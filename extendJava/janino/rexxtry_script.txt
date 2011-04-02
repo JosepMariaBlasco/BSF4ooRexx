@@ -1,0 +1,20 @@
+call bsf.cls
+o1=BsfCreateRexxProxy("return .true", , "javax.swing.filechooser.FileFilter")
+say "now switching to Janino and testing that one too..."
+clz1=bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy")
+clz1~setExtendUsingJanino(.true)
+
+clz2=bsf.loadClass("org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool")
+-- clz2~bDebug =.true
+clz2~bss =.true
+clz2~bTiming=.true
+
+o2=BsfCreateRexxProxy("return .true", , "javax.swing.filechooser.FileFilter")
+
+meths=o1~getClass~getDeclaredMethods; say meths~items "methods:"; do m over meths;say m~toString;end
+meths=o2~getClass~getDeclaredMethods; say meths~items "methods:"; do m over meths;say m~toString;end
+
+
+clz2~bss =.false
+o3=BsfCreateRexxProxy("return .true", , "javax.swing.filechooser.FileFilter")
+meths=o3~getClass~getDeclaredMethods; say meths~items "methods:"; do m over meths;say m~toString;end

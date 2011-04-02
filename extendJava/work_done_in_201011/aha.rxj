@@ -1,0 +1,128 @@
+rp=BsfCreateRexxProxy(.dumper~new)
+-- rp=.dumper~new
+
+
+
+a1=bsf.createProxyClass("java.awt.Dimension")
+-- a2=bsf.createProxyClass("java.awt.Dimension",                      , rp)
+a2=bsf.createProxyClass("java.awt.Dimension")
+a2~~setDefaultHandler(rp)
+a3=bsf.createProxyClass("java.awt.Dimension", .list~of("getHeight"))
+-- a4=bsf.createProxyClass("java.awt.Dimension", .list~of("getHeight"), rp)
+a4=bsf.createProxyClass("java.awt.Dimension", .list~of("getHeight"))
+a4~~setDefaultHandler(rp)
+
+
+-- newClzObj~setDefaultHandler(rexxProxy)  -- set RexxProxy for constructors and static methods
+
+
+l=.array~of(a1, a2, a3, a4)
+
+do clz over l
+   say "clz:" pp(clz) "clz~getDefaultHandler="pp(clz~getDefaultHandler)
+   say
+   call dumpMethods clz
+   say
+   call dumpConstructors clz
+   say "-"~copies(50)
+end
+
+say "="~copies(75)
+
+rp2=BsfCreateRexxProxy(.dumper2~new)
+-- rp3=BsfCreateRexxProxy(.dumper3~new)
+-- rp2=.dumper2~new
+
+-- say "rp2:" rp2 "rp2~nixi:" rp2~nixi
+say "rp2:" pp(rp2 )
+do clz over l
+   say "clz="pp(clz)
+   o1=clz~new(rp2)         -- default constructor: 0,0
+   o2=clz~new(rp2, 1, 2)
+   say "o1~height:" o1~getheight
+   say "o1~width: " o1~getwidth
+   say "o1:" o1~toString
+
+   say "o2~width: " o2~getwidth
+   say "o2~height:" o2~getheight
+   say "o2:" o2~toString
+say
+say "o1~getTargetRexxProxy:" pp(o1~getTargetRexxProxy)
+say "o2~getTargetRexxProxy:" pp(o2~getTargetRexxProxy)
+   say "-"~copies(50)
+end
+
+say "-"~copies(50)
+say "a1="pp(a1)
+say "o1="pp(o1)
+
+
+-- ::requires aha.rxj
+::requires aha.cls
+
+::routine dumpMethods
+  use arg clz
+
+  say "clz="pp(clz) pp(clz~toString)
+
+  meths=clz~getDeclaredMethods
+  do i=1 to meths~items
+     say i"." pp(meths[i]~toString)
+  end
+
+::routine dumpConstructors
+  use arg clz
+
+  say "clz="pp(clz) pp(clz~toString)
+
+  meths=clz~getDeclaredConstructors
+  do i=1 to meths~items
+     say i"." pp(meths[i]~toString)
+  end
+
+
+::class dumper
+::method unknown
+  slotDir=arg(arg())    -- get last (slot) argument
+say "09"x "<dumper0> nr args:" arg()
+  nl="09 0d 0a"x        -- TAB-CR-LF
+  tmpStr=self "-" arg() "arguments:"
+  do i over slotDir~allIndexes~sortWith(.caselessComparator~new)
+     tmpStr=tmpStr nl pp(i)"="pp(slotDir[i])
+  end
+  say tmpStr
+  return tmpStr" (as return value)"
+
+
+::class dumper2
+::method unknown
+  use arg methName, argArray
+
+  slotDir=argArray[argArray~items]
+  say "09"x pp("<dumper2.UNKNOWN>: arg(1)="pp(arg(1))) pp(slotDir~makeArray~makeString("l","-"))
+-- forward message (arg(1)"_forwardTo_Super")
+
+
+  nl="09 0d 0a"x        -- TAB-CR-LF
+  tmpStr=self "-" arg() "arguments:"
+  do i over slotDir~allIndexes~sortWith(.caselessComparator~new)
+     tmpStr=tmpStr nl pp(i)"="pp(slotDir[i])
+  end
+  say tmpStr
+
+  if methName<>"<INIT>" then
+     return slotDir~javaObject~send(methName"_forwardToSuper")
+
+
+
+::method getHeight
+  use arg slotDir
+
+  say "09"x pp("<dumper2.GETHEIGHT>: arg()="arg()) pp(slotDir~makeArray~makeString("l","-"))
+
+
+  -- forward to (slotdir~javaObject) message ("getHeight_forwardTo_Super")
+  return slotDir~javaObject~getHeight_forwardToSuper
+
+
+::class dumper3

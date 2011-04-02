@@ -1,0 +1,121 @@
+/* Create a Java class by extension that will proxy all "setSize" methods to Rexx.
+
+   Therefore a Rexx class implementing the setSize-method needs to created, which carries
+   out the operation. In this test program the values supplied to the setSize-method will
+   get doubled.
+
+   Attention: proxying the Java methods "toString", "equals" and "hashCode" are not supported
+              as that may cause the JVM to crash.
+
+   Rony G. Flatscher (C), WU Wien, 2010-11-27
+*/
+
+   /* create a proxy class for the Java class "java.awt.Dimension",
+      name the new class "RGF_Dimension",
+      proxy the Java methods "getHeight" and "setSize" */
+a1=bsf.createProxyClass("java.awt.Dimension", "RGF_Dimension", "getHeight", "setSize")
+
+   /* create a Rexx instance of the ooRexx class "Doubler", which implements the "setSize"
+      method such, that the supplied width and height get doubled; wrap it up as Java RexxProxy */
+rpd=BsfCreateRexxProxy(.dumper~new)    -- create a dumper Rexx object, wrap it up as a RexxProxy
+
+   /* create an instance of the proxied class, first argument must be the RexxProxy object
+      that implements the "setSize" method */
+o1=a1~new(rpd, 1, 2)
+
+   /* show current values */
+say "created with (width=1,height=2) ..."
+say "o1~getWidth="o1~getWidth "o1~getHeight="o1~getHeight
+say o1~toString
+say "="~copies(75)
+
+   /* change and show current values */
+say "setting dimension to (width=3,height=5)..."
+o1~setSize(3,5)
+say "o1~getWidth="o1~getWidth "o1~getHeight="o1~getHeight
+say o1~toString
+
+say "="~copies(75)
+   /* change and show current values */
+say "setting dimension to current dimension values..."
+o1~setSize(o1)       -- use this Dimension object as an argument
+say "o1~getWidth="o1~getWidth "o1~getHeight="o1~getHeight
+say o1~toString
+
+say "="~copies(75)
+   /* change and show current values */
+say "setting dimension to (width=17,height=222)..."
+o1~setSize(17,222)
+say "o1~getWidth="o1~getWidth "o1~getHeight="o1~getHeight
+say o1~toString
+
+exit
+
+::requires BSF.CLS
+
+
+/* -------------------------------------------------------------------- */
+/* Rexx class that implements the Java method "setSize"  */
+::class doubler
+
+
+/* ooRexx 'setSize' method will double the supplied values.
+
+   Java may supply one (Dimension object) or two (width,height) arguments. In
+   addition another argument will be supplied as the last argument, named "slotDir",
+   an ooRexx directory object.
+*/
+
+::method setSize
+  if arg()=2 then    -- Dimension object plus the slotDir argument
+  do
+      use arg dimObj, slotDir
+      slotDir~javaObject~setSize_forwardToSuper(dimObj~width*2, dimObj~height*2)
+  end
+  else               -- width, height plus the slotDir argument
+  do
+      use arg width, height, slotDir
+      slotDir~javaObject~setSize_forwardToSuper(width*2, height*2)
+  end
+
+
+
+/* Use the ooRexx unknown mechanism to document (by informing the user
+   with say-statements) each invocation of a proxied Java method. */
+::class dumper
+::method unknown
+
+/* Unknown method name will be the first argument "methName",
+   array with supplied arguments the second argument "methArgs", which
+   has the "slotDir" argument appended by BSF4ooRexx.
+*/
+  use arg methName, methArgs
+
+  args=methArgs~items     -- get number of elements in arguments sent with method name
+  slotDir=methArgs[args]  -- get last argument, the slotDir directory supplied by BSF4ooRexx
+
+   -- for debugging: show current content of the "slotDir"-directory
+  call dumpSlotDir self, args, slotDir
+
+  if methName<>"<INIT>" then     -- constructor in super got already invoked in Java constructor
+  do
+     if args=1 then  -- no arguments from Java, just slotDir added by BSF4ooRexx
+        forward to (slotDir~javaObject) message (methName"_forwardToSuper") array ()
+     else            -- remove slotDir-argument (last argument) added by BSF4ooRexx
+        forward to (slotDir~javaObject) message (methName"_forwardToSuper") arguments(methArgs~section(1,args-1))
+  end
+
+
+
+/* Show the content of the "slotDir" directory ordered by index (name) ascendingly. */
+::routine dumpSlotDir
+  use arg title, argNr, slotDir
+
+  say "---> dumpSlotDir() - begin ..."
+  tmpStr="09"x pp(title) "-" pp(argNr) "argument(s):"
+  nl="0d 0a 09 09"x        -- TAB-CR-LF
+  do i over slotDir~allIndexes~sortWith(.caselessComparator~new)
+     tmpStr=tmpStr nl pp(i)"="pp(slotDir[i])
+  end
+  say tmpStr
+  say "<--- dumpSlotDir() - end."

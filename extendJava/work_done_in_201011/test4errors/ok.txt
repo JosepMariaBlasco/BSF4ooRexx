@@ -1,0 +1,279 @@
+/// ProxiedJavaClassTool.createProxiedJavaClass(...), created Java source code: 
+package org.rexxla.bsf.engines.rexx.onTheFly; 
+import org.rexxla.bsf.engines.rexx.RexxProxy; 
+import org.apache.bsf.BSFException; 
+
+public class Dimension_$RexxExtendClass$_24825485 extends java.awt.Dimension
+{
+	public  static          Object    classLock     =new Object(); 
+	private static volatile RexxProxy defaultHandler=null;         
+	private                 RexxProxy target        =null;         
+
+
+	public static RexxProxy getDefaultHandler() 
+	{
+		return defaultHandler; 
+	}
+
+
+	public static void setDefaultHandler(RexxProxy rexxproxy) 
+	{
+		synchronized (classLock)    
+		{                           
+			defaultHandler=rexxproxy; 
+		}                           
+	}
+
+
+	public synchronized RexxProxy getTargetRexxProxy() 
+	{
+		return target; 
+	}
+
+
+	public synchronized void setTargetRexxProxy(RexxProxy newTarget) 
+	{
+		target=newTarget; 
+	}
+
+
+	// --- creating methods according to String array of methods to proxy (if any) 
+
+	// --- creating base (default) constructor 
+
+	public Dimension_$RexxExtendClass$_24825485() 
+	{
+		super();                    
+		target=defaultHandler;      
+	}
+
+
+	public Dimension_$RexxExtendClass$_24825485(RexxProxy rexxproxy)  
+	{
+		super();                 
+		target=rexxproxy;        
+		if (defaultHandler==null)   
+		{                           
+			defaultHandler=rexxproxy; 
+		}                           
+	}
+
+
+	// --- creating constructors from existing public constructors using [java.awt.Dimension] 
+
+	public Dimension_$RexxExtendClass$_24825485(org.rexxla.bsf.engines.rexx.RexxProxy a0, java.awt.Dimension a1)      
+	{
+		super(a1);                    
+		target=a0;      
+		if (defaultHandler==null) 
+		{                         
+			defaultHandler=a0;      
+		}                         
+	}
+
+
+	public Dimension_$RexxExtendClass$_24825485(org.rexxla.bsf.engines.rexx.RexxProxy a0, int a1, int a2)      
+	{
+		super(a1, a2);                    
+		target=a0;      
+		if (defaultHandler==null) 
+		{                         
+			defaultHandler=a0;      
+		}                         
+	}
+
+}
+
+a1~getDefaultHandler - before: [The NIL object]
+/// ProxiedJavaClassTool.createProxiedJavaClass(...), created Java source code: 
+package org.rexxla.bsf.engines.rexx.onTheFly; 
+import org.rexxla.bsf.engines.rexx.RexxProxy; 
+import org.apache.bsf.BSFException; 
+
+public class Dimension_$RexxExtendClass$_25613505 extends java.awt.Dimension
+{
+	public  static          Object    classLock     =new Object(); 
+	private static volatile RexxProxy defaultHandler=null;         
+	private                 RexxProxy target        =null;         
+
+
+	public static RexxProxy getDefaultHandler() 
+	{
+		return defaultHandler; 
+	}
+
+
+	public static void setDefaultHandler(RexxProxy rexxproxy) 
+	{
+		synchronized (classLock)    
+		{                           
+			defaultHandler=rexxproxy; 
+		}                           
+	}
+
+
+	public synchronized RexxProxy getTargetRexxProxy() 
+	{
+		return target; 
+	}
+
+
+	public synchronized void setTargetRexxProxy(RexxProxy newTarget) 
+	{
+		target=newTarget; 
+	}
+
+
+	// --- creating methods according to String array of methods to proxy (if any) 
+
+	public double getHeight() throws BSFException
+	{
+		Object []obj=new Object[] {  };
+		Object    res=null;     
+		RexxProxy rpTarget=(target==null ? defaultHandler : target);     
+			res=rpTarget.invoke(this, "getHeight", "public double getHeight()", obj); 
+		if (res==null)                   
+		{ 
+			throw new ClassCastException("Result returned from RexxProxy '"+rpTarget+"' is 'null', which cannot be cast to the primitive return type 'double'.");    
+		} 
+		if (res instanceof String)    
+		{ 
+			res= new Double((String) res); 
+		} 
+		return ((Double) res).doubleValue(); 
+	}
+
+
+	public double getHeight_forwardToSuper() 
+	{
+		return super.getHeight();    
+	}
+
+
+	// --- creating constructors from existing public constructors using [java.awt.Dimension] 
+
+	public Dimension_$RexxExtendClass$_25613505(org.rexxla.bsf.engines.rexx.RexxProxy a0) throws BSFException     
+	{
+		super();                    
+		target=a0;      
+		if (defaultHandler==null) 
+		{                         
+			defaultHandler=a0;      
+		}                         
+		Object []obj=new Object[] {  };
+		target.invoke(this, "<init>", "public java.awt.Dimension()", obj);   
+	}
+
+
+	public Dimension_$RexxExtendClass$_25613505(org.rexxla.bsf.engines.rexx.RexxProxy a0, java.awt.Dimension a1) throws BSFException     
+	{
+		super(a1);                    
+		target=a0;      
+		if (defaultHandler==null) 
+		{                         
+			defaultHandler=a0;      
+		}                         
+		Object []obj=new Object[] { a1 };
+		target.invoke(this, "<init>", "public java.awt.Dimension(java.awt.Dimension)", obj);   
+	}
+
+
+	public Dimension_$RexxExtendClass$_25613505(org.rexxla.bsf.engines.rexx.RexxProxy a0, int a1, int a2) throws BSFException     
+	{
+		super(a1, a2);                    
+		target=a0;      
+		if (defaultHandler==null) 
+		{                         
+			defaultHandler=a0;      
+		}                         
+		Object []obj=new Object[] { new Integer(a1), new Integer(a2) };
+		target.invoke(this, "<init>", "public java.awt.Dimension(int,int)", obj);   
+	}
+
+
+	// --- creating base (default) constructor 
+
+	public Dimension_$RexxExtendClass$_25613505() 
+	{
+		super();                    
+		target=defaultHandler;      
+	}
+
+
+	// --- creating constructors from existing public constructors using [java.awt.Dimension] 
+}
+
+clz: [java.lang.Class@22c95b] clz~getDefaultHandler=[The NIL object]
+
+clz=[java.lang.Class@22c95b] [class org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505]
+  1. [public static void org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505.setDefaultHandler(org.rexxla.bsf.engines.rexx.RexxProxy)]
+  2. [public static org.rexxla.bsf.engines.rexx.RexxProxy org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505.getDefaultHandler()]
+  3. [public synchronized org.rexxla.bsf.engines.rexx.RexxProxy org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505.getTargetRexxProxy()]
+  4. [public synchronized void org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505.setTargetRexxProxy(org.rexxla.bsf.engines.rexx.RexxProxy)]
+  5. [public double org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505.getHeight_forwardToSuper()]
+  6. [public double org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505.getHeight() throws org.apache.bsf.BSFException]
+
+clz=[java.lang.Class@22c95b] [class org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505]
+  1. [public org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505(org.rexxla.bsf.engines.rexx.RexxProxy,int,int) throws org.apache.bsf.BSFException]
+  2. [public org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505()]
+  3. [public org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505(org.rexxla.bsf.engines.rexx.RexxProxy) throws org.apache.bsf.BSFException]
+  4. [public org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505(org.rexxla.bsf.engines.rexx.RexxProxy,java.awt.Dimension) throws org.apache.bsf.BSFException]
+--------------------------------------------------
+clz: [java.lang.Class@1034bb5] clz~getDefaultHandler=[org.rexxla.bsf.engines.rexx.RexxProxy@4a65e0]
+
+clz=[java.lang.Class@1034bb5] [class org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485]
+  1. [public static void org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485.setDefaultHandler(org.rexxla.bsf.engines.rexx.RexxProxy)]
+  2. [public static org.rexxla.bsf.engines.rexx.RexxProxy org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485.getDefaultHandler()]
+  3. [public synchronized org.rexxla.bsf.engines.rexx.RexxProxy org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485.getTargetRexxProxy()]
+  4. [public synchronized void org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485.setTargetRexxProxy(org.rexxla.bsf.engines.rexx.RexxProxy)]
+
+clz=[java.lang.Class@1034bb5] [class org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485]
+  1. [public org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485(org.rexxla.bsf.engines.rexx.RexxProxy,int,int)]
+  2. [public org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485()]
+  3. [public org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485(org.rexxla.bsf.engines.rexx.RexxProxy)]
+  4. [public org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485(org.rexxla.bsf.engines.rexx.RexxProxy,java.awt.Dimension)]
+--------------------------------------------------
+===========================================================================
+rp2: [org.rexxla.bsf.engines.rexx.RexxProxy@1e0be38]
+[1] clz=[java.lang.Class@22c95b] [class org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505]
+	 [a DUMPER2] - [1] argument(s): 
+		 [JAVAOBJECT]=[org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505@1e859c0] 
+		 [METHODDESCRIPTOR]=[public java.awt.Dimension()] 
+		 [METHODNAME]=[<init>] 
+		 [USERDATA]=[a Directory]
+	 [a DUMPER2] - [3] argument(s): 
+		 [JAVAOBJECT]=[org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505@15c7850] 
+		 [METHODDESCRIPTOR]=[public java.awt.Dimension(int,int)] 
+		 [METHODNAME]=[<init>] 
+		 [USERDATA]=[a Directory]
+	 [<dumper2.GETHEIGHT>: arg()=1] [METHODDESCRIPTOR-METHODNAME-JAVAOBJECT-USERDATA]
+o1~height: 0.0
+o1~width:  0.0
+o1: org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505[width=0,height=0]
+[1] o2~width:  [1.0] o2~height: [2]
+-->
+[2] o2~width:  [1.0] o2~height: [2]
+<--
+[3] o2: org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_25613505[width=2,height=6]
+
+o1~getTargetRexxProxy: [org.rexxla.bsf.engines.rexx.RexxProxy@1e0be38]
+o2~getTargetRexxProxy: [org.rexxla.bsf.engines.rexx.RexxProxy@1e0be38]
+--------------------------------------------------
+[2] clz=[java.lang.Class@1034bb5] [class org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485]
+o1~height: 0.0
+o1~width:  0.0
+o1: org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485[width=0,height=0]
+[1] o2~width:  [1.0] o2~height: [2]
+-->
+[2] o2~width:  [1.0] o2~height: [2]
+<--
+[3] o2: org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485[width=2,height=6]
+
+o1~getTargetRexxProxy: [org.rexxla.bsf.engines.rexx.RexxProxy@1e0be38]
+o2~getTargetRexxProxy: [org.rexxla.bsf.engines.rexx.RexxProxy@1e0be38]
+--------------------------------------------------
+--------------------------------------------------
+a1=[java.lang.Class@1034bb5]
+o1=[org.rexxla.bsf.engines.rexx.onTheFly.Dimension_$RexxExtendClass$_24825485@1ded0fd]
+---
+The End.

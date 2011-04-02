@@ -1,0 +1,7 @@
+Attention: the versions in use can *NOT* be found here, instead look up:
+
+        BSF4ooRexx.dev\source_java
+
+---rgf, 2010-04-16
+
+

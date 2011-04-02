@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+RegistrationClassName: com.sun.star.script.framework.provider.oorexx.S
+ criptProviderForooRexx
+Created-By: Rony G Flatscher WU Wien Austria Europe
+Built-By: Rony G Flatscher 20080712 WU Wien Austria Europe
+Class-Path: ScriptFramework.jar

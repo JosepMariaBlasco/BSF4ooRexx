@@ -1,0 +1,281 @@
+// Decompiled by Jad v1.5.8g. Copyright 2001 Pavel Kouznetsov.
+// Jad home page: http://www.kpdus.com/jad.html
+// Decompiler options: packimports(3) annotate 
+// Source File Name:   TestTemplate.java
+
+import org.rexxla.bsf.engines.rexx.RexxProxy;
+
+abstract class TestTemplate
+{
+
+    public static abstract RexxProxy getDefaultHandler_rgf();
+
+    public static abstract void setDefaultHandler_rgf(RexxProxy rexxproxy);
+
+    abstract TestTemplate(RexxProxy rexxproxy);
+
+    abstract TestTemplate();
+
+    abstract void testVoid_rgf()
+        throws Throwable;
+
+    abstract void testPrimitiveBooleanVoid_1_rgf(boolean flag)
+        throws Throwable;
+
+    abstract boolean testPrimitiveBooleanPrimitiveBoolean_1_rgf(boolean flag)
+        throws Throwable;
+
+    abstract void testPrimitiveByteVoid_1_rgf(byte byte0)
+        throws Throwable;
+
+    abstract byte testPrimitiveBytePrimitiveByte_1_rgf(byte byte0)
+        throws Throwable;
+
+    abstract void testPrimitiveCharacterVoid_1_rgf(char c)
+        throws Throwable;
+
+    abstract char testPrimitiveCharacterPrimitiveCharacter_1_rgf(char c)
+        throws Throwable;
+
+    abstract void testPrimitiveShortVoid_1_rgf(short word0)
+        throws Throwable;
+
+    abstract short testPrimitiveShortPrimitiveShort_1_rgf(short word0)
+        throws Throwable;
+
+    abstract void testPrimitiveIntegerVoid_1_rgf(int i)
+        throws Throwable;
+
+    abstract int testPrimitiveIntegerPrimitiveInteger_1_rgf(int i)
+        throws Throwable;
+
+    abstract void testPrimitiveLongVoid_1_rgf(long l)
+        throws Throwable;
+
+    abstract long testPrimitiveLongPrimitiveLong_1_rgf(long l)
+        throws Throwable;
+
+    abstract void testPrimitiveFloatVoid_1_rgf(float f)
+        throws Throwable;
+
+    abstract float testPrimitiveFloatPrimitiveFloat_1_rgf(float f)
+        throws Throwable;
+
+    abstract void testPrimitiveDoubleVoid_1_rgf(double d)
+        throws Throwable;
+
+    abstract double testPrimitiveDoublePrimitiveDouble_1_rgf(double d)
+        throws Throwable;
+
+    abstract void testBooleanVoid_1_rgf(Boolean boolean1)
+        throws Throwable;
+
+    abstract Boolean testBooleanBoolean_1_rgf(Boolean boolean1)
+        throws Throwable;
+
+    abstract void testByteVoid_1_rgf(Byte byte1)
+        throws Throwable;
+
+    abstract Byte testByteByte_1_rgf(Byte byte1)
+        throws Throwable;
+
+    abstract void testCharacterVoid_1_rgf(Character character)
+        throws Throwable;
+
+    abstract Character testCharacterCharacter_1_rgf(Character character)
+        throws Throwable;
+
+    abstract void testIntegerVoid_1_rgf(Integer integer)
+        throws Throwable;
+
+    abstract Integer testIntegerInteger_1_rgf(Integer integer)
+        throws Throwable;
+
+    abstract void testLongVoid_1_rgf(Long long1)
+        throws Throwable;
+
+    abstract Long testLongLong_1_rgf(Long long1)
+        throws Throwable;
+
+    abstract void testFloatVoid_1_rgf(Float float1)
+        throws Throwable;
+
+    abstract Float testFloatFloat_1_rgf(Float float1)
+        throws Throwable;
+
+    abstract void testDoubleVoid_1_rgf(Double double1)
+        throws Throwable;
+
+    abstract Double testDoubleDouble_1_rgf(Double double1)
+        throws Throwable;
+
+    abstract void testStringVoid_1_rgf(String s)
+        throws Throwable;
+
+    abstract String testStringString_1_rgf(String s)
+        throws Throwable;
+
+    abstract void TestPrimitivesVoid_rgf(boolean flag, byte byte0, char c, short word0, int i, long l, 
+            float f, double d, String s)
+        throws Throwable;
+
+    abstract Object TestPrimitivesObject_rgf(boolean flag, byte byte0, char c, short word0, int i, long l, 
+            float f, double d, String s)
+        throws Throwable;
+
+    public abstract void testEmptyVoid_rgf()
+        throws Throwable;
+
+    public abstract Object testEmptyObject_rgf()
+        throws Throwable;
+
+    public abstract void testOneObjectVoid_rgf(Object obj)
+        throws Throwable;
+
+    public abstract Object testOneObjectObject_rgf(Object obj)
+        throws Throwable;
+
+    public abstract void testOneIntVoid_rgf(int i)
+        throws Throwable;
+
+    public abstract Object testOneIntObject_rgf(int i)
+        throws Throwable;
+
+    public Double testOneDblDouble_1(double d)
+        throws Throwable
+    {
+        String s = "testOneDblDouble_1";
+    //    0    0:ldc1            #110 <String "testOneDblDouble_1">
+    //    1    2:astore_3        
+        Object aobj[] = {
+            new Double(d)
+        };
+    //    2    3:iconst_1        
+    //    3    4:anewarray       Object[]
+    //    4    7:dup             
+    //    5    8:iconst_0        
+    //    6    9:new             #112 <Class Double>
+    //    7   12:dup             
+    //    8   13:dload_1         
+    //    9   14:invokespecial   #114 <Method void Double(double)>
+    //   10   17:aastore         
+    //   11   18:astore          4
+        Object obj = null;
+    //   12   20:aconst_null     
+    //   13   21:astore          5
+        if(target == null)
+    //*  14   23:aload_0         
+    //*  15   24:getfield        #116 <Field RexxProxy target>
+    //*  16   27:ifnonnull       44
+            obj = defaultHandler.invoke(s, aobj);
+    //   17   30:getstatic       #118 <Field RexxProxy defaultHandler>
+    //   18   33:aload_3         
+    //   19   34:aload           4
+    //   20   36:invokevirtual   #124 <Method Object RexxProxy.invoke(String, Object[])>
+    //   21   39:astore          5
+        else
+    //*  22   41:goto            56
+            obj = target.invoke(s, aobj);
+    //   23   44:aload_0         
+    //   24   45:getfield        #116 <Field RexxProxy target>
+    //   25   48:aload_3         
+    //   26   49:aload           4
+    //   27   51:invokevirtual   #124 <Method Object RexxProxy.invoke(String, Object[])>
+    //   28   54:astore          5
+        if(obj != null)
+    //*  29   56:aload           5
+    //*  30   58:ifnull          160
+        {
+            Object obj1 = obj;
+    //   31   61:aload           5
+    //   32   63:astore          6
+            if(obj instanceof String)
+    //*  33   65:aload           5
+    //*  34   67:instanceof      #126 <Class String>
+    //*  35   70:ifeq            87
+                obj = new Double((String)obj);
+    //   36   73:new             #112 <Class Double>
+    //   37   76:dup             
+    //   38   77:aload           5
+    //   39   79:checkcast       #126 <Class String>
+    //   40   82:invokespecial   #128 <Method void Double(String)>
+    //   41   85:astore          5
+            if(!(obj instanceof Double))
+    //*  42   87:aload           5
+    //*  43   89:instanceof      #112 <Class Double>
+    //*  44   92:ifne            160
+                throw new ClassCastException("Result type '" + obj1.getClass() + "' cannot be cast to return type '" + (java.lang.Double.class) + '"');
+    //   45   95:new             #130 <Class ClassCastException>
+    //   46   98:dup             
+    //   47   99:new             #132 <Class StringBuffer>
+    //   48  102:dup             
+    //   49  103:invokespecial   #134 <Method void StringBuffer()>
+    //   50  106:ldc1            #136 <String "Result type '">
+    //   51  108:invokevirtual   #140 <Method StringBuffer StringBuffer.append(String)>
+    //   52  111:aload           6
+    //   53  113:invokevirtual   #144 <Method Class Object.getClass()>
+    //   54  116:invokevirtual   #147 <Method StringBuffer StringBuffer.append(Object)>
+    //   55  119:ldc1            #149 <String "' cannot be cast to return type '">
+    //   56  121:invokevirtual   #140 <Method StringBuffer StringBuffer.append(String)>
+    //   57  124:getstatic       #151 <Field Class class$java$lang$Double>
+    //   58  127:ifnonnull       142
+    //   59  130:ldc1            #153 <String "java.lang.Double">
+    //   60  132:invokestatic    #157 <Method Class _mthclass$(String)>
+    //   61  135:dup             
+    //   62  136:putstatic       #151 <Field Class class$java$lang$Double>
+    //   63  139:goto            145
+    //   64  142:getstatic       #151 <Field Class class$java$lang$Double>
+    //   65  145:invokevirtual   #147 <Method StringBuffer StringBuffer.append(Object)>
+    //   66  148:bipush          34
+    //   67  150:invokevirtual   #160 <Method StringBuffer StringBuffer.append(char)>
+    //   68  153:invokevirtual   #164 <Method String StringBuffer.toString()>
+    //   69  156:invokespecial   #165 <Method void ClassCastException(String)>
+    //   70  159:athrow          
+        }
+        return (Double)obj;
+    //   71  160:aload           5
+    //   72  162:checkcast       #112 <Class Double>
+    //   73  165:areturn         
+    }
+
+    public abstract Integer testOneIntInteger_2_rgf(int i)
+        throws Throwable;
+
+    public abstract Object testOneIntInt_2_rgf(int i, Object obj)
+        throws Throwable;
+
+    public abstract int testOneIntInt_1_rgf(int i)
+        throws Throwable;
+
+    public abstract void testOneIntVoid_1_rgf(int i)
+        throws Throwable;
+
+    public abstract double testOneDoubleDouble_1_rgf(double d)
+        throws Throwable;
+
+    public abstract void testOneDoubleVoid_1_rgf(double d)
+        throws Throwable;
+
+    private static Object classLock = new Object();
+    private static volatile RexxProxy defaultHandler = null;
+    RexxProxy target;
+    static Class class$java$lang$Boolean; /* synthetic field */
+    static Class class$java$lang$Byte; /* synthetic field */
+    static Class class$java$lang$Character; /* synthetic field */
+    static Class class$java$lang$Short; /* synthetic field */
+    static Class class$java$lang$Integer; /* synthetic field */
+    static Class class$java$lang$Long; /* synthetic field */
+    static Class class$java$lang$Float; /* synthetic field */
+    static Class class$java$lang$String; /* synthetic field */
+
+    static 
+    {
+    //    0    0:new             #4   <Class Object>
+    //    1    3:dup             
+    //    2    4:invokespecial   #188 <Method void Object()>
+    //    3    7:putstatic       #190 <Field Object classLock>
+    //    4   10:aconst_null     
+    //    5   11:putstatic       #118 <Field RexxProxy defaultHandler>
+    //*   6   14:return          
+    }
+}

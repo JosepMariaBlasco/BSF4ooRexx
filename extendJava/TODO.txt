@@ -1,0 +1,82 @@
+2010-02-23, Creating dynamically subclasses, rgf
+
+Probleme
+        - "java.lang.reflect.InvocationTargetException" *sometimes*, if creating
+          dynamically a proxied subclasses, cf.
+
+          testExt.rex
+
+            in
+
+          F:\test\bsf4oorexx\20100212_ScreenShot_CreateOnTheFlyClass4Subclassing
+
+
+ToDo:
+        - if abstract class: make sure that all abstract methods of all superclasses
+          are handled as well
+
+        - allow creating proxy-methods for any method in any superclass, if they
+          carry new signatures (plus adding a "_forwardToSuper" for them as well)
+
+        - create test cases for no method, one method, two methods, three methods,
+          all methods, with and without constructors ("<init>")
+
+
+--------------
+
+
+From: "03_rexx_testExtendNormalCallback.testGroup"
+
+
+        ::method "test_01_plain_sendMessage_no_args"
+           /* due to the naming in this testgroup, this method will be the first that gets
+              run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+              that it is set as BSF.CLS routines and methods depend on that */
+            if bsf("bsfPrefixReturnValue")=0 then
+               call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+
+            ro=.SomeRexxClass~new           -- create an instance of an ooRexx class
+            -- rpo=BsfCreateRexxProxy(ro, ,"rgf.E_extendNormalClasses.NormalTest")  -- create Java RexxProxy object, being used as an AbstractTest object
+            -----------------------------------------------------------------------------------------
+            rp=BsfCreateRexxProxy(ro)       -- create a RexxProxy (Java) object of it
+
+            extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+            classVersion=0                  -- use the compiled class' class version
+            argArr=bsf.createArrayOf("java.lang.String", "dummy_Method")
+            clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, classVersion, argArr)
+
+            -- create an instance of the extended class, supplying the RexxProxy object
+                 -- get constructor
+            argArr=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
+            constructor=clz~getDeclaredConstructor(argArr)
+            self~assertNotNull(constructor, "constructor<>.nil")
+
+                 -- create instance
+            argArr=bsf.createArrayOf("java.lang.Object", rp)
+            rpo=constructor~newInstance(argArr)   -- create instance of extended Java class
+            -----------------------------------------------------------------------------------------
+
+            listOfEntries=.list~of("METHODNAME", "METHODDESCRIPTOR", "JAVAOBJECT")
+
+            expected=.directory~new
+            expected~methodName="dummy_Method"
+            expected~argArrayItems=1+1         -- one for argument, one for slotArgument
+            expected~slotArgument=.true
+
+            rp_arr=rpo~dummy_Method("oha1")     -- sendMessage interface method, fetch result from Rexx object's unknown
+
+            noArgs=bsf.createArrayOf("java.lang.Object")   -- no arguments (= empty array of arguments)
+              -- get UNKNOWN's arguments
+            oneArg=bsf.createArrayOf("java.lang.String", 1)
+            rp_arg1=rp_arr~sendMessage("AT", oneArg)
+
+            oneArg[1]=2
+            rp_arg2=rp_arr~sendMessage("[]", oneArg)
+            items=rp_arg2~sendMessage("items", noArgs)
+
+            oneArg[1]=3
+            rp_arg3=rp_arr~sendMessage("AT", oneArg)
+
+            self~assertTrue(checkReturnedValues(expected, rp_arg1, rp_arg2, items, rp_arg3, listOfEntries, noArgs, oneArg))
+

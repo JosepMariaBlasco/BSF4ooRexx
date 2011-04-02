@@ -1,0 +1,79 @@
+
+/* Create a Java class by extension that will proxy all "setSize" methods to Rexx.
+
+   Therefore a Rexx class implementing the setSize-method needs to created, which carries
+   out the operation. In this test program the values supplied to the setSize-method will
+   get doubled.
+
+   Attention: proxying the Java methods "toString", "equals" and "hashCode" are not supported
+              as that may cause the JVM to crash.
+
+   Rony G. Flatscher (C), WU Wien, 2010-11-27
+*/
+
+   /* create a proxy class for the Java class "java.awt.Dimension", proxy the Java method "setSize" */
+a1=bsf.createProxyClass("java.awt.Dimension", .nil, "setSize")
+
+   /* create a Rexx instance of the ooRexx class "Doubler", which implements the "setSize"
+      method such, that the supplied width and height get doubled; wrap it up as Java RexxProxy */
+rpd=BsfCreateRexxProxy(.doubler~new)   -- create a doubler Rexx object, wrap it up as a RexxProxy
+
+   /* create an instance of the proxied class, first argument must be the RexxProxy object
+      that implements the "setSize" method */
+o1=a1~new(rpd, 1, 2)
+
+   /* show current values */
+say "created with (width=1,height=2) ..."
+say "o1~getWidth="o1~getWidth "o1~getHeight="o1~getHeight
+say o1~toString
+say "---"
+
+   /* change and show current values */
+say "setting dimension to (width=3,height=5), but will get doubled..."
+o1~setSize(3,5)
+say "o1~getWidth="o1~getWidth "o1~getHeight="o1~getHeight
+say o1~toString
+
+say "---"
+   /* change and show current values */
+say "setting dimension to current dimension values (but will get doubled)..."
+o1~setSize(o1)       -- use this Dimension object as an argument
+say "o1~getWidth="o1~getWidth "o1~getHeight="o1~getHeight
+say o1~toString
+
+say "---"
+   /* change and show current values */
+say "setting dimension to (width=17,height=222), but will get doubled..."
+o1~setSize(17,222)
+say "o1~getWidth="o1~getWidth "o1~getHeight="o1~getHeight
+say o1~toString
+
+exit
+
+::requires BSF_TEMP.CLS
+
+
+/* -------------------------------------------------------------------- */
+/* Rexx class that implements the Java method "setSize"  */
+::class doubler
+
+
+/* ooRexx 'setSize' method will double the supplied values.
+
+   Java may supply one (Dimension object) or two (width,height) arguments. In
+   addition another argument will be supplied as the last argument, named "slotDir",
+   an ooRexx directory object.
+*/
+
+::method setSize
+  if arg()=2 then    -- Dimension object plus the slotDir argument
+  do
+      use arg dimObj, slotDir
+      slotDir~javaObject~setSize_forwardToSuper(dimObj~width*2, dimObj~height*2)
+  end
+  else               -- width, height plus the slotDir argument
+  do
+      use arg width, height, slotDir
+      slotDir~javaObject~setSize_forwardToSuper(width*2, height*2)
+  end
+

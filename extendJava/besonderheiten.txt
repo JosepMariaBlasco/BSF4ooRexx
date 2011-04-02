@@ -1,0 +1,91 @@
+
+Java 4:
+
+        - keine Frame-Hints
+
+        - Byte, Short, Integer, Long, Float, Double: haben (noch) keine valueOf(primitiveValue)-Methoden!
+
+                - stattdessen new class(arg) notwendig !
+
+        - synthetic static fields for primitive datatype Classes
+
+        - synthetic static "class$" method
+
+        - "StringBuffer" for println()
+
+
+Java 5:
+
+        - keine Frame-Hints
+
+
+Java 6:
+
+        - Frame-Hints
+
+--------------------------------------
+
+        proxy.invoke():
+
+                        (String methodName, Object []args)
+                        (String methodName, Object []args), String methodSignature)
+
+        methodInfo:
+                        methodDescription: asm-desc
+                        signature|signatureExpanded|method attributes methodName | class-or-interface attributes interface-or-class-Name
+
+
+--------------------------------------
+
+        offen:          - non-abstract methods, allow access to super's method:
+                             "methodName"+"_in_$super" ? or generically:
+
+                             "forwardToSuper"(methName, Object[] args) ?
+
+                        - auch "forwardToSuperStatic" ??
+
+                        - what about "final" for arguments, any consequences in bytecode ?
+
+--------------------------------------
+        callback:
+                        rexxProxy.invoke(
+                                          Object javaObject,
+                                          String methodName,
+                                          String methodDescription,
+                                          Object[] args)
+                            throws BSFException
+                        )
+
+--------------------------------------
+
+Transformation (make sure class-names are correctly used):
+
+        general:        - ignore Attributes, Annotations, InnerClasses, OuterClasses
+                        - adjust owner-name in instructions e.g. for fields
+                        - visitSource:
+                                - source: "BSF4Rexx: extends class XYZ [implements I1[, I2]...]
+                                - debug:  null
+                        - process public and synthetic members only
+                        - new name: name+"$RgfExtend
+                        - add all abstract methods
+                        - rewrite public constructors to:
+                                - accept RexxProxy as first argument
+                                - invoke superclass' constructor
+
+        < V1_5:         - synthetic (static) methods copy over as is
+                        - synthetic fields, copy over
+                        - use "StringBuffer" for creating output string
+
+--------------------------------------
+
+invocation:
+
+        - clzName, no-methodsList:  - public constructors, [abstract methods,] forwardToSuper
+
+        - clzName, methodsList:     - public constructors, abstract methods, forwardToSuper, methods of list
+
+
+   - allow to use it as third parameter, in BsfCreateRexxProxy(), 4th and more arguments are then
+     taken as arguments for creating an instance (if this throws an exception, so be it)
+
+
