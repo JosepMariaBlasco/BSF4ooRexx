@@ -1,0 +1,117 @@
+#!/usr/bin/rexx
+/*
+   Name:     "HelloWorld.rxj"
+
+   Invoke:   "rexx HelloWorld.rxj"
+                or
+             "rexxj HelloWorld.rxj" (Windows)
+                or
+             "rexxj.sh HelloWorld.rxj" (Unix)
+
+   Purpose:  create a window with a button to close it
+
+             This version stresses Object Rexx and the wrapper class "BSF.CLS" which
+             makes Java look like if it was Object Rexx ...
+             ;)
+
+   Needs:    ooRexx, BSF4ooRexx
+
+   Date:    2001-04-18, 2003-01-23, 2003-05-10, 2005-06-05
+
+   Author:   Rony G. Flatscher, University of Essen, WU Wien University,
+             derived from Peter Kalender's proof-of-concept work for the "Essener Ski Seminar",
+             University of Essen (Oct 2000 to Feb 2001)
+
+
+   last change: $Revision: 902 $ $Author: Administrator $ $Date: 2010-08-22 16:12:11 +0200 (Sun, 22 Aug 2010) $
+
+   changed:
+            2005-12-28, added Apache license
+            2008-06-01, updated text
+            2008-07-19, rgf, added hash-bang line at the top
+            2008-08-23, ---rgf, if using BSF.CLS, then do not use BSF() directly (or
+                                remove the first three chars from its result string)
+            2009-07-05, Walter Pachl add help and correct description
+            2010-05-16, rgf, - replacing bsf.addEventListener[WithEventObject] with a Rexx event handler
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+If arg(1)='?' Then Do
+  Parse Source source
+  Say source
+  Say 'Create a resizable window with a button that can be pressed to close the window'
+  Exit
+  End
+
+if      BsfInvokedBy()=1 then say "This Rexx program was invoked by Java!"
+else if BsfInvokedBy()=2 then say "This Rexx program was invoked by Rexx, JVM loaded by Rexx!"
+else                          say "No JVM present, we got troubles ..."
+
+   -- Create a Java RexxProxy for controlling the closing of the application
+rexxCloseEH =.RexxCloseAppEventHandler~new   -- Rexx event handler
+   -- Create Java RexxProxy for the Rexx event handler
+rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , "java.awt.event.ActionListener", -
+                                            "java.awt.event.WindowListener" )
+
+        /* create a Java awt window and a Java awt button       */
+tmpWin = .awtFrame~new('Hello World!')
+tmpWin~addWindowListener(rpCloseEH)
+
+tmpBut = .bsf~new("java.awt.Button", 'Press Me !')
+tmpBut~addActionListener(rpCloseEH)
+
+        /* prepare window and show it, using cascading messages (two twiddles '~')   */
+tmpWin ~~add(tmpBut) ~~pack ~~setVisible(.true) ~~toFront
+
+rexxCloseEH~waitForExit -- wait until we are allowed to end the program
+call SysSleep .2        -- let Java's RexxProxy finalizations find a running Rexx instance
+
+::REQUIRES BSF.CLS      -- get the Java support
+
+        /* one way, how to define a Java class in Object Rexx   */
+::CLASS "awtFrame" SUBCLASS bsf
+::METHOD init
+  self~init:super('java.awt.Frame', ARG(1, 'A'))
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to set "close app" indicator */
+::class RexxCloseAppEventHandler
+::method init        /* constructor */
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::attribute closeApp          -- indicates whether app should be closed
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method actionPerformed      -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method windowClosing        -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+

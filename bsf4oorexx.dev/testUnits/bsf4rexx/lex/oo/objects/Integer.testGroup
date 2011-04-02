@@ -1,0 +1,100 @@
+#!/usr/bin/rexx
+/*
+   name:             Integer testGroup
+   author:           Michael Lex
+   date:             2009-05-07
+   version:          1.0.0
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.Integer.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "Integer.testGroup" subclass ooTestCase public
+
+::method "test_1"
+	.bsf~bsf.import("java.lang.Integer","JInteger") /* import java Integer class */
+	i=.JInteger~new(5)
+	self~assertFalse(i~compareTo(.JInteger~new(5)))
+
+::method "test_2"
+	.bsf~bsf.import("java.lang.Integer","JInteger")
+	i=.JInteger~new(5)
+	self~assertEquals(i~intValue,5)
+
+::method "test_2a"
+--	i=.bsf4rexx~integer.class(5)
+--	self~assertEquals(i~intValue,5)
+--	a=bsf.createArray(.bsf4rexx~integer.class,3,4)
+
+::method "test_3"
+	.bsf~bsf.import("java.lang.Integer","JInteger")
+	i=.JInteger~new(2147483647)
+	self~assertEquals(i~intValue,2147483647)
+
+/*
+::method "test_4"
+	.bsf~bsf.import("java.lang.Integer","JInteger")
+	errorCode=40.1
+	self~expectSyntax(errorCode)
+	i=.JInteger~new(2147483648)
+
+::method "test_5"
+	.bsf~bsf.import("java.lang.Integer","JInteger")
+	errorCode=40.1
+	self~expectSyntax(errorCode)
+	i=.JInteger~new(foo)
+*/
+
+::method "test_6"
+	.bsf~bsf.import("java.lang.Integer","JInteger")
+	i=.JInteger~newStrict("Integer","-2147483648")
+	self~assertEquals(i~intValue,"-2147483648")
+
+::method "test_7"
+--	.bsf~bsf.import("java.lang.Integer","JInteger")
+--	errorCode=40.1
+--	self~expectSyntax(errorCode)
+--	i=.JInteger~newStrict("Integer","-2147483649")
+
+::method "test_8"
+	.bsf~bsf.import("java.lang.Integer","JInteger")
+	i=.JInteger~newStrict("Integer.class","-2147483648")
+	self~assertEquals(i~intValue,"-2147483648")
+
+::method "test_9"
+	.bsf~bsf.import("java.lang.Integer","JInteger")
+	i=.JInteger~newStrict("INTEGER.CLASS","-2147483648")
+	self~assertEquals(i~intValue,"-2147483648")
+
+::method "test_10"
+--	.bsf~bsf.import("java.lang.Integer","JInteger")
+--	errorCode=40.1
+--	self~expectSyntax(errorCode)
+--	i=.JInteger~new("Inte","-2147483648")
+
+
+::method "test_11"
+	.bsf~bsf.import("java.lang.Integer","JInteger")
+	i=.JInteger~newStrict("In","-2147483648")
+	self~assertEquals(i~intValue,"-2147483648")
+
+::method "test_12"
+	.bsf~bsf.import("java.lang.Integer","JInteger")
+	i=.JInteger~newStrict("I","-2147483648")
+	self~assertEquals(i~intValue,"-2147483648")
+
+
+return
+

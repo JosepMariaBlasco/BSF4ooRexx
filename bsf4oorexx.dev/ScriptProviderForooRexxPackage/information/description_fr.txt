@@ -1,0 +1,4 @@
+﻿Cela met Open Object Rexx (ooRexx) à la disposition de toutes les applications OpenOffice.org. ooRexx est un puissant langage de script qui est facile à apprendre.
+
+    ooRexx:        http://www.ooRexx.org
+    BSF4ooRexx: http://wi.wu.ac.at/rgf/rexx/bsf4oorexx/current/

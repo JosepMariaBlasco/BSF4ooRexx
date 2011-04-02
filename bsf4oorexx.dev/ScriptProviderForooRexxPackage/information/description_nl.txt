@@ -1,0 +1,6 @@
+Dit maakt de krachtige en makkelijk te leren Open Object Rexx (ooRexx) script-taal beschikbaar voor alle OpenOffice.org toepassingen.
+
+    ooRexx:        http://www.ooRexx.org
+    BSF4ooRexx: http://wi.wu.ac.at/rgf/rexx/bsf4oorexx/current/
+
+

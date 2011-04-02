@@ -1,0 +1,146 @@
+/*
+   name:       07_listElementNamesAsTree.rex
+   purpose:    - demonstrate how to implement a SAX content handler in Rexx, this version
+                 displays the ElementNames in a tree, very much like example 6.7 in the book
+                 "Processing XML with Java" (see below);
+               - demonstrates how the location callback can be exploited to add line and column
+                 information to the elements;
+               - demonstrates how to synchronize with the WindowClosing event of the JFrame;
+               - demonstrates how to create directly a Java proxy object for calling back to Rexx
+   author:     Rony G. Flatscher, (c) 2009
+   date:       2009-06-22
+   needs:      ooRexx 4.0, BSF4Rexx 4.0, at least Java 1.4
+   resources:  - <http://www.cafeconleche.org/books/xmljava/chapters/index.html> (2009-06-19)
+                 ... book on XML processing with Java ("Processing XML with Java", Elliotte Rusty)
+
+               - <http://www.w3.org/DOM/>
+                 ... official web site of the DOM project
+
+               - <http://java.sun.com/j2se/1.4.2/docs/api/index.html> (2009-06-20)
+                 ... DOM Java package for Java version 1.4 (easier to read because of no generics yet)
+
+               - <http://java.sun.com/j2se/1.4.2/docs/api/org/xml/sax/package-summary.html> (2009-06-19)
+                 ... SAX Java package for Java version 1.4 (easier to read because of no generics yet)
+
+   license:    LGPL 3.0 (Lesser Gnu Public License version 3.0), cf. <http://www.gnu.org/licenses/lgpl.html>
+               or
+               ASF 2.0 (Apache Software Foundation License version 2.0), cf. <http://www.apache.org/licenses/LICENSE-2.0>
+*/
+
+
+parse arg xmlFileName
+
+   /* create an instance of the JAXP DocumentBuilderFactory    */
+factory=bsf.loadClass("javax.xml.parsers.DocumentBuilderFactory")~newInstance
+
+   /* make sure that parser is set to be namespace aware       */
+factory~setNamespaceAware(.true)
+
+   /* now create the DocumentBuilder object                    */
+parser=factory~newDocumentBuilder
+
+   /* create a Rexx object for error handling                  */
+eh=.errorHandler~new
+
+   /* create a Java proxy using the Rexx object for error handling   */
+javaProxy=BsfCreateRexxProxy(eh, , "org.xml.sax.ErrorHandler")
+
+   /* set the parser's error handler                           */
+parser~setErrorHandler(javaProxy)
+
+   /* parse the file, result is full DOM-tree                  */
+document=parser~parse(xmlFileName)
+
+   /* get constant value to determine node types to filter     */
+.local~show_element=bsf.getConstant("org.w3c.dom.traversal.NodeFilter", "SHOW_ELEMENT")
+whatToShow=.show_element
+
+   /* create a TreeWalker with only Element nodes              */
+walker=document~createTreeWalker(document, whatToShow, .nil, .true)
+
+   /* process list of Element nodes                            */
+jTreeRoot=walkTheTree( walker~firstChild, .nil )
+
+   /* now prepare and display JTree */
+tree    =.bsf~new("javax.swing.JTree", jTreeRoot)
+treeView=.bsf~new("javax.swing.JScrollPane", tree)
+
+.bsf~bsf.import("javax.swing.JFrame", "JFrame") /* import the Java class   */
+f       =.JFrame~new("XML Tree")                /* create an instance      */
+f~setDefaultCloseOperation(.JFrame~EXIT_ON_CLOSE)  /* get constant         */
+f~getContentPane~add(treeView)
+wl=.windowListener~new  /* create a Rexx WindowListener object */
+f~addWindowListener(BsfCreateRexxProxy(wl,,"java.awt.event.WindowListener"))
+f~~pack~~show~~toFront  /* pack, show and move JFrame to front */
+
+loop forever            /* wait until JFrame got closed                 */
+   if wl~isClosing=.true then leave
+   call sysSleep .01    /* sleep a while to save cycles                 */
+end
+
+
+::requires BSF.CLS      /* get the Java support */
+
+
+::routine walkTheTree   /* walks the tree recursively                */
+  use arg node, jTreeParentNode
+
+  data=ppAtts(node~getNodeName, node~getAttributes)   /* define text for tree node  */
+  newJTreeNode=.bsf~new("javax.swing.tree.DefaultMutableTreeNode", data) /* create new node   */
+
+  if jTreeParentNode=.nil then    /* save root               */
+     jTreeParentNode=newJTreeNode
+  else                           /* insert into tree        */
+     jTreeParentNode~insert(newJTreeNode, jTreeParentNode~getChildCount)
+
+  child=node~firstChild /* depth first                               */
+  do while child<>.nil
+     if child~getNodeType=.show_element then /* child could be of different type!*/
+        call walkTheTree child, newJTreeNode   /* recurse, i.e. one level deeper   */
+
+     child=child~nextSibling  /* breadth next                        */
+  end
+  return jTreeParentNode
+
+
+::routine ppAtts        /* pretty prints element name with attributes, if any; shows attribute typename  */
+  use arg strElementName, atts
+
+  tmpStr=strElementName
+  tmpStr2=""
+  if atts~getLength>0 then    /* o.k. attributes defined for this element  */
+  do
+      do i=0 to atts~getLength-1   /* iterate over all attributes, 0-based */
+         att=atts~item(i)     /* get attribute node                        */
+            /* DOM 2.0 is not making attribute types available, hence no type information */
+         tmpStr2=tmpStr2 att~getName'="'att~getValue'"'
+      end
+  end
+  return pp((tmpStr tmpStr2~strip)~strip)
+
+
+
+::class ErrorHandler    /* will handle "org.xml.sax.ErrorHandler" events*/
+
+::method unknown        /* handles "warning", "error" and "fatalError" events */
+  use arg methName, argArray  /* fetch arguments                        */
+  exception=argArray[1] /* retrieve SAXException argument               */
+                        /* display error message                        */
+  .error~say(methName":"  "line="exception~getLineNumber",col="exception~getColumnNumber":" pp(exception~getMessage))
+
+
+
+::class windowListener     /* a Rexx implemented WindowListener            */
+::method init              /* constructor, setting attribute to a defined value  */
+  expose isClosing
+  isClosing=.false
+
+::method isClosing attribute
+
+::method windowClosing     /* if windowClosing event occurred, indicate it */
+  expose isClosing
+  isClosing=.true
+
+::method unknown           /* intercept all other messages to do nothing   */
+
+

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+TryExec=rexx
+Exec=/opt/BSF4ooRexx/install/runRexxScriptJava.sh /opt/BSF4ooRexx/install/setupJava.rex
+Terminal=true
+Path=/opt/BSF4ooRexx/install
+Name=Configure Java to use
+Comment=Allows to select which installed Java should be used. Please make sure that the Java's bitness (32-Bit or 64-Bit) matches the bitness of the installed ooRexx (run "rexx -v" to learn about the bitness of ooRexx, see the output entitled line "Addressing Mode:").

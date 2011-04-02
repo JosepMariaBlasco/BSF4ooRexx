@@ -1,0 +1,94 @@
+#!/usr/bin/rexx
+/*
+   name:             version testGroup
+   author:           Michael Lex
+   version:          1.0.0
+*/
+/*
+
+  Due to the circumstance that the error codes were change from
+  BSF4Rexx version 2.8 to version 4.0 the following local variable
+  indicates the current used version.
+
+  For version 4.0:
+	.local~ver = 4
+
+  For version 2.8:
+	.local~ver = 2 -- or any other value since the check is only if 4 is present
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.version.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+::requires "rxregexp.cls"
+
+::class "version.testGroup" subclass ooTestCase public
+
+::method "test_1"
+	.local~ver = 4
+
+	self~AssertNotNull(bsf("version","All"))
+
+::method "test_2"
+	self~AssertNotNull(bsf("version","ArrayWrapper"))
+
+::method "test_3"
+	self~AssertNotNull(bsf("version","BsfManager"))
+
+::method "test_4"
+	self~AssertNotNull(bsf("version","EnumerationWrapper"))
+
+::method "test_5"
+	self~AssertNotNull(bsf("version","Java4Rexx"))
+
+::method "test_6"
+	self~AssertNotNull(bsf("version","RexxAndJava"))
+
+::method "test_7"
+	self~AssertNotNull(bsf("version","RexxEngine"))
+
+::method "test_8"
+	self~AssertNotNull(bsf("version","Supplier"))
+
+::method "test_9"
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	var=bsf("version","not_existing")
+
+::method "test_10"
+	self~AssertNotNull(bsf("version","Al"))
+
+::method "test_11"
+	self~AssertNotNull(bsf("version","AR"))
+
+::method "test_12"
+	self~AssertNotNull(bsf("version","B"))
+
+::method "test_13"
+	self~AssertNotNull(bsf("version","E"))
+
+::method "test_14"
+	self~AssertNotNull(bsf("version","J"))
+
+::method "test_15"
+	self~AssertNotNull(bsf("version","RexxA"))
+
+::method "test_16"
+	self~AssertNotNull(bsf("version","RexxE"))
+
+::method "test_17"
+	self~AssertNotNull(bsf("version","S"))
+
+return
+

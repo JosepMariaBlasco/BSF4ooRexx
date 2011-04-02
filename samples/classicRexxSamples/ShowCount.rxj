@@ -1,0 +1,131 @@
+#!/usr/bin/rexx
+/*
+   Name:    "ShowCount.rxj"
+
+   Invoke:  "rexx Showcount.rxj"
+                or
+            "rexxj2.cmd Showcount.rxj" (Windows)
+                or
+            "rexxj2.sh Showcount.rxj" (Unix)
+
+   Purpose:  create a little resizable window with a push button to count and reveal
+             the number of times the button was pressed
+
+   Needs:    IBM's "Bean Scripting Framework" (BSF)
+             (cf. "http://oss.software.ibm.com/developerworks/projects/bsf")
+
+             and the package "bsf4rexx"
+             (cf. "http://nestroy.wi-inf.uni-essen.de/Forschung/rgf/Entwicklung.html")
+
+   Date:    2001-04-18, 2003-01-23, 2003-05-10
+            2005-12-28, added Apache license
+            2008-09-09, rgf, changed "registerBean" and "registerBeanStrict" to their synonyms
+                             "new" and "newStrict" which better describe the semantics of
+                             these subfunctions
+            2009-08-26, Walter Pachl  add help
+            2010-02-16, rgf, adapted library name to "BSF4ooRexx"
+
+   Author:   Rony G. Flatscher, University of Essen, WU Wien University,
+             derived from Peter Kalender's proof-of-concept work for the "Essener Ski Seminar",
+             University of Essen (Oct 2000 to Feb 2001)
+
+   license(s): see end of this file
+*/
+
+If arg(1)='?' Then Do
+  Parse Source source
+  Say source
+  Say 'This program displays a window with a button at its bottom'
+  Say 'In the middle of this window you will be told'
+  Say '   how often you have pressed this very button.'
+  Exit
+End
+
+if rxFuncQuery("BSF") then  /* no bsf4rexx support available yet, hence load Java */
+do
+   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx", "BsfLoadFuncs"
+   call BsfLoadFuncs    /* load all BSF-functions                    */
+   call BsfLoadJava     /* load the JVM and set up BSF4Rexx-support  */
+end
+
+invoked=BsfInvokedBy()
+Select
+  When invoked=1 then say "This Rexx program was invoked by Java!"
+  When invoked=2 then say "This Rexx program was invoked by Rexx, JVM loaded by Rexx!"
+  Otherwise
+  Do
+                      say "No JVM present, we got troubles ..."
+                      Exit
+  End
+End
+
+call BSF 'new', 'Window',      'java.awt.Frame',  'Show count'
+call BSF 'addEventListener', 'Window', 'window', 'windowClosing', 'call BSF "exit"'
+
+call BSF 'new', 'Button',      'java.awt.Button', 'Press me!'
+call BSF 'addEventListener', 'Button', 'action', '', 'call ShowCount'
+
+call BSF 'new', 'Label', 'java.awt.Label'
+call BSF 'invoke', 'Label', 'setAlignment', '1'
+
+call BSF 'invoke', 'Window', 'add', 'Center', 'Label'
+call BSF 'invoke', 'Window', 'add', 'South',  'Button'
+call BSF 'invoke', 'Window', 'pack'
+call BSF 'invoke', 'Window', 'show'
+call BSF 'invoke', 'Window', 'toFront'
+
+i=0             /* set counter to 0     */
+
+do forever
+   a = bsf("pollEventText")     /* wait for an eventText to be sent     */
+   say "received the following eventText: ["a"]"
+   interpret a                  /* execute as a Rexx program    */
+   if result= "SHUTDOWN, REXX !" then leave     /* JVM will be shutdown in 1/10sec      */
+end
+
+exit
+
+        /* show the actual number of times, you pressed the button      */
+ShowCount:
+   i=i+1
+   call BSF 'invoke', 'Label', 'setText', "Press #" i
+   return
+
+/*
+   license(s): choice of
+
+    ------------------------ Apache Version 2.0 license (AL2.0)-------------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+
+    or
+
+    ------------------------ GNU Lesser Public License 3.0 (LGPL3.0) ----------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the GNU Lesser Pubilc License, 3.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.gnu.org/licenses/lgpl.html
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+

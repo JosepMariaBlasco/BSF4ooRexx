@@ -1,0 +1,15 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Rexx Script
+Name[de]=Rexx Skript
+GenericName=RexxScript
+Comment=Rexx or ooRexx script executed by ooRexx.
+Icon=oorexx-logo
+MimeType=text/x-rexx;text/x-rexx-java;text/x-rexx-java-ooo;
+TryExec=rexx
+Exec=rexx %f
+Terminal=true
+Categories=Utility;
+
+# defined for the BSF4ooRexx package, date: 2010-07-31, 2010-08-19/21, author: Rony G. Flatscher

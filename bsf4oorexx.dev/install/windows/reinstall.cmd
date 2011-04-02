@@ -1,0 +1,3 @@
+@echo off
+@echo Starting re-installation ...
+rexx.exe kickoff.rex reinstall

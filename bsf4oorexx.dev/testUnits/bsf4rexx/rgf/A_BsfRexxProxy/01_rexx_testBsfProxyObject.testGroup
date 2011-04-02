@@ -1,0 +1,155 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testBsfRexxProxy1.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2009-09-06
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4Rexx 4.0 new external BsfRexxProxy() method
+   hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
+                     hence this test unit needs to address RexxProxy objects in a Java fashion, using
+                     the RexxProxy method "invoke(String methodName, Object[] args)"; any Rexx object
+                     that gets returned will be wrapped up as a RexxProxy as well
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testBsfProxyObject1)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "testBsfProxyObject1" subclass ooTestCase public
+
+
+::method "test_01_plain_BsfRexxProxy"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+
+    ro=.SomeRexxClass~new           -- create an instance of an ooRexx class
+
+    rpo=BsfCreateRexxProxy(ro)      -- create Java RexxProxy object, do not supply anything
+
+    ro2=BsfRexxProxy(rpo)  -- get Rexx object from proxy
+    self~assertSame(ro, ro2)
+
+    ud2=BsfRexxProxy(rpo, "userData")
+    self~assertNull(ud2)   -- no userData created
+
+    rc2=BsfRexxProxy(rpo, "refCount")
+    self~assertEquals(1, rc2)
+
+::method "test_02_plain_with_user_data_BsfRexxProxy"
+    ro=.SomeRexxClass~new           -- create an instance of an ooRexx class
+
+    userData="hi"
+    rpo=BsfCreateRexxProxy(ro, userData)  -- create Java RexxProxy object, do not supply anything
+
+    ro2=BsfRexxProxy(rpo)  -- get Rexx object from proxy
+    self~assertSame(ro, ro2)
+
+    ud2=BsfRexxProxy(rpo, "userData")
+    self~assertSame(userData, ud2)
+
+    rc2=BsfRexxProxy(rpo, "refCount")
+    self~assertEquals(1, rc2)
+
+      -- another RexxProxy
+    userData=.object~new
+    rpo2=BsfCreateRexxProxy(ro, userData)  -- create Java RexxProxy object, do not supply anything
+
+    ro2=BsfRexxProxy(rpo2)  -- get Rexx object from proxy
+    self~assertSame(ro, ro2)
+
+    ud2=BsfRexxProxy(rpo2, "userData")
+    self~assertSame(userData, ud2)
+
+    rc2=BsfRexxProxy(rpo2, "refCount")
+    self~assertEquals(2, rc2)
+
+
+::method "test_03_error"
+    self~expectSyntax(40.900)
+    call bsfRexxProxy(nixi)
+
+::method "test_04_error"
+    self~expectSyntax(40.900)
+    call bsfRexxProxy(.nil)
+
+::method "test_05_error"
+    self~expectSyntax(40.900)
+    call bsfRexxProxy(.object)
+
+::method "test_06_error"
+    self~expectSyntax(40.900)
+    call bsfRexxProxy(.array~new)
+
+
+/* ==================================================================================== */
+-- just return the method name and the arguments accompanying it
+::class SomeRexxClass
+::method unknown
+  use arg methName, argArray
+
+/*
+  say "UNKNOWN, methodName:" pp(methName)
+  do i=1 to argArray~items
+     o=argArray[i]
+     say "   arg #" i":" pp(o)
+     if o~isA(.directory) then
+     do
+        do idx over o
+           say "      entry:" pp(idx)
+        end
+     end
+
+  end
+  say "---"
+*/
+
+  return .array~of(methName, argArray)
+
+
+/* ==================================================================================== */
+::routine checkReturnedValues
+  use arg expected, rp_arg1, rp_arg2, items, rp_arg3, listOfEntries=.nil, noArgs, oneArg
+
+  if expected~methodName<>rp_arg1 then return .false
+  if expected~argArrayItems<>items then return .false
+  if expected~slotArgument, listOfEntries=.nil then return .false
+
+  if listOfEntries<>.nil then    -- slot argument given, check it
+  do
+     oneArg[1]=items
+     slotDir=rp_arg2~invoke("at", oneArg)    -- get slotDir object from argArray
+
+      -- get all entries in slotDir and save them in a set
+     allIndexes=slotDir~invoke("allIndexes", noArgs)  -- get allIndexes
+     tmpSet=.set~new
+     do i=1 to allIndexes~invoke("items", noArgs)     -- iterate over all entries
+        oneArg[1]=i              -- set index
+        tmpSet~put(allIndexes~invoke("at", oneArg))   -- retrieve string value
+     end
+
+     if tmpSet~items <> listOfEntries~items then return .false -- mismatch, cannot be o.k.!
+
+      -- remove the expected entries from the set
+     do entry over listOfEntries       -- check whether slotDir contains all expected entries
+        tmpSet~remove(entry)           -- remove entry from the set
+     end
+     return (tmpSet~items=0)           -- returns .true, if all entries got removed
+  end
+
+  return .true

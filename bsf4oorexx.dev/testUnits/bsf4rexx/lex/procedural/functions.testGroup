@@ -1,0 +1,43 @@
+#!/usr/bin/rexx
+/*
+   name:             functions testGroup
+   author:           Michael Lex
+   version:          1.0.0
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.functions.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+::requires "rxregexp.cls"
+
+::class "functions.testGroup" subclass ooTestCase public
+
+::method "test_1"
+	ret=BsfQueryRegisteredFunctions()
+	self~assertNotNull(BsfQueryRegisteredFunctions.0)
+
+::method "test_2"
+	ret=BsfQueryAllFunctions()
+	self~assertNotNull(BsfQueryAllFunctions.0)
+
+::method "test_3"
+	ret=BsfQueryRegisteredFunctions(s.)
+	self~assertNotNull(s.0)
+
+::method "test_4"
+	ret=BsfQueryAllFunctions(s.)
+	self~assertNotNull(s.0)
+
+return
+

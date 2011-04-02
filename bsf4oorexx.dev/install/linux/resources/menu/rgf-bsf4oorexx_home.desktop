@@ -1,0 +1,6 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Exec=xdg-open http://wi.wu.ac.at/rgf/rexx/bsf4oorexx/current/
+Name=BSF4ooRexx Download Page
+Comment=Opens the "BSF4ooRexx" download page on the Internet.

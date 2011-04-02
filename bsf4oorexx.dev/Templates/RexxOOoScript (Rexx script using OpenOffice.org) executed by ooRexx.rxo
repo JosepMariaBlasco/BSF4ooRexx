@@ -1,0 +1,39 @@
+#!/usr/bin/rexx
+
+parse version v   /* get Rexx version information  */
+say v             /* show version information      */
+
+say "UNO.CLS version:" .uno~version       /* show version of UNO.CLS */
+say "BSF.CLS version:" .bsf4rexx~version  /* show version of BSF.CLS */
+
+use arg slotArg   /* fetch the "slotArg", a java.util.Hashtable object which contains invocation
+                     information from OpenOffice.org, will always be the very last argument     */
+
+scriptContext=uno.getScriptContext(slotArg)  /* get the xScriptContext object                   */
+if scriptContext<>.nil then                  /* o.k., we are invoked as a macro from OOo        */
+do
+   oDoc=getDocument(scriptContext~getDocument)  /* get the document service (a XModel) object   */
+   xDesktop=scriptContext~getDesktop            /* get the desktop (a XDesktop) object          */
+   xContext=scriptContext~getComponentContext   /* get the context (a XComponentContext) object */
+end
+else  /* this program was called from outside of OOo, e.g. from the commandline  */
+do
+   xContext = UNO.connect()                  /* get a connection to OOo server                  */
+   xDesktop = UNO.createDesktop(xContext)    /* create the XDesktop from xContext               */
+      /* create a word processor document (url="private:factory/swriter")
+           [spreadsheet document, url: "private:factory/swriter",
+            presentation document, url: "private:factory/simpress", etc.]
+      */
+   oDoc=xDesktop~XComponentLoader~loadComponentFromURL("private:factory/swriter", "_blank", 0, .UNO~noProps)
+end
+
+say
+say "The OpenOffice document" pp(oDoc) "implements:"
+say
+say "services:" ppd(oDoc~uno.getServiceNames)
+say
+say "interfaces:" ppd(oDoc~uno.getInterfaceNames)
+
+/* delete what you do not need and proceed! Happy programming, ---rony */
+
+::requires "UNO.CLS"    /* get the OpenOffice support (also loads the Java support) */

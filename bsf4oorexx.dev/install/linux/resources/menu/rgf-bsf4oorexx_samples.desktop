@@ -1,0 +1,6 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Exec=xdg-open /opt/BSF4ooRexx/samples
+Name=Samples (simple to comprehensive BSF4ooRexx examples)
+Comment=Opens the BSF4ooRexx "samples" folder.

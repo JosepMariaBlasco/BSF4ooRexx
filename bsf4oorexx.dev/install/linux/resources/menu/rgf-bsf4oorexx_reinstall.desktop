@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Exec=/opt/BSF4ooRexx/install/linux/reinstall.sh
+Terminal=true
+Path=/opt/BSF4ooRexx/install/linux
+Name=Reinstall BSF4ooRexx
+Comment=Reinstalls BSF4ooRexx.

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+
+  <mime-type type="text/x-rexx-java">
+    <sub-class-of type="text/plain"/>
+    <comment>RexxJavaScript (Rexx script using Java) executed by ooRexx</comment>
+    <glob pattern="*.jrexx"/>
+    <glob pattern="*.rexxj"/>
+    <glob pattern="*.rxj"/>
+  </mime-type>
+
+<!--
+   - defined for the BSF4ooRexx package, date: 2010-07-30/2010-08-09, author: Rony G. Flatscher
+   - copy/link to "/usr/share/mime/packages", then run  "update-mime-database /usr/share/mime"
+-->
+
+</mime-info>

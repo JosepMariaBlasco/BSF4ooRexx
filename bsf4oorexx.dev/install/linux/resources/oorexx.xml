@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+
+  <mime-type type="text/x-rexx">
+    <sub-class-of type="text/plain"/>
+    <comment>RexxScript executed by ooRexx</comment>
+    <glob  weight="60" pattern="*.cls"/>
+    <glob pattern="*.orx"/>
+    <glob pattern="*.rex"/>
+    <glob pattern="*.rexx"/>
+    <glob pattern="*.testGroup"/>
+    <glob pattern="*.testUnit"/>
+    <magic priority="75">         <!-- just for testing purposes as priority of 60 did not overrule the standard hash bang catching match -->
+        <match type="string" offset="0" value="#!/usr/bin/rexx"/>
+    </magic>
+  </mime-type>
+
+<!--
+   - defined for the BSF4ooRexx package, date: 2010-07-30/2010-08-09/20/22, author: Rony G. Flatscher
+   - copy/link to "/usr/share/mime/packages", then run  "update-mime-database /usr/share/mime"
+-->
+
+</mime-info>
