@@ -34,6 +34,7 @@ import  java.lang.reflect.*;
 */
 
 /* changed:
+   ---rgf, 2011-01-08, fix logic error if context class loader is not set (e.g. observed on MacOSX)
    ---rgf, 2009-09-10, context class loader may not be set, account for it
    ---rgf, 2007-09-17, adjusted for using default class loader, if system class loader fails
    ---rgf, 2007-01-29, loading and invoking all methods via reflection
@@ -76,7 +77,7 @@ public class BSF_Log // implements org.apache.commons.logging.Log
             String str4Log="org.apache.commons.logging.Log";
 
             // rgf, 2009-09-10: context CL may be null
-            if (cl==null)
+            if (cl!=null)    // rgf, 2011-01-08
             {
                 try {
                     oac_Log        = cl.loadClass(str4Log);
@@ -458,4 +459,5 @@ public class BSF_Log // implements org.apache.commons.logging.Log
         System.out.println("--------------------------------------------------------");
     }
 }
+
 

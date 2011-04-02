@@ -1,5 +1,5 @@
 /* original author: Rene Jansen ("rvj"), 2006-11 */
-/* BSF4ooRexx JDBC Example rvj 20061128, 20061201, 20100822 rgf
+/* BSF4ooRexx JDBC Example rvj 20061128, 20061201, 20100822, 20110322 rgf
 
    Pre-requisites for the "derby" database: add "derby.jar" to your "CLASSPATH" environment variable
    Pre-requisites for the "hsql" database: add "hsqldb.jar" to your "CLASSPATH" environment variable
@@ -84,7 +84,6 @@ end
 
 ::routine dropTable           -- drop a table
   use arg stmt, tableName
-  call BsfShowErrorMessage 0  -- switch off printing the stack trace
   signal on syntax            -- catch exception, if table does not exist yet (very first run)
   stmt~executeUpdate("DROP TABLE" tableName)
 

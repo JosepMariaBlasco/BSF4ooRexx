@@ -1,5 +1,5 @@
 /*
- * Copyright 2004-2009 The Apache Software Foundation.
+ * Copyright 2004-2011 The Apache Software Foundation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,6 +60,7 @@ import org.apache.bsf.util.ObjectRegistry;
  */
 
 /*  changed:
+    2011-01-08: ---rgf, static constructor: fixed logic error in fallback code for getResources()
     2009-09-10: ---rgf, context class loader may not be set, account for it
 
     2007-09-17: ---rgf, some Java hosts do not set the Thread's context class loader and
@@ -180,13 +181,19 @@ public class BSFManager {
             {
                 e=tccl.getResources(resourceName);
             }
+            else  // fallback, rgf, 2011
+            {
+                e=definedClassLoader.getResources(resourceName);
+		Thread.currentThread().setContextClassLoader(definedClassLoader); // rgf, 2011-01-08
+            }
 
+/*
             if (tccl==null | !e.hasMoreElements())  // either no CCL or nor elements, use this class' resources
             {
 //                RGFInfo.append("==> no BSF engines found from context ClassLoader, now using defCL !\n");
                 e=definedClassLoader.getResources(resourceName);
             }
-
+*/
 
             while (e.hasMoreElements()) {
                 URL url = (URL)e.nextElement();

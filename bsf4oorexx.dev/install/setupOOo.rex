@@ -56,13 +56,21 @@
             2010-08-15, ---rgf, - Linux: now supplying full path to "unopkg" to add_ooRexxPackage.rxo
             2010-08-17, ---rgf, - Linux: don't copy ooRexx-OOo-support files to OOo/program dir (not needed due to copying them tu /usr/bin)
             2010-08-24, ---rgf, - Windows: assume CLASSPATH is always set !
+            2011-01-25/26, ---rgf, - Windows: if CLASSPATH set in HKCU, then make sure we refer to system's set value of CLASSPATH as well;
+                                  escape "%" with "[25x]" in path
+            2011-02-25, ---rgf (on the way to Tokyo) - add support for MacOSX
+            2011-02-27, ---rgf, - fixed bug in determining MacOSX
+                                - MacOSX: fixed bug in determining whether OOo is installed or not
+                                - MacOSX: not setting up xdg-menu
+            2011-03-01, ---rgf, - MacOSX: adjusted 'sed' arguments
+            2011-03-02, ---rgf, - MacOSX: do not generate MacOSX home directory in setEnvironment4OOo.sh
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2010 Rony G. Flatscher
+       Copyright (C) 2006-2011 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -93,7 +101,10 @@ OOO_jars=/usr/share/java/openoffice
 
 cmd.=""                          /* default value for stem        */
 parse upper source s +1          /* get first character of operating system in uppercase */
-cmd.eIsUnix=(pos(s, "WO")=0)
+cmd.eIsUnix=(pos(s, "WO")=0)     /* neither Windows nor OS/2, hence Unix */
+
+parse upper source s +1  -- get operating system name in uppercase
+cmd.eIsMacOSX=(s="M")    -- determine whether running on "MACOSX"
 
 
 -- cmd.eIsUnix=1     /* for debugging: force Unix-mode */
@@ -123,17 +134,23 @@ do
       -- cf.  <http://wiki.services.openoffice.org/wiki/Documentation/DevGuide/ProUNO/Java/Transparent_Use_of_Office_UNO_Components>
     if cmd.eIsUnix=1 then  -- Unix
     do
-       cmd.ePath2OOoBase=getOOoHomeDirUnix() -- try to get OOo's home directory (works for OOo 2.x)
+       if cmd.eIsMacOSX then
+          cmd.ePath2OOoBase=getOOoHomeDirMacOSX() -- try to get OOo's home directory
+       else
+          cmd.ePath2OOoBase=getOOoHomeDirUnix() -- try to get OOo's home directory (works for OOo 2.x)
     end
     else                   -- Windows: get path to OOo from registry, use that hive to add PATH and CLASSPATH additions
     do
        parse value getOOoHomeDirWindows() with hive cmd.ePath2OOoBase
     end
 
-      -- remove trailing "program"-directory
-    lpos=lastPos(cmd.eFile.sep,cmd.ePath2OOoBase) -- get last occurrence of file separator
-    if lpos>1 then
-       cmd.ePath2OOoBase=substr(cmd.ePath2OOoBase, 1, lpos-1)  -- remove last directory ("program")
+    if \cmd.eIsMacOSX then	-- there is no trailing "/program" directory !
+    do
+         -- remove trailing "program"-directory
+       lpos=lastPos(cmd.eFile.sep,cmd.ePath2OOoBase) -- get last occurrence of file separator
+       if lpos>1 then
+          cmd.ePath2OOoBase=substr(cmd.ePath2OOoBase, 1, lpos-1)  -- remove last directory ("program")
+    end
 end
 else  -- path was given: needs to point to OOo base directory from which "program/soffice" can be derived
 do
@@ -152,8 +169,11 @@ do
       if lpos>1 then
          lpos=lastPos(cmd.eFile.sep,tmpPath, lpos-1) -- get the second to last occurrence of the file separator
 
-      if lpos>1 then             -- Bingo!
-         cmd.ePath2OOoBase=substr(tmpPath,1,lpos-1)
+      if \cmd.eIsMacOSX then
+      do
+          if lpos>1 then             -- Bingo! Remove trailing "/program" on non MacOSX-systems
+            cmd.ePath2OOoBase=substr(tmpPath,1,lpos-1)
+      end
    end
 end
 cmd.ePath2OOoBase=canonizePath(cmd.ePath2OOoBase)
@@ -169,6 +189,8 @@ call directory oldDir            /* reset directory                           */
 
 if cmd.ePath2OOoBase="" then         /* not found, give a message and abort ...   */
 do
+   say "OpenOffice.org not installed?"
+   say
    say "path to OpenOffice.org/StarOffice directory" pp(path2OOo) "could not be found!"
    say
    say "     usage: rexx setupOOo [path-to-OpenOffice-directory]"
@@ -209,8 +231,13 @@ do
 end
 
 
-cmd.ePath2OOoPrograms=cmd.ePath2OOoBase     || cmd.eFile.sep || "program"
-cmd.ePath2OOoJars    =cmd.ePath2OOoPrograms || cmd.eFile.sep || "classes"
+if cmd.eIsMacOSX then
+    cmd.ePath2OOoPrograms=cmd.ePath2OOoBase
+else
+    cmd.ePath2OOoPrograms=cmd.ePath2OOoBase     || cmd.eFile.sep || "program"
+
+if \cmd.eIsMacOSX then  -- on MacOSX depend on "unoinfo"
+   cmd.ePath2OOoJars    =cmd.ePath2OOoPrograms || cmd.eFile.sep || "classes"
 
 cmd.eThisDirectory=directory() || cmd.eFile.sep -- save this directory
 
@@ -252,7 +279,10 @@ do
    cmd.eSetOOoJars = 'OOO_jars=$OOO_pgms' || cmd.eFile.sep || "classes"
    cmd.eJarVar = cmd.ePath.sep"$OOO_jars"cmd.eFile.sep   /* variable to use                        */
 
-   cmd.eDLL="libBSF4ooRexx.so"     /* define name of dynamic link library    */
+   if cmd.eIsMacOSX then
+      cmd.eDLL="libBSF4ooRexx.dylib"  /* define name of dynamic link library    */
+   else
+      cmd.eDLL="libBSF4ooRexx.so"     /* define name of dynamic link library    */
 
 --rgf,20100320   cmd.eSetOOoPgms = "OOoPgm=" || cmd.ePath2OOoPrograms
 
@@ -318,8 +348,10 @@ do
 
    cmd.eAdd2BashRc.2="if [ -f" cmd.eSetEnvironmentScriptName "];" -
                      "then ." cmd.eSetEnvironmentScriptName "; fi #" cmd.eInstallationNeedle
-
-   cmd.e_sed_delete ="sed -i '/"cmd.eInstallationNeedle"/d'"   -- 2010-03-19: sed command to delete entries from profile(s)
+   if cmd.eIsMacOSX then --rgf, 2011-03-01: sed on MacOSX works differently, cf. <http://blog.mpdaugherty.com/2010/05/27/difference-with-sed-in-place-editing-on-mac-os-x-vs-linux/>
+      cmd.e_sed_delete ="sed -i '' '/"cmd.eInstallationNeedle"/d'"
+   else
+      cmd.e_sed_delete ="sed -i '/"cmd.eInstallationNeedle"/d'"   -- 2010-03-19: sed command to delete entries from profile(s)
 
 end
 else  /* Windows, OS/2 (eCS), ... */
@@ -440,7 +472,10 @@ cmd.eSetCP=cmd.eSetCP || cmd.ePath.sep || cmd.eSetCPWithFullPath
 
 
 /* determine files to copy to "OOo/program": needed for macros, we can point PATH there too!  */
-cmd.e4OOoPrograms=cmd.eDLL "BSF.CLS UNO.CLS UNO_XINTERFACES.RXO UNO_CREATE_INTERFACE_LIST.RXO UNO_API_info.rxo UNO_ReflectionUtil.cls"
+if cmd.eIsMacOSX then  -- rgf, 2011-02-28, initially for MacOSX: do not copy dylib
+   cmd.e4OOoPrograms="BSF.CLS UNO.CLS UNO_XINTERFACES.RXO UNO_CREATE_INTERFACE_LIST.RXO UNO_API_info.rxo UNO_ReflectionUtil.cls"
+else
+   cmd.e4OOoPrograms=cmd.eDLL "BSF.CLS UNO.CLS UNO_XINTERFACES.RXO UNO_CREATE_INTERFACE_LIST.RXO UNO_API_info.rxo UNO_ReflectionUtil.cls"
 
 
    /* create the scripts   */
@@ -620,6 +655,9 @@ createInstallScript: procedure expose cmd. path.
      bWriteProlog=.false  -- for "/etc/profile" no epilog/prolog, for .bashrc: yes!
 
      do tmpTgt over .array~of(cmd.eAdd2Profile, cmd.eAdd2BashRc)
+        if cmd.eIsMacOSX, bWriteProlog then     -- on MacOSX do not create .bashrc
+           leave
+
         appendTo=">>" tmpTgt
 
         call lineout fn, ""
@@ -675,12 +713,15 @@ createInstallScript: procedure expose cmd. path.
 */
 ----<----
 
-           -- 2010-07-27, create/remove fileAssocations
-      call lineout fn, "./fileAssociations_for_rxo_add.sh"
-      call lineout fn, ""
+      if \cmd.eIsMacOSX then	-- do not create file assosiations on MacOSX
+      do
+               -- 2010-07-27, create/remove fileAssocations
+         call lineout fn, "./fileAssociations_for_rxo_add.sh"
+         call lineout fn, ""
 
-      call lineout ui, "./fileAssociations_for_rxo_remove.sh"
-      call lineout ui, ""
+         call lineout ui, "./fileAssociations_for_rxo_remove.sh"
+         call lineout ui, ""
+      end
 
   end
   else      -- add statements to incorporate paths into registry
@@ -718,7 +759,12 @@ createInstallScript: procedure expose cmd. path.
          -- add bsf-jars to CLASSPATH
 
          -- make sure the current directory is searched as well
-      arg="/key:"q(cmd.eRegistryClassPath) "/path:"q(cmd.eSetCPWithFullPath)
+      if cmd.eRegistryClassPath~left(5)="HKCU\" then  -- rgf, 2011-01-25: make sure that system set CLASSPATH is honored !
+         arg="/key:"q(cmd.eRegistryClassPath) "/path:"q("%CLASSPATH%;"cmd.eSetCPWithFullPath)
+      else
+         arg="/key:"q(cmd.eRegistryClassPath) "/path:"q(cmd.eSetCPWithFullPath)
+
+         arg=arg~changestr("%", "[25x]") -- make sure that cmd.exe does not expand
 
       tmpStr1=cmd "/add"    arg
       tmpStr2=cmd "/remove" arg
@@ -914,8 +960,12 @@ createEnvironmentScript: procedure expose cmd. path.
   call lineout fn, ""
 
 --  call lineout fn, cmd.eLineComment "make sure we use the same OOo-BSF4Rexx programs the OOo macros do (hence" q("OOo_pgms") "listed first)"
-  call lineout fn, cmd.eLineComment "define and lookup OOo's program directory first"
-  call lineout fn, cmd.eSetOOoHome
+  if \cmd.eIsMacOSX then
+  do
+     call lineout fn, cmd.eLineComment "define and lookup OOo's program directory first"
+     call lineout fn, cmd.eSetOOoHome
+  end
+
 -- call lineout fn, cmd.eSetOOoJars
 --  call lineout fn, ""
 
@@ -1216,6 +1266,16 @@ syntax2:                   -- no OOo-entry
      end
   end
   return ""                      -- not found
+
+
+/* rgf, 2011-02-25, try to find OOo's home dir on MacOSX */
+::routine getOOoHomeDirMacOSX
+  path="/Applications/OpenOffice.org.app/Contents/MacOS"  -- well defined home directory
+  soffice=path"/soffice"
+  if SysFileExists(soffice) then return path
+  return ""  -- not found (not installed)
+
+
 
 
    -- queries needed OOo configuration using "unoinfo" (available starting with OOo 3.x)

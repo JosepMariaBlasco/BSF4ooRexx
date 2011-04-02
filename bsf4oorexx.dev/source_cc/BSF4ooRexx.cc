@@ -29,6 +29,21 @@ offene Probleme:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+
+    4.0.7 2011-03-19 - fix Apple compiler problem: make environment{AttachTo|DetachFrom} a true function (inline
+                       causes global structure's elements being NULL; this happens with "i686-apple-darwin10-gcc-4.2.1 (GCC) 4.2.1 (Apple Inc. build 5664)")
+                     - RgfCreateRexxlikeErrorInfo(): check whether RexxCondition RexxStringObject are NULL or Nil
+
+	4.0.6 2011-01-12 - free VMArgs options (string and options array)
+		                 - memset malloc'ated VMArgs option memory to 0x00
+
+        4.0.6 2011-02-09 - forcing ooRexx minimum level 4.1.0
+        4.0.6 2011-02-07 - fixing error message to reflect platforms if [lib]jvm.{dll|so|dylib} not found
+        4.0.6 2011-01-09 - fixing MacOSX Java pecularity, using ["JAVA_STARTED_ON_FIRST_THREAD_%d", getpid()] as
+                           per <http://lists.apple.com/archives/java-dev/2009/Oct/msg00511.html>
+
+    	4.0.6 2011-01-02/07 - fixing MacOSX g++ warnings and errors, allow loading JVM via Rexx as well on MacOSX
+
         4.0.5 2010-08-14 - new stratety on Unix to load 'libjvm.so': first try '/opt/BSF4ooRexx/libjvm.so',
                            if not successful, then look for 'libjvm.so' and let the system find it, if setup
 
@@ -345,7 +360,7 @@ offene Probleme:
   *  LICENSE:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright 2001-2010 Rony G. Flatscher
+       Copyright 2001-2011 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -427,9 +442,12 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 // #define DEBUG_TID2JRST      // ---rgf, 2009-09-28
 // #define DEBUG_JRST          // ---rgf, 2009-09-28
 
+// #define DEBUG_FIND_RAJO         // rgf, 2011-03-12
+// #define DEBUG_RAJO              // rgf, 2011-03-12
+
 // #define RGF_TRUE      // ---rgf, 2010-02-10
 
-#if defined (UNIX) && defined (NIXI_NOXI) // comment before && to activate all of the flags below
+#if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
     #define DEBUG
     #define DEBUG1
     #define DEBUG2
@@ -466,6 +484,10 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     #define DEBUG_SHOW_STRUCTURES    // ---rgf, 2009-10-06
     #define DEBUG_JAVA_ATTACH_DETACH    // ---rgf, 2009-10-07
 
+#endif
+
+#if defined (__APPLE__) && NIXI      // only define, if rexx is started on the main thread and established a CFRunLoop (then awt's event dispatch thread needs to run on a separate thread)
+    #define RGF_LOAD_JVM_IN_SEPARATE_THREAD
 #endif
 
 // #define RGF_UNO_WRAP     // rgf, 2010-06-08: use UNO.WRAP, if .UNO available
@@ -525,6 +547,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
    #ifndef __APPLE__    // not for Apple (would need to split off the JVM loading part)
        #define ALLOW_LOADING_JVM    //   ---rgf, 2005-08-23, #idef'ed - not for OS2 and not for Macintosh
    #endif
+
+#define ALLOW_LOADING_JVM // rgf 2011-01-02, temporarily TODO: remove this definition
 
    // rgf, 2009-08-13
    #ifndef VOID
@@ -617,11 +641,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "405.20100814 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "407.20110319 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "405.20100814 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "407.20110319 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "405.20100814 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "407.20110319 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -766,7 +790,7 @@ inline VOID  RgfAcquireLock2(
     #endif
             tid=RgfGetTID();
 
-    fprintf(stderr, "*** RGF_INFO: --- RgfAcquireLock2(lock): tid=[%lu], lock=[%p] ...\n", (unsigned long) tid, lock);
+    fprintf(stderr, "*** RGF_INFO: --- RgfAcquireLock2(lock): tid=[%lu], lock=[%p] ...\n", (unsigned long) tid, (void *)& lock);
     fflush(stderr);
 #endif
 
@@ -783,7 +807,7 @@ inline VOID  RgfAcquireLock2(
 
 
 #if defined (RGF_INFO) || defined (RGF_ATTACH) || defined (RGF_DETACH) || defined (DEBUG_REXX_ATTACH)
-    fprintf(stderr, "*** RGF_INFO: --> RgfAcquireLock2(lock): tid=[%lu], lock=[%p]  ... now ACQUIRED !\n", (unsigned long) tid, lock);
+    fprintf(stderr, "*** RGF_INFO: --> RgfAcquireLock2(lock): tid=[%lu], lock=[%p]  ... now ACQUIRED !\n", (unsigned long) tid, (void *) &lock);
     fflush(stderr);
 #endif
 
@@ -809,7 +833,7 @@ inline VOID  RgfReleaseLock2(                  // prototype definition
         TID
     #endif
             tid=RgfGetTID();
-    fprintf(stderr, "*** RGF_INFO: --- RgfReleaseLock2(lock): tid=[%lu], lock=[%p]  ...\n", (unsigned long) tid, lock);
+    fprintf(stderr, "*** RGF_INFO: --- RgfReleaseLock2(lock): tid=[%lu], lock=[%p]  ...\n", (unsigned long) tid, (void *) & lock);
     fflush(stderr);
 #endif
 
@@ -824,7 +848,7 @@ inline VOID  RgfReleaseLock2(                  // prototype definition
 #endif
 
 #if defined (RGF_INFO) || defined (RGF_ATTACH) || defined (RGF_DETACH) || defined (DEBUG_REXX_ATTACH)
-    fprintf(stderr, "*** RGF_INFO: <-- RgfReleaseLock2(lock): tid=[%lu], lock=[%p]  ... now RELEASED !\n", (unsigned long) tid, lock);
+    fprintf(stderr, "*** RGF_INFO: <-- RgfReleaseLock2(lock): tid=[%lu], lock=[%p]  ... now RELEASED !\n", (unsigned long) tid, (void *) & lock);
     fflush(stderr);
 #endif
 }
@@ -913,7 +937,7 @@ inline logical_t RgfAddRexxInterpreterInstanceToList(RexxThreadContext *rtc)
     newNode->instance=ri;           // save RexxInstance
 
 #if defined (DEBUG_RII_LIST)
-    fprintf(stderr, "(0)  RgfAddRexxInterpreterInstanceToList(...): newNode=[%p]/->instance=[%p],ri=[5p], ->next=[%p] | pRoot_RII=[%p].\n",
+    fprintf(stderr, "(0)  RgfAddRexxInterpreterInstanceToList(...): newNode=[%p]/->instance=[%p],ri=[%p], ->next=[%p] | pRoot_RII=[%p].\n",
                                                                    newNode, newNode->instance, ri, newNode->next, pRoot_RII);
     fflush(stderr);
 
@@ -2102,7 +2126,7 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
 
    fprintf(stderr, "\tclz_Throwable    =[%p]\n", struct_JVM->clz_Throwable);
 
-   fprintf(stderr, "\nt\temptyUTFString   =[%p]\n", struct_JVM->jstring_emptyUTFString);
+   fprintf(stderr, "\n\temptyUTFString   =[%p]\n", struct_JVM->jstring_emptyUTFString);
    fprintf(stderr, "---\n");
    fflush(stderr);
 
@@ -2366,7 +2390,9 @@ inline jthrowable RgfCreateRexxException4Java (JNIEnv *env, jobject rajo,
 #if defined(DEBUG40)
    fprintf(stderr, "\t-->\tRgfCreateRexxException4Java() - create RexxException ...\n");
    fprintf(stderr, "\t-->\tRgfCreateRexxException4Java() - \tclz=[%p], mid=[%p], reason=[%d], message=[%.256s], jConditionObject=[%p]\n",
-                             clz, mid, reason, message, jConditionObject);
+    defaultJVM->clz_RexxException, defaultJVM->mid_RexxException_init, reason, message, jConditionObject);
+//                             clz, mid, reason, message, jConditionObject);
+
 #endif
 
         // public RexxException (int reason, String message, RexxProxy rexxCondition)
@@ -2618,7 +2644,7 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
     RexxInstance *riid=rtc->instance;
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS)
-    fprintf(stderr, "RgfProcessJArgs(...): riid=[%p], len=[%d] + [%d]; ExceptionCheck()=[%d]...\n", riid, len, (slotDir==NULL ? 0 : 1), env->ExceptionCheck()   );fflush(stderr);
+    fprintf(stderr, "RgfProcessJArgs(...): riid=[%p], len=[%d] + [%d]; ExceptionCheck()=[%d]...\n", riid, (int) len, (slotDir==NULL ? 0 : 1), (int) env->ExceptionCheck()   );fflush(stderr);
 #endif
     RexxArrayObject ra=rtc->NewArray(len+ (slotDir==NULL ? 0 : 1) );
 
@@ -2631,7 +2657,7 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS )
     fprintf(stderr, "RgfProcessJArgs(...): riid=[%p]\n\t---> len=[%d], len=[%d], len+(slotDir==NULL ? 0 : 1)=[%d], [%lu]\n\tCheckCondition=[%d] <---\n",
-                    riid, len, len, len+(slotDir==NULL ? 0 : 1) ,(size_t) (len+ (slotDir==NULL ? 0 : 1)),(int) rtc->CheckCondition());fflush(stderr);
+                    riid, (int) len, (int) len, (int) len+(slotDir==NULL ? 0 : 1) ,(size_t) (len+ (slotDir==NULL ? 0 : 1)),(int) rtc->CheckCondition());fflush(stderr);
 
 
     fprintf(stderr, "\triid=[%p] ---> ra~size=[%lu], ra~items=[%lu]\n",riid, rtc->ArraySize(ra),rtc->ArrayItems(ra));fflush(stderr);
@@ -2649,7 +2675,7 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
     {
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS)
-   fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], rtc->checkCondition()=[%d], RUNTIME (PRE-)LOADING OF BSF.CLS ! | [1] ...\n", riid, rtc->CheckCondition());fflush(stderr);
+   fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], rtc->checkCondition()=[%d], RUNTIME (PRE-)LOADING OF BSF.CLS ! | [1] ...\n", riid, (int) rtc->CheckCondition());fflush(stderr);
 #endif
 
         RexxObjectPtr result_obj=NULL;
@@ -2729,7 +2755,7 @@ if (rtc->CheckCondition())
 //                            created class method "uno.wrap" to allow for future enhancement
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS)
-    fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], jint len=[%d], ExceptionCheck()=[%d], bClzBsf=[%d]...\n", riid, len, env->ExceptionCheck(), bClzBsf);fflush(stderr);
+    fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], jint len=[%d], ExceptionCheck()=[%d], bClzBsf=[%d]...\n", riid, (int) len, (int) env->ExceptionCheck(), (int) bClzBsf);fflush(stderr);
 #endif
 
     for (int i=0; i<len; ++i)
@@ -2852,7 +2878,7 @@ if (rtc->CheckCondition())
     {
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS)
-    fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], adding slotDir=[%.256s], len=[%u]\n", riid, rtc->ObjectToStringValue(slotDir), len);fflush(stderr);
+    fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], adding slotDir=[%.256s], len=[%d]\n", riid, rtc->ObjectToStringValue(slotDir), (int) len);fflush(stderr);
 #endif
 
         rtc->ArrayPut(ra, slotDir, len+1);        // always save slot Directroy as last argument
@@ -2972,28 +2998,27 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
     char *msg=(char *)RexxAllocateMemory( 4096 );
     msg[0]=0;
 
-    // RexxStrinbObject condName=rtc->DirectoryAt(condObj, "CONDITION");
-
+    // RexxStringObject condName=rtc->DirectoryAt(condObj, "CONDITION");
+// test: fprintf(stderr, "RexxDecode....: %s\n", cond.program==NULL ? rtc->CString(rtc->Nil()) : "n/a");
 
         // format message according to exception type
     if (rtc->SendMessage1(cond.conditionName, "EQUALS", rtc->String("SYNTAX"))==rtc->True()) // SYNTAX condition ?
     {
-                                    // will only use 1024 of it
         char const *line1=rtc->CString(rtc->SendMessage0(rtc->DirectoryAt(condObj, "TRACEBACK"), "FIRSTITEM")) ; // first traceback line=error line
         // line1=rtc->CString(rtc->SendMessage0(rtc->DirectoryAt(condObj, "TRACEBACK"), "FIRSTITEM")) ; // first traceback line=error line
 
         char line2[2048]="";        // will only use 1024 of it
         // sprintf(line2, "Error %d running %.512s line %d:  %.1024s",
         SNPRINTF(line2, 2048, "Error %d running %.512s line %d:  %.1024s",
-                            (int) cond.rc,       rtc->CString(cond.program),
-                            (int) cond.position, rtc->CString(cond.errortext) );
+                            (int) cond.rc,      (NULL != cond.program   && rtc->Nil() != cond.program   ? rtc->CString( cond.program )  : "program n/a")   ,
+                            (int) cond.position,(NULL != cond.errortext && rtc->Nil() != cond.errortext ? rtc->CString( cond.errortext ): "errortext n/a") );
 
         char line3[2048]="";        // will only use 1024 of it
         // sprintf(line3, "Error %.3f: %.256s", (float) cond.code/1000l, rtc->CString(cond.message));
         // sprintf(line3, "Error %d.%d:  %.1024s", (int) (cond.code / 1000),
         SNPRINTF( line3, 2048, "Error %d.%d:  %.1024s", (int) (cond.code / 1000),
-                                                (int) (cond.code % 1000),
-                                                     rtc->CString(cond.message));
+                                     (int) (cond.code % 1000),
+                                     (NULL != cond.message && rtc->Nil() != cond.message ? rtc->CString( cond.message ) : "message n/a") );
 
         // sprintf(msg, "%.16s%.512s:\n%.1024s\n%.1024s\n%.1024s", DLLNAME, header, line1, line2, line3);
         SNPRINTF( msg, 4096, "%.16s%.512s:\n%.1024s\n%.1024s\n%.1024s", DLLNAME, header, line1, line2, line3);
@@ -3002,7 +3027,9 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
     else
     {
         // sprintf(msg, "%.16s%.512s: Rexx condition [%.512s] raised", DLLNAME, header, rtc->CString(cond.conditionName));
-        SNPRINTF( msg, 4096, "%.16s%.512s: Rexx condition [%.512s] raised", DLLNAME, header, rtc->CString(cond.conditionName));
+        SNPRINTF( msg, 4096, "%.16s%.512s: Rexx condition [%.512s] raised",
+                                  DLLNAME, header,
+                                  (NULL != cond.conditionName && rtc->Nil() != cond.conditionName ? rtc->CString(cond.conditionName) : "conditionName n/a") );
     }
 
     return msg;
@@ -3168,7 +3195,7 @@ inline void dumpPARAM(const char *title, PSTRUCT_PARAM param)
                     param->riid,
                     param->bDetach,
                     param->error,
-                    param->attachResult,
+                    (int) param->attachResult,
                     (unsigned long) param->attach2tid
                     );
 }
@@ -3312,7 +3339,7 @@ inline void createAttachErrorMessage(const char *title, char *buf, size_t bufLen
     if (param->error == -1)         // JNI attach error
     {
         SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], thread [%lu] cannot 'AttachCurrentThread(...)' to JVM=[%p], Java's return code=[%d] ('0'=JNI_OK, '-1'=JNI_ERR, '-2'=JNI_EDETACHED, '-3'=JNI_EVERSION, '-4'=JNI_ENOMEM, '-5'=JNI_EEXIST, '-6'=JNI_EINVAL)",
-                      DLLNAME, title, param->error, (unsigned long) param->tid, defaultJVM->jvm, param->attachResult);
+                      DLLNAME, title, param->error, (unsigned long) param->tid, defaultJVM->jvm, (int) param->attachResult);
     }
     else if (param->error == -2)    // no rajo associated with this TID!
     {
@@ -3344,7 +3371,7 @@ inline void createAttachErrorMessage(const char *title, char *buf, size_t bufLen
                           param->rajo,
                           param->riid,
                           param->bDetach,
-                          param->attachResult,
+                          (int) param->attachResult,
                           param->error
                       );
     }
@@ -3381,10 +3408,23 @@ inline RexxStringObject createAttachErrorMessageRSO(RexxCallContext *rcc, const 
     //       the caller is responsible to carry out a DetachCurrentThread()!
     //       This way this function can be used for attaching, such that upon return interactions with
     //       Java are possible.
-inline void environmentAttachTo(PSTRUCT_PARAM param, int bNewGroup)
+
+// rgf, 2011-03-19: all of a sudden inline will cause a problem as global variable defaultJVM is
+//                  not addressed correctly anymore, removing inline remedies the situation!
+// (i686-apple-darwin10-gcc-4.2.1 (GCC) 4.2.1 (Apple Inc. build 5664))
+#ifndef __APPLE__
+    inline
+#endif
+void environmentAttachTo(PSTRUCT_PARAM param, int bNewGroup)
 {
+
     if (defaultJVM->jvm == NULL)    // no JVM available !
     {
+#if defined (DEBUG_JAVA_ATTACH_DETACH)
+    fprintf(stderr, "environmentAttachTo() - NO JVM? defaultJVM->jvm=[%p], defaultJVM->primodal_rajo=[%p]\n", defaultJVM->jvm, defaultJVM->primodal_rajo);
+    fflush(stderr);
+#endif
+
         param->error=-99;
         return;
     }
@@ -3404,7 +3444,7 @@ inline void environmentAttachTo(PSTRUCT_PARAM param, int bNewGroup)
             if (param->attachResult=defaultJVM->jvm->AttachCurrentThread((void **) &param->env, (void *) &defaultJavaVMAttachArgs)!=JNI_OK) // attach to JVM
             {
 #if defined (DEBUG_JAVA_ATTACH_DETACH)
-    fprintf(stderr, "environmentAttachTo() - AttachCurrentThread did NOT work ! :-( :-(, attachResult=[%d]\n", param->attachResult);
+    fprintf(stderr, "environmentAttachTo() - AttachCurrentThread did NOT work ! :-( :-(, attachResult=[%d]\n", (int) param->attachResult);
     fflush(stderr);
 #endif
                 param->error=-1;    // JNI attach error
@@ -3420,7 +3460,7 @@ inline void environmentAttachTo(PSTRUCT_PARAM param, int bNewGroup)
         else if (param->attachResult!=JNI_OK)   // a version error ?
         {
 #if defined (DEBUG_JAVA_ATTACH_DETACH)
-    fprintf(stderr, "environmentAttachTo() - GetEnv(...) did NOT work ! :-( :-(, attachResult=[%d]\n", param->attachResult);
+    fprintf(stderr, "environmentAttachTo() - GetEnv(...) did NOT work ! :-( :-(, attachResult=[%d]\n", (int) param->attachResult);
     fflush(stderr);
 #endif
             param->error=-1;        // JNI attach error
@@ -3475,7 +3515,14 @@ inline void environmentAttachTo(PSTRUCT_PARAM param, int bNewGroup)
     // - subtractRajoFromTID
     // - detach from JNIEnv if bDetach==TRUE
     // - bCloseGroup: if TRUE subtract 2 instead of 1 to close group, i.e. nodes may be reclaimed (if not used by other TIDs)
-inline void environmentDetachFrom(PSTRUCT_PARAM param, int bCloseGroup)
+
+// rgf, 2011-03-19: all of a sudden inline will cause a problem as global variable defaultJVM is
+//                  not addressed correctly anymore, removing inline remedies the situation!
+//                  (i686-apple-darwin10-gcc-4.2.1 (GCC) 4.2.1 (Apple Inc. build 5664)); just make sure this function works correctly under Apple as well
+#ifndef __APPLE__
+   inline
+#endif
+void environmentDetachFrom(PSTRUCT_PARAM param, int bCloseGroup)
 {
     // if (param->error==NULL)     // maintain structures
     if (param->error==0)     // maintain structures
@@ -4054,6 +4101,10 @@ inline PSTRUCT_TID2NODE addRajoToTID2NODE (PSTRUCT_PARAM param, int bNewGroup)
         param->tid=RgfGetTID();
     }
 
+#if defined (DEBUG_RAJO)
+   fprintf(stderr, "...+... addRajoToTID2NODE(): param->tid=[%lu]", (unsigned long) param->tid); fflush(stderr);
+#endif
+
     PSTRUCT_RAJO   rajoListNode=NULL;
     PSTRUCT_NODE           node=NULL;
     PSTRUCT_TID2NODE t2ListNode=NULL;
@@ -4079,11 +4130,18 @@ inline PSTRUCT_TID2NODE addRajoToTID2NODE (PSTRUCT_PARAM param, int bNewGroup)
                     t2ListNode->firstNode->rajoRef->refCounter++;
                     t2ListNode->firstNode->nodeRefCounter++;
                 }
+#if defined (DEBUG_RAJO)
+   fprintf(stderr, "...+... addRajoToTID2NODE(): param->tid=[%lu], a node exists already, increased counter.\n", (unsigned long) param->tid); fflush(stderr);
+#endif
 
                 return t2ListNode;
             }
             else    // not a node with the given rajo, create a new node, push it
             {
+#if defined (DEBUG_RAJO)
+   fprintf(stderr, "...+... addRajoToTID2NODE(): param->tid=[%lu], need to create new node.\n", (unsigned long) param->tid); fflush(stderr);
+#endif
+
                 break;  // found TID, but firstNode is not referring same rajo
             }
         }
@@ -4193,6 +4251,9 @@ inline int subtractRajoFromTID2NODE (JNIEnv *env,
     {
         tid=RgfGetTID();
     }
+#if defined (DEBUG_RAJO)
+   fprintf(stderr, "...-... subtractRajoFromTID2NODE(): param->tid=[%lu]", (unsigned long) tid); fflush(stderr);
+#endif
 
     PSTRUCT_RAJO   rajoListNode=NULL;
     PSTRUCT_NODE           node=NULL;
@@ -4249,14 +4310,25 @@ inline PSTRUCT_RAJO findRAJO (
         tid=RgfGetTID();
     }
 
+#if defined (DEBUG_FIND_RAJO) || defined (DEBUG_RAJO)  // RGF, 2011-03-12, TODO
+    fprintf(stderr, "findRAJO - start, tid=[%lu], pRoot_TID2NODE=[%p]\n", (unsigned long) tid, pRoot_TID2NODE );fflush(stderr);
+#endif
+
         // find tid in tid2jrst
     for (PSTRUCT_TID2NODE t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
     {
+#if defined (DEBUG_FIND_RAJO) // RGF, 2011-03-12, TODO
+    fprintf(stderr, "findRAJO -     , t2ListNode->tid=[%lu], tid=[%lu]\n", (unsigned long) t2ListNode->tid, (unsigned long) tid );fflush(stderr);
+#endif
+
         if (t2ListNode->tid == tid)    // tid found !
         {
             return t2ListNode->firstNode->rajoRef;
         }
     }
+#if defined (DEBUG_FIND_RAJO) // RGF, 2011-03-12, TODO
+    fprintf(stderr, "findRAJO - end, tid=[%lu] not found!\n", (unsigned long) tid );fflush(stderr);
+#endif
 
     return NULL;    // not found, return NULL
 }
@@ -6466,6 +6538,281 @@ RexxRoutine0(CSTRING, BsfInvokedBy) // 20090505, ---rgf
 
 
 
+
+
+
+
+    /*********************************************************************/
+    /* 2011-01-06/07: APPLE version: load JVM in its own thread          */
+    /*                                                                   */
+    /*********************************************************************/
+
+/*
+
+from: <http://lists.apple.com/archives/java-dev/2009/Oct/msg00511.html>, <http://lists.apple.com/archives/java-dev/2009/Jan/msg00019.html>
+
+char firstThreadEnvVariable[80];
+sprintf(firstThreadEnvVariable, "JAVA_STARTED_ON_FIRST_THREAD_%d", getpid());
+setenv(firstThreadEnvVariable, "1", 1);
+
+---
+
+*/
+
+
+#ifdef __APPLE__   // rgf, 2011-01-06, 2011-01-07, 2011-01-12
+
+
+/*
+
+// call back for dummy source used to make sure the CFRunLoop doesn't exit right away
+// This callback is called when the source has fired.
+void sourceCallBack (  void *info  ) {}
+
+
+
+inline int createAndRunLoop()
+{
+
+    CFRunLoopSourceContext sourceContext;
+
+    // Create a a sourceContext to be used by our source that makes
+
+    // sure the CFRunLoop doesn't exit right away
+    sourceContext.version = 0;
+    sourceContext.info = NULL;
+    sourceContext.retain = NULL;
+    sourceContext.release = NULL;
+    sourceContext.copyDescription = NULL;
+    sourceContext.equal = NULL;
+    sourceContext.hash = NULL;
+    sourceContext.schedule = NULL;
+    sourceContext.cancel = NULL;
+    sourceContext.perform = &sourceCallBack;
+
+    // Create the Source from the sourceContext
+    CFRunLoopSourceRef sourceRef = CFRunLoopSourceCreate (NULL, 0, &sourceContext);
+
+    // Use the constant kCFRunLoopCommonModes to add the source to the set of objects
+
+    // monitored by all the common modes
+    CFRunLoopAddSource (CFRunLoopGetCurrent(),sourceRef,kCFRunLoopCommonModes);
+
+    // Park this thread in the runloop
+    CFRunLoopRun();
+
+    return 0;
+}
+*/
+
+//----------------------
+
+
+
+    // according to Apple we must load the JVM in another thread such that the Java awt-thread is not created on the main thread
+    // which would interfere with Apple's event dispatch loop; cf. <http://developer.apple.com/library/mac/#technotes/tn2005/tn2147.html>,
+    // which links to <http://developer.apple.com/library/mac/#samplecode/simpleJavaLauncher/Introduction/Intro.html>
+
+    // however: swt seems to need to run in main (first) thread
+
+    // on pthreads: <http://www.cognitus.net/html/howto/pthreadSemiFAQ_4.html>, rgf, 2011-01-09
+
+// still problem on 2011-01-10, researching:
+//     <http://web.archiveorange.com/archive/v/Hd19lJzSPWTFf9btyoAx>
+//     <http://www.crap4j.org/news/?cat=1>
+//     <https://bugs.eclipse.org/bugs/show_bug.cgi?id=211625>, some interesting pieces of infos
+
+    /* load the JVM, detach before ending thread */
+void * loadJVM4Apple(PVOID arguments)
+{
+	PVOID *args=(PVOID *) arguments;
+	JNIEnv          **pjniEnv=(JNIEnv **)        args[0];
+	JavaVMInitArgs *pvm_args2=(JavaVMInitArgs *) args[1];
+	int		     *res=(int *)            args[2];
+        rgf_JNI_CreateJavaVM rgfCreateJavaVM = (rgf_JNI_CreateJavaVM) args[3];
+
+#if not defined (RGF_LOAD_JVM_IN_SEPARATE_THREAD)
+        // rgf, 2011-01-09, from: <http://lists.apple.com/archives/java-dev/2009/Oct/msg00511.html>
+        char firstThreadEnvVariable[80];
+        sprintf(firstThreadEnvVariable, "JAVA_STARTED_ON_FIRST_THREAD_%d", getpid());
+        setenv(firstThreadEnvVariable, "1", 1);
+#endif
+
+
+#ifdef DEBUG
+{
+	JavaVMInitArgs vm_args2=*pvm_args2;
+
+	fprintf(stderr, "loadJVM4Apple(): __APPLE__, vm_args2.options=[%p], vm_args2.nOptions=[%d]\n", vm_args2.options, (int) vm_args2.nOptions);
+#ifdef DEBUG3
+	for (int m=0;m<vm_args2.nOptions;m++)
+	{
+    		fprintf(stderr, "\t---> options[%d]=[%.256s] \n", m, vm_args2.options[m].optionString);
+	}
+#endif
+    	fprintf(stderr, "\t--- --- --- \n" ); 	fflush(stderr);
+}
+#endif
+
+
+
+#ifdef DEBUG
+	fprintf(stderr, "loadJVM4Apple(): __APPLE__, about to invoke 'rgfCreateJavaVM(...)\n"); fflush(stderr);
+        fprintf(stderr, "               pjniEnv=[%p], pvm_args2=[%p], rgfCreateJavaVM=[%p]\n", pjniEnv, pvm_args2, rgfCreateJavaVM); fflush(stderr);
+#endif
+
+	*res = (int) rgfCreateJavaVM( &currentJVM, (void **) pjniEnv, pvm_args2);
+
+#ifdef DEBUG
+    fprintf(stderr, "loadJVM4Apple(): __APPLE__, *res=[%d] \n", *res);
+
+    fprintf(stderr, "loadJVM4Apple(): __APPLE__, #3b, before FindClass(\"java/lang/System\"), jniEnv=[%p]...\n", *pjniEnv); fflush(stderr);
+
+    jclass clzTest=(*pjniEnv)->FindClass("java/lang/System");
+    fprintf(stderr, "loadJVM4Apple(): __APPLE__, #4b, after  FindClass(\"java/lang/System\"(), clzTest=[%p]...\n", clzTest); fflush(stderr);
+#endif
+
+	currentJVM->DetachCurrentThread();
+
+#ifdef DEBUG
+    fprintf(stderr, "loadJVM4Apple(): __APPLE__, #55, after DetachCurrentThread()\n");fflush(stderr);
+#endif
+
+
+// 	int resDet=pthread_detach(pthread_self());   // rgf, just for testing purposes
+
+
+
+// will hang on loading java.awt.Frame
+// TODO: check if not in headless mode then create an awt object to force creation of the awt thread
+/*
+fprintf(stderr, "loadJVM4Apple(): __APPLE__, #5a, before FindClass(\"java/awt/Frame\") ...\n"); fflush(stderr);
+jclass clzFrame=(*pjniEnv)->FindClass("java/awt/Frame");
+fprintf(stderr, "loadJVM4Apple(): __APPLE__, #5a, after  FindClass(), clzFrame=[%p]...\n", clzFrame); fflush(stderr);
+
+	int resDet=pthread_detach(pthread_self());   // rgf, just for testing purposes
+*/
+
+
+
+#ifdef RGF_TEST_LOOP_SLEEP
+
+ 	int resDet=pthread_detach(pthread_self());   // rgf, just for testing purposes
+fprintf(stderr, "loadJVM4Apple(): __APPLE__, #99, after getpid=[%d], pthread_self()=[%lu], pthread_detach(), resDat=[%d] ...\n", getpid(), (unsigned long) pthread_self(), resDet); fflush(stderr);
+
+
+// let us keep this thread alive eternally (for testing purposes)
+	int tmpVal=1;
+        unsigned long ul=0lu;
+	while (tmpVal==1)
+        {
+		struct timeval timeout;
+		timeout.tv_sec = 1;
+		timeout.tv_usec = 0; // 100000;
+fprintf(stderr, "loadJVM4Apple(): __APPLE__, [%lu] #222, before sleeping ...\n", ++ul);fflush(stderr);
+
+		select( 0, NULL, NULL, NULL, & timeout );
+
+fprintf(stderr, "loadJVM4Apple(): __APPLE__, [%lu] #333, after sleeping.\n", ul);fflush(stderr);
+
+	}
+fprintf(stderr, "loadJVM4Apple(): __APPLE__, #999, after 'ETERNAL LOOP' in thread !\n");fflush(stderr);
+
+#endif
+
+}
+
+
+
+
+    /* main function that controls how the JVM gets loaded (on current thread or separate thread) */
+jint loadJVM4AppleMain (JNIEnv **pjniEnv, JavaVMInitArgs *pvm_args2,  rgf_JNI_CreateJavaVM rgfCreateJavaVM)
+{
+	int   res=-999;
+	PVOID args[] = {(void *) pjniEnv, (void *) pvm_args2, (void *) &res, (void *) rgfCreateJavaVM, NULL};
+
+
+#ifdef RGF_LOAD_JVM_IN_SEPARATE_THREAD
+        /* Have the JVM loaded in its own thread, get the JVM-loading result and return it. */
+
+	/* Start the thread that runs the VM. */
+	pthread_t vmthread;
+
+	/* create a new pthread copying the stack size of the primordial pthread */
+	struct rlimit limit;
+	size_t stack_size = 0;
+
+	int rc = getrlimit(RLIMIT_STACK, &limit);
+
+	if (rc == 0)
+	{
+		if (limit.rlim_cur != 0LL)
+		{
+			stack_size = (size_t)limit.rlim_cur;
+		}
+	}
+
+	pthread_attr_t thread_attr;
+	pthread_attr_init(&thread_attr);
+
+        pthread_attr_setdetachstate( & thread_attr, PTHREAD_CREATE_JOINABLE );   // rgf: allow to join this thread
+
+	pthread_attr_setscope(&thread_attr, PTHREAD_SCOPE_SYSTEM);
+//	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
+	if (stack_size > 0)
+	{
+		pthread_attr_setstacksize(&thread_attr, stack_size);
+	}
+
+
+#ifdef DEBUG
+    fprintf(stderr, "loadJVMinNewThread(): __APPLE__, getpid()=[%d], pthread_self()=[%lu], ...\n", getpid(), (unsigned long) pthread_self()); fflush(stderr);
+#endif
+
+	/* Start the thread that we will start the JVM on. */
+	int res1=pthread_create(&vmthread, &thread_attr, loadJVM4Apple, args);
+
+
+#ifdef DEBUG
+	fprintf(stderr, "loadJVMinNewThread(): __APPLE__, after pthread_create (...)\n");
+        fprintf(stderr, "                      res=[%d], res1=[%d] \n", (int)res, res1);  fflush(stderr);
+#endif
+	pthread_attr_destroy(&thread_attr);
+
+	int res2=pthread_join(vmthread, NULL);	// wait until JVM creation thread ends, such that its return code is available via 'res'
+
+/*
+fprintf(stderr, "loadJVMinNewThread(): __APPLE__, BEFORE createAndRunLoop ...\n"); fflush(stderr);
+
+        int res99=createAndRunLoop();
+
+fprintf(stderr, "loadJVMinNewThread(): __APPLE__, AFTER createAndRunLoop.\n"); fflush(stderr);
+*/
+
+
+#ifdef DEBUG
+	fprintf(stderr, "loadJVMinNewThread(): __APPLE__, after pthread_join(...)\n");
+        fprintf(stderr, "                      res=[%d], res2=[%d] \n", (int)res, res2);  fflush(stderr);
+#endif
+
+	if (res2==0) return (jint) res;
+
+	return (jint) -1;     // indicate that something went wrong joining
+
+
+
+
+#else   // just load the VM on current thread
+	loadJVM4Apple(args);
+        return (jint) res;
+#endif
+
+}
+
+#endif
+
+
+
     /* 2006-01-04, ---rgf: changed handling of arguments for JNI_1_2 and up:
        - arguments are passed on to the JVM as is; this way one can use the
          "-D<name>=<value>", "-verbose[:{class|gc|jni|X-non-standard-name}[,...]]
@@ -6569,20 +6916,38 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
     #endif
 
 #elif defined ( UNIX )
-   // PVOID      hVM = NULL;
-   // char *jni_12_library="libjvm.so";
-   // hVM=dlopen(jni_12_library, RTLD_LAZY | RTLD_GLOBAL );
+   PVOID hVM = NULL;
 
         // 2010-08-14, rgf: new strategy, now that we have a defined place on Unix ("/opt/BSF4ooRexx")
         //                  look first in /opt/BSF4ooRexx, and thereafter let the system find "libjvm.so"
-   PVOID hVM=dlopen("/opt/BSF4ooRexx/libjvm.so", RTLD_LAZY | RTLD_GLOBAL );
+
+	// 2011-01-06, rgf: on Unix-based systems the BSF4ooRexx installation may have put a link to the
+	//                  JVM to be used into BSF4ooRexx home directory, so look there first
+
+   // char *jni_12_library="libjvm.so";
+   // hVM=dlopen(jni_12_library, RTLD_LAZY | RTLD_GLOBAL );
+
+#ifdef __APPLE__
+   hVM=dlopen("/opt/BSF4ooRexx/libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL );
+   if (hVM==NULL)   // not found, now look in system's location
+   {
+       hVM=dlopen("/System/Library/Frameworks/JavaVM.framework/JavaVM", RTLD_LAZY | RTLD_GLOBAL );
+   }
+#else
+   hVM=dlopen("/opt/BSF4ooRexx/libjvm.so", RTLD_LAZY | RTLD_GLOBAL );
+#endif
 
    if (hVM==NULL)   // not found, now let the system search a "libjvm.so"
    {
-// TODO: to be removed !
-// fprintf(stderr, "*** \"/opt/BSF4ooRexx/libjvm.so\" not found, now searching \"libjvm.so\" via system... \n"); fflush(stderr);
+#ifdef DEBUG2
+	fprintf(stderr, "hvm=[%p], now looking without an explicit path...\n", hVM);
+#endif
 
+#ifdef __APPLE__
+       hVM=dlopen("libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL );   // not found, now let the system find a "libjvm.so"...
+#else
        hVM=dlopen("libjvm.so", RTLD_LAZY | RTLD_GLOBAL );   // not found, now let the system find a "libjvm.so"...
+#endif
    }
 
 #endif
@@ -6590,16 +6955,52 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 
 #ifdef DEBUG2
    #if   defined (WINDOWS) // ( WIN32 )
-       fprintf(stderr, "hVM=[%p], proc=[%p]\n", hVM, GetProcAddress(hVM, "JNI_CreateJavaVM"));
+       fprintf(stderr, "hVM=[%p],  JNI_CreateJavaVM-proc=[%p]\n", hVM, GetProcAddress(hVM, "JNI_CreateJavaVM"));
    #elif defined ( UNIX )
-       fprintf(stderr, "hVM=[%p], proc=[%p]\n", hVM, dlsym(hVM, "JNI_CreateJavaVM"));
+       fprintf(stderr, "dlerror() ---> [%s]\n", dlerror());
+
+       fprintf(stderr, "hVM=[%p], JNI_CreateJavaVM-proc=[%p]\n", hVM, dlsym(hVM, "JNI_CreateJavaVM"));
+       fprintf(stderr, "dlerror() ---> [%s]\n", dlerror());
+
+if (hVM!=NULL)   // rgf, 2011-03-12
+{
+       Dl_info info;
+fprintf(stderr, "1) before dladdr(...)\n");fflush(stderr);
+       int rc=dladdr((void *) hVM, (Dl_info *) &info);
+fprintf(stderr, "2) after  dladdr(...), rc=[%d]\n", rc);fflush(stderr);
+
+       if (rc!=0)  // rc of 0 in this function indicates error! :-(
+       {
+       fprintf(stderr, "dladdr(), rc=[%d], dli_fname=[%s]\n", rc, info.dli_fname);fflush(stderr);
+
+       }
+       fprintf(stderr, "3) after: dlerror() ---> [%s]\n", dlerror());fflush(stderr);
+}
+
+#ifdef __APPLE__
+    fprintf(stderr, "__APPLE__\n");
+#else
+    fprintf(stderr, "UNIX\n");
+
+
+#endif
+
    #endif
 #endif
 
    if ( hVM == NULL)  // oops, no Java DLL/so found
    {
        // sprintf(msg, "%.16s/routine/BsfLoadJava(), error 2.992: Java dynamic link/shared library not found", DLLNAME);
+//        SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 2.992: Java dynamic link/shared library \"/opt/BSF4ooRexx/libjvm.so\" not found (also looking for \"libjvm.so\" without success)", DLLNAME);
+// rgf, 2011-02-08
+#if defined ( WINDOWS )
+       SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 2.992: Java dynamic link/shared library \"jvm.dll\" not found", DLLNAME);
+#elif defined ( __APPLE__)
+       SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 2.992: Java dynamic link/shared library \"/opt/BSF4ooRexx/libjvm.dylib\" not found (also looking for \"libjvm.dylib\" without success)", DLLNAME);
+#else
        SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 2.992: Java dynamic link/shared library \"/opt/BSF4ooRexx/libjvm.so\" not found (also looking for \"libjvm.so\" without success)", DLLNAME);
+#endif
+
        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
        return "-992";
    }
@@ -6632,7 +7033,7 @@ fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
     if ( rgfCreateJavaVM == NULL)  // oops, no entry point found, cannot load Java !
     {
         // sprintf(msg, "%.16s/routine/BsfLoadJava(), error 3.992: Java dynamic link/shared library not found", DLLNAME);
-        SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 3.992: Java dynamic link/shared library not found", DLLNAME);
+        SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 3.992: Java dynamic link/shared library: entry point \"JNI_CreateJavaVM\" not found", DLLNAME);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         return "-992";
     }
@@ -6657,7 +7058,7 @@ fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
     resVer = rgfGetDefaultJavaVMInitArgs(&vm_args2);
 
 #ifdef DEBUG1        // ---rgf, 2003-04-30
-    fprintf(stderr, "BsfLoadJava(): after rgf_JNI_GetDefaultJavaVMInitArgs, resVer=[%d]\n", resVer);
+    fprintf(stderr, "BsfLoadJava(): after rgf_JNI_GetDefaultJavaVMInitArgs, resVer=[%d]\n", (int) resVer);
 
 
     #ifdef DEBUG_HIT_ENTER_TO_CONTINUE
@@ -6721,13 +7122,15 @@ fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
 
 #endif
 
-                         size_t tmpLength=strlen(cTmpStrObj)+1;
-                         char *ch = (char *) malloc(tmpLength);           // copy Rexx argument
+                         size_t tmpLength=strlen(cTmpStrObj);
+                         char *ch = (char *) malloc(tmpLength+1);           // copy Rexx argument
+			 memset(ch, 0, tmpLength+1);	// make sure that initialized to 0x00
+
                          strncpy(ch, cTmpStrObj, tmpLength);
                          options[m].optionString = ch;      //
                          options[m].extraInfo    = NULL;    // Florian's Schuld! :) (2004-05-06)
 #ifdef DEBUG3
-    fprintf(stderr, "BsfLoadJava(): added Rexx argument [%.256s] as option # [%d]\n", options[m], m);
+    fprintf(stderr, "BsfLoadJava(): added Rexx argument [%.256s] as option # [%d]\n", options[m].optionString, m);
 #endif
 
             m++;                   // increase counter to reflect number of available options
@@ -6766,29 +7169,120 @@ fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
         vm_args2.options  = options;    // set options-array (containing classpath)
         vm_args2.nOptions = m;          // indicate how many entries in array
 #ifdef DEBUG3
-    fprintf(stderr, "BsfLoadJava(): # of options for JVM is: [%d]\n\n", vm_args2.nOptions);
+    fprintf(stderr, "BsfLoadJava(): # of options for JVM is: [%d]\n\n", (int) vm_args2.nOptions);
 #endif
     }
 
 
     // res = rgfCreateJavaVM( &globJvm, (void **) &jniEnv, &vm_args2);
-    // res = rgfCreateJavaVM( &globJvm, (void **) &jniEnv, &vm_args2);
+
+    // according to Apple we must load the JVM in another thread such that the Java awt-thread is not created on the main thread
+    // which would interfere with Apple's event dispatch loop; cf. <http://developer.apple.com/library/mac/#technotes/tn2005/tn2147.html>,
+    // which links to <http://developer.apple.com/library/mac/#samplecode/simpleJavaLauncher/Introduction/Intro.html>
+#ifdef __APPLE__
+#ifdef DEBUG
+	fprintf(stderr, "BSFLoadJava(): __APPLE__, about to invoke 'loadJVMinNewThread(...)\n");
+        fprintf(stderr, "               &jniEnv=[%p], &vm_args2=[%p], rgfCreateJavaVM=[%p]\n", &jniEnv, &vm_args2, rgfCreateJavaVM);  fflush(stderr);
+#endif
+
+	// create JVM
+    res = loadJVM4AppleMain  ((JNIEnv **) &jniEnv, (JavaVMInitArgs *)  &vm_args2, rgfCreateJavaVM);
+
+
+#ifdef DEBUG
+    fprintf(stderr, "BSFLoadJava(): __APPLE__, #3a, before FindClass(), jniEnv=[%p]...\n", jniEnv); fflush(stderr);
+
+//    jclass clzTest1=jniEnv->FindClass("java/lang/System");
+//    fprintf(stderr, "BSFLoadJava(): __APPLE__, #4a, after  FindClass(), clzTest1=[%p]...\n", clzTest1); fflush(stderr);
+#endif
+
+/* --- rgf, 2011-03-16: maybe wrong assumption that interferes with the rgf attach logic */
+
+       // on APPLE: adapt, we need to attach to JVM as this is now running in a different thread
+    jint resAttach=currentJVM->GetEnv((void **) jniEnv, USE_DEFINED_JNI_VERSION);  // this will indicate that we are not attached as of yet
+#ifdef DEBUG
+	fprintf(stderr, "BSFLoadJava(): __APPLE__, #1, resAttach=[%d], JNI_EDETACHED=[%d]\n", (int) resAttach, JNI_EDETACHED); fflush(stderr);
+#endif
+
+    if (resAttach==JNI_EDETACHED)   // not attached, attach this thread
+    {
+         // nope, not yet attached, try to attach
+        resAttach=currentJVM->AttachCurrentThread((void **) &jniEnv, (void *) &defaultJavaVMAttachArgs);
+#ifdef DEBUG
+	fprintf(stderr, "BSFLoadJava(): __APPLE__, #2, resAttach=[%d], JNI_OK=[%d]\n", (int) resAttach, JNI_OK); fflush(stderr);
+#endif
+        res=resAttach; 	// rgf, use return-code from attachment
+    }
+
+
+#ifdef DEBUG
+    fprintf(stderr, "BSFLoadJava(): __APPLE__, #3b, before FindClass(), jniEnv=[%p]...\n", jniEnv); fflush(stderr);
+
+    jclass clzTest=jniEnv->FindClass("java/lang/System");
+    fprintf(stderr, "BSFLoadJava(): __APPLE__, #4b, after  FindClass(), clzTest=[%p]...\n", clzTest); fflush(stderr);
+#endif
+/* --- */
+
+
+#else
     res = rgfCreateJavaVM( &currentJVM, (void **) &jniEnv, &vm_args2);
+#endif
+
+
+#ifdef DEBUG3
+{
+	fprintf(stderr, "BSFLoadJava() - after JVM created, vm_args2.options=[%p], vm_args2.nOptions=[%d]\n", vm_args2.options, (int) vm_args2.nOptions);
+#ifdef DEBUG3
+	for (int m=0;m<vm_args2.nOptions;m++)
+	{
+    		fprintf(stderr, "\t---> options[%d]=[%.256s] \n", m, vm_args2.options[m].optionString);
+	}
+#endif
+    	fprintf(stderr, "\t--- --- --- \n" );
+	fflush(stderr);
+
+}
+#endif
+
+// rgf, 2011-01-12: free malloc'ated memory for the JVM options
+{
+#ifdef DEBUG3
+	fprintf(stderr, "BSFLoadJava() - after JVM created, vm_args2.options=[%p], vm_args2.nOptions=[%d], about to free memory...\n", vm_args2.options, (int) vm_args2.nOptions);
+#endif
+	for (int m=0;m<vm_args2.nOptions;m++)
+	{
+#ifdef DEBUG3
+    		fprintf(stderr, "\tabout to free ---> options[%d]=[%.256s] \n", m, vm_args2.options[m].optionString);  fflush(stderr);
+#endif
+                free(vm_args2.options[m].optionString);
+	}
+#ifdef DEBUG3
+	fprintf(stderr, "\tabout to free vm_args2.options-array \n" ); fflush(stderr);
+#endif
+	free(vm_args2.options);
+}
+
+
+
+
     bsfInvokedBy=2;    // invoked by Rexx (which loaded Java)
 
 #ifdef DEBUG2        // ---rgf, 2003-04-30
-   fprintf(stderr, "BsfLoadJava(): AFTER create a JVM, res=[%d]\n", res);
+   fprintf(stderr, "BsfLoadJava(): AFTER create a JVM, res=[%d]\n", (int) res);
 #endif
 
     if (res<0)
     {
         // sprintf(msg, "%.16s/routine/BsfLoadJava(), error 4.995: rc=%d, cannot create Java VM", DLLNAME, res);
-        SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 4.995: rc=%d, cannot create Java VM", DLLNAME, res);
+        SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 4.995: rc=%d, cannot create Java VM", DLLNAME, (int) res);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         return "-995";
     }
 
     /* Find the class "Java4Rexx" */
+#ifdef DEBUG
+     fprintf(stderr, "jniEnv=[%p], JAVA_4_REXX=[%.256s] \n", jniEnv, JAVA_4_REXX );
+#endif
     cls = (*jniEnv).FindClass(JAVA_4_REXX);    // or: cls = jniEnv->FindClass(JAVA_4_REXX);
     // cls = jniEnv->FindClass(JAVA_4_REXX);    // or: cls = jniEnv->FindClass(JAVA_4_REXX);
 #ifdef DEBUG
@@ -7138,17 +7632,17 @@ RexxRoutine0(RexxStringObject, BsfUnloadJava)  // 20090505, ---rgf, only a stub 
        // empty JavaVM structure
     JavaVM *tmpJVM=defaultJVM->jvm;     // save pointer to JVM
     uninit_STRUCT_JVM(param.env, defaultJVM); // will DeleteGlobalRef(...), nullify structure
-    defaultJVM=NULL;
+    // defaultJVM=NULL;  // rgf, 2011-03-19
 
 #if defined ( RGF_INFO_1 )
-    fprintf(stderr, "*** *** RGF_INFO_1: RgfUnloadJava() 2, now calling DestroyJava() ...\n", pRoot_RAJO);
+    fprintf(stderr, "*** *** RGF_INFO_1: RgfUnloadJava() 2, now calling DestroyJava() ...\n");
     fflush(stderr);
 #endif
 
     long ret=tmpJVM->DestroyJavaVM ( ); // destroy JVM
 
 #if defined ( RGF_INFO_1 )
-    fprintf(stderr, "*** *** RGF_INFO_1: RgfUnloadJava() 3, AFTER calling DestroyJava(), ret=[%d] ...\n", ret);
+    fprintf(stderr, "*** *** RGF_INFO_1: RgfUnloadJava() 3, AFTER calling DestroyJava(), ret=[%d] ...\n", (int) ret);
     fflush(stderr);
 #endif
 
@@ -7408,7 +7902,7 @@ RexxRoutine1(logical_t, BsfAttachToTID, CSTRING, toTID)    // 20090505, ---rgf, 
             break;
         }
 
-        if (t2ListNode->tid == attachToTID)   // target TID exists!
+        if ((unsigned long) t2ListNode->tid == attachToTID)   // target TID exists!
         {
 // fprintf(stderr, "/// ba2i marker (2b), t2ListNode=[%p]...\n", t2ListNode);fflush(stderr);
             bTargetTIDMissing=FALSE;
@@ -7434,7 +7928,15 @@ RexxRoutine1(logical_t, BsfAttachToTID, CSTRING, toTID)    // 20090505, ---rgf, 
 
 
    // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
-   STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, attachToTID};
+   STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0,
+(
+#ifdef UNIX
+    pthread_t
+#else
+    TID
+#endif
+)
+                       attachToTID};
    RgfAcquireLock();
 
 #if defined ( DEBUG_SHOW_STRUCTURES )
@@ -7587,7 +8089,7 @@ RexxRoutine0(RexxStringObject, BsfGetRIID)    // 20090505, ---rgf, only a stub f
 {
     RexxInstance *ri=context->threadContext->instance;  // get the RexxThreadContext pointer
 #ifdef RGF_INFO
-    fprintf(stderr, "*** RGF_INFO: BsfGetRIID(): %%lu=[%lu], %%p=[%p] \n", ri, ri);
+    fprintf(stderr, "*** RGF_INFO: BsfGetRIID(): %%lu=[%lu], %%p=[%p] \n", (long unsigned int) ri, ri);
     fflush(stderr);
 #endif
 
@@ -8265,7 +8767,7 @@ RexxRoutine2(RexxObjectPtr, BsfRexxProxy, RexxObjectPtr, proxy, OPTIONAL_CSTRING
 
 #if defined (DEBUG_REXX_PROXY)
     fprintf(stderr, "*** *** RGF_INFO: BsfRexxProxy(): [1] 'flag=1' - rrid=[%p], flag=[%d], condition? [%d] ... \n",
-                    context->threadContext->instance, flag, (int) context->CheckCondition());
+                    context->threadContext->instance, (int) flag, (int) context->CheckCondition());
     fflush(stderr);
 #endif
 
@@ -8277,7 +8779,7 @@ RexxRoutine2(RexxObjectPtr, BsfRexxProxy, RexxObjectPtr, proxy, OPTIONAL_CSTRING
     else
     {
         fprintf(stderr, "*** *** RGF_INFO: BsfRexxProxy(): [1] 'flag=1' - rrid=[%p], flag=[%d], condition? [%d], BSF~string=[%s], proxy~string=[%s] ... \n",
-                        context->threadContext->instance, flag, (int) context->CheckCondition(),
+                        context->threadContext->instance, (int) flag, (int) context->CheckCondition(),
                         context->ObjectToStringValue(context->DirectoryAt(context->GetLocalEnvironment(), "BSF")),
                         context->ObjectToStringValue(proxy)
                         );
@@ -8288,12 +8790,12 @@ RexxRoutine2(RexxObjectPtr, BsfRexxProxy, RexxObjectPtr, proxy, OPTIONAL_CSTRING
 
 #if defined (RGF_INFO) || defined (DEBUG_REXX_PROXY)
     fprintf(stderr, "*** *** RGF_INFO: BsfRexxProxy(): [2] 'getRexxObjectId' - rrid=[%p], flag=[%d], rexxObjectID=[%p], condition? [%d] ... \n",
-                    context->threadContext->instance, flag, rexxObjectID, (int) context->CheckCondition());
+                    context->threadContext->instance, (int) flag, rexxObjectID, (int) context->CheckCondition());
     fflush(stderr);
 
 
     fprintf(stderr, "*** *** RGF_INFO: BsfRexxProxy(), exceptional state? tid=[%lu], flag=[%d], rexxObjectID=[%p], condition? [%d] ... ZO\n",
-            (unsigned long) tid, flag, rexxObjectID, (int) context->CheckCondition()
+            (unsigned long) tid, (int) flag, rexxObjectID, (int) context->CheckCondition()
             );
     fflush(stderr);
 #endif
@@ -8475,7 +8977,7 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
                 errorKind=1;        // indicate error
 
                 char msg[1024]="";
-                SNPRINTF( msg, 1024, "%.16s/routine/BsfRawBytes(), error 3: argument 2 ('lengthToUse') value (%lu) larger than maximum length (%lu)",
+                SNPRINTF( msg, 1024, "%.16s/routine/BsfRawBytes(), error 3: argument 2 ('lengthToUse') value (%zu) larger than maximum length (%zu)",
                                      DLLNAME,
                                      lengthToUse, len
                                      );
@@ -8553,7 +9055,7 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
                     errorKind=1;        // indicate error
 
                     char msg[1024]="";
-                    SNPRINTF( msg, 1024, "%.16s/routine/BsfRawBytes(), error 3: argument 2 ('lengthToUse') value (%lu) larger than maximum length (%lu)",
+                    SNPRINTF( msg, 1024, "%.16s/routine/BsfRawBytes(), error 3: argument 2 ('lengthToUse') value (%zu) larger than maximum length (%zu)",
                                          DLLNAME,
                                          lengthToUse, len
                                          );
@@ -9001,7 +9503,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
     for (size_t i=0; i<numArgs; i++)
     {
        RexxObjectPtr tmpObj=context->ArrayAt(argArray, i+1);
-       fprintf(stderr, "\ti=%lu, tmpObj: %%ul=%ul %%p=%p", i+1, (long int) tmpObj, tmpObj);
+       fprintf(stderr, "\ti=%lu, tmpObj: %%lu=%lu %%p=%p", i+1, (unsigned long) tmpObj, tmpObj);
        fflush(stderr);
 
        int tind=RgfValue4JavaIndicator(context->threadContext, tmpObj);
@@ -9301,7 +9803,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
 
 #ifdef RGF_INFO_1
     // test new detaching
-    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 6  - RgfNewDetach()=[%d]\n", rndRes);
+    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 6  - RgfNewDetach(), error=[%d]\n", param.error);
     fflush(stderr);
 #endif
 
@@ -10427,13 +10929,21 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInitializ
             tid=RgfGetTID();
 
 #if defined (RGF_INFO)  || defined (RGF_JNI)  || defined (DEBUG_JNI_ENTRY)
-    fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 1, tid=[%lu] ... \n",
-                       (unsigned long) tid);
+    fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 1, tid=[%lu], currentJVM=[%p], defaultJVM->jvm=[%p] ... \n",
+                       (unsigned long) tid, currentJVM, defaultJVM->jvm);
     fflush(stderr);
 #endif
 
     if (currentJVM==NULL)   // invoked by Java, save JVM-pointer for later use
     {
+#if defined (RGF_INFO)  || defined (RGF_JNI)  || defined (DEBUG_JNI_ENTRY)
+    fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 1-1, tid=[%lu], currentJVM==NULL ... \n",
+                       (unsigned long) tid);
+    fflush(stderr);
+#endif
+
+
+
         env->GetJavaVM( & currentJVM );
         bsfInvokedBy=2;     // Java invoked by Rexx !
 
@@ -10460,8 +10970,15 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInitializ
         RgfReleaseLock();           // release lock
 */
     }
-    else if (defaultJVM==NULL)
+//    else if (defaultJVM==NULL)  // rgf, 2011-03-18
+    else if (defaultJVM->jvm==NULL)
     {
+#if defined (RGF_INFO)  || defined (RGF_JNI)  || defined (DEBUG_JNI_ENTRY)
+    fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 1-1, tid=[%lu], defaultJVM->jvm==NULL ... \n",
+                       (unsigned long) tid);
+    fflush(stderr);
+#endif
+
         // save and initialize JVM related data
         init_STRUCT_JVM(env, defaultJVM, currentJVM);    // 20091003, initialize default structure
     }
@@ -10470,12 +10987,31 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInitializ
     // 20091003, save primodal_rajo as a global reference
     defaultJVM->primodal_rajo=env->NewGlobalRef(raj);
 
+#if defined (RGF_INFO)  || defined (RGF_JNI)
+    fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 2, tid=[%lu], rajo=[%p], primodal_rajo=[%p], pRoot_RAJO=[%p], pRoot_TID2NODE=[%p], defaultJVM->jvm=[%p] ... \n",
+                       (unsigned long) tid,
+                        raj,
+                        defaultJVM->primodal_rajo,
+                        pRoot_RAJO,
+                        pRoot_TID2NODE,
+                        defaultJVM->jvm
+                       );
+    fflush(stderr);
+
+#endif
+
+
         // 20091005: this is loaded via Rexx, keep this
     JNIEnv *daemEnv;
     int res=defaultJVM->jvm->AttachCurrentThreadAsDaemon((void **) &daemEnv, (void *) &defaultJavaVMAttachArgs);
 
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={tid, daemEnv, defaultJVM->primodal_rajo, NULL, 0, 0, 0, 0};
+#if defined (RGF_INFO)  || defined (RGF_JNI)
+    dumpPARAM("... _jniInitialize4Rexx #1, after initializing param-structure", &param);
+#endif
+
+
     if (pRoot_RII!=NULL && pRoot_RII->next==NULL)   // if only a single RIID available, then use that one
     {
         param.riid=(void *)pRoot_RII->instance;
@@ -10483,15 +11019,23 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInitializ
 
     RgfAcquireLock();
     environmentAttachTo(&param, TRUE);      // attach to Java, force staying around after next environmentDetachFrom() !
+#if defined (RGF_INFO)  || defined (RGF_JNI)
+    fprintf(stderr, "... _jniInitialize4Rexx #2 pre: defaultJVM->jvm=[%p]\n", defaultJVM->jvm);fflush(stderr);
+    dumpPARAM("... _jniInitialize4Rexx #2 (after environmentAttachTo(&param, TRUE))", &param);
+#endif
     environmentDetachFrom(&param, FALSE);   // don't close group
+#if defined (RGF_INFO)  || defined (RGF_JNI)
+    fprintf(stderr, "... _jniInitialize4Rexx #3 pre: defaultJVM->jvm=[%p]\n", defaultJVM->jvm);fflush(stderr);
+    dumpPARAM("... _jniInitialize4Rexx #3 (after environmentDetachFrom(&param, FALSE))", &param);
+#endif
     RgfReleaseLock();
 
 
 #if defined (RGF_INFO)  || defined (RGF_JNI)
-    fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 2, tid=[%lu], primodal_rajo=[%p], pRoot_RAJO=[%p], pRoot_TID2NODE=[%p] ... \n",
+    fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 3, tid=[%lu], primodal_rajo=[%p], pRoot_RAJO=[%p], pRoot_TID2NODE=[%p] ... \n",
                        (unsigned long) tid,
-                        pRoot_RAJO,
                         defaultJVM->primodal_rajo,
+                        pRoot_RAJO,
                         pRoot_TID2NODE
                        );
     fflush(stderr);
@@ -11667,9 +12211,9 @@ fprintf(stderr, "///  marker (5b), res=[%d]...\n", ret);fflush(stderr);
     RexxPackageEntry bsf_package_entry =
     {
         STANDARD_PACKAGE_HEADER
-        REXX_INTERPRETER_4_0_0,              // anything including and after 4.0.0 will work
+        REXX_INTERPRETER_4_1_0,              // anything including and after 4.1.0 will work
         "bsf",                               // name of the package
-        "4.0",                               // package information
+        "4.1",                               // package information
         bsfLoader,                           // no load function
         bsfUnloader,                         // no unload function
         bsf_external_functions,              // the exported functions
@@ -12023,7 +12567,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
         if (invocationType<1 || invocationType>4)  // wrong invocationType
         {
             // sprintf(msg, "%.16s/routine/jniRexxRunProgram(), error 1: argument 'invocationType' can only be one of '1', '2', '3' or '4', found: [%d]", DLLNAME, invocationType);
-            SNPRINTF( msg, 1024, "%.16s/routine/jniRexxRunProgram(), error 2: argument 'invocationType' can only be one of '1', '2', '3' or '4', found: [%d]", DLLNAME, invocationType);
+            SNPRINTF( msg, 1024, "%.16s/routine/jniRexxRunProgram(), error 2: argument 'invocationType' can only be one of '1', '2', '3' or '4', found: [%d]", DLLNAME, (int) invocationType);
         }
         else if (j_fileName==NULL)
         {
@@ -12033,12 +12577,12 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
         else if ((invocationType==2 || invocationType==4) && j_programData==NULL)
         {
             // sprintf(msg, "%.16s/routine/jniRexxRunProgram(), error 3: argument 'invocationType' is '%d', therefore 'programData' must not be 'null'", DLLNAME, invocationType);
-            SNPRINTF( msg, 1024, "%.16s/routine/jniRexxRunProgram(), error 4: argument 'invocationType' is '%d', therefore 'programData' must not be 'null'", DLLNAME, invocationType);
+            SNPRINTF( msg, 1024, "%.16s/routine/jniRexxRunProgram(), error 4: argument 'invocationType' is '%d', therefore 'programData' must not be 'null'", DLLNAME, (int) invocationType);
         }
         else if ((invocationType==1 || invocationType==3) && j_programData!=NULL)
         {
             // sprintf(msg, "%.16s/routine/jniRexxRunProgram(), error 4: argument 'invocationType' is '%d', therefore 'programData' must be 'null'", DLLNAME, invocationType);
-            SNPRINTF( msg, 1024, "%.16s/routine/jniRexxRunProgram(), error 5: argument 'invocationType' is '%d', therefore 'programData' must be 'null'", DLLNAME, invocationType);
+            SNPRINTF( msg, 1024, "%.16s/routine/jniRexxRunProgram(), error 5: argument 'invocationType' is '%d', therefore 'programData' must be 'null'", DLLNAME, (int) invocationType);
         }
         else
         {
@@ -12058,7 +12602,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
 #if defined(DEBUG_JNI) || defined (DEBUG40)
     fprintf(stderr, "<-- returning: .._jniRexxRunProgram(...): tid=[%lu], error in arguments, problematic invocationType=[%d]\n",
-                                (unsigned long) tid, invocationType);
+                                (unsigned long) tid, (int) invocationType);
     fflush(stderr);
 #endif
 
@@ -12240,7 +12784,7 @@ fflush(stderr);
 
 #if defined (DEBUG40)
     fprintf(stderr, "..._jniRexxRunProgram(...): rtc->CheckCondition()=[%d] /////  tid=[%lu] \n",
-                    rtc->CheckCondition(), (unsigned long) tid);
+                    (int) rtc->CheckCondition(), (unsigned long) tid);
     fflush(stderr);
 #endif
 
@@ -12727,7 +13271,7 @@ rgf, 20091005 */
 
 #if defined (RGF_TRUE) || defined (DEBUG_40) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
     fprintf(stderr, "...jniRexxSendMessageToRexxObject(): thisTid=[%lu]... ro=[%p], SendMessage: c_msg=[%.256s], ra=[%p], size=[%u] ...\n",
-                                       (unsigned long) thisTid, ro, c_msg, ra, rtc->ArraySize(ra));
+                                       (unsigned long) thisTid, ro, c_msg, ra, (unsigned) rtc->ArraySize(ra));
     fflush(stderr);
 #endif
 
@@ -12739,7 +13283,7 @@ rgf, 20091005 */
 
 #if defined (RGF_TRUE) || defined (DEBUG_40) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
     fprintf(stderr, "...jniRexxSendMessageToRexxObject(): thisTid=[%lu]... SendMessage: c_msg=[%.256s], ra=[%p], size=[%u]; result_obj=[%p] ...\n",
-                                       (unsigned long) thisTid, c_msg, ra, rtc->ArraySize(ra), result_obj);
+                                       (unsigned long) thisTid, c_msg, ra, (unsigned) rtc->ArraySize(ra), result_obj);
     fflush(stderr);
 #endif
         }

@@ -5,27 +5,43 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.20
-   Changes:
-            2010-08-11, ---rgf, - added "cacao" subdir to potential jvm locations on Unix
-            2010-08-10, ---rgf, - Linux: now adding setE* to /etc/profile and $HOME/.bashrc
-            2010-08-07, ---rgf, - Linux: remove chmod logic, is now done in "setupAllAndRun.rex"
-            2010-08-01, ---rgf, - Linux: change modification bits
-                                - correcting 'rexxj.sh': export PATH as well
+   Version: 1.22
+   Changed:
+
+            2011-03-27, ---rgf, - Linux: now executing separate 'xdg_icons_menu_add-remove.sh'
+            2011-03-26, ---rgf, - Linux: do not call xdg_menu_*.sh as menus are handled in the fileAssociation scripts
+            2011-03-21, ---rgf, - Linux: link "libjvm.so" symbolically to "/opt/BSF4ooRexx", such
+                                         that Java can find its home
+            2011-03-07, ---rgf, - MacOSX: do not use fat binary anymore, only support 32- and 64-bit in install (ppc-support would have to be added explicitly)
+            2011-03-02, ---rgf, - Unixes: link "rexxj.sh" to "/usr/bin" as well
+                                - MacOSX: copy/link "libBSF4ooRexx.dylib" also to "/usr/lib/java"
+            2011-03-01, ---rgf, - macosx: adjusted 'sed' arguments
+            2011-02-27, ---rgf, - fixed bug in determining macosx
+                                - macosx: do not create file associations and menu options
+                                - macosx: make sure to use dyld_library_path everywhere
+            2011-02-25, ---rgf (on the way to tokyo) - add support for macosx
+            2011-01-25/26, ---rgf, - windows: if classpath set in hkcu, then make sure we refer to system's set value of classpath as well;
+                                  escape "%" with "[25x]" in path
+            2011-01-03, ---rgf, - fixed bug in parsing the output of a "ls -al", thanks to uli zinngrebe for reporting on 2010-12-26!
+            2010-08-11, ---rgf, - added "cacao" subdir to potential jvm locations on unix
+            2010-08-10, ---rgf, - linux: now adding sete* to /etc/profile and $home/.bashrc
+            2010-08-07, ---rgf, - linux: remove chmod logic, is now done in "setupallandrun.rex"
+            2010-08-01, ---rgf, - linux: change modification bits
+                                - correcting 'rexxj.sh': export path as well
                                 - now linking 'libjvm.so', if necessary; allows to forgo setting
-                                  LD_LIBRARY_PATH which is unfortunately tricky (one needs to use
+                                  ld_library_path which is unfortunately tricky (one needs to use
                                   to set ~/.bashrc individually for every user as /etc/profile
-                                  will runn before setuid's screen which wipes out a set LD_LIBRARY_PATH)
+                                  will runn before setuid's screen which wipes out a set ld_library_path)
 
-            2010-07-31, ---rgf, - Linux: add file associations
+            2010-07-31, ---rgf, - linux: add file associations
 
-            2010-07-27, ---rgf, - Windows: add file associations
+            2010-07-27, ---rgf, - windows: add file associations
 
-            2010-03-28, ---rgf, - Windows: fixed bug that inserted leading blanks into PATH
+            2010-03-28, ---rgf, - windows: fixed bug that inserted leading blanks into path
 
-            2010-03-21, ---rgf, - Unix: make sure libBSF4ooRexx.so is copied into /usr/lib and
+            2010-03-21, ---rgf, - unix: make sure libbsf4oorexx.so is copied into /usr/lib and
                                         run ldconfig
-            2010-03-19, ---rgf, - Unix: installing systemwide into /etc/profile, uninstall
+            2010-03-19, ---rgf, - unix: installing systemwide into /etc/profile, uninstall
                                         now uses sed to remove those entries with uninstall;
                                         /etc/profile seems to be only re-read if a logoff and
                                         logon occurs
@@ -105,7 +121,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2010 Rony G. Flatscher
+       Copyright (C) 2006-2011 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -175,6 +191,9 @@ end
 
       /* determine commands depending on Unix or Windows (OS2)    */
 cmd.eIsUnix=(j.file.separator="/")
+
+parse upper source s +1  -- get operating system name in uppercase
+cmd.eIsMacOSX=(s="M")    -- determine whether running on "MACOSX"
 
 -- cmd.eIsUnix=.true -- for debugging only !!
 
@@ -246,7 +265,10 @@ end
 
 
    /* define path to "jvm.dll/libjvm.so" ("javai.dll/libjavai.so" for Java 1.1.8)   */
-cmd.ePath2JavaDLL= getPath2JavaDll()
+if cmd.eIsMacOSX then
+   cmd.ePath2JavaDLL=getPath2JavaOnMacOSX()
+else
+   cmd.ePath2JavaDLL= getPath2JavaDll()
 
 cmd.eInstallDirectory=directory() || j.file.separator -- save this directory
 
@@ -265,6 +287,10 @@ cmd.eHintString="created:" q(cmd.eDateTimeEdited) "by user" q(j.["USER.NAME"]) -
 
 if cmd.eIsUnix then
 do
+   suname=value("SUDO_USER",,"ENVIRONMENT") -- fetch environment value, if available
+   if suname<>"" then
+      cmd.eHintString="created:" q(cmd.eDateTimeEdited) "by sudo user" q(suname)
+
    call UnixDetermineTargetLibDirs cmd.   -- determine where to copy/link libraries to
 
    nl="0a"x                      /* Unix new-line character sequence (\n)     */
@@ -273,7 +299,7 @@ do
    cmd.eLeadIn="#!/bin/sh"nl     /* command to execute this file              */
    cmd.eEcho="echo"
    -- cmd.eCopy="cp -plfv"          /* preserve, hard-link, force, verbose: source target(dir)  */
-   cmd.eCopy="cp -fv"            /* force, verbose: source target(dir) [works on FAT32/NTFS systems from Linux as well] */
+   cmd.eCopy="cp -pfv"            /* force, verbose: source target(dir) [works on FAT32/NTFS systems from Linux as well] */
 --   cmd.eCopy="cp -f"            /* force, verbose: source target(dir) [works on FAT32/NTFS systems from Linux as well] */
    cmd.eLink="ln -fv"            /* force, verbose: source target(dir)  */
 --   cmd.eLink="ln -f"            /* force, verbose: source target(dir)  */
@@ -288,8 +314,19 @@ do
 
    -- if LD_LIBRARY_PATH is set, use it
    -- rgf, 20100321: note: if used in /etc/profile will get totally ignored ! (works for ~/.bashrc)
-   cmd.eSetDLLPath = '[ "$LD_LIBRARY_PATH" != "" ] && TMPLLP=$LD_LIBRARY_PATH: || TMPLLP=' || .endOfLine || -
-                      "export LD_LIBRARY_PATH=$BSF4REXX_HOME:" || cmd.ePath2JavaDLL || ":" || "$TMPLLP"
+   if cmd.eIsMacOSX then
+   do
+      cmd.eSetDLLPath = '[ "$DYLD_LIBRARY_PATH" != "" ] && TMPLLP=$DYLD_LIBRARY_PATH: || TMPLLP=' || .endOfLine || -
+                         "export DYLD_LIBRARY_PATH=$BSF4REXX_HOME:" || cmd.ePath2JavaDLL  || ":" || ":" || "$TMPLLP"
+--                         "export DYLD_LIBRARY_PATH=$BSF4REXX_HOME:" || cmd.ePath2JavaDLL  || ":" || "$BSF4REXX_HOME/install/"cmd.eBitness || ":" || "$TMPLLP"
+--                         "export DYLD_LIBRARY_PATH=$BSF4REXX_HOME:" || cmd.ePath2JavaDLL  || ":" || "$BSF4REXX_HOME/install/macosx/resources" || ":" || "$TMPLLP"
+--                         "export DYLD_LIBRARY_PATH=$BSF4REXX_HOME:" || cmd.ePath2JavaDLL  || ":" || "`pwd`/macosx/resources" || ":" || "$TMPLLP"
+   end
+   else
+   do
+      cmd.eSetDLLPath = '[ "$LD_LIBRARY_PATH" != "" ] && TMPLLP=$LD_LIBRARY_PATH: || TMPLLP=' || .endOfLine || -
+                         "export LD_LIBRARY_PATH=$BSF4REXX_HOME:" || cmd.ePath2JavaDLL || ":" || "$TMPLLP"
+   end
 
                       -- "export LD_LIBRARY_PATH=$TMPLLP" || "$BSF4REXX_HOME" || j.path.separator  || cmd.ePath2JavaDLL
 
@@ -323,7 +360,10 @@ do
    cmd.eAdd2BashRc.2="if [ -f" cmd.eSetEnvironmentScriptName "];" -
                      "then ." cmd.eSetEnvironmentScriptName "; fi #" cmd.eInstallationNeedle
 
-   cmd.e_sed_delete_profile ="sed -i '/"cmd.eInstallationNeedle"/d'"   -- 2010-03-19: sed command to delete entries from profile(s)
+   if cmd.eIsMacOSX then --rgf, 2011-03-01: sed on MacOSX works differently, cf. <http://blog.mpdaugherty.com/2010/05/27/difference-with-sed-in-place-editing-on-mac-os-x-vs-linux/>
+      cmd.e_sed_delete_profile ="sed -i '' '/"cmd.eInstallationNeedle"/d'"
+   else
+      cmd.e_sed_delete_profile ="sed -i '/"cmd.eInstallationNeedle"/d'"   -- 2010-03-19: sed command to delete entries from profile(s)
 
 /* -- rgf, 20100321: not using /etc/ld.so.conf as ldconfig may not be present on all Unixes
    --                copying to /usr/lib instead (running ldconfig on Linuxes)
@@ -333,8 +373,16 @@ do
 
    cmd.eSetExecutable    ="chmod 755"     /* set executable for all (user, group, other)  */
    cmd.eLineComment="#"
-   cmd.eDLL="libBSF4ooRexx.so"   /* define name of dynamic link library    */
-   cmd.eDLLAllBaseNames="libBSF4ooRexx*.so"
+   if cmd.eIsMacOSX then
+      cmd.eDLL="libBSF4ooRexx.dylib"
+   else
+      cmd.eDLL="libBSF4ooRexx.so"   /* define name of dynamic link library    */
+
+   if cmd.eIsMacOSX then
+      cmd.eDLLAllBaseNames="libBSF4ooRexx*.dylib"
+   else
+      cmd.eDLLAllBaseNames="libBSF4ooRexx*.so"
+
    if cmd.eBinDir="" then
       cmd.eBinDir="/usr/bin"     /* directory where executables reside     */
 
@@ -481,7 +529,8 @@ createInstallScript: procedure expose j. cmd. path.
 
 
    -- 2010-07-27, rgf: create fileAssocations
-  call "setupFileAssociations.rex"       /* create the file association files   */
+  if \cmd.eIsMacOSX then		-- do not setup file associations and menus on MacOSX
+     call "setupFileAssociations.rex"       /* create the file association files   */
 
   call stream fn, "c", "open replace"
   call stream ui, "c", "open replace"
@@ -524,10 +573,17 @@ createInstallScript: procedure expose j. cmd. path.
 /* ---> 2010-08-07, ---rgf
      "chmod u+rwx,go+rx *sh"     -- make sure the newly created shell scripts are executable
 <--- */
+     if cmd.eIsMacOSX then
+        tmpJvmLibName="libjvm.dylib"
+     else
+        tmpJvmLibName="libjvm.so"
 
      bWriteProlog=.false  -- for "/etc/profile" no epilog/prolog, for .bashrc: yes!
 
      do tmpTgt over .array~of(cmd.eAdd2Profile, cmd.eAdd2BashRc)
+        if cmd.eIsMacOSX, bWriteProlog then     -- on MacOSX do not create .bashrc
+           leave
+
         appendTo=">>" tmpTgt
 
         call lineout fn, ""
@@ -555,62 +611,88 @@ createInstallScript: procedure expose j. cmd. path.
         bWriteProlog=.true
      end
 
-     -- rgf, 2010-08-11: cf. <http://wiki.winehq.org/WineOn64bit>, Fedora/SuSE vs. Debian-based
-     if cmd.eTgtLib32<>.nil then
+     if cmd.eIsMacOSX then    -- copy libBSF4ooRexx.dylib from and to correct location, no support for ppc as of 2011-03-07
      do
-        tmpCmd=cmd.eCopy "32/" || cmd.eDLL cmd.eTgtLib32
--- say "tmpCmd=["tmpCmd"]"
-        call lineout fn, cmd.eEcho qc(tmpCmd)
-        call lineout fn, tmpCmd
-        call lineout fn, ""
+           path2lib=cmd.eBitness || "/"
 
-/*
-        -- delete libBSF4ooRexx.so from /usr/lib
-        -- tmpCmd=cmd.eDelete cmd.eTgtLib32 || "/" || cmd.eDLL
-        tmpCmd=cmd.eDelete cmd.eTgtLib32 || "/" || cmd.eDLLAllBaseNames
+           tmpCmd=cmd.eCopy path2lib || cmd.eDLL ".." -- make sure it's in BSFHOME for setEnvironment4BSF.sh
 -- say "tmpCmd=["tmpCmd"]"
-        call lineout ui, cmd.eEcho qc(tmpCmd)
-        call lineout ui, tmpCmd
-        call lineout ui, ""
-*/
-     end
+           call lineout fn, cmd.eEcho qc(tmpCmd)
+           call lineout fn, tmpCmd
+           call lineout fn, ""
 
-     if cmd.eTgtLib364<>.nil then
-     do
-        tmpCmd=cmd.eCopy "64/" || cmd.eDLL cmd.eTgtLib64
+
+           tmpCmd=cmd.eCopy path2lib || cmd.eDLL cmd.eLibDir
 -- say "tmpCmd=["tmpCmd"]"
-        call lineout fn, cmd.eEcho qc(tmpCmd)
-        call lineout fn, tmpCmd
-        call lineout fn, ""
+           call lineout fn, cmd.eEcho qc(tmpCmd)
+           call lineout fn, tmpCmd
+           call lineout fn, ""
 
-/*
-        -- delete libBSF4ooRexx.so from /usr/lib
-        -- tmpCmd=cmd.eDelete cmd.eTgtLib64 || "/" || cmd.eDLL
-        tmpCmd=cmd.eDelete cmd.eTgtLib64 || "/" || cmd.eDLLAllBaseNames
--- say "tmpCmd=["tmpCmd"]"
-        call lineout ui, cmd.eEcho qc(tmpCmd)
-        call lineout ui, tmpCmd
-        call lineout ui, ""
-*/
-     end
-
-     -- rgf, 20100815: delete libBSF4ooRexx*.so in /usr/lib, /usr/lib32, /usr/lib64
-     --                ldconfig may create symbolic links named libBSF4ooRexx-32-so and libBSF4ooRexx-64.so
-     do tmpTgtLib over .array~of("/usr/lib", "/usr/lib32", "/user/lib64")
-        if SysFileExists(tmpTgtLib) then
-        do
-           tmpCmd=cmd.eDelete tmpTgtLib || "/" || cmd.eDLLAllBaseNames
+           tmpCmd=cmd.eDelete cmd.eLibDir || "/" || cmd.eDLL
            call lineout ui, cmd.eEcho qc(tmpCmd)
            call lineout ui, tmpCmd
            call lineout ui, ""
+
+         -- on MacOSX also copy/link to "/usr/lib/java"
+           tmpJavaLibDir="/usr/lib/java"
+           tmpCmd=cmd.eCopy path2lib || cmd.eDLL tmpJavaLibDir
+-- say "tmpCmd=["tmpCmd"]"
+           call lineout fn, cmd.eEcho qc(tmpCmd)
+           call lineout fn, tmpCmd
+           call lineout fn, ""
+
+           tmpCmd=cmd.eDelete tmpJavaLibDir || "/" || cmd.eDLL
+           call lineout ui, cmd.eEcho qc(tmpCmd)
+           call lineout ui, tmpCmd
+           call lineout ui, ""
+
+     end
+     else   -- plain Unix/Linux
+     do
+-- TODO: rgf, 2011-03-07: check whether we need to copy lib to BSF4REXX-HOME in order for SetEnvironment4BSF.sh to work
+        -- rgf, 2010-08-11: cf. <http://wiki.winehq.org/WineOn64bit>, Fedora/SuSE vs. Debian-based
+        if cmd.eTgtLib32<>.nil then
+        do
+           tmpCmd=cmd.eCopy "32/" || cmd.eDLL cmd.eTgtLib32
+-- say "tmpCmd=["tmpCmd"]"
+           call lineout fn, cmd.eEcho qc(tmpCmd)
+           call lineout fn, tmpCmd
+           call lineout fn, ""
+        end
+
+        if cmd.eTgtLib64<>.nil then   -- rgf, 2011-03-07
+        do
+           tmpCmd=cmd.eCopy "64/" || cmd.eDLL cmd.eTgtLib64
+-- say "tmpCmd=["tmpCmd"]"
+           call lineout fn, cmd.eEcho qc(tmpCmd)
+           call lineout fn, tmpCmd
+           call lineout fn, ""
+        end
+
+     -- rgf, 20100815: delete libBSF4ooRexx*.so in /usr/lib, /usr/lib32, /usr/lib64
+     --                ldconfig may create symbolic links named libBSF4ooRexx-32-so and libBSF4ooRexx-64.so
+        do tmpTgtLib over .array~of("/usr/lib", "/usr/lib32", "/user/lib64")
+           if SysFileExists(tmpTgtLib) then
+           do
+              tmpCmd=cmd.eDelete tmpTgtLib || "/" || cmd.eDLLAllBaseNames
+              call lineout ui, cmd.eEcho qc(tmpCmd)
+              call lineout ui, tmpCmd
+              call lineout ui, ""
+           end
         end
      end
 
      -- rgf, 20100814
      -- tmpName1="/opt/BSF4ooRexx/libjvm.so"  -- default location to link to
-     tmpPath2libjvm=cmd.ePath2JavaDLL || j.file.separator || "libjvm.so"
+     tmpPath2libjvm=cmd.ePath2JavaDLL || j.file.separator || tmpJvmLibName -- "libjvm.so"
 
-     tmpCmd="ln -fsv" tmpPath2libjvm "/opt/BSF4ooRexx/libjvm.so"
+     -- tmpCmd="ln -fsv" tmpPath2libjvm "/opt/BSF4ooRexx/libjvm.so"
+     -- tmpCmd="ln -fsv" tmpPath2libjvm "/opt/BSF4ooRexx/"tmpJvmLibName
+     -- tmpCmd=cmd.eLink tmpPath2libjvm "/opt/BSF4ooRexx/"tmpJvmLibName -- rgf, 2011-03-06
+
+      -- on Linux this needs to be a symbolic link, such that the JVM can find its Java home
+     tmpCmd="ln -fsv" tmpPath2libjvm "/opt/BSF4ooRexx/"tmpJvmLibName -- rgf, 2011-03-21
+
      call lineout fn, cmd.eEcho qc(tmpCmd)
      call lineout fn, tmpCmd
      call lineout fn, ""
@@ -618,7 +700,7 @@ createInstallScript: procedure expose j. cmd. path.
       -- copying Rexx scripts to /usr/bin
      call lineout fn, cmd.eEcho qc("copying BSF4ooRexx scripts to /usr/bin ...")
      call lineout ui, cmd.eEcho qc("removing BSF4ooRexx scripts from /usr/bin ...")
-     files2userBin=.array~of("../BSF.CLS", "../BSF_OnTheFly.cls", "../rexxj2.sh", "../rgf_util2.rex", "../rexxj2.sh", "rexxpaws.rex")
+     files2userBin=.array~of("../BSF.CLS", "../BSF_OnTheFly.cls", "../rexxj.sh", "../rexxj2.sh", "../rgf_util2.rex", "../rexxj2.sh", "rexxpaws.rex")
      do binFile over files2userBin
          tmpCmd=cmd.eCopy binFile "/usr/bin"
          call lineout fn, cmd.eEcho qc(tmpCmd)
@@ -632,103 +714,44 @@ createInstallScript: procedure expose j. cmd. path.
      call lineout ui, ""
 
 
-/*
-     /* 20100801: new logic: if /usr/lib/libjvm.so does not exist, then symbolically link the found one to it;
-                  this allows us to not be dependent on setting LD_LIBRARY_LD for all users/processes
-                  and use /etc/profile for setting PATH and CLASSPATH
-     */
-     if (cmd.eBitness=64 & cmd.eTgtLib64=.nil) | (cmd.eBitness=32 & cmd.eTgtLib32=.nil) then
+     if \cmd.eIsMacOSX then
      do
-        say "setupBSF.rex: you are running a" cmd.eBitness "bit ooRexx interpreter, but there is no" cmd.eBitness "bit Java available on your system!"
-        say "              Please make sure that you have a" cmd.eBitness "bit Java installed and then run 'rexx setupJava.rex' to make it available to BSF4ooRexx!"
-     end
-     else
-     do
-        tmpName1="/opt/BSF4ooRexx/libjvm.so"  -- default location to link to
-        tmpName2=cmd.ePath2JavaDLL || j.file.separator || "libjvm.so"
-     end
-
-
-     tmpName1="/opt/BSF4ooRexx/libjvm.so"  -- default location to link to
-     tmpName2=cmd.ePath2JavaDLL || j.file.separator || "libjvm.so"
-
-     if cmd.eBitness=32 then     -- ooRexx in 32bit
-     do
-        if cmd.eTgtLib32<>.nil then
-           tmpName1=cmd.eTgtLib64 || "\libjvm.so"
-        else
-           say "setupBSF.rex: cannot find a location for 32-Bit Java (libjvm.so) on your system!"
-     end
-     else if cmd.eBitness=64 then   -- ooRexx in 32bit
-     do
-        if cmd.eTgtLib64=.nil then  -- we are in troubles!
-           tmpName1=cmd.eTgtLib64 || "\libjvm.so"
-        else
-            say "setupBSF.rex: cannot find a location for 64-Bit Java (libjvm.so) on your system!"
-     end
-
-     if SysFileExists(tmpName1)=.false then
-     do
-        tmpName2=cmd.ePath2JavaDLL || j.file.separator || "libjvm.so"
-
-        if pos("64", tmpName2)>0 then  -- a 64-bit version inferrable from path ?
-        do
-           if cmd.eTgtLib64<>.nil then
-              tmpName1=cmd.eTgtLib64 || "/libjvm.so"
-        end
-        else if cmd.eTgtLib32<>.nil then
-        do
-            tmpName1=cmd.eTgtLib32 || "/libjvm.so"
-        end
-
---        tmpCmd="ln -fs" tmpName2 tmpName1
-        tmpCmd="ln -fsv" tmpName2 tmpName1
-        call lineout fn, cmd.eEcho qc(tmpCmd)
-        call lineout fn, tmpCmd
-        call lineout fn, ""
-
-        -- do not remove libjvm.so link upon removal of BSF4ooRexx as other apps may be dependent on it !
-     end
-*/
-
-     -- run ldconfig: rgf, 2010-03-21: not available on Solaris or Mac !
+        -- run ldconfig: rgf, 2010-03-21: not available on Solaris or Mac !
 -- say "cmd.eOperatingSystem=["cmd.eOperatingSystem"]"
-     -- if cmd.eOperatingSystem="LINUX" then    -- update /etc/ld.so.cache
+        -- if cmd.eOperatingSystem="LINUX" then    -- update /etc/ld.so.cache
 
-      -- tmpCmd="ldconfig"
-      tmpCmd="ldconfig -n /usr/lib /usr/lib32 /usr/lib64 /opt/BSF4ooRexx"   -- rgf, 2010-08-14
-      call lineout fn, cmd.eEcho qc(tmpCmd)
-      call lineout fn, tmpCmd
-      call lineout fn, ""
-      call lineout ui, cmd.eEcho qc(tmpCmd)
-      call lineout ui, tmpCmd
-      call lineout ui, ""
+         -- tmpCmd="ldconfig"
+         tmpCmd="ldconfig -n /usr/lib /usr/lib32 /usr/lib64 /opt/BSF4ooRexx"   -- rgf, 2010-08-14
+         call lineout fn, cmd.eEcho qc(tmpCmd)
+         call lineout fn, tmpCmd
+         call lineout fn, ""
+         call lineout ui, cmd.eEcho qc(tmpCmd)
+         call lineout ui, tmpCmd
+         call lineout ui, ""
 
         -- copy *bins to /usr/bin
 
+      -- create icons and menu (2010-08-20, 2011-03-27)
+         call lineout fn, "# add icons and menu"
+         call lineout fn, "./xdg_icons_menu_add.sh"
+         call lineout fn, ""
+
+         call lineout ui, "# remove icons and menu"
+         call lineout ui, "./xdg_icons_menu_remove.sh"
+         call lineout ui, ""
+
            -- create fileAssocations
-      call lineout fn, ""
-      call lineout fn, "./fileAssociations_for_rex_add.sh"
-      call lineout fn, "./fileAssociations_for_rxj_add.sh"
+         call lineout fn, "# add mimetype (file associations)"
+         call lineout fn, "./fileAssociations_for_rex_add.sh"
+         call lineout fn, "./fileAssociations_for_rxj_add.sh"
+         call lineout fn, ""
 
-      call lineout ui, ""
-      call lineout ui, "./fileAssociations_for_rex_remove.sh"
-      call lineout ui, "./fileAssociations_for_rxj_remove.sh"
+         call lineout ui, "# remove mimetype (file associations)"
+         call lineout ui, "./fileAssociations_for_rex_remove.sh"
+         call lineout ui, "./fileAssociations_for_rxj_remove.sh"
+         call lineout ui, ""
 
-
-      -- create menu (2010-08-20)
-      call lineout fn, ""
-      call lineout fn, "./xdg_menu_add.sh"
-
-/*  now in xdg_menu_add.sh itself, rgf
-         -- rgf, 2010-08-21: on Ubuntu the Applications Menu is only generated, if menu-file gets copied to its location once again
-         --                  hence repeat copy procedure once more
-      call lineout fn, "sleep 0.2s"
-      call lineout fn, "./xdg_menu_add.sh"
-*/
-
-      call lineout ui, ""
-      call lineout ui, "./xdg_menu_remove.sh"
+     end
 
   end
   else      -- add statements to incorporate paths into registry
@@ -782,7 +805,12 @@ createInstallScript: procedure expose j. cmd. path.
          tmpArgs=tmpArgs || j.path.separator || "."   -- add current directory (for datergf-BSF4Rexx-samples to work)
 
             -- make sure the current directory is searched as well
-         arg="/key:"q(cmd.eRegistryClassPath) "/path:"q(tmpArgs)
+         if cmd.eRegistryClassPath~left(5)="HKCU\" then  -- rgf, 2011-01-25: make sure that system set CLASSPATH is honored !
+            arg="/key:"q(cmd.eRegistryClassPath) "/path:"q("%CLASSPATH%;"tmpArgs)
+         else
+            arg="/key:"q(cmd.eRegistryClassPath) "/path:"q(tmpArgs)
+
+         arg=arg~changestr("%", "[25x]") -- make sure that cmd.exe does not expand
 
          tmpStr1=cmd "/add"    arg
          tmpStr2=cmd "/remove" arg
@@ -1102,7 +1130,10 @@ create_REXXJ_Script: procedure expose j. cmd. path.
 
   if cmd.eIsUnix=1 then    -- rgf, 2009-10-21
   do
-     call lineout fn, cmd.eLineComment "set LD_LIBRARY_PATH "
+     if cmd.eIsMacOSX then
+         call lineout fn, cmd.eLineComment "set DYLD_LIBRARY_PATH "
+     else
+         call lineout fn, cmd.eLineComment "set LD_LIBRARY_PATH "
 
      -- call lineout fn, subword(cmd.eSetDLLPath, 2)  -- skip first word ("export")
      call lineout fn, cmd.eSetDLLPath
@@ -1117,7 +1148,10 @@ create_REXXJ_Script: procedure expose j. cmd. path.
   if cmd.eIsUnix=1 then
   do
   --   tmpStr1=tmpStr1 || "$BSF4REXX_HOME"  || j.path.separator || "$LD_LIBRARY_PATH" || cmd.eQuote
-     tmpStr1=tmpStr1 || "$LD_LIBRARY_PATH" || cmd.eQuote
+     if cmd.eIsMacOSX then
+        tmpStr1=tmpStr1 || "$DYLD_LIBRARY_PATH" || cmd.eQuote
+     else
+        tmpStr1=tmpStr1 || "$LD_LIBRARY_PATH" || cmd.eQuote
   end
   else
   do
@@ -1128,7 +1162,14 @@ create_REXXJ_Script: procedure expose j. cmd. path.
   end
 
   tmpStr2="-classpath" cmd.eQuote || iif(cmd.eIsUnix=1, "$CLASSPATH", "%CLASSPATH%") || cmd.eQuote
-  call lineout fn, cmd.eJavaBinary tmpStr1 tmpStr2 cmd.eRexxDispatch
+
+  -- rgf, 2011-02-27: if a Java 64-bit then explicitly start Java in Rexx-bitness (32 or 64 bit) mode
+  tmpStr0=""
+  if cmd.eBitness=32, j.sun.arch.data.model=64 then
+     tmpStr0="-d32"
+
+
+  call lineout fn, cmd.eJavaBinary tmpStr0 tmpStr1 tmpStr2 cmd.eRexxDispatch
 
 
   call stream fn, "c", "close"
@@ -1316,7 +1357,12 @@ getPath2JavaDll: procedure expose j. cmd. path.
 
       /* removed search for [lib]javai.{so|dll}, as Java 1.1.8 is not supported anymore */
    if cmd.eIsUnix=1 then            /* Unix           */
-      dlls="libjvm.so"
+   do
+      if cmd.eIsMacOSX then
+         dlls="libjvm.dylib"
+      else
+         dlls="libjvm.so"
+   end
    else                             /* Windows, OS2   */
       dlls ="jvm.dll"
 
@@ -1344,6 +1390,15 @@ getPath2JavaDll: procedure expose j. cmd. path.
       /* default, even if directory does not exist to hint the user where to look for  */
    return tmpStr || j.file.separator || "bin" || j.file.separator || "client"
 
+
+/* rgf, 2011-02-25: try to locate correct libjvm.dylib on MacOSX
+*/
+getPath2JavaOnMacOSX: procedure
+   call SysFileTree "/System/Library/Java/JavaVirtualMachines/libjvm.dylib", "files.", "FOS"
+   if files.0=0 then return ""
+
+   location=filespec("Loction", files.[files.0])   -- get path to newest Java in case there are multiply dylibs
+   return location~left(max(1,location~length-1))  -- remove trailing file separator
 
 /* Parse commandline arguments, if any.
 */
@@ -1719,13 +1774,20 @@ syntax:
      libs~append(lib)
   end
 
+-- e.g.:
+-- drwxr-xr-x 220 root root 77824 2011-03-27 23:46 /usr/lib
+-- drwxr-xr-x  40 root root 36864 2011-03-27 23:46 /usr/lib32
+-- lrwxrwxrwx   1 root root     3 2011-01-27 09:00 /usr/lib64 -> lib
+
+
   lib32=.false
   lib64=.false
   lib64isLink=.false
   do val over libs
-     parse value val with flags . . . . . . lib . target
+     -- parse value val with flags . . . . . . lib . target
+     parse value val with _mode _inode _owner _group _size _date _time lib . target
 
-say "unixDetermineLibs:" flags"|"lib"|"target "..."
+say "unixDetermineLibs:" _mode"|"lib"|"target "..."
 
      if      lib="/usr/lib32" then lib32=.true
      else if lib="/usr/lib64" then

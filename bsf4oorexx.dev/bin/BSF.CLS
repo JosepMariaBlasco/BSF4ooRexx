@@ -12,6 +12,16 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2011-02-21, rgf: - define new entries in .bsf4rexx
+                             - "OPSYS" ... operating system name from "PARSE SOURCE opsys ." plus
+                               "OPSYS1", "OPSYS2", "OPSYS3" with the first one, two, three letters in uppercase
+                             - MacOSX: "APPLE_APPLICATION" the Apple application object representing the running Rexx program
+                             - "BSF4OOREXX_{016|032|048|064|128|256}": if defined path to PNG-icon
+                             - "OOREXX4OOO_{016|032|048|064|128|256}": if defined path to PNG-icon
+
+                          - MacOSX: remove About and Preferences Apple menu entries
+                          - MacOSX: define Dock icon
+         2011-02-20, rgf: - adding MacOSX related properties
          2010-07-12, rgf: - .bsf.dialog::inputBox: now accepting a Java Object array for options
          2010-06-10, rgf: - changed environment variable from 'BSF4Rexx.JavaStartupOptions' to
                             'BSF4Rexx_JavaStartupOptions'; reason: bash cannot process
@@ -304,7 +314,7 @@
 
 
 
-   version:     4.0.4 (20100610)
+   version:     4.0.6 (20110220)
 
    authors:     (c) 2001-2009 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
@@ -317,7 +327,7 @@
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2001-2010 Rony G. Flatscher
+   Copyright 2001-2011 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -335,7 +345,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2001-2010 Rony G. Flatscher
+   Copyright 2001-2011 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -365,16 +375,23 @@
        raise syntax 3.900 array (errString)
    end
 
+   parse source opsys .       -- get name of operating system, rgf, 2010-02-20
 
    if BsfInvokedBy()=0 then   -- JVM not yet loaded
    do
 --      call BsfLoadJava
          -- process Java runtime args, if any
       jso=value('BSF4Rexx_JavaStartupOptions', ,"ENVIRONMENT")
+
+      if opsys="MACOSX" then  -- as of 2010-02-20: if loading Java via Rexx, awt-event thread does not work
+         jso=(jso "-Djava.awt.headless=true")~strip   -- make sure that Java hints at the cause of the problem
+
       arr=parseJavaOptions(jso)
       stmt=createJavaLoadStatement(arr)      -- create the BsfLoadJava-statement
+/*
       if jso<>"" then      -- environment variable set, if so, show its value
-         say "... using environment variable 'BSF4Rexx_JavaStartupOptions' to configure Java:" pp(jso)
+         say "BSF.CLS: ... using environment variable 'BSF4Rexx_JavaStartupOptions' to configure Java:" pp(jso) "..."
+*/
       interpret stmt       -- carry out the statement in the string
    end
 
@@ -386,13 +403,32 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="405.20100712" -- set version
+   .bsf4rexx~version="406.20110328" -- set version
+   .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
+   .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
+   .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
+   .bsf4rexx~opSys3 =opsys~left(3)~upper  -- save operating system name's first two letters in uppercase
 
    .bsf.dialog~setDefaultComponent  -- Initialize the default component object (cannot be done in class' constructor)
 
    .local~bsf=.bsf      -- save .BSF in .local as well, to make it findable in callback situations
 
+   call getAndSetPathToIcons
+
+   if opsys="MACOSX" then
+   do
+      .java.lang.system~setProperty('apple.laf.useScreenMenuBar','true') -- just used on Macs: use Apple's menu dock, for JFrame-menus insteadof the window's menu bar
+           -- by default hide "About" and "Preferences" menu in Apple's menu bar
+      app=bsf.loadClass("com.apple.eawt.Application")~getApplication
+      .bsf4rexx~apple_application=app   -- get and save Apple's application object to ease use in dependent programs
+      app~removeAboutMenuItem
+      app~removePreferencesMenuItem
+      if .bsf4rexx~hasEntry("bsf4oorexx_256") then
+         app~setDockIconImage(.bsf~new("javax.swing.ImageIcon",.bsf4rexx~bsf4oorexx_256)~getImage)
+   end
+
    call BSfShowErrorMessage .false  -- turn off displaying the Java exception message (leftover from the very early BSF4Rexx days)
+
    return
 
 syntax:
@@ -400,6 +436,57 @@ syntax:
 
 
 ::requires "BSF4ooRexx" library
+
+::routine getAndSetPathToIcons	-- rgf, 2011-02-21: find path to icons, if found save icons
+  opsys=.bsf4rexx~opsys~left(1)     -- get first letter of operating system (L=Linux, M=MacOSX, W=Windows, ...)
+
+  parse source opsys +1 1 . kind path2this
+
+  if opsys="W" then
+  do
+     paths=.array~of(filespec("Location", path2this)"install\images\linux\hicolor\")
+  end
+  else
+  do
+     paths=.array~of(filespec("Location", path2this)"install/images/linux/hicolor/", -  -- look in directory of this program (may be linked to somewhere else)
+                     "/opt/BSF4ooRexx/install/images/linux/hicolor/",                -  -- fallback location
+                     "/Applications/BSF4ooRexx.app/Current/Resources/",              -  -- hypothetic location on MacOSX (may need adjustment)
+                     "/Users/rony/bsf4oorexx.201012/root201012/trunk/bsf4oorexx.dev/images/linux/hicolor/" - -- Rony's developer path (to be removed)
+                     )
+  end
+
+  path2icon=""
+  do entry over paths
+     res=SysFileExists(entry)
+     if res=1 then
+     do
+        path2icon=qualify(entry)
+--        say "... BSF.CLS::getAndSetPathToIcons (debug): - path2icon found! ["path2icon"] ..."
+     end
+  end
+  if path2icon="" then return     -- no path found
+
+  path2icon=path2icon || .bsf4rexx~file.separator   -- append file separator
+
+	-- create entries to exisiting icon files in the given resolutions
+  imageNames=.array~of("bsf4oorexx", "oorexx4ooo")
+  do res over .array~of("016", "032", "064", "048", "128", "256")
+     do name over imageNames
+        tmpName=name"_"res
+        fullPath=path2icon || tmpName".png"
+        if SysFileExists(fullPath) then
+        do
+           .bsf4rexx~setEntry(tmpName, fullPath)
+--           say "... BSF.CLS::getAndSetPathToIcons (debug):" tmpName "->" fullPath "..."
+        end
+     end
+  end
+
+  return
+
+
+
+
 
 /* Initialize BSF.DIR which is stored with the BSF class object, such that
    each interpreter instance is separated from each other w.r.t. the objects

@@ -2,7 +2,8 @@
 /*
    name:             Bean testGroup
    author:           Michael Lex
-   version:          1.0.0
+   changed:          ---rgf, 2011-02-12: allow this test to run in "java.awt.headless=true"-mode
+   version:          1.0.1
 */
 /*
 
@@ -44,9 +45,16 @@ return testResult
 	s=.JString~newStrict("int", 5)
 
 ::method "test_2"
+/*
 	.bsf~bsf.import("java.awt.TextField", "Jatf")
 	ftf=.Jatf~newStrict("int", 5)
 	self~assertEquals(ftf~getColumns(),5)
+*/
+        .bsf~bsf.import("java.awt.Dimension", "JaD")
+        fd=.JaD~newStrict("int", 1, "int", 2)
+        self~assertEquals(fd~getWidth,1)
+        self~assertEquals(fd~getHeight,2)
+
 
 ::method "test_3"
 	show_msg = BsfShowErrorMessage(0)
@@ -63,16 +71,30 @@ return testResult
 	ftf=.Jatf~newStrict("double", 5)
 
 ::method "test_5"
+/*
 	.bsf~bsf.import("java.awt.TextField", "Jatf")
 	ftf=.Jatf~newStrict("int", 5)
 	var=bsf.unregisterBean("Jatf")
 	self~assertEquals(var, ".NIL")
+*/
+        .bsf~bsf.import("java.awt.Dimension", "JaD")
+        fd=.JaD~newStrict("int", 1, "int", 2)
+	var=bsf.unregisterBean(fd)
+	var=bsf.unregisterBean(fd)
+	self~assertEquals(var, ".NIL")
 
 ::method "test_6"
+/*
 	.bsf~bsf.import("java.awt.TextField", "Jatf")
 	ftf=.Jatf~newStrict("int", 5)
 	var=bsf.unregisterBean("a_not_existing_bean")
 	self~assertEquals(var, ".NIL")
+*/
+        .bsf~bsf.import("java.awt.Dimension", "JaD")
+        fd=.JaD~newStrict("int", 1, "int", 2)
+	var=bsf.unregisterBean("a_not_existing_bean")
+	self~assertEquals(var, ".NIL")
+
 
 ::method "test_7"
 	show_msg = BsfShowErrorMessage(0)
@@ -95,9 +117,15 @@ return testResult
 	s=.JString~new("foo", 5)
 
 ::method "test_10"
+/*
 	.bsf~bsf.import("java.awt.TextField", "Jatf")
 	ftf=.Jatf~new("foo", 5)
 	self~assertEquals(ftf~getColumns(),5)
+*/
+        .bsf~bsf.import("java.awt.Dimension", "JaD")
+        fd=.JaD~new(1,2)
+        self~assertEquals(fd~getWidth,1)
+        self~assertEquals(fd~getHeight,2)
 
 ::method "test_11"
 	show_msg = BsfShowErrorMessage(0)
@@ -107,16 +135,32 @@ return testResult
 	ftf=.Jatf~new("foo", 1, 2)
 
 ::method "test_12"
+/*
 	.bsf~bsf.import("java.awt.TextField", "Jatf")
 	ftf=.Jatf~new("foo", 5)
 	var=bsf.unregisterBean("Jatf")
 	self~assertEquals(var, ".NIL")
+*/
+        .bsf~bsf.import("java.awt.Dimension", "JaD")
+        fd=.JaD~new(1,2)
+	var=bsf.unregisterBean(fd)
+	var=bsf.unregisterBean(fd)
+	self~assertEquals(var, ".NIL")
+
+
 
 ::method "test_13"
+/*
 	.bsf~bsf.import("java.awt.TextField", "Jatf")
 	ftf=.Jatf~new("foo", 5)
 	var=bsf.unregisterBean("a_not_existing_bean")
 	self~assertEquals(var, ".NIL")
+*/
+        .bsf~bsf.import("java.awt.Dimension", "JaD")
+        fd=.JaD~new(1,2)
+	var=bsf.unregisterBean("a_not_existing_bean")
+	self~assertEquals(var, ".NIL")
+
 
 ::method "test_14"
 	show_msg = BsfShowErrorMessage(0)

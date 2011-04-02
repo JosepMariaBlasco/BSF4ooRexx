@@ -15,6 +15,9 @@
 *                               give the error message for the developer
 
 *           2008-06-23, ---rgf: changed logic to parse the line number from Rexx error messages
+
+            2011-02-18, ---rgf: applying fix that Stephan Bergman created for the ScriptEdtiorForBeanShell,
+                                cf. <http://www.openoffice.org/issues/show_bug.cgi?id=92926>
 *
 *
 *  The Contents of this file are made available subject to the terms of
@@ -86,6 +89,7 @@ import javax.swing.JPanel;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;  // rgf, 2011-02-18
 
 import java.awt.FlowLayout;
 import java.awt.event.ActionListener;
@@ -196,7 +200,9 @@ public class ScriptEditorForooRexx
      */
     public static ScriptEditorForooRexx getEditor(URL url)
     {
-        return (ScriptEditorForooRexx)BEING_EDITED.get(url);
+        synchronized (ScriptEditorForooRexx.class) {    // rgf, 2011-02-18
+            return (ScriptEditorForooRexx)BEING_EDITED.get(url);
+        }
     }
 
     /**
@@ -280,7 +286,7 @@ public class ScriptEditorForooRexx
      * @param  entry       The metadata describing the script
      *
      */
-    public void edit(XScriptContext context, ScriptMetaData entry) {
+    public void edit(final XScriptContext context, final ScriptMetaData entry) {    // rgf, 2011-02-18
         if (entry != null ) {
             try {
                 // following is useless, as real editor will be another instance
@@ -294,14 +300,17 @@ public class ScriptEditorForooRexx
                 catch (Exception ignore) // TODO re-examine error handling
                 {
                 }
+                final ClassLoader theCl = cl;
+
                 String sUrl = entry.getParcelLocation();
                 if ( !sUrl.endsWith( "/" ) )
                 {
                     sUrl += "/";
                 }
                 sUrl +=  entry.getLanguageName();
-                URL url = entry.getSourceURL();
+                final URL url = entry.getSourceURL();
 
+/*
                 // check if there is already an editing session for this script
                 if (BEING_EDITED.containsKey(url))
                 {
@@ -315,6 +324,31 @@ public class ScriptEditorForooRexx
                     // new ScriptEditorForooRexx(context, cl, url);
                     new ScriptEditorForooRexx(context, cl, url, entry);
                 }
+*/
+                // --> as Stephan Bergmann's patch (2011-02-18) in <http://www.openoffice.org/issues/show_bug.cgi?id=92926>
+                new Thread() {
+                    public void run () {
+                        SwingUtilities.invokeLater (
+                            new Runnable () {
+                                public void run () {
+                                    synchronized (ScriptEditorForooRexx.class) {
+                                        ScriptEditorForooRexx editor =
+                                            (ScriptEditorForooRexx) BEING_EDITED.get(url);
+                                        if (editor == null) {
+                                            editor = new ScriptEditorForooRexx (
+                                                context, theCl, url, entry);    // rgf: passing on ScriptMetaData
+                                            BEING_EDITED.put(url, editor);
+                                        }
+                                        else {
+                                            editor.frame.toFront();
+                                        }
+                                    }   // synchronized
+                                }   // run ()
+                            }   // new Runnable
+                            );
+                    }
+                }.start();
+                // <--
             }
             catch (IOException ioe) {
                 showErrorMessage( "Error loading file: " + ioe.getMessage() );
@@ -373,8 +407,8 @@ public class ScriptEditorForooRexx
 
         frame.toFront(); // 20070920, rgf: make sure frame is in foreground
 
-
-        BEING_EDITED.put(url, this);
+// rgf, 2011-02-18
+//        BEING_EDITED.put(url, this);
     }
 
     private void showErrorMessage(String message) {
@@ -496,9 +530,13 @@ public class ScriptEditorForooRexx
         return result;
     }
 
-    private void shutdown()
+    private void shutdown() // rgf, 2011-02-18
     {
-        if (BEING_EDITED.containsKey(scriptURL)) {
+        // if (BEING_EDITED.containsKey(scriptURL)) {
+        //     BEING_EDITED.remove(scriptURL);
+        // }
+
+        synchronized (ScriptEditorForooRexx.class) {
             BEING_EDITED.remove(scriptURL);
         }
     }

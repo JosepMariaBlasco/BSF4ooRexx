@@ -4,11 +4,12 @@
            2010-07-06, renamed to ".rxj" to indicate that this is a Rexx program using Java
    tests the BSF4Rexx installation, queries all version information;
    can be invoked directly or via Java, e.g. "rexxj infoBSF.rxj"
+           2011-02-09, give architecture information (bitness, arch-name), extension path(s)
 
    license:
 
    ------------------------ Apache Version 2.0 license -------------------------
-      Copyright 2006-2010 Rony G. Flatscher
+      Copyright 2006-2011 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.
@@ -40,11 +41,15 @@ say
 
    /* show the Java version in use for this invocation */
 say 'Java version:       ' pp(bsf('invoke', 'System.class', 'getProperty', 'java.version' ))
+say 'Java bitness:       ' pp(bsf('invoke', 'System.class', 'getProperty', 'sun.arch.data.model' ))
+say 'Java architecture:  ' pp(bsf('invoke', 'System.class', 'getProperty', 'os.arch' ))
 say 'Java home dir:      ' pp(bsf('invoke', 'System.class', 'getProperty', 'java.home' ))
 say
 say 'Java library path:  ' pp(bsf('invoke', 'System.class', 'getProperty', 'java.library.path' ))
 say
 say 'Java class path:    ' pp(bsf('invoke', 'System.class', 'getProperty', 'java.class.path' ))
+say
+say 'Java extension path:' pp(bsf('invoke', 'System.class', 'getProperty', 'java.ext.dirs' ))
 say
 
 text="directly by Rexx which loaded Java"

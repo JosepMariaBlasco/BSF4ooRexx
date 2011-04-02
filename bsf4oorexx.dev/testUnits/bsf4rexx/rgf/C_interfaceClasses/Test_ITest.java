@@ -2,6 +2,7 @@
 // define a class that uses an ITest object, which now can also be a RexxProxy
 // that declares to implement the "ITest" interface, i.e. all its methods;
 // the RexxProxy implementation may take advantage of the ooRexx UNKNOWN mechanism
+// - rgf, 2011-02: added "bShowInfos" to control additional new debug output
 
 package rgf.C_interfaceClasses;
 
@@ -9,38 +10,52 @@ import org.rexxla.bsf.engines.rexx.RexxProxy;
 
 public class Test_ITest
 {
+    final boolean bShowInfos=true;
+
     public void test_ITest (ITest itest) throws Exception
     {
-
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"itest="+itest);
         RexxProxy rp=itest.getTestRunner();
-// System.err.println("rp=["+rp+"]");
+if (bShowInfos) System.err.println("rp=["+rp+"]");
 
             // inverse value
         String hintText="itest.boolean_Method(true)";
         Object argArray[]=null;
         if (itest.boolean_Method(true)!=false)
         {
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"1a");
+
             rp.sendMessage("assertTrue", new Object[] {Boolean.FALSE, hintText});
             // throw new Exception (hintText);
         }
         else
         {
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"1b");
+
             rp.sendMessage("assertTrue", new Object[] {Boolean.TRUE, hintText});
         }
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"1-done.");
+
 
         //-------
         hintText="itest.Boolean_Method(Boolean.TRUE).booleanValue()";
         if (itest.Boolean_Method(Boolean.TRUE).booleanValue()!=false)
         {
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"2a");
+
             rp.sendMessage("assertTrue", new Object[] {Boolean.FALSE, hintText});
             // throw new Exception ("itest.Boolean_Method(Boolean.TRUE).booleanValue()");
         }
         else
         {
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"2b");
+
             rp.sendMessage("assertTrue", new Object[] {Boolean.TRUE, hintText});
         }
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"2-done.");
 
 
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"3");
             // half value, Rexx: value%2
             // boolean/Boolean
         //-------
@@ -92,6 +107,7 @@ public class Test_ITest
                 rp.sendMessage("assertTrue", new Object[] {Boolean.TRUE, hintText});
             }
 
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"char/Character, rp=["+rp+"]");
 
             // char/Character: return value unchanged
             //-------
@@ -106,15 +122,21 @@ public class Test_ITest
             rp.sendMessage("assertTrue", new Object[] {Boolean.TRUE, hintText});
         }
 
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"'ß', # 1, rp=["+rp+"]");
         //-------
-        hintText="";
-        if (itest.char_Method('ß')!= ('ß'))
+	char testChar='ß';
+        hintText=this+": testChar=["+testChar+"]==[ß], itest.char_Method(testChar) == (testChar),  itest.char_Method('testChar')=["+itest.char_Method(testChar)+"]";
+
+        if (itest.char_Method(testChar)!= (testChar))
         {
+if (bShowInfos) System.err.println("\t'ß'!='ß': char=["+itest.char_Method('ß')+"]");
             rp.sendMessage("assertTrue", new Object[] {Boolean.FALSE, hintText});
             // throw new Exception ("itest.char_Method('ß')");
         }
         else
         {
+if (bShowInfos) System.err.println("\telse branch: \\('ß'!='ß'): char=["+itest.char_Method('ß')+"]");
+
             rp.sendMessage("assertTrue", new Object[] {Boolean.TRUE, hintText});
         }
 
@@ -129,6 +151,8 @@ public class Test_ITest
             throw new Exception ("itest.Character_Method(new Character(Character.MAX_VALUE))");
         }
 */
+
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"'A'");
         //-------
         hintText="";
         if (itest.Character_Method(new Character('A')).charValue()!= 'A')
@@ -141,6 +165,7 @@ public class Test_ITest
             rp.sendMessage("assertTrue", new Object[] {Boolean.TRUE, hintText});
         }
 
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"'ß', # 2");
         //-------
         hintText="";
         if (itest.Character_Method(new Character('ß')).charValue()!= 'ß')
@@ -154,6 +179,7 @@ public class Test_ITest
         }
 
 
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"short/Short");
             // short/Short
         //-------
         hintText="";
@@ -205,7 +231,7 @@ public class Test_ITest
         }
 
 
-
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"int/Integer");
 
             // int/Integer
         //-------
@@ -258,6 +284,7 @@ public class Test_ITest
         }
 
 
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"long/Long");
             // long/Long
         //-------
         hintText="";
@@ -309,7 +336,7 @@ public class Test_ITest
         }
 
 
-
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"float/Float");
             // float/Float: return same value
         //-------
         hintText="";
@@ -360,6 +387,8 @@ public class Test_ITest
             rp.sendMessage("assertTrue", new Object[] {Boolean.TRUE, hintText});
         }
 
+
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"double/Double");
             // double/Double: return same value
         //-------
         hintText="";
@@ -411,6 +440,7 @@ public class Test_ITest
         }
 
 
+if (bShowInfos) System.err.println(this+".test_ITEST: "+"String");
             // String: returns last three chars
         //-------
         hintText="";

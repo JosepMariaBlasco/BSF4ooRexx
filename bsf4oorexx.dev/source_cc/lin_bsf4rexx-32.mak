@@ -32,6 +32,8 @@ BLD_PATH = .
 # JDK_BASE = /usr/java/j2sdk1.4.2_08
 # JDK_BASE = /home/rony/dev/jdk1.6.0_06
 # JDK_BASE = /usr/lib/jvm/java-6-sun
+# JDK_BASE = /usr/lib/jvm/java-6-openjdk
+# JDK_BASE = /usr/lib/jvm/java-6-sun
 JDK_BASE = /usr/lib/jvm/java-6-openjdk
 
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
@@ -40,6 +42,7 @@ INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/
 
 INC_PATH_ORX = -I/opt/ooRexx/include $(INC_PATH)
 
+# LIB_PATH = -L. -L/usr/local/lib32 -L/usr/lib32 -L/usr/local/lib -L/usr/lib -L/opt/ooRexx/lib
 LIB_PATH = -L. -L/usr/local/lib -L/usr/lib -L/opt/ooRexx/lib
 
 
@@ -61,7 +64,7 @@ link = gcc
 
 #
 # CFLAGS_ori     = -c -ggdb -D__cplusplus
-CFLAGS		= -c -O3 -D__cplusplus -DUNIX -DBSF4REXX_32_BIT
+CFLAGS		= -c -O3 -D__cplusplus -DUNIX -m32 -DBSF4REXX_32_BIT
 # CFLAGS		= -c -D__cplusplus -DUNIX -g -o0 -v -da -Q
 CFLAGS_ORX      = -DUSE_$(ORX)
 

@@ -2,6 +2,7 @@
 Version=1.0
 Type=Application
 TryExec=rexx
+Icon=system-software-update
 Exec=/opt/BSF4ooRexx/install/runRexxScriptJava.sh /opt/BSF4ooRexx/install/setupJava.rex
 Terminal=true
 Path=/opt/BSF4ooRexx/install

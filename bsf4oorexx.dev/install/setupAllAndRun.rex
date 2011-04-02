@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-05,14,18
-   version: 1.01
+   version: 1.02
    name:    setupAllAndRun.rex
    purpose: installer to install or reinstall the BSF4ooRexx package
 
@@ -26,13 +26,15 @@
                              - make sure that script starts out of its own homedirectory (to allow
                                catering for some Windows 7 new "security" behaviour regarding setting
                                the homedirectory of cmd.exe scripts; so now elevating rexx.exe instead)
+            2011-01-26, -rgf, - correct BSF-message popup text to not claim that no errors occurred during install and reinstall
+            2011-02-25, -rgf (on the way to Tokyo) - add support for MacOSX
 
    remark:  ---
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010 Rony G. Flatscher
+       Copyright (C) 2010-2011 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -113,9 +115,16 @@ cmd.eSetupOOo="setupOOo.rex"
 cmd.eGeneratedScripts.BSF=.array~of("installBSF", "uninstallBSF", "fileAssociations_for_")
 cmd.eGeneratedScripts.OOo=.array~of("installOOo", "uninstallOOo", "fileAssociations_for_RXO")
 
-if sysVersion()~left(1)~upper="W" then       -- determine opsys and default target installation directory
+cmd.eOpSysFull=sysVersion()
+cmd.eOpSys=cmd.eOpsysFull~left(1)~upper
+
+parse upper source s +1  -- get operating system name in uppercase
+cmd.eIsMacOSX=(s="M")    -- determine whether running on "MACOSX"
+
+-- if sysVersion()~left(1)~upper="W" then       -- determine opsys and default target installation directory
+if cmd.eOpSys="W" then
 do
-   cmd.eOpSys="W"
+--   cmd.eOpSys="W"
    cmd.eFile.sep="\"
    cmd.eDefaultTargetDir=value("ProgramFiles", ,"ENVIRONMENT")"\"cmd.eInstallDirName
    cmd.eInstallScriptNameBSF  ="installBSF.cmd"
@@ -132,7 +141,7 @@ do
    -- del:     del test2 /s /f /q
    -- rmdir:   rd dirName /s /q     ... dirName<>"." because of lock an error would occur
 end
-else
+else   -- Unix-like system, including MacOSX
 do
    cmd.eOpSys="U"
    cmd.eFile.sep="/"
@@ -180,8 +189,12 @@ end
 cmd.eBInstallBSF=.true    -- start out to install BSF
 cmd.eBInstallOOo=.true    -- start out to install OOo
 
-if cmd.eBDebug=.true then say pp("cmd.eOpSys", cmd.eOpSys)
-if cmd.eBDebug=.true then say pp("cmd.eDefaultTargetDir", cmd.eDefaultTargetDir)
+if cmd.eBDebug=.true then
+do
+   say pp("cmd.eOpSys", cmd.eOpSys)
+   say pp("cmd.eOpSysFull", cmd.eOpSysFull)
+   say pp("cmd.eDefaultTargetDir", cmd.eDefaultTargetDir)
+end
 
 cmd.eThisDir=directory()   -- get current directory from which this script got started
 
@@ -330,9 +343,10 @@ do
    end
 
    title="BSF4ooRexx - Install"
-   msg="Success: Install was carried out with no errors!"
+   msg="Install was carried out (this dialog uses BSF4ooRexx) !"
    lf="0a"x
-   if cmd.eOpSys<>"W" then
+
+   if cmd.eOpSys<>"W", \cmd.eIsMacOSX then   -- neither under Windows, nor Mac
    do
       msg=msg lf -
               lf"Please logoff/logon to make sure that the BSF4ooRexx application menu gets rebuilt." -
@@ -450,9 +464,9 @@ do
    end
 
    title="BSF4ooRexx - Reinstall"
-   msg="Success: Reinstall was carried out with no errors!"
+   msg="Reinstall was carried out (this dialog uses BSF4ooRexx) !"
    lf="0a"x
-   if cmd.eOpSys<>"W" then
+   if cmd.eOpSys<>"W", \cmd.eIsMacOSX then   -- neither under Windows, nor Mac
    do
       msg=msg lf -
               lf"Please logoff/logon to make sure that the BSF4ooRexx application menu gets rebuilt." -
@@ -546,7 +560,8 @@ say cmd.eThisName": (debug) createAndRunInstallationScripts, mode=["mode"], crea
          if newDir="" then newDir="/"
                       else newDir=newDir"/"dirName
 
-say "*** SysFileExists("newDir")=" SysFileExists(newDir)
+         if cmd.eBDebug=.true then say "*** SysFileExists("newDir")=" SysFileExists(newDir)
+
          if SysFileExists(newDir)=.false then  -- dreate directory, if necessary
          do
             cmd = cmd.eMkDir755 newDir

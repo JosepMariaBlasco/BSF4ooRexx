@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
 
-  <mime-type type="text/x-rexx">
+  <mime-type type="application/x-rexx">
     <sub-class-of type="text/plain"/>
     <comment>RexxScript executed by ooRexx</comment>
     <glob  weight="60" pattern="*.cls"/>
@@ -16,7 +16,7 @@
   </mime-type>
 
 <!--
-   - defined for the BSF4ooRexx package, date: 2010-07-30/2010-08-09/20/22, author: Rony G. Flatscher
+   - defined for the BSF4ooRexx package, date: 2010-07-30/2011-03-26, author: Rony G. Flatscher
    - copy/link to "/usr/share/mime/packages", then run  "update-mime-database /usr/share/mime"
 -->
 

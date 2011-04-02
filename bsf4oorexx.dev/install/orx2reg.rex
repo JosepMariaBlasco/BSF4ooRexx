@@ -4,7 +4,7 @@
 
    date:       2008-05-12, rgf
 
-   version:    1.0.1 (20080512)
+   version:    1.0.3
 
    authors:    Rony G. Flatscher
 
@@ -33,11 +33,14 @@
    changed: 2010-08-10, ---rgf: adding/removing "rexxpaws.exe" as SendTo-program
             2010-08-18/19, ---rgf: adding/removing Start-menu entries for menu node "BSF4ooRexx" to
                                 ease reinstalling and uninstalling
+            2011-01-26, ---rgf: cater for escaped "%" as "[25x]" on Windows
+            2011-03-20, ---rgf: - added possibility to define an icon to a shortcut
+                                - added menu-entry "ooRexxTry.rxj"
 
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2008-2010 Rony G. Flatscher
+   Copyright 2008-2011 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -55,7 +58,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2008-2010 Rony G. Flatscher
+   Copyright 2008-2011 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -86,6 +89,7 @@ end
 
 parse caseless arg "/" +1 switch +1 '/key:"' key '"' 'path:"' path '"'
 switch=switch~translate    -- put into uppercase
+path=path~changestr("[25x]", "%")     -- unescape
 
 
 if pos(switch, "ARQ")=0 then
@@ -453,8 +457,19 @@ syntax: return .nil
      InformationFolder=qualify(location"..\samples") -- Folder that has additional infos, including ReleaseNotes.txt
      call createMenu menuFolder, "Samples (simple to comprehensive BSF4ooRexx examples).lnk", InformationFolder, "Opens the BSF4ooRexx ""samples"" folder."
 
-     InformationFolder=qualify(location"..\utilities") -- Folder that has additional infos, including ReleaseNotes.txt
-     call createMenu menuFolder, "Utilities (some platform-independent utility scripts).lnk", InformationFolder, "Opens the BSF4ooRexx ""utilities"" folder."
+     UtilitiesFolder=qualify(location"..\utilities") -- Folder that has additional infos, including ReleaseNotes.txt
+     call createMenu menuFolder, "Utilities (some platform-independent utility scripts).lnk", UtilitiesFolder, "Opens the BSF4ooRexx ""utilities"" folder."
+
+      /* create menu entry for "ooRexxTry.rxj" */
+     linkName   ="GUI RexxTry Program (ooRexxTry.rxj).lnk"
+     targetPath =qualify(UtilitiesFolder"\ooRexxTry.rxj")
+     description="Platform independent GUI (using Java awt and swing) that allows to interactively enter and execute Rexx code."
+     workingDirectory=UtilitiesFolder
+     -- no qualify(), leave leading backslash (yielding two consecutive backslashes): only then will WindowsXP use the icon!
+     iconLocation=location"\images\windows\oorexxtry.ico, 0"
+     -- iconLocation=qualify(location"\images\windows\oorexxtry.ico")
+
+     call createMenu menuFolder, linkName, targetPath, description, workingDirectory, .nil, iconLocation
   end
   else   -- remove BSF4ooRexx menu entry
   do
@@ -465,14 +480,15 @@ syntax: return .nil
 
 
 createMenu: procedure expose wsh
-  use arg menuFolder, linkName, targetPath, description=.nil, workingDirectory=.nil, args=""
+  use arg menuFolder, linkName, targetPath, description=.nil, workingDirectory=.nil, args=.nil, iconLocation=.nil
 
 -- say "linkName=["linkName"], targetPath=["targetPath"]"
   shortCut=wsh~CreateShortcut(menuFolder"\"linkName)
   shortCut~targetPath=targetPath
   if description<>.nil      then shortCut~description=description
   if workingDirectory<>.nil then shortCut~workingDirectory=workingDirectory
-  if args<>"" then shortCut~arguments=args
+  if args<>.nil & args<>""  then shortCut~arguments=args
+  if iconLocation<>.nil     then shortCut~iconLocation=iconLocation
   shortCut~save
   return
 

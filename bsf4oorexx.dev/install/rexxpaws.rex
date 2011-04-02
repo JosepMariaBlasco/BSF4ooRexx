@@ -37,7 +37,7 @@ args  =strip(args, "L")    -- strip leading spaces+tabs
 parse source . invocationType thisFullPath
 thisName=filespec("Name",thisFullPath)    -- extract filename only
 
-say "invocationType=["invocationType"]" "arg(1)=["arg(1)"]" "script=["script"]" "args=["args"]"
+-- say "invocationType=["invocationType"]" "arg(1)=["arg(1)"]" "script=["script"]" "args=["args"]"
 signal on any
 
 condObj=.nil

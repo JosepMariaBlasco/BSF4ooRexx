@@ -1,6 +1,7 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
+Icon=system-software-install
 Exec=/opt/BSF4ooRexx/install/linux/uninstall.sh
 Terminal=true
 Path=/opt/BSF4ooRexx/install/linux

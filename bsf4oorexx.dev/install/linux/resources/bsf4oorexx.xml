@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
 
-  <mime-type type="text/x-rexx-java">
+  <mime-type type="application/x-rexx-java">
     <sub-class-of type="text/plain"/>
     <comment>RexxJavaScript (Rexx script using Java) executed by ooRexx</comment>
     <glob pattern="*.jrexx"/>

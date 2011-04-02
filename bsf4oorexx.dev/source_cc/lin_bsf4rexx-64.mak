@@ -30,7 +30,9 @@ BLD_PATH = .
 # JDK_BASE = /usr/java/j2sdk1.4.2_08
 # JDK_BASE = /home/rony/dev/jdk1.6.0_06
 # JDK_BASE = /usr/lib/jvm/java-6-sun
-JDK_BASE = /usr/lib/jvm/java-6-openjdk
+# JDK_BASE = /usr/lib/jvm/java-6-openjdk
+# JDK_BASE = /usr/lib/jvm/java-6-sun-1.6.0.24
+JDK_BASE = /usr/lib/jvm/java-6-sun
 
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 

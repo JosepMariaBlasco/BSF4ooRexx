@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for Linux                  4 Dec 2010
+BSF4ooRexx - Installation Directions for Linux                  26 Mar 2011
 ==============================================
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
@@ -67,4 +67,15 @@ Rony G. Flatscher, Vienna, Austria, Europe
 P.S.: Support is given either via the newsgroup <news:comp.lang.rexx> or the
       private e-mail list of the non-profit Rexx Language Association
       <http://www.rexxla.org> where you meet a good many helping experts!
+
+P.P.S.: Additional infos for Linux w.r.t. OpenOffice.org/LibreOffice
+
+        - LibreOffice is currently not supported
+
+        - OpenOffice.org could have been tampered with by the Linux distribution and
+          as a result not function correctly; if that is the case (you cannot
+          successfully run OpenOffice.org Rexx scripts) then you need to deinstall
+          your distribution's OpenOffice.org and instead install the genuine
+          OpenOffice.org from <http://www.OpenOffice.org>; then choose
+          "BSF4ooRexx -> Installation -> reinstall"
 

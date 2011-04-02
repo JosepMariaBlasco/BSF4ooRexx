@@ -35,7 +35,11 @@
 
                - 2010-06-01, rgf, changed version number
 
-   version:    1.03
+               - 2011-02-19, rgf, - using Toolkit's getMenuShortcutKeyMask to define menu short-cut key
+               - 2011-02-21, rgf, - make sure to act upon the Apple application quit event
+                                  - adding icon image to JFrames
+
+   version:    1.04
 
    license:    AL 2.0 (Apache License 2.0, cf. <http://www.apache.org/licenses/LICENSE-2.0>)
 
@@ -59,7 +63,7 @@
 */
 
 /*****************************************************************************/
-.local~version.frontend_UNO_API_info="103.20100601"   -- save version information in .local
+.local~version.frontend_UNO_API_info="104.20110221"   -- save version information in .local
 
 parse version parse version 'exx_' v '.'
 if v<4 then
@@ -89,8 +93,19 @@ call bsf.import "java.awt.event.WindowListener", "WindowListener"
 
 
 rexxCloseEH=.RexxCloseAppEventHandler~new -- create Rexx event handler
+
+if .bsf4rexx~opsys="MACOSX" then
+do
+         -- create a RexxProxy for our Rexx event handler
+   rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , .ActionListener, .WindowListener, "com.apple.eawt.ApplicationListener")
+   .bsf4rexx~apple_application~addApplicationListener(rpCloseEH) -- CMD-Quit-callback (Apple)
+end
+else  -- not running under Apple
+do
       -- create a RexxProxy for our Rexx event handler
-rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , .ActionListener, .WindowListener)
+   rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , .ActionListener, .WindowListener)
+end
+
 
 /* we need a swing-Label quite often, hence import it */
 call bsf.import "javax.swing.JLabel", "swingLabel"    /* the ooRexx proxy class is named "swingLabel" */
@@ -99,12 +114,21 @@ call bsf.import "java.awt.Cursor",    "awtCursor"
 /* create the frame for the program */
 info="(".version.frontend_UNO_API_info", using UNO.CLS v".uno~version")"
 frame = .bsf~new("javax.swing.JFrame", "UNO API Viewer by Nicole Scholz" info)
+
+if .bsf4rexx~hasEntry("oorexx4ooo_048") then	-- rgf, 2011-02-21
+do
+-- say "... ooRexxTry.rxj: about to do a 'frame~setIconImage(...)'"
+   frame~setIconImage(.bsf~new("javax.swing.ImageIcon", .bsf4rexx~oorexx4ooo_048)~getImage)
+end
+
+
 frame~addWindowListener(rpCloseEH)
 
 /* allow access to the fields and static functions for mnemonics and accelerators */
 ActionEvent=bsf.loadClass("java.awt.event.ActionEvent")  -- just load and get the class object
 KeyEvent   =bsf.loadClass("java.awt.event.KeyEvent")     -- just load and get the class object
 KeyStroke  =bsf.loadClass("javax.swing.KeyStroke")       -- just load and get the class object
+menuShortcutKey=bsf.loadClass("java.awt.Toolkit")~getDefaultToolkit~getMenuShortcutKeyMask   -- rgf, 2011-02-19
 
 /* create a menuBar, add two menus to it, then add it to the frame */
 fileMenu= .bsf~new("javax.swing.JMenu", "File")
@@ -113,7 +137,9 @@ fileMenu~setMnemonic(KeyEvent~VK_F)
    /* menu item "Exit" */
    fileMenuItem= .bsf~new("javax.swing.JMenuItem", "Exit", KeyEvent~VK_X)
    fileMenuItem~addActionListener(rpCloseEH)
-   fileMenuItem~setAccelerator(KeyStroke~getKeyStroke(KeyEvent~VK_E, ActionEvent~CTRL_MASK))
+--   fileMenuItem~setAccelerator(KeyStroke~getKeyStroke(KeyEvent~VK_E, ActionEvent~CTRL_MASK))
+   fileMenuItem~setAccelerator(KeyStroke~getKeyStroke(KeyEvent~VK_E, menuShortcutKey))
+
    fileMenu~add(fileMenuItem)
 
 /* menu information, add it directly to the menuBar */
@@ -124,7 +150,9 @@ aboutMenu~setMnemonic(KeyEvent~VK_A)
    infoMenuItem= .bsf~new("javax.swing.JMenuItem", "Information")
    infoMenuItem~setMnemonic(KeyEvent~VK_I)
    infoMenuItem~addActionListener(BsfCreateRexxProxy(.ShowInfoHandler~new, userData, .ActionListener))
-   infoMenuItem~setAccelerator(KeyStroke~getKeyStroke(KeyEvent~VK_I, ActionEvent~CTRL_MASK))
+--   infoMenuItem~setAccelerator(KeyStroke~getKeyStroke(KeyEvent~VK_I, ActionEvent~CTRL_MASK))
+   infoMenuItem~setAccelerator(KeyStroke~getKeyStroke(KeyEvent~VK_I, menuShortcutKey))
+
    aboutMenu~add(infoMenuItem)
 
 menuBar= .bsf~new("javax.swing.JMenuBar")
@@ -468,6 +496,13 @@ processUNO_IDL_ori: procedure expose frame tf_UNO_IDL_Name cf_Layer -
 
   .local~frontend.infoFrame = .bsf~new("javax.swing.JFrame", "About this Program")
 
+   if .bsf4rexx~hasEntry("oorexx4ooo_048") then	-- rgf, 2011-02-21
+   do
+-- say "... ooRexxTry.rxj: about to do a 'frame~setIconImage(...)'"
+      .frontend.infoFrame~setIconImage(.bsf~new("javax.swing.ImageIcon", .bsf4rexx~oorexx4ooo_048)~getImage)
+   end
+
+
   type="text/html"      -- MIME type of text
   txt="<h3>Program Information (version" .frontend.version")</h3>                                  "  -
       "                                                                                    "  -
@@ -493,7 +528,7 @@ processUNO_IDL_ori: procedure expose frame tf_UNO_IDL_Name cf_Layer -
       "Just experiment a little bit in order to find the settings of your liking.          "  -
       "                                                                                    "  -
       '<p>Apache Software License (ASL) 2.0, cf. http://www.apache.org/licenses/           '  -
-      "<p>&copy; 2009-2010 Nicole Scholz, Rony G. Flatscher, Vienna, Austria               "
+      "<p>&copy; 2009-2011 Nicole Scholz, Rony G. Flatscher, Vienna, Austria               "
 
   jEdit=.bsf~new("javax.swing.JEditorPane", "text/html", txt)
   jEdit~setEditable(.false)
@@ -647,6 +682,24 @@ selectText="(UNO_SERVICE)   com.sun.star.embed.Storage (mandatory service, mand.
 ::method waitForExit          -- method blocks until attribute is set to .true
   expose closeApp
   guard on when closeApp=.true
+
+::method handleQuit           -- rgf, 2011-02-21: handle Apple's ApplicationListener event
+  expose closeApp
+  use arg applicationEvent
+  closeApp=.true              -- indicate that the app should close
+
+  applicationEvent~setHandled(.true)  -- indicate to MacOSX that quitting is o.k.
+
+
+::method handleOpenApplication    -- rgf, 2011-02-21: if using an ApplicationListener we need at least removePreferencesMenuItem (maybe a bug in Apple's Application)
+  expose closeApp
+  use arg applicationEvent
+  -- .stdout~say( "... handleOpenApplication ..." )
+
+  app=.bsf4rexx~apple_application     -- retrieve this Apple application object
+  app~removeAboutMenuItem             -- just remove again (done originally in BSF.CLS)
+  app~removePreferencesMenuItem       -- just remove again (done originally in BSF.CLS)
+  applicationEvent~setHandled(.true)  -- indicate to MacOSX that quitting is o.k.
 
 
 /* ------------------------------------------------------------------------ */

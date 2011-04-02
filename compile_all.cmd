@@ -63,8 +63,8 @@ javac %cp% -source %source% -target %target% org/apache/bsf/engines/xslt/*.java
 
 javac %cp% -source %source% -target %target% org/rexxla/bsf/engines/rexx/*.java
 
-rem javac %cp% -source %source% -target %target% bin/*.java
-javac %cp% -source %source% -target %target% bin/JavaInfo4BSF4RexxInstallation.java
+rem javac %cp% -source %source% -target %target% bsf4oorexx.dev/bin/*.java
+javac %cp% -source %source% -target %target% bsf4oorexx.dev/bin/JavaInfo4BSF4RexxInstallation.java
 
 javac %cp% -source %source% -target %target% com/sun/star/script/framework/provider/oorexx/*.java
 

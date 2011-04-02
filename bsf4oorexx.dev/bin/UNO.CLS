@@ -6,6 +6,7 @@
    last change: $Revision: 803 $ $Author: Administrator $ $Date: 2010-07-24 19:09:19 +0200 (Sat, 24 Jul 2010) $
 
    changed:
+            2011-02-21, ---rgf, - Apple MacOSX-support added for displaying correct default icon in dock
             2010-07-24, ---rgf, - made the routine uno.determineScriptLocation() script language independent
 
             2010-07-20, ---rgf, - uno.createDesktop() now returns the XDesktop interface to the service
@@ -273,7 +274,7 @@
             2006-01-03, ---rgf, corrected inline documentation
 
 
-   version: 1.3.5
+   version: 1.3.6
    name:    UNO.CLS
    purpose: allow interfacing with UNO components (via Java), tested with OpenOffice.org, v1.1.x and up
    needs:   BSF4Rexx, BSF.CLS, UNO_XINTERFACES.RXO
@@ -281,7 +282,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2005-2010 Rony G. Flatscher
+       Copyright (C) 2005-2011 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -299,6 +300,16 @@
 
 call initialize.uno.dir          -- make sure .UNO's uno.dir object is initialized
 
+if .bsf4rexx~opsys="MACOSX" then  -- on MacOSX display the standard ooRexx4OOo logo
+do
+           -- by default display the bsf4oorexx icon
+    if .bsf4rexx~hasEntry("oorexx4ooo_256") then
+    do
+      .bsf4rexx~apple_application~setDockIconImage(.bsf~new("javax.swing.ImageIcon",.bsf4rexx~oorexx4ooo_256)~getImage)
+-- say "... UNO.CLS found icon !!"
+    end
+end
+
    -- do not show BSFException messages as UNO.CLS will show them as popups, if necessary
 call bsfShowErrorMessage .false
 
@@ -307,7 +318,7 @@ call bsfShowErrorMessage .false
 .uno~nil=.uno~any~void        -- if using in comparisons, then use "uno.areSame(unoObject, .uno~nil))"
 .uno~nil_name=.uno~any~objectname   -- index name of entry in BSFRegistry on the Java side
 
-.uno~version="135.20100724"      -- set version number
+.uno~version="136.20110221"      -- set version number
 
    -- XPropertySet-behaviour with getPropertyValue and setPropertyValue
 .uno~xPropertySetAutoCase=.true  -- if prop name not found pick a matching case, if possible

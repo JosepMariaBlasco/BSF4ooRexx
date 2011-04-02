@@ -1,3 +1,35 @@
+-------------------------------------- 2011-02-21 ----------------------------------
+- utilities/OOo/UNO_API_info/frontend_UNO_API_info.rxo
+
+        - make sure to act upon the Apple application quit event
+        - adding icon image to JFrames
+
+- bin/UNO.CLS
+
+        - Apple MacOSX-support added for displaying correct default icon in dock
+
+-------------------------------------- 2011-02-19 ----------------------------------
+- utilities/OOo/UNO_API_info/frontend_UNO_API_info.rxo
+
+        - using Toolkit's getMenuShortcutKeyMask to define menu short-cut key
+
+-------------------------------------- 2011-02-17 ----------------------------------
+- ScriptProviderForooRexx.oxt
+
+        - GUI will now be created via SwingUtilities.invokeLater(),
+          cf. <http://www.openoffice.org/issues/show_bug.cgi?id=92926> to
+          cater for MacOSX behaviour
+
+-------------------------------------- 2011-01-24 ----------------------------------
+- setupOOo.rex
+
+        - escape "%" with "[25x]" in path on Windows
+
+-------------------------------------- 2010-12-08 ----------------------------------
+- installation:
+
+        - changed mimetype from "application/x-rexx-java-ooo" to "text/x-rexx-java-ooo"
+
 -------------------------------------- 2010-08-14 ----------------------------------
 - Installation
 

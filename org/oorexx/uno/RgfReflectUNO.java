@@ -74,7 +74,7 @@ import java.util.Vector;
  * <p>
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2006-2007 Rony G. Flatscher
+ *    Copyright (C) 2006-2011 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -90,7 +90,7 @@ import java.util.Vector;
  * ----------------------------------------------------------------------------- </pre>
  *
  * @author Rony G. Flatscher
- * @version 1.0.1, 2007-07-07
+ * @version 1.0.3, 2011-02-15
  */
 
 
@@ -104,6 +104,13 @@ import java.util.Vector;
     2008-01-01, ---rgf, added option "" to add datatype to individual constant values,
                         as the datatype may differ among the constants of the same
                         constant group (cf. <com.sun.star.packages.zip.ZipConstants>) !
+
+    2011-02-15, ---rgf, just added "this" to error message, such that the source of this
+                        message can be immediately known;
+                        made static field bDebug public, such that temporarily debug messgaes
+                        can be turned on
+    2011-02-22, ---rgf, needed to change "this" to "RgfReflectUNO.class", because
+                        there is no "this" in static methods
 */
 
 public class RgfReflectUNO // TestRgf
@@ -111,7 +118,7 @@ public class RgfReflectUNO // TestRgf
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "102.20080101";
+    static public String version = "103.20110215";
 
 /*
     / ** If set to <code>true</code> (default value) then for each individual constant
@@ -128,7 +135,7 @@ public class RgfReflectUNO // TestRgf
     /** Controls issuing some debug messages, if set to <code>true</code>. Default value:
      *  <code>false</code>.
      */
-    static boolean bDebug = false;   // publically accessible field
+    static public boolean bDebug = false;   // publically accessible field
 
     static private int maxModifierValue = 0;    // maximum modifier value
 
@@ -392,7 +399,7 @@ public class RgfReflectUNO // TestRgf
         }
         catch (Exception e)
         {
-            say("sch... UNEXPECTED error, cannot bootstrap and/or retrieve singletons!");
+            say(RgfReflectUNO.class+": sch... UNEXPECTED error, cannot bootstrap and/or retrieve singletons!");
             e.printStackTrace();
         }
 
@@ -1693,7 +1700,7 @@ private static void processConstantValue(String name, Object constVal, StringBuf
                 {
                     if (bDebug==true)
                     {
-                        say("encodeService(): no XTypeDescriptor found for: "+pp(services[i])+"!");
+                        say(RgfReflectUNO.class+": encodeService(): no XTypeDescriptor found for: "+pp(services[i])+"!");
                     }
                 }
             }
@@ -1880,7 +1887,7 @@ private static void processConstantValue(String name, Object constVal, StringBuf
             }
         }
 
-if (bDebug) say("MEEEEH! queryInterfaceObjectByName() - interface "+pp(name)+" not found in XTypeProvider! bExtendSearch="+bExtendSearch);
+if (bDebug) say(RgfReflectUNO.class+": MEEEEH! queryInterfaceObjectByName() - interface "+pp(name)+" not found in XTypeProvider! bExtendSearch="+bExtendSearch);
             //
         if (bExtendSearch==true)        // use reflection
         {
@@ -2625,7 +2632,7 @@ if (bDebug) say("MEEEEH! queryInterfaceObjectByName() - interface "+pp(name)+" n
             }
         }
 
-if (bDebug==true) say("MEEEEH! queryInterfaceName() - interface "+pp(name)+" not found in XTypeProvider! bExtendSearch="+bExtendSearch);
+if (bDebug==true) say(RgfReflectUNO.class+": MEEEEH! queryInterfaceName() - interface "+pp(name)+" not found in XTypeProvider! bExtendSearch="+bExtendSearch);
             //
         if (bExtendSearch==true)        // use reflection
         {

@@ -2,6 +2,7 @@
 @rem 2009-10-20, overhauled for BSF4ooRexx
 @rem 2010-07-24, added 'information' folder to regular installation with an intro to ooRexx, plus docs for rgf_util2.rex
 @rem 2010-12-30/31, updated to new locations
+@rem 2011-03-20, add MacOSX support
 
 @rem @echo createDistribution.cmd (for BSF4ooRexx)
 @echo %0 (for BSF4ooRexx)
@@ -23,8 +24,8 @@ set CLASSPATH=%CLASSPATH%;D:\Programme\OpenOffice.org 3\program\;D:\Programme\Op
 
 
 
-set runDate=20101208
-set doc_date=2010-12-08
+set runDate=20110328
+set doc_date=2011-03-28
 
 @rem values to use for creating the BSF jarfile
 set bsfDate=20090910
@@ -159,6 +160,7 @@ md bsf4oorexx
 md bsf4oorexx\install
 md bsf4oorexx\install\linux
 md bsf4oorexx\install\linux\resources
+md bsf4oorexx\install\linux\resources\xdg-utils
 md bsf4oorexx\install\linux\resources\menu
 md bsf4oorexx\install\windows
 
@@ -209,6 +211,7 @@ copy %path2dev%\install\*                          bsf4oorexx\install\
 copy %path2dev%\install\linux\*                    bsf4oorexx\install\linux\
 copy %path2dev%\install\linux\resources\*          bsf4oorexx\install\linux\resources\
 copy %path2dev%\install\linux\resources\menu\*     bsf4oorexx\install\linux\resources\menu\
+xcopy /s %path2dev%\install\linux\resources\xdg-utils\* bsf4oorexx\install\linux\resources\xdg-utils\
 copy %path2dev%\install\windows\*                  bsf4oorexx\install\windows\
 
 del bsf4oorexx\install\*.html
@@ -238,10 +241,16 @@ copy /y %path2dev%\source_cc\associationChanged.exe     bsf4oorexx\install\
 md  bsf4oorexx\install\32
 copy /y %path2dev%\source_cc\32\*.dll              bsf4oorexx\install\32\
 copy /y %path2dev%\source_cc\32\lib*.so            bsf4oorexx\install\32\
+copy /y %path2dev%\source_cc\32\lib*.dylib         bsf4oorexx\install\32\
 
 md  bsf4oorexx\install\64
 copy /y %path2dev%\source_cc\64\*.dll              bsf4oorexx\install\64\
 copy /y %path2dev%\source_cc\64\lib*.so            bsf4oorexx\install\64\
+copy /y %path2dev%\source_cc\64\lib*.dylib         bsf4oorexx\install\64\
+
+md  bsf4oorexx\install\macosx
+rem 20110320, rgf - universal install script, hence use the Linux versions
+copy %path2dev%\install\linux\*                    bsf4oorexx\install\macosx\
 
 copy "%path2dev%\ReferenceCards\BSF4ooRexx\*.pdf"  bsf4oorexx\
 copy "%path2dev%\ReferenceCards\OOo\*.pdf"         bsf4oorexx\

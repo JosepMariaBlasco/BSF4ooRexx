@@ -21,7 +21,7 @@ import org.apache.bsf.util.type.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2010 Rony G. Flatscher
+ *    Copyright (C) 2001-2011 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -36,13 +36,28 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.0.4, 2010-05-22
+  * @version 4.0.6, 2011-02-23
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
      needs: Java level 1.4 due to using Exception's getCause();
             ooRexx 4.0
+     2011-03-15, ---rgf, - add new persons to credit/kudos
+
+     2011-02-23, ---rgf, - as this class is not public, its public members cannot be accessed
+                           by non-package code; therefore added that a new subfunction
+                           "carryOutSystemExit": if no argument ("0"|.false or "1"|.true) is given,
+                           then the current setting will be returned, otherwise the boolean field
+                           will be set to the argument, which gets returned as well
+
+     2011-02-09, ---rgf, - added static public boolean field 'bCarryOutSystemExit': if set to false,
+                           then the subfunction EXIT does not carry out a delayed System.exit (ignores it);
+                           this allows BSF4ooRexx programs like 'ooRexxTry.rxj' to execute BSF4ooRexx
+                           programs that employ bsf.exit, which - if carried out - would exit Java and
+                           by that means will shut down 'ooRexxTry.rxj'
+
+     2011-01-24, ---rgf, - add new persons to credit
 
      2010-05-22, ---rgf, - removed special handling of Character.class or char.class arguments because
                            of changes in BSF4ooRexx.cc
@@ -220,9 +235,17 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "404.20100522";
+    static final public String version = "406.20110315";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
+
+    /** If set to <code>.false</code>, then subfunction &quot;EXIT&quot; is not carried out.
+        This may be necessary in rare cases, e.g. if BSF4ooRexx programs using <code>bsf.exit</code>
+        are run via a BSF4ooRexx application like &quot;ooRexxTry.rxj&quot;, which would be
+        shut down together with Java, no questions asked, which may surprise the user.
+     * @since 2011-02-09
+    */
+    static public boolean carryOutSystemExit = true;
 
     /** Defines the version string. */
     static final private String RAJ_VERSION = version + " " + pkgName + " (org.apache.bsf)";
@@ -292,7 +315,6 @@ class RexxAndJava {
         return rexxEngine;
     }
 
-    /** Stores the eventTextVector. */
 
     /** Stores the number of references from Object Rexx to Java objects using
       * <code>beanName</code> as the key. This way it becomes possible for the
@@ -746,6 +768,8 @@ private static final int           KUDOS                     =  39 ;   // 2009-1
 
 private static final int           IS_INSTANCE               =  40 ;   // 2010-02-20, ---rgf
 
+private static final int           CARRY_OUT_SYSTEM_EXIT     =  41 ;   // 2011-02-23, ---rgf
+
 
         // define the constant strings for the function names passed from Rexx
 private static final String STRING_ADD_EVENT_LISTENER             = "addEventListener"                     ;
@@ -797,6 +821,7 @@ private static final String STRING_KUDOS                          = "kudos"     
 // private static final String STRING_IS_INSTANCE                    = "isInstance"                           ; // rgf, 2010-02-20
 private static final String STRING_IS_A                           = "isA"                                  ; // rgf, 2010-02-20
 
+private static final String STRING_CARRY_OUT_SYSTEM_EXIT          =  "carryOutSystemExit";   // 2011-02-23, ---rgf
 
 
     /** Entry point for Rexx calls into Java. This method carries out
@@ -970,8 +995,6 @@ private static final String STRING_IS_A                           = "isA"       
 
 
 
-
-
         <!-- -------------------------------------------------------- -->
         <tr class="TableHeadingColor"><!-- table row -->
         <td> <code> &quot;arrayPut&quot; </code>
@@ -1061,6 +1084,22 @@ private static final String STRING_IS_A                           = "isA"       
      *
      *
 
+        <!-- -------------------------------------------------------- -->
+        <tr class="TableHeadingColor"><!-- table row -->
+        <td> <code> &quot;carryOutSystemExit&quot; </code>
+        <td colspan="2">Allows to globally set RexxAndJava to not carry out
+     *                  the subfunction <code>&quot;exit&quot;</code>. This
+     *                  allows e.g. <code>&quot;ooRexxTry.rxj&quot;</code> to
+     *                  run BSF4ooRexx programs that excercise that subfunction.
+
+        <tr class="TableRowColor"><!-- table row -->
+        <td>
+        <td align="right"> <code>newSetting</code>
+        <td> Optional. If omitted the current setting will be returned (&quot;1&quot;
+                       or quot;0&quot;).
+                       If given, then it must be a boolean value, i.e.  &quot;1&quot; (true)
+                       or quot;0&quot; (false).
+     *
 
 
         <!-- -------------------------------------------------------- -->
@@ -2074,6 +2113,9 @@ System.err.println();
 //       else if (args[0].equalsIgnoreCase( STRING_IS_INSTANCE                    )) choice = IS_INSTANCE               ;  // 20100220, rgf
 
 
+       else if (args[0].equalsIgnoreCase( STRING_CARRY_OUT_SYSTEM_EXIT          )) choice = CARRY_OUT_SYSTEM_EXIT     ;  // 20110223, rgf
+
+
         // ==================================================================
         // ==================================================================
 
@@ -2609,8 +2651,14 @@ for (int i=0; i<args.length; i++)
                                                           // get milliseconds to sleep
                          if (args.length > 2) msecs2sleep = Long.parseLong(args[2]);
                       }
-                          // create and start the delayed exit thread
-                      new Thread( new ExitDelayed(rc, msecs2sleep) ) .start();
+
+                      // rgf, 2011-02-09: controls whether System.exit is carried out or not
+                      if (carryOutSystemExit==true)
+                      {
+                              // create and start the delayed exit thread
+                          new Thread( new ExitDelayed(rc, msecs2sleep) ) .start();
+
+                      }
                       // return "SHUTDOWN, REXX !";  // indicate to Rexx what to do ... ;)
                       return makeString4Rexx("SHUTDOWN, REXX !");
                   }
@@ -4603,6 +4651,42 @@ if (e instanceof InvocationTargetException)
 
                    }
         // ==================================================================
+          case CARRY_OUT_SYSTEM_EXIT:
+              {
+              /* ********************************************************
+               * object = BSF( 'carryOutSystemExit'[, 0|1] )
+               *
+               * "0" or "1" - if false, then the "exit" subfunction is not carried out
+               *
+               * - returns: - the actual value of this setting
+               *********************************************************/
+
+                  if (args.length>2)
+                  {
+                      throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                               "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" invalid # of args;\nusage: value = BSF( " +
+                              "'"+args[0]+"' [, 0 | 1 ] )");
+                  }
+
+                  if (args.length==2)   // no argument given, return current setting
+                  {
+                      try  // convert to short, if not "0", then true, false else
+                      {
+                          carryOutSystemExit=((Short.decode(args[1].trim()).shortValue())!=0);
+                      }
+                      catch (Exception e)
+                      {
+                          throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                   "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" invalid argument ["+args[1]+"];\nusage: value = BSF( " +
+                                   "'"+args[0]+"' [, 0 | 1] ), exception thrown: ["+e.toString()+"]");
+                      }
+                  }
+
+                  return makeString4Rexx( new Boolean(carryOutSystemExit) );
+
+              }
+   // ==================================================================
+
 
           case SLEEP :  // meant for Regina and other Rexxes which don't have a SysSleep() by default
                   {
@@ -4735,6 +4819,7 @@ if (e instanceof InvocationTargetException)
                            "Gro\u00dfe-Coosmann, Florian"           + "\n" +
                            "Hahnekamp, Rainer"                      + "\n" +
                            "Heinisch, Florian"                      + "\n" +
+                           "Hesse, J\u00fcrgen"                     + "\n" +      // 2011-01-24, rgf
                            "Hessling, Mark"                         + "\n" +
                            "Hinz, Michael"                          + "\n" +
                            "Hoisl, Bernhard"                        + "\n" +
@@ -4749,7 +4834,9 @@ if (e instanceof InvocationTargetException)
                            "McGuire, Rick"                          + "\n" +
                            "Miesfeld, Mark"                         + "\n" +
                            "M\u00fcller, Franz"                     + "\n" +
+                           "Moldaschl, Markus"                      + "\n" +
                            "Nash, Simon"                            + "\n" +
+                           "Paar, Manuel"                           + "\n" +      // 2011-01-24, rgf
                            "Pachl, Walter"                          + "\n" +
                            "Peedin, Lee"                            + "\n" +
                            "Pezerovic, Edin"                        + "\n" +
@@ -4765,6 +4852,7 @@ if (e instanceof InvocationTargetException)
                            "Sonnemans, Freddy"                      + "\n" +
                            "Spanberger, David"                      + "\n" +
                            "Specht, Tobias"                         + "\n" +
+                           "St\u00f6hr, Dennis R."                  + "\n" + // 2011-01-24, rgf
                            "Taylor, Pam"                            + "\n" +
                            "Waglechner, Christoph"                  + "\n" +
                            "Wilson, Gray"                           + "\n" +

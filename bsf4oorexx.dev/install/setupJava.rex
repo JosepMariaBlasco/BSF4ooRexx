@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-23
-   version: 1.0
+   version: 1.01
    name:    fixupJava.rex
    purpose: BSF4ooRexx must be able to dynamically load 'libjvm.so';
             Linux systems may have plenty of alternative Javas installed and
@@ -18,7 +18,10 @@
 
    needs:   ---
 
-   changed: ---
+   changed:
+            2011-01-03, ---rgf, - fixed bug in parsing the output of a "ls -al", thanks to Uli Zinngrebe for reporting on 2010-12-27!
+            2011-03-27, ---rgf, - link libjvm.so only symbollically to /opt/BSF4ooRexx in
+                                  order for Java to find its home
 
    remark:  supercedes the previously available version (total rewrite)
 
@@ -173,7 +176,7 @@ end
 */
 
 -- cmd="sudo ln -fv" path2lib "/usr/lib"
-cmd="sudo ln -fv" path2lib "/opt/BSF4ooRexx/libjvm.so"
+cmd="sudo ln -fsv" path2lib "/opt/BSF4ooRexx/libjvm.so"
 say thisName": linking ["cmd"]..."
 cmd
 
@@ -275,7 +278,8 @@ syntax:
   lib64=.false
   lib64isLink=.false
   do val over libs
-     parse value val with flags . . . . . . lib . target
+     -- parse value val with flags . . . . . . lib . target
+     parse value val with _mode _inode _owner _group _size _month _day _time lib . target
 
 -- say "unixDetermineLibs:" flags"|"lib"|"target "..."
 

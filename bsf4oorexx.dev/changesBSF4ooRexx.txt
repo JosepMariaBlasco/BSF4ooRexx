@@ -1,3 +1,145 @@
+-------------------------------------- 2011-02-23 ----------------------------------
+- RexxAndJava.java
+
+        - as this class is not public, its public members cannot be accessed
+          by non-package code; therefore added that a new subfunction
+          "carryOutSystemExit": if no argument ("0"|.false or "1"|.true) is given,
+          then the current setting will be returned, otherwise the boolean field
+          will be set to the argument, which gets returned as well
+
+- utilities/ooRexxTry.rxj
+
+        - renamed class "CreateSocket" to "CreateServerSocket"
+        - added logic to allow new ooRexxTry.rxj instances to be
+          created, even if the port is already taken (ask user
+          for another new portnumber)
+        - use new BSF-subfunction "carryOutSystemExit"
+        - use SysTempFileName() to create unique temporary filenames
+
+-------------------------------------- 2011-02-21 ----------------------------------
+- utilities/ooRexxTry.rxj
+
+        - added new BSF4ooRexx program by Markus Moldaschl which implements
+          Lee Peedin's Windows ooRexxTry.rex in a platform independent manner,
+          plus a few new bells and whistles
+        - MacOSX: make sure to act upon the Apple application quit event
+        - MacOSX: adding icon image to JFrame
+        - make sure that a bsf.exit() is not carried out, if the RexxAndJava
+          version is capable of doing that
+
+- bin/BSF.CLS
+
+        - define new entries in .bsf4rexx
+          - "OPSYS" ... operating system name from "PARSE SOURCE opsys ." plus
+            "OPSYS1", "OPSYS2", "OPSYS3" with the first one, two, three letters in
+            uppercase
+          - MacOSX: "APPLE_APPLICATION" the Apple application object representing
+            the running Rexx program
+          - "BSF4OOREXX_{016|032|048|064|128|256}": if defined path to PNG-icon
+          - "OOREXX4OOO_{016|032|048|064|128|256}": if defined path to PNG-icon
+
+        - MacOSX: remove About and Preferences Apple menu entries
+        - MacOSX: define Dock icon
+
+- testUnits/ooRexxUnit/OOREXXUNIT.CLS
+
+        - fixed a wrong statement in Assert::fail
+
+-------------------------------------- 2011-02-20 ----------------------------------
+- utilities/ooRexxTry.rxj
+
+        - removed MacOSX-related change to name of menu "Exit"
+          to "Quit" as MacOSX has its own application "Quit" menu at all times
+
+        - also using "VK_E" instead of "VK_X" for "Exit" button
+
+- bin/BSF.CLS
+
+        - adding MacOSX related properties for the Rexx programs
+
+-------------------------------------- 2011-02-15 ----------------------------------
+- org.rexxla.bsf.RexxDispatcher.java
+
+        - MacOSX: show Rexx' filename in Apple menu bar in the application title,
+          which gets set to: "BSF4ooRexx [rexx-filename]"
+
+-------------------------------------- 2011-02-12 ----------------------------------
+- testUnits/bsf4rexx/lex/procedural/Bean.testGroup
+
+        - allow this test to run in "java.awt.headless=true"-mode
+
+- testUnits/bsf4rexx/lex/oo/Bean.testGroup
+
+        - allow this test to run in "java.awt.headless=true"-mode
+
+-------------------------------------- 2011-02-10 ----------------------------------
+- testUnits/bsf4rexx/rgf/C_interfaceClasses/Test_ITest.java
+
+        - added "bShowInfos" to control additional new debug output
+
+-------------------------------------- 2011-02-09 ----------------------------------
+- BSF4ooRexx.cc
+
+        - forcing ooRexx minimum level 4.1.0 (used to be 4.0.0, which is no good as
+          there were needed bug fixes, which materialized in 4.0.1; as more bug fixes
+          were applied to the available ooRexx 4.1.0, that version is now mandated)
+
+- infoBSF.rxj
+  infoBSF-oo.rxj
+
+        - now also querying values for "os.arch", "sun.arch.data.model" and
+          "java.ext.dirs" properties
+
+-------------------------------------- 2011-02-07 ----------------------------------
+- BSF4ooRexx.cc
+
+        - fixing error message to reflect platforms if [lib]jvm.{dll|so|dylib} not found
+
+-------------------------------------- 2011-01-24 ----------------------------------
+- setupAllAndRun.rex
+
+        - correct BSF-message popup text to not claim that no errors occurred during
+          install and reinstall
+
+- setupBSF.rex
+
+        - escape "%" with "[25x]" in path on Windows
+
+- orx2reg.rex
+
+        - cater for escaped "%" as "[25x]" on Windows
+
+-------------------------------------- 2011-01-24 ----------------------------------
+- RexxAndJava.java
+
+        - added new credits to kudos
+
+-------------------------------------- 2011-01-12 ----------------------------------
+- BSF4ooRexx.cc
+
+	- free VMArgs options (string and options array)
+	- memset malloc'ated VMArgs option memory to 0x00
+
+-------------------------------------- 2011-01-09 ----------------------------------
+- BSF4ooRexx.cc
+
+        - fixing MacOSX Java pecularity, using ["JAVA_STARTED_ON_FIRST_THREAD_%d", getpid()]
+          as per <http://lists.apple.com/archives/java-dev/2009/Oct/msg00511.html>
+
+-------------------------------------- 2011-01-08 ----------------------------------
+- org.apache.bsf.BSFManager.java
+
+        - static constructor: fixed logic error in fallback code for getResources()
+
+-------------------------------------- 2011-01-02/07 -------------------------------
+- BSF4ooRexx.cc
+
+        - fixed up code to not produce warnings on MacOSX' g++
+        - code makes it possible to successfully load JVM in first thread by rexx.exe,
+          although only with "java.awt.headless=true" in effect; rexxj*.* works like
+          on any platform
+    	- fixing MacOSX g++ warnings and errors, allow loading JVM via Rexx as well on MacOSX
+
 -------------------------------------- 2010-12-08 ----------------------------------
 - installation:
 

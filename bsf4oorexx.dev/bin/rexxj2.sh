@@ -35,4 +35,3 @@ else
    java $BSF4Rexx_JavaStartupOptions org.rexxla.bsf.RexxDispatcher $*
 fi
 
-echo "aha $BSF4Rexx_JavaStartupOptions"

@@ -88,6 +88,8 @@
                                            creation time (and also collections of test cases)
                      2008-01-07  ---mm,  - Major re-work of the framework, bumping level to 2.0.0
 
+                     2011-02-21, ---rgf, - fixed a wrong statement in Assert::fail
+
 
    language-level:   6.0.2
    needs:            ooRexx 3.2 or later
@@ -124,7 +126,7 @@
 
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2005-2007 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2011 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -1330,7 +1332,8 @@ return str
 
   msg = "ooRexxUnit.cls - source of syntax exception 'FAIL' method invocation in class 'ASSERT'."
 
-  RAISE syntax 93.964 array (msg, data)
+--  RAISE syntax 93.964 array (msg, data)
+  RAISE syntax 93.964 array (msg pp(data~msg)) -- add application's msg to failure
 
 
 ::attribute conditionExpected private
