@@ -1,0 +1,30 @@
+; ------------------------ Apache Version 2.0 license -------------------------
+;    Copyright (C) 2001-2009 Rony G. Flatscher
+;
+;    Licensed under the Apache License, Version 2.0 (the "License");
+;    you may not use this file except in compliance with the License.
+;    You may obtain a copy of the License at
+;
+;        http://www.apache.org/licenses/LICENSE-2.0
+;
+;    Unless required by applicable law or agreed to in writing, software
+;    distributed under the License is distributed on an "AS IS" BASIS,
+;    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;    See the License for the specific language governing permissions and
+;    limitations under the License.
+; -----------------------------------------------------------------------------
+
+; 2008-10-21, ---rgf, new MSVC (2008), version: 15.00.21022.08 for 80x86
+; 2009-09-07, ---rgf, 64-Bit version
+; 2009-09-11, ---rgf, increased stack and heap size from 40KB (40960B) to 128KB (131072B)
+
+
+LIBRARY   BSF4ooRexx-64
+; HEAPSIZE  40960
+; STACKSIZE 40960
+HEAPSIZE  131072
+STACKSIZE  131072
+
+; ooRexx 4.0.0 related function, which allows the interpreter to load all external functions
+EXPORTS
+        RexxGetPackage

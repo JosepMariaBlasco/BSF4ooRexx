@@ -1,0 +1,99 @@
+<html>
+
+<head>
+    <title>Updating ooRexx ScriptProvider for OpenOffice.org (New Version Available)</title>
+</head>
+
+<body>
+    <h1>New Version of the ooRexx Script Provider for OpenOffice.org</h1>
+
+    <p>This document is created for OpenOffice.org (OOo) users of the ooRexx Script Provider in
+    the case that it got updated.
+
+    <p>The OOo update information that OOo meant to use gets stored in:
+    <a href="ooRexx4OOo_update.xml">ooRexx4OOo_update.xml</a>.
+
+
+    <h2>Download Directions</h2>
+
+    <p>Download the zip-archive named <a href=".">BSF4ooRexx_install.zip (show directory with all files)</a>.
+
+    <h3>Update Instructions</h3>
+
+    <p>First you need to uninistall the OOo and BSF support for ooRexx, followed
+    by unzipping <code>BSF4ooRexx_install.zip</code> and copying the subdirectry
+    tree named &quot;bsf4oorexx&quot; over the existing subdirectory &quot;bsf4oorexx&quot;,
+    running <code>rexx&nbsp;setupBSF.rex</code> and <code>rexx&nbsp;setupOOo.rex</code>,
+    followed by running the created installation programs (in that order) as super
+    user/Administrator.
+
+
+    <h4>Uninstalling Currently Installed BSF4ooRexx</h4>
+
+    <p>Find the directory &quot;bsf4oorexx\install&quot; (Windows) or &quot;bsf4oorexx/install&quot; (Linux)
+    and run the following programs in the following order:
+
+    <ul>
+        <li><code>uninstallOOo_runAsAdministrator.cmd</code> (Windows) or
+        <br><code>uninstallOOo_sudo.sh</code> (Unix),
+
+        <li><code>uninstallBSF_runAsAdministrator.cmd</code> (Windows) or
+        <br><code>uninstallBSF_sudo.sh</code> (Unix).
+    </ul>
+
+
+    <h4>Installing New Version of <a href="http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current"> BSF4ooRexx Containing the New ooRexx ScriptProvider Version forOOo</a></h4>
+
+    <ul>
+        <li>Download the latest version of
+            <a href="http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/BSF4ooRexx_install.zip">BSF4ooRexx_install.zip</a> and save it locally.
+            <p>
+
+        <li>Uninstall the zip archive named &quot;BSF4ooRexx_install.zip&quot; which will create
+            a subdirectory named &quot;bsf4oorexx&quot; containing numerous files and subdirectories.
+            One of these subdirectories is named &quot;install&quot; into which you need to change to.
+            <p>
+
+        <li>Run the programs (in that order):
+            <br><code>rexx setupBSF.rex</code> (Windows),
+            <br><code>setupBSF_sudo.sh</code> (Unix),
+            <br>and
+            <br><code>rexx setupOOo.rex</code> (Windows),
+            <br><code>setupOOo_sudo.sh</code> (Unix).
+            <p>
+            These programs create installation and uninstallation scripts tailored to your system's
+            need.
+
+        <li>Run the generated installation scripts (in that order):
+            <ul>
+                <li><code>installBSF_runAsAdministrator.cmd</code> (Windows) or
+                <br><code>installBSF_sudo.sh</code> (Unix).
+
+                <li><code>installOOo_runAsAdministrator.cmd</code> (Windows) or
+                <br><code>installOOo_sudo.sh</code> (Unix),
+            </ul>
+            <p>
+
+    </ul>
+
+
+    <h2>Further Help</h2>
+
+    <p>The OOo update information is stored in: <a href="ooRexx4OOo_update.xml">OOo.update.xml</a>.
+
+    <p>Use the OOo mailing lists, which are located in the developer area of
+    <a href="http://www.OpenOffice.org">http://www.OpenOffice.org</a>.
+
+    <p>If you have questions ad ooRexx and/or BSF4ooRexx then consult
+    <a href="news:comp.lang.rexx">news:comp.lang.rexx</a>,
+    <a href="http://www.RexxLA.org">http://www.RexxLA.org</a>,
+    <a href="http://www.ooRexx.org">http://www.ooRexx.org</a>.
+
+    <p>
+    <hr>
+    <p>Rony G. Flatscher, Wien (Vienna), &Ouml;sterreich (Austria), Europe
+    <p>2010-08-02
+
+</body>
+
+</html>

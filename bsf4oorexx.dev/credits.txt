@@ -1,0 +1,74 @@
+Over the years there have been many fine people who have contributed to this
+project or influenced its shaping in one way or another.
+
+This list gives their names in alphabetical order (using a Western European
+codepage):
+
+        Ahammer, Andreas
+        Augustin, Walter
+        Barwater, Gil
+        Beck, Andreas
+        Burger, Martin
+        Cowlishaw, Mike F.
+        Davis, Chip
+        Dujis, Erik
+        Edlinger, Andreas
+        Egli, Rätus
+        Faucher, Jean-Louis
+        Flatscher, Alice R.
+        Flatscher, Daniel A.
+        Flatscher, Michael B.
+        Fosdick, Howard
+        Frysak, Josef
+        Gmeiner, Michael
+        Gundacker, Dominik
+        Görlich, Gerhard
+        Große-Coosmann, Florian
+        Hahnekamp, Rainer
+        Heinisch, Florian
+        Hessling, Mark
+        Hinz, Michael
+        Hoisl, Bernhard
+        Jansen, René
+        Kalender, Peter
+        Kauril, Michael
+        Keßler, Matthias
+        Lex, Michael
+        Märker, Kurt
+        Marks, Brian
+        Matthiesen, Faber
+        McGuire, Rick
+        Miesfeld, Mark
+        Müller, Franz
+        Nash, Simon
+        Pachl, Walter
+        Peedin, Lee
+        Pezerovic, Edin
+        Prem, Matthias
+        Ratliff, Matt
+        Realfsen, Åsmund
+        Requena, David
+        Richard, Pierre G.
+        Ruggles, David
+        Sauer, Ralph
+        Schmid, Stefan
+        Scholz, Nicole
+        Small, John
+        Sonnemans, Freddy
+        Spanberger, David
+        Specht, Tobias
+        Taylor, Pam
+        Waglechner, Christoph
+        Wiegel, Kees
+        Wilson, Gray
+        Woehr, Jack
+        Wolfers, Jon (Sahananda)
+
+
+Rony G. Flatscher
+2010-12-04, Wien/Vienna, Austria
+
+P.S.: Due to the many people who have had an influence over time I may have
+      overlooked the one or the other while preparing this credit list. In such a
+      case please accept my apologies and please drop me a note.
+

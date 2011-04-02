@@ -1,0 +1,307 @@
+#!/usr/bin/rexx
+/*
+   Name:    installOOoRexxMacros.rxo
+   Purpose: make sure macros from distribution get installed (uninstalled) with
+            the BSF4ooRexx support
+   Author:  Rony G. Flatscher
+   Version: 1.0
+   Date:    2010-06-05
+   Changed: 2010-06-10, ---rgf, if no argument given, then paths to macro locations for
+                        "share" and "user" are output
+            2010-06-13, ---rgf, added option to install/deinstall whole Rexx script libraries
+            2010-07-06, ---rgf, renamed to ".rxo" to indicate that this is a Rexx program using
+                                OpenOffice via Java
+            2010-07-24, ---rgf, handle special "python" case which does not have a parcel-descriptor.xml
+                                file, run extensive tests
+
+   last svn check-in: $Revision: 927 $ $Author: Administrator $ $Date: 2010-12-26 18:34:19 +0100 (Sun, 26 Dec 2010) $
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2010 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+parse upper arg install .
+
+xContext = UNO.connect()         -- connect to server and retrieve the XContext object
+
+service="com.sun.star.frame.Desktop" -- OOo Desktop UNO component service
+xDesktop=xContext~getServiceManager~createInstanceWithContext(service,xContext)~XDesktop
+
+if install="" then      -- no argument given, show system paths to "share" and "user"
+do
+    say "share:" qq(uno.determineScriptLocation(xContext,"share", "oorexx")~script_RootDirScriptLanguage)
+    say "user: " qq(uno.determineScriptLocation(xContext,"user", "oorexx")~script_RootDirScriptLanguage)
+    say
+    say "usage: rexx installOOoRexxMacros.rxo [/install | /deinstall]"
+    xDesktop~terminate  -- try to terminate the OOo instance
+    exit
+end
+
+fl=install~left(1)      -- extract first letter
+if fl="/" | fl="-" then fl=install~substr(2,1)  -- maybe "/[un|de]install" or "-[un|de]install"
+bInstall=(fl<>"U" & fl<>"D")     -- un-/de-install? default: install
+
+fs=.uno~file.separator -- get file-separator, "\" on Win, "/" on Unix
+
+   /* check whether run from the development subdirectory, if so adjust paths to wu_tools program */
+parse source . . path
+bDeveloperLocation=(path~pos("BSF4ooRexx.dev")>0)
+pathLocs=.directory~new -- directory to contain path fragments to files we need for installation
+if bDeveloperLocation then    -- run from the developer subdirectory branch
+do
+   pathLocs~path2UNO_API_info.rxo=".." || fs || "bin" || fs || "UNO_API_info.rxo"
+   pathLocs~path2OOoSamplesDir   =".." || fs || ".."  || fs || "samples" || fs || "OOo"
+end
+else                          -- run from deployment install directory
+do
+   pathLocs~path2UNO_API_info.rxo=".." || fs || "UNO_API_info.rxo"
+   pathLocs~path2OOoSamplesDir   =".." || fs || "samples" || fs || "OOo"
+end
+
+
+if fs="/" then          -- running on a Unix platform
+do
+   copyCmd="cp -f"      -- Unix copy command, use force
+   redirect2null=">/dev/null"
+end
+else                    -- running on Windows
+do
+   copyCmd="copy /y"    -- Windows copy command, allow overwriting
+   redirect2null="> nul"
+end
+
+-- redirect2null=""  -- for debugging purposes only
+
+   -- install "wu_tools" script(s)
+call install_wu_tools    xContext, bInstall, copyCmd, redirect2null, "share", pathLocs   -- un/install macro
+
+   -- install all files from the subdirectories (= "libraries") of srcDir
+listOfLanguageDirNames=.array~of("oorexx", "javascript", "python")
+listOfLanguageNames   =.array~of("ooRexx", "JavaScript", "Python")
+do i=1 to listOfLanguageDirNames~items -- languageDir over listOfLanguageDirNames
+   languageDir  = listOfLanguageDirNames[i]
+   languageName = listOfLanguageNames[i]
+   srcDir="OOo_ScriptLibraries" || fs || languageDir
+   call sysFileTree srcDir || fs || "*", "dirs.", "OD"
+   set=.set~new
+   do k=1 to dirs.0
+      set~put(dirs.k)
+   end
+
+   sortedDir=set~allItems~sortWith(.CaselessComparator~new)
+
+   do dir over sortedDir
+      libraryName=filespec("name",dir) -- get library name (= directory name)
+      if libraryName~left(1)="." then  -- do not process directories that start with a dot
+         iterate
+
+      call install_script_library xContext, bInstall, copyCmd, redirect2null, srcDir, libraryName, "share", languageDir, languageName
+   end
+end
+
+xDesktop~terminate  -- try to terminate the OOo instance
+
+
+::requires UNO.CLS
+
+::routine createTargetDir  public   -- routine to create "Script/ooRexx" (locations~scriptDir4ooRexx) and "Script/ooRexx/xyz" (locations~targetDir) directories, if they do not exist yet
+  use arg locations
+
+  do dir over .list~of(locations~script_RootDirScriptLanguage, locations~targetDir)
+     if dir=.nil then iterate
+
+     if \SysFileExists(dir) then    -- script directory does not exist yet
+        call SysMkDir dir           -- create directory
+  end
+
+
+::routine removeTargetDir  -- routine to remove "Script/ooRexx/xyz" (locations~targetDir) directory (won't be successful, if not empty)
+  use arg locations
+
+  dir=locations~targetDir
+
+  if dir<>.nil, SysFileExists(dir) then   -- try to remove this directory (only possible, if empty)
+  do
+         -- check whether only the 'parcel-descriptor.xml' file exists (or none), if so delete it,
+         -- then the directory
+      ufs=.uno~file.separator             -- get the file separator of this platform
+      call sysFileTree dir || ufs || "*", "files.", "O"
+      if files.0<2 then
+      do
+          bRemoveDir=(files.0=0)          -- if no files in library, removing it is safe
+          if files.0=1 then
+          do
+             lpos=lastPos(ufs, files.1)   -- get last file separator, if any
+             if lpos>0 then
+             do
+                 bRemoveDir=substr(files.1, lpos+1)= "parcel-descriptor.xml"  -- "parcel-descriptor.xml"
+                 if bRemoveDir then
+                    call SysFileDelete files.1  -- delete parcel file, not needed anymore
+             end
+          end
+
+          if bRemoveDir=.true then  -- removing library/directory safe (empty) ?
+             call SysRmDir dir      -- remove directory
+      end
+  end
+
+
+
+::routine writeParcelData           -- writes (replaces existing) "parcel-descriptor.xml" file
+  use strict arg path2parcel, parcel
+
+  call SysFileDelete path2parcel            -- delete old parcel file
+  call charout path2parcel, parcel~toString -- write new parcel file
+  call stream path2parcel, "c", "close"     -- make sure file is closed
+
+::routine qq                        -- enclose string in double quotes
+  parse arg val
+  return '"' || val || '"'
+
+
+
+
+
+   /* this routine installs or uninstalls the "UNO_API_info.rxo" into the
+      script directory "share", library "wu_tools" */
+::routine install_wu_tools
+  use strict arg xContext, bInstall=.false, copyCmd, redirect2null="", location="share", pathLocs
+
+  srcDir =".."                -- located in "bsf4oorexx" directory
+--  location="share"          -- install for all users
+  library="wu_tools"          -- library (directory) name
+  name   ="UNO_API_info.rxo"  -- name of script
+
+   -- get us physical paths we may need
+  locations=uno.determineScriptLocation(xContext, location, "oorexx", "ooRexx", library, srcDir)
+  ufs=.uno~file.separator     -- get file separator for this platform
+  isUnix=(ufs="/")            -- running under Unix ?
+
+  path2parcel=locations~targetDir_parcel  -- get fully qualified path to parcel
+  parcel=.Parcel~fromXMLFile(path2parcel) -- create parcel (read-in if it exists)
+
+  if bInstall then            -- install macro
+  do
+      say "installing '"library || ufs || name"' to the '"location"' location ..."
+      call createTargetDir locations            -- create directories, if they do not exist as of yet
+
+      -- tmpStr=copyCmd qq(locations~sourceDir || ufs || name) qq(locations~targetDir) redirect2null
+      tmpStr=copyCmd qq(pathLocs~path2UNO_API_info.rxo) qq(locations~targetDir) redirect2null
+      tmpStr                                    -- let Rexx send the command to the command interpreter
+      so=.Parcel~createScriptDefinition(name)   -- create a new script definition
+      parcel~addScriptDefinition(so)            -- add it to the parcel
+
+      call writeParcelData path2parcel, parcel
+      if isUnix then          -- set parcel to 644
+         "chmod 644" path2parcel
+  end
+  else                        -- uninstall macro
+  do
+      say "removing '"library || ufs || name"' from the '"location"' location ..."
+      call sysFileDelete locations~targetDir || ufs || name
+      parcel~removeScriptDefinition(name)       -- add it to the parcel
+
+      call writeParcelData path2parcel, parcel
+      if isUnix then          -- set parcel to 644
+         "chmod 644" path2parcel
+
+      call removeTargetDir locations
+  end
+
+
+::routine do_qq   -- quote string, if it contains blanks
+  parse arg pathName
+  if pos(" ",pathName)>0 then
+     return qq(pathName)
+
+  return pathName -- unchanged
+
+
+   /* this routine installs or uninstalls all files from the given directory (= "library");
+      it will copy all entries in the source parcel descriptor (if any) to the target parcel
+      descriptor  */
+
+
+::routine install_script_library
+  use strict arg xContext, bInstall=.false, copyCmd, redirect2null="", srcDir, tgtLibraryName, location="share", scriptLanguageDir="oorexx", scriptLanguageName="ooRexx"
+
+   -- get us physical paths we may need
+  ufs=.uno~file.separator     -- get file separator for this platform
+
+  isUnix=(ufs="/")
+
+  bIsPython = (scriptLanguageDir="python")   /* "python" directory in source ? */
+  bHandleParcelDescriptor = \ bIsPython      /* if "python", then no parcel descriptor handling! */
+
+  locations=uno.determineScriptLocation(xContext, location, scriptLanguageDir, scriptLanguageName, tgtLibraryName, srcDir || ufs || tgtLibraryName)
+
+   -- create parcel from file (if not existent or empty, that's fine)
+  if bHandleParcelDescriptor then
+  do
+     srcParcel=.Parcel~fromXMLFile(locations~sourceDir_parcel, scriptLanguageName)
+     tgtParcel=.Parcel~fromXMLFile(locations~targetDir_parcel, scriptLanguageName)
+  end
+
+      -- get all files from source directory (library)
+  call SysFileTree locations~sourceDir || ufs ||"*.*", "files.", "OF"
+
+  if bInstall then            -- install macro
+  do
+      say "installing" (files.0-bHandleParcelDescriptor) "file(s) from the" pp(scriptLanguageName) "library '"tgtLibraryName"'"  "to the '"location"' location ..."
+      call createTargetDir locations            -- create directories, if they do not exist as of yet
+
+      do i=1 to files.0
+         name=filespec("name",files.i)    -- extract name from full path
+         if name="parcel-descriptor.xml" then   -- skip parcel file
+            iterate
+
+         tmpStr=copyCmd qq(files.i) qq(locations~targetDir) redirect2null
+         tmpStr                                 -- let Rexx send the command to the command interpreter
+      end
+
+         -- now add source parcel descriptions to target parcel description (overwriting there existing entries)
+      if bHandleParcelDescriptor then
+      do
+         tgtParcel~parcelScriptDefinitions~putAll(srcParcel~parcelScriptDefinitions)
+         call writeParcelData locations~targetDir_parcel, tgtParcel
+         if isUnix then          -- set parcel to 644
+            "chmod 644" locations~targetDir_parcel
+      end
+  end
+  else                        -- uninstall macro
+  do
+      say "removing '"tgtLibraryName"' from the '"location"' location ..."
+
+      do i=1 to files.0
+         name=filespec("name",files.i)    -- extract name from full path
+         if name="parcel-descriptor.xml" then   -- skip parcel file
+            iterate
+         call sysFileDelete locations~targetDir || ufs || name
+         if bHandleParcelDescriptor then
+            tgtParcel~removeScriptDefinition(name)       -- add it to the parcel
+      end
+
+      if bHandleParcelDescriptor then
+      do
+         call writeParcelData locations~targetDir_parcel, tgtParcel
+         if isUnix then          -- set parcel to 644
+            "chmod 644" locations~targetDir_parcel
+      end
+
+      call removeTargetDir locations
+  end

@@ -1,0 +1,1958 @@
+/*
+   name:       UNO_API_info.rxo
+
+   purpose:    Utility program to introspect a given UNO object or UNO IDL string,
+               creating a writer document to receive all available documentation
+               with links to the official OOo UNO API documentation
+
+   remarks:    originates from code of Nicole Scholz' Master Thesis at the WU Vienna in 2009,
+               cf. http://wi.wu-wien.ac.at/rgf/diplomarbeiten/
+
+   needs:      ooRexx 3.2, cf. http://www.ooRexx.org
+               BSF4Rexx, cf. http://wi.wu-wien.ac.at/rgf/rexx/bsf4rexx/current/
+               OpenOffice.org, cf. http://www.OpenOffice.org
+
+   authors:    Nicole Scholz, Rony G. Flatscher
+
+   date:       2009-02-22
+
+   changed:    2009-01 - 2009-02, changes, started logging, Rony G. Flatscher (rgf) edits/additions, 2009-01 - 2009-02
+
+                     among other things:
+
+                     - renamed to "UNO_API_Info.rex"
+                     - restructured code
+                     - determines how invocation took place (via ooRexx or via OOo's dispatch
+                       mechanism, i.e. as a macro)
+                     - removed dependency on 'rgf_util2.rex', which is as of yet unpublished
+                     - removed unnecessary (leftover?) creation of service
+                       "com.sun.star.style.PageStyle"
+                     - uncovered a very subtle bug w.r.t. defining the TOC layouts (one must
+                       give a PropertyValue object as the third element; null or ANY-void does
+                       not suffice if using the ScriptFramework context [creating a new connection
+                       and using that would work, except that then OOo Basic hangs!]
+                     - UNO_TYPEDEF rendering such, that definition is shown/presented
+                     - allow an ooRexx MapCollection(e.g. a directory) or an array of PropertyValues,
+                       with optional entries
+                     - changed/corrected graphical boxes
+                     - parametrized a few factors
+                     - removed makeUrl() as this is not really needed
+                     - replaced rectangle shape creation and distribution algorithm (still coarse, but o.k.,
+                       much more flexible and breaks pages as needed)
+                     - added option to allow determining where to store generated files, if desired
+                     - setting XFrame's title to reflect what gets rendered, includes start dateTime
+                     - expecting UNO object or UNO IDL string as first argument, second argument
+                       is optional and if given is either an ooRexx directory object or a sequence
+                       of PropertyValues
+
+               2009-03-16, rgf: using "ooSetupVersionAboutBox", if available, to get at
+                           the detailed version number, e.g. "3.0.1" instead of "3.0"
+               2010-05-27, rgf, renamed extension to ".rxo" to match new convention "Rexx-OOo"-script
+
+               2010-06-01, rgf, changed code to work on OOo 3.2 as well, although an OOo-bug
+                           got introduced there: <http://www.openoffice.org/issues/show_bug.cgi?id=105855>
+
+               2010-06-05, rgf, adapted code to new behaviour in BSF4ooRexx; ie. arguments from OOo
+                                need to be explicitly wrapped up as UNO objects using the public
+                                routine "uno.wrap()"
+
+
+   version:    1.03
+
+   license:    AL 2.0 (Apache License 2.0, cf. <http://www.apache.org/licenses/LICENSE-2.0>)
+
+
+   usage:      either
+
+                   call "UNO_API_info" UNO_object_or_IDL_string[, options]
+
+               or
+
+                   call analyzeAndCreateReference UNO_object_or_IDL_string[, options]
+
+                   after a ::requires-directive or argument less call of "UNO_API_info"
+
+               or
+
+                   using OOo's dispatch mechanisms
+
+   examples:   cf. BSF4ooRexx directory/folder: .../bsf4oorexx/utilities/OOo/UNO_API_info
+
+   options:
+            name:                    default:     brief explanation
+
+            NrOfLayers             = 1         -- "1" or "2"
+            NumberingTypeLevel_1   = 2         -- Roman number, cf. "com.sun.star.style.NumberingType"
+            NumberingTypeLevel_2   = 4         -- Arabic number, cf. "com.sun.star.style.NumberingType"
+            NumberingTypeLevel_3   = 4         -- Arabic number, cf. "com.sun.star.style.NumberingType"
+            FontName               = "Arial"
+            View                   = 1         -- "1" view in writer
+                                                  "2" save odt, view in writer
+                                                  "3" save odt, print document
+                                                  "4" save odt and create pdf
+            StoreToDirectory       = ""        -- denotes full path to directory, where the generated files
+                                               -- should get stored to, if View > 1
+
+            DocumentationSource    = 1         -- "1"=Internet, "2"=local SDK installation
+            DocumentationFolder    = ""        -- path to local installation of the OOo documentation
+
+
+
+   TODO:
+         - query page dimensions for graphical view
+         - anchor shapes at page, allowing for exact positioning
+         - use a runtime-passed directory instead of a .local-stored stem variable
+
+   Opptions:
+
+      - "FontName"      ... String, defaults to "Arial"
+
+      Numbering types (constant from "com.sun.star.style.NumberingType")
+
+         - "NumberingTypeLevel_1 ... defaults to 2 (upper Roman)
+         - "NumberingTypeLevel_2 ... defaults to 4 (Arabic number)
+         - "NumberingTypeLevel_3 ... defaults to 4 (Arabic number)
+
+      - "NrOfLayers"    ... "1" or "2", defaults to "2" (2=also query embedded services and interfaces)
+
+      - "View"          ... "1" View in writer
+                            "2" (default) Save as odt-file and view in writer
+                            "3" Save as odt-file and print document
+                            "4" Save as odt-file and create a pdf-file
+
+      - "DocumentationSource" ... "1" (default) Internet ("http://api.openoffice.org/docs/common/ref/")
+                                  "2" use local documentation, add NO fragment identifiers (Windows)
+                                  "3" use local documentation, add fragment identifieres (Linux o.k.)
+
+      - "DocumentationFolder" ... path to local installation of OOo documentation
+
+
+
+*/
+
+-- .local~rgf.debug=.true   -- rgf, 2009-02-11
+
+/*****************************************************************************/
+/*                              createApiInfo                                */
+/*****************************************************************************/
+
+
+call BSfShowErrorMessage .true
+
+-- .local~bDebug=.true       -- give debug infos
+
+call initialize   -- create and set up objects we need over and over again
+
+if arg()=0 then   -- no arguments given, work on document object, if invoked via scripting framework
+do
+   scriptContext=uno.getScriptContext()   /* get the xScriptContext object                   */
+   if scriptContext=.nil then             /* not invoked via the dispatch interface          */
+      exit -1
+
+      -- o.k. use the ScriptContext UNO objects as well
+   args=.directory~new
+   args~XContext=scriptContext~getComponentContext
+   args~XDesktop=scriptContext~getDesktop
+
+   uno_object=scriptContext ~getDocument  /* use the document object */
+end
+else
+do
+   -- o.k. invoked with arguments already, hence invoke "analyzeAndCreateReference()" with all arguments
+   use arg uno_object=.nil, args
+
+   if .bDebug=.true then
+   do
+      say "Arguments received!" "arg():" pp(arg())
+      do i=1 to arg()
+         say "    i="i":" pp(arg(i))
+      end
+   end
+
+   -- if the very first invocation with arguments, then "<O>" is not prefixed yet,
+   -- prepend it, if we have an UNO Proxy reference in hand
+   if uno_object~isA(.string), left(uno_object,3)<>"<O>", uno_object~caselessPos("Proxy")>0 then
+      uno_object="<O>"||uno_object
+
+   -- second argument could be a PropertyValue array
+   if args~isA(.string), left(args,1)="[", pos("@",args)>0 then
+      args="<O>"||args
+end
+
+call analyzeAndCreateReference uno_object, args -- now anaylze and render
+return .true
+
+
+::requires "UNO_ReflectionUtil.cls" -- get OOo-reflection utilities (which loads UNO.CLS, which loads BSF.CLS)
+
+
+/* Routine that queries and renders the supplied UNO type (object or IDL name) */
+::routine analyzeAndCreateReference public
+   use strict arg argUNO_Object=.nil, args=.nil
+
+   -- if this routine is called from this program, it may be the case that
+   -- processing of "<O>"-prepended bean names has not occurred yet, hence
+   -- make sure that the appropriate UNO(BSF) proxies are created from them
+/*
+   if argUNO_Object~isA(.string), argUNO_Object~left(3)="<O>" then    -- a BSF-Registry object? Try to wrap it up as an UNO proxy object
+      argUNO_Object=uno.wrap(argUNO_Object)
+
+   if args~isA(.string), args~left(3)="<O>" then   -- a BSF-Registry object? Try to wrap it up as an UNO proxy object
+      args=uno.wrap(args)
+*/
+   -- rgf, 2010-06-05
+   argUNO_Object=uno.wrap(argUNO_Object)
+   args         =uno.wrap(args)
+
+   argDir=createArgDirectory(args)     -- get settings into an ooRexx directory
+      -- assign settings to variables
+   argNrOfLayers           = argDir~NrOfLayers
+   argView                 = argDir~View
+   argDocumentationSource  = argDir~DocumentationSource
+   argDocumentationFolder  = argDir~DocumentationFolder
+   argNumberingTypeLevel_1 = argDir~NumberingTypeLevel_1
+   argNumberingTypeLevel_2 = argDir~NumberingTypeLevel_2
+   argNumberingTypeLevel_3 = argDir~NumberingTypeLevel_3
+   argFont                 = argDir~FontName
+
+      -- undocumented
+   .scholz~footerCharHeight    = argDir~footerCharHeight
+   .scholz~defaultCharHeight   = argDir~defaultCharHeight
+   .scholz~Heading_1_CharHeight= argDir~Heading_1_CharHeight
+   .scholz~Heading_2_CharHeight= argDir~Heading_2_CharHeight
+   .scholz~Heading_3_CharHeight= argDir~Heading_3_CharHeight
+
+   .scholz~backColorCell          = argDir~backColorCell
+   .scholz~backColorNormal        = argDir~backColorNormal
+   .scholz~charColor              = argDir~charColor
+   .scholz~sectionBackgroundColor = argDir~sectionBackgroundColor
+   .scholz~graphicBackgroundColor = argDir~graphicBackgroundColor
+
+      -- runtime related
+
+      -- re/set
+   .scholz~rectanglePosX = .scholz~initialPosX
+   .scholz~rectanglePosY = .scholz~initialPosY
+   .scholz~maxRowHeight  = 0
+   .scholz~noMembers   = .false
+   .scholz~selectedUrl = 0
+
+      -- get XDesktop and/or XComponentContext to use, if necessary
+      -- if no XDestkop and/or XContext supplied, then go and get/create one
+   if \argDir~hasEntry("XDesktop") | \argDir~hasEntry("XContext") then
+      call queryRuntimeObjects argDir
+
+      -- get product name and version
+   if \.scholz~hasentry("ooName") then    -- not available, then first run, get it
+      call query_OOo_Installation argDir~xContext
+
+
+   unoObject=.nil       -- if an UNO object was passed as first argument, it will be stored with this variable
+   title=""             -- title to be used in footer
+   tmpAllMembersRelation=.relation~new    -- relation to store members of the UNO IDL definition, if argNrOfLayers=2
+   arrArgUNO_Object=.nil
+
+   if \argUNO_Object~isA(.string) then   -- first argument not a string
+   do
+      -- unoObject=arg(1)           -- save object
+      unoObject=argUNO_Object            -- save object
+      defUnoObject=unoObject~uno.getDefinition  -- get Definition
+      if defUnoObject~match(1,"UNO_SERVICE|") then -- if a UNO_SERVICE object, then it may implement multiple UNO services!
+      do
+         parse var defUnoObject before "|" argUNO_Object "|" after -- get the IDL string (possibly multiples, concatenated by '+'
+
+         arrArgUNO_Object=argUNO_Object~makeArray("+")    -- split string at "+" chars
+
+         if arrArgUNO_Object~items>1 then -- multiple services implemented in UNO service object ?
+         do
+             tmpStr=arrArgUNO_Object[1]"+..."
+             defUnoObject=before"|"tmpStr"|"after
+             title="UNO_SERVICE" tmpStr "(multiple services implemented in UNO service object)"
+
+               -- sort array caselessly by unqualified name
+             arr=.array~new
+             do s over arrArgUNO_Object
+                arr~append( (s~substr(s~lastpos(.)+1)) s)
+             end
+             arr=arr~sortWith(.caselessComparator~new)
+             do i=1 to arr~items
+                parse value arr[i] with . val
+                arrArgUNO_Object[i]=val
+             end
+         end
+         else
+         do
+            title="UNO_SERVICE" pp(argUNO_Object) -- make sure we show service in footnote's title hint as well
+         end
+      end
+   end
+
+   if arrArgUNO_Object=.nil then                  -- not yet an array
+      arrArgUNO_Object=argUNO_Object~makeArray("+")    -- split string at "+" chars
+
+
+   say "processing "pp(argUNO_Object)", consisting of" arrArgUNO_Object~items "part(s) ..."
+
+   .scholz~selectedUrl = argDocumentationSource
+   if .scholz~selectedUrl = 1 then
+       -- link into the OOo's Internet base URL for IDL reference documentation
+      .scholz~ooo.baseUrl="http://api.openoffice.org/docs/common/ref/"
+   else
+   do
+        -- link into the OOo's local directory base URL for IDL reference documentation
+      a=.java.lang.system~getProperty("os.name")  /* fragt Java nach dem Namen des Betriebssystems */
+      if a~left(1)="W" then                       /* wenn der 1. Buchstabe "W" ist, dannWindows */
+      do
+         cp=value("ProgramFiles", , "ENVIRONMENT")
+         cplink = cp~changestr("\","/")
+         .scholz~ooo.baseUrl=cplink"/"argDocumentationFolder||"docs/common/ref/"
+      end
+      else
+         .scholz~ooo.baseUrl=argDocumentationFolder||"docs/common/ref/"
+   end
+
+   if argUNO_Object="" | abbrev(argUNO_Object,"com.")=.false then
+   do
+      .bsf.dialog~messageBox("Please insert a valid UNO IDL string".endOfLine'e.g. "com.sun.star"',"Invalid UNO Typedefinition String Entered!","error")
+      return .false
+   end
+
+   if argFont<>"" then            -- font given, if so save it with the .scholz-directory
+   do
+      if "Times New Roman"~caselessEquals(argFont) then
+         argFont = "Times"
+
+      .scholz~font=argFont~strip     -- save Font name
+   end
+
+   def=uno.getDefinition(arrArgUNO_Object[1])  -- try to get a definition of this UNO IDL string
+   eol2=.endOfLine~copies(2)
+   if def="" then       -- nothing returned, maybe RgfReflectUNO's xContext out of scope?
+   do
+      --rgf: try to rescue (assume old xContext for reflection has gone)
+      call UNO.resetRgfReflectUNO      -- create another context and assign it to the reflection class
+      def=uno.getDefinition(arrArgUNO_Object[1])  -- try again
+      if def="" then    -- nope, we got troubles!
+      do
+         .bsf.dialog~messageBox("IDL-Name:" pp(argUNO_Object) eol2 "If the given IDL-name exists, then retry after restarting the application!", "No UNO-Definition returned!", "error")
+         return .false
+      end
+   end
+   else
+     do
+      if .bDebug=.true then
+      do
+         max=350           -- maximum number of chars from definition to display in the popup
+         if length(def)>max then tmpDef=def~left(max)"...<cut>...".endOfLine"..."
+                            else tmpDef=def
+         .bsf.dialog~messageBox("IDL-Name:" pp(argUNO_Object) eol2 "IDL-Definition:" ppd(tmpDef), "IDL-Definition", "i")
+      end
+   end
+
+
+/* ************************************************************************************* */
+
+-- -----------------------> create document, TOC and footer definitions
+   oDesktop=argDir~XDesktop  -- get the XDesktop object of this run
+   xComponentLoader = oDesktop~XComponentLoader -- get its componentLoader interface
+
+   /* create a blank *.odt - file */
+   url = "private:factory/swriter"
+
+   /* set document properties: documenttitle and window hidden */
+   props = bsf.createArray(.UNO~PropertyValue, 1)
+   props[1] = .UNO~PropertyValue~new
+
+     -- set document title
+   props[1]~Name = "DocumentTitle"
+   -- props[1]~Value = "IDL-Definitions-"argUNO_Object
+
+
+     -- set document hidden that the creation time is shorter (don't show Window)
+   props[1]~Name = "Hidden"
+   -- props[1]~Value = .scholz~java.true -- box("boolean", .true)
+   props[1]~Value = .scholz~java.false -- debug
+
+   oWriterComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, props)
+   xWriterDocument  = oWriterComponent~XTextDocument  -- XModel interface available as well
+
+      -- create a title for the component's frame, also used for storing generated files later
+   workTitle=createDocumentBaseTitle( argUNO_Object )
+   call setWriterCopmonentFrameTitle xWriterDocument, workTitle
+
+      -- do not update screen
+   if argDir~LockControllers=.true then               -- no screen updates, while creating documentation ?
+      if \xWriterDocument~hasControllersLocked then   -- make sure it is not locked yet
+         xWriterDocument~lockControllers              -- no screen updates in frame anymore
+
+   /* get the MulitServiceFactory interface from the current document */
+   xDMsf = xWriterDocument~XMultiServiceFactory
+
+   /* create the TextObject and the TextCursor */
+   xText = xWriterDocument~getText
+
+      -- create TOC
+   contentTextContent = create_TOC( xDMsf, xText, xWriterDocument, argNrOfLayers, arrArgUNO_Object, argNumberingTypeLevel_1, argNumberingTypeLevel_2, argNumberingTypeLevel_3)  -- create TOC
+
+      -- create footer
+   if title="" then     -- no title yet, create it
+   do
+      refObj=createReflectionObject(def)  -- create reflection object from definition
+      title= refObj~unoTypeName pp(refObj~fullyQualifiedName)
+   end
+   call create_footer xDMSf, xWriterDocument, title
+
+   if (argNrOfLayers = 2) then
+      sectionTitle = "SECTION A: DEFINITION"
+   else
+      sectionTitle = ""
+
+   /* disable underlining of hyperlinks in the whole document */
+   xFamiliesSupplier = xWriterDocument~XStyleFamiliesSupplier
+   xCharStyleFamily = xFamiliesSupplier~getStyleFamilies~getByName("CharacterStyles")~XNameContainer
+
+   xInternetLinkStyleProps= xCharStyleFamily~getByName("Internet link")
+   xInternetLinkStyleProps~xPropertySet~setPropertyValue("CharUnderline", .scholz~underline_none)
+
+   xVisitedInternetLinkStyleProps=xCharStyleFamily~getByName("Visited Internet Link")
+   xVisitedInternetLinkStyleProps~xPropertySet~setPropertyValue("CharUnderline", .scholz~underline_none)
+
+/* ************************************************************************************* */
+   if arrArgUNO_Object~items>1 then   -- multiple service UNO IDLs in service object found ?
+   do
+
+      say "First processing aggregate service definitions" "..."
+      refObj=createReflectionObject(defUnoObject)  -- create reflection object from definition
+      sectionTitle = "SECTION A: SERVICE OBJECT " refObj~fullyQualifiedName
+      lfTab="0a09"x
+      hintText="The UNO service object implements multiple services, namely:" "0a"x
+      do service over arrArgUNO_Object   -- iterate over service
+         hintText=hintText || lfTab || service
+      end
+
+      call createSections xWriterDocument, xDMsf, xText, refObj, hintText, argNrOfLayers, sectionTitle, arrArgUNO_Object
+      sectionTitle = ""
+      call insertDelimiterPage xText
+   end
+
+/* ************************************************************************************* */
+   do i=1 to arrArgUNO_Object~items -- def over arrArgUNO_Object[1}
+      def=uno.getDefinition(arrArgUNO_Object[i])      -- get UNO IDL string
+      say "... processing part #" i":" pp(arrArgUNO_Object[i]) "..."
+
+      refObj=createReflectionObject(def)  -- create reflection object from definition
+
+      if .bDebug=.true then
+      do
+         say "--> fullyQualifiedName:" pp(refObj~fullyQualifiedName)
+         say "           unoTypeName:" pp(refObj~unoTypeName)
+      end
+
+
+      hintText=""
+      if refObj~isA(.uno_definitionWithMembers), refObj~definitions~items=0 then
+         hintText="No members defined."
+      if arrArgUNO_Object~items>1 then
+      do
+        if i = 1 then
+          sectionTitle = "SECTION B: CONTAINED SERVICE OBJECTS"
+        else
+          sectionTitle = ""
+      end
+
+      call createSections xWriterDocument, xDMsf, xText, refObj, hintText, argNrOfLayers, sectionTitle, arrArgUNO_Object
+
+         -- if members should be shown and a container type in hand, then save the members
+      if argNrOfLayers=2, refObj~isA(.uno_definitionWithMembers) then
+         tmpAllMembersRelation~putAll(refObj~definitions)
+   end
+
+
+/* ************************************************************************************* */
+   if argNrOfLayers = 2 then      -- show member definitions too
+   do
+      say
+      say "Now processing all the member definitions:"
+      say
+      if arrArgUNO_Object~items>1 then
+        sectionTitle = "SECTION C: LAYER 2"
+      else
+        sectionTitle = "SECTION B: LAYER 2"
+
+      allMembers=tmpAllMembersRelation~allItems~sort
+      setProcessed=.set~new
+
+      do member over allMembers
+         tmpFQName=member~fullyQualifiedName
+         if uno.getTypeName(tmpFQName)<>"", setProcessed~hasIndex(tmpFQName)=.false then   --member~unoTypeName
+         do
+            setProcessed~put(tmpFQName)    -- remember that we have processed this definition
+
+            def=uno.getDefinition(member~fullyQualifiedName)
+            refObj=createReflectionObject(def)  -- create reflection object from definition
+
+            say "09"x"--->" pp(editName(refObj~fullyQualifiedName))" ..."
+
+            hintText=""
+            if refObj~isA(.uno_definitionWithMembers), refObj~definitions~items=0 then
+               hintText="No members defined."
+            call createSections xWriterDocument, xDMsf, xText, refObj, hintText, argNrOfLayers, sectionTitle, arrArgUNO_Object
+            sectionTitle = ""
+         end
+      end
+   end
+
+     -- TOC UPDATEN
+   contentTextContent~XDocumentIndex~update
+
+      -- set WriterDocument visible after creation
+   xWriterDocument~XModel~getCurrentController()~XController~getFrame()~XFrame~getContainerWindow()~XWindow~setVisible(.true)
+
+   if argDir~LockControllers=.true then               -- no screen updates, while creating documentation ?
+      if xWriterDocument~hasControllersLocked then    -- make sure it is locked
+         xWriterDocument~unLockControllers            -- no screen updates in frame anymore
+-----------------------------------------------------
+
+
+   -- save the created document as odt-file in the current folder
+   if argView<>1 then
+   do
+
+      if argDir~StoreToDirectory<>"" then  -- save files in homedirectory
+      do
+         pathDeli="\"   -- path delimiter; "ConvertToURL" will adapt it, if Unix, hence "/" needed instead
+         if pos(argDir~storeToDirectory~right(1), "/\")>0 then
+            pathDeli="" -- trailing path delimiter given, hence do not append one
+
+         url=ConvertToURL(argDir~storeToDirectory || pathDeli || workTitle".odt")
+      end
+      else  -- store to "current" directory, wherever that is ...
+      do
+         url=ConvertToURL(directory() || "\" || workTitle".odt")
+      end
+         -- save created document as odt-file
+      oWriterComponent~XStorable~storeAsURL(url, .UNO~noProps)
+
+      if argView=3 then        -- print the created document to the default printer
+      do
+         xPrintable = oWriterComponent~XPrintable
+         --xPrintable~setPrinter(props)
+         xPrintable~print(.UNO~noProps) -- print the file to default printer
+      end
+         -- create a pdf-file from the created odt file
+      else if argView=4 then   -- create a pdf-file from the created odt file
+      do
+         xStorable = oWriterComponent~XStorable -- get xStorable interface
+
+         -- convert the document to a pdf-file
+         props = bsf.createArray(.UNO~propertyValue, 2)
+         props[1] = uno.createProperty("FilterName"  , "writer_pdf_Export")
+         props[2] = uno.createProperty("CompressMode", 2)
+
+         storeURL = substr(url, 1, lastpos(".", url)) || "pdf" -- create output file name
+         xStorable~storeToUrl(storeURL, props) -- store the file with props to URL
+      end
+   end
+
+      -- make sure that no "save modification" questions are asked!
+   oWriterComponent~XModifiable~setModified(.false)
+
+   say "-"~copies(78)
+
+   return .true
+
+
+
+/* 2009-02-21, rgf: set title of writer component to reflect UNO IDL name and
+                    start of time, append OOo component.
+*/
+::routine setWriterCopmonentFrameTitle
+   use strict arg xModel, newTitle
+
+   -- make sure we escape if a runtime error (e.g. undocumented XTitle
+   -- interface not available in installation) occurs
+   signal on any     -- if any condition arises, continue at label "ANY:"
+
+      -- get the XTitle interface
+   xTitle=xModel~getCurrentController~getFrame~XTitle
+
+   parse value xTitle~title with f "-" rest  -- trailing name of product and document type ?
+
+   if rest<>"" then xTitle~title=newTitle "-" rest -- reuse trailing infos
+               else xTitle~title=newTitle
+
+any:
+   return
+
+
+
+/* Create the document's name without extension. */
+::routine createDocumentBaseTitle
+  use arg uno_idl="UNO IDL Name n/a !"
+
+   len=40
+   if length(uno_idl)>len then   -- too long (a '+' concatenated list of UNO service names?)
+      uno_idl=substr(uno_idl, 1, len)"..."
+
+   return "UNO_API_INFO-"uno_idl"-".DateTime~new~string~translate("__",":/") -- ~changeStr(":","_")
+
+
+
+/* Routine that takes an UNO_WithDefinitionsMember reference and returns
+   a new relation object where each index represents an UNO-type and associates
+   all according members with it.
+*/
+::routine makeUNOTypeRel
+  use strict arg objRef
+
+  tmpRel=objRef~definitions         -- get the relation with the members
+  newRel=.relation~new              -- create a new relation
+  s=tmpRel~supplier
+  do while s~available
+     newRel[s~item~unoTypeName]=s~item -- associate item with index containing the UNO type name
+     s~next                         -- get next index/item pair from the supplier
+  end
+  return newRel                     -- return new relation
+
+
+/* Create the subsection "Overview", "Listing by UNO Types", "Graphical Overview" */
+::routine createSections
+   use strict arg xWriterDocument, xDMsf, xText, refObj, hintText="", argNrOfLayers, sectionTitle, arrArgUNO_Object
+
+   xTextCursor = xText~createTextCursor   -- create a text cursor
+   xTextCursor~gotoEnd(.false)
+
+   paraBreak=.scholz~ooo.paragraph_break     -- gets used multiple times in this routine
+
+   rows=0
+   if refObj~isA(.uno_definitionWithMembers) then
+     rows=refObj~definitions~allItems~items+1
+
+     -- create main section heading
+   call createMainSectionHeading xDMsf, xText, refObj, argNrOfLayers, sectionTitle, arrArgUNO_Object
+   if hintText<>"" then
+   do
+
+      /* create the TextObject and the TextCursor */
+      props = xTextCursor~xPropertySet -- get the properties for this xTextCursor
+      props~setPropertyValue("CharFontName", .scholz~font)
+      props~setPropertyValue("CharHeight",   .scholz~defaultCharHeight)
+      props~setPropertyValue("CharWeight",   .scholz~NORMAL)
+
+      xText~insertControlCharacter(xText~getEnd, paraBreak, .false)
+      xText~insertString(xTextCursor, hintText, .false)
+      xText~insertControlCharacter(xText~getEnd, paraBreak, .false)
+   end
+
+     -- create overview table (rgf)
+   call createTableOverview xDMsf, xText, refObj, argNrOfLayers, arrArgUNO_Object
+   xText~insertControlCharacter(xText~getEnd, paraBreak, .false)
+
+      -- create listing by unoTypes (rgf)
+   call createTableByTypes  xDMsf, xText, refObj, argNrOfLayers, arrArgUNO_Object
+   xText~insertControlCharacter(xText~getEnd, paraBreak, .false)
+
+   if rows > 5 then
+   do
+if .bDebug=.true  then say "page_before in line #" .line "... rows > 5, i.e. rows="rows
+     xTextCursor~xPropertySet~setPropertyValue("BreakType",.scholz~ooo.page_BEFORE)
+   end
+   else
+     xText~insertControlCharacter(xText~getEnd, paraBreak, .false)
+
+     -- create overview graphic (rgf)
+   -- if refObj~isA(.uno_definitionWithMembers) then
+   if .scholz~noMembers=.true then -- .scholz~noMembers~equals("TRUE") then
+      .scholz~rectanglePosY = 2000
+
+   call createGraphicOverview  xWriterDocument, xDMsf, xText, refObj, argNrOfLayers, arrArgUNO_Object
+   xText~insertControlCharacter(xText~getEnd, paraBreak, .false)
+
+
+/* Create Table of Content. */
+::routine create_TOC
+   use strict arg xDMsf, xText, xWriterDocument, argNrOfLayers, arrArgUNO_Object, argNumberingTypeLevel_1, argNumberingTypeLevel_2, argNumberingTypeLevel_3
+
+      -- TOC
+   contentInd = xDMsf~createInstance("com.sun.star.text.ContentIndex")
+   contentProps = contentInd~XPropertySet
+
+   xFamiliesSupplier = xWriterDocument~XStyleFamiliesSupplier
+   xParaStyleFamily = xFamiliesSupplier~getStyleFamilies~getByName("ParagraphStyles")~XNameContainer
+
+   call ParaStyle "ParaStyleHeading", contentProps,xParaStyleFamily, 14
+   call ParaStyle "ParaStyleLevel1",  contentProps,xParaStyleFamily, 12
+   call ParaStyle "ParaStyleLevel2",  contentProps,xParaStyleFamily, 10
+   call ParaStyle "ParaStyleLevel3",  contentProps,xParaStyleFamily, 10
+
+   contentProps~setPropertyValue("CreateFromOutline", .scholz~java.true)
+   contentProps~setPropertyValue("IsProtected",       .scholz~java.true)
+
+   short3=box("short", 3)     -- Java Short object representing the value "3"
+   contentProps~setPropertyValue("Level",             short3)
+   contentProps~setPropertyValue("Title",             "Table Of Content")
+
+      -- TEXT CONTENT auf TOC setzen und formatieren
+   contentTextContent = contentInd~xTextContent()
+      -- insert TOC
+   xText~insertTextContent(xText, contentTextContent, .false )
+
+   contentTextContent~XPropertySet~setPropertyValue("Level", short3)
+
+   /* create two-dimensional array of type PropertyValue */
+   propsToc = bsf.createArray(.UNO~PropertyValue, 6, 3)
+
+   /* now set the property values */
+
+      /* rgf, 2009-02-15, - *very* subtle bug: if using the ScriptContext objects, than
+                            an error occurs, if the third elements are left out (because
+                            no TabStopFillCharacter is defined);
+
+                            this works if working via UNO.createDesktop() (i.e. with a
+                            new connection to OOo), which makes this a very subtle problem!
+
+                            supplying an empty PropertyValue solves the problem
+      */
+    -- show chapter numbering
+   nullEntry=.uno~propertyValue~new -- empty PropertyValue
+
+   propsToc[1,1]=uno.createProperty("TokenType",           "TokenEntryNumber")
+   propsToc[1,2]=uno.createProperty("CharacterStyleName",  "")
+   propsToc[1,3]=nullEntry
+    -- show hyperlink
+   propsToc[2,1]=uno.createProperty("TokenType",           "TokenHyperlinkStart")
+   propsToc[2,2]=uno.createProperty("CharacterStyleName",  "")
+   propsToc[2,3]=nullEntry
+
+   propsToc[3,1]=uno.createProperty("TokenType",           "TokenEntryText")
+   propsToc[3,2]=uno.createProperty("CharacterStyleName",  "")
+   propsToc[3,3]=nullEntry
+
+   propsToc[4,1]=uno.createProperty("TokenType",           "TokenHyperlinkEnd")
+   propsToc[4,2]=uno.createProperty("CharacterStyleName",  "")
+   propsToc[4,3]=nullEntry
+
+   propsToc[5,1]=uno.createProperty("TokenType",           "TokenTabStop")
+   propsToc[5,2]=uno.createProperty("TabStopRightAligned", .scholz~java.true)
+   propsToc[5,3]=uno.createProperty("TabStopFillCharacter",".")
+
+    -- show page number
+   propsToc[6,1]=uno.createProperty("TokenType",           "TokenPageNumber")
+   propsToc[6,2]=uno.createProperty("CharacterStyleName",  "")
+   propsToc[6,3]=nullEntry
+
+   LevelFormat = contentProps~getPropertyValue("LevelFormat")
+   LevelFormat~xIndexAccess~xIndexReplace~replaceByIndex(1, propsToc)
+   LevelFormat~xIndexAccess~xIndexReplace~replaceByIndex(2, propsToc)
+   LevelFormat~xIndexAccess~xIndexReplace~replaceByIndex(3, propsToc)
+
+   xChapterNumberingSupplier = xWriterDocument~XChapterNumberingSupplier
+   xChapterNumberingRules = xChapterNumberingSupplier~getChapterNumberingRules()
+
+   aChapterNumberingArray=bsf.createArray(.uno~propertyValue,3)
+
+   call setNumberingType aChapterNumberingArray, xChapterNumberingRules, "Heading 1", argNumberingTypeLevel_1, 1
+   call setNumberingType aChapterNumberingArray, xChapterNumberingRules, "Heading 2", argNumberingTypeLevel_2, 2
+   call setNumberingType aChapterNumberingArray, xChapterNumberingRules, "Heading 3", argNumberingTypeLevel_3, 3
+
+   return contentTextContent
+
+
+  -- routine for setting the numbering type for each heading style
+::routine setNumberingType
+  use arg aChapterNumberingArray, xChapterNumberingRules, heading, numberingType, index
+
+  aChapterNumberingArray[1]=uno.createProperty("HeadingStyleName", heading)
+  aChapterNumberingArray[2]=uno.createProperty("NumberingType",    box("short",numberingType))
+  aChapterNumberingArray[3]=uno.createProperty("Suffix",           ". ")
+
+  xChapterNumberingRules~xIndexAccess~xIndexReplace~replaceByIndex(index,aChapterNumberingArray)
+
+
+::routine ParaStyle
+  use arg HeadingStyle, contentProps, xParaStyleFamily, paraCharHeight
+   sParaStyleHeading = contentProps~getPropertyValue(HeadingStyle)
+   xHeadingStyleProps = xParaStyleFamily~getByName(sParaStyleHeading)~xPropertySet
+   xHeadingStyleProps~setPropertyValue("CharFontName", .scholz~font)
+   xHeadingStyleProps~setPropertyValue("CharHeight", box("integer", paraCharHeight))
+
+
+/* Create the footer. */
+::routine create_footer
+   use strict arg xDMSf, xWriterDocument, title
+
+      -- create the footer
+   xFamiliesSupplier = xWriterDocument~XStyleFamiliesSupplier
+   xStyle = xFamiliesSupplier~getStyleFamilies~getByName("PageStyles")~XNameContainer
+   xFooter = xStyle~getByName("Standard")
+   FooterProperty = xFooter~xPropertySet
+   FooterProperty~setPropertyValue("FooterIsOn", .scholz~java.true)
+   footerText = FooterProperty~getPropertyValue("FooterText")~xText
+
+   -- change the "Footer" paragraph style to draw a border line on its top border
+   xParagraphStyles = xFamiliesSupplier~getStyleFamilies~getByName("ParagraphStyles")~XNameContainer
+   xFooterStyle = xParagraphStyles~getByName("Footer")
+      -- get and define the BorderLine
+   borderLine=.bsf~new("com.sun.star.table.BorderLine")
+   borderLine~OuterLineWidth=1   -- 1/100th mm
+      -- assign BorderLine to TopBorder
+   xFooterStyle~XPropertySet~setPropertyValue("TopBorder", borderLine)
+   xFooterStyle~XPropertySet~setPropertyValue("TopBorderDistance", box("int",50))
+
+      -- Creating the total number of pages
+   numberingType=box("Short", bsf.getConstant("com.sun.star.style.NumberingType", "ARABIC"))
+
+   pageCount = xDMsf~createInstance("com.sun.star.text.TextField.PageCount")
+   pageCountTC = pageCount~xTextContent()
+   pageCountPS=pageCount~XPropertySet()
+   pageCountPS~setPropertyValue("NumberingType", numberingType)
+
+      -- Creating the actual page number
+   pageNumber=xDMsf~createInstance("com.sun.star.text.TextField.PageNumber")
+   pageNumberTC=pageNumber~XTextContent()
+   pageNumberPS=pageNumber~XPropertySet()
+   pageNumberPS~setPropertyValue("NumberingType", numberingType)
+   pageNumberPS~setPropertyValue("SubType", box("Short", "1"))
+
+      -- Create the current date
+   datetime = xDMsf~createInstance("com.sun.star.text.TextField.DateTime")
+   datetimeProps = datetime ~XPropertySet()
+   datetimeProps~setPropertyValue("IsDate",  .scholz~java.true)
+   datetimeProps~setPropertyValue("IsFixed", .scholz~java.true)
+   datetimeTC = datetime~XTextContent()
+
+      -- Create the current time
+   datetime1 = xDMsf~createInstance("com.sun.star.text.TextField.DateTime")
+   datetimeProps1 = datetime1 ~XPropertySet()
+   datetimeProps1~setPropertyValue("IsDate",  .scholz~java.false)
+   datetimeProps1~setPropertyValue("IsFixed", .scholz~java.true)
+   datetimeTC1 = datetime1~XTextContent()
+
+      -- insert the footer text into the document
+   xTextCursorFooter = footerText~createTextCursor
+   cur = xTextCursorFooter~xPropertySet
+   cur~setPropertyValue("CharHeight", .scholz~footerCharHeight)
+   cur~setPropertyValue("CharFontName", .scholz~font)
+
+      -- insert the page number, the date and the time into the footer
+   footerText~getEnd~setString(title .scholz~line_Break)
+   footerText~insertTextContent(footerText~getEnd, datetimeTC, .false)
+   footerText~getEnd~setString(", ")
+   footerText~insertTextContent(footerText~getEnd, datetimeTC1, .false)
+   footerText~getEnd~setString(.scholz~tab1'interrogating: "'.scholz~ooName .scholz~ooSetupVersion'"')
+
+   footerText~getEnd~setString(.scholz~tab1)
+   footerText~getEnd~setString("page ")
+   footerText~insertTextContent(footerText~getEnd, pageNumberTC, .false)
+   footerText~getEnd~setString(" of ")
+   footerText~insertTextContent(footerText~getEnd, pageCountTC, .false)
+   return
+
+
+/*  2008-08-22, rgf: if members are shown too, then insert a page with a hint for them;
+                     maybe defining a section with special formatting (e.g. edited footer, etc.)
+                     would be better
+*/
+::routine insertDelimiterPage
+   use Arg xText
+
+   /* create the TextObject and the TextCursor */
+   xTextCursor = xText~createTextCursor   -- create a text cursor
+   props = xTextCursor~xPropertySet -- get the properties for this xTextCursor
+   xTextCursor~gotoEnd(.false)      -- position at end of text
+
+      -- add paragraph and page break
+   xText~insertControlCharacter(xText~getEnd, .scholz~ooo.paragraph_break, .false)
+if .bDebug=.true  then say "page_before in line #" .line "... insertDelimiterPage()"
+  props~setPropertyValue("BreakType",.scholz~ooo.page_BEFORE)
+
+
+::routine insertTitleText
+   use Arg xText, title, charHeight=(.scholz~entry(14)), unoRefObject=.nil, place, heading, argNrOfLayers, serviceObject = .nil
+
+   /* create the TextObject and the TextCursor */
+   xTextCursor = xText~createTextCursor   -- create a text cursor
+   props = xTextCursor~xPropertySet -- get the properties for this xTextCursor
+   xTextCursor~gotoEnd(.false)      -- position at end of text
+   props~setPropertyValue("ParaStyleName",heading)  -- change heading style of a text
+
+   if argNrOfLayers = 2 | serviceObject = 1 then
+      props~setPropertyValue("ParaBackColor", .scholz~sectionBackgroundColor) -- section heading background color
+   else
+     props~setPropertyValue("ParaBackColor", .scholz~backColorNormal) -- normal background color
+
+   props~setPropertyValue("CharFontName", .scholz~font)
+   props~setPropertyValue("CharHeight",   charHeight)
+   props~setPropertyValue("CharWeight",   .scholz~bold)
+
+   if (place = "first") then
+   do
+      props~setPropertyValue("BreakType",.scholz~ooo.page_BEFORE)
+   end
+
+   if argNrOfLayers = 2 | serviceObject = 1 then
+   do
+      xText~insertString(xTextCursor, title, .false)          -- write bracket
+   end
+   else
+   do
+      /* set the headline */
+     parse var title "[" IDLname "]" rest
+     xText~insertString(xTextCursor, "[", .false)          -- write bracket
+     call setUrlWithText xText, idlName, unoRefObject      -- write IDL name with URL
+     xText~insertString(xTextCursor, "]" rest, .false)  -- write bracket
+   end
+
+      -- add paragraph break
+   xText~insertControlCharacter(xText~getEnd, .scholz~ooo.paragraph_break, .false)
+
+
+/* 2008-08-22, rgf: create main section heading */
+::routine createMainSectionHeading
+   -- create overview table
+   use Arg xDMsf, xText, refObj, argNrOfLayers, sectionTitle, arrArgUNO_Object
+
+   xTextCursor = xText~createTextCursor()
+   -- call insertTitleText xText, pp(refObj~fullyQualifiedName), , refObj, "first", "Heading 1"
+   -- if there is a second layer choosen then add the queried section to the headlines
+   if argNrOfLayers = 2 then
+   do
+      if sectionTitle <> "" then
+      do
+         call insertTitleText xText, sectionTitle, .scholz~Heading_1_CharHeight, , "first", "Heading 1", argNrOfLayers
+         call insertTitleText xText, pp(editName(refObj~fullyQualifiedName)), .scholz~Heading_2_CharHeight, refObj, , "Heading 2"
+      end
+      else
+      do
+         call insertTitleText xText, pp(editName(refObj~fullyQualifiedName)), .scholz~Heading_2_CharHeight, refObj,"first" , "Heading 2"
+      end
+   end
+   else
+   do
+      if arrArgUNO_Object~items>1 then
+      do
+         if sectionTitle <> "" then
+         do
+            serviceObject = 1
+            call insertTitleText xText, sectionTitle, .scholz~Heading_1_CharHeight, , "first", "Heading 1", , serviceObject
+            call insertTitleText xText, pp(editName(refObj~fullyQualifiedName)), .scholz~Heading_2_CharHeight, refObj, , "Heading 2"
+         end
+         else
+         do
+            call insertTitleText xText, pp(editName(refObj~fullyQualifiedName)), .scholz~Heading_2_CharHeight, refObj,"first" , "Heading 2"
+         end
+      end
+      else
+      do
+          call insertTitleText xText, pp(editName(refObj~fullyQualifiedName)), .scholz~Heading_1_CharHeight, refObj, "first", "Heading 1"
+      end
+    end
+
+
+   -- create overview table
+::routine createTableOverview
+   use Arg xDMsf, xText, refObj, argNrOfLayers, arrArgUNO_Object
+
+      -- set the paragraph style to Heading 3 or 2
+   if argNrOfLayers= 2 | arrArgUNO_Object~items > 1 then
+   do
+      heading = "Heading 3"
+      charSize = .scholz~Heading_3_CharHeight
+   end
+   else
+   do
+      heading = "Heading 2"
+      charSize = .scholz~Heading_2_CharHeight
+   end
+
+   call insertTitleText xText, pp(refObj~name) "("refObj~unoTypeName")"  "by Name", charSize, refObj, , heading
+
+   xText~insertControlCharacter(xText~getEnd, .scholz~ooo.paragraph_break, .false)
+   xTextCursor = xText~createTextCursor   -- create a text cursor
+   xTextCursor~gotoEnd(.false)
+
+      -- has members show them ordered in a table
+   if refObj~isA(.uno_definitionWithMembers) then
+   do
+      refObjTypeName=refObj~unoTypeName
+         -- get the relation object with members, get at allItems, sort them
+      allMembers=refObj~definitions~allItems~sort
+
+      /* create the table */
+      xTextTable = xDMsf~createInstance("com.sun.star.text.TextTable")~XTextTable
+      nrRows=allMembers~items+1        -- add one more row for headings
+      xTextTable~initialize(nrRows, 2) -- initialize the table
+
+      /* insert TextTable in the Text */
+      xText~insertTextContent(xTextCursor, xTextTable, .false)
+
+      /* insert the headlines into the table */
+      call setCellText xTextCursor, "A1", "Member Name", xTextTable, 10, "BOLD"
+      call setColumnWidth "A1", xTextTable
+      call setCellText xTextCursor, "B1", "Type",        xTextTable, 10, "BOLD"
+      call setColumnWidth "B1", xTextTable
+
+      /* insert the fullyqualified name into the first column
+         and the unoName into the second column of the table */
+      -- do i=1 to allMembers~items
+        -- row=i+1
+      row=1
+      n = 1
+      do member over allMembers
+        row+=1
+        typeName=member~unoTypeName
+        if wordpos(typeName, "UNO_PROPERTY UNO_ATTRIBUTE UNO_METHOD")>0 | refObjTypeName="UNO_MODULE" then
+           call setCellText xTextCursor, "A"row, n || .scholz~tab1 || member~name, xTextTable, 9, "NORMAL", member, refObj
+        else
+           call setCellText xTextCursor, "A"row, n || .scholz~tab1 || editName(member~fullyQualifiedName), xTextTable, 9, "NORMAL", member, refObj
+
+        call setColumnWidth "A"row, xTextTable
+        call setCellText xTextCursor, "B"row, typeName, xTextTable, 9
+        n+=1
+      end
+      .scholz~noMembers = .false
+   end
+   else
+   do
+      if refObj~unoTypeName="UNO_TYPEDEF" then
+      do
+         call createUNO_TYPEDEFINITION_info xDMsf, xText, refObj, argNrOfLayers, arrArgUNO_Object
+      end
+      else
+      do
+         xText~insertString(xTextCursor, "(No members available!)", .false)
+      end
+     .scholz~noMembers = .true
+   end
+   return
+
+
+-- rgf, 2009-02-18: UNO_TYPEDEFs need to be rendered differently! They should
+-- display the referenced Type
+::routine createUNO_TYPEDEFINITION_info
+   use Arg xDMsf, xText, refObj, argNrOfLayers, arrArgUNO_Object
+
+      /* create the table */
+      xTextTable = xDMsf~createInstance("com.sun.star.text.TextTable")~XTextTable
+      xTextTable~initialize(1,1) -- initialize the table: 1 row, 1 column
+
+      /* insert TextTable in the Text */
+      xTextCursor = xText~createTextCursor~~gotoEnd(.false)
+      xText~insertTextContent(xTextCursor, xTextTable, .false)
+
+      tmpStr=refObj~referencedUnoTypeName":" || .scholz~tab1 || refObj~referencedType
+      call setCellText xTextCursor, "A1", tmpStr, xTextTable, 9, "BOLD", .nil, refObj
+   return
+
+
+
+   -- create table ordered by types
+::routine createTableByTypes
+   use Arg xDMsf, xText, refObj, argNrOfLayers, arrArgUNO_Object
+
+   if argNrOfLayers = 2 | arrArgUNO_Object~items>1 then
+      call insertTitleText xText, pp(refObj~name) "("refObj~unoTypeName") by UNO Types", .scholz~Heading_3_CharHeight, refObj, , "Heading 3"
+   else
+      call insertTitleText xText, pp(refObj~name) "("refObj~unoTypeName") by UNO Types", .scholz~Heading_2_CharHeight, refObj, , "Heading 2"
+   xText~insertControlCharacter(xText~getEnd, .scholz~ooo.paragraph_break, .false)
+
+   xTextCursor = xText~createTextCursor   -- create a text cursor
+   xTextCursor~gotoEnd(.false)
+
+      -- has members show them ordered in a table
+   if refObj~isA(.uno_definitionWithMembers) then
+   do
+         -- get a relation where the items are associated with the UNO type names
+      memberRel=makeUNOTypeRel(refObj)
+      uniqueTypes=getUniqueItemTypes(memberRel)
+
+         /* create the table */
+      xTextTable = xDMsf~createInstance("com.sun.star.text.TextTable")~XTextTable
+
+      nrRows=memberRel~items+uniqueTypes~items+1
+      if refObj~unoTypeName~equals("UNO_CONSTANTS") | refObj~unoTypeName~equals("UNO_ENUM") then
+      do
+          xTextTable~initialize(nrRows, 2)       -- initialize the table
+      end
+      else
+      do
+         -- add one more row per UNO type (for heading) and one for title cell
+        xTextTable~initialize(nrRows, 1)       -- initialize the table
+      end
+
+      /* insert TextTable in the Text */
+      xText~insertTextContent(xTextCursor, xTextTable, .false)
+
+      call setCellText xTextCursor,"A1", "Name", xTextTable, 10, "BOLD"
+      if refObj~unoTypeName~equals("UNO_CONSTANTS")  | refObj~unoTypeName~equals("UNO_ENUM") then
+      do
+          call setCellText xTextCursor,"B1", "Value", xTextTable, 10, "BOLD"
+      end
+      row=2
+      do type over uniqueTypes      -- iterate over all found types
+         if memberRel~hasIndex(type)=.false then iterate
+
+         call setCellText xTextCursor, "A"row, type":", xTextTable, 9, "BOLD"
+         call setCellBackground "A"row, xTextTable
+         if refObj~unoTypeName~equals("UNO_CONSTANTS")  | refObj~unoTypeName~equals("UNO_ENUM") then
+         do
+            xTextTableCursor=xTextTable~createCursorByCellName("A"row) -- create cursor
+            xTextTableCursor~gotoCellByName("B"row, .true)             -- select area up to and including this cell
+            xTextTableCursor~mergeRange
+         end
+         if refObj~unoTypeName~equals("UNO_CONSTANTS") then
+            call setColumnWidth "A"row, xTextTable
+         row+=1
+
+         tmpArr=memberRel~allAt(type)~sort   -- get all items associated with this type, sort them
+         n = 1
+         do member over tmpArr
+            -- if wordpos(type, "UNO_PROPERTY UNO_ATTRIBUTE UNO_INTERFACE UNO_SERVICE UNO_EXCEPTION")>0 then
+            if wordpos(type, "UNO_PROPERTY UNO_ATTRIBUTE UNO_METHOD")>0 | refObjTypeName="UNO_MODULE" then
+            do
+               if member~unoTypeName~equals("UNO_PROPERTY") then
+               do
+                  if member~modifiers~items>0 then
+                  do
+                     tmpStr = ""
+                     tmpStr= "("|| member~modifiers~toString(, "+") ||")" -- wandle Array-Elemente in String
+                     call setCellText xTextCursor, "A"row, n || "09"x || member~name,                         xTextTable, 9, , member, refObj
+                     call setCellText xTextCursor, "A"row, " "tmpStr,                         xTextTable, 9
+                  end
+                  else
+                     call setCellText xTextCursor, "A"row, n || "09"x || member~name,                         xTextTable, 9, , member, refObj
+               end
+               else if member~unoTypeName~equals("UNO_METHOD") then
+               do
+                  call setCellText xTextCursor, "A"row, n || "09"x || member~toJavaSyntax, xTextTable, 9, , member, refObj, ,"UNO_METHOD"
+               end
+               else
+                  call setCellText xTextCursor, "A"row, n || "09"x || member~name,                         xTextTable, 9, , member, refObj
+            end
+            else
+            do
+               call setCellText xTextCursor, "A"row, n || "09"x || editName(member~fullyQualifiedName), xTextTable, 9, , member, refObj
+               if refObj~unoTypeName~equals("UNO_CONSTANTS")  | refObj~unoTypeName~equals("UNO_ENUM") then
+               do
+                  call setColumnWidth "A"row, xTextTable
+                  if refObj~unoTypeName~equals("UNO_ENUM")  then
+                  do
+                     if member~value = refObj~defaultValue then
+                        call setCellText xTextCursor, "B"row, "(default) "member~value, xTextTable, 9, , member, refObj, "right"
+                     else
+                        call setCellText xTextCursor, "B"row, member~value, xTextTable, 9, , member, refObj, "right"
+                  end
+                  else
+                     call setCellText xTextCursor, "B"row, member~value, xTextTable, 9, , member, refObj , "right"
+               end
+
+               if refObj~unoTypeName~equals("UNO_SERVICE") | refObj~unoTypeName~equals("UNO_INTERFACE") then
+               do
+                  parse var member membertype "[" servicename "|" membername "|" wholemembername "|" optional "]"
+                  if optional~equals("OPTIONAL") then
+                     call setCellText xTextCursor, "A"row, " (" || optional||")",                         xTextTable, 9
+               end
+            end
+
+            row+=1
+            n+=1
+         end
+      end
+   end
+   else
+   do
+      if refObj~unoTypeName="UNO_TYPEDEF" then
+      do
+         call createUNO_TYPEDEFINITION_info xDMsf, xText, refObj, argNrOfLayers, arrArgUNO_Object
+      end
+      else
+      do
+         xText~insertString(xTextCursor, "(No members available!)", .false)
+      end
+   end
+   return
+
+
+   -- create graphic overview
+::routine createGraphicOverview
+   use Arg xWriterDocument,xDMsf, xText, refObj, argNrOfLayers, arrArgUNO_Object
+
+   if argNrOfLayers = 2 | arrArgUNO_Object~items>1 then
+   do
+      heading = "Heading 3"
+      charSize=.scholz~Heading_3_CharHeight
+   end
+   else
+   do
+      heading = "Heading 2"
+      charSize=.scholz~Heading_2_CharHeight
+   end
+
+   call insertTitleText xText, pp(refObj~name) "("refObj~unoTypeName") Graphical", charSize, , refObj, heading
+
+   xTextCursor = xText~createTextCursor   -- create a text cursor
+   xTextCursor~gotoEnd(.false)
+   props = xTextCursor~xPropertySet -- get the properties for this xTextCursor
+
+      /* needs to be set to 9 point as Ms. Scholz' algorithm for calculating the
+         graphical shapes and text positions depends on that, rgf, 2009-02-14 */
+   titleSize=9
+   memberSize=titleSize-1
+   name=refObj~fullyQualifiedName
+
+      -- insert IDL name
+   call insertShapeTitle xDMsf, xText,xTextCursor, refObj~unoTypeName, name, titleSize,refObj,  "center"
+   xText~insertControlCharacter(xText~getEnd, .scholz~ooo.paragraph_break, .false)
+
+      -- has members, show them in sorted order
+   if refObj~isA(.uno_definitionWithMembers) then
+   do
+         -- get a relation where the items are associated with the UNO type names
+      memberRel=makeUNOTypeRel(refObj)
+      uniqueTypes=getUniqueItemTypes(memberRel)
+
+      refObjTypeName=refObj~unoTypeName
+
+         -- create a .endOfLine-delimited string of member names
+      do type over uniqueTypes            -- iterate over all UNO types
+         if memberRel~hasIndex(type)=.false then iterate
+
+         tmpStr=""
+         do member over memberRel~allAt(type)~sort -- get all members of given type, sort them
+            if wordpos(type, "UNO_PROPERTY UNO_ATTRIBUTE UNO_METHOD")>0 | refObjTypeName="UNO_MODULE" then
+               str=member~name
+            else
+               str=editName(member~fullyQualifiedName)
+
+            if tmpStr="" then
+               tmpStr=str
+            else
+               tmpStr=tmpStr || .endOfLine || str
+         end
+
+         -- call insertShape xDMsf, xText,xTextCursor, type, tmpStr, memberSize, refObj, "left"  -- create and insert shape
+         -- Call insertShape string, xText, xTextCursor, refObj, xDMsf, charSize, title
+         Call insertShape tmpStr, xText, xTextCursor, refObj, xDMsf, type
+      end
+   end
+   else
+   do
+
+      if refObj~unoTypeName<>"UNO_TYPEDEF" then
+         xText~insertString(xTextCursor, "(No members available!)", .false)
+   end
+  .scholz~rectanglePosX = .scholz~initialPosX
+  .scholz~rectanglePosY = .scholz~initialPosY
+  .scholz~maxRowHeight  = 0
+  .scholz~selectedUrl   = 0
+return
+
+
+
+insertShapeTitle: procedure   -- rgf, 2009-02-20
+   use arg xDMsf, xText,xTextCursor, title="title n/a", string="string n/a", charSize=8, refObj, alignment
+
+   xText~insertControlCharacter(xTextCursor, .scholz~ooo.paragraph_break, .false)
+
+         -- determine maximum width of shape (in chars)
+   maxCharLength=length(title)
+   tmpStr=string
+   do while tmpStr<>""
+      parse var tmpStr val (.endOfLine) tmpStr
+      maxCharLength=max(maxCharLength, length(val))
+   end
+   rectWidth =maxCharLength*.scholz~rect.charWidth + .scholz~rect.charWidthPad   -- format() used to round result to integer
+
+      -- +1 (one .endOfLine less than items) +1 (header) +1 (empty line)
+   nrOfEntries = (string~countStr(.endOfLine)+1+2)
+   rectHeight=(nrOfEntries)*.scholz~rect.charHeight+.scholz~rect.charHeightPad
+
+      -- create and insert a shape object
+   shape = xDMsf~createInstance("com.sun.star.drawing.RectangleShape")~xShape
+   shape~setSize(.awtSize~new(rectWidth,rectHeight))
+      -- set the anchor at_paragraph so the rectangle can be moved to another position
+   shape~xPropertySet~setPropertyValue("AnchorType", .scholz~ooo.AT_PARAGRAPH)
+   shape~xPropertySet~setPropertyValue("TextVerticalAdjust", .scholz~ooo.vertical_top)
+
+      -- calculate the position of the rectangles
+      -- the first rectangle is created in the middle of the page
+   -- if alignment~equals("center") then
+   do
+      nodeX=trunc((.scholz~rect.maxWidth-rectWidth)/2)
+      nodeY= .scholz~rectanglePosY
+      .scholz~rectanglePosY = .scholz~rectanglePosY + rectHeight
+      call shapeTextInsertion shape, nodeX, nodeY, xText, string, refObj, xDMsf, charSize, title
+   end
+   return
+
+
+/* --rgf, 2009-02-19, -- insert a page break, reset vars */
+newPage: procedure
+   use arg xText, xTextCursor
+
+    xText~insertControlCharacter(xTextCursor, .scholz~ooo.paragraph_break, .false)
+    props = xTextCursor~xPropertySet
+    props~setPropertyValue("BreakType",.scholz~ooo.page_BEFORE)
+   .scholz~rectanglePosX = .scholz~initialPosX
+   .scholz~rectanglePosY = .scholz~initialPosY
+   .scholz~maxRowHeight  = 0
+   return
+
+
+/* ---rgf, 2009-02-19, generalized routine to make sure that all members are displayed */
+-- arrangeRectangleHigh: procedure
+insertShape: procedure
+   -- use arg xDMsf, xText,xTextCursor, title="title n/a", string="string n/a", charSize=8, refObj, alignment
+   -- use arg string, rectWidth, nodeX, nodeY, xText, shape, nrOfEntries, xTextCursor, refObj, xDMsf, charSize=8, title=("n/a, line #" pp(.line))
+   -- use arg string, xText, xTextCursor, refObj, xDMsf, charSize=8, title=("n/a, line #" pp(.line))
+
+   use arg string, xText, xTextCursor, refObj, xDMsf, title=("n/a, line #" pp(.line)), charSize=8
+
+   /* We need additional rectangles (because of original implementaiton):
+
+      - use available height, calculate maximum number of entries possible
+      - check needed width
+
+         - if available width is too small -> new page, reset vars
+
+      - create rectangle, add content, update vars
+   */
+   totalEntries=string~countStr(.endOfLine)+1   -- how many entries
+   tmpString=string
+
+   do label hardWork while totalEntries>0, tmpString<>""
+                       -- total height           -- current Y-Pos         - Y-offset
+      availableHeight =.scholz~rect.maxHeight - (.scholz~rectanglePosY - .scholz~yReduction)
+      availableEntries=trunc((availableHeight - .scholz~rect.charHeightPad)/.scholz~rect.charHeight)
+      if availableEntries<3 then             -- not enough space left
+      do
+         call newPage xText, xTextCursor     -- insert a page break, reset vars
+         iterate hardWork
+      end
+
+      if availableEntries<totalEntries then  -- calculate number of possible entries
+         nrEntries=availableEntries
+      else
+         nrEntries=totalEntries
+
+      -- maxLen=0
+      maxLen=length(title)+4  -- determines size of rect, sometimes title is longer than member
+      strToProcess=""                        -- string containing members to process
+      do nrEntries                           -- get maximal length
+         parse var tmpString val (.endOfLine) tmpString
+         maxLen=max(maxLen, length(val))     -- get maximum length
+         if strToProcess="" then strToProcess=val
+                            else strToProcess=strToProcess || .endOfLine || val
+      end
+
+         -- if width is not available, do a page break and reset variables, and start over
+      neededWidth =maxLen*.scholz~rect.charWidth + .scholz~rect.charWidthPad
+
+         -- if too wide and not first column, then do a "carriage return, line feed"
+      -- if .scholz~oldWidth + neededWidth > .scholz~rect.maxWidth, .scholz~rectanglePosX>100 then -- no space, do a page break
+      if .scholz~rectanglePosX + neededWidth > .scholz~rect.maxWidth, .scholz~rectanglePosX>.scholz~initialPosX then -- no space, do a page break
+      do
+         -- check whether breaking the "row" would give us enough space
+         availableHeight = availableHeight - (.scholz~maxRowHeight-.scholz~yReduction)
+         availableEntries=trunc((availableHeight - .scholz~rect.charHeightPad)/.scholz~rect.charHeight)
+         if availableEntries<4 then
+         do
+            -- no place on page anymore, do a page-break and start over ....
+            call newPage xText, xTextCursor     -- insert a page break, reset vars
+               -- re-assemble string
+            if tmpString="" then tmpString=strToProcess
+                            else tmpString=strToProcess || .endOfLine || tmpString
+            iterate hardWork
+         end
+
+         -- o.k., reposition
+         .scholz~rectanglePosX=.scholz~initialPosX -- reset
+         .scholz~rectanglePosY=.scholz~rectanglePosY + .scholz~maxRowHeight - .scholz~yReduction
+      end
+         -- include title and empty line in calculations
+      neededHeight=(nrEntries+2)*.scholz~rect.charHeight+.scholz~rect.charHeightPad
+
+      /* create rectangle shape */
+      shape = xDMsf~createInstance("com.sun.star.drawing.RectangleShape")~xShape
+      shape~setSize(.awtSize~new(neededWidth,neededHeight))
+         -- set the anchor at_paragraph so the rectangle can be moved to another position
+      shape~xPropertySet~setPropertyValue("AnchorType", .scholz~.ooo.AT_PARAGRAPH)
+      shape~xPropertySet~setPropertyValue("TextVerticalAdjust", .scholz~ooo.vertical_top)
+
+      nodeX = .scholz~rectanglePosX
+      nodeY = .scholz~rectanglePosY
+
+      call shapeTextInsertion shape, nodeX, nodeY, xText, strToProcess, refObj, xDMsf, charSize, title
+
+      totalEntries=totalEntries-nrEntries -- subtract those that we have already processed
+      .scholz~rectanglePosX = .scholz~rectanglePosX + neededWidth + .scholz~rect.charWidthPad -- 500
+      .scholz~maxRowHeight  =max(.scholz~maxRowHeight, nodeY+neededHeight)
+   end hardWork
+   return
+
+
+
+  /* method for inserting the string into the rectangle and set the properties of the rectangle */
+shapeTextInsertion: procedure
+   use arg shape, nodeX, nodeY, xText, string, refObj, xDMsf, charSize=8, title=.nil
+
+   shape~setPosition(.awtPoint~new(nodeX, nodeY))
+   shape~xPropertySet~setPropertyValue("FillColor", .scholz~graphicBackgroundColor)
+   xTextContentShape = shape~xTextContent    -- get xTextContent rendering
+   xText~insertTextContent(xText~getEnd, xTextContentShape, .false)  -- insert shape
+
+      -- get text object, add text to shape
+   xShapeText = Shape~xText
+   xShapeTextCursor = xShapeText~createTextCursor
+   xShapeTextCursor~gotoEnd(.false)
+   props = xShapeTextCursor~xPropertySet          -- get properties
+      -- define common properties
+   props~setPropertyValue("CharFontName", .scholz~font)
+   props~setPropertyValue("CharHeight",   .scholz~entry(charSize))
+
+      -- define property for title text
+   props~setPropertyValue("CharWeight",   .scholz~bold)
+
+   xShapeText~insertString(xShapeTextCursor, .scholz~line_Break , .false)
+   xShapeText~insertString(xShapeTextCursor, title, .false)   -- write title
+
+   xShapeText~insertControlCharacter(xShapeText~getEnd, .scholz~ooo.paragraph_break, .false)
+   xShapeText~insertControlCharacter(xShapeText~getEnd, .scholz~ooo.paragraph_break, .false)
+
+      -- define property for rest of text
+   xShapeTextCursor~gotoEnd(.false)
+   props~setPropertyValue("CharWeight",   .scholz~NORMAL)-- reset font to normal
+
+   do while string<>""
+      parse var string val (.endOfLine) string
+      call setUrlWithText xText, val, refObj, , , xDMsf, xShapeText, val, xShapeTextCursor
+   end
+  return
+
+
+/* Processes a fully qualified name.
+
+   kind="e[ncode]" ... return unqualified name, followed by path in round parenthesis (default)
+   kind="u[nqualified]" ... return unqualified name
+   kind="p[ath]"   ... return path, i.e. everything up to (but not including) the last dot
+*/
+::routine editName
+   use strict arg longName, kind="ENCODE"
+
+   kind=kind~space(0)~left(1)~translate -- get first char
+   if pos(kind,"EUP")=0 then         -- default to "E"ncode
+      kind="E"
+
+   pos=lastpos(".",longName)         -- a fully qualified name in hand?
+   if pos=0 then                     -- no, just return received name
+      return longName
+
+   shortName=substr(longName,pos+1)  -- extract unqualified name
+
+   if kind="E" then                  -- encode
+   do
+      if pos>1 then                  -- path given
+         return shortName "("left(longName,pos-1)")"
+      return longName                -- return name unchanged
+   end
+   else if kind="U" then             -- unqualified name
+   do
+      return shortName
+   end
+   else                              -- path
+   do
+      if pos>1 then                  -- chars before last dot, i.e. a path ?
+         return left(longName,pos-1)
+      return ""
+   end
+   return "n/a"                      -- will never execute
+
+
+
+/* Routine that inserts a text at the end of an XText object. If 'unoRefObject' (an UNO_Definition)
+   is given, then define a URL for the text; if in addition 'xref' is true, then add the string "[xref]"
+   with the appropriate link.
+*/
+::routine setUrlWithText
+   use strict arg xText, strText, unoRefObject=.nil, xref=.true, parentRefObject=.nil,xDMsf=.nil, xShapeText=.nil, string=.nil, xShapeTextCursor=.nil
+
+   xTextCursor=xText~createTextCursor   -- get a text cursor for the xText object
+   xTextCursor~goToEnd(.false)          -- move cursor to the end of the xText object, clear selection
+
+   if xShapeTextCursor=.nil then
+      xText~insertString(xTextCursor, strText, .true) -- insert Text, select it
+
+   if unoRefObject<>.nil then       -- a reference possible, define the necessary URLs
+   do
+      -- get base URL append fully qualified name of UNO object, replace dots with forward slashes
+      fqn        =unoRefObject~fullyQualifiedName   -- get fully qualified name
+      linkTo     =fqn                               -- part of URL
+      unoTypeName=unoRefObject~unoTypeName          -- get UNO typename
+      if parentRefObject<>.nil then
+         parentTypeName=parentRefObject~unoTypeName -- get UNO typename of parent/container object
+      else
+         parentTypeName=.nil
+
+      bIsContained=.false   -- part of a container?
+      datatype=""           -- indicate no datatype
+
+      if parentRefObject<>.nil then
+      do
+         -- a member object (e.g. UNO_SERVICE, UNO_EXCEPTION, etc.?)
+         if unoRefObject~hasMethod("PARENT") then    -- no fully qualified name, a member, e.g. a property
+         do
+            -- get parent's (container's) fully qualified name
+            linkTo=unoRefObject~parent~fullyQualifiedName
+            -- e.g.: http://api.openoffice.org/docs/common/ref/com/sun/star/embed/Storage#MediaType
+
+            chunk="#"||unoRefObject~name
+            bIsContained=.true
+         end
+         else if unoRefObject~hasMethod("DEFINEDBY") then
+         do
+            linkTo=unoRefObject~definedBy     -- get parent's/container's name
+            chunk="#"||unoRefObject~name
+            bIsContained=.true
+         end
+
+         if wordPos(unoTypeName, "UNO_PROPERTY UNO_ATTRIBUTE")>0 then  -- get datatype?
+         do
+             -- get Java name of the datatype "javaDatatype:unoDatatype:referen
+            parse value unoRefObject~datatype with datatype ":" .
+         end
+      end
+
+      linkTo=.scholz~ooo.baseUrl  || linkTo~changestr(".","/")--
+
+      if xShapeText <> .nil then
+      do
+           -- create a text field at the document factory
+        xTextProps=xDMsf~createInstance("com.sun.star.text.TextField.URL")~XPropertySet
+        xTextProps~setPropertyValue("Representation",string)
+        xTextProps~setPropertyValue("TargetFrame", "_blank")
+        urlvariable = "URL"
+      end
+      else
+      do
+         xTextProps =xTextCursor~xPropertySet -- get the properties for the text to be inserted
+         urlvariable = "HyperLinkURL"
+      end
+
+       -- define necessary section fragment identifiers
+      select
+         when unoTypeName = ("UNO_SERVICE")   then linkTypeName = "#Services"
+         when unoTypeName = ("UNO_INTERFACE") then linkTypeName = "#Interfaces"
+         when unoTypeName = ("UNO_CONSTANTS") then linkTypeName = "#ConstantGroups"
+         when unoTypeName = ("UNO_EXCEPTION") then linkTypeName = "#Exceptions"
+         when unoTypeName = ("UNO_STRUCT")    then linkTypeName = "#Structs"
+         when unoTypeName = ("UNO_ENUM")      then linkTypeName = "#Enums"
+         when unoTypeName = ("UNO_TYPEDEF")   then linkTypeName = "#Typedefs"
+         when unoTypeName = ("UNO_MODULE")    then linkTypeName = ""
+         otherwise linkTypeName=""
+      end
+
+      /* define the link property */
+      if bIsContained then     -- part of a collection!
+      do
+         -- as of OOo 2.4.0 (2008-04-04): no 'id' for targets available in module
+         if parentTypeName="UNO_MODULE" then
+         do
+            if .scholz~selectedUrl = 2 then
+               xTextProps~setPropertyValue(urlvariable, linkTo||"/module-ix.html") -- set a property value for the cell
+            else
+               xTextProps~setPropertyValue(urlvariable, linkTo||"/module-ix.html"||linkTypeName) -- set a property value for the cell
+         end
+         else
+         do
+            if .scholz~selectedUrl = 1 then
+               xTextProps~setPropertyValue(urlvariable, linkTo||chunk) -- set a property value for the cell
+            if .scholz~selectedUrl = 2 then
+               xTextProps~setPropertyValue(urlvariable, linkTo||".html") -- set a property value for the cell
+            else
+               xTextProps~setPropertyValue(urlvariable, linkTo||".html"||chunk) -- set a property value for the cell
+         end
+         xref=.false                 -- there are no xref's for members
+      end
+      else
+      do
+         if unoTypeName="UNO_MODULE" then
+         do
+            xTextProps~setPropertyValue(urlvariable, linkTo||"/module-ix.html")
+            xref=.false              -- there are no xref's for modules
+         end
+         else if unoTypeName="UNO_STRUCT" then
+         do
+            xTextProps~setPropertyValue(urlvariable, linkTo||".html")
+         end
+         else
+         do
+            if .scholz~selectedUrl = 1 then
+               xTextProps~setPropertyValue(urlvariable, linkTo)
+            else
+               xTextProps~setPropertyValue(urlvariable, linkTo||".html")
+         end
+      end
+
+      if xShapeText = .nil then
+      do
+--         xText~insertString(xTextCursor, strText, .false) -- insert Text
+         xTextCursor~goToEnd(.true)   -- move cursor to the end of the xText object, clear selection
+         if datatype<>"" then
+            xText~insertString(xTextCursor, " <"datatype">", .true) -- insert datatype info
+
+
+         /* insert the xref-URL too ? */
+         if xref=.true then
+         do
+-- rgf: OOo 3.2 bug, hence select inserted text and set HyperLinkUrl property for selected text explicitly
+            xTextCursor~goToEnd(.false)
+            xText~insertString(xTextCursor, " [xref]", .true)   -- Leerzeichen
+            refURL=linkTo || "-xref.html"
+            xTextProps~setPropertyValue("HyperLinkURL", refUrl) -- set a property value for the cell
+         end
+      end
+      else
+      do
+         xFieldTextContent=xTextProps~XTextContent
+         -- insert the field at the SHAPE text
+         xShapeText~insertTextContent(xShapeTextCursor, xFieldTextContent, .false)
+         xShapeText~insertControlCharacter(xShapeTextCursor, .scholz~ooo.paragraph_break, .false)
+      end
+
+       if xShapeText = .nil then
+       do
+           -- make sure we remove the URL from now on
+          xTextCursor~goToEnd(.false)   -- move cursor to the end of the xText object, clear selection
+          xTextProps~setPropertyValue("HyperLinkURL", "")  -- set a property value for the cell
+       end
+   end
+   xTextCursor~goToEnd(.false)   -- move cursor to the end of the xText object, clear selection
+   return
+
+
+::routine setCellText
+       -- define default values for 'charsize' and 'weight' in case they are omitted
+   use arg xTextCursor, cell, text, xTextTable, charsize="10", weight="NORMAL", unoRefObject=.nil, parentRefObject=.nil, alignB, method
+    xCellText = xTextTable~getCellByName(cell)~XText
+ 	cursorProps = xCellText~createTextCursor~XPropertySet
+ 	cursorProps~setPropertyValue("CharColor",   .scholz~charColor)
+ 	cursorProps~setPropertyValue("CharFontName",.scholz~font)
+ 	cursorProps~setPropertyValue("CharHeight",  .scholz~entry(charSize)) -- set font size
+ 	cursorProps~setPropertyValue("CharWeight",  .scholz~entry(weight))
+
+ 	if  text~pos("(default)")<> 0 then
+ 	  cursorProps~setPropertyValue("CharPosture",  .scholz~ooo.italic)
+
+ 	if alignB="right"  then --text~length=1 | text~pos("(default)")<> 0
+ 	  cursorProps~setPropertyValue("ParaAdjust", .scholz~ooo.para_right)
+
+ 	-- the text of an UNO_METHOD has to be parsed to separate the additional information from the method name
+ 	if method~equals("UNO_METHOD")then
+ 	do
+       parse var text returnType type methodName "(" +0 rest
+       call setUrlWithText xCellText, returnType, unoRefObject, ,parentRefObject
+       call setUrlWithText xCellText, .scholz~tab1 || type" ", unoRefObject, ,parentRefObject
+       cursorProps~setPropertyValue("CharWeight", .scholz~bold)
+       call setUrlWithText xCellText, methodName, unoRefObject, ,parentRefObject
+       cursorProps~setPropertyValue("CharWeight",  .scholz~entry(weight))
+       call setUrlWithText xCellText, rest, unoRefObject, ,parentRefObject
+    end
+    else
+    do
+       call setUrlWithText xCellText, text, unoRefObject, ,parentRefObject
+    end
+    return
+
+
+  -- routine to set the background color of a table cell
+::routine setCellBackground
+   use arg cell, xTextTable
+   xTextTableCursor = xTextTable~createCursorByCellName(cell)
+   xTextTableCursor~XPropertySet~setPropertyValue("BackColor", .scholz~backColorCell)
+   return
+
+
+  -- routine to change the column width of a table
+::routine setColumnWidth
+   use arg cell, xTextTable
+   xTextTableCursor = xTextTable~createCursorByCellName(cell)
+   xTableProps=xTextTable~xPropertySet
+   colRelSum=xTableProps~getPropertyValue("TableColumnRelativeSum") -- usually: 10000
+   colSeparators=xTableProps~getPropertyValue("TableColumnSeparators") -- total sum
+   colSeparators[1]~position=trunc(colRelSum*0.70)  -- new position of the column separator
+     -- set the property with the calculated position of the seperator
+   xTableProps~setPropertyValue("TableColumnSeparators", colSeparators)
+   return
+
+
+   -- method to count the UNO-Types the relation contains
+::routine getDatatypeCount
+   use arg coll
+   count=0
+      -- "hasIndex" returns .true=1 or .false=0, hence just add those values up
+   do type over .scholz~uno.types
+      count=count+coll~hasIndex(type)  -- just add those values up
+   end
+   return count
+
+
+   -- return a sorted array containing all unique types found in index
+::routine getUniqueItemTypes
+   use arg relation
+
+   set=.set~new
+   s=relation~supplier
+   do while s~available
+      set~put(s~index)
+      s~next
+   end
+
+   return set~allIndexes~sortWith(.CaselessComparator~new)
+
+
+/* ---rgf, 2009-02-15: - now forcing to supply the xContext argument */
+::routine query_OOo_Installation
+   use strict arg xContext
+
+     -- get the version of Open Office
+   xMCF = xContext~getServiceManager   -- retrieve XMultiComponentFactory
+
+     -- get service object
+   service="com.sun.star.configuration.ConfigurationProvider"
+   sProvider=xMCF~createInstanceWithContext(service, xContext)
+   xProvider=sProvider~XMultiServiceFactory  -- get its service manager
+
+     -- create property array to query version
+   propArr=bsf.createArray(.uno~propertyValue, 1)
+   propArr[1]=uno.createProperty("nodepath", "/org.openoffice.Setup/Product")
+
+     -- get a read-only ConfigurationAccess from the sProvider's service manager
+   service="com.sun.star.configuration.ConfigurationAccess"
+   aSettings=xProvider~createInstanceWithArguments(service, propArr)
+   xSettings=aSettings~xNameAccess           -- get interface to access by name
+
+      -- save name and version of product in .local
+   .scholz~ooName        =xSettings~getByName("ooName")
+
+   name="ooSetupVersionAboutBox"    -- e.g. "3.0.1", rgf, 2009-03-23
+   if xSettings~hasByName(name) then
+      .scholz~ooSetupVersion=xSettings~getByName(name)         -- e.g. "3.0"
+   else
+      .scholz~ooSetupVersion=xSettings~getByName("ooSetupVersion")   -- e.g. "3.0"
+
+   return
+
+
+/* rgf, 2009-02-15: Locates or creates the XDesktop and the XContext (actually
+                    the XComponentContext) objects to work with, adding them to
+                    the passed directory object.
+*/
+::routine queryRuntimeObjects
+   use arg runtime
+
+   sc=uno.getScriptContext()  -- if dispatched as a macro by OOo, this will not be .nil
+   if sc<>.nil then           -- use the ScriptContext XDesktop and XComponentContext
+   do
+      if .rgf.debug=.true then .error~say("--> UNO_API_Info.rxo@queryRuntimeObjects(): /using ScriptContext objects...")
+
+      if \runtime~hasEntry("XContext") then
+         runtime~XContext=sc~getComponentContext
+
+      if \runtime~hasEntry("XDesktop") then
+         runtime~XDesktop=sc~getDesktop
+   end
+   else  -- no ScriptContext, if necessary establish a new connection, if necessary create a XDesktop with the XContext
+   do
+      if .rgf.debug=.true then .error~say("--> UNO_API_Info.rxo@queryRuntimeObjects(): \establishing a new connection...")
+
+      if \runtime~hasEntry("XContext") then
+         runtime~XContext=uno.connect()   -- create a new connection, save returned XContext
+
+      if \runtime~hasEntry("XDesktop") then
+         runtime~XDesktop=uno.createDesktop(runtime~xContext)~XDesktop
+   end
+
+   return runtime
+
+
+/* initialization on very first invocation */
+::routine initialize
+      -- define a directory to store all kind of useful data for this application, i.e.
+      -- (standard) values that we need over and over
+   .local~scholz=.directory~new
+      -- constants
+   .scholz~line_break      = "0a"x  -- linefeed character
+   .scholz~tab1            = "09"x  -- tabulator character
+
+      -- pre-defined font sizes boxed as Java Float objects, sizes "6" through "14"
+   do i=6 to 14
+     .scholz[i]=box("float",i)
+   end
+
+      -- get Java constants we need often
+   javaClassName="com.sun.star.text.ControlCharacter"
+   .scholz~ooo.paragraph_break = bsf.getConstant(javaClassName, "PARAGRAPH_BREAK")
+
+   javaClassName="com.sun.star.style.BreakType"
+   .scholz~ooo.page_before     = bsf.getConstant(javaClassName, "PAGE_BEFORE")
+
+   javaClassName="com.sun.star.text.TextContentAnchorType"
+   .scholz~ooo.at_paragraph    = bsf.getConstant(javaClassName, "AT_PARAGRAPH")
+
+   javaClassName="com.sun.star.awt.FontSlant"
+   .scholz~ooo.italic          = bsf.getConstant(javaClassName, "ITALIC")
+
+   javaClassName="com.sun.star.style.ParagraphAdjust"
+   .scholz~ooo.para_right           = bsf.getConstant(javaClassName, "RIGHT")
+
+   javaClassName="com.sun.star.drawing.TextVerticalAdjust"
+   .scholz~ooo.vertical_top             = bsf.getConstant(javaClassName, "TOP")
+
+   awtfontWeight="com.sun.star.awt.FontWeight"
+   .scholz~bold  =box("float", bsf.getConstant(awtFontWeight, "BOLD"))
+   .scholz~NORMAL=box("float", bsf.getConstant(awtFontWeight, "NORMAL"))
+
+   .scholz~underline_none=box("short", bsf.getConstant("com.sun.star.awt.FontUnderline", "NONE"))
+
+
+      -- needed quite often for setting boolean properties
+   .scholz~java.true =box("Boolean", .true)      -- Java Boolean object representing .true
+   .scholz~java.false=box("Boolean", .false)     -- Java Boolean object representing .false
+
+      -- define Internet base URL for the OOo documentation
+   .scholz~ooo.baseUrl="http://api.openoffice.org/docs/common/ref/"
+
+      -- array of UNO types, make sure it is sorted
+   .scholz~uno.types=.array~of("UNO_ATTRIBUTE", "UNO_CONSTANTS", "UNO_ENUM",   "UNO_EXCEPTION", -
+                               "UNO_INTERFACE", "UNO_METHOD",    "UNO_MODULE", "UNO_PROPERTY",  -
+                               "UNO_SERVICE",   "UNO_SINGLETON", "UNO_STRUCT", "UNO_TYPEDEF")   -
+                               ~ sort
+
+      -- import those Java classes that we need multiple times
+   call bsf.import "com.sun.star.awt.Size",       "awtSize"
+   call bsf.import "com.sun.star.awt.Point",      "awtPoint"
+
+   .scholz~rect.maxHeight=17750  -- 18500 -- maximal height of graphical box
+   .scholz~rect.maxWidth=17000   -- maximal width of area in which we may have graphical boxes
+
+   -- char height measurements
+   .scholz~rect.charHeight   =350   -- char calculated as 3.5 mm tall
+   .scholz~rect.charHeightPad=600   -- total vertical padding 6 mm
+
+   .scholz~HeadingCharHeight_1=14
+   .scholz~HeadingCharHeight_2=12
+   .scholz~HeadingCharHeight_3=11
+
+   -- char width measurements
+   .scholz~rect.charWidth   =200    -- char calculated as 2 mm wide
+   .scholz~rect.charWidthPad=500    -- total horizontal padding 5 mm
+
+         -- adjust roughly for inserted paragraphs to keep gaps of wrapped (CR-LF'd)
+         -- shapes to previous row within "reason"
+   .scholz~YReduction= 800 -- 600   -- 800
+
+   .scholz~initialPosX=50           -- most left coordinate, leave a few pixels such that left border gets seen
+   .scholz~initialPosY=0            -- most top coordinate
+
+   return
+
+
+
+/* Purpose: Define default values, replace them by explicit settings given in a
+            PropertyValue sequence or in an ooRexx MapCollection (like a directory)
+
+            Returns a directory object containing the values to work with.
+   rgf, 2009-02-16
+*/
+::routine createArgDirectory
+   use strict arg settings=.nil
+
+   argDir=.Properties~new
+    -- define the default values
+   argDir~NrOfLayers             = 1         -- analyze one layer/level only
+   argDir~NumberingTypeLevel_1   = 2         -- Uppercase Roman number
+   argDir~NumberingTypeLevel_2   = 4         -- Arabic number
+   argDir~NumberingTypeLevel_3   = 4         -- Arabic number
+   argDir~FontName               = "Arial"
+   argDir~View                   = 1         -- create and show a swriter document
+   argDir~DocumentationSource    = 1         -- use the Internet OOo documentation
+   argDir~DocumentationFolder    = ""        -- path to local installation of the OOo documentation
+   argDir~StoreToDirectory       = ""        -- denotes full path to directory, where the generated files
+                                             -- should get stored to, if View > 1
+
+    -- undocumented
+   argDir~LockControllers        = .false    -- while creating the document, lock controllers to inhibit screen updates?
+
+   argDir~FooterCharHeight       = box("float",  8)   -- footer character height
+   argDir~DefaultCharHeight      = box("float", 10)   -- default character height
+
+   argDir~Heading_1_CharHeight   = box("float", 14)   -- default Heading 1 height
+   argDir~Heading_2_CharHeight   = box("float", 12)   -- default Heading 2 height
+   argDir~Heading_3_CharHeight   = box("float", 11)   -- default Heading 3 height
+
+   argDir~BackColorCell          = box("int", "A4A4A4"x ~c2d)  -- grey
+   argDir~BackColorNormal        = box("int", "ffffff"x ~c2d)  -- white
+   argDir~CharColor              = box("int", 0)               -- black
+   argDir~GraphicBackgroundColor = box("int", "CECEF6"x ~c2d)  -- malve/violette
+   argDir~SectionBackgroundColor = argDir~graphicBackgroundColor
+      -- also entries XDesktop and XComponent can be given
+
+   if settings=.nil | settings~isA(.string) then   -- no arguments given, use the default settings
+      return argDir
+
+   if wordPos(settings~class~id, "BSF_ARRAY_REFERENCE UNO_ARRAY_PROXY")>0 then  -- an array (of PropertyValues) in hand?
+   do
+      do prop over settings                  -- assign settings from PropertyValue objects
+         propName=prop~name~strip~translate  -- put into uppercase
+         propValue=unbox(prop~value)         -- normalize
+
+         select
+            when pos("CHARHEIGHT", propName)>0 then propValue=box("float", propValue)
+            when pos("COLOR",      propName)>0 then propValue=box("int",   propValue)
+            otherwise nop
+         end
+
+         argDir~setEntry(propName, propValue)   -- save with name
+
+         if .bDebug=.true  then say "\\\ ... PropertyValue.name="pp(prop~name) pp(propName)":" pp(propValue)
+      end
+      return argDir
+   end
+
+    -- o.k. argument needs to be an ooRexx MapCollection (like .directory) in order
+    --      to work, otherwise a runtime error will be raised
+   do idx over settings
+      argName=idx~translate
+      argValue=unbox(settings[idx])    -- normalize
+
+      select
+         when pos("CHARHEIGHT", argName)>0 then argValue=box("float", value)
+         when pos("COLOR",      argName)>0 then argValue=box("int",   value)
+         otherwise nop
+      end
+
+      argDir~setEntry(argName, argValue)  -- this way we make sure index is uppercased
+
+      if .bDebug=.true  then say "/// ... idx="pp(idx) "argName="pp(argName)":" pp(argValue)
+   end
+   return argDir
+
+
+/*
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2008-2010 Nicole Scholz, Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+

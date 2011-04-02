@@ -1,0 +1,28 @@
+<!DOCTYPE Menu PUBLIC "-//freedesktop//DTD Menu 1.0//EN"
+    "http://www.freedesktop.org/standards/menu-spec/menu-1.0.dtd">
+
+<Menu>
+    <Name>Applications</Name>
+<Menu>
+    <Name>BSF4ooRexx</Name>
+    <Directory>rgf-bsf4oorexx_menu.directory</Directory>
+
+    <Menu>
+       <Name>Installation</Name>
+       <Include>
+           <Filename>rgf-bsf4oorexx_home.desktop</Filename>
+           <Filename>rgf-bsf4oorexx_setupjava.desktop</Filename>
+           <Filename>rgf-bsf4oorexx_reinstall.desktop</Filename>
+           <Filename>rgf-bsf4oorexx_uninstall.desktop</Filename>
+       </Include>
+    </Menu>
+
+    <Include>
+        <Filename>rgf-bsf4oorexx_information.desktop</Filename>
+        <Filename>rgf_bsf4oorexx_samples.desktop</Filename>
+        <Filename>rgf_bsf4oorexx_utilities.desktop</Filename>
+        <Filename>rgf-bsf4oorexx_samples.desktop</Filename>
+        <Filename>rgf-bsf4oorexx_utilities.desktop</Filename>
+    </Include>
+</Menu>
+</Menu>

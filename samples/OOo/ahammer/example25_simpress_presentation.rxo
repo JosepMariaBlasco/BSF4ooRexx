@@ -1,0 +1,78 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited by Rony G. Flatscher, 2010-07-20 */
+/* Example 25: create an empty impress document with two pages (slides), set properties for animations as well */
+
+   /* Retrieve the Desktop object, we need its XComponentLoader interface to load a new document */
+xDesktop         = UNO.createDesktop()       /* get the OOo XDesktop interface to the service object  */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* create an empty presentation (impress) document */
+url = "private:factory/simpress"
+impressComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, .UNO~noProps)
+
+   /* need document's factory to be able to create and insert objects in the document */
+xImpressFactory = impressComponent~XMultiServiceFactory
+
+   /* get draw page by index */
+xDrawPagesSupplier = impressComponent~XDrawPagesSupplier
+xDrawPages = xDrawPagesSupplier~getDrawPages
+xDrawPage0 = xDrawPages~getByIndex(0)~XDrawPage
+
+   /* set the properties to animate the first object automatically */
+xDrawPage0Props = xDrawPage0~XPropertySet
+xDrawPage0Props~setPropertyValue("Change", box("int", 2))
+
+   /* insert a new draw page (slide) and fetch it */
+xDrawPages~insertNewByIndex(1)
+xDrawPage1 = xDrawPages~getByIndex(1)~XDrawPage
+
+   /* create a RectangleShape and add it to DrawPage0 */
+shapeRectangle = xImpressFactory~createInstance("com.sun.star.drawing.RectangleShape")
+shapeRectangle = shapeRectangle~XShape
+shapeRectangle~setPosition(.bsf~new("com.sun.star.awt.Point", 3000, 3000))  /* set position: x,y */
+shapeRectangle~setSize(.bsf~new("com.sun.star.awt.Size", 10000, 3000))      /* set size: width,height */
+
+xDrawPage0~add(shapeRectangle)
+shapeRectangle~XText~setString("Click anywhere to go on!")
+
+   /* create an EllipseShape and add it to DrawPage1 */
+shapeEllipse = xImpressFactory~createInstance("com.sun.star.drawing.EllipseShape")
+xShapeEllipse = shapeEllipse~XShape
+xShapeEllipse~setPosition(.bsf~new("com.sun.star.awt.Point", 3000, 3000))   /* set position: x,y */
+xShapeEllipse~setSize(.bsf~new("com.sun.star.awt.Size", 9000, 3000))        /* set size: width,height */
+
+xDrawPage1~add(xShapeEllipse)
+xShapeEllipse~XText~setString("Click here to go back!")
+
+   /* set the Animation for the Rectangle on the first page */
+xRectangleProps = shapeRectangle~XPropertySet
+wfb = bsf.getConstant("com.sun.star.presentation.AnimationEffect", "WAVYLINE_FROM_BOTTOM")
+xRectangleProps~setPropertyValue("Effect", wfb)
+
+   /* set the slide transition effect for the second page */
+xSlideProps = xDrawPage1~XPropertySet
+xSlideProps~setPropertyValue("Effect", bsf.getConstant("com.sun.star.presentation.FadeEffect", "RANDOM"))
+xSlideProps~setPropertyValue("Speed",  bsf.getConstant("com.sun.star.presentation.AnimationSpeed", "MEDIUM"))
+
+   /* set the Interaction of the Ellipse on the 2nd Page */
+xEllipseProps = shapeEllipse~XPropertySet
+xEllipseProps~setPropertyValue("OnClick", bsf.getConstant("com.sun.star.presentation.ClickAction", "FIRSTPAGE"))
+
+   /* set "modified" false -> UNO will not ask if you want to save the current document on close */
+impressComponent~XModifiable~setModified(.false)
+
+   /* start the presentation */
+.bsf.dialog~messageBox("About to start the presentation, click outside the elllipse to stop presentation ...", "Start Presentation Dialog", "info")
+xPresentation = impressComponent~XPresentationSupplier~getPresentation
+
+/* The method "start" exits on the ooRexx side (part of the root class .Object), hence
+   the "start" message would be understood on the ooRexx side and would not be forwarded
+   to the Java side (to address OOo).
+
+   In order to guarantee a message to be sent to the Java side at all times (and hence
+   for this particular situation, one may use the bsf.dispatch("messageName" [, args...])
+   message. */
+xPresentation~bsf.dispatch("start") /* make sure "start" message is forwarded to the Java side,
+                                       such that the OOo presentation can be started */
+
+::requires UNO.CLS    -- get UNO support

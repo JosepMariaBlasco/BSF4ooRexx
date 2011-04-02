@@ -1,0 +1,16 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Rexx Script (Java)
+Name[de]=Rexx Skript (Java)
+GenericName=RexxScriptJava
+Comment=RexxJavaScript (Rexx script using Java) executed by ooRexx.
+Comment[de]=RexxJavaScript (Rexx-Skript, das Java benutzt), ausgeführt von ooRexx.
+Icon=bsf4oorexx-logo
+MimeType=text/x-rexx-java;
+TryExec=/opt/BSF4ooRexx/install/runRexxScriptJava.sh
+Exec=/opt/BSF4ooRexx/install/runRexxScriptJava.sh %f
+Terminal=true
+Categories=Utility;
+
+# defined for the BSF4ooRexx package, date: 2010-07-31/2010-08-20, author: Rony G. Flatscher

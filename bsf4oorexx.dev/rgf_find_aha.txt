@@ -1,0 +1,13 @@
+
+
+find . -  \( -iname "*rex" -o -iname "*cls" -o -iname "*rxj" -o -iname "*rxo" \) -type f -exec file '{}' \;
+
+find . -  -type d -exec file '{}' \;
+
+find . -exec file '{}' \;
+
+
+
+find . -exec chmod ugo+rw '{}' \;
+
+

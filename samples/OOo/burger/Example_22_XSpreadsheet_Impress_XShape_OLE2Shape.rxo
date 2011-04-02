@@ -1,0 +1,65 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_200601>, edited by Rony G. Flatscher, 2010-07-12/20 */
+/* Cf. <http://wiki.services.openoffice.org/wiki/Documentation/DevGuide/Charts/Creating_a_Chart_OLE_Object_in_Draw_and_Impress> */
+
+use arg slotArg   /* fetch the "slotArg", a java.util.Hashtable object which contains invocation
+                     information from OpenOffice.org, will always be the very last argument     */
+
+scriptContext=uno.getScriptContext(slotArg)  /* get the xScriptContext object, if any           */
+if scriptContext<>.nil then                  /* o.k., we are invoked as a macro from OOo        */
+do
+   xDesktop=scriptContext~getDesktop            /* get the desktop (a XDesktop) object          */
+   xContext=scriptContext~getComponentContext   /* get the context (a XComponentContext) object */
+   thisPath=uno.getScriptPath(.nil, slotArg)    /* will return the physical path to this script */
+end
+else              /* this program was called from outside of OOo, e.g. from the commandline     */
+do
+   xContext = UNO.connect()                  /* get a connection to OOo server                  */
+   xDesktop = UNO.createDesktop(xContext)    /* create the XDesktop from xContext               */
+   thisPath = directory()                    /* determine path to this script                   */
+end
+
+xComponentLoader=xDesktop~XComponentLoader   /* get componentLoader interface                   */
+
+   /* ------------------------------------------------------------ */
+   /* open an existing spreadsheet file hiddenly */
+url = uno.convertToUrl(thisPath"/myTestSpreadsheet.ods")
+
+props=bsf.createJavaArray(.UNO~propertyValue, 1)   /* create array of PropertyValue */
+props[1] = uno.createProperty("Hidden", box("boolean", .true))    /* create a property value       */
+
+calcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, props)
+
+   /* get first sheet in spreadsheet, retrieve first chart and then its raw data */
+xSheet1 = calcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0) ~XSpreadSheet
+xChart1 = xSheet1~xTableChartsSupplier~getCharts~XIndexAccess~getByIndex(0)~XTableChart
+chart1data = xChart1~XEmbeddedObjectSupplier~getEmbeddedObject~XChartDocument~getData
+
+   /* ------------------------------------------------------------ */
+   /* create a new presentation document, get its factory and the first DrawPage (slide) */
+url = "private:factory/simpress"
+impressComponent = xComponentLoader~loadComponentFromURL(url, "_blank",0, .UNO~noProps)
+xImpressFactory = impressComponent~XMultiServiceFactory  /* get document's factory */
+xDrawPage1 = impressComponent~XDrawPagesSupplier~getDrawPages~getByIndex(0)~XDrawPage
+
+   /* create and add a shape to the draw page   */
+xOle2shape = xImpressFactory~createInstance("com.sun.star.drawing.OLE2Shape")~XShape
+xDrawPage1~add(xOle2shape)
+
+xOle2shape~setSize(.bsf~new("com.sun.star.awt.Size", 18000, 14000))     /* width, height */
+xOle2shape~setPosition(.bsf~new("com.sun.star.awt.Point", 6000, 3000))  /* x, y */
+
+   /* get access to the properties  */
+xOle2shapeProps = xOle2shape~xPropertySet
+   /* set shape's CLSID to type chart shape */
+xOle2shapeProps~setPropertyValue("CLSID", "12dcae26-281f-416f-a234-c3086127382e")
+   /* assign Model the chart's data */
+xChartDocument = xOle2shapeProps~getPropertyValue("Model")~XChartDocument
+xChartDocument~attachData(chart1data)
+
+   /* allow to close (abort) document without saving-dialog */
+xChartDocument~XModifiable~setModified(.false)   /* clear modified flag in xChartDocument */
+impressComponent~XModifiable~setModified(.false) /* clear modified flag in impressComponent */
+
+::requires UNO.CLS   -- load UNO support for OpenOffice.org
+

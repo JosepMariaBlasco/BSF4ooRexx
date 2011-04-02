@@ -1,0 +1,4 @@
+﻿Diese Erweiterung macht die mächtige und einfach zu erlernende Skriptsprache "Open Object Rexx (ooRexx)"  für alle OpenOffice.org-Anwendungen verfügbar.
+
+    ooRexx:        http://www.ooRexx.org
+    BSF4ooRexx: http://wi.wu.ac.at/rgf/rexx/bsf4oorexx/current/

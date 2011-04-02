@@ -1,0 +1,264 @@
+#!/usr/bin/rexx
+/*
+   name:             bsfPrefixReturnValue testGroup
+   author:           Michael Lex
+   version:          1.0.0
+*/
+/*
+
+  Due to the circumstance that the error codes were change from
+  BSF4Rexx version 2.8 to version 4.0 the following local variable
+  indicates the current used version.
+
+  For version 4.0:
+	.local~ver = 4
+
+  For version 2.8:
+	.local~ver = 2 -- or any other value since the check is only if 4 is present
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.bsfPrefixReturnValue.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "bsfPrefixReturnValue.testGroup" subclass ooTestCase public
+
+::method "test_1"
+	.local~ver = 4
+
+	pre=BSF("bsfPrefixReturnValue", 0)
+	self~assertEquals(pre, 0)
+
+::method "test_2"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Array.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_3"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Class.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_4"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Method.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_5"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Object.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_6"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("String.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_7"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("System.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_8"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Thread.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_9"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("boolean.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_10"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Boolean.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_11"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("byte.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_12"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Byte.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_13"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("char.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_14"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Character.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_15"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("double.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_16"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Double.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_17"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("float.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_18"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Float.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_19"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("int.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_20"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Integer.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_21"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("long.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_22"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Long.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_23"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("short.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_24"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Short.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_25"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("Void.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	len=BSF("arrayLength", arr)
+	self~assertEquals(len, 5)
+
+::method "test_26"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("int.class", 5)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	len=BSF("arrayLength", foo)
+
+::method "test_27"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPut", arr, 12345, 2)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	x=BSF("arrayAt", arr, 2)
+	self~assertEquals(x, 12345)
+
+::method "test_28"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPut", arr, 12345, 2)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	x=BSF("arrayAt", arr, 7)
+
+::method "test_29"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPut", arr, 12345, 2)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	x=BSF("arrayAt", arr,)
+
+::method "test_30"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPut", arr, 12345, 2)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	x=BSF("arrayAt", arr)
+
+::method "test_31"
+	pre=BSF("bsfPrefixReturnValue", 1)
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPut", arr, 12345, 2)
+	pre=BSF("bsfPrefixReturnValue", 0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	x=BSF("arrayAt",)
+
+return
+

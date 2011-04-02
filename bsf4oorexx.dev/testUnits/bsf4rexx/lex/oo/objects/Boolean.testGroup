@@ -1,0 +1,93 @@
+#!/usr/bin/rexx
+/*
+   name:             Boolean testGroup
+   author:           Michael Lex
+   date:             2009-05-07
+   version:          1.0.0
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.Boolean.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "Boolean.testGroup" subclass ooTestCase public
+
+::method "test_1"
+	.bsf~bsf.import("java.lang.Boolean","JBoolean") /* import java Boolean class */
+	i=.JBoolean~new("TRUE")
+	self~assertTrue(i~booleanValue())
+
+::method "test_2"
+	.bsf~bsf.import("java.lang.Boolean","JBoolean")
+	i=.JBoolean~new("FALSE")
+	self~assertFalse(i~booleanValue())
+
+::method "test_3"
+	.bsf~bsf.import("java.lang.Boolean","JBoolean")
+	i=.JBoolean~new("foo")
+	self~assertFalse(i~booleanValue())
+
+::method "test_4"
+	.bsf~bsf.import("java.lang.Boolean","JBoolean")
+	i=.JBoolean~new("")
+	self~assertFalse(i~booleanValue())
+
+::method "test_5"
+	.bsf~bsf.import("java.lang.Boolean","JBoolean")
+	i=.JBoolean~newStrict("BOOLEAN.CLASS",1)
+	self~assertTrue(i~booleanValue())
+
+::method "test_6"
+	.bsf~bsf.import("java.lang.Boolean","JBoolean")
+	i=.JBoolean~newStrict("BOOLEAN.CLASS",0)
+	self~assertFalse(i~booleanValue())
+
+::method "test_7"
+	.bsf~bsf.import("java.lang.Boolean","JBoolean")
+	i=.JBoolean~newStrict("BOOLEAN.CLASS",13)
+	self~assertFalse(i~booleanValue())
+
+::method "test_8"
+	.bsf~bsf.import("java.lang.Boolean","JBoolean")
+	i=.JBoolean~newStrict("BO",1)
+	self~assertTrue(i~booleanValue())
+
+::method "test_9"
+--	.bsf~bsf.import("java.lang.Boolean","JBoolean")
+--	errorCode=40.1
+--	self~expectSyntax(errorCode)
+--	i=.JBoolean~newStrict("B",1)
+
+::method "test_10"
+	.bsf~bsf.import("java.lang.Boolean","JBoolean")
+	i=.JBoolean~newStrict("BOO",1)
+	self~assertTrue(i~booleanValue())
+
+::method "test_11"
+	.bsf~bsf.import("java.lang.Boolean","JBoolean")
+	i=.JBoolean~newStrict("BOOL",1)
+	self~assertTrue(i~booleanValue())
+
+::method "test_12"
+	.bsf~bsf.import("java.lang.Boolean","JBoolean")
+	i=.JBoolean~newStrict("BOOLEAN.CLASS",.true)
+	self~assertTrue(i~booleanValue())
+
+::method "test_13"
+	.bsf~bsf.import("java.lang.Boolean","JBoolean")
+	i=.JBoolean~newStrict("boolean.class",.false)
+	self~assertFalse(i~booleanValue())
+
+return
+

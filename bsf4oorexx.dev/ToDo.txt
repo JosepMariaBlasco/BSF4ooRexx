@@ -1,0 +1,12 @@
+
+- Add all files to Sourceforge svn (https://sourceforge.net/projects/bsf4rexx/)
+
+- Eventually use Apache Maven to create the binaries (http://maven.apache.org/)
+
+
+- Once ooRexx debugging and profiling is available in the kernel
+
+        - whenever debugging and/or profiling APIs are added to ooRexx, make them available to Java
+
+2010-12-04, ---rgf
+
