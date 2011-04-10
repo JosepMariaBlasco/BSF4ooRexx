@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for MacOSX                 20 Mar 2011
+BSF4ooRexx - Installation Directions for MacOSX                 10 Apr 2011
 ===============================================
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
@@ -16,9 +16,10 @@ Prerequisites
 
 [1] Java Runtime Environment (JRE) 1.4 or higher installed on your computer.
 
-[2] Version 4.1.0 of ooRexx.
+[2] Version 4.1.1 of ooRexx.
 
-[3] optional: OpenOffice.org from <http://download.openoffice.org/index.html>.
+[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org> or
+              LibreOffice (LO) from <http://www.libreoffice.org/download/>.
 
 [4] Uninstall any previously installed version of BSF4[oo]Rexx, if any.
 
@@ -44,6 +45,8 @@ P.S.: Support is given either via the newsgroup <news:comp.lang.rexx> or the
       private e-mail list of the non-profit Rexx Language Association
       <http://www.rexxla.org> where you meet a good many helping experts!
 
+      In addition check out the mailing lists and forums on the BSF4ooRexx
+      home at <http://sourceforge.net/projects/bsf4oorexx/>.
 
 P.P.S.: Restrictions on MacOSX:
 

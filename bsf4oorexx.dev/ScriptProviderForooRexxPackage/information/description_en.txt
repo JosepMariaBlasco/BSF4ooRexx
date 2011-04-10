@@ -1,4 +1,4 @@
-This makes the powerful and easy-to-learn Open Object Rexx (ooRexx) scripting language available to all OpenOffice.org applications.
+This makes the powerful and easy-to-learn Open Object Rexx (ooRexx) scripting language available to all OpenOffice.org/LibreOffice applications.
 
     ooRexx:        http://www.ooRexx.org
-    BSF4ooRexx: http://wi.wu.ac.at/rgf/rexx/bsf4oorexx/current/
+    BSF4ooRexx: http://sourceforge.net/projects/bsf4oorexx/

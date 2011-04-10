@@ -62,6 +62,7 @@ codepage):
         Specht, Tobias
         Stöhr, Dennis R.
         Taylor, Pam
+        Turner, Bill
         Waglechner, Christoph
         Wiegel, Kees
         Wilson, Gray
@@ -70,7 +71,7 @@ codepage):
 
 
 Rony G. Flatscher
-2011-03-19, Wien/Vienna, Austria
+2011-04-10, Wien/Vienna, Austria
 
 P.S.: Due to the many people who have had an influence over time I may have
       overlooked the one or the other while preparing this credit list. In such a

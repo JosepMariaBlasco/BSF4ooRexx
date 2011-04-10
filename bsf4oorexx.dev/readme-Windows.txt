@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for Windows                4 Dec 2010
+BSF4ooRexx - Installation Directions for Windows                10 Apr 2011
 ================================================
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
@@ -22,7 +22,8 @@ Prerequisites
 
 [2] ooRexx 4.0.1 or higher, cf. <http://www.oorexx.org/download.html>
 
-[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org/index.html>
+[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org> or
+              LibreOffice (LO) from <http://www.libreoffice.org/download/>.
 
 [4] Uninstall any previously installed version of BSF4[oo]Rexx, if any.
 
@@ -59,4 +60,8 @@ Rony G. Flatscher, Vienna, Austria, Europe
 P.S.: Support is given either via the newsgroup <news:comp.lang.rexx> or the
       private e-mail list of the non-profit Rexx Language Association
       <http://www.rexxla.org> where you meet a good many helping experts!
+
+      In addition check out the mailing lists and forums on the BSF4ooRexx
+      home at <http://sourceforge.net/projects/bsf4oorexx/>.
+
 

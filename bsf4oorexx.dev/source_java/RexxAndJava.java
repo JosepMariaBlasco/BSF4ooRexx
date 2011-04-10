@@ -4854,12 +4854,11 @@ if (e instanceof InvocationTargetException)
                            "Specht, Tobias"                         + "\n" +
                            "St\u00f6hr, Dennis R."                  + "\n" + // 2011-01-24, rgf
                            "Taylor, Pam"                            + "\n" +
+                           "Turner, Bill"                           + "\n" + // 2011-04-10, rgf
                            "Waglechner, Christoph"                  + "\n" +
                            "Wilson, Gray"                           + "\n" +
                            "Woehr, Jack"                            + "\n" +
                            "Wolfers, Jon (Sahananda)"
-//                           + "\n" +
-//                           "Zinngrebe, Ulrich"
                            ;
 
                         // now halt given thread

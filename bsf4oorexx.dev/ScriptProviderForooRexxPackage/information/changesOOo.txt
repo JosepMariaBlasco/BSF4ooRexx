@@ -1,3 +1,9 @@
+-------------------------------------- 2011-04-10 ----------------------------------
+- installation/setupOOo.rex
+
+        - now handles LibreOffice on MacOSX and Windows (on Linux it was handled
+          already)
+
 -------------------------------------- 2011-02-21 ----------------------------------
 - utilities/OOo/UNO_API_info/frontend_UNO_API_info.rxo
 

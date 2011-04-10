@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for Linux                  26 Mar 2011
+BSF4ooRexx - Installation Directions for Linux                  10 Apr 2011
 ==============================================
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
@@ -22,15 +22,16 @@ Prerequisites
 
 [2] A version newer than ooRexx 4.0.1 as a bug-fix (rev. 6133) is needed for the
     OpenOffice support. You can easily fetch the latest successful build of ooRexx
-    from <http://build.oorexx.org> (or try to find a matching Linux-ooRexx in the
-    subdirectory "linux-oorexx-6135").
+    from <http://build.oorexx.org>.
 
-[3] optional: OpenOffice.org from <http://download.openoffice.org/index.html>.
+[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org> or
+              LibreOffice (LO) from <http://www.libreoffice.org/download/>.
 
     Please note: on Linux it is possible that your distribution has an altered
-    version of OpenOffice installed, which may not be compatible in its Java
+    version of OpenOffice.org installed, which may not be compatible in its Java
     interfaces with the "genuine OpenOffice" package. In that case uninstall
     your distribution's OOo and get the "genuine OpenOffice" from the above URL.
+
 
 [4] Uninstall any previously installed version of BSF4[oo]Rexx, if any.
 
@@ -68,9 +69,10 @@ P.S.: Support is given either via the newsgroup <news:comp.lang.rexx> or the
       private e-mail list of the non-profit Rexx Language Association
       <http://www.rexxla.org> where you meet a good many helping experts!
 
-P.P.S.: Additional infos for Linux w.r.t. OpenOffice.org/LibreOffice
+      In addition check out the mailing lists and forums on the BSF4ooRexx
+      home at <http://sourceforge.net/projects/bsf4oorexx/>.
 
-        - LibreOffice is currently not supported
+P.P.S.: Additional infos for Linux w.r.t. OpenOffice.or
 
         - OpenOffice.org could have been tampered with by the Linux distribution and
           as a result not function correctly; if that is the case (you cannot
