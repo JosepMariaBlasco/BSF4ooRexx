@@ -1,4 +1,4 @@
-/* ooRexx (http://www.ooRexx.org) template, version: 2010-07-27, Rony G. Flatscher */
+/* ooRexx (http://www.ooRexx.org) template, version: 2011-04-10, Rony G. Flatscher */
 
 /* The following ooRexx code realizes an OOo macro that can be run against each
    OOo document type. It demonstrates how to get the document object and determine
@@ -131,7 +131,7 @@ syntax:    /* create and display condition/exception information in a popup dial
    .bsf.dialog~messageBox(tmpStr, "Runtime error #" co~code, "error") -- display the string
 
 
-::requires UNO.CLS   /* load UNO support (OpenOffice/StarOffice) for ooRexx   */
+::requires UNO.CLS   /* load UNO support (OpenOffice/LibreOffice) for ooRexx   */
 
 /* OOo >= 3.0: get the invocation context (a XScriptInvocationContext) object; if not .nil, then
                use this document instead of the result of scriptContext~getDocument!            */

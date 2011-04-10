@@ -3,9 +3,9 @@
    Name:    setupOOo.rex
    Purpose: create a shell script which sets the environment variable CLASSPATH
             to point to the Java archives needed to drive/automate OpenOffice.org
-            resp. StarOffice
+            resp. LibreOffice
    Author:  Rony G. Flatscher
-   Version: 1.15
+   Version: 1.16
    Date:    2006-01-04
    Changed:
             2006-01-16, ---rgf, make sure CLASSPATH is used in any case
@@ -64,6 +64,8 @@
                                 - MacOSX: not setting up xdg-menu
             2011-03-01, ---rgf, - MacOSX: adjusted 'sed' arguments
             2011-03-02, ---rgf, - MacOSX: do not generate MacOSX home directory in setEnvironment4OOo.sh
+            2011-04-10, ---rgf, - added support for LibreOffice (tested with LO 3.3.2) on 
+                                  Windows, MacOSX (Linux-Version was generic enough already)
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
@@ -124,7 +126,7 @@ do
 end
 
                                  /* paths to Java and desired bin-dir given?  */
-parse arg path2OOo               /* get path to OpenOffice.org/StarOffice     */
+parse arg path2OOo               /* get path to OpenOffice.org/LibreOffice */
 hive=""                    -- relevant for Windows registry
 
 -- say "path2OOo=["path2OOo"]"
@@ -189,11 +191,11 @@ call directory oldDir            /* reset directory                           */
 
 if cmd.ePath2OOoBase="" then         /* not found, give a message and abort ...   */
 do
-   say "OpenOffice.org not installed?"
+   say "OpenOffice.org/LibreOffice not installed?"
    say
-   say "path to OpenOffice.org/StarOffice directory" pp(path2OOo) "could not be found!"
+   say "path to OpenOffice.org/LibreOffice directory" pp(path2OOo) "could not be found!"
    say
-   say "     usage: rexx setupOOo [path-to-OpenOffice-directory]"
+   say "     usage: rexx setupOOo [path-to-OpenOffice/LibreOffice-directory]"
    say
 
    if cmd.eIsUnix=0 then
@@ -507,7 +509,7 @@ createInstallScript: procedure expose cmd. path.
   hintString="created:" q(date("S") time()) "by user" q(userid())
 
   call lineout fn, cmd.eEcho qe("created:" q(date("S") time()))
-  call lineout fn, cmd.eEcho qe("installing BSF4ooRexx ""OpenOffice.org"" support...")
+  call lineout fn, cmd.eEcho qe("installing BSF4ooRexx ""OpenOffice.org/LibreOffice"" support...")
   call lineout fn, cmd.eEcho qe(".")
   call lineout fn, cmd.eEchoOff
   call lineout fn, ""
@@ -515,14 +517,14 @@ createInstallScript: procedure expose cmd. path.
      /* uninstall: */
   call lineout ui, cmd.eEcho qe("created:" q(date("S") time()))
   call lineout ui, cmd.eEchoOff
-  call lineout ui, cmd.eEcho qe("uninstalling BSF4ooRexx ""OpenOffice.org"" support...")
+  call lineout ui, cmd.eEcho qe("uninstalling BSF4ooRexx ""OpenOffice.org/LibreOffice"" support...")
   call lineout ui, cmd.eEcho qe(".")
   call lineout ui, ""
-  call lineout ui, cmd.eEcho qe("(make sure that no instances of ""OpenOffice.org"" are running!)")
+  call lineout ui, cmd.eEcho qe("(make sure that no instances of ""OpenOffice.org/LibreOffice"" are running!)")
   call lineout ui, ""
 
   -- uninstall Rexx macros, before we uninstall the rest of the pack ... ???
-  call lineout ui, cmd.eEcho qe("uninstalling ooRexx OOo macros from OpenOffice/StarOffice:")
+  call lineout ui, cmd.eEcho qe("uninstalling ooRexx OOo macros from OpenOffice/LibreOffice:")
   if cmd.eIsUnix=1 then
   do
      -- tmpCmd= "." cmd.eSetEnvironment4BSFScriptName  ">/dev/null;" "." cmd.eSetEnvironmentScriptName ">/dev/null;"
@@ -548,7 +550,7 @@ createInstallScript: procedure expose cmd. path.
   call lineout ui, ""
 
   /* rgf, 2006-07-11: add package to OOo via Rexx and the now established OOo-support */
-  call lineout ui, cmd.eEcho qe("Removing package ""ScriptProviderForooRexx.oxt"" from OpenOffice/StarOffice:")
+  call lineout ui, cmd.eEcho qe("Removing package ""ScriptProviderForooRexx.oxt"" from OpenOffice/LibreOffice:")
   if cmd.eIsUnix=1 then
   do
 --     call lineout ui, "."    cmd.eSetEnvironmentScriptName ">/dev/null;rexx add_ooRexxPackage.rxo remove 2>/dev/null"
@@ -678,7 +680,7 @@ createInstallScript: procedure expose cmd. path.
 
         call lineout fn, ""
 
-        call lineout ui, cmd.eEcho qe("removing BSF4ooRexx' OpenOffice.org entries from" tmpTgt "...")
+        call lineout ui, cmd.eEcho qe("removing BSF4ooRexx' OpenOffice.org/LibreOffice entries from" tmpTgt "...")
         call lineout ui, cmd.e_sed_delete tmpTgt
         call lineout ui, ""
 
@@ -746,8 +748,8 @@ createInstallScript: procedure expose cmd. path.
          -- inform user
       -- call lineout fn, cmd.eEcho qc(tmpStr1)
       -- call lineout ui, cmd.eEcho qc(tmpStr2)
-      call lineout fn, cmd.eEcho qc("add OpenOffice.org-paths to environment variable 'Path' via registry ...")
-      call lineout ui, cmd.eEcho qc("remove OpenOffice.org-paths from environment variable 'Path' via registry ...")
+      call lineout fn, cmd.eEcho qc("add OpenOffice.org/LibreOffice-paths to environment variable 'Path' via registry ...")
+      call lineout ui, cmd.eEcho qc("remove OpenOffice.org/LibreOffice-paths from environment variable 'Path' via registry ...")
 
          -- carry out operation
       call lineout fn, tmpStr1
@@ -771,8 +773,8 @@ createInstallScript: procedure expose cmd. path.
          -- inform user
       -- call lineout fn, cmd.eEcho qc(tmpStr1)
       -- call lineout ui, cmd.eEcho qc(tmpStr2)
-      call lineout fn, cmd.eEcho qc("add OpenOffice.org-jars to environment variable 'CLASSPATH' via registry ...")
-      call lineout ui, cmd.eEcho qc("remove OpenOffice.org-jars from environment variable 'CLASSPATH' via registry ...")
+      call lineout fn, cmd.eEcho qc("add OpenOffice.org/LibreOffice-jars to environment variable 'CLASSPATH' via registry ...")
+      call lineout ui, cmd.eEcho qc("remove OpenOffice.org/LibreOffice-jars from environment variable 'CLASSPATH' via registry ...")
 
          -- carry out operation
       call lineout fn, tmpStr1
@@ -803,7 +805,7 @@ createInstallScript: procedure expose cmd. path.
 */
 
    /* rgf, 2006-07-11: add package to OOo via Rexx and the now established OOo-support */
-  call lineout fn, cmd.eEcho qe("adding package ""ScriptProviderForooRexx.oxt"" to OpenOffice/StarOffice:")
+  call lineout fn, cmd.eEcho qe("adding package ""ScriptProviderForooRexx.oxt"" to OpenOffice/LibreOffice:")
   if cmd.eIsUnix=1 then
   do
 --     call lineout fn, "."    cmd.eSetEnvironmentScriptName ">/dev/null;rexx add_ooRexxPackage.rxo"
@@ -833,7 +835,7 @@ createInstallScript: procedure expose cmd. path.
   call lineout fn, ""
   call lineout ui, ""
 
-  call lineout fn, cmd.eEcho qe("adding ooRexx OOo macros to OpenOffice/StarOffice:")
+  call lineout fn, cmd.eEcho qe("adding ooRexx OOo macros to OpenOffice/LibreOffice:")
 
   if cmd.eIsUnix=1 then
   do
@@ -872,8 +874,8 @@ createInstallScript: procedure expose cmd. path.
   call lineout fn, cmd.eEcho qe(lastMessage)
 
   call lineout fn, ""
-  call lineout fn, cmd.eEcho qe("/// Please close ALL instances of OpenOffice/StarOffice and the quickstarter.")
-  call lineout fn, cmd.eEcho qe("(This will allow OpenOffice/StarOffice to fully initialize and as a result find ooRexx!)")
+  call lineout fn, cmd.eEcho qe("/// Please close ALL instances of OpenOffice/LibreOffice and the quickstarter.")
+  call lineout fn, cmd.eEcho qe("(This will allow OpenOffice/LibreOffice to fully initialize and as a result find ooRexx!)")
   call lineout fn, ""
 
   call lineout fn, ""
@@ -952,9 +954,9 @@ createEnvironmentScript: procedure expose cmd. path.
   call lineout fn, cmd.eLineComment "(allows running OOo scripts from the commandline)"
 
   if cmd.eIsUnix=.true then   -- don't echo in Unix as this script may be executed on every new shell
-     call lineout fn, cmd.eLineComment "setting the CLASSPATH environment variable to point to the OpenOffice.org/StarOffice jar files"
+     call lineout fn, cmd.eLineComment "setting the CLASSPATH environment variable to point to the OpenOffice.org/LibreOffice jar files"
   else
-     call lineout fn, cmd.eEcho qe("setting the CLASSPATH environment variable to point to the OpenOffice.org/StarOffice jar files")
+     call lineout fn, cmd.eEcho qe("setting the CLASSPATH environment variable to point to the OpenOffice.org/LibreOffice jar files")
 
 --  call lineout fn, cmd.eEcho qe("(make sure that the environment is set for BSF4ooRexx as well)...")
   call lineout fn, ""
@@ -1054,7 +1056,7 @@ info:                            /* tell user what has happened   */
   say
   say "the following scripts have been created:"
   say
-  say " " pp(cmd.eInstallScriptName)": run to install ooRexx-UNO support for OpenOffice"
+  say " " pp(cmd.eInstallScriptName)": run to install ooRexx-UNO support for OpenOffice/LibreOffice"
 /*
   if cmd.eIsUnix=0 then
      say "       usage:" cmd.eInstallScriptName
@@ -1069,7 +1071,7 @@ info:                            /* tell user what has happened   */
   say
   say
 
-  say " " pp(cmd.eUninstallScriptName)": run to uninstall ooRexx-UNO support for OpenOffice"
+  say " " pp(cmd.eUninstallScriptName)": run to uninstall ooRexx-UNO support for OpenOffice/LibreOffice"
 /*
   if cmd.eIsUnix=0 then
      say "       usage:" cmd.eUninstallScriptName
@@ -1085,7 +1087,7 @@ info:                            /* tell user what has happened   */
 
   -- say " " pp(cmd.eSetEnvironmentScriptName)": helper script for setting up the environment"
   say " " pp(filespec("Name",cmd.eSetEnvironmentScriptName))": helper script for setting up the environment"
-  say "              for running OpenOffice.org (OOo)/StarOffice (SO) ooRexx programs"
+  say "              for running OpenOffice.org (OOo)/LibreOffice (LO) ooRexx programs"
   say
 /*
   if cmd.eIsUnix=0 then
@@ -1215,6 +1217,27 @@ canonizePath: procedure expose cmd. path.
     to OOo's program directory
 */
 ::routine getOOoHomeDirWindows
+  regpaths=.array~of("Software\OpenOffice.org\UNO\InstallPath\", "Software\LibreOffice\UNO\InstallPath\")
+  wsh=.OleObject~new("WScript.Shell")
+
+  do key over regpaths
+     do hive over .array~of("HKCU", "HKLM")  -- current user/local machine
+        val=readOOoRegEntry(wsh, hive, key)  -- try to fetch a value
+        if val<>"" then return val
+     end
+  end
+  return ""                               -- no entry for OOo/SO/LO found !
+
+::routine readOOoRegEntry   -- read key from hive, return hive and value back
+  use arg wsh, hive, key
+  signal on syntax
+  return hive wsh~regRead(hive"\"key)      -- gets triggered, if key does not exist in registry
+syntax:
+  return ""
+
+
+
+::routine getOOoHomeDirWindows_Original
   key="Software\OpenOffice.org\UNO\InstallPath\"
   wsh=.OleObject~new("WScript.Shell")
 
@@ -1227,6 +1250,7 @@ syntax1:
 
 syntax2:                   -- no OOo-entry
   return ""
+
 
 
 /* Look for "soffice" on environment variable PATH. If a link, find link's target.
@@ -1268,13 +1292,17 @@ syntax2:                   -- no OOo-entry
   return ""                      -- not found
 
 
-/* rgf, 2011-02-25, try to find OOo's home dir on MacOSX */
+/* rgf, 2011-02-25, try to find OOo's home dir on MacOSX, 2011-04-10: add search for LibreOffice */
 ::routine getOOoHomeDirMacOSX
-  path="/Applications/OpenOffice.org.app/Contents/MacOS"  -- well defined home directory
-  soffice=path"/soffice"
-  if SysFileExists(soffice) then return path
-  return ""  -- not found (not installed)
+-- well defined home directory
+  paths=.array~of("/Applications/OpenOffice.org.app/Contents/MacOS", "/Applications/LibreOffice.app/Contents/MacOS")  
 
+  do path over paths
+     soffice=path"/soffice"
+     if SysFileExists(soffice) then return path
+  end
+
+  return ""  -- not found (not installed)
 
 
 

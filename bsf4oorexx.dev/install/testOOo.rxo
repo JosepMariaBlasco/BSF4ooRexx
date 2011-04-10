@@ -1,11 +1,12 @@
 #!/usr/bin/rexx
 /*
    Name:    testOOo.rex
-   Purpose: test whether OpenOffice.org/StarOffice can be automated via ooRexx
+   Purpose: test whether OpenOffice.org/LibreOffice can be automated via ooRexx
    Author:  Rony G. Flatscher
    Date:    2006-01-01
    Changed: 2010-07-06, ---rgf, renamed to ".rxo" to indicate that this is a Rexx program using
                                 OpenOffice via Java
+            2011-04-10, ---rgf, adding hint about LibreOffice
    Needs:   UNO.CLS (Universal Network Objects support, component technology on
                      which OOo/SO are built)
 
@@ -19,7 +20,7 @@
    license:
 
    ------------------------ Apache Version 2.0 license -------------------------
-      Copyright 2006-2010 Rony G. Flatscher
+      Copyright 2006-2011 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.
@@ -35,10 +36,9 @@
    -----------------------------------------------------------------------------
 */
 
-say "testOOo.rex: started to run; please be patient on the very first invocation"
-say "             as creating the full Java support for OpenOffice.org (OOo) or"
-say "             StarOffice (SO) takes a while initially."
+say "testOOo.rex: started to run ..."
 say
+
    /* create a desktop object, request the XDesktop interface from it and
       request the XComponentLoader interface from that                        */
 say "... getting at a componentLoader ..."
@@ -56,7 +56,7 @@ text = writerComponent~XTextDocument~getText
 
    /* set the text of the text object to salute the world of ooRexx           */
 say "... setting the text object ..."
-text~setString("Hello OpenOffice.org/StarOffice, this is ooRexx speaking! ("date("S") time()")")
+text~setString("Hello OpenOffice.org/LibreOffice, this is ooRexx speaking! ("date("S") time()")")
 
 say
 say "done."

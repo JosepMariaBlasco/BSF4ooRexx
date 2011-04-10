@@ -1,13 +1,14 @@
 #!/usr/bin/rexx
 /*
    Name:    testOOo2.rex
-   Purpose: test whether OpenOffice.org/StarOffice can be automated via ooRexx,
+   Purpose: test whether OpenOffice.org/LibreOffice can be automated via ooRexx,
             demonstrate some of the reflection methods for finding out informaton
             about UNO_PROXY objects at runtime
    Author:  Rony G. Flatscher
    Date:    2006-01-03
    Needs:   UNO.CLS (Universal Network Objects support, component technology on
                      which OOo/SO are built)
+            2011-04-10, ---rgf, adding hint about LibreOffice
 
    Remarks: For further information on programming OOo/SO and getting at ooRexx
             nutshell examples that jump-start you please refer to
@@ -19,7 +20,7 @@
    license:
 
    ------------------------ Apache Version 2.0 license -------------------------
-      Copyright 2006-2010 Rony G. Flatscher
+      Copyright 2006-2011 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.
@@ -35,11 +36,9 @@
    -----------------------------------------------------------------------------
 
 */
-
-say "testOOo.rex: started to run; please be patient on the very first invocation"
-say "             as creating the full Java support for OpenOffice.org (OOo) or"
-say "             StarOffice (SO) takes a while initially."
+say "testOOo.rex: started to run ..."
 say
+
    /* create a desktop object, request the XDesktop interface from it and
       request the XComponentLoader interface from that                        */
 say "... getting at a componentLoader ..."
@@ -74,7 +73,7 @@ say "---"
 say "    text~uno.getDefinition="ppd(text~uno.getDefinition)
 say "---"
 say "    text~uno.getProperties="ppd(text~uno.getProperties)
-text~setString("Hello OpenOffice.org/StarOffice, this is ooRexx speaking! ("date("S") time()")")
+text~setString("Hello OpenOffice.org/LibreOffice, this is ooRexx speaking! ("date("S") time()")")
 call eyeCatcher
 
 say
