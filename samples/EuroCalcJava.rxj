@@ -27,6 +27,7 @@
                              "new" and "newStrict" which better describe the semantics of
                              these subfunctions
             2010-05-16, rgf, heightened frame a little bit (made it parametrized in addition)
+            2011-04-16, rgf, added Estonian crown (EEK)
 
    Author:   Rony G. Flatscher, University of Augsburg, WU Wien University
 
@@ -125,11 +126,13 @@ setup_euro_infos : PROCEDURE EXPOSE euro.     /* expose stem, i.e. belongs to ca
 
     euro.skk =    30.126   ;  euro.SKK.eCountry = "SKK: Slovakia (Koruna)"    ; euro.SKK.eSince=2009
 
+    euro.eek =    15.6466  ;  euro.EEK.eCountry = "EEK: Estonia (Crown)"      ; euro.EEK.eSince=2011
+
 
 
         /* determine processing order of currencies, will also be used as index
            into "euro."-stem, hence UPPERCASE (!) spelling     */
-    euro.eOrder = "EUR ATS BEF CYP DEM ESP FIM FRF GRD IEP ITL LUF MTL NLG PTE SIT SKK"
+    euro.eOrder = "EUR ATS BEF CYP DEM ESP FIM FRF GRD IEP ITL LUF MTL NLG PTE SIT SKK EEK"
 
     euro.eCount=words(euro.eOrder)     /* save number of currencies */
     RETURN
