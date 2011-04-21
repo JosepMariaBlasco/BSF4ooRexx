@@ -5,9 +5,11 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.22
+   Version: 1.23
    Changed:
 
+            2011-04-21, ---rgf, - Windows: adjust for 64-bit behaviour, if Rexx is 32-bit (needing 32-bit Java): 
+                                           generated batch files need to refer to %windir%\SysWOW64\java.exe
             2011-03-27, ---rgf, - Linux: now executing separate 'xdg_icons_menu_add-remove.sh'
             2011-03-26, ---rgf, - Linux: do not call xdg_menu_*.sh as menus are handled in the fileAssociation scripts
             2011-03-21, ---rgf, - Linux: link "libjvm.so" symbolically to "/opt/BSF4ooRexx", such
@@ -427,8 +429,26 @@ do
    cmd.eLibDir=cmd.eBinDir
    cmd.eQuote='"'                /* always quote file names for Windows    */
    cmd.eAllArguments='%*'
+
    if cmd.eJavaBinary="" then
-      cmd.eJavaBinary=qw(getFromPath("java.exe"))   /* get fully qualified path   */
+   do
+      /* check whether running 32-bit on a 64-bit Windows; if so adapt accordingly */
+      if value("processor_architeW6432",,"environment")<>"" then
+      do
+         windir=value("windir",,"environment")
+         wow64 =windir"\SysWOW64\java.exe"
+         win32 =windir"\system32\java.exe"
+
+         if sysfileexists(wow64) then
+             cmd.eJavaBinary=qw(wow64)
+         else if sysfileexists(win32) then 
+             cmd.eJavaBinary=qw(win32)
+      end
+
+      if cmd.eJavaBinary="" then
+         cmd.eJavaBinary=qw(getFromPath("java.exe"))   /* get fully qualified path   */
+   end
+
 
    if isRexxInstalledInHKCU() then  -- ooRexx in user hive (HKCU: current user)
    do
