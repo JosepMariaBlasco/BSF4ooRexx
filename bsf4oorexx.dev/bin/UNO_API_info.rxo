@@ -9,7 +9,8 @@
                cf. http://wi.wu-wien.ac.at/rgf/diplomarbeiten/
 
    needs:      ooRexx 3.2, cf. http://www.ooRexx.org
-               BSF4Rexx, cf. http://wi.wu-wien.ac.at/rgf/rexx/bsf4rexx/current/
+               BSF4Rexx, cf. "http://sourceforge.net/projects/bsf4oorexx/files/"
+                        (old: http://wi.wu-wien.ac.at/rgf/rexx/bsf4rexx/current/)
                OpenOffice.org, cf. http://www.OpenOffice.org
 
    authors:    Nicole Scholz, Rony G. Flatscher

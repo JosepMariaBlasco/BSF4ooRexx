@@ -1,3 +1,16 @@
+-------------------------------------- 2011-04-29 ----------------------------------
+- orx2reg.rex
+  linux/resources/menu/bsf4oorexx_home.desktop
+
+  description.xml
+  ScriptProviderForooRexx.author.htm
+  ScriptProviderForooRexx.update.html
+  ScriptProviderForooRexx.update.xml
+  ScriptProviderForooRexx.release-notes_en.txt
+
+        - changed download page URL to "http://sourceforge.net/projects/bsf4oorexx/files/"
+        - change references to BSF4ooRexx WWW site to: "http://sourceforge.net/projects/bsf4oorexx/"
+
 -------------------------------------- 2011-02-23 ----------------------------------
 - RexxAndJava.java
 

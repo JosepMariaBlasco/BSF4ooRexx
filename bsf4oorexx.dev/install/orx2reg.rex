@@ -448,7 +448,8 @@ syntax: return .nil
 
 
      -- LINKS TO FOLDERS/URL
-     webSite="http://wi.wu.ac.at/rgf/rexx/bsf4oorexx/current/"
+--     webSite="http://wi.wu.ac.at/rgf/rexx/bsf4oorexx/current/"
+     webSite="http://sourceforge.net/projects/bsf4oorexx/files/"
      call createMenu menuFolderInstallation, "BSF4ooRexx Download Page.lnk", webSite, "Opens the ""BSF4ooRexx"" download page on the Internet."
 
      InformationFolder=qualify(location"..\information") -- Folder that has additional infos, including ReleaseNotes.txt

@@ -3,7 +3,7 @@
 xmlns:d="http://openoffice.org/extensions/description/2006"
 xmlns:xlink="http://www.w3.org/1999/xlink">
 
-  <version value="406.20110410"/>
+  <version value="406.20110429"/>
 
   <identifier value="org.oorexx.uno.ScriptProviderForooRexx.package"/>
 
@@ -16,6 +16,7 @@ xmlns:xlink="http://www.w3.org/1999/xlink">
       <src xlink:href="http://www.rexxla.org/updates/ScriptProviderForooRexx.update.xml" lang="en"/>
       <src xlink:href="http://www.oorexx.org/updates/ScriptProviderForooRexx.update.xml" lang="en"/>
       <src xlink:href="http://www.netrexx.org/updates/ScriptProviderForooRexx.update.xml" lang="en"/>
+      <src xlink:href="http://sourceforge.net/projects/bsf4oorexx/files/ScriptProviderForooRexx.update.html" lang="en"/>
   </update-information>
 
   <publisher>
