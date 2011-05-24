@@ -5,10 +5,12 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.23
+   Version: 1.24
    Changed:
 
-            2011-04-21, ---rgf, - Windows: adjust for 64-bit behaviour, if Rexx is 32-bit (needing 32-bit Java): 
+            2011-05-24, ---rgf, - general: changed logic to determine path to java binary as early as possible
+                                - Windows: use registry's JRE entry, if java.exe cannot be found
+            2011-04-21, ---rgf, - Windows: adjust for 64-bit behaviour, if Rexx is 32-bit (needing 32-bit Java):
                                            generated batch files need to refer to %windir%\SysWOW64\java.exe
             2011-03-27, ---rgf, - Linux: now executing separate 'xdg_icons_menu_add-remove.sh'
             2011-03-26, ---rgf, - Linux: do not call xdg_menu_*.sh as menus are handled in the fileAssociation scripts
@@ -154,14 +156,35 @@ do
 end
 
 cmd.=""                          /* default value for stem        */
+j.=""                            /* default value for stem        */
 
-parse upper source cmd.eOperatingSystem . /* get name of operating system           */
+parse upper source cmd.eOperatingSystem . /* get name of operating system     */
+   -- set most important flags
+cmd.eIsWindows=(cmd.eOperatingSystem~left(1)="W")
+cmd.eIsUnix   =\cmd.eIsWindows   /* if not Windows, it's a Unix dialect       */
+if cmd.eIsWindows=.true then
+do
+   j.file.separator="\"
+   j.path.separator=";"
+end
+else
+do
+   j.file.separator="/"
+   j.path.separator=":"
+end
+
+   /* parse path, put directories into the stem variable */
+path.=""
+call parsePath
 
 cmd.eDateTime=.dateTime~new~string
 cmd.eDateTimeEdited=cmd.eDateTime~changeStr(":","-")
 cmd.eArgSeparator="09"x          /* separator for delimiting Rexx arguments   */
                                  /* paths to Java and desired bin-dir given?  */
 parse value parseArgs(arg(1)) with cmd.eJavaBinary (cmd.eArgSeparator) cmd.eBinDir
+if cmd.eJavaBinary="" then       /* no path to java.exe given, determine it   */
+   call determinePath2javaBinary
+
 
 call getJavaProps                /* get the properties of the installed Java  */
 
@@ -176,9 +199,6 @@ j.path.separator=":" -- rgf, debug
 
 
 
-   /* parse path, put directories into the stem variable */
-path.=""
-call parsePath
 
 if j.path.separator="" | j.file.separator="" then
 do
@@ -393,7 +413,7 @@ do
    cmd.eQuote='"'                /* ---rgf, 2007-01-28: quoting of file names for Unix too! */
    cmd.eAllArguments='$*'
    if cmd.eJavaBinary="" then
-      cmd.eJavaBinary=getFromPath("java")    /* get fully qualified path   */
+      call determinePath2javaBinary
 end
 else  /* Windows  */
 do
@@ -431,24 +451,7 @@ do
    cmd.eAllArguments='%*'
 
    if cmd.eJavaBinary="" then
-   do
-      /* check whether running 32-bit on a 64-bit Windows; if so adapt accordingly */
-      if value("processor_architeW6432",,"environment")<>"" then
-      do
-         windir=value("windir",,"environment")
-         wow64 =windir"\SysWOW64\java.exe"
-         win32 =windir"\system32\java.exe"
-
-         if sysfileexists(wow64) then
-             cmd.eJavaBinary=qw(wow64)
-         else if sysfileexists(win32) then 
-             cmd.eJavaBinary=qw(win32)
-      end
-
-      if cmd.eJavaBinary="" then
-         cmd.eJavaBinary=qw(getFromPath("java.exe"))   /* get fully qualified path   */
-   end
-
+      call determinePath2javaBinary
 
    if isRexxInstalledInHKCU() then  -- ooRexx in user hive (HKCU: current user)
    do
@@ -468,12 +471,11 @@ do
    say "PANIC: no executable" javaName "found !"
    say
    say "Please make sure that you have Java installed! You can run 'setupBSF.rex'"
-   say "with an argument being the fully qualified path to the" javaName "executable"
+   say "with an argument being the fully qualified path to the '"javaName"' executable"
    say "for which you wish to create the 'un/install' and 'bsf4rexx' scripts."
    say
    call usage
 end
-
 
 cmd.eRexxDispatch= "org.rexxla.bsf.RexxDispatcher" cmd.eAllArguments
 
@@ -1339,7 +1341,7 @@ getJavaProps: procedure expose j. cmd. path.
 
    i=0
    max=0
-   j.=""
+   -- j.=""
    sort.=""
    if queued()=0 then
    do
@@ -1610,7 +1612,8 @@ usage:
   say
   say "Examples:  rexx setupBSF"
 
-  if cmd.eIsUnix=.false then
+  -- if cmd.eIsUnix=.false then
+  if cmd.eIsWindows=.true then
   do
      say "           - will use any ""java.exe"" found in one of the directories of the"
      say "             environment variable ""PATH"""
@@ -1624,9 +1627,10 @@ usage:
   end
   say
 
-  if cmd.eIsUnix=.false then
+  -- if cmd.eIsUnix=.false then
+  if cmd.eIsWindows=.true then
   do
-     say "           rexx setupBSF E:\jdk1.4.2_12\jre\bin\java.exe D:\windows\system32"
+     say "           rexx setupBSF E:\jdk1.6\jre\bin\java.exe D:\windows\system32"
      say "           - will use ""java.exe"" from the given first argument"
      say "           - will copy the BSF4ooRexx-support-files to the Windows system directory"
   end
@@ -1725,6 +1729,48 @@ canonizePath: procedure expose j. cmd. path.
    return newArr~makeString("LINE",j.file.separator)
 
 
+/* Determine fully qualified path to the "java" binary (Windows: "java.exe")  */
+determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: determine path to java binary
+   if cmd.eIsWindows=.false then
+   do
+      cmd.eJavaBinary=getFromPath("java") /* get fully qualified path   */
+      return
+   end
+
+   /* check whether running 32-bit on a 64-bit Windows; if so adapt accordingly */
+   if value("processor_architeW6432",,"environment")<>"" then
+   do
+      windir=value("windir",,"environment")
+      wow64 =windir"\SysWOW64\java.exe"
+      win32 =windir"\system32\java.exe"
+
+      if sysfileexists(wow64) then
+          cmd.eJavaBinary=qw(wow64)
+      else if sysfileexists(win32) then
+          cmd.eJavaBinary=qw(win32)
+   end
+
+   if cmd.eJavaBinary="" then       -- not yet determined
+   do
+      javaExe="java.exe"                 -- executable's name
+      tmpJavaBinary=getFromPath(javaExe) -- on path ?
+      if tmpJavaBinary=javaExe then      -- not found on path, try JRE registry entry
+      do
+         wsh  = .OleObject~new("WScript.Shell")
+         baseKey = "HKLM\Software\JavaSoft\Java Runtime Environment"
+         version=wsh~regRead(basekey"\CurrentVersion")
+         javaHome=wsh~regRead(basekey"\"version"\JavaHome")
+         binJava=javaHome"\bin\java.exe"
+
+         if sysFileExists(binJava) then   -- o.k. finally found !
+            cmd.eJavaBinary=qw(binJava)
+      end
+      else  -- found on path, use it
+      do
+         cmd.eJavaBinary=qw(tmpJavaBinary)
+      end
+   end
+   return
 
 
 /*  2008-05-17, ---rgf
