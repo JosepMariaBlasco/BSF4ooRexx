@@ -58,7 +58,7 @@ HOWTO compile and create a distribution
 	- run "createDistributionForBSF4ooRexx4.cmd"        
 
 
-Pleae feel free to add to this document.
+Please feel free to add to this document.
 
 2011-04-05, Rony G. Flatscher
 
