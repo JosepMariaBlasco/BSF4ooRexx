@@ -2,11 +2,11 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-05,14,18
-   version: 1.02
+   version: 1.03
    name:    setupAllAndRun.rex
    purpose: installer to install or reinstall the BSF4ooRexx package
 
-   usage:  setupAllAndRun.rex [install [targetDir]] | reinstall | uninstall [keep]
+   usage:  setupAllAndRun.rex [install [targetDir] [/@q:]] | reinstall [/@q:] | uninstall [/keep] [/@q:]
            ... targetDir:    directory to install to, optional
                               ... if targetDir ".", then install from current directory (don't
                                   copy package to default directory)
@@ -28,6 +28,9 @@
                                the homedirectory of cmd.exe scripts; so now elevating rexx.exe instead)
             2011-01-26, -rgf, - correct BSF-message popup text to not claim that no errors occurred during install and reinstall
             2011-02-25, -rgf (on the way to Tokyo) - add support for MacOSX
+            2011-05-25, -rgf  - add an option "/@q:" (quiet) which will inhibit dialogs, such that
+                                this installer can be used by other installers in "silent"
+                                (unattended) mode
 
    remark:  ---
 
@@ -54,6 +57,7 @@ bPauseAtEnd=.true                -- pause at end, such that user can see the out
 
 cmd.eBDebug=.false               -- if set to .true, then debug mode
 cmd.eBInteractive=.true          -- if set to .true, then Rexx-"pause" are carried out
+cmd.eBQuiet=.false               -- if set to .true, then no dialogs are presented
 
 parse source . . s
 cmd.eThisLocation=filespec("Location", s) -- get location (including drive letter, if any)
@@ -78,11 +82,30 @@ end
 
 
 -- process arguments: setupAllAndRun.rex [install [targetDir]] | reinstall | uninstall [keep]
-parse arg runTypeArg targetDir
+parse arg runTypeArg targetDir "/@"quietArg":"  -- try to match "/@q:"
+
+if quietArg<>"" then
+do
+   if quietArg~upper<>"Q" then      -- must be in the form of "/@qr:"
+   do
+      say cmd.eThisName", usage:  setupAllAndRun.rex [install [targetDir] [/@q:]] | reinstall [/@q:] | uninstall [keep] [/@q:]"
+      if cmd.eBInteractive=.true then
+      do
+         say cmd.eThisName": about to exit program, please hit enter to continue ..."
+         parse pull input
+      end
+      exit -40
+   end
+
+   cmd.eBQuiet=.true          -- if set to .true, then no dialogs are presented
+   bPauseAtEnd=.false         -- do not wait on user input at end
+   cmd.eBInteractive=.false   -- turn off interactivity
+end
+
 
 if runTypeArg="" then
 do
-   say cmd.eThisName", usage:  setupAllAndRun.rex [install [targetDir]] | reinstall | uninstall [keep]"
+   say cmd.eThisName", usage:  setupAllAndRun.rex [install [targetDir] [/@q:]] | reinstall [/@q:] | uninstall [keep] [/@q:]"
    if cmd.eBInteractive=.true then
    do
       say cmd.eThisName": about to exit program, please hit enter to continue ..."
@@ -357,8 +380,11 @@ do
    msg=msg lf lf"(This very dialog is written in Rexx using Java for an operating system independent GUI dialog!)"
    msg=msg~changeStr(lf,"/LF/")
 
-   res=showMessageBoxViaBSF(cmd., msg, title, "information")   -- try to bring up a dialog to inform user
-   if res=.true then bPauseAtEnd=.false
+   if cmd.eBQuiet=.false then
+   do
+      res=showMessageBoxViaBSF(cmd., msg, title, "information")   -- try to bring up a dialog to inform user
+      if res=.true then bPauseAtEnd=.false
+   end
 end
 
 
@@ -368,17 +394,21 @@ do
    if cmd.eBDebug=.true then say cmd.eThisName': debug mode, un-install branch with switch=['cmd.eSwitch'] ...'
 
    bProceed=.true          -- default: proceed with uninstalling
-   if cmd.eSwitch="R" then -- attention: remove (delete) from system is chosen!
+
+   if cmd.eBQuiet=.false then
    do
-      say "This will uninstall and remove (delete!) ""BSF4ooRexx"" from your system."
-      say "Do you wish to uninstall and delete ? (yes/NO=default)"
-      parse upper pull answer .     -- get user's answer
-      bProceed=(answer~left(1)="Y")
-      if bProceed=.false then -- do not uninstall !
+      if cmd.eSwitch="R" then -- attention: remove (delete) from system is chosen!
       do
-         say cmd.eThisName": you do not want to uninstall and delete ""BSF4ooRexx"", hit enter to return ..."
-         parse pull answer
-         exit -20
+         say "This will uninstall and remove (delete!) ""BSF4ooRexx"" from your system."
+         say "Do you wish to uninstall and delete ? (yes/NO=default)"
+         parse upper pull answer .     -- get user's answer
+         bProceed=(answer~left(1)="Y")
+         if bProceed=.false then -- do not uninstall !
+         do
+            say cmd.eThisName": you do not want to uninstall and delete ""BSF4ooRexx"", hit enter to return ..."
+            parse pull answer
+            exit -20
+         end
       end
    end
 
@@ -477,8 +507,11 @@ do
    msg=msg lf lf"(This very dialog is written in Rexx using Java for an operating system independent GUI dialog!)"
    msg=msg~changeStr(lf,"/LF/")
 
-   res=showMessageBoxViaBSF(cmd., msg, title, "information")   -- try to bring up a dialog to inform user
-   if res=.true then bPauseAtEnd=.false
+   if cmd.eBQuiet=.false then
+   do
+      res=showMessageBoxViaBSF(cmd., msg, title, "information")   -- try to bring up a dialog to inform user
+      if res=.true then bPauseAtEnd=.false
+   end
 end
 
 if bPauseAtEnd=.true then    -- pause at end, such that user can
