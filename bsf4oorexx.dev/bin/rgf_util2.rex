@@ -2,7 +2,7 @@
       url to documentation and reference card (as of 2010-05-14):
                   http://wi.wu.ac.at/rgf/rexx/orx20/
 
-      author:     Rony G. Flatscher, copyright 2008-2010, all rights reserved
+      author:     Rony G. Flatscher, copyright 2008-2011, all rights reserved
       date:       2007-06-01 - 2007-06-02; 2007-07-30; 2007-08-02, 2007-08-07, 2007-08-15,
                   2007-10-20, 2007-10-23
                   2007-12-30 - made NumberComparator more flexible, allows to use
@@ -81,7 +81,10 @@
                   2010-08-15, .NumberComparator ignored second argument (order) in constructor,
                               if first argument was set to .true (thanks to Glenn Knickerbocker
                               on comp.lang.rexx)
-
+                  2011-05-30, - fix error not allowing suppliers to be shown in dump2(); this
+                                follows Jean-Louis fix in his ooRexx sandbox as of 2011-05-30;
+                                also changed sequence of argument checking to follow sequence
+                                of arguments as seen in Jean-Louis' version of rgf_util2.rex
 
       purpose:    set of 3.2 utilities to ease programming of 3.2.0, e.g. offer sort2()- and
                   stableSort2()-BIFs that handle all kind of standard sorting needs, thereby
@@ -98,7 +101,7 @@
       license:    Choice of
                   ASF 2.0, <http://www.apache.org/licenses/LICENSE-2.0>:
                   --------------- cut here ----------------
-                     Copyright 2008-2010 Rony G. Flatscher
+                     Copyright 2008-2011 Rony G. Flatscher
 
                      Licensed under the Apache License, Version 2.0 (the "License");
                      you may not use this file except in compliance with the License.
@@ -1749,7 +1752,11 @@ syntax:              -- propagate condition
 
 
   if coll~isA(.supplier) then
+  do
      s=coll
+     len=5  -- define an arbitrary high width
+     say title
+  end
   else if \coll~isA(.Collection) then   -- make sure we have a Collection else
   do
      if arg(2,"E") then    -- title omitted !
@@ -1761,13 +1768,14 @@ syntax:              -- propagate condition
      -- .ArgUtil~validateClass("collection", coll, .Collection) -- must be of type Collection
      return
   end
+  else      -- a collection in hand
+  do
+     say title": ("coll~items "items)"
+     len=length(coll~items)
+  end
 
-
-  say title": ("coll~items "items)"
   say
   count=0
-  len=length(coll~items)
-
 
 
   if coll~isA(.Collection) then
@@ -2235,15 +2243,15 @@ syntax:     -- propagate syntax exception, if any
   expose stringComparator order
   use arg bIgnoreNonNumbers=.true, order="A", case="I"
 
-  order=order~strip~left(1)~translate
-  if pos(order, "AD")=0 then
-     raise syntax 93.914 array ("# 2 (order)", "A, D", arg(2))
-
   if bIgnoreNonNumbers=.false then
      return    -- just use the plain number comparisons (default: method "compare", already defined)
 
   if \datatype(bIgnoreNonNumbers, "O") then  -- not boolean/lOgical !
      raise syntax 34.901 array (bIgnoreNumbers)
+
+  order=order~strip~left(1)~translate
+  if pos(order, "AD")=0 then
+     raise syntax 93.914 array ("# 2 (order)", "A, D", arg(2))
 
 
   case=case~strip~left(1)~translate
