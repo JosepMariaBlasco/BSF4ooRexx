@@ -14,6 +14,7 @@ java org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool TestAbstract Caesar
 
 /*
     2010-11-30, rgf:   - fixed bug in createConstructorsBase() which caused illegal class files to be created
+    2010-05-31, rgf:   - use the ClassLoader of the class to proxy, otherwise dynamically created Java classes cannot be extended
 */
 
 import java.lang.reflect.*;
@@ -34,7 +35,7 @@ import org.codehaus.janino.SimpleCompiler;
  *  proxied Java method invocations to their original target on the Java side.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2010 Rony G. Flatscher
+ *    Copyright (C) 2010-2011 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -49,7 +50,7 @@ import org.codehaus.janino.SimpleCompiler;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 0.5.2, 2010-03-27, 2010-04-14, 2010-04-17, 2010-04-18, 2010-11-30
+  * @version 0.6.0, 2010-03-27, 2010-04-14, 2010-04-17, 2010-04-18, 2010-11-30, 2011-05-31
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu.ac.at">http://www.wu.ac.at</a>)
   */
 
@@ -296,6 +297,7 @@ public class ProxiedJavaClassTool
         if (bss) System.err.println("/// ProxiedJavaClassTool.createProxiedJavaClass(...), created Java source code: \n"+sb);
 
         SimpleCompiler sc=new SimpleCompiler();
+        sc.setParentClassLoader(javaClassToProxy.getClassLoader());     // rgf, 2011-05-31: make sure also dynamically created classes can be found
         Class clz=null;
 
         long startTime=0l, endTime=0l, endOfLoadTime=0l;
