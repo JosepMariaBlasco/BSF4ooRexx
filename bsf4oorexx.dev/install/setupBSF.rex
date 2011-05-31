@@ -7,7 +7,9 @@
    Date:    2006-01-07
    Version: 1.24
    Changed:
-
+            2011-05-28, ---rgf, - Unix: if run on Unix make sure all dirs/files are set to owner "user:admin",
+                                         chmod to 775 for dirs and 664 on files, such that "admin" users can
+                                         remove dirs and files as well
             2011-05-24, ---rgf, - general: changed logic to determine path to java binary as early as possible
                                 - Windows: use registry's JRE entry, if java.exe cannot be found
             2011-04-21, ---rgf, - Windows: adjust for 64-bit behaviour, if Rexx is 32-bit (needing 32-bit Java):
@@ -313,6 +315,15 @@ do
    if suname<>"" then
       cmd.eHintString="created:" q(cmd.eDateTimeEdited) "by sudo user" q(suname)
 
+   -- get and save logName and sudoUser-Name
+   cmd.eLogName  = value('LOGNAME',    ,'ENVIRONMENT')  -- get current logname, could be 'root' if sudo'ing
+   cmd.eSudoUser = value('SUDO_USER',  ,'ENVIRONMENT')  -- maybe sudo'ing, then who is the sudo user
+
+   if cmd.eLogName="root", cmd.eSudoUser<>"" then
+      cmd.eRealUserName=cmd.eSudoUser
+   else
+      cmd.eRealUserName=cmd.eLogName
+
    call UnixDetermineTargetLibDirs cmd.   -- determine where to copy/link libraries to
 
    nl="0a"x                      /* Unix new-line character sequence (\n)     */
@@ -502,6 +513,10 @@ call createInstallScript      /* new on 2008-05-17, ---rgf
                               */
 
 call createRunAsScripts       /* 2010-03-07: for Vista and higher */
+
+/**/
+if cmd.eIsUnix=1 then         /* make sure rights are not fully available to the world */
+   call setChmod cmd.
 
 /* ---> 2010-08-07, done by controlling script "setupAllAndRun.rex"
 if cmd.eIsUnix=1 then         /* make sure rights are not fully available to the world */
@@ -1891,6 +1906,43 @@ say "unixDetermineLibs:" _mode"|"lib"|"target "..."
   end
   return
 
+
+::routine setChmod   -- on Unix systems make sure that we set the file flags accordingly
+   use strict arg cmd., bAllFiles=.true
+
+   if cmd.eBDebug=.true then
+   do
+      say cmd.eThisName': setChmod, bAllFiles=[' || bAllFiles || '], ...'
+      return
+   end
+
+      -- make sure that "admin" group members have full access to directories and files
+   if bAllFiles=.true then
+   do
+      "chmod 775 .."                            /* 755 on "bsf4oorexx"-directory                      */
+      "chown" "-R" cmd.eRealUserName":admin ../*"
+
+      "find .. -type d -exec chmod 775 '{}' \;" /* 755 make all directories traversable; rwx-rwxr-x   */
+      "find .. -type f -exec chmod 664 '{}' \;" /* make all files rw-rw-r--                           */
+
+            /* make all executable files executable: */
+      -- 'find .. \( -iname "*.txt" -o -iname "*.pdf" -o -iname "*.oxt" -o -iname "*.htm*" \) -type f -execdir chmod 644 ''{}'' \;'
+      chunk1="find .."   -- leadin, start from parent directory
+      chunk2="-type f -execdir chmod ugo+x '{}' \;"   /* make sure executable gets set for all */
+      tmpStr=""
+      do ext over .array~of("sh", "so", "rex", "rxj", "rxo", "rexxj", "jrexx", "cls", "orx", "testGroup", "testUnit", "exe", "class", "cmd", "py", "js", "nrx", "jacl")
+         if tmpStr="" then tmpStr =           '-iname "*'ext'"'
+                      else tmpStr = tmpStr '-o -iname "*'ext'"'
+      end
+      cmd = chunk1 "\(" tmpStr "\)" chunk2   -- build command
+      cmd                                    -- let the shell run the command
+   end
+   else  /* just make sure that all (possibly newly created) .sh-files in the current directory get set to: 775 */
+   do
+       'find . -iname "*.sh" -type f -exec chown' cmd.eRealUserName':admin  ''{}'' \;'
+       'find . -iname "*.sh" -type f -exec chmod 775 ''{}'' \;'
+   end
+   return
 
 
 

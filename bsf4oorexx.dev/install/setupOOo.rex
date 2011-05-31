@@ -5,7 +5,7 @@
             to point to the Java archives needed to drive/automate OpenOffice.org
             resp. LibreOffice
    Author:  Rony G. Flatscher
-   Version: 1.16
+   Version: 1.17
    Date:    2006-01-04
    Changed:
             2006-01-16, ---rgf, make sure CLASSPATH is used in any case
@@ -64,8 +64,12 @@
                                 - MacOSX: not setting up xdg-menu
             2011-03-01, ---rgf, - MacOSX: adjusted 'sed' arguments
             2011-03-02, ---rgf, - MacOSX: do not generate MacOSX home directory in setEnvironment4OOo.sh
-            2011-04-10, ---rgf, - added support for LibreOffice (tested with LO 3.3.2) on 
+            2011-04-10, ---rgf, - added support for LibreOffice (tested with LO 3.3.2) on
                                   Windows, MacOSX (Linux-Version was generic enough already)
+            2011-05-28, ---rgf, - Unix: make sure newly created files are assigned to "admin" group and
+                                  fully writable for "admin" members
+            2011-05-31, ---rgf, - Unix: look for LibreOffice first in "/opt/libreoffice/program" (default installation
+                                        location for genuine LO from www.LibreOffice.org)
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
@@ -269,6 +273,18 @@ do
    if tmpVal<>"" then cmd.eUser=tmpVal       -- o.k., use this user
                  else cmd.eUser=value("USER",,"ENVIRONMENT")
 
+   -- get and save logName and sudoUser-Name
+   cmd.eLogName  = value('LOGNAME',    ,'ENVIRONMENT')  -- get current logname, could be 'root' if sudo'ing
+   cmd.eSudoUser = value('SUDO_USER',  ,'ENVIRONMENT')  -- maybe sudo'ing, then who is the sudo user
+
+   if cmd.eLogName="root", cmd.eSudoUser<>"" then
+      cmd.eRealUserName=cmd.eSudoUser
+   else
+      cmd.eRealUserName=cmd.eLogName
+
+   cmd.eSetOwner="chown" cmd.eRealUserName":admin"   -- newly created files, also assigned to "admin" group
+
+
    nl="0a"x                      /* Unix new-line character sequence (\n)  */
    cmd.eNullDevice = "/dev/null" /* null device  */
 
@@ -326,7 +342,7 @@ do
    cmd.eRunRexxScriptJava = cmd.eThisDirectory || "runRexxScriptJava.sh"
    cmd.eRunRexxScriptOOo  = cmd.eThisDirectory || "runRexxScriptOOo.sh"
 
-   cmd.eSetExecutable    ="chmod 755"   /* set executable for all (user, group, other)  */
+   cmd.eSetExecutable    ="chmod 775"   /* set executable for all (user, group, other)  */
    cmd.eLineComment="#"
 
    cmd.eInstallSystemWide=.true           /* install into /etc/profile which supposedly works on all systems
@@ -908,7 +924,10 @@ createInstallScript: procedure expose cmd. path.
   if cmd.eSetExecutable<>"" then       /* set file executable (Unix)    */
   do
      cmd.eSetExecutable cmd.eInstallScriptName
+     cmd.eSetOwner      cmd.eInstallScriptName
+
      cmd.eSetExecutable cmd.eUninstallScriptName
+     cmd.eSetOwner      cmd.eUninstallScriptName
   end
   return
 
@@ -1016,7 +1035,10 @@ createEnvironmentScript: procedure expose cmd. path.
   call stream fn, "c", "close"
 
   if cmd.eSetExecutable<>"" then       /* set file executable (Unix)    */
+  do
      cmd.eSetExecutable cmd.eSetEnvironmentScriptName
+     cmd.eSetOwner      cmd.eSetEnvironmentScriptName
+  end
 
   return
 
@@ -1256,6 +1278,12 @@ syntax2:                   -- no OOo-entry
 /* Look for "soffice" on environment variable PATH. If a link, find link's target.
 */
 ::routine getOOoHomeDirUnix
+
+    -- rgf, 2011-05-31: check for "/opt/libreoffice/soffice" first (default installation location for http://www.LibreOffice.org)
+  path="/opt/libreoffice/program"
+  if sysFileExists(path"/soffice") then
+     return path
+
   val=value("PATH", , "environment")   -- get PATH environment variable's value
   paths=val~makeArray(":")       -- create array from string, use Unix path delimiter (":")
 
@@ -1295,7 +1323,7 @@ syntax2:                   -- no OOo-entry
 /* rgf, 2011-02-25, try to find OOo's home dir on MacOSX, 2011-04-10: add search for LibreOffice */
 ::routine getOOoHomeDirMacOSX
 -- well defined home directory
-  paths=.array~of("/Applications/OpenOffice.org.app/Contents/MacOS", "/Applications/LibreOffice.app/Contents/MacOS")  
+  paths=.array~of("/Applications/OpenOffice.org.app/Contents/MacOS", "/Applications/LibreOffice.app/Contents/MacOS")
 
   do path over paths
      soffice=path"/soffice"

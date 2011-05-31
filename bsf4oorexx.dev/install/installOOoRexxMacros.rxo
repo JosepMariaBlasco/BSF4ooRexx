@@ -13,6 +13,7 @@
                                 OpenOffice via Java
             2010-07-24, ---rgf, handle special "python" case which does not have a parcel-descriptor.xml
                                 file, run extensive tests
+            2011-05-28, ---rgf, make sure group-members have full write access
 
    last svn check-in: $Revision: 927 $ $Author: Administrator $ $Date: 2010-12-26 18:34:19 +0100 (Sun, 26 Dec 2010) $
 
@@ -126,7 +127,16 @@ xDesktop~terminate  -- try to terminate the OOo instance
      if dir=.nil then iterate
 
      if \SysFileExists(dir) then    -- script directory does not exist yet
+     do
         call SysMkDir dir           -- create directory
+
+        if .bsf4rexx~opsys1<>"W" then -- not Windows, hence a Unix-system
+        do
+
+            "chown" getRealUserName()":admin" dir -- make sure we assign directory to group "admin"
+            "chmod 775"                  dir -- make sure "admin" users have full write access
+        end
+     end
   end
 
 
@@ -175,8 +185,6 @@ xDesktop~terminate  -- try to terminate the OOo instance
 
 
 
-
-
    /* this routine installs or uninstalls the "UNO_API_info.rxo" into the
       script directory "share", library "wu_tools" */
 ::routine install_wu_tools
@@ -191,6 +199,8 @@ xDesktop~terminate  -- try to terminate the OOo instance
   locations=uno.determineScriptLocation(xContext, location, "oorexx", "ooRexx", library, srcDir)
   ufs=.uno~file.separator     -- get file separator for this platform
   isUnix=(ufs="/")            -- running under Unix ?
+  realUserName="root"
+  if isUnix then realUserName=getRealUserName()
 
   path2parcel=locations~targetDir_parcel  -- get fully qualified path to parcel
   parcel=.Parcel~fromXMLFile(path2parcel) -- create parcel (read-in if it exists)
@@ -207,8 +217,11 @@ xDesktop~terminate  -- try to terminate the OOo instance
       parcel~addScriptDefinition(so)            -- add it to the parcel
 
       call writeParcelData path2parcel, parcel
-      if isUnix then          -- set parcel to 644
-         "chmod 644" path2parcel
+      if isUnix then          -- set parcel to 664
+      do
+         "chmod 664" path2parcel
+         "chown" realUserName":admin" path2parcel
+      end
   end
   else                        -- uninstall macro
   do
@@ -217,8 +230,11 @@ xDesktop~terminate  -- try to terminate the OOo instance
       parcel~removeScriptDefinition(name)       -- add it to the parcel
 
       call writeParcelData path2parcel, parcel
-      if isUnix then          -- set parcel to 644
-         "chmod 644" path2parcel
+      if isUnix then          -- set parcel to 664
+      do
+         "chmod 664" path2parcel
+         "chown" realUserName":admin" path2parcel
+      end
 
       call removeTargetDir locations
   end
@@ -244,6 +260,8 @@ xDesktop~terminate  -- try to terminate the OOo instance
   ufs=.uno~file.separator     -- get file separator for this platform
 
   isUnix=(ufs="/")
+  realUserName="root"
+  if isUnix then realUserName=getRealUserName()
 
   bIsPython = (scriptLanguageDir="python")   /* "python" directory in source ? */
   bHandleParcelDescriptor = \ bIsPython      /* if "python", then no parcel descriptor handling! */
@@ -279,8 +297,11 @@ xDesktop~terminate  -- try to terminate the OOo instance
       do
          tgtParcel~parcelScriptDefinitions~putAll(srcParcel~parcelScriptDefinitions)
          call writeParcelData locations~targetDir_parcel, tgtParcel
-         if isUnix then          -- set parcel to 644
-            "chmod 644" locations~targetDir_parcel
+         if isUnix then          -- set parcel to 664
+         do
+            "chmod 664" locations~targetDir_parcel
+            "chown" realUserName":admin" locations~targetDir_parcel
+         end
       end
   end
   else                        -- uninstall macro
@@ -299,9 +320,23 @@ xDesktop~terminate  -- try to terminate the OOo instance
       if bHandleParcelDescriptor then
       do
          call writeParcelData locations~targetDir_parcel, tgtParcel
-         if isUnix then          -- set parcel to 644
-            "chmod 644" locations~targetDir_parcel
+         if isUnix then          -- set parcel to 664
+         do
+            "chmod 664" locations~targetDir_parcel
+            "chown" realUserName":admin" locations~targetDir_parcel
+         end
       end
 
       call removeTargetDir locations
   end
+
+
+ ::routine getRealUserName    -- Unix: determine and return real user name
+   logName  = value('LOGNAME',    ,'ENVIRONMENT')  -- get current logname, could be 'root' if sudo'ing
+   sudoUser = value('SUDO_USER',  ,'ENVIRONMENT')  -- maybe sudo'ing, then who is the sudo user
+
+   if logName="root", sudoUser<>"" then
+      return sudoUser
+   else
+      return logName
+

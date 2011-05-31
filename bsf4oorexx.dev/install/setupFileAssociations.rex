@@ -11,6 +11,8 @@
             2011-03-21, ---rgf, add "rgf-bsf4oorexx_oorexxtry.desktop" to Linux
             2011-03-26, ---rgf, reorganize xdg-install in linux, remove all dashes from name and use "--novendor"
             2011-03-27, ---rgf, - Linux: now creating separate 'xdg_icons_menu_add-remove.sh'
+            2011-05-28, ---rgf, - Unix: make sure group of new files is set to "admin" and "admin" users
+                                        have full write access to these files as well
 
    last svn check-in: $Revision: 640 $ $Author: rony $ $Date: 2010-04-17 22:25:38 +0200 (Sat, 17 Apr 2010) $
 
@@ -581,8 +583,8 @@ createTypeNameEntry: procedure
   end
 
   ---- change owner/group
-   "chmod 755" fragmentName"*.sh"
-   'chown' realuserName":"realUserName fragmentName"*.sh"
+   "chmod 775" fragmentName"*.sh"
+   'chown' realuserName":admin" fragmentName"*.sh"
   return
 
 
@@ -608,8 +610,8 @@ createTypeNameEntry: procedure
   ufs~close
 
   ---- change owner/group
-  "chmod 755" fragmentName"*.sh"
-  'chown' cmd.eRealuserName":"cmd.eRealUserName fragmentName"*.sh"
+  "chmod 775" fragmentName"*.sh"
+  'chown' cmd.eRealuserName":admin" fragmentName"*.sh"
 
 
 ::routine linuxXdgMenu     -- install/uninstall menu
@@ -815,7 +817,7 @@ linuxAddIconsDoTheWork: procedure
        ifs~say("# Templates directory will be created, but never removed")
        ifs~~say(cmd.eMkDir775 enQQ(userTemplatesDirName))~~say -- create Templates directory
             -- change owner/group to real user
-       ifs~~say('chown' realuserName":"realUserName enQQ(userTemplatesDirName))~say
+       ifs~~say('chown' realuserName":admin" enQQ(userTemplatesDirName))~say
    end
 
    if SysFileExists(skelHome"/Templates")=.false then -- Templates folder does not exist !

@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-05,14,18
-   version: 1.03
+   version: 1.04
    name:    setupAllAndRun.rex
    purpose: installer to install or reinstall the BSF4ooRexx package
 
@@ -31,6 +31,12 @@
             2011-05-25, -rgf  - add an option "/@q:" (quiet) which will inhibit dialogs, such that
                                 this installer can be used by other installers in "silent"
                                 (unattended) mode
+            2011-05-28, -rgf  - make sure that all directories and files of the "bsf4oorexx" directory and
+                                subdirectory get as owner the real name of the installing user and as group
+                                "admin", where the "admin" group gets full read/write access to all directories
+                                and files as well (this way anyone being in the admin group can change or
+                                uninstall the files)
+
 
    remark:  ---
 
@@ -166,6 +172,16 @@ do
 end
 else   -- Unix-like system, including MacOSX
 do
+
+   -- get and save logName and sudoUser-Name
+   cmd.eLogName  = value('LOGNAME',    ,'ENVIRONMENT')  -- get current logname, could be 'root' if sudo'ing
+   cmd.eSudoUser = value('SUDO_USER',  ,'ENVIRONMENT')  -- maybe sudo'ing, then who is the sudo user
+
+   if cmd.eLogName="root", cmd.eSudoUser<>"" then
+      cmd.eRealUserName=cmd.eSudoUser
+   else
+      cmd.eRealUserName=cmd.eLogName
+
    cmd.eOpSys="U"
    cmd.eFile.sep="/"
    cmd.eDefaultTargetDir="/opt/"cmd.eInstallDirName
@@ -548,8 +564,6 @@ exit 0
       return 0
    end
 
-say cmd.eThisName": (debug) createAndRunInstallationScripts, mode=["mode"], createInstallScript=["createInstallScript"], runInstallScript=["runInstallScript"] ..."
-
    call (createInstallScript)
    if result<>"RESULT", result<>0 then       -- something went wrong, abort
    do
@@ -688,11 +702,14 @@ say cmd.eThisName": (debug) createAndRunInstallationScripts, mode=["mode"], crea
       return
    end
 
+      -- make sure that "admin" group members have full access to directories and files
    if bAllFiles=.true then
    do
-      "chmod 755 ../.."                         /* 755 on "bsf4oorexx"-directory                      */
-      "find .. -type f -exec chmod 644 '{}' \;" /* make all files rw-r--r--                           */
-      "find .. -type d -exec chmod 755 '{}' \;" /* 755 make all directories traversable; rwx-r-xr-x   */
+      "chmod 775 .."                            /* 755 on "bsf4oorexx"-directory                      */
+      "chown" "-R" cmd.eRealUserName":admin ../*"
+
+      "find .. -type d -exec chmod 775 '{}' \;" /* 755 make all directories traversable; rwx-rwxr-x   */
+      "find .. -type f -exec chmod 664 '{}' \;" /* make all files rw-rw-r--                           */
 
             /* make all executable files executable: */
       -- 'find .. \( -iname "*.txt" -o -iname "*.pdf" -o -iname "*.oxt" -o -iname "*.htm*" \) -type f -execdir chmod 644 ''{}'' \;'
@@ -706,9 +723,10 @@ say cmd.eThisName": (debug) createAndRunInstallationScripts, mode=["mode"], crea
       cmd = chunk1 "\(" tmpStr "\)" chunk2   -- build command
       cmd                                    -- let the shell run the command
    end
-   else  /* just make sure that all (possibly newly created) .sh-files in the current directory get set to: 755 */
+   else  /* just make sure that all (possibly newly created) .sh-files in the current directory get set to: 775 */
    do
-       'find . -iname "*.sh" -type f -exec chmod 755 ''{}'' \;'
+       'find . -iname "*.sh" -type f -exec chown' cmd.eRealUserName':admin  ''{}'' \;'
+       'find . -iname "*.sh" -type f -exec chmod 775 ''{}'' \;'
    end
    return
 
