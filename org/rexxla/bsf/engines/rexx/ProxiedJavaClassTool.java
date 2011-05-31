@@ -296,6 +296,7 @@ public class ProxiedJavaClassTool
         if (bss) System.err.println("/// ProxiedJavaClassTool.createProxiedJavaClass(...), created Java source code: \n"+sb);
 
         SimpleCompiler sc=new SimpleCompiler();
+        sc.setParentClassLoader(javaClassToProxy.getClassLoader());     // rgf, 2011-05-31: make sure also dynamically created classes can be found
         Class clz=null;
 
         long startTime=0l, endTime=0l, endOfLoadTime=0l;
