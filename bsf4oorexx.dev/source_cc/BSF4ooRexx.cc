@@ -29,6 +29,7 @@ offene Probleme:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.0.8 2011-06-05 - rgf, make Java Throwable object available via ADDITIONAL array if doing a RaiseException()
 
     4.0.7 2011-03-19 - fix Apple compiler problem: make environment{AttachTo|DetachFrom} a true function (inline
                        causes global structure's elements being NULL; this happens with "i686-apple-darwin10-gcc-4.2.1 (GCC) 4.2.1 (Apple Inc. build 5664)")
@@ -641,11 +642,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "407.20110319 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "408.20110605 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "407.20110319 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "408.20110605 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "407.20110319 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "408.20110605 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -3133,6 +3134,11 @@ long size_STRUCT_PARAM=sizeof(STRUCT_PARAM);  // get and memorize size of struct
 
 
 // prototypes:
+
+// void RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, RexxThreadContext *rtc, const char * errorStringPattern); // rgf, 2011-06-04
+// RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, RexxThreadContext *rtc, const char * errorStringPattern); // rgf, 2011-06-04
+RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, RexxCallContext *rcc, const char * errorStringPattern); // rgf, 2011-06-04
+
 void removeRAJO(JNIEnv *env, PSTRUCT_RAJO node);
 void removeNODE(JNIEnv *env, PSTRUCT_NODE node);
 void removeTID2NODE(JNIEnv *env, PSTRUCT_TID2NODE node);
@@ -6512,6 +6518,102 @@ inline void make_upper (char * string)
 
 
 
+    // rgf, 2011-06-04
+    // create error message text, wrap Java throwable
+    // - create array and add both to it, supply array as "ADDITIONAL" array to RaiseException
+    // - return error message text, such that caller can use it to set its environment
+    // needs: - param (jni-env, rajo, etc.)
+    //        - rtc
+    //        - error message pattern containing "%16" (for DLLName) and "%s" (for error message), e.g.
+    //          "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]"
+// inline void RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, RexxThreadContext *rtc, const char * errorStringPattern)
+// inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, RexxThreadContext *rtc, const char * errorStringPattern)
+// JNIEnv *jniEnv
+// inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, RexxCallContext *rcc, const char * errorStringPattern)
+
+// jobject -> rajo
+
+inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, RexxCallContext *rcc, const char * errorStringPattern)
+{
+     RexxThreadContext *rtc = rcc->threadContext;
+
+     jthrowable jo=param->env->ExceptionOccurred();    // get the Exception object
+
+     if (bShowErrorString==1)       // print the stack?
+     {
+         param->env->ExceptionDescribe();    // print the stack
+     }
+     param->env->ExceptionClear();           // clear exception in the JVM
+
+     RexxStringObject rso=NULL;             // RexxString used for error message
+     jclass joc=param->env->GetObjectClass(jo);    // get Throwable's class object
+
+     jmethodID jmidName=param->env->GetMethodID(joc, "toString", "()Ljava/lang/String;");    // get method ID
+     jobject   jobj    =param->env->CallObjectMethod(jo, jmidName, NULL);  // invoke toString()
+
+     if ( param->env->ExceptionCheck() )     // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+     {
+         param->env->ExceptionDescribe();
+         param->env->ExceptionClear();
+         rso=rtc->String("<Unfortunately, Java was not able to create a string from the Throwable, because it threw another exception while attempting to do so! :( >");
+     }
+     else   // copy Java string to RexxString
+     {
+         const char *aha=param->env->GetStringUTFChars( (jstring) jobj, JNI_FALSE);
+         rso=rtc->String(aha);     // create RexxStringObject
+         param->env->ReleaseStringUTFChars( (jstring) jobj, aha);
+     }
+
+        // ---> create full error message for Rexx
+     size_t sz=rtc->StringLength(rso);   // get needed string length
+     char * tmp=(char *) RexxAllocateMemory(sz+256);
+
+     // SNPRINTF( tmp, sz+256, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
+     SNPRINTF( tmp, sz+256, errorStringPattern, DLLNAME, rtc->StringData(rso));
+     rso=rtc->String(tmp);      // turn into a RexxString
+     RexxFreeMemory(tmp);
+
+        // use RexxCallContext to set context variable
+     rcc->SetContextVariable(BSF_ERROR_STRING, rso);    // set also the context variable to the error message
+
+        // ---> register Java throwable in BSFRegistry
+     // create a bean of the Java object; if .BSF is available, then return a bsf.wrap() of it
+     jstring j_beanName = (jstring) param->env->CallObjectMethod(param->rajo,
+                                        defaultJVM->mid_RexxAndJava_registerBean4JNI,
+                                        jo);
+
+     // get char* beanName, do a bsf.wrap() if available; return that result
+     const char * c_beanName    = param->env->GetStringUTFChars(j_beanName, JNI_FALSE);
+     RexxStringObject r_beanName=       rtc->String(c_beanName);    // create Rexx string
+     param->env->ReleaseStringUTFChars(j_beanName, c_beanName);      // release
+
+     RexxObjectPtr bsfClz=rgfGetEntryFromLocal (rtc, "BSF"); // get .BSF, if available
+     RexxObjectPtr rJavaThrowable=NULL;
+     if (bsfClz!=rtc->Nil())  // class found, do a bsf.wrap() on the beanName
+     {
+         rJavaThrowable=rtc->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_PROXY object
+     }
+     else    // cast RexxString to RexxObject
+     {
+         rJavaThrowable=(RexxObjectPtr) r_beanName;
+     }
+
+        // --- now create RexxArray used for condition's "ADDITIONAL", first entry: substitution text, second entry: Java Throwable object
+     RexxArrayObject ra=rtc->NewArray(2);
+     rtc->ArrayPut(ra, rso, 1);     // save Throwable's string
+     rtc->ArrayPut(ra, rJavaThrowable, 2);  // save wrapped Java Throwable object
+
+        // --- raise exception
+     rtc->RaiseException(Rexx_Error_Incorrect_call_user_defined, ra);
+
+     return rso;            // return error string, such that caller can decide to set it to the environment as well
+}
+
+
+
+
+
+
 
     /*********************************************************************/
     /* Queries how BSF4Rexx was invoked and whether JVM is present       */
@@ -7348,6 +7450,7 @@ fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
 
         context->SetContextVariable(BSF_ERROR_STRING, rso);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
+
         // rgf, 20091004 RgfNewDetach(); // 2009-06-07
         return "-990";  // return prematurely
     }
@@ -8328,6 +8431,13 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
 
         if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
         {
+
+            RexxStringObject rso=RgfCreateRexxSyntaxConditionWithJavaThrowable (&param,
+                 context,
+                 "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]");
+            // "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%.256s]");
+/*
+
                 // get Java Throwable toString() as a RexxString; will clear the pending Java exception
             RexxStringObject rso=RgfGetJavaThrowableAsString (param.env, context->threadContext);
 
@@ -8350,6 +8460,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
 
             context->SetContextVariable(BSF_ERROR_STRING, rso);
             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
+*/
 
             RgfAcquireLock();
             environmentDetachFrom(&param, FALSE);
@@ -8369,6 +8480,11 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
 
     if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
     {
+
+        RexxStringObject rso=RgfCreateRexxSyntaxConditionWithJavaThrowable (&param,
+             context,
+             "%.16s/routine/BsfCreateRexxProxy(), error 5: Java exception occurred: [%s]");
+/*
             // get Java Throwable toString() as a RexxString; will clear the pending Java exception
         RexxStringObject rso=RgfGetJavaThrowableAsString (param.env, context->threadContext);
 
@@ -8390,6 +8506,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
         }
         context->SetContextVariable(BSF_ERROR_STRING, rso);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
+*/
     }
 
         // get native string from jstring
@@ -9091,6 +9208,10 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
 
     if (errorKind==0 && param.env->ExceptionCheck())    // if a pending Java exception, handle it and create a Rexx exception
     {
+        RexxStringObject rso=RgfCreateRexxSyntaxConditionWithJavaThrowable (&param,
+             context,
+             "%.16s/routine/BsfRawBytes(), error 5: caused Java exception: [%s]");
+/*
             // get Java Throwable toString() as a RexxString; will clear the pending Java exception
         RexxStringObject rso=RgfGetJavaThrowableAsString (param.env, context->threadContext);
 
@@ -9114,6 +9235,8 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
 
         context->SetContextVariable(BSF_ERROR_STRING, rso);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
+*/
+
         result_Obj=context->Nil();
     }
 
@@ -9300,6 +9423,10 @@ RexxRoutine1(RexxObjectPtr, BsfRawBytes_ORI, RexxObjectPtr, data)
 
     if (param.env->ExceptionCheck())    // if a pending Java exception, handle it and create a Rexx exception
     {
+        RexxStringObject rso=RgfCreateRexxSyntaxConditionWithJavaThrowable (&param,
+             context,
+             "%.16s/routine/BsfRawBytes(), error 4: caused Java exception: [%s]");
+/*
             // get Java Throwable toString() as a RexxString; will clear the pending Java exception
         RexxStringObject rso=RgfGetJavaThrowableAsString (param.env, context->threadContext);
 
@@ -9323,6 +9450,7 @@ RexxRoutine1(RexxObjectPtr, BsfRawBytes_ORI, RexxObjectPtr, data)
 
         context->SetContextVariable(BSF_ERROR_STRING, rso);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
+*/
         result_Obj=context->Nil();
     }
 
@@ -9756,9 +9884,12 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
                 // pending exception ?
         if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
         {
+            RexxStringObject rso=RgfCreateRexxSyntaxConditionWithJavaThrowable (&param,
+                 context,
+                 "%.16s/routine/BSF(), error 3: Java exception occurred: [%s]");
+/*
                 // get Java Throwable toString() as a RexxString; will clear the pending Java exception
             RexxStringObject rso=RgfGetJavaThrowableAsString (param.env, context->threadContext);
-
             // create error message for Rexx
             size_t sz=context->StringLength(rso);   // get needed string length, default msg buffer is 4 KB
             if (sz>4000)
@@ -9777,6 +9908,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
             }
             context->SetContextVariable(BSF_ERROR_STRING, rso);
             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
+*/
 
 
 #if defined ( RGF_INVALID_ROUTINE_NIXINOXI )
@@ -10551,6 +10683,10 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
         // pending exception in Java, if so report it to Rexx !
         if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
         {
+            RexxStringObject rso=RgfCreateRexxSyntaxConditionWithJavaThrowable (&param,
+                 context,
+                 "%.16s/routine/BsfJavaException(), error 4: unhandled Java exception pending: [%s], cannot throw a new Java exception or a fatal error");
+/*
                 // get Java Throwable toString() as a RexxString; will clear the pending Java exception
             RexxStringObject rso=RgfGetJavaThrowableAsString (param.env, context->threadContext);
 
@@ -10571,7 +10707,7 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
 
             context->SetContextVariable(BSF_ERROR_STRING, rso);
             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-
+*/
             RgfAcquireLock();
             environmentDetachFrom(&param, FALSE);
             RgfReleaseLock();

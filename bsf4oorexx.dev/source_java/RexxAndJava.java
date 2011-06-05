@@ -36,13 +36,17 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.0.6, 2011-02-23
+  * @version 4.0.7, 2011-06-04
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
      needs: Java level 1.4 due to using Exception's getCause();
             ooRexx 4.0
+     2011-06-04, ---rgf, - make sure that BSFExceptions get the Throwable assigned, if this
+                           intelligible from context, such that one can retrieve it by using
+                           the BSFException instance method getTargetException()
+
      2011-03-15, ---rgf, - add new persons to credit/kudos
 
      2011-02-23, ---rgf, - as this class is not public, its public members cannot be accessed
@@ -235,7 +239,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "406.20110315";
+    static final public String version = "407.20110604";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -2288,7 +2292,9 @@ for (int i=0; i<args.length; i++)
                    {
                        throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                           "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" componentType ["+args[1]+"]"+
-                          " is neither an instance of 'java.lang.Class', nor could a Java class by that name be dynamically loaded!");
+                          " is neither an instance of 'java.lang.Class', nor could a Java class by that name be dynamically loaded!"
+                          , e  // rgf, 2011-06-04: supply Exception object
+                          );
                    }
                }
 
@@ -2325,6 +2331,7 @@ for (int i=0; i<args.length; i++)
                               " (value=\""+args[i]+"\") caused an exception"+
                               ( t==null ? "" : "(\""+t+"\")" )+
                               ", must be of componentType \""+componentType+"\""
+                               , e  // rgf, 2011-06-04: supply Exception object
                           );
                    }
                }
@@ -2368,7 +2375,9 @@ for (int i=0; i<args.length; i++)
                    {
                        throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                           "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" componentType ["+args[1]+"]"+
-                          " is neither an instance of 'java.lang.Class', nor could a Java class by that name be dynamically loaded!");
+                          " is neither an instance of 'java.lang.Class', nor could a Java class by that name be dynamically loaded!"
+                          , e  // rgf, 2011-06-04: supply Exception object
+                          );
                    }
 
                    // ---------------->
@@ -3015,6 +3024,7 @@ if (bDebug) System.err.println("--> ==> now setting the value: o=["+o+"], args[2
                                       +(choice==SET_FIELD_VALUE ? "field" : "property")
                                       +" ["+ args[2]+"] in object ["+args[1]+"] to ["+ (args.length>4 ? args[4] : args[3]) +"]"
                                       +"\n, exception thrown: ["+e.toString()+"]"     // rgf, 2008-07-09
+                                      , e  // rgf, 2011-06-04: supply Exception object
                                       );
                          }
 
@@ -3033,6 +3043,7 @@ if (bDebug) System.err.println("--> ==> now setting the value: o=["+o+"], args[2
                                      "field" : "property" )
                                   +" ["+args[2]+"] in object ["+args[1]+"]"
                                   +"\n, exception thrown: ["+e.toString()+"]"     // rgf, 2008-07-09
+                                  , e  // rgf, 2011-06-04: supply Exception object
                                   );
                      }
                   }
@@ -3100,7 +3111,9 @@ if (bDebug) System.err.println("--> ==> now setting the value: o=["+o+"], args[2
                           {
                               throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                               //        "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class '"+args[1]+"', threw exception: ["+e.getLocalizedMessage()+"]");
-                                 "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class '"+args[1]+"', threw exception: ["+e.toString()+"]");
+                                 "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class '"+args[1]+"', threw exception: ["+e.toString()+"]"
+                                 , e  // rgf, 2011-06-04: supply Exception object
+                                 );
                               // "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class ["+args[1]+"]', threw exception: ["+e.getLocalizedMessage()+"]");
                           }
                       }
@@ -3368,7 +3381,9 @@ if (bDebug)
                                                           // "/// Java-exception (RexxAndJava) occurred: ["+eMsg+"] \\\\\\\n" +
                                                                       "/// Java-exception (RexxAndJava) occurred: ["+e.toString()+"]" +
                                                                       getCauseAsString(", getCause(): ", e)+" \\\\\\\n" +
-                                                          "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"], method not found or error (exception) executing method!" );
+                                                          "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"], method not found or error (exception) executing method!"
+                                                          , e  // rgf, 2011-06-04: supply Exception object
+                                                          );
                                           }
                                   }
 
@@ -3729,6 +3744,7 @@ if (bDebug)
                                                                       "/// Java-exception (RexxAndJava) occurred: ["+e.toString()+"]" +
                                                                       getCauseAsString(", getCause(): ", e)+" \\\\\\\n" +
                                                           "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"], method not found or error (exception) executing method!"
+                                                          , e  // rgf, 2011-06-04: supply Exception object
                                                           );
                                           }
                                       }
@@ -3936,7 +3952,9 @@ if (bDebug) e.printStackTrace ();
                           {
                               throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                  "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": javaClass ["+args[2]+"]"+
-                                 " is neither an instance of 'java.lang.Class', nor could a Java class by that name be dynamically loaded!");
+                                 " is neither an instance of 'java.lang.Class', nor could a Java class by that name be dynamically loaded!"
+                                 , e  // rgf, 2011-06-04: supply Exception object
+                                 );
                           }
                       }
                         // carry out the test and return .true or .false accordingly
@@ -4088,7 +4106,9 @@ if (bDebug) e.printStackTrace ();
                        {
                            throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                  // "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class '"+args[1]+"', threw exception: ["+e.getLocalizedMessage()+"]");
-                                 "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class '"+args[1]+"', threw exception: ["+e.toString()+"]");
+                                 "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class '"+args[1]+"', threw exception: ["+e.toString()+"]"
+                                 , e  // rgf, 2011-06-04: supply Exception object
+                                 );
                            // "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class ["+args[1]+"], threw exception: ["+e.getLocalizedMessage()+"]");
                        }
 
@@ -4175,7 +4195,9 @@ if (bDebug) e.printStackTrace ();
                          {
 //                            e.printStackTrace(System.err);
                            throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
-                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" threw ["+e.toString()+"], hence aborting...");
+                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" threw ["+e.toString()+"], hence aborting..."
+                                    , e  // rgf, 2011-06-04: supply Exception object
+                                    );
                          }
                   }
         // ==================================================================
@@ -4291,7 +4313,9 @@ if (bDebug) e.printStackTrace ();
 
                           throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": could not create a bean from instantiating '"+
-                                   args[2]+"', exception thrown: ["+e.toString()+"]");
+                                   args[2]+"', exception thrown: ["+e.toString()+"]"
+                                   , e  // rgf, 2011-06-04: supply Exception object
+                                   );
                       }
                   }
         // ==================================================================
@@ -4351,7 +4375,9 @@ if (bDebug) e.printStackTrace ();
                           {
                               throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                        // "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class '"+args[2]+"', threw exception: ["+e.getLocalizedMessage()+"]");
-                                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class '"+args[2]+"', threw exception: ["+e.toString()+"]");
+                                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class '"+args[2]+"', threw exception: ["+e.toString()+"]"
+                                       , e  // rgf, 2011-06-04: supply Exception object
+                                       );
                               // "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class ["+args[2]+"], threw exception: ["+e.getLocalizedMessage()+"]");
                           }
                       }
@@ -4531,6 +4557,7 @@ if (e instanceof InvocationTargetException)
                                                       "\t\tusing constructor: ["+constr[i]+"]\n"+
                                                       "\t\t raised exception: ["+e.toString()+"]"+
                                                       getCauseAsString(" -> ", e)  // rgf, 2008-06-08
+                                                      , e  // rgf, 2011-06-04: supply Exception object
                                                       );
                           }
                       }
@@ -4643,7 +4670,9 @@ if (e instanceof InvocationTargetException)
                            {
                                throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                         "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" invalid argument ["+args[1]+"];\nusage: value = BSF( " +
-                                        "'"+args[0]+"' [, 0 | 1] ), exception thrown: ["+e.toString()+"]");
+                                        "'"+args[0]+"' [, 0 | 1] ), exception thrown: ["+e.toString()+"]"
+                                        , e  // rgf, 2011-06-04: supply Exception object
+                                        );
                            }
                        }
 
@@ -4678,7 +4707,9 @@ if (e instanceof InvocationTargetException)
                       {
                           throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" invalid argument ["+args[1]+"];\nusage: value = BSF( " +
-                                   "'"+args[0]+"' [, 0 | 1] ), exception thrown: ["+e.toString()+"]");
+                                   "'"+args[0]+"' [, 0 | 1] ), exception thrown: ["+e.toString()+"]"
+                                   , e  // rgf, 2011-06-04: supply Exception object
+                                   );
                       }
                   }
 
@@ -4712,7 +4743,9 @@ if (e instanceof InvocationTargetException)
                       catch (Exception e)
                           {
                               throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                                   "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": argument 'time2sleep', value '"+args[1]+"' not numeric, exception thrown: ["+e.toString()+"]");
+                                   "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": argument 'time2sleep', value '"+args[1]+"' not numeric, exception thrown: ["+e.toString()+"]"
+                                   , e  // rgf, 2011-06-04: supply Exception object
+                                   );
                           }
 
                       Thread thisThread = Thread.currentThread(); // get current Thread

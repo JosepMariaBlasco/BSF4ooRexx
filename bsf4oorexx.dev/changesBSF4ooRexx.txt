@@ -1,3 +1,10 @@
+-------------------------------------- 2011-06-04 ----------------------------------
+- RexxAndJava.java
+
+        - make sure that BSFExceptions get the Throwable assigned, if this
+          intelligible from context, such that one can retrieve it by using
+          the BSFException instance method getTargetException()
+
 -------------------------------------- 2011-04-29 ----------------------------------
 - orx2reg.rex
   linux/resources/menu/bsf4oorexx_home.desktop
