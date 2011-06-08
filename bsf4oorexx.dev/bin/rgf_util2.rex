@@ -85,6 +85,10 @@
                                 follows Jean-Louis fix in his ooRexx sandbox as of 2011-05-30;
                                 also changed sequence of argument checking to follow sequence
                                 of arguments as seen in Jean-Louis' version of rgf_util2.rex
+                  2011-06-08, - new ppCondition2(co[,bShowPackage=.false]): returns a string
+                                rendering of the supplied condition object
+                              - new ppPackage2(package[,indent1=""[, indent2="09"x[, lf==.endOfLine]]]):
+                                returns a string rendering of the supplied package object
 
       purpose:    set of 3.2 utilities to ease programming of 3.2.0, e.g. offer sort2()- and
                   stableSort2()-BIFs that handle all kind of standard sorting needs, thereby
@@ -120,7 +124,7 @@
 
                   LGPL 3.0, <http://www.fsf.org/licensing/licenses/lgpl.html> (as of: 2008-02-17)
 
-      version:    1.0.5
+      version:    1.0.6
 */
 
 .local~rgf.non.printable=xrange("00"x,"1F"x)||"FF"x
@@ -3226,4 +3230,92 @@ syntax: raise propagate
    - DateTime2: alle "toXXX", updateable, epochable
    - Class ConstantGroup
 */
+
+
+/* create and return a string rendering of the supplied condition object
+   rgf, 2011-06-08
+*/
+::routine ppCondition2 public
+  use strict arg co, bShowPackageInfo=.false, indent1="09"x, lf=.endOfLine
+
+  indent2=indent1~copies(2)
+  indent3=indent1~copies(3)
+
+  maxWidth=0            -- determine length of widest index
+  do idx over co
+     maxWidth=max(maxWidth,idx~length)
+  end
+  maxWidth+=2           -- add square brackets
+
+  mb=.MutableBuffer~new
+
+  do idx over co~allindexes~sort
+     entry=co[idx]
+     mb~~append(indent1) ~~append(pp2(idx)~left(maxWidth)) ~~append("=") ~~append(pp2(entry)) ~~append(lf)
+     if entry~isA(.collection) then
+     do val over entry
+        mb ~~append(indent2) ~~append(pp2(val)) ~~append(lf)
+     end
+     else if entry~isA(.package), bShowPackageInfo=.true then
+     do
+        mb ~~append(ppPackage2(entry, indent2, indent3, lf))
+     end
+
+  end
+
+  return mb~string
+
+
+/* Create and return a string rendering of the package information.
+   rgf, 2011-06-08
+*/
+::routine ppPackage2 public
+  use strict arg package, indent1="", indent2="09"x, lf=.endOfLine
+
+  width=20
+  mb = .MutableBuffer~new
+  mb ~~append(indent1) ~~append(pp2("name")~left(width, ".")) ~~append(pp2(package~name)) ~~append(lf)
+  mb ~~append(indent1) ~~append(pp2("size")~left(width, ".")) ~~append(pp2(package~sourceSize)) ~~append( " line(s)")~~append(lf)
+  mb ~~append(indent1) ~~append("---") ~~append(lf)
+
+  mb ~~append(indent1) ~~append(pp2("definedMethods")~left(width, ".")) ~~append(listCollection(package~definedMethods, indent2, lf)) ~~append(lf)
+  mb ~~append(indent1) ~~append("---") ~~append(lf)
+
+  mb ~~append(indent1) ~~append(pp2("defined classes")~left(width, ".")) ~~append(listCollection(package~classes, indent2, lf)) ~~append(lf)
+  mb ~~append(indent1) ~~append(pp2("publicClasses")~left(width, ".")) ~~append(listCollection(package~publicClasses, indent2, lf)) ~~append(lf)
+  mb ~~append(indent1) ~~append(pp2("importedClasses")~left(width, ".")) ~~append(listCollection(package~importedClasses, indent2, lf)) ~~append(lf)
+  mb ~~append(indent1) ~~append("---") ~~append(lf)
+
+  mb ~~append(indent1) ~~append(pp2("defined routines")~left(width, ".")) ~~append(listCollection(package~routines, indent2, lf)) ~~append(lf)
+  mb ~~append(indent1) ~~append(pp2("publicRoutines")~left(width, ".")) ~~append(listCollection(package~publicRoutines, indent2, lf)) ~~append(lf)
+  mb ~~append(indent1) ~~append(pp2("importedRoutines")~left(width, ".")) ~~append(listCollection(package~importedRoutines, indent2, lf)) ~~append(lf)
+  mb ~~append(indent1) ~~append("---") ~~append(lf)
+
+  mb ~~append(indent1) ~~append(pp2("importedPackages")~left(width, ".")) ~~append(listCollection(package~importedPackages, indent2, lf)) ~~append(lf)
+  mb ~~append(indent1) ~~append("---") ~~append(lf)
+  return mb~string
+
+
+listCollection: procedure
+  use strict arg coll, indent, lf
+  mb=.MutableBuffer~new
+  mb~~append(pp2(coll)) ~~append(lf)
+
+  if coll~isA(.MapCollection) then
+  do
+     if coll~isA(.Directory) then   -- index is a string, comparisons are o.k.
+        workColl=coll~allIndexes~sort
+     else                           -- else make sure we get a string value to sort on
+        workColl=sort2(coll~allIndexes, "Message", "string")
+  end
+  else   -- do not sort
+      workColl=coll~allItems
+
+  do idx over workColl  -- iterate over
+     if idx~isA(.package) then
+        mb~~append(indent) ~~append(pp2(idx~name)) ~~append(lf)
+     else
+        mb~~append(indent) ~~append(pp2(idx)) ~~append(lf)
+  end
+  return mb~string
 
