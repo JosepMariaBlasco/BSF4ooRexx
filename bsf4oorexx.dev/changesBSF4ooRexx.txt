@@ -1,9 +1,37 @@
+-------------------------------------- 2011-06-18 ----------------------------------
+- install/images
+
+        - added new icons created by Graham Wilson (for ooRexxTry.rxj and for the
+          installation menus)
+
+-------------------------------------- 2011-06-08 ----------------------------------
+- bin/rgf_util.rex
+
+        - new routine ppCondition2(co[,bShowPackage=.false [,indent1="09"x [,indent2="0909"x [,indent3="090909"x [,lf=.endOfLine]]]]]]):
+          returns a string rendering of the supplied condition object "co"
+
+        - new routine ppPackage2(package[,indent1=""[, indent2="09"x[, lf==.endOfLine]]):
+          returns a string rendering of the supplied package object
+
+- added bsf4oorexx.dev/ReferenceCards/rgf_util
+
+        - source odt-files for "rgf_util2.rex" article and (updated) reference card
+          which get copied to bsf4oorexx.dev/information
+
 -------------------------------------- 2011-06-04 ----------------------------------
 - RexxAndJava.java
 
-        - make sure that BSFExceptions get the Throwable assigned, if this
-          intelligible from context, such that one can retrieve it by using
-          the BSFException instance method getTargetException()
+        - make sure that BSFExceptions get the Java Throwable object assigned, if this
+          intelligible from context, such that one can retrieve it by using the
+          BSFException instance method getTargetException()
+
+-------------------------------------- 2011-05-30 ----------------------------------
+- bin/rgf_util.rex
+
+        - fix error not allowing suppliers to be shown in dump2(); this
+          follows Jean-Louis fix in his ooRexx sandbox as of 2011-05-30;
+          also changed sequence of argument checking to follow sequence
+          of arguments as seen in Jean-Louis' version of rgf_util2.rex
 
 -------------------------------------- 2011-04-29 ----------------------------------
 - orx2reg.rex

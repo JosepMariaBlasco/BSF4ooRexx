@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-05,14,18
-   version: 1.04
+   version: 1.05
    name:    setupAllAndRun.rex
    purpose: installer to install or reinstall the BSF4ooRexx package
 
@@ -36,6 +36,7 @@
                                 "admin", where the "admin" group gets full read/write access to all directories
                                 and files as well (this way anyone being in the admin group can change or
                                 uninstall the files)
+            2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
 
 
    remark:  ---
@@ -374,10 +375,10 @@ do
       do
          if cmd.eBInteractive=.true then
          do
-            say cmd.eThisName": about to exit program, please hit enter to continue ..."
+            say cmd.eThisName": something went wrong with setting up OOo/LO support (res=["res"]), about to exit program, please hit enter to continue ..."
             parse pull input
+            exit res -- rgf, 20110608: only abort, if in interactive mode
          end
-         exit res
       end
    end
 
@@ -503,10 +504,10 @@ do
    do
       if cmd.eBInteractive=.true then
       do
-         say cmd.eThisName": about to exit program, please hit enter to continue ..."
+         say cmd.eThisName": something went wrong with setting up OOo/LO support (res=["res"]), about to exit program, please hit enter to continue ..."
          parse pull input
+         exit res -- rgf: 20110608 - only abort, if in interactive mode
       end
-      exit res
    end
 
    title="BSF4ooRexx - Reinstall"
@@ -706,7 +707,8 @@ exit 0
    if bAllFiles=.true then
    do
       "chmod 775 .."                            /* 755 on "bsf4oorexx"-directory                      */
-      "chown" "-R" cmd.eRealUserName":admin ../*"
+-- rgf,2011-06-08: FC has no "admin" group!
+      -- "chown" "-R" cmd.eRealUserName":admin ../*"
 
       "find .. -type d -exec chmod 775 '{}' \;" /* 755 make all directories traversable; rwx-rwxr-x   */
       "find .. -type f -exec chmod 664 '{}' \;" /* make all files rw-rw-r--                           */
@@ -725,7 +727,9 @@ exit 0
    end
    else  /* just make sure that all (possibly newly created) .sh-files in the current directory get set to: 775 */
    do
-       'find . -iname "*.sh" -type f -exec chown' cmd.eRealUserName':admin  ''{}'' \;'
+-- rgf,2011-06-08: FC has no "admin" group!
+--       'find . -iname "*.sh" -type f -exec chown' cmd.eRealUserName':admin  ''{}'' \;'
+
        'find . -iname "*.sh" -type f -exec chmod 775 ''{}'' \;'
    end
    return

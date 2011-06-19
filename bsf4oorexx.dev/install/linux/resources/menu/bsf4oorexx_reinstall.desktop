@@ -1,7 +1,8 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Icon=system-software-update
+# Icon=system-software-update
+Icon=bsf4rexx-reinstall
 Exec=/opt/BSF4ooRexx/install/linux/reinstall.sh
 Terminal=true
 Path=/opt/BSF4ooRexx/install/linux

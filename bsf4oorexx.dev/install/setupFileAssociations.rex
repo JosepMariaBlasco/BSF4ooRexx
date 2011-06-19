@@ -4,7 +4,7 @@
    Purpose: creates files to set up and remove file associations
    Author:  Rony G. Flatscher
    Date:    2010-07-26/27/30/31, 2010-08-20
-   Version: 0.02
+   Version: 1.00
    Changes:
             2010-07-26, ---rgf, plain
             2010-12-08, ---rgf, changing application/x-rexx* -> text/x-rexx*
@@ -13,6 +13,7 @@
             2011-03-27, ---rgf, - Linux: now creating separate 'xdg_icons_menu_add-remove.sh'
             2011-05-28, ---rgf, - Unix: make sure group of new files is set to "admin" and "admin" users
                                         have full write access to these files as well
+            2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
 
    last svn check-in: $Revision: 640 $ $Author: rony $ $Date: 2010-04-17 22:25:38 +0200 (Sat, 17 Apr 2010) $
 
@@ -584,7 +585,9 @@ createTypeNameEntry: procedure
 
   ---- change owner/group
    "chmod 775" fragmentName"*.sh"
-   'chown' realuserName":admin" fragmentName"*.sh"
+
+-- rgf,2011-06-08: FC has no "admin" group!
+--   'chown' realuserName":admin" fragmentName"*.sh"
   return
 
 
@@ -611,7 +614,9 @@ createTypeNameEntry: procedure
 
   ---- change owner/group
   "chmod 775" fragmentName"*.sh"
-  'chown' cmd.eRealuserName":admin" fragmentName"*.sh"
+
+-- rgf,2011-06-08: FC has no "admin" group!
+--  'chown' cmd.eRealuserName":admin" fragmentName"*.sh"
 
 
 ::routine linuxXdgMenu     -- install/uninstall menu
@@ -817,7 +822,10 @@ linuxAddIconsDoTheWork: procedure
        ifs~say("# Templates directory will be created, but never removed")
        ifs~~say(cmd.eMkDir775 enQQ(userTemplatesDirName))~~say -- create Templates directory
             -- change owner/group to real user
-       ifs~~say('chown' realuserName":admin" enQQ(userTemplatesDirName))~say
+
+-- rgf,2011-06-08: FC has no "admin" group!
+--       ifs~~say('chown' realuserName":admin" enQQ(userTemplatesDirName))
+       ifs~say
    end
 
    if SysFileExists(skelHome"/Templates")=.false then -- Templates folder does not exist !

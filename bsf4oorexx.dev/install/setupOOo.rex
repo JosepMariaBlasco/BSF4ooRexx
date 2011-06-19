@@ -5,7 +5,7 @@
             to point to the Java archives needed to drive/automate OpenOffice.org
             resp. LibreOffice
    Author:  Rony G. Flatscher
-   Version: 1.17
+   Version: 1.18
    Date:    2006-01-04
    Changed:
             2006-01-16, ---rgf, make sure CLASSPATH is used in any case
@@ -70,6 +70,7 @@
                                   fully writable for "admin" members
             2011-05-31, ---rgf, - Unix: look for LibreOffice first in "/opt/libreoffice/program" (default installation
                                         location for genuine LO from www.LibreOffice.org)
+            2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
@@ -924,10 +925,14 @@ createInstallScript: procedure expose cmd. path.
   if cmd.eSetExecutable<>"" then       /* set file executable (Unix)    */
   do
      cmd.eSetExecutable cmd.eInstallScriptName
-     cmd.eSetOwner      cmd.eInstallScriptName
+
+-- rgf,2011-06-08: FC has no "admin" group!
+--     cmd.eSetOwner      cmd.eInstallScriptName
 
      cmd.eSetExecutable cmd.eUninstallScriptName
-     cmd.eSetOwner      cmd.eUninstallScriptName
+
+-- rgf,2011-06-08: FC has no "admin" group!
+--     cmd.eSetOwner      cmd.eUninstallScriptName
   end
   return
 
@@ -1037,7 +1042,9 @@ createEnvironmentScript: procedure expose cmd. path.
   if cmd.eSetExecutable<>"" then       /* set file executable (Unix)    */
   do
      cmd.eSetExecutable cmd.eSetEnvironmentScriptName
-     cmd.eSetOwner      cmd.eSetEnvironmentScriptName
+
+-- rgf,2011-06-08: FC has no "admin" group!
+--     cmd.eSetOwner      cmd.eSetEnvironmentScriptName
   end
 
   return

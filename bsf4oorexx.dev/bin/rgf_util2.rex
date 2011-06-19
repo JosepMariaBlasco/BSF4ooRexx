@@ -85,10 +85,12 @@
                                 follows Jean-Louis fix in his ooRexx sandbox as of 2011-05-30;
                                 also changed sequence of argument checking to follow sequence
                                 of arguments as seen in Jean-Louis' version of rgf_util2.rex
-                  2011-06-08, - new ppCondition2(co[,bShowPackage=.false]): returns a string
-                                rendering of the supplied condition object
-                              - new ppPackage2(package[,indent1=""[, indent2="09"x[, lf==.endOfLine]]]):
+                  2011-06-08, - new routine ppCondition2(co[,bShowPackage=.false [,indent1="09"x [,indent2="0909"x [,indent3="090909"x [,lf=.endOfLine]]]]]]):
+                                returns a string rendering of the supplied condition object "co"
+
+                              - new routine ppPackage2(package[,indent1=""[, indent2="09"x[, lf==.endOfLine]]):
                                 returns a string rendering of the supplied package object
+
 
       purpose:    set of 3.2 utilities to ease programming of 3.2.0, e.g. offer sort2()- and
                   stableSort2()-BIFs that handle all kind of standard sorting needs, thereby

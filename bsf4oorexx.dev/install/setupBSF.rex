@@ -5,8 +5,9 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.24
+   Version: 1.25
    Changed:
+            2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
             2011-05-28, ---rgf, - Unix: if run on Unix make sure all dirs/files are set to owner "user:admin",
                                          chmod to 775 for dirs and 664 on files, such that "admin" users can
                                          remove dirs and files as well
@@ -1920,7 +1921,9 @@ say "unixDetermineLibs:" _mode"|"lib"|"target "..."
    if bAllFiles=.true then
    do
       "chmod 775 .."                            /* 755 on "bsf4oorexx"-directory                      */
-      "chown" "-R" cmd.eRealUserName":admin ../*"
+
+-- rgf,2011-06-08: FC has no "admin" group!
+--      "chown" "-R" cmd.eRealUserName":admin ../*"
 
       "find .. -type d -exec chmod 775 '{}' \;" /* 755 make all directories traversable; rwx-rwxr-x   */
       "find .. -type f -exec chmod 664 '{}' \;" /* make all files rw-rw-r--                           */
@@ -1939,7 +1942,10 @@ say "unixDetermineLibs:" _mode"|"lib"|"target "..."
    end
    else  /* just make sure that all (possibly newly created) .sh-files in the current directory get set to: 775 */
    do
-       'find . -iname "*.sh" -type f -exec chown' cmd.eRealUserName':admin  ''{}'' \;'
+
+-- rgf,2011-06-08: FC has no "admin" group!
+--       'find . -iname "*.sh" -type f -exec chown' cmd.eRealUserName':admin  ''{}'' \;'
+
        'find . -iname "*.sh" -type f -exec chmod 775 ''{}'' \;'
    end
    return

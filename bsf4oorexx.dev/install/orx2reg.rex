@@ -36,6 +36,7 @@
             2011-01-26, ---rgf: cater for escaped "%" as "[25x]" on Windows
             2011-03-20, ---rgf: - added possibility to define an icon to a shortcut
                                 - added menu-entry "ooRexxTry.rxj"
+            2011-06-19, ---rgf: add the new icons from Graham Wilson for reinstall and uninstall
 
 
 
@@ -411,7 +412,9 @@ syntax: return .nil
 
      -- REINSTALL
      reinstallScript=subLocation"\reinstall.cmd"
-     call createMenu menuFolderInstallation, "Reinstall BSF4ooRexx.lnk", reinstallScript, "Reinstalls BSF4ooRexx.", subLocation
+     iconLocation=location"\images\windows\bsf4rexx-reinstall.ico, 0"
+     call createMenu menuFolderInstallation, "Reinstall BSF4ooRexx.lnk", reinstallScript, "Reinstalls BSF4ooRexx.", subLocation, .nil, iconLocation
+     -- call createMenu menuFolderInstallation, "Reinstall BSF4ooRexx.lnk", reinstallScript, "Reinstalls BSF4ooRexx.", subLocation
 
 --     reinstallScript=subLocation"\reinstall_runas_Administrator.cmd"
 --     call createMenu menuFolderInstallation, "Reinstall BSF4ooRexx (runas Administrator).lnk", reinstallScript, "Reinstalls BSF4ooRexx (running as Administrator).", subLocation
@@ -441,7 +444,9 @@ syntax: return .nil
      end
 
      uninstallScript=subLocation"\uninstall.cmd"
-     call createMenu menuFolderInstallation, "Uninstall BSF4ooRexx.lnk", uninstallScript, "Uninstalls BSF4ooRexx and removes it from the system.", subLocation, args
+     iconLocation=location"\images\windows\bsf4rexx-uninstall.ico, 0"
+     call createMenu menuFolderInstallation, "Uninstall BSF4ooRexx.lnk", uninstallScript, "Uninstalls BSF4ooRexx and removes it from the system.", subLocation, args, iconLocation
+     -- call createMenu menuFolderInstallation, "Uninstall BSF4ooRexx.lnk", uninstallScript, "Uninstalls BSF4ooRexx and removes it from the system.", subLocation, args
 
 --     uninstallScript=subLocation"\uninstall_runas_Administrator.cmd"
 --     call createMenu menuFolderInstallation, "Uninstall BSF4ooRexx (runas Administrator).lnk", uninstallScript, "Uninstalls BSF4ooRexx and removes it from the system (running as Administrator).", subLocation, args
