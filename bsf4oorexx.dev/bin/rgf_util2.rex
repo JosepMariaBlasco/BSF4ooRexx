@@ -90,6 +90,7 @@
 
                               - new routine ppPackage2(package[,indent1=""[, indent2="09"x[, lf==.endOfLine]]):
                                 returns a string rendering of the supplied package object
+                  2011-08-03, - ppCondition2(): make sure that length is only calculated, if a string in hand
 
 
       purpose:    set of 3.2 utilities to ease programming of 3.2.0, e.g. offer sort2()- and
@@ -3245,7 +3246,7 @@ syntax: raise propagate
 
   maxWidth=0            -- determine length of widest index
   do idx over co
-     maxWidth=max(maxWidth,idx~length)
+     if idx~isA(.string) then maxWidth=max(maxWidth,idx~length)
   end
   maxWidth+=2           -- add square brackets
 
