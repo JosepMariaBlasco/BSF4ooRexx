@@ -1,5 +1,6 @@
-BSF4ooRexx - Installation Directions for Linux                  10 Apr 2011
+BSF4ooRexx - Installation Directions for Linux                  22 Aug 2011
 ==============================================
+Home: <http://sourceforge.net/projects/bsf4oorexx/>
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
 Java objects as Rexx objects.
@@ -20,9 +21,9 @@ Prerequisites
     Sometimes it is possible to run Java from the commandline. To check, open
     a command line window and enter: "java -version"
 
-[2] A version newer than ooRexx 4.0.1 as a bug-fix (rev. 6133) is needed for the
-    OpenOffice support. You can easily fetch the latest successful build of ooRexx
-    from <http://build.oorexx.org>.
+    Home: <http://www.java.com>
+
+[2] ooRexx 4.1.0 or higher from its home: <http://www.ooRexx.org>.
 
 [3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org> or
               LibreOffice (LO) from <http://www.libreoffice.org/download/>.
@@ -51,6 +52,11 @@ Prerequisites
 Installation
 ============
 
+Either get the GUI-installer for your platform (deb, rpm) from
+<http://sourceforge.net/projects/bsf4oorexx/files/> and double-click on
+them.
+
+Alternatively use the command-line version:
 
 Step [1] Download the archive "BSF4ooRexx_install.zip" and unzip it
 
@@ -74,10 +80,11 @@ P.S.: Support is given either via the newsgroup <news:comp.lang.rexx> or the
 
 P.P.S.: Additional infos for Linux w.r.t. OpenOffice.or
 
-        - OpenOffice.org could have been tampered with by the Linux distribution and
-          as a result not function correctly; if that is the case (you cannot
-          successfully run OpenOffice.org Rexx scripts) then you need to deinstall
-          your distribution's OpenOffice.org and instead install the genuine
-          OpenOffice.org from <http://www.OpenOffice.org>; then choose
+        - OpenOffice.org/LibreOffice could have been tampered with by the Linux
+          distribution and as a result not function correctly; if that is the case
+          (you cannot successfully run OpenOffice.org Rexx scripts) then you need
+          to deinstall your distribution's OpenOffice.org and instead install the
+          genuine OpenOffice.org from <http://download.OpenOffice.org> or LibreOffice
+          from <http://www.LibreOffice.org/download>; then choose
           "BSF4ooRexx -> Installation -> reinstall"
 

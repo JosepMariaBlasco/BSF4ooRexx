@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for Windows                10 Apr 2011
+BSF4ooRexx - Installation Directions for Windows                22 Aug 2011
 ================================================
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
@@ -43,6 +43,11 @@ Prerequisites
 Installation
 ============
 
+Either get the GUI-installer for your platform (32-bit, 64-bit) from
+<http://sourceforge.net/projects/bsf4oorexx/files/> and double-click on
+them.
+
+Alternatively use the command-line version:
 
 Step [1] Download the archive "BSF4ooRexx_install.zip" and unzip it
 

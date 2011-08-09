@@ -4,7 +4,7 @@
    Purpose: make sure macros from distribution get installed (uninstalled) with
             the BSF4ooRexx support
    Author:  Rony G. Flatscher
-   Version: 1.0
+   Version: 1.01
    Date:    2010-06-05
    Changed: 2010-06-10, ---rgf, if no argument given, then paths to macro locations for
                         "share" and "user" are output
@@ -14,13 +14,14 @@
             2010-07-24, ---rgf, handle special "python" case which does not have a parcel-descriptor.xml
                                 file, run extensive tests
             2011-05-28, ---rgf, make sure group-members have full write access
+            2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
 
    last svn check-in: $Revision: 927 $ $Author: Administrator $ $Date: 2010-12-26 18:34:19 +0100 (Sun, 26 Dec 2010) $
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010 Rony G. Flatscher
+       Copyright (C) 2010-2011 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -133,7 +134,9 @@ xDesktop~terminate  -- try to terminate the OOo instance
         if .bsf4rexx~opsys1<>"W" then -- not Windows, hence a Unix-system
         do
 
-            "chown" getRealUserName()":admin" dir -- make sure we assign directory to group "admin"
+-- rgf,2011-06-08: FC has no "admin" group!
+--            "chown" getRealUserName()":admin" dir -- make sure we assign directory to group "admin"
+
             "chmod 775"                  dir -- make sure "admin" users have full write access
         end
      end
@@ -220,7 +223,9 @@ xDesktop~terminate  -- try to terminate the OOo instance
       if isUnix then          -- set parcel to 664
       do
          "chmod 664" path2parcel
-         "chown" realUserName":admin" path2parcel
+
+-- rgf,2011-06-08: FC has no "admin" group!
+--         "chown" realUserName":admin" path2parcel
       end
   end
   else                        -- uninstall macro
@@ -233,7 +238,9 @@ xDesktop~terminate  -- try to terminate the OOo instance
       if isUnix then          -- set parcel to 664
       do
          "chmod 664" path2parcel
-         "chown" realUserName":admin" path2parcel
+
+-- rgf,2011-06-08: FC has no "admin" group!
+--         "chown" realUserName":admin" path2parcel
       end
 
       call removeTargetDir locations
@@ -300,7 +307,9 @@ xDesktop~terminate  -- try to terminate the OOo instance
          if isUnix then          -- set parcel to 664
          do
             "chmod 664" locations~targetDir_parcel
-            "chown" realUserName":admin" locations~targetDir_parcel
+
+-- rgf,2011-06-08: FC has no "admin" group!
+--            "chown" realUserName":admin" locations~targetDir_parcel
          end
       end
   end
@@ -323,7 +332,9 @@ xDesktop~terminate  -- try to terminate the OOo instance
          if isUnix then          -- set parcel to 664
          do
             "chmod 664" locations~targetDir_parcel
-            "chown" realUserName":admin" locations~targetDir_parcel
+
+-- rgf,2011-06-08: FC has no "admin" group!
+--            "chown" realUserName":admin" locations~targetDir_parcel
          end
       end
 

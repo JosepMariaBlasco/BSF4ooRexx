@@ -239,7 +239,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "407.20110604";
+    static final public String version = "407.20110608";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -4889,7 +4889,7 @@ if (e instanceof InvocationTargetException)
                            "Taylor, Pam"                            + "\n" +
                            "Turner, Bill"                           + "\n" + // 2011-04-10, rgf
                            "Waglechner, Christoph"                  + "\n" +
-                           "Wilson, Gray"                           + "\n" +
+                           "Wilson, Gray (artwork: graphics, icons)"+ "\n" +
                            "Woehr, Jack"                            + "\n" +
                            "Wolfers, Jon (Sahananda)"
                            ;
