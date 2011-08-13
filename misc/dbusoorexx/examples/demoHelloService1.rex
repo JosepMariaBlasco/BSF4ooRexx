@@ -1,0 +1,118 @@
+#!/usr/bin/rexx
+/*
+      author:  Rony G. Flatscher, (c) 2011
+      name:    demoHelloService.rex
+      usage:   rexx demoHelloService.rex
+      purpose: - demonstrate a dbus Rexx service object with its introspection data
+                 defined within this program (cf. init-method)
+               - demonstrate how to override the reply signature right in the
+                 return value (cf. methods "Hello1" and "Hello3")
+      needs:   - ooRexx dbus support package
+      date:    2011-08-04
+      specs:   dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
+      license: AL 2.0 (Apache License 2.0)
+
+            ------------------------ Apache Version 2.0 license -------------------------
+               Copyright 2011 Rony G. Flatscher
+
+               Licensed under the Apache License, Version 2.0 (the "License");
+               you may not use this file except in compliance with the License.
+               You may obtain a copy of the License at
+
+                   http://www.apache.org/licenses/LICENSE-2.0
+
+               Unless required by applicable law or agreed to in writing, software
+               distributed under the License is distributed on an "AS IS" BASIS,
+               WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+               See the License for the specific language governing permissions and
+               limitations under the License.
+            -----------------------------------------------------------------------------
+*/
+
+timeout=30     -- wait for 30 seconds (1 minute) for clients, then stop
+
+objectPath    ="/org/rexxla/oorexx/demo/Hello"
+busName       ="org.rexxla.oorexx.demo.Hello"
+interface     ="org.rexxla.oorexx.demo.Hello"
+
+conn=.dbus~session         -- get the session bus
+
+signal on syntax name halt -- make sure message loop gets stopped
+signal on halt             -- intercept ctl-c or closing terminal in which Rexx runs
+
+res=conn~busName("request", busName)
+if res<>.dbus.dir~primaryOwner & res<>.dbus.dir~alreadyOwner then   -- o.k., wait for clients
+do
+   say "res="res "problem with requesting the bus name" busName", aborting ..."
+   exit -1
+end
+
+conn~serviceObject("add", objectPath, .HelloRexxServer~new)
+
+say "sleeping" timeout "secs ..."
+call syssleep timeout
+
+halt:
+   conn~messageLoop("stop")-- stop message loop
+
+
+::requires "dbus.cls"         -- get dbus support for ooRexx
+
+::class HelloRexxServer
+
+::method Introspect        /* return the introspection data for this service object */
+ return '<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"'  -
+        '"http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">               '  -
+        '<node>                                                                        '  -
+        '  <interface name="org.freedesktop.DBus.Introspectable">                      '  -
+        '    <method name="Introspect">                                                '  -
+        '      <arg name="data" direction="out" type="s"/>                             '  -
+        '    </method>                                                                 '  -
+        '  </interface>                                                                '  -
+        '  <interface name="org.rexxla.oorexx.demo.Hello">                             '  -
+        '    <method name="Hello">                                                     '  -
+        '      <arg name="result" direction="out" type="s"/>                           '  -
+        '    </method>                                                                 '  -
+        '    <method name="Hello1">                                                    '  -
+        '      <arg name="result" direction="out" type="ay"/>                          '  -
+        '    </method>                                                                 '  -
+        '    <method name="Hello2">                                                    '  -
+        '      <arg name="result" direction="out" type="as"/>                          '  -
+        '    </method>                                                                 '  -
+        '    <method name="Hello3">                                                    '  -
+        '      <arg name="result" direction="out" type="ao"/>                          '  -
+        '    </method>                                                                 '  -
+        '    <method name="Hello4">                                                    '  -
+        '      <arg name="result" direction="out" type="a{ss}"/>                       '  -
+        '    </method>                                                                 '  -
+        '    <property name="ServiceName" access="read"  type="s"/>                    '  -
+        '  </interface>                                                                '  -
+        '</node>                                                                       '
+
+::method serviceName       /* the name of this service object           */
+   return "RexxHelloService1"
+
+::method Hello       /* the service method 'Hello' returns a string     */
+  return "This is a 'Hello' from Rexx at" .dateTime~new"."
+
+::method Hello1      /* the service method 'Hello1' returns a string which is forced
+                        to be marshalled as 'ay' (an array of bytes)    */
+  return dbus.box("ay", "This is a 'Hello' from Rexx at" .dateTime~new".")
+
+::method Hello2      /* the service method 'Hello2' returns an array    */
+  return .array~of("eins", "zwei", "drei")
+
+::method Hello3   /* the service method 'Hello3' returns an array, forces it to
+                     be marshalled as 'ao' (array of object paths)      */
+  result=.array~of("/eins", "/zwei", "/drei")
+  return dbus.box("ao",result)
+
+::method Hello4      /* the service method 'Hello4' returns a directory ("map"/"dict") */
+  dict=.directory~new
+  dict~eins="one"
+  dict~zwei="two"
+  dict~drei="three"
+  return dict
+
+::method Get      /* access to our only property requested, return it */
+  return self~serviceName

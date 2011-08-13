@@ -1,0 +1,212 @@
+/* Rony G. Flatscher, 2011-08-01
+
+   purpose: formatting information for the "rexxdoc.rex" generated on-the-fly documentation
+            of D-Bus service (bus) name interfaces
+
+      license:    AL 2.0
+            ------------------------ Apache Version 2.0 license -------------------------
+               Copyright 2011 Rony G. Flatscher
+
+               Licensed under the Apache License, Version 2.0 (the "License");
+               you may not use this file except in compliance with the License.
+               You may obtain a copy of the License at
+
+                   http://www.apache.org/licenses/LICENSE-2.0
+
+               Unless required by applicable law or agreed to in writing, software
+               distributed under the License is distributed on an "AS IS" BASIS,
+               WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+               See the License for the specific language governing permissions and
+               limitations under the License.
+            -----------------------------------------------------------------------------
+*/
+
+@media screen {
+
+
+     .choose { color: brown;
+                 font-weight: bold;
+             }
+
+     a.choose {
+                 text-decoration: none;
+             }
+
+     .choose:hover  {
+                 font-size: 150%;
+                 font-weight: bolder;
+                 text-decoration: none;
+             }
+}
+
+
+@media screen, print {
+
+     body    { background-color:  white; /* lightgoldenrodyellow  ; */
+               font-family: Times, Avantgarde;
+               font-family: Arial,sans-serif;
+               font-size: 12pt;
+               }
+
+     H1      { color: blue;
+               text-align: center;
+               font-family: Arial,sans-serif;
+               font-size: 150%;
+             }
+
+
+     .name   {
+               font-weight: bold;
+               }
+
+     .result .signature
+     ,span.signature
+     ,.argtype
+              {
+                font-size: 85%;
+                color:     green;
+              }
+
+     .argname {
+                font-size: 85%;
+              }
+
+     .paren   {
+                 font-weight: bold;
+              }
+
+     .access  {
+                 font-size: 85%;
+                 color: darkgreen;
+              }
+
+/*
+     .paren,
+     .comma,
+*/
+     .arrow   {
+                 color: red;
+              }
+
+     li.servicename
+              {
+                 border-top: 4px dotted black;
+                 padding-top: 10px;
+              }
+
+     em.bustype
+     ,.objectpath
+     ,em.node
+     ,em.interface
+     ,em.servicename
+                  {
+                     color:blue;
+                  }
+
+     em.servicename {
+                     font-weight: bold;
+                  }
+
+     table.interface
+             {
+                 width: 100%;
+                 border-collapse: collapse;
+                 border: 1px dotted black;
+             }
+
+     tr.borderabove {
+                      border-top: 1px dotted black ;
+                      /* background-color: blue; */
+                    }
+     tr      {
+               vertical-align: baseline;
+             }
+
+     td.nr   {
+                width:      3%; /* 1cm; */
+                font-size: 65%;
+                text-align: center; /* right; */
+             }
+
+     td.res  {
+                width: 5%;    /* 1cm; */
+             }
+
+     td.kind  {
+                /* 2cm; */
+                width: 8%;
+                text-align: center; /* center; */
+             }
+
+     td.methodname
+             {
+                 width: 84%;
+             }
+
+
+     td.propertyname
+             {
+                 width: 25%;
+             }
+
+     td span.access
+             {
+                 width: 5%;
+             }
+
+     td span.property
+             {
+                 width: 10%;
+             }
+
+
+     table.datatype
+             {
+                border: 1px dotted black;
+             }
+
+     td.emptycell
+             {
+                border-left: 1px dotted black;
+                border-right: 1px dotted black;
+             }
+
+
+     tr.odd
+     ,dt
+             {
+               /* background-color: rgb(235, 235, 235) ; */  /* also in hex possible, e.g. #f1f1f1 */
+               /* background-color: khaki ; */
+               background-color:  LemonChiffon ;
+                        /* #EEEEE0 ; */ /* ivory 2 ; */ /* #EEE8AA; */ /* lightgoldenrod ; */
+             }
+
+     .epilog   { font-variant: small-caps;
+               font-family: Arial,sans-serif;
+               font-size: 65%;
+               font-style: italic;
+               text-align: center;
+               /* font-weight: bold; */
+             }
+}
+
+
+@media print {
+     BODY {
+            font-size:   10pt;
+          }
+
+     TABLE {
+             padding: 1px;
+             font-size: 10pt;
+           }
+}
+
+
+@media all {
+
+/*  BODY { line-height: 1.2;} */
+}
+
+
+

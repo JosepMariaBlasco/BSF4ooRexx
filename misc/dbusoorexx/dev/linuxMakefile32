@@ -1,0 +1,51 @@
+# sudo cc -g -Wall `pkg-config --libs --cflags dbus-1` -o dbus-example-02 dbus-example-02.c
+
+# rgf, 20210602 from <http://maemo.org/development/training/maemo_platform_development_content/plain_html/node10/>
+#
+# Simple Makefile for the libdbus example that will send the "Display
+# Note dialog" RPC message. You need to run the example in the SDK or
+# a compatible device.
+#
+
+# Define a list of pkg-config packages we want to use
+pkg_packages := dbus-1
+
+# rgf, 2011-06-12
+RGF_MODEL  := 32
+RGF_CFLAGS := -DDBUSOOREXX_$(RGF_MODEL) -m$(RGF_MODEL)
+
+PKG_CFLAGS  := $(shell pkg-config --cflags $(pkg_packages))
+PKG_LDFLAGS := $(shell pkg-config --libs $(pkg_packages))
+
+# Additional flags for the compiler:
+#    -g : Add debugging symbols
+# -Wall : Enable most gcc warnings
+# ADD_CFLAGS := -g -Wall
+ADD_CFLAGS := -Wall -DUNIX  -D__cplusplus
+
+# Combine user supplied, additional, and pkg-config flags
+CFLAGS  := $(PKG_CFLAGS) $(ADD_CFLAGS) $(CFLAGS)
+LDFLAGS := $(PKG_LDFLAGS) $(LDFLAGS)
+
+# LINK_FLAGS = -shared -rdynamic -lpthread -lc  -lm -L/lib32
+LINK_FLAGS = -shared -rdynamic -lpthread -lc  -lm -L/lib32 -L/usr/lib32
+
+
+# rgf, 2011-06-11: "g++" must be defined explicitly
+CC := g++ -fPIC
+RGF_OUTPUTLIBNAME := libdbusoorexx.so
+
+targets = dbusoorexx32
+
+.PHONY: all clean
+
+all: $(targets)
+
+dbusoorexx32: dbusoorexx.cc
+	$(CC) $(CFLAGS) $(RGF_CFLAGS) $< -o lib$@.so $(LINK_FLAGS) $(LDFLAGS)
+	cp -p lib$@.so $(RGF_OUTPUTLIBNAME)
+
+clean:
+	$(RM) libdbusoorexx32.so $(RGF_OUTPUTLIBNAME)
+
+

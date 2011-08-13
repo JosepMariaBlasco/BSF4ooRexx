@@ -1,0 +1,52 @@
+#!/usr/bin/rexx
+/*
+      author:     Rony G. Flatscher (c) 2011
+      name:       testHelloWorld.rex
+      date:       2011-07-25, 2011-07-29
+      purpose:    demonstrate how to use a Rexx proxy to interact with a DBUS object
+      license:    AL 2.0
+            ------------------------ Apache Version 2.0 license -------------------------
+               Copyright 2011 Rony G. Flatscher
+
+               Licensed under the Apache License, Version 2.0 (the "License");
+               you may not use this file except in compliance with the License.
+               You may obtain a copy of the License at
+
+                   http://www.apache.org/licenses/LICENSE-2.0
+
+               Unless required by applicable law or agreed to in writing, software
+               distributed under the License is distributed on an "AS IS" BASIS,
+               WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+               See the License for the specific language governing permissions and
+               limitations under the License.
+            -----------------------------------------------------------------------------
+*/
+
+
+o=.dbus~session~getObject("org.freedesktop.Notifications","/org/freedesktop/Notifications")
+
+say "introspect data:"
+say o~proxy.introspectData
+
+say "Dumping the introspection data parse tree:"
+call IDBus.dumpIDBus o~proxy.introspectRootNode
+
+call dump2 o~GetServerInformation, "o~GetServerInformation"
+say
+
+call dump2 o~GetCapabilities, "o~GetCapabilities"
+say
+
+id=o~notify("Rony's App", , , "This is summary info", "This is the body info", , , -1)
+say "notification's id:" id
+say dbusVersion()
+say "sleeping 3 secs ..."
+call syssleep 3
+say "creating another notification, reusing current notification ..."
+id=o~notify("Rony's App", id, "oorexx", "This is summary info # 2", "This is the body info # 2", , , -1)
+say "notification's id:" id
+say dbusVersion()
+
+
+::requires "dbus.cls"         -- get access to DBus
+::requires "rgf_util2.rex"    -- utilties like dump2(), installed by BSF4ooRexx
