@@ -1,7 +1,7 @@
 #!/usr/bin/rexx
 /*
       author:     Rony G. Flatscher (c)
-      date:       2011-07-29/31, 2011-08-01/05
+      date:       2011-07-29/31, 2011-08-01/05, 2011-08-14
       version:    1.0
       name:       dbusdoc.rex
       purpose:    documents given bus name in HTML form to allow the creation of API listings
@@ -583,8 +583,9 @@ say "   *** debug interface:" pp2(i~name)
 
                        if a~name<>"" then
                           mm~~append(' <span class="argname">')~~append(a~name)~~append('</span>')
+
+                       bFirstRun=.false
                     end
-                    bFirstRun=.false
                  end
                  tmpStr=mm~string
 
