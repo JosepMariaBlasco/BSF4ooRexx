@@ -6,7 +6,7 @@
       purpose:    demonstrate how to code the Sebastian Margiol examples for controlling "vlc" with the direct
                   DBUS language binding for ooRexx
 
-      needs:      get and install "vlc" (http://www.vlc.org), then go to "Tools -> Preferences",
+      needs:      get and install "vlc" (http://www.videolan.org), then go to "Tools -> Preferences",
                   "Show settings" to "All", then open "Interfaces" in the left frame and mark
                   "Control interfaces" and check "D-Bus control interface"
 
