@@ -68,7 +68,8 @@ say "-- "~copies(10)
 do s over signatures
    say "   DbusValidateSignature:" pp2(s) pp2(DbusValidate(s,"s"))
 end
-
+say "---"
+say "DBusVersion():" pp2(DBusVersion())
 
 ::requires "dbus.cls"      -- get access to the DBUS functionality from Rexx
 ::requires "rgf_util2.rex" -- get utilities

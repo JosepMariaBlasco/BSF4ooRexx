@@ -26,7 +26,7 @@ all: i386 x86_64 ppc universal
 
 # --------------------------------------------------------
 i386: dbusoorexx.cc
-	g++ -c $(CFLAGS) $(INC_PATH) -I/opt/ooRexx-i386/include -m32 -arch i386 -DUSE_OREXX -DUNIX -odbusoorexx-mac-i386.o dbusoorexx.cc
+	g++ -c $(CFLAGS) $(INC_PATH) -I/opt/ooRexx-i386/include -m32 -arch i386 -DDBUSOOREXX_32 -DUSE_OREXX -DUNIX -odbusoorexx-mac-i386.o dbusoorexx.cc
 
 	g++ -dynamiclib $(LFLAGS) -o libdbusoorexx-i386.dylib dbusoorexx-mac-i386.o /usr/lib/librexx.dylib /usr/lib/librexxapi.dylib $(LIB_PATH) -framework JavaVM -arch i386
 
@@ -34,14 +34,14 @@ i386: dbusoorexx.cc
 
 # ---------------------------------------------------
 x86_64: dbusoorexx.cc
-	g++ -c $(CFLAGS) $(INC_PATH) -I/opt/ooRexx-x86_64/include -m64 -arch x86_64 -DUSE_OREXX -DUNIX -odbusoorexx-mac-x86_64.o dbusoorexx.cc
+	g++ -c $(CFLAGS) $(INC_PATH) -I/opt/ooRexx-x86_64/include -m64 -arch x86_64 -DDBUSOOREXX_64 -DUSE_OREXX -DUNIX -odbusoorexx-mac-x86_64.o dbusoorexx.cc
 
 	g++ -dynamiclib $(LFLAGS) -o libdbusoorexx-x86_64.dylib dbusoorexx-mac-x86_64.o /opt/ooRexx-x86_64/lib/ooRexx/librexx.dylib /opt/ooRexx-x86_64/lib/ooRexx/librexxapi.dylib $(LIB_PATH) -framework JavaVM -arch x86_64
 #	cp -p libdbusoorexx-x86_64.dylib 64/libdbusoorexx.dylib
 
 # ---------------------------------------------------
 ppc: dbusoorexx.cc
-	g++ -c $(CFLAGS) $(INC_PATH) -I/opt/ooRexx-x86_64/include -I/opt/ooRexx-ppc/include -m32 -arch ppc -DUSE_OREXX -DUNIX -odbusoorexx-mac-ppc.o dbusoorexx.cc
+	g++ -c $(CFLAGS) $(INC_PATH) -I/opt/ooRexx-x86_64/include -I/opt/ooRexx-ppc/include -m32 -arch ppc -DDBUSOOREXX_32 -DUSE_OREXX -DUNIX -odbusoorexx-mac-ppc.o dbusoorexx.cc
 
 	g++ -dynamiclib $(LFLAGS) -o libdbusoorexx-ppc.dylib dbusoorexx-mac-ppc.o /opt/ooRexx-ppc/lib/ooRexx/librexx.dylib /opt/ooRexx-ppc/lib/ooRexx/librexxapi.dylib $(LIB_PATH) -framework JavaVM -arch ppc
 
