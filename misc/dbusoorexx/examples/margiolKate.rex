@@ -33,26 +33,25 @@
    signal on syntax              -- syntax condition handler
    signal on halt name syntax    -- CTL-C handler
 
+   conn=.dbus~session            -- get the session connection
+
    kateProcId=getKateProcId()    -- get the procid of the newest Kate, create an instance if necessary
    if kateProcId="" then         -- no kate instance found (and could not be created)
    do
       say "no kate instance available, could not create one either, aborting ..."
       exit -1
    end
-
    busname="org.kde.kate-"kateProcID -- create the bus name kate listens to
    objPath="/Kate/Document/1"    -- define object path
-
-   conn=.dbus~session            -- get the session connection
    document=conn~getObject(busname,objPath)  -- get the kate document object
 
    klipper=conn~getObject("org.kde.klipper","/klipper")  -- get the klipper object
 
+   struct=document~endOfLine(1)  -- structs are represented as Rexx array objects
+   say "line" struct[2] "ends at position" struct[1]
+
    if document~isEmpty then      -- a new, empty document
    do
-      struct=document~endOfLine(1)  -- structs are represented as Rexx array objects
-      say "line" struct[1] "ends at position" struct[2]
-
       say "Empty document, filling with computed text..."
       text=.array~of("               ____                    ", -
                      "  ___    ___  |  _ \   ___ __  ____  __", -
@@ -64,21 +63,23 @@
    end
    else                          -- an existing document
    do
-      say "Document not empty! (Found "document~totalCharacters "characters in" document~lines "line(s).)"
-      say "- text gets copied to the clipboard and document will be cleared. Press enter to continue ..."
+      say "Document not empty! (Found "document~totalCharacters "characters in" document~lines "line(s) in the document.)"
+      say "- Text gets copied to the clipboard and document will be cleared. Press enter to continue ..."
       parse pull input
 
       klipper~setClipboardContents(document~text)
       document~clear
       say "- Text got copied to the clipboard and the document cleared."
-      say "  next step: paste text from clipboard into the document. Press enter to continue ..."
+      say "  (There are "document~totalCharacters "characters in" document~lines "line(s) in the document.)"
+      say
+      say "  Next step: paste text from clipboard into the document. Press enter to continue ..."
       parse pull input
 
       document~setText(klipper~getClipboardContents)
       say "- Text got pasted from the clipboard into the document."
-      say "  (There are "document~totalCharacters "characters in" document~lines "line(s).)"
    end
-   say "done."
+   say "There are "document~totalCharacters "characters in" document~lines "line(s) in the document."
+   say "Done."
    conn~close                 -- closing the connections, stops the message loop thread
    exit
 
