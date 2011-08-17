@@ -13,7 +13,9 @@
                - this sends any kind of arguments to the testRawPongServer.rex using
 
                - all DBus-methods directly (not taking advanatage of the class
-                 DBusProxyObject
+                 DBusProxyObject)
+
+               - test testing whether closing a private connection
 
       usage:   rexx testPrivateClientPingSimple.rex
 
@@ -98,6 +100,9 @@ call dump2 res[res~last], "roundtrip, 'res["res~last"]'-content"
 say
 
 say "DbusVersion():" dbusVersion()
+say "conn~isOpen:  " conn~isOpen
+conn~close
+say "conn~isOpen:  " conn~isOpen "(after closing)"
 
 call dumpConnectionStatistics conn
 

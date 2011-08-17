@@ -23,7 +23,7 @@
                 2011-08-04, rgf: - added statistics support
                 2011-08-07, rgf: - finalized private/standalone dbus ability
 
-    version:    095.20110807
+    version:    099.20110817
     license:      Apache License 2.0
 
 ------------------------ Apache Version 2.0 license -------------------------
@@ -75,11 +75,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 #ifdef DBUSOOREXX_32
-    #define DBUS_REXXVERSION    "095.20110811 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110817 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (DBUSOOREXX_64)
-    #define DBUS_REXXVERSION    "095.20110811 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110817 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define DBUS_REXXVERSION    "095.20110811 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110817 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #ifndef TID
@@ -596,6 +596,22 @@ RexxMethod1(RexxObjectPtr, DbusGetUniqueBusId, CSELF, connPtr)
     dbus_free(tmpStr);
     // context->SendMessage1(genericBusObject, "UNIQUEBUSNAME=", rso);
     return rso;
+}
+
+
+    // if open, returns true, false else; cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusConnection.html#ga611ae94556af36fe30bfb547366ca4e1>
+RexxMethod1(RexxObjectPtr, DbusConnectionIsConnected, CSELF, connPtr)
+{
+#if defined (DEBUG_METHODS)
+   fprintf(stderr, "===> arrived in DbusConnectionIsConnected\n");
+   fflush(stderr);
+#endif
+    DBusConnection *conn=(DBusConnection *) connPtr;
+    if (conn!=NULL && connPtr!=context->Nil() && dbus_connection_get_is_connected(conn))
+    {
+        return context->True();
+    }
+    return context->False();
 }
 
 
@@ -6274,6 +6290,8 @@ RexxMethod2(RexxObjectPtr, DbusNativeServerDisconnect, CSELF, serverPtr, OSELF, 
         REXX_METHOD( DbusServerWatchLoop            , DbusServerWatchLoop             ),
                     // 2011-08-11
         REXX_METHOD( DbusServerTimeoutLoop          , DbusServerTimeoutLoop           ),
+                    // 2011-08-17
+        REXX_METHOD( DbusConnectionIsConnected      , DbusConnectionIsConnected       ),
 
         REXX_LAST_METHOD()
     };

@@ -9,9 +9,11 @@
                   - BSF4ooRexx, if using the utf8-conversion routines, download from
                     <https://sourceforge.net/projects/bsf4oorexx/>
 
+      credits:    Mike F. Cowlishaw: for making his "utf8"-Rexx procedure available (cf. routine "stringToutf8")
+
       cf.:        dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
 
-      version:    091.20110804
+      version:    099.20110817
       changes:    - 2011-07-20, rgf; DBusProxyObject:
                     - added proxy.dispatch(methodName[,args...])-method to send messages that
                       would be otherwise executed on the Rexx side, ie. all of .Object's methods
@@ -45,7 +47,13 @@
                      - added "watchConnections" method to DBusServer, which asynchroneously probes client
                        connections to see whether the clients are gone in the meantime; commented, because
                        there are impacts on the clients and dbus should work correctly by sending the
-                       "Disconnected" signal on a client connection that is discarded
+                       "Disconnected" signal on a client connection that is discarded; removed it as probing
+                       has adverse effects
+                  - 2011-08-14, rgf
+                     - adding Mike F. Cowlishaw's "utf8" procedure for "stringToUtf8", in case BSF.CLS is
+                       not required
+                  - 2011-08-17, rgf
+                     - re-activated "watchConnections" method, this time employing "dbus_connection_get_is_connected(conn)" instead
 
 
       license:    Apache License 2.0
@@ -74,7 +82,7 @@
 */
 .local~dbus.dir=.directory~new
 
-.dbus.dir~version="095.20110813"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
+.dbus.dir~version="099.20110817"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
 
 .dbus.dir~DBUS_SERVICE_DBUS            ="org.freedesktop.DBus"    -- "The bus name used to talk to the bus itself."
 .dbus.dir~DBUS_PATH_DBUS               ="/org/freedesktop/DBus"   -- "The object path used to talk to the bus itself."
@@ -399,21 +407,24 @@ syntax: raise propagate
   if busType="private" then   -- if a private connection, then truly close it
   do
 -- send the "Disconnected" signal to the server, doesn't work :(
-self~message("signal", "/org/freedesktop/DBus/Local", "org.freedesktop.DBus.Local", "Disconnected", "")
+-- self~message("signal", "/org/freedesktop/DBus/Local", "org.freedesktop.DBus.Local", "Disconnected", "")
 
      self~nativeCloseConnection
 --     say self ":" "! ---> NATIVE CLOSE CONNECTION GOT CARRIED OUT <--- !" "busType:" pp2(busType) "self:" pp2(self) "server:" pp2(server)
   end
 
+::method nativeIsConnected    private external "LIBRARY dbusoorexx DbusConnectionIsConnected"
+::method isOpen            -- returns .true if connected (open), .false else
+  return self~nativeIsConnected
 
 
 ::method uninit
   expose busType cself
 
-  say self"::UNINIT ! cself="pp2(cself) "busType="pp2(busType) "self:" pp2(self)
+--  say self"::UNINIT ! cself="pp2(cself) "busType="pp2(busType) "self:" pp2(self)
 
-  if cself<>.nil then         -- a DBUS connection pointer in hand ?
-     self~close               -- make sure connection gets closed
+  if cself<>.nil then      -- a DBUS connection pointer in hand ?
+     self~close            -- make sure connection gets closed
 
 
    /* add listener object, syntax:  - a[dd] | r[emove], object [,[interface] [,signalname]]
@@ -844,7 +855,33 @@ syntax:  -- mostlikely: org.freedesktop.DBus.Error.Reply or org.freedesktop.DBus
    /* as of 2011-07-05 ooRexx from trunk does not support UTF-8, hence depending on BSF4ooRexx */
 ::routine stringToUtf8 public    -- needs BSF4ooRexx
   parse arg str
+
+  if .bsf=".BSF" then   -- no BSF available (need to uncomment the ::requires BSF.CLS statement above), hence using the Rexx conversion procedure
+     return utf8(str)
+
   return BsfRawBytes(.java.lang.String~new(str)~getBytes("UTF-8"))
+
+
+-- the following code was made available by Mike F. Cowlishaw in his e-mail on the ooRexx
+-- Sourceforge developer list on 2011-07-05, many thanks!
+/* --------------------------------------------------------------- */
+/* UTF-8 encoder (for 00-FF only)                                  */
+/* --------------------------------------------------------------- */
+utf8: procedure
+  parse arg data
+  out=''
+  do while data\==''                    -- generate escapes
+    parse var data char +1 data
+    d=c2d(char)
+    if d>=128 then do
+      bits=x2b(c2x(char))
+      c1=x2c(b2x('110000'left(bits, 2)))
+      c2=x2c(b2x('10'substr(bits, 3)))
+      char=c1||c2
+      end
+    out=out||char
+    end
+  return out
 
 
    /* ---------------------------------------------------------------------------------------- */
@@ -1649,7 +1686,7 @@ syntax:
 ::class "DBusServer"   public
 ::method init
   expose cself address allowAnonymous defaultService defaultListener connections  -
-         watchLoopActive watchlist timeoutLoopActive -- watchConnections
+         watchLoopActive watchlist timeoutLoopActive watchConnections
   use strict arg address, defaultService=.nil, defaultListener=.nil, allowAnonymous=.false
 
   .ArgUtil~validateClass("address", address, .string)
@@ -1658,7 +1695,7 @@ syntax:
      raise syntax 88.900 array ('Argument "allowAnonymous" must be a logical value, found "'allowAnonymous'"')
 
   connections=.array~new
-  -- watchConnections=.false
+  watchConnections=.false
   internalRegisteredServiceObjects=.directory~new
   internalSignalListeners         =.array~new
   cself=.nil                           -- will be set by native code
@@ -1679,7 +1716,7 @@ syntax:
 ::attribute watchLoopActive  get       -- indicates whether the server message loop is active or not
 
 ::method newConnection     -- new connection to this server received (from native code)
-  expose defaultService defaultListener connections -- watchConnections
+  expose defaultService defaultListener connections watchConnections
   use strict arg conn
 
 -- signal on syntax
@@ -1706,13 +1743,8 @@ syntax:
      conn~listener("add", defaultListener)                  -- will start message loop automatically
   end
 
-/* rgf (2011-08-13): do not apply this, as it impacts valid client connections!
   if watchConnections=.false then      -- start the watchConnections thread
-  do
      self~watchConnections
-     -- self~watchConnections(60)
-  end
-*/
 
 -- say pp2(self)"::newConnection - conn~messageLoop('active'):" pp2(conn~messageLoop('active'))
 -- say pp2(self)"::newConnection -" pp2(conn) "about to leave."
@@ -1730,7 +1762,7 @@ syntax:
   expose connections
   use strict arg conn
 
-say "..." self"::disconnect, 'conn'="pp2(conn)
+-- say "..." self"::disconnect, 'conn'="pp2(conn)
   conn~messageLoop("stop")             -- stop the connection's message loop
   res=connections~removeItem(conn)     -- remove the disconnected connection to the client
   conn~close                           -- make sure we cannot use it anymore (it wouldn't work)
@@ -1752,18 +1784,18 @@ say "..." self"::disconnect, 'conn'="pp2(conn)
   self~nativeStartServerWatchLoop   -- start the server message loop on the new thread
 
 
-/* -- not good (rgf, 2011-08-13): if the server calls into a running client, dbus timeouts and NoReply may errors occur that impact the client
+
 -- as of DBus 1.4.14, the private server does not receive a "Disconnected" signal
 ::method watchConnections  unguarded   -- check whether client connections are available, if not disconnect the stalled connecition
   expose connections watchConnections
-  use strict arg sleepTime=1
+  use strict arg sleepTime=.1 -- check every 1/10 second
 
   guard on
   watchConnections=.true      -- indicate that the watch Connections thread is started
   guard off
   reply
 
-say "... ... probing" pp2(conn) "sleepTime:" pp2(sleepTime) "..."
+-- say "... ... probing" pp2(conn) "sleepTime:" pp2(sleepTime) "..."
 
   do forever while connections~items>0 -- as long as client connections, probe them
      call sysSleep sleepTime  -- sleep
@@ -1771,8 +1803,12 @@ say "... ... probing" pp2(conn) "sleepTime:" pp2(sleepTime) "..."
      arr=connections~copy     -- get a copy of all connections
      guard off
      do conn over arr         -- iterate over all client connections and probe them
-say "... ... probing" pp2(conn) "..."
-        call probe self, conn
+-- say "... ... testing" pp2(conn)": conn~isOpen:" pp2(conn~isOpen)  "..."
+        if conn~isOpen=.false then
+        do
+-- say "... ... BINGO! " pp2(conn) "not connected/open anymore, DISCONNECTing connection !"
+           self~disconnect(conn)
+        end
      end
   end
   guard on
@@ -1780,35 +1816,6 @@ say "... ... probing" pp2(conn) "..."
   guard off
   return
 
-
-probe: procedure
-  use arg thisServer, conn
-  signal on syntax
-
-
-say "self: probing via signal ..."
-conn~message("signal", "/", "org.rexxla.orrexx.dbus.server", "ProbePing", "s", .datetime~new~string)
-
-   -- send a message expecting a reply to the client (the message will evoke an error)
-  res=conn~message("call", "private.org.rexxla.oorexx.dbus.server", "/private", "org.rexxla.oorexx.dbus.server", "ProbePing", "s", "s", .dateTime~new~string)
-say "self: probing via method call seems o.k., res="pp2(res) "..."
-
-  return
-
-syntax:
-  co=condition('object')
-  say "..." self":watchConnections, received error from" pp2(conn)
-  say ppCondition2(co)
-
-  str="method/DbusBusCallMessage(), error 10: could not receive a valid pending message object from 'dbus_connection_send_with_reply()'"
-  if pos(str, co~message)>0 then    -- check whether error indicates that no reply object can be created, then disconnect the client!
-  do
-     thisServer~disconnect(conn)       -- disconnect the client connection (will stop its message loop as well)
-     say "..." self":watchConnections, removed client connection:" pp2(conn) "using server:" pp2(thisServer)
-     say "---"
-  end
-  return
-*/
 
 
 
