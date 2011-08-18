@@ -79,7 +79,7 @@ javac %source% %target% %javaSrc%\RexxProxy.java                    && copy %jav
 javac %source% %target% %javaSrc%\Supplier.java                     && copy %javaSrc%\Supplier*                   %path2engine%
 
 @rem 2009-07-31
-javac %source% %target% %javaSrc%\RexxExtendClass.java              && copy %javaSrc%\RexxExtendClass*            %path2engine%
+javac %source% %target% %javaSrc%\RexxExtendClass.java              && copy %javaSrc%\RexxExtendClass*            %path2engine% && copy %javaSrc%\MethodForSuperData.class  %path2engine% && copy %javaSrc%\TransformationData.class  %path2engine%
 javac %source% %target% %javaSrc%\RexxExtendingClassLoader.java     && copy %javaSrc%\RexxExtendingClassLoader*   %path2engine%
 
 javac %source% %target% %javaSrc%\RexxDispatcher.java               && copy %javaSrc%\RexxDispatcher*             %path2rexxlaBsf%
