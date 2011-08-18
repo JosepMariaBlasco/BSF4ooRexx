@@ -24,8 +24,8 @@ set CLASSPATH=%CLASSPATH%;D:\Programme\OpenOffice.org 3\program\;D:\Programme\Op
 
 
 
-set runDate=20110531
-set doc_date=2011-05-31
+set runDate=20110822
+set doc_date=2011-08-22
 
 @rem values to use for creating the BSF jarfile
 set bsfDate=20090910
@@ -254,14 +254,16 @@ copy %path2dev%\install\linux\*                    bsf4oorexx\install\macosx\
 
 copy "%path2dev%\ReferenceCards\BSF4ooRexx\*.pdf"  bsf4oorexx\
 copy "%path2dev%\ReferenceCards\OOo\*.pdf"         bsf4oorexx\
+copy /y "%path2dev%\ReferenceCards\BSF4ooRexx\*.pdf"  bsf4oorexx\information\
+copy /y "%path2dev%\ReferenceCards\OOo\*.pdf"         bsf4oorexx\information\
 copy /y bsf4oorexx\*pdf .
 
 
 copy /y %path2dev%\chang*                          bsf4oorexx\install\
 copy /y %path2dev%\chang*                          .
 
-copy /y %path2dev%\readm*                          bsf4oorexx\install\
-rem copy /y %path2dev%\readm*                          bsf4oorexx\
+copy /y %path2dev%\readme-*                        bsf4oorexx\install\
+rem copy /y %path2dev%\readme-*                    bsf4oorexx\
 copy /y %path2dev%\readm*                          .
 
 copy /y %path2dev%\credits.txt                     bsf4oorexx\install\

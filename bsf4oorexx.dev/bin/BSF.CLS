@@ -314,7 +314,7 @@
 
 
 
-   version:     4.0.6 (20110220)
+   version:     4.0.6 (20110822)
 
    authors:     (c) 2001-2009 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
@@ -403,7 +403,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="406.20110618" -- set version
+   .bsf4rexx~version="406.20110822" -- set version
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
