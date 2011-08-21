@@ -24,8 +24,12 @@
                 2011-08-07, rgf: - finalized private/standalone dbus ability
                 2011-08-17, rgf: - rename variable 'interface' to 'interfaceName' as the MSCPP-compiler reserves 'interface'
                 2011-08-18, rgf: - send empty reply messages by default, unless DBus' attribute 'sendEmptyReply' is not .true
+                2011-08-21, rgf: - if UNIX_FD is not defined (e.g. on Windows), then the respective un/marshalling
+                                   code will not be compiled
+                                 - adjust Windows version: 32-bit MS compiler abends at runtime if "%zu" is used in fprintf/_snprintf
+                                   - changed all debug fprintf's from "%zu" to "%lu" to not cause exceptions when debugging on Windows with MSC
 
-    version:    099.20110818
+    version:    099.20110821
     license:      Apache License 2.0
 
 ------------------------ Apache Version 2.0 license -------------------------
@@ -57,16 +61,9 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 #define DBUS_API_SUBJECT_TO_CHANGE
 #include <dbus/dbus.h>
 
-#ifndef DBUS_TYPE_UNIX_FD       // e.g. not defined for Windows
-    #define DBUS_TYPE_UNIX_FD      ((int) 'h')
-#endif
-
 #ifndef DBUS_VERSION_STRING     // on Windows an older version of dbus has not defined it yet
     #define DBUS_VERSION_STRING  "<n/a>"
 #endif
-
-//   #include <stdbool.h>
-//   #include <unistd.h>
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,11 +87,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 #ifdef DBUSOOREXX_32
-    #define DBUS_REXXVERSION    "099.20110818 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110821 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (DBUSOOREXX_64)
-    #define DBUS_REXXVERSION    "099.20110818 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110821 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define DBUS_REXXVERSION    "099.20110818 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110821 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #ifndef TID
@@ -319,7 +316,7 @@ void RexxEntry dbusLoader (RexxThreadContext *rtc)
 #endif
 
 #if defined (DEBUG_LOADER_UNLOADER )    // just to save warnings
-    bool res=
+    int res=
 #endif
     dbus_threads_init_default();    // initialize threading support, cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusThreads.html#ga33b6cf3b8f1e41bad5508f84758818a7>
 
@@ -1047,9 +1044,10 @@ inline void SET_NEW_STRUCT_MARSHAL (PSTRUCT_MARSHAL pnewM, char *localSignature,
 logical_t unmarshal(DBusMessageIter *iter, char typeCode, RexxArrayObject rxResult, PSTRUCT_MARSHAL pmarsh)
 {
 #ifdef DEBUG_MARSHALLING
-    fprintf(stderr, "---> arrived in unmarshal(...), typeCode=[%c], cursor=[%zu], signature=[%s], iter=[%p], rxResult=[%p] \n",
+    // fprintf(stderr, "---> arrived in unmarshal(...), typeCode=[%c], cursor=[%zu], signature=[%s], iter=[%p], rxResult=[%p] \n",
+    fprintf(stderr, "---> arrived in unmarshal(...), typeCode=[%c], cursor=[%lu], signature=[%s], iter=[%p], rxResult=[%p] \n",
                        typeCode,
-                       pmarsh->cursor - pmarsh->signature,
+                       (unsigned long) (pmarsh->cursor - pmarsh->signature),
                        pmarsh->signature,
                        iter,
                        rxResult
@@ -1079,9 +1077,10 @@ logical_t unmarshal(DBusMessageIter *iter, char typeCode, RexxArrayObject rxResu
                 pmarsh->cursor++;       // let us point to the next typeCode if any
 
 #ifdef DEBUG_UNMARSHAL
-fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], cursor>=end-element? [%d] - signature=[%s], value=[%s] /str=[%s] \n",
-            pmarsh->cursor     - pmarsh->signature,
-            pmarsh->elementEnd - pmarsh->signature,
+// fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], cursor>=end-element? [%d] - signature=[%s], value=[%s] /str=[%s] \n",
+fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], cursor>=end-element? [%d] - signature=[%s], value=[%s] /str=[%s] \n",
+            (unsigned long) (pmarsh->cursor     - pmarsh->signature),
+            (unsigned long) (pmarsh->elementEnd - pmarsh->signature),
             (int) (pmarsh->cursor >= pmarsh->elementEnd),
             pmarsh->signature,
             pmarsh->context->ObjectToStringValue(currRexxObj),
@@ -1177,6 +1176,8 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], 
             }
             break;
 
+
+#if defined ( DBUS_TYPE_UNIX_FD )      // e.g. not defined for Windows
         // case 'h' :      // UNIX_FD: a 32-bit unsigned integer accordig to dbus-specification.html
         case DBUS_TYPE_UNIX_FD :
             {
@@ -1186,6 +1187,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], 
                 pmarsh->cursor++;       // let us point to the next typeCode if any
             }
             break;
+#endif
 
         // case 'u' :      // UINT32
         case DBUS_TYPE_UINT32 :
@@ -1289,12 +1291,13 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], 
             size_t cursorPos = pmarsh->cursor - pmarsh->signature;
 
 
-            fprintf(stderr, "     /--> unmarshal(): DBUS_TYPE_ARRAY - signature=[%s], cursorPos=[%zu|%c]: arrStartPos=[%zu|%c], arrEndPos=[%zu|%c], arrLen=[%zu] | elStartPos=[%zu|%c], elEndPos=[%zu|%c], elLen=[%zu]\n",
-                                         tmp,  cursorPos, *(tmp+cursorPos),
-                                         arrStartPos, *(tmp+arrStartPos), arrEndPos, *(tmp+arrEndPos),
-                                         arrLen,
-                                         elStartPos, *(tmp+elStartPos), elEndPos, *(tmp+elEndPos),
-                                         elLen);
+            // fprintf(stderr, "     /--> unmarshal(): DBUS_TYPE_ARRAY - signature=[%s], cursorPos=[%zu|%c]: arrStartPos=[%zu|%c], arrEndPos=[%zu|%c], arrLen=[%zu] | elStartPos=[%zu|%c], elEndPos=[%zu|%c], elLen=[%zu]\n",
+            fprintf(stderr, "     /--> unmarshal(): DBUS_TYPE_ARRAY - signature=[%s], cursorPos=[%lu|%c]: arrStartPos=[%lu|%c], arrEndPos=[%lu|%c], arrLen=[%lu] | elStartPos=[%lu|%c], elEndPos=[%lu|%c], elLen=[%lu]\n",
+                                         tmp,  (unsigned long) cursorPos, *(tmp+cursorPos),
+                                         (unsigned long) arrStartPos, *(tmp+arrStartPos), (unsigned long) arrEndPos, *(tmp+arrEndPos),
+                                         (unsigned long) arrLen,
+                                         (unsigned long) elStartPos, *(tmp+elStartPos), (unsigned long) elEndPos, *(tmp+elEndPos),
+                                         (unsigned long) elLen);
 
             fflush(stderr);
     }
@@ -1318,8 +1321,9 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], 
                                 (pmarsh->is_ay ? pmarsh->unmarshal_ay_as_string : 0); //  pmarsh->is_ay;
 
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, "     /--> unmarshal(): DBUS_TYPE_ARRAY - signature=[%s], about to create array with [%zu] dimensions\n",
-                               pmarsh->signature, nrDims); fflush(stderr);
+    // fprintf(stderr, "     /--> unmarshal(): DBUS_TYPE_ARRAY - signature=[%s], about to create array with [%zu] dimensions\n",
+    fprintf(stderr, "     /--> unmarshal(): DBUS_TYPE_ARRAY - signature=[%s], about to create array with [%lu] dimensions\n",
+                               pmarsh->signature, (unsigned long) nrDims); fflush(stderr);
 #endif
 
                 RexxArrayObject arrIdx   =pmarsh->context->NewArray(nrDims);
@@ -1339,18 +1343,20 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], 
                 currRexxObj=pmarsh->context->SendMessage2(pmarsh->arrayClass, "SENDWITH", pmarsh->context->String("NEW"), rxWithArgs);
 
 #ifdef DEBUG_ARRAY
-   fprintf(stderr, "     unmarshal(...), 'a' - currRexxObj=[%p]~dimension=[%zu];  pmarsh->dimensions=[%zu] - nrDims=[%zu]; | ~size=[%zu], ~items=[%zu]\n",
+   // fprintf(stderr, "     unmarshal(...), 'a' - currRexxObj=[%p]~dimension=[%zu];  pmarsh->dimensions=[%zu] - nrDims=[%zu]; | ~size=[%zu], ~items=[%zu]\n",
+   fprintf(stderr, "     unmarshal(...), 'a' - currRexxObj=[%p]~dimension=[%lu];  pmarsh->dimensions=[%lu] - nrDims=[%lu]; | ~size=[%lu], ~items=[%lu]\n",
                          currRexxObj,
-                         pmarsh->context->ArrayDimension((RexxArrayObject) currRexxObj),
-                         pmarsh->dimensions,
-                         nrDims,
-                         pmarsh->context->ArraySize((RexxArrayObject) currRexxObj),
-                         pmarsh->context->ArrayItems((RexxArrayObject) currRexxObj)
+                         (unsigned long) pmarsh->context->ArrayDimension((RexxArrayObject) currRexxObj),
+                         (unsigned long) pmarsh->dimensions,
+                         (unsigned long) nrDims,
+                         (unsigned long) pmarsh->context->ArraySize((RexxArrayObject) currRexxObj),
+                         (unsigned long) pmarsh->context->ArrayItems((RexxArrayObject) currRexxObj)
                          );
 
-   fprintf(stderr, "     unmarshal(...), 'a' - p->is_ay=[%zu], p->unmarshal_ay_as_string=[%zu], arrIdx=[%s], p->signature=[%s]\n",
-                         pmarsh->is_ay,
-                         pmarsh->unmarshal_ay_as_string,
+   // fprintf(stderr, "     unmarshal(...), 'a' - p->is_ay=[%zu], p->unmarshal_ay_as_string=[%zu], arrIdx=[%s], p->signature=[%s]\n",
+   fprintf(stderr, "     unmarshal(...), 'a' - p->is_ay=[%lu], p->unmarshal_ay_as_string=[%lu], arrIdx=[%s], p->signature=[%s]\n",
+                         (unsigned long) pmarsh->is_ay,
+                         (unsigned long) pmarsh->unmarshal_ay_as_string,
                          ARR_AS_STRING(arrIdx, pmarsh->context),
                          pmarsh->signature
                          );
@@ -1363,11 +1369,12 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], 
     {
         size_t cursorPos = pmarsh->cursor - pmarsh->signature;
 
-        fprintf(stderr, "     /<-- signature=[%s], cursorPos=[%zu|%c]: end-of-array-processing #1. currRexxObj: dims=[%zu], items=[%zu], size=[%zu] \n",
-                pmarsh->signature,  cursorPos, *(pmarsh->signature+cursorPos),
-                pmarsh->context->ArrayDimension((RexxArrayObject) currRexxObj),
-                pmarsh->context->ArrayItems((RexxArrayObject) currRexxObj),
-                pmarsh->context->ArraySize((RexxArrayObject) currRexxObj)
+        // fprintf(stderr, "     /<-- signature=[%s], cursorPos=[%zu|%c]: end-of-array-processing #1. currRexxObj: dims=[%zu], items=[%zu], size=[%zu] \n",
+        fprintf(stderr, "     /<-- signature=[%s], cursorPos=[%lu|%c]: end-of-array-processing #1. currRexxObj: dims=[%lu], items=[%lu], size=[%lu] \n",
+                pmarsh->signature,  (unsigned long) cursorPos, *(pmarsh->signature+cursorPos),
+                (unsigned long) pmarsh->context->ArrayDimension((RexxArrayObject) currRexxObj),
+                (unsigned long) pmarsh->context->ArrayItems((RexxArrayObject) currRexxObj),
+                (unsigned long) pmarsh->context->ArraySize((RexxArrayObject) currRexxObj)
                 );
     }
 #endif
@@ -1446,11 +1453,12 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], 
    fprintf(stderr, "... unmarshal(...): *** STRUCT: BEFORE - localM.signature=[%s], localM.cursor=[%s], localM.elementStart=[%s], localM.elementEnd=[%s]\n",
                         localM.signature, localM.cursor, localM.elementStart, localM.elementEnd);
 
-   fprintf(stderr, "... unmarshal(...): *** STRUCT: BEFORE - localM.signature=[%s], localM.cursor=[%zu], localM.elementStart=[%zu], localM.elementEnd=[%zu]\n",
+   // fprintf(stderr, "... unmarshal(...): *** STRUCT: BEFORE - localM.signature=[%s], localM.cursor=[%zu], localM.elementStart=[%zu], localM.elementEnd=[%zu]\n",
+   fprintf(stderr, "... unmarshal(...): *** STRUCT: BEFORE - localM.signature=[%s], localM.cursor=[%lu], localM.elementStart=[%lu], localM.elementEnd=[%lu]\n",
                         localM.signature,
-                        localM.cursor - localM.signature,
-                        localM.elementStart - localM.signature,
-                        localM.elementEnd - localM.signature
+                        (unsigned long) (localM.cursor - localM.signature),
+                        (unsigned long) (localM.elementStart - localM.signature),
+                        (unsigned long) (localM.elementEnd - localM.signature)
                         );
 #endif
 
@@ -1465,11 +1473,13 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], 
    fprintf(stderr, "... unmarshal(...): *** STRUCT: AFTER - pmarsh->signature=[%s], pmarsh->cursor=[%s], pmarsh->elementStart=[%s], pmarsh->elementEnd=[%s]\n",
                         pmarsh->signature, pmarsh->cursor, pmarsh->elementStart, pmarsh->elementEnd);
 
-   fprintf(stderr, "... unmarshal(...): *** STRUCT: AFTER - pmarsh->signature=[%s], pmarsh->cursor=[%zu], pmarsh->elementStart=[%zu], pmarsh->elementEnd=[%zu]\n",
+   // fprintf(stderr, "... unmarshal(...): *** STRUCT: AFTER - pmarsh->signature=[%s], pmarsh->cursor=[%zu], pmarsh->elementStart=[%zu], pmarsh->elementEnd=[%zu]\n",
+   fprintf(stderr, "... unmarshal(...): *** STRUCT: AFTER - pmarsh->signature=[%s], pmarsh->cursor=[%lu], pmarsh->elementStart=[%lu], pmarsh->elementEnd=[%lu]\n",
                         pmarsh->signature,
-                        pmarsh->cursor - pmarsh->signature,
-                        pmarsh->elementStart - pmarsh->signature,
-                        pmarsh->elementEnd - pmarsh->signature);
+                        (unsigned long) (pmarsh->cursor - pmarsh->signature),
+                        (unsigned long) (pmarsh->elementStart - pmarsh->signature),
+                        (unsigned long) (pmarsh->elementEnd - pmarsh->signature)
+                        );
 #endif
 
 
@@ -1515,19 +1525,20 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], 
         pmarsh->context->SendMessage1(rxResult, "APPEND", currRexxObj);     // append current Rexx object to array
 
 #ifdef DEBUG_UNMARSHAL
-    fprintf(stderr, "\nrxResult=[%p], currRexxObj=[%p], currRexxObj~class=[%s], size=[%zu]\n",
+    // fprintf(stderr, "\nrxResult=[%p], currRexxObj=[%p], currRexxObj~class=[%s], size=[%zu]\n",
+    fprintf(stderr, "\nrxResult=[%p], currRexxObj=[%p], currRexxObj~class=[%s], size=[%lu]\n",
                    rxResult,
                    currRexxObj,
                    (currRexxObj==NULL ? NULL : pmarsh->context->ObjectToStringValue(pmarsh->context->SendMessage0(currRexxObj, "CLASS"))),
-                   (currRexxObj==NULL ? 0 : (pmarsh->context->IsArray(currRexxObj) ? pmarsh->context->ArraySize((RexxArrayObject) currRexxObj) : 0 ))
+                   (unsigned long) (currRexxObj==NULL ? 0 : (pmarsh->context->IsArray(currRexxObj) ? pmarsh->context->ArraySize((RexxArrayObject) currRexxObj) : 0 ))
          );
-    fprintf(stderr, "... end of unmarshal(), rxResult [%p] appending currRexxObj=[%p]=[%s]: dims=[%zu], items=[%zu], size=[%zu]\n",
+    fprintf(stderr, "... end of unmarshal(), rxResult [%p] appending currRexxObj=[%p]=[%s]: dims=[%lu], items=[%lu], size=[%lu]\n",
                    rxResult,
                    currRexxObj,
                    pmarsh->context->ObjectToStringValue(currRexxObj),
-                   pmarsh->context->ArrayDimension((RexxArrayObject) rxResult),
-                   pmarsh->context->ArrayItems((RexxArrayObject) rxResult),
-                   pmarsh->context->ArraySize((RexxArrayObject) rxResult)
+                   (unsigned long) pmarsh->context->ArrayDimension((RexxArrayObject) rxResult),
+                   (unsigned long) pmarsh->context->ArrayItems((RexxArrayObject) rxResult),
+                   (unsigned long) pmarsh->context->ArraySize((RexxArrayObject) rxResult)
         );
 #endif
 
@@ -1558,19 +1569,21 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], 
 logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject rao, RexxArrayObject arrIdx, PSTRUCT_MARSHAL pmarsh)
 {
 #ifdef DEBUG_ARRAY
-       fprintf(stderr, "---> arrived in unmarshalArray(...): level=[%zu], rao=[%s], arrIdx=[%s]\n",
-                         level,
+       // fprintf(stderr, "---> arrived in unmarshalArray(...): level=[%zu], rao=[%s], arrIdx=[%s]\n",
+       fprintf(stderr, "---> arrived in unmarshalArray(...): level=[%lu], rao=[%s], arrIdx=[%s]\n",
+                         (unsigned long) level,
                          ARR_AS_STRING(rao, pmarsh->context),
                          ARR_AS_STRING(arrIdx, pmarsh->context) );
 
-       fprintf(stderr, "                unmarshalArray(...): signature=[%s], dims=[%zu] - cursor=[%zu], arrStart=[%zu], arrEnd=[%zu], elStart=[%zu], elEnd=[%zu]\n",
+       // fprintf(stderr, "                unmarshalArray(...): signature=[%s], dims=[%zu] - cursor=[%zu], arrStart=[%zu], arrEnd=[%zu], elStart=[%zu], elEnd=[%zu]\n",
+       fprintf(stderr, "                unmarshalArray(...): signature=[%s], dims=[%lu] - cursor=[%lu], arrStart=[%lu], arrEnd=[%lu], elStart=[%lu], elEnd=[%lu]\n",
                          pmarsh->signature,
-                         pmarsh->dimensions,
-                         pmarsh->cursor   - pmarsh->signature,
-                         pmarsh->arrStart - pmarsh->signature,
-                         pmarsh->arrEnd   - pmarsh->signature,
-                         pmarsh->elementStart - pmarsh->signature,
-                         pmarsh->elementEnd   - pmarsh->signature
+                         (unsigned long) pmarsh->dimensions,
+                         (unsigned long) (pmarsh->cursor   - pmarsh->signature    ) ,
+                         (unsigned long) (pmarsh->arrStart - pmarsh->signature    ) ,
+                         (unsigned long) (pmarsh->arrEnd   - pmarsh->signature    ) ,
+                         (unsigned long) (pmarsh->elementStart - pmarsh->signature) ,
+                         (unsigned long) (pmarsh->elementEnd   - pmarsh->signature)
            );
 #endif
     DBusMessageIter iter_array;
@@ -1587,7 +1600,8 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
     strncpy(localSignature, start, pmarsh->elementEnd-start+1);
 
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, "     - level=[%zu], localSignature=[%s], rao=[%p] \n", level, localSignature, rao); fflush(stderr);
+    // fprintf(stderr, "     - level=[%zu], localSignature=[%s], rao=[%p] \n", level, localSignature, rao); fflush(stderr);
+    fprintf(stderr, "     - level=[%lu], localSignature=[%s], rao=[%p] \n", (unsigned long) level, localSignature, rao); fflush(stderr);
     fprintf(stderr, "    unmarshalArray(...): OPEN container ---> ---> ---> signature=[%s]\n", localSignature);
 #endif
 
@@ -1629,11 +1643,12 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
     if (pmarsh->is_ay && level==pmarsh->dimensions) // "ay" -> "s"
     {
 #ifdef DEBUG_ARRAY
-   fprintf(stderr, "    unmarshalArray(...): BYTE-ARRAY-HANDLING ! localSignature=[%s], p->signature=[%s], level=[%zu], p->dimensions=[%zu], p->is_ay=[%d], p->unmarshal_ay_as_string=[%d]\n",
+   // fprintf(stderr, "    unmarshalArray(...): BYTE-ARRAY-HANDLING ! localSignature=[%s], p->signature=[%s], level=[%zu], p->dimensions=[%zu], p->is_ay=[%d], p->unmarshal_ay_as_string=[%d]\n",
+   fprintf(stderr, "    unmarshalArray(...): BYTE-ARRAY-HANDLING ! localSignature=[%s], p->signature=[%s], level=[%lu], p->dimensions=[%lu], p->is_ay=[%d], p->unmarshal_ay_as_string=[%d]\n",
                         localSignature,
                         pmarsh->signature,
-                        level,
-                        pmarsh->dimensions,
+                        (unsigned long) level,
+                        (unsigned long) pmarsh->dimensions,
                         (int) pmarsh->is_ay,
                         (int) pmarsh->unmarshal_ay_as_string
                         );
@@ -1650,16 +1665,18 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
         dbus_message_iter_get_fixed_array (&iter_array, &array, &arrCount);
 
 #ifdef DEBUG_ARRAY
-   fprintf(stderr, "    unmarshalArray(...): arrCount=[%d], arrIdx=[%s],  nrDims=[%zu], level=[%zu] \n",
+   // fprintf(stderr, "    unmarshalArray(...): arrCount=[%d], arrIdx=[%s],  nrDims=[%zu], level=[%zu] \n",
+   fprintf(stderr, "    unmarshalArray(...): arrCount=[%d], arrIdx=[%s],  nrDims=[%lu], level=[%lu] \n",
                              arrCount,
                              ARR_AS_STRING(arrIdx, pmarsh->context),
-                             nrDims,
-                             level
+                             (unsigned long) nrDims,
+                             (unsigned long) level
                         );
 
-   fprintf(stderr, "    unmarshalArray(...): arrIdx~size=[%zu], nrDims=[%zu] \n",
-                             pmarsh->context->ArraySize(arrIdx),
-                             nrDims );
+   // fprintf(stderr, "    unmarshalArray(...): arrIdx~size=[%zu], nrDims=[%zu] \n",
+   fprintf(stderr, "    unmarshalArray(...): arrIdx~size=[%lu], nrDims=[%lu] \n",
+                             (unsigned long) pmarsh->context->ArraySize(arrIdx),
+                             (unsigned long) nrDims );
 
 
 #endif
@@ -1672,8 +1689,9 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
                                          pmarsh->context->StringSizeToObject(nrDims) );
 
 #ifdef DEBUG_ARRAY
-   fprintf(stderr, "    unmarshalArray(...): must adjust arrIdx (too many indices!), now arrIdx=[%s] as nrDims=[%zu] \n ",
-                  ARR_AS_STRING(arrIdx, pmarsh->context), nrDims);
+   // fprintf(stderr, "    unmarshalArray(...): must adjust arrIdx (too many indices!), now arrIdx=[%s] as nrDims=[%zu] \n ",
+   fprintf(stderr, "    unmarshalArray(...): must adjust arrIdx (too many indices!), now arrIdx=[%s] as nrDims=[%lu] \n ",
+                  ARR_AS_STRING(arrIdx, pmarsh->context), (unsigned long) nrDims);
 #endif
         }
 
@@ -1735,9 +1753,10 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
         }
 
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, " ............... analyze signature, set arrStart/arrEnd  elStart/elEnd, dims=[%zu], calcDims=[%zu], lM.signature=[%s], lm.arrStart=[%c], lm.arrEnd=[%c]\n",
-                  localM.dimensions,
-                  localM.arrEnd - localM.arrStart + 1,
+    // fprintf(stderr, " ............... analyze signature, set arrStart/arrEnd  elStart/elEnd, dims=[%zu], calcDims=[%zu], lM.signature=[%s], lm.arrStart=[%c], lm.arrEnd=[%c]\n",
+    fprintf(stderr, " ............... analyze signature, set arrStart/arrEnd  elStart/elEnd, dims=[%lu], calcDims=[%lu], lM.signature=[%s], lm.arrStart=[%c], lm.arrEnd=[%c]\n",
+                  (unsigned long) localM.dimensions,
+                  (unsigned long) (localM.arrEnd - localM.arrStart + 1),
                   localM.signature,
                   *localM.arrStart,
                   *localM.arrEnd
@@ -1818,10 +1837,11 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
                            currArrIdx
                            );
 
-    fprintf(stderr, "----> Ticker # 7d, signature=[%s], cursor=[%zu], elementStart=[%zu] \n",
+    // fprintf(stderr, "----> Ticker # 7d, signature=[%s], cursor=[%zu], elementStart=[%zu] \n",
+    fprintf(stderr, "----> Ticker # 7d, signature=[%s], cursor=[%lu], elementStart=[%lu] \n",
                     localM.signature,
-                    localM.cursor - localM.signature,
-                    localM.elementStart - localM.signature);
+                    (unsigned long) (localM.cursor - localM.signature),
+                    (unsigned long) (localM.elementStart - localM.signature) );
 #endif
 
                 localM.cursor=localM.signature;     // reset cursor
@@ -1831,8 +1851,9 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
     else        // recurse into next dimension!
     {
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, "----> Ticker # 8-, level=[%zu], rao=[%p], arrIdx=[%s], &iter_array(arg_type=[%d])==[%d] (DBUS_ARRAY_TYPE) \n",
-                              level, rao, ARR_AS_STRING(arrIdx, pmarsh->context),
+    // fprintf(stderr, "----> Ticker # 8-, level=[%zu], rao=[%p], arrIdx=[%s], &iter_array(arg_type=[%d])==[%d] (DBUS_ARRAY_TYPE) \n",
+    fprintf(stderr, "----> Ticker # 8-, level=[%lu], rao=[%p], arrIdx=[%s], &iter_array(arg_type=[%d])==[%d] (DBUS_ARRAY_TYPE) \n",
+                              (unsigned long) level, rao, ARR_AS_STRING(arrIdx, pmarsh->context),
                               dbus_message_iter_get_arg_type(&iter_array), DBUS_TYPE_ARRAY
                               );
 #endif
@@ -1844,20 +1865,23 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
             SET_ARRAY_IDX(arrIdx, level+1, 0, pmarsh->context); // reset next higher dimension's index !
 
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, "----> Ticker # 8a, recursing with values, level+1=[%zu], rao=[%p], arrIdx=[%s] \n", level+1, rao, ARR_AS_STRING(arrIdx, pmarsh->context));
+    // fprintf(stderr, "----> Ticker # 8a, recursing with values, level+1=[%zu], rao=[%p], arrIdx=[%s] \n", level+1, rao, ARR_AS_STRING(arrIdx, pmarsh->context));
+    fprintf(stderr, "----> Ticker # 8a, recursing with values, level+1=[%lu], rao=[%p], arrIdx=[%s] \n", (unsigned long) level+1, rao, ARR_AS_STRING(arrIdx, pmarsh->context));
 #endif
 
             unmarshalArray(&iter_array, level+1, rao, arrIdx, &localM);
 
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, "<---- Ticker # 8b, current level again: [%zu] \n", level);
+    // fprintf(stderr, "<---- Ticker # 8b, current level again: [%zu] \n", level);
+    fprintf(stderr, "<---- Ticker # 8b, current level again: [%lu] \n", (unsigned long) level);
 #endif
             indexLevel++;
             // reset next dimension's item count value to 0
             dbus_message_iter_next(&iter_array);
         }
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, "<---- Ticker # 9, back at level [%zu] \n", level);
+    // fprintf(stderr, "<---- Ticker # 9, back at level [%zu] \n", level);
+    fprintf(stderr, "<---- Ticker # 9, back at level [%lu] \n", (unsigned long) level);
 #endif
     }
 
@@ -2082,9 +2106,10 @@ logical_t unmarshalVariant(DBusMessageIter *iter, RexxArrayObject rop, PSTRUCT_M
 logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRUCT_MARSHAL pmarsh)
 {
 #ifdef DEBUG_MARSHALLING
-    fprintf(stderr, "---> arrived in marshal(...), typeCode=[%c], cursor=[%zu], signature=[%s], iter=[%p] \n",
+    // fprintf(stderr, "---> arrived in marshal(...), typeCode=[%c], cursor=[%zu], signature=[%s], iter=[%p] \n",
+    fprintf(stderr, "---> arrived in marshal(...), typeCode=[%c], cursor=[%lu], signature=[%s], iter=[%p] \n",
                        typeCode,
-                       pmarsh->cursor - pmarsh->signature,
+                       (unsigned long) (pmarsh->cursor - pmarsh->signature),
                        pmarsh->signature,
                        iter
                        );
@@ -2220,12 +2245,22 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
                 {
                     if (n==0)       // empty string
                     {
+
+#ifdef _MSC_VER     // "%zu" creates runtime errors with "Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 15.00.30729.01 for 80x86"
+                        SNPRINTF(pmarsh->msgChunk256, 256, ": cannot convert an empty Rexx String to a byte value, string length: [%lu]", (unsigned long) n);
+#else
                         SNPRINTF(pmarsh->msgChunk256, 256, ": cannot convert an empty Rexx String to a byte value, string length: [%zu]", n);
+#endif
                         pmarsh->rexxError=true;
                     }
                     else            // too large of a string
                     {
+#ifdef _MSC_VER     // "%zu" creates runtime errors with "Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 15.00.30729.01 for 80x86"
+                        SNPRINTF(pmarsh->msgChunk256, 256, ": conversion (value=[%.32s]) to a byte value failed, string length: [%lu]", pmarsh->context->ObjectToStringValue(rop), (unsigned long) n);
+#else
                         SNPRINTF(pmarsh->msgChunk256, 256, ": conversion (value=[%.32s]) to a byte value failed, string length: [%zu]", pmarsh->context->ObjectToStringValue(rop), n);
+#endif
+
                         pmarsh->rexxError=true;
                     }
                 }
@@ -2353,6 +2388,8 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
         }
         break;
 
+
+#if defined ( DBUS_TYPE_UNIX_FD )      // e.g. not defined for Windows
     case 'h' :      // UNIX_FD: a 32-bit unsigned integer accordig to dbus-specification.html
         {
             uint32_t val=0;
@@ -2377,6 +2414,7 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
             pmarsh->cursor++;       // let us point to the next typeCode if any
         }
         break;
+#endif
 
     case 'u' :      // UINT32
         {
@@ -2496,10 +2534,11 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
         RexxArrayObject tmpRao= ( rop==NULL ? NULL : (RexxArrayObject) rop );
         if (tmpRao!=NULL)
         {
-            fprintf(stderr, "rop~dimension=[%zu], rop~size=[%zu], rop~items=[%zu]",
-                            pmarsh->context->ArrayDimension(tmpRao),
-                            pmarsh->context->ArraySize(tmpRao),
-                            pmarsh->context->ArrayItems(tmpRao)
+            // fprintf(stderr, "rop~dimension=[%zu], rop~size=[%zu], rop~items=[%zu]",
+            fprintf(stderr, "rop~dimension=[%lu], rop~size=[%lu], rop~items=[%lu]",
+                            (unsigned long) pmarsh->context->ArrayDimension(tmpRao),
+                            (unsigned long) pmarsh->context->ArraySize(tmpRao),
+                            (unsigned long) pmarsh->context->ArrayItems(tmpRao)
                     );
         }
 
@@ -2567,12 +2606,13 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
     size_t cursorPos = pmarsh->cursor - pmarsh->signature;
 
 
-    fprintf(stderr, "     /--> signature=[%s], cursorPos=[%zu|%c]: arrStartPos=[%zu|%c], arrEndPos=[%zu|%c], arrLen=[%zu] | elStartPos=[%zu|%c], elEndPos=[%zu|%c], elLen=[%zu]\n",
-                                     tmp,  cursorPos, *(tmp+cursorPos),
-                                     arrStartPos, *(tmp+arrStartPos), arrEndPos, *(tmp+arrEndPos),
-                                     arrLen,
-                                     elStartPos, *(tmp+elStartPos), elEndPos, *(tmp+elEndPos),
-                                     elLen);
+    // fprintf(stderr, "     /--> signature=[%s], cursorPos=[%zu|%c]: arrStartPos=[%zu|%c], arrEndPos=[%zu|%c], arrLen=[%zu] | elStartPos=[%zu|%c], elEndPos=[%zu|%c], elLen=[%zu]\n",
+    fprintf(stderr, "     /--> signature=[%s], cursorPos=[%lu|%c]: arrStartPos=[%lu|%c], arrEndPos=[%lu|%c], arrLen=[%lu] | elStartPos=[%lu|%c], elEndPos=[%lu|%c], elLen=[%lu]\n",
+                                     tmp,  (unsigned long) cursorPos, *(tmp+cursorPos),
+                                     (unsigned long) arrStartPos, *(tmp+arrStartPos), (unsigned long) arrEndPos, *(tmp+arrEndPos),
+                                     (unsigned long) arrLen,
+                                     (unsigned long) elStartPos, *(tmp+elStartPos), (unsigned long) elEndPos, *(tmp+elEndPos),
+                                     (unsigned long) elLen);
     fflush(stderr);
     }
 #endif
@@ -2657,13 +2697,21 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
                     // make sure it is not a byte array for which a Rexx string is supplied
                     if (!pmarsh->is_ay || (pmarsh->is_ay && (pmarsh->dimensions-1 != pmarsh->context->ArrayDimension(rao))) )
                     {
-                    orxConvFlag=false;
-                    SNPRINTF(pmarsh->msgChunk256, 256, ": marshalling of Rexx array not possible as Rexx array possesses [%zu] dimension(s), but the supplied DBUS array signature ([%s]) has [%zu] dimension(s)",
-                                      pmarsh->context->ArrayDimension(rao),
-                                      pmarsh->signature,
-                                      pmarsh->dimensions
-                                  );
-                    break;
+                        orxConvFlag=false;
+#ifdef _MSC_VER     // "%zu" creates runtime errors with "Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 15.00.30729.01 for 80x86"
+                        SNPRINTF(pmarsh->msgChunk256, 256, ": marshalling of Rexx array not possible as Rexx array possesses [%lu] dimension(s), but the supplied DBUS array signature ([%s]) has [%lu] dimension(s)",
+                                          (unsigned long) pmarsh->context->ArrayDimension(rao),
+                                          pmarsh->signature,
+                                          (unsigned long) pmarsh->dimensions
+                                      );
+#else
+                        SNPRINTF(pmarsh->msgChunk256, 256, ": marshalling of Rexx array not possible as Rexx array possesses [%zu] dimension(s), but the supplied DBUS array signature ([%s]) has [%zu] dimension(s)",
+                                          pmarsh->context->ArrayDimension(rao),
+                                          pmarsh->signature,
+                                          pmarsh->dimensions
+                                      );
+#endif
+                        break;
                     }
 
                     pmarsh->marshal_ay_as_string=true;  // indicate we need to marshal the string elements as byte arrays
@@ -2679,8 +2727,9 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
     {
     size_t cursorPos = pmarsh->cursor - pmarsh->signature;
 
-    fprintf(stderr, "     /<-- signature=[%s], cursorPos=[%zu|%c]: end-of-array-processing #2. \n",
-            pmarsh->signature,  cursorPos, *(pmarsh->signature+cursorPos));
+    // fprintf(stderr, "     /<-- signature=[%s], cursorPos=[%zu|%c]: end-of-array-processing #2. \n",
+    fprintf(stderr, "     /<-- signature=[%s], cursorPos=[%lu|%c]: end-of-array-processing #2. \n",
+            pmarsh->signature,  (unsigned long) cursorPos, *(pmarsh->signature+cursorPos));
     }
 #endif
 
@@ -2849,13 +2898,14 @@ fprintf(stderr, "%s: *** marshal(...): ??? default-branch ??? typeCode=[%c], sig
 logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop, RexxArrayObject arrIdx, PSTRUCT_MARSHAL pmarsh)
 {
 #ifdef DEBUG_ARRAY
-   fprintf(stderr, "---> arrived in marshalArray(...): signature=[%s] - cursor=[%zu], arrStart=[%zu], arrEnd=[%zu], elStart=[%zu], elEnd=[%zu]\n",
+   // fprintf(stderr, "---> arrived in marshalArray(...): signature=[%s] - cursor=[%zu], arrStart=[%zu], arrEnd=[%zu], elStart=[%zu], elEnd=[%zu]\n",
+   fprintf(stderr, "---> arrived in marshalArray(...): signature=[%s] - cursor=[%lu], arrStart=[%lu], arrEnd=[%lu], elStart=[%lu], elEnd=[%lu]\n",
                          pmarsh->signature,
-                         pmarsh->cursor   - pmarsh->signature,
-                         pmarsh->arrStart - pmarsh->signature,
-                         pmarsh->arrEnd   - pmarsh->signature,
-                         pmarsh->elementStart - pmarsh->signature,
-                         pmarsh->elementEnd   - pmarsh->signature
+                         (unsigned long) (pmarsh->cursor   - pmarsh->signature    ) ,
+                         (unsigned long) (pmarsh->arrStart - pmarsh->signature    ) ,
+                         (unsigned long) (pmarsh->arrEnd   - pmarsh->signature    ) ,
+                         (unsigned long) (pmarsh->elementStart - pmarsh->signature) ,
+                         (unsigned long) (pmarsh->elementEnd   - pmarsh->signature)
            );
 #endif
     DBusMessageIter iter_array;
@@ -2876,11 +2926,12 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
     strncpy(localSignature, start, pmarsh->elementEnd-start+1);
 
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, "     - level=[%zu], localSignature=[%s], anyRop=[%p]=[%s], p->dimensions=[%zu] <-> arrIdx=[%s]\n",
-                            level, localSignature,
+    // fprintf(stderr, "     - level=[%zu], localSignature=[%s], anyRop=[%p]=[%s], p->dimensions=[%zu] <-> arrIdx=[%s]\n",
+    fprintf(stderr, "     - level=[%lu], localSignature=[%s], anyRop=[%p]=[%s], p->dimensions=[%lu] <-> arrIdx=[%s]\n",
+                            (unsigned long) level, localSignature,
                             anyRop,
                             (anyRop==NULL ? "NULL" : pmarsh->context->ObjectToStringValue(anyRop) ),
-                            pmarsh->dimensions,
+                            (unsigned long) pmarsh->dimensions,
                                 ARR_AS_STRING(arrIdx, pmarsh->context)
                             ); fflush(stderr);
    fprintf(stderr, "    marshalArray(...): OPEN container ---> ---> ---> signature=[%s]\n", localSignature);
@@ -2961,8 +3012,9 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
             CSTRING stringValue =pmarsh->context->CString(rso);  // get a CSTRING
 
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, "       ... branch # 1b: level==pmarsh->dimensions, a STRING in hand, size=[%zu], value=[%.64s]!\n",
-                                    stringLength, stringValue);
+    // fprintf(stderr, "       ... branch # 1b: level==pmarsh->dimensions, a STRING in hand, size=[%zu], value=[%.64s]!\n",
+    fprintf(stderr, "       ... branch # 1b: level==pmarsh->dimensions, a STRING in hand, size=[%lu], value=[%.64s]!\n",
+                                    (unsigned long) stringLength, stringValue);
 #endif
 
             if (!dbus_message_iter_append_fixed_array(&iter_array, DBUS_TYPE_BYTE, &stringValue, stringLength ))
@@ -2985,18 +3037,20 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
             size_t neededRexxArgs=GET_NUMBER_OF_REXX_ARGS_FOR_SIGNATURE((char *) localSignature);
 
 #ifdef DEBUG_ARRAY
-        fprintf(stderr, "       ... branch # 2: level==pmarsh->dimensions == [%zu], neededRexxArgs=[%zu]\n",
-                        level, neededRexxArgs);
+        // fprintf(stderr, "       ... branch # 2: level==pmarsh->dimensions == [%zu], neededRexxArgs=[%zu]\n",
+        fprintf(stderr, "       ... branch # 2: level==pmarsh->dimensions == [%lu], neededRexxArgs=[%lu]\n",
+                        (unsigned long) level, (unsigned long) neededRexxArgs);
 #endif
 
                 // process all array items
             size_t items=GET_ARRAY_SIZE_AT_DIMENSION(rao, level, pmarsh->context);
 
 #ifdef DEBUG_ARRAY
-       fprintf(stderr, "       ...ma(...): rao=[%s], has rao-size/items at level=[%zu]/dim|items: [%zu] | arrIdx=[%s]\n",
+       // fprintf(stderr, "       ...ma(...): rao=[%s], has rao-size/items at level=[%zu]/dim|items: [%zu] | arrIdx=[%s]\n",
+       fprintf(stderr, "       ...ma(...): rao=[%s], has rao-size/items at level=[%lu]/dim|items: [%lu] | arrIdx=[%s]\n",
                                      ARR_AS_STRING( rao , pmarsh->context),
-                                     level,
-                                     items,
+                                     (unsigned long) level,
+                                     (unsigned long) items,
                                       ARR_AS_STRING( arrIdx , pmarsh->context)
                                      );
 #endif
@@ -3004,7 +3058,9 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
             for (size_t i=1; i<=items; i++)     // process each array entry, which itself may have a signature
             {
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, "          marshalArray(...): processing array (level=[%zu]) item # i=[%zu]/items=[%zu]\n", level, i, items);
+    // fprintf(stderr, "          marshalArray(...): processing array (level=[%zu]) item # i=[%zu]/items=[%zu]\n", level, i, items);
+    fprintf(stderr, "          marshalArray(...): processing array (level=[%lu]) item # i=[%lu]/items=[%lu]\n",
+                               (unsigned long) level, (unsigned long) i, (unsigned long) items);
 #endif
 
                 localM.cursor=localM.signature;     // reset cursor
@@ -3026,10 +3082,11 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
    fprintf(stderr, "          ... ma(...): rao=[%p]", rao);
    if (rao!=NULL)
    {
-       fprintf(stderr, "          - dims=[%zu], items=[%zu], size=[%zu] \n",
-                     pmarsh->context->ArrayDimension(rao),
-                     pmarsh->context->ArrayItems    (rao),
-                     pmarsh->context->ArraySize     (rao));
+       // fprintf(stderr, "          - dims=[%zu], items=[%zu], size=[%zu] \n",
+       fprintf(stderr, "          - dims=[%lu], items=[%lu], size=[%lu] \n",
+                     (unsigned long) pmarsh->context->ArrayDimension(rao),
+                     (unsigned long) pmarsh->context->ArrayItems    (rao),
+                     (unsigned long) pmarsh->context->ArraySize     (rao));
    }
 #endif
 
@@ -3054,8 +3111,9 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
                     CSTRING stringValue =pmarsh->context->CString(rop);  // get a CSTRING
 
 #ifdef DEBUG_ARRAY
-            fprintf(stderr, "       ... branch # 2:  BYTE-ARRAY / level==pmarsh->dimensions, a STRING in hand, stringLength=[%zu], stringValue=[%.64s]!\n",
-                                            stringLength, stringValue);
+            // fprintf(stderr, "       ... branch # 2:  BYTE-ARRAY / level==pmarsh->dimensions, a STRING in hand, stringLength=[%zu], stringValue=[%.64s]!\n",
+            fprintf(stderr, "       ... branch # 2:  BYTE-ARRAY / level==pmarsh->dimensions, a STRING in hand, stringLength=[%lu], stringValue=[%.64s]!\n",
+                                            (unsigned long) stringLength, stringValue);
         if (pmarsh->context->IsArray(rop))
         {
             fprintf(stderr, "       ... branch # 2b: BYTE-ARRAY / an array in hand, value=[%.64s]!\n",
@@ -3107,8 +3165,13 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
                     if (neededRexxArgs<pmarsh->context->ArraySize(rao))    // too many Rexx arguments ?
                     {
                         char msg[128]="";     // buffer for error message
+#ifdef _MSC_VER     // "%zu" creates runtime errors with "Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 15.00.30729.01 for 80x86"
+                        SNPRINTF( msg, 128, "localSignature [%s] mandates at most [%lu] Rexx arguments, however Rexx supplies too many arguments [%lu]",
+                                             localSignature, (unsigned long) neededRexxArgs, (unsigned long) items);
+#else
                         SNPRINTF( msg, 128, "localSignature [%s] mandates at most [%zu] Rexx arguments, however Rexx supplies too many arguments [%zu]",
                                              localSignature, neededRexxArgs, items);
+#endif
 
                         SNPRINTF(pmarsh->msgChunk256, 256, ": marshalling an ARRAY - %s", msg);
                         pmarsh->rexxError=true;
@@ -3126,9 +3189,10 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
                         RexxObjectPtr currRop=pmarsh->context->ArrayAt(rao, idx);       // get array's entry
 
 #ifdef DEBUG_ARRAY
-        fprintf(stderr, "    marshalArray(...): processing array item # [%zu]/[%zu] | subelement idx=[%zu]/[%zu] single type=[%c], value=[%s] ***\n",
-                                            i, items,
-                                            idx, neededRexxArgs,
+        // fprintf(stderr, "    marshalArray(...): processing array item # [%zu]/[%zu] | subelement idx=[%zu]/[%zu] single type=[%c], value=[%s] ***\n",
+        fprintf(stderr, "    marshalArray(...): processing array item # [%lu]/[%lu] | subelement idx=[%lu]/[%lu] single type=[%c], value=[%s] ***\n",
+                                            (unsigned long) i, (unsigned long) items,
+                                            (unsigned long) idx, (unsigned long) neededRexxArgs,
                                             *localM.cursor,
                                             (currRop!=NULL ? pmarsh->context->ObjectToStringValue(currRop) : NULL)
                                             );
@@ -3151,9 +3215,10 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
                 else
                 {
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, "    marshalArray(...): neededRexxArgs<=1: processing level=[%zu], array item # i=[%zu]/items=[%zu]: single type=[%c]; arrIdx=[%s]: value=[%s] §§§\n",
-                         level,
-                         i, items, *localM.cursor,
+    // fprintf(stderr, "    marshalArray(...): neededRexxArgs<=1: processing level=[%zu], array item # i=[%zu]/items=[%zu]: single type=[%c]; arrIdx=[%s]: value=[%s] §§§\n",
+    fprintf(stderr, "    marshalArray(...): neededRexxArgs<=1: processing level=[%lu], array item # i=[%lu]/items=[%lu]: single type=[%c]; arrIdx=[%s]: value=[%s] §§§\n",
+                         (unsigned long) level,
+                         (unsigned long) i, (unsigned long) items, *localM.cursor,
                          ARR_AS_STRING(arrIdx, pmarsh->context),
                          (rop==NULL ? NULL : pmarsh->context->ObjectToStringValue(rop))
                          );
@@ -3194,7 +3259,9 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
             SET_ARRAY_IDX(arrIdx, level, i, pmarsh->context);
 
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, "    ...ma(...): recursing with level=[%zu] with [%zu] items, arrIdx=[%s]\n",  level, items, ARR_AS_STRING( arrIdx , pmarsh->context));
+    // fprintf(stderr, "    ...ma(...): recursing with level=[%zu] with [%zu] items, arrIdx=[%s]\n",  level, items, ARR_AS_STRING( arrIdx , pmarsh->context));
+    fprintf(stderr, "    ...ma(...): recursing with level=[%lu] with [%lu] items, arrIdx=[%s]\n",
+                            (unsigned long) level, (unsigned long) items, ARR_AS_STRING( arrIdx , pmarsh->context));
 #endif
 
                 // recurse into the next dimension
@@ -3385,8 +3452,13 @@ logical_t marshalStruct(DBusMessageIter *iter, RexxArrayObject rao, PSTRUCT_MARS
     if (neededRexxArgs<items)
     {
         char msg[128]="";     // buffer for error message
+#ifdef _MSC_VER     // "%zu" creates runtime errors with "Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 15.00.30729.01 for 80x86"
+        SNPRINTF( msg, 128, "localSignature [%s] mandates at most [%lu] Rexx arguments, however Rexx supplies too many arguments [%lu]",
+                             localSignature, (unsigned long) neededRexxArgs, (unsigned long) items);
+#else
         SNPRINTF( msg, 128, "localSignature [%s] mandates at most [%zu] Rexx arguments, however Rexx supplies too many arguments [%zu]",
                              localSignature, neededRexxArgs, items);
+#endif
 
         SNPRINTF(pmarsh->msgChunk256, 256, ": marshalling a STRUCT - %s", msg);
         pmarsh->rexxError=true;
@@ -3436,7 +3508,8 @@ logical_t marshalStruct(DBusMessageIter *iter, RexxArrayObject rao, PSTRUCT_MARS
             return false;
         }
 #ifdef DEBUG_STRUCT
-   fprintf(stderr, "     success: done idx=[%zu], localM.cursor=[%s] ...\n", idx, localM.cursor);
+   // fprintf(stderr, "     success: done idx=[%zu], localM.cursor=[%s] ...\n", idx, localM.cursor);
+   fprintf(stderr, "     success: done idx=[%lu], localM.cursor=[%s] ...\n", (unsigned long) idx, localM.cursor);
 #endif
     }
 
@@ -3762,11 +3835,12 @@ RexxArrayObject helperUnmarshalMessageArgs( DBusMessage  *dbusMsg,       // DBUS
     }
 
 #ifdef DEBUG_UNMARSHAL
-    fprintf(stderr, "\n ...  helperUnmarshalMessageArgs(...): unmarshalling SUCCESS, RxResult=[%p], dims=[%zu], items=[%zu], size=[%zu] !\n",
+    // fprintf(stderr, "\n ...  helperUnmarshalMessageArgs(...): unmarshalling SUCCESS, RxResult=[%p], dims=[%zu], items=[%zu], size=[%zu] !\n",
+    fprintf(stderr, "\n ...  helperUnmarshalMessageArgs(...): unmarshalling SUCCESS, RxResult=[%p], dims=[%lu], items=[%lu], size=[%lu] !\n",
                              rxResult,
-                             context->ArrayDimension(rxResult),
-                             context->ArrayItems    (rxResult),
-                             context->ArraySize     (rxResult)
+                             (unsigned long) context->ArrayDimension(rxResult),
+                             (unsigned long) context->ArrayItems    (rxResult),
+                             (unsigned long) context->ArraySize     (rxResult)
 
            );
 
@@ -3775,10 +3849,11 @@ RexxArrayObject helperUnmarshalMessageArgs( DBusMessage  *dbusMsg,       // DBUS
 
     if (context->IsArray(tmpO))
     {
-        fprintf(stderr, ", dims=[%zu], items=[%zu], size=[%zu]",
-                           context->ArrayDimension((RexxArrayObject) tmpO),
-                           context->ArrayItems    ((RexxArrayObject) tmpO),
-                           context->ArraySize     ((RexxArrayObject) tmpO) );
+        // fprintf(stderr, ", dims=[%zu], items=[%zu], size=[%zu]",
+        fprintf(stderr, ", dims=[%lu], items=[%lu], size=[%lu]",
+                           (unsigned long) context->ArrayDimension((RexxArrayObject) tmpO),
+                           (unsigned long) context->ArrayItems    ((RexxArrayObject) tmpO),
+                           (unsigned long) context->ArraySize     ((RexxArrayObject) tmpO) );
     }
     fprintf(stderr, "\n");
     fflush(stderr);
@@ -3810,10 +3885,11 @@ void helperMarshalMessageArgs( DBusMessage      *dbusMsg,       // DBUS message
 
    if (context->IsArray(rexxArgs))
    {
-       fprintf(stderr, "     rexxArgs=[%p], size=[%zu], items=[%zu]\n",
+       // fprintf(stderr, "     rexxArgs=[%p], size=[%zu], items=[%zu]\n",
+       fprintf(stderr, "     rexxArgs=[%p], size=[%lu], items=[%lu]\n",
                           rexxArgs,
-                         (rexxArgs==NULL ? 0 : context->ArraySize(rexxArgs)),
-                         (rexxArgs==NULL ? 0 : context->ArrayItems(rexxArgs))
+                         (unsigned long) (rexxArgs==NULL ? 0 : context->ArraySize(rexxArgs)),
+                         (unsigned long) (rexxArgs==NULL ? 0 : context->ArrayItems(rexxArgs))
               );
    }
    else
@@ -3859,9 +3935,10 @@ void helperMarshalMessageArgs( DBusMessage      *dbusMsg,       // DBUS message
         RexxObjectPtr rop=context->ArrayAt(rexxArgs,rai);   // can return Nil(), but also NULL|NULLOBJECT
 
 #ifdef DEBUG_FUNCTIONS
-    fprintf(stderr, " ...  helperMarshalMessageArgs(...):  rai=%zu/%zu, typeCode=[%c], rop=[%p]=[%s]\n",
-                           rai,
-                           neededNumberOfRexxArgs,
+    // fprintf(stderr, " ...  helperMarshalMessageArgs(...):  rai=%zu/%zu, typeCode=[%c], rop=[%p]=[%s]\n",
+            fprintf(stderr, " ...  helperMarshalMessageArgs(...):  rai=%lu/%lu, typeCode=[%c], rop=[%p]=[%s]\n",
+                           (unsigned long) rai,
+                           (unsigned long) neededNumberOfRexxArgs,
                            typeCode,
                            rop,
                            (rop==NULL ? NULL : context->ObjectToStringValue(rop))
@@ -3872,13 +3949,24 @@ void helperMarshalMessageArgs( DBusMessage      *dbusMsg,       // DBUS message
         if (!marshal(iter, typeCode, rop, &marsh))   // an error has occurred !
         {
             char      msgChunk2[512]="";
-            SNPRINTF(msgChunk2, 512, "Rexx message argument # [%zu], typeCode=[%c]%s / error position (1-based): [%ld] in full signature: [%s]",
+
+#ifdef _MSC_VER     // "%zu" creates runtime errors with "Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 15.00.30729.01 for 80x86"
+            SNPRINTF(msgChunk2, 512, "Rexx message argument # [%lu], typeCode=[%c]%s / error position (1-based): [%ld] in full signature: [%s] (maybe typeCode not supported on platform?)",
+                                      (unsigned long) rai,
+                                      typeCode,
+                                      msgChunk,
+                                      (long int) (marsh.errorPosInSignature-marsh.signature+1),
+                                      marsh.signature
+                                      );
+#else
+            SNPRINTF(msgChunk2, 512, "Rexx message argument # [%zu], typeCode=[%c]%s / error position (1-based): [%ld] in full signature: [%s] (maybe typeCode not supported on platform?)",
                                       rai,
                                       typeCode,
                                       msgChunk,
                                       (long int) (marsh.errorPosInSignature-marsh.signature+1),
                                       marsh.signature
                                       );
+#endif
 
             char      msgChunk3[1024]="";
             SNPRINTF( msgChunk3, 1024, errorConditionText, DLLNAME, msgChunk2);
@@ -4032,7 +4120,8 @@ RexxMethod2(RexxObjectPtr, DbusMessageLoop, CSELF, connPtr, OSELF, self)
 #ifdef DEBUG_MESSAGELOOP
         if (++count>=limit)
         {
-            fprintf(stderr, "... MessageLoop(): looped [%zu] times...\n", limit); fflush(stderr);
+            // fprintf(stderr, "... MessageLoop(): looped [%zu] times...\n", limit); fflush(stderr);
+            fprintf(stderr, "... MessageLoop(): looped [%lu] times...\n", (unsigned long) limit); fflush(stderr);
             count=0;
         }
 #endif
@@ -5003,14 +5092,22 @@ RexxMethod6(RexxObjectPtr, DbusBusSignalMessage, CSTRING,         senderObjectPa
     size_t sigLen=strlen(signature);
 
 #if defined (DEBUG_METHODS)
-   fprintf(stderr, "===> arrived in DbusBusSignalMessage: rao=[%p], items=[%zu], signature=[%s]\n", rexxArgs, items, signature);fflush(stderr);
+   // fprintf(stderr, "===> arrived in DbusBusSignalMessage: rao=[%p], items=[%zu], signature=[%s]\n", rexxArgs, items, signature);fflush(stderr);
+   fprintf(stderr, "===> arrived in DbusBusSignalMessage: rao=[%p], items=[%lu], signature=[%s]\n", rexxArgs, (unsigned long) items, signature);fflush(stderr);
 #endif
 
     if (items>255)      // at most 256 arguments, because signature string can't be any longer
     {
         char msg[1024]="";     // buffer for error message
+
+#ifdef _MSC_VER     // "%zu" creates runtime errors with "Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 15.00.30729.01 for 80x86"
+        SNPRINTF( msg, 1024, "%.16s/method/DbusBusSignalMessage(), error 1: too many Rexx message arguments supplied (%lu), exceeds maximum possible signature size of 255 bytes)",
+                             DLLNAME, (unsigned long) items);
+#else
         SNPRINTF( msg, 1024, "%.16s/method/DbusBusSignalMessage(), error 1: too many Rexx message arguments supplied (%zu), exceeds maximum possible signature size of 255 bytes)",
                              DLLNAME, items);
+#endif
+
          // raise exception
         context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
         return NULLOBJECT;
@@ -5051,8 +5148,14 @@ RexxMethod6(RexxObjectPtr, DbusBusSignalMessage, CSTRING,         senderObjectPa
     if (neededRexxArgs<items)
     {
         char msg[1024]="";     // buffer for error message
+#ifdef _MSC_VER     // "%zu" creates runtime errors with "Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 15.00.30729.01 for 80x86"
+        SNPRINTF( msg, 1024, "%.16s/method/DbusBusSignalMessage(), error 4: signature [%s] mandates at most [%lu] Rexx arguments, however Rexx supplies too many arguments [%lu]",
+                             DLLNAME, signature, (unsigned long) neededRexxArgs, (unsigned long) items);
+#else
         SNPRINTF( msg, 1024, "%.16s/method/DbusBusSignalMessage(), error 4: signature [%s] mandates at most [%zu] Rexx arguments, however Rexx supplies too many arguments [%zu]",
                              DLLNAME, signature, neededRexxArgs, items);
+#endif
+
          // raise exception
         context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
         return NULLOBJECT;
@@ -5160,7 +5263,8 @@ RexxMethod8(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
     size_t argSignatureLength=strlen(argSignature);
 
 #if defined (DEBUG_METHODS)
-   fprintf(stderr, "===> arrived in DbusBusCallMessage: rao=[%p], items=[%zu], argSignature=[%s] | replySignature=[%s]\n", rexxArgs, items, argSignature, replySignature);
+   // fprintf(stderr, "===> arrived in DbusBusCallMessage: rao=[%p], items=[%zu], argSignature=[%s] | replySignature=[%s]\n", rexxArgs, items, argSignature, replySignature);
+   fprintf(stderr, "===> arrived in DbusBusCallMessage: rao=[%p], items=[%lu], argSignature=[%s] | replySignature=[%s]\n", rexxArgs, (unsigned long) items, argSignature, replySignature);
    fprintf(stderr, "===>                                ... busName=[%s], targetObjectPath=[%s], callInterfaceName=[%s], callMemberName=[%s]\n",
                          busName, targetObjectPath, callInterfaceName, callMemberName);
 
@@ -5170,8 +5274,14 @@ RexxMethod8(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
     if (items>255)      // at most 256 arguments, because signature string can't be any longer
     {
         char msg[1024]="";     // buffer for error message
+#ifdef _MSC_VER     // "%zu" creates runtime errors with "Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 15.00.30729.01 for 80x86"
+        SNPRINTF( msg, 1024, "%.16s/method/DbusBusCallMessage(), error 1: too many Rexx message arguments supplied (%lu), exceeds maximum possible argSignature size of 255 bytes)",
+                             DLLNAME, (unsigned long) items);
+#else
         SNPRINTF( msg, 1024, "%.16s/method/DbusBusCallMessage(), error 1: too many Rexx message arguments supplied (%zu), exceeds maximum possible argSignature size of 255 bytes)",
                              DLLNAME, items);
+#endif
+
          // raise exception
         context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
         return NULLOBJECT;
@@ -5231,8 +5341,14 @@ RexxMethod8(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
     if (neededRexxArgs<items)
     {
         char msg[1024]="";     // buffer for error message
+
+#ifdef _MSC_VER     // "%zu" creates runtime errors with "Microsoft (R) 32-bit C/C++ Optimizing Compiler Version 15.00.30729.01 for 80x86"
+        SNPRINTF( msg, 1024, "%.16s/method/DbusBusCallMessage(), error 5: argSignature [%s] mandates at most [%lu] Rexx arguments, however Rexx supplies too many arguments [%lu]",
+                             DLLNAME, argSignature, (unsigned long) neededRexxArgs, (unsigned long) items);
+#else
         SNPRINTF( msg, 1024, "%.16s/method/DbusBusCallMessage(), error 5: argSignature [%s] mandates at most [%zu] Rexx arguments, however Rexx supplies too many arguments [%zu]",
                              DLLNAME, argSignature, neededRexxArgs, items);
+#endif
          // raise exception
         context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
         return NULLOBJECT;
@@ -5870,9 +5986,10 @@ RexxMethod3(RexxObjectPtr, DbusServerTimeoutLoop, RexxObjectPtr, timeoutDataPoin
 #if defined (DEBUG_TIMEOUTLOOP)
         if (counter % 10000 == 1)
         {
-            fprintf(stderr, "... TimeoutLoop(): after timeout, res=[%d], counter=[%zu], timeout_ms=[%d] timeout enabled=[%d]  \n",
+            // fprintf(stderr, "... TimeoutLoop(): after timeout, res=[%d], counter=[%zu], timeout_ms=[%d] timeout enabled=[%d]  \n",
+            fprintf(stderr, "... TimeoutLoop(): after timeout, res=[%d], counter=[%lu], timeout_ms=[%d] timeout enabled=[%d]  \n",
                              res,
-                             counter,
+                             (unsigned long) counter,
                              dbus_timeout_get_interval(pto->timeout),
                              dbus_timeout_get_enabled(pto->timeout) );
         }
@@ -5882,7 +5999,10 @@ RexxMethod3(RexxObjectPtr, DbusServerTimeoutLoop, RexxObjectPtr, timeoutDataPoin
         {
 #if defined (DEBUG_TIMEOUTLOOP)
     if (counter % 1000 == 1)        // every second
-        fprintf(stderr, "... TimeoutLoop(): after timeout, branch 'enabled', counter=[%zu], about to call 'dbus_timeout_handle()' ... \n",counter);
+    {
+    //    fprintf(stderr, "... TimeoutLoop(): after timeout, branch 'enabled', counter=[%zu], about to call 'dbus_timeout_handle()' ... \n",counter);
+    fprintf(stderr, "... TimeoutLoop(): after timeout, branch 'enabled', counter=[%lu], about to call 'dbus_timeout_handle()' ... \n", (unsigned long) counter);
+    }
 #endif
             dbus_timeout_handle(pto->timeout);  // let DBus act ...
         }
