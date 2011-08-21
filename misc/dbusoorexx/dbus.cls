@@ -14,6 +14,7 @@
       cf.:        dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
 
       version:    099.20110817
+
       changes:    - 2011-07-20, rgf; DBusProxyObject:
                     - added proxy.dispatch(methodName[,args...])-method to send messages that
                       would be otherwise executed on the Rexx side, ie. all of .Object's methods
@@ -54,6 +55,9 @@
                        not required
                   - 2011-08-17, rgf
                      - re-activated "watchConnections" method, this time employing "dbus_connection_get_is_connected(conn)" instead
+                  - 2011-08-18, rgf
+                     - define attribute 'sendEmptyReply' on DBus, default: .true; if .true, then a method
+                       call to a Rexx server object will reply, even if no return values are defined for it
 
 
       license:    Apache License 2.0
@@ -82,7 +86,7 @@
 */
 .local~dbus.dir=.directory~new
 
-.dbus.dir~version="099.20110817"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
+.dbus.dir~version="099.20110818"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
 
 .dbus.dir~DBUS_SERVICE_DBUS            ="org.freedesktop.DBus"    -- "The bus name used to talk to the bus itself."
 .dbus.dir~DBUS_PATH_DBUS               ="/org/freedesktop/DBus"   -- "The object path used to talk to the bus itself."
@@ -254,6 +258,21 @@ syntax: raise propagate    -- raise in caller
                   'address', 'uniqueBusName' and 'wellKnownBusName', if given
 */
 
+/* controls whether a received message call without defined return value will return an empty message reply */
+::attribute sendEmptyReply    get
+::attribute sendEmptyReply    set       -- default: .true (append slotDir as last argument)
+  expose sendEmptyReply
+  use strict arg argSendEmptyReply=.true
+
+  signal on syntax
+  if \datatype(argSendEmptyReply, "O") then
+     raise syntax 88.900 array ('Argument "argSendEmptyReply" must be a logical value, found "'argSendEmptyReply'"')
+
+  sendEmptyReply=argSendEmptyReply
+  return
+syntax:
+  raise propagate
+
    /* attribute controls whether the arguments from a signal or a remote method call get
       appended with a slotDir-directory supplying possibly useful information about the
       DBUS message; default: .true
@@ -314,7 +333,7 @@ syntax:
   expose cself busType makeSlotDir makeReplySlotDir active -
          internalRegisteredServiceObjects internalSignalListeners -
          unmarshalByteArrayAsString -
-         collectStatistics statistics server
+         collectStatistics statistics server sendEmptyReply
 
   cself=.nil                  /* will be set by a native method   */
   busType=.nil                /* will be set by native method     */
@@ -327,6 +346,8 @@ syntax:
   internalRegisteredServiceObjects=.directory~new
   internalSignalListeners         =.array~new
   unmarshalByteArrayAsString      =.false /* if .true, then return 'ay' as strings */
+
+  sendEmptyReply                  =.true  /* if .true, then sends an empty reply upon a message call */
 
   collectStatistics               =.true  /* if .true, simple statistics are gathered and stored in 'statistics' */
   statistics                      =.directory~new
@@ -1711,7 +1732,7 @@ syntax:
 ::attribute defaultListener            -- default Rexx listener object, used, if internalSignalListeners is empty
 ::attribute connections get            -- list of established connections
   expose connections
-  return connections~copy              -- return a copy of the connections
+  return connections~copy              -- return a copy of the current connections
 
 ::attribute watchLoopActive  get       -- indicates whether the server message loop is active or not
 
@@ -1764,7 +1785,7 @@ syntax:
 
 -- say "..." self"::disconnect, 'conn'="pp2(conn)
   conn~messageLoop("stop")             -- stop the connection's message loop
-  res=connections~removeItem(conn)     -- remove the disconnected connection to the client
+  res=connections~removeItem(conn)     -- remove the disconnected connection from the client
   conn~close                           -- make sure we cannot use it anymore (it wouldn't work)
 
 
@@ -1778,9 +1799,9 @@ syntax:
 
   -- return self~nativeServerID
 -- say "address:" pp2(address) "cself="pp2(cself)
-  self~nativeServerStartup(address)
+  self~nativeServerStartup(address) -- create server listening on given address
 
-  reply                             -- create new thread
+  reply                             -- create a new thread
   self~nativeStartServerWatchLoop   -- start the server message loop on the new thread
 
 
@@ -1838,7 +1859,7 @@ syntax:
 
    -- now fetch RexxPointer value
   use strict arg action, timeoutDataPointer
-say "... timeoutDataPointer:" pp2(timeoutDataPointer) copies("<-/\",10)
+-- say "... timeoutDataPointer:" pp2(timeoutDataPointer) copies("<-/\",10)
   reply                                -- create a new thread
   self~nativeStartServerTimeoutLoop(timeoutDataPointer)  -- start the timeout loop, pass (*data) via Rexx to native function
 

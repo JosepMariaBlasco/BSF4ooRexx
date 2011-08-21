@@ -55,11 +55,18 @@ conn=.dbus~new(busType) -- get a connection
 
 address1="unix:path=/tmp/dbus-test"
 address2="tcp:host=localhost,port=23000,family=ipv4;" -- socket lingers after shutdown
+address3="unix:path=/tmp/dbus-test;tcp:host=localhost,port=23000,family=ipv4;"
 
 -- address1="unix:path=/tmp/dbus-test-oopsla"
 -- address1="tcp:host=localhost,port=23001,family=ipv4;" -- socket lingers after shutdown
-address=address1
--- address=address2
+-- address=address1
+
+parse arg otherAddress .
+if otherAddress<>"" then
+   address=otherAddress
+else
+   address=address3
+
 say "creating a connection to the" pp2(busType) "message bus..."
 say "creating a connection to" pp2(address) "message bus..."
 conn=.dbus~new(address) -- get a connection

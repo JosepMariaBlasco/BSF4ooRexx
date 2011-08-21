@@ -22,8 +22,10 @@
                                  - added ability to force stopping all Rexx threads HALT_ALL_REXX_THREADS()
                 2011-08-04, rgf: - added statistics support
                 2011-08-07, rgf: - finalized private/standalone dbus ability
+                2011-08-17, rgf: - rename variable 'interface' to 'interfaceName' as the MSCPP-compiler reserves 'interface'
+                2011-08-18, rgf: - send empty reply messages by default, unless DBus' attribute 'sendEmptyReply' is not .true
 
-    version:    099.20110817
+    version:    099.20110818
     license:      Apache License 2.0
 
 ------------------------ Apache Version 2.0 license -------------------------
@@ -48,11 +50,24 @@
 extern "C" {            // make sure no C++ name mangling comes into the way
 #endif
 
+#ifdef _MSC_VER
+   #pragma comment(lib, "dbus-1.lib")  // as per the hint of Pontus Carlsson in an e-mail from 2011-08-19
+#endif
+
 #define DBUS_API_SUBJECT_TO_CHANGE
 #include <dbus/dbus.h>
 
-#include <stdbool.h>
-#include <unistd.h>
+#ifndef DBUS_TYPE_UNIX_FD       // e.g. not defined for Windows
+    #define DBUS_TYPE_UNIX_FD      ((int) 'h')
+#endif
+
+#ifndef DBUS_VERSION_STRING     // on Windows an older version of dbus has not defined it yet
+    #define DBUS_VERSION_STRING  "<n/a>"
+#endif
+
+//   #include <stdbool.h>
+//   #include <unistd.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -75,11 +90,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 #ifdef DBUSOOREXX_32
-    #define DBUS_REXXVERSION    "099.20110817 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110818 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (DBUSOOREXX_64)
-    #define DBUS_REXXVERSION    "099.20110817 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110818 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define DBUS_REXXVERSION    "099.20110817 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110818 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #ifndef TID
@@ -114,9 +129,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 // #define DEBUG_DICT_2
 #define DEBUG_VARIANT
 #define DEBUG_VARIANT_2
-
 #define DEBUG_MESSAGELOOP
-
 #define DEBUG_FUNCTIONS
 #define DEBUG_METHODS
 
@@ -4051,21 +4064,27 @@ fprintf(stderr, "--- --- --- bClientForPrivateRexxServer=[%d]\n", bClientForPriv
 
     CSTRING tmpInterface=dbus_message_get_interface(dbusMsg);
     CSTRING tmpMember=dbus_message_get_member(dbusMsg);
+/*
     if (   tmpInterface!=NULL && tmpMember!= NULL
         && !strncmp("org.freedesktop.DBus.Local", tmpInterface, 26) // a client on a private server is disconnected
         && !strncmp("Disconnected",         tmpMember,    12)
     )
+*/
 
+    if (msgType==DBUS_MESSAGE_TYPE_SIGNAL)
     {
-fprintf(stderr, "---- BINGO BINGO - DISCONNECT received: interface=[%s], member=[%s]\n",
-                dbus_message_get_interface(dbusMsg), dbus_message_get_member(dbusMsg));
-        // TODO: send message "disconnect" to server object supplying the connection object as argument
+        if (dbus_message_is_signal(dbusMsg,DBUS_INTERFACE_LOCAL,"Disconnected") )
+        {
+            fprintf(stderr, "----> SIGNAL-RECEIVED: BINGO BINGO - DISCONNECT received: interface=[%s], member=[%s]\n",
+                    dbus_message_get_interface(dbusMsg), dbus_message_get_member(dbusMsg));
+        }
+        else
+        {
+            fprintf(stderr, "----> SIGNAL-RECEIVED:  interface=[%s], member=[%s]\n",
+                    dbus_message_get_interface(dbusMsg), dbus_message_get_member(dbusMsg));
+        }
     }
-    else
-    {
-        fprintf(stderr, "----- ----- ----- - DISCONNECT not received: interface=[%s], member=[%s]\n",
-                dbus_message_get_interface(dbusMsg), dbus_message_get_member(dbusMsg));
-    }
+
 // <----
 #endif
 
@@ -4167,18 +4186,18 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
 
             // unmarshal arguments
         RexxArrayObject arrArgs=NULL;
-        {
-            arrArgs=helperUnmarshalMessageArgs(dbusMsg,
-                           context->threadContext,
-                           (context->GetObjectVariable("UNMARSHALBYTEARRAYASSTRING")==context->True()),
-                           "%.16s/method/DbusMessageLoop(), error 99: %s"    // base condition message
-                          );
+        // {
+        arrArgs=helperUnmarshalMessageArgs(dbusMsg,
+                       context->threadContext,
+                       (context->GetObjectVariable("UNMARSHALBYTEARRAYASSTRING")==context->True()),
+                       "%.16s/method/DbusMessageLoop(), error 99: %s"    // base condition message
+                      );
 
-            if (arrArgs==NULL)  // make sure we have at least an empty array
-            {
-                arrArgs=context->NewArray(0);
-            }
+        if (arrArgs==NULL)  // make sure we have at least an empty array
+        {
+            arrArgs=context->NewArray(0);
         }
+        // }
 
         if (bMakeSlotDir && slotDir!=NULL)
         {
@@ -4186,9 +4205,9 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
         }
 
             // get Interface and Member
-        CSTRING interface=dbus_message_get_interface(dbusMsg);
+        CSTRING interfaceName=dbus_message_get_interface(dbusMsg);
 
-        RexxStringObject rxInterface=( interface==NULL ? context->NullString() : context->String(interface) ) ;
+        RexxStringObject rxInterface=( interfaceName==NULL ? context->NullString() : context->String(interfaceName) ) ;
 
         CSTRING member   =dbus_message_get_member(dbusMsg);
         RexxStringObject rxMember= (member==NULL ? context->NullString() : context->String(member));
@@ -4264,13 +4283,16 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                 // message to the server supplying this connection as an argument
             if (bClientForPrivateRexxServer)
             {
+/*
                 if (   interface!=NULL && member!= NULL
                     && !strncmp("org.freedesktop.DBus.Local", interface, 26) // a client on a private server is disconnected
                     && !strncmp("Disconnected",               member,    12)
                 )
+*/
+                if (dbus_message_is_signal(dbusMsg,DBUS_INTERFACE_LOCAL,"Disconnected") )
                 {
 #if defined (DEBUG_RGF)     // debug private server connection to client
-    fprintf(stderr, "---- BINGO BINGO #2 - DISCONNECT received: interface=[%s], member=[%s]\n",interface, member);
+    fprintf(stderr, "---- BINGO BINGO #2 - DISCONNECT received: interfaceName=[%s], member=[%s]\n",interfaceName, member);
 #endif
                         // send DISCONNECT message to server, supplying this connection instance as an argument
                     context->SendMessage1(context->SendMessage0(self, "SERVER"), "DISCONNECT", self);
@@ -4307,10 +4329,10 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
     fprintf(stderr, "    ... message is a CALL, service object for object path [%s] does not exist! \n", objectPath); fflush(stderr);
 #endif
                 char errMsg[512]="";
-                SNPRINTF(errMsg, 512, "Rexx service object [%s] does not exist (you intended to invoke member=[%s] in the interface=[%s]",
+                SNPRINTF(errMsg, 512, "Rexx service object [%s] does not exist (you intended to invoke member=[%s] in the interfaceName=[%s]",
                                       objectPath,
                                       member,
-                                      interface);
+                                      interfaceName);
 
                 DBusMessage *errReply=dbus_message_new_error(dbusMsg,
                                             "org.freedesktop.DBus.Error.ServiceUnknown",
@@ -4320,7 +4342,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                 // send the reply && flush the connection
                 if (!dbus_connection_send(conn, errReply, &serial))
                 {
-                   fprintf(stderr, "%s: out of memory while sending DBUS error return message!\n", DLLNAME);
+                   fprintf(stderr, "%s/DbusMessageLoop: out of memory while sending DBUS error return message!\n", DLLNAME);
                 }
                 dbus_connection_flush(conn);
 
@@ -4381,14 +4403,49 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                 if (dbus_message_get_no_reply(dbusMsg)) // dispatch via separate thread, we don't care about Rexx conditions there ...
                 {
 #ifdef DEBUG_MESSAGELOOP
-    fprintf(stderr, "\n    ... message is a CALL, 1 - sending message [%s] (interface=[%s]) to service object for [%s] ASYNCHRONEOUSLY (no reply expected) ... \n", member, interface, objectPath); fflush(stderr);
+    fprintf(stderr, "\n    ... message is a CALL, 1 - sending message [%s] (interfaceName=[%s]) to service object for [%s] ASYNCHRONEOUSLY (no reply expected) ... \n", member, interfaceName, objectPath); fflush(stderr);
 #endif
                     context->SendMessage(rop, "STARTWITH", arr2);
+
+                    // send an empty reply-message, controlled by connection's attribute 'sendEmptyReply'
+                    if (context->GetObjectVariable("SENDEMPTYREPLY")==rxTrue)
+                    {
+#ifdef DEBUG_MESSAGELOOP
+    fprintf(stderr, "\n    ... message is a CALL, 1 - return EMPTY REPLY for message [%s] (interfaceName=[%s]) to service object for [%s] ASYNCHRONEOUSLY (controlled by attribute \"sendEmptyReply\") ... \n", member, interfaceName, objectPath); fflush(stderr);
+#endif
+                        DBusMessage *returnMsg=dbus_message_new_method_return(dbusMsg);
+                        dbus_uint32_t serial = 0;
+                        if (!dbus_connection_send(conn, returnMsg, &serial))
+                        {
+                           fprintf(stderr, "%s/DbusMessageLoop: out of memory while sending DBUS return message!\n", DLLNAME);
+                        }
+                        dbus_connection_flush(conn);
+
+                        if (bCollectStatistics) // allows us to guard on only, if statistics should be collected !
+                        {
+                            context->SetGuardOn();          // update statistics on call method
+                            RexxDirectoryObject rdo=(RexxDirectoryObject) context->GetObjectVariable("STATISTICS");
+                            RexxDirectoryObject slotDir=context->NewDirectory();
+                            helperCreateSlotDirEntries(context->threadContext, slotDir, returnMsg);   // setup slotDir
+
+                            CSTRING sentKind ="SENT";
+                            CSTRING kind     ="LASTSENTMESSAGE";
+                            CSTRING countKind="COUNTSENTMESSAGES";
+                            context->DirectoryPut(rdo,slotDir,kind);     // make error messages slotDir available
+                            context->DirectoryPut(rdo,context->DirectoryAt(slotDir,"DATETIME"),sentKind);   // adjust "RECEIVED" datetime-stamp
+                                // increase kind's count
+                            RexxObjectPtr count=context->DirectoryAt(rdo,countKind);
+                            count=context->SendMessage1(count, "+", context->Int32ToObject(1));
+                            context->DirectoryPut(rdo,count,countKind);
+                            context->SetGuardOff();
+                        }
+                        dbus_message_unref(returnMsg);
+                    }
                 }
                 else                                    // dispatch synchroneously
                 {
 #ifdef DEBUG_MESSAGELOOP
-    fprintf(stderr, "\n    ... message is a CALL, 2 - about to send message [%s] (interface=[%s]) to service object for [%s] ... \n", member, interface, objectPath); fflush(stderr);
+    fprintf(stderr, "\n    ... message is a CALL, 2 - about to send message [%s] (interfaceName=[%s]) to service object for [%s] ... \n", member, interfaceName, objectPath); fflush(stderr);
 #endif
 
                     rxResult=context->SendMessage(rop, "SENDWITH", arr2);
@@ -4396,7 +4453,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                     if (context->CheckCondition())      // oops a Rexx condition got raised
                     {
 #ifdef DEBUG_MESSAGELOOP
-    fprintf(stderr, "    ... message is a CALL, 2a - message [%s] (interface=[%s]) to service object for [%s], caused a Rexx CONDITION :-( ... \n", member, interface, objectPath); fflush(stderr);
+    fprintf(stderr, "    ... message is a CALL, 2a - message [%s] (interfaceName=[%s]) to service object for [%s], caused a Rexx CONDITION :-( ... \n", member, interfaceName, objectPath); fflush(stderr);
 #endif
 
                         RexxDirectoryObject condObj=context->GetConditionInfo();  // condition object !
@@ -4447,10 +4504,10 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                         else    // an unexpected Rexx error has occurred, communicate it to the client
                         {
                             char errMsg[512]="";
-                            SNPRINTF(errMsg, 512, "Rexx service object [%s] running method=[%s] in the interface=[%s] raised a Rexx condition",
+                            SNPRINTF(errMsg, 512, "Rexx service object [%s] running method=[%s] in the interfaceName=[%s] raised a Rexx condition",
                                                   objectPath,
                                                   member,
-                                                  interface);
+                                                  interfaceName);
 
                              char *rexxLikeErrorMsg=RgfCreateRexxlikeErrorInfo (context->threadContext, condObj, errMsg);
 
@@ -4465,7 +4522,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                              // send the error reply && flush the connection
                          if (!dbus_connection_send(conn, errReply, &serial))
                          {
-                            fprintf(stderr, "%s: out of memory while sending DBUS error return message!\n", DLLNAME);
+                            fprintf(stderr, "%s/DbusMessageLoop: out of memory while sending DBUS error return message!\n", DLLNAME);
                          }
                          dbus_connection_flush(conn);
 
@@ -4509,13 +4566,13 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                     else if (rxResult==NULLOBJECT) //  || rxResult==rxNil)   // no return value, do not reply
                     {
 #ifdef DEBUG_MESSAGELOOP
-    fprintf(stderr, "    ... message is a CALL, 2b - message [%s] (interface=[%s]) to service object for [%s], no condition, no return value, PROBLEM as caller expects one! :( \n", member, interface, objectPath); fflush(stderr);
+    fprintf(stderr, "    ... message is a CALL, 2b - message [%s] (interfaceName=[%s]) to service object for [%s], no condition, no return value, PROBLEM as caller expects one! :( \n", member, interfaceName, objectPath); fflush(stderr);
 #endif
                         char errMsg[512]="";
-                        SNPRINTF(errMsg, 512, "Rexx service object [%s] running method=[%s] in the interface=[%s] did not return a value, although client expects one",
+                        SNPRINTF(errMsg, 512, "Rexx service object [%s] running method=[%s] in the interfaceName=[%s] did not return a value, although client expects one",
                                               objectPath,
                                               member,
-                                              (interface==NULL ? "" : interface)
+                                              (interfaceName==NULL ? "" : interfaceName)
                                               );
 
                          DBusMessage *errReply=dbus_message_new_error(dbusMsg,
@@ -4526,7 +4583,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                              // send the error reply && flush the connection
                          if (!dbus_connection_send(conn, errReply, &serial))
                          {
-                            fprintf(stderr, "%s: out of memory while sending DBUS error return message!\n", DLLNAME);
+                            fprintf(stderr, "%s/DbusMessageLoop: out of memory while sending DBUS error return message!\n", DLLNAME);
                          }
                          dbus_connection_flush(conn);
 
@@ -4561,7 +4618,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                     {
 
 #ifdef DEBUG_MESSAGELOOP
-    fprintf(stderr, "    ... message is a CALL, 3 - message [%s] (interface=[%s]) to service object for [%s], no condition, a return value to be processed! :( \n", member, interface, objectPath); fflush(stderr);
+    fprintf(stderr, "    ... message is a CALL, 3 - message [%s] (interfaceName=[%s]) to service object for [%s], no condition, a return value to be processed! :( \n", member, interfaceName, objectPath); fflush(stderr);
 
     fprintf(stderr, "    ... message is a CALL, 3i - rxResult=[%p], rxResult~class=[%s], if array, arr[1]=[%s], arr[2]=[%s]\n",
                              rxResult,
@@ -4601,7 +4658,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                             // this branch expects .array~of("replySignature=x", returnValueMatchingSignature)
 
 #ifdef DEBUG_MESSAGELOOP
-    fprintf(stderr, "    ... message is a CALL, IsArray(rxResult): message [%s] (interface=[%s]) to service object for [%s], no condition, returned an array object ... \n", member, interface, objectPath); fflush(stderr);
+    fprintf(stderr, "    ... message is a CALL, IsArray(rxResult): message [%s] (interfaceName=[%s]) to service object for [%s], no condition, returned an array object ... \n", member, interfaceName, objectPath); fflush(stderr);
 #endif
                             dimension=context->ArrayDimension((RexxArrayObject) rxResult);
 
@@ -4637,7 +4694,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                                             // use second element of returned array object as return value matching the signature
 
 #ifdef DEBUG_MESSAGELOOP
-    fprintf(stderr, "    ... message is a CALL, message [%s] (interface=[%s]) to service object for [%s] | signature=[%s] -> BINGO-SUPER-BINGO ! \n", member, interface, objectPath, signature); fflush(stderr);
+    fprintf(stderr, "    ... message is a CALL, message [%s] (interfaceName=[%s]) to service object for [%s] | signature=[%s] -> BINGO-SUPER-BINGO ! \n", member, interfaceName, objectPath, signature); fflush(stderr);
 #endif
 
                                             // create new array with array arguments
@@ -4688,11 +4745,11 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                             else if (rso!=context->Nil() && rso!=NULL)
                             {
 #ifdef DEBUG_MESSAGELOOP
-    fprintf(stderr, "    ... message is a CALL, 3a - DBusServiceObject-branch, rso=[%p]=[%s], CheckCondition=[%d] - message [%s] (interface=[%s]) to service object for [%s], no condition, a return value to be processed! :( \n",
+    fprintf(stderr, "    ... message is a CALL, 3a - DBusServiceObject-branch, rso=[%p]=[%s], CheckCondition=[%d] - message [%s] (interfaceName=[%s]) to service object for [%s], no condition, a return value to be processed! :( \n",
                                      rso,
                                      (rso==NULL ? NULL : context->ObjectToStringValue(rso)),
                                      (int) context->CheckCondition(),
-                                     member, interface, objectPath); fflush(stderr);
+                                     member, interfaceName, objectPath); fflush(stderr);
 #endif
 
                                 // get and check signature
@@ -4758,7 +4815,7 @@ else
                         if (!*signature)    // signature not yet set, hence encode all elements as strings
                         {
 #ifdef DEBUG_MESSAGELOOP
-    fprintf(stderr, "    ... message is a CALL, message [%s] (interface=[%s]) to service object for [%s], no explicit return signature given ... \n", member, interface, objectPath); fflush(stderr);
+    fprintf(stderr, "    ... message is a CALL, message [%s] (interfaceName=[%s]) to service object for [%s], no explicit return signature given ... \n", member, interfaceName, objectPath); fflush(stderr);
 #endif
                             if (dimension>0 && dimension<254)       // an array in hand, return it as a*s
                             {
@@ -4799,7 +4856,7 @@ else
                         }
 
 #ifdef DEBUG_MESSAGELOOP
-    fprintf(stderr, "    ... message is a CALL, message [%s] (interface=[%s]) to service object for [%s], MARSHALLING return value with signature [%s] ...\n", member, interface, objectPath, signature); fflush(stderr);
+    fprintf(stderr, "    ... message is a CALL, message [%s] (interfaceName=[%s]) to service object for [%s], MARSHALLING return value with signature [%s] ...\n", member, interfaceName, objectPath, signature); fflush(stderr);
 #endif
                                 // now marshal return value in rxResult with the given signature
                                 // let the helper function do the work (and raise an error, if necessary)
@@ -4839,7 +4896,7 @@ else
                         {
                             // if bRexxCondition is set, then the RexxCondition() is not cleared and will cause the respective condition in Rexx to be raised upon return
 
-                            if(bMarshallingError==true)   // create error message to inform caller that something went wrong in marshalling the return value !
+                            if(bMarshallingError) // ==true)   // create error message to inform caller that something went wrong in marshalling the return value !
                             {
                                 char errMsg[512]="";
                                 SNPRINTF(errMsg, 512, "Rexx service object [%s] supplied a return value that could not be marshalled with signature [%s]",
@@ -4891,13 +4948,13 @@ else
                                 char msg[1024]="";     // buffer for error message
 
                                     /* raise exception */
-                                SNPRINTF( msg, 1024, "%.16s/DbusMessageLoop, panic! Unexpected marshalling error for return value [%.64s] with signature [%.256s] by service object [%s] after returning from Rexx method [%s] (interface=[%s])",
+                                SNPRINTF( msg, 1024, "%.16s/DbusMessageLoop, panic! Unexpected marshalling error for return value [%.64s] with signature [%.256s] by service object [%s] after returning from Rexx method [%s] (interfaceName=[%s])",
                                                  DLLNAME,
                                                  context->ObjectToStringValue(rxResult),
                                                  signature,
                                                  objectPath,
                                                  member,
-                                                 interface
+                                                 interfaceName
                                                  );
 
                                 context->SetObjectVariable("active", context->False()); // indicate message processing has stopped
@@ -4908,7 +4965,7 @@ else
 
 
 #ifdef DEBUG_MESSAGELOOP
-    fprintf(stderr, "    ... message is a CALL, message [%s] (interface=[%s]) to service object for [%s]: ***SUCCESS*** (RETURN MESSAGE GOT SUCCESSFULLY SENT)!\n", member, interface, objectPath); fflush(stderr);
+    fprintf(stderr, "    ... message is a CALL, message [%s] (interfaceName=[%s]) to service object for [%s]: ***SUCCESS*** (RETURN MESSAGE GOT SUCCESSFULLY SENT)!\n", member, interfaceName, objectPath); fflush(stderr);
 #endif
                     }
                 }
@@ -5012,7 +5069,7 @@ RexxMethod6(RexxObjectPtr, DbusBusSignalMessage, CSTRING,         senderObjectPa
 
     // create a signal & check for errors
     dbusMsg = dbus_message_new_signal(senderObjectPath,     // object name of the signal
-                                      signalInterfaceName,  // interface name of the signal
+                                      signalInterfaceName,  // interfaceName name of the signal
                                       signalName );         // name of the signal
 fprintf(stderr, "... sending DbusBusSignalMessage(): dbusMsg=[%p] - [%s], [%s], [%s] ... \n",
                 dbusMsg, senderObjectPath, signalInterfaceName, signalName);
@@ -5087,7 +5144,7 @@ fprintf(stderr, "... sending DbusBusSignalMessage(): dbusMsg=[%p] - [%s], [%s], 
 // -----------------------------------------------------------------------------------------------------
     // ============================================================================= //
 // call a method
-//      use strict arg nixi, busName, receiverObjectPath, interface="", methodName, signature="", ...
+//      use strict arg nixi, busName, receiverObjectPath, interfaceName="", methodName, signature="", ...
 RexxMethod8(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
                                                CSTRING,         targetObjectPath,
                                                CSTRING,         callInterfaceName,
@@ -5195,13 +5252,13 @@ RexxMethod8(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
     // create a call message & check for errors
     dbusMsg= dbus_message_new_method_call(  busName,   // busName to address (destination)
                                             targetObjectPath,   // object name of the call
-                                            (!*callInterfaceName ? NULL : callInterfaceName),  // interface name of the call
+                                            (!*callInterfaceName ? NULL : callInterfaceName),  // interfaceName name of the call
                                             callMemberName );   // name of the call
 
     if (NULL == dbusMsg)
     {
        char msg[1024]="";     // buffer for error message
-       SNPRINTF( msg, 1024, "%.16s/method/DbusBusCallMessage(), error 6: cannot create call message 'dbus_message_new_method_call()' returned NULL; check spelling of bus name=[%s], object path=[%s], interface=[%s], method=[%s]",
+       SNPRINTF( msg, 1024, "%.16s/method/DbusBusCallMessage(), error 6: cannot create call message 'dbus_message_new_method_call()' returned NULL; check spelling of bus name=[%s], object path=[%s], interfaceName=[%s], method=[%s]",
                              DLLNAME, busName, targetObjectPath, callInterfaceName, callMemberName);
 
         // raise exception

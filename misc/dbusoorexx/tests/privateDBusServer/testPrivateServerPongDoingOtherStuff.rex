@@ -46,7 +46,12 @@ say "DbusVersion()  ="pp2(DbusVersion())
 address1="unix:path=/tmp/dbus-test"
 address2="tcp:host=localhost,port=23000,family=ipv4;" -- socket lingers after shutdown
 address3="unix:path=/tmp/dbus-test;tcp:host=localhost,port=23000,family=ipv4;"
-address=address1
+
+parse arg otherAddress .
+if otherAddress<>"" then
+   address=otherAddress
+else
+   address=address3
 
 defaultService =.testServiceObject~new
 defaultListener=.testSignalObject~new

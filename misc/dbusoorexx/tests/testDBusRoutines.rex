@@ -71,5 +71,6 @@ end
 say "---"
 say "DBusVersion():" pp2(DBusVersion())
 
+
 ::requires "dbus.cls"      -- get access to the DBUS functionality from Rexx
 ::requires "rgf_util2.rex" -- get utilities

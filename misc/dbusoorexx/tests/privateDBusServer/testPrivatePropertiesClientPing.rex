@@ -24,7 +24,13 @@ busName   ="org.rexxla.oorexx.dbus.test.pong.properties" -- bus to use
 
 address1="unix:path=/tmp/dbus-test"
 address2="tcp:host=localhost,port=23000,family=ipv4;" -- socket lingers after shutdown
-address=address1
+address3="unix:path=/tmp/dbus-test;tcp:host=localhost,port=23000,family=ipv4;"
+
+parse arg otherAddress .
+if otherAddress<>"" then
+   address=otherAddress
+else
+   address=address3
 
 say "creating a connection to the private" pp2(address) "message bus..."
 conn=.dbus~new(address) -- get a connection

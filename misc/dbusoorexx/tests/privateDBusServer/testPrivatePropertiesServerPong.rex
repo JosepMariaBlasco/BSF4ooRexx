@@ -39,7 +39,12 @@ busName       ="org.rexxla.oorexx.dbus.test.pong.properties"
 address1="unix:path=/tmp/dbus-test"
 address2="tcp:host=localhost,port=23000,family=ipv4;" -- socket lingers after shutdown
 address3="unix:path=/tmp/dbus-test;tcp:host=localhost,port=23000,family=ipv4;"
-address=address1
+
+parse arg otherAddress .
+if otherAddress<>"" then
+   address=otherAddress
+else
+   address=address3
 
 tso=.testServiceObject~new
 say "starting up server, listening for connections on:" pp2(address)

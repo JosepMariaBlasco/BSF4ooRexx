@@ -44,12 +44,18 @@ say "DbusVersion()  ="pp2(DbusVersion())
 address1="unix:path=/tmp/dbus-test"
 address2="tcp:host=localhost,port=23000,family=ipv4;" -- socket lingers after shutdown
 address3="unix:path=/tmp/dbus-test;tcp:host=localhost,port=23000,family=ipv4;"
-address=address1
+
+parse arg otherAddress .
+if otherAddress<>"" then
+   address=otherAddress
+else
+   address=address3
 
 defaultService =.testServiceObject~new
 defaultListener=.testSignalObject~new
 say "starting up server, listening for connections on:" pp2(address)
 server =.DBUSServer~new(address,defaultService,defaultListener)
+server~allowAnonymous=.true
 server~startup
 say "server~active (after  startup):" pp2(server~active) "cself="pp2(server~cself)
 say "server~serverId:               " pp2(server~serverId)
@@ -61,6 +67,7 @@ signal on syntax
 signal on halt
 
 say "DbusVersion()="pp2(DbusVersion())
+say "Private server listens at address:" pp2(server~address)
 say "Hit enter to end program ..."
 parse pull x
 
