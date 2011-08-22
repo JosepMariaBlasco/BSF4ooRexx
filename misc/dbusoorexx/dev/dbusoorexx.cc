@@ -28,6 +28,9 @@
                                    code will not be compiled
                                  - adjust Windows version: 32-bit MS compiler abends at runtime if "%zu" is used in fprintf/_snprintf
                                    - changed all debug fprintf's from "%zu" to "%lu" to not cause exceptions when debugging on Windows with MSC
+                2011-08-22, rgf: - add ability to check whether type code is supported on the connection
+                                 - make the message, server and timeout loop aware of Rexx conditions; if a condition is active, leave the loop
+                                   setting the loop control variable to .false to reflect this fact in ooRexx code as well
 
     version:    099.20110821
     license:      Apache License 2.0
@@ -65,6 +68,12 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     #define DBUS_VERSION_STRING  "<n/a>"
 #endif
 
+
+#ifndef  DBUS_TYPE_UNIX_FD      // e.g. not defined for Windows, still incorporate it
+    #define DBUS_TYPE_UNIX_FD ((int) 'h')
+#endif
+
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -87,11 +96,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 #ifdef DBUSOOREXX_32
-    #define DBUS_REXXVERSION    "099.20110821 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110822 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (DBUSOOREXX_64)
-    #define DBUS_REXXVERSION    "099.20110821 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110822 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define DBUS_REXXVERSION    "099.20110821 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110822 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #ifndef TID
@@ -623,6 +632,28 @@ RexxMethod1(RexxObjectPtr, DbusConnectionIsConnected, CSELF, connPtr)
     }
     return context->False();
 }
+
+
+
+    // if open, returns true, false else; cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusConnection.html#ga611ae94556af36fe30bfb547366ca4e1>
+    // expects one char; if that is a supported type code returns .true, otherwise .false
+RexxMethod2(RexxObjectPtr, DbusConnectionCanSendType, CSTRING, typeCode, CSELF, connPtr)
+{
+#if defined (DEBUG_METHODS)
+   fprintf(stderr, "===> arrived in DbusConnectionCanSendType\n");
+DbusConnectionCanSendType
+   fflush(stderr);
+#endif
+    DBusConnection *conn=(DBusConnection *) connPtr;
+    if (conn!=NULL && connPtr!=context->Nil() && dbus_connection_can_send_type(conn, *typeCode))
+    {
+        return context->True();
+    }
+    return context->False();
+}
+
+
+
 
 
     // ============================================================================= //
@@ -4110,6 +4141,14 @@ RexxMethod2(RexxObjectPtr, DbusMessageLoop, CSELF, connPtr, OSELF, self)
         }
 #endif
 
+        if  (context->CheckCondition()) // is this thread affected by a Halt-condition? If so, leave
+        {
+            context->SetGuardOn();
+            context->SetObjectVariable("ACTIVE",rxFalse);
+            context->SetGuardOff();
+            break;
+        }
+
         logical_t bLeave=(context->GetObjectVariable("active") == rxFalse);
 
         if (bLeave)
@@ -5942,6 +5981,7 @@ RexxMethod3(RexxObjectPtr, DbusServerTimeoutLoop, RexxObjectPtr, timeoutDataPoin
     }
 
     RexxObjectPtr rxTrue =context->True();
+    RexxObjectPtr rxFalse =context->False();
     CSTRING timeoutLoopActive="TIMEOUTLOOPACTIVE";      // as long as this variable is .true, the loop will get executed
 
     context->SetGuardOn();
@@ -5968,6 +6008,14 @@ RexxMethod3(RexxObjectPtr, DbusServerTimeoutLoop, RexxObjectPtr, timeoutDataPoin
         // allow loop thread to be ended by Rexx, e.g. checking the status of the "active" attribute (if .false return from message loop)
     while (context->GetObjectVariable(timeoutLoopActive) == rxTrue) // while watch loop active, go ahead
     {
+        if  (context->CheckCondition()) // is this thread affected by a Halt-condition? If so, leave
+        {
+            context->SetGuardOn();
+            context->SetObjectVariable(timeoutLoopActive,rxFalse);
+            context->SetGuardOff();
+            break;
+        }
+
 #if defined (DEBUG_TIMEOUTLOOP)
     counter++;
 #endif
@@ -6147,10 +6195,11 @@ RexxMethod2(RexxObjectPtr, DbusServerWatchLoop, CSELF, connPtr, OSELF, self)
 
     RexxObjectPtr rxNil  =context->Nil();
     RexxObjectPtr rxTrue =context->True();
-    CSTRING wlaName="WATCHLOOPACTIVE";      // as long as this variable is .true, the loop will get executed
+    RexxObjectPtr rxFalse=context->False();
+    CSTRING watchLoopActive="WATCHLOOPACTIVE";      // as long as this variable is .true, the loop will get executed
 
     context->SetGuardOn();
-    if (context->GetObjectVariable(wlaName) == rxTrue)     // already running ?
+    if (context->GetObjectVariable(watchLoopActive) == rxTrue)     // already running ?
     {
         context->SetGuardOff();
         return NULLOBJECT;      // return, do not start another message loop thread
@@ -6191,20 +6240,28 @@ RexxMethod2(RexxObjectPtr, DbusServerWatchLoop, CSELF, connPtr, OSELF, self)
 #endif
 
     context->SetGuardOn();
-    context->SetObjectVariable(wlaName, context->True());  // indicate message processing is active
+    context->SetObjectVariable(watchLoopActive, context->True());  // indicate message processing is active
     context->SetGuardOff();
 
 #ifdef DEBUG_WATCHLOOP
     fprintf(stderr, "... WatchLoop(): about to enter message loop, changed instance variable 'active' to .true: [%s], self=[%s] self~identityHash=[%s] ...\n",
-                    context->ObjectToStringValue(context->GetObjectVariable(wlaName)),
+                    context->ObjectToStringValue(context->GetObjectVariable(watchLoopActive)),
                     context->ObjectToStringValue(self),
                     context->ObjectToStringValue(context->SendMessage0(self,"IDENTITYHASH"))
             ); fflush(stderr);
 #endif
 
         // allow loop thread to be ended by Rexx, e.g. checking the status of the "active" attribute (if .false return from message loop)
-    while (context->GetObjectVariable(wlaName) == rxTrue)   // while watch loop active, go ahead
+    while (context->GetObjectVariable(watchLoopActive) == rxTrue)   // while watch loop active, go ahead
     {
+        if  (context->CheckCondition()) // is this thread affected by a Halt-condition? If so, leave
+        {
+            context->SetGuardOn();
+            context->SetObjectVariable(watchLoopActive,rxFalse);
+            context->SetGuardOff();
+            break;
+        }
+
             // create Select() attributes
         fd_set rfds, wfds, efds;        // read, write, error fd sets
         int maxfd = 0;
@@ -6277,7 +6334,7 @@ RexxMethod2(RexxObjectPtr, DbusServerWatchLoop, CSELF, connPtr, OSELF, self)
     fprintf(stderr, "... WatchLoop(): after select() #2, res=[%d]... \n", res);
 #endif
 
-            if (context->GetObjectVariable(wlaName) != rxTrue)  // stop watch loop ?
+            if (context->GetObjectVariable(watchLoopActive) != rxTrue)  // stop watch loop ?
             {
 #ifdef DEBUG_WATCHLOOP
     fprintf(stderr, "... WatchLoop(): after select() #2, learned we need to stop watch loop, breaking! \n");
@@ -6319,7 +6376,7 @@ RexxMethod2(RexxObjectPtr, DbusServerWatchLoop, CSELF, connPtr, OSELF, self)
     }       // end while
 
 #ifdef DEBUG_WATCHLOOP
-    fprintf(stderr, "... WatchLoop(): about to leav.\n"); fflush(stderr);
+    fprintf(stderr, "... WatchLoop(): about to leave.\n"); fflush(stderr);
 #endif
 
     return NULL;    // do not return anything
@@ -6469,6 +6526,8 @@ RexxMethod2(RexxObjectPtr, DbusNativeServerDisconnect, CSELF, serverPtr, OSELF, 
         REXX_METHOD( DbusServerTimeoutLoop          , DbusServerTimeoutLoop           ),
                     // 2011-08-17
         REXX_METHOD( DbusConnectionIsConnected      , DbusConnectionIsConnected       ),
+                    // 2011-08-22
+        REXX_METHOD( DbusConnectionCanSendType      , DbusConnectionCanSendType       ),
 
         REXX_LAST_METHOD()
     };

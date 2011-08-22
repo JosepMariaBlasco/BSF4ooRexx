@@ -58,6 +58,9 @@
                   - 2011-08-18, rgf
                      - define attribute 'sendEmptyReply' on DBus, default: .true; if .true, then a method
                        call to a Rexx server object will reply, even if no return values are defined for it
+                  - 2011-08-21, rgf
+                      - added method "supports" to "DBus": currently returns all supported typecodes or tests
+                        individual type codes (e.g. "h" cannot be sent on Windows and therefore is not supported there)
 
 
       license:    Apache License 2.0
@@ -870,6 +873,38 @@ syntax:  -- mostlikely: org.freedesktop.DBus.Error.Reply or org.freedesktop.DBus
 */
    return
 
+
+
+::method nativeCanSendType       private external "LIBRARY dbusoorexx DbusConnectionCanSendType"
+/*
+      supports() ... return "typeCodes={a,...,x}" ... returns string denoting available types
+      supports("T[ypecode]", typecode)            ... returns .false/.true; typecode can be a string: only returns .true then, if all characters are supported type codes
+*/
+::method supports    -- this name is neutral enough to allow extensions, if other connection-related tests are needed
+  if arg()=0 then
+  do
+     str=""
+      -- get all indexes, remove "", sort array
+     arr=.dbus.dir~dataTypes~allIndexes~~removeItem("")~sort
+     do char over arr
+        if self~nativeCanSendType(char) then    -- supported
+        do
+           if str<>"" then str=str","
+           str=str||char         -- add supported type code
+        end
+     end
+     return "typeCode={"str"}"
+  end
+
+  use strict arg kind="T", char  -- fetch arguments
+
+  if kind~strip~left(1)~upper<>"T" then
+     raise syntax 88.916 array ('"kind"', '"T[ypecode]"', action)
+
+  do i=1 to char~length          -- iterate over characters
+     if self~nativeCanSendType(char~subChar(i))=.false then return .false
+  end
+  return .true
 
 
    /* ---------------------------------------------------------------------------------------- */
