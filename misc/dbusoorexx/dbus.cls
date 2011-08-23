@@ -13,7 +13,7 @@
 
       cf.:        dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
 
-      version:    099.20110817
+      version:    099.20110823
 
       changes:    - 2011-07-20, rgf; DBusProxyObject:
                     - added proxy.dispatch(methodName[,args...])-method to send messages that
@@ -61,6 +61,10 @@
                   - 2011-08-21, rgf
                       - added method "supports" to "DBus": currently returns all supported typecodes or tests
                         individual type codes (e.g. "h" cannot be sent on Windows and therefore is not supported there)
+                  - 2011-08-23, rgf
+                      - added attribute "haltAllThreadsOnUnexpectedError" to "DBus": if .true and an unexpected
+                        Rexx condition is raised while servicing a request, then all Rexx threads will get halted
+                        (intended to stop/abend program)
 
 
       license:    Apache License 2.0
@@ -89,7 +93,7 @@
 */
 .local~dbus.dir=.directory~new
 
-.dbus.dir~version="099.20110818"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
+.dbus.dir~version="099.20110823"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
 
 .dbus.dir~DBUS_SERVICE_DBUS            ="org.freedesktop.DBus"    -- "The bus name used to talk to the bus itself."
 .dbus.dir~DBUS_PATH_DBUS               ="/org/freedesktop/DBus"   -- "The object path used to talk to the bus itself."
@@ -331,12 +335,14 @@ syntax:
 
 ::attribute collectStatistics       -- default: .true (keep slotDirs of last received messages/errors/signals and their respective counters)
 ::attribute statistics              -- a directory
+::attribute haltAllThreadsOnUnexpectedError  -- if set to .true, then an unexpected Rexx condition will cause all Rexx threads to be halted
 
 ::method init
   expose cself busType makeSlotDir makeReplySlotDir active -
          internalRegisteredServiceObjects internalSignalListeners -
          unmarshalByteArrayAsString -
-         collectStatistics statistics server sendEmptyReply
+         collectStatistics statistics server sendEmptyReply -
+         haltAllThreadsOnUnexpectedError
 
   cself=.nil                  /* will be set by a native method   */
   busType=.nil                /* will be set by native method     */
@@ -351,6 +357,9 @@ syntax:
   unmarshalByteArrayAsString      =.false /* if .true, then return 'ay' as strings */
 
   sendEmptyReply                  =.true  /* if .true, then sends an empty reply upon a message call */
+
+  haltAllThreadsOnUnexpectedError=.false  -- set to .true when all running threads should be halted, if the
+                                          -- there is an unexpected Rexx condition while servicing a request
 
   collectStatistics               =.true  /* if .true, simple statistics are gathered and stored in 'statistics' */
   statistics                      =.directory~new
@@ -437,9 +446,89 @@ syntax: raise propagate
 --     say self ":" "! ---> NATIVE CLOSE CONNECTION GOT CARRIED OUT <--- !" "busType:" pp2(busType) "self:" pp2(self) "server:" pp2(server)
   end
 
-::method nativeIsConnected    private external "LIBRARY dbusoorexx DbusConnectionIsConnected"
-::method isOpen            -- returns .true if connected (open), .false else
+/* Fold functions/methods that query the state or abilities of a connection.
+   "Authenticated" or "IsAuthenticated" are synonyms: returns .true, if the connection was authenticated, .false else
+   "O" or "C" or "IsO" or "IsC" are synonyms: return .true, if the connection is open, .false else
+   "Supported" or "TypeCode" are synonyms: if no second argument, returns all supported type codes; if
+                                           second argument given, returns .true, if all type codes are supported, .false if any one is not supported
+*/
+::method query
+  parse upper arg option +1 1 option3 +3 .      -- get first char and first three chars in uppercase
+
+  optionPos=pos(option, "ACOST")
+  if optionPos=0 then    -- option not identified just as of yet
+  do
+     option3Pos=wordPos(option3, "ISA ISC ISO")
+     if option3Pos>0 then
+     do
+        option="AOO"~subChar(option3Pos)        -- set option
+     end
+     else
+     do
+        raise syntax 88.916 array ('"option"', '"a[uthenticated]" or "IsA[uthenticated]", "O[pen]" or "IsO[pen" or "C[onnected]" or "IsC[onnected]", "S[upports]" or "T[ypecode]"', arg(1))
+     end
+  end
+  else
+  do
+     if option="T" then option="S"  -- "Supports" functionality
+     if option="C" then option="O"  -- test "Open" functionality
+  end
+
+  if option="A" then return self~nativeIsAuthenticated
+  if option="O" then return self~nativeIsConnected
+
+say "option="pp2(option) "arg()="pp2(arg())
+  if arg()<=1 then return self~supportsTypeCode
+
+  use strict arg nix, char  -- fetch arguments
+  return self~supportsTypeCode("T",char) -- test whether given type codes are supported
+
+
+::method nativeIsConnected       private external "LIBRARY dbusoorexx DbusConnectionIsConnected"
+::method nativeIsAuthenticated   private external "LIBRARY dbusoorexx DbusConnectionIsAuthenticated"
+/*
+::method isOpen            -- returns .true if connected (open), .false else; synonym for "isConnected"
   return self~nativeIsConnected
+
+::method isConnected       -- returns .true if connected (open), .false else
+  return self~nativeIsConnected
+
+::method isAuthenticated
+  return self~nativeIsAuthenticated
+*/
+
+-- keep these private so to not blow up the amount of methods one needs to be aware of
+::method nativeCanSendType       private external "LIBRARY dbusoorexx DbusConnectionCanSendType"
+/*
+      supports() ... return "typeCodes={a,...,x}" ... returns string denoting available types
+      supports("T[ypecode]", typecode)            ... returns .false/.true; typecode can be a string: only returns .true then, if all characters are supported type codes
+*/
+::method supportsTypeCode  private  -- this name is neutral enough to allow extensions, if other connection-related tests are needed
+  if arg()=0 then
+  do
+     str=""
+      -- get all indexes, remove "", sort array
+     arr=.dbus.dir~dataTypes~allIndexes~~removeItem("")~sort
+     do char over arr
+        if self~nativeCanSendType(char) then    -- supported
+        do
+           if str<>"" then str=str","
+           str=str||char         -- add supported type code
+        end
+     end
+     return "typeCode={"str"}"
+  end
+
+  use strict arg kind="T", char  -- fetch arguments
+
+  if kind~strip~left(1)~upper<>"T" then
+     raise syntax 88.916 array ('"kind"', '"T[ypecode]"', action)
+
+  do i=1 to char~length          -- iterate over characters
+     if self~nativeCanSendType(char~subChar(i))=.false then return .false
+  end
+  return .true
+
 
 
 ::method uninit
@@ -875,38 +964,6 @@ syntax:  -- mostlikely: org.freedesktop.DBus.Error.Reply or org.freedesktop.DBus
 
 
 
-::method nativeCanSendType       private external "LIBRARY dbusoorexx DbusConnectionCanSendType"
-/*
-      supports() ... return "typeCodes={a,...,x}" ... returns string denoting available types
-      supports("T[ypecode]", typecode)            ... returns .false/.true; typecode can be a string: only returns .true then, if all characters are supported type codes
-*/
-::method supports    -- this name is neutral enough to allow extensions, if other connection-related tests are needed
-  if arg()=0 then
-  do
-     str=""
-      -- get all indexes, remove "", sort array
-     arr=.dbus.dir~dataTypes~allIndexes~~removeItem("")~sort
-     do char over arr
-        if self~nativeCanSendType(char) then    -- supported
-        do
-           if str<>"" then str=str","
-           str=str||char         -- add supported type code
-        end
-     end
-     return "typeCode={"str"}"
-  end
-
-  use strict arg kind="T", char  -- fetch arguments
-
-  if kind~strip~left(1)~upper<>"T" then
-     raise syntax 88.916 array ('"kind"', '"T[ypecode]"', action)
-
-  do i=1 to char~length          -- iterate over characters
-     if self~nativeCanSendType(char~subChar(i))=.false then return .false
-  end
-  return .true
-
-
    /* ---------------------------------------------------------------------------------------- */
    /* as of 2011-07-05 ooRexx from trunk does not support UTF-8, hence depending on BSF4ooRexx */
 ::routine stringToUtf8 public    -- needs BSF4ooRexx
@@ -965,6 +1022,8 @@ syntax: raise propagate
 
 
    /* ---------------------------------------------------------------------------------------- */
+/* allow for sending error-messages instead of a reply back to the invoker, will get honored in
+   the message loop of the DBus connection that invoked the Rexx method calling this routine   */
 ::routine raiseDBusError   public   -- this condition will be turned into an error-message in native code
   use arg errName="org.freedesktop.DBus.Error.RexxServiceRaised", errMessage=.nil
   signal on syntax

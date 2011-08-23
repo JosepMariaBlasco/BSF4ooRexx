@@ -32,7 +32,7 @@
                                  - make the message, server and timeout loop aware of Rexx conditions; if a condition is active, leave the loop
                                    setting the loop control variable to .false to reflect this fact in ooRexx code as well
 
-    version:    099.20110821
+    version:    099.20110823
     license:      Apache License 2.0
 
 ------------------------ Apache Version 2.0 license -------------------------
@@ -57,9 +57,11 @@
 extern "C" {            // make sure no C++ name mangling comes into the way
 #endif
 
+/*
 #ifdef _MSC_VER
    #pragma comment(lib, "dbus-1.lib")  // as per the hint of Pontus Carlsson in an e-mail from 2011-08-19
 #endif
+*/
 
 #define DBUS_API_SUBJECT_TO_CHANGE
 #include <dbus/dbus.h>
@@ -72,6 +74,22 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 #ifndef  DBUS_TYPE_UNIX_FD      // e.g. not defined for Windows, still incorporate it
     #define DBUS_TYPE_UNIX_FD ((int) 'h')
 #endif
+
+
+/*
+#include "oorexxapi.h"  // testing for cygwin-compilation, hence moved here because of re-definitions
+
+#include <sys/types.h> // rgf-temp
+#include <unistd.h>     // rgf-temp
+#include <sys/select.h> // rgf-temp
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <stdbool.h>    // rgf-temp
+#include <sys/types.h>  // rgf-temp
+#include <stdint.h>     // rgf-temp
+*/
 
 
 #include <stdio.h>
@@ -96,11 +114,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 #ifdef DBUSOOREXX_32
-    #define DBUS_REXXVERSION    "099.20110822 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110823 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (DBUSOOREXX_64)
-    #define DBUS_REXXVERSION    "099.20110822 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110823 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define DBUS_REXXVERSION    "099.20110822 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110823 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #ifndef TID
@@ -634,14 +652,11 @@ RexxMethod1(RexxObjectPtr, DbusConnectionIsConnected, CSELF, connPtr)
 }
 
 
-
-    // if open, returns true, false else; cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusConnection.html#ga611ae94556af36fe30bfb547366ca4e1>
-    // expects one char; if that is a supported type code returns .true, otherwise .false
+    // expects a single char; if that is a supported type code returns .true, otherwise .false
 RexxMethod2(RexxObjectPtr, DbusConnectionCanSendType, CSTRING, typeCode, CSELF, connPtr)
 {
 #if defined (DEBUG_METHODS)
    fprintf(stderr, "===> arrived in DbusConnectionCanSendType\n");
-DbusConnectionCanSendType
    fflush(stderr);
 #endif
     DBusConnection *conn=(DBusConnection *) connPtr;
@@ -653,6 +668,20 @@ DbusConnectionCanSendType
 }
 
 
+    // if authenticated, returns true, false else
+RexxMethod1(RexxObjectPtr, DbusConnectionIsAuthenticated, CSELF, connPtr)
+{
+#if defined (DEBUG_METHODS)
+   fprintf(stderr, "===> arrived in DbusConnectionIsAuthenticated\n");
+   fflush(stderr);
+#endif
+    DBusConnection *conn=(DBusConnection *) connPtr;
+    if (conn!=NULL && connPtr!=context->Nil() && dbus_connection_get_is_authenticated(conn))
+    {
+        return context->True();
+    }
+    return context->False();
+}
 
 
 
@@ -4570,6 +4599,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                         dbus_message_unref(returnMsg);
                     }
                 }
+
                 else                                    // dispatch synchroneously
                 {
 #ifdef DEBUG_MESSAGELOOP
@@ -4688,6 +4718,16 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                              context->SetGuardOn();
                              context->SetObjectVariable("ACTIVE", rxFalse);  // stop message loop thread
                              context->SetGuardOff();
+
+                             if (context->GetObjectVariable("HALTALLTHREADSONUNEXPECTEDERROR")==rxTrue)  // halt all Rexx threads? (trying to force program to exit)
+                             {
+                                 context->threadContext->instance->Halt();  // raise Halt condition in all threads of this Rexx interpreter instance
+                             }
+                         }
+                         else   // clear Rexx condition and proceed as normal
+                         {
+                             context->ClearCondition();
+
                          }
                     }
 
@@ -6528,6 +6568,8 @@ RexxMethod2(RexxObjectPtr, DbusNativeServerDisconnect, CSELF, serverPtr, OSELF, 
         REXX_METHOD( DbusConnectionIsConnected      , DbusConnectionIsConnected       ),
                     // 2011-08-22
         REXX_METHOD( DbusConnectionCanSendType      , DbusConnectionCanSendType       ),
+        REXX_METHOD( DbusConnectionIsAuthenticated  , DbusConnectionIsAuthenticated   ),
+
 
         REXX_LAST_METHOD()
     };
