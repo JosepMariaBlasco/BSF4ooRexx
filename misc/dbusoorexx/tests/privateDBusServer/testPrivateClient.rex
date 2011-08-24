@@ -47,21 +47,21 @@ objectPath="/org/rexxla/oorexx/dbus/test/Pong"
 busName   ="org.rexxla.oorexx.dbus.test.pong"
 interface =""
 
-/*
-busType="session"                  -- default to session bus
-say "creating a connection to the" pp2(busType) "message bus..."
-conn=.dbus~new(busType) -- get a connection
-*/
-
 address1="unix:path=/tmp/dbus-test"
 address2="tcp:host=localhost,port=23000,family=ipv4;" -- socket lingers after shutdown
 address3="tcp:host=localhost,port=23000,family=ipv4;unix:path=/tmp/dbus-test;"
 
--- address1="unix:path=/tmp/dbus-test-oopsla"
--- address1="tcp:host=localhost,port=23001,family=ipv4;" -- socket lingers after shutdown
--- address=address1
+parse arg otherAddress doNotTestUNIX_FDs
 
-parse arg otherAddress .
+if doNotTestUNIX_FDs<>"" then
+   .local~client.unix_Fd=.false
+
+/*
+say ".client.unix_fd="pp2(.client.unix_fd) "doNotTestUNIX_FDs="pp2(doNotTestUNIX_FDs)
+say "hit enter"
+parse pull aha
+*/
+
 if otherAddress<>"" then
    address=otherAddress
 else
@@ -93,8 +93,6 @@ say "<---***>"~copies(7)
 
 call testSimpleTypes      conn, busName, objectPath
 
-/*
-*/
 call testSimpleArrayTypes conn, busName, objectPath
 call test2dimensionalArrayTypes conn, busName, objectPath
 call test3dimensionalArrayTypes conn, busName, objectPath
@@ -106,9 +104,6 @@ call testStructTypes1 conn, busName, objectPath
 call testVariantTypes1 conn, busName, objectPath
 say "/*\ "~copies(10)
 call testVariantTypes2 conn, busName, objectPath
-
-/*
-*/
 
 say "--*--  "~copies(10)
 say "activating makeReplySlotDir and reissuing message call:"
@@ -176,7 +171,7 @@ say center(" testSimpleTypes ", 50, "-")
    say "interface="pp2(interface) "methodName="pp2(methodName)
 
 
-   if conn~query("typecode", "h") then    -- does the connection support UNIX_FD's ?
+   if conn~query("typecode", "h"), .client.unix_Fd<>.false then    -- does the connection support UNIX_FD's ?
       order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
    else
       order=.array~of("s","g","o","y","b","n","q","i","u","x","t","d")
@@ -249,7 +244,7 @@ numeric digits 20
 
 say center(" testSimpleArrayTypes ", 50, "-")
 
-   if conn~query("typecode", "h") then    -- does the connection support UNIX_FD's ?
+   if conn~query("typecode", "h"), .client.unix_Fd<>.false then    -- does the connection support UNIX_FD's ?
       order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
    else
       order=.array~of("s","g","o","y","b","n","q","i","u","x","t","d")
@@ -386,7 +381,7 @@ parse pull key
 
    say center(" test2dimensionalArrayTypes ", 50, "-")
 
-   if conn~query("typecode", "h") then    -- does the connection support UNIX_FD's ?
+   if conn~query("typecode", "h"), .client.unix_Fd<>.false then    -- does the connection support UNIX_FD's ?
       order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
    else
       order=.array~of("s","g","o","y","b","n","q","i","u","x","t","d")
@@ -505,7 +500,7 @@ say "---> debug dump2dArray(): arr~dimension="arr~dimension "arr~items="arr~item
 
    say center(" test3dimensionalArrayTypes ", 50, "-")
 
-   if conn~query("typecode", "h") then    -- does the connection support UNIX_FD's ?
+   if conn~query("typecode", "h"), .client.unix_Fd<>.false then    -- does the connection support UNIX_FD's ?
       order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
    else
       order=.array~of("s","g","o","y","b","n","q","i","u","x","t","d")
@@ -656,7 +651,7 @@ say "hit enter"
 parse pull x
 */
 
-   if conn~query("typecode", "h") then    -- does the connection support UNIX_FD's ?
+   if conn~query("typecode", "h"), .client.unix_Fd<>.false then    -- does the connection support UNIX_FD's ?
       order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
    else
       order=.array~of("s","g","o","y","b","n","q","i","u","x","t","d")

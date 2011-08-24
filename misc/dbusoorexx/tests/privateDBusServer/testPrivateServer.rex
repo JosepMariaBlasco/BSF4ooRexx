@@ -140,61 +140,9 @@ syntax:  -- stop the message loop thread !
   use arg methName, methArgs
 
 -- signal on syntax
-
-  slotDir=methArgs[methArgs~last]
-
--- say center(" PONG::unknown, methName:" pp2(methName) "args:" pp2(methArgs) pp2(methArgs~items) "", 100, "*")
+  slotDir=methArgs[methArgs~last]   -- get SlotDir argument (always last)
   title=pp2(methName) "args:" pp2(methArgs) pp2(methArgs~items) "signature:" pp2(slotDir~signature)
   say "METHOD_CALL" (self~class~increaseCounter~right(7))":" title
-
--- say "*** PONG::unknown, slotDir:" pp2(slotDir) "slotDir~class:" pp2(slotDir~class) "methArgs~items="pp2(methArgs~items)
-/*
-  title=pp2(self)": methName="pp2(methName) "methArgs="pp2(methArgs) "methArgs[1]="pp2(methArgs[1]) "value:" pp2(methArgs[1]~string~c2x) pp2(slotdir~signature)
-  say "PONG::"title
-
-  call dump2 methArgs, title "methArgs"
-
-   do i=1 to methArgs~size - 1
-      call dump2 methArgs[i], "argument #" i
-      say
-   end
-
-   call dump2 slotDir, title "slotDir"
-
-   say "    --> --> --> now creating return value ---"
-*/
-
-/*
-   -- process arguments, create reply (return) value, by using the same arguments (without slotDir argument) with the same signature
-  resArr=.array~new~~append("useThisSignature="slotDir~signature)   -- first element a key word followed by signature
-  do i=1 to methArgs~size-1         -- append all other arguments in the order received
-     resArr~append(methArgs[i])
-  end
-*/
-
--- say "PONG: about to create a section, methArgs~size-1:" methArgs~size-1", useThisSignature="slotDir~signature
-
-/*
-  resArr=.array~of("useThisSignature="slotDir~signature)
-  resArr~append(methArgs~section(1,methArgs~size-1)) -- leave out the supplemental slotDir argument
-
-
-/*
-  if methArgs~items>2 then       -- two or more args
-     resArr~append(methArgs~section(1,methArgs~size-1)) -- leave out the supplemental slotDir argument
-  else                           -- one or no arg
-     resArr~append(methArgs[1])
-*/
-
-/*
-call dump2 resArr, "PONG - resArr:"
-say "PONG --> now returning ..."
-
-  say "---/\--- "~copies(5)
-  say
-*/
-  return resArr
-*/
 
   return dbus.box(slotDir~signature, methArgs~section(1,methArgs~size-1))
 
@@ -221,28 +169,12 @@ syntax:
   use arg methName, methArgs
 
   slotDir=methArgs[methArgs~items]
-  title="methName="pp2(methName) "methArgs="pp2(methArgs) "methArgs[1]="pp2(methArgs[1]) pp2(slotdir~signature)
+  title="methName="pp2(methName) "methArgs="pp2(methArgs) "methArgs[1]="pp2(methArgs[1]) pp2(slotdir~signature) "|" pp2(slotDir~interface) pp2(slotDir~member)
   say "SIGNAL     " (self~class~increaseCounter~right(7))":" title
 
-/*
-  call dump2 methArgs, title "methArgs"
-
-  if methArgs~items>0 then
-     call dump2 slotDir, title "slotDir"
-
-   -- TODO: process arguments, create reply (return) value, by using the same arguments (without slotDir argument) with the same signature
-
-  say "--\/==\/-- "~copies(5)
-  say
-
---  return methArgs[1]       -- will return as a string
---  return .array~of(slotDir~signature, methArgs[1])       -- will return a string
-*/
 
 ::method NameOwnerChanged  -- demo how to directly intercept a signal
   use arg one, two, three, slotDir
-  -- say "==>" pp2(slotDir~messageTypeName) pp2(slotDir~interface) pp2(slotDir~member) pp2(slotDir~dateTime)":" pp2(one)"," pp2(two)"," pp2(three)
   say "SIGNAL     " (self~class~increaseCounter~right(7))":" pp2(slotDir~messageTypeName) pp2(slotDir~interface) pp2(slotDir~member) pp2(slotDir~dateTime)":" pp2(one)"," pp2(two)"," pp2(three)
-
 
 
