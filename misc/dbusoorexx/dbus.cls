@@ -449,13 +449,13 @@ syntax: raise propagate
 /* Fold functions/methods that query the state or abilities of a connection.
    "Authenticated" or "IsAuthenticated" are synonyms: returns .true, if the connection was authenticated, .false else
    "O" or "C" or "IsO" or "IsC" are synonyms: return .true, if the connection is open, .false else
-   "Supported" or "TypeCode" are synonyms: if no second argument, returns all supported type codes; if
-                                           second argument given, returns .true, if all type codes are supported, .false if any one is not supported
+   "Supports" or "TypeCode" are synonyms: if no second argument, returns all supported type codes; if
+                                          second argument given, returns .true, if all type codes are supported, .false if any one is not supported
 */
 ::method query
   parse upper arg option +1 1 option3 +3 .      -- get first char and first three chars in uppercase
 
-  optionPos=pos(option, "ACOST")
+  optionPos=pos(option, "ACOT")
   if optionPos=0 then    -- option not identified just as of yet
   do
      option3Pos=wordPos(option3, "ISA ISC ISO")
@@ -465,23 +465,21 @@ syntax: raise propagate
      end
      else
      do
-        raise syntax 88.916 array ('"option"', '"a[uthenticated]" or "IsA[uthenticated]", "O[pen]" or "IsO[pen" or "C[onnected]" or "IsC[onnected]", "S[upports]" or "T[ypecode]"', arg(1))
+        raise syntax 88.916 array ('"option"', '"A[uthenticated]" or "IsA[uthenticated]", "O[pen]" or "IsO[pen]" or "C[onnected]" or "IsC[onnected]", "T[ypecode]"', arg(1))
      end
   end
   else
   do
-     if option="T" then option="S"  -- "Supports" functionality
      if option="C" then option="O"  -- test "Open" functionality
   end
 
   if option="A" then return self~nativeIsAuthenticated
   if option="O" then return self~nativeIsConnected
 
-say "option="pp2(option) "arg()="pp2(arg())
-  if arg()<=1 then return self~supportsTypeCode
+  if arg()<=1 then return self~canSendTypeCode  -- return list of all supported type codes
 
   use strict arg nix, char  -- fetch arguments
-  return self~supportsTypeCode("T",char) -- test whether given type codes are supported
+  return self~canSendTypeCode(char)    -- test whether given type codes are supported
 
 
 ::method nativeIsConnected       private external "LIBRARY dbusoorexx DbusConnectionIsConnected"
@@ -503,7 +501,7 @@ say "option="pp2(option) "arg()="pp2(arg())
       supports() ... return "typeCodes={a,...,x}" ... returns string denoting available types
       supports("T[ypecode]", typecode)            ... returns .false/.true; typecode can be a string: only returns .true then, if all characters are supported type codes
 */
-::method supportsTypeCode  private  -- this name is neutral enough to allow extensions, if other connection-related tests are needed
+::method canSendTypeCode  private  -- this name is neutral enough to allow extensions, if other connection-related tests are needed
   if arg()=0 then
   do
      str=""
@@ -516,13 +514,16 @@ say "option="pp2(option) "arg()="pp2(arg())
            str=str||char         -- add supported type code
         end
      end
-     return "typeCode={"str"}"
+     --   return "typeCode={"str"}"
+     return str
   end
 
-  use strict arg kind="T", char  -- fetch arguments
+  use strict arg char  -- fetch arguments
 
+/*
   if kind~strip~left(1)~upper<>"T" then
      raise syntax 88.916 array ('"kind"', '"T[ypecode]"', action)
+*/
 
   do i=1 to char~length          -- iterate over characters
      if self~nativeCanSendType(char~subChar(i))=.false then return .false
@@ -1919,7 +1920,7 @@ syntax:
      guard off
      do conn over arr         -- iterate over all client connections and probe them
 -- say "... ... testing" pp2(conn)": conn~isOpen:" pp2(conn~isOpen)  "..."
-        if conn~isOpen=.false then
+        if conn~query("open")=.false then
         do
 -- say "... ... BINGO! " pp2(conn) "not connected/open anymore, DISCONNECTing connection !"
            self~disconnect(conn)
