@@ -31,8 +31,10 @@
                 2011-08-22, rgf: - add ability to check whether type code is supported on the connection
                                  - make the message, server and timeout loop aware of Rexx conditions; if a condition is active, leave the loop
                                    setting the loop control variable to .false to reflect this fact in ooRexx code as well
+                2011-08-25, rgf: - add entry "CONNECTION" to slotDir; this allows service and listener objects
+                                   to distinguish the connections they got registered with
 
-    version:    099.20110823
+    version:    099.20110826
     license:      Apache License 2.0
 
 ------------------------ Apache Version 2.0 license -------------------------
@@ -114,11 +116,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 #ifdef DBUSOOREXX_32
-    #define DBUS_REXXVERSION    "099.20110823 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110826 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (DBUSOOREXX_64)
-    #define DBUS_REXXVERSION    "099.20110823 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110826 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define DBUS_REXXVERSION    "099.20110823 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110826 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #ifndef TID
@@ -2182,7 +2184,7 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
     pmarsh->errorPosInSignature=pmarsh->cursor; // memorize cursor, in case we get an error
 
 #ifdef DEBUG_MARSHALLING_2
-    fprintf(stderr, "        marshal() - before switch, typeCode=[%c], bRopIsNull=[%d]\n", typeCode, (int) bRopIsNull);
+    fprintf(stderr, "        marshal() - before switch, typeCode=[%c], bRopIsNull=[%d], rop=[%p]\n", typeCode, (int) bRopIsNull, rop);
 #endif
 
     switch (typeCode)
@@ -2581,15 +2583,15 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
 
 #ifdef DEBUG_ARRAY
 {
-    fprintf(stderr, "*** marshal(...): *** ARRAY - begin, IsArray(rop)=[%d], rop=[%p], rop~string=[%s] ",
-                     (int) pmarsh->context->IsArray(rop),
+            fprintf(stderr, "*** marshal(...): *** ARRAY - begin, IsArray(rop)=[%d], rop=[%p], rop~string=[%s] ",
+                     (bRopIsNull==1 ? 0 : (int) pmarsh->context->IsArray(rop) ),
                      rop,
-                     (rop==NULL ? NULL : pmarsh->context->ObjectToStringValue(rop) )
+                     (bRopIsNull==1 ? "<NULL>" : pmarsh->context->ObjectToStringValue(rop) )
                      );
     fflush(stderr);
 
         // assume array object was supplied for marshalling
-    if (pmarsh->context->IsArray(rop))
+    if (bRopIsNull!=1 && pmarsh->context->IsArray(rop))
     {
         RexxArrayObject tmpRao= ( rop==NULL ? NULL : (RexxArrayObject) rop );
         if (tmpRao!=NULL)
@@ -2601,9 +2603,8 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
                             (unsigned long) pmarsh->context->ArrayItems(tmpRao)
                     );
         }
-
-        fprintf(stderr, "\n");
     }
+    fprintf(stderr, "\n");
 }
 #endif
 
@@ -2686,7 +2687,7 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
             if (bRopIsNull) // o.k. Rexx argument not available, supply another empty Rexx array as argument array
             {
 #ifdef DEBUG_ARRAY
-    fprintf(stderr, "     marshal(...), 'a': bRopIsNull");
+    fprintf(stderr, "     marshal(...), 'a': bRopIsNull, *pmarsh->elementStart=[%c]",*pmarsh->elementStart);
 #endif
                 if (*pmarsh->elementStart!='{')     // make sure not a DICT expected!
                 {
@@ -2968,9 +2969,11 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
                          (unsigned long) (pmarsh->elementEnd   - pmarsh->signature)
            );
 #endif
+
     DBusMessageIter iter_array;
     RexxArrayObject rao=NULL;
-    if (pmarsh->context->IsArray(anyRop))   // an array object (could be a MapCollection for processing a DICT
+
+    if (anyRop != NULL && pmarsh->context->IsArray(anyRop))   // an array object (could be a MapCollection for processing a DICT
     {
         rao=(RexxArrayObject) anyRop;
     }
@@ -4040,13 +4043,16 @@ void helperMarshalMessageArgs( DBusMessage      *dbusMsg,       // DBUS message
 
 // -----------------------------------------------------------------------
 // adds some information about the message
-void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject slotDir, DBusMessage *dbusMsg)
+void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject slotDir, DBusMessage *dbusMsg, RexxObjectPtr conn)
 {
     const char   *str=NULL;
     RexxObjectPtr rop=NULL;
 
     context->SendMessage2(slotDir, "SETENTRY", context->CString("AUTOSTART"),
                             (dbus_message_get_auto_start(dbusMsg) == TRUE ? context->True() : context->False()) );
+
+    context->SendMessage2(slotDir, "SETENTRY", context->CString("CONNECTION"),   conn );
+
 
     str=dbus_message_get_destination(dbusMsg);
     rop=(str==NULL ? context->NullString() : context->CString(str));
@@ -4338,7 +4344,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
         if ( bMakeSlotDir || bCollectStatistics) // should we create a slotDir-argument containing message related information?
         {
             slotDir=context->NewDirectory();
-            helperCreateSlotDirEntries(context->threadContext, slotDir, dbusMsg);  // adds some information about the message
+            helperCreateSlotDirEntries(context->threadContext, slotDir, dbusMsg, self);  // adds some information about the message
         }
 
             // unmarshal arguments
@@ -4508,7 +4514,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                     context->SetGuardOn();          // update statistics on send signal
                     RexxDirectoryObject rdo=(RexxDirectoryObject) context->GetObjectVariable("STATISTICS");
                     RexxDirectoryObject slotDir=context->NewDirectory();
-                    helperCreateSlotDirEntries(context->threadContext, slotDir, errReply);   // setup slotDir
+                    helperCreateSlotDirEntries(context->threadContext, slotDir, errReply, self);   // setup slotDir
                     CSTRING errName=dbus_message_get_error_name(errReply);
                     if (errName!=NULL)
                     {
@@ -4583,7 +4589,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                             context->SetGuardOn();          // update statistics on call method
                             RexxDirectoryObject rdo=(RexxDirectoryObject) context->GetObjectVariable("STATISTICS");
                             RexxDirectoryObject slotDir=context->NewDirectory();
-                            helperCreateSlotDirEntries(context->threadContext, slotDir, returnMsg);   // setup slotDir
+                            helperCreateSlotDirEntries(context->threadContext, slotDir, returnMsg, self);   // setup slotDir
 
                             CSTRING sentKind ="SENT";
                             CSTRING kind     ="LASTSENTMESSAGE";
@@ -4689,7 +4695,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                              context->SetGuardOn();          // update statistics on send signal
                              RexxDirectoryObject rdo=(RexxDirectoryObject) context->GetObjectVariable("STATISTICS");
                              RexxDirectoryObject slotDir=context->NewDirectory();
-                             helperCreateSlotDirEntries(context->threadContext, slotDir, errReply);   // setup slotDir
+                             helperCreateSlotDirEntries(context->threadContext, slotDir, errReply, self);   // setup slotDir
                              CSTRING errName=dbus_message_get_error_name(errReply);
                              if (errName!=NULL)
                              {
@@ -4760,7 +4766,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                              context->SetGuardOn();          // update statistics on send signal
                              RexxDirectoryObject rdo=(RexxDirectoryObject) context->GetObjectVariable("STATISTICS");
                              RexxDirectoryObject slotDir=context->NewDirectory();
-                             helperCreateSlotDirEntries(context->threadContext, slotDir, errReply);   // setup slotDir
+                             helperCreateSlotDirEntries(context->threadContext, slotDir, errReply, self);   // setup slotDir
                              CSTRING errName=dbus_message_get_error_name(errReply);
                              if (errName!=NULL)
                              {
@@ -5087,7 +5093,7 @@ else
                                     context->SetGuardOn();          // update statistics on send signal
                                     RexxDirectoryObject rdo=(RexxDirectoryObject) context->GetObjectVariable("STATISTICS");
                                     RexxDirectoryObject slotDir=context->NewDirectory();
-                                    helperCreateSlotDirEntries(context->threadContext, slotDir, errReply);   // setup slotDir
+                                    helperCreateSlotDirEntries(context->threadContext, slotDir, errReply, self);   // setup slotDir
                                     CSTRING errName=dbus_message_get_error_name(errReply);
                                     if (errName!=NULL)
                                     {
@@ -5159,12 +5165,13 @@ else
 // -----------------------------------------------------------------------------------------------------
     // ============================================================================= //
     // send a signal message over the bus (a broadcast message)
-RexxMethod6(RexxObjectPtr, DbusBusSignalMessage, CSTRING,         senderObjectPath,
+RexxMethod7(RexxObjectPtr, DbusBusSignalMessage, CSTRING,         senderObjectPath,
                                                  CSTRING,         signalInterfaceName,
                                                  CSTRING,         signalName,
                                                  CSTRING,         signature,
                                                  RexxArrayObject, rexxArgs,
-                                                 CSELF,           connPtr)
+                                                 CSELF,           connPtr,
+                                                 OSELF,           self)
 {
     // check Rexx arguments first
     size_t items = (rexxArgs==NULLOBJECT ? 0 : context->ArraySize(rexxArgs)) ;
@@ -5253,8 +5260,11 @@ RexxMethod6(RexxObjectPtr, DbusBusSignalMessage, CSTRING,         senderObjectPa
     dbusMsg = dbus_message_new_signal(senderObjectPath,     // object name of the signal
                                       signalInterfaceName,  // interfaceName name of the signal
                                       signalName );         // name of the signal
-fprintf(stderr, "... sending DbusBusSignalMessage(): dbusMsg=[%p] - [%s], [%s], [%s] ... \n",
-                dbusMsg, senderObjectPath, signalInterfaceName, signalName);
+
+#if defined (DEBUG_METHODS)
+    fprintf(stderr, "... DBusSignalMessage(): sending DbusBusSignalMessage(): dbusMsg=[%p] - [%s], [%s], [%s] ... \n",
+                    dbusMsg, senderObjectPath, signalInterfaceName, signalName);
+#endif
 
     if (NULL == dbusMsg)
     {
@@ -5303,7 +5313,7 @@ fprintf(stderr, "... sending DbusBusSignalMessage(): dbusMsg=[%p] - [%s], [%s], 
     {
         RexxDirectoryObject rdo=(RexxDirectoryObject) context->GetObjectVariable("STATISTICS");
         RexxDirectoryObject slotDir=context->NewDirectory();
-        helperCreateSlotDirEntries(context->threadContext, slotDir, dbusMsg);   // setup slotDir
+        helperCreateSlotDirEntries(context->threadContext, slotDir, dbusMsg, self);   // setup slotDir
 
         CSTRING sentKind ="SENT";
         CSTRING kind     ="LASTSENTSIGNAL";
@@ -5327,14 +5337,15 @@ fprintf(stderr, "... sending DbusBusSignalMessage(): dbusMsg=[%p] - [%s], [%s], 
     // ============================================================================= //
 // call a method
 //      use strict arg nixi, busName, receiverObjectPath, interfaceName="", methodName, signature="", ...
-RexxMethod8(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
+RexxMethod9(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
                                                CSTRING,         targetObjectPath,
                                                CSTRING,         callInterfaceName,
                                                CSTRING,         callMemberName,
                                                CSTRING,         replySignature,     // if empty/NULL, do not wait on reply (ignore it)
                                                CSTRING,         argSignature,
                                                RexxArrayObject, rexxArgs,
-                                               CSELF,           connPtr)
+                                               CSELF,           connPtr,
+                                               OSELF,           self)
 
 {
     // check Rexx arguments first
@@ -5509,7 +5520,7 @@ RexxMethod8(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
             context->SetGuardOn();          // update statistics on call method
             RexxDirectoryObject rdo=(RexxDirectoryObject) context->GetObjectVariable("STATISTICS");
             RexxDirectoryObject slotDir=context->NewDirectory();
-            helperCreateSlotDirEntries(context->threadContext, slotDir, dbusMsg);   // setup slotDir
+            helperCreateSlotDirEntries(context->threadContext, slotDir, dbusMsg, self);   // setup slotDir
 
             CSTRING sentKind ="SENT";
             CSTRING kind     ="LASTSENTMESSAGE";
@@ -5563,7 +5574,7 @@ RexxMethod8(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
             context->SetGuardOn();          // update statistics on call method
             RexxDirectoryObject rdo=(RexxDirectoryObject) context->GetObjectVariable("STATISTICS");
             RexxDirectoryObject slotDir=context->NewDirectory();
-            helperCreateSlotDirEntries(context->threadContext, slotDir, dbusMsg);   // setup slotDir
+            helperCreateSlotDirEntries(context->threadContext, slotDir, dbusMsg, self);   // setup slotDir
 
             CSTRING sentKind ="SENT";
             CSTRING kind     ="LASTSENTMESSAGE";
@@ -5624,7 +5635,7 @@ RexxMethod8(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
             ) // should we create a slotDir-argument containing message related information?
         {
             slotDir=context->NewDirectory();
-            helperCreateSlotDirEntries(context->threadContext, slotDir, replyMsg);  // adds some information about the message
+            helperCreateSlotDirEntries(context->threadContext, slotDir, replyMsg, self);  // adds some information about the message
         }
 
         if (msgType==DBUS_MESSAGE_TYPE_ERROR) // reply was an error message, raise condition in caller and inform him !

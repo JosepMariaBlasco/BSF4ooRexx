@@ -65,6 +65,7 @@
                       - added attribute "haltAllThreadsOnUnexpectedError" to "DBus": if .true and an unexpected
                         Rexx condition is raised while servicing a request, then all Rexx threads will get halted
                         (intended to stop/abend program)
+                  - 2011-08-26, rgf: close all connections if in the DBusServer watchLoop a halt-condition arises (via native code)
 
 
       license:    Apache License 2.0
@@ -164,13 +165,21 @@ dataTypes["a"]="array"     -- container
 dataTypes["v"]="variant"   -- container
 -- dataTypes["e"]="dict"      -- container: not directly used, rather "a{xy}"
 -- dataTypes["r"]="struct"    -- container: not directly used, rather "(abc)"
-.dbus.dir~dataTypes=dataTypes    -- save the data type defs
+.dbus.dir~dataTypes=dataTypes -- save the data type defs
 
+-- try to require BSF4ooRexx dynamically
+call dynamicRequiresBSF4ooRexx
 
 ::requires "dbusoorexx" LIBRARY  -- get access to the native routines and methods
 
--- ::requires "BSF.CLS"          -- BSF4ooRexx: needed need for UTF-8 conversion routines
 ::requires "rgf_util2.rex"    -- installed with the BSF4ooRexx package
+
+::routine dynamicRequiresBSF4ooRexx -- BSF4ooRexx: needed need for UTF-8 conversion routines
+  signal on any
+  .context~package~loadPackage("BSF.CLS") -- if not found a syntax condition is raised and
+                                          -- control transferred to (immediately following) "ANY:" label
+any:
+  return
 
 
 
@@ -1913,6 +1922,7 @@ syntax:
 
 -- say "... ... probing" pp2(conn) "sleepTime:" pp2(sleepTime) "..."
 
+  signal on halt
   do forever while connections~items>0 -- as long as client connections, probe them
      call sysSleep sleepTime  -- sleep
      guard on
@@ -1930,6 +1940,14 @@ syntax:
   guard on
   watchConnections=.false
   guard off
+  return
+
+halt:       -- a HALT condition, make sure all known connections get closed
+  guard off -- make sure guard is off
+say "... DEBUG..." self": HALT in watchConnections, closing all known connections (and thereby their messageloops)..."
+  do conn over connections
+     conn~close
+  end
   return
 
 
@@ -1956,7 +1974,9 @@ syntax:
   use strict arg action, timeoutDataPointer
 -- say "... timeoutDataPointer:" pp2(timeoutDataPointer) copies("<-/\",10)
   reply                                -- create a new thread
+
   self~nativeStartServerTimeoutLoop(timeoutDataPointer)  -- start the timeout loop, pass (*data) via Rexx to native function
+
 
 
 

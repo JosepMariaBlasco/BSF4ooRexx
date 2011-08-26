@@ -55,7 +55,7 @@ do i=1 to repetitions
 end
 ended=.dateTime~new
 
-say "started:" started", ended:" ended", duration:" ended-started
+say "started:" started", ended:" ended", duration:" ended-started"/"repetitions"="||(ended-started)/repetitions
 exit 0
 
 usage:
