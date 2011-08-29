@@ -13,7 +13,7 @@
 
       cf.:        dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
 
-      version:    099.20110823
+      version:    099.20110829
 
       changes:    - 2011-07-20, rgf; DBusProxyObject:
                     - added proxy.dispatch(methodName[,args...])-method to send messages that
@@ -66,6 +66,7 @@
                         Rexx condition is raised while servicing a request, then all Rexx threads will get halted
                         (intended to stop/abend program)
                   - 2011-08-26, rgf: close all connections if in the DBusServer watchLoop a halt-condition arises (via native code)
+                  - 2011-08--29, rgf: change sequence of init-args for DBusServiceObject to reflect importance by usage pattern
 
 
       license:    Apache License 2.0
@@ -94,7 +95,7 @@
 */
 .local~dbus.dir=.directory~new
 
-.dbus.dir~version="099.20110823"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
+.dbus.dir~version="099.20110829"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
 
 .dbus.dir~DBUS_SERVICE_DBUS            ="org.freedesktop.DBus"    -- "The bus name used to talk to the bus itself."
 .dbus.dir~DBUS_PATH_DBUS               ="/org/freedesktop/DBus"   -- "The object path used to talk to the bus itself."
@@ -1234,9 +1235,9 @@ syntax: raise propagate   -- raise condition in caller
 */
 ::class "DbusServiceObject" mixinclass object  public
 
-::method init                 -- service.connection, service.objectPath and introData may be supplied later, using the respective methods
+::method init                 -- intorData, service.connection, service.objectPath; introData may be supplied later, using the respective methods
   expose  service.connection service.objectPath service.introspectRootNode service.methods
-  use strict arg service.connection=.nil, service.objectPath=.nil, introData=.nil
+  use strict arg introData=.nil, service.connection=.nil, service.objectPath=.nil
 
   service.methods=.nil
 

@@ -158,7 +158,7 @@ call dumpConnectionStatistics conn
   if~addProperty("Rony3rw", "s", "readwrite")
 
   introspectData=node~makeString       -- turn definitions into the appropriate xml-string
-  self~init:super(,,introspectData)    -- make sure we define the interface data for the clients (will be returned by Introspect)
+  self~init:super(introspectData)      -- make sure we define the interface data for the clients (will be returned by Introspect)
 
   say "init: created on the fly the following introspect data:"
   say introspectData

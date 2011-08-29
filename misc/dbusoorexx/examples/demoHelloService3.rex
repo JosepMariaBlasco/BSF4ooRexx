@@ -78,7 +78,7 @@ halt:
    -- introspection data stored in an external file
   idata='demoHelloService3.xml'     -- filename that contains the introspect.xml data
 
-  self~init:super(.nil,.nil,idata)  -- let DBusServiceObject initialize
+  self~init:super(idata)  -- let DBusServiceObject initialize
 
 ::method serviceName       /* the name of this service object           */
    return "RexxHelloService3"

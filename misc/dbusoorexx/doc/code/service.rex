@@ -1,6 +1,5 @@
 objectPath    ="/org/rexxla/oorexx/demo/Hello"
 busName       ="org.rexxla.oorexx.demo.Hello"
-interface     ="org.rexxla.oorexx.demo.Hello"
 
 conn=.dbus~session            -- get the session bus
 
@@ -19,8 +18,9 @@ conn~serviceObject("add", objectPath, service)  -- add service object to connect
 say "Hit enter to stop server..."
 parse pull answer
 
-halt:                         -- a ctl-c causes a jump to this label
-   conn~messageLoop("stop")   -- stop message loop
+halt:                   -- a ctl-c causes a jump to this label
+   say "closing connection."
+   conn~close           -- close connection, stops message loop
 
 
 ::requires "dbus.cls"         -- get dbus support for ooRexx
@@ -45,8 +45,8 @@ halt:                         -- a ctl-c causes a jump to this label
         '  </interface>                                                                '  -
         '</node>                                                                       '
 
-::method Multiply
+::method Multiply       -- implementation of "orx.rexxla.oorexx.demo.Hello.Multiply"
    use arg number1, number2, slotDir
-   say "Multply-request received: sender-bus="slotDir~sender "at="slotDir~dateTime
+   say "Multply-request received: sender-bus=["slotDir~sender"]" "at=["slotDir~dateTime"]"
    return number1*number2
 

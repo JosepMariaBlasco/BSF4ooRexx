@@ -140,7 +140,7 @@ halt:
         '  </interface>                                                                '  -
         '</node>                                                                       '
 
-  self~init:super(.nil,.nil,idata)  -- let DBusServiceObject initialize
+  self~init:super(idata)  -- let DBusServiceObject initialize
 
 ::method serviceName       /* the name of this service object           */
   return "RexxHelloService2"
