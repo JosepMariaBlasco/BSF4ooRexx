@@ -13,7 +13,7 @@
 
       cf.:        dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
 
-      version:    099.20110829
+      version:    099.20110912
 
       changes:    - 2011-07-20, rgf; DBusProxyObject:
                     - added proxy.dispatch(methodName[,args...])-method to send messages that
@@ -66,8 +66,14 @@
                         Rexx condition is raised while servicing a request, then all Rexx threads will get halted
                         (intended to stop/abend program)
                   - 2011-08-26, rgf: close all connections if in the DBusServer watchLoop a halt-condition arises (via native code)
-                  - 2011-08--29, rgf: change sequence of init-args for DBusServiceObject to reflect importance by usage pattern
-
+                  - 2011-08-29, rgf: change sequence of init-args for DBusServiceObject to reflect importance by usage pattern
+                  - 2011-09-12, rgf: - DBus.close(): setting "cself=.nil", so cannot be used anymore
+                                     - DBus.message(...): raise error, if connection is closed
+                                     - DBus.listener() & DBus.serviceObject(): if no listeners and service objects, stop message loop
+                      - DBusServiceObject: replaced "service.connection" with "service.connections" (a set);
+                                           removed "service.objectPath"; changed method "service.signal" to
+                                           accept the arguments in the following order "objectPath,interface,member, ...args...",
+                                           a signal is sent to all connections the service object is registered with
 
       license:    Apache License 2.0
 
@@ -95,7 +101,7 @@
 */
 .local~dbus.dir=.directory~new
 
-.dbus.dir~version="099.20110829"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
+.dbus.dir~version="099.20110912"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
 
 .dbus.dir~DBUS_SERVICE_DBUS            ="org.freedesktop.DBus"    -- "The bus name used to talk to the bus itself."
 .dbus.dir~DBUS_PATH_DBUS               ="/org/freedesktop/DBus"   -- "The object path used to talk to the bus itself."
@@ -443,7 +449,7 @@ syntax: raise propagate
 
 ::method nativeCloseConnection    private EXTERNAL "LIBRARY dbusoorexx DbusNativeConnectionClose"
 ::method close             -- close (private) connection
-  expose busType server statistics
+  expose busType statistics cself
 
   self~messageLoop("stop")    -- stop message loop, independent of the connection's type
   statistics~closed=.dateTime~new   -- remember time of closing
@@ -455,6 +461,8 @@ syntax: raise propagate
      self~nativeCloseConnection
 --     say self ":" "! ---> NATIVE CLOSE CONNECTION GOT CARRIED OUT <--- !" "busType:" pp2(busType) "self:" pp2(self) "server:" pp2(server)
   end
+  cself=.nil               -- from now on this instance of a connection is not usable anymore
+
 
 /* Fold functions/methods that query the state or abilities of a connection.
    "Authenticated" or "IsAuthenticated" are synonyms: returns .true, if the connection was authenticated, .false else
@@ -599,10 +607,8 @@ syntax: raise propagate
      guard on        -- how many listener and service objects are there ?
      nr=internalSignalListeners~items+internalRegisteredServiceObjects~items
      guard off
-/* ??? RGF 2011-08-13
      if nr=0 then    -- no registered listener & server objects, make sure message loop is stopped
         self~messageLoop("stop")
-*/
 
      return count
   end
@@ -650,8 +656,11 @@ syntax:  raise propagate
 
      if rexxObject~isA(.DBusServiceObject) then
      do
+        rexxObject~service.connections~put(self)   -- add this connection to the serviceObject connection set
+/*
         rexxObject~service.connection=self         -- set connection in DBusServiceObject
         rexxObject~service.objectPath=objectPath   -- save desired object-Path
+*/
      end
 
      guard on
@@ -696,10 +705,9 @@ syntax:  raise propagate
      nr=internalSignalListeners~items+internalRegisteredServiceObjects~items
      guard off
 
-/* ??? RGF 2011-08-13
      if nr=0 then    -- no registered listener & server objects, make sure message loop is stopped
         self~messageLoop("stop")
-*/
+
      return count
   end
 
@@ -836,9 +844,14 @@ syntax:
 
    /* folding methods of the "message" group into one parametrized method */
 ::method message        -- send message to service object
+  expose cself
   use strict arg function, ...
 
   signal on syntax
+
+  if cself=.nil then    -- connection got closed, cannot use it anymore
+     raise syntax 93.900 array ('Connection is closed, hence cannot be used anymore')
+
   firstLetter=function~strip~left(1)~upper
   if pos(firstLetter,"CS")=0 then
      raise syntax 88.916 array ('"function"', '"C[all]", "S[ignal]"', function)
@@ -1236,10 +1249,13 @@ syntax: raise propagate   -- raise condition in caller
 ::class "DbusServiceObject" mixinclass object  public
 
 ::method init                 -- intorData, service.connection, service.objectPath; introData may be supplied later, using the respective methods
-  expose  service.connection service.objectPath service.introspectRootNode service.methods
-  use strict arg introData=.nil, service.connection=.nil, service.objectPath=.nil
+  expose  service.connections service.introspectRootNode service.methods
+--  expose  service.connection service.objectPath service.introspectRootNode service.methods
+--  use strict arg introData=.nil, service.connection=.nil, service.objectPath=.nil
+  use strict arg introData=.nil
 
   service.methods=.nil
+  service.connections=.set~new   -- set of connections in which this service object gets used
 
   signal on syntax
   self~service.parseIntrospectData(introData)
@@ -1295,8 +1311,15 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
   expose    service.introspectData
   return dbus.box("s", service.introspectData)
 
-::attribute service.connection               /* object's connection to use  */
+::attribute service.connections              /* object's connection to use  */
 
+/*
+::attribute service.connections get          /* object's connection to use  */
+  expose service.connections
+  return service.connections~copy            /* return a copy of the current set of connections this service object services */
+*/
+
+/*
 ::attribute service.objectPath get           /* object's path on the dbus   */
 ::attribute service.objectPath set           /* object's path on the dbus   */
    expose service.objectPath service.connection
@@ -1316,6 +1339,7 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
    service.objectPath=oPath
    return
 syntax: raise propagate
+*/
 
 
 ::attribute service.introspectRootNode get   /* make introspection parse tree available */
@@ -1331,7 +1355,7 @@ syntax: raise propagate
 
 ::attribute service.methods  get             /* make introspection parse tree available */
 
-::attribute service.replySignature get
+::attribute service.replySignature get       /* returns the reply signature for the given member or .nil */
   expose service.methods service.objectPath
   use arg member, interface=""
 
@@ -1348,11 +1372,16 @@ syntax: raise propagate
   return .nil           -- no signature/member found
 
 
-::method service.sendSignal   -- utility method to ease emitting signals from the service object
-  expose service.methods service.connection service.objectPath
-  use strict arg member, interface, ...
+::method service.sendSignal   -- utility method to ease emitting signals from the service object;
+                              -- will emit the signal to all connections this service object is registered with
+  expose service.methods service.connections
+--  expose service.methods service.connection service.objectPath
+  use strict arg objectPath=.nil, interface="", member, ...
 
-  signature=""
+  signature=""                            -- default to no arguments
+   -- canonize (empty,left-out) values
+  if interface=.nil then interface=""
+  if objectPath=""  then objectPath=.nil
 
   if service.methods<>.nil then
   do
@@ -1370,15 +1399,55 @@ syntax: raise propagate
   end
 
    -- build arguments for "self~message":
-  args=.array~of("signal", service.objectPath, interface, member, signature)
-  do i=3 to arg()       -- append arguments to the signal, if any
+   -- args=.array~of("signal", service.objectPath, interface, member, signature)
+  args=.array~of("signal", objectPath, interface, member, signature)
+  do i=4 to arg()       -- append arguments to the signal, if any
      args~append(arg(i))
   end
 
   signal on syntax
-  service.connection~sendWith("message", args) -- send the message
+--  service.connection~sendWith("message", args) -- send the message
+
+  do conn over service.connections  -- send signal to all connections this service object is being used
+     if conn~cself=.nil then        -- connection closed?
+        service.connections~remove(conn)  -- remove connection from set
+     else
+     do
+        if objectPath=.nil then     -- no object path supplied, find an object path for this service object on the connection
+        do
+           opath=.nil
+           s=conn~serviceObject("GetRegisteredServiceObjects")~supplier
+           do while s~available     -- loop over all index/item pairs
+              if s~item=self then
+              do
+                 if s~index~left(1)="/" then    -- found an object path index entry
+                 do
+                    opath=s~index               -- use this as object path, leave supplier loop
+                    leave
+                 end
+                 else if s~index="default" then -- service object is a default entry
+                 do
+                    opath="/"                   -- supply a root path value as the default value
+                 end
+              end
+              s~next             -- get next index/item pair
+           end
+
+           if opath=.nil then    -- service object is not registered with connection anymore, remove connection from service object as well
+           do
+              service.connections~remove(conn)
+              iterate
+           end
+
+           args[2]=opath         -- set object path in signal message
+        end
+
+        conn~sendWith("message", args) -- send the signal message
+     end
+  end
   return
 syntax:raise propagate
+
 
                /* service requests  */
 ::method unknown
@@ -1945,7 +2014,7 @@ syntax:
 
 halt:       -- a HALT condition, make sure all known connections get closed
   guard off -- make sure guard is off
-say "... DEBUG..." self": HALT in watchConnections, closing all known connections (and thereby their messageloops)..."
+-- say "... DEBUG..." self": HALT in watchConnections, closing all known connections (and thereby their messageloops)..."
   do conn over connections
      conn~close
   end

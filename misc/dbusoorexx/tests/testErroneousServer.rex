@@ -6,7 +6,7 @@
       purpose: - demonstrate a dbus Rexx service object with its introspection data
                  defined within this program (cf. init-method)
       needs:   - ooRexx dbus support package
-      date:    2011-07-29 (2011-07-17)
+      date:    2011-07-29 (2011-07-17, 2011-09-12)
       specs:   dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
       license: AL 2.0 (Apache License 2.0)
 
@@ -62,7 +62,7 @@ say "-- ** -- "~copies(5)
 
 /*
 /*
-o~service.sendSignal("Start", "", "started at:" .dateTime~new~string)
+o~service.sendSignal(objectPath, interface, "Start", "started at:" .dateTime~new~string)
 say "sleeping" timeout "secs ..."
 call syssleep timeout
 say "press return to end"
@@ -70,7 +70,7 @@ parse pull x
 */
 
 halt:
-   o~service.sendSignal("Exit", "", "exited at:" .dateTime~new~string)
+   o~service.sendSignal(objectPath, interface, "Exit", "exited at:" .dateTime~new~string)
    conn~messageLoop("stop")-- stop message loop
    say "after stopping message loop..."
    exit -1

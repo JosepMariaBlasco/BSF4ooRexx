@@ -53,12 +53,12 @@ conn~serviceObject("add", objectPath, o)
 say "o="pp2(o)
 say "-- ** -- "~copies(5)
 
-o~service.sendSignal("Start", "", "started at:" .dateTime~new~string)
+o~service.sendSignal(objectPath, interface, "Start", "started at:" .dateTime~new~string)
 say "sleeping" timeout "secs ..."
 call syssleep timeout
 
 halt:
-   o~service.sendSignal("Exit", "", "exited at:" .dateTime~new~string)
+   o~service.sendSignal(objectPath, interface, "Exit", "exited at:" .dateTime~new~string)
    conn~messageLoop("stop")-- stop message loop
    say "after stopping message loop..."
    exit -1

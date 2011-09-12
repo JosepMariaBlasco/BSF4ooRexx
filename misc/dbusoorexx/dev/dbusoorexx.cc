@@ -34,7 +34,7 @@
                 2011-08-25, rgf: - add entry "CONNECTION" to slotDir; this allows service and listener objects
                                    to distinguish the connections they got registered with
 
-    version:    099.20110826
+    version:    099.20110912
     license:      Apache License 2.0
 
 ------------------------ Apache Version 2.0 license -------------------------
@@ -116,11 +116,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 #ifdef DBUSOOREXX_32
-    #define DBUS_REXXVERSION    "099.20110826 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110912 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (DBUSOOREXX_64)
-    #define DBUS_REXXVERSION    "099.20110826 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110912 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define DBUS_REXXVERSION    "099.20110826 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "099.20110912 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #ifndef TID
@@ -132,6 +132,14 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // =================== debug defines ...
 #define REXX_LOADER             // needed for dbus_threads_init_default(), cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusThreads.html#ga33b6cf3b8f1e41bad5508f84758818a7>
+
+
+    // if defined, then a "Disconnected" signal on a private server's client connection will
+    // cause a "disconnect" message to be sent to the private server automatically
+    // as of 2011-09-12 (DBus 1.5.7) the "Disconnected" signal is not sent on private server connections;
+    // to test stalled connections the Rexx code checks for that and disconnects, if the connection is not open anymore,
+    // hence the following def is not really needed
+// #define REXX_AUTO_DISCONNECT_FROM_PRIVATE_SERVER
 
 
 // #define DEBUG_RGF           // for temporary debug output
@@ -4125,10 +4133,12 @@ RexxMethod2(RexxObjectPtr, DbusMessageLoop, CSELF, connPtr, OSELF, self)
     RexxObjectPtr rxFalse=context->False();
     RexxObjectPtr rxNil  =context->Nil();
 
+
+#if defined (REXX_AUTO_DISCONNECT_FROM_PRIVATE_SERVER)  // if auto-disconnect from private server
         // determine, whether this is a connection to a private Rexx server running in this instance
     RexxObjectPtr tmpRop=context->GetObjectVariable("server");
     bool bClientForPrivateRexxServer= (tmpRop!=NULL && tmpRop!=rxNil);
-
+#endif
         // Rexx objects that work as servers on the bus
     RexxDirectoryObject serviceObjects = (RexxDirectoryObject) context->GetObjectVariable("internalRegisteredServiceObjects");
 
@@ -4209,7 +4219,7 @@ RexxMethod2(RexxObjectPtr, DbusMessageLoop, CSELF, connPtr, OSELF, self)
 
         int msgType=dbus_message_get_type(dbusMsg);
 
-#if defined (DEBUG_RGF)     // show all messages we receive on this connection, look for the "Disconnected" signal
+#if defined (DEBUG_RGF)    // show all messages we receive on this connection, look for the "Disconnected" signal
 // --->
 fprintf(stderr, "/// ==//==>>>  ... message: type=[%d] (%s), path=[%s], interface=[%s], member=[%s] | signature=[%s] <===//===\\\\\\.......\n",
     msgType,
@@ -4280,6 +4290,8 @@ fprintf(stderr, "--- --- --- bClientForPrivateRexxServer=[%d]\n", bClientForPriv
             // a signal, but we have no listeners, ignore
         if (msgType==DBUS_MESSAGE_TYPE_SIGNAL )
         {
+
+#if defined (REXX_AUTO_DISCONNECT_FROM_PRIVATE_SERVER)  // if auto-disconnect from private server
                 // if a Disconnect signal on a server client connection, then send a "disconnect"
                 // message to the server supplying this connection as an argument (shuts down client connection in Rexx)
             if (bClientForPrivateRexxServer) // if so, check for the "Disconnect" signal and handle it
@@ -4302,6 +4314,7 @@ fprintf(stderr, "--- --- --- a SIGNAL, BINGO BINGO BINOG - DISCONNECT received: 
                     continue;
                 }
             }
+#endif
 
                 // check whether Rexx listeners are registered, if not discard signal and go ahead
             if (context->ArrayItems(signalListeners)==0)
@@ -4442,6 +4455,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
             context->SetGuardOff();     // release exclusive access to object variables/attributes
 
 
+#if defined (REXX_AUTO_DISCONNECT_FROM_PRIVATE_SERVER)  // if auto-disconnect from private server
                 // if a Disconnect signal on a server client connection, then send a "disconnect"
                 // message to the server supplying this connection as an argument
             if (bClientForPrivateRexxServer)
@@ -4461,6 +4475,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                     context->SendMessage1(context->SendMessage0(self, "SERVER"), "DISCONNECT", self);
                 }
             }
+#endif
         }
 
         // a message call, then invoke the message on the service object
