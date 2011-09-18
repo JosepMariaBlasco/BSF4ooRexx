@@ -5,4 +5,4 @@
 DBUSLIB=$HOME/dev/bsf4oorexx/sandbox/rgf/misc/dbusoorexx/dev
 DBUSPATH=$HOME/dev/bsf4oorexx/sandbox/rgf/misc/dbusoorexx
 echo $0 running "DYLD_LIBRARY_PATH=$DBUSLIB PATH=$DBUSPATH rexx $1"
-DYLD_LIBRARY_PATH=$DBUSLIB PATH=$DBUSPATH:$PATH rexx $1
+DYLD_LIBRARY_PATH=$DBUSLIB PATH=$DBUSPATH:$PATH rexx $*
