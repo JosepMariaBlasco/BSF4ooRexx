@@ -1,0 +1,272 @@
+#!/usr/bin/rexx
+/* elpShowSource.rxj */
+/*
+This demonstration was written in ooRexx by Lee Peedin
+using BSF4ooRexx, created and distributed by Dr. Rony Flatscher.
+The latest release of BSF4ooRexx can be found at:
+<http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/>
+The latest information on ooRexx can be found at:
+<http://www.oorexx.org/>
+Some demonstrations may require these additional Java classes
+SWT         <http://www.eclipse.org/swt/>
+FreeTTS     <http://freetts.sourceforge.net/docs/index.php>
+
+This demonstration has been tested using:
+ooRexx              3.0.1
+Java Version        1.5.0_06
+Windows Version     Microsoft Windows XP [Version 5.1.2600]
+-- changed:         2009-10-17, rgf, renamed extension to '.rxj'
+                    2010-05-16, rgf, - adapting example to take full advantage of BSF4ooRexx
+                                     - replacing bsf.addEventListener[WithEventObject] with a Rexx event handlers
+*/
+    lf='0a'x
+    .local~lf='0a'x
+    call bsf.importClass 'org.eclipse.swt.SWT'                    , 'swt'
+    call bsf.importClass 'org.eclipse.swt.layout.FillLayout'      , 'swtFillLayout'
+    call bsf.importClass 'org.eclipse.swt.graphics.Color'         , 'swtColor'
+    call bsf.importClass 'org.eclipse.swt.graphics.Font'          , 'swtFont'
+    call bsf.importClass 'org.eclipse.swt.graphics.FontData'      , 'swtFontData'
+    call bsf.importClass 'org.eclipse.swt.graphics.Image'         , 'swtImage'
+    call bsf.importClass 'org.eclipse.swt.widgets.ColorDialog'    , 'swtColorDialog'
+    call bsf.importClass 'org.eclipse.swt.widgets.Display'        , 'swtDisplay'
+    call bsf.importClass 'org.eclipse.swt.widgets.FileDialog'     , 'swtFileDialog'
+    call bsf.importClass 'org.eclipse.swt.widgets.FontDialog'     , 'swtFontDialog'
+    call bsf.importClass 'org.eclipse.swt.widgets.Menu'           , 'swtMenu'
+    call bsf.importClass 'org.eclipse.swt.widgets.MenuItem'       , 'swtMenuItem'
+    call bsf.importClass 'org.eclipse.swt.widgets.Shell'          , 'swtShell'
+    call bsf.importClass 'org.eclipse.swt.widgets.Text'           , 'swtText'
+
+    userData=.directory~new      -- directory which is meant to be sent to the event handler by BSF4ooRexx
+    interfaceSelectionListener="org.eclipse.swt.events.SelectionListener"  -- name of swt SelectionListener interface
+
+    display  = .swtDisplay~new
+    font     = .swtFont~new(display,'Courier',10,.swt~normal)
+
+    foregroundColor = display~getSystemColor(.swt~color_black)
+    backgroundColor = display~getSystemColor(.swt~color_white)
+
+    shell = .swtShell~new(display)
+    shell~setLayout(.swtFillLayout~new)
+    shell~setText('Source Preview Screen')
+
+    text = .swtText~new(shell,.swt~border + .swt~multi + .swt~v_scroll + .swt~h_scroll)
+    text~setFont(font)
+    text~setForeground(foregroundColor)
+    text~setBackground(backgroundColor)
+
+    bar = .swtMenu~new(shell,.swt~bar)
+    shell~setMenuBar(bar)
+
+    fileItem = .swtMenuItem~new(bar,.swt~cascade)
+    fileItem~setText('File')
+
+    submenu = .swtMenu~new(shell,.swt~drop_down)
+    fileItem~setMenu(submenu)
+
+    item = .swtMenuItem~new(submenu,.swt~push)
+    item~setText('Open')
+    rpEH=BsfCreateRexxProxy(.menuOpenEH~new, userData, interfaceSelectionListener)
+    item~addSelectionListener(rpEH)
+
+    item = .swtMenuItem~new(submenu,.swt~push)
+    item~setText('Syntax')
+    rpEH=BsfCreateRexxProxy(.menuSyntaxEH~new, userData, interfaceSelectionListener)
+    item~addSelectionListener(rpEH)
+
+    item = .swtMenuItem~new(submenu,.swt~push)
+    item~setText('Close')
+    rpEH=BsfCreateRexxProxy(.menuCloseEH~new, userData, interfaceSelectionListener)
+    item~addSelectionListener(rpEH)
+
+    item = .swtMenuItem~new(submenu,.swt~push)
+    item~setText('Exit')
+    rexxProxyEH=BsfCreateRexxProxy(.exitEH~new, userData, interfaceSelectionListener)
+    item~addSelectionListener(rexxProxyEH)
+
+    appearanceItem = .swtMenuItem~new(bar,.swt~cascade)
+    appearanceItem~setText('Appearance')
+
+    submenu = .swtMenu~new(shell,.swt~drop_down)
+    appearanceItem~setMenu(submenu)
+
+    item = .swtMenuItem~new(submenu,.swt~push)
+    item~setText('Font')
+    rpEH=BsfCreateRexxProxy(.menuFontEH~new, userData, interfaceSelectionListener)
+    item~addSelectionListener(rpEH)
+
+    item = .swtMenuItem~new(submenu,.swt~push)
+    item~setText('Foreground')
+    rpEH=BsfCreateRexxProxy(.menuForegroundEH~new, userData, interfaceSelectionListener)
+    item~addSelectionListener(rpEH)
+
+    item = .swtMenuItem~new(submenu,.swt~push)
+    item~setText('Background')
+    rpEH=BsfCreateRexxProxy(.menuBackgroundEH~new, userData, interfaceSelectionListener)
+    item~addSelectionListener(rpEH)
+
+    icon = .swtImage~new(display,'rexx.jpg')
+    shell~setImage(icon)
+
+    shell~setBounds(0,340,1024,370)
+
+    -- save Java objects we need in the event handlers
+    userData~shell   = shell
+    userData~display = display
+    userData~font    = font
+    userData~text    = text
+    userData~foregroundColor=foregroundColor
+    userData~backgroundColor=backgroundColor
+
+    shell~open
+
+    do while shell~isDisposed=.false      -- swt event loop
+       if display~readAndDispatch=.false then
+          display~sleep
+    end
+
+      -- being nice: disposing created swt resources
+    font~dispose
+    foregroundColor~dispose
+    backgroundColor~dispose
+    text~dispose
+    display~dispose
+
+::requires bsf.cls      -- get Java support
+
+
+
+::class exitEH
+::method unknown     -- intercept unhandled events
+  use arg methName, methArgs
+  bsf.getSlotDir(methArgs)~userData~shell~dispose
+
+
+::class menuOpenEH
+::method unknown     -- intercept unhandled events
+  use arg methName, methArgs
+  userData=bsf.getSlotDir(methArgs)~userData
+
+  dialog = .swtFileDialog~new(userData~shell,.swt~open)
+  name   = dialog~open
+  if .nil = name then
+     userData~shell~setText('Source Preview Screen')
+  else
+  do
+     istream = .stream~new(name)
+     iarray  = istream~arrayin
+     istream~close
+     ftext = ''
+     ctr = 0
+     do i = 1 to iarray~items
+        ftext = ftext||iarray[i]
+        if i < iarray~items then
+           ftext = ftext||.lf
+     end
+     userData~text~setText(ftext)
+     userData~shell~setText('Source Preview Screen -' name)
+  end
+
+
+::class menuSyntaxEH
+::method unknown     -- intercept unhandled events
+  use arg methName, methArgs
+  userData=bsf.getSlotDir(methArgs)~userData
+
+  outfile = 'temp.rex'
+  rv = SysFileDelete(outfile)
+  ostream = .stream~new(outfile)
+  rv = ostream~open('replace')
+  if rv = 'READY:' then
+  do
+     ostream~charout(userData~text~getText)
+     ostream~close
+
+     'rexxc temp.rex /s 2> rexxc.txt'
+     if rc \= 0 then
+     do
+        output = 'rexxc.txt'
+        opstream = .stream~new(output)
+        earray = opstream~arrayin
+        opstream~close
+        errtxt = ''
+        do i = 1 to earray~items
+           errtxt = errtxt||earray[i]||.lf
+        end
+        .bsf.dialog~messageBox(errtxt,'Syntax Checker','error')
+     end
+     else
+     do
+         .bsf.dialog~messageBox('No Syntax Errors Detected','Syntax Checker','information')
+     end
+     rv = SysFileDelete('rexxc.txt')
+  end
+  else
+  do
+     .bsf.dialog~messageBox('Return Value of stream~open was' rv ,'Error','error')
+     ostream~close
+  end
+
+
+::class menuCloseEH
+::method unknown     -- intercept unhandled events
+  use arg methName, methArgs
+  userData=bsf.getSlotDir(methArgs)~userData
+
+  userData~text~setText("")
+  userData~shell~setText("Source Preview Screen")
+
+
+::class menuFontEH
+::method unknown     -- intercept unhandled events
+  use arg methName, methArgs
+  userData=bsf.getSlotDir(methArgs)~userData
+
+  fontData=menuFont(userData) -- let user select font
+  if fontData<>.nil then      -- show dialog, fetch selection, if any
+  do
+     font = .swtFont~new(userData~display,fontData)
+     userData~font=font       -- save new font
+     userData~text~setFont(font)
+  end
+
+
+::routine menuFont
+  use arg userData
+  fontDialog = .swtFontDialog~new(userData~shell)
+  fontDialog~setFontList(userData~font~getFontData)
+  return fontDialog~open      -- return selection or .nil, if none
+
+
+
+
+::class menuForegroundEH
+::method unknown     -- intercept unhandled events
+  use arg methName, methArgs
+  userData=bsf.getSlotDir(methArgs)~userData
+
+  colorDialog = .swtColorDialog~new(userData~shell)
+  colorDialog~setRGB(userData~foregroundColor~getRGB)
+  rgb = colorDialog~open
+  if rgb<>.nil then           -- show dialog, fetch selection, if any
+  do
+     foregroundColor = .swtColor~new(userData~display,rgb)
+     userData~foregroundColor=foregroundColor   -- save new color
+     userData~text~setForeground(userData~foregroundColor)
+  end
+
+
+::class menuBackgroundEH
+::method unknown     -- intercept unhandled events
+  use arg methName, methArgs
+  userData=bsf.getSlotDir(methArgs)~userData
+
+  colorDialog = .swtColorDialog~new(userData~shell)
+  colorDialog~setRGB(userData~backgroundColor~getRGB)
+  rgb = colorDialog~open      -- show dialog, fetch selection, if any
+  if rgb<>.nil then
+  do
+     backgroundColor = .swtColor~new(userData~display,rgb)
+     userData~backgroundColor=backgroundColor   -- save new color
+     userData~text~setBackground(backgroundColor)
+  end
+

@@ -1,0 +1,51 @@
+/*
+   name:    RunJavaClass.rxj
+   author:  Jack Woehr, <http://www.well.com/%7Ejax/rcfb/rexx.html>
+   purpose: Calls the static void main() method of a class, supplying optionally
+            arguments given on the command line
+   date:    2008-09-03
+            2009-07-06 Walter Pachl  add help
+
+   usage:   RunJavaClass fullyQualifiedJavaClassName [arg] ...
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2001-2009 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+
+*/
+
+If arg(1)='?' Then Do
+  Parse Source source
+  Say source
+  Say 'This program shows how a Java class can be called from OoRexx'
+  Say 'rexx RunJavaClass fullyQualifiedJavaClassName [arg] ... '
+  Say 'For example:                                            '
+  Exit
+  End
+
+parse arg myClassName myArgs        /* parse arguments      */
+say "class to load:" pp(myClassName)
+myClass=bsf.loadClass(myClassName)  /* load the Java class  */
+
+say "args are:" pp(myArgs)          /* show arguments       */
+myArgArray=bsf.createJavaArray("String.class", myArgs~words)   /* create a Java array with matching size */
+do i = 1 to myArgs~words
+   myArgArray[i]= myArgs~word(i)
+end
+
+myClass~main(myArgArray)            /* invoke the static "main" method  */
+
+::requires BSF.CLS

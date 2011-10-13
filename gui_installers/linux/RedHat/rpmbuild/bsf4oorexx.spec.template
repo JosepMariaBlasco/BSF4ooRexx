@@ -1,0 +1,44 @@
+Summary:        Bean Scripting Framework for Open Object Rexx (BSF4ooRexx)
+
+Group:          Development/Tools
+License:        Apache Software License 2.0
+URL:            http://sourceforge.net/projects/bsf4oorexx/
+#Source0:        
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+Autoreq:        0
+BuildRequires:  unzip
+Requires:       oorexx >= 4.1.0
+Requires:       java-1.6.0-openjdk >= 1.6.0
+
+%description
+BSF4Rexx version for ooRexx 4.1.0 and later, exploiting the new ooRexx kernel (e.g. allowing implementation of Java methods in ooRexx, callbacks from Java to ooRexx). [Camouflages Java as the dynamically typed, caseless and easy to use ooRexx.]
+
+%prep
+unzip -d %{_builddir}/BSF4ooRexxInstall %{_sourcedir}/BSF4ooRexx_install
+
+%build
+
+%install
+rm -rf %{buildroot}
+mkdir -p %{buildroot}/tmp/
+cp -r BSF4ooRexxInstall %{buildroot}/tmp/
+
+%post
+rm -rf /opt/BSF4ooRexx
+cp -R %{_sourcedir}/BSF4ooRexxInstall /tmp/
+#cd /tmp/BSF4ooRexxInstall/bsf4oorexx/install/
+rexx /tmp/BSF4ooRexxInstall/bsf4oorexx/install/setupAllAndRun.rex install /@q:
+
+%preun
+#cd /opt/BSF4ooRexx
+rexx /opt/BSF4ooRexx/install/setupAllAndRun.rex uninstall /@q:
+
+%clean
+
+%files
+%defattr(-,root,root,-)
+%doc
+/tmp/*
+
+%changelog

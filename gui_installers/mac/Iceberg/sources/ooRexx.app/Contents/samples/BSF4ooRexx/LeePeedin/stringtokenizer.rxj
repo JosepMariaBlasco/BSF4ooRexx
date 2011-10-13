@@ -1,0 +1,69 @@
+#!/usr/bin/rexx
+/* stringtokenizer.rxj */
+/*
+This demonstration was written in ooRexx by Lee Peedin
+using BSF4ooRexx, created and distributed by Dr. Rony Flatscher.
+The latest release of BSF4ooRexx can be found at:
+<http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/>
+The latest information on ooRexx can be found at:
+<http://www.oorexx.org/>
+Some demonstrations may require these additional Java classes
+SWT         <http://www.eclipse.org/swt/>
+FreeTTS     <http://freetts.sourceforge.net/docs/index.php>
+
+This demonstration has been tested using:
+ooRexx              3.0.1
+Java Version        1.5.0_06
+Windows Version     Microsoft Windows XP [Version 5.1.2600]
+Linux Version       Suse 10
+-- changed:         2009-10-17, rgf, renamed extension to '.rxj'
+*/
+    parse source os how what
+    call SysCls
+    lf = '0a'x
+    astring = 'Welcome To The RexxLA Symposium'
+    text = 'astring =' astring
+
+--Split a string with the default delimiter (a space)
+    stc = .bsf~new('java.util.StringTokenizer', astring)
+
+    text = text||lf'Number of Elements...:' stc~countTokens
+    do while stc~hasMoreElements
+       text = text||lf||stc~nextElement
+    end
+
+    text = text||lf
+    text = text||lf
+    text = text||lf
+    text = text||lf
+    text = text||lf
+    text = text||lf
+    text = text||lf
+
+    astring = 'one,two:three;four;five:six,seven'
+    text = text||lf'astring =' astring
+
+--Split a string with multiple delimiters - creates an Java enumeration
+    delim = ',;:'
+    stc = .bsf~new('java.util.StringTokenizer', astring, delim)
+    text = text||lf'Number of Elements...:' stc~countTokens
+    do while stc~hasMoreElements
+       text = text||lf||stc~nextElement
+    end
+
+    text = text||lf
+    text = text||lf
+    text = text||lf
+    text = text||lf
+    text = text||lf
+
+--Split a string with multiple delimiters & retain the delimeters
+    stc = .bsf~new('java.util.StringTokenizer', astring, delim, .true)
+    text = text||lf'Number of Elements...:' stc~countTokens
+    do while stc~hasMoreElements
+       text = text||lf||stc~nextElement
+    end
+    call elpFrame 'Example of the Java StringTokenizer Class', text, 14, 70
+
+::requires 'elpFrame.rxj'
+

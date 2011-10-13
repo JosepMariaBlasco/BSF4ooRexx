@@ -1,0 +1,22 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited by Rony G. Flatscher, 2010-07-17/20 */
+/* Example 11: create a calc/spreadsheet document and insert a text in cell "A1" */
+
+   /* create the Desktop object, we need its XComponentLoader interface to load a new document */
+xDesktop         = UNO.createDesktop()       /* get the OOo XDesktop interface to the service object  */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* create a new spreadsheet document */
+url = "private:factory/scalc"
+calcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, .UNO~noProps)
+
+   /* get first sheet in spreadsheet */
+xSheet = calcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0) ~XSpreadSheet
+
+   /* insert some text in "A1" (row/column format: "0,0") */
+call uno.setCell xSheet, 0, 0, "Hello World with ooRexx !"  /* routine defined in UNO.CLS */
+
+   /* set "modified" false -> UNO will not ask if you want to save the current document on close */
+calcComponent~XModifiable~setModified(.false)
+
+::requires UNO.CLS    -- get UNO support

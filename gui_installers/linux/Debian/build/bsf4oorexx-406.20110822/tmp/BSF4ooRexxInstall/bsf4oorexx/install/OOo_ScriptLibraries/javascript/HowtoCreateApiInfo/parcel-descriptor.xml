@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<parcel language="JavaScript" xmlns:parcel="scripting.dtd">
+
+    <script language="JavaScript">
+        <locale lang="en">
+            <displayname value="HowtoCreateApiInfo"/>
+            <description>
+                Javascript sample to demonstrate how to use the OOo dispatch framework to create on-the-fly documentation for an OOo UNO object and an UNO IDL string using the ooRexx utility macro 'UNO_API_info.rxo'.
+            </description>
+        </locale>
+        <functionname value="HowtoCreateApiInfo.js"/>
+        <logicalname value="HowtoCreateApiInfo.JavaScript"/>
+    </script>
+
+</parcel>

@@ -1,0 +1,7 @@
+parse source . . src
+
+rexxCode="parse arg str; return reverse(str)"
+vArgs=Vector()
+vArgs.addElement("Hello from NetRexx")
+result=org.apache.bsf.BSFManager().apply("rexx",src,0,0,rexxCode,null,vArgs)
+say "NetRexx received:" result

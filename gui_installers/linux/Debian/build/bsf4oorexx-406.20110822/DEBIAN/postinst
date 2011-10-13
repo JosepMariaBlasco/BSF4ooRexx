@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cd /tmp/BSF4ooRexxInstall/bsf4oorexx/install/
+sudo rexx /tmp/BSF4ooRexxInstall/bsf4oorexx/install/setupAllAndRun.rex install /@q:

@@ -1,0 +1,102 @@
+#!/usr/bin/rexx
+/*
+    name:      Snippet108.rxj
+    purpose:   Transcribe the swt Java example 'Snippet108' to ooRexx using BSF4Rexx
+    author:    Rony G. Flatscher
+    date:      2006-02-03
+
+    url:       ooRexx:         <http://www.ooRexx.org>
+               Bsf4ooRexx:     <http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/>
+               swt:            <http://www.eclipse.org/swt/>, section "Releases"
+               Snippet108.java <http://dev.eclipse.org/viewcvs/index.cgi/%7Echeckout%7E/org.eclipse.swt.snippets/src/org/eclipse/swt/snippets/Snippet108.java>
+               Java source:    <http://java.sun.com>
+
+    directions:   - download ooRexx and install it
+                  - make sure Java is installed on your machine
+                  - download BSF4ooRexx and install it
+                  - download the standalone version of swt ("Standard Widget Toolkit"), a fast set of
+                    Java classes, replacing awt/swing, available for all major platforms (Linux,
+                    MacOS, Windows), cf. <http://www.eclipse.org/swt/>
+
+     changes:
+            2010-05-16, rgf, - replacing bsf.addEventListener[WithEventObject] with Rexx event handlers
+
+   last change: $Revision: 691 $ $Author: rony $ $Date: 2010-05-18 15:53:47 +0200 (Tue, 18 May 2010) $
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+
+*/
+
+   -- get easy access to static fields, wrap them up in an ooRexx directory proxy, new BSF4Rexx feature as of 2006-02-02
+swt=bsf.wrapStaticFields("org.eclipse.swt.SWT")
+
+display=.bsf~new("org.eclipse.swt.widgets.Display")
+shell  =.bsf~new("org.eclipse.swt.widgets.Shell", display)
+
+label  =.bsf~new("org.eclipse.swt.widgets.Label", shell, swt~none)
+label~setText("Enter your name:")
+
+text   =.bsf~new("org.eclipse.swt.widgets.Text", shell, swt~border)
+rowData=.bsf~new("org.eclipse.swt.layout.RowData", 100, swt~default)
+text~setLayoutData(rowData)
+   -- event listener to read content of text field, if it got modified
+rp=BsfCreateRexxProxy(.ModifyEventHandler~new,, 'org.eclipse.swt.events.ModifyListener')
+text~addModifyListener(rp)
+
+   -- we need the Button class more than once, hence importing it into ooRexx under the name "swtButton"
+.bsf~bsf.import("org.eclipse.swt.widgets.Button", "swtButton")
+ok=.swtButton~new(shell, swt~push)
+ok~setText("OK")
+rp=BsfCreateRexxProxy(.SelectionEventHandler~new,, 'org.eclipse.swt.events.SelectionListener')
+ok~addSelectionListener(rp)
+
+cancel=.swtButton~new(shell, swt~push)
+cancel~setText("Cancel")
+cancel~addSelectionListener(rp)
+
+shell~setDefaultButton(cancel)
+shell~setLayout(.bsf~new("org.eclipse.swt.layout.RowLayout"))
+shell~~pack~~open
+
+do while shell~isDisposed=.false      -- swt event loop
+   if display~readAndDispatch=.false then
+      display~sleep
+end
+
+display~dispose
+
+
+::requires BSF.CLS      -- get Java support
+
+
+::class  SelectionEventHandler
+::method unknown        -- intercept unhandled events
+
+::method widgetSelected
+  use arg eventObject, slotDir
+  say eventObject~source~toString   -- alternatively: getText
+
+
+::class  ModifyEventHandler
+::method unknown        -- intercept unhandled events
+
+::method modifyText
+  use arg eventObject, slotDir
+  say "So far you have entered:" pp(eventObject~source~getText)
+

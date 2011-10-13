@@ -1,0 +1,31 @@
+/* rexx */
+
+FileOutputStream   = .bsf~bsf.import("java.io.FileOutputStream")
+FileInputStream    = .bsf~bsf.import("java.io.FileInputStream")
+
+StreamSource       = .bsf~bsf.import("javax.xml.transform.stream.StreamSource")
+StreamResult       = .bsf~bsf.import("javax.xml.transform.stream.StreamResult")
+TransformerFactory = .bsf~bsf.import("javax.xml.transform.TransformerFactory")
+
+parse arg xmlFile xslFile outputFile
+
+if xslFile="" then   -- first two arguments are mandatory
+do
+  say "use: rexxj xslt.jrexx xmlfile stylesheet [output]"
+  exit
+end
+if outputFile = "" then outputFile = xmlFile||".output"
+
+if xmlFile~right(4) <> ".xml" then xmlFile = xmlFile||".xml"
+if xslFile~right(4) <> ".xsl" & xslFile~right(5) <> ".xslt" then
+  xslFile = xslFile||".xsl"
+
+xmlStream    = StreamSource~new(FileInputStream~new(xmlFile))
+styleStream  = StreamSource~new(FileInputStream~new(xslFile))
+resultStream = StreamResult~new(FileOutputStream~new(outputFile))
+
+xslt         = TransformerFactory~newInstance~newTransformer(styleStream)
+
+xslt~transform(xmlStream, resultStream)
+
+::requires bsf.cls

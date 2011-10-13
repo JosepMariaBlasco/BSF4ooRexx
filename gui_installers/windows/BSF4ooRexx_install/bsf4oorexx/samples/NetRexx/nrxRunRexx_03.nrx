@@ -1,0 +1,20 @@
+import org.rexxla.bsf.engines.rexx.
+parse source . . src
+
+rexxEngine=org.apache.bsf.BSFManager().loadScriptingEngine("rexx")
+
+rexxCode="d=.directory~new                                             ;" -
+         "d~ooRexx='Open Object Rexx'                                  ;" -
+         "d~BSF4ooRexx='Bean Scripting Framework for Open Object Rexx' ;" -
+         "return d                                                     ;" -
+         "::requires BSF.CLS                                           ;"
+
+rp=RexxProxy rexxEngine.apply(src,0,0,rexxCode,null,null);
+
+say 'rp~ooRexx              = ['rp.sendMessage0("ooRexx")']'
+say 'rp~entry("ooRexx")     = ['rp.sendMessage1("entry", "ooRexx")']'
+say 'rp["OOREXX"]           = ['rp.sendMessage1("[]",    "OOREXX")']\n'
+
+say 'rp~BSF4ooRexx          = ['rp.sendMessage0("Bsf4ooRexx")']'
+say 'rp~entry("BSF4ooRexx") = ['rp.sendMessage1("entry", "BSF4ooRexx")"]"
+say 'rp["BSF4OOREXX"]       = ['rp.sendMessage1("[]", "BSF4OOREXX")']'

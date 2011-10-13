@@ -1,0 +1,41 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited by Rony G. Flatscher, 2010-07-20 */
+/* Example 26: Read data from an existing (OOo-pre-installed) database */
+
+xContext = UNO.connect()   /* connect to server and retrieve the XContext object */
+XMcf = xContext~getServiceManager   /* retrieve XMultiComponentFactory */
+
+   /* first we create our RowSet object and get its XRowSet interface */
+xRowSet = xMcf~createInstanceWithContext("com.sun.star.sdbc.RowSet", xContext) ~XRowSet
+xProp = xRowSet~XPropertySet  /* get access to xRowSet's properties */
+
+   /* the DataSourceName can be a data source registered with [PRODUCTNAME], among other possibilities */
+xProp~setPropertyValue("DataSourceName", "Bibliography")
+
+/* -->
+/* if your database requires logon, you can use the properties User and Password, like: */
+xProp~setPropertyValue("User", "your_username")
+xProp~setPropertyValue("Password", "your_password")
+<-- */
+
+   /* the CommandType must be TABLE, QUERY or COMMAND - here we use COMMAND, box value into a Java Integer */
+cmdType = box("int", bsf.getConstant("com.sun.star.sdb.CommandType", "COMMAND"))
+xProp~setPropertyValue("CommandType", cmdType)
+
+   /* the Command could be a table or query name or a SQL command, depending on the CommandType */
+/* -->  -- old SQL command (note column names are all uppercase!):
+xProp~setPropertyValue("Command", "SELECT IDENTIFIER, AUTHOR FROM biblio ORDER BY IDENTIFIER")
+<-- */
+   /* ---rgf, 2010-07-20, OOo 3.2.1: case of fields has changed, hence the adapted query */
+xProp~setPropertyValue("Command", "SELECT Identifier, Author FROM biblio ORDER BY Identifier")
+
+xRowSet~execute      /* carry out the command (the SQL query in this case) */
+xRow = xRowSet~XRow  /* get the XRow interface for column access */
+
+say "Identifier | Author"
+say "-------------------"
+do while xRowSet~next > 0
+	say pp(xRow~getString(1))~left(10) "-" pp(xRow~getString(2))
+end
+
+::requires UNO.CLS    -- get UNO support

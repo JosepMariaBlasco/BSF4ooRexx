@@ -1,0 +1,68 @@
+#!/usr/bin/rexx
+/*
+   Name:    testOOo.rex
+   Purpose: test whether OpenOffice.org/LibreOffice can be automated via ooRexx
+   Author:  Rony G. Flatscher
+   Date:    2006-01-01
+   Changed: 2010-07-06, ---rgf, renamed to ".rxo" to indicate that this is a Rexx program using
+                                OpenOffice via Java
+            2011-04-10, ---rgf, adding hint about LibreOffice
+   Needs:   UNO.CLS (Universal Network Objects support, component technology on
+                     which OOo/SO are built)
+
+   Remarks: For further information on programming OOo/SO and getting at ooRexx
+            nutshell examples that jump-start you please refer to
+            <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.html#bakk_07> (Andreas Ahammer);
+
+            Also a must, the homepage and developer information (including the *excellent*
+            Developer guide for OOo 2.0 dated 2005-05 or later): <http://www.OpenOffice.org>
+
+   license:
+
+   ------------------------ Apache Version 2.0 license -------------------------
+      Copyright 2006-2011 Rony G. Flatscher
+
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+   -----------------------------------------------------------------------------
+*/
+
+say "testOOo.rex: started to run ..."
+say
+
+   /* create a desktop object, request the XDesktop interface from it and
+      request the XComponentLoader interface from that                        */
+say "... getting at a componentLoader ..."
+componentLoader = UNO.createDesktop()~XDesktop~XComponentLoader
+
+   /* use the XComponentLoader interface function "loadComponentFromUrl()" to
+      create a writer component (= word processor document)                   */
+say "... loading a writerComponent ..."
+writerComponent = componentLoader~loadComponentFromURL("private:factory/swriter", "_blank", 0, .UNO~noProps)
+
+   /* get the XTextDocument interface from the writerComponent and use its function
+      getText() to get a hold of the text object                              */
+say "... getting the text object ..."
+text = writerComponent~XTextDocument~getText
+
+   /* set the text of the text object to salute the world of ooRexx           */
+say "... setting the text object ..."
+text~setString("Hello OpenOffice.org/LibreOffice, this is ooRexx speaking! ("date("S") time()")")
+
+say
+say "done."
+say
+say "(You may want to re-run this script to see the startup speed improvement!)"
+
+
+::requires UNO.CLS   /* directive to get the UNO support for ooRexx, defines utility classes, routines */
+

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+# Icon=system-software-install
+Icon=bsf4rexx-uninstall
+Exec=/opt/BSF4ooRexx/install/linux/uninstall.sh
+Terminal=true
+Path=/opt/BSF4ooRexx/install/linux
+Name=Uninstall BSF4ooRexx
+Comment=Uninstalls BSF4ooRexx and removes it from the system.

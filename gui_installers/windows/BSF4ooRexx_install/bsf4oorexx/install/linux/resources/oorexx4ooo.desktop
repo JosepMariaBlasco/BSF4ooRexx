@@ -1,0 +1,18 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Rexx Script (OOo)
+NoDisplay=true
+Name[de]=Rexx Skript (OOo)
+GenericName=RexxScriptOOo
+Comment=RexxOOoScript (ooRexx script using OpenOffice.org) executed by ooRexx.
+Comment[de]=RexxJavaScript (Rexx-Skript, das OpenOffice.org benutzt), ausgeführt von ooRexx.
+# Icon=oorexx4ooo_logo
+Icon=oorexx4ooo
+MimeType=application/x-rexx-java-ooo;
+TryExec=/opt/BSF4ooRexx/install/runRexxScriptOOo.sh
+Exec=/opt/BSF4ooRexx/install/runRexxScriptOOo.sh %f
+Terminal=true
+Categories=Utility;
+
+# defined for the BSF4ooRexx package, date: 2010-07-31 - 2011-03-26, author: Rony G. Flatscher

@@ -1,0 +1,951 @@
+-------------------------------------- 2011-04-10 ----------------------------------
+- installation/setupOOo.rex
+
+        - now handles LibreOffice on MacOSX and Windows (on Linux it was handled
+          already)
+
+-------------------------------------- 2011-02-21 ----------------------------------
+- utilities/OOo/UNO_API_info/frontend_UNO_API_info.rxo
+
+        - make sure to act upon the Apple application quit event
+        - adding icon image to JFrames
+
+- bin/UNO.CLS
+
+        - Apple MacOSX-support added for displaying correct default icon in dock
+
+-------------------------------------- 2011-02-19 ----------------------------------
+- utilities/OOo/UNO_API_info/frontend_UNO_API_info.rxo
+
+        - using Toolkit's getMenuShortcutKeyMask to define menu short-cut key
+
+-------------------------------------- 2011-02-17 ----------------------------------
+- ScriptProviderForooRexx.oxt
+
+        - GUI will now be created via SwingUtilities.invokeLater(),
+          cf. <http://www.openoffice.org/issues/show_bug.cgi?id=92926> to
+          cater for MacOSX behaviour
+
+-------------------------------------- 2011-01-24 ----------------------------------
+- setupOOo.rex
+
+        - escape "%" with "[25x]" in path on Windows
+
+-------------------------------------- 2010-12-08 ----------------------------------
+- installation:
+
+        - changed mimetype from "application/x-rexx-java-ooo" to "text/x-rexx-java-ooo"
+
+-------------------------------------- 2010-08-14 ----------------------------------
+- Installation
+
+        - created new, one-click installation on Windows and Linux
+
+        - added file-associations on Windows and Linux for OOo scripts/programs
+
+        - added ability to get update-notifications from OOo
+
+-------------------------------------- 2010-07-24 ----------------------------------
+- UNO.CLS
+
+        - made the routine uno.determineScriptLocation() script language independent
+
+- installOOoRexxMacros.rxo
+
+        - now installs the ooRexx macro samples in a single library
+
+        - can also be run directly from the development subdirectory to ease debugging
+
+        - now installs a utility ooRexx macro ("UNO_API_info.rxo") into OOo's "share"
+          location and makes it thereby globally available to all programming languages
+
+          - installs a JavaScript example which demos the use of the ooRexx macro
+            "UNO_API_info.rxo"
+
+          - installs a Python example which demos the use of the ooRexx macro
+            "UNO_API_info.rxo"
+
+-------------------------------------- 2010-07-20 ----------------------------------
+- UNO.CLS
+
+        - uno.createDesktop() now returns the XDesktop interface to the service
+          (to match the behaviour of the dispatch framework)
+
+-------------------------------------- 2010-07-15 ----------------------------------
+- UNO.CLS
+
+        - changed the behaviour of the .UNO_ENUM class: whenever the enum value
+          is requested, now the code will cause always a lookup via the Java class
+          object representing the UNO_ENUM; otherwise it may be the case that
+          Java UNO disposes the remote bridge to UNO such that the cached Java
+          object representing the UNO_ENUM value will throw a java_remote_bridge
+          "com.sun.star.lang.DisposedException" if used as an argument
+
+-------------------------------------- 2010-07-12 ----------------------------------
+- UNO.CLS
+
+        - stops and raises a syntax condition, if UNO_Proxy's unknown method is about to recurse
+          infinitively with "findInterfaceWithMember" for whatever reasons (which now have become
+          readable in the error output)
+
+-------------------------------------- 2010-07-11 ----------------------------------
+- UNO.CLS
+
+        - does not wrap already wrapped .UNO_PROXY objects anymore
+
+-------------------------------------- 2010-07-10 ----------------------------------
+- UNO.CLS
+
+        - introduced a new .uno entry named "bShowErrorPopup", which by default is set to
+          .true (to keep past behaviour). If set to .false no UNO error-popup windows are
+          created at all (which may be advisable).
+
+-------------------------------------- 2010-07-07 ----------------------------------
+- UNO.CLS
+
+        - routine uno.getScriptContext: added syntax handling, which returns .nil, if
+          a non script-context argument was supplied
+
+
+-------------------------------------- 2010-06-13 ----------------------------------
+- installOOoRexxMacros.rxo
+
+        - now installs the new ooRexx script libraries "ExportSheetsToHTML", "HelloWorld",
+          "MemoryUsage", "TextTableSample", "WordCount" for all users ("share")
+
+- new libraries created and tested (modelled after OOo supplied ones)
+
+        - ExportSheetsToHTML
+        - HelloWorld
+        - MemoryUsage
+        - TextTableSample
+        - WordCount
+
+- UNO.CLS
+
+        - changing names in directory returned by the public routine
+          "uno.determineScriptLocation"
+
+
+-------------------------------------- 2010-06-08 ----------------------------------
+- UNO.CLS
+        - enquoting "rgf_util2.rex" requires directive to allow it to work under Unix
+
+-------------------------------------- 2010-06-07 ----------------------------------
+- UNO.CLS
+        - adding the public class "PARCEL" and its private class "ParcelScriptDefinition"
+          to ease interaction with the script's parcel descriptors
+
+        - added public routine "::routine uno.determineScriptLocation" to ease
+          (un)installing Rexx scripts/macros
+
+        - added class method "uno.wrap" to class .uno
+
+-------------------------------------- 2010-06-05 ----------------------------------
+- UNO_API_info.rxo
+        - adapted code to new behaviour in BSF4ooRexx; ie. arguments from OOo need to
+          be explicitly wrapped up as UNO objects using the public routine "uno.wrap()"
+
+- UNO_ReflectionUtil.cls
+        - removing check for minimum ooRexx version (already done in BSF.CLS)
+        - changed version number to 1.0.1
+        - experimental: changed "call UNO.CLS" to ":: requires UNO.CLS", such
+          that an existing package for "UNO.CLS" gets reused; possible
+          problem: if all instances of OOo went away then the cached
+          UNO objects proxying OOo objects may become invalid and cause
+          runtime errors, if (re-)used thereafter
+
+        - checking for ooRexx 4.0.1 (relying on 4.0 requires-processing,
+          but needing 4.0.1 for BSF4ooRexx anyway), now requiring
+          "UNO.CLS" such that this utility can be used without any
+          other prerequisites
+
+- installOOoRexxMacros.rxo
+
+        - new installer, will create a library "wu_tools" for all users ("share")
+          and copy the ooRexx utility "UNO_API_info.rxo" to it, such that every
+          OOo language can take advantage of its features
+
+-------------------------------------- 2010-06-01 ----------------------------------
+- UNO_API_info.rxo
+        - changed code to work on OOo 3.2 as well, although an OOo-bug got introduced
+          there: <http://www.openoffice.org/issues/show_bug.cgi?id=105855>
+
+-------------------------------------- 2010-05-27 ----------------------------------
+- UNO.CLS
+        - adapting to extension change (".rex" -> ".rxo")
+
+- UNO_API_info.rxo
+        - renamed extension to ".rxo" to match new convention "Rexx-OOo"-script
+
+-------------------------------------- 2010-05-08 ----------------------------------
+- UNO.CLS
+        - remove dependency on .bsf~bsf.getJavaClassObjectProxy(...)
+
+-------------------------------------- 2010-03-21 ----------------------------------
+- setupOOo.rex:
+        - changed the setup scripts to make it easier for users to install the OOo
+          support, especially on Linux:
+
+          - using /etc/profile to invoke the setEnvironment4OOo.sh
+
+            - need to logoff/logon to make changes effective, unless one would add the
+              following lines to ~/.bashrc
+
+                 source fully-qualified-path-to/setEnvironment4OOo.sh
+
+- new directory "utilities/OOo":
+
+        - contains utility classes programs which exploit and enhance the OpenOffice support
+
+          - new "OOoScreenShot.rxo" allows to take full screen shots or screen shots
+            from OOo document windows and/or OOo awt containers, allowing to save them as
+            gif, jpg/jpeg or png files; this file can be directly used as an OOo macro as well,
+            allowing screen shots from documents via "Tools -> Macro..." (even better: if
+            one assigns that macro to a function key, pressing that function key will create
+            a screen shot from the active document in which the function key got pressed)
+
+- new directory "utilities/OOo/UNO_API_info":
+
+        - moved from "samples"-directory as it really is a great utility for learning about
+          the numerous and complex OOo APIs in an easy and very efficient manner
+
+
+-------------------------------------- 2010-02-28 ----------------------------------
+
+- fixed a bug in UNO_PROXY.UNKNOWN; if non-interface members start with an "x", now
+  will correctly process that member, if an interface of the given name does not exist
+  (e.g. because members of a struct start with an x)
+
+-------------------------------------- 2009-10-31 ----------------------------------
+- setupOOo.rex
+        - changed occurrences of "BSF4Rexx" to "BSF4ooRexx" (resolves the bug that
+          [lib]BSF4ooRExx.{so|dll} is not copied to the OOo program directory)
+
+- ScriptProviderForooRexx.java, ScriptSourceModel.java
+
+        - OOo scripting framework logic changed: an OOo process will now have one
+          Rexx interpreter instance, which will automatically require UNO.CLS; any
+          Rexx script/macro invocations thereafter will execute instanteneously as
+          the ooRexx 4.0 requires logic now will merely reuse an already required
+          package
+
+- UNO.CLS
+
+        - added a "slotArgument" to any invocation of a Rexx script/macro via OOo
+          as the very last argument passed to the Rexx script; the slotArgument is
+          of type Hashtable and needs to be supplied to the following public OOo
+          routines:
+
+                  uno.getScriptContext(slotArgument)
+                  uno.getScriptProviderVersion(slotArgument)
+                  uno.getScriptFileName(slotArgument)
+                  uno.getScriptMetaData(slotArgument)
+                  uno.getScriptSourceModel(slotArgument)
+                  uno.getScriptPath([uri] , slotArgument)
+
+- template.rxo
+
+        - changed to fetch the slotArgument and then use it in the routine uno.getScriptContext()
+
+- samples/OOo/burger
+
+        - changed all examples to use to fetch the slotArgument and then use it in the
+          routine uno.getScriptContext()
+
+-------------------------------------- 2009-10-20 ----------------------------------
+- read-me-UNO_API_info.html:
+        - updated slightly, edited format
+
+
+-------------------------------------- 2009-10-18 ----------------------------------
+- ScriptProviderForooRexx.java:
+        - changed default extension to ".rxo"
+
+- samples\OOo:
+        - changed OOo script filetypes to ".rxo"
+
+- frontend_UNO_API_info.rxo:
+        - added ability to veto termination of last OOo instance; this way keeping
+          all cached OOo Java objects intact
+
+-------------------------------------- 2009-02-22 ----------------------------------
+New files:
+
+- UNO_API_info.rex
+        - utility program which accepts an UNO object or an UNO IDL string and
+          creates a writer document for it listing all UNO definitions that can
+          be retrieved via introspection; puts links for all listed UNO types
+
+- UNO_ReflectionUtil.cls
+        - utility program for easying introspection of UNO objects and UNO IDL
+          strings at runtime
+
+New directory:
+
+- bsf4rexx/samples/OOo/UNO_API_info
+
+        - files:                                         purpose:
+
+          frontend_UNO_API_info.rex                      GUI frontend for "UNO_API_info.rex"
+          TestCreateApiInfo.bas                          OOo Basic procedure to dispatch "UNO_API_info.rex"
+          TestCreateApiInfo.class                        Java program to dispatch "UNO_API_info.rex" (compiled)
+          TestCreateApiInfo.java                         Java program to dispatch "UNO_API_info.rex" (source)
+          testCreateApiInfo_ooRexx.rex                   ooRexx program to dispatch "UNO_API_info.rex"
+          testCreateApiInfo_ooRexx_direct.rex            ooRexx program to directly invoke "UNO_API_info.rex"
+          testCreateApiInfo_supplying_uno_object.rex     ooRexx program to directly invoke "UNO_API_info.rex"
+
+        - remarks:
+
+          the dispatch examples above (OOo Basic, Java, ooRexx) only work, if the script
+          "UNO_API_info.rex" utiltiy program is stored in the user realm in a library
+          named "wu_tools"; to do that, do the following:
+
+          1) Tools -> Macros -> Organize Macros -> ooRexx...
+
+          2) Mark "My Macros", press "Create...", enter "wu_tools"
+
+          3) Mark library "wu_tools", press "Create...", enter "UNO_API_info" (no ".rex"!)
+
+          4) Mark "UNO_API_info.rex", press "Edit", press "Clear"
+
+          5) load "UNO_API_info.rex" from the BSF4Rexx installation directory into a
+             text editor, press CTL-A ("mark all"), press CTL-C ("copy to clipboard")
+
+          6) place cursor into the empty OOo editor window, press CTL-V ("copy from clipboard"),
+             press ALT-S (save editor content), close OOo editor window, close all instances
+             of OOo, including the quickloader instance (if active)
+
+-------------------------------------- 2009-02-15 ----------------------------------
+- UNO.CLS:
+        - UNO.resetRgfReflectUNO(): now accepts an optional XComponentContext,
+          if not supplied, and invoked via the ScriptingFramework, then
+          use the scripting's XComponentContext, otherwise create a new
+          connection to OOo and use that XComponentContext
+
+-------------------------------------- 2009-02-09 ----------------------------------
+- UNO.CLS:
+        - fixed bug in UNO_CONSTANTS: value contained "|" and trailing
+          type name which got introduced after seeing an UNO CONSTANT
+          group that had different types per value; now the
+          type-information (individual value's typename) is stored as
+          'name".TYPENAME"' and 'value".TYPENAME"'
+
+        - UNO.WRAP(): now does try a BSF.WRAP(), if a string with an
+          object prefix ("<O>") is submitted
+
+-------------------------------------- 2008-09-13 ----------------------------------
+- UNO.CLS:
+        - sets BsfShowErrorMessages to .false, as this module will take over the
+          error reporting; set it to .true to see what exceptions UNO.CLS takes on
+          and is able to react accordingly
+
+-------------------------------------- 2008-09-12 ----------------------------------
+- UNO.CLS:
+        - added .uno~nil (represents a UNO-null via a ANY~void type)
+
+        - .uno~xPropertySetAutoCase: if .true, then case of property will be
+          adjusted, if necessary and possible (only one property must exist that
+          matches); affected: XPropertySet's getPropertyValue() and setPropertyValue()
+
+        - .uno~xPropertySetAutoBox : if .true, setting property values will be
+          automatically boxed; affected: XPropertySet's setPropertyValue()
+
+        - improved error-information handling to help end-user developers to find
+          problems as quickly as possible
+
+-------------------------------------- 2008-09-10 ----------------------------------
+- UNO.CLS:
+        - added method "uno.getInterfaceName(['Unqualified'])" and public routine
+          "uno.getInterfaceName(object[, 'Unqualified'])"
+
+        - added method "uno.supportsService(name)" and public routine
+          "uno.supportsService(object, name)"
+
+        - added method "uno.supportsInterface(name)" and public routine
+          "uno.supportsInterface(object, name)"
+
+        - added more helpful information, if a "setPropertyValue()" could not execute
+          successfully (e.g. using a non-existent, wrongly cased property name, or a
+          wrongly typed value)
+
+-------------------------------------- 2008-08-31 ----------------------------------
+- UNO.CLS:
+        - new "UNO" public class now behaves as a directory by forwarding all
+          unknown messages to its directory class attribute
+
+        - removed "UNODIR" class
+
+-------------------------------------- 2008-08-28 ----------------------------------
+- UNO.CLS:
+        - moved ".uno" directory object to the class attribute "dir" of class
+          ".UNODIR" and have ".uno" just point to it; the code in here will be
+          changed to use only the UNODIR class attribute such that multiple
+          interpreter instances running in the same process do not influence that
+          content unadvertently (.local is shared in ooRexx < 4.0!)
+
+- ScriptProviderForooRexx.java, ScriptSourceModel.java:
+        - Rexx scripts are dispatched on their own Java thread; this way no other
+          running Rexx scripts need to be stalled (as no nesting of Rexx interpreters
+          within the same thread will be occurring)
+
+-------------------------------------- 2008-08-20 ----------------------------------
+- UNO.CLS:
+        - added debug information in case an OOo Basic like interaction with a
+          property is taking place (e.g. because transcribing an OOo Basic macro
+          1:1 to ooRexx); the information informs the programmer which ooRexx code
+          to create to allow for the intended behaviour; if one defines
+          ".uno~bAutoResolve=.true", then execution continues for further debugging
+
+-------------------------------------- 2008-08-19 ----------------------------------
+- template.rex:
+        - now demonstrates how to get and use the XScriptInvocationContext object
+
+-------------------------------------- 2008-08-18 ----------------------------------
+- UNO.CLS:
+        - added debug information in case a method/attribute was not found; if
+          possible to resolve path to method/attribute this information will be
+          given in the UNO.CLS string encoding (almost self-defined); if resolvable
+          the program may continue (interrupted by message boxes displaying the paths
+          to resolvable methods/attributes), if one defines ".uno~bAutoResolve=.true"
+
+-------------------------------------- 2008-08-09 ----------------------------------
+- ScriptProviderForooRexx.java:
+        - adapting code to cater for the signature change in OOo 300: now
+          ScriptContext.createContext(...) is dynamically executed, such that
+          it can cater for OOo 2.x *and* 3.x (in 3.x the signature has changed,
+          rendering it incompatible with earlier versions of OOo!)
+
+- template.rex:
+        - now demonstrates how to get at the XScriptInvocationContext object, i.e.:
+
+              o=scriptContext~getInvocationContext
+
+-------------------------------------- 2008-07-21 ----------------------------------
+- com/sun/star/script/framework/provider/oorexx/ScriptProviderForooRexx.java:
+        - using "getLogicalName()" instead of "getDescription()" in ScriptMetaData to
+          get at the name of the macro file
+
+-------------------------------------- 2008-07-20 ----------------------------------
+- UNO.CLS:
+        - uno.createProperty(name[,value=.nil]): this new public routine eases the
+          creation of PropertyValue objects; the first argument is mandatory and
+          determines the "name", the second argument is optional (defaulting to .nil)
+          and denotes the "value"
+
+-------------------------------------- 2008-07-06 ----------------------------------
+- setupOOo.rex:
+        - added path to soffice to CLASSPATH on Unix (now needed for OOo 2.4 e.g.
+          on Ubuntu
+
+        - fixed a typo in Unix chmod command
+
+        - corrected an error in the Unix branch where home of soffice is looked for,
+          if no argument is given
+
+-------------------------------------- 2008-06-27 ----------------------------------
+- UNO.CLS:
+        - uno.getScriptPath(): this routine can be called from a macro and will
+          return the system path from a macro-URI (using the OOo singleton
+          "com.sun.star.util.theMacroExpander");
+          in case no argument is supplied, the routine will locate the location place
+          holder from the script's meta data (routine "uno.getScriptMetaData()") and
+          return a system path, if that location place holder starts with "user" or
+          "share" (such scripts are not located within a document, but externally to
+          it)
+
+-------------------------------------- 2008-06-24 ----------------------------------
+- UNO.CLS:
+
+        - added entry "PATH.SEPARATOR" to the .UNO directory
+
+        - added public routine get.ScriptPath([sriptUri]): returns the system path of
+          the optional 'scriptUri'; if argument is omitted, and the routine runs for
+          a script/macro, then that scriptUri (parcelLocation) is used instead;
+          if neither applies, .nil is returned
+
+        - changed uno.addPath([addPath] [,envName])
+
+             returns 'addPath' value added to 'envName', if unsuccessful (e.g. 'addPath'
+             exists already and therefore does not get added) then returns an
+             empty string "";
+
+             the return value (could have been dynamically created) can be used for
+             removing the added path later with the new public routine uno.removePath(),
+             documented below
+
+             - if 'addPath' is not supplied or .nil, then if
+
+               - the routine runs for a script/macro, then its system path is used, or else
+               - the current directory is used instead
+
+             - if 'envName' is omitted, then by default the environment variable 'PATH' is
+               used to add a path to it
+
+        - added uno.removePath([removePath] [,envName])
+
+             returns 'removePath' value removed from 'envName', if unsuccessful (e.g. 'removePath'
+             does not exist and therefore cannot be removed) then returns an empty string "";
+
+             - if 'removePath' is not supplied or .nil, then if
+
+               - the routine runs for a script/macro, then its system path is used, or else
+               - the current directory is used instead
+
+             - if 'envName' is omitted, then by default the environment variable 'PATH' is
+               used to remove the path from it
+
+             if 'envName' gets emptied by the remove operation, then it will be deleted from
+             the environment
+
+
+- template.rex:
+
+
+-------------------------------------- 2008-06-18 ----------------------------------
+- ScriptProviderForooRexx and related classes:
+        - if scripts/macros are located in "user" or "share", then the operating
+          system dependent, fully qualified filename will be determined and supplied
+          to Rexx; this way the Rexx programmer has an easy manner to figure out
+          the location of a running macro
+
+- UNO.CLS:
+        - added public routine "uno.addPath([addPath] [,envName] )
+          where "addPath" defaults to the script's path, if not a script,
+          then the current directory; "envName" defaults to "PATH". If 'addPath'
+
+-------------------------------------- 2008-06-15 ----------------------------------
+- ScriptProviderForooRexx and related classes:
+        - supplies script name to ooRexx
+
+-------------------------------------- 2008-06-10 ----------------------------------
+- UNO.CLS:
+
+        - wrapped metaData object returned by "uno.getScriptMetaData()" as an UNO proxy object
+
+          Looking up the source code for the OOo scripting framework, the following methods
+          are known to a metaData object:
+
+
+             getClassPath            ... returns an array of type java.net.URL
+
+             getDescription          ... returns String (location: ScriptEntry)
+             getLanguage             ... returns String (location: ScriptEntry)
+             getLanguageName         ... returns String (location: ScriptEntry)
+             getLanguageProperties   ... returns a java.util.Map (location: ScriptEntry)
+             getLocation             ... returns String (location: ScriptEntry)
+             getLogicalName          ... returns String (location: ScriptEntry)
+             setLogicalName          ... sets String (location: ScriptEntry)
+
+             getLocationPlaceHolder  ... returns String (location: ScriptMetaData)
+             getParcelLocation       ... returns String (location: ScriptMetaData)
+             getScriptFullURL        ... returns String (location: ScriptMetaData)
+
+             getShortFormScriptURL   ... returns String (location: ScriptMetaData)]
+
+             getSourceURL            ... returns a java.net.URL, has e.g. method "getFile()" (location: ScriptMetaData)
+             hasSource               ... returns boolean (location: ScriptMetaData)
+
+             loadSource              ... returns nothing(location: ScriptMetaData), needs
+                                         to be done in order for the following methods to function;
+                                         also: invoke this method if "hasSource()" returns .false
+                getSource            ... returns String (location: ScriptMetaData)
+                getSourceBytes       ... returns byte array (location: ScriptMetaData)
+
+
+
+-------------------------------------- 2008-05-18 ----------------------------------
+- setupOOo.rex:
+        - adds (ooRexx) code to determine home of OOo 2.x on Unix and Windows,
+          if no path to OOo's home is supplied; please note this version does not
+          (yet) deal with the current beta of OOo 3.x as it misses the new utility
+          "unoinfo.exe", which supplies the OOo-installation related paths
+
+        - for Windows the created un/installOOo.cmd now also contains commands to
+          add/remove path entries to the appropriate HKCU (user) or HKLM (system)
+          environment variables PATH and CLASSPATH, depending in which hive OOo got
+          installed to; for this the new utility program 'orx2reg.rex' got created;
+          before applying the changes (adding/removing paths) a backup-file is
+          created documenting the values of the PATH and CLASSPATH environment
+          variables of both hives
+
+-------------------------------------- 2008-03-04 ----------------------------------
+- UNO.CLS: added public routine "UNO.resetRgfReflectUNO" which will create a new
+        xContext and assign it to the "RgfReflectUNO" class; this allows to
+        overcome situations in which the xContext gets invalidated by shut-down
+        OOo instances, which would cause RgfReflectUNO to only return an empty
+        string ("") instead of string renderings of the IDL definition
+
+-------------------------------------- 2008-01-01 ----------------------------------
+- org.oorexx.uno.RgfReflectUNO: changed encoding for UNO_CONSTANTS to optionally
+        supply the datatype also for each individual constant as there may be
+        constant groups that use different datatypes (cf. <com.sun.star.packages.zip.ZipConstants>).
+
+        The public static field "bSupplyDatatypeForEachConstant" (default=true) controls,
+        whether this appending of constant datatypes takes place or not.
+
+-------------------------------------- 2007-09-21 ----------------------------------
+- OOo 2.3 (September 2007): introduces some problems for scripting support, cf.
+        <http://www.openoffice.org/issues/show_bug.cgi?id=81445>
+
+        [-> Please use the updated package with version OOo 2.3.1, which fixed the bug]
+
+- OOo 2.3 Installation Bug: unfortunately, OOo 2.3 has an installation bug, which
+             causes the Java-based ScriptingFramework to not be available for Java
+             extensions!
+
+             As a result this will unfortunately cause the installation (running the
+             generated OOo installation script named "installOOo.{cmd|sh}") of ooRexx
+             becoming an integral part of OOo (for macro/scripting purposes) to fail!
+
+             Workaround:
+
+             - locate the file "OOo-InstallationHome/program/uno.ini"
+             - load the file and locate the line that starts with "URE_INTERNAL_JAVA_CLASSPATH="
+             - if there is no entry right of it named " $ORIGIN/classes/ScriptFramework.jar", then
+               supply it
+             - close all instances of OOo (also the quickstarter)
+             - Rerun "installOOo.{cmd|sh}"
+
+             (This problem should go away again with later versions of OOo.)
+
+- ScriptingForooRexx-package: starting with OOo 2.3 a customized class loader is used
+        by OOo, which breaks the current code; adjusted BSF itself and the OOo-scripting
+        support code to be able to deal with this change; now also explicitly setting
+        and restoring thread context class loaders for BSFManager invocations using
+        OOo supplied class loaders
+
+        - new beans registered with BSF:
+                - script's (parcel) filename: entry 'OOo.fileName' in BSFRegistry
+                - script's meta-data:         entry 'OOo.ScriptMetaData' in BSFRegistry
+
+- Editor of the ScriptingForooRexx-package:
+
+        - now will show the edited script in a sensible way, such that one can
+          learn to which group ("user", "share", document) of scripts it belongs
+          together with the library and the macro name
+
+- UNO.CLS: new public routines to return the two new pieces of script information
+
+        - uno.getScriptFileName(): returns the parcel filename (a string)
+
+        - uno.getScriptMetaData(): returns the MetaData UNO object
+
+
+- UNO_XINTERFACES.REX:
+           - created new version to match OOo 2.3.0 (older versions would still work,
+             using reflection on the fly, which would be slightly slower)
+
+- Tested on:
+
+        - OOo 2.2.1 German:     o.k.
+        - OOo 2.3.0 English:    o.k.
+
+-------------------------------------- 2007-07-07 ----------------------------------
+- ScriptingForooRexx:
+           - 'template.rex': corrected an error in the scalc section (now correctly
+             retrieves the value of a cell)
+
+- org.oorexx.uno.RgfReflectUNO.java:
+           - now correctly lists the correct primitive Java datatype for primitive UNO
+             datatypes
+           - properties: now indicates the fully qualified Java class names for wrapping
+             primitive UNO datatypes
+
+- UNO_XINTERFACES.REX:
+           - created new version to match OOo 2.2.1 (older versions would still work,
+             using reflection on the fly, which would be slightly slower)
+
+- add_ooRexxPackage.rex:
+           - changed logic altogether as OOo 2.2.1 introduced an incompatibility in
+             driving the XPackageManager; now applies "unopkg" command line commands
+             for installing and removing the ooRexx scripting package from OOo
+
+-------------------------------------- 2007-06-16 ----------------------------------
+- ScriptingForooRexx:
+           - changed 'template.rex' to be usable in the context of all OOo modules;
+             will create and display text for 'sword' and 'scalc'; will display a
+             popup message box listing the services of the OOo module else
+
+-------------------------------------- 2007-01-30 ----------------------------------
+- UNO.CLS: - added routines uno.convertToUrl(filename) and uno.convertFromUrl(url), which
+             should replace the same routines not led in by the string "UNO." (this is to
+             make the programmer clear, from where the routine comes from; besides they got
+             documented in the reference card already with the "uno." prefix
+
+-------------------------------------- 2007-01-20 ----------------------------------
+- UNO.CLS: - changed UNO_ENUM enum object's MAKESTRING method to return as
+             a required string value a string in the form:
+
+                a[n] FULLY_QUALIFIED_IDL_NAME[ENUM_NAME=ENUM_VALUE]
+
+             representing the full information, easily parseable by Rexx
+           - changed the index' name for the default enum value got changed
+             to "DEFAULT_ENUM_VALUE"
+           - added method MAKESTRING to UNO_ENUM which will return a required
+             string value listing all enum values in an easy parseable form
+
+-------------------------------------- 2007-01-19 ----------------------------------
+- UNO.CLS: - changed class UNO_ENUM to return the Java objects representing the
+             enum value, but at the same time allowing to get at their name and
+             value supplying the methods "NAME" and "VALUE"
+
+-------------------------------------- 2007-01-14 ----------------------------------
+- UNO.CLS: - renamed the public routine "uno.getInterfaceNames" to
+             "uno.getCachedInterfaceNames" (it processes up the XInterface-cache);
+             this way the routine should not be intermixed with the UNO_PROXY
+             method named "uno.getInterfaceNames" (which uses UNO reflection to
+             return the well known full interface class names)
+           - "uno.connect()"  now accepts a second optional argument,
+             an "XCcomponentContext" in case it got established already
+           - new reference card for OpenOffice/UNO ("refcardOOo.pdf")
+
+-------------------------------------- 2007-01-12 ----------------------------------
+- UNO.CLS: - renamed UNO_PROXY-method "uno.getServiceNamesViaReflection" to
+             "uno.getServiceNames" and "uno.getInterfaceNamesViaReflection" to
+             "uno.getInterfaceNames"
+           - added UNO_PROXY-method "uno.getInterfaceNames"
+
+-------------------------------------- 2007-01-06 ----------------------------------
+- UNO.CLS: - added optional replacement string to ppd(), changed logic to use Java's
+             "line.separator" and also the changestr()-BIF;
+           - .uno now contains the platform dependent "line.separator", "file.separator"
+              values from java.lang.System's properties
+           - removed method attribute "bsfObject", renamed "bsfObject" to to
+             "uno.bsfObject" (changed all occurrences), added getter method "uno.bsfObject"
+           - UNO_DIRLIKE: changed attribute methods to make setters private,
+             added new methods to retrieve a *copy* of "unoDirectory" and
+             "unoNameQueue" for inspection
+           - created a reference card for UNO.CLS
+
+-------------------------------------- 2006-09-03 ----------------------------------
+- UNO.CLS: - new public routine "UNO.getInterfaceName(shortName)" returns blank delimited
+             fully qualified Interface names matching the unqualified "shortName"
+
+-------------------------------------- 2006-07-24 ----------------------------------
+- UNO.CLS: - made UNO_CONSTANTS.encode() a little bit more flexible (now
+             an arbitrary mix of constant-field-names and decimal values)
+
+-------------------------------------- 2006-07-19 ----------------------------------
+- UNO.CLS: - added/changed class UNO_DIRLIKE, UNO_ENUM and UNO_CONSTANTS, which
+             can be treated as directories, if retrieving field-names or their
+             numeric values; UNO_CONSTANTS has in addition the methods
+             ENCODE(blank-delimited-field-names) returning the encoded decimal
+             number; DECODE(decimal number) returning a blank-delimited-filed-names
+
+
+-------------------------------------- 2006-07-17 ----------------------------------
+- UNO.CLS: - added UNO.WRAPARRAY which determines whether to wrap up a BSF_ARRAY
+             object as an UNO_ARRAY_PROXY
+
+-------------------------------------- 2006-07-16 ----------------------------------
+- UNO.CLS: - added UNO_ARRAY_PROXY class; the public routine UNO.CreateArray()
+             which uses BSF.CreateArray(), but wraps it up as an UNO_ARRAY_PROXY
+             (making sure that its elements are wrapped up as UNO_PROXY objects)
+
+-------------------------------------- 2006-07-12 ----------------------------------
+- UNO.CLS: - uno.setCell() now allows letter-number-coordinates; added routine
+             uno.getCell(xSheet, colNr0, rowNr0) or uno.getCell(xSheet, LetterNumber)
+             returning a XCell object [you can use {g|s}etValue(), {g|s}etFormula(),
+             getError() or getType() with it]
+
+-------------------------------------- 2006-07-10 ----------------------------------
+- UNO.CLS: - changed "uno.getScriptContext()" and "uno.connect()" to now explicitly
+             supply their XComponentContext to org.oorexx.uno.RgfReflectUNO, which will
+             inhibit that class to use UNO bootstrapping (which would hang the scripting
+             framework);
+             activated fall-back code to use reflection at runtime to query correct
+             interface class
+
+-------------------------------------- 2006-06-04 ----------------------------------
+- UNO.CLS: fixed a bug in querying an interface object, if unqualified class name is
+           used more than once
+
+-------------------------------------- 2006-02-03 ----------------------------------
+- changed UNO.CLS to not use RgfReflectUNO as a means of last resort, as at the moment
+  the Java scripting framework of OOo would hang (pertains to versions 1.1.x and 2.0.x);
+  cf. <http://qa.openoffice.org/issues/show_bug.cgi?id=61146>
+
+- hint: to easily get at the UNO constant and enumeration values, just wrap up the respective
+        Java class using the new BSF.CLS routine named "bsf.wrapStaticFields(stringJavaClassName)";
+        just send the names of the constants/enumeration values to the resulting directory object
+
+-------------------------------------- 2006-01-24 ----------------------------------
+- changed ScriptingFrameword ooRexx support to show Rexx execution errors in a dialog
+  window, considerably easying development of OOo macros
+
+-------------------------------------- 2006-01-24 ----------------------------------
+- removed the UNO reflection support from the extension jar; created for it "oorexx-uno.jar",
+  which will get copied to OOo/program/classes
+
+-------------------------------------- 2006-01-06 ----------------------------------
+- removed the public routines pp() and iif(), as they now are made available via the
+  required module "BSF.CLS"
+
+- added the public routines uno.getScriptContext() and uno.getScriptContextVersion();
+  the ooRexx macro "template.rex" adapted (note the change in getting access to
+  the scriptContext compared to earlier beta-versions!):
+
+        /* Hello World in ooRexx, cf. http://www.ooRexx.org, version: 2006-01-06 */
+        xScriptContext=uno.getScriptContext()     -- get the xScriptContext object
+
+        oDoc=xScriptContext~getDocument           -- get the document service (an XModel object)
+        -- oDesktop=xScriptContext~getDesktop           -- get the desktop (an XDesktop object)
+        -- oContext=xScriptContext~getComponentContext  -- get the context(an XComponentContext object)
+
+        xTextDoc=oDoc~XTextDocument               -- get the XTextDocument interface from the document
+        hello="Hello World (in ooRexx) "          -- define text to add
+        xTextDoc~getText~getEnd~setString(hello)  -- add text at the end of the text document
+
+
+        ::requires UNO.CLS   -- load UNO support for OpenOffice.org
+
+
+-------------------------------------- 2006-01-04 ----------------------------------
+- routine
+
+        - uno.areSame(object1, object2)
+          ... returns true if both objects refer to the same object (passthrough
+              for UnoRuntime.areSame()
+
+- additional method for "UNO_PROXY" objects:
+
+        - uno.isSameO(o)
+          ... returns true if this UNO_PROXY object refers to the same object as the
+              argument object "o"
+
+-------------------------------------- 2006-01-03 ----------------------------------
+
+- module "OOO.CLS" was renamed to "UNO.CLS" to reflect that it generically supports the
+  UNO (Universal Network Object) component model on which OOo is built; the definition
+  of UNO objects is carried out in "UNOIDL" (UNO Interface Description Language) and is
+  usually stored in a type repository that is available at runtime for reflection
+
+- routines
+
+        - iif(test, if_true, if_false)
+          ... VBasic like function: if "test" yields .true, then "if_true" is returned,
+              otherwise "if_false"
+
+        - pp(string)
+          ... returns the string enquoted with square brackets
+
+        - ppd(string)
+          ... simple "pretty-print for debug": supply any of the UNOIDL blank delimited
+              strings to dump them on stdout in a slightly better ledgible form (breaks
+              the string on the blanks and indents them starting with the second line using
+              a TAB character)
+
+        - convertToUrl(string)
+          ... converts the fully qualified path to its URL representation as expected
+              by OOo (takes differences between Linux and Windows transparently into account)
+
+        - convertFromUrl(string)
+          ... converts the URL encoding of a file to a fully qualified path (takes
+              differences between Linux and Windows transparently into account)
+
+        - encodeURL(string)
+          ... encodes a URL such that non-ASCII-characters are represented with their
+              hex values (led in by percent sign)
+
+        - decodeURL(string)
+          ... decodes a URL which represents non-ASCII-characters as hex values (led in
+              by percent sign)
+
+
+        - uno.wrap(object)
+          ... if possible, the object will be wrapped up as a "UNO_PROXY" which activates
+              the special support for UNO objects (e.g. sending merely the name of an
+              interface in order to get the interface object, etc.)
+
+        - uno.loadClass(java_class_name[, short_name])
+          ... imports the UNO Java class "java_class_name" (as an UNO_PROXY) and stores
+              it under the name "short_name" in the directory ".uno"; if "short_name is
+              omitted then the unqualified class name (after the last dot) is used instead
+
+        - uno.connect(url_string)
+          ... allows connecting to a remote OOo by using the URL according to the OOo
+              documentation; returns a reference to the remote object that you denoted
+              in the "url_string"
+
+        - uno.createDesktop([context])
+          ... creates and returns the reference to the OOo desktop object of the supplied
+              "context" (could be any OOo server); if "context" is omitted, then the local
+              OOo is used (ie. OOo installed on the machine the program runs on; no need
+              to define ports explicitly)
+
+        - uno.setCell(xSheet, x, y, value)
+          ... simple utility routine: inserts "value" (number, text or formula) at the
+              0-based co-ordinates "x" and "y" in the spreadsheet-object "xSheet"
+
+
+- additional methods for "UNO_PROXY" objects:
+
+        - uno.findInterfaceWithMember(name, [bReturnString [, howMany]])
+          ... returns the interface that contains a method or attribute by the given "name";
+              if "bReturnString" is .true (default), then the fully qualified UNOIDL string
+              of the interface is returned, otherwise the interface object itself;
+              "howMany" determines how many matches should be attempted, if a negative
+              number, then all matching interfaces with all matching members are returned
+
+        - uno.getDefinition
+          ... returns a blank delimited string containing all UNOIDL members of the object
+
+        - uno.getInterfaceNamesViaReflection
+          ... returns a blank delimited string containing all interfaces defined in the
+              repository (if available) for this object
+
+        - uno.getProperties
+          ... returns a blank delimited string denoting all properties of this object
+
+        - uno.getServiceNamesViaReflection
+          ... returns a blank delimited string containing all services defined in the
+              repository (if available) for this object
+
+        - uno.getTypeName
+          ... returns a string denominating the type of the object
+
+        - uno.getXTypeProviderTypeNames
+          ... returns a blank delimited string containing all interfaces the object reports
+
+        - uno.queryInterfaceName(name)
+          ... returns a string denominating the fully qualified UNOIDL name of the interface
+              for this object; "name" may be partially given
+
+        - uno.queryInterfaceObjectByName(name)
+          ... returns the interface object (or .nil if not available) of the interface that
+              ends with "name"
+
+        - uno.queryServiceName(name)
+          ... returns a string denominating the fully qualified UNOIDL name of the service
+              this object implements; "name" may be partially given
+
+
+- additional routines for analyzing OOo definitions, the first argument (named "o" below)
+  can be OOO proxy objects or strings that fully qualify definition objects in the OOo type
+  repository; as there functionality is exactly the same as the methods above, only the
+  signatures are given:
+
+        - uno.findInterfaceWithMember public(o, name[, bReturnString [, howMany]])
+
+        - uno.getDefinition(o)
+
+        - uno.getInterfaceNamesViaReflection(o)
+
+        - uno.getProperties(o)
+
+        - uno.getServiceNamesViaReflection(o)
+
+        - uno.getTypeName(o)
+
+        - uno.getXTypeProviderTypeNames(o)
+
+        - uno.queryInterfaceName(o, name)
+
+        - uno.queryInterfaceObjectByName(o, name)
+
+        - uno.queryServiceName(o, name)
+
+
+---rgf
+

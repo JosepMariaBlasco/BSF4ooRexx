@@ -1,0 +1,31 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited by Rony G. Flatscher, 2010-07-15/20 */
+/* Example 05: open an OOo document hiddenly, use document properties to retrieve the count of
+               paragraphs, sentences and words */
+
+   /* Retrieve the Desktop object, we need its XComponentLoader interface to load a new document */
+xDesktop         = UNO.createDesktop()       /* get the OOo XDesktop interface to the service object  */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* load the file locally */
+url=uno.convertToUrl(directory()"/textdocument01.sxw")
+   /* alternatively it is available on the Internet as well, in which case: */
+-- url="http://wi.wu-wien.ac.at/rgf/diplomarbeiten/BakkStuff/2005/textdocument01.sxw"
+
+   /* create a Java array of type "com.sun.star.beans.PropertyValue" with a capacity of 1 object */
+props = bsf.createJavaArray(.uno~PropertyValue, 1) /* create Java array for one PropertyValue */
+props[1]=uno.createProperty("Hidden", box("boolean", .true))
+writerComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, props)
+
+   /* get the properties of this file */
+-- xTextDocumentProps = writerComponent~XTextDocument~XPropertySet
+writerProps = writerComponent~XPropertySet
+
+   /* show statistics */
+say "Statistics for file" pp(uno.convertFromUrl(url))":"
+say
+say "   paragraphs: " writerProps~getPropertyValue("ParagraphCount")
+/* There is no property "SentenceCount" ! */
+say "   words:      " writerProps~getPropertyValue("WordCount")
+
+::requires UNO.CLS    -- get UNO support

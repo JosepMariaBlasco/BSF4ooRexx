@@ -1,0 +1,131 @@
+#!/usr/bin/rexx
+/*
+   author:     Rony G. Flatscher
+   date:       2008-07-20
+   purpose:    demonstrate how to create and use Java array objects
+   changes:    ---
+   last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
+
+   2009-07-05 Walter Pachl  add help
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2009 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+If arg(1)='?' Then Do
+  Parse Source source
+  Say source
+  Say 'Demonstrate how to create and use Java array objects'
+  Say 'Why what one want to do that???'
+  Exit
+  End
+
+
+   /* create a one-dimensional Java array object */
+say "1a) Demonstrating the creation and usage of a one dimensional Java array object of type 'int':"
+arr=bsf.createJavaArray("int.class", 3)    /* cf. reference card, note lower-case 'i' ! */
+do i=1 to 3
+   arr[i]=i
+end
+
+say "    elements in the Java array of type 'int' (primitive):"
+say
+do i=1 to arr~items
+   say "    i="i":" arr[i]
+end
+say
+
+say "1b) Demonstrating the creation and usage of a one dimensional Java array object of type 'java.lang.Integer':"
+arr=bsf.createJavaArray("Integer.class", 3)   /* cf. reference card, note upper-case 'I' ! */
+do i=1 to 3
+   arr[i]=box('int', i)    /* turn primitive 'int' type into a the Java object of type 'java.lang.Integer' */
+end
+
+say "    elements in the Java array of type 'java.lang.Integer' (Java objects):"
+say
+do i=1 to arr~items
+   say "    i="i":" arr[i]
+end
+say
+
+
+
+   /* create a two-dimensional Java array object */
+say "2a) Demonstrating the creation and usage of a two dimensional Java array object of type 'float':"
+arr=bsf.createJavaArray("float.class", 3, 2)  /* cf. reference card, note lower-case 'f' ! */
+do j=1 to 3
+   do k=1 to 2
+      arr[j,k]=j"."k    -- create a float (small decimal) value
+   end
+end
+
+say "    elements in the Java array of type 'float' (primitive):"
+say
+do j=1 to 3
+   do k=1 to 2
+      say "    j="j",k="k":" arr[j,k]   -- retrieve and show the float value stored in the array
+   end
+end
+say
+
+
+say "2b) Demonstrating the creation and usage of a one dimensional Java array object of type 'java.lang.Float':"
+arr=bsf.createJavaArray("Float.class", 3,2)    /* cf. reference card, note upper-case 'F' ! */
+do j=1 to 3
+   do k=1 to 2
+      arr[j,k]=box("float", j"."k)  -- create a float (small decimal) value, box it as a "java.lang.Float" object
+   end
+end
+
+say "    elements in the Java array of type 'java.lang.Float' (Java objects):"
+say
+do j=1 to 3
+   do k=1 to 2
+      say "    j="j",k="k":" arr[j,k]   -- retrieve and show the float value stored in the array
+   end
+end
+say
+
+
+
+say "3a)  Demonstrating the creation and usage of a one dimensional Java array object of type 'java.lang.String':"
+arr=bsf.createJavaArray("String.class", 3)    /* cf. reference card, note upper-case 'F' ! */
+arr[1]="Hi, there"
+arr[2]="this is ooRexx"
+arr[3]="using Java array objects to store and fetch Strings!"
+
+say
+do i=1 to arr~items
+   say "    i="i":" arr[i]
+end
+say
+
+say "3b)  Demonstrating the creation and usage of a one dimensional Java array object of type 'java.lang.String':"
+arr=bsf.createJavaArrayOf("String.class",   -   -- first element is a Java class (object or fully qualified name)
+                          "Hi, there",      -
+                          "this is ooRexx", -
+                          "using Java array objects to store and fetch Strings!")
+
+say
+do i=1 to arr~items
+   say "    i="i":" arr[i]
+end
+say
+
+
+::requires BSF.CLS    -- get access to the BSF-supporting Object Rexx classes
+

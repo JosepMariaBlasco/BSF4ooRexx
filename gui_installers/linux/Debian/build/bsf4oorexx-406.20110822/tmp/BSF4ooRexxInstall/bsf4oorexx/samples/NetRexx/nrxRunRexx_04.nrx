@@ -1,0 +1,25 @@
+import org.rexxla.bsf.engines.rexx.
+parse source . . src
+
+rexxEngine=org.apache.bsf.BSFManager().loadScriptingEngine("rexx")
+
+rexxCode= "a=1                                         \n" -
+          "b=0                                         \n" -
+          "say a/b  -- cause a syntax error at runtime \n" -
+          "::requires BSF.CLS                            "
+
+do
+    result=rexxEngine.apply(src,0,0,rexxCode,null,null)
+
+catch re=RexxException
+    System.out.println("Rexx program threw an exception:\n")
+    rp=re.getRexxConditionObject()
+
+    say '    rp.sendMessage0("condition")       : ['rp.sendMessage0("condition")']'
+    say '    rp.sendMessage0("code")            : ['rp.sendMessage0("code")']'
+    say '    rp.sendMessage0("message")         : ['rp.sendMessage0("message")']'
+    say '    rp.sendMessage0("program")         : ['rp.sendMessage0("program")']\n'
+
+    traceBack=RexxProxy rp.sendMessage0("traceback")
+    say '    traceBack.sendMessage0("firstItem"): \n\t['traceBack.sendMessage0("firstItem")']'
+end

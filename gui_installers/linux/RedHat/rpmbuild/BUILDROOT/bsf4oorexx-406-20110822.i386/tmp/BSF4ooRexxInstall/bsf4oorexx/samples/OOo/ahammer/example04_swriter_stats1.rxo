@@ -1,0 +1,55 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited by Rony G. Flatscher, 2010-07-15/20 */
+/* Example 04: open an OOo document from the web, use cursors to count paragraphs, sentences and words */
+
+   /* Retrieve the Desktop object, we need its XComponentLoader interface to load a new document */
+xDesktop         = UNO.createDesktop()       /* get the OOo XDesktop interface to the service object  */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* open a writer file hiddenly from the Internet */
+url="http://wi.wu-wien.ac.at/rgf/diplomarbeiten/BakkStuff/2005/textdocument01.sxw"
+   /* alternatively it is available locally as well, in which case: */
+-- url=uno.convertToUrl(directory()"/textdocument01.sxw")
+
+   /* create a Java array of type "com.sun.star.beans.PropertyValue" with a capacity of 1 object */
+props = bsf.createJavaArray(.uno~PropertyValue, 1) /* create Java array for one PropertyValue */
+props[1]=uno.createProperty("Hidden", box("boolean", .true))
+writerComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, props)
+
+   /* get a TextCursor */
+xTextCursor = writerComponent~XTextDocument~getText~createTextCursor
+
+   /* get a Word-, Sentence- and ParagraphCursor */
+xWordCursor      = xTextCursor~XWordCursor
+xSentenceCursor  = xTextCursor~XSentenceCursor
+xParagraphCursor = xTextCursor~XParagraphCursor
+
+   /* count paragraphs */
+xTextCursor~gotoStart(.false)
+paragraphs = 1       /* start with the first paragraph */
+do while xParagraphCursor~gotoNextParagraph(.false)
+	paragraphs += 1
+end
+
+   /* count sentences */
+xTextCursor~gotoStart(.false)
+sentences = 1        /* start with the first sentence */
+do while xSentenceCursor~gotoNextSentence(.false)
+	sentences += 1
+end
+
+   /* count words */
+xTextCursor~gotoStart(.false)
+words = 1            /* start with the first word */
+do while xWordCursor~gotoNextWord(.false)
+	words += 1
+end
+
+   /* show statistics */
+say "Statistics for file" pp(uno.convertFromUrl(url))":"
+say
+say "   paragraphs:" paragraphs
+say "   sentences: " sentences
+say "   words:     " words
+
+::requires UNO.CLS    -- get UNO support

@@ -1,0 +1,320 @@
+#!/usr/bin/rexx
+/*
+    name:      PrintTest.rxj
+    purpose:   show viewing and printing Java and Rexx files
+    author:    Rony G. Flatscher
+    date:      2006-01-17
+    changed:   2006-01-20, ---rgf, now using a filter (this does not work under Windows!)
+               2008-07-13, ---rgf, if using BSF.CLS, then do not use BSF() directly (or
+                                   remove the first three chars from its result string)
+               2008-07-19, rgf, added hash-bang line at the top
+               2010-05-18, rgf, - adapting example to take full advantage of BSF4ooRexx
+                                - replacing bsf.addEventListener with a Rexx event handlers
+                                - employ the Java interface "java.io.FilenameFilter"
+
+    remarks:   adapted from an adapted Java program named "TestPrint.java" from
+               Zukowski, J.: "Java AWT Reference", O'Reilly & Associates, 1997 and
+               spotted by Lee Pedin
+
+    last change: $Revision: 690 $ $Author: rony $ $Date: 2010-05-18 15:53:21 +0200 (Tue, 18 May 2010) $
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+If arg(1)='?' Then Do
+  Parse Source source
+  Say source
+  Say 'show viewing and printing Java and Rexx files using awt'
+  Say 'A window is displayed into which a file can be loaded (load button)'
+  Say 'Subsequent use of the print button sends this loaded text to the printer'
+  Exit
+  End
+
+     -- import the Java java.awt.FileDialog class, make it available as .FileDialog in Rexx
+        -- use public routine defined in BSF.CLS
+  call bsf.importClass "java.awt.FileDialog", "FileDialog"
+  call bsf.importClass "java.awt.Font"      , "Font"
+     -- import the Java java.awt.Button class, make it available as .javaButton in Rexx
+        -- use .BSF class method defined in BSF.CLS (same as the public routine)
+  .bsf~bsf.importClass("java.awt.Button", "javaButton")
+
+-- Create a userData directory
+   userData=.directory~new    -- a directory which will be passed to Rexx with the event
+
+-- Create a Java RexxProxy for controlling the closing of the application
+  rexxCloseEH =.RexxCloseAppEventHandler~new   -- Rexx event handler
+      -- Create Java RexxProxy for the Rexx event handler
+  rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , "java.awt.event.ActionListener", -
+                                              "java.awt.event.WindowListener" )
+
+   -- create frame window
+  frame = .bsf~new("java.awt.Frame", "File Loader")    -- create instance of Frame
+  frame~addWindowListener(rpCloseEH)               -- add RexxProxy event handler
+  userData~frame=frame                             -- save frame window for use in event handlers
+
+  statusInfo=.bsf~new("java.awt.Label")            -- create instance of Label
+  frame~add(statusInfo, "North");                  -- add label to frame
+  userData~statusInfo=statusInfo                   -- save label for use in event handlers
+
+  p = .bsf~new("java.awt.Panel");                  -- create a panel
+  loadButton=.javaButton~new("Load File")          -- create a button
+                                                   -- if button is pressed, load a file to textArea
+  rp=BsfCreateRexxProxy(.RexxLoadFileEventHandler~new, userData, "java.awt.event.ActionListener")
+  loadButton~addActionListener(rp)                 -- add RexxProxy event handler
+  p~add(loadButton)                                -- add button to panel
+
+  printButton=.javaButton~new("Print")             -- create a button
+  rp=BsfCreateRexxProxy(.RexxPrintEventHandler~new, userData, "java.awt.event.ActionListener")
+  printButton~addActionListener(rp)                -- add RexxProxy event handler
+  p~add(printButton)                               -- add button to panel
+
+  closeButton=.javaButton~new("Close")             -- create a button
+  closeButton~addActionListener(rpCloseEH)         -- add RexxProxy event handler
+  p~add(closeButton)                               -- add button to panel
+
+  frame~add(p, "South")                            -- add panel to south (bottom) of frame
+
+  textArea=.bsf~new("java.awt.TextArea", 30, 100)  -- create a textArea
+  frame~add(textArea, "Center")                        -- add text area to center (middle) of frame
+  userData~textArea=textArea                       -- save text area for use in event handlers
+                                                   -- set specific font for textArea
+  textArea~setFont(.bsf~new("java.awt.Font", "Courier", bsf.getStaticValue("java.awt.Font", "PLAIN"), 12))
+
+  frame~~pack~~setVisible(.true)                   -- calc layout, show frame
+
+  rexxCloseEH~waitForExit  -- wait until we are allowed to end the program
+  call SysSleep .2         -- let Java's RexxProxy finalizations find a running Rexx instance
+
+
+::requires bsf.cls         -- get BSF4ooRexx (Java) support
+
+
+  /* a procedure to be invoked if the appropriate button is pressed  */
+::routine  loadFileCommand
+  use arg frame, statusInfo, textArea           -- retrieve Java object proxies
+
+  file=.FileDialog~new(frame, "Load File", .FileDialog~LOAD)
+
+   -- create an instance of the Rexx FileFilter implementation
+  newFilter=.RexxFileFilter~new('*.rex;*.rxj;*.rxo;*.jrexx;*.java', .set~of('rex', 'rxj', 'rxo', 'jrexx', 'java'))
+
+   /* create a RexxProxy, supply the Rexx FileFilter object and demand it to be used as
+      an implemenation of the abstract Java class "javax.swing.filechooser.FileFilter" */
+  rexxProxy=BsfCreateRexxProxy(newFilter, , "java.io.FilenameFilter")
+  file~setFilenameFilter(rexxProxy)            -- set the filter to fileDialog
+
+  if sysVersion()~left(3)~upper="WIN", .java.lang.System~getProperty('java.vm.vendor')~left(3)~upper="SUN" then
+  do
+      say "*** Sun documents that FileDialog's filename filters are not operational under Windows ! ***"
+      say "*** On Windows use 'JPrintFile.rxj' instead, which uses an operational swing class.      ***"
+  end
+
+  file~setDirectory(directory())                -- set the directory to current directory
+  file~show                                     -- show dialog, blocks until user entered something
+  curFile=file~getFile                          -- get chosen file
+  if curFile<>.nil then                         -- if a file was given, process it
+  do
+     filename=file~getDirectory || curFile      -- create a fully qualified file name
+     statusInfo~setText("Load:" filename)       -- show filename to be loaded
+
+     filesize=stream(filename, "C", "query size")  -- get file-size (returns empty string, if file does not exist)
+     if filesize<>"" then
+     do
+        textArea~setText(charin(filename, 1, filesize))  -- read file and place it into textArea
+        call stream filename, "c", "close"      -- close file
+     end
+     else
+        textArea~setText("File Not Found:" filename)
+  end
+  return
+
+
+
+  /* a routine to be invoked if the appropriate button is pressed    */
+::routine printCommand
+   use arg frame, textArea          -- retrieve Java proxy objects
+
+   props=.bsf~new("java.util.Properties")           -- create an instance of Properties
+   pjob=frame~getToolkit~getPrintJob(frame, "Cool Stuff", props)  -- get printer from user
+   if pjob<>.nil then               -- if printer got chosen, proceed
+   do
+      pg=pjob~getGraphics
+      if pg<>.nil then
+      do
+         call printLongString pjob, pg, textArea~getText -- print the string in the textArea
+         pg~dispose
+      end
+      pjob~end
+   end
+   return
+
+
+printLongString: procedure          /* this procedure carries out the printing   */
+     use arg pjob, pg, s
+
+      -- initialize variables
+     margin = 36     -- 1/2 inch
+     parse value "1 0 0" with pageNum linesForThisPage linesForThisJob
+
+     pageHeight = pjob~getPageDimension~height - margin
+     helv = .font~new("Courier", .font~PLAIN, 8)   -- get a plain 8pt Courier font
+
+     pg~setFont(helv)                              -- set the font to the print graphic context
+     fm = pg~getFontMetrics(helv)                  -- now font metrics reflect the printer ones
+     fontHeight  = fm~getHeight                    -- get fontHeight
+     fontDescent = fm~getDescent                   -- get fontDescent
+     curHeight   = margin                          -- distance from top (margin initially)
+
+     cr="0d"x                                      -- CR
+     lf="0a"x                                      -- LF
+     parse var s (lf) -1 n +1 -- get character immediately before LF, use CR-LF or LF sequence of text file
+     if n=cr then nl=cr||lf
+             else nl=lf
+
+     do while s<>""
+        parse var s nextLine (nl) s                -- extract a line
+
+        if (curHeight+fontHeight)>pageHeight then  -- new page needed
+        do
+           say linesForThisPage~right(3) "lines printed for page" pageNum~right(3)
+           if linesForThisPage=0 then
+           do
+              say "Font is too big for pages of this size; aborting ..."
+              leave
+           end
+           pageNum=pageNum+1
+           linesForThisPage=0
+           pg~dispose
+           pg=pjob~getGraphics
+           if pg<>.nil then
+           do
+              pg~setFont(helv)
+           end
+           curHeight=margin
+        end
+
+        curHeight=curHeight+fontHeight
+        if pg<>.nil then
+        do
+           pg~drawString(nextLine, margin, curHeight-fontDescent) -- string, x, y co-ordinates
+           linesForThisPage=linesForThisPage+1
+           linesForThisJob =linesForThisJob+1
+        end
+        else
+           say "**error**, pg=.nil !"
+     end
+
+     say linesForThisPage~right(3) "lines printed for page" pageNum~right(3)
+     say "---"
+     say "total of pages printed:" pageNum~right(10)
+     say "total of lines printed:" linesForThisJob~right(10)
+     return
+
+
+/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to set "close app" indicator */
+::class RexxCloseAppEventHandler
+::method init        /* constructor */
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::attribute closeApp          -- indicates whether app should be closed
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method actionPerformed      -- event method (from ActionListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method windowClosing        -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to process tab changes */
+::class RexxLoadFileEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  userData=slotDir~userData   -- fetch userData directory from slot argument
+  call loadFileCommand userData~frame, userData~statusInfo, userData~textArea
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to process tab changes */
+::class RexxPrintEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  userData=slotDir~userData   -- fetch userData directory from slot argument
+  call printCommand userData~frame, userData~textArea
+
+
+
+
+/* ------------------------------------------------------------------------ */
+/* ------------------------------------------------------------------------ */
+/* This Rexx class implements the abstract method "accept" of
+   the interface Java class "java.io.FilenameFilter". Creating of an instance
+   of this Rexx class and passing it as the first argument
+*/
+::class RexxFileFilter
+::method init
+  expose description filter bIgnoreCase
+  use arg description, filter=(.set~new), bIgnoreCase=.false
+
+::attribute description    -- description for the files we allow, a string that is shown in the GUI
+
+::attribute filter         -- a collection of filetypes, e.g. .array~of(".rex", ".jrexx", ".java")
+::attribute bIgnoreCase    -- ignore case when checking filetype, set to .false
+
+-- implementations of the abstract Java methods
+::method getDescription    -- implementation for the abstract Java method
+  expose description
+  return description
+
+
+-- implementation of the abstract Java method
+::method accept            -- implementation for the abstract Java method
+  expose  filter bIgnoreCase
+  use arg dir, fileName    -- directory
+
+say "accept: dir="pp(dir) "fileName="pp(fileName)
+  -- if file~isDirectory then return .true   -- accept (include) directories in any case!
+
+   -- create explicitly a Java String object (makes the Java String methods available to us)
+  strRef=.bsf~new("java.lang.String", fileName)
+  if bIgnoreCase then strRef=strRef~upper
+
+  do elem over filter        -- iterate over all file types
+      if bIgnoreCase then
+         res=strRef~endsWith(elem~upper)
+      else
+         res=strRef~endsWith(elem)
+
+      if res then return .true
+  end
+  return .false
+

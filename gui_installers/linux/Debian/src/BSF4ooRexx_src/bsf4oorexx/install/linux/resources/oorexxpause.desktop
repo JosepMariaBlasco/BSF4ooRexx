@@ -1,0 +1,18 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=RexxPaws (runs Rexx script and pauses at end)
+NoDisplay=true
+Name[de]=RexxPaws (fÃ¼hrt Rexx-Skript aus und wartet am Ende)
+GenericName=RexxScript
+Comment=Rexx script executed by ooRexx pausing at end of execution by waiting on user input, such that the user can read the Rexx output, if invoked via the desktop.
+Comment[de]=Rexx-Skript wird von ooRexx ausgeführt, wartet aber dann am Ende der Ausführung auf eine Benutzereingabe (sinnvoll z.B., wenn Rexx-Skripte von der Arbeitsoberfläche aus gestartet wurden, da hiermit das Terminalfenster am Ende der Ausführung offen bleibt, sodass die Rexx-Ausgaben in Ruhe gelesen werden können).
+# Icon=oorexx_logo
+Icon=oorexx
+MimeType=application/x-rexx;application/x-rexx-java;application/x-rexx-java-ooo;
+TryExec=rexx
+Exec=rexx rexxpaws.rex %f
+Terminal=true
+Categories=Utility;
+
+# defined for the BSF4ooRexx package, date: 2010-08-14 - 2011-03-26, author: Rony G. Flatscher

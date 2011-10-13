@@ -1,0 +1,140 @@
+#!/usr/bin/rexx
+/* swing_progressbar.rxj */
+/*
+This demonstration was written in ooRexx by Lee Peedin
+using BSF4ooRexx, created and distributed by Dr. Rony Flatscher.
+The latest release of BSF4ooRexx can be found at:
+<http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/>
+The latest information on ooRexx can be found at:
+<http://www.oorexx.org/>
+Some demonstrations may require these additional Java classes
+SWT         <http://www.eclipse.org/swt/>
+FreeTTS     <http://freetts.sourceforge.net/docs/index.php>
+
+This demonstration has been tested using:
+ooRexx              3.0.1
+Java Version        1.5.0_06
+Windows Version     Microsoft Windows XP [Version 5.1.2600]
+Linux Version       Suse 10
+-- changed:         2009-10-17, rgf, renamed extension to '.rxj'
+                    2010-05-15, rgf, - adapting example to take full advantage of BSF4ooRexx
+                                     - replacing bsf.addEventListener with a Rexx event handlers
+*/
+    parse source os how what
+    call SysCls
+    lf = '0a'x
+
+-- Import the required classes
+    call bsf.importClass 'javax.swing.JButton'  , 'JButton'
+    call bsf.importClass 'java.awt.Rectangle'   , 'Rectangle'
+
+-- Create a userData directory
+    userData=.directory~new         -- a directory which will be passed to Rexx with the event
+
+-- Create a Java RexxProxy for controlling the closing of the application
+   rexxCloseEH =.RexxCloseAppEventHandler~new  -- Rexx event handler
+      -- Create Java RexxProxy for the Rexx event handler, supply 'userData' slot argument
+   rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, userData, "java.awt.event.ActionListener" )
+
+-- Create a frame with a title
+    frame = .bsf~new('javax.swing.JFrame', 'Progress Bar')
+    frame~setDefaultCloseOperation(frame~DO_NOTHING_ON_CLOSE)
+
+-- Create a panel
+    panel = .bsf~new('javax.swing.JPanel')
+
+-- Create a GO button
+    goButton = .JButton~new('Go')
+      -- Set the "hot-key" for the button
+    goButton~setMnemonic('g')
+    frame~getRootPane~setDefaultButton(goButton)   -- set default push button
+      -- Add a listener to the button
+    rpGoEH=BsfCreateRexxProxy(.RexxGoEventHandler~new, userData, "java.awt.event.ActionListener" )
+    goButton~addActionListener(rpGoEH)
+
+-- Create an EXIT button, hot-key, and listener
+    exitButton = .JButton~new('Exit')
+    exitButton~setMnemonic('x')
+    exitButton~addActionListener(rpCloseEH)
+
+-- Add the buttons to the panel
+    panel~~add(goButton)~~add(exitButton)
+
+-- Create a progress bar with the minimum & maximum values
+    maximum=5000
+    pb = .bsf~new('javax.swing.JProgressBar',0,maximum)
+      -- Show it, even though no progress has started
+    pb~setStringPainted(.true)
+      -- Give the progress bar and initial text
+    pb~setString('Waiting For Go')
+      -- Make it visible
+    pb~setVisible(.true)
+
+-- Add the progress bar to the frame
+    frame~add(pb)
+-- Add the panel to the frame
+    frame~add(panel,'South')
+
+-- Pack & show the frame
+    frame~pack       -- this will set the dimensions
+      -- calculate positions such that window will be in the upper right corner
+    sw = frame~getToolkit~getScreenSize~getWidth
+    sh = frame~getToolkit~getScreenSize~getHeight
+    fw = frame~getWidth
+    fh = frame~getHeight
+    fx = (sw-fw)~format(,0)
+    fy = 0
+    frame~setLocation(fx,fy)
+    frame~~setVisible(.true)~~tofront
+
+    userData~pb=pb            -- save Java proxy object to be used in event handler
+    userData~maximum=maximum  -- maximum value in progress bar
+
+    rexxCloseEH~waitForExit   -- wait until we are allowed to end the program
+    call SysSleep .2          -- let Java's RexxProxy finalizations find a running Rexx instance
+
+
+::requires bsf.cls      -- get Java support
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to set "close app" indicator */
+::class RexxCloseAppEventHandler
+::method init        /* constructor */
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method actionPerformed      -- event method   (from ActionListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+  say "actionPerformed: closing app..."
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to reset */
+::class RexxGoEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  userData=slotDir~userData   -- fetch user Data directory from slot argument
+  pb=slotDir~userData~pb      -- fetch progress bar object
+  max=slotDir~userData~maximum   -- fetch maximum value
+
+   -- get the relative location=point(x/y), size=dimension(width/height)
+  rect=.Rectangle~new(pb~getLocation, pb~getSize)
+
+  call time('r')
+  do aa = 1 to max
+      pb~setValue(aa)
+      pb~setString(aa 'of' max)
+         -- the following is needed for updating the screen to witness the progress
+      pb~paintImmediately(rect)
+  end
+  pb~setString(time('e') 'Seconds')
+
+

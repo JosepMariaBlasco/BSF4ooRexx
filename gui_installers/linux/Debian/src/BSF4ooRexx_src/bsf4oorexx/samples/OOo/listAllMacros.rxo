@@ -1,0 +1,235 @@
+/*  -- rgf, 2007-07-15, transcription of a Basic program documented at the bottom
+    of this file, which was created by Paolo Mantovani; please see at the bottom for the
+    entire posting including the Basic code.
+*/
+
+xContext = UNO.connect()  -- connect to server and retrieve the XContext object
+-- XMcf = xContext~getServiceManager   -- retrieve XMultiComponentFactory
+
+oDesktop         = UNO.createDesktop(xContext)  -- get the UNO Desktop service object
+xComponentLoader = oDesktop~XDesktop~XComponentLoader  -- get componentLoader
+                                                       -- interface
+/* open the blank *.odc - file */
+url = "private:factory/scalc"
+xCalcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, .UNO~noProps)
+
+
+/* get first sheet in spreadsheet */
+xSheet = xCalcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0) ~XSpreadSheet
+
+oBrowseNodeFactory = xContext~getValueByName("/singletons/com.sun.star.script.browse.theBrowseNodeFactory")
+iViewType = bsf.getConstant("com.sun.star.script.browse.BrowseNodeFactoryViewTypes", "MACROORGANIZER")
+-- iViewType = bsf.getConstant("com.sun.star.script.browse.BrowseNodeFactoryViewTypes", "MACROSELECTOR")
+
+aMasterProviders = oBrowseNodeFactory~XBrowseNodeFactory~createView(iViewType)~ChildNodes
+
+iLevel = 0
+.local~iRow = 0      -- save in .local environment, makes it globally accessible
+do oMasterProvider over aMasterProviders
+   call uno.setCell xSheet, iLevel, .iRow, oMasterProvider~name
+say "Master-name:" "   "~copies(iLevel) pp(oMasterProvider~name)
+   call printChildNodes xSheet, oMasterProvider, iLevel+1
+  .local~iRow = .iRow+1
+end
+
+exit
+
+
+printChildNodes: procedure
+   use arg xSheet, oParent, iLevel
+-- say ppd( oParent~uno.getDefinition )
+
+  do oChild over oParent~XBrowseNode~childNodes
+    .local~iRow = .iRow+1
+    call uno.setCell xSheet, iLevel, .iRow, oChild~name
+say "oChild~name:" "   "~copies(iLevel) pp(oChild~name)
+    xProps=oChild~XPropertySetInfo
+    if .nil<>xProps then
+    do
+      if xProps~hasPropertyByName("URI") Then
+         call uno.setCell xSheet, iLevel+1, .iRow, xProps~getPropertyByName("URI")
+    end
+
+    If hasChildNodes(oChild) Then
+      call PrintChildNodes xSheet, oChild, iLevel+1
+  end
+  return
+
+
+::requires uno.cls      -- get ooRexx support for OOo
+
+
+::routine hasChildNodes -- there may be some exceptions (e.g. "exceptions.AttributeError")
+  use arg oChild
+
+  signal on any         -- any condition will cause jump to "ANY:" label
+  return oChild~hasChildNodes
+
+any:
+  -- pause
+  return .false
+
+
+
+/*
+   Mailing-List: contact dev-help@api.openoffice.org; run by ezmlm
+   list-post: <mailto:dev@api.openoffice.org>
+   Reply-To: dev@api.openoffice.org
+   From: Paolo Mantovani
+   To: dev@api.openoffice.org
+   Date: Sat, 14 Jul 2007 16:36:00 +0200
+   In-Reply-To: <46973B33.70209@wu-wien.ac.at>
+   Subject: Re: [api-dev] Hmm ... (Re: [api-dev] Is there an example for packaging macros as an extension somewhere
+
+   Hello Rony,
+
+   Alle 10:43, venerd=EC 13 luglio 2007, Rony G. Flatscher ha scritto:
+   [...]
+   > After reading the text you pointed me to and looking once more to the
+   > BasicAddonBuilder I finally looked through the "View -> Toolbars" and
+   > saw there was a Basic Addon Toolbar, which I found afterwards, and as
+   > you write, consists of one entry.
+
+   In effect the small toolbar is not easily visible because it initially appe=
+   ars=20
+   docked in the top-left corner. I'll put it floating in a=20
+   next version of the package
+
+
+   >
+   > In the meantime I looked over the code which is really impressive ans
+   > shows the high command Paolo has gained over that area of OOo!
+   >
+   > Unfortunately, at the moment it would be a little bit too much time
+   > consuming research effort to try to extend it to cater generically for
+   > all macro languages that happen to be installed on the system.
+   >
+   > Things like:
+   >
+   >     * how to get a list of the installed macro languages,
+   >           o what is the exact spelling of a macro language (E.g. "java"
+   >             vs. "Java"),
+   >           o what is the URL to indicate a specific macro from a specific
+   >             macro language should be used (with or without arguments),
+   >     * how to get a list of existing macro libraries
+   >           o "user-home"/user/Scripts
+   >           o "shared-hoome"/shared/Scripts
+   >     * how to get a list of
+   >           o existing macro files (in the Python case there are macros
+   >             right in "./Scripts/python", i.e., the home of macro
+   >             language directory contains already scripts.
+   >
+   > These questions are probably easy to answer by those in the know, which
+   > would help save quite some research time. (Maybe someone who knows could
+   > just give hints/pointers where to look into?)
+
+   All these information are accessible through the singleton:
+   "com.sun.star.script.browse.theBrowseNodeFactory"
+
+   I've put a basic example at the end of this post.
+   Copy the source in your StarBasic IDE and run the first macro.
+   It should create a spreadsheet with a hierarchical list of the macros for a=
+   ll=20
+   supported languages. (it may take some time...)
+
+   >
+   > Once this knowledge is available, one could start to try to generalize
+   > the current BasicAddonBuilder to become a true "MacroAddonBuilder" (like
+   > having a choice for the desired macro language initially, and maybe even
+   > allow to pick any macro from any macro language to execute, if a toolbar
+   > button or menu option got chosen)?
+
+
+   All the necessary code is (more or less) already in the BasicAddonBuilder, =
+   but=20
+   I've deliberately limited the choice to Starbasic only. Not only, I've used=
+   =20
+   the old style macro URL's in the generated addons.xcu. ("macro:" protocol=20
+   instead of the new and language agnostic "vnd.sun.star.script:" protocol)
+
+   This is because in my first experiments I got errors trying to install an=20
+   addons.xcu with commands specified with the "vnd.sun.star.script:" protocol.
+
+   Anyway I think that it would be possibile (even if not so trivial) to make =
+   the=20
+   BasicAddonBuilder language agnostic, removing limitations to basic only tha=
+   t=20
+   I've introduced, but this would work only in the scripting domain, and not=
+   =20
+   for deployng UNO components.
+   A more generic solution was suggested from Mathias Bauer in this post:
+   http://extensions.openoffice.org/servlets/ReadMsg?list=3Ddev&msgNo=3D513
+
+   Until now I was oriented in this direction, but I'm open to any suggestions=
+   =20
+   and contributions.
+   But, before to add new features I would like to finish my todo list:
+   =2D Localization of UI items in the generated Addons.xcu=20
+   =2D Versioning support
+   =2D Licensing support
+   =2D Dependances support
+
+   and I really need help for the first entry! :-)
+   I've posted my question here some days ago but I didn't receive any reply ;=
+   =2D(
+   http://api.openoffice.org/servlets/ReadMsg?list=3Ddev&msgNo=3D17858
+
+   Perhaps my question was not well explained?
+
+   ciao
+   Paolo M
+
+   -------------------------8<-------------------------
+
+
+   REM  *****  BASIC  *****
+
+   Dim oSheet As Object
+   Dim iRow As Integer
+
+   sub BrowseMacrosExample
+     oDoc = StarDesktop.loadComponentFromUrl( _
+       "private:factory/scalc","_default",0,Array())
+     oSheet = oDoc.Sheets(0)
+
+     oBrowseNodeFactory = GetDefaultContext.getValueByName( _
+       "/singletons/com.sun.star.script.browse.theBrowseNodeFactory")
+
+     iViewType = _
+       com.sun.star.script.browse.BrowseNodeFactoryViewTypes.MACROORGANIZER
+     aMasterProviders() = oBrowseNodeFactory.createView(iViewType).ChildNodes()
+
+     iLevel = 0
+     iRow = 0
+     For Each oMasterProvider in aMasterProviders()
+       oSheet.getCellByPosition(iLevel, iRow).String = oMasterProvider.Name
+       PrintChildNodes(oMasterProvider, iLevel+1)
+       iRow = iRow+1
+     Next oMasterProvider
+
+   end sub
+
+   Sub PrintChildNodes(oParent, iLevel)
+   On error resume next
+     For Each oChild In oParent.ChildNodes()
+       iRow = iRow+1
+       oSheet.getCellByPosition(iLevel, iRow).String = oChild.Name
+       If HasUnoInterfaces(oChild, "com.sun.star.beans.XPropertySet") Then
+         If oChild.PropertySetInfo.hasPropertyByName("URI") Then
+           oSheet.getCellByPosition(iLevel+1, iRow).String = oChild.URI
+         End If
+       End If
+       If oChild.hasChildNodes() Then
+         PrintChildNodes(oChild, iLevel+1)
+       End If
+     Next oChild
+
+   End Sub
+
+
+
+   ---------------------------------------------------------------------
+   To unsubscribe, e-mail: dev-unsubscribe@api.openoffice.org
+   For additional commands, e-mail: dev-help@api.openoffice.org
+*/
+

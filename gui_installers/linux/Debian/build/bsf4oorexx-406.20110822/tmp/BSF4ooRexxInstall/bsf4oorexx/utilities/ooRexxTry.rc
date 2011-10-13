@@ -1,0 +1,17 @@
+Xpos=0
+HistorySize=20
+Height=840
+Ypos=0
+Enable_Error_Stream_On_Socket=no
+Error_Monitor_Destination=GUIErrorStream
+Input_Monitor_Destination=GUIInputStream
+Width=672
+FontName=Lucida Console
+FontSize=12
+Output_Monitor_Destination=GUIOutputStream
+Host=localhost
+Port=8888
+Enable_Input_Stream_On_Socket=no
+Enable_Output_Stream_On_Socket=no
+Use_System_Look_And_Feel=no
+silentMode=no

@@ -1,0 +1,92 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_200601>, edited by Rony G. Flatscher, 2010-07-11/14/20 */
+
+use arg slotArg   /* fetch the "slotArg", a java.util.Hashtable object which contains invocation
+                     information from OpenOffice.org, will always be the very last argument     */
+
+scriptContext=uno.getScriptContext(slotArg)  /* get the xScriptContext object, if any           */
+if scriptContext<>.nil then                  /* o.k., we are invoked as a macro from OOo        */
+do
+   xDesktop=scriptContext~getDesktop            /* get the desktop (a XDesktop) object          */
+   xContext=scriptContext~getComponentContext   /* get the context (a XComponentContext) object */
+   thisPath=uno.getScriptPath(.nil, slotArg)    /* will return the physical path to this script */
+end
+else              /* this program was called from outside of OOo, e.g. from the commandline     */
+do
+   xContext = UNO.connect()                  /* get a connection to OOo server                  */
+   xDesktop = UNO.createDesktop(xContext)    /* create the XDesktop from xContext               */
+   thisPath = directory()                    /* determine path to this script                   */
+end
+
+xComponentLoader=xDesktop~XComponentLoader   /* get componentLoader interface                   */
+
+   /* ------------------------------------------------------------ */
+   /* create a new presentation document */
+url = "private:factory/simpress"
+impressComponent = xComponentLoader~loadComponentFromURL(url, "_blank",0,.UNO~noProps)
+   /*  need document's factory to be able to insert created objects  */
+xImprFactory = impressComponent~XMultiServiceFactory
+
+   /* creating a master page */
+xMasterPages = impressComponent~XMasterPagesSupplier~getMasterPages
+xMasterPage  = xMasterPages~getByIndex(0)~XDrawPage
+
+   /* ------------------------------------------------------------ */
+   /* create a GraphicObjectShape with picture */
+xShape1 = xImprFactory~createInstance("com.sun.star.drawing.GraphicObjectShape")~xShape
+call setshape xShape1, 1000, 1000, 2500, 2500
+xMasterPage~add(xShape1)
+xShape1~xPropertySet~setPropertyValue("GraphicURL", uno.convertToUrl(thisPath"/ooRexx4OOo.png"))
+
+   /* create a TextShape for the master slide to contain some arbitrary text */
+xShape2 =xImprFactory~createInstance("com.sun.star.drawing.TextShape")~xShape
+call setshape xShape2, 4500, 17000, 21000, 1000
+xMasterPage~add(xShape2)
+proportional = bsf.getConstant("com.sun.star.drawing.TextFitToSizeType", "PROPORTIONAL")
+xShape2~xPropertySet~setPropertyValue("TextFitToSize", proportional)
+xShape2~XText~setString("This got defined in the Master Slide (at" .dateTime~new")")
+
+   /* create a TextShape for the master slide to contain the slide number */
+xShape3 = xImprFactory~createInstance("com.sun.star.drawing.TextShape")~xShape
+call setshape xShape3, 20000, 19000, 6000, 1000
+xMasterPage~add(xShape3)
+xText3 = xShape3~xText     /* get XText cursor */
+xText3~insertString(xText3, "Slide Number: ", .false)
+xTFP=xImprFactory~createInstance("com.sun.star.text.TextField.PageNumber")~XTextField
+xText3~insertTextContent(xText3, xTFP, .false)
+
+   /* ------------------------------------------------------------ */
+   /* creating another DrawPage (the second slide) and setting some properties */
+xDrawPages = impressComponent~XDrawPagesSupplier~getDrawPages
+xDrawPage2 = xDrawPages~insertNewByIndex(0)~XDrawPage
+xDrawPage2Props = xDrawPage2~xPropertySet
+
+randomFade = bsf.getConstant("com.sun.star.presentation.FadeEffect",  "RANDOM")
+xDrawPage2Props~setPropertyValue("Effect", randomFade)
+
+mediumSpeed= bsf.getConstant("com.sun.star.presentation.AnimationSpeed", "MEDIUM")
+xDrawPage2Props~setPropertyValue("Speed", mediumSpeed)
+
+   /* inserting a text shape in the new DrawPage */
+xShape4 = xImprFactory~createInstance("com.sun.star.drawing.TextShape")~xShape
+call setshape xShape4, 4000, 8000, 21000, 1800
+xDrawPage2~add(xShape4)
+xShape4~xPropertySet~setPropertyValue("TextFitToSize", proportional)
+xShape4~xText~setString("This is an example for a DrawPage for the second slide.")
+
+   /* start the presentation */
+xPresentation = impressComponent~XPresentationSupplier~getPresentation
+   /* "start" is a method in the ooRexx class "Object", hence using message
+      "bsf.dispatch()" to dispatch "start" on the Java side  */
+xPresentation~bsf.dispatch("start")
+
+impressComponent~XModifiable~setModified(.false) /* allow to close (abort) document without saving-dialog */
+
+::requires UNO.CLS   -- load UNO support for OpenOffice.org
+
+::routine setshape   /* utility routine to set the size and position of an xShape object */
+   use arg xShape, x, y, w, h
+
+   xShape~setPosition(.bsf~new("com.sun.star.awt.Point", x, y))
+   xShape~setSize(.bsf~new("com.sun.star.awt.Size", w, h))
+   return

@@ -1,0 +1,338 @@
+#!/usr/bin/rexx
+/* swing_menu.rxj */
+/*
+This demonstration was written in ooRexx by Lee Peedin
+using BSF4ooRexx, created and distributed by Dr. Rony Flatscher.
+The latest release of BSF4ooRexx can be found at:
+<http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/>
+The latest information on ooRexx can be found at:
+<http://www.oorexx.org/>
+Some demonstrations may require these additional Java classes
+SWT         <http://www.eclipse.org/swt/>
+FreeTTS     <http://freetts.sourceforge.net/docs/index.php>
+
+This demonstration has been tested using:
+ooRexx              3.0.1
+Java Version        1.5.0_06
+Windows Version     Microsoft Windows XP [Version 5.1.2600]
+Linux Version       Suse 10
+-- changed:         2009-10-17, rgf, renamed extension to '.rxj'
+                    2010-05-16, rgf, - adapting example to take full advantage of BSF4ooRexx
+                                     - replacing bsf.addEventListener[WithEventObject] with a Rexx event handler
+*/
+    parse source os how what
+
+Main:
+    call SysCls
+    .local~sm.what = what
+    .local~sm.lf   = '0a'x
+    .local~sm.tab  = '09'x
+-- call the internal importClasses routine
+    call importClasses
+
+-- call the internal createAndShowGUI routine
+    userData=.directory~new      -- directory that should be sent to the event handler
+    output = createAndShowGUI(userData)
+    userData~output=output       -- save output object, such that event handlers can get access to it
+
+    userData~rexxCloseEH~waitforExit   -- wait until we are allowed to end the program
+    -- rexxCloseEH~waitForExit   -- wait until we are allowed to end the program
+    call SysSleep .2          -- let Java's RexxProxy finalizations find a running Rexx instance
+
+
+::requires bsf.cls
+
+::routine createAndShowGUI
+    use arg userData          -- fetch 'userData' directory
+
+ -- Create a Java RexxProxy for controlling the closing of the application
+    rexxCloseEH =.RexxCloseAppEventHandler~new  -- Rexx event handler
+       -- Create Java RexxProxy for the Rexx event handler
+    rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, userData, "java.awt.event.ActionListener", -
+                                                         "java.awt.event.WindowListener" )
+    userData~rexxCloseEH=rexxCloseEH   -- save Rexx event handler for later use
+    userData~rpCloseEH=rpCloseEH       -- save RexxProxy for Rexx event handler for later use
+
+-- Create the frame window
+    frame = .JFrame~new('Menu Demo')
+    frame~addWindowListener(rpCloseEH) -- add Rexx event handler supplying the RexxProxy of it
+
+
+-- Call the internal MenuDemo class
+    demo = .MenuDemo~new
+    frame~setJMenuBar(demo~createMenuBar(userData))   -- pass on 'userData' directory
+    frame~setContentPane(demo~createContentPane)
+
+    frame~setSize(450,300)
+    sw = frame~getToolkit~getScreenSize~getWidth
+    sh = frame~getToolkit~getScreenSize~getHeight
+    fw = frame~getWidth
+    fh = frame~getHeight
+    fx = (sw-fw)~format(,0)
+    fy = 0
+    frame~setLocation(fx,fy)
+
+    frame~setVisible(.true)
+
+return demo~output
+
+::class MenuDemo public
+::method output attribute
+::method createMenuBar
+    use arg userData       -- fetch 'userData' directory
+
+    menuBar = .JMenuBar~new
+
+-- First JMenu
+    menu = .JMenu~new('A Menu')
+    menu~setMnemonic('a')
+    menuBar~add(menu)
+
+-- 1st item for first JMenu
+    menuItem = .JMenuItem~new('A text only menu item')
+    menuItem~setMnemonic('t')
+    rp=BsfCreateRexxProxy(.RexxTextOnlyEventHandler~new, userData, "java.awt.event.ActionListener")
+    menuItem~addActionListener(rp)
+    menu~add(menuItem)
+
+-- 2nd item for first JMenu
+-- Call the internal createImageIcon routine
+    icon = createImageIcon('oorexx.gif')
+    menuItem = .JMenuItem~new('Both text & icon',icon)
+    menuItem~setMnemonic('b')
+    rp=BsfCreateRexxProxy(.RexxTextAndIconEventHandler~new, userData, "java.awt.event.ActionListener")
+    menuItem~addActionListener(rp)
+    menu~add(menuItem)
+
+-- 3rd item for first JMenu
+    icon = createImageIcon('rexxla.gif')
+    menuItem = .JMenuItem~new(icon)
+    menuItem~setMnemonic('i')
+    menu~add(menuItem)
+    rp=BsfCreateRexxProxy(.RexxIconOnlyEventHandler~new, userData, "java.awt.event.ActionListener")
+    menuItem~addActionListener(rp)
+
+-- Add a separator
+    menu~addSeparator
+-- Only one item can be selected
+    group = .ButtonGroup~new
+
+-- 4th item for first JMenu
+    rbMenuItem = .JRadioButtonMenuItem~new('A radio button (1) menu item')
+    rbMenuItem~setSelected(.true)
+    rbMenuItem~setMnemonic('r')
+    rp=BsfCreateRexxProxy(.RexxRB_1_EventHandler~new, userData, "java.awt.event.ActionListener")
+    rbMenuItem~addActionListener(rp)
+-- 1st item in group
+    group~add(rbMenuItem)
+    menu~add(rbMenuItem)
+
+-- 5th item for first JMenu
+    rbMenuItem = .JRadioButtonMenuItem~new('Another radio button (2)')
+    rbMenuItem~setMnemonic('o')
+    rp=BsfCreateRexxProxy(.RexxRB_2_EventHandler~new, userData, "java.awt.event.ActionListener")
+    rbMenuItem~addActionListener(rp)
+-- 2nd item in group
+    group~add(rbMenuItem)
+    menu~add(rbMenuItem)
+
+-- Add a separator
+    menu~addSeparator
+
+-- 6th item in first JMenu
+    cbMenuItem = .JCheckBoxMenuItem~new('A check box (1) menu item')
+    cbMenuItem~setMnemonic('c')
+    rp=BsfCreateRexxProxy(.RexxCB_1_EventHandler~new, userData, "java.awt.event.ActionListener")
+    cbMenuItem~addActionListener(rp)
+    menu~add(cbMenuItem)
+
+-- 7th item in first JMenu
+    cbMenuItem = .JCheckBoxMenuItem~new('Another check box (2)')
+    cbMenuItem~setMnemonic('n')
+    rp=BsfCreateRexxProxy(.RexxCB_2_EventHandler~new, userData, "java.awt.event.ActionListener")
+    cbMenuItem~addActionListener(rp)
+    menu~add(cbMenuItem)
+
+-- Add a seperator
+    menu~addSeparator
+
+-- Create a sub menu (just another JMenu)
+    submenu = .JMenu~new('A submenu')
+    submenu~setMnemonic('s')
+
+-- 1st item in submenu
+    menuItem = .JMenuItem~new('An item in the submenu (1)')
+    rp=BsfCreateRexxProxy(.RexxSubMenu_1_EventHandler~new, userData, "java.awt.event.ActionListener")
+    menuItem~addActionListener(rp)
+    submenu~add(menuItem)
+
+-- 2nd item in submenu
+    menuItem = .JMenuItem~new('Another item in the submenu (2)')
+    rp=BsfCreateRexxProxy(.RexxSubMenu_2_EventHandler~new, userData, "java.awt.event.ActionListener")
+    menuItem~addActionListener(rp)
+    submenu~add(menuItem)
+
+-- 8th item in first JMenu
+    menu~add(submenu)
+
+-- Create the second JMenu
+    menu = .JMenu~new('Another Menu')
+    menu~setMnemonic('n')
+
+-- 1st item in second JMenu
+    menuItem = .JMenuItem~new('Clear')
+    menuItem~setMnemonic('c')
+    rp=BsfCreateRexxProxy(.RexxClearEventHandler~new, userData, "java.awt.event.ActionListener")
+    menuItem~addActionListener(rp)
+    menu~add(menuItem)
+
+-- 2nd item in second JMenu
+    menuItem = .JMenuItem~new('Exit')
+    menuItem~setMnemonic('x')
+    menuItem~addActionListener(userData~rpCloseEH)  -- fetch existing event handler and reuse it
+    menu~add(menuItem)
+    menuBar~add(menu)
+return menuBar
+
+::method createContentPane
+    expose output
+    contentPane = .JPanel~new
+    contentPane~setLayout(.BorderLayout~new)
+    contentPane~setOpaque(.true)
+
+    output = .JTextArea~new(5,30)
+    output~setTabSize(2)
+    output~setEditable(.false)
+    scrollpane = .JScrollPane~new(output)
+    contentPane~add(scrollpane,'Center')
+return contentPane
+
+::routine createImageIcon
+    use arg iconfile
+    icon = .ImageIcon~new(iconfile)
+return icon
+
+::routine importClasses
+    classes = ''
+    classes = classes 'java.awt.BorderLayout'
+    classes = classes 'javax.swing.JMenu'
+    classes = classes 'javax.swing.JMenuItem'
+	 classes = classes 'javax.swing.JCheckBoxMenuItem'
+    classes = classes 'javax.swing.JRadioButtonMenuItem'
+    classes = classes 'javax.swing.ButtonGroup'
+    classes = classes 'javax.swing.JMenuBar'
+    classes = classes 'javax.swing.ImageIcon'
+    classes = classes 'javax.swing.JPanel'
+    classes = classes 'javax.swing.JTextArea'
+    classes = classes 'javax.swing.JScrollPane'
+    classes = classes 'javax.swing.JFrame'
+
+   do i = 1 to words(classes)
+      className = classes~word(i)~substr(classes~word(i)~lastpos('.')+1)
+      call bsf.importClass classes~word(i), className
+   end
+return
+
+::routine ShowAction
+    use arg action_text,output
+    s = 'Action event detected.'
+    s = s||.sm.lf||.sm.tab||action_text
+    output~append(s||.sm.lf)
+return
+
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to set "close app" indicator */
+::class RexxCloseAppEventHandler
+::method init        /* constructor */
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::attribute closeApp          -- indicates whether app should be closed
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method actionPerformed      -- event method   (from ActionListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method windowClosing        -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxTextOnlyEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call ShowAction "Text only menu item", slotDir~userData~output
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxTextAndIconEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call ShowAction "Text & icon item", slotDir~userData~output
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxIconOnlyEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call ShowAction "Icon only menu item", slotDir~userData~output
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxRB_1_EventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call ShowAction "Radio button 1", slotDir~userData~output
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxRB_2_EventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call ShowAction "Radio button 2", slotDir~userData~output
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxCB_1_EventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call ShowAction "Check box 1", slotDir~userData~output
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxCB_2_EventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call ShowAction "Check box 2", slotDir~userData~output
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxSubMenu_1_EventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call ShowAction "Submenu item 1", slotDir~userData~output
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxSubMenu_2_EventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call ShowAction "Submenu item 2", slotDir~userData~output
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxClearEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  slotDir~userData~output~setText("")  -- clear output text
+

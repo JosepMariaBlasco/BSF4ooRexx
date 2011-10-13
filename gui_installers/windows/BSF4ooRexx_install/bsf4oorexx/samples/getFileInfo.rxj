@@ -1,0 +1,80 @@
+#!/usr/bin/rexx
+/*
+   Name:    "getFileInfo.rxj"
+
+   Author:   Rony G. Flatscher, University of Augsburg, WU Wien University,
+
+   Putpose:  demonstrate using the Java class "java.io.File" to gain information about
+             files/directories
+
+   Changes:
+         2008-07-19, rgf, added hash-bang line at the top
+         2009-07-05 Walter Pachl add help and some correction
+
+   last change: $Revision: 902 $ $Author: Administrator $ $Date: 2010-08-22 16:12:11 +0200 (Sun, 22 Aug 2010) $
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2001-2009 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+
+If arg(1)='?' Then Do
+  Parse Source source
+  Say source
+  Say 'Extract and show the attributes of a file or directory given as argument'
+  Exit
+  End
+
+parse arg filename      /* get the name of a file/directory */
+say "received filename: --->" pp(filename) "<---"
+say
+
+.bsf~bsf.import("java.io.File", "JFile")  -- import the Java class "java.io.File", name it "JFile"
+
+f=.JFile~new(filename)  -- create a Java file object
+say "Separator on this system:     " pp(f~separator)     -- get field value and show it
+say "Path separator on this system:" pp(f~pathSeparator) -- get field value and show it
+say
+
+      /* define an array with two elements (strings) */
+infos=.array~of( "isDirectory isFile isHidden canRead canWrite getName getPath isAbsolute" -
+                 "getAbsolutePath getCanonicalPath" ,                                      -
+                 "getAbsoluteFile getCanonicalFile toURI toURL" )
+
+do j=1 to 2             /* iterate over the two array elements          */
+   tmp=infos[j]         /* get array-element (a string)                 */
+   do i=1 to tmp~words     /* could have been: "words(infos)"           */
+      w=tmp~word(i)        /* could have been: "word(infos,i)"          */
+
+      if j=1 then          /* these methods return a string already    */
+         val=.message~new(f, w)~send   /* define message, give target and messagename */
+      else                 /* these methods return a Java object, hence get string off of it */
+         val=.message~new(f, w)~send~toString
+
+      /* show results */
+      say "   " (w":")~right(20) pp(val)  /* run the method and display result   */
+   end
+   say "---"
+end
+
+
+::requires BSF.CLS      -- get the BSF4Rexx support for ooRexx
+
+::routine pp         /* "pretty print" ;)    */
+  return "[" || arg(1) || "]"
+

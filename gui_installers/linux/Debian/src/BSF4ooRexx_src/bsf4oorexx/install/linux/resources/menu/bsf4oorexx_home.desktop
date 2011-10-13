@@ -1,0 +1,7 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Icon=folder-remote
+Exec=xdg-open http://sourceforge.net/projects/bsf4oorexx/files/
+Name=BSF4ooRexx Download Page
+Comment=Opens the "BSF4ooRexx" download page on the Internet.

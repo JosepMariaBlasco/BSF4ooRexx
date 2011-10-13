@@ -1,0 +1,179 @@
+#!/usr/bin/rexx
+/*
+   Name:    "ShowSize.rxj"
+
+   Invoke:  "rexx ShowSize.rxj"
+                or
+            "rexxj2.cmd ShowSize.rxj" (Windows)
+                or
+            "rexxj2.sh ShowSize.rxj" (Unix)
+
+   Purpose:  create a little resizable window with a push button to reveal the actual
+             size; adds EventListeners in order for Rexx to be notified, if a button
+             is pressed or the Window closed (by pressing the System close button)
+
+             ===> This version uses the ability to prioritize requests, by using
+             the text "/*2*/" as the very first text in the string sent in case
+             an event took place.
+
+             This version works also, if called from the command line, as it is able
+             to load Java and the bsf4rexx support by itself.
+
+   Needs:    IBM's "Bean Scripting Framework" (BSF)
+             (cf. "http://oss.software.ibm.com/developerworks/projects/bsf")
+
+             and the package "bsf4rexx"
+             (cf. "http://nestroy.wi-inf.uni-essen.de/Forschung/rgf/Entwicklung.html")
+
+   Date:    2001-04-18, 2003-01-23, 2003-05-10
+            2005-12-28, added Apache license
+            2008-09-09, rgf, changed "registerBean" and "registerBeanStrict" to their synonyms
+                             "new" and "newStrict" which better describe the semantics of
+                             these subfunctions
+            2009-08-26 Walter Pachl added help
+            2010-02-16, rgf, adapted library name to "BSF4ooRexx"
+
+   Author:   Rony G. Flatscher, University of Essen, WU Wien University,
+             derived from Peter Kalender's proof-of-concept work for the "Essener Ski Seminar",
+             University of Essen (Oct 2000 to Feb 2001)
+
+   license(s): see end of this file
+*/
+If arg(1)='?' Then
+Do
+  Parse Source source
+  say source
+  say "Create a resizable window showing its size (width and height) in the middle."
+  say "After a short time this window is automatically downsized and then"
+  say "enlarged a couple of times  and the actual size is displayed each time."
+  say "Thereafter you can resize the window yourself and display the current size"
+  say "by pressing the respective button."
+  say " "
+  say "Argument m (0|1|2) lets you specify the priority of Window Closing"
+  say "0 - batch  priority (low)"
+  say "1 - normal priority (default)"
+  say "2 - alarm  priority (highest)"
+  Exit
+End
+
+Parse Arg m
+If m<>'' & wordpos(m,'0 1 2')=0 Then
+Do
+  say "Argument must be ?, 0, 1, or 2"
+  Exit
+End
+
+if rxFuncQuery("BSF") then  /* no bsf4rexx support available yet, hence load Java */
+do
+   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx", "BsfLoadFuncs"
+   call BsfLoadFuncs    /* load all BSF-functions                    */
+   call BsfLoadJava     /* load the JVM and set up BSF4Rexx-support  */
+end
+
+if      BsfInvokedBy()=1 then say "This Rexx program was invoked by Java!"
+else if BsfInvokedBy()=2 then say "This Rexx program was invoked by Rexx, JVM loaded by Rexx!"
+else                          say "No JVM present, we got troubles ..."
+
+
+call BSF 'new', 'Window', 'java.awt.Frame', 'Show size'
+If m='' Then
+  call BSF 'addEventListener', 'Window', 'window', 'windowClosing', 'call BSF "exit"'
+Else
+  call BSF 'addEventListener', 'Window', 'window', 'windowClosing', '/*'m'*/call BSF "exit"'
+
+call BSF 'new', 'Button', 'java.awt.Button', 'Press me!'
+call BSF 'addEventListener', 'Button', 'action', '', 'call ShowSize'
+
+call BSF 'new', 'Label', 'java.awt.Label'
+call BSF 'invoke', 'Label', 'setAlignment', bsf('getFieldValue', 'Label', 'CENTER')
+
+call BSF 'invoke', 'Window', 'add', 'Center', 'Label'
+call BSF 'invoke', 'Window', 'add', 'South',  'Button'
+call BSF 'invoke', 'Window', 'pack'
+call BSF 'invoke', 'Window', 'setSize',     250, 150
+call BSF 'invoke', 'Window', 'setLocation', 100, 100
+call BSF 'invoke', 'Window', 'show'
+call BSF 'invoke', 'Window', 'toFront'
+
+secs=3
+info="sleeping" secs  "seconds ..."
+call BSF 'invoke', 'Label', 'setText', info
+say info
+call bsf 'sleep', secs  /* sleep i seconds using bsf4rexx       */
+
+do i=100 to 300 by 10   /* animate the window a little bit      */
+   call BSF 'invoke', 'Window', 'setLocation', i       , (i/3)%1
+   call BSF 'invoke', 'Window', 'setSize',     (i*.9)%1, 100+i%3
+   call BSF 'invoke', 'Window', 'show'
+   call ShowSize
+   call bsf 'sleep', .15        /* sleep i seconds using bsf4rexx       */
+end
+
+do forever
+        /* a direct call always returns a string, in the
+           case of a Java "null" by default the string ".NIL"   */
+   a = bsf("pollEventText", 1000)   /* wait for an eventText to be sent,
+                                       after 1 second return anyway */
+
+   if a=".NIL" then say "Rexx: no eventText so far ..."
+   else
+   do
+      say "received the following eventText: ["a"]"
+      interpret a                  /* execute as a Rexx program    */
+      if result= "SHUTDOWN, REXX !" then leave     /* JVM will be shutdown in 1/10sec      */
+      say "Rexx: sleeping" secs "secs"
+      call bsf 'sleep', secs    /* sleep i seconds using bsf4rexx       */
+      say "Rexx: awakened!"
+   end
+end
+exit
+
+
+ShowSize: procedure
+
+   dim   =bsf('invoke', 'Window', 'getSize')    /* get dimension object */
+   string=bsf('invoke', dim, 'toString')        /* get String rendering */
+   call BSF 'unregisterBean', dim               /* free Java registry   */
+
+   parse var string "width=" width ",height=" height "]"
+   call BSF 'invoke', 'Label', 'setText', "(" width "/" height ")"
+   return
+
+/*
+   license(s): choice of
+
+    ------------------------ Apache Version 2.0 license (AL2.0)-------------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+
+    or
+
+    ------------------------ GNU Lesser Public License 3.0 (LGPL3.0) ----------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the GNU Lesser Pubilc License, 3.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.gnu.org/licenses/lgpl.html
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+

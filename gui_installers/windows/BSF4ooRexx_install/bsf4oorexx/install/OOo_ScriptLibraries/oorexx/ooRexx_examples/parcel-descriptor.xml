@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<parcel language="ooRexx" xmlns:parcel="scripting.dtd">
+
+    <script language="ooRexx">
+        <locale lang="en">
+            <displayname value="ExportSheetsToHTML"/>
+            <description>
+                Saves each sheet in the current Calc document as a separate HTML file in the same directory as the original Calc document.
+(This ooRexx sample is modelled after the JavaScript sample that gets distributed with OOo.)
+            </description>
+        </locale>
+        <functionname value="ExportSheetsToHTML.rxo"/>
+        <logicalname value="ExportSheetsToHTML.ooRexx"/>
+    </script>
+
+    <script language="ooRexx">
+        <locale lang="en">
+            <displayname value="Hello World"/>
+            <description>
+                Adds the the string &quot;Hello World&quot; into the current text doc.
+(This ooRexx sample is modelled after the JavaScript sample that gets distributed with OOo.)
+            </description>
+        </locale>
+        <functionname value="HelloWorld.rxo"/>
+        <logicalname value="HelloWorld.ooRexx"/>
+    </script>
+
+    <script language="ooRexx">
+        <locale lang="en">
+            <displayname value="HowtoCreateApiInfo"/>
+            <description>
+ooRexx sample to demonstrate how to use the OOo dispatch framework to create on-the-fly documentation for an OOo UNO object and an UNO IDL string using the ooRexx utility macro 'UNO_API_info.rxo'.
+            </description>
+        </locale>
+        <functionname value="HowtoCreateApiInfo.rxo"/>
+        <logicalname value="HowtoCreateApiInfo.ooRexx"/>
+    </script>
+
+    <script language="ooRexx">
+        <locale lang="en">
+            <displayname value="ooRexx JVM Usage"/>
+            <description>
+                Updates a spreadsheet with the current memory usage statistics for the Java Virtual Machine
+(This ooRexx sample is modelled after the BeanShell sample that gets distributed with OOo.)
+            </description>
+        </locale>
+        <functionname value="MemoryUsage.rxo"/>
+        <logicalname value="MemoryUsage.ooRexx"/>
+    </script>
+
+    <script language="ooRexx">
+        <locale lang="en">
+            <displayname value="Text Table Sample"/>
+            <description>
+                Demonstrates how to add a table to a text document.
+(This ooRexx sample is modelled after the Python sample that gets distributed with OOo.)
+            </description>
+        </locale>
+        <functionname value="TableSample.rxo"/>
+        <logicalname value="TableSample.ooRexx"/>
+    </script>
+
+    <script language="ooRexx">
+        <locale lang="en">
+            <displayname value="Word Count"/>
+            <description>
+                Provides a word count of the selected text in A Writer document.
+(This ooRexx sample is modelled after the BeanShell sample that gets distributed with OOo.)
+            </description>
+        </locale>
+        <functionname value="WordCount.rxo"/>
+        <logicalname value="WordCount.ooRexx"/>
+    </script>
+
+</parcel>

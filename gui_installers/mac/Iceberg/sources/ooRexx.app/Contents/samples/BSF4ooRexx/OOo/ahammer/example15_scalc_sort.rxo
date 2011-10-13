@@ -1,0 +1,129 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, created by Rony G. Flatscher,
+   replacing Mr. Ahammer's example, 2010-07-17/18/20 */
+/* Example: sort a cell range by columns and by rows, demonstrate how to copy sorted result,
+            cf. <http://wiki.services.openoffice.org/wiki/Documentation/DevGuide/Spreadsheets/Sorting> */
+
+   /* create the Desktop object, we need its XComponentLoader interface to load a new document */
+xDesktop         = UNO.createDesktop()       /* get the OOo XDesktop interface to the service object  */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* open "mySpreadsheetForSorting.ods" */
+url = ConvertToURL(directory() || "\mySpreadsheetForSorting.ods")
+calcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, .UNO~noProps)
+
+   /* get first sheet in spreadsheet */
+xSheet = calcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0) ~XSpreadSheet
+
+   /* -------------------------------------------------- */
+   /* sort range by column, place sorted results to a different place */
+strSortRange = "A1:D4"
+sortRange = xSheet~XCellRange~getCellRangeByName(strSortRange)
+
+strTargetAddress = "F1"
+targetAddress = uno.getCell(xSheet,strTargetAddress) ~XCellAddressable~getCellAddress
+
+   /* define the field to sort */
+clzTableSortField = UNO.loadClass( "com.sun.star.table.TableSortField" )   /* load UNO-class */
+
+tableSortField = bsf.createJavaArray(clzTableSortField, 1)  /* create Java array with a capacity of 1 */
+tableSortField[1] = clzTableSortField~new    /* create struct and save it in array */
+col = 1  /* 0-based, aiming at 'Name' column */
+tableSortField[1]~Field           = 1        /* column to sort rows by (0-based)   */
+tableSortField[1]~IsAscending     = .false   /* sort descendingly */
+tableSortField[1]~IsCaseSensitive = .false   /* ignore case */
+
+   /* define the sort descriptor */
+javaTrue  = box("boolean", .true)            /* Java wrapper object for .true */
+javaFalse = box("boolean", .false)           /* Java wrapper object for .false */
+
+props = bsf.createJavaArrayOf(.UNO~propertyValue                       , -
+            uno.createProperty("BindFormatsToContent", javaTrue)       , -
+            uno.createProperty("ContainsHeader",       javaTrue)       , -
+            uno.createProperty("CopyOutputData",       javaTrue)       , -
+            uno.createProperty("IsSortColumns",        javaFalse)      , -
+            uno.createProperty("OutputPosition",       targetAddress)  , -
+            uno.createProperty("SortFields",           tableSortField) )
+
+msg = "About to sort rows in" pp(strSortRange) "by column #" pp(col) "(0-based, 'Name') descendingly, copying the result to" pp(strTargetAddress) "..."
+.bsf.dialog~messageBox(msg,,"info")
+
+sortRange~XSortable~sort(props)     /* do the sort, copy result to given cell */
+call uno.setCell xSheet, "F6", "Sorted rows by column #" pp(col) "(0-based, 'Name') descendingly."
+
+   /* -------------------------------------------------- */
+   /* sort the copied table in place */
+strSortRange = "F1:I4"
+sortRange = xSheet~XCellRange~getCellRangeByName(strSortRange)
+col = 2  /* 0-based, aiming at 'Country' column */
+
+tableSortField[1]~Field           = col   /* country column    */
+tableSortField[1]~IsAscending     = .true /* sort ascendingly  */
+
+props = bsf.createJavaArrayOf(.UNO~propertyValue                       , -
+            uno.createProperty("BindFormatsToContent", javaTrue)       , -
+            uno.createProperty("ContainsHeader",       javaTrue)       , -
+            uno.createProperty("IsSortColumns",        javaFalse)      , -
+            uno.createProperty("SortFields",           tableSortField) )
+
+msg = "About to sort rows in" pp(strSortRange) "by column #" pp(col) "(0-based, 'Country') ascendingly in place ..."
+.bsf.dialog~messageBox(msg,,"info")
+sortRange~XSortable~sort(props)  /* sort in place */
+call uno.setCell xSheet, "F6", "Sorted rows by column #" pp(col) "(0-based, 'Country') ascendingly in place."
+
+
+   /* -------------------------------------------------- */
+   /* -------------------------------------------------- */
+   /* sort range by row, place sorted results to a different place */
+strSortRange = "A17:D20"
+sortRange = xSheet~XCellRange~getCellRangeByName(strSortRange)
+
+strTargetAddress = "A24"
+targetAddress = uno.getCell(xSheet,strTargetAddress) ~XCellAddressable~getCellAddress
+
+tableSortField[1] = clzTableSortField~new    /* create struct and save it in array  */
+row = 3  /* 0-based, aiming at 'LastOrder' row  */
+
+tableSortField[1]~Field           = row      /* row to sort columns by (0-based)    */
+tableSortField[1]~IsAscending     = .false   /* sort descendingly */
+tableSortField[1]~IsCaseSensitive = .false   /* ignore case */
+
+props = bsf.createJavaArrayOf(.UNO~propertyValue                       , -
+            uno.createProperty("BindFormatsToContent", javaTrue)       , -
+            uno.createProperty("ContainsHeader",       javaTrue)       , -
+            uno.createProperty("CopyOutputData",       javaTrue)       , -
+            uno.createProperty("IsSortColumns",        javaTrue)       , -
+            uno.createProperty("OutputPosition",       targetAddress)  , -
+            uno.createProperty("SortFields",           tableSortField) )
+
+msg = "About to sort columns in range" pp(strSortRange) "by row #" pp(row)  "('LastOrder') descendingly, copying the result to" pp(strTargetAddress) "..."
+.bsf.dialog~messageBox(msg,,"info")
+
+sortRange~XSortable~sort(props)     /* do the sort, copy result to given cell */
+call uno.setCell xSheet, "E24", "Sorted columns by row #" pp(row) "(0-based, 'LastOrder') descendingly."
+
+
+   /* -------------------------------------------------- */
+   /* sort the copied table in place */
+strSortRange = "A24:D27"
+sortRange = xSheet~XCellRange~getCellRangeByName(strSortRange)
+
+row = 2  /* 0-based, aiming at 'Country' row */
+tableSortField[1]~Field           = row   /* country row       */
+tableSortField[1]~IsAscending     = .true /* sort ascendingly  */
+
+props = bsf.createJavaArrayOf(.UNO~propertyValue                       , -
+            uno.createProperty("BindFormatsToContent", javaTrue)       , -
+            uno.createProperty("ContainsHeader",       javaTrue)       , -
+            uno.createProperty("IsSortColumns",        javaTrue)       , -
+            uno.createProperty("SortFields",           tableSortField) )
+
+msg = "About to sort columns in range" pp(strSortRange) "by row #" pp(row)  "(0-based, 'Country') ascendingly in place ..."
+.bsf.dialog~messageBox(msg,,"info")
+sortRange~XSortable~sort(props)  /* sort in place */
+call uno.setCell xSheet, "E24", "Sorted columns by row #" pp(row) "(0-based, 'Country') ascendingly."
+
+.bsf.dialog~messageBox("Done, about to dispose (close) the calc component ...", "Closing Dialog", "info")
+calcComponent~dispose
+
+::requires UNO.CLS    -- get UNO support

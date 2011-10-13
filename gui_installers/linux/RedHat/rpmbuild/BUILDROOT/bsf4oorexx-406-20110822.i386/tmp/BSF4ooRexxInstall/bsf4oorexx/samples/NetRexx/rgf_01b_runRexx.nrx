@@ -1,0 +1,13 @@
+import org.apache.bsf.
+
+        /* 'Hello world!' with NetRexx */
+parse source . . src
+parse version v
+say src"/"v": Hello world!"
+
+        /* 'Hello world!' using a Rexx interpreter */
+rexxCode  ="parse source . . src; parse version v; say src'/'v': Hello world!'"
+mgr       =BSFManager()
+rexxEngine=mgr.loadScriptingEngine("rexx")
+rexxEngine.apply(src,0,0,rexxCode,null,null)
+

@@ -1,0 +1,864 @@
+/*
+   name:       frontend_UNO_API_info.rxo
+
+   purpose:    GUI-frontend for on-the-fly documentation of OpenOffice.org (OOo)
+               UNO (Universal Network Objects) IDL (Interface Description Language)
+               strings like e.g. "com.sun.star.style.ParagraphStyle"; will
+               use "UNO_API_info.rxo" which creates an OOo writer document
+               containing the definitions acquired at runtime
+
+   remarks:    constitutes a nice example of how to use Java swing to create
+               a platform independent GUI
+               originates from code of Nicole Scholz' Master Thesis at the WU Vienna in 2009,
+               cf. http://wi.wu-wien.ac.at/rgf/diplomarbeiten/
+
+   needs:      ooRexx 4.0, cf. http://www.ooRexx.org
+               BSF4Rexx 4.0, cf. http://wi.wu-wien.ac.at/rgf/rexx/bsf4rexx/version4/current
+               OpenOffice.org, cf. http://www.OpenOffice.org
+
+               - "UNO_API_info.rxo" from the BSF4Rexx UNO distribution
+               - "UNO_ReflectionUtil.cls" from the BSF4Rexx UNO distribution
+
+   authors:    Nicole Scholz, Rony G. Flatscher
+
+   date:       2009-02-22
+
+   changed:    - 2009-10-18, rgf, added TerminateListener which vetos the termination of the
+                             last OOo instance such that as long as this frontend is running
+                             all cached OOo-UNO-objects remain intact and can be used reliably
+
+               - 2010-05-25, rgf, replaced all bsf.addEventHandler(...) with native Rexx event
+                                  handlers that are able to react in realtime;
+                                  demonstrate usage of imported Java classes for the event listeners
+
+               - 2010-05-27, rgf, display version information in title bar
+
+               - 2010-06-01, rgf, changed version number
+
+               - 2011-02-19, rgf, - using Toolkit's getMenuShortcutKeyMask to define menu short-cut key
+               - 2011-02-21, rgf, - make sure to act upon the Apple application quit event
+                                  - adding icon image to JFrames
+
+   version:    1.04
+
+   license:    AL 2.0 (Apache License 2.0, cf. <http://www.apache.org/licenses/LICENSE-2.0>)
+
+
+
+   changes, starting logging in 2009-02-16
+
+         - rgf, renamed to "Frontend_UNO_API_Info.rxo"
+         - rgf, restructured code
+         - rgf, added default button, such that <enter> starts the processing
+         - rgf, now uses a GridBagLayout to allow for insets (makes dialog look nicer)
+           - changed appearance, grouping and sequence of components, moving the
+             more important options to the top
+         - rgf, renamed variables to be easier ledgible and a little bit more meaningful,
+           restructured/resequenced some code for the same reason
+         - rgf, adapted submitting arguments via a Rexx directory object
+         - rgf, preset interface to defaults used in CREATE_UNO_API_INFO.RXO to reduce
+           surprise effect on user's side
+         - rgf, added mnemonics and accelerators to menus
+         - rgf, added option to state "StoreToDirectory"
+*/
+
+/*****************************************************************************/
+.local~version.frontend_UNO_API_info="104.20110221"   -- save version information in .local
+
+parse version parse version 'exx_' v '.'
+if v<4 then
+do
+   Say "This program needs at least ooRexx 4.0.1 to run, found" pp(v)", aborting..."
+   exit -1
+end
+
+if .bsf4rexx~version<"400.2009" then
+do
+   Say "This program needs at least BSF4Rexx 4.0 to run, found" pp(.bsf4rexx~version)", aborting..."
+   exit -1
+end
+
+call "UNO_API_info"        -- worker program, now it is initialized and all of its
+                           -- public routines are available to us
+
+
+/* create userData for use with the Greetings routine and event handlers;
+   this allows us to access the registered objects      */
+userData=.directory~new
+
+   /* the following Java classes are used more than once, hence import them to simplify
+      coding a bit   */
+call bsf.import "java.awt.event.ActionListener", "ActionListener"
+call bsf.import "java.awt.event.WindowListener", "WindowListener"
+
+
+rexxCloseEH=.RexxCloseAppEventHandler~new -- create Rexx event handler
+
+if .bsf4rexx~opsys="MACOSX" then
+do
+         -- create a RexxProxy for our Rexx event handler
+   rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , .ActionListener, .WindowListener, "com.apple.eawt.ApplicationListener")
+   .bsf4rexx~apple_application~addApplicationListener(rpCloseEH) -- CMD-Quit-callback (Apple)
+end
+else  -- not running under Apple
+do
+      -- create a RexxProxy for our Rexx event handler
+   rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , .ActionListener, .WindowListener)
+end
+
+
+/* we need a swing-Label quite often, hence import it */
+call bsf.import "javax.swing.JLabel", "swingLabel"    /* the ooRexx proxy class is named "swingLabel" */
+call bsf.import "java.awt.Cursor",    "awtCursor"
+
+/* create the frame for the program */
+info="(".version.frontend_UNO_API_info", using UNO.CLS v".uno~version")"
+frame = .bsf~new("javax.swing.JFrame", "UNO API Viewer by Nicole Scholz" info)
+
+if .bsf4rexx~hasEntry("oorexx4ooo_048") then	-- rgf, 2011-02-21
+do
+-- say "... ooRexxTry.rxj: about to do a 'frame~setIconImage(...)'"
+   frame~setIconImage(.bsf~new("javax.swing.ImageIcon", .bsf4rexx~oorexx4ooo_048)~getImage)
+end
+
+
+frame~addWindowListener(rpCloseEH)
+
+/* allow access to the fields and static functions for mnemonics and accelerators */
+ActionEvent=bsf.loadClass("java.awt.event.ActionEvent")  -- just load and get the class object
+KeyEvent   =bsf.loadClass("java.awt.event.KeyEvent")     -- just load and get the class object
+KeyStroke  =bsf.loadClass("javax.swing.KeyStroke")       -- just load and get the class object
+menuShortcutKey=bsf.loadClass("java.awt.Toolkit")~getDefaultToolkit~getMenuShortcutKeyMask   -- rgf, 2011-02-19
+
+/* create a menuBar, add two menus to it, then add it to the frame */
+fileMenu= .bsf~new("javax.swing.JMenu", "File")
+fileMenu~setMnemonic(KeyEvent~VK_F)
+
+   /* menu item "Exit" */
+   fileMenuItem= .bsf~new("javax.swing.JMenuItem", "Exit", KeyEvent~VK_X)
+   fileMenuItem~addActionListener(rpCloseEH)
+--   fileMenuItem~setAccelerator(KeyStroke~getKeyStroke(KeyEvent~VK_E, ActionEvent~CTRL_MASK))
+   fileMenuItem~setAccelerator(KeyStroke~getKeyStroke(KeyEvent~VK_E, menuShortcutKey))
+
+   fileMenu~add(fileMenuItem)
+
+/* menu information, add it directly to the menuBar */
+aboutMenu= .bsf~new("javax.swing.JMenu", "About")
+aboutMenu~setMnemonic(KeyEvent~VK_A)
+
+   /* menu item "About" */
+   infoMenuItem= .bsf~new("javax.swing.JMenuItem", "Information")
+   infoMenuItem~setMnemonic(KeyEvent~VK_I)
+   infoMenuItem~addActionListener(BsfCreateRexxProxy(.ShowInfoHandler~new, userData, .ActionListener))
+--   infoMenuItem~setAccelerator(KeyStroke~getKeyStroke(KeyEvent~VK_I, ActionEvent~CTRL_MASK))
+   infoMenuItem~setAccelerator(KeyStroke~getKeyStroke(KeyEvent~VK_I, menuShortcutKey))
+
+   aboutMenu~add(infoMenuItem)
+
+menuBar= .bsf~new("javax.swing.JMenuBar")
+menuBar~add(fileMenu)
+menuBar~add(aboutMenu)
+
+frame~setJMenuBar(menuBar) -- add menu bar to the frame
+
+
+/* set pane to a GridBagLayout */
+layoutManager=.bsf~new("java.awt.GridBagLayout")
+frameContentPane=frame~getContentPane
+frameContentPane~setLayout(layoutManager)
+
+/* create the GridBagConstraints object */
+constr=.bsf~new("java.awt.GridBagConstraints")
+insets=.bsf~new("java.awt.Insets", 0,0,0,0)  -- top, left, bottom, right
+constr~insets=insets
+
+constr~fill=bsf.getConstant("java.awt.GridBagConstraints", "BOTH")
+
+/* create entry field for UNO IDL  */
+lbl_UNO_IDL_Name=.swingLabel~new("Enter a fully qualified UNO IDL name:")
+
+tf_UNO_IDL_Name=.bsf~new("javax.swing.JTextField", "", 30)
+userData~tf_UNO_IDL_Name = tf_UNO_IDL_Name   -- save text field for later use
+-- tf_UNO_IDL_Name~setText("com.sun.star.embed.Storage")
+
+cf_UNO_IDL=.bsf~new("javax.swing.JComboBox")
+userData~cf_UNO_IDL = cf_UNO_IDL             -- save choice field for later use
+
+call addDemoUNOIDLs userData
+
+
+/* create push button, add Rexx code to execute, if pressed */
+buttonStartProcessing= .bsf~new("javax.swing.JButton", "Create UNO IDL Documentation")
+buttonStartProcessing~setMnemonic(KeyEvent~VK_C)
+buttonStartProcessing~addActionListener(BsfCreateRexxProxy(.ProcessUNO_Handler~new, userData, .ActionListener))
+
+
+/* font choice */
+lbl_Font=.swingLabel~new("Choose the font to use for rendering:")
+
+cf_Font = .bsf~new("javax.swing.JComboBox")
+cf_Font~~addItem("Arial")                    -
+       ~~addItem("Bitstream Vera Sans Mono") -
+       ~~addItem("Cordia New")               -
+       ~~addItem("Courier New")              -
+       ~~addItem("DejaVueSans Condensed")    -
+       ~~addItem("DejaVueSans Mono")         -
+       ~~addItem("Franklin Gothic Book")     -
+       ~~addItem("Gill Sans MT")             -
+       ~~addItem("Lucida Sans")              -
+       ~~addItem("Old English Text MT")      -
+       ~~addItem("Times")                    -
+       ~~addItem("Verdana")
+cf_Font~setSelectedItem("Verdana")   -- select "Verdana"
+
+
+/* Numbering types */
+  -- get all available numbering types from Open Office, ignore first (indicator) token
+parse value uno.getDefinition("com.sun.star.style.NumberingType") with . numberingTypeDef
+
+numberingTypes = .array~new
+i = 0
+do while numberingTypeDef <> ""
+   parse var numberingTypeDef  defTypeName "|" value "|" . numberingTypeDef
+   i= i + 1
+   numberingTypes[i]= defTypeName value
+end
+numberingTypes~sortWith(.caselessComparator~new)   -- sort array caselessly
+
+  -- array of tool tip text description for numbering types from OOo Api
+numberingTypesDesc=.array~of( -
+      "0 Numbering is put in upper case letters as A, B, C, D, ...." ,                               -
+      "1 Numbering is in lower case letters as a, b, c, e,...." ,                                    -
+      "2 Numbering is in Roman numbers with upper case letters as I, II, III, IV,...." ,             -
+      "3 Numbering is in Roman numbers with lower case letters as i, ii, iii, iv, ...." ,            -
+      "4 Numbering is in Arabic numbers as 1, 2, 3, 4, ...." ,                                       -
+      "5 Numbering is invisible." ,                                                                  -
+      "6 Use a character from a specified font." ,                                                   -
+      "7 Numbering is specified in the page style." ,                                                -
+      "8 Numbering is displayed as a bitmap graphic." ,                                              -
+      "9 Numbering is put in upper case letters as A, B, ..., Y, Z, AA, BB, CC, ... AAA, ...." ,     -
+      "10 Numbering is put in lower case letters as a, b, ..., y, z, aa, bb, cc, ... aaa, ...." ,    -
+      "11 A transliteration module will be used to produce numbers in chinese, japanese, etc." ,     -
+      "12 The nativenumbersupplier service will be called to produce numbers in native languages." , -
+      "13 Numbering for fullwidth Arabic number" ,                                                   -
+      "14 Bullet for Circle Number" ,                                                                -
+      "15 Numbering for Chinese lower case number" ,                                                 -
+      "16 Numbering for Chinese upper case number" ,                                                 -
+      "17 Numbering for Traditional Chinese upper case number" ,                                     -
+      "18 Bullet for Chinese Tian Gan" ,                                                             -
+      "19 Bullet for Chinese Di Zi" ,                                                                -
+      "20 Numbering for Japanese traditional number" ,                                               -
+      "21 Bullet for Japanese AIU fullwidth" ,                                                       -
+      "22 Bullet for Japanese AIU halfwidth" ,                                                       -
+      "23 Bullet for Japanese IROHA fullwidth" ,                                                     -
+      "24 Bullet for Japanese IROHA halfwidth" ,                                                     -
+      "25 Numbering for Korean upper case number" ,                                                  -
+      "26 Numbering for Korean hangul number" ,                                                      -
+      "27 Bullet for Korean Hangul Jamo" ,                                                           -
+      "28 Bullet for Korean Hangul Syllable" ,                                                       -
+      "29 Bullet for Korean Hangul Circled Jamo" ,                                                   -
+      "30 Bullet for Korean Hangul Circled Syllable" ,                                               -
+      "31 Numbering in Arabic alphabet letters" ,                                                    -
+      "32 Numbering in Thai alphabet letters" ,                                                      -
+      "33 Numbering in Hebrew alphabet letters" ,                                                    -
+      "34 Numbering in Nepali alphabet letters" ,                                                    -
+      "35 Numbering in Khmer alphabet letters" ,                                                     -
+      "36 Numbering in Lao alphabet letters" ,                                                       -
+      "37 Numbering in Tibetan/Dzongkha alphabet letters" ,                                          -
+      "38 Numbering in Cyrillic alphabet upper case letters" ,                                       -
+      "39 Numbering in Cyrillic alphabet lower case letters" ,                                       -
+      "40 Numbering in Cyrillic alphabet upper case letters" ,                                       -
+      "41 Numbering in Cyrillic alphabet lower case letters" ,                                       -
+      "42 Numbering in Russian Cyrillic alphabet upper case letters" ,                               -
+      "43 Numbering in Russian Cyrillic alphabet lower case letters" ,                               -
+      "44 Numbering in Russian Cyrillic alphabet upper case letters" ,                               -
+      "45 Numbering in Russian Cyrillic alphabet lower case letters" ,                               -
+      "46 Numbering in Persian alphabet letters (aa, be, pe, te, ...)")
+
+  --chapter numbering choice first level
+cf_FirstLevel = .bsf~new("javax.swing.JComboBox")
+  --chapter numbering choice second level
+cf_SecondLevel = .bsf~new("javax.swing.JComboBox")
+  --chapter numbering choice third level
+cf_ThirdLevel = .bsf~new("javax.swing.JComboBox")
+
+do i over numberingTypes~allItems
+  cf_FirstLevel~addItem(i)
+  cf_SecondLevel~addItem(i)
+  cf_ThirdLevel~addItem(i)
+end
+
+/* set default numbering type and tool tip text for first level */
+lbl_FirstLevel=.swingLabel~new("Choose numbering type for first chapter level:")
+
+cf_FirstLevel~setSelectedItem("ROMAN_UPPER 2")  -- select "2  ROMAN_UPPER"
+cf_FirstLevel~setToolTipText(numberingTypesdesc[cf_FirstLevel~getSelectedItem~word(2)+1])
+cf_FirstLevel~addActionListener(BsfCreateRexxProxy(.Cf_FirstLevelHandler~new, userData, .ActionListener))
+
+
+/* set default numbering type and tool tip text for second level */
+lbl_SecondLevel=.swingLabel~new("Choose numbering type for second chapter level:")
+
+cf_SecondLevel~setSelectedItem("ARABIC 4")      -- select "4  ARABIC"
+cf_SecondLevel~setToolTipText(numberingTypesdesc[cf_SecondLevel~getSelectedItem~word(2)+1])
+cf_SecondLevel~addActionListener(BsfCreateRexxProxy(.Cf_SecondLevelHandler~new, userData, .ActionListener))
+
+
+/* set default numbering type and tool tip text for third level */
+lbl_ThirdLevel=.swingLabel~new("Choose numbering type for third chapter level:")
+
+cf_ThirdLevel~setSelectedItem("ARABIC 4")       -- select "4  ARABIC"
+cf_ThirdLevel~setToolTipText(numberingTypesdesc[cf_ThirdLevel~getSelectedItem~word(2)+1])
+cf_ThirdLevel~addActionListener(BsfCreateRexxProxy(.Cf_ThirdLevelHandler~new, userData, .ActionListener))
+
+
+/* view choice */
+lbl_View=.swingLabel~new("Determine what to do with the generated documentation:")
+
+cf_View = .bsf~new("javax.swing.JComboBox")
+cf_View~~addItem("1 View in writer")                      -
+       ~~addItem("2 Save as odt-file and view in writer") -
+       ~~addItem("3 Save as odt-file and print document") -
+       ~~addItem("4 Save as odt-file and create a pdf-file")
+
+cf_View~addActionListener(BsfCreateRexxProxy(.Cf_ViewHandler~new, userData, .ActionListener))
+
+
+/* Full path to directory to store generated files to, if cf_View<>1 */
+lbl_StoreToDirectory=.swingLabel~new("Directory/folder to store generated files to: ")
+
+tf_StoreToDirectory=.bsf~new("javax.swing.JTextField", "", 35)
+-- dir=.java.lang.system~getProperty("user.home")  -- "user.dir"=current dir, "java.io.tmpdir"
+dir=directory()   -- current local directory
+tf_StoreToDirectory~setText(dir)          -- set directory
+tf_StoreToDirectory~setEditable(.false)   -- do not allow to edit, unless "cf_View<>1"
+
+/* layer choice */
+lbl_Layer=.swingLabel~new("Choose # of layers/levels to analyze:")
+
+cf_Layer = .bsf~new("javax.swing.JComboBox")
+cf_Layer~~addItem("1 Analyze given UNO IDL only (first layer/level)")                 -
+        ~~addItem("2 Additionally, analyze the UNO IDL members too (first & second layer/level)")
+
+
+/* url choice */
+lbl_URL=.swingLabel~new("Path to API documentation directory to hyperlink to:")
+
+cf_URL = .bsf~new("javax.swing.JComboBox")
+cf_URL~~addItem("1 Use the OOo Internet API documentation site")  -
+      ~~addItem("2 Use local API without jump marks/fragment identifiers (Windows)")   -
+      ~~addItem("3 Use local API with jump marks/fragment identifiers (Unix)")
+cf_URL~addActionListener(BsfCreateRexxProxy(.Cf_UrlHandler~new, userData, .ActionListener))
+
+
+/* local location to hyperlink to, if cf_URL<>1 */
+lbl_LocalURL=.swingLabel~new("Directory/folder of the local SDK installation: ")
+
+tf_local_URL=.bsf~new("javax.swing.JTextField", "", 35)
+tf_local_URL~setText("OpenOffice.org_x.y_SDK/")
+tf_local_URL~setEditable(.false)    -- do not allow to edit, unless "cf_URL<>1"
+
+
+/* prepare and add components to pane */
+constr~ipady=1       -- make the cells 1 px higher (inside) than usual, makes for easier reading
+
+row=0                -- first row (0-based)
+constr~gridwidth=2   -- use two cells
+                     -- add inset of 10px for top, 3px for left
+call placeInRow  row, frameContentPane, constr, lbl_UNO_IDL_Name  , .nil,  10,  3
+constr~gridwidth=1   -- revert to one cell width
+
+row+=1; call placeInRow row, frameContentPane, constr, tf_UNO_IDL_Name, buttonStartProcessing, 0, 2
+   -- add inset of "20" at bottom to displace the following cells
+constr~gridwidth=2   -- use two cells
+row+=1; call placeInRow row, frameContentPane, constr, cf_UNO_IDL, .nil, 0, 20
+constr~gridwidth=1   -- revert to one cell width
+
+row+=1; call placeInRow row, frameContentPane, constr, lbl_Layer      , cf_Layer
+row+=1; call placeInRow row, frameContentPane, constr, lbl_Font       , cf_Font       , 15
+row+=1; call placeInRow row, frameContentPane, constr, lbl_FirstLevel , cf_FirstLevel , 15
+row+=1; call placeInRow row, frameContentPane, constr, lbl_SecondLevel, cf_SecondLevel
+row+=1; call placeInRow row, frameContentPane, constr, lbl_ThirdLevel , cf_ThirdLevel
+row+=1; call placeInRow row, frameContentPane, constr, lbl_View       , cf_View       , 15
+row+=1; call placeInRow row, frameContentPane, constr, lbl_StoreToDirectory, tf_StoreToDirectory
+
+row+=1; call placeInRow row, frameContentPane, constr, lbl_URL        , cf_URL        , 15
+row+=1; call placeInRow row, frameContentPane, constr, lbl_LocalURL   , tf_local_URL  , 0, 10
+
+/* set default button, rgf, 2009-02-13 */
+frame~getRootPane~setDefaultButton(buttonStartProcessing)
+
+/* make the GUI components available to the Rexx event handlers */
+userData~frame               = frame
+userData~cf_Layer            = cf_Layer
+userData~cf_FirstLevel       = cf_FirstLevel
+userData~cf_SecondLevel      = cf_SecondLevel
+userData~cf_ThirdLevel       = cf_ThirdLevel
+userData~cf_Font             = cf_Font
+userData~cf_View             = cf_View
+userData~tf_StoreToDirectory = tf_StoreToDirectory
+userData~cf_URL              = cf_URL
+userData~tf_local_URL        = tf_local_URL
+userData~tf_UNO_IDL_Name     = tf_UNO_IDL_Name
+userData~numberingTypesdesc  = numberingTypesdesc
+
+/* pack components, show the frame, make sure it is visible by moving it to the front */
+frame~~pack~~setVisible(.true)~toFront
+
+xdesktop=uno.createDesktop()~XDesktop  -- get desktop object and query its XDesktop interface
+-- say "desktop="ppd(xdesktop~uno.getTypeName)   -- show definition of object
+-- say "desktop="ppd(xdesktop~uno.getDefinition)   -- show definition of object
+
+   -- create a TerminateListener instance, implemented in Rexx
+proxy=BsfCreateRexxProxy(.TerminateListener~new,,"com.sun.star.frame.XTerminateListener")
+xdesktop~addTerminateListener(proxy)      -- add TerminateListener
+
+/*
+do forever                    -- event text loop
+   cmd=.bsf~bsf.pollEventText -- get event text (a string of Rexx code)
+   -- say cmd                    -- debug
+   interpret cmd              -- execute event text as Rexx code
+
+	if result="SHUTDOWN REXX!" then leave
+end
+*/
+
+rexxCloseEH~waitForExit -- wait until we are allowed to end the program
+xDesktop~removeTerminateListener(proxy)   -- remove TerminateListener
+call SysSleep .2        -- let Java's RexxProxy finalizations find a running Rexx instance
+
+
+exit
+
+
+/* procedure which invokes the processing, but sets the cursor to WAIT cursor and
+   resets it upon return; placed in this area and using EXPOSE to be able to access
+   all Java objects directly
+*/
+::routine processUNO_IDL
+  use arg userData
+  cursor=userData~frame~getCursor      -- get current cursor from javax.swing.JFrame
+  userData~frame~setCursor(.awtCursor~wait_cursor) -- set cursor
+
+   /* place all arguments into a directory object */
+  args=.directory~new
+  args~NrOfLayers           = userData~cf_Layer~getSelectedItem~word(1)
+  args~NumberingTypeLevel_1 = userData~cf_FirstLevel~getSelectedItem~word(2)
+  args~NumberingTypeLevel_2 = userData~cf_SecondLevel~getSelectedItem~word(2)
+  args~NumberingTypeLevel_3 = userData~cf_ThirdLevel~getSelectedItem~word(2)
+  args~FontName             = userData~cf_Font~getSelectedItem
+  args~View                 = userData~cf_View~getSelectedItem~word(1)
+  args~StoreToDirectory     = userData~tf_StoreToDirectory~getText~strip
+  args~DocumentationSource  = userData~cf_URL~getSelectedItem~word(1)
+  args~DocumentationFolder  = userData~tf_local_URL~getText~strip
+
+  call analyzeAndCreateReference userData~tf_UNO_IDL_Name~getText, args
+
+  userData~frame~setCursor(cursor)     -- re-set cursor
+  return
+
+
+-- ////////////////////////////////////////////////
+processUNO_IDL_ori: procedure expose frame tf_UNO_IDL_Name cf_Layer -
+                                 cf_View tf_StoreToDirectory cf_URL tf_local_URL -
+                                 cf_FirstLevel cf_SecondLevel cf_ThirdLevel cf_Font
+  cursor=frame~getCursor      -- get current cursor from javax.swing.JFrame
+  frame~setCursor(.awtCursor~wait_cursor) -- set cursor
+
+   /* place all arguments into a directory object */
+  args=.directory~new
+  args~NrOfLayers           = cf_Layer~getSelectedItem~word(1)
+  args~NumberingTypeLevel_1 = cf_FirstLevel~getSelectedItem~word(2)
+  args~NumberingTypeLevel_2 = cf_SecondLevel~getSelectedItem~word(2)
+  args~NumberingTypeLevel_3 = cf_ThirdLevel~getSelectedItem~word(2)
+  args~FontName             = cf_Font~getSelectedItem
+  args~View                 = cf_View~getSelectedItem~word(1)
+  args~StoreToDirectory     = tf_StoreToDirectory~getText~strip
+  args~DocumentationSource  = cf_URL~getSelectedItem~word(1)
+  args~DocumentationFolder  = tf_local_URL~getText~strip
+
+  call analyzeAndCreateReference tf_UNO_IDL_Name~getText, args
+
+  frame~setCursor(cursor)     -- re-set cursor
+  return
+
+
+::requires UNO.CLS   -- get the UNO-support (includes BSF.CLS, i.e. Java-support)
+
+
+  -- routine for creating the information popup window
+::routine newInfoWindow
+  if .local~hasentry("frontend.infoFrame") then    -- already an info window displayed?
+  do
+     .frontend.infoFrame~toFront          -- make sure it is put into front
+     return
+  end
+
+  .local~frontend.infoFrame = .bsf~new("javax.swing.JFrame", "About this Program")
+
+   if .bsf4rexx~hasEntry("oorexx4ooo_048") then	-- rgf, 2011-02-21
+   do
+-- say "... ooRexxTry.rxj: about to do a 'frame~setIconImage(...)'"
+      .frontend.infoFrame~setIconImage(.bsf~new("javax.swing.ImageIcon", .bsf4rexx~oorexx4ooo_048)~getImage)
+   end
+
+
+  type="text/html"      -- MIME type of text
+  txt="<h3>Program Information (version" .frontend.version")</h3>                                  "  -
+      "                                                                                    "  -
+      "This program queries the given, fully qualified UNO IDL string at runtime and   <br>"  -
+      "formats the results in an OpenOffice.org writer document, such that the user is <br>"  -
+      "able to learn about all of its documented capabilities. The UNO IDL definitions <br>"  -
+      "are hyperlinked either to the OpenOffice.org Internet documentation or to the   <br>"  -
+      "locally installed OpenOffice.org developer kit.                                     "  -
+      "                                                                                    "  -
+      "<p>The user can determine:                                                          "  -
+      "   <ul>                                                                             "  -
+      "   <li> the fully qualified name of the UNO IDL definition to analyze,              "  -
+      "   <li> whether the members of the analyzed UNO IDL definition should be       <br> "  -
+      "        analyzed themselves (&quot;2 show first and second layer&quot;)             "  -
+      "   <li> which font should be used for rendering,                                    "  -
+      "   <li> which numbering types should be used for the chapter levels,                "  -
+      "   <li> whether the rendered result should only be viewed or whether it should <br> "  -
+      "        be saved, printed and/or rendered to PDF,                                   "  -
+      "   <li> where the generated hyperlinks point to (Internet or local machine).        "  -
+      "   </ul>                                                                            "  -
+      "<p>                                                                                 "  -
+      "                                                                                    "  -
+      "Just experiment a little bit in order to find the settings of your liking.          "  -
+      "                                                                                    "  -
+      '<p>Apache Software License (ASL) 2.0, cf. http://www.apache.org/licenses/           '  -
+      "<p>&copy; 2009-2011 Nicole Scholz, Rony G. Flatscher, Vienna, Austria               "
+
+  jEdit=.bsf~new("javax.swing.JEditorPane", "text/html", txt)
+  jEdit~setEditable(.false)
+
+  .frontend.infoFrame~getContentPane~add(jEdit)
+  .frontend.infoFrame~getContentPane~setLayout(.bsf~new("java.awt.GridLayout", "1", "1"))
+
+  .frontend.infoFrame~addWindowListener(BsfCreateRexxProxy(.CloseInfoHandler~new,,.WindowListener))
+  .frontend.infoFrame~~pack~~setVisible(.true)~~toFront
+
+
+  -- method for closing one frame
+::routine closeInfoWindow
+  .frontend.infoFrame~~setVisible(.true)~~dispose
+  .local~setEntry("frontend.infoFrame")   -- remove this entry, such that new instances become possible
+  return
+
+
+
+   -- place the two received components in the Grid
+::routine placeInRow
+  use arg row, pane, constr, leftComponent=.nil, rightComponent=.nil, top=0, bottom=0
+
+  insets=constr~insets
+  insets~top=top
+  insets~bottom=bottom
+
+  constr~gridy=row
+
+  if leftComponent<>.nil then
+  do
+     constr~gridx=0        -- col #1
+     insets~left=5
+
+     if rightComponent=.nil then
+        insets~right=5
+     else
+        insets~right=0     -- let it run into right component
+
+     pane~add(leftComponent, constr)
+  end
+
+  if rightComponent<>.nil then
+  do
+     constr~gridx=1        -- col #2
+
+     if leftComponent=.nil then
+        insets~left=5
+     else
+        insets~left=0      -- let it run into left component
+
+     insets~right=5
+     pane~add(rightComponent, constr)
+  end
+  return
+
+
+::routine addDemoUNOIDLs
+  use strict arg userData
+
+  cf=userData~cf_uno_idl
+  tf=userData~tf_uno_idl_name
+
+  cf~addItem("(UNO_CONSTANTS) com.sun.star.datatransfer.dnd.DNDConstants"                                                  )
+  cf~addItem("(UNO_CONSTANTS) com.sun.star.packages.zip.ZipConstants [has different types!]"                               )
+
+  cf~addItem("(UNO_ENUM)      com.sun.star.uno.TypeClass"                                                                  )
+  cf~addItem("(UNO_ENUM)      com.sun.star.xml.dom.events.EventType"                                                       )
+  cf~addItem("(UNO_ENUM)      com.sun.star.xml.dom.events.PhaseType"                                                       )
+
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.awt.tree.ExpandVetoException (one 'struct' member)"                             )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.configuration.backend.MergeRecoveryRequest"                                     )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.configuration.backend.StratumCreationException (two 'string' member)"           )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.datatransfer.dnd.InvalidDNDOperationException (no members!)"                    )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.deployment.DependencyException"                                                 )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.deployment.InstallException (interface member)"                                 )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.deployment.VersionException"                                                    )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.document.FilterOptionsRequest (interface, []PropertyValue)"                     )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.mail.SendMailMessageFailedException"                                            )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.sdbc.BatchUpdateException ('[]long' (SEQUENCE LONG))"                           )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.ucb.AuthenticationRequest (many members of different types)"                    )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.ucb.HandleCookiesRequest"                                                       )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.xml.dom.DOMException"                                                           )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.xml.dom.events.EventException (one 'short' member)"                             )
+  cf~addItem("(UNO_EXCEPTION) com.sun.star.xml.sax.SAXParseException"                                                      )
+
+  cf~addItem("(UNO_INTERFACE) com.sun.star.awt.tree.XTreeControl (three methods, two attributes)"                          )
+  cf~addItem("(UNO_INTERFACE) com.sun.star.drawing.framework.XResourceId (three members)"                                  )
+  cf~addItem("(UNO_INTERFACE) com.sun.star.xml.crypto.sax.XReferenceResolvedListener (method with excecption, attributes)" )
+
+  cf~addItem("(UNO_MODULE)    com.sun.star"                                                                                )
+  cf~addItem("(UNO_MODULE)    com.sun.star.configuration.backend.xml (three members)"                                      )
+  cf~addItem("(UNO_MODULE)    com.sun.star.xml.dom.events"                                                                 )
+
+  cf~addItem("(UNO_SERVICE)   com.sun.star.embed.DocumentCloser (no members!)"                                             )
+  cf~addItem("(UNO_SERVICE)   com.sun.star.embed.EmbeddedObjectDescriptor (only two properties)"                           )
+  cf~addItem("(UNO_SERVICE)   com.sun.star.embed.FileSystemStorage (one mandatory service)"                                )
+  cf~addItem("(UNO_SERVICE)   com.sun.star.embed.FileSystemStorageFactory (one mandatory interface)"                       )
+
+selectText="(UNO_SERVICE)   com.sun.star.embed.Storage (mandatory service, mand.+opt. interfaces, properties)"
+  cf~addItem( selectText                                                                                                   )
+  cf~addItem("(UNO_SERVICE)   com.sun.star.embed.StorageStream (mandatory+optional interfaces, properties)"                )
+  cf~addItem("(UNO_SERVICE)   com.sun.star.formula.FormulaProperties (only properties)"                                    )
+  cf~addItem("(UNO_SERVICE)   com.sun.star.sdb.DataSourceBrowser (one mandatory service, three mandatory interfaces)"      )
+  cf~addItem("(UNO_SERVICE)   com.sun.star.style.ParagraphStyle (mandatory and optional services, properties"              )
+
+  cf~addItem("(UNO_SINGLETON) com.sun.star.deployment.PackageInformationProvider"                                          )
+  cf~addItem("(UNO_SINGLETON) com.sun.star.resource.OfficeResourceLoader"                                                  )
+  cf~addItem("(UNO_SINGLETON) com.sun.star.util.theMacroExpander"                                                          )
+
+  cf~addItem("(UNO_STRUCT)    com.sun.star.corba.giop.RequestHeader_1_2 (primitives, structs)"                             )
+  cf~addItem("(UNO_STRUCT)    com.sun.star.datatransfer.dnd.DragSourceEvent (two interfaces)"                              )
+  cf~addItem("(UNO_STRUCT)    com.sun.star.xml.crypto.sax.ElementStackItem (string, boolean, interface)"                   )
+
+  cf~addItem("(UNO_TYPEDEF)   com.sun.star.beans.PropertyValues (sequence of 'PropertyValues')"                            )
+  cf~addItem("(UNO_TYPEDEF)   com.sun.star.corba.ObjectSystemID ('unsigned long')"                                         )
+  cf~addItem("(UNO_TYPEDEF)   com.sun.star.rendering.ColorComponent ('double')"                                            )
+  cf~addItem("(UNO_TYPEDEF)   com.sun.star.sync.FilterData (sequence of 'string')"                                         )
+
+   -- transfer selected choice-field into text-field
+  tf~text=selectText~word(2)        -- assign selectText UNO-IDL string to text field
+  cf~setSelectedItem(selectText)    -- select entry in choice field
+
+  cf~addActionListener(BsfCreateRexxProxy(.Cf_UNO_IDL_Handler~new, userData, .ActionListener))
+  return
+
+
+
+/* Rexx event handlers that are called in realtime, i.e. they run on the awt dispatch
+   thread (and block it, therefore the Rexx code must execute as quickly as possible) */
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to set "close app" indicator */
+::class RexxCloseAppEventHandler
+::method init        /* constructor */
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::attribute closeApp          -- indicates whether app should be closed
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method actionPerformed      -- event method (from ActionListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method windowClosing        -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+::method handleQuit           -- rgf, 2011-02-21: handle Apple's ApplicationListener event
+  expose closeApp
+  use arg applicationEvent
+  closeApp=.true              -- indicate that the app should close
+
+  applicationEvent~setHandled(.true)  -- indicate to MacOSX that quitting is o.k.
+
+
+::method handleOpenApplication    -- rgf, 2011-02-21: if using an ApplicationListener we need at least removePreferencesMenuItem (maybe a bug in Apple's Application)
+  expose closeApp
+  use arg applicationEvent
+  -- .stdout~say( "... handleOpenApplication ..." )
+
+  app=.bsf4rexx~apple_application     -- retrieve this Apple application object
+  app~removeAboutMenuItem             -- just remove again (done originally in BSF.CLS)
+  app~removePreferencesMenuItem       -- just remove again (done originally in BSF.CLS)
+  applicationEvent~setHandled(.true)  -- indicate to MacOSX that quitting is o.k.
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */    -- show info window
+::class ShowInfoHandler
+
+::method actionPerformed
+  call newInfoWindow -- show info window
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */    -- close info window
+::class CloseInfoHandler
+
+::method unknown     -- intercept events we are not interested in
+
+::method actionPerformed
+  call closeInfoWindow  -- close info Window
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */    -- choice field View handler
+::class ProcessUNO_Handler
+
+::method actionPerformed
+  use arg eventObject, slotDir
+
+   -- process the supplied/selected UNO-IDL string according to all settings
+  call processUNO_IDL slotDir~userData
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class Cf_FirstLevelHandler
+
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  userData=slotDir~userData   -- fetch userData argument
+   -- set the tooltip depending on the chosen numbering scheme
+  userData~cf_FirstLevel~setToolTipText(userData~numberingTypesdesc[userData~cf_FirstLevel~getSelectedItem~word(2)+1])
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class Cf_SecondLevelHandler
+
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  userData=slotDir~userData   -- fetch userData argument
+   -- set the tooltip depending on the chosen numbering scheme
+  userData~cf_SecondLevel~setToolTipText(userData~numberingTypesdesc[userData~cf_SecondLevel~getSelectedItem~word(2)+1])
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class Cf_ThirdLevelHandler
+
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  userData=slotDir~userData   -- fetch userData argument
+   -- set the tooltip depending on the chosen numbering scheme
+  userData~cf_ThirdLevel~setToolTipText(userData~numberingTypesdesc[userData~cf_ThirdLevel~getSelectedItem~word(2)+1])
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */    -- choice field View handler
+::class Cf_ViewHandler
+
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  userData=slotDir~userData   -- fetch userData argument
+   -- determine whether the store-to text field is editable or not
+  userData~tf_StoreToDirectory~setEditable(userData~cf_View~getSelectedItem~left(1)<>1)
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */    -- choice field URL handler
+::class Cf_UrlHandler
+
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  userData=slotDir~userData   -- fetch userData argument
+   -- determine whether the URL text field is editable or not
+  userData~tf_local_URL~setEditable(userData~cf_URL~getSelectedItem~left(1)<>1)
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */    -- UNO IDLs
+::class Cf_UNO_IDL_Handler
+
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  userData=slotDir~userData   -- fetch userData argument
+   -- set the text field to the selected value in the choice field
+  userData~tf_uno_idl_name~text=userData~cf_uno_idl~getSelectedItem~word(2)
+
+
+
+/* ------------------------------------------------------------------------ */
+/* Create a TerminateListener to prevent exiting OpenOffice as long as this frontend runs.
+   This will cause at least one OOo document (or the OOo desktop) to remain active, such that
+   all cached OOo-UNO-objects remain intact.
+*/
+::class TerminateListener
+::method unknown
+  use arg methName, args
+  say self": unknown - method="pp(methName) "eventObject="pp(args[1]~toString)
+
+::method queryTermination  /* throw a TerminationVetoException */
+  parse source . . s
+  say s": vetoing termination of last OOo instance as long as this program runs!" pp(.dateTime~new)
+  t=.BSF~new("com.sun.star.frame.TerminationVetoException")
+  call BsfJavaException "throw", t  -- throw this exception on the Java side
+  return
+
+/* from: <http://wiki.services.openoffice.org/wiki/Documentation/DevGuide/OfficeDev/Using_the_Desktop>
+
+  import com.sun.star.frame.TerminationVetoException;
+  import com.sun.star.frame.XTerminateListener;
+
+  public class TerminateListener implements XTerminateListener {
+
+      public void notifyTermination (com.sun.star.lang.EventObject eventObject) {
+          System.out.println("about to terminate...");
+      }
+
+      public void queryTermination (com.sun.star.lang.EventObject eventObject)
+          throws TerminationVetoException {
+
+          // test if we can terminate now
+          if (TerminationTest.isAtWork() == true) {
+              System.out.println("Terminate while we are at work? No way!");
+              throw new TerminationVetoException() ; // this will veto the termination,
+                                                     // a call to terminate() returns false
+          }
+      }
+
+      public void disposing (com.sun.star.lang.EventObject eventObject) {
+      }
+  }
+*/
+
+/*
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2008-2010 Nicole Scholz, Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+

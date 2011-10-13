@@ -1,0 +1,92 @@
+--- Rexx external function package "BSF4ooRexx", status: release, 04 Dec 2010 ---
+
+BSF4ooRexx is a package for the easy to learn, yet powerful scripting language
+ooRexx (http://www.ooRexx.org) which makes Java available to ooRexx, and ooRexx
+available to Java.
+
+        ooRexx programmers become able to address all of the Java classes and
+        Java objects in their runtime-environment as ooRexx classes and ooRexx
+        objects.
+
+        - ooRexx programs become able to implement Java interfaces or abstract
+          classes directly in ooRexx.
+
+        - One could e.g. use the Java awt or swing packages to create truly
+          portable (platform independent) GUIs for ooRexx programs, where the
+          necessary callback methods for many of the awt/swing classes get
+          implemented in ooRexx as well.
+
+        - and much more...
+
+        Java programs can invoke ooRexx programs and even send messages directly
+        to ooRexx objects.
+
+Download location:
+
+        - <http://wi.wu.ac.at/rgf/rexx/bsf4oorexx/current>
+
+        - Installation archive name: BSF4ooRexx_install.zip
+
+Installation:
+
+        - unzip the archive "BSF4ooRexx_install.zip", go into the folder
+          "bsf4oorexx\installation\windows" or "bsf4oorexx/installation/linux"
+
+        - double-click on "install.cmd" (Windows) or "install.sh" (Linux)
+
+Most important new/updated/improved features of this version:
+
+        - double-click installation, re-installation and uninstallation of
+          BSF4ooRexx, making it possible for end-users to carry out these:
+
+        - installation package will be copied to %ProgramFiles% (Windows)
+          resp. /opt/BSF4ooRexx (Linux) and the installation will start from
+          there
+
+        - full desktop integration on Windows and Linux making it for the
+          first time possible to start BSF4ooRexx programs by double-clicking
+          in the Explorer interface;
+
+        - running any Rexx scripts with "RexxPaws" such that the terminal
+          window remains open for the user to see the console output;
+
+        - reinstallation, uninstallation of BSF4ooRexx and additional information
+          is now available via the GUI's menu system;
+
+        - OpenOffice.org (OOo) extension is now packaged as an OXT-file and
+          allows for receiving update information automatically;
+
+        - OpenOffice.org (OOo) extension is now packaged as an OXT-file and
+          allows for receiving update information automatically;
+
+        - OOo support for the nifty ooRexx utility "UNO_API_info.rxo" for
+          any OOo language (via the OOo dispatch interface);
+
+        - and numerous additional improvements.
+
+
+Known problems:
+
+        - Windows: none
+
+        - Linux: - it may be the case that ooRexx 4.0.1 cannot run OOo scripts
+                   from the command line; later versions (starting with revision 6133)
+                   of ooRexx have this bug fixed and can be downloaded from
+                   <http://build.oorexx.org>; alternatively, you may download the
+                   appropriate ooRexx interpreter for your Linux from the subdirectory
+                   "http://wi.wu.ac.at/rgf/rexx/bsf4oorexx/archive/2010/2010-08-30/linux-oorexx-6135"
+
+                 - it may be the case that the "BSF4ooRexx" application menu is
+                   not created immediately under the "Application" menu, which causes
+                   the BSF4ooRexx menu options to be listed in the "Others" menu; in
+                   this case just logoff and logon to cause the "BSF4ooRexx" menu to
+                   be displayed on its own
+
+Support:
+
+        - Newsgroup <news:comp.lang.rexx>
+        - RexxLA member's mailing list, cf. <http://www.RexxLA.org>
+
+
+Rony G. Flatscher, Wien/Vienna, Austria, Europe
+

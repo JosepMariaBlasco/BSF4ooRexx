@@ -1,0 +1,63 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited by Rony G. Flatscher, 2010-07-17/19/20 */
+/* Example 18: load the calc document from example 14, create a simple chart and save to a new file */
+
+   /* create the Desktop object, we need its XComponentLoader interface to load a new document */
+xDesktop         = UNO.createDesktop()       /* get the OOo XDesktop interface to the service object  */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* open the file that got created in example 14 */
+userHome = .java.lang.System~getProperty("user.home")    /* get user home directory from Java */
+fileName = "myAhammerExample14.ods"
+url = uno.convertToUrl(userHome"/"fileName)
+
+signal on syntax  /* let us intercept the Rexx condition, if loading document fails */
+calcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, .UNO~noProps)
+signal off syntax /* do not intercept Rexx syntax conditions anymore */
+
+   /* get first sheet in spreadsheet */
+xSheet = calcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0) ~XSpreadSheet
+
+.bsf.dialog~messageBox("About to create and insert a chart into this spreadsheet ...", , "info")
+   /* create the frame for the Chart */
+oRect = .bsf~new("com.sun.star.awt.Rectangle")
+oRect~X      =   300
+oRect~Y      =  5500
+oRect~Width  = 18000
+oRect~Height =  8000
+
+   /* catch the underlying data and make a CellRange*/
+myRange=xSheet~XCellRange ~getCellRangeByName("A1:C10")
+myAddr = myRange~XCellRangeAddressable~getRangeAddress
+
+   /* create the CellRangeAddress for the Chart */
+call UNO.loadClass "com.sun.star.table.CellRangeAddress"
+oAddr = bsf.createArray(.UNO~CellRangeAddress, 1)     -- create Java array
+oAddr[1] = myAddr
+
+   /* get the Sheet's ChartsSupplier, add a new Chart */
+xTableCharts = xSheet~XTableChartsSupplier~getCharts
+xTableCharts~addNewByName("FirstChart", oRect, oAddr, .true, .true)
+
+   /* define file name name to use for storing the edited file, needed in next example */
+storeFileName = "myAhammerExample14_with_ChartFromExample18.ods"
+
+storeURL = uno.convertToUrl(userHome"/"storeFileName) /* save the document in the user's home folder */
+calcComponent~XStorable~storeAsURL(storeURL, .UNO~noProps)
+
+msg = "New document saved to" pp(uno.convertFromUrl(storeUrl))
+say msg
+
+.bsf.dialog~messageBox(msg || ("0a"x)~copies(2) || "Done, about to dispose (close) the calc component ...", "Closing Dialog", "info")
+calcComponent~dispose
+
+exit
+
+syntax:  /* Rexx condition handler */
+   title = "File Not Found/Problem Loading File"
+   msg = "Please run 'example14_scalc_fill.rxo' before running this example. We need the file that gets produced in example 14!" "0a"x || -
+         "File in question:" pp(uno.convertFromUrl(url))
+   .bsf.dialog~messageBox(msg, title, "error")
+   say title":" msg     /* also display in command-line window */
+
+::requires UNO.CLS    -- get UNO support

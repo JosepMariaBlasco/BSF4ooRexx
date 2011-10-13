@@ -1,0 +1,14 @@
+Package: bsf4oorexx
+Version: 406.20110822
+Section: Interpreted Computer Languages
+Priority: optional
+Homepage: http://sourceforge.net/projects/bsf4oorexx
+Maintainer: BSF4ooRexx <bsf4oorexx-devel@lists.sourceforge.net>
+Architecture: all
+Description: Bean Scripting Framework for Open Object Rexx (BSF4ooRexx) 
+ BSF4ooRexx version for ooRexx 4.1.0 and later exploiting the new ooRexx kernel (e.g. allowing implementing Java methods in ooRexx, callbacks from Java to ooRexx). [Camouflages Java as the dynamically typed, caseless and easy to use ooRexx.]
+ .
+ Special note for users of Ubuntu 11.04: If you want to use the LibreOffice version from the repository, you should invoke the command "sudo apt-get install libreoffice libreoffice-java-common" from the command line. If you then experience any problems working with LibreOffice, you need to remove the .libreoffice folder from your home directory. When the program starts up the next time, the folder is rebuilt and everything works well again.
+Depends: oorexx (>= 4.1.0), openjdk-6-jre
+Recommends: openoffice.org (>= 3.2.0), openoffice.org-calc (>= 3.2.0), openoffice.org-draw (>= 3.2.0), openoffice.org-impress (>= 3.2.0), openoffice.org-writer (>= 3.2.0)
+

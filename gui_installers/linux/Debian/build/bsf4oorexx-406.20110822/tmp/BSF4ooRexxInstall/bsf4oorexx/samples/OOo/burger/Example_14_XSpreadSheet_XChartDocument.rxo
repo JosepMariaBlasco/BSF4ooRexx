@@ -1,0 +1,77 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_200601>, edited by Rony G. Flatscher, 2010-07-07/20 */
+
+use arg slotArg   /* fetch the "slotArg", a java.util.Hashtable object which contains invocation
+                     information from OpenOffice.org, will always be the very last argument     */
+
+scriptContext=uno.getScriptContext(slotArg)  /* get the xScriptContext object, if any           */
+if scriptContext<>.nil then                  /* o.k., we are invoked as a macro from OOo        */
+do
+   xDesktop=scriptContext~getDesktop            /* get the desktop (a XDesktop) object          */
+   xContext=scriptContext~getComponentContext   /* get the context (a XComponentContext) object */
+end
+else              /* this program was called from outside of OOo, e.g. from the commandline     */
+do
+   xContext = UNO.connect()                  /* get a connection to OOo server                  */
+   xDesktop = UNO.createDesktop(xContext)    /* create the XDesktop from xContext               */
+end
+
+xComponentLoader=xDesktop~XComponentLoader   /* get componentLoader interface                   */
+
+   /* create a blank *.ods - file */
+url = "private:factory/scalc"
+calcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0,.UNO~noProps)
+
+   /* get first sheet in spreadsheet */
+xSheet=calcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0) ~XSpreadSheet
+
+   /* insert values into sheet   */
+arr=.array~of( .array~of(""        , "Column-One", "Column-Two"), -
+               .array~of("Row-I"   , 32          , 22        ), -
+               .array~of("Row-II"  , 33          , 55        ), -
+               .array~of("Row-III" ,  2          , 34        ), -
+               .array~of("Row-IV"  , 44          , 33        ) )
+
+do row=1 to 5
+   do col=1 to 3
+      colLetter="ABC"~subStr(col,1) /* extract column letter   */
+       call UNO.setCell xSheet, colLetter||row, arr[row][col]
+   end
+end
+
+
+xCellRange = xSheet~xCellRange~getCellRangeByName("A1:C5")
+addr = xCellRange~xCellRangeAddressable~getRangeAddress
+oAddr = bsf.createJavaArrayOf("com.sun.star.table.CellRangeAddress", addr)
+
+oRect = .bsf~new("com.sun.star.awt.Rectangle")
+oRect~X = 300
+oRect~Y = 5000
+oRect~Width = 10000
+oRect~Height = 8000
+xTableCharts = xSheet~xTableChartsSupplier~getCharts
+xTableCharts~addNewByName("FirstChart", oRect, oAddr, .true, .true)
+
+xChartObj = xTableCharts~xNameAccess~getByName("FirstChart")
+xChartDocument = xChartObj~xTableChart~xEmbeddedObjectSupplier~getEmbeddedObject~XChartDocument
+
+.bsf.dialog~messageBox("Chart named 'FirstChart' Created", "Please Press Button to Continue...", "information")
+
+xMsf = xChartDocument~XMultiserviceFactory
+xDiagram = xMsf~createInstance("com.sun.star.chart.PieDiagram")~xDiagram
+xChartDocument~setDiagram(xDiagram)
+.bsf.dialog~messageBox("Changed to PieDiagram", "Please Press Button to Continue...", "information")
+
+xDiagram = xMsf~createInstance("com.sun.star.chart.LineDiagram")~xDiagram
+xChartDocument~setDiagram(xDiagram)
+.bsf.dialog~messageBox("Changed to LineDiagram", "Please Press Button to Continue...", "information")
+
+xDiagram = xMsf~createInstance("com.sun.star.chart.AreaDiagram")~xDiagram
+xChartDocument~setDiagram(xDiagram)
+.bsf.dialog~messageBox("Changed to AreaDiagram", "Please Press Button to Finish...", "information")
+
+   /* allow to close (abort) document without saving-dialog */
+calcComponent~XModifiable~setModified(.false)   /* spreadsheet document */
+xChartDocument~XModifiable~setModified(.false)  /* chart document       */
+
+::requires UNO.CLS   -- load UNO support for OpenOffice.org

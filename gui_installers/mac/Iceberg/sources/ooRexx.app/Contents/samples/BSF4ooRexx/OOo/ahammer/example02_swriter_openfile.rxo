@@ -1,0 +1,28 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited by Rony G. Flatscher, 2010-07-15/20 */
+/* example 02: open an existing writer document in read-only mode */
+
+   /* Retrieve the Desktop object, we need its XComponentLoader interface to load a new document */
+xDesktop         = UNO.createDesktop()       /* get the OOo XDesktop interface to the service object  */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* open an existing writer document in read-only mode */
+url = uno.convertToUrl(directory()"/myTestDocument.odt")
+
+   /* create a Java array of type "com.sun.star.beans.PropertyValue" with a capacity of 1 object */
+props = bsf.createJavaArray(.uno~PropertyValue, 1) /* create Java array for one PropertyValue */
+
+   /* The value of a PropertyValue must be an explicit Java object, hence the need of "box"ing
+      primitive values (boolean, byte, char, int, long, float, double) into their Java
+      pendants using the appropriate Java wrapper classes.
+      The public routine box() eases this process considerably (defined in BSF.CLS). */
+javaTrue = box("boolean",.true)  /* create explicitly a Boolean Java object for value ".true" */
+
+   /* create a PropertyValue object and assign it to the array */
+props[1]=uno.createProperty("ReadOnly", javaTrue)  /* create and assign PropertyValue */
+
+   /* load writer component in read-only mode */
+xComponentLoader~loadComponentFromURL(url, "_blank", 0, props)
+
+::requires UNO.CLS    -- get UNO support
+

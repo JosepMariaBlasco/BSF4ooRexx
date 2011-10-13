@@ -1,0 +1,343 @@
+#!/usr/bin/rexx
+/*
+   author:  Rony G. Flatscher
+   date:    2006-07-08
+   changed: 2006-07-10, changed delimiter in "{%see full-name|string-as-in-code}" to
+                        "{%see full-name%string-as-in-code}"
+            2006-07-10, changed a bug in usage of "endPos", moved block to appropriate if-block
+            2006-07-27, renamed the file to indicate that it is related to OpenOffice
+            2007-02-12, added infos (URLs) to OOo snippet creator and OOo snippet homepage
+            2007-07-05, if no file pattern is given, "*.snip" is used by default
+            2008-08-14, updated link to SnippetCreator extension
+            2010-05-27, ---rgf, renamed extension to ".rxo" to match new convention "Rexx-OOo"-script
+
+   version: 1.0.5
+   name:    addLinks2OOoSnippets.rxo
+   purpose: add links to UNO interfaces and fully qualified UNO class names into
+            Rexx-code embedded as a snippet.
+   needs:   UNO.CLS
+
+   further infos:
+            - <http://api.openoffice.org/SDK/snippets/index.html> ... Overview of OOo' Snippets
+              including the following links
+
+            - <http://codesnippets.services.openoffice.org/> ... OOo Snippet Homepage
+
+            - <http://www.paolo-mantovani.org/downloads/SnippetCreator/SnippetCreator-20070624.oxt>
+              the Snippet creator package (as of 2007-06-24) which needs to be installed via
+              "Tools->Extension (Package) Manager"; use it to create your snippets, the creator
+              will create an XML-file containing your snippet
+
+              - run this script to process that created XML-snippet file (it will add the
+                official OOo-links to the definition of the interfaces used in the ooRexx
+                program)
+
+              - then send the resulting file to <mailto:dev@api.openoffice.org>
+
+   remark:  as of 2006-07-07 an e-mail by Tom Schindl explains:
+               Date: Thu, 06 Jul 2006 17:40:37 +0200
+               From: Tom Schindl <tom.schindl@bestsolution.at>
+               To: "Rony G. Flatscher" <Rony.Flatscher@wu-wien.ac.at>
+               CC: h0252896@
+               Subject: Re: ooRexx Snippets OOo
+
+               Hi,
+
+               Naja das verlinken ist ziemlich unspektakul=E4r gel=F6st, in dem du einfa=
+               ch
+               im Text ala JavaDoc bestimmte "Tags" einf=FCgst. Grund daf=FCr, dass man
+               nicht einfach xml-tags verwendet ist, dass dann das Vim parsen nicht
+               mehr funktioniert ;-)
+
+               1. Verlinkung von Interfaces, ...
+
+               Man f=FCgt im Code anstelle des Textes:
+               - {%see com.sun.star.lang.XMultiComponentFactory}
+                 kompletter Text erscheint
+               // old: - {%see com.sun.star.uno.XComponentContext|XComponentContext}
+               // new since 2006-07-10:
+               - {%see com.sun.star.uno.XComponentContext%XComponentContext}
+                 kurzer Text erscheint
+
+               Ich habe dir ein Java Beispiel angeh=E4ngt, bei dem das verwendet wird,
+               die URL im Netz dazu lautet dann:
+
+
+               2. Verlinkung zu anderen Snippets, ...
+               - {%internal ../Office/Office.ConnectViaPipe.snip}
+               - {%external http://www.bestsolution.at}
+
+
+               Ich hoffe ich habe dich richtig verstanden.
+
+               Tom
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2006-2010 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+parse arg filename                           -- get argument
+if filename="" then
+   filename="*.snip"
+
+.output~charout("Looking for file(s) ["filename"] ... ")
+
+call sysFileTree filename, "files.", "FO"    -- search for all files, return fully qualified name
+if files.0=0 then       -- no file(s) found?
+do
+   say " None/Not found! Aborting..."
+   exit -1
+end
+say "["files.0"] file(s) to process..."
+
+   -- define characters to escape and their SGML entity value, save array objects in .local environment
+.local~esc.From=.array~of("&"    , "<"   , ">"   , '"'     , "'"     )
+.local~esc.To  =.array~of("&amp;", "&lt;", "&gt;", "&quot;", "&apos;")
+
+   -- define characters which begin a Rexx symbol, save it in the .local environment
+.local~symbol.chars="ABCDEFGHJIJKLMNOPQRSTUVWXYZabcdefghjijklmnopqrstuvwxyz0123456789!_?."
+
+   -- define quote characters
+.local~quote.chars ="'"""
+
+   -- define LF character store it in the .local environment
+.local~lf="0a"x
+
+
+len=length(files.0)        -- save number of characters
+do i=1 to files.0          -- iterate over files
+   say "Processing file #" i~right(len)"/"i":" pp(files.i)
+   -- say pp(escape(charin(files.i, 1, chars(files.i))), "reverse")
+   call processFile files.i
+   say copies("=", 70)
+end
+
+
+
+::requires uno.cls         -- get specific UNO support
+
+::routine escape           -- escape characters from (default) / to SGML entities
+  parse arg string, reverse
+
+  if left(reverse,1)~translate="R" then   -- reverse from SGML entitites to char
+  do i=.esc.From~items to 1 by -1
+     string=changestr(.esc.To[i], string, .esc.From[i])
+  end
+  else                     -- change char to escape to SGML entity
+  do i=1 to .esc.From~items
+     string=changestr(.esc.From[i], string, .esc.To[i])
+  end
+  return string
+
+::routine processFile
+  parse arg filename
+
+  content=charin(filename, 1, chars(filename))  -- read entire file
+  call stream filename, "C", "CLOSE"            -- explicitly close file
+
+   -- this way of parsing allows attributes in the start tags as well
+   -- parse variable string, include match strings into parsed variables
+  parse var content before1 "<answer" -0 answer "</answer>" after1
+  answer=answer"</answer>"    -- add match string
+
+   -- now extract code
+  parse var answer before2 "<listing" -0 listing ">" code "</listing>" -0 after2
+  listing=listing">"          -- add match string
+
+  code=processCode(code)
+
+   -- now re-assemble the parts
+  contentNew= before1 || before2 || listing || code || after2 || after1
+
+  if content=contentNew then
+  do
+     say "... could not insert new link, hence snippet remains unchanged"
+     return
+  end
+
+  -- make a backup of the original file
+     -- use the Java information about our system
+  if .bsf4rexx~system.class~getProperty("file.separator")="/" then  -- assume Unix system
+     copy="cp"
+  else              -- assume Windows (or OS2)
+     copy="copy"
+
+  bkpFileName=SysTempFileName(filename"-???-backup") -- get a unique filename for backup purposes
+  say "... creating a backup copy as" pp(bkpFileName)
+  command=copy filename bkpFileName
+--  say pp(command)"..."
+  address cmd command      -- now do the copy
+
+   -- replace existing file with new
+  say "... replacing edited snippet file"
+ call stream  filename, "C", "OPEN WRITE REPLACE"
+ call charout filename, contentNew
+ call stream  filename, "C", "CLOSE"
+
+
+::routine processCode
+  parse arg code
+
+  tmpCode=escape(code, "reverse")   -- get us the unescaped version (SGML entities are replaced by the chars)
+
+  tmpRes=""
+  do while tmpCode<>""              -- process string
+     parse var tmpCode c "{" +0 linkText "}" tmpCode
+     if linkText<>"" then           -- if a linkText was found add closing match string
+        linkText=linkText || "}"
+
+        -- add linkTexts to chunk, if possible
+     tmpRes=tmpRes || processChunk(c) || linkText
+  end
+  return escape(tmpRes)             -- return code in escaped form
+
+
+
+/* This routine will search and insert links to symbols which represent OpenOffice
+   interface classes or regula classes.
+
+   Assumptions: - interface class names can be found following a message operator; these can
+                  can be fully or partially qualified and found in a case that does not match
+                  the OOo definition
+                - (interface) class names can be found in fully qualified form and with the
+                  right mixed case in form of a quoted string, where the quotes can be double
+                  or single quotes
+*/
+::routine processChunk        -- analyze string for adding links
+  parse arg chunk
+
+  tmpRes=""
+  do while chunk<>""          -- loop as long as data there
+     posQuote =verify(chunk, .quote.chars , "M")   -- find first matching quote
+     posTilde =pos("~", chunk)               -- find a tilde (message operator)
+
+     if posQuote>0 & posQuote<posTilde then      -- quoted string first, process ig
+     do
+        quote=substr(chunk, posQuote, 1)     -- get used quote
+        -- posEnd=pos(quote, chunk, posQuote+1) -- get ending quote
+
+        posEnd=verify(chunk, quote || .lf, "Match", posQuote+1) -- get ending quote on same line
+
+        if posEnd<>0 then        -- matching end-quote found
+        do
+           if chunk~substr(posEnd,1)=.lf then     -- oops: LF char in hand
+           do
+              tmpRes=tmpRes || substr(chunk, 1, posQuote)   -- extract up to and including quote
+              chunk=substr(chunk, posQuote+1)               -- extract after quote
+              iterate                             -- do not process this chunk, iterate
+           end
+
+           tmpRes=tmpRes || substr(chunk, 1, posQuote)
+           text=substr(chunk, posQuote+1, posEnd-posQuote-1)-- extract quoted text
+
+           unoClassName=getUnoClassName(text)   -- try to get a class name
+           if unoClassName<>"" & unoClassName=text then            -- found an entry with exact case?
+              tmpRes=tmpRes || "{%see" text"}" || quote
+           else
+              tmpRes=tmpRes || text || quote
+
+           chunk=substr(chunk, posEnd+1)     -- unprocessed chunk
+           iterate               -- now process rest
+        end
+     end
+
+     if posTilde=0 then       -- tilde does not exist, chunk is finished!
+        return tmpRes || chunk
+
+      -- process symbol token after message operator, if any
+     posSymbol   =verify(chunk, .symbol.chars, "Match",   posTilde)     -- find first matching symbol character
+
+     if posSymbol=0 then      -- no symbol characters found anymore, processing of this chunk ends (seems to be a coding error)
+        return tmpRes || chunk
+
+     posLastSymbol=verify(chunk, .symbol.chars, "NoMatch", posSymbol)-1 -- find first non-symbol character
+     if posLastSymbol<1 then
+        posLastSymbol=length(chunk)          -- all valid symbol characters
+
+     text=substr(chunk, posSymbol, posLastSymbol-posSymbol+1) -- extract token
+
+     tmpRes=tmpRes || substr(chunk, 1, posSymbol-1)   -- extract and append string up to but not including first symbol
+
+     unoClassName=getUnoClassName(text)
+     if unoClassName<>"" then
+     do
+        if unoClassName=text then
+           tmpRes=tmpRes || "{%see" unoClassName"}"         -- case already correct
+        else
+           tmpRes=tmpRes || "{%see" unoClassName"%"text"}"  -- ooRexx case may be different, keep ooRexx spelling
+     end
+     else
+     do
+        tmpRes=tmpRes || text
+     end
+
+     chunk=substr(chunk, posLastSymbol+1)    -- remove processed string from chunk
+  end
+  return tmpRes
+
+
+::routine getUnoClassName     -- find a matching UNO/OOo class name, return "" if not available
+  parse arg className
+
+      -- check whether interface class
+  tmpName=.uno~XInterfaces~entry(className)  -- does the entry exist ?
+
+      -- any of the
+  if .nil=tmpName then
+  do
+     if abbrev(className, "com.sun.") then   -- starts with a package name from OOo
+        return className
+
+     return ""                -- indicate that text seems not to be a OOo class name
+  end
+
+  if className~translate=tmpName~translate then -- fully qualified interface name supplied, return it
+     return tmpName              -- this version has in any case the right case ;)
+
+   -- o.k. check whether interface class name has duplicate unqualified names,
+   -- if so ask user which fully qualified class name to pick
+  lpos=lastpos(".", className)-- get last dot in name
+  if lpos>0 then
+     shortName=substr(className, lpos+1)~translate  -- extract unqualified name
+  else
+     shortName=className~translate      -- className is unqualified
+
+  if .UNO~XInterfaces.dupes~hasindex(shortName) then
+  do
+     arr=.UNO~XInterfaces.dupes~allAt(shortName)~makearray  -- get all fully qualified class names
+     arr~put(.UNO~XInterfaces~entry(shortName), arr~items+1)    -- add original entry
+     items=arr~items       -- get number of items
+     len=length(items)
+     say "There are multiple fully qualified classes for" pp(className)", choose one:"
+     say
+     do i=1 to items
+        if i=items then hint="*"
+                   else hint=" "
+
+        say hint i~right(len)"/"items pp(arr[i])
+     end
+     say
+     .output~charout("Choose a number between 1 through" items "(default): ")
+     call beep 500,50
+     parse pull answer     -- get answer
+     if answer<1 | answer>items | \datatype(answer, "W") then   -- default to first entry
+        answer=items
+     return arr[answer]         -- return chosen class name
+  end
+  return tmpName           -- this version has the right casing
+

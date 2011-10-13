@@ -1,0 +1,165 @@
+<head>
+    <title>Brief Overview of the BSF4ooRexx Samples in this Directory</title>
+
+</head>
+
+<body>
+<h1>BSF4ooRexx Samples (Using Java Classes from Rexx)</h1>
+
+<em>Hint:</em> if you wish to look at the ooRexx code with syntax highlighting, then you can
+use the free and open-source editor <code>&quot;[g]vim&quot;</code>, which is available for practically
+all platforms and can be downloaded from its homepage at
+<a href="http://www.vim.org/">http://www.vim.org/</a>.
+
+<dl>
+    <dt><em><a href=".">.  &lt;directory&gt; (List of this directory)</a></em>
+    <dd>Display all of this directory's files and directories.
+
+    <dt><em><a href="apache_bsf_samples/index.html">apache_bsf_samples  &lt;directory&gt; </a></em>
+    <dd>Original examples from Apache's BSF 2.x distributions, augmented with Rexx variants.
+
+    <dt><em><a href="classicRexxSamples">classicRexxSamples  &lt;directory&gt; </a></em>
+    <dd>Demonstrates how to use the external BSF functions without taking advantage of ooRexx.
+
+    <dt><a href="DateRgf.rxj">DateRgf.rxj</a>
+    <dd>ooRexx program to test access to the class <code>org.oorexx.datergf.DateTimeRGF</code>, which is contained
+        in the <code>&quot;bsf-rexx-engine.jar&quot;</code> archive; the documentation of the BSF4ooRexx
+        Date/Time classes can be found in the archive <code>&quot;docs_bsf4rexx.zip&quot;</code>.
+        <br>You may want to try this link to the documentation as well:
+        <a href="http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/docs/docs.bsf4oorexx/">http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/docs/docs.bsf4oorexx/</a>
+
+    <dt><a href="DateRgfSample.rxj">DateRgfSample.rxj</a>
+    <dd>Demonstrates the usage of the routine <code>BSF.wrapStaticFields</code> for accessing
+        Java constants. This public routine gets defined by the ooRexx package <code>BSF.CLS</code>.
+
+    <dt><code>datergf_docs.zip</code>
+    <dd>Archive that contains the HTML documentation of the supplied Java package
+        <code>org.oorexx.datergf</code>.
+
+    <dt><a href="demoJavaArrays.rxj">demoJavaArrays.rxj</a>
+    <dd>Demonstrate how to create and use Java array objects.
+
+    <dt><em><a href="DOM/index.html">DOM  &lt;directory&gt;</a></em>
+    <dd>Scripts that demonstrate how to use Java's &quot;DOM (Document Object Model)&quot; classes to
+        process XML files.
+
+    <dt><a href="EuroCalcJava.rxj">EuroCalcJava.rxj</a>
+    <dd>Using Java's &quot;awt (abstract window toolkit)&quot; classes to create a portable GUI for
+        converting Euro amounts to/from any of the original Euro currencies.
+
+    <dt><a href="getFileInfo.rxj">getFileInfo.rxj</a>
+    <dd>Demonstrate using the Java class <code>java.io.File</code> to gain information about
+        files/directories.
+
+    <dt><a href="GetJavaSystemProperties.rxj">GetJavaSystemProperties.rxj</a>
+    <dd>List all Java system properties of your Java installation. Loads explicitly the
+        Java class <code>java.lang.System</code> and interrogates it.
+
+    <dt><a href="GetJavaSystemProperties1.rxj">GetJavaSystemProperties1.rxj</a>
+    <dd>List all Java system properties of your Java installation. Uses the existing
+        reference to the Java class <code>java.lang.System</code>, which gets set up
+        by the ooRexx package <code>BSF.CLS</code> and stored to an ooRexx directory
+        that is always available by its environment symbol <code>.BSF4Rexx</code>.
+
+    <dt><a href="GetJavaSystemProperties2.rxj">GetJavaSystemProperties2.rxj</a>
+    <dd>Same as <code>GetJavaSystemProperties.rxj</code> but lists the properties
+        alphabetically sorted in ascending order by employing the Java class
+        <code>java.util.TreeSet</code>.
+
+    <dt><a href="GetJavaSystemProperties3.rxj">GetJavaSystemProperties3.rxj</a>
+    <dd>Same as <code>GetJavaSystemProperties.rxj</code> but uses the methods
+        <code>store</code> and <code>storeToXML</code> of the Java class
+        <code>java.lang.System</code> to print all properties to the standard
+        output (console).
+
+    <dt><a href="Greetings.rxj">Greetings.rxj</a>
+    <dd>Creates a window with a choice-object and two text-fields and buttons;
+        if the ok-button gets pressed then another window pops up and displays what
+             was chosen and entered by the user.
+
+    <dt><a href="HelloWorld.rxj">HelloWorld.rxj</a>
+    <dd>Creates a window with a button which allows to close the window.
+
+    <dt><em><a href="Java/index.html">Java &lt;directory&gt;</a></em>
+    <dd>Java programs that demonstrate how one can invoke ooRexx from Java and how easy this is.
+        There are examples that interact with ooRexx objects from Java, including ooRexx condition
+        objects.
+
+    <dt><a href="JavaVersion.rxj">JavaVersion.rxj</a>
+    <dd>Fetch the system property <code>&quot;java.version&quot;</code> and display its value.
+
+    <dt><a href="JPrintFile.rxj">JPrintFile.rxj</a>
+    <dd>Allows to pick a file that then gets printed (user is allowed to pick the printer as well).
+        Java <em>&quot;swing&quot;</em> version.
+
+    <dt><em><a href="LeePeedin/index.html">LeePeedin &lt;directory&gt;</a></em>
+    <dd>Scripts created by Lee Peedin for a presentation on one of the International Rexx Symposiums
+        organized by the Rexx Language Association
+        (cf. <a href="http://www.RexxLA.org">http://www.RexxLA.org</a>). Stresses GUI programming
+        and Java menus.
+
+    <dt><em><a href="OOo/index.html">OOo &lt;directory&gt;</a></em>
+    <dd>Examples for driving <a href="http://www.OpenOffice.org">OpenOffice.org</a> applications.
+
+    <dt><a href="PrintFile.rxj">PrintFile.rxj</a>
+    <dd>Allows to pick a file that then gets printed (user is allowed to pick the printer as well).
+        Java <em>&quot;awt&quot;</em> version.
+
+    <dt><a href="RegexTestHarness.rxj">RegexTestHarness.rxj</a>
+    <dd>Allows for interactive experimenting with Java's regular expressions; the Java tutorial
+        on regular expressions can be found at:
+        <a href="http://java.sun.com/docs/books/tutorial/essential/regex/index.html">http://java.sun.com/docs/books/tutorial/essential/regex/index.html</a>.
+
+    <dt><em><a href="ReneJansen/index.html">ReneJansen &lt;directory&gt;</a></em>
+    <dd>Ren&eacute; Jansen's examples for demonstrating the usage of &quot;XSLT;&quot; and
+        &quot;JDBC (Java Database Connectivity)&quot; to access relational databases.
+
+    <dt><a href="RunJavaClass.rxj">RunJavaClass.rxj</a>
+    <dd>Calls the static void main() method of the given Java class, supplying optionally
+        arguments given on the command line to Rexx (by <a href="http://www.well.com/%7Ejax/rcfb/rexx.html">Jack Woehr</a>).
+
+    <dt><em><a href="SAX/index.html">SAX &lt;directory&gt;</a></em>
+    <dd>Scripts that demonstrate how to use Java's &quot;SAX (Simple API for XML)&quot; classes to
+        process XML files.
+
+    <dt><a href="ShootOut.rxj">ShootOut.rxj</a>
+    <dd>Creates a window with a choice-object and two text-fields and buttons.
+        Entering a question (indicated by a trailing question mark) will give
+        a &quot;magic-ball&quot; answer. Originally developed at an International
+        Rexx Symposium to meet the &quot;Magic 8-Ball&quot; challenge set forth
+        by Chip Davis.
+
+    <dt><a href="ShootOut2.rxj">ShootOut2.rxj</a>
+    <dd>Extends <code>ShootOut.rxj</code> above with the ability to edit the
+        answer file after answering successfully a password popup (correct password:
+        &quot;hey&quot;).
+
+    <dt><a href="ShowCount.rxj">ShowCount.rxj</a>
+    <dd>Creates a little resizable window with a push button to count and reveal
+        the number of times the button got pressed.
+
+    <dt><a href="ShowSize.rxj">ShowSize.rxj</a>
+    <dd>Creates a little resizable window with a push button to reveal the actual
+        size; adds EventListeners in order for Rexx to be notified, if a button
+        gets pressed.
+
+    <dt><a href="swt_snippet108.rxj">swt_snippet108.rxj</a>
+    <dd>Transcription of the Eclipse GUI class library
+        <a href="http://www.eclipse.org/swt/">&quot;swt (Standard Widget Toolkit)&quot;</a>
+        Java example
+        <a href="http://dev.eclipse.org/viewcvs/index.cgi/%7Echeckout%7E/org.eclipse.swt.snippets/src/org/eclipse/swt/snippets/Snippet108.java">&quot;Snippet108.java&quot;</a>
+        to ooRexx.
+
+        <br><em>Attention! This example needs Eclipse's
+        <a href="http://www.eclipse.org/swt/">swt</a> library (see section entitled
+        <code>&quot;Releases&quot;/&quot;Stable&quot;</code>) installed on your system and
+        the environment variable
+        <code>CLASSPATH</code> point to the <code>swt.jar</code> library!</em>
+</dl>
+
+<p>
+<hr>
+<p style="font-size: 80%;">
+Rony G. Flatscher, 2010-08-22, Wien/Vienna, Austria, Europe
+</body>
+

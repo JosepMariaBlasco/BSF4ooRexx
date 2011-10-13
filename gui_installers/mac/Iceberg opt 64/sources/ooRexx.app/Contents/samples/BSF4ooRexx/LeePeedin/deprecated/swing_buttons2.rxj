@@ -1,0 +1,334 @@
+/* swing_buttons2.rxj */
+/*
+This demonstration was written in ooRexx by Lee Peedin
+using BSF4Rexx, created and distributed by Dr. Rony Flatscher.
+The latest release of BSF4Rexx can be found at:
+<http://wi.wu-wien.ac.at/rgf/rexx/bsf4rexx/current/>
+The latest information on ooRexx can be found at:
+<http://www.oorexx.org/>
+Some demonstrations may require these additional Java classes
+SWT         <http://www.eclipse.org/swt/>
+FreeTTS     <http://freetts.sourceforge.net/docs/index.php>
+
+This demonstration has been tested using:
+ooRexx              3.0.1
+Java Version        1.5.0_06
+Windows Version     Microsoft Windows XP [Version 5.1.2600]
+Linux Version       Suse 10
+-- changed:         2009-10-17, rgf, renamed extension to '.rxj'
+*/
+    parse source os how what
+    call SysCls
+    lf = '0a'x
+
+-- Import the required classes
+    call bsf.import 'java.awt.Insets'               , 'Insets'
+    call bsf.import 'java.awt.GridBagConstraints'   , 'GridBagConstraints'
+    call bsf.import 'java.awt.GridBagLayout'        , 'GridBagLayout'
+    call bsf.import 'javax.swing.JButton'           , 'JButton'
+    call bsf.import 'javax.swing.JCheckBox'         , 'JCheckBox'
+    call bsf.import 'javax.swing.JComboBox'         , 'JComboBox'
+    call bsf.import 'javax.swing.JFrame'            , 'JFrame'
+    call bsf.import 'javax.swing.JLabel'            , 'JLabel'
+    call bsf.import 'javax.swing.JRadioButton'      , 'JRadioButton'
+    call bsf.import 'javax.swing.JSlider'           , 'JSlider'
+    call bsf.import 'javax.swing.JSpinner'          , 'JSpinner'
+    call bsf.import 'javax.swing.JTextField'        , 'JTextField'
+    call bsf.import 'javax.swing.JToggleButton'     , 'JToggleButton'
+    call bsf.import 'javax.swing.SpinnerListModel'  , 'SpinnerListModel'
+
+    blue         = .bsf~bsf.getStaticValue('java.awt.Color','blue')
+    white        = .bsf~bsf.getStaticValue('java.awt.Color','white')
+    red          = .bsf~bsf.getStaticValue('java.awt.Color','red')
+
+-- Create A Frame
+    frame = .JFrame~new('Swing Buttons 2')
+-- Add a CLOSE listener
+    frame~bsf.addEventListener('window','windowClosing','call Closed')
+-- A frame, by default, has a Pane
+    pane = frame~getContentPane
+-- Apply the gridbaglayout to the pane - it will use the Constraints defined below
+    pane~setLayout(.GridBagLayout~new)
+
+-- Gather all the static values for GridBagConstraints
+    gbc = bsf.wrapStaticFields('java.awt.GridBagConstraints')
+-- Create an instance of GridBagConstraints
+    c = .GridBagConstraints~new
+
+-- Define the space to place between each widget
+    c~insets = .Insets~new(1,1,1,1)  --top, left, bottom, right
+-- Indicate that we want each widget "streched" vertically only (if needed)
+    c~fill = gbc~vertical
+-- Indicate where we want to place each widget within its grid area
+    c~anchor = gbc~line_start
+
+-- Create labels for each of our widgets
+    label1 = .JLabel~new('JButton')
+    label1~setOpaque(.true)
+    label1~setBackground(blue)
+    label1~setForeground(white)
+
+    label2 = .JLabel~new('JRadioButton')
+
+    label3 = .JLabel~new('JToggleButton')
+    label3~setOpaque(.true)
+    label3~setBackground(blue)
+    label3~setForeground(white)
+
+    label4 = .JLabel~new('JCheckBox')
+
+    label5 = .JLabel~new('JComboBox')
+    label5~setOpaque(.true)
+    label5~setBackground(blue)
+    label5~setForeground(white)
+
+    label6 = .JLabel~new('JSpinner')
+
+    label7 = .JLabel~new('JSlider')
+    label7~setOpaque(.true)
+    label7~setBackground(blue)
+    label7~setForeground(white)
+
+    label8 = .JLabel~new('JTextField')
+
+-- Create an OK button
+    OkButton = .JButton~new('OK')
+-- Set its "hot-key"
+    OkButton~setMnemonic('o')
+-- Add a listener for its click
+    OkButton~bsf.addEventListener('action', '', 'call OKButton')
+-- Watch for the {esc} key
+    OkButton~bsf.addEventListenerReturningEventInfos('key','keyPressed','')
+
+-- Create a Radio Button and add its mnemonic and listeners
+    radioButton = .JRadioButton~new('Radio Button')
+    radioButton~setMnemonic('r')
+    radioButton~bsf.addEventListener('action', '', 'call RadioButton')
+    radioButton~bsf.addEventListenerReturningEventInfos('key','keyPressed','')
+
+-- Create a Toggle Button and add its mnemonic and listeners
+    toggleButton = .JToggleButton~new('Toggle Button')
+    toggleButton~setMnemonic('t')
+    toggleButton~bsf.addEventListener('action', '', 'call ToggleButton')
+    toggleButton~bsf.addEventListenerReturningEventInfos('key','keyPressed','')
+
+-- Create a Check Box and add its mnemonic and listeners
+    checkBox = .JCheckBox~new('Check Box')
+    checkBox~setMnemonic('c')
+    checkBox~bsf.addEventListener('action', '', 'call CheckBox')
+    checkBox~bsf.addEventListenerReturningEventInfos('key','keyPressed','')
+
+-- Create a Combo Box and add its mnemonic and listeners
+    comboBox = .JComboBox~new
+    comboBox~~addItem('Red')~~addItem('Blue')~~addItem('Green')
+    comboBox~bsf.addEventListener('action','','call ComboBox')
+    comboBox~bsf.addEventListenerReturningEventInfos('key','keyPressed','')
+
+-- Create a Spinner and add its mnemonic and listeners
+    list = bsf.createArray("Object.class", 12)
+    tmpArr=.array~of('Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec')
+    do i = 1 to tmpArr~items
+        list[i] = tmpArr[i]
+    end
+    slm = .SpinnerListModel~new(list)
+    spinner = .JSpinner~new(slm)
+    spinner~setValue(date('m')~left(3))
+    spinner~bsf.addEventListener('change','','call Spinner')
+    spinner~bsf.addEventListenerReturningEventInfos('key','keyPressed','')
+
+-- Create a Slidder and add its mnemonic and listeners
+    slider = .JSlider~new(0,30,15)
+    slider~setMajorTickSpacing(10)
+    slider~setMinorTickSpacing(5)
+    slider~setPaintTicks(.true)
+    slider~setPaintLabels(.true)
+    slider~bsf.addEventListener('change','','call Slider')
+    slider~bsf.addEventListenerReturningEventInfos('key','keyPressed','')
+
+-- Create a textField to display our button activity
+    textField = .JTextField~new('',24)
+-- Don't allow the textField to be edited
+    textField~setEditable(.false)
+
+-- Create an Exit Button and add its mnemonic and listeners
+    exitButton = .JButton~new('Exit')
+    exitButton~setMnemonic('x')
+    exitButton~setBackground(red)
+    exitButton~setForeground(white)
+    exitButton~bsf.addEventListener('action', '', 'call exitButton')
+    exitButton~bsf.addEventListenerReturningEventInfos('key','keyPressed','')
+
+-- Place label in grid 0,0 (x,y)
+    c~gridx = 0
+    c~gridY = 0
+    pane~add(label1,c)
+
+-- Place widget in grid 1,0
+    c~gridx = 1
+    c~gridY = 0
+    pane~add(OkButton,c)
+
+-- Place label in grid 0,1
+    c~gridx = 0
+    c~gridY = 1
+    pane~add(label2,c)
+
+-- Place widget in grid 1,1
+    c~gridx = 1
+    c~gridY = 1
+    pane~add(radioButton,c)
+
+-- Place label in grid 0,2
+    c~gridx = 0
+    c~gridY = 2
+    pane~add(label3,c)
+
+-- Place widget in grid 1,2
+    c~gridx = 1
+    c~gridY = 2
+    pane~add(toggleButton,c)
+
+-- Place label in grid 0,3
+    c~gridx = 0
+    c~gridY = 3
+    pane~add(label4,c)
+
+-- Place widget in grid 1,3
+    c~gridx = 1
+    c~gridY = 3
+    pane~add(checkBox,c)
+
+-- Place label in grid 0,4
+    c~gridx = 0
+    c~gridY = 4
+    pane~add(label5,c)
+
+-- Place widget in grid 1,4
+    c~gridx = 1
+    c~gridY = 4
+    pane~add(comboBox,c)
+
+-- Place label in grid 0,5
+    c~gridx = 0
+    c~gridY = 5
+    pane~add(label6,c)
+
+-- Place widget in grid 1,5
+    c~gridx = 1
+    c~gridY = 5
+    pane~add(spinner,c)
+
+-- Place label in grid 0,6
+    c~gridx = 0
+    c~gridY = 6
+    pane~add(label7,c)
+
+-- Place widget in grid 1,6
+    c~gridx = 1
+    c~gridY = 6
+    pane~add(slider,c)
+
+-- Place label in grid 0,7
+    c~gridx = 0
+    c~gridY = 7
+    pane~add(label8,c)
+
+-- Place widget in grid 1,7
+    c~gridx = 1
+    c~gridY = 7
+    pane~add(textField,c)
+
+-- Place Exit button in grid 0,1
+    c~gridx = 0
+    c~gridY = 8
+    pane~add(exitButton,c)
+
+-- Pack the frame so we can get its width & height
+    frame~pack
+-- Get the screen's width & height
+    sw = frame~getToolkit~getScreenSize~getWidth
+    sh = frame~getToolkit~getScreenSize~getHeight
+-- Get the frame's width & height
+    fw = frame~getWidth
+    fh = frame~getHeight
+-- Calculate the x position to place our frame
+    fx = (sw-fw)~format(,0)
+-- Frame y position will be top of screen
+    fy = 0
+-- Set the location of our frame
+    frame~setLocation(fx,fy)
+
+-- Show the frame and bring it to the front
+    frame~~show~~tofront
+
+-- Watch for events
+    do forever
+        do until .nil = rexxCode
+            rexxCode = bsf.pollEventText(1)
+            if .nil \= rexxCode then
+                do
+                    if ABBREV(rexxCode, '/*BSFBEAN/*') then
+                        do
+                            eventInfo=bsf.getEventInfoObject(rexxCode)
+                            eventObject=eventInfo[1][1]
+                            if wasEscapeKeyPressed(eventObject) then call Escape
+                        end
+                    else
+                        interpret rexxCode
+                end
+        end
+    end
+exit
+
+Escape:
+    textField~setText('Escape Key Pressed')
+    .bsf~bsf.exit
+return
+
+Closed:
+    textField~setText('Window Closed')
+    .bsf~bsf.exit
+return
+
+OKButton:
+    textField~setText('OK Button Pressed')
+return
+
+RadioButton:
+    textField~setText('Radio Button Selected-Current State ->' radioButton~isSelected)
+return
+
+ToggleButton:
+    textField~setText('Toggle Button Selected-Current State ->' toggleButton~isSelected)
+return
+
+CheckBox:
+    textField~setText('Check Box Selected-Current State ->' checkBox~isSelected)
+return
+
+ComboBox:
+    textField~setText('Combo Box Selected Item ->' comboBox~getSelectedItem)
+return
+
+Slider:
+    textField~setText('Slider Value ->' slider~getValue)
+return
+
+Spinner:
+    textField~setText('Spinner Value ->' spinner~getValue)
+return
+
+ExitButton:
+    textField~setText('Exit Button Pressed')
+    .bsf~bsf.exit
+return
+
+::requires bsf.cls
+
+-- Test each key entered for {esc}
+::routine wasEscapeKeyPressed
+    use arg eventObject
+    keyCode=eventObject~keyCode
+    return keyCode = 27
+
+

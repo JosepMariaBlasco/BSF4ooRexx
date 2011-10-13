@@ -1,0 +1,70 @@
+#!/usr/bin/rexx
+/* swing_jwindow.rxj */
+/*
+This demonstration was written in ooRexx by Lee Peedin
+using BSF4ooRexx, created and distributed by Dr. Rony Flatscher.
+The latest release of BSF4ooRexx can be found at:
+<http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/>
+The latest information on ooRexx can be found at:
+<http://www.oorexx.org/>
+Some demonstrations may require these additional Java classes
+SWT         <http://www.eclipse.org/swt/>
+FreeTTS     <http://freetts.sourceforge.net/docs/index.php>
+
+This demonstration has been tested using:
+ooRexx              3.0.1
+Java Version        1.5.0_06
+Windows Version     Microsoft Windows XP [Version 5.1.2600]
+Linux Version       Suse 10
+-- changed:         2009-10-17, rgf, renamed extension to '.rxj'
+*/
+
+-- Import the required classes
+    call bsf.importClass 'javax.swing.JTextArea'        , 'JTextArea'
+    call bsf.importClass 'javax.swing.JWindow'          , 'JWindow'
+-- Get the value of the colors for the textArea
+    yellow = .bsf~bsf.getStaticValue('java.awt.Color','yellow')
+    black  = .bsf~bsf.getStaticValue('java.awt.Color','black')
+-- Define a line feed
+    lf = '0a'x
+-- Create a window instance
+    window = .JWindow~new
+-- Create a text area instance
+    textArea = .JTextArea~new(text)
+    textArea~setForeground(yellow)
+    textArea~setBackground(black)
+-- Obtain the default content pane of the window
+    pane = window~getContentPane
+-- Define the text
+    text =      'A JWindow is a container that can be displayed'lf
+    text = text 'anywhere on the users desktop. It does not'lf
+    text = text 'have the title bar, window-management buttons,'lf
+    text = text 'or other trimmings associated with a JFrame. 'lf||lf
+    text = text 'One might use it along with SysSleep to prompt'lf
+    text = text 'the user to "stand-by".'lf||lf
+    text = text 'Printing Occurring - Please Standby (10 Seconds)'
+-- Add the text to the textarea
+    textArea~setText(text)
+-- Add the textarea to the pane
+    pane~add(textArea)
+-- Set the size of the window
+    window~setSize(300,150)
+-- Calculate the position to display the window
+    sw = window~getToolkit~getScreenSize~getWidth
+    sh = window~getToolkit~getScreenSize~getHeight
+    ww = window~getWidth
+    wh = window~getHeight
+    wx = (sw - ww)~format(,0)
+    wy = 0
+-- Set the window position
+    window~setLocation(wx,wy)
+-- Display the window and bring it to the front
+    window~setVisible(.true)
+    window~toFront
+-- Leave it on the desktop for 10 seconds
+    call SysSleep 10
+-- Dispose of the window (it can be used again by sending "~setVisible(.true) & ~toFront"
+    window~dispose
+
+::requires bsf.cls
+

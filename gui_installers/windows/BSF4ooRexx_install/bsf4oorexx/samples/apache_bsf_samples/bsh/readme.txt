@@ -1,0 +1,18 @@
+
+To run any of the scripts here, type:
+
+        rexxj filename
+
+    or:
+
+	java org.apache.bsf.Main -in filename -mode exec
+
+
+where filename is any of the script files here.
+
+You need to have the BSF jar file and any language-specific
+jars/zips on your classpath.
+
+Note: The mode must be set to "exec" to avoid the language's
+      interpreter/compiler from treating the script as an
+      expression.

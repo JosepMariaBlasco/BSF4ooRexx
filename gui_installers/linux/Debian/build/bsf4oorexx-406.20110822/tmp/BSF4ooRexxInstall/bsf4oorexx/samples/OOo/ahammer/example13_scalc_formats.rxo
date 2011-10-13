@@ -1,0 +1,42 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited by Rony G. Flatscher, 2010-07-17/20 */
+/* Example 13: create a new calc document, enter a few values, format cells */
+
+   /* Retrieve the Desktop object, we need its XComponentLoader interface to load a new document */
+xDesktop         = UNO.createDesktop()       /* get the OOo XDesktop interface to the service object  */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* create new calc document */
+url = "private:factory/scalc"
+calcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, .UNO~noProps)
+
+   /* get first sheet in spreadsheet */
+xSheet = calcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0) ~XSpreadSheet
+
+   /* insert some text */
+call UNO.setCell xSheet, 0, 0, "Matr.Nr.:"      /* cell "A1" */
+call UNO.setCell xSheet, 1, 0, "0251406"        /* cell "B1" */
+
+call UNO.setCell xSheet, 0, 1, "Datum:"         /* cell "A2" */
+
+   /* even if you have another version of OOo then the English one, you still have to write
+      the formulas in English ! */
+call UNO.setCell xSheet, 1, 1, "=TODAY()"       /* cell "B2" */
+
+   /* format individual cell */
+xCell = xSheet~getCellByPosition(1, 1)          /* cell "A2" */
+xPropertySet11 = xCell~XPropertySet~setPropertyValue("CellBackColor", box("int", "00 00 ff"x ~c2d))
+
+xCell = xSheet~getCellByPosition(0, 1)          /* cell "B2" */
+xPropertySet01 = xCell~XPropertySet~setPropertyValue("CharColor",     box("int", "ff 00 00"x ~c2d))
+
+   /* format the cells voa xCellRange */
+xCellRangeProps = xSheet~XCellRange~getCellRangeByName("A1:B1")~XPropertySet
+bold = box("float", bsf.getConstant("com.sun.star.awt.FontWeight", "BOLD"))
+xCellRangeProps~setPropertyValue("CharWeight", bold)
+
+   /* set "modified" false -> UNO will not ask if you want to save the current document on close */
+calcComponent~XModifiable~setModified(.false)
+
+
+::requires UNO.CLS -- get UNO support

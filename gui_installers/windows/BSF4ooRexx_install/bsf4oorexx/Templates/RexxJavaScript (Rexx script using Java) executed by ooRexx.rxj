@@ -1,0 +1,8 @@
+#!/usr/bin/rexx
+
+parse version v   /* get Rexx version information  */
+say v             /* show version information      */
+
+say "BSF.CLS version:" .bsf4rexx~version  /* show version of BSF.CLS */
+
+::requires "BSF.CLS"    /* get the Java support    */

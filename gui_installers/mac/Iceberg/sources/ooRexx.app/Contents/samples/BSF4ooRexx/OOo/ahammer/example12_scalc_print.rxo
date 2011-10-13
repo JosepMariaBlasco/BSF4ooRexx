@@ -1,0 +1,123 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited and extended by Rony G. Flatscher, 2010-07-17 */
+/* Example 12: load an existing calc/spreadsheet document and define and print a certain area twice */
+
+   /* create the Desktop object, we need its XComponentLoader interface to load a new document */
+xContext = UNO.connect()                  /* get a connection to OOo server                  */
+xDesktop = UNO.createDesktop(xContext)    /* create desktop service using xContext           */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* load calc document from current directory, turn it into an UNO URL */
+url = makeUrl("mySpreadsheetForPrintExample.ods")  /* get the document from the current folder */
+calcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, .UNO~noProps)
+
+   /* create a Java array of type PropertyValue and a capacity of 1 */
+props = bsf.createJavaArray(.UNO~propertyValue, 1)
+
+   /* get the component's XPrintable interface */
+xPrintable = calcComponent~XPrintable
+
+   /* get printer related information */
+defaultPrinter    = getDefaultPrinter(xPrintable)
+-- availablePrinters = getAvailablePrinters(xComponentLoader~XContext, defaultPrinter)
+availablePrinters = getAvailablePrinters(xContext, defaultPrinter)
+
+   /* ask user for printer to use */
+printer = askUserForPrinter(availablePrinters, defaultPrinter) /* ask user for printer to use */
+if printer=.nil then    /* user does not want to print */
+do
+   calcComponent~dispose         /* dispose, not needed anymore */
+   exit
+end
+
+if printer<>defaultPrinter then  /* user wishes to use a different printer, set it to */
+do
+   .bsf.dialog~messageBox("About to set the printer to" pp(printer) "...",,"info")
+      /* set the printer to an existing one, if not using the default printer */
+   props[1]=uno.createProperty("Name", printer)
+   xPrintable~setPrinter(props)
+end
+
+   /* define the cell range we want to print */
+rangeToPrint="B6:E13"   /* range to print of the spreadsheet */
+.bsf.dialog~messageBox("About to set the print area of the first sheet to" pp(rangeToPrint) "...",,"info")
+
+   /* get first sheet in spreadsheet */
+xSheet = calcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0) ~XSpreadSheet
+
+   /* get a cell range and use it to set the XSheet's print area(s) */
+rangeAddress = xSheet~XCellRange~getCellRangeByName(rangeToPrint) ~XCellRangeAddressable~getRangeAddress
+
+   /* create a Java array of CellRangeAddress'es */
+printAreas = bsf.createJavaArrayOf("com.sun.star.table.CellRangeAddress", rangeAddress)
+xSheet~XPrintAreas~setPrintAreas(printAreas) /* set xSheet's print areas */
+
+
+msg = "Print two copies of spreadsheet's cell range" pp(rangeToPrint) "to" pp(printer) "?"
+answer=.bsf.dialog~dialogBox(msg, "Print Dialog", "question", "OkCancel")
+
+if answer=0 then     /* answered "Ok" */
+do
+      /* we want to copies of the printout, we re-use the existing Java array of type PropertyValue */
+   props[1] = uno.createProperty("CopyCount", box("short", 2))
+   xPrintable~print(props)       /* print two copies of the sheet's print area */
+
+   .bsf.dialog~messageBox("Printing done, about to dispose the spreadsheet document without saving ...",,"info")
+end
+
+calcComponent~dispose         /* dispose, not needed anymore */
+
+
+::requires UNO.CLS    -- get UNO support
+
+::routine makeUrl    -- operating system independent
+  return  uno.convertToURL(stream(arg(1), "c", "query exists"))
+
+
+::routine getDefaultPrinter   /* return the default printer, if any available    */
+   use arg xPrintable         /* expecting a com.sun.star.view.XPrintable object */
+
+   printDescriptor = xPrintable~getPrinter   /* an array of PropertyValues */
+   do propValue over printDescriptor
+      if propValue~name="Name" then
+         return propValue~value
+   end
+   return .nil                /* no printer name found, return .nil  */
+
+
+::routine getAvailablePrinters   /* get the available printers via OOo, return a sorted Rexx array of printer names */
+   use strict arg xContext, defaultPrinter=.nil
+
+   signal on syntax
+      /* as of 2010-07-12 this service is available on OOo 3.2, but not documented (no IDL available  */
+   ps=xContext~getServiceManager~XMultiServiceFactory~createInstance("com.sun.star.awt.PrinterServer")
+   if ps=.nil then   /* raise a syntax condition, if service could not be created, such that a default list gets created */
+      raise syntax 93.900
+
+   allPrinters=ps~XPrinterServer~getPrinterNames   /* get Java String array of all available printers */
+   bsf.loadClass("java.util.Arrays")~sort(allPrinters)   /* sort the Java String array */
+   return allPrinters                              /* return the Java array   */
+
+syntax:     /* if running on OOo installations that have that service not yet defined, supply a default */
+   if defaultPrinter=.nil then return bsf.createJavaArray("java.lang.String",0) /* return empty array */
+   return bsf.createJavaArrayOf("java.lang.String", defaultPrinter)  /* at least return the default printer */
+
+
+::routine askUserForPrinter      /* if more than one printer available, will put up a dialog for the user to choose */
+   use arg availablePrinters, defaultPrinter
+
+   if availablePrinters~items>0 then   /* if at least one printer available, let user pick one  */
+   do                                  /* select and position on defaultPrinter        */
+      msg = "Please pick a printer to print to"
+      title = "Choose Printer"
+      printer = .bsf.dialog~inputBox(msg, title, "question", , availablePrinters, defaultPrinter)
+      return printer
+   end
+
+
+   title = 'Printing Dialog in ooRexx'
+   msg   = 'Do you want to print "'fileName'" to "'defaultPrinter'"?'
+   choice = .bsf.dialog~dialogBox(msg, title, "Question", "YesNo")
+   if choice=0 then return defaultPrinter
+               else return .nil
+

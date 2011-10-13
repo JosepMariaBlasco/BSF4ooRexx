@@ -1,0 +1,148 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_200601>, edited and extended by Rony G. Flatscher, 2010-07-12/13/14/20 */
+/* Cf. <http://wiki.services.openoffice.org/wiki/Documentation/DevGuide/Drawings/Printing_Drawing_Documents> */
+
+use arg slotArg   /* fetch the "slotArg", a java.util.Hashtable object which contains invocation
+                     information from OpenOffice.org, will always be the very last argument     */
+
+scriptContext=uno.getScriptContext(slotArg)  /* get the xScriptContext object, if any           */
+if scriptContext<>.nil then                  /* o.k., we are invoked as a macro from OOo        */
+do
+   xDesktop=scriptContext~getDesktop            /* get the desktop (a XDesktop) object          */
+   xContext=scriptContext~getComponentContext   /* get the context (a XComponentContext) object */
+   thisPath=uno.getScriptPath(.nil, slotArg)    /* will return the physical path to this script */
+end
+else              /* this program was called from outside of OOo, e.g. from the commandline     */
+do
+   xContext = UNO.connect()                  /* get a connection to OOo server                  */
+   xDesktop = UNO.createDesktop(xContext)    /* create the XDesktop from xContext               */
+   thisPath = directory()                    /* determine path to this script                   */
+end
+
+xComponentLoader=xDesktop~XComponentLoader   /* get componentLoader interface                   */
+
+   /* ------------------------------------------------------------ */
+   /* printing swriter file */
+fileName = "myTestDocument.odt"
+url = uno.convertToUrl(thisPath"/"fileName)
+
+javaTrue  = box("boolean", .true)   /* Java wrapper object needed for PropertyValue's value */
+javaFalse = box("boolean", .false)  /* Java wrapper object needed for PropertyValue's value */
+loadProps = bsf.createJavaArrayOf(.UNO~propertyValue, uno.createProperty("Hidden", javaTrue))
+writerComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, loadProps)
+
+   /* get printer related information */
+xPrintable        = writerComponent~XPrintable
+defaultPrinter    = getDefaultPrinter(xPrintable)
+availablePrinters = getAvailablePrinters(xContext, defaultPrinter)
+
+   /* set printer properties */
+printer = askUserForPrinter(fileName, availablePrinters, defaultPrinter) /* ask user for printer to use */
+if printer<>.nil then
+do
+   printerProps=bsf.createJavaArrayOf(.UNO~propertyValue, uno.createProperty("Name", printer))
+   xPrintable~setPrinter(printerProps) /* set printer properties */
+
+      /* set print-options and print */
+   printProps = bsf.createJavaArrayOf(.UNO~propertyValue, uno.createProperty("Pages", "1"), -
+                                                          uno.createProperty("Wait", javaTrue))
+   xPrintable~print(printProps)        /* print the writer component */
+end
+writerComponent~dispose          /* dispose, as not needed anymore */
+
+   /* ------------------------------------------------------------ */
+   /* Printing scalc file */
+fileName = "myTestSpreadsheet.ods"
+url = uno.convertToUrl(thisPath"/"fileName)
+calcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, loadProps)
+xSheet = calcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0)~XSpreadSheet
+
+xPrintable = calcComponent~XPrintable
+
+   /* set printer properties */
+printer = askUserForPrinter(fileName, availablePrinters, defaultPrinter) /* ask user for printer to use */
+if printer<>.nil then
+do
+   printerProps=bsf.createJavaArrayOf(.UNO~propertyValue, uno.createProperty("Name", printer))
+   xPrintable~setPrinter(printerProps) /* set printer properties */
+
+      /* create a cell range, then get the CellRangeAddress */
+   myAddr = xSheet~XCellRange~getCellRangeByName("A1:C5")~XCellRangeAddressable~getRangeAddress
+   odsProps = bsf.createJavaArrayOf("com.sun.star.table.CellRangeAddress", myAddr)
+   xSheet~XPrintAreas~setPrintAreas(odsProps)   /* set the print area in the spreadsheet  */
+
+      /* set print-options and print */
+   printProps = bsf.createJavaArrayOf(.UNO~propertyValue, uno.createProperty("Wait", javaTrue))
+   xPrintable~print(printProps)
+end
+calcComponent~dispose            /* dispose, as not needed anymore */
+
+   /* ------------------------------------------------------------ */
+   /* Printing simpress file */
+fileName = "myTestPresentation.odp"
+url = uno.convertToUrl(thisPath"/"fileName)
+impressComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, loadProps)
+
+   /* set printer properties */
+xPrintable = impressComponent~XPrintable
+printer = askUserForPrinter(fileName, availablePrinters, defaultPrinter) /* ask user for printer to use */
+if printer<>.nil then
+do
+   printerProps=bsf.createJavaArrayOf(.UNO~propertyValue, uno.createProperty("Name", printer))
+   xPrintable~setPrinter(printerProps) /* set printer properties */
+
+   printProps = bsf.createJavaArrayOf(.UNO~propertyValue, uno.createProperty("Wait", javaTrue) )
+   xPrintable~print(printProps)
+end
+impressComponent~dispose         /* dispose, as not needed anymore */
+
+
+::requires UNO.CLS   -- load UNO support for OpenOffice
+
+::routine getDefaultPrinter   /* return the default printer, if any available    */
+   use arg xPrintable         /* expecting a com.sun.star.view.XPrintable object */
+
+   printDescriptor = xPrintable~getPrinter   /* an array of PropertyValues */
+   do propValue over printDescriptor
+      if propValue~name="Name" then
+         return propValue~value
+   end
+   return .nil                /* no printer name found, return .nil  */
+
+
+::routine getAvailablePrinters   /* get the available printers via OOo, return a sorted Rexx array of printer names */
+   use strict arg xContext, defaultPrinter=.nil
+
+   signal on syntax
+      /* as of 2010-07-12 this service is available on OOo 3.2, but not documented (no IDL available  */
+   ps=xContext~getServiceManager~XMultiServiceFactory~createInstance("com.sun.star.awt.PrinterServer")
+   if ps=.nil then   /* raise a syntax condition, if service could not be created, such that a default list gets created */
+      raise syntax 93.900
+
+   allPrinters=ps~XPrinterServer~getPrinterNames   /* get Java String array of all available printers */
+   bsf.loadClass("java.util.Arrays")~sort(allPrinters)   /* sort the Java String array */
+   return allPrinters                              /* return the Java array   */
+
+syntax:     /* if running on OOo installations that have that service not yet defined, supply a default */
+   if defaultPrinter=.nil then return bsf.createJavaArray("java.lang.String",0) /* return empty array */
+   return bsf.createJavaArrayOf("java.lang.String", defaultPrinter)  /* at least return the default printer */
+
+
+::routine askUserForPrinter      /* if more than one printer available, will put up a dialog for the user to choose */
+   use arg fileName, availablePrinters, defaultPrinter
+
+   if availablePrinters~items>0 then   /* if at least one printer available, let user pick one  */
+   do                                  /* select and position on defaultPrinter        */
+      msg = "Please pick a printer to print to"
+      title = 'Printing "'fileName'"'
+      printer = .bsf.dialog~inputBox(msg, title, "question", , availablePrinters, defaultPrinter)
+      return printer
+   end
+
+
+   title = 'Printing Dialog in ooRexx'
+   msg   = 'Do you want to print "'fileName'" to "'defaultPrinter'"?'
+   choice = .bsf.dialog~dialogBox(msg, title, "Question", "YesNo")
+   if choice=0 then return defaultPrinter
+               else return .nil
+

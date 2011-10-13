@@ -1,0 +1,8 @@
+BSF4ooRexx_install_postflight.sh:
+
+	Links für UNO* nach /usr/bin hinzufügen.
+	Export path entfernt.
+
+BSF4ooRexx_uninstall_postflight.sh
+
+	Export path entfernt.

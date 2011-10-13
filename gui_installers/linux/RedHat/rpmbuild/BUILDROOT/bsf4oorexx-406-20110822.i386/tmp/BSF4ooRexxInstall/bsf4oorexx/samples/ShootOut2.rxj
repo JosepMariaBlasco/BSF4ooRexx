@@ -1,0 +1,474 @@
+#!/usr/bin/rexx
+/*
+   Name:    "ShootOut2.rxj"
+
+   Invoke:  "rexx ShootOut2.rxj"
+                or
+            "rexxj ShootOut2.rxj" (Windows)
+                or
+            "rexxj.sh ShootOut2.rxj" (Unix)
+
+   Purpose:  create a window with a choice-object and two text-fields and buttons;
+             if the ok-button is pressed then popup another window and display what
+             was chosen and entered.
+
+
+   Date:    2001-04-22 -- *NOT* finished yet!
+
+   Changes: 2003-01-23 -- finished: had to correct BSF itself to allow "char" datatypes to be used
+            2003-05-10, --rgf, adjusted usage of Java arrays to new (relaxed) OO-array support
+            2005-06-05, ---rgf, adjusted to name changes of the BSF class methods
+            2005-12-28, added Apache license
+            2008-08-23, ---rgf, if using BSF.CLS, then do not use BSF() directly (or
+                                remove the first three chars from its result string)
+            2009-07-05  Walter Pachl added help
+            2010-05-17, rgf, - adapting example to take full advantage of BSF4ooRexx
+                             - replacing bsf.addEventListener with Rexx event handlers
+
+   Author:   Rony G. Flatscher, WU Wien University,
+
+   last change: $Revision: 699 $ $Author: rony $ $Date: 2010-05-24 20:43:37 +0200 (Mon, 24 May 2010) $
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+main: -- indicate that this is the "main" program
+
+If arg(1)='?' Then Do
+  Parse Source source
+  Say source
+  Say 'Create a window with an input area and an output area'
+  Say 'Enter a question (any string with a question mark at the end'
+  Say 'Some sentence from a file (ShootAnswers.txt) will then be displayed in the output area'
+  Exit
+  End
+
+if      BsfInvokedBy()=1 then say "This Rexx program was invoked by Java!"
+else if BsfInvokedBy()=2 then say "This Rexx program was invoked by Rexx, JVM loaded by Rexx!"
+else                          say "No JVM present, we got troubles ..."
+
+        /* bsf.import Java classes          */
+.bsf~bsf.import("java.awt.Button"             , "awtButton"         )
+.bsf~bsf.import('java.awt.Frame'              , "awtFrame"          )
+.bsf~bsf.import('java.awt.GridBagConstraints' , "awtGBConstraints"  )
+.bsf~bsf.import('java.awt.GridBagLayout'      , "awtGridBagLayout"  )
+.bsf~bsf.import('java.awt.Insets'             , "awtInsets"         )
+.bsf~bsf.import("java.awt.Label"              , "awtLabel"          )
+.bsf~bsf.import("java.awt.TextArea"           , "awtTextArea"       )
+.bsf~bsf.import("java.awt.TextField"          , "awtTextField"      )
+                                              ,
+.bsf~bsf.import("java.awt.Dialog"             , "awtDialog"         )
+.bsf~bsf.import("java.awt.MenuBar"            , "awtMenuBar"        )
+.bsf~bsf.import("java.awt.Menu"               , "awtMenu"           )
+.bsf~bsf.import("java.awt.MenuItem"           , "awtMenuItem"       )
+
+   -- Create a mainUserData directory for the event handlers
+mainUserData = .directory~new  -- a directory which will be passed to Rexx with the event
+mainUserData~mainTID=BsfGetTID()  -- save main TID, such that we can attach to this thread's Java bridge
+
+        /* create labels                */
+label1 = .awtLabel~new('Your question?')
+label2 = .awtLabel~new('Well, consider this answer:' )
+
+        /* create text area objects     */
+taQuery  = .awtTextArea~new("",  5, 80, .awtTextArea~SCROLLBARS_NONE)
+taAnswer = .awtTextArea~new("", 15, 80, .awtTextArea~SCROLLBARS_VERTICAL_ONLY)
+
+mainUserData~taQuery  = taQuery   -- save textarea object for later use
+mainUserData~taAnswer = taAnswer  -- save textarea object for later use
+
+        /* make the answer text area non-editable       */
+taAnswer~setEditable(.false)
+
+        /* create the buttons           */
+butAnswer = .awtButton~new(' Please answer me! ')
+butLeave  = .awtButton~new(' Let us stop for dooday, o.k.? ' )
+
+        /* create gridBagLayout & constraint    */
+lay    = .awtGridBagLayout~new
+layCon = .awtGBConstraints~new
+
+        /* now define details of the GridBagLayout      */
+layCon~fill     =layCon~HORIZONTAL
+layCon~gridWidth=layCon~REMAINDER
+
+
+inset = .awtInsets~new(5, 5, 5, 5)
+layCon~bsf.setFieldValue( 'insets',  inset)
+.local~lay.con=layCon   -- save for later use in the local environment under the name "LAY.CON"
+
+        /* register the constraints with the layout manager     */
+lay ~~setConstraints(label1,    layCon)
+lay ~~setConstraints(taQuery,   layCon)
+lay ~~setConstraints(butAnswer, layCon)
+lay ~~setConstraints(label2,    layCon)
+lay ~~setConstraints(taAnswer,  layCon)
+lay ~~setConstraints(butLeave,  layCon)
+
+
+        /* create and assemble menu     */
+mb    = .awtMenuBar~new
+m     = .awtMenu     ~new("File")
+mEdit = .awtMenuItem ~new("Edit answers...")
+mExit = .awtMenuItem ~new("Exit")
+m ~~add(mEdit) ~~add(mExit)   -- add menu items to menu
+
+mb ~add(m)                         -- add menu to menu bar
+
+        /* create the frame window                              */
+window = .awtFrame~new('ShootOut!')
+mainUserData~window=window     -- save window object for later use
+window~~setMenuBar(mb)
+
+        /* now add controls to window, change some settings of it       */
+window ~~setLayout(lay)
+window ~~add(label1) ~~add(taQuery)  ~~add(butAnswer)
+window ~~add(Label2) ~~add(taAnswer) ~~add(butLeave)
+
+        /* define the events we are interested in and the text to be sent to us */
+      -- Create a Java RexxProxy for controlling the closing of the application
+rexxCloseEH = .RexxCloseAppEventHandler~new  -- Rexx event handler
+      -- Create Java RexxProxy for the Rexx event handler
+rpCloseEH = BsfCreateRexxProxy(rexxCloseEH, , "java.awt.event.ActionListener", -
+                                              "java.awt.event.WindowListener" )
+window  ~addWindowListener(rpCloseEH)
+butLeave~addActionListener(rpCloseEH)
+mExit~addActionListener(rpCloseEH)
+
+      -- create and add the action listener for the answer button
+rp=BsfCreateRexxProxy(.RexxAnswerEventHandler~new, mainUserData, "java.awt.event.ActionListener")
+butAnswer~addActionListener(rp)
+      -- create and add the action listener for the edit answers button
+rp=BsfCreateRexxProxy(.RexxPwdPopupEventHandler~new, mainUserData, "java.awt.event.ActionListener")
+mEdit~addActionListener(rp)
+
+        /* read answers from file       */
+mainUserData~file.name="ShootAnswers.txt"
+call readAnswersFromFile mainUserData
+
+        /* pack the elements, show the window, bring it to the front    */
+window ~~pack ~~setVisible(.true) ~~toFront
+
+rexxCloseEH~waitForExit -- wait until we are allowed to end the program
+if mainUserData~hasEntry("editCloseEH") then  -- if close handler for a dialog exists
+   mainUserData~editCloseEH~closeApp=.true    -- make sure dialog gets disposed as well
+
+call SysSleep .2        -- let Java's RexxProxy finalizations find a running Rexx instance
+
+::requires BSF.CLS   -- get Java support
+
+   /* routine to read answers from file and storing them in an array    */
+::routine readAnswersFromFile
+  use arg mainUserData
+
+  file=.stream~new(mainUserData~file.name)
+  mainUserData~answers = file~arrayin     -- read answers from file
+  file~close
+
+        /* react to pressing the answer button  */
+::routine answer
+   use  arg userData
+
+   taQuery =userData~taQuery     -- get query text area
+   taAnswer=userData~taAnswer    -- get answer text area
+   answers =userData~answers     -- get answers
+
+   txt=userData~taQuery~getText  -- get query text
+
+   lf = "0a"x
+   txt=txt~translate("  ", "0d0a"x)~space~strip('T')
+   if txt~right(1) = "?" then           /* a question in hand?          */
+   do
+      newLine = "0a0a"x
+      tmp     =        newLine || "*** your question: ***" || newLine || txt
+      tmp     = tmp || newLine || "--- my answer to you! ---" || newLine
+      pick    = random(1, answers~items)/* pick a number        */
+      tmp     = tmp || answers~at(pick)
+
+      taAnswer~append(tmp)       -- append to answer text area
+      taQuery~setText("")        -- clear query text area
+   end
+   return
+
+
+::routine  createEditAnswersDialog
+   use arg pwUserData
+
+   mainUserData=pwUserData~mainUserData     -- get userData from main
+
+   answersUserData=.directory~new            -- create a new userData directory
+   answersUserData~mainUserData=mainUserData -- save main's userData
+
+      -- Create a Java RexxProxy for controlling the closing of the pw dialog
+   rexxAnswersCloseEH = .RexxEditAnswersCloseEventHandler~new  -- Rexx event handler
+      -- Create Java RexxProxy for the Rexx event handler
+   rpCloseEH = BsfCreateRexxProxy(rexxAnswersCloseEH, , "java.awt.event.ActionListener", -
+                                                        "java.awt.event.WindowListener" )
+   answersUserData~rexxAnswersCloseEH=rexxAnswersCloseEH
+   mainUserData~editCloseEH = rexxAnswersCloseEH   -- save the local event handler for main window to close if needed
+
+   window=mainUserData~window    -- get owner of this (modal) dialog
+   answersDialog    = .awtDialog~new(window, "Edit Answers!")
+
+   answersDialog.ta = .awtTextArea~new("" , 27, 80, .awtTextArea~SCROLLBARS_VERTICAL_ONLY)
+   answersUserData~answersDialog.ta=answersDialog.ta  -- save text area for later use in event handler
+
+   answersDialog.ok = .awtButton~new("O.K., save and use my changes!")
+   answersDialog.no = .awtButton~new("Abort, please just return, will you?")
+
+      -- define the layout
+   lay    = .awtGridBagLayout~new
+   answersDialog ~~setLayout(lay)
+
+   lay ~setConstraints(answersDialog.ta, .lay.Con)
+   lay ~setConstraints(answersDialog.ok, .lay.Con)
+   lay ~setConstraints(answersDialog.no, .lay.Con)
+
+      -- add the components to the dialog
+   answersDialog ~~add(answersDialog.ta) ~~add(answersDialog.ok) ~~add(answersDialog.no)
+
+      -- define eventListeners
+   answersDialog   ~addWindowListener(rpCloseEH)
+   answersDialog.no~addActionListener(rpCloseEH)
+
+         -- create and add the action listener for the o.k.  button
+   rp=BsfCreateRexxProxy(.RexxEditAnswersOkEventHandler~new, answersUserData, "java.awt.event.ActionListener")
+   answersDialog.ok~addActionListener(rp)
+
+   answersDialog ~pack
+
+       -- set answers text
+   call readAnswersFromFile mainUserData     -- reread file, result stored in arrays-entry
+   txt=mainUserData~answers~makeString
+   answersDialog.ta~setText(txt)
+
+   -- make dialog visible
+   answersDialog ~~setResizable(.false) ~~setVisible(.true)
+
+   rexxAnswersCloseEH~waitForExit   -- wait until we are allowed to end the program
+   answersDialog ~dispose
+
+
+
+/* ------------------------------------------------------------------------ */
+/* --- Rexx envent handlers for main frame window                       --- */
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to set "close app" indicator */
+::class RexxCloseAppEventHandler
+::method init        /* constructor */
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::attribute closeApp          -- indicates whether app should be closed
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method actionPerformed      -- event method (from ActionListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method windowClosing        -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxAnswerEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  call answer slotDir~userData
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxPwdPopupEventHandler
+::method actionPerformed      -- create password popup window
+  use arg eventObject, slotDir
+
+  mainUserData  = slotDir~userData        -- fetch mainUserData directory
+
+      -- define eventListeners
+  pwUserData = .directory~new             -- create a userData directory for this window's event handlers
+  pwUserData~mainUserData=mainUserData    -- save main window's userData directory
+
+      -- create dialog
+  pwDialog = .awtDialog~new(mainUserData~window, "Password check!")
+       -- define a grid layout for this dialog
+  pwDialog~setLayout(.bsf~new("java.awt.GridLayout", .array~of(2, 2) ))
+
+  pwDialog.tf = .awtTextField~new         -- create text field
+  pwDialog.tf~~setEchoChar("*")
+  pwUserData~pwDialog.tf=pwDialog.tf      -- save object for later use in event handler
+
+  pwDialog.ok    = .awtButton~new("O.K.!")
+  pwDialog.abort = .awtButton~new("Abort")
+
+       -- add the components
+  pwDialog ~~add(.awtLabel~new("Password? ('hey')")) ~~add(pwDialog.tf)
+  pwDialog ~~add(pwDialog.ok) ~~add(pwDialog.abort)
+
+      -- Create a Java RexxProxy for controlling the closing of the pw dialog
+  rexxPwdCloseEH = .RexxPwPopupCloseEventHandler~new  -- Rexx event handler
+      -- Create Java RexxProxy for the Rexx event handler
+  rpCloseEH = BsfCreateRexxProxy(rexxPwdCloseEH, , "java.awt.event.ActionListener", -
+                                                   "java.awt.event.WindowListener" )
+  mainUserData~editCloseEH = rexxPwdCloseEH  -- save the local event handler for main window to close if needed
+  pwUserData~rexxPwdCloseEH = rexxPwdCloseEH -- save close event handler for .RexxPwPopupOkEventHandler
+
+  pwDialog       ~addWindowListener(rpCloseEH)
+  pwDialog.abort ~addActionListener(rpCloseEH)
+
+      -- create and add the action listener for the answer button
+  rp=BsfCreateRexxProxy(.RexxPwPopupOkEventHandler~new, pwUserData, "java.awt.event.ActionListener")
+  pwDialog.ok    ~addActionListener(rp)
+  pwDialog ~~setResizable(.false) ~~pack
+
+  -- switch away from awt-thread, attach to main thread's Java bridge, make dialog visible
+  reply              -- do not block awt-thread, proceed execution on a new thread
+  signal on syntax   -- in case this thread was already attached to the main thread, intercept condition
+  call bsfAttachToTID mainUserData~mainTid   -- attach to main thread's Java bridge
+
+syntax:
+   -- make dialog visible
+  pwDialog ~setVisible(.true)
+  rexxPwdCloseEH~waitForExit  -- wait until we are allowed to end the program
+  pwDialog ~dispose
+
+
+/* ------------------------------------------------------------------------ */
+/* --- Rexx envent handlers for the password dialog (popup)             --- */
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxPwPopupCloseEventHandler
+
+::method init        /* constructor */
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::attribute closeApp          -- indicates whether app should be closed
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method actionPerformed      -- event method (from ActionListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method windowClosing        -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxPwPopupOkEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  pwUserData=slotDir~userData   -- fecth pwUserData directory
+  -- check whether password is o.k., if so, let dialog close, open new edit answer dialog
+
+  pwDialog.tf=pwUserData~pwDialog.tf  -- retrieve password text field
+
+  txt= pwDialog.tf~getText   -- get text
+  if txt \= "hey" then   -- wrong password, make entry visible
+  do
+     call beep 2500, 200
+     pwDialog.tf~setEchoChar("00"x)    -- make entry visible
+     -- pwDialog.tf~setEchoChar(box("char", "00"x))
+     return
+  end
+
+  call beep 100,25            -- beep to indicate all went well
+   -- make sure pw dialog gets disposed
+  pwUserData~rexxPwdCloseEH~closeApp=.true
+
+  -- switch away from awt-thread, attach to main thread's Java bridge, make dialog visible
+  reply              -- do not block awt-thread, proceed execution on a new thread
+      -- now executing on a new thread!
+  signal on syntax   -- in case this thread was already attached to the main thread, intercept condition
+  call bsfAttachToTID pwUserData~mainUserData~mainTid -- attach to main thread's Java bridge
+
+syntax:
+   -- create edit answers dialog and let it execute
+  call createEditAnswersDialog pwUserData
+
+
+
+/* ------------------------------------------------------------------------ */
+/* --- Rexx envent handlers for the edit answers dialog (popup)         --- */
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxEditAnswersCloseEventHandler
+
+::method init        /* constructor */
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::attribute closeApp          -- indicates whether app should be closed
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method actionPerformed      -- event method (from ActionListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method windowClosing        -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler   */
+::class RexxEditAnswersOkEventHandler  -- save answers, re-read, cause dialog to be disposed
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  answersUserData=slotDir~userData  -- fetch userData from slot directory
+  mainUserData=answersUserData~mainUserData  -- get mainUserData from it
+
+  fileName=mainUserData~file.name               -- get file name
+  txt=answersUserData~answersDialog.ta~getText  -- get text from text area
+
+  call stream fileName, "c", "open write replace"
+  do while txt <> ""
+     parse var txt before "." txt
+     before=before~translate("  ", "0d0a"x)~space~strip('T')   -- remove empty lines and spaces
+     if before = "" then iterate
+     call lineout fileName, before || "."
+  end
+  call stream fileName, "C", "close"
+
+  call readAnswersFromFile mainUserData   -- reread file, result stored in arrays-entry
+
+  answersUserData~rexxAnswersCloseEH~closeApp=.true   -- make sure dialog gets disposed

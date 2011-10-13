@@ -1,0 +1,76 @@
+-- transcribed from Laurent Godard's e-mail from 2007-03-22 15:23:10 on dev@api.oo.o
+-- rgf, 2007-06-19, 2008-10-21
+
+xContext = UNO.connect()  -- connect to server and retrieve the XContext object
+xMcf = xContext~getServiceManager   -- retrieve XMultiComponentFactory
+
+   -- create ConfigurationProvider service and get its factory ("xProvider")
+service="com.sun.star.configuration.ConfigurationProvider"
+xProvider=xMcf~createInstanceWithContext(service, xContext)~XMultiServiceFactory
+
+   -- create property array to denote the configuration node we are interested in
+propArr=bsf.createArray(.uno~propertyValue, 1)
+propArr[1]=uno.createProperty("nodepath", "/org.openoffice.Setup/Product")
+
+   -- create ConfigurationAccess service and get its XNameAccess interface
+service="com.sun.star.configuration.ConfigurationAccess"
+xSettings=xProvider~createInstanceWithArguments(service, propArr)~xNameAccess
+
+say xSettings~getByName("ooName") xSettings~getByName("ooSetupVersion")
+
+::requires uno.cls      -- get ooRexx support for OOo
+
+
+/*
+   Message-ID: <4602914E.7090208@indesko.com>
+   Date: Thu, 22 Mar 2007 15:23:10 +0100
+   From: Laurent Godard <lgodard@indesko.com>
+   To: dev@api.openoffice.org
+   References: <15313.200.158.222.239.1174515099.squirrel@mail2.icmc.usp.br>
+   Subject: Re: [api-dev] external application getting OOo version number
+
+   Hi
+
+   > I'd like to know what is the easiest way for an external application (say,
+   > an ebuild binary) to find out OOo's version number (e.g. 2.0.2).
+   >
+
+   the information is stored in the <ooo>/share/registry/.../Setup.xcu file
+   (Node Product/ooSetupVersion)
+
+   here is a macro i usualy use from inside OOo
+
+   HTH
+
+   Laurent
+
+   '-----------------
+
+   function RecupereVersionOOO() as string
+   'recupère version de OOo
+   Dim aSettings, aConfigProvider
+   Dim aParams2(0) As new com.sun.star.beans.PropertyValue
+   aConfigProvider = createUnoService(
+   "com.sun.star.configuration.ConfigurationProvider" )
+   aParams2(0).Name = "nodepath"
+   aParams2(0).Value = "/org.openoffice.Setup/Product"
+   aSettings = aConfigProvider.createInstanceWithArguments(
+   "com.sun.star.configuration.ConfigurationAccess", aParams2() )
+
+   RecupereVersionOOO=aSettings.getbyname("ooSetupVersion")
+
+   end function
+
+
+   --
+   Laurent Godard <lgodard@indesko.com> - Ingénierie OpenOffice.org -
+   http://www.indesko.com
+   Nuxeo Enterprise Content Management >> http://www.nuxeo.com -
+   http://www.nuxeo.org
+   Livre "Programmation OpenOffice.org", Eyrolles 2004-2006
+
+   ---------------------------------------------------------------------
+   To unsubscribe, e-mail: dev-unsubscribe@api.openoffice.org
+   For additional commands, e-mail: dev-help@api.openoffice.org
+
+*/

@@ -1,0 +1,80 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_200601>, edited and extended by Rony G. Flatscher, 2010-07-07/20 */
+
+use arg slotArg   /* fetch the "slotArg", a java.util.Hashtable object which contains invocation
+                     information from OpenOffice.org, will always be the very last argument     */
+
+scriptContext=uno.getScriptContext(slotArg)  /* get the xScriptContext object, if any           */
+if scriptContext<>.nil then                  /* o.k., we are invoked as a macro from OOo        */
+do
+   xDesktop=scriptContext~getDesktop            /* get the desktop (a XDesktop) object          */
+   xContext=scriptContext~getComponentContext   /* get the context (a XComponentContext) object */
+end
+else              /* this program was called from outside of OOo, e.g. from the commandline     */
+do
+   xContext = UNO.connect()                  /* get a connection to OOo server                  */
+   xDesktop = UNO.createDesktop(xContext)    /* create the XDesktop from xContext               */
+end
+
+xComponentLoader=xDesktop~XComponentLoader   /* get componentLoader interface                   */
+
+   /* create a blank *.ods - file      */
+url = "private:factory/scalc"
+calcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0,.UNO~noProps)
+
+   /* get first sheet in spreadsheet   */
+xSheet=calcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0) ~XSpreadSheet
+
+   /* get cell "A1" and set it to a numeric value representing "2010-07-10" */
+xCell = xSheet~getCellByPosition(0, 0)
+xCell~value=40369    /* number represents "2010-07-10" as "Date", was originally: "38748" */
+
+xCellProps=xCell~xPropertySet    /* get XPropertySet interface */
+xCellProps~setPropertyValue("CellBackColor", "000080"x ~c2d)
+
+key=84               /* key that represents a Date format: "YYYY-MM-DD" (German: "JJJJ-MM-TT") */
+.bsf.dialog~messageBox("About to change the cell type to 'Date' (using the 'NumberFormat' key with the value '"key"').", "Please Press Button to Continue...", "information")
+xCellProps~setPropertyValue("NumberFormat",  key)
+xCellProps~setPropertyValue("CellBackColor", "ff7f50"x ~c2d)
+call uno.setCell xSheet, "B1", "(format index key used:" key")"
+
+
+   /* Now list all available XNumberFormats to this document   */
+xFormatNumbers=calcComponent~XNumberFormatsSupplier~getNumberFormats    /* get the XNumberFormats interface */
+constNumberFormat=.uno_constants~new("com.sun.star.util.NumberFormat")  /* get access to the NumberFormat constant group   */
+locale = .bsf~new("com.sun.star.lang.Locale")                  /* create an empty locale        */
+
+allKeys=xFormatNumbers~queryKeys(constNumberFormat~all, locale, .false) /* get all defined NumberFormats */
+items=allKeys~items
+
+                 -- column, row
+call uno.setCell xSheet, 0, 2, "XNumberFormats defined for this spreadsheet document:"
+
+.bsf.dialog~messageBox("About to create a list of all available 'XNumberFormats' for this document (ie." items "defined number formats).", "Please Press Button to Continue...", "information")
+titleRow=4
+-- call uno.setCell xSheet, 0, titleRow, "'#"      /* A4 */
+call uno.setCell xSheet, 1, titleRow, "Index (Key)"
+call uno.setCell xSheet, 2, titleRow, "Type"
+call uno.setCell xSheet, 3, titleRow, "Type (Decoded)"
+call uno.setCell xSheet, 4, titleRow, "FormatString"
+call uno.setCell xSheet, 5, titleRow, "Comment"
+
+len=items~length           /* memorize maximum length for formatting purposes later on */
+do k=1 to items            /* itearate over all available NumberFormats */
+   row=titleRow+k
+   call uno.setCell xSheet, 0, row, "format #" k~right(len, "0")
+   index=allKeys[k]        /* get NumberFormatter index        */
+   call uno.setCell xSheet, 1, row, index
+   nfp=xFormatNumbers~getByKey(index) /* get NumberFormatterProperties with XPropertySet interface   */
+   type=nfp~getPropertyValue("Type")
+   call uno.setCell xSheet, 2, row, type
+   call uno.setCell xSheet, 3, row, constNumberFormat~entry(type)
+   call uno.setCell xSheet, 4, row, "'"nfp~getPropertyValue("FormatString")
+   call uno.setCell xSheet, 5, row, nfp~getPropertyValue("Comment")
+end
+
+calcComponent~XModifiable~setModified(.false)   /* allow to close (abort) document without saving-dialog */
+
+::requires UNO.CLS   -- load UNO support for OpenOffice.org
+
+

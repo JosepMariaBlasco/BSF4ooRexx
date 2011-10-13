@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<parcel language="ooRexx" xmlns:parcel="scripting.dtd">
+     <script language="ooRexx">
+         <locale lang="en">
+             <displayname value="UNO_API_info"/>
+             <description>
+                 UNO_API_info.rxo: a(n) ooRexx macro 
+             </description>
+         </locale>
+         <functionname value="UNO_API_info.rxo"/>
+         <logicalname value="UNO_API_info.ooRexx"/>
+     </script> 
+</parcel>

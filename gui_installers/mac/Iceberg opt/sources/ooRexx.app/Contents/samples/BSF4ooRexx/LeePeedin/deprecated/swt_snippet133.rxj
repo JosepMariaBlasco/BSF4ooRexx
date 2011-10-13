@@ -1,0 +1,275 @@
+/* swt_snippet133.rxj */
+/*
+This demonstration was written in ooRexx by Lee Peedin
+using BSF4Rexx, created and distributed by Dr. Rony Flatscher.
+The latest release of BSF4Rexx can be found at:
+<http://wi.wu-wien.ac.at/rgf/rexx/bsf4rexx/current/>
+The latest information on ooRexx can be found at:
+<http://www.oorexx.org/>
+Some demonstrations may require these additional Java classes
+SWT         <http://www.eclipse.org/swt/>
+FreeTTS     <http://freetts.sourceforge.net/docs/index.php>
+
+This demonstration has been tested using:
+ooRexx              3.0.1
+Java Version        1.5.0_06
+Windows Version     Microsoft Windows XP [Version 5.1.2600]
+-- changed:         2009-10-17, rgf, renamed extension to '.rxj'
+*/
+
+/* This ooRexx code is based loosely on the Java program found at
+<http://dev.eclipse.org/viewcvs/index.cgi/%7Echeckout%7E/org.eclipse.swt.snippets/src/org/eclipse/swt/snippets/Snippet133.java>
+
+The Java code, itself, does not perform as "advertised" in that if the user does not
+select a font, the printed data will be in the default font of the printer - not Courier,10
+which is what it is susposed to be when a font is not selected.
+
+To prevent this in this ooRexx version, the user is required to select a font before
+printing - an errorMessage is shown if no font is selected and the user is allowed to
+select a font at print time.
+
+Currently this ooRexx version:
+Does not attempt "word-wrap"; therefore any line of text that exceeds the printer width
+will be truncated.
+
+Does not substitute spaces for tabs in the data to be printed.
+
+Uses an array vs. a buffer to hold the print data.
+
+Special Note to SELF: gc~stringExtent(whatever)~x will return the length of whatever after
+the font & font attributes are set.
+
+*/
+    call SysCls
+    lf  = '0a'x
+    tab = '09'x     -- define a TAB to use in menu text to tab the accelerator text
+
+    swt = bsf.wrapStaticFields('org.eclipse.swt.SWT')
+
+    call bsf.import 'org.eclipse.swt.graphics.Color'         , 'swtColor'
+    call bsf.import 'org.eclipse.swt.graphics.Font'          , 'swtFont'
+    call bsf.import 'org.eclipse.swt.graphics.FontData'      , 'swtFontData'
+    call bsf.import 'org.eclipse.swt.graphics.GC'            , 'swtGC'
+
+    call bsf.import 'org.eclipse.swt.layout.FillLayout'      , 'swtFillLayout'
+
+    call bsf.import 'org.eclipse.swt.printing.PrintDialog'   , 'swtPrintDialog'
+    call bsf.import 'org.eclipse.swt.printing.Printer'       , 'swtPrinter'
+
+    call bsf.import 'org.eclipse.swt.widgets.ColorDialog'    , 'swtColorDialog'
+    call bsf.import 'org.eclipse.swt.widgets.Display'        , 'swtDisplay'
+    call bsf.import 'org.eclipse.swt.widgets.FileDialog'     , 'swtFileDialog'
+    call bsf.import 'org.eclipse.swt.widgets.FontDialog'     , 'swtFontDialog'
+    call bsf.import 'org.eclipse.swt.widgets.Menu'           , 'swtMenu'
+    call bsf.import 'org.eclipse.swt.widgets.MenuItem'       , 'swtMenuItem'
+    call bsf.import 'org.eclipse.swt.widgets.MessageBox'     , 'swtMessageBox'
+    call bsf.import 'org.eclipse.swt.widgets.Shell'          , 'swtShell'
+    call bsf.import 'org.eclipse.swt.widgets.Text'           , 'swtText'
+
+    display  = .swtDisplay~new
+    font     = .swtFont~new(display,'Courier',10,swt~normal)
+
+    fontData = .nil
+
+    foregroundColor = display~getSystemColor(swt~color_black)
+    backgroundColor = display~getSystemColor(swt~color_white)
+
+    shell = .swtShell~new(display)
+    shell~setLayout(.swtFillLayout~new)
+    shell~setText('Print Text Using BSF4Rexx Version:' .bsf4Rexx~version)
+    shell~setMaximized(.true)
+
+    text = .swtText~new(shell,swt~border + swt~multi + swt~v_scroll + swt~h_scroll)
+    text~setFont(font)
+    text~setForeground(foregroundColor)
+    text~setBackground(backgroundColor)
+
+    menuBar = .swtMenu~new(shell,swt~bar)
+    shell~setMenuBar(menuBar)
+
+    item     = .swtMenuItem~new(menuBar,swt~cascade)
+    item~setText('&File')
+    fileMenu = .swtMenu~new(shell,swt~drop_down)
+    item~setMenu(fileMenu)
+
+    item = .swtMenuItem~new(fileMenu,swt~push)
+    item~setText("&Open..."tab"CTRL-O")     -- rgf was here
+    item~setAccelerator(swt~ctrl + 'O'~c2d) --Thanks Rony, you're very welcome, Lee!
+    item~bsf.addEventListener('selection','','call menuOpen')
+
+    item = .swtMenuItem~new(fileMenu,swt~push)
+    item~setText('&Font...')
+    item~bsf.addEventListener('selection','','call menuFont')
+
+    item = .swtMenuItem~new(fileMenu,swt~push)
+    item~setText('&Foreground Color...')
+    item~bsf.addEventListener('selection','','call menuForegroundColor')
+
+    item = .swtMenuItem~new(fileMenu,swt~push)
+    item~setText('&Background Color...')
+    item~bsf.addEventListener('selection','','call menuBackgroundColor')
+
+    item = .swtMenuItem~new(fileMenu,swt~push)
+    item~setText('&Print...'tab'CTRL-P')
+    item~setAccelerator(swt~ctrl + 'P'~c2d)
+    item~bsf.addEventListener('selection','','call menuPrint')
+
+    item = .swtMenuItem~new(fileMenu,swt~push)
+    item~setText('E&xit...'tab'CTRL-X')
+    item~setAccelerator(swt~ctrl + 'X'~c2d)
+    item~bsf.addEventListener('selection','','shell~dispose')
+
+    shell~~pack~~open
+
+    do outerLoop=1 while shell~isDisposed=.false
+        do while display~readAndDispatch
+            rexxCode=bsf.pollEventText(1)
+            if .nil<>rexxCode then
+                interpret rexxCode
+            if shell~isDisposed then
+                leave outerLoop
+        end
+        display~sleep
+    end
+exit
+
+menuOpen:
+    dialog = .swtFileDialog~new(shell,swt~open)
+    name   = dialog~open
+    if .nil = name then
+        nop
+    else
+        do
+            istream = .stream~new(name)
+            iarray  = istream~arrayin
+            istream~close
+            ftext = ''
+            do i = 1 to iarray~items
+                ftext = ftext||iarray[i]
+                if i < iarray~items then
+                    ftext = ftext||lf
+            end
+            text~setText(ftext)
+        end
+return
+
+menuFont:
+    fontDialog = .swtFontDialog~new(shell)
+    fontDialog~setFontList(font~getFontData)
+    fontData   = fontDialog~open
+    if .nil   \= fontdata then
+        do
+            font = .swtFont~new(display,fontData)
+            text~setFont(font)
+        end
+return
+
+menuForegroundColor:
+    colorDialog = .swtColorDialog~new(shell)
+    colorDialog~setRGB(foregroundColor~getRGB)
+    rgb = colorDialog~open
+    if .nil \= rgb then
+        do
+            foregroundColor = .swtColor~new(display,rgb)
+            text~setForeground(foregroundColor)
+        end
+return
+
+menuBackgroundColor:
+    colorDialog = .swtColorDialog~new(shell)
+    colorDialog~setRGB(backgroundColor~getRGB)
+    rgb = colorDialog~open
+    if .nil \= rgb then
+        do
+            backgroundColor = .swtColor~new(display,rgb)
+            text~setBackground(backgroundColor)
+        end
+return
+
+menuPrint:
+    if .nil = fontData then
+        do
+            box = .swtMessageBox~new(shell,swt~icon_error)
+            box~setMessage('You Must Select A Font For The Printer')
+            rv = box~open
+            call menuFont
+            if .nil = fontData then
+                return
+        end
+    dialog = .swtPrintDialog~new(shell,swt~none)
+    data = dialog~open
+    if .nil = data then
+        return
+    else
+        do
+            textToPrint = text~getText
+            printer = .swtPrinter~new(data)
+        end
+    call print
+return
+
+print:
+    if printer~startJob('Snippet133') then
+        do
+            clientArea   = printer~getClientArea
+            trim         = printer~computeTrim(0,0,0,0)
+            dpi          = printer~getDPI
+            leftMargin   = dpi~x + trim~y
+            rightMargin  = clientArea~width
+            topMargin    = dpi~y + trim~y
+            bottomMargin = clientArea~height - dpi~y + trim~y + trim~height
+
+            tabs = copies(' ',4)
+
+            gc = .swtGC~new(printer)
+
+            printerFont = .swtFont~new(printer,fontData)
+
+            gc~setFont(printerFont)
+
+            tabWidth   = gc~stringExtent(tabs)~x
+            lineHeight = gc~getFontMetrics~getHeight
+
+            rgb = foregroundColor~getRGB
+            printerForegroundColor = .swtColor~new(printer,rgb)
+            gc~setForeground(printerForegroundColor)
+
+            rgb = backgroundColor~getRGB
+            printerBackgroundColor = .swtColor~new(printer,rgb)
+            gc~setBackground(printerBackgroundColor)
+
+            call printText
+            printer~endJob
+        end
+return
+
+printText:
+    printer~startPage
+    x = leftMargin
+    y = topMargin
+    do i = 1 to iarray~items
+        ftext = iarray[i]
+        call printWordBuffer
+    end
+return
+
+printWordBuffer:
+    gc~drawString(ftext,x,y,.false)
+    call newLine
+return
+
+newLine:
+    x = leftMargin
+    y = y + lineHeight
+    if y + lineHeight > bottomMargin then
+        do
+            printer~endPage
+            y = topMargin
+            printer~startPage
+        end
+return
+
+::requires bsf.cls
+
+
+

@@ -1,0 +1,11 @@
+import org.apache.bsf.
+
+mgr       =BSFManager()
+rexxEngine=mgr.loadScriptingEngine("rexx")
+rexxCode  ="SAY 'Rexx was here!'"
+do
+   rexxEngine.exec("rexx",0,0,rexxCode)
+catch e=BSFException
+   e.printStackTrace
+end
+

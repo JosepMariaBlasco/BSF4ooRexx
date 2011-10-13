@@ -1,0 +1,99 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited by Rony G. Flatscher, 2010-07-15 */
+/* Example 3c: open a web document and print its first page at the default printer */
+
+   /* Retrieve the Desktop object, we need its XComponentLoader interface to load a new document */
+xContext = UNO.connect()                  /* get a connection to OOo server                  */
+xDesktop = UNO.createDesktop(xContext)    /* create desktop service using xContext           */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* load the HTML file, get its printing interface and print it */
+-- url = uno.convertToUrl(directory()"\myTestDocument.html")
+url = "http://www.RexxLA.org"       /* use a URL from the WWW */
+htmlComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, .UNO~noProps)
+
+   /* get the printable interface */
+xPrintable = htmlComponent~XPrintable
+
+   /* get printer related information */
+defaultPrinter    = getDefaultPrinter(xPrintable)
+availablePrinters = getAvailablePrinters(xContext, defaultPrinter)
+
+   /* ask user for printer to use */
+printer = askUserForPrinter(availablePrinters, defaultPrinter) /* ask user for printer to use */
+if printer=.nil then    /* user does not want to print */
+do
+   htmlComponent~dispose   /* dispose, not needed anymore */
+   exit
+end
+
+   /* create a Java array of type "com.sun.star.beans.PropertyValue" with a capacity of 1 object */
+props = bsf.createJavaArray(.uno~PropertyValue, 1) /* create Java array for one PropertyValue */
+
+if printer<>defaultPrinter then  /* user wishes to use a different printer, set it to */
+do
+   .bsf.dialog~messageBox("About to set the printer to" pp(printer) "...", , "info")
+      /* set the printer to an existing one, if not using the default printer */
+   props[1]=uno.createProperty("Name", printer)
+   xPrintable~setPrinter(props)
+end
+
+   /* set the print-options */
+props[1] = uno.createProperty("Pages", "1")     /* print only page 1 */
+
+   /* print the document */
+xPrintable~print(props)       /* print the document's first page */
+
+.bsf.dialog~messageBox("Printing of" pp(uno.convertFromUrl(url))  "done ...", "Closing Dialog", "info")
+
+
+::requires UNO.CLS    -- get UNO support
+
+
+::routine getDefaultPrinter   /* return the default printer, if any available    */
+   use arg xPrintable         /* expecting a com.sun.star.view.XPrintable object */
+
+   printDescriptor = xPrintable~getPrinter   /* an array of PropertyValues */
+   do propValue over printDescriptor
+      if propValue~name="Name" then
+         return propValue~value
+   end
+   return .nil                /* no printer name found, return .nil  */
+
+
+::routine getAvailablePrinters   /* get the available printers via OOo, return a sorted Rexx array of printer names */
+   use strict arg xContext, defaultPrinter=.nil
+
+   signal on syntax
+      /* as of 2010-07-12 this service is available on OOo 3.2, but not documented (no IDL available  */
+   ps=xContext~getServiceManager~XMultiServiceFactory~createInstance("com.sun.star.awt.PrinterServer")
+   if ps=.nil then   /* raise a syntax condition, if service could not be created, such that a default list gets created */
+      raise syntax 93.900
+
+   allPrinters=ps~XPrinterServer~getPrinterNames   /* get Java String array of all available printers */
+   bsf.loadClass("java.util.Arrays")~sort(allPrinters)   /* sort the Java String array */
+   return allPrinters                              /* return the Java array   */
+
+syntax:     /* if running on OOo installations that have that service not yet defined, supply a default */
+   if defaultPrinter=.nil then return bsf.createJavaArray("java.lang.String",0) /* return empty array */
+   return bsf.createJavaArrayOf("java.lang.String", defaultPrinter)  /* at least return the default printer */
+
+
+::routine askUserForPrinter      /* if more than one printer available, will put up a dialog for the user to choose */
+   use arg availablePrinters, defaultPrinter
+
+   if availablePrinters~items>0 then   /* if at least one printer available, let user pick one  */
+   do                                  /* select and position on defaultPrinter        */
+      msg = "Please pick a printer to print to"
+      title = "Choose Printer"
+      printer = .bsf.dialog~inputBox(msg, title, "question", , availablePrinters, defaultPrinter)
+      return printer
+   end
+
+
+   title = 'Printing Dialog in ooRexx'
+   msg   = 'Do you want to print "'fileName'" to "'defaultPrinter'"?'
+   choice = .bsf.dialog~dialogBox(msg, title, "Question", "YesNo")
+   if choice=0 then return defaultPrinter
+               else return .nil
+

@@ -1,0 +1,34 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_200601>, edited by Rony G. Flatscher, 2010-07-07/20 */
+
+use arg slotArg   /* fetch the "slotArg", a java.util.Hashtable object which contains invocation
+                     information from OpenOffice.org, will always be the very last argument     */
+
+scriptContext=uno.getScriptContext(slotArg)  /* get the xScriptContext object, if any           */
+if scriptContext<>.nil then                  /* o.k., we are invoked as a macro from OOo        */
+do
+   xDesktop=scriptContext~getDesktop            /* get the desktop (a XDesktop) object          */
+   xContext=scriptContext~getComponentContext   /* get the context (a XComponentContext) object */
+end
+else              /* this program was called from outside of OOo, e.g. from the commandline     */
+do
+   xContext = UNO.connect()                  /* get a connection to OOo server                  */
+   xDesktop = UNO.createDesktop(xContext)    /* create the XDesktop from xContext               */
+end
+
+xComponentLoader=xDesktop~XComponentLoader   /* get componentLoader interface                   */
+
+   /* create a new spreadsheet file */
+url = "private:factory/scalc"
+calcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0,.UNO~noProps)
+
+   /* get first sheet in spreadsheet */
+xSheet=calcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0) ~XSpreadSheet
+
+   /* insert values into tables */
+call uno.setCell xSheet, 0, 0, "Hello World (with ooRexx)"  /* using the 0-based integer addressing mode */
+call uno.setCell xSheet, "A3", "(at" .DateTime~new")"       /* using the "A1"-addressing mode */
+
+calcComponent~XModifiable~setModified(.false)   /* allow to close (abort) document without saving-dialog */
+
+::requires UNO.cls    -- get UNO support
