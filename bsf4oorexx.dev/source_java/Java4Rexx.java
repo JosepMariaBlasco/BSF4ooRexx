@@ -21,7 +21,7 @@ import java.io.*;       // exception handling
  *
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2009 Rony G. Flatscher
+ *    Copyright (C) 2001-2012 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -38,13 +38,18 @@ import java.io.*;       // exception handling
  *
  *
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
-  * @version 4.0 (needs new APIs), 2009-05-31
+  * @version 4.1
  */
+
+/* changes:
+    - 2012-02-04, rgf: cater for new (deferred) logic of creating a Rexx interpreter instance
+*/
+
 class Java4Rexx {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "400.20091019";
+    static public String version = "410.20120204";
 
 
   /**  BSF-manager to be used to get (instantiate) the Rexx engine. */
@@ -81,6 +86,7 @@ class Java4Rexx {
 
         // now call into the DLL ("BSF4ooRexx.dll") in order to initialize; will set JVM in BSF4ooRexx.cc
     RexxAndJava raj=rxEngine.getRexxInterface();    // get the interface instance
+    raj.createRexxInterpreterInstance();    // rgf, 20120204: create Rexx interpreter instance
     raj.jniInitialize4Rexx();                       // initialize Rexx, creates another Interpreter instance
 
     String root_rii_ID=raj.jniGetRexxInterpreterInstanceRoot(); // get root of interpreter instances (defined in BsfLoader())
@@ -88,8 +94,10 @@ class Java4Rexx {
 
 // System.err.println("Java4Rexx.java: BSFGetTID()=["+raj.jniRexxGetTID()+"]");
 
-
-    raj.jniRexxTerminateInterpreterInstance(rii_ID); // terminate spurious Rexx interpreter instance
+    if (rii_ID!=null)   // RexxEngine may not represent a created Rexx interpreter instance
+    {
+        raj.jniRexxTerminateInterpreterInstance(rii_ID); // terminate spurious Rexx interpreter instance
+    }
 
     rxEngine.set_rii_ID(root_rii_ID);   // now tell engine instance which Rexx interpreter instance to use
 

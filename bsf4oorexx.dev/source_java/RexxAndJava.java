@@ -21,7 +21,7 @@ import org.apache.bsf.util.type.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2011 Rony G. Flatscher
+ *    Copyright (C) 2001-2012 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -239,7 +239,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "407.20110608";
+    static final public String version = "410.20120204";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -5888,6 +5888,34 @@ System.err.println("***debug RexxAndJava.getCauseAsString(): InvocationTargetExc
         frame.dispose();
     }
 
+
+
+
+    /** Creates a new Rexx interpreter instance using the ooRexx 4.0 API <code>RexxCreateInterpreter()</code>.
+     *  TODO: This method honors optional Rexx interpreter instance settings, such that a default
+     *        command environment can be defined, as well as Rexx command handlers
+     *        (and eventually Rexx exit handlers) implemented in Java.
+     *
+     * @return a String representing the created Rexx interpreter instance ID or <code>null</code>, if
+     *         no Rexx interpreter instance could be created
+     *
+     * @since 2012-02-04
+    */
+    protected String createRexxInterpreterInstance()
+    {
+        String rii_ID;  // represents Rexx interpreter instance ("RII")
+        // TODO: version that allows passing Java Rexx exit and command handler arrays, if configured
+        rii_ID=jniRexxCreateInterpreterInstance();  // create interpreter instance
+        return rii_ID;
+    }
+
+
+
+    // TODO: create jni-accessors for
+    //       - the entire Rexx interpreter instance (all threads affected):
+    //            Halt(), SetTrace(0|1)
+    //       - Rexx-thread related APIs
+    //            RexxSetHalt(), SetThreadTrace(0|1), RexxException...()
 
 }
 /*
