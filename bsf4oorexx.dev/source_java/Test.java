@@ -27,6 +27,17 @@ public class Test
                    "-U- \u00dc.";
         System.out.println("two=["+two+"]");
 
+        java.awt.Dimension jad=new java.awt.Dimension(100,200);
+        System.out.println("jad=["+jad+"]");
+
+        int intarr[]=new int[15]; // {1,2,3};
+
+        String intstr[]=new String[15];
+
+        Object aha [] = new Object[] {intarr,intstr};
+        System.out.println("aha="+aha+", intarr="+intarr+", intstr="+intstr);
+
+
     }
 }
 

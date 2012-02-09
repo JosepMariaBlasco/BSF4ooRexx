@@ -43,6 +43,7 @@ import java.io.*;       // exception handling
 
 /* changes:
     - 2012-02-04, rgf: cater for new (deferred) logic of creating a Rexx interpreter instance
+    - 2012-02-06, rgf: supply new (default) RexxConfiguration object for creating Rexx interpreter instance
 */
 
 class Java4Rexx {
@@ -86,10 +87,11 @@ class Java4Rexx {
 
         // now call into the DLL ("BSF4ooRexx.dll") in order to initialize; will set JVM in BSF4ooRexx.cc
     RexxAndJava raj=rxEngine.getRexxInterface();    // get the interface instance
-    raj.createRexxInterpreterInstance();    // rgf, 20120204: create Rexx interpreter instance
+    raj.createRexxInterpreterInstance(new RexxConfiguration());    // rgf, 20120204: create Rexx interpreter instance
     raj.jniInitialize4Rexx();                       // initialize Rexx, creates another Interpreter instance
 
     String root_rii_ID=raj.jniGetRexxInterpreterInstanceRoot(); // get root of interpreter instances (defined in BsfLoader())
+
     String rii_ID=rxEngine.get_rii_ID();
 
 // System.err.println("Java4Rexx.java: BSFGetTID()=["+raj.jniRexxGetTID()+"]");

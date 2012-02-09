@@ -14,7 +14,7 @@ import java.lang.reflect.Method;
   * using the RexxSAA interface.
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2009 Rony G. Flatscher
+ *    Copyright (C) 2001-2012 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 4.0.0, 20090827
+  * @version 4.1.0, 20120204
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,18 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2012-02-06, ---rgf, - jniRegisterBSF() moved to RexxAndJava with the new name jniSetupNativeJVMPointer()
+                        - private field "rexxConfig" and getter method "getRexxConfig()" added, supplying it
+                          for creating a Rexx interpreter instance
+                        - changed 'private' to 'protected' for field 'bTerminated' to allow RexxAndJava's [BSF.]EXIT
+                          to block callbacks from Java to Rexx
+    2012-02-04, ---rgf, - changed code to allow for delayed creation of a Rexx interpreter instance (RII),
+                          which is meant to allow configuring a Rexx engine instance via the field
+                          rexxInterface (a RexxAndJava object) for Java implemented Rexx exit and
+                          command handlers;
+
+     // =====================================
      2009-08-27, ---rgf, - added the argument "returnType" to rexxInterface.jniRexxSendMessageToRexxObject()
      2009-07-12, ---rgf, - renamed argument "methodDescription" to "methodDescriptor" for
                            jniRexxSendMessageToRexxObject()
@@ -88,11 +100,11 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "400.20090827";
+    static final public String version = "410.20120204";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
-    private boolean bTerminated=false;
+    protected boolean bTerminated=false;
 
     /** Contains the RexxInterpreter instance ID this engine is associated with.
      */
@@ -114,8 +126,22 @@ public class RexxEngine extends BSFEngineImpl {
         this.rii_ID=rii_ID;
     }
 
+    /** Rexx configuration object, that determines the options with which a
+     *  Rexx interpreter instance should get created.
+     */
+    private RexxConfiguration rexxConfig=new RexxConfiguration();
+
+    /** Getter method.
+     * @return the RexxConfiguration object of this Rexx engine
+     */
+    public RexxConfiguration getRexxConfiguration()
+    {
+        return rexxConfig;
+    }
+
 
     private boolean bDebug=false ; // 20040404, ---rgf
+    // private boolean bDebug=true;   // 20040404, ---rgf
 
     /** Allows using the Rexx interpreter from Java. */
     // private RexxAndJava   rexxInterface;
@@ -156,7 +182,7 @@ public class RexxEngine extends BSFEngineImpl {
         super.initialize (mgr, lang, declaredBeans);
         rexxInterface = new RexxAndJava(mgr, this);
 
-        rexxInterface.jniRegisterBSF();
+        // rexxInterface.jniRegisterBSF();
 
 /*
 if (bDebug) System.err.println("===> RexxEngine().initialize(): before ===> rexxInterface.jniRegisterBSF()");
@@ -172,11 +198,12 @@ catch (Exception e)
 }
 */
 
-
+/* rgf, 2012-02-04
 if (bDebug) System.err.println("===> RexxEngine().initialize(): before ===> rii_ID=["+rii_ID+"]");
 
         this.rii_ID=rexxInterface.jniRexxCreateInterpreterInstance();  // create interpreter instance
 if (bDebug) System.err.println("===> RexxEngine().initialize(): after  ===> rii_ID=["+rii_ID+"]");
+*/
     }
 
 
@@ -211,6 +238,14 @@ if (bDebug) System.err.println("RexxEngine.eval() - begin...");
         if (bTerminated==true)       // engine got terminated, cannot use it anymore
         {
             throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
+        }
+
+        // rgf, 2012-02-04
+        if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
+        {
+if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+            this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
+if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 
 
@@ -284,14 +319,20 @@ if (bDebug) System.err.println("<=== RexxEngine.call()-1 - AFTER: rexxInterface.
                         throws BSFException
     {
 
-if (bDebug) System.err.println("RexxEngine.call() - begin...");
+if (bDebug) System.err.println("RexxEngine.call(Object object, String name, Object[] args) - begin...");
 
-        // TODO: decide whether running on a different Rexx interpreter instance should be allowed
         if (bTerminated==true)       // engine got terminated, cannot use it anymore
         {
             throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
         }
 
+        // rgf, 2012-02-04
+        if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
+        {
+if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+            this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
+if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
+        }
 
         // String editedArgs[] = new String [ (args!= null ? args.length : 0) ];
         Object editedArgs[] = null;
@@ -373,7 +414,7 @@ if (bDebug) System.err.println("RexxEngine.call(): jniRexxRunProgram() ...");
             rexxInterface.unregisterBean( (String) e.nextElement());
         }
 
-if (bDebug) System.err.println("RexxEngine.call() - end, returning ["+o+"]...");
+if (bDebug) System.err.println("RexxEngine.call(Object object, String name, Object[] args) - end, returning ["+o+"]...");
         return o;
     }
 
@@ -399,6 +440,8 @@ if (bDebug) System.err.println("RexxEngine.call() - end, returning ["+o+"]...");
     public Object call (RexxProxy proxy, Method methodObject, Object[] args)
                         throws BSFException
     {
+if (bDebug) System.err.println("RexxEngine.call(RexxProxy proxy, Method methodObject, Object[] args) - begin...");
+
         if (proxy==null)
         {
             throw new RexxException("'proxy' argument must not be null!");
@@ -409,17 +452,21 @@ if (bDebug) System.err.println("RexxEngine.call() - end, returning ["+o+"]...");
             throw new RexxException("'methodObject' argument must not be null!");
         }
 
-
-        String name=methodObject.getName();
-        String methodObjectBean=rexxInterface.makeString4Rexx(methodObject);
-
-if (bDebug) System.err.println("RexxEngine.call() - begin...");
-
-        // TODO: decide whether running on a different Rexx interpreter instance should be allowed
         if (bTerminated==true)       // engine got terminated, cannot use it anymore
         {
             throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
         }
+
+        // rgf, 2012-02-04
+        if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
+        {
+if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+            this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
+if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
+        }
+
+        String name=methodObject.getName();
+        String methodObjectBean=rexxInterface.makeString4Rexx(methodObject);
 
 
         // String editedArgs[] = new String [ (args!= null ? args.length : 0) ];
@@ -524,7 +571,7 @@ if (bDebug) System.err.println("RexxEngine.call(): jniRexxSendMessageToRexxObjec
         }
         rexxInterface.unregisterBean(methodObjectBean);
 
-if (bDebug) System.err.println("RexxEngine.call() - end, returning ["+o+"]...");
+if (bDebug) System.err.println("RexxEngine.call(RexxProxy proxy, Method methodObject, Object[] args) - end, returning ["+o+"]...");
        return o;
     }
 
@@ -547,11 +594,12 @@ if (bDebug) System.err.println("RexxEngine.call() - end, returning ["+o+"]...");
     public Object call (RexxProxy proxy, Object javaObject, String methodName, String methodDescriptor, Object[] args)
                         throws BSFException
     {
+if (bDebug) System.err.println("RexxEngine.call() - begin...");
+
         if (proxy==null)
         {
             throw new RexxException("'proxy' argument must not be null!");
         }
-
 
         if (javaObject==null)
         {
@@ -563,15 +611,18 @@ if (bDebug) System.err.println("RexxEngine.call() - end, returning ["+o+"]...");
             throw new RexxException("'methodName' argument must not be null!");
         }
 
-
-if (bDebug) System.err.println("RexxEngine.call() - begin...");
-
-        // TODO: decide whether running on a different Rexx interpreter instance should be allowed
         if (bTerminated==true)       // engine got terminated, cannot use it anymore
         {
             throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
         }
 
+        // rgf, 2012-02-04
+        if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
+        {
+if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+            this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
+if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
+        }
 
 
         String javaObjectBean=rexxInterface.makeString4Rexx(javaObject);
@@ -746,6 +797,14 @@ if (bDebug) System.err.println("RexxEngine.apply() - just entered (...)");
         if (bTerminated==true)       // engine got terminated, cannot use it anymore
         {
             throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
+        }
+
+        // rgf, 2012-02-04
+        if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
+        {
+if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+            this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
+if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 
     // ---rgf, 2006-02-24
@@ -982,15 +1041,18 @@ if (bDebug)
      *
     */
     public void terminate() {
-
         bTerminated=true;   // do not allow any invocations via this instance anymore
 
+        if (rii_ID!=null)   // if RII got created
+        {
             // this waits until all threads of the instance have finished
-if (bDebug) System.err.println("RexxEngine().terminate(): before jniRexxTerminateInterpreterInstance("+rii_ID+")..");
+if (bDebug) System.err.println("RexxEngine().terminate(): before jniRexxTerminateInterpreterInstance("+rii_ID+")...");
 
         rexxInterface.jniRexxTerminateInterpreterInstance(rii_ID);  // wait for termination of all Rexx threads of this interpreter instance
 
 if (bDebug) System.err.println("RexxEngine().terminate(): AFTER jniRexxTerminateInterpreterInstance("+rii_ID+")");
+
+        }
 
         super.terminate();                  // now let the superclass do its work
     }
@@ -1005,7 +1067,10 @@ if (bDebug) System.err.println("RexxEngine().terminate(): AFTER jniRexxTerminate
     {
 if (bDebug) System.err.println("RexxEngine().halt(): before jniRexxHaltInterpreterInstance("+rii_ID+")..");
 
-        rexxInterface.jniRexxHaltInterpreterInstance(rii_ID);  // halt interpreter instance
+        if (rii_ID!=null)   // if RII got created
+        {
+            rexxInterface.jniRexxHaltInterpreterInstance(rii_ID);  // halt interpreter instance
+        }
 
 if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterpreterInstance("+rii_ID+")");
 
@@ -1020,11 +1085,17 @@ if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterprete
      *        in all ooRexx threads)
      *
      * @return return code from <code>RexxSetHalt(...)</code>: <code>0<code> (o.k.),
-     *                    <code>1</code> (tid not found), or <code>2</code> (failure)
+     *                    <code>1</code> (tid not found), or <code>2</code> (failure), or
+     *                    <code>3</code> (Rexx interpreter instance was not yet created)
     */
     public int halt(String tid)
     {
-        return rexxInterface.jniRexxSetHalt(tid);   // halt/terminate Rexx interpreter instance of this thread
+        if (rii_ID!=null)   // if RII got created
+        {
+            return rexxInterface.jniRexxSetHalt(tid);   // halt/terminate Rexx interpreter instance of this thread
+        }
+        return 3;
+
     }
 
 }

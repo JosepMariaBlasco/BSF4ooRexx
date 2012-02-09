@@ -1,4 +1,4 @@
-# debug, e.g.:    nmake /f Makefile32 clean && nmake /f Makefile32
+# debug, e.g.:    nmake /f Makefile32 clean && nmake /f Makefile32          -- debug version may hang if invoked via rexx.exe and not via Java !
 # release, e.g.:  nmake /f Makefile32 clean && nmake /f Makefile32 RELEASE=1
 # 32-bit version, rgf, 2009-09-07
 
@@ -105,6 +105,7 @@ BSF4ooRexx-32.dll: BSF4ooRexx-32.obj
     link $(DLL_LFLAGS) $(@B).obj -out:$(@B).dll
     copy $(@B).dll BSF4ooRexx.dll
     copy $(@B).dll 32\BSF4ooRexx.dll
+    copy $(@B).dll ..\..\bsf4oorexx\BSF4ooRexx.dll
     @if exist $(@B).exp copy $(@B).exp BSF4ooRexx.exp > nul
     @if exist $(@B).ilk copy $(@B).ilk BSF4ooRexx.ilk > nul
     @if exist $(@B).lib copy $(@B).lib BSF4ooRexx.lib > nul

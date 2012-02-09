@@ -38,6 +38,11 @@ import java.lang.reflect.Method;
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
 
+    2012-02-06, ---rgf, - jniRegisterBSF() moved to RexxAndJava with the new name jniSetupNativeJVMPointer()
+                        - private field "rexxConfig" and getter method "getRexxConfig()" added, supplying it
+                          for creating a Rexx interpreter instance
+                        - changed 'private' to 'protected' for field 'bTerminated' to allow RexxAndJava's [BSF.]EXIT
+                          to block callbacks from Java to Rexx
     2012-02-04, ---rgf, - changed code to allow for delayed creation of a Rexx interpreter instance (RII),
                           which is meant to allow configuring a Rexx engine instance via the field
                           rexxInterface (a RexxAndJava object) for Java implemented Rexx exit and
@@ -99,7 +104,7 @@ public class RexxEngine extends BSFEngineImpl {
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
-    private boolean bTerminated=false;
+    protected boolean bTerminated=false;
 
     /** Contains the RexxInterpreter instance ID this engine is associated with.
      */
@@ -119,6 +124,19 @@ public class RexxEngine extends BSFEngineImpl {
     protected void set_rii_ID(String rii_ID)
     {
         this.rii_ID=rii_ID;
+    }
+
+    /** Rexx configuration object, that determines the options with which a
+     *  Rexx interpreter instance should get created.
+     */
+    private RexxConfiguration rexxConfig=new RexxConfiguration();
+
+    /** Getter method.
+     * @return the RexxConfiguration object of this Rexx engine
+     */
+    public RexxConfiguration getRexxConfiguration()
+    {
+        return rexxConfig;
     }
 
 
@@ -164,7 +182,7 @@ public class RexxEngine extends BSFEngineImpl {
         super.initialize (mgr, lang, declaredBeans);
         rexxInterface = new RexxAndJava(mgr, this);
 
-        rexxInterface.jniRegisterBSF();
+        // rexxInterface.jniRegisterBSF();
 
 /*
 if (bDebug) System.err.println("===> RexxEngine().initialize(): before ===> rexxInterface.jniRegisterBSF()");
@@ -226,7 +244,7 @@ if (bDebug) System.err.println("RexxEngine.eval() - begin...");
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
 if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
-            this.rii_ID=rexxInterface.createRexxInterpreterInstance();
+            this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
 if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 
@@ -312,7 +330,7 @@ if (bDebug) System.err.println("RexxEngine.call(Object object, String name, Obje
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
 if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
-            this.rii_ID=rexxInterface.createRexxInterpreterInstance();
+            this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
 if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 
@@ -443,7 +461,7 @@ if (bDebug) System.err.println("RexxEngine.call(RexxProxy proxy, Method methodOb
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
 if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
-            this.rii_ID=rexxInterface.createRexxInterpreterInstance();
+            this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
 if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 
@@ -602,7 +620,7 @@ if (bDebug) System.err.println("RexxEngine.call() - begin...");
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
 if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
-            this.rii_ID=rexxInterface.createRexxInterpreterInstance();
+            this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
 if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 
@@ -785,7 +803,7 @@ if (bDebug) System.err.println("RexxEngine.apply() - just entered (...)");
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
 if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
-            this.rii_ID=rexxInterface.createRexxInterpreterInstance();
+            this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
 if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 

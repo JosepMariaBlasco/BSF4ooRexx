@@ -57,6 +57,11 @@ copy %javaSrc%\RexxEngine.java                %path2engine%
 copy %javaSrc%\RexxException.java             %path2engine%
 copy %javaSrc%\RexxProxy.java                 %path2engine%
 copy %javaSrc%\Supplier.java                  %path2engine%
+@rem 2010-04-17
+copy %javaSrc%\RexxHandler.java               %path2engine%
+copy %javaSrc%\RexxExitHandler.java           %path2engine%
+copy %javaSrc%\RexxCommandHandler.java        %path2engine%
+copy %javaSrc%\RexxConfiguration.java         %path2engine%
 
 @rem 2009-07-31
 copy %javaSrc%\RexxExtendClass.java           %path2engine%
@@ -69,6 +74,8 @@ copy %javaSrc%\ProxiedJavaClassTool.java      %path2engine%
 copy %javaSrc%\RexxDispatcher.java            %path2rexxlaBsf%
 
 
+
+@rem 2010-04-17
 javac %source% %target% %javaSrc%\ArrayWrapper.java                 && copy %javaSrc%\ArrayWrapper*               %path2engine%
 javac %source% %target% %javaSrc%\EnumerationWrapper.java           && copy %javaSrc%\EnumerationWrapper*         %path2engine%
 javac %source% %target% %javaSrc%\Java4Rexx.java                    && copy %javaSrc%\Java4Rexx*                  %path2engine%
@@ -86,5 +93,12 @@ javac %source% %target% %javaSrc%\RexxDispatcher.java               && copy %jav
 
 @rem 2010-04-17
 javac %source% %target% %javaSrc%\ProxiedJavaClassTool.java         && copy %javaSrc%\ProxiedJavaClassTool*       %path2engine%
+
+@rem 2010-04-17
+javac %source% %target% %javaSrc%\RexxHandler.java                  && copy %javaSrc%\RexxHandler*                %path2engine%
+javac %source% %target% %javaSrc%\RexxExitHandler.java              && copy %javaSrc%\RexxExitHandler*            %path2engine%
+javac %source% %target% %javaSrc%\RexxCommandHandler.java           && copy %javaSrc%\RexxCommandHandler*         %path2engine%
+javac %source% %target% %javaSrc%\RexxConfiguration.java            && copy %javaSrc%\RexxConfiguration*          %path2engine%
+
 
 endlocal

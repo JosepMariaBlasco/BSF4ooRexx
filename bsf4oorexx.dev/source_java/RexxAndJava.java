@@ -36,11 +36,20 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.0.7, 2011-06-04
+  * @version 4.1.0, 2012-02-06
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
+     2012-02-06, ---rgf, - changed visibility of all jni*()-functions from public to protected
+                         - changed jniRegisterBSF() to jniSetupNativeJVMPointer() to reflect the current purpose
+                         - changed jniRexxCreateInterpreterInstance to accept new options argument
+                         - added private field "rii_ID" and getter "get_rii_ID()", could also be inforred via field "rexxEngine"
+
+
+
+     -------------------------------------- before adding functionality to configure the Rexx interpreter instance
+
      needs: Java level 1.4 due to using Exception's getCause();
             ooRexx 4.0
      2011-06-04, ---rgf, - make sure that BSFExceptions get the Throwable assigned, if this
@@ -239,7 +248,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20120204";
+    static final public String version = "410.20120206";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -314,10 +323,14 @@ class RexxAndJava {
 
     /** Stores the Rexx engine. */
     BSFEngine  rexxEngine;
+
+    /** Getter method for field {@link rexxEngine}. */
     protected BSFEngine getRexxEngine()     // accessor
     {
         return rexxEngine;
     }
+
+
 
 
     /** Stores the number of references from Object Rexx to Java objects using
@@ -346,6 +359,20 @@ class RexxAndJava {
       * To store the default TypeConvertorRegistry, if needed.
       */
     TypeConvertorRegistry glob_tcr = new TypeConvertorRegistry();;  // will include default set of type convertors
+
+
+    /** Contains the RexxInterpreter instance ID this engine is associated with.
+     */
+    private String rii_ID=null;
+
+    /** Getter method.
+     *  @return the RexxInterpreter instance ID
+     */
+    // protected String get_rii_ID()
+    public String get_rii_ID()
+    {
+        return rii_ID;
+    }
 
 
     /** Load the DLL, which allows interfacing Java with Rexx or Object Rexx, determines
@@ -496,7 +523,8 @@ necessary anymore
       * registered with Rexx, making it thereby available to all
       * Rexx and Object Rexx programs, called from Java.
       */
-    public native int jniRegisterBSF ();        // changed to int (---rgf, 2001-05-25)
+    // public native int jniRegisterBSF ();        // changed to int (---rgf, 2001-05-25)
+    protected native void jniSetupNativeJVMPointer ();     // changed 2012-02-06, rgf
 
 
 
@@ -531,16 +559,17 @@ necessary anymore
       * all of the cleanup (e.g. of Object Rexx) is done. This is necessary for ooRexx 3.x.
       *
       * @return returns always 0. (Just there to allow future return codes, if necessary.)
+    @deprecated
       */
-    public native int jniRexxWaitForTermination ( );
-
+    protected native int jniRexxWaitForTermination ( );
 
     /** This native method indicates whether the Object Rexx interpreter is still running or not.
       * This is necessary for ooRexx 3.x.
       *
       * @return returns always 0. (Just there to allow future return codes, if necessary.)
+    @deprecated
       */
-    public native int jniRexxDidRexxTerminate ( );
+    protected native int jniRexxDidRexxTerminate ( );
 
 
     /** This native method returns the current thread id as seen by
@@ -549,7 +578,8 @@ necessary anymore
       *
       * @return returns the decimal value of the thread id (TID)
       */
-    public native String jniRexxGetTID ( );
+    protected native String jniRexxGetTID ( );
+
 
 
     /** This native method halts a Rexx interpreter instance or individual
@@ -582,8 +612,8 @@ necessary anymore
      *
      *           </table>
       */
-    public native int jniRexxSetHalt (String tid);
-
+    // used by RexxEngine
+    protected native int jniRexxSetHalt (String tid);
 
 
     // rgf, 2009-05-03, exploiting new ooRexx 4.0 APIs ----------------------------------------
@@ -594,7 +624,7 @@ necessary anymore
      *
      * @since May 2009
      */
-    public native String jniRexxCreateInterpreterInstance ();           // RexxCreateInterpreter(), returns rii-id
+    protected native String jniRexxCreateInterpreterInstance (Object [] options);           // RexxCreateInterpreter(), returns rii-id
 
 
 
@@ -608,7 +638,7 @@ necessary anymore
      *
      * @since May 2009
      */
-    public native String jniGetRexxInterpreterInstanceRoot ();           // RexxCreateInterpreter(), returns rii-id
+    protected native String jniGetRexxInterpreterInstanceRoot ();           // RexxCreateInterpreter(), returns rii-id
 
 
 
@@ -633,7 +663,7 @@ necessary anymore
      *
      * @since May 2009
      */
-    public native Object jniRexxRunProgram (
+    protected  native Object jniRexxRunProgram (
                     String  rii_ID,                 // RexxInstance instance ID
                     int     invocationType,         // determines whether "CallProgram", "LoadPackage" or "LoadPackageFromData" is to be used
                     String  fileName,               // filename which contains the program to run
@@ -663,7 +693,7 @@ necessary anymore
      *
      * @since May 2009
      */
-    public native Object jniRexxSendMessageToRexxObject (
+    protected native Object jniRexxSendMessageToRexxObject (
                     String  rii_ID,             // RexxInstance instance ID
                     String  obj_ID,             // RexxProxy objectID
                     String  userData_ID,        // RexxProxy userData_ID
@@ -689,7 +719,8 @@ necessary anymore
      *         number of '0' indicates that no references are left, a return value of '-1'
      *         indicates that the Rexx object was not registered (could not be found)
      */
-    public native int jniUnregisterRexxObject(String obj_ID);
+    // used by RexxProxy
+    protected native int jniUnregisterRexxObject(String obj_ID);
 
 
     /** Uses the ooRexx 4.0 API <code>Halt()</code> to raise the <code>HALT</code> condition in all Rexx threads
@@ -701,7 +732,8 @@ necessary anymore
      *
      * @since May 2009
      */
-    public native int    jniRexxHaltInterpreterInstance (String rii_ID); // use Halt()
+    // used by RexxEngine
+    protected native int    jniRexxHaltInterpreterInstance (String rii_ID); // use Halt()
 
 
     /** Uses the ooRexx 4.0 API <code>Terminate()</code> to wait on all Rexx threads
@@ -713,15 +745,27 @@ necessary anymore
      *
      * @since May 2009
      */
-    public native int    jniRexxTerminateInterpreterInstance (String rii_ID); // use Terminate(), but *must* be issued from the original thread context
+    // used by RexxEngine and Java4Rexx
+    protected native int    jniRexxTerminateInterpreterInstance (String rii_ID); // use Terminate(), but *must* be issued from the original thread context
 
 
+    /* rgf, 2012-02-08, used for allowing exit and command handlers to interact with their RexxExitContext
+     *                   for raising conditions and querying/setting variables.
+     */
+
+     protected native void   jniRaiseCondition    (Object[] slot, String conditionName, String description, Object[] additional, Object result);
+     protected native void   jniRaiseException    (Object[] slot, long definedErrorNumber, Object[] substitutions);
+     protected native void   jniRaiseException0   (Object[] slot, long definedErrorNumber);
+     protected native void   jniRaiseException1   (Object[] slot, long definedErrorNumber, String substitution1);
+     protected native void   jniRaiseException2   (Object[] slot, long definedErrorNumber, String substitution1, String substitution2);
+     protected native Object jniGetContextVariable(Object[] slot, String variableName);
+     protected native void   jniSetContextVariable(Object[] slot, String variableName, Object variableValue);
 
 
 
     /**  rgf, 2003-01-15, used for allowing the BSF4ooRexx-DLL to get at *env, *obj and then to mid etc.
      * */
-    public native int jniInitialize4Rexx() ;
+    protected native int jniInitialize4Rexx() ;
 
         // define the constants for the desired function
 private static final int           ADD_EVENT_LISTENER        =  1  ;
@@ -2664,6 +2708,9 @@ for (int i=0; i<args.length; i++)
                       // rgf, 2011-02-09: controls whether System.exit is carried out or not
                       if (carryOutSystemExit==true)
                       {
+                              // rgf, 2012-02-06: make sure  no callbacks from Java to Rexx occur anymore
+                          ((RexxEngine)rexxEngine).bTerminated=true;
+
                               // create and start the delayed exit thread
                           new Thread( new ExitDelayed(rc, msecs2sleep) ) .start();
 
@@ -5901,12 +5948,32 @@ System.err.println("***debug RexxAndJava.getCauseAsString(): InvocationTargetExc
      *
      * @since 2012-02-04
     */
-    protected String createRexxInterpreterInstance()
+    protected String createRexxInterpreterInstance(RexxConfiguration rc) throws BSFException
     {
-        String rii_ID;  // represents Rexx interpreter instance ("RII")
+        if (rii_ID!=null)   // already created for this RAJO!
+        {
+            throw new BSFException("A Rexx interpreter instance has been created already having the ID ["+rii_ID+"]");
+        }
+
+        jniSetupNativeJVMPointer();         // make sure C++ side gets a JVM pointer
         // TODO: version that allows passing Java Rexx exit and command handler arrays, if configured
-        rii_ID=jniRexxCreateInterpreterInstance();  // create interpreter instance
-        return rii_ID;
+
+        Object options[]=null;
+        if (rc!=null)
+        {
+            rc.modifiable=false;            // from now on do not allow any changes to the structure of options
+            options=rc.getArguments4JNI();  // get arguments for native code to configure the Rexx instance
+        }
+
+        String tmp_rii_ID=jniRexxCreateInterpreterInstance(options);  // create interpreter instance
+
+        if (this.rii_ID==null)  // no RII as of yet for this RAJO, set it!
+        {
+            this.rii_ID=rii_ID;
+        }
+
+        // String rii_ID=jniRexxCreateInterpreterInstance(options);  // create interpreter instance
+        return tmp_rii_ID;
     }
 
 

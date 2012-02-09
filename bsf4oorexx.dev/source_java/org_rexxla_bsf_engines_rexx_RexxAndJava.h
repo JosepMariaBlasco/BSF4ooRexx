@@ -7,6 +7,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+/* Inaccessible static: carryOutSystemExit */
+/* Inaccessible static: null4Rexx */
+/* Inaccessible static: bsfPrefixReturnValue */
+/* Inaccessible static: nlR_class */
 #undef org_rexxla_bsf_engines_rexx_RexxAndJava_ADD_EVENT_LISTENER
 #define org_rexxla_bsf_engines_rexx_RexxAndJava_ADD_EVENT_LISTENER 1L
 #undef org_rexxla_bsf_engines_rexx_RexxAndJava_ARRAY_AT
@@ -81,12 +85,38 @@ extern "C" {
 #define org_rexxla_bsf_engines_rexx_RexxAndJava_REXX_HALT 35L
 #undef org_rexxla_bsf_engines_rexx_RexxAndJava_CREATE_ARRAY_OBJECT_OF
 #define org_rexxla_bsf_engines_rexx_RexxAndJava_CREATE_ARRAY_OBJECT_OF 36L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_GET_REXX_AND_JAVA
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_GET_REXX_AND_JAVA 37L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_GET_REXX_ENGINE
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_GET_REXX_ENGINE 38L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_KUDOS
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_KUDOS 39L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_IS_INSTANCE
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_IS_INSTANCE 40L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_CARRY_OUT_SYSTEM_EXIT
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_CARRY_OUT_SYSTEM_EXIT 41L
+/* Inaccessible static: class_00024java_00024lang_00024Class */
+/* Inaccessible static: class_00024java_00024lang_00024Object */
+/* Inaccessible static: class_00024java_00024lang_00024reflect_00024Method */
+/* Inaccessible static: class_00024java_00024lang_00024reflect_00024Array */
+/* Inaccessible static: class_00024java_00024lang_00024String */
+/* Inaccessible static: class_00024java_00024lang_00024System */
+/* Inaccessible static: class_00024java_00024lang_00024Thread */
+/* Inaccessible static: class_00024java_00024lang_00024Boolean */
+/* Inaccessible static: class_00024java_00024lang_00024Byte */
+/* Inaccessible static: class_00024java_00024lang_00024Character */
+/* Inaccessible static: class_00024java_00024lang_00024Double */
+/* Inaccessible static: class_00024java_00024lang_00024Float */
+/* Inaccessible static: class_00024java_00024lang_00024Integer */
+/* Inaccessible static: class_00024java_00024lang_00024Long */
+/* Inaccessible static: class_00024java_00024lang_00024Short */
+/* Inaccessible static: class_00024java_00024lang_00024Void */
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniRegisterBSF
- * Signature: ()I
+ * Method:    jniSetupNativeJVMPointer
+ * Signature: ()V
  */
-JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRegisterBSF
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetupNativeJVMPointer
   (JNIEnv *, jobject);
 
 /*
@@ -124,10 +154,10 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSetHa
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniRexxCreateInterpreterInstance
- * Signature: ()Ljava/lang/String;
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCreateInterpreterInstance
-  (JNIEnv *, jobject);
+  (JNIEnv *, jobject, jobjectArray);
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
@@ -176,6 +206,62 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltI
  */
 JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
   (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRaiseCondition
+ * Signature: ([Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/Object;)V
+ */
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseCondition
+  (JNIEnv *, jobject, jobjectArray, jstring, jstring, jobjectArray, jobject);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRaiseException
+ * Signature: ([Ljava/lang/Object;J[Ljava/lang/Object;)V
+ */
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException
+  (JNIEnv *, jobject, jobjectArray, jlong, jobjectArray);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRaiseException0
+ * Signature: ([Ljava/lang/Object;J)V
+ */
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException0
+  (JNIEnv *, jobject, jobjectArray, jlong);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRaiseException1
+ * Signature: ([Ljava/lang/Object;JLjava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException1
+  (JNIEnv *, jobject, jobjectArray, jlong, jstring);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniRaiseException2
+ * Signature: ([Ljava/lang/Object;JLjava/lang/String;Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException2
+  (JNIEnv *, jobject, jobjectArray, jlong, jstring, jstring);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetContextVariable
+ * Signature: ([Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetContextVariable
+  (JNIEnv *, jobject, jobjectArray, jstring);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniSetContextVariable
+ * Signature: ([Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;)V
+ */
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContextVariable
+  (JNIEnv *, jobject, jobjectArray, jstring, jobject);
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
