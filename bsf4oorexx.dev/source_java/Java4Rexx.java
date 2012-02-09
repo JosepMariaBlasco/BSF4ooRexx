@@ -1,4 +1,4 @@
-package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ...
+package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
 
 import org.apache.bsf.*;   // BSF support
 import java.io.*;       // exception handling
@@ -42,6 +42,7 @@ import java.io.*;       // exception handling
  */
 
 /* changes:
+    - 2012-02-09, rgf: need to use try-block for createRexxInterpreterInstance() as it now throws a BSFException
     - 2012-02-04, rgf: cater for new (deferred) logic of creating a Rexx interpreter instance
     - 2012-02-06, rgf: supply new (default) RexxConfiguration object for creating Rexx interpreter instance
 */
@@ -50,7 +51,7 @@ class Java4Rexx {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "410.20120204";
+    static public String version = "410.20120209";
 
 
   /**  BSF-manager to be used to get (instantiate) the Rexx engine. */
@@ -87,7 +88,12 @@ class Java4Rexx {
 
         // now call into the DLL ("BSF4ooRexx.dll") in order to initialize; will set JVM in BSF4ooRexx.cc
     RexxAndJava raj=rxEngine.getRexxInterface();    // get the interface instance
-    raj.createRexxInterpreterInstance(new RexxConfiguration());    // rgf, 20120204: create Rexx interpreter instance
+    try {
+        raj.createRexxInterpreterInstance(new RexxConfiguration());    // rgf, 20120204: create Rexx interpreter instance
+    }
+    catch (BSFException e)
+    {}
+
     raj.jniInitialize4Rexx();                       // initialize Rexx, creates another Interpreter instance
 
     String root_rii_ID=raj.jniGetRexxInterpreterInstanceRoot(); // get root of interpreter instances (defined in BsfLoader())

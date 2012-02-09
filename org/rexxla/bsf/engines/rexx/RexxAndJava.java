@@ -753,13 +753,13 @@ necessary anymore
      *                   for raising conditions and querying/setting variables.
      */
 
-     protected native void jniRaiseCondition(Object[] slot, String conditionName, String description, Object[] additional, Object result);
-     protected native void jniRaiseException(Object[] slot, long definedErrorNumber, Object[] substitutions);
-     protected native void jniRaiseException0(Object[] slot, long definedErrorNumber);
-     protected native void jniRaiseException1(Object[] slot, long definedErrorNumber, String substitution1);
-     protected native void jniRaiseException2(Object[] slot, long definedErrorNumber, String substitution1, String substitution2);
+     protected native void   jniRaiseCondition    (Object[] slot, String conditionName, String description, Object[] additional, Object result);
+     protected native void   jniRaiseException    (Object[] slot, long definedErrorNumber, Object[] substitutions);
+     protected native void   jniRaiseException0   (Object[] slot, long definedErrorNumber);
+     protected native void   jniRaiseException1   (Object[] slot, long definedErrorNumber, String substitution1);
+     protected native void   jniRaiseException2   (Object[] slot, long definedErrorNumber, String substitution1, String substitution2);
      protected native Object jniGetContextVariable(Object[] slot, String variableName);
-     protected native void jniSetContextVariable(Object[] slot, String variableName, Object variableValue);
+     protected native void   jniSetContextVariable(Object[] slot, String variableName, Object variableValue);
 
 
 

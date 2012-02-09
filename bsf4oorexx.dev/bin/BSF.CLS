@@ -12,6 +12,9 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2012-02-09, rgf: - supply default values for some USE ARG arguments to inhibit the RXNOVAL exit to
+                            be triggered
+
          2011-02-21, rgf: - define new entries in .bsf4rexx
                              - "OPSYS" ... operating system name from "PARSE SOURCE opsys ." plus
                                "OPSYS1", "OPSYS2", "OPSYS3" with the first one, two, three letters in uppercase
@@ -1028,7 +1031,7 @@ any:
    ------------------------------------------------------------- */
 ::METHOD bsf.import class
 --  USE ARG classname, bsf.FullJavaClassName
-  USE ARG java_path, classname, extendedJavaClz=.nil   -- 2005-06-05, changed argument sequence
+  USE ARG java_path, classname=.nil, extendedJavaClz=.nil   -- 2005-06-05, changed argument sequence
 
   bNoClassName=(arg(2, "Omitted") | className="" | .nil=className)
 
@@ -1114,7 +1117,7 @@ any:
    .local environment, unless the second argument is explicitly .nil
    ------------------------------------------------------------- */
 ::METHOD bsf.importClass class
-  USE ARG java_path, classname, extendedJavaClz=.nil   -- 2005-06-05, changed argument sequence
+  USE ARG java_path, classname=.nil, extendedJavaClz=.nil   -- 2005-06-05, changed argument sequence
 
   bNoClassName=(arg(2, "Omitted") | className="" | .nil=className)
 

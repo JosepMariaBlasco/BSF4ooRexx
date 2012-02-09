@@ -35,10 +35,13 @@ import java.util.*;         // BitSet
  * @since 2012-02-04
  */
 
+/* 2012-02-09, rgf: - ArrayList needs to be initialized, such that size() matches the number of exits
+ */
+
 public class RexxConfiguration {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "1.20120207";
+    final static public String version = "1.20120209";
 
 
     // ------------------------------------------------------------------------------------
@@ -169,6 +172,16 @@ public class RexxConfiguration {
 
     /** Stores RexxExitHandler objects, if any defined. Index is the Rexx exit number. */
     private ArrayList exitHandlers       =new ArrayList(RexxExitHandler.RXNOOFEXITS);
+
+
+    public RexxConfiguration()
+    {
+            // add null-elements to ArrayList, such that its size() matches the maximum number of items
+        for (int i=0;i<RexxExitHandler.RXNOOFEXITS;i++)
+        {
+            exitHandlers.add(i,null);
+        }
+    }
 
     /** Returns an array with two elements, where the first element
      *  is an int array of exit numbers and the second element is an array of
@@ -376,7 +389,7 @@ public class RexxConfiguration {
             throw new BSFException("Invalid Rexx exit function number ["+function+"]");
         }
 
-        exitHandlers.set(function,exitHandler); // save exit handler wit
+        exitHandlers.add(function,exitHandler); // save exit handler wit
         definedExits.set(function);             // remember this
     }
 

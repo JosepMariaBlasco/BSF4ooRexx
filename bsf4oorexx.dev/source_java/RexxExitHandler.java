@@ -108,6 +108,18 @@ public abstract class RexxExitHandler extends RexxHandler
      */
     public abstract int handleExit(int exitNumber, int subFunction, Object[] parmBlock, Object[] slot);
 
+
+/* The following documents briefly the parmBlock-array
+
+    system exit # RXNOVAL/13:
+
+        parmBlock[0]: variable_name - a String
+        parmBlock[1]: value         - any value the exit handler wants the variable to be assigned to
+
+    system exit ...
+
+*/
+
 }
 
 

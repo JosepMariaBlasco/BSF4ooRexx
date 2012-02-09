@@ -478,7 +478,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 
-// #define RGF_COMMAND_HANDLER         // rgf, 2012-02-07
+#define RGF_COMMAND_HANDLER         // rgf, 2012-02-07
+#define RGF_SYSTEM_EXIT_HANDLER     // rgf, 2012-02-07
 // #define DEBUG_RGF_PROCESS_J_ARG1    // rgf, 2012-02-07
 // #define DEBUG_RGF_PROCESS_J_ARGS
 
@@ -2897,6 +2898,18 @@ inline RexxObjectPtr RgfProcessJArg1 (JNIEnv *env, jobject rajo,     // RexxAndJ
 
     else // a Java object, process it via RexxAndJava
     {
+        if (rajo==NULL)     // not supplied ?
+        {
+                // get the RII structure to get access to
+            RexxInstance *ri=rtc->instance;
+            PSTRUCT_RII struRii=RgfGetRexxInterpreterInstanceStructFromList(ri);
+            rajo=struRii->rajo;
+
+#if defined(DEBUG_RGF_PROCESS_J_ARGS)
+     fprintf(stderr, "... RgfProcessJArg1(...): !! rajo was null, now set to: [%p]\n", rajo);
+#endif
+        }
+
             // create a bean of the Java object
         jstring j_beanName = (jstring) env->CallObjectMethod(rajo,
                                            defaultJVM->mid_RexxAndJava_registerBean4JNI,
@@ -14550,7 +14563,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregiste
 // and invoke it.
 int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber, int subfunction, void *parmBlock)
 {
-#if defined ( RGF_INFO ) || defined ( RGF_COMMAND_HANDLER )
+#if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
     fprintf(stderr, "*** RGF_INFO: rexx_exit_handler_entry() 1, exitNumber=[%d], subfunction=[%d] ---> ...\n",
                     exitNumber, subfunction
             );
@@ -14562,19 +14575,228 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
         // get the RII structure to get access to
     RexxInstance *ri=context->threadContext->instance;
     PSTRUCT_RII struRii=RgfGetRexxInterpreterInstanceStructFromList(ri);
-    if (struRii==NULL || struRii->rajo==NULL) {
+    if (struRii==NULL || struRii->rajo==NULL)
+    {
         SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 1: panic - cannot find Rexx interpreter instance related Java interface objects, exitNumber=[%d], subfunction=[%d] for RexxInterpreterInstance=[%p]",
                             DLLNAME, exitNumber, subfunction, ri);
 
 
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        return NULL;
+        return RXEXIT_RAISE_ERROR;
+    }
+
+    // TODO: attach to Java, get RexxConfiguration, use getExitHandler(int), invoke handler, if not null & check result
+// -----------------------------------------
+    // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
+    STRUCT_PARAM param={0, 0, struRii->rajo, (void *)ri, 0, 0, 0, 0};
+
+    RgfAcquireLock();
+    environmentAttachTo(&param, FALSE); // attach to Java
+
+#if defined ( DEBUG_SHOW_STRUCTURES )
+    dumpPARAM(   "rexx_command_exit_entry(), after environmentAttachTo(...): param:", &param);
+    dumpRAJO(    "rexx_command_exit_entry(), after environmentAttachTo(...), 1: ");
+    dumpTID2NODE("rexx_command_exit_entry(), after environmentAttachTo(...), 1: ");
+#endif
+
+    if (param.error== -1)    // could not attach to Java
+    {
+        RgfReleaseLock();
+        SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_exit_entry(), error 2: panic - cannot attach to Java, exit number=[%d], subfunction=[%d] for RexxInterpreterInstance=[%p]",
+                            DLLNAME, exitNumber, subfunction, ri );
+
+        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+        return RXEXIT_RAISE_ERROR;
+    }
+    RgfReleaseLock();
+
+        // get Java command handler object, if any
+    jobject jhandler=param.env->CallObjectMethod(struRii->rexxconf,
+                                      defaultJVM->mid_RexxConfiguration_getExitHandler,
+                                      (jint) exitNumber);
+
+        // check for Java exception
+    if (param.env->ExceptionCheck())
+    {
+fprintf(stderr, "*** TINKER 12 ****\n");
+param.env->ExceptionDescribe();    // clear the Java exception
+fprintf(stderr,  "*** ****\n");fflush(stderr);
+
+        param.env->ExceptionClear();    // clear the Java exception
+        RgfAcquireLock();
+        environmentDetachFrom(&param, FALSE);    // do not close group
+        RgfReleaseLock();
+
+        SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_exit_entry(), error 3: Java exception while attempting to fetch the Java exit handler for system exit number=[%d]",
+                            DLLNAME, exitNumber);
+        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+        return RXEXIT_RAISE_ERROR;
+    }
+
+        // check whether jhandler==NULL, if so return RXEXIT_NOT_HANDLED (Java side may have nullified jhandler entry)
+    if (jhandler==NULL) {
+        RgfAcquireLock();
+        environmentDetachFrom(&param, FALSE);    // do not close group
+        RgfReleaseLock();
+
+        return RXEXIT_NOT_HANDLED;
     }
 
 
-    // TODO: attach to Java, get RexxConfiguration, use getExitHandler(int), invoke handler, if not null & check result
-   fprintf(stderr, "in rexx_exit_handler_entry... \n")   ;
-   return 43;
+        // invoke command handler
+            // create slot array argument
+    jobjectArray jslot = param.env->NewObjectArray (
+                              (jsize) 5,                // needed size (number of elements)
+                              defaultJVM->clz_Object,   // type
+                              NULL                      // initial value
+                              );
+
+        // index [0]: save rajo that created this Rexx interpreter instance
+    param.env->SetObjectArrayElement(jslot, (jint) 0, struRii->rajo);
+        // index [1]: save RexxConfiguration object of this RII
+    param.env->SetObjectArrayElement(jslot, (jint) 1, struRii->rexxconf);
+
+        // index [2]: save RexxExitContext pointer as a jstring
+    const char c_context [ RGF_POINTER_STRING_WIDTH+1 ] = "";
+    RgfPointer2String(context, c_context);  // create a string representation of RexxExitContext
+    param.env->SetObjectArrayElement(jslot, (jint) 2, param.env->NewStringUTF(c_context));
+
+        // index [3]: add context pointer type: 0=ThreadContext, 1=MethodContext, 2=FunctionContext, 3=ExitContext
+    param.env->SetObjectArrayElement(jslot, (jint) 3, param.env->NewStringUTF("3"));
+
+        // index [4]: last entry always unused, meant as a slot entry in case this becomes necessary in the future
+
+
+    jobjectArray jpb=NULL;    // Java version of the parmBlock (Object [])
+
+// !!!
+// TODO: process paramBlock according to system exit, prepare argument accordingly
+
+    // ================== BEGIN: system exit related special handling, before invoking the Java exit handler
+    {
+        switch (exitNumber)
+        {
+        case RXNOVAL:       // system exit # 13
+            {
+                RXVARNOVALUE_PARM *pb=(RXVARNOVALUE_PARM *) parmBlock;
+                // fprintf(stderr, "---> RXNOVAL, variable_name=[%s]\n", context->CString(((RXVARNOVALUE_PARM *) parmBlock)->variable_name));
+                fprintf(stderr, "---> RXNOVAL, variable_name=[%s]\n", context->CString(pb->variable_name));
+
+                jpb = param.env->NewObjectArray (
+                               (jsize) 2,                // needed size (number of elements)
+                               defaultJVM->clz_Object,   // type
+                               NULL                      // initial value
+                               );
+                param.env->SetObjectArrayElement(jpb, (jint) 0,
+                                                 param.env->NewStringUTF(context->CString(pb->variable_name))
+                                                 );
+            }
+            break;
+
+        default:            // unknown handler, return immediately with RXEXIT_NOT_HANDLED
+            RgfAcquireLock();
+            environmentDetachFrom(&param, FALSE);    // do not close group
+            RgfReleaseLock();
+            return RXEXIT_NOT_HANDLED;
+        }
+    }
+    // ================== END:   system exit related special handling, before invoking the Java exit handler
+
+        // public abstract Object handleCommand(String address, String command, Object[] slot);
+    jobject jresult=NULL;
+
+    int j_exit_rc=(jint) param.env->CallIntMethod(jhandler,
+                                      defaultJVM->mid_RexxExitHandler_handleExit,
+                                      exitNumber,
+                                      subfunction,
+                                      jpb,
+                                      jslot);
+
+        // check for Java exception
+    if (param.env->ExceptionCheck())
+    {
+fprintf(stderr, "*** TINKER 16 ****\n");
+param.env->ExceptionDescribe();    // clear the Java exception
+fprintf(stderr,  "*** ****\n");fflush(stderr);
+
+        param.env->ExceptionClear();    // clear the Java exception
+        RgfAcquireLock();
+        environmentDetachFrom(&param, FALSE);    // do not close group
+        RgfReleaseLock();
+
+        SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_exit_entry(), error 4: Java exception while running the Java exit handler for system exit number=[%d], subfunction=[%d]",
+                            DLLNAME, exitNumber, subfunction);
+        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+        return RXEXIT_RAISE_ERROR;
+    }
+
+
+        // TODO: analyze system exits that raise an error indicator whether
+        // a Rexx condition raised by the Java handler? If so, return immediately
+    if (context->CheckCondition()) {
+fprintf(stderr, "*** TINKER 17 ****\n");
+        RgfAcquireLock();
+        environmentDetachFrom(&param, FALSE);    // do not close group
+        RgfReleaseLock();
+        return RXEXIT_RAISE_ERROR;
+    }
+
+// !!!
+// TODO: process paramBlock contained result (if any) according to system exit; transfer to parmBlock, if necessary
+    if (j_exit_rc == RXEXIT_HANDLED)    // o.k. exit handler says it handled exit; do we need to do something ?
+    {
+        // ================== BEGIN: system exit related special handling, before returning to Rexx
+        {
+            switch (exitNumber)
+            {
+            case RXNOVAL:   // system exit # 13
+                {
+                    RXVARNOVALUE_PARM *pb=(RXVARNOVALUE_PARM *) parmBlock;
+                    fprintf(stderr, "<--- RXNOVAL, variable_name=[%s]\n", context->CString(pb->variable_name));
+
+                    jobject jvalue= param.env->GetObjectArrayElement(jpb, (jint) 1);
+
+                    pb->value=RgfProcessJArg1 (param.env,
+                                               NULL,      // RexxAndJava object, if NULL will be fetched in routine
+                                               context->threadContext,    // RexxThreadContext
+                                               jvalue,            // Java object to turn into a RexxObjectPtr
+                                               FALSE              // if FALSE, do not load .BSF, if not found
+                                               );
+                }
+                break;
+            }
+            // case :
+        }
+        // ================== END:   system exit related special handling, before returning to Rexx
+    }
+
+
+    RgfAcquireLock();
+    environmentDetachFrom(&param, FALSE);    // do not close group
+    RgfReleaseLock();
+
+// -----------------------------------------
+
+
+#if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
+    //
+    if (exitNumber==13)
+    {
+        RXVARNOVALUE_PARM *pb=(RXVARNOVALUE_PARM *) parmBlock;
+        // fprintf(stderr, "---> RXNOVAL, variable_name=[%s]\n", context->CString(((RXVARNOVALUE_PARM *) parmBlock)->variable_name));
+        fprintf(stderr, "---> RXNOVAL, variable_name=[%s]\n", context->CString(pb->variable_name));
+    }
+#endif
+
+
+#if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
+    fprintf(stderr, "*** RGF_INFO: rexx_exit_handler_entry() 2, exitNumber=[%d], subfunction=[%d] <--- ...\n",
+                    exitNumber, subfunction
+            );
+    fflush(stderr);
+#endif
+
+   return j_exit_rc;    // return whatever the handler returned
 }
 
 
