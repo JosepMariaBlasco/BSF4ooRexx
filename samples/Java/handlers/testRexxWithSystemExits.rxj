@@ -25,9 +25,11 @@ say "---"
 say
 
 say "(Rexx-side) RXNOVAL-Test #2:" test  "(second - even - time: handled, now has a value!)"
+say "<-rexx-rexx"
 say "---"
 say
 
+say "now dropping variable 'TEST' ..."
 drop test   -- drop variable
 say "(Rexx-side) RXNOVAL-Test #3:" test "(dropped variable, now - odd - not handled)"
 say "---"
@@ -36,19 +38,7 @@ say
 say "(Rexx-side) RXNOVAL-Test #4:" test  "(second - even - time: handled, now has a value!)"
 say "---"
 say
-
-say "default environment:" address()
-"helloWorld"
-say "rc="rc
-say "---"
-say
-
-
-say "permanent address change to NIXI ..."
-address nixi
-"aimed at nixi ..."
-say "--- The End # 3 ---"
-exit
+say "done."
 
 ::requires "BSF.CLS"    -- get Java support
 

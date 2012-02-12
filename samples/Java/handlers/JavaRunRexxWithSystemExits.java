@@ -65,7 +65,7 @@ public class JavaRunRexxWithSystemExits
         public int handleExit(int exitNumber, int subFunction, Object[] parmBlock, Object[] slot)
         {
             counter++;
-            System.err.print("[RXNOVAL_exit] exitNumber=["+exitNumber+"] subFunction=["+subFunction+"]"
+            System.err.print("(Java-side) [RXNOVAL_exit] exitNumber=["+exitNumber+"] subFunction=["+subFunction+"]"
                           + " variable_name=["+parmBlock[0]+"], invoked ["+counter+"] time");
             if (counter>1)  // add plural ?
             {

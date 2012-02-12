@@ -28,7 +28,7 @@ public abstract class RexxHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "1.20120208";
+    final static public String version = "1.20120212";
 
 
     /** Raises a condition in the current Rexx thread, pass-through method to the Rexx API, which
@@ -108,6 +108,10 @@ public abstract class RexxHandler
     }
 
     /** Fetches and returns the Rexx variable value in the Rexx program for which the handler runs.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @param variableName name of the Rexx variable
+     * @return value of the Rexx variable
      */
     public static Object getContextVariable(Object[] slot, String variableName)
     {
@@ -115,6 +119,10 @@ public abstract class RexxHandler
     }
 
     /** Allows to set a variable with a value in the Rexx program for which the handler runs.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @param variableName name of the Rexx variable
+     * @param variableValue the Rexx variable should be set to
      */
     public static void setContextVariable(Object[] slot, String variableName, Object variableValue)
     {
@@ -122,5 +130,66 @@ public abstract class RexxHandler
     }
 
 
+
+
+    /** Checks to see if any conditions have resulted from a call to a Rexx API (cf &quot;rexxpg.pdf&quot;).
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return <code>true</code>, if Rexx condition is set, <code>false</code> else
+    */
+    public static boolean checkCondition(Object[] slot)
+    {
+        return ((RexxAndJava) slot[0]).jniCheckCondition(slot);
+    }
+
+    /** Clears any pending condition status (cf &quot;rexxpg.pdf&quot;).
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+    */
+    public static void clearCondition(Object[] slot)
+    {
+        ((RexxAndJava) slot[0]).jniClearCondition(slot);
+    }
+
+    /** Returns a directory object containing the condition information; this is equivalent to calling
+     *  Condition(&apos;O&apos;) from within Rexx code (cf &quot;rexxpg.pdf&quot;).
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return returns a {@link RexxProxy} for a Rexx Directory object or <code>NULL</code>, if no
+     *         pending Rexx condition
+    */
+    public static Object getConditionInfo(Object[] slot)
+    {
+        return ((RexxAndJava) slot[0]).jniGetConditionInfo(slot);
+    }
+
+
+    /**  Sets the interactive trace state for the current thread.
+     *
+     * @param state new state for interactive trace
+     */
+    public void  setThreadTrace(Object[] slot, boolean state)
+    {
+        ((RexxAndJava) slot[0]).jniSetThreadTrace(slot, state);
+    }
+
+    /**  Raises a <code>HALT</code> condition on the this (Rexx) thread.
+     */
+    public void  haltThread(Object[] slot)
+    {
+        ((RexxAndJava) slot[0]).jniHaltThread(slot);
+    }
+
+
+
+    /** Drops a Rexx variable in the current routine’s caller variable context.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @param variableName name of the Rexx variable
+     */
+    public static void dropContextVariable(Object[] slot, String variableName)
+    {
+        ((RexxAndJava) slot[0]).jniDropContextVariable(slot, variableName);
+    }
 
 }

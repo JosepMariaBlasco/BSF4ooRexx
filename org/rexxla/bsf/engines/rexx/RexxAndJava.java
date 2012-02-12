@@ -41,6 +41,15 @@ import org.apache.bsf.util.type.*;
   */
 
  /*
+     2012-02-11, ---rgf, - added methods:
+                           jniCheckCondition(), jniClearCondition(), jniGetConditionInfo(),
+                           jniSetThread(), jniSetThreadTrace(), jniHaltThread()
+
+     2012-02-08, ---rgf, - added methods:
+                           jniRaiseCondition(), jniRaiseException(), jniRaiseException0(),
+                           jniRaiseException1(), jniRaiseException2(), jniGetContextVariable(),
+                           jniSetContextVariable()
+
      2012-02-06, ---rgf, - changed visibility of all jni*()-functions from public to protected
                          - changed jniRegisterBSF() to jniSetupNativeJVMPointer() to reflect the current purpose
                          - changed jniRexxCreateInterpreterInstance to accept new options argument
@@ -248,7 +257,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20120206";
+    static final public String version = "410.20120212";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -749,17 +758,28 @@ necessary anymore
     protected native int    jniRexxTerminateInterpreterInstance (String rii_ID); // use Terminate(), but *must* be issued from the original thread context
 
 
-    /* rgf, 2012-02-08, used for allowing exit and command handlers to interact with their RexxExitContext
-     *                   for raising conditions and querying/setting variables.
-     */
+     //  rgf, 2012-02-08, used for allowing exit and command handlers to interact with their RexxExitContext
+     //                  for raising conditions and querying/setting variables.
+     //
 
-     protected native void   jniRaiseCondition    (Object[] slot, String conditionName, String description, Object[] additional, Object result);
-     protected native void   jniRaiseException    (Object[] slot, long definedErrorNumber, Object[] substitutions);
-     protected native void   jniRaiseException0   (Object[] slot, long definedErrorNumber);
-     protected native void   jniRaiseException1   (Object[] slot, long definedErrorNumber, String substitution1);
-     protected native void   jniRaiseException2   (Object[] slot, long definedErrorNumber, String substitution1, String substitution2);
-     protected native Object jniGetContextVariable(Object[] slot, String variableName);
-     protected native void   jniSetContextVariable(Object[] slot, String variableName, Object variableValue);
+     protected native void    jniRaiseCondition    (Object[] slot, String conditionName, String description, Object[] additional, Object result);
+     protected native void    jniRaiseException    (Object[] slot, long definedErrorNumber, Object[] substitutions);
+     protected native void    jniRaiseException0   (Object[] slot, long definedErrorNumber);
+     protected native void    jniRaiseException1   (Object[] slot, long definedErrorNumber, String substitution1);
+     protected native void    jniRaiseException2   (Object[] slot, long definedErrorNumber, String substitution1, String substitution2);
+     protected native Object  jniGetContextVariable(Object[] slot, String variableName);
+     protected native void    jniSetContextVariable(Object[] slot, String variableName, Object variableValue);
+
+     // rgf, 2012-02-11
+     protected native boolean jniCheckCondition    (Object[] slot);
+     protected native void    jniClearCondition    (Object[] slot);
+     protected native Object  jniGetConditionInfo  (Object[] slot);
+
+     protected native void    jniSetThreadTrace    (Object[] slot, boolean state);
+     protected native void    jniHaltThread        (Object[] slot);
+
+     // rgf, 2012-02-12
+     protected native void    jniDropContextVariable(Object[] slot, String variableName);
 
 
 

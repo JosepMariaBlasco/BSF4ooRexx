@@ -12,6 +12,8 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2012-02-11, rgf: - added public routines stringToUtf8(string) and utf8ToString(string)
+
          2012-02-09, rgf: - supply default values for some USE ARG arguments to inhibit the RXNOVAL exit to
                             be triggered
 
@@ -406,7 +408,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="406.20110822" -- set version
+   .bsf4rexx~version="410.20120212" -- set version
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3640,4 +3642,19 @@ syntax:
   raise propagate
 
 
+
+
+/* rgf, 2012-02-11: add, but do not document as of yet; originally developped for the
+                    DBUS4ooRexx package which mandates UTF-8 strings (and checks them) */
+   /* ---------------------------------------------------------------------------------------- */
+   /* as of 2011-07-05 ooRexx from trunk does not support UTF-8, hence depending on BSF4ooRexx */
+::routine stringToUtf8 public    -- needs BSF4ooRexx
+  parse arg str
+  return BsfRawBytes(.java.lang.String~new(str)~getBytes("UTF-8"))
+
+
+   /* ---------------------------------------------------------------------------------------- */
+::routine utf8ToString public    -- needs BSF4ooRexx
+  parse arg str
+  return BsfRawBytes(.java.lang.String~new(bsfRawBytes(str),"UTF-8")~getBytes)
 
