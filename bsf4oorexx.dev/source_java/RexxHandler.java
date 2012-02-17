@@ -22,13 +22,13 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
  *
  * @author Rony G. Flatscher
  * @version 1.0
- * @since 2012-02-04
+ * @since 2012-02-17
  */
 public abstract class RexxHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "1.20120212";
+    final static public String version = "1.20120217";
 
 
     /** Raises a condition in the current Rexx thread, pass-through method to the Rexx API, which
@@ -43,9 +43,10 @@ public abstract class RexxHandler
      * @param result         optional result object, if routine or method does not trap the condition;
      *                       may contain the error or failure number
      */
-    public static void raiseCondition(Object[] slot, String conditionName, String description, Object[] additional, Object result)
+    public static void raiseCondition(Object slot, String conditionName, String description, Object[] additional, Object result)
     {
-        ((RexxAndJava) slot[0]).jniRaiseCondition(slot, conditionName, description, additional, result);
+        Object [] arrSlot=(Object[]) slot;
+        ((RexxAndJava) arrSlot[0]).jniRaiseCondition(arrSlot, conditionName, description, additional, result);
     }
 
     /** Raises a Rexx error of the given error number, call immediately before returning from
@@ -60,9 +61,10 @@ public abstract class RexxHandler
      *        of the condition object)
      *
     */
-    public static void raiseException(Object[] slot, long definedErrorNumber, Object[] substitutions)
+    public static void raiseException(Object slot, long definedErrorNumber, Object[] substitutions)
     {
-        ((RexxAndJava) slot[0]).jniRaiseException(slot, definedErrorNumber, substitutions);
+        Object [] arrSlot=(Object[]) slot;
+        ((RexxAndJava) arrSlot[0]).jniRaiseException(arrSlot, definedErrorNumber, substitutions);
     }
 
     /** Raises a Rexx error without substitution values of the given error number, call immediately before returning from
@@ -73,9 +75,10 @@ public abstract class RexxHandler
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
      * @param definedErrorNumber:  <code>errorNumber*1000+subcode</code>
     */
-    public static void raiseException0(Object[] slot, long definedErrorNumber)
+    public static void raiseException0(Object slot, long definedErrorNumber)
     {
-        ((RexxAndJava) slot[0]).jniRaiseException0(slot, definedErrorNumber);
+        Object [] arrSlot=(Object[]) slot;
+        ((RexxAndJava) arrSlot[0]).jniRaiseException0(arrSlot, definedErrorNumber);
     }
 
     /** Raises a Rexx error of the given error number, call immediately before returning from
@@ -87,9 +90,10 @@ public abstract class RexxHandler
      * @param definedErrorNumber:  <code>errorNumber*1000+subcode</code>
      * @param substitution1 String used as the first substition value for the error message
     */
-    public static void raiseException1(Object[] slot, long definedErrorNumber, String substitution1)
+    public static void raiseException1(Object slot, long definedErrorNumber, String substitution1)
     {
-        ((RexxAndJava) slot[0]).jniRaiseException1(slot, definedErrorNumber, substitution1);
+        Object [] arrSlot=(Object[]) slot;
+        ((RexxAndJava) arrSlot[0]).jniRaiseException1(arrSlot, definedErrorNumber, substitution1);
     }
 
     /** Raises a Rexx error of the given error number, call immediately before returning from
@@ -102,9 +106,10 @@ public abstract class RexxHandler
      * @param substitution1 String used as the first substition value for the error message
      * @param substitution2 String used as the second substition value for the error message
     */
-    public static void raiseException2(Object[] slot, long definedErrorNumber, String substitution1, String substitution2)
+    public static void raiseException2(Object slot, long definedErrorNumber, String substitution1, String substitution2)
     {
-        ((RexxAndJava) slot[0]).jniRaiseException2(slot, definedErrorNumber, substitution1, substitution2);
+        Object [] arrSlot=(Object[]) slot;
+        ((RexxAndJava) arrSlot[0]).jniRaiseException2(arrSlot, definedErrorNumber, substitution1, substitution2);
     }
 
     /** Fetches and returns the Rexx variable value in the Rexx program for which the handler runs.
@@ -113,9 +118,10 @@ public abstract class RexxHandler
      * @param variableName name of the Rexx variable
      * @return value of the Rexx variable
      */
-    public static Object getContextVariable(Object[] slot, String variableName)
+    public static Object getContextVariable(Object slot, String variableName)
     {
-        return ((RexxAndJava) slot[0]).jniGetContextVariable(slot, variableName);
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniGetContextVariable(arrSlot, variableName);
     }
 
     /** Allows to set a variable with a value in the Rexx program for which the handler runs.
@@ -124,9 +130,10 @@ public abstract class RexxHandler
      * @param variableName name of the Rexx variable
      * @param variableValue the Rexx variable should be set to
      */
-    public static void setContextVariable(Object[] slot, String variableName, Object variableValue)
+    public static void setContextVariable(Object slot, String variableName, Object variableValue)
     {
-        ((RexxAndJava) slot[0]).jniSetContextVariable(slot, variableName, variableValue);
+        Object [] arrSlot=(Object[]) slot;
+        ((RexxAndJava) arrSlot[0]).jniSetContextVariable(arrSlot, variableName, variableValue);
     }
 
 
@@ -137,18 +144,20 @@ public abstract class RexxHandler
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
      * @return <code>true</code>, if Rexx condition is set, <code>false</code> else
     */
-    public static boolean checkCondition(Object[] slot)
+    public static boolean checkCondition(Object slot)
     {
-        return ((RexxAndJava) slot[0]).jniCheckCondition(slot);
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniCheckCondition(arrSlot);
     }
 
     /** Clears any pending condition status (cf &quot;rexxpg.pdf&quot;).
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
     */
-    public static void clearCondition(Object[] slot)
+    public static void clearCondition(Object slot)
     {
-        ((RexxAndJava) slot[0]).jniClearCondition(slot);
+        Object [] arrSlot=(Object[]) slot;
+        ((RexxAndJava) arrSlot[0]).jniClearCondition(arrSlot);
     }
 
     /** Returns a directory object containing the condition information; this is equivalent to calling
@@ -158,9 +167,10 @@ public abstract class RexxHandler
      * @return returns a {@link RexxProxy} for a Rexx Directory object or <code>NULL</code>, if no
      *         pending Rexx condition
     */
-    public static Object getConditionInfo(Object[] slot)
+    public static Object getConditionInfo(Object slot)
     {
-        return ((RexxAndJava) slot[0]).jniGetConditionInfo(slot);
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniGetConditionInfo(arrSlot);
     }
 
 
@@ -168,16 +178,18 @@ public abstract class RexxHandler
      *
      * @param state new state for interactive trace
      */
-    public void  setThreadTrace(Object[] slot, boolean state)
+    public void  setThreadTrace(Object slot, boolean state)
     {
-        ((RexxAndJava) slot[0]).jniSetThreadTrace(slot, state);
+        Object [] arrSlot=(Object[]) slot;
+        ((RexxAndJava) arrSlot[0]).jniSetThreadTrace(arrSlot, state);
     }
 
     /**  Raises a <code>HALT</code> condition on the this (Rexx) thread.
      */
-    public void  haltThread(Object[] slot)
+    public void  haltThread(Object slot)
     {
-        ((RexxAndJava) slot[0]).jniHaltThread(slot);
+        Object [] arrSlot=(Object[]) slot;
+        ((RexxAndJava) arrSlot[0]).jniHaltThread(arrSlot);
     }
 
 
@@ -187,9 +199,10 @@ public abstract class RexxHandler
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
      * @param variableName name of the Rexx variable
      */
-    public static void dropContextVariable(Object[] slot, String variableName)
+    public static void dropContextVariable(Object slot, String variableName)
     {
-        ((RexxAndJava) slot[0]).jniDropContextVariable(slot, variableName);
+        Object [] arrSlot=(Object[]) slot;
+        ((RexxAndJava) arrSlot[0]).jniDropContextVariable(arrSlot, variableName);
     }
 
 }

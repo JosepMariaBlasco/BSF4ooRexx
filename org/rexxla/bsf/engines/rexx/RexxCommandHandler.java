@@ -22,25 +22,24 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
  *
  * @author Rony G. Flatscher
  * @version 1.0
- * @since 2012-02-04
+ * @since 2012-02-17
  */
-public abstract class RexxCommandHandler extends RexxHandler
+public interface RexxCommandHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "1.20120206";
+    final static public String version = "1.20120217";
 
 
     /** Command handler signature (called via native code) according to the ooRexx API
      *  documentation in <code>rexxpg.pdf</code>.
      *
+     * @param slot this is an opaque <code>Object</code> argument which must be supplied
+     *             unchanged to the direct Rexx API methods in {@link RexxHandler}
      * @param address a String denoting the name of the command environment for which this
      *                method got invoked
      * @param command a String containing the command passed from Rexx
-     * @param slot this is an <code>Object[]</code> which should be supplied unchanged to
-     *             the direct Rexx API methods in {@link RexxHandler}, which among other things
-     *             allow to raise conditions in the Rexx interpreter
      */
-    public abstract Object handleCommand(String address, String command, Object[] slot);
+    public Object handleCommand(Object slot, String address, String command);
 
 }

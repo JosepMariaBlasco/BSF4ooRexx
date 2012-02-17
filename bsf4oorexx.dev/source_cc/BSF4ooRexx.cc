@@ -29,6 +29,13 @@ offene Probleme:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.1.-8 2012-02-17 - adapted to exploit command and exit handlers that implement the *interfaces*
+                        RexxExitHandler.java and RexxCommandHandler.java (they used to be defined
+                        in an abstract fashion); much easier to implement for the Java programmers,
+                        may incur a small overhead as now getting the class object and the
+                        jmid-lookup needs to be done on each exit invocation; implemented with the
+                        CONFIG_REXX_HANDLERS_AS_INTERFACES directive
+
     4.1.-7 2012-02-12 - created the JNI-function _jniDropContextVariable() for Java handlers to be able to use them
                       - added code for processing RXFNC and RXSIO-exit
 
@@ -488,11 +495,10 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // #define RGF_COMMAND_HANDLER         // rgf, 2012-02-07
 // #define RGF_SYSTEM_EXIT_HANDLER     // rgf, 2012-02-07
+// #define DEBUG_JNI
 
 // #define DEBUG_RGF_PROCESS_J_ARG1    // rgf, 2012-02-07
 // #define DEBUG_RGF_PROCESS_J_ARGS
-
-
 
 #if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
     #define DEBUG
@@ -541,6 +547,27 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // #define RGF_UNO_WRAP     // rgf, 2010-06-08: use UNO.WRAP, if .UNO available
 // #define DEBUG_RGF_PROCESS_J_ARGS_UNO
+
+
+    // 2012-02-17, rgf
+    // if the following flag is defined, then RexxCommandHandler.java and
+    // RexxExitHandler. java are defined as interface classes, hence:
+    // comment out all code that assumes that Java command and exit handlers
+    // are implemented by extending an abstract class RexxCommandHandler.java
+    // and RexxExitHandler.java (which might run faster, as the method handle
+    // lookup only needs to be done for the abstract classes, rather than
+    // querying the class object and its Rexx handler method each time a
+    // command or exit gets invoked)
+
+// rgf, 2012-02-17
+#define CONFIG_REXX_HANDLERS_AS_INTERFACES
+
+    // define the handler's name and signatures
+#define CONFIG_REXX_COMMAND_HANDLER_NAME      "handleCommand"
+#define CONFIG_REXX_COMMAND_HANDLER_SIGNATURE "(Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;"
+#define CONFIG_REXX_EXIT_HANDLER_NAME         "handleExit"
+#define CONFIG_REXX_EXIT_HANDLER_SIGNATURE    "(Ljava/lang/Object;II[Ljava/lang/Object;)I"
+
 
 
 
@@ -690,11 +717,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "410.20120212 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120217 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "410.20120212 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120217 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "410.20120212 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120217 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -2143,6 +2170,10 @@ typedef struct _STRUCT_JVM {
     // public RexxCommandHandler getCommandHandler(String name)
     jmethodID                   mid_RexxConfiguration_getCommandHandler;
 
+
+
+#ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES // rgf, 2012-02-17
+
     jclass                      clz_RexxExitHandler;    // org.rexxla.bsf.engines.rexx.RexxExitHandler
     // public abstract int handleExit(int exitNumber, int subFunction, Object[] parmBlock, Object[] slot);
     jmethodID                   mid_RexxExitHandler_handleExit;
@@ -2150,6 +2181,7 @@ typedef struct _STRUCT_JVM {
     jclass                      clz_RexxCommandHandler; // org.rexxla.bsf.engines.rexx.RexxCommandHandler
     // public abstract Object handleCommand(String address, String command, Object[] slot);
     jmethodID                   mid_RexxCommandHandler_handleCommand;
+#endif
 
 } STRUCT_JVM;
 
@@ -2229,16 +2261,24 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
         // public RexxCommandHandler getCommandHandler(String name)
     struct_JVM->mid_RexxConfiguration_getCommandHandler=env->GetMethodID(tmpClz, "getCommandHandler", "(Ljava/lang/String;)Lorg/rexxla/bsf/engines/rexx/RexxCommandHandler;")  ;
 
+#ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES    // rgf, 2012-02-17
     tmpClz=env->FindClass("org/rexxla/bsf/engines/rexx/RexxExitHandler");    // get class object
     struct_JVM->clz_RexxExitHandler=tmpClz;    // org.rexxla.bsf.engines.rexx.RexxExitHandler
         // public abstract int handleExit(int exitNumber, int subFunction, Object[] parmBlock, Object[] slot);
-    struct_JVM->mid_RexxExitHandler_handleExit=env->GetMethodID(tmpClz, "handleExit", "(II[Ljava/lang/Object;[Ljava/lang/Object;)I");
+    struct_JVM->mid_RexxExitHandler_handleExit=env->GetMethodID(tmpClz,
+                                                     CONFIG_REXX_EXIT_HANDLER_NAME,
+                                                     CONFIG_REXX_EXIT_HANDLER_SIGNATURE);
+           // "handleExit", "(II[Ljava/lang/Object;[Ljava/lang/Object;)I");
 
     tmpClz=env->FindClass("org/rexxla/bsf/engines/rexx/RexxCommandHandler");    // get class object
     struct_JVM->clz_RexxCommandHandler=tmpClz;
         // public abstract Object handleCommand(String address, String command, Object[] slot);
-    struct_JVM->mid_RexxCommandHandler_handleCommand=env->GetMethodID(tmpClz, "handleCommand", "(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;");
+    struct_JVM->mid_RexxCommandHandler_handleCommand=env->GetMethodID(tmpClz,
+                                                     CONFIG_REXX_COMMAND_HANDLER_NAME,
+                                                     CONFIG_REXX_COMMAND_HANDLER_SIGNATURE);
+           // "handleCommand", "(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;");
     // rgf, 2012-02-07 --end
+#endif
 
         // create global references for these important objects
     struct_JVM->clz_Object       =(jclass)  env->NewGlobalRef(struct_JVM->clz_Object);
@@ -2252,8 +2292,11 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
 
     // rgf, 2012-02-07 --begin
     struct_JVM->clz_RexxConfiguration =(jclass)  env->NewGlobalRef(struct_JVM->clz_RexxConfiguration);
+
+#ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES    // rgf, 2012-02-17
     struct_JVM->clz_RexxExitHandler   =(jclass)  env->NewGlobalRef(struct_JVM->clz_RexxExitHandler);
     struct_JVM->clz_RexxCommandHandler=(jclass)  env->NewGlobalRef(struct_JVM->clz_RexxCommandHandler);
+#endif
     // rgf, 2012-02-07 --end
 
 
@@ -2296,11 +2339,13 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxConfiguration_getExitHandler   =[%p]\n",   struct_JVM->mid_RexxConfiguration_getExitHandler);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxConfiguration_getCommandHandler=[%p]\n",   struct_JVM->mid_RexxConfiguration_getCommandHandler);
 
+#ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES    // rgf, 2012-02-17
    fprintf(stderr, "\tclz_RexxExitHandler   =[%p]\n", struct_JVM->clz_RexxExitHandler);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxExitHandler_handleExit         =[%p]\n",   struct_JVM->mid_RexxExitHandler_handleExit);
 
    fprintf(stderr, "\tclz_RexxCommandHandler=[%p]\n", struct_JVM->clz_RexxCommandHandler);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxCommandHandler_handleCommand   =[%p]\n",   struct_JVM->mid_RexxCommandHandler_handleCommand);
+#endif
 
    fprintf(stderr, "---\n");
    fflush(stderr);
@@ -2332,8 +2377,11 @@ inline void uninit_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM)
 
     // rgf, 2012-02-07 --begin
     env->DeleteGlobalRef(struct_JVM->clz_RexxConfiguration);
+
+#ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES    // rgf, 2012-02-17
     env->DeleteGlobalRef(struct_JVM->clz_RexxExitHandler);
     env->DeleteGlobalRef(struct_JVM->clz_RexxCommandHandler);
+#endif
     // rgf, 2012-02-07 --end
 
 
@@ -14943,7 +14991,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
     if (param.error== -1)    // could not attach to Java
     {
         RgfReleaseLock();
-        SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_exit_entry(), error 2: panic - cannot attach to Java, exit number=[%d], subfunction=[%d] for RexxInterpreterInstance=[%p]",
+        SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 2: panic - cannot attach to Java, exit number=[%d], subfunction=[%d] for RexxInterpreterInstance=[%p]",
                             DLLNAME, exitNumber, subfunction, ri );
 
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
@@ -14969,7 +15017,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
 
-        SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_exit_entry(), error 3: Java exception while attempting to fetch the Java exit handler for system exit number=[%d]",
+        SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 3: Java exception while attempting to fetch the Java exit handler for system exit number=[%d]",
                             DLLNAME, exitNumber);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         return RXEXIT_RAISE_ERROR;
@@ -15327,12 +15375,67 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         // public abstract Object handleCommand(String address, String command, Object[] slot);
     jobject jresult=NULL;
 
-    int j_exit_rc=(jint) param.env->CallIntMethod(jhandler,
+    int j_exit_rc=0;
+
+#ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES    // rgf, 2012-02-17
+    j_exit_rc=(jint) param.env->CallIntMethod(jhandler,
                                       defaultJVM->mid_RexxExitHandler_handleExit,
+                                      jslot,
                                       exitNumber,
                                       subfunction,
-                                      jpb,
-                                      jslot);
+                                      jpb
+                                      );
+#else       // invoke the handler method in the object, if not raise syntax error
+
+/*
+fprintf(stderr, "jhandler=[%p], jclazz=[%p]\n", jhandler, param.env->GetObjectClass(jhandler));
+
+
+char tmpBuf[1024];
+
+JAVA_TO_STRING( param.env, jhandler, tmpBuf, 1024);
+fprintf(stderr, "*** *** DEBUG_JNI: ..._jniRexxRunProgram() jhandler=[%p] ~toString=[%s]\n",
+                                 jhandler,
+                                 tmpBuf
+                                 );
+
+fprintf(stderr, "*** name=[%s], signature=[%s]\n", CONFIG_REXX_EXIT_HANDLER_NAME,
+                                          CONFIG_REXX_EXIT_HANDLER_SIGNATURE
+                                         );
+*/
+
+    jmethodID jmid=param.env->GetMethodID(param.env->GetObjectClass(jhandler),
+                                          CONFIG_REXX_EXIT_HANDLER_NAME,
+                                          CONFIG_REXX_EXIT_HANDLER_SIGNATURE
+                                         );
+
+    if (param.env->ExceptionCheck())
+    {
+/*
+fprintf(stderr, "*** NIXINOXI 2 rexx_exit_handler_entry - BEFORE calling Java exit handler --> ****\n");
+param.env->ExceptionDescribe();    // clear the Java exception
+fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
+*/
+        param.env->ExceptionClear();    // clear the Java exception
+        RgfAcquireLock();
+        environmentDetachFrom(&param, FALSE);    // do not close group
+        RgfReleaseLock();
+
+        SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 4: Java exception, cannot find the Java Rexx exit handler method named [%s], needed for processing the Rexx system exit number=[%d], subfunction=[%d]",
+                            DLLNAME, CONFIG_REXX_EXIT_HANDLER_NAME, exitNumber, subfunction);
+        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+        return RXEXIT_RAISE_ERROR;
+    }
+
+    j_exit_rc=(jint) param.env->CallIntMethod(jhandler,
+                                      jmid, // mid_RexxExitHandler_handleExit
+                                      jslot,
+                                      exitNumber,
+                                      subfunction,
+                                      jpb
+                                      );
+
+#endif
 
         // check for Java exception
     if (param.env->ExceptionCheck())
@@ -15347,7 +15450,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
 
-        SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_exit_entry(), error 4: Java exception while running the Java exit handler for system exit number=[%d], subfunction=[%d]",
+        SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 5: Java exception while running the Java exit handler for system exit number=[%d], subfunction=[%d]",
                             DLLNAME, exitNumber, subfunction);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         return RXEXIT_RAISE_ERROR;
@@ -15411,7 +15514,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
                         {
                             pb->rxfnc_flags.rxfferr =1; // indicate an error occurred
-                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 1: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
+                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 6: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
                                                 DLLNAME, exitNumber, subfunction);
                             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
                         }
@@ -15472,7 +15575,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                             // TODO: could get Java object's String value and return that ?
                         else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
                         {
-                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 1: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
+                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 7: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
                                                 DLLNAME, exitNumber, subfunction);
                             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
                         }
@@ -15502,7 +15605,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                             // TODO: could get Java object's String value and return that ?
                         else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
                         {
-                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 1: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
+                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 8: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
                                                 DLLNAME, exitNumber, subfunction);
                             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
                         }
@@ -15827,12 +15930,48 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         // index [4]: last entry always unused, meant as a slot entry in case this becomes necessary in the future
 
 
-        // public abstract Object handleCommand(String address, String command, Object[] slot);
-    jobject jresult=param.env->CallObjectMethod(jhandler,
-                                      defaultJVM->mid_RexxCommandHandler_handleCommand,
-                                      jaddress,
-                                      param.env->NewStringUTF(context->CString(command)),
-                                      jslot);
+        // public abstract Object handleCommand(Object slot, String address, String command);
+
+    jobject jresult=NULL;
+
+#ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES    // rgf, 2012-02-17
+
+    jresult=param.env->CallObjectMethod(jhandler,
+                                  defaultJVM->mid_RexxCommandHandler_handleCommand,
+                                  jslot,
+                                  jaddress,
+                                  param.env->NewStringUTF(context->CString(command))
+                                  );
+
+#else       // invoke the handler method in the object, if not raise syntax error
+    jmethodID jmid=param.env->GetMethodID(param.env->GetObjectClass(jhandler),
+                                          CONFIG_REXX_COMMAND_HANDLER_NAME,
+                                          CONFIG_REXX_COMMAND_HANDLER_SIGNATURE
+                                         );
+
+    if (param.env->ExceptionCheck())
+    {
+        param.env->ExceptionClear();    // clear the Java exception
+        RgfAcquireLock();
+        environmentDetachFrom(&param, FALSE);    // do not close group
+        RgfReleaseLock();
+
+        SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_handler_entry(), error 5: Java exception, cannot find the Java Rexx exit handler method named [%s], needed for processing the command addressed to: [%s]",
+                            DLLNAME, context->CString(address));
+        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+        return NULL;
+    }
+
+    jresult=param.env->CallObjectMethod(jhandler,
+                                  jmid,
+                                  jslot,
+                                  jaddress,
+                                  param.env->NewStringUTF(context->CString(command))
+                                  );
+
+#endif
+
+
 
         // check for Java exception
     if (param.env->ExceptionCheck())
@@ -15846,7 +15985,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
 
-        SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_handler_entry(), error 5: Java exception while running the Java command handler for command name/address=[%s], command=[%s]",
+        SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_handler_entry(), error 6: Java exception while running the Java command handler for command name/address=[%s], command=[%s]",
                             DLLNAME, context->CString(address), context->CString(command));
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         return NULL;

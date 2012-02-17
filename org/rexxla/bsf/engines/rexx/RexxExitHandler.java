@@ -27,13 +27,13 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
  *
  * @author Rony G. Flatscher
  * @version 1.0
- * @since 2012-02-05
+ * @since 2012-02-17
  */
-public abstract class RexxExitHandler extends RexxHandler
+public interface RexxExitHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "1.20120206";
+    final static public String version = "1.20120217";
 
     // --------------------------------------------------------------------------------
     //    Exit return actions
@@ -97,19 +97,18 @@ public abstract class RexxExitHandler extends RexxHandler
     /** Exit handler signature (called via native code) according to the ooRexx API
      *  documentation in <code>rexxpg.pdf</code>.
      *
+     * @param slot this is an opaque <code>Object</code> argument which must be supplied
+     *             unchanged to the direct Rexx API methods in {@link RexxHandler}
      * @param exitNumber the Rexx exit number
      * @param subFunction the Rexx exit subfunction number
      * @param parmBlock an <code>Object[]</code> which is structured according to the ooRexx
      *                  exit documentation in <code>rexxpg.pdf</code>; each structure is itself
      *                  contained in an <code>Object[]</code>
-     * @param slot this is an <code>Object[]</code> which should be supplied unchanged to
-     *             the direct Rexx API methods in {@link RexxHandler}, which among other things
-     *             allow to raise conditions in the Rexx interpreter
      */
-    public abstract int handleExit(int exitNumber, int subFunction, Object[] parmBlock, Object[] slot);
+    public int handleExit(Object slot, int exitNumber, int subFunction, Object[] parmBlock);
 
 
-/* The following documents briefly the parmBlock-array
+/** The following documents briefly the parmBlock-array
 
     system exit # RXNOVAL/13:
 
