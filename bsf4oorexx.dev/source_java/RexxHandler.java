@@ -22,7 +22,7 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
  *
  * @author Rony G. Flatscher
  * @version 1.0
- * @since 2012-02-17
+ * @since 2012-02-18
  */
 public abstract class RexxHandler
 {
@@ -137,6 +137,30 @@ public abstract class RexxHandler
     }
 
 
+    /** Allows to set a variable to <code>.nil</code> in the Rexx program for which the handler runs.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @param variableName name of the Rexx variable
+     */
+    public static void setContextVariableToNil(Object slot, String variableName)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        ((RexxAndJava) arrSlot[0]).jniSetContextVariableToNil(arrSlot, variableName);
+    }
+
+
+    /** Drops a Rexx variable in the current routine’s caller variable context.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @param variableName name of the Rexx variable
+     */
+    public static void dropContextVariable(Object slot, String variableName)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        ((RexxAndJava) arrSlot[0]).jniDropContextVariable(arrSlot, variableName);
+    }
+
+
 
 
     /** Checks to see if any conditions have resulted from a call to a Rexx API (cf &quot;rexxpg.pdf&quot;).
@@ -178,7 +202,7 @@ public abstract class RexxHandler
      *
      * @param state new state for interactive trace
      */
-    public void  setThreadTrace(Object slot, boolean state)
+    public static void  setThreadTrace(Object slot, boolean state)
     {
         Object [] arrSlot=(Object[]) slot;
         ((RexxAndJava) arrSlot[0]).jniSetThreadTrace(arrSlot, state);
@@ -186,23 +210,11 @@ public abstract class RexxHandler
 
     /**  Raises a <code>HALT</code> condition on the this (Rexx) thread.
      */
-    public void  haltThread(Object slot)
+    public static void  haltThread(Object slot)
     {
         Object [] arrSlot=(Object[]) slot;
         ((RexxAndJava) arrSlot[0]).jniHaltThread(arrSlot);
     }
 
-
-
-    /** Drops a Rexx variable in the current routine’s caller variable context.
-     *
-     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
-     * @param variableName name of the Rexx variable
-     */
-    public static void dropContextVariable(Object slot, String variableName)
-    {
-        Object [] arrSlot=(Object[]) slot;
-        ((RexxAndJava) arrSlot[0]).jniDropContextVariable(arrSlot, variableName);
-    }
 
 }

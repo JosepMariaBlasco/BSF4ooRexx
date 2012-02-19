@@ -781,6 +781,9 @@ necessary anymore
      // rgf, 2012-02-12
      protected native void    jniDropContextVariable(Object[] slot, String variableName);
 
+     // rgf, 2012-02-18
+     protected native void    jniSetContextVariableToNil(Object[] slot, String variableName);
+
 
 
     /**  rgf, 2003-01-15, used for allowing the BSF4ooRexx-DLL to get at *env, *obj and then to mid etc.
@@ -5494,6 +5497,28 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
         return null;        // coercion was *not* successful, hence return nothing
     }
 
+    /** Allow lookup of BSFRegistry entries.
+     *
+     * @param beanName string denoting the index into the BSFRegistry
+     * @return the Java object matching <code>beanName</code>, if not found <code>null</code>
+     *
+     * @since 2012-02-19
+     */
+    protected Object lookupBean(String beanName)
+    {
+        Object o=mgr.lookupBean(beanName);
+        if (o==null && bsfPrefixReturnValue)    // bean not found, maybe still has prefix ?
+        {
+            if (beanName.startsWith(OBJECT_INDICATOR_PREFIX))
+            {
+                String name=beanName.substring(3);  // remove prefix from bean
+                o=mgr.lookupBean(beanName);
+            }
+        }
+        return o;
+    }
+
+
 
     /** Allow JNI to easily lookup the BSFRegistry.
      *
@@ -5504,6 +5529,8 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
     {
         return mgr.lookupBean(beanName);
     }
+
+
 
     /** Allow JNI to easily register a bean.
      *

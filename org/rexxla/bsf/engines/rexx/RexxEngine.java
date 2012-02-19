@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 4.1.0, 20120204
+  * @version 4.1.0, 20120219
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,9 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2012-02-19, ---rgf, - added public methods registerBean(), unregisterBean(), lookupBean() as
+                          pass-through methods for the protected RexxAndJava methods
 
     2012-02-06, ---rgf, - jniRegisterBSF() moved to RexxAndJava with the new name jniSetupNativeJVMPointer()
                         - private field "rexxConfig" and getter method "getRexxConfig()" added, supplying it
@@ -100,7 +103,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20120204";
+    static final public String version = "410.20120219";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -1096,6 +1099,86 @@ if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterprete
         }
         return 3;
 
+    }
+
+
+    // these methods are pass-through methods for the respective protected RexxAndJava methods
+
+    /** This method registers an <em>object</em> with the given <em>beanName</em>
+     *  that gets created automatically in the BSF registry, if not registered yet.
+     *  In addition a reference counting is carried out.
+     *
+      *  @param object to be registered
+      *
+      *  @return returns the beanName
+     *
+     * @since 2012-02-19
+      */
+    public String  registerBean(Object object) throws RexxException
+    {
+        if (bTerminated==true)       // engine got terminated, cannot use it anymore
+        {
+            throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
+        }
+        return rexxInterface.registerBean(rexxInterface.makeString4Rexx(object), object);
+    }
+
+
+    /** This method registers an <em>object</em> with the given <em>beanName</em> with
+     *  the BSF registry, if not registered yet. In addition a reference counting is
+     *  carried out.
+     *
+      *  @param beanName name of the object to be registered
+      *
+      *  @param object to be registered
+      *
+      *  @return returns the beanName
+     *
+     * @since 2012-02-19
+      */
+    public String  registerBean(String beanName, Object object)  throws RexxException
+    {
+        if (bTerminated==true)       // engine got terminated, cannot use it anymore
+        {
+            throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
+        }
+        return rexxInterface.registerBean(beanName, object);
+    }
+
+
+    /** This method allows for unregistering Beans, taking into account reference counters.
+      * Only if the reference counter drops to 0, will the given Bean be unregistered.
+      *
+      *  @param beanName name of the Bean to be unregistered
+      *
+      *  @return returns <code>true</code>, if the Bean exists, <code>false</code> else.
+     *
+     * @since 2012-02-19
+      */
+    public boolean unregisterBean(String beanName )  throws RexxException
+    {
+        if (bTerminated==true)       // engine got terminated, cannot use it anymore
+        {
+            throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
+        }
+        return rexxInterface.unregisterBean(beanName);
+    }
+
+
+    /** Allow lookup of BSFRegistry entries.
+     *
+     * @param beanName string denoting the index into the BSFRegistry
+     * @return the Java object matching <code>beanName</code>, if not found in BSF registry returns <code>null</code>
+     *
+     * @since 2012-02-19
+     */
+    public Object lookupBean(String beanName)  throws RexxException
+    {
+        if (bTerminated==true)       // engine got terminated, cannot use it anymore
+        {
+            throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
+        }
+        return rexxInterface.lookupBean(beanName);
     }
 
 }

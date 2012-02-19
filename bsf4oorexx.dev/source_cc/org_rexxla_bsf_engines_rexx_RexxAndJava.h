@@ -313,6 +313,14 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniDropConte
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniSetContextVariableToNil
+ * Signature: ([Ljava/lang/Object;Ljava/lang/String;)V
+ */
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContextVariableToNil
+  (JNIEnv *, jobject, jobjectArray, jstring);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniInitialize4Rexx
  * Signature: ()I
  */
