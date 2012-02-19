@@ -36,11 +36,13 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.1.0, 2012-02-06
+  * @version 4.1.0, 2012-02-19
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
+     2012-02-19, ---rgf, - added method jniGetCallerContext(), jniGetAllContextVariables
+
      2012-02-11, ---rgf, - added methods:
                            jniCheckCondition(), jniClearCondition(), jniGetConditionInfo(),
                            jniSetThread(), jniSetThreadTrace(), jniHaltThread()
@@ -257,7 +259,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20120212";
+    static final public String version = "410.20120219";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -783,6 +785,10 @@ necessary anymore
 
      // rgf, 2012-02-18
      protected native void    jniSetContextVariableToNil(Object[] slot, String variableName);
+
+     // rgf, 2012-02-19
+     protected native Object  jniGetCallerContext(Object[] slot);
+     protected native Object  jniGetAllContextVariables(Object[] slot);
 
 
 

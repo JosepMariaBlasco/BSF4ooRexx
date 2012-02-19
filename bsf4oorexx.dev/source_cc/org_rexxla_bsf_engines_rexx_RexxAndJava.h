@@ -321,6 +321,22 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContex
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetCallerContext
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCallerContext
+  (JNIEnv *, jobject, jobjectArray);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetAllContextVariables
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetAllContextVariables
+  (JNIEnv *, jobject, jobjectArray);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniInitialize4Rexx
  * Signature: ()I
  */

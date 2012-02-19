@@ -3,6 +3,17 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
 
    Interface class to allow typing Rexx handlers implemented in Java.
 
+   <p><em>Please note:</em> these methods allow interfacing with the running instance
+   of the Rexx interpreter instance on the <em>same (!) thread</em> in which the Rexx command
+   or Rexx exit Java handler got invoked.
+   It is necessary to supply the opaque argument named <em>slot</em> from the Java handler
+   methods <em>unaltered</em>.
+   <br>
+   If neither of these two restrictions holds, then the results of executing any of these
+   static methods will be undefined, mostlikely tearing down ooRexx and Java!
+
+   <p>
+
  * <pre>------------------------ Apache Version 2.0 license -------------------------
  *    Copyright (C) 2012 Rony G. Flatscher
  *
@@ -22,13 +33,13 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
  *
  * @author Rony G. Flatscher
  * @version 1.0
- * @since 2012-02-18
+ * @since 2012-02-19
  */
 public abstract class RexxHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "1.20120217";
+    final static public String version = "1.20120219";
 
 
     /** Raises a condition in the current Rexx thread, pass-through method to the Rexx API, which
@@ -111,6 +122,20 @@ public abstract class RexxHandler
         Object [] arrSlot=(Object[]) slot;
         ((RexxAndJava) arrSlot[0]).jniRaiseException2(arrSlot, definedErrorNumber, substitution1, substitution2);
     }
+
+
+
+    /** Fetches and returns a Rexx directory containing all context variables.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return a @{link RexxProxy} representing a Rexx directory with the currently defined context variables
+     */
+    public static Object  getAllContextVariables(Object slot)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniGetAllContextVariables(arrSlot);
+    }
+
 
     /** Fetches and returns the Rexx variable value in the Rexx program for which the handler runs.
      *
@@ -195,6 +220,19 @@ public abstract class RexxHandler
     {
         Object [] arrSlot=(Object[]) slot;
         return ((RexxAndJava) arrSlot[0]).jniGetConditionInfo(arrSlot);
+    }
+
+
+    /** Returns the Rexx context object that can be analyzed to learn about the context
+     *  of the command/exit.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return returns a {@link RexxProxy} for the Rexx <code>.context</code>  object
+    */
+    public static Object  getCallerContext(Object slot)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniGetCallerContext(arrSlot);
     }
 
 

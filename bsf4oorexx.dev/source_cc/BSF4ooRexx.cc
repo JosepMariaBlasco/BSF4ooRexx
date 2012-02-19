@@ -29,10 +29,15 @@ offene Probleme:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.1.-10 2012-02-19 - added native function _jniGetCallerContext()
+                       - RgfCreateRexxlikeErrorInfo(): set informative Java message, if no traceback line
+                         available (because a result of a Java call into Rexx)
+
     4.1.-9 2012-02-18 - added inline function RgfRexxObject2JavaObject() to have a single spot
                         where the basic conversion occurs (became necessary because of new execution
                         paths causing "copy-duplication" of code)
                       - renamed RgfProcessJArg1() to RgfJavaObject2RexxObject()
+
     4.1.-8 2012-02-17 - adapted to exploit command and exit handlers that implement the *interfaces*
                         RexxExitHandler.java and RexxCommandHandler.java (they used to be defined
                         in an abstract fashion); much easier to implement for the Java programmers,
@@ -504,6 +509,10 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 // #define DEBUG_RGF_PROCESS_J_ARG1    // rgf, 2012-02-07; renamed to RgfJavaObject2RexxObject, 2012-02-18
 // #define DEBUG_RGF_PROCESS_J_ARGS
 
+// #define DEBUG_REXX_OBJECT_TO_JAVA   // rgf, 2012-02-19
+
+
+
 #if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
     #define DEBUG
     #define DEBUG1
@@ -721,11 +730,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "410.20120218 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120219 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "410.20120218 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120219 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "410.20120218 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120219 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -2623,10 +2632,13 @@ inline jthrowable RgfCreateRexxException4Java (JNIEnv *env, jobject rajo,
 
 #if defined(DEBUG40)
    fprintf(stderr, "\t-->\tRgfCreateRexxException4Java() - create RexxException ...\n");
-   fprintf(stderr, "\t-->\tRgfCreateRexxException4Java() - \tclz=[%p], mid=[%p], reason=[%d], message=[%.256s], jConditionObject=[%p]\n",
+   fprintf(stderr, "\t-->\tRgfCreateRexxException4Java() - \tclz=[%p], mid=[%p], reason=[%d], message=[%.256s], jConditionObject=[%p].\n",
     defaultJVM->clz_RexxException, defaultJVM->mid_RexxException_init, reason, message, jConditionObject);
 //                             clz, mid, reason, message, jConditionObject);
 
+   fprintf(stderr, "\t-->\tRgfCreateRexxException4Java() - \tmessage=<<<[%.256s]>>>\n",message);
+
+   fflush(stderr);
 #endif
 
         // public RexxException (int reason, String message, RexxProxy rexxCondition)
@@ -2639,7 +2651,8 @@ inline jthrowable RgfCreateRexxException4Java (JNIEnv *env, jobject rajo,
                                                );
 
 #if defined(DEBUG40)
-   fprintf(stderr, "\t-->\tRgfCreateRexxException4Java() - end ...\n");
+   fprintf(stderr, "\t-->\tRgfCreateRexxException4Java() - end ...\n<-------\n");
+   fflush(stderr);
 #endif
     return thr;     // return throwable
 }
@@ -3405,7 +3418,15 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
         // format message according to exception type
     if (rtc->SendMessage1(cond.conditionName, "EQUALS", rtc->String("SYNTAX"))==rtc->True()) // SYNTAX condition ?
     {
-        char const *line1=rtc->CString(rtc->SendMessage0(rtc->DirectoryAt(condObj, "TRACEBACK"), "FIRSTITEM")) ; // first traceback line=error line
+        RexxObjectPtr tbRop=rtc->SendMessage0(rtc->DirectoryAt(condObj, "TRACEBACK"), "FIRSTITEM"); // first traceback line=error line
+        const char *line1="Rexx traceback line not available from the Rexx condition object (Rexx condition may have been caused by a call or message from Java to Rexx)";
+
+        if (tbRop!=rtc->Nil())     // a traceback entry available
+        {
+            line1=(const char *) rtc->CString(tbRop) ; // first traceback line=error line
+        }
+
+        // char const *line1=rtc->CString(rtc->SendMessage0(rtc->DirectoryAt(condObj, "TRACEBACK"), "FIRSTITEM")) ; // first traceback line=error line
         // line1=rtc->CString(rtc->SendMessage0(rtc->DirectoryAt(condObj, "TRACEBACK"), "FIRSTITEM")) ; // first traceback line=error line
 
         char line2[2048]="";        // will only use 1024 of it
@@ -3423,7 +3444,6 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
 
         // sprintf(msg, "%.16s%.512s:\n%.1024s\n%.1024s\n%.1024s", DLLNAME, header, line1, line2, line3);
         SNPRINTF( msg, 4096, "%.16s%.512s:\n%.1024s\n%.1024s\n%.1024s", DLLNAME, header, line1, line2, line3);
-
     }
     else
     {
@@ -7090,22 +7110,23 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
 
     jobject jresult=NULL;   // default for -1, -2
 
-    if (typeIndicator>=0)   // a RexxString, BSF/UNO_Proxy or any other RexxObject
-    {
-
-#if defined (DEBUG_REXX_PROXY_BSF)
+#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA)
     RexxStringObject strTmpObj= RgfDebug_GetMaxStringValue(context, tmpObj, 90) ;
-    fprintf(stderr, "... RgfRexxObject2JavaObject():b: typeIndicator=[%c], arg[%lu]=[%.256s]\n", typeIndicator, (unsigned long) i, context->CString(strTmpObj) );
+    fprintf(stderr, "... RgfRexxObject2JavaObject():b: typeIndicator=[%d], maxStringValue=[%.256s]\n", typeIndicator, (unsigned long) context->CString(strTmpObj) );
 
     // fprintf(stderr, "... BSF(): arg[%u]=[%.256s]\n", i, context->CString(context->SendMessage0(tmpObj, "STRING")));
 #endif
 
+
+    if (typeIndicator>=0)   // a RexxString, BSF/UNO_Proxy or any other RexxObject
+    {
+
         if (typeIndicator==1)   // a .STRING
         {
 
-#if defined (DEBUG_REXX_PROXY_BSF)
+#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA)
     // fprintf(stderr, "-> BSF(): \targ[%u] STRING       val=[%.256s]\n",i, context->CString(context->ObjectToString(tmpObj))); fflush(stderr);
-    fprintf(stderr, "-> RgfRexxObject2JavaObject():c: \targ[%lu] STRING       val=[%.256s]\n",(unsigned long) i,
+    fprintf(stderr, "-> RgfRexxObject2JavaObject():c: \tSTRING       val=[%.256s]\n",
        context->CString(RgfDebug_GetMaxStringValue(context, tmpObj, 180))); fflush(stderr);
 #endif
 
@@ -7124,8 +7145,8 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
             // )
             if (typeIndicator>1)    // a BSF/UNO_PROXY object in hand, Java object resides in BSF registry
             {
-#if defined (DEBUG_REXX_PROXY_BSF)
-    fprintf(stderr, "-> RgfRexxObject2JavaObject():d: \targ[%lu] BSF/UNO_PROXY val=[%.256s]\n",(unsigned long) i, context->CString(RgfDebug_GetMaxStringValue(context, tmpObj, 90)) ); fflush(stderr);
+#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA)
+    fprintf(stderr, "-> RgfRexxObject2JavaObject():d: \tBSF/UNO_PROXY val=[%.256s]\n",context->CString(RgfDebug_GetMaxStringValue(context, tmpObj, 90)) ); fflush(stderr);
 #endif
                 // lookup the Java object from the BSF registry and return that Java object, i.e.
                 // get bean from the Java side --------------------------------------------------
@@ -7139,21 +7160,24 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
             else    // any other Rexx object, wrap it up as a (Java) RexxProxy
             {
 
-#if defined (DEBUG_REXX_PROXY_BSF)
+#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA)
     char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-    fprintf(stderr, "-> RgfRexxObject2JavaObject(): debug! \targ[%lu] is a non-String, non-BSF/UNO RexxObject, type=[%.256s]: creating a RexxProxy for it!\n\t~string=[%.256s]",
-                     (unsigned long) i,
+    fprintf(stderr, "-> RgfRexxObject2JavaObject(): debug! \tis a non-String, non-BSF/UNO RexxObject, type=[%.256s]: creating a RexxProxy for it!\n\t~string=[%.256s]\n",
                      context->CString(context->ObjectToString(context->SendMessage0(tmpObj,"CLASS"))),
                      tmpStrObject);
     fflush(stderr);
 #endif
                     // create RexxProxy for it
-                jobject jresult=RgfCreateRexxProxy (param->env, param->rajo,
-                                                    context,    // ThreadContext, RMG: 20090514
-                                                    tmpObj,     // Rexx object
-                                                    NULL,       // Package object
-                                                    NULL        // userData (slot)
-                                                   );
+                jresult=RgfCreateRexxProxy (param->env, param->rajo,
+                                            context,    // ThreadContext, RMG: 20090514
+                                            tmpObj,     // Rexx object
+                                            NULL,       // Package object
+                                            NULL        // userData (slot)
+                                            );
+
+#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA)
+     fprintf(stderr, "-> RgfRexxObject2JavaObject(): AFTER creating RexxProxy jresult=[%p]\n",jresult);fflush(stderr);
+#endif
             }
         }
     }
@@ -14591,7 +14615,7 @@ rgf, 20091005 */
 
         RexxDirectoryObject condObj=rtc->GetConditionInfo();
 
-        char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/routine/jniRexxSendMessageToRexxObject(), error 3");
+        char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/routine/jniRexxSendMessageToRexxObject(), error 4");
 
         jthrowable rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              rtc, // rtc,
@@ -15423,6 +15447,39 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
 
 
             // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        case RXHLT:    // system exit # 7, "HALT condition processing"
+            {
+#if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
+                RXFNCCAL_PARM *pb =(RXFNCCAL_PARM *) parmBlock;
+                fprintf(stderr, "---> RXHLT=7: [%d], subfunction: [%d]\n", exitNumber, subfunction);
+#endif
+
+                if (subfunction==RXHLTTST ||    // 2
+                    subfunction==RXHLTCLR)      // 1 - TODO: does this have a parmBlock ??
+                {
+                    RXHLTTST_PARM *pb=(RXHLTTST_PARM *) parmBlock;
+                    jpb = param.env->NewObjectArray (
+                                   (jsize) 2,                // needed size (number of elements)
+                                   defaultJVM->clz_Object,   // type
+                                   NULL                      // initial value
+                                   );
+
+                        // process flag for Java
+                    jbooleanArray jflags= param.env->NewBooleanArray((jsize) 1); // needed size (number of elements)
+                    jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
+                    tmpFlags[0]=pb->rxhlt_flags.rxfhhalt;
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
+
+                        // index [1]: may be freely used by Java (a slot that gets ignored here)
+                }
+            }
+            break;
+
+
+
+
+            // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             // nothing to setup, so just break
         case RXINI:       // system exit # 9, "initialization processing"
     #if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
@@ -15886,6 +15943,32 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                 }
                 break;
 
+
+                // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            case RXHLT:    // system exit # 7, "HALT condition processing"
+                {
+    #if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
+                    RXFNCCAL_PARM *pb =(RXFNCCAL_PARM *) parmBlock;
+                    fprintf(stderr, "<--- RXHLT=7: [%d], subfunction: [%d]\n", exitNumber, subfunction);
+    #endif
+
+                    if (subfunction==RXHLTTST ||    // 2
+                        subfunction==RXHLTCLR)      // 1 - TODO: does this have a parmBlock ??
+                    {
+                        RXHLTTST_PARM *pb=(RXHLTTST_PARM *) parmBlock;
+
+                            // get flags from Java and assign their values to Rexx
+                        jbooleanArray jflags= (jbooleanArray) param.env->GetObjectArrayElement(jpb, (jint) 0);
+                        jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
+                        pb->rxhlt_flags.rxfhhalt =tmpFlags[0];
+
+
+// fprintf(stderr, "<--- RXHLT=7: [%d], subfunction: [%d], pb->rxhlt_flags.rxfhhalt=[%d]\n",exitNumber, subfunction, pb->rxhlt_flags.rxfhhalt);fflush(stderr);
+
+                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    }
+                }
+                break;
 
 
                 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -16388,6 +16471,7 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseCond
         // get RexxExitContext from opaque slot argument
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
 
+
         // get condition name in Rexx
     RexxStringObject rsoConditionName= (j_conditionName==NULL ? NULL :
                 (RexxStringObject) JNU_GetStringNativeCharsReturningRexxObjectPtr(env, j_conditionName, context->threadContext)
@@ -16794,7 +16878,56 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContex
 
 }
 
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetCallerContext
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCallerContext
+  (JNIEnv *env, jobject rajo, jobjectArray j_slot)
+{
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 1/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCallerContext <== <==\n");fflush(stderr);
+#endif
 
+        // get RexxExitContext from opaque slot argument
+    RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
+    RexxObjectPtr rop=context->GetCallerContext();
+
+    STRUCT_PARAM param={0, env, rajo, 0, 0, 0, 0, 0};
+    jobject jobj=RgfRexxObject2JavaObject(&param,context->threadContext,rop);
+
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCallerContext <== <==\n");fflush(stderr);
+#endif
+    return jobj;
+}
+
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetAllContextVariables
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetAllContextVariables
+  (JNIEnv *env, jobject rajo, jobjectArray j_slot)
+{
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 1/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetAllContextVariables <== <==\n");fflush(stderr);
+#endif
+
+        // get RexxExitContext from opaque slot argument
+    RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
+    RexxObjectPtr rop=context->GetAllContextVariables();
+
+    STRUCT_PARAM param={0, env, rajo, 0, 0, 0, 0, 0};
+    jobject jobj=RgfRexxObject2JavaObject(&param,context->threadContext,rop);
+
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetAllContextVariables <== <==\n");fflush(stderr);
+#endif
+    return jobj;
+}
 
 
 
