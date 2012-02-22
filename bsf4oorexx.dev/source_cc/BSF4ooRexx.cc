@@ -510,7 +510,9 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 // #define DEBUG_RGF_PROCESS_J_ARGS
 
 // #define DEBUG_REXX_OBJECT_TO_JAVA   // rgf, 2012-02-19
+// #define DEBUG_ARRAY_ARGS                // rgf, 2012-02-21
 
+#define DEBUGINFO_FOR_OTHERS     // rgf, 2012-02-22: if flag is set, then show some debug infos for others who try to debug
 
 
 #if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
@@ -730,11 +732,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "410.20120219 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120222 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "410.20120219 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120222 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "410.20120219 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120222 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -2904,7 +2906,9 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
 #endif
 
         RexxObjectPtr result_obj=NULL;
-        RexxRoutineObject rro=rtc->NewRoutine("FROM_BSF4ooRexx_DLL", "::requires BSF.CLS", 18);
+        // RexxRoutineObject rro=rtc->NewRoutine("FROM_BSF4ooRexx_DLL", "::requires BSF.CLS", 18);
+        char code[]="::requires BSF.CLS";
+        RexxRoutineObject rro=rtc->NewRoutine("FROM_BSF4ooRexx_RgfJavaObject2RexxObject", code, strlen(code));
         if (rro!=NULL)      // object got created, let us run it
         {
             result_obj=rtc->CallRoutine(rro, NULL);   // call the program ?? NULL correct ??
@@ -3090,13 +3094,15 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
        fprintf(stderr, "**** //1a// clzBSF~string=[%s]\n", rtc->CString(rtc->SendMessage0(clzBSF,"STRING")));
        fflush(stderr);
 
-/* as of 2012-02-09, rgf: bombs!
+    // as of 2012-02-09, rgf: bombs! not anymore with 4.1.1, 20110222
        fprintf(stderr, "**** //1b// clzBSF~string=[%s] (->ObjectToStringValue)\n", rtc->ObjectToStringValue(clzBSF));
        fprintf(stderr, "**** //1c// clzBSF~string=[%s] (->ObjectToString)\n", rtc->CString(rtc->ObjectToString(clzBSF)));
        fflush(stderr);
-*/
+
    }
 #endif
+
+// bLoadBSF=TRUE;
 
     if (!bClzBsf && bLoadBSF)       // rgf, 2009-09-26: if BSF.CLS was not required yet, require it now!
     {
@@ -7110,7 +7116,7 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
 
     jobject jresult=NULL;   // default for -1, -2
 
-#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA)
+#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA) || defined (DEBUG_ARRAY_ARGS)
     RexxStringObject strTmpObj= RgfDebug_GetMaxStringValue(context, tmpObj, 90) ;
     fprintf(stderr, "... RgfRexxObject2JavaObject():b: typeIndicator=[%d], maxStringValue=[%.256s]\n", typeIndicator, (unsigned long) context->CString(strTmpObj) );
 
@@ -7124,7 +7130,7 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
         if (typeIndicator==1)   // a .STRING
         {
 
-#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA)
+#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA) || defined (DEBUG_ARRAY_ARGS)
     // fprintf(stderr, "-> BSF(): \targ[%u] STRING       val=[%.256s]\n",i, context->CString(context->ObjectToString(tmpObj))); fflush(stderr);
     fprintf(stderr, "-> RgfRexxObject2JavaObject():c: \tSTRING       val=[%.256s]\n",
        context->CString(RgfDebug_GetMaxStringValue(context, tmpObj, 180))); fflush(stderr);
@@ -7145,7 +7151,7 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
             // )
             if (typeIndicator>1)    // a BSF/UNO_PROXY object in hand, Java object resides in BSF registry
             {
-#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA)
+#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA) || defined (DEBUG_ARRAY_ARGS)
     fprintf(stderr, "-> RgfRexxObject2JavaObject():d: \tBSF/UNO_PROXY val=[%.256s]\n",context->CString(RgfDebug_GetMaxStringValue(context, tmpObj, 90)) ); fflush(stderr);
 #endif
                 // lookup the Java object from the BSF registry and return that Java object, i.e.
@@ -7160,7 +7166,7 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
             else    // any other Rexx object, wrap it up as a (Java) RexxProxy
             {
 
-#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA)
+#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA) || defined (DEBUG_ARRAY_ARGS)
     char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
     fprintf(stderr, "-> RgfRexxObject2JavaObject(): debug! \tis a non-String, non-BSF/UNO RexxObject, type=[%.256s]: creating a RexxProxy for it!\n\t~string=[%.256s]\n",
                      context->CString(context->ObjectToString(context->SendMessage0(tmpObj,"CLASS"))),
@@ -7175,8 +7181,8 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
                                             NULL        // userData (slot)
                                             );
 
-#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA)
-     fprintf(stderr, "-> RgfRexxObject2JavaObject(): AFTER creating RexxProxy jresult=[%p]\n",jresult);fflush(stderr);
+#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA) || defined (DEBUG_ARRAY_ARGS)
+     fprintf(stderr, "-> RgfRexxObject2JavaObject(): AFTER creating RexxProxy jresult=[%p], CheckCondition()=[%d]\n",jresult,context->CheckCondition());fflush(stderr);
 #endif
             }
         }
@@ -7193,6 +7199,9 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
 jobjectArray RgfRexxArray2JavaArray(PSTRUCT_PARAM param, RexxThreadContext *context, RexxArrayObject argArray)
 {
 // *** >>>> ????
+#if defined (RGF_INFO_1) || defined (DEBUG_ARRAY_ARGS) // rgf, 20090820
+    fprintf(stderr, "RgfRexxArray2JavaArray():\t 1 - just arrived, CheckCondition()=[%d]...\n", context->CheckCondition());fflush(stderr);
+#endif
     if (argArray==NULL)     // no object passed in, then return NULL as well
     {
         return NULL;
@@ -7209,12 +7218,12 @@ jobjectArray RgfRexxArray2JavaArray(PSTRUCT_PARAM param, RexxThreadContext *cont
                               NULL
                               // defaultJVM->jstring_emptyUTFString// (*env).NewStringUTF("")
                               );
-#ifdef RGF_INFO_1 // rgf, 20090820
-    fprintf(stderr, "RgfRexxArray2JavaArray():\t 1 - after creating Java array object 'arr'...\n");fflush(stderr);
+#if defined (RGF_INFO_1) || defined (DEBUG_ARRAY_ARGS) // rgf, 20090820
+    fprintf(stderr, "RgfRexxArray2JavaArray():\t 2 - after creating Java array object 'arr', CheckCondition()=[%d]...\n", context->CheckCondition());fflush(stderr);
 #endif
 
 
-#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_BSF_FUNCTION)
+#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_BSF_FUNCTION) || defined (DEBUG_ARRAY_ARGS)
 
     #ifdef UNIX
         pthread_t
@@ -7223,7 +7232,7 @@ jobjectArray RgfRexxArray2JavaArray(PSTRUCT_PARAM param, RexxThreadContext *cont
     #endif
         tid=RgfGetTID();
 
-    fprintf(stderr, "--- RGF_INFO: RgfRexxArray2JavaArray(): 1, tid=[%lu], numArgs=[%lu]", (unsigned long) tid, numArgs);fflush(stderr);
+    fprintf(stderr, "--- RGF_INFO: RgfRexxArray2JavaArray(): 3, tid=[%lu], numArgs=[%lu]", (unsigned long) tid, numArgs);fflush(stderr);
     if (numArgs>0)
     {
 
@@ -7259,6 +7268,10 @@ jobjectArray RgfRexxArray2JavaArray(PSTRUCT_PARAM param, RexxThreadContext *cont
         RexxObjectPtr tmpObj=context->ArrayAt(argArray, i+1);    // get Object from ooRexx argument array list
         param->env->SetObjectArrayElement(arr, (jsize) i, RgfRexxObject2JavaObject(param,context,tmpObj));
     }
+
+#if defined (RGF_INFO_1) || defined (DEBUG_ARRAY_ARGS) // rgf, 20120221
+    fprintf(stderr, "RgfRexxArray2JavaArray():\t 4 - before returning, CheckCondition()=[%d]...\n", context->CheckCondition());fflush(stderr);
+#endif
 
     return arr;
 }
@@ -14040,6 +14053,13 @@ fflush(stderr);
 
 <<< */
 
+    // invocationType:
+    //   1: execute Rexx program from file, use the 4.0 API <code>CallProgram</code>
+    //   2: execute Rexx program from buffer, uses the 4.0 API <code>NewRoutine</code> and <code>CallRoutine</code>
+    //   3: load Rexx package (and run prolog) from file, use the 4.0 API <code>LoadPackage</code>
+    //   4: load Rexx package (and run prolog) from buffer, use the 4.0 API <code>LoadPackageFromData</code>
+// fprintf(stderr, "C++ invocationType=[%d]\n", invocationType);fflush(stderr);
+
     switch (invocationType)
     {
     case 1:     // CallProgram()
@@ -15272,7 +15292,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         // invoke command handler
             // create slot array argument
     jobjectArray jslot = param.env->NewObjectArray (
-                              (jsize) 5,                // needed size (number of elements)
+                              (jsize) 4,                // needed size (number of elements)
                               defaultJVM->clz_Object,   // type
                               NULL                      // initial value
                               );
@@ -15290,13 +15310,9 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         // index [3]: add context pointer type: 0=ThreadContext, 1=MethodContext, 2=FunctionContext, 3=ExitContext
     param.env->SetObjectArrayElement(jslot, (jint) 3, param.env->NewStringUTF("3"));
 
-        // index [4]: last entry always unused, meant as a slot entry in case this becomes necessary in the future
-
-
     jobjectArray jpb=NULL;    // Java version of the parmBlock (Object [])
 
-// !!!
-// TODO: process paramBlock according to system exit, prepare argument accordingly
+
 
     // ================== BEGIN: system exit related special handling, before invoking the Java exit handler
     {
@@ -15360,6 +15376,160 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                 }
             }
             break;
+
+
+            // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        case RXCMD:    // system exit # 3, "Process calls to subcommand handlers"
+            {
+
+#if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
+                RXCMDHST_PARM *pb =(RXCMDHST_PARM *) parmBlock;
+                fprintf(stderr, "---> RXCMD=3: [%d], subfunction: [%d], address=[%.32s], dllname=[%.32s], command=[%.64s]\n",
+                                    exitNumber,
+                                    subfunction,
+                                    pb->rxcmd_address,
+                                    pb->rxcmd_dll,
+                                    pb->rxcmd_command
+                                    );
+#endif
+
+                if (subfunction==RXCMDHST)   // 1 - Calls a named subcommand handler
+                {
+                    RXCMDHST_PARM *pb=(RXCMDHST_PARM *) parmBlock;
+
+                    jpb = param.env->NewObjectArray (
+                                   (jsize) 5,                // needed size (number of elements)
+                                   defaultJVM->clz_Object,   // type
+                                   NULL                      // initial value
+                                   );
+
+                        // process flags for Java
+                    jbooleanArray jflags= param.env->NewBooleanArray((jsize) 2); // needed size (number of elements)
+                    jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
+                    tmpFlags[0]=pb->rxcmd_flags.rxfcfail;
+                    tmpFlags[1]=pb->rxcmd_flags.rxfcerr;
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
+
+
+                        // process address name
+                    CONSTRXSTRING address_name;
+                    address_name.strptr   =pb->rxcmd_address;
+                    address_name.strlength=pb->rxcmd_addressl;
+                    jobject jaddress=JNU_CreateJavaStringFromCONSTRXSTRING(param.env,
+                                                 context->threadContext,
+                                                &address_name);
+                    param.env->SetObjectArrayElement(jpb, (jint) 1, jaddress);
+
+
+                        // process dllname name
+                    CONSTRXSTRING dllname_name;
+                    dllname_name.strptr   =pb->rxcmd_dll;
+                    dllname_name.strlength=pb->rxcmd_dll_len;
+                    jobject jdllname=JNU_CreateJavaStringFromCONSTRXSTRING(param.env,
+                                                 context->threadContext,
+                                                &dllname_name);
+                    param.env->SetObjectArrayElement(jpb, (jint) 2, jdllname);
+
+
+                        // process command
+                    jobject jcommand=JNU_CreateJavaStringFromCONSTRXSTRING(param.env,
+                                                 context->threadContext,
+                                                &pb->rxcmd_command);
+                    param.env->SetObjectArrayElement(jpb, (jint) 3, jcommand);
+
+                       // index [4]: may be set by the exit handler to a return String (!) value
+                }
+            }
+            break;
+
+
+            // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        case RXMSQ:   // system exit # 4, "External data queue exit"
+            {
+
+#if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
+                fprintf(stderr, "---> RXMSQ=4: [%d], subfunction: [%d]\n", exitNumber, subfunction);
+#endif
+
+                if (subfunction==RXMSQPLL)   // 1 - Pulls a line from the external data queue
+                {
+                    RXMSQPLL_PARM *pb=(RXMSQPLL_PARM *) parmBlock;
+
+                    jpb = param.env->NewObjectArray (
+                                   (jsize) 1,                // needed size (number of elements)
+                                   defaultJVM->clz_Object,   // type
+                                   NULL                      // initial value
+                                   );
+
+                        // index [0]: may be set by the exit handler to return any value
+
+                }
+
+                else if (subfunction==RXMSQPSH) // 2 - Places a line in the external data queue.
+                {
+                    RXMSQPSH_PARM *pb=(RXMSQPSH_PARM *) parmBlock;
+
+                    jpb = param.env->NewObjectArray (
+                                   (jsize) 2,                // needed size (number of elements)
+                                   defaultJVM->clz_Object,   // type
+                                   NULL                      // initial value
+                                   );
+
+                        // process flags for Java
+                    jbooleanArray jflags= param.env->NewBooleanArray((jsize) 1); // needed size (number of elements)
+                    jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
+                    tmpFlags[0]=pb->rxmsq_flags.rxfmlifo;
+
+fprintf(stderr, "C++ RXMSQPSH, pb->rxmsq_flags.rxfmlifo=[%d]\n", pb->rxmsq_flags.rxfmlifo);fflush(stderr);
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
+
+                        // process value to push
+                    jobject jvalue=JNU_CreateJavaStringFromCONSTRXSTRING(param.env,
+                                                 context->threadContext,
+                                                &pb->rxmsq_value);
+                    param.env->SetObjectArrayElement(jpb, (jint) 1, jvalue);
+                }
+
+                else if (subfunction==RXMSQSIZ)     // 3 - Returns the number of lines in the external data queue
+                {
+                    RXMSQSIZ_PARM *pb=(RXMSQSIZ_PARM *) parmBlock;
+
+                    jpb = param.env->NewObjectArray (
+                                   (jsize) 1,                // needed size (number of elements)
+                                   defaultJVM->clz_Object,   // type
+                                   NULL                      // initial value
+                                   );
+
+                        // index [0]: should be set by the Java handler, a String containing the number
+                }
+
+                else if (subfunction==RXMSQNAM)     // 20 - Sets the name of the active external data queue
+                {
+                    RXMSQNAM_PARM *pb=(RXMSQNAM_PARM *) parmBlock;
+
+                    jpb = param.env->NewObjectArray (
+                                   (jsize) 1,                // needed size (number of elements)
+                                   defaultJVM->clz_Object,   // type
+                                   NULL                      // initial value
+                                   );
+
+                        // index [0]: new queue name; be nice and use type CONSTRXSTRING for RXSTRING, although they have the same structure but different const defs
+                    CONSTRXSTRING new_queue_name;
+                    new_queue_name.strptr   =pb->rxmsq_name.strptr;
+                    new_queue_name.strlength=pb->rxmsq_name.strlength;
+
+// fprintf(stderr, "C++ C++ C++ RXMSQNAM, new_queue_name=[%.64s]\n", pb->rxmsq_name.strptr);fflush(stderr);
+                    jobject jnewQueueName=JNU_CreateJavaStringFromCONSTRXSTRING(param.env,
+                                                 context->threadContext,
+                                                &new_queue_name);
+                    param.env->SetObjectArrayElement(jpb, (jint) 0, jnewQueueName);
+                }
+            }
+            break;
+
+
 
 
             // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -15450,12 +15620,11 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         case RXHLT:    // system exit # 7, "HALT condition processing"
             {
 #if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
-                RXFNCCAL_PARM *pb =(RXFNCCAL_PARM *) parmBlock;
                 fprintf(stderr, "---> RXHLT=7: [%d], subfunction: [%d]\n", exitNumber, subfunction);
 #endif
 
                 if (subfunction==RXHLTTST ||    // 2
-                    subfunction==RXHLTCLR)      // 1 - TODO: does this have a parmBlock ??
+                    subfunction==RXHLTCLR)      // 1 - also has a parmBlock (unclear documentation) !!
                 {
                     RXHLTTST_PARM *pb=(RXHLTTST_PARM *) parmBlock;
                     jpb = param.env->NewObjectArray (
@@ -15476,6 +15645,32 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
             }
             break;
 
+
+            // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        case RXTRC:    // system exit # 8, "Tests the external trace indicator."
+            {
+#if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
+                fprintf(stderr, "---> RXTRC=8: [%d], subfunction: [%d]\n", exitNumber, subfunction);
+#endif
+
+                if (subfunction==RXTRCTST)      // 1
+                {
+                    RXTRCTST_PARM *pb =(RXTRCTST_PARM *) parmBlock;
+                    jpb = param.env->NewObjectArray (
+                                   (jsize) 1,                // needed size (number of elements)
+                                   defaultJVM->clz_Object,   // type
+                                   NULL                      // initial value
+                                   );
+
+                        // process flag for Java
+                    jbooleanArray jflags= param.env->NewBooleanArray((jsize) 1); // needed size (number of elements)
+                    jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
+                    tmpFlags[0]=pb->rxtrc_flags.rxftrace;
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
+                }
+            }
+            break;
 
 
 
@@ -15527,11 +15722,11 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                          param.env->NewStringUTF(context->CString(pb->variable_name))
                                                          );
 
-
-
                 }
             }
             break;
+
+
 
             // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         case RXEXF:     // system exit # 12, "processes calls to external functions, if not found", OO version
@@ -15568,7 +15763,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     }
 
                     jpb = param.env->NewObjectArray (
-                                   (jsize) 5,                // needed size (number of elements)
+                                   (jsize) 4,                // needed size (number of elements)
                                    defaultJVM->clz_Object,   // type
                                    NULL                      // initial value
                                    );
@@ -15606,14 +15801,11 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     RexxArrayObject rao=context->NewArray(argc);
                     for (size_t i=0; i<argc; i++)
                     {
-                        context->ArrayPut(rao, argv[i], i);
+                        context->ArrayPut(rao, argv[i], i+1);
                     }
                     param.env->SetObjectArrayElement(jpb, (jint) 2, RgfRexxArray2JavaArray(&param, context->threadContext, rao));
 
                     // fourth element remains NULL, needs to be set by handler, if a result is returned
-
-                    // fifth element is our slot
-
                 }
             }
             break;
@@ -15670,7 +15862,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
     }
     // ================== END:   system exit related special handling, before invoking the Java exit handler
 
-
+/*
     if (param.env->ExceptionCheck())
     {
 // show Java handler stack before raising a Rexx condition to help debug Java implemented handlers
@@ -15679,6 +15871,19 @@ param.env->ExceptionDescribe();    // clear the Java exception
 fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         param.env->ExceptionClear();    // clear the Java exception
     }
+*/
+
+
+
+        // a Rexx condition raised while preparing data for the Java handler? If so, return immediately
+    if (context->CheckCondition()) {
+        RgfAcquireLock();
+        environmentDetachFrom(&param, FALSE);    // do not close group
+        RgfReleaseLock();
+        return RXEXIT_RAISE_ERROR;
+    }
+
+
 
         // public abstract Object handleCommand(String address, String command, Object[] slot);
     jobject jresult=NULL;
@@ -15760,28 +15965,9 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
         return RXEXIT_RAISE_ERROR;
-
-/*
-        // -----------------
-// show Java handler stack before raising a Rexx condition to help debug Java implemented handlers
-fprintf(stderr, "*** rexx_exit_handler_entry --> ****\n");
-param.env->ExceptionDescribe();    // clear the Java exception
-fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
-
-        param.env->ExceptionClear();    // clear the Java exception
-        RgfAcquireLock();
-        environmentDetachFrom(&param, FALSE);    // do not close group
-        RgfReleaseLock();
-
-        SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 5: Java exception while running the Java exit handler for system exit number=[%d], subfunction=[%d]",
-                            DLLNAME, exitNumber, subfunction);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        return RXEXIT_RAISE_ERROR;
-*/
     }
 
 
-        // TODO: analyze system exits that raise an error indicator whether
         // a Rexx condition raised by the Java handler? If so, return immediately
     if (context->CheckCondition()) {
         RgfAcquireLock();
@@ -15790,9 +15976,8 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         return RXEXIT_RAISE_ERROR;
     }
 
-// !!!
-// TODO: process return code
-// TODO: process paramBlock contained result (if any) according to system exit; transfer to parmBlock, if necessary
+
+
     // --------------------------------------------------------------------------
     // --------------------------------------------------------------------------
     if (j_exit_rc != RXEXIT_NOT_HANDLED)    // o.k. exit handler says it handled exit; do we need to do something ?
@@ -15852,6 +16037,146 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                 break;
 
 
+                // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            case RXCMD:    // system exit # 3, "Process calls to subcommand handlers"
+                {
+
+    #if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
+                    RXCMDHST_PARM *pb =(RXCMDHST_PARM *) parmBlock;
+                    fprintf(stderr, "<--- RXCMD=3: [%d], subfunction: [%d], address=[%.32s], dllname=[%.32s], command=[%.64s]\n",
+                                        exitNumber,
+                                        subfunction,
+                                        pb->rxcmd_address,
+                                        pb->rxcmd_dll,
+                                        pb->rxcmd_command
+                                        );
+    #endif
+
+                    if (subfunction==RXCMDHST)   // 1 - Calls a named subcommand handler
+                    {
+                        RXCMDHST_PARM *pb=(RXCMDHST_PARM *) parmBlock;
+
+                            // get flags from Java and assign their values to Rexx
+                        jbooleanArray jflags= (jbooleanArray) param.env->GetObjectArrayElement(jpb, (jint) 0);
+                        jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
+                        pb->rxcmd_flags.rxfcfail =tmpFlags[0];
+                        pb->rxcmd_flags.rxfcerr  =tmpFlags[1];
+                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+
+                            // get result, if any, turn it into a RexxObjectPtr
+                        jobject jresult=param.env->GetObjectArrayElement(jpb, (jint) 4);
+                        if (jresult==NULL )     // return an empty Rexx string
+                        {
+                            pb->rxcmd_retc.strlength=0;
+// fprintf(stderr, "C++ C++ -> jresult==NULL! \n");fflush(stderr);
+                        }
+
+                            // an error
+                            // TODO: could get Java object's String value and return that ?
+                        else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
+                        {
+                            pb->rxcmd_flags.rxfcerr =1; // indicate an error occurred
+                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 7: Java RXCMD=3 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
+                                                DLLNAME, exitNumber, subfunction);
+                            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+                        }
+
+                        else    // o.k., process Java String object
+                        {
+                            JNU_JavaString2pRxString(param.env, (jstring) jresult, &pb->rxcmd_retc);
+// fprintf(stderr, "C++ C++ -> created return value=[%.128s] \n", pb->rxcmd_retc.strptr);fflush(stderr);
+                        }
+                    }
+                }
+                break;
+
+
+
+                // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            case RXMSQ:   // system exit # 4, "External data queue exit"
+                {
+
+    #if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
+                    fprintf(stderr, "<--- RXMSQ=4: [%d], subfunction: [%d]\n", exitNumber, subfunction);
+    #endif
+
+                    if (subfunction==RXMSQPLL)   // 1 - Pulls a line from the external data queue
+                    {
+                        RXMSQPLL_PARM *pb=(RXMSQPLL_PARM *) parmBlock;
+
+                            // get result, if any, turn it into a RexxObjectPtr
+                        jobject jresult=param.env->GetObjectArrayElement(jpb, (jint) 0);
+                        if (jresult==NULL )     // return an empty Rexx string
+                        {
+                            pb->rxmsq_retc.strlength=0;
+// fprintf(stderr, "C++ C++ -> jresult==NULL! \n");fflush(stderr);
+                        }
+
+                            // an error
+                            // TODO: could get Java object's String value and return that ?
+                        else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
+                        {
+                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 8: Java RXMSQ=4 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
+                                                DLLNAME, exitNumber, subfunction);
+                            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+                        }
+
+                        else    // o.k., process Java String object
+                        {
+                            JNU_JavaString2pRxString(param.env, (jstring) jresult, &pb->rxmsq_retc);
+// fprintf(stderr, "C++ C++ -> created return value=[%.128s] \n", pb->rxmsq_retc.strptr);fflush(stderr);
+                        }
+                    }
+
+                    else if (subfunction==RXMSQSIZ)     // 3 - Returns the number of lines in the external data queue
+                    {
+                        RXMSQSIZ_PARM *pb=(RXMSQSIZ_PARM *) parmBlock;
+
+                            // get result, if any, turn it into a RexxObjectPtr
+                        jobject jresult=param.env->GetObjectArrayElement(jpb, (jint) 0);
+                        if (jresult==NULL )     // return an empty Rexx string
+                        {
+                            pb->rxmsq_size=0;
+// fprintf(stderr, "C++ C++ -> jresult==NULL! \n");fflush(stderr);
+                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 9: Java RXMSQ=4 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a value (current size of queue)",
+                                                DLLNAME, exitNumber, subfunction);
+                            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+                        }
+
+                            // an error
+                            // TODO: could get Java object's String value and return that ?
+                        else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
+                        {
+                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 10: Java RXMSQ=4 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
+                                                DLLNAME, exitNumber, subfunction);
+                            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+                        }
+
+                        else    // o.k., process Java String object, return Rexx string
+                        {
+                                // turn Java value into size_t
+                            char * c_result=(char *) JNU_GetStringNativeChars(param.env, (jstring) jresult);   // convert to native string
+                            size_t size=0;
+                                // turn into RexxString, then create a size_t from it
+                            int res=context->ObjectToStringSize(context->String(c_result), &size);
+                            if (res==0)     // conversion error occurred !
+                            {
+                                SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 11: Java RXMSQ=4 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object representing a valid number (\"size_t\")",
+                                                    DLLNAME, exitNumber, subfunction);
+                                context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+                            }
+                            else    // conversion went o.k.
+                            {
+                                pb->rxmsq_size=size;
+                            }
+                            RexxFreeMemory(c_result);
+                        }
+                    }
+                }
+                break;
+
+
+
 
                 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             case RXSIO:    // system exit # 5, "standard input and output"
@@ -15899,7 +16224,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                             // TODO: could get Java object's String value and return that ?
                         else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
                         {
-                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 7: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
+                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 12: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
                                                 DLLNAME, exitNumber, subfunction);
                             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
                         }
@@ -15929,7 +16254,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                             // TODO: could get Java object's String value and return that ?
                         else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
                         {
-                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 8: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
+                            SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 13: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
                                                 DLLNAME, exitNumber, subfunction);
                             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
                         }
@@ -15948,7 +16273,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
             case RXHLT:    // system exit # 7, "HALT condition processing"
                 {
     #if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
-                    RXFNCCAL_PARM *pb =(RXFNCCAL_PARM *) parmBlock;
                     fprintf(stderr, "<--- RXHLT=7: [%d], subfunction: [%d]\n", exitNumber, subfunction);
     #endif
 
@@ -15961,10 +16285,26 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         jbooleanArray jflags= (jbooleanArray) param.env->GetObjectArrayElement(jpb, (jint) 0);
                         jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                         pb->rxhlt_flags.rxfhhalt =tmpFlags[0];
+                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    }
+                }
+                break;
 
 
-// fprintf(stderr, "<--- RXHLT=7: [%d], subfunction: [%d], pb->rxhlt_flags.rxfhhalt=[%d]\n",exitNumber, subfunction, pb->rxhlt_flags.rxfhhalt);fflush(stderr);
+                // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            case RXTRC:    // system exit # 8, "Tests the external trace indicator"
+                {
+    #if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
+                    fprintf(stderr, "<--- RXTRC=8: [%d], subfunction: [%d]\n", exitNumber, subfunction);
+    #endif
+                    if (subfunction==RXTRCTST)      // 1 - Tests the external trace indicator
+                    {
+                        RXTRCTST_PARM *pb =(RXTRCTST_PARM *) parmBlock;
 
+                            // get flags from Java and assign their values to Rexx
+                        jbooleanArray jflags= (jbooleanArray) param.env->GetObjectArrayElement(jpb, (jint) 0);
+                        jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
+                        pb->rxtrc_flags.rxftrace =tmpFlags[0];
                         param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
                     }
                 }
@@ -16043,13 +16383,19 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
 
                         if (subfunction==RXOFNCCAL || subfunction==RXEXFCAL)   // 1
                         {
-#if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
-                        fprintf(stderr, "<--- RXEXF=12/RXOFNC=15, exitNumber: [%d], subfunction: [%d], RXEXIT_HANDLED, rxfnc_name=[%.256s]\n",
+#if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER ) || defined (DEBUGINFO_FOR_OTHERS)
+    #if defined (DEBUGINFO_FOR_OTHERS)
+       fprintf(stderr, "C++ ");
+    #endif
+
+                        fprintf(stderr, "<--- RXEXF=12/RXOFNC=15, exitNumber: [%d], subfunction: [%d], RXEXIT_HANDLED, rxfnc_name=[%.256s], j_exit_rc=[%d]=[%s]\n",
                                            exitNumber,
                                            subfunction,
                                            exitNumber==RXOFNC ?
                                                       ((RXOFNCCAL_PARM *) parmBlock)->rxfnc_name.strptr :
                                                       ((RXEXFCAL_PARM *)  parmBlock)->rxfnc_name.strptr
+                                           , j_exit_rc
+                                           , (j_exit_rc==RXEXIT_HANDLED ? "RXEXIT_HANDLED" : "RXEXIT_RAISE_ERROR")
                                            );
 #endif
 
@@ -16061,19 +16407,31 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                 // get flags from Java and assign their values to Rexx
                             jbooleanArray jflags= (jbooleanArray) param.env->GetObjectArrayElement(jpb, (jint) 0);
                             jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
+
+#if defined (DEBUGINFO_FOR_OTHERS)
+    fprintf(stderr,  "C++ returned from RXOFNC or RXEXF exit, ferr=[%d], fnfnd=[%d], fsub=[%d]\n",tmpFlags[0], tmpFlags[1], tmpFlags[2]); fflush(stderr);
+#endif
+
                             if (exitNumber==RXOFNC)
                             {
                                 RXOFNC_FLAGS flags=((RXOFNCCAL_PARM *) parmBlock)->rxfnc_flags;
                                 flags.rxfferr =tmpFlags[0];
                                 flags.rxffnfnd=tmpFlags[1];
-                                flags.rxffsub =tmpFlags[2];
+
+#if defined (DEBUGINFO_FOR_OTHERS)
+   fprintf(stderr,  "C++               RXOFNC              , ferr=[%d], fnfnd=[%d]\n",flags.rxfferr, flags.rxffnfnd);fflush(stderr);
+#endif
+
                             }
                             else
                             {
                                 RXEXF_FLAGS flags=((RXEXFCAL_PARM *) parmBlock)->rxfnc_flags;
                                 flags.rxfferr =tmpFlags[0];
                                 flags.rxffnfnd=tmpFlags[1];
-                                flags.rxffsub =tmpFlags[2];
+
+#if defined (DEBUGINFO_FOR_OTHERS)
+  fprintf(stderr,  "C++                         RXEXF     , ferr=[%d], fnfnd=[%d]\n",flags.rxfferr, flags.rxffnfnd);fflush(stderr);
+#endif
                             }
                             param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
 
@@ -16253,10 +16611,6 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
                                       jaddress);
 
         // check for Java exception
-
-SNPRINTF(msg, 1024, "%%.16s/internal/rexx_command_handler_entry(), error 3: Java exception while attempting to fetch the Java command handler for command name/address=[%s] - [%%s]",
-                    context->CString(address));
-fprintf(stderr, "*** DEBUG *** ---> [%s] <---\n", msg);
     if (param.env->ExceptionCheck())
     {
             // raise Rexx condition with Java Throwable
@@ -16271,23 +16625,6 @@ fprintf(stderr, "*** DEBUG *** ---> [%s] <---\n", msg);
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
         return NULL;
-
-/*
-        // --------------------
-// show Java handler stack before raising a Rexx condition to help debug Java implemented handlers
-fprintf(stderr, "*** rexx_command_handler_entry --> ****\n");
-param.env->ExceptionDescribe();    // clear the Java exception
-fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
-        param.env->ExceptionClear();    // clear the Java exception
-        RgfAcquireLock();
-        environmentDetachFrom(&param, FALSE);    // do not close group
-        RgfReleaseLock();
-
-        SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_handler_entry(), error 3: Java exception while attempting to fetch the Java command handler for command name/address=[%s]",
-                            DLLNAME, context->CString(address));
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        return NULL;
-*/
     }
 
         // check whether jhandler==NULL, if so raise appropriate RexxCondtion
@@ -16306,7 +16643,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         // invoke command handler
             // create slot array argument
     jobjectArray jslot = param.env->NewObjectArray (
-                              (jsize) 5,                // needed size (number of elements)
+                              (jsize) 4,                // needed size (number of elements)
                               defaultJVM->clz_Object,   // type
                               NULL                      // initial value
                               );
@@ -16323,8 +16660,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
 
         // index [3]: add context pointer type: 0=ThreadContext, 1=MethodContext, 2=FunctionContext, 3=ExitContext
     param.env->SetObjectArrayElement(jslot, (jint) 3, param.env->NewStringUTF("3"));
-
-        // index [4]: last entry always unused, meant as a slot entry in case this becomes necessary in the future
 
 
         // public abstract Object handleCommand(Object slot, String address, String command);
@@ -16385,23 +16720,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
         return NULL;
-
-/*
-        // -------------------------
-// show Java handler stack before raising a Rexx condition to help debug Java implemented handlers
-fprintf(stderr, "*** rexx_command_handler_entry --> ****\n");
-param.env->ExceptionDescribe();    // clear the Java exception
-fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
-        param.env->ExceptionClear();    // clear the Java exception
-        RgfAcquireLock();
-        environmentDetachFrom(&param, FALSE);    // do not close group
-        RgfReleaseLock();
-
-        SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_handler_entry(), error 6: Java exception while running the Java command handler for command name/address=[%s], command=[%s]",
-                            DLLNAME, context->CString(address), context->CString(command));
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        return NULL;
-*/
     }
 
 

@@ -27,13 +27,13 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
  *
  * @author Rony G. Flatscher
  * @version 1.0
- * @since 2012-02-17
+ * @since 2012-02-21
  */
 public interface RexxExitHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "1.20120217";
+    final static public String version = "99.20120221";
 
     // --------------------------------------------------------------------------------
     //    Exit return actions
@@ -97,6 +97,304 @@ public interface RexxExitHandler
     /** Exit handler signature (called via native code) according to the ooRexx API
      *  documentation in <code>rexxpg.pdf</code>.
      *
+     *
+
+       <p>
+       The following documents briefly the parmBlock-array that gets supplied to the Java exit
+       handler, depending on the exit number and subfunction. Please refer also to the ooRexx
+       documentation &quot;rexxpg.pdf&quot;, section entitled &quot;Context Exit Definitions&quot;
+       on which this implementation is based upon.
+
+        <table border>
+        <tr>
+            <th>Exit name/number
+            <th>subfunction name/number
+            <th>Description
+
+        <tr> <!-- ================================================ -->
+            <td><code>RXFNC/2</code>
+            <td><code>RXFNCCAL/1</code>
+            <td>Processes calls to external functions.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxfnc_flags</code>, type: <code>boolean[]</code>
+                        <ul>
+                        <li><code>[0] rxfferr</code>, settable (&quot;invalid call to routine&quot;)
+                        <li><code>[1] rxffnfnd</code>, settable (&quot;function not found&quot;)
+                        <li><code>[2] rxffsub</code>, if <code>true</code> then called as subroutine, else as function
+                        </ul>
+
+                <tr>
+                    <td><code>[1] rxfnc_name</code>, subroutine/function name, type: <code>String</code>
+
+                <tr>
+                    <td><code>[2] rxfnc_que</code>, current queue name, type: <code>String</code>
+
+                <tr>
+                    <td><code>[3] rxfnc_argv</code>, supplied arguments, type: <code>Object[]</code>, can be <code>null</code>
+
+                <tr>
+                    <td><code>[4] rxfnc_retc</code>, return value by handler, if any, type: <code>String</code>
+
+                </table>
+
+
+        <tr> <!-- ================================================ -->
+            <td><code>RXCMD/3</code>
+            <td><code>RXCMDHST/1</code>
+            <td>Calls a named subcommand handler.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxfnc_flags</code>, type: <code>boolean[]</code>
+                        <ul>
+                        <li><code>[0] rxffail</code>, settable (&quot;command failed (trap FAILURE condition)&quot;)
+                        <li><code>[1] rxffcerr</code>, settable (&quot;command raises an error (trap ERROR condition)&quot;)
+                        </ul>
+
+                <tr>
+                    <td><code>[1] rxcmd_address</code>, address name, type: <code>String</code>
+
+                <tr>
+                    <td><code>[2] rxcmd_dll</code>, DLL name, if handler is in a DLL, empty string else, type: <code>String</code>
+
+                <tr>
+                    <td><code>[3] rxcmd_command</code>, command, type: <code>String</code>
+
+                <tr>
+                    <td><code>[4] rxcmd_retc</code>, return value by handler, if any, type: <code>String</code>
+
+                </table>
+
+
+        <tr> <!-- ================================================ -->
+            <td><code>RXMSQ/4</code>
+            <td><code>RXMSQPLL/1</code>
+            <td>Pulls a line from the external data queue.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxmsq_retc</code>, return value by handler, if any, type: <code>String</code>
+                </table>
+
+        <tr>
+            <td>
+            <td><code>RXMSQPSH/2</code>
+            <td>Places a line in the external data queue.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxfnc_flags</code>, type: <code>boolean[]</code>
+                        <ul>
+                        <li><code>[0] rxfmlifo</code>, if set <code>LIFO (QUEUE)</code>, if <code>false FIFO (PUSH)</code>
+                        </ul>
+
+                <tr>
+                    <td><code>[1] rxmsq_value</code>, entry to be pushed/queued, type: <code>String</code>
+                </table>
+
+        <tr>
+            <td>
+            <td><code>RXMSQSIZ/3</code>
+            <td>Returns the number of lines in the external data queue.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxmsq_size</code>, number of lines in queue, type: <code>String</code>
+                </table>
+
+        <tr>
+            <td>
+            <td><code>RXMSQNAM/20</code>
+            <td>Sets the name of the active external data queue.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxmsq_name</code>, new external data queue name, type: <code>String</code>
+                </table>
+
+
+        <tr> <!-- ================================================ -->
+            <td><code>RXSIO/5</code>
+            <td><code>RXSIOSAY/1</code>
+            <td>Writes a line to the standard output stream.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxsio_string</code>, string to display, type: <code>String</code>
+                </table>
+
+        <tr>
+            <td>
+            <td><code>RXSIOTRC/2</code>
+            <td>Writes trace and error message output to the standard error stream.
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxsio_string</code>, trace line to display, type: <code>String</code>
+                </table>
+
+        <tr>
+            <td>
+            <td><code>RXSIOTRD/3</code>
+            <td>Reads from standard input stream.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxsiotrd_retc</code>, return value by handler, if any, type: <code>String</code>
+                </table>
+
+        <tr>
+            <td>
+            <td><code>RXSIODTR/4</code>
+            <td>Interactive debug input.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxsiodtr_retc</code>, return value by handler, if any, type: <code>String</code>
+                </table>
+
+        <tr> <!-- ================================================ -->
+            <td><code>RXHLT/7</code>
+            <td><code>RXHLTCLR/1</code>
+            <td>Clears the HALT condition.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxhlt_flags</code>, type: <code>boolean[]</code>
+                        <ul>
+                        <li><code>[0] rxfhhalt</code>, settable, if set to <code>true</code>, the <code>HALT</code> condition will be cleared
+                        </ul>
+                </table>
+
+
+        <tr>
+            <td>
+            <td><code>RXHLTTST/2</code>
+            <td>Tests the halt indicator.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxhlt_flags</code>, type: <code>boolean[]</code>
+                        <ul>
+                        <li><code>[0] rxfhhalt</code>, settable, if set to <code>true</code>, the <code>HALT</code> condition will be raised
+                        </ul>
+                </table>
+
+
+        <tr> <!-- ================================================ -->
+            <td><code>RXTRC/8</code>
+            <td><code>RXTRCTST/1</code>
+            <td>Tests the external trace indicator.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxtrc_flags</code>, type: <code>boolean[]</code>
+                        <ul>
+                        <li><code>[0] rxftrace</code>, settable, if set to <code>true</code>, then tracing will take place
+                        </ul>
+                </table>
+
+
+        <tr> <!-- ================================================ -->
+            <td><code>RXINI/9</code>
+            <td><code>RXINIEXT/1</code>
+            <td>Initializing processing.
+
+
+        <tr> <!-- ================================================ -->
+            <td><code>RXTER/10</code>
+            <td><code>RXTEREXT/1</code>
+            <td>Termination processing.
+
+
+        <tr> <!-- ================================================ -->
+            <td><code>RXEXF/12</code>
+            <td><code>RXEXFCAL/1</code>
+            <td>Processes calls to external functions (ooRexx version), at end of search for an external routine.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxfnc_flags</code>, type: <code>boolean[]</code>
+                        <ul>
+                        <li><code>[0] rxfferr</code>, settable (&quot;invalid call to routine&quot;)
+                        <li><code>[1] rxffnfnd</code>, settable (&quot;function not found&quot;)
+                        <li><code>[2] rxffsub</code>, if <code>true</code> then called as subroutine, else as function
+                        </ul>
+
+                <tr>
+                    <td><code>[1] rxfnc_name</code>, subroutine/function name, type: <code>String</code>
+
+                <tr>
+                    <td><code>[2] rxfnc_argv</code>, supplied arguments, type: <code>Object[]</code>, can be <code>null</code>
+
+                <tr>
+                    <td><code>[3] rxfnc_retc</code>, return value by handler, if any, type: <code>Object</code>
+
+                </table>
+
+
+        <tr> <!-- ================================================ -->
+            <td><code>RXNOVAL/13</code>
+            <td><code>RXNOVALCALL/1</code>
+            <td>Processes a Rexx <code>NOVALUE</code> condition.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] variable_name</code>, variable name, type: <code>String</code>
+
+                <tr>
+                    <td><code>[1] value</code>, return value by handler, if any, type: <code>Object</code>
+
+                </table>
+
+
+        <tr> <!-- ================================================ -->
+            <td><code>RXVALUE/14</code>
+            <td><code>RXVALUECALL/1</code>
+            <td>Processes an extended call to the <code>VALUE()</code> built-in function (&quot;BIF&quot;)
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] selector</code>, the environment selector name, type: <code>String</code>
+
+                <tr>
+                    <td><code>[1] variable_name</code>, variable name, type: <code>String</code>
+
+                <tr>
+                    <td><code>[2] value</code>, return value by handler, if any, type: <code>Object</code>
+
+                </table>
+
+
+        <tr> <!-- ================================================ -->
+            <td><code>RXOFNC/15</code>
+            <td><code>RXOFNCCAL/1</code>
+            <td>Processes calls to external functions (ooRexx version), at beginning of the search for an external routine.<br>
+                <code>parmBlock</code>:
+                <table>
+                <tr>
+                    <td><code>[0] rxfnc_flags</code>, type: <code>boolean[]</code>
+                        <ul>
+                        <li><code>[0] rxfferr</code>, settable (&quot;invalid call to routine&quot;)
+                        <li><code>[1] rxffnfnd</code>, settable (&quot;function not found&quot;)
+                        <li><code>[2] rxffsub</code>, if <code>true</code> then called as subroutine, else as function
+                        </ul>
+
+                <tr>
+                    <td><code>[1] rxfnc_name</code>, subroutine/function name, type: <code>String</code>
+
+                <tr>
+                    <td><code>[2] rxfnc_argv</code>, supplied arguments, type: <code>Object[]</code>, can be <code>null</code>
+
+                <tr>
+                    <td><code>[3] rxfnc_retc</code>, return value by handler, if any, type: <code>Object</code>
+
+                </table>
+
+       </table>
+     *
      * @param slot this is an opaque <code>Object</code> argument which must be supplied
      *             unchanged to the direct Rexx API methods in {@link RexxHandler}
      * @param exitNumber the Rexx exit number
@@ -107,17 +405,6 @@ public interface RexxExitHandler
      */
     public int handleExit(Object slot, int exitNumber, int subFunction, Object[] parmBlock);
 
-
-/** The following documents briefly the parmBlock-array
-
-    system exit # RXNOVAL/13:
-
-        parmBlock[0]: variable_name - a String
-        parmBlock[1]: value         - any value the exit handler wants the variable to be assigned to
-
-    system exit ...
-
-*/
 
 }
 
