@@ -36,7 +36,9 @@ ppc: BSF4ooRexx.cc
 
 # ---------------------------------------------------
 universal: BSF4ooRexx.cc i386 x86_64
-	lipo -create -output libBSF4ooRexx.dylib -arch x86_64 libBSF4ooRexx-x86_64.dylib -arch i386 libBSF4ooRexx-i386.dylib -arch ppc libBSF4ooRexx-ppc.dylib
+	lipo -create -output libBSF4ooRexx.dylib -arch x86_64 libBSF4ooRexx-x86_64.dylib -arch i386 libBSF4ooRexx-i386.dylib 
+
+#	lipo -create -output libBSF4ooRexx.dylib -arch x86_64 libBSF4ooRexx-x86_64.dylib -arch i386 libBSF4ooRexx-i386.dylib -arch ppc libBSF4ooRexx-ppc.dylib
 
 # ---------------------------------------------------
 

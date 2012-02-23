@@ -512,7 +512,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 // #define DEBUG_REXX_OBJECT_TO_JAVA   // rgf, 2012-02-19
 // #define DEBUG_ARRAY_ARGS                // rgf, 2012-02-21
 
-#define DEBUGINFO_FOR_OTHERS     // rgf, 2012-02-22: if flag is set, then show some debug infos for others who try to debug
+// #define DEBUGINFO_FOR_OTHERS     // rgf, 2012-02-22: if flag is set, then show some debug infos for others who try to debug
 
 
 #if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
@@ -3136,7 +3136,7 @@ if (rtc->CheckCondition())
 
         clzBSF=rgfGetEntryFromLocal (rtc, "BSF");  // .local~BSF
         bClzBsf=(clzBSF!=rtc->Nil());
-fprintf(stderr, "**** //2// bClzBsf=[%d], rtc->Nil()=[%p], clzBSF=[%p]\n", bClzBsf, rtc->Nil(), clzBSF);
+// fprintf(stderr, "**** //2// bClzBsf=[%d], rtc->Nil()=[%p], clzBSF=[%p]\n", (int) bClzBsf, rtc->Nil(), clzBSF);
     }
 
 
