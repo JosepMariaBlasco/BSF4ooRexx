@@ -335,7 +335,7 @@ class RexxAndJava {
     /** Stores the Rexx engine. */
     BSFEngine  rexxEngine;
 
-    /** Getter method for field {@link rexxEngine}. */
+    /** Getter method for field {@link #rexxEngine}. */
     protected BSFEngine getRexxEngine()     // accessor
     {
         return rexxEngine;
@@ -670,7 +670,7 @@ necessary anymore
      * @param args an array of arguments to pass on
      *
      * @throws a {@link RexxException}, if the argument does not denote an existing Rexx interpreter instance
-     * @return
+     * @return a return value from running the Rexx program or <code>null</code>
      *
      * @since May 2009
      */
@@ -723,7 +723,6 @@ necessary anymore
 
     /** Unregisters the Rexx object denoted by 'obj_ID' from the JNI registry.
      *
-     * @param rii_ID a String representing the Rexx interpreter instance as returned by {@link #jniRexxCreateInterpreterInstance ()}
      * @param obj_ID the object id that is used as a key on the JNI side
      *
      * @return number of references to the Rexx object in the JNI registry left; a

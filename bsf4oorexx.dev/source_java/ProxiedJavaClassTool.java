@@ -35,7 +35,7 @@ import org.codehaus.janino.SimpleCompiler;
  *  proxied Java method invocations to their original target on the Java side.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2010-2011 Rony G. Flatscher
+ *    Copyright (C) 2010-2012 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -868,7 +868,6 @@ if (bDebug==true) System.err.println("!!! IS_SYNTHETIC_METHOD.invoke("+meths[k]+
      * @param sb the StringBuffer to append the statements to
      * @param m a Method object which needs to get proxied
      * @param newClzName the new name of the new class
-     * @param javaClassToProxy the Java (abstract) class that gets extended
      * @param ri RunInfos runtime infos for managing the process
      */
     static void createMethod (StringBuffer sb, Method m, String newClzName, RunInfos ri)
@@ -1271,7 +1270,7 @@ if (bDebug==true) System.err.println("---> createMethod() |     created 'forward
 
     /** Create comma-separated list of parameter types, enclosed in round parenthesis.
      * @param paramTypes array of Class objects
-     * @param bMethodSignature
+     * @param kind
     */
     // static String createMethodSignatureParen(Class [] paramTypes, boolean bMethodSignature)
     static String createListOfClassNames(Class [] paramTypes, int kind)

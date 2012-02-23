@@ -66,7 +66,7 @@ public abstract class RexxHandler
      *  &quot;Appendix C. Error Numbers and Messages&quot;.
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
-     * @param definedErrorNumber:  <code>errorNumber*1000+subcode</code>
+     * @param definedErrorNumber  <code>errorNumber*1000+subcode</code>
      * @param substitutions an Object array containing substitution values for the error message (if
      *        more entries get added, then they can be retrieved by ooRexx using the additional method
      *        of the condition object)
@@ -84,7 +84,7 @@ public abstract class RexxHandler
      *  &quot;Appendix C. Error Numbers and Messages&quot;.
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
-     * @param definedErrorNumber:  <code>errorNumber*1000+subcode</code>
+     * @param definedErrorNumber  <code>errorNumber*1000+subcode</code>
     */
     public static void raiseException0(Object slot, long definedErrorNumber)
     {
@@ -98,7 +98,7 @@ public abstract class RexxHandler
      *  &quot;Appendix C. Error Numbers and Messages&quot;.
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
-     * @param definedErrorNumber:  <code>errorNumber*1000+subcode</code>
+     * @param definedErrorNumber  <code>errorNumber*1000+subcode</code>
      * @param substitution1 String used as the first substition value for the error message
     */
     public static void raiseException1(Object slot, long definedErrorNumber, String substitution1)
@@ -113,7 +113,7 @@ public abstract class RexxHandler
      *  &quot;Appendix C. Error Numbers and Messages&quot;.
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
-     * @param definedErrorNumber:  <code>errorNumber*1000+subcode</code>
+     * @param definedErrorNumber  <code>errorNumber*1000+subcode</code>
      * @param substitution1 String used as the first substition value for the error message
      * @param substitution2 String used as the second substition value for the error message
     */

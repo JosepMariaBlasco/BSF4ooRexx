@@ -6,7 +6,7 @@ import java.util.*;         // BitSet
 
 /**
  * This class allows to configure a Rexx interpreter instance, before it gets created employing
- *  {@link RexxAndJava#createRexxInterpreterInstance() RexxAndJava.createRexxInterpreterInstance()}.
+ *  {@link RexxAndJava#createRexxInterpreterInstance(RexxConfiguration rc) RexxAndJava.createRexxInterpreterInstance(RexxConfiguration rc)}.
  * Cf. ooRexx' <code>rexxpg.pdf</code> documentation for the Rexx interpreter creation options.
  *
  * All final static fields that use ooRexx names also use the ooRexx constant values from
@@ -355,9 +355,9 @@ public class RexxConfiguration {
      */
     protected boolean modifiable=true;
 
-    /** Access method for field {@link modifiable}
+    /** Access method for field {@link #modifiable}
      *
-     * @return current setting of field {@link modifiable}
+     * @return current setting of field {@link #modifiable}
     */
     public boolean isModifiable()
     {
@@ -374,8 +374,8 @@ public class RexxConfiguration {
      *  possible at runtime to change to a RexxExitHandler object using
      *  {@link RexxConfiguration#setExitHandler(int function, RexxExitHandler exitHandler)}.
      *
-     * @param function the Rexx exit function number which serves as the index for {@link exitHandlers}
-     * @param exitHandler a RexxExitHandler object
+     * @param function the Rexx exit function number
+     * @param exitHandler a {@link RexxExitHandler} object
     */
     public void addExitHandler(int function, RexxExitHandler exitHandler) throws BSFException
     {
@@ -396,7 +396,7 @@ public class RexxConfiguration {
 
     /** Allows to replace a defined {@link RexxExitHandler} with a new one or to remove it.
      *
-     * @param function the Rexx exit function number which serves as the index for {@link exitHandlers}
+     * @param function the Rexx exit function number
      * @param exitHandler a RexxExitHandler object or <code>null</code>, if the exit should not be served anymore
     */
     public RexxExitHandler setExitHandler(int function, RexxExitHandler exitHandler) throws BSFException

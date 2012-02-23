@@ -572,9 +572,9 @@ class ScriptImpl implements XScript
          *                          undefined in sequence, i.e., the value
          *                          has to be ignored by the callee
          *
-         * @param aOutParamIndex    Out indices
+         * @param aOutParamsIndex   Out indices
          *
-         * @param aOutParam         Out parameters
+         * @param aOutParams        Out parameters
          *
          * @return                  The value returned from the function
          *                          being invoked

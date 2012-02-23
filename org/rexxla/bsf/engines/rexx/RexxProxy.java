@@ -17,9 +17,9 @@ import org.apache.bsf.BSFException;
 
 /**
  * This class allows RexxProxy objects to be created from native (JNI) code and will be
- * registered in the BSFRegistry using the String retrievable by {@link #getRegistryKeyValue()}.
+ * registered in the BSFRegistry using the String retrievable by {@link #getBsfRegistryKey()}.
  * It allows ooRexx objects to be addressed by Java, as well as creating any number
- * of java.lang.reflect.Proxy objects from it(cf. {@link #public Object newJavaProxyInstance(Object[] interfaces)})
+ * of java.lang.reflect.Proxy objects from it(cf. {@link #newJavaProxyInstance(Object[] interfaces)})
  * which forward any method invocation to the proxied ooRexx object.
  * The class is public, such that any Java program can define variables of type RexxProxy. However, only
  * native code is capable of instantiating this class.

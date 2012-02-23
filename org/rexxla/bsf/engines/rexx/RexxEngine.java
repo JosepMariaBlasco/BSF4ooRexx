@@ -1083,7 +1083,7 @@ if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterprete
     /** Allow halting an individual Rexx thread (raising the <code>HALT</code> condition) having
      *  the given thread ID.
      *
-     * @param a string with the target thread ID, or
+     * @param tid a string with the target thread ID, or
      *        the string <code>&quot;0&quot;</code> (raises the <code>HALT</code> condition
      *        in all ooRexx threads)
      *
