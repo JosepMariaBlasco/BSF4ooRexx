@@ -732,11 +732,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "410.20120222 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120223 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "410.20120222 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120223 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "410.20120222 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120223 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -15199,6 +15199,14 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
     PSTRUCT_RII struRii=RgfGetRexxInterpreterInstanceStructFromList(ri);
     if (struRii==NULL || struRii->rajo==NULL)
     {
+
+#if defined ( RGF_SYSTEM_EXIT_HANDLER )
+    if (exitNumber==RXINI || exitNumber==RXTER)
+    {
+        fprintf(stderr,  "C++ >> >> >> 1 << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
+    }
+#endif
+
         SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 1: panic - cannot find Rexx interpreter instance related Java interface objects, exitNumber=[%d], subfunction=[%d] for RexxInterpreterInstance=[%p]",
                             DLLNAME, exitNumber, subfunction, ri);
 
@@ -15223,6 +15231,12 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
 
     if (param.error== -1)    // could not attach to Java
     {
+#if defined ( RGF_SYSTEM_EXIT_HANDLER )
+    if (exitNumber==RXINI || exitNumber==RXTER)
+    {
+        fprintf(stderr,  "C++ >> >> >> 2 << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
+    }
+#endif
         RgfReleaseLock();
         SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 2: panic - cannot attach to Java, exit number=[%d], subfunction=[%d] for RexxInterpreterInstance=[%p]",
                             DLLNAME, exitNumber, subfunction, ri );
@@ -15239,6 +15253,12 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
 
     if (param.env->ExceptionCheck())
     {
+#if defined ( RGF_SYSTEM_EXIT_HANDLER )
+    if (exitNumber==RXINI || exitNumber==RXTER)
+    {
+        fprintf(stderr,  "C++ >> >> >> 3 << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
+    }
+#endif
             // raise Rexx condition with Java Throwable
         SNPRINTF(msg, 1024, "%%.16s/internal/rexx_exit_handler_entry(), error 3: Java exception while attempting to fetch the Java exit handler for system exit number=[%d], subfunction=[%d] - [%%s]",
                             exitNumber, subfunction);
@@ -15275,6 +15295,13 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
 
         // check whether jhandler==NULL, if so return RXEXIT_NOT_HANDLED (Java side may have nullified jhandler entry)
     if (jhandler==NULL) {
+
+#if defined ( RGF_SYSTEM_EXIT_HANDLER )
+    if (exitNumber==RXINI || exitNumber==RXTER)
+    {
+        fprintf(stderr,  "C++ >> >> >> 4 (NULL-handler!) << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
+    }
+#endif
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
@@ -15481,7 +15508,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                     tmpFlags[0]=pb->rxmsq_flags.rxfmlifo;
 
-fprintf(stderr, "C++ RXMSQPSH, pb->rxmsq_flags.rxfmlifo=[%d]\n", pb->rxmsq_flags.rxfmlifo);fflush(stderr);
                     param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
 
@@ -15520,7 +15546,6 @@ fprintf(stderr, "C++ RXMSQPSH, pb->rxmsq_flags.rxfmlifo=[%d]\n", pb->rxmsq_flags
                     new_queue_name.strptr   =pb->rxmsq_name.strptr;
                     new_queue_name.strlength=pb->rxmsq_name.strlength;
 
-// fprintf(stderr, "C++ C++ C++ RXMSQNAM, new_queue_name=[%.64s]\n", pb->rxmsq_name.strptr);fflush(stderr);
                     jobject jnewQueueName=JNU_CreateJavaStringFromCONSTRXSTRING(param.env,
                                                  context->threadContext,
                                                 &new_queue_name);
@@ -15528,7 +15553,6 @@ fprintf(stderr, "C++ RXMSQPSH, pb->rxmsq_flags.rxfmlifo=[%d]\n", pb->rxmsq_flags
                 }
             }
             break;
-
 
 
 
@@ -15769,8 +15793,6 @@ fprintf(stderr, "C++ RXMSQPSH, pb->rxmsq_flags.rxfmlifo=[%d]\n", pb->rxmsq_flags
                                    );
 
                         // process flags for Java
-                    // jintArray jflags= param.env->NewIntArray((jsize) 3); // needed size (number of elements)
-                    // jint * tmpFlags=param.env->GetIntArrayElements(jflags,NULL);
                     jbooleanArray jflags= param.env->NewBooleanArray((jsize) 3); // needed size (number of elements)
                     jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                     if (exitNumber==RXOFNC)
@@ -15854,6 +15876,14 @@ fprintf(stderr, "C++ RXMSQPSH, pb->rxmsq_flags.rxfmlifo=[%d]\n", pb->rxmsq_flags
 
 
         default:            // unknown handler, return immediately with RXEXIT_NOT_HANDLED
+
+#if defined ( RGF_SYSTEM_EXIT_HANDLER )
+    if (exitNumber==RXINI || exitNumber==RXTER)
+    {
+        fprintf(stderr,  "C++ >> >> >> 5 (default:) << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
+    }
+#endif
+
             RgfAcquireLock();
             environmentDetachFrom(&param, FALSE);    // do not close group
             RgfReleaseLock();
@@ -15862,21 +15892,16 @@ fprintf(stderr, "C++ RXMSQPSH, pb->rxmsq_flags.rxfmlifo=[%d]\n", pb->rxmsq_flags
     }
     // ================== END:   system exit related special handling, before invoking the Java exit handler
 
-/*
-    if (param.env->ExceptionCheck())
-    {
-// show Java handler stack before raising a Rexx condition to help debug Java implemented handlers
-fprintf(stderr, "*** NIXINOXI 1 rexx_exit_handler_entry - BEFORE calling Java exit handler --> ****\n");
-param.env->ExceptionDescribe();    // clear the Java exception
-fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
-        param.env->ExceptionClear();    // clear the Java exception
-    }
-*/
-
 
 
         // a Rexx condition raised while preparing data for the Java handler? If so, return immediately
     if (context->CheckCondition()) {
+#if defined ( RGF_SYSTEM_EXIT_HANDLER )
+    if (exitNumber==RXINI || exitNumber==RXTER)
+    {
+        fprintf(stderr,  "C++ >> >> >> 6 (Rexx-condition) << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
+    }
+#endif
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
@@ -15899,24 +15924,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                       jpb
                                       );
 #else       // invoke the handler method in the object, if not raise syntax error
-
-/*
-fprintf(stderr, "jhandler=[%p], jclazz=[%p]\n", jhandler, param.env->GetObjectClass(jhandler));
-
-
-char tmpBuf[1024];
-
-JAVA_TO_STRING( param.env, jhandler, tmpBuf, 1024);
-fprintf(stderr, "*** *** DEBUG_JNI: ..._jniRexxRunProgram() jhandler=[%p] ~toString=[%s]\n",
-                                 jhandler,
-                                 tmpBuf
-                                 );
-
-fprintf(stderr, "*** name=[%s], signature=[%s]\n", CONFIG_REXX_EXIT_HANDLER_NAME,
-                                          CONFIG_REXX_EXIT_HANDLER_SIGNATURE
-                                         );
-*/
-
     jmethodID jmid=param.env->GetMethodID(param.env->GetObjectClass(jhandler),
                                           CONFIG_REXX_EXIT_HANDLER_NAME,
                                           CONFIG_REXX_EXIT_HANDLER_SIGNATURE
@@ -15924,11 +15931,13 @@ fprintf(stderr, "*** name=[%s], signature=[%s]\n", CONFIG_REXX_EXIT_HANDLER_NAME
 
     if (param.env->ExceptionCheck())
     {
-/*
-fprintf(stderr, "*** NIXINOXI 2 rexx_exit_handler_entry - BEFORE calling Java exit handler --> ****\n");
-param.env->ExceptionDescribe();    // clear the Java exception
-fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
-*/
+#if defined ( RGF_SYSTEM_EXIT_HANDLER )
+    if (exitNumber==RXINI || exitNumber==RXTER)
+    {
+        fprintf(stderr,  "C++ >> >> >> 7 (Java-condition) << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
+    }
+#endif
+
         param.env->ExceptionClear();    // clear the Java exception
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);    // do not close group
@@ -15953,6 +15962,12 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         // check for Java exception
     if (param.env->ExceptionCheck())
     {
+#if defined ( RGF_SYSTEM_EXIT_HANDLER )
+    if (exitNumber==RXINI || exitNumber==RXTER)
+    {
+        fprintf(stderr,  "C++ >> >> >> 8 (Java-condition) << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
+    }
+#endif
             // raise Rexx condition with Java Throwable
         SNPRINTF(msg, 1024, "%%.16s/internal/rexx_exit_handler_entry(), error 5: Java exception while running the Java exit handler for system exit number=[%d], subfunction=[%d] - [%%s]",
                             exitNumber, subfunction);
@@ -15970,6 +15985,12 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
 
         // a Rexx condition raised by the Java handler? If so, return immediately
     if (context->CheckCondition()) {
+#if defined ( RGF_SYSTEM_EXIT_HANDLER )
+    if (exitNumber==RXINI || exitNumber==RXTER)
+    {
+        fprintf(stderr,  "C++ >> >> >> 9 (Rexx-condition) << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
+    }
+#endif
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
@@ -16061,6 +16082,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                         pb->rxcmd_flags.rxfcfail =tmpFlags[0];
                         pb->rxcmd_flags.rxfcerr  =tmpFlags[1];
+
                         param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
 
                             // get result, if any, turn it into a RexxObjectPtr
@@ -16068,7 +16090,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         if (jresult==NULL )     // return an empty Rexx string
                         {
                             pb->rxcmd_retc.strlength=0;
-// fprintf(stderr, "C++ C++ -> jresult==NULL! \n");fflush(stderr);
                         }
 
                             // an error
@@ -16084,7 +16105,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         else    // o.k., process Java String object
                         {
                             JNU_JavaString2pRxString(param.env, (jstring) jresult, &pb->rxcmd_retc);
-// fprintf(stderr, "C++ C++ -> created return value=[%.128s] \n", pb->rxcmd_retc.strptr);fflush(stderr);
                         }
                     }
                 }
@@ -16109,7 +16129,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         if (jresult==NULL )     // return an empty Rexx string
                         {
                             pb->rxmsq_retc.strlength=0;
-// fprintf(stderr, "C++ C++ -> jresult==NULL! \n");fflush(stderr);
                         }
 
                             // an error
@@ -16124,7 +16143,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         else    // o.k., process Java String object
                         {
                             JNU_JavaString2pRxString(param.env, (jstring) jresult, &pb->rxmsq_retc);
-// fprintf(stderr, "C++ C++ -> created return value=[%.128s] \n", pb->rxmsq_retc.strptr);fflush(stderr);
                         }
                     }
 
@@ -16137,7 +16155,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         if (jresult==NULL )     // return an empty Rexx string
                         {
                             pb->rxmsq_size=0;
-// fprintf(stderr, "C++ C++ -> jresult==NULL! \n");fflush(stderr);
                             SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 9: Java RXMSQ=4 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a value (current size of queue)",
                                                 DLLNAME, exitNumber, subfunction);
                             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
@@ -16158,7 +16175,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                             char * c_result=(char *) JNU_GetStringNativeChars(param.env, (jstring) jresult);   // convert to native string
                             size_t size=0;
                                 // turn into RexxString, then create a size_t from it
-                            int res=context->ObjectToStringSize(context->String(c_result), &size);
+                            size_t res=context->ObjectToStringSize(context->String(c_result), &size);
                             if (res==0)     // conversion error occurred !
                             {
                                 SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 11: Java RXMSQ=4 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object representing a valid number (\"size_t\")",
@@ -16370,6 +16387,8 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     }
                     break;
 
+
+
                 // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 case RXEXF:     // system exit # 12, "processes calls to external functions, if not found", OO version
                 case RXOFNC:    // system exit # 15, "processes calls to external functions, before search starts", OO version
@@ -16383,10 +16402,8 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
 
                         if (subfunction==RXOFNCCAL || subfunction==RXEXFCAL)   // 1
                         {
-#if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER ) || defined (DEBUGINFO_FOR_OTHERS)
-    #if defined (DEBUGINFO_FOR_OTHERS)
+#if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
        fprintf(stderr, "C++ ");
-    #endif
 
                         fprintf(stderr, "<--- RXEXF=12/RXOFNC=15, exitNumber: [%d], subfunction: [%d], RXEXIT_HANDLED, rxfnc_name=[%.256s], j_exit_rc=[%d]=[%s]\n",
                                            exitNumber,
@@ -16408,30 +16425,17 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                             jbooleanArray jflags= (jbooleanArray) param.env->GetObjectArrayElement(jpb, (jint) 0);
                             jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
 
-#if defined (DEBUGINFO_FOR_OTHERS)
-    fprintf(stderr,  "C++ returned from RXOFNC or RXEXF exit, ferr=[%d], fnfnd=[%d], fsub=[%d]\n",tmpFlags[0], tmpFlags[1], tmpFlags[2]); fflush(stderr);
-#endif
-
                             if (exitNumber==RXOFNC)
                             {
-                                RXOFNC_FLAGS flags=((RXOFNCCAL_PARM *) parmBlock)->rxfnc_flags;
-                                flags.rxfferr =tmpFlags[0];
-                                flags.rxffnfnd=tmpFlags[1];
-
-#if defined (DEBUGINFO_FOR_OTHERS)
-   fprintf(stderr,  "C++               RXOFNC              , ferr=[%d], fnfnd=[%d]\n",flags.rxfferr, flags.rxffnfnd);fflush(stderr);
-#endif
-
+                                RXOFNC_FLAGS *flags=&((RXOFNCCAL_PARM *) parmBlock)->rxfnc_flags;
+                                flags->rxfferr =tmpFlags[0];
+                                flags->rxffnfnd=tmpFlags[1];
                             }
                             else
                             {
-                                RXEXF_FLAGS flags=((RXEXFCAL_PARM *) parmBlock)->rxfnc_flags;
-                                flags.rxfferr =tmpFlags[0];
-                                flags.rxffnfnd=tmpFlags[1];
-
-#if defined (DEBUGINFO_FOR_OTHERS)
-  fprintf(stderr,  "C++                         RXEXF     , ferr=[%d], fnfnd=[%d]\n",flags.rxfferr, flags.rxffnfnd);fflush(stderr);
-#endif
+                                RXEXF_FLAGS *flags=&((RXEXFCAL_PARM *) parmBlock)->rxfnc_flags;
+                                flags->rxfferr =tmpFlags[0];
+                                flags->rxffnfnd=tmpFlags[1];
                             }
                             param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
 
@@ -16468,7 +16472,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     break;
 
 
-                // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                     // <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 case RXVALUE:   // system exit # 14, "extends the environments available to the VALUE() built-in function."
                     {
@@ -16559,12 +16562,6 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
 #if defined ( RGF_INFO ) // || defined ( RGF_COMMAND_HANDLER )
     fprintf(stderr, "*** RGF_INFO: rexx_command_handler_entry() 1 ---> ...\n");
     fflush(stderr);
-#endif
-
-#if defined (RGF_COMMAND_HANDLER) && defined (NIXI)
-    fprintf(stderr, "*RGF_COMMAND_HANDLER*: rexx_command_handler_entry(): arrived, address=[%s], command=[%s]\n",
-                    context->CString(address),
-                    context->CString(command));
 #endif
 
     char msg[1024]="";
@@ -17028,7 +17025,7 @@ JNIEXPORT jboolean JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniCheck
 
         // get RexxExitContext from opaque slot argument
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
-    return context->CheckCondition();
+    return (jboolean) context->CheckCondition();
 
 #if defined (DEBUG_JNI)
     fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCheckCondition <== <==\n");

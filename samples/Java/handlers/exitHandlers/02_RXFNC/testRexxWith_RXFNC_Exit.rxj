@@ -64,7 +64,7 @@ call test_not_found_error_as_function
 
 any:
    say "(Rexx-side) condition in test_invalid_call_to_routine():"
-   say "(Rexx-side)" ppCondition2(condition('o'))
+   say ppCondition2(condition('o'))
 
 ::routine test_invalid_call_to_routine_as_function
    handleVar=1                -- Java handler should start processing call requests
@@ -75,7 +75,7 @@ any:
 
 any:
    say "(Rexx-side) condition in test_invalid_call_to_routine():"
-   say "(Rexx-side)" ppCondition2(condition('o'))
+   say ppCondition2(condition('o'))
 
 
 ::routine test_not_found_error
@@ -87,7 +87,7 @@ any:
 
 any:
    say "(Rexx-side) condition in test_not_found_error():"
-   say "(Rexx-side) " ppCondition2(condition('o'))
+   say ppCondition2(condition('o'))
 
 ::routine test_not_found_error_as_function
    handleVar=1            -- Java handler should start processing call requests
@@ -98,5 +98,5 @@ any:
 
 any:
    say "(Rexx-side) condition in test_not_found_error():"
-   say "(Rexx-side) " ppCondition2(condition('o'))
+   say ppCondition2(condition('o'))
 

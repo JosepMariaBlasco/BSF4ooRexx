@@ -70,9 +70,20 @@ public class JavaRunRexxWith_RXCMD_Exit implements RexxExitHandler
         if (subFunction==1)     // RXCMDHST
         {
             System.err.println(", RXCMDHST=1: flag rxfcfail=["+flag[0]+"], flag rxfcerr=["+flag[0]+"]");
-            if (address.compareToIgnoreCase("RGF_JAVA")==0) // o.k. addressed to us
+            if (((String) RexxHandler.getContextVariable(slot,"RGF_JAVA")).compareTo("0")==0) // o.k. addressed to us
             {
-                parmBlock[4]="<dealt by Java exit handler for address=["+address+"], received command=["+command+"], handler invoked ["+counter+"] time"+(counter==1?"":"s")+" so far.>";
+                if (((String) RexxHandler.getContextVariable(slot,"RGF_FAILURE")).compareTo("1")==0)
+                {
+                    flag[0]=true;       // set rxfcfail
+                }
+                else if (((String) RexxHandler.getContextVariable(slot,"RGF_ERROR")).compareTo("1")==0)
+                {
+                    flag[1]=true;       // set rxfcerr
+                }
+                else
+                {
+                    parmBlock[4]="<dealt by Java exit handler for address=["+address+"], received command=["+command+"], handler invoked ["+counter+"] time"+(counter==1?"":"s")+" so far.>";
+                }
                 return RexxExitHandler.RXEXIT_HANDLED;
             }
         }

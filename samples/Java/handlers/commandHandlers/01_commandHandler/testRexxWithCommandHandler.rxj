@@ -24,7 +24,7 @@ say "default environment:" address()
 
 do i=1 to 10
    "helloWorld #" i
-   say "rc="rc
+   say "rc="pp(rc) "rc~class="pp(rc~class)
    say "---"
    say
 end

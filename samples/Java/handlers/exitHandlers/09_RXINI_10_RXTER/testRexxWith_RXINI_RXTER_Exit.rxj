@@ -17,13 +17,16 @@
  * purpose: demonstrate the possibilities of Java implemented Rexx system exit handlers
  *
  * @author Rony G. Flatscher
- * @since  2012-02-19
+ * @since  2012-02-23
  */
 
 say "(Rexx-side) ---1-begin main--- RXINI_START="pp(RXINI_START) "class:" pp(RXINI_START~class) "<=== <=== <==="
 sleepTime=0.01
 call sysSleep sleepTime
 say "(Rexx-side) ---2-end main---   RXINI_START="pp(RXINI_START) "class:" pp(RXINI_START~class)  "<=== <=== <==="
+say
+say "(Rexx-side) NOTE: as this Java handler temporarily deactives RXINI handlers, the"
+say "                  RXINI and RXTER counters cannot match."
 
 
 ::requires "BSF.CLS"    -- get Java support

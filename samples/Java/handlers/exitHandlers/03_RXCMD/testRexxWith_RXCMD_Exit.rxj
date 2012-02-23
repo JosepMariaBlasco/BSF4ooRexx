@@ -17,7 +17,7 @@
  * purpose: demonstrate the possibilities of Java implemented Rexx system exit handlers
  *
  * @author Rony G. Flatscher
- * @since  2012-02-20
+ * @since  2012-02-23
  */
 
 address="RGF_JAVA"   -- Java exit handler looks for this address name
@@ -43,6 +43,11 @@ say "(Rexx-side) #3b - rc="pp(rc)
 say
 drop rc
 
+call testFailure
+say
+call testError
+say
+
 signal on any name all
 address nixi_noxi    -- non existent environment named "NIXI_NOXI"
 say "(Rexx-side) #4 - before addressing non-existing 'NIXI_NOXI' (variable got dropped), a runtime error should occur ..."
@@ -57,4 +62,29 @@ all:
 
 ::requires "BSF.CLS"    -- get Java support
 ::requires "rgf_util2.rex"
+
+::routine testFailure
+  signal on failure
+  rgf_java=0      -- let Java handler process this
+  rgf_failure=1   -- let Java handler set the failure flag
+  address test_raise_failure "say 'hi, failure!'"
+  return
+
+
+failure:
+  say "(Rexx-side) testFailure():"
+  say ppCondition2(condition("object"))
+
+
+::routine testError
+   signal on error
+  rgf_java=0      -- let Java handler process this
+  rgf_error=1     -- let Java handler set the failure flag
+  address test_raise_error "say 'hi, error!'"
+  return
+
+error:
+  say "(Rexx-side) testError():"
+  say ppCondition2(condition("object"))
+
 

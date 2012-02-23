@@ -99,6 +99,7 @@ public class JavaRunRexxWith_RXINI_RXTER_Exit implements RexxExitHandler
             try
             {
                     // deactivate RXINI/RXTER exits temporarily to not cause a recursive handling of Java objects by BSF.CLS
+                    // WARNING: this will cause wrong RXINI vs. RXTER counters !
                 old=rexxConf.setExitHandler(exitNumber, null);
 
                     // now set Rexx variable to a Java object (will be wrapped up appropriately)
