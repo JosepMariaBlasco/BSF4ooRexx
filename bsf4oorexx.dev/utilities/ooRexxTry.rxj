@@ -30,11 +30,19 @@
                           be mappable
                         - make sure that it can be run on older versions that do not
                           have "carryOutSystemExit" implemented
+            2012-02-23 Rony G. Fltascher
+                        - fix for bug 3434228 not working on some Linux distributions
+                          due to not having write permissions to its directory: now
+                          using "user.home" as working and temporary directory, returned
+                          by new routine getHomeDir()
+                        - fixed a bug referring to .preferred_path instead of .mm.dir~preferredPath
+                        - accustomed for Java 1.4 swing forcing to use "getContentPane" before
+                          adding a component to a JFrame or JDialog
 */
 
 /*----------------------------------------------------------------------------*/
-/*  Copyright 2011 Markus Moldaschl, Rony G. Flatscher                        */
-/*								              */
+/*  Copyright 2011 Markus Moldaschl, 2011-2012 Rony G. Flatscher              */
+/*								                                                      */
 /*  Licensed under the Apache License, Version 2.0 (the "License");           */
 /*  you may not use this file except in compliance with the License.          */
 /*  You may obtain a copy of the License at				      */
@@ -752,7 +760,7 @@ RunSyntax:
     open = slotDir~userData~fileMenu~getItem(1)
     frame = .mm.dir~frame
     fc = .JFileChooser~new
-    fc~setCurrentDirectory( .bsf~new("java.io.File", .preferred_path))
+    fc~setCurrentDirectory( .bsf~new("java.io.File", .mm.dir~preferred_path))
     -- Create an instance of the Rexx FileFilter class to filter the file list
      rexxFilter=.RexxFileFilter~new("*.rex;*.rxj;*.rxo;*.txt", .set~of('rex', 'rxj', 'rxo', 'txt'))
      /* create a RexxProxy, supply the Rexx FileFilter object and demand it to be used as
@@ -1225,7 +1233,7 @@ RunSyntax:
     mainpanel~add(buttonpanel)
 /*===============================================*/
 
-    frame~add(mainpanel)
+    frame~getContentPane~add(mainpanel)
     frame~setJMenuBar(menuBar)
     .local~mm.dir~frame = frame
     rexxMonitorEH = .MonitorDialog~new(userData)
@@ -1859,7 +1867,7 @@ RunSyntax:
     userData~errgroup = errgroup
     userData~outfiletf = outfiletf
     userData~errfiletf = errfiletf
-    mdialog~add(mainpanel)
+    mdialog~getContentPane~add(mainpanel)
     mdialog~pack
 
 ::method actionPerformed
@@ -2085,7 +2093,9 @@ RunSyntax:
             /*Temporary code storage*/
             -- .local~mm.dir~tempFile = 'ooRexxTry_test9999.rex'
             -- rgf, make sure, we get unique file names
-            .mm.dir~tempFile = filespec("N",SysTempFileName(directory() || .bsf4rexx~file.separator || "ooRexxTry_test????.rex"))
+            -- .mm.dir~tempFile = filespec("N",SysTempFileName(directory() || .bsf4rexx~file.separator || "ooRexxTry_test????.rex"))
+            .mm.dir~tempFile = filespec("N",SysTempFileName(getHomeDir() || .bsf4rexx~file.separator || "ooRexxTry_test????.rex"))
+
             c_stream = .stream~new(.mm.dir~tempFile)
             c_stream~open('Write Replace')
             do ca = 1 to code_array~items
@@ -2593,7 +2603,7 @@ return
     userData~insogroup = insogroup
     userData~outsogroup = outsogroup
     userData~errsogroup = errsogroup
-    sdialog~add(mainpanel)
+    sdialog~getContentPane~add(mainpanel)
     sdialog~pack
 
 ::method actionPerformed
@@ -2778,9 +2788,14 @@ return
 
 -- Need a few generic variables
     .local~mm.dir~version        = '2.0'             -- Internal version control
-    .local~mm.dir~preferred_path = '.'                  -- Default starting path for Save As dialog - will be either
-                                                -- the folder ooRexxTry is executed from or the last folder that
-                                                -- was accessed using the Windows File Dialog
+
+
+       /* Default starting path for Save As dialog - will be either
+          the folder ooRexxTry is executed from or the last folder that
+          was accessed using the Windows File Dialog: */
+    -- .local~mm.dir~preferred_path = '.'
+    .local~mm.dir~preferred_path = getHomeDir()
+
 --    .local~mm.dir~title          = 'ooRexxTry'       -- Title to use for the dialogs
     parse version "-" name "_" ver "("
     .mm.dir~title='ooRexxTry' pp(name ver", BSF" .bsf4rexx~version)
@@ -2872,3 +2887,7 @@ return
 -- .stdout~say("dontBSFExit: 'carryOutSystemExit' was: ["val"], now set to: ["newVal"]")
 any:
   return
+
+::routine getHomeDir
+  path=.java.lang.System~getProperty("user.home")
+  return path
