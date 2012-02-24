@@ -732,11 +732,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "410.20120223 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120224 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "410.20120223 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120224 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "410.20120223 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120224 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -17244,6 +17244,55 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetAll
     return jobj;
 }
 
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetLocalEnvironment
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetLocalEnvironment
+  (JNIEnv *env, jobject rajo, jobjectArray j_slot)
+{
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 1/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetLocalEnvironment <== <==\n");fflush(stderr);
+#endif
+
+        // get RexxExitContext from opaque slot argument
+    RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
+    RexxObjectPtr rop=context->GetLocalEnvironment();
+
+    STRUCT_PARAM param={0, env, rajo, 0, 0, 0, 0, 0};
+    jobject jobj=RgfRexxObject2JavaObject(&param,context->threadContext,rop);
+
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetLocalEnvironment <== <==\n");fflush(stderr);
+#endif
+    return jobj;
+}
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetGlobalEnvironment
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlobalEnvironment
+  (JNIEnv *env, jobject rajo, jobjectArray j_slot)
+{
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 1/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlobalEnvironment <== <==\n");fflush(stderr);
+#endif
+
+        // get RexxExitContext from opaque slot argument
+    RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
+    RexxObjectPtr rop=context->GetGlobalEnvironment();
+
+    STRUCT_PARAM param={0, env, rajo, 0, 0, 0, 0, 0};
+    jobject jobj=RgfRexxObject2JavaObject(&param,context->threadContext,rop);
+
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlobalEnvironment <== <==\n");fflush(stderr);
+#endif
+    return jobj;
+}
 
 
 

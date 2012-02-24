@@ -36,12 +36,14 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.1.0, 2012-02-19
+  * @version 4.1.0, 2012-02-24
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
-     2012-02-19, ---rgf, - added method jniGetCallerContext(), jniGetAllContextVariables
+     2012-02-24, ---rgf, - added methods jniGetLocalEnvironment(), jniGetGlobalEnvironment()
+
+     2012-02-19, ---rgf, - added methods jniGetCallerContext(), jniGetAllContextVariables
 
      2012-02-11, ---rgf, - added methods:
                            jniCheckCondition(), jniClearCondition(), jniGetConditionInfo(),
@@ -259,7 +261,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20120219";
+    static final public String version = "410.20120224";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -786,9 +788,12 @@ necessary anymore
      protected native void    jniSetContextVariableToNil(Object[] slot, String variableName);
 
      // rgf, 2012-02-19
-     protected native Object  jniGetCallerContext(Object[] slot);
+     protected native Object  jniGetCallerContext   (Object[] slot);
      protected native Object  jniGetAllContextVariables(Object[] slot);
 
+     // rgf, 2012-02-24
+     protected native Object  jniGetLocalEnvironment(Object[] slot);
+     protected native Object  jniGetGlobalEnvironment(Object[] slot);
 
 
     /**  rgf, 2003-01-15, used for allowing the BSF4ooRexx-DLL to get at *env, *obj and then to mid etc.

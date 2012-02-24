@@ -337,6 +337,22 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetAll
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetLocalEnvironment
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetLocalEnvironment
+  (JNIEnv *, jobject, jobjectArray);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetGlobalEnvironment
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlobalEnvironment
+  (JNIEnv *, jobject, jobjectArray);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniInitialize4Rexx
  * Signature: ()I
  */

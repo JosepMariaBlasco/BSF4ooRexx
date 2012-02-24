@@ -33,13 +33,13 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
  *
  * @author Rony G. Flatscher
  * @version 1.0
- * @since 2012-02-19
+ * @since 2012-02-24
  */
 public abstract class RexxHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "1.20120219";
+    final static public String version = "1.20120224";
 
 
     /** Raises a condition in the current Rexx thread, pass-through method to the Rexx API, which
@@ -238,6 +238,7 @@ public abstract class RexxHandler
 
     /**  Sets the interactive trace state for the current thread.
      *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
      * @param state new state for interactive trace
      */
     public static void  setThreadTrace(Object slot, boolean state)
@@ -247,6 +248,8 @@ public abstract class RexxHandler
     }
 
     /**  Raises a <code>HALT</code> condition on the this (Rexx) thread.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
      */
     public static void  haltThread(Object slot)
     {
@@ -254,5 +257,28 @@ public abstract class RexxHandler
         ((RexxAndJava) arrSlot[0]).jniHaltThread(arrSlot);
     }
 
+
+    /**   Returns a reference to this Rexx interpreter instance <code>.local</code> environment directory.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return a {@link RexxProxy} for the Rexx <code>.local</code> object
+     */
+    public static Object getLocalEnvironment(Object slot)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniGetLocalEnvironment(arrSlot);
+    }
+
+
+    /**   Returns a reference to the Rexx interpreter global <code>.environment</code> directory.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return a {@link RexxProxy} for the Rexx <code>.environment</code> object
+     */
+    public static Object getGlobalEnvironment(Object slot)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniGetGlobalEnvironment(arrSlot);
+    }
 
 }

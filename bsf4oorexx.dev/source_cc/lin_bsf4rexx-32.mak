@@ -34,7 +34,8 @@ BLD_PATH = .
 # JDK_BASE = /usr/lib/jvm/java-6-sun
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk
 # JDK_BASE = /usr/lib/jvm/java-6-sun
-JDK_BASE = /usr/lib/jvm/java-6-openjdk
+# JDK_BASE = /usr/lib/jvm/java-6-openjdk
+JDK_BASE = /usr/lib/jvm/java-6-sun-1.6.0.16
 
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 
@@ -75,8 +76,12 @@ CFLAGS_ORX      = -DUSE_$(ORX)
 # LINK_FLAGS      = -shared -rdynamic -lpthread /usr/java/j2sdk1.4.1_02/jre/lib/i386/client/libjvm.so -lc  -lm
 # LINK_FLAGS      = -shared -rdynamic -lpthread $(JDK_BASE)/jre/lib/i386/client/libjvm.so -lc  -lm
 # LINK_FLAGS      = -shared -rdynamic -lpthread -lc  -lm
-LINK_FLAGS      = --export-dynamic -shared -rdynamic -lpthread -lc  -lm
+# LINK_FLAGS      = --export-dynamic -shared -rdynamic -lpthread -lc  -lm
 
+
+# ?LINK_FLAGS      = -shared -rdynamic -lpthread -lc  -lm -ldl -m elf_i386 
+
+LINK_FLAGS      = -shared -rdynamic -lpthread -lc  -lm -ldl 
 
 LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
 
