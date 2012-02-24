@@ -1,11 +1,12 @@
 package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
 /**
 
-   Interface class to allow typing Rexx handlers implemented in Java.
+   Abstract class to allow Rexx exit and command handlers implemented in Java to use
+   some of the ooRexx exit APIs directly.
 
    <p><em>Please note:</em> these methods allow interfacing with the running instance
    of the Rexx interpreter instance on the <em>same (!) thread</em> in which the Rexx command
-   or Rexx exit Java handler got invoked.
+   or Rexx exit Java handler got invoked on.
    It is necessary to supply the opaque argument named <em>slot</em> from the Java handler
    methods <em>unaltered</em>.
    <br>
@@ -174,7 +175,7 @@ public abstract class RexxHandler
     }
 
 
-    /** Drops a Rexx variable in the current routine’s caller variable context.
+    /** Drops a Rexx variable from the context.
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
      * @param variableName name of the Rexx variable
@@ -223,7 +224,7 @@ public abstract class RexxHandler
     }
 
 
-    /** Returns the Rexx context object that can be analyzed to learn about the context
+    /** Returns the Rexx context object <code>.context</code> that can be analyzed to learn about the context
      *  of the command/exit.
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
@@ -247,7 +248,7 @@ public abstract class RexxHandler
         ((RexxAndJava) arrSlot[0]).jniSetThreadTrace(arrSlot, state);
     }
 
-    /**  Raises a <code>HALT</code> condition on the this (Rexx) thread.
+    /**  Raises a <code>HALT</code> condition on the current (Rexx) thread.
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
      */

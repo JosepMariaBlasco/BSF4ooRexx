@@ -39,6 +39,8 @@ public interface RexxCommandHandler
      * @param address a String denoting the name of the command environment for which this
      *                method got invoked
      * @param command a String containing the command passed from Rexx
+     *
+     * @return any value, which can be retrieved on the Rexx side via the variable <code>RC</code> (result code)
      */
     public Object handleCommand(Object slot, String address, String command);
 

@@ -47,42 +47,60 @@ public interface RexxExitHandler
     //
     // System Exit function and sub-function definitions
 
-    /** End of exit list.           */  final static public int RXENDLST       =            0;
+    /** End of exit list.           */  final static public int RXENDLST       =       0;
 
     /** Process external functions. */  final static public int RXFNC          =       2;
-    /** subcode value.              */  final static public int    RXFNCCAL    =  1;
+    /** Processes calls to external
+        functions.                  */  final static public int    RXFNCCAL    =  1;
+
     /** Process host commands.      */  final static public int RXCMD          =       3;
-    /** subcode value.              */  final static public int    RXCMDHST    =  1;
+    /** Calls a named subcommand
+        handler.                    */  final static public int    RXCMDHST    =  1;
+
     /** Manipulate queue.           */  final static public int RXMSQ          =       4;
     /** Pull a line from queue      */  final static public int    RXMSQPLL    =  1;
     /** Place a line on queue       */  final static public int    RXMSQPSH    =  2;
     /** Return num of lines on queue*/  final static public int    RXMSQSIZ    =  3;
     /** Set active queue name       */  final static public int    RXMSQNAM    = 20;
+
     /** Session I/O.                */  final static public int RXSIO          =       5;
     /** SAY a line to STDOUT        */  final static public int    RXSIOSAY    =  1;
     /** Trace output                */  final static public int    RXSIOTRC    =  2;
     /** Read from char stream       */  final static public int    RXSIOTRD    =  3;
     /** DEBUG read from char stream */  final static public int    RXSIODTR    =  4;
-    /** Return linelength(N/A OS/2) */  final static public int    RXSIOTLL    =  5;
+    /** Return linelength (n/a OS/2)*/  final static public int    RXSIOTLL    =  5;
+
     /** Halt processing.            */  final static public int RXHLT          =       7;
     /** Clear HALT indicator        */  final static public int    RXHLTCLR    =  1;
     /** Test HALT indicator         */  final static public int    RXHLTTST    =  2;
+
     /** Test ext trace indicator.   */  final static public int RXTRC          =       8;
-    /** subcode value.              */  final static public int    RXTRCTST    =  1;
+    /** Tests the external trace
+        indicator.                  */  final static public int    RXTRCTST    =  1;
+
     /** Initialization processing.  */  final static public int RXINI          =       9;
-    /** subcode value.              */  final static public int    RXINIEXT    =  1;
+    /** Initialization exit.        */  final static public int    RXINIEXT    =  1;
+
     /** Termination processing.     */  final static public int RXTER          =      10;
-    /** subcode value.              */  final static public int    RXTEREXT    =  1;
+    /** Termination exit.           */  final static public int    RXTEREXT    =  1;
 
     /** scripting function call     */  final static public int RXEXF          =      12;
-    /** subcode value.              */  final static public int    RXEXFCAL    =  1;
+    /** Processes calls to external
+        functions.                  */  final static public int    RXEXFCAL    =  1;
+
     /** NOVALUE exit                */  final static public int RXNOVAL        =      13;
-                                        final static public int    RXNOVALCALL =  1;
+    /** Processes a Rexx NOVALUE
+        condition.                  */  final static public int    RXNOVALCALL =  1;
+
     /** VALUE function exit         */  final static public int RXVALUE        =      14;
-                                        final static public int    RXVALUECALL =  1;
-    /** Process external functions using
-    object values. */                   final static public int RXOFNC         =      15;
-    /** subcode value.              */  final static public int    RXOFNCCAL   =  1;
+    /** Processes an extended call
+        to the VALUE() built-in
+        function.                   */  final static public int    RXVALUECALL =  1;
+
+    /** Process external functions
+        using object values.        */  final static public int RXOFNC         =      15;
+    /** Processes calls to external
+        functions.                  */  final static public int    RXOFNCCAL   =  1;
 
 
     /** 1 + largest exit number.    */  final static public int RXNOOFEXITS    =           16;
@@ -402,11 +420,10 @@ public interface RexxExitHandler
      * @param parmBlock an <code>Object[]</code> which is structured according to the ooRexx
      *                  exit documentation in <code>rexxpg.pdf</code>; each structure is itself
      *                  contained in an <code>Object[]</code>
+     *
+     * @return RXEXIT_HANDLED (0), RXEXIT_NOT_HANDLED (1) or RXEXIT_RAISE_ERROR (-1)
      */
     public int handleExit(Object slot, int exitNumber, int subFunction, Object[] parmBlock);
-
-
 }
-
 
 
