@@ -27,13 +27,13 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
  *
  * @author Rony G. Flatscher
  * @version 1.0
- * @since 2012-02-21
+ * @since 2012-02-25
  */
 public interface RexxExitHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "99.20120221";
+    final static public String version = "100.20120225";
 
     // --------------------------------------------------------------------------------
     //    Exit return actions
@@ -108,7 +108,7 @@ public interface RexxExitHandler
     /** Names of Rexx system exit function numbers between number 0 and 15.
      *  (As baseline is Java 1.4 enumerations cannot be used.)
      */
-    static public String RX_EXIT_NAMES[]={"0=n/a!", "1=n/a!", "RXFNC", "RXCMD",
+    static final public String RX_EXIT_NAMES[]={"0=n/a!", "1=n/a!", "RXFNC", "RXCMD",
                             "RXMSQ", "RXSIO", "6=n/a!", "RXHLT", "RXTRC", "RXINI", "RXTER",
                             "11=n/a!", "RXEXF", "RXNOVAL", "RXVALUE", "RXOFNC"};
 
@@ -118,10 +118,12 @@ public interface RexxExitHandler
      *
 
        <p>
-       The following documents briefly the parmBlock-array that gets supplied to the Java exit
-       handler, depending on the exit number and subfunction. Please refer also to the ooRexx
-       documentation &quot;rexxpg.pdf&quot;, section entitled &quot;Context Exit Definitions&quot;
-       on which this implementation is based upon.
+       The following documents briefly the <code>{@link parmBlock}</code>-array that gets
+       supplied to the Java exit handler, depending on the exit number and subfunction.
+
+       Please refer also to the ooRexx documentation &quot;rexxpg.pdf&quot;, section
+       entitled &quot;Context Exit Definitions&quot; on which this implementation is
+       based upon.
 
         <table border>
         <tr>

@@ -58,11 +58,6 @@ public class JavaRunRexxWithCommandExits
 
         rexxconf.setInitialAddressEnvironment("ALICE");
 
-            // add ",.pre" to default call extensions
-        rexxconf.setExternalCallExtensions(rexxconf.getExternalCallExtensions()+",.pre");
-
-        rexxconf.setExternalCallPath("..");
-
         System.err.println("edited  rexxconf=["+rexxconf+"]\n");
 
         // invoke the interpreter and run the Rexx program

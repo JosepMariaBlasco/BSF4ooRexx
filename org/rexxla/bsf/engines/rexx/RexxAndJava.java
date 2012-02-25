@@ -41,6 +41,7 @@ import org.apache.bsf.util.type.*;
   */
 
  /*
+     2012-02-25, ---rgf, - added methods jniNil(), jniInterpreterVersion(), jniLanguageLevel()
      2012-02-24, ---rgf, - added methods jniGetLocalEnvironment(), jniGetGlobalEnvironment()
 
      2012-02-19, ---rgf, - added methods jniGetCallerContext(), jniGetAllContextVariables
@@ -261,7 +262,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20120224";
+    static final public String version = "410.20120225";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -794,6 +795,11 @@ necessary anymore
      // rgf, 2012-02-24
      protected native Object  jniGetLocalEnvironment(Object[] slot);
      protected native Object  jniGetGlobalEnvironment(Object[] slot);
+
+     // rgf, 2012-02-25
+     protected native Object  jniNil(Object[] slot);
+     protected native long    jniInterpreterVersion(Object[] slot);
+     protected native long    jniLanguageLevel     (Object[] slot);
 
 
     /**  rgf, 2003-01-15, used for allowing the BSF4ooRexx-DLL to get at *env, *obj and then to mid etc.

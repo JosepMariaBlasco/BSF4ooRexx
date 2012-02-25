@@ -18,7 +18,7 @@
  * needs:   testRexxWithCommandHandler.rxj
  *
  * @author  Rony G. Flatscher
- * @since   2012-02-21
+ * @since   2012-02-25
  */
 
 import org.apache.bsf.*;
@@ -40,14 +40,22 @@ public class JavaRunRexxWithCommandHandler implements RexxCommandHandler
         // Configure the RexxEngine
         RexxConfiguration rexxconf=rexxEngine.getRexxConfiguration();
         System.err.println("default rexxconf=["+rexxconf+"]\n");
+            // configure command handler
         rexxconf.addCommandHandler("EPOQUE", new JavaRunRexxWithCommandHandler());
-
         rexxconf.setInitialAddressEnvironment("EPOQUE");
+
+            // add "rxmath" library, distributed with ooRexx
+        rexxconf.addRequiredLibrary("rxmath");
+
+            // add "./anotherpath" to lookup
+        String fs=System.getProperty("file.separator");     // "\" or "/"
+        String ps=System.getProperty("path.separator");     // ";" or ":"
+        String ud=System.getProperty("user.dir");
+        String dirName="anotherpath";
+        rexxconf.setExternalCallPath("."+fs+dirName+ps+ud+fs+dirName);
 
             // add ",.pre" to default call extensions
         rexxconf.setExternalCallExtensions(rexxconf.getExternalCallExtensions()+",.pre");
-
-        rexxconf.setExternalCallPath("..");
 
         System.err.println("edited  rexxconf=["+rexxconf+"]\n");
 
@@ -67,6 +75,20 @@ public class JavaRunRexxWithCommandHandler implements RexxCommandHandler
             case 1:     return "123";
             case 2:     return new GregorianCalendar();
             case 3:     return null;
+            case 4:     return RexxHandler.getNil(slot);
+            case 5:     long iv=RexxHandler.getInterpreterVersion(slot);
+                        return "InterpreterVersion: -> as hex string: ["+Long.toHexString(iv)+"] -> as long: ["+iv+"]";
+            case 6:     long ll=RexxHandler.getLanguageLevel(slot);
+                        return "LanguageLevel:      -> as hex string: ["+Long.toHexString(ll)+"] -> as long: ["+ll+"]";
+            case 7:     return RexxHandler.getGlobalEnvironment(slot);
+            case 8:     return RexxHandler.getLocalEnvironment(slot);
+            case 9:     return RexxHandler.getCallerContext(slot);
+            case 10:    return RexxHandler.getAllContextVariables(slot);
+            case 11:    return (RexxHandler.checkCondition(slot) == true ? "1" : "0");
+            case 12:    return RexxHandler.getConditionInfo(slot);
+            case 13:    return (RexxHandler.checkCondition(slot) == true ? "1" : "0");
+            case 14:    return "This is \"case 14\", hence returning this interesting String... ;)";
+
             default:    return ""+counter;      // turn primitive into Java String
         }
     }

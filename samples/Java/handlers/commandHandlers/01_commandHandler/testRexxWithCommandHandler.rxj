@@ -17,16 +17,30 @@
  * purpose: demonstrate the possibilities Java command handlers allows for
  *
  * @author Rony G. Flatscher
- * @since  2012-02-21
+ * @since  2012-02-25
  */
+
+say "use required library 'rxmath':"
+numeric digits 16    -- maximum precision
+say "RxCalcPi():" RxCalcPi()
+say "==="
+
+say "use external path:"
+call "another_rexx_pgm"       -- quoted, such that it can be found on Unix too
+call "another_rexx_pgm.pre"   -- quoted, such that it can be found on Unix too
+say "==="
+
+say "use required library 'rxmath':"
+numeric digits 16    -- maximum precision
+say "RxCalcPi():" RxCalcPi()
+say "==="
 
 say "default environment:" address()
 
-do i=1 to 10
+do i=1 to 15
    "helloWorld #" i
    say "rc="pp(rc) "rc~class="pp(rc~class)
    say "---"
-   say
 end
 
 

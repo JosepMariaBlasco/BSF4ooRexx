@@ -36,12 +36,15 @@ import java.util.*;         // BitSet
  */
 
 /* 2012-02-09, rgf: - ArrayList needs to be initialized, such that size() matches the number of exits
+   2012-02-25, rgf: - fix problem with turning ArrayList into String[] for required libraries,
+                      renamed getRequiredLibrary[4JNI]() to getRequiredLibraries[4JNI] to reflect the
+                      fact, that multiple libraries can be required
  */
 
 public class RexxConfiguration {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "1.20120209";
+    final static public String version = "1.20120225";
 
 
     // ------------------------------------------------------------------------------------
@@ -126,9 +129,17 @@ public class RexxConfiguration {
      * @return array of type String containing all required native library names that should get loaded
      *         with the creation of the Rexx interpreter instance
      */
-    public String [] getRequiredLibrary()
+    public String [] getRequiredLibraries()
     {
-        return (String[]) load_required_library.toArray();
+        int     size=load_required_library.size();
+        String str[]=new String[size];
+
+        for (int i=0;i<size;i++)
+        {
+            str[i]=(String) load_required_library.get(i);
+        }
+        // return (String[]) load_required_library.toArray();
+        return str;
     }
 
 
@@ -137,13 +148,13 @@ public class RexxConfiguration {
      * @return array of type String containing all required native library names that should get loaded
      *         with the creation of the Rexx interpreter instance or <code>null</code>, if none defined
      */
-    public String [] getRequiredLibrary4JNI()
+    public String [] getRequiredLibraries4JNI()
     {
         if (load_required_library.size()==0)    // if none defined, return null
         {
             return null;
         }
-        return getRequiredLibrary();
+        return getRequiredLibraries();
     }
 
 
@@ -541,7 +552,7 @@ public class RexxConfiguration {
                 initial_address_environment,        // [1]: INITIAL_ADDRESS_ENVIRONMENT (null or String)
                 external_call_path,                 // [2]: EXTERNAL_CALL_PATH (null or String)
                 external_call_extensions,           // [3]: EXTERNAL_CALL_EXTENSIONS (null or String)
-                getRequiredLibrary4JNI(),           // [4]: LOAD_REQUIRED_LIBRARY  (null or String[])
+                getRequiredLibraries4JNI(),         // [4]: LOAD_REQUIRED_LIBRARY  (null or String[])
                 getExitHandlers4JNI(),              // [5]: DIRECT_EXITS  (null or int[] exits)
                 getCommandHandlerNames4JNI()        // [6]: DIRECT_ENVIRONMENTS  (null or String[] commandNames)
             };

@@ -353,6 +353,30 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlo
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniNil
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniNil
+  (JNIEnv *, jobject, jobjectArray);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniInterpreterVersion
+ * Signature: ([Ljava/lang/Object;)J
+ */
+JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpreterVersion
+  (JNIEnv *, jobject, jobjectArray);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniLanguageLevel
+ * Signature: ([Ljava/lang/Object;)J
+ */
+JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguageLevel
+  (JNIEnv *, jobject, jobjectArray);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniInitialize4Rexx
  * Signature: ()I
  */

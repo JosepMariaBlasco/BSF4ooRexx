@@ -282,4 +282,52 @@ public abstract class RexxHandler
         return ((RexxAndJava) arrSlot[0]).jniGetGlobalEnvironment(arrSlot);
     }
 
+
+    // 2012-02-25, rgf
+    /** Returns a reference to the Rexx sentinel value <code>.nil</code>.
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return a {@link RexxProxy} referring to the <code>.nil</code> object
+     */
+    public static Object getNil(Object slot)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniNil(arrSlot);
+    }
+
+    /** (Copied from the ooRexx rexxpg.pdf documentation) &quot;
+     * Returns the version of the interpreter. The returned version is
+     * encoded in the 3 least significant bytes of the returned value,
+     * using 1 byte each for the interpreter version, release, and revision
+     * values. For example, on a 32-bit platform, this value would be
+     * <code>0x00040000</code> for version 4.0.0.&quot;
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return the ooRexx interpreter version
+     */
+    public static long getInterpreterVersion(Object slot)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniInterpreterVersion(arrSlot);
+    }
+
+
+    /** (Copied from the ooRexx rexxpg.pdf documentation) &quot;Returns the language level of
+     *  the interpreter. The returned language level is encoded in the 2 least
+     *  significant bytes of the returned value, using 1 byte each for the
+     *  interpreter version, release, and revision values. For example, on a 32-bit
+     *  platform, this value would be <code>0x00000603</code> for language level 6.03.&quot;
+     *
+     * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
+     * @return the ooRexx language level
+     */
+    public static long getLanguageLevel(Object slot)
+    {
+        Object [] arrSlot=(Object[]) slot;
+        return ((RexxAndJava) arrSlot[0]).jniLanguageLevel(arrSlot);
+    }
+
+
+
+
 }
