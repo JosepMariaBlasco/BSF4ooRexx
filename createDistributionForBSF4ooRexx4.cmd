@@ -24,8 +24,8 @@ set CLASSPATH=%CLASSPATH%;D:\Programme\OpenOffice.org 3\program\;D:\Programme\Op
 
 
 
-set runDate=20110822
-set doc_date=2011-08-22
+set runDate=20120225
+set doc_date=2012-02-25
 
 @rem values to use for creating the BSF jarfile
 set bsfDate=20090910

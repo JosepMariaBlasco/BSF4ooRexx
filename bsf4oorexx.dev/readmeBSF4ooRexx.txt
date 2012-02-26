@@ -1,9 +1,9 @@
-BSF4ooRexx, 4.05 Dec 2010, GA (general availability)
-====================================================
+BSF4ooRexx, 4.10 Feb 2012, BETA
+===============================
 
-BSF4ooRexx, version 4.05: this version exploits the new APIs of ooRexx 4.0.1 and
-as such can only be used with ooRexx 4.0.1 or newer, hence the renaming of the
-package from "BSF4Rexx" to "BSF4ooRexx".
+BSF4ooRexx, version 4.10: this version makes the configuration of individual
+Rexx interpreter instances possible, as well implementing Rexx exit handlers
+and Rexx command handlers in Java/NetRexx.
 
 The files "changesBSF4ooRexx.txt" and "changesOOo.txt" give brief information
 about the changes.
@@ -26,9 +26,9 @@ Installation of BSF4ooRexx in a Nutshell
 
 0) If there is a previous version of BSF4Rexx or BSF4ooRexx installed on your
    system, please deinstall it by executing "uninstallBSF.cmd" (Windows) or
-   "uninstallBSF.sh" (Linux).
+   "uninstallBSF.sh" (Linux) or via the BSF4ooRexx menu.
 
-1) unzip the archive "BSF4ooRexx_install.zip" into the target directory
+1) unzip the archive "BSF4ooRexx_install-beta20120225.zip" into the target directory
    (this will also unzip the OpenOffice/StarOffice-support files)
 
    - Linux-hint: you may want to unzip the archive into the "/opt" directory
@@ -59,7 +59,7 @@ Good luck and have fun!
 
 Rony G. Flatscher
 WU Wien
-Vienna (Austria, Europe), 2010-12-04
+Vienna (Austria, Europe)
 
 P.S.: Further information can be found in "readmeBSF4ooRexx_next.txt"
 

@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for MacOSX                 22 Aug 2011
+BSF4ooRexx - Installation Directions for MacOSX                 25 Feb 2012
 ===============================================
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage

@@ -2,8 +2,8 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-23
-   version: 1.01
-   name:    fixupJava.rex
+   version: 1.03
+   name:    setupJava.rex
    purpose: BSF4ooRexx must be able to dynamically load 'libjvm.so';
             Linux systems may have plenty of alternative Javas installed and
             therefore 'libjvm.so' seems not to be linked into the usual lib
@@ -22,13 +22,15 @@
             2011-01-03, ---rgf, - fixed bug in parsing the output of a "ls -al", thanks to Uli Zinngrebe for reporting on 2010-12-27!
             2011-03-27, ---rgf, - link libjvm.so only symbollically to /opt/BSF4ooRexx in
                                   order for Java to find its home
+            2012-02-25, ---rgf, - Unix: remove "-n" flag from "ldconfig"
+                                - Unix: removed target lib-determination, not needed here
 
    remark:  supercedes the previously available version (total rewrite)
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010 Rony G. Flatscher
+       Copyright (C) 2010-2012 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -87,7 +89,7 @@ end
    /* try to find 'libjvm.so' */
 call sysFileTree javaHome"/libjvm.so", "libFile.", "FOS"
 bitness=getRexxBitness()   -- can be .nil if not determinable, else "32" or "64"
-call unixDetermineTargetLibDirs cmd.
+-- 2012-02-25, rgf: not needed here: call unixDetermineTargetLibDirs cmd.
 
 if bDebug=.true then say pp("bitness", bitness)
 if bDebug=.true then say pp("# 'libjvm.so' found", libFile.0)
@@ -180,7 +182,8 @@ cmd="sudo ln -fsv" path2lib "/opt/BSF4ooRexx/libjvm.so"
 say thisName": linking ["cmd"]..."
 cmd
 
-cmd="sudo ldconfig -n /opt/BSF4ooRexx"    --
+-- cmd="sudo ldconfig -n /opt/BSF4ooRexx"    --
+cmd="sudo ldconfig /opt/BSF4ooRexx"    --
 say thisName": updating cache to shared libraries ["cmd"]..."
 cmd
 say thisName": done."
@@ -253,6 +256,8 @@ syntax:
    return bitness
 
 
+/* 2012-02-25, rgf: not needed in this script
+
 ::routine unixDetermineTargetLibDirs      -- determine which /usr/lib* to use for the different architectures and distributions
   use arg cmd.
 
@@ -318,7 +323,7 @@ syntax:
      end
   end
   return
-
+*/
 
 ::routine qc                        -- quote for Unix
   return "'"  || arg(1) || "'"    /* Unix     */

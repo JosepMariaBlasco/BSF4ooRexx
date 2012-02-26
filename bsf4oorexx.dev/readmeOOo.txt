@@ -1,8 +1,10 @@
-The ooRexx OpenOffice.org Support (Using BSF4ooRexx), 2010-12-04
-================================================================
+The ooRexx OpenOffice.org Support (Using BSF4ooRexx), 2012-02-25 BETA
+=====================================================================
 
 This adds support for interfacing with OpenOffice/StarOffice using BSF4ooRexx,
-which therefore must be installed already.
+which therefore must be installed already. Please note: by default the
+BSF4ooRexx installer will install the OOo-support, if OOo (or LibreOffice)
+is installed on the machine.
 
 Please see also the text file "changesOOo.txt" which contains important
 information about changes in the OpenOffice.org (OOo) /Staroffice (SO) support.
@@ -40,6 +42,6 @@ Good luck and have fun!
 
 Rony G. Flatscher
 WU Wien
-Vienna (Austria, Europe), 2010-12-04
+Vienna (Austria, Europe)
 
 P.S.: Further information can be found in "readmeOOo_next.txt"

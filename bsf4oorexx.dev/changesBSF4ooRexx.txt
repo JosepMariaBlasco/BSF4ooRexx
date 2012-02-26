@@ -1,3 +1,23 @@
+-------------------------------------- 2012-02-25 ----------------------------------
+
+- new beta version, major new features
+
+        - allow to configure a Rexx interpreter instance (RexxConfiguration), before
+          creating it; cf. the ooRexx programming guide documentation in "rexxpg.pdf"
+
+        - allow to configure and implement Rexx command handlers in Java
+
+        - allow to configure and implement Rexx exit handlers in Java
+
+        - fixed: issue # 3434228, "GUI Rexxtry - install with working directory ~"
+
+        - fixed: issue # 3434226, "rpm is case sensitive - misses ooRexx installation"
+
+- install/setupBSF.rex
+
+        - Unix: changed logic to determine which target lib to copy libBSF4ooRexx.so to
+                (using location of "librexx.so")
+
 -------------------------------------- 2011-06-18 ----------------------------------
 - install/images
 

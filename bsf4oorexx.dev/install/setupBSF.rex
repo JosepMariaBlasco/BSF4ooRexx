@@ -5,8 +5,10 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.25
+   Version: 1.27
    Changed:
+            2012-02-25, ---rgf, - Unix: remove "-n" flag from "ldconfig"
+                                - Unix: detect target so-dir by looking for the lib-dir librexx.so got installed to
             2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
             2011-05-28, ---rgf, - Unix: if run on Unix make sure all dirs/files are set to owner "user:admin",
                                          chmod to 775 for dirs and 664 on files, such that "admin" users can
@@ -128,7 +130,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2011 Rony G. Flatscher
+       Copyright (C) 2006-2012 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -689,6 +691,7 @@ createInstallScript: procedure expose j. cmd. path.
      do
 -- TODO: rgf, 2011-03-07: check whether we need to copy lib to BSF4REXX-HOME in order for SetEnvironment4BSF.sh to work
         -- rgf, 2010-08-11: cf. <http://wiki.winehq.org/WineOn64bit>, Fedora/SuSE vs. Debian-based
+
         if cmd.eTgtLib32<>.nil then
         do
            tmpCmd=cmd.eCopy "32/" || cmd.eDLL cmd.eTgtLib32
@@ -759,7 +762,8 @@ createInstallScript: procedure expose j. cmd. path.
         -- if cmd.eOperatingSystem="LINUX" then    -- update /etc/ld.so.cache
 
          -- tmpCmd="ldconfig"
-         tmpCmd="ldconfig -n /usr/lib /usr/lib32 /usr/lib64 /opt/BSF4ooRexx"   -- rgf, 2010-08-14
+         -- tmpCmd="ldconfig -n /usr/lib /usr/lib32 /usr/lib64 /opt/BSF4ooRexx"   -- rgf, 2010-08-14
+         tmpCmd="ldconfig /usr/lib /usr/lib32 /usr/lib64 /opt/BSF4ooRexx"   -- rgf, 2012-02-25
          call lineout fn, cmd.eEcho qc(tmpCmd)
          call lineout fn, tmpCmd
          call lineout fn, ""
@@ -1834,8 +1838,34 @@ syntax:
    return "runas /env /user:"wnw~ComputerName"\Administrator"
 
 
+-- 2012-02-12, rgf: new logic - use cmd.eBitness and then look for "librexx.so" and
+--                  copy appropriate "libBSF4ooRexx" to the same location
+::routine unixDetermineTargetLibDirs
+  use arg cmd.
 
-::routine unixDetermineTargetLibDirs      -- determine which /usr/lib* to use for the different architectures and distributions
+  cmd.eTgtLib32=.nil                -- no target for 32-bit as of yet
+  cmd.eTgtLib64=.nil                -- no target for 64-bit as of yet
+
+  librexx="librexx.so"
+
+  if cmd.eBitness=32 then        -- 32-bit Rexx
+  do
+      if SysFileExists("/usr/lib/"librexx) then
+         cmd.eTgtLib32="/usr/lib"
+      else if SysFileExists("/usr/lib32/"librexx) then
+         cmd.eTgtLib32="/usr/lib32"
+  end
+  else if cmd.eBitness=64 then   -- 64-bit rexx
+  do
+      if SysFileExists("/usr/lib/"librexx) then
+         cmd.eTgtLib64="/usr/lib"
+      else if SysFileExists("/usr/lib64/"librexx) then
+         cmd.eTgtLib64="/usr/lib64"
+  end
+  return
+
+
+::routine unixDetermineTargetLibDirsOriginal      -- determine which /usr/lib* to use for the different architectures and distributions
   use arg cmd.
 
   "uname -m | rxqueue"     -- get machine architecture, e.g. "x86_64"

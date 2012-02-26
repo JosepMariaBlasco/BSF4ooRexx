@@ -6,12 +6,12 @@ Summary:        Bean Scripting Framework for Open Object Rexx (BSF4ooRexx)
 Group:          Development/Tools
 License:        Apache Software License 2.0
 URL:            http://sourceforge.net/projects/bsf4oorexx/
-#Source0:        
+#Source0:
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 Autoreq:        0
 BuildRequires:  unzip
-Requires:       oorexx >= 4.1.0
+Requires:       ooRexx >= 4.1.0
 Requires:       java-1.6.0-openjdk >= 1.6.0
 
 %description
