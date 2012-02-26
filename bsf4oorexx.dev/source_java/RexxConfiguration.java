@@ -39,6 +39,7 @@ import java.util.*;         // BitSet
    2012-02-25, rgf: - fix problem with turning ArrayList into String[] for required libraries,
                       renamed getRequiredLibrary[4JNI]() to getRequiredLibraries[4JNI] to reflect the
                       fact, that multiple libraries can be required
+   2012-02-26, rgf: - fix wrong documentation for getExitHandlers4JNI()
  */
 
 public class RexxConfiguration {
@@ -221,11 +222,8 @@ public class RexxConfiguration {
         return tmpExitHandlers;
     }
 
-    /** Returns an array with two elements, where the first element
-     *  is an int array of exit numbers and the second element is an array of
-     *  RexxExitHandler with the matching Java exit handler object (or <code>null</code>, if
-     *  not yet handled by the Java side). If no exit handlers got defined, then <code>null</code>
-     *  gets returned.
+    /** Returns an an int array of exit numbers for which Java exit handlers got defined.
+     *  If no exit handlers got defined, then <code>null</code> gets returned.
      *
      * @return int array containing the exit numbers or null, if no exit handlers should be defined
     */
