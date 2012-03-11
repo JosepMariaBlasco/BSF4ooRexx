@@ -29,6 +29,10 @@ package org.rexxla.bsf.engines.rexx;   // belongs to that fine package ;) ...
  * @version 1.0
  * @since 2012-02-25
  */
+
+/* 2012-02-26, rgf  - fixed some formatting
+*/
+
 public interface RexxExitHandler
 {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
@@ -118,7 +122,7 @@ public interface RexxExitHandler
      *
 
        <p>
-       The following documents briefly the <code>{@link parmBlock}</code>-array that gets
+       The following documents briefly the <code>parmBlock</code>-array that gets
        supplied to the Java exit handler, depending on the exit number and subfunction.
 
        Please refer also to the ooRexx documentation &quot;rexxpg.pdf&quot;, section

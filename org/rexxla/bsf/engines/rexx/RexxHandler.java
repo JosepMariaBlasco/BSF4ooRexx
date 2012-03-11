@@ -211,7 +211,7 @@ public abstract class RexxHandler
     }
 
     /** Returns a directory object containing the condition information; this is equivalent to calling
-     *  Condition(&apos;O&apos;) from within Rexx code (cf &quot;rexxpg.pdf&quot;).
+     *  <code>condition(&apos;O&apos;)</code> from within Rexx code (cf &quot;rexxpg.pdf&quot;).
      *
      * @param slot an opaque Object array as passed to the {@link RexxExitHandler} or {@link RexxCommandHandler} object
      * @return returns a {@link RexxProxy} for a Rexx Directory object or <code>NULL</code>, if no
@@ -295,8 +295,8 @@ public abstract class RexxHandler
         return ((RexxAndJava) arrSlot[0]).jniNil(arrSlot);
     }
 
-    /** (Copied from the ooRexx rexxpg.pdf documentation) &quot;
-     * Returns the version of the interpreter. The returned version is
+    /** (Copied from the ooRexx rexxpg.pdf documentation) &quot;Returns
+     *  the version of the interpreter. The returned version is
      * encoded in the 3 least significant bytes of the returned value,
      * using 1 byte each for the interpreter version, release, and revision
      * values. For example, on a 32-bit platform, this value would be

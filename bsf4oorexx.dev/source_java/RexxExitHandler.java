@@ -122,7 +122,7 @@ public interface RexxExitHandler
      *
 
        <p>
-       The following documents briefly the <code>{@link #parmBlock}</code>-array that gets
+       The following documents briefly the <code>parmBlock</code>-array that gets
        supplied to the Java exit handler, depending on the exit number and subfunction.
 
        Please refer also to the ooRexx documentation &quot;rexxpg.pdf&quot;, section

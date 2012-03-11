@@ -8,7 +8,7 @@ set docs_apache_dir=./docs.apache.bsf
 set doc_date=%runDate%
 
 if not "%doc_date%"=="" goto continue
-set doc_date=2012-02-25
+set doc_date=2012-02-26
 
 :continue
 set docs_header=-header "%doc_date%, rgf"
