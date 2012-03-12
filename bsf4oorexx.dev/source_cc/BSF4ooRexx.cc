@@ -29,6 +29,9 @@ offene Probleme:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.1.-13 2012-03-11 - added support for NetRexx Rexx' class for return values from handlers
+                         (if NetRexx Rexx' value, return its string value to Rexx)
+
     4.1.-12 2012-02-25 - added native functions jniNil(), jniInterpreterVersion(), jniLanguageLevel()
                        - RgfRexxObject2JavaObject(): now wraps up .nil as an own RexxProxy! This
                          will allow Rexx handlers to also distinguish between "nothing returned" (NULL)
@@ -518,8 +521,9 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 // #define DEBUG_REXX_OBJECT_TO_JAVA   // rgf, 2012-02-19
-// #ydefine DEBUG_ARRAY_ARGS            // rgf, 2012-02-21
+// #define DEBUG_ARRAY_ARGS            // rgf, 2012-02-21
 
+// #define RGF_JENV_OBJECTS        // rgf, 2012-03-12, show Java object values in structure (cache)
 
 
 #if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
@@ -586,6 +590,9 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // rgf, 2012-02-17
 #define CONFIG_REXX_HANDLERS_AS_INTERFACES
+
+// rgf, 2012-03-11
+#define CONFIG_HANDLE_NETREXX_AS_STRING_4_REXX
 
     // define the handler's name and signatures
 #define CONFIG_REXX_COMMAND_HANDLER_NAME      "handleCommand"
@@ -742,11 +749,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "410.20120225 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120312 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "410.20120225 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120312 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "410.20120225 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120312 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -2172,6 +2179,11 @@ typedef struct _STRUCT_JVM {
     jmethodID                   mid_RexxAndJava_registerBean4JNI;       // 20091018, rgf
     jmethodID                   mid_RexxAndJava_unregisterBean;
 
+#if defined (CONFIG_HANDLE_NETREXX_AS_STRING_4_REXX)
+    jclass                      clz_NetRexx;            // "netrexx/lang/Rexx", 20120311, rgf
+    jmethodID                   mid_NetRexx_toString;   // "netrexx/lang/Rexx", 20120311, rgf
+#endif
+
     jclass                      clz_RexxException;  // "org/rexxla/bsf/engines/rexx/RexxException"
     jmethodID                   mid_RexxException_init;     // constructor
 
@@ -2252,6 +2264,19 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
     struct_JVM->mid_RexxAndJava_unregisterBean     =env->GetMethodID( tmpClz, "unregisterBean",      "(Ljava/lang/String;)Z");
     struct_JVM->mid_RexxAndJava_makeString4Rexx    =env->GetMethodID( tmpClz, "makeString4Rexx",     "(Ljava/lang/Object;)Ljava/lang/String;");
 
+// 2012-03-11, rgf: get static field (type class) "nlR_class", may be NULL, if no NetRexx available
+//                  get toString() mid as well, needed for RgfJavaObject2RexxObject(...)
+#if defined (CONFIG_HANDLE_NETREXX_AS_STRING_4_REXX)
+    {
+        jfieldID fid=env->GetStaticFieldID(tmpClz, "nlR_class", "Ljava/lang/Class;");
+        jclass   j_nrxclz=(jclass) env->GetStaticObjectField(tmpClz, fid);
+        if (j_nrxclz!=NULL)  // NetRexx class available, get its toString() method
+        {
+            struct_JVM->clz_NetRexx=j_nrxclz;           // assign NetRexx class object
+            struct_JVM->mid_NetRexx_toString=env->GetMethodID( j_nrxclz, "toString", "()Ljava/lang/String;" );
+        }
+    }
+#endif
 
 
        // get MID for RexxException
@@ -2308,6 +2333,14 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
         // create global references for these important objects
     struct_JVM->clz_Object       =(jclass)  env->NewGlobalRef(struct_JVM->clz_Object);
     struct_JVM->clz_RexxAndJava  =(jclass)  env->NewGlobalRef(struct_JVM->clz_RexxAndJava);
+
+#if defined (CONFIG_HANDLE_NETREXX_AS_STRING_4_REXX)
+    if (struct_JVM->clz_NetRexx!=NULL)
+    {
+        struct_JVM->clz_NetRexx=(jclass) env->NewGlobalRef(struct_JVM->clz_NetRexx);
+    }
+#endif
+
     struct_JVM->clz_RexxException=(jclass)  env->NewGlobalRef(struct_JVM->clz_RexxException);
     struct_JVM->clz_RexxProxy    =(jclass)  env->NewGlobalRef(struct_JVM->clz_RexxProxy);
     struct_JVM->clz_String       =(jclass)  env->NewGlobalRef(struct_JVM->clz_String);
@@ -2325,7 +2358,7 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
     // rgf, 2012-02-07 --end
 
 
-#if defined ( DEBUG_JNI )
+#if defined ( DEBUG_JNI )  || defined (RGF_JENV_OBJECTS)
    fprintf(stderr, "\ninit_STRUCT_JVM(): after setting up, struct_JVM->jvm=[%p], env->ExceptionCheck()=[%d]\n\n",
                    struct_JVM->jvm, env->ExceptionCheck());
 
@@ -2341,6 +2374,11 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_makeString4Rexx    =[%p]\n", struct_JVM->mid_RexxAndJava_makeString4Rexx  );
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_registerBean4JNI   =[%p]\n", struct_JVM->mid_RexxAndJava_registerBean4JNI );
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_unregisterBean     =[%p]\n", struct_JVM->mid_RexxAndJava_unregisterBean   );
+
+#if defined (CONFIG_HANDLE_NETREXX_AS_STRING_4_REXX)
+   fprintf(stderr, "\tclz_NetRexx      =[%p]\n", struct_JVM->clz_NetRexx);
+   fprintf(stderr, "\t\tstruct_JVM->mid_NetRexx_toString   =[%p]\n", struct_JVM->mid_NetRexx_toString );
+#endif
 
    fprintf(stderr, "\tclz_RexxException=[%p]\n", struct_JVM->clz_RexxException);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxException_init         =[%p]\n", struct_JVM->mid_RexxException_init         );
@@ -2394,6 +2432,14 @@ inline void uninit_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM)
     env->DeleteGlobalRef(struct_JVM->clz_Object);
     env->DeleteGlobalRef(struct_JVM->clz_RexxAndJava);
     env->DeleteGlobalRef(struct_JVM->clz_RexxException);
+
+#if defined (CONFIG_HANDLE_NETREXX_AS_STRING_4_REXX)
+    if (struct_JVM->clz_NetRexx!=NULL)
+    {
+        env->DeleteGlobalRef(struct_JVM->clz_NetRexx);
+    }
+#endif
+
     env->DeleteGlobalRef(struct_JVM->clz_RexxProxy);
     env->DeleteGlobalRef(struct_JVM->clz_String);
     env->DeleteGlobalRef(struct_JVM->clz_Throwable);
@@ -2992,6 +3038,17 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
         return res;
     }
 
+
+// 2012-03-11, rgf: check for NetRexx object in hand; if so replace it with its toString() value
+#if defined (CONFIG_HANDLE_NETREXX_AS_STRING_4_REXX)
+    if (defaultJVM->clz_NetRexx!=NULL)
+    {
+        if (env->IsInstanceOf(j_obj, defaultJVM->clz_NetRexx)==JNI_TRUE)
+        {
+            j_obj=env->CallObjectMethod(j_obj, defaultJVM->mid_NetRexx_toString);
+        }
+    }
+#endif
 
         // if a jstring, get the RexxString value
     if (env->IsInstanceOf(j_obj, defaultJVM->clz_String)==JNI_TRUE )  // ---rgf, 2012-02-07
