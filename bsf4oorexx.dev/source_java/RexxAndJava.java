@@ -36,11 +36,17 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.1.0, 2012-02-24
+  * @version 4.1.0, 2012-03-12
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
+     2012-03-12, ---rgf, - now loading BSF4ooRexx DLL/so after trying to fetch the netrexx.lang.Rexx class,
+                           such that native library can access static field "nlR_class" and fetch the class object,
+                           if Java found it
+                         - change scope of "bsfPrefixReturnValue" from static to instance, such that
+                           the Rexx interpreter instances can run with different settings
+
      2012-02-25, ---rgf, - added methods jniNil(), jniInterpreterVersion(), jniLanguageLevel()
      2012-02-24, ---rgf, - added methods jniGetLocalEnvironment(), jniGetGlobalEnvironment()
 
@@ -262,7 +268,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20120225";
+    static final public String version = "410.20120312";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -306,7 +312,8 @@ class RexxAndJava {
      * the '\t' character in Java). By default this is set to <code>false</code> to remain
      * backwardly compatible with older BSF4ooRexx programs.
      */
-    static protected boolean bsfPrefixReturnValue = false; // 2008-06-22
+    // static protected boolean bsfPrefixReturnValue = false; // 2008-06-22
+    protected boolean bsfPrefixReturnValue = false; // 2008-06-22
         // the following strings must not be changed as BSF.CLS' BSF.WRAP() routine and
         // other methods and routines there depend on the value *and* length (must be 3)!
     static final protected String OBJECT_INDICATOR_PREFIX="<O>"; // "OBJECT ";
@@ -394,9 +401,6 @@ class RexxAndJava {
      */
     static
     {
-// System.err.println("---RexxAndJava() - static: before loadLibrary---");
-        System.loadLibrary( DLL_NAME );
-// System.err.println("---RexxAndJava() - static: AFTER loadLibrary---");
 
 /*
 o.k., AccessibleObject got introduced in Java 1.2, we are demanding at least Java 1.4, hence this is not
@@ -436,6 +440,15 @@ necessary anymore
                 ;
             }
         }
+
+
+// 2012-03-12, rgf: move loading the BSF4ooRexx library *after* loading the NetRexx class
+
+// System.err.println("---RexxAndJava() - static: before loadLibrary---");
+        System.loadLibrary( DLL_NAME );
+// System.err.println("---RexxAndJava() - static: AFTER loadLibrary---");
+
+
     }
 
 
