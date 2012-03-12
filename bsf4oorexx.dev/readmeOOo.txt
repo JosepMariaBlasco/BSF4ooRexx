@@ -1,4 +1,4 @@
-The ooRexx OpenOffice.org Support (Using BSF4ooRexx), 2012-02-25 BETA
+The ooRexx OpenOffice.org Support (Using BSF4ooRexx), 2012-03-12 BETA
 =====================================================================
 
 This adds support for interfacing with OpenOffice/StarOffice using BSF4ooRexx,

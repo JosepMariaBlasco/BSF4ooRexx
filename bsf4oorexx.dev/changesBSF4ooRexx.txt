@@ -1,3 +1,18 @@
+-------------------------------------- 2012-03-12 ----------------------------------
+- RexxAndJava.java
+
+        - now first trying to load 'netrexx.lang.Rexx' and then loading BSF4ooRexx DLL/so
+          such that the native library can access the static field "nlR_class" and fetch
+          the netrexx.lang.Rexx class object, if it was found
+
+        - change scope of "bsfPrefixReturnValue" from static to instance, such that
+          the Rexx interpreter instances can run with different settings in parallel
+
+- BSF4ooRexx.cc
+
+        - added support for 'netrexx.lang.Rexx' class for return values from handlers
+          (if NetRexx Rexx' value, return its string value to Rexx)
+
 -------------------------------------- 2012-02-25 ----------------------------------
 
 - new beta version, major new features
