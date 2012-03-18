@@ -61,7 +61,8 @@ public class JavaRunRexxWithCommandExits
         System.err.println("edited  rexxconf=["+rexxconf+"]\n");
 
         // invoke the interpreter and run the Rexx program
-        rexxEngine.apply ("JavaRunRexxWithCommandExits.java", 0, 0, rexxCode, null, null);
+        rexxEngine.apply ("JavaRunRexxWithCommandExits.rex", 0, 0, rexxCode, null, null);
+        rexxEngine.terminate();     // terminate Rexx interpreter instance
     }
 
 

@@ -29,6 +29,9 @@ offene Probleme:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.1.-14 2012-03-18 - fixed a bug in processing the return value for Rexx exits RXEXF and RXOFNC
+                       - corrected the needed size of the parmBlock array for the RXHLT and RXVALUE exits
+
     4.1.-13 2012-03-11 - added support for NetRexx Rexx' class for return values from handlers
                          (if NetRexx Rexx' value, return its string value to Rexx)
 
@@ -749,11 +752,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "410.20120312 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120318 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "410.20120312 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120318 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "410.20120312 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120318 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -15746,7 +15749,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                 {
                     RXHLTTST_PARM *pb=(RXHLTTST_PARM *) parmBlock;
                     jpb = param.env->NewObjectArray (
-                                   (jsize) 2,                // needed size (number of elements)
+                                   (jsize) 1,                // needed size (number of elements)
                                    defaultJVM->clz_Object,   // type
                                    NULL                      // initial value
                                    );
@@ -15757,8 +15760,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     tmpFlags[0]=pb->rxhlt_flags.rxfhhalt;
                     param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
-
-                        // index [1]: may be freely used by Java (a slot that gets ignored here)
                 }
             }
             break;
@@ -15945,7 +15946,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                 if (subfunction==RXVALUECALL )   // 1
                 {
                     jpb = param.env->NewObjectArray (
-                                   (jsize) 4,                // needed size (number of elements)
+                                   (jsize) 3,                // needed size (number of elements)
                                    defaultJVM->clz_Object,   // type
                                    NULL                      // initial value
                                    );
@@ -15962,8 +15963,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     param.env->SetObjectArrayElement(jpb, (jint) 2,
                                 RgfRexxObject2JavaObject(&param,context->threadContext,pb->value)
                                                     );
-
-    //                // fourth element is our slot where we save the arrToRemove array, if any
                 }
             }
             break;
@@ -16537,15 +16536,26 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                 // get result, if any, turn it into a RexxObjectPtr
                             jobject jresult=param.env->GetObjectArrayElement(jpb, (jint) 3);
 
+                            RexxObjectPtr rop=RgfJavaObject2RexxObject (param.env,
+                                                       NULL,      // RexxAndJava object, if NULL will be fetched in routine
+                                                       context->threadContext,    // RexxThreadContext
+                                                       jresult,           // Java object to turn into a RexxObjectPtr
+                                                       FALSE              // if FALSE, do not load .BSF, if not found
+                                                       );
+                            if (rop==NULL)  // Java returned NULL, so we return .nil
+                            {
+                                rop=context->Nil();
+                            }
+
                             if (exitNumber==RXOFNC)
                             {
                                 RXOFNCCAL_PARM *pb=(RXOFNCCAL_PARM *) parmBlock;
-                                pb->rxfnc_retc=retc;
+                                pb->rxfnc_retc=rop;
                             }
                             else
                             {
                                 RXEXFCAL_PARM *pb=(RXEXFCAL_PARM *) parmBlock;
-                                pb->rxfnc_retc=retc;
+                                pb->rxfnc_retc=rop;
                             }
                         }
 

@@ -42,12 +42,18 @@ say "def=["def"]"
 say "ghi=["ghi"]"
 say "---"
 say
-say "... the next VALUE()-statement will raise Rexx condition 40.914..."
-say
-say "(Rexx-side) - value('abc',,'NIXI_NOXI')="pp(value('abc',,'NIXI_NOXI'))
+call nixi_noxi
 
-::requires "BSF.CLS"    -- get Java support
+::requires "BSF.CLS"       -- get Java support
+::requires "rgf_util2.rex" -- get access to ppCondition2()
 
-
-
+::routine nixi_noxi
+   signal on any
+   say "... the next VALUE()-statement will raise Rexx condition 40.914..."
+   say
+   say "(Rexx-side) - value('abc',,'NIXI_NOXI')="pp(value('abc',,'NIXI_NOXI'))
+   return
+any:
+   say ppCondition2(condition("Object"))
+   return
 

@@ -60,7 +60,8 @@ public class JavaRunRexxWithCommandHandler implements RexxCommandHandler
         System.err.println("edited  rexxconf=["+rexxconf+"]\n");
 
         // invoke the interpreter and run the Rexx program
-        rexxEngine.apply ("JavaRunRexxWithCommandHandler.java", 0, 0, rexxCode, null, null);
+        rexxEngine.apply ("JavaRunRexxWithCommandHandler.rex", 0, 0, rexxCode, null, null);
+        rexxEngine.terminate();     // terminate this Rexx interpreter instance
     }
 
 
