@@ -1497,7 +1497,7 @@ RunSyntax:
         return 0
       end
     .local~mm.dir~say_stg = .mm.dir~say_stg||output
-    .mm.dir~saysArea~setText(.mm.dir~say_stg)~~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
+    .mm.dir~saysArea~~setText(.mm.dir~say_stg)~~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
     if .mm.dir~enableOutputSocket & .mm.dir~clientConnected -
     then .mm.dir~out~println("[.OUTPUT] "||output)
     return 0
@@ -1512,7 +1512,7 @@ RunSyntax:
       end
     if \line~equals('LINE') then raise syntax 93.958
     .local~mm.dir~say_stg = .mm.dir~say_stg||output||.endOfLine
-    .mm.dir~saysArea~setText(.mm.dir~say_stg)~~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
+    .mm.dir~saysArea~~setText(.mm.dir~say_stg)~~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
     if .mm.dir~enableOutputSocket & .mm.dir~clientConnected -
     then .mm.dir~out~println("[.OUTPUT] "||output)
     return 0
