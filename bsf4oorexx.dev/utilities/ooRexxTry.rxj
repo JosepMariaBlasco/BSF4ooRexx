@@ -1383,9 +1383,9 @@ RunSyntax:
 ::routine attach2java
   signal on syntax
   call BsfAttachToTid .mm.dir~start.tid
-  return .false
-syntax:
   return .true
+syntax:
+  return .false
 
 
 /* Move error related output from the command prompt to the "errors" area of the GUI*/
