@@ -38,6 +38,14 @@
                         - fixed a bug referring to .preferred_path instead of .mm.dir~preferredPath
                         - accustomed for Java 1.4 swing forcing to use "getContentPane" before
                           adding a component to a JFrame or JDialog
+
+            2012-03-27 Jean-Louis Faucher
+                        - Fix bug 3512053
+
+            2012-03-29 Rony G. Flatscher
+                        - make sure that .input, .output and .error GUI interface can be used,
+                          even if Rexx code is run on a separate thread; quick fix, experimental
+
 */
 
 /*----------------------------------------------------------------------------*/
@@ -100,6 +108,7 @@
 userData = .directory~new                   -- Directory to certain objects
 .local~mm.dir = .directory~new			-- locally accessable directory
 						-- holds frequently used key variables
+.mm.dir~start.tid=BSFGetTID()    -- get this instance's thread id
 parse arg isDefault
 
 .mm.dir~useDefault = .false			-- use default settings
@@ -1367,10 +1376,24 @@ RunSyntax:
 ::method unknown
 
 
+/* Try to attach to Java with the thread that has an established connection from Rexx to Java.
+   If already attached a syntax error will be raised. Returns .true if an attach was carried out,
+   .false else.
+*/
+::routine attach2java
+  signal on syntax
+  call BsfAttachToTid .mm.dir~start.tid
+  return .false
+syntax:
+  return .true
+
+
 /* Move error related output from the command prompt to the "errors" area of the GUI*/
 ::class GUIErrorStream subclass stream
 ::method lineout
     use arg output
+
+    call attach2java       -- make sure we can interact with Java on this thread
 
     .local~mm.dir~error_stg = .mm.dir~error_stg||output||.endOfLine
     .mm.dir~errorsArea~~setText(.mm.dir~error_stg)~~setCaretPosition(.mm.dir~errorsArea~getDocument~getLength)
@@ -1395,6 +1418,8 @@ RunSyntax:
 ::method charIn
     expose vk_enterPressed
     use arg start, length
+
+    call attach2java       -- make sure we can interact with Java on this thread
 
     -- look for bad arguments
     if \start~equals('START') then raise syntax 93.958
@@ -1434,6 +1459,8 @@ RunSyntax:
 ::method lineIn
     expose vk_enterPressed
     use arg line, count
+
+    call attach2java       -- make sure we can interact with Java on this thread
 
     -- look for bad arguments
     if \line~equals('LINE') then raise syntax 93.958
@@ -1479,6 +1506,9 @@ RunSyntax:
 ::class GUIOutputStream subclass stream
 ::method say
     use arg output
+
+    call attach2java       -- make sure we can interact with Java on this thread
+
     .local~mm.dir~say_stg = .mm.dir~say_stg||output||.endOfLine
     .mm.dir~saysArea~~setText(.mm.dir~say_stg)~~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
     if .mm.dir~enableOutputSocket & .mm.dir~clientConnected
@@ -1490,6 +1520,8 @@ RunSyntax:
 ::method charout
     use arg output, start
 
+    call attach2java       -- make sure we can interact with Java on this thread
+
     if \start~equals('START') then raise syntax 93.958
     if output~equals('OUTPUT') then
       do
@@ -1500,10 +1532,13 @@ RunSyntax:
     .mm.dir~saysArea~~setText(.mm.dir~say_stg)~~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
     if .mm.dir~enableOutputSocket & .mm.dir~clientConnected -
     then .mm.dir~out~println("[.OUTPUT] "||output)
+
     return 0
 
 ::method lineout
     use arg output, line
+
+    call attach2java       -- make sure we can interact with Java on this thread
 
     if output~equals('OUTPUT') then
       do
@@ -1515,6 +1550,7 @@ RunSyntax:
     .mm.dir~saysArea~~setText(.mm.dir~say_stg)~~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
     if .mm.dir~enableOutputSocket & .mm.dir~clientConnected -
     then .mm.dir~out~println("[.OUTPUT] "||output)
+
     return 0
 
 
