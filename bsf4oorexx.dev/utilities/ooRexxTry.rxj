@@ -46,6 +46,12 @@
                         - make sure that .input, .output and .error GUI interface can be used,
                           even if Rexx code is run on a separate thread; quick fix, experimental
 
+            2012-04-03 Rony G. Flatscher
+                        - fix bug ID: 3514658
+                        - Java classes are now stored in .local by there fully qualified name;
+                          this way there should be no interference with any other class (JLF
+                          reported a name clash with .file, which is defined as an ooRexx class
+                          and which was offset by java.io.File that was saved in .local as .file)
 */
 
 /*----------------------------------------------------------------------------*/
@@ -195,32 +201,32 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
     use arg , slotDir
 
     mainframe = .mm.dir~frame
-    adialog = .JDialog~new(mainframe, 'About')
+    adialog = .javax.swing.JDialog~new(mainframe, 'About')
     adialog~setResizable(.false)
     contentpane = adialog~getContentPane
-    gridbag = .GridBagLayout~new
-    c = .GridBagConstraints~new
+    gridbag = .java.awt.GridBagLayout~new
+    c = .java.awt.GridBagConstraints~new
     contentpane~setLayout(gridbag)
-    verpanel = .JPanel~new
-    verpanel~~setBackground(.Color~magenta)~~add(.JLabel~new("Version"))
-    version = .JPanel~new
-    version~add(.JLabel~new(.mm.dir~version))
-    atpanel = .JPanel~new
-    atpanel~~setBackground(.Color~magenta)~~add(.JLabel~new("Author"))
-    author = .JPanel~new
-    author~add(.JLabel~new("Markus Moldaschl"))
-    docpanel = .JPanel~new
-    docpanel~~setBackground(.Color~magenta)~~add(.JLabel~new("Documentation"))
-    doc = .JPanel~new
-    docbutton = .JButton~new("PDF")
+    verpanel = .javax.swing.JPanel~new
+    verpanel~~setBackground(.java.awt.Color~magenta)~~add(.JLabel~new("Version"))
+    version = .javax.swing.JPanel~new
+    version~add(.javax.swing.JLabel~new(.mm.dir~version))
+    atpanel = .javax.swing.JPanel~new
+    atpanel~~setBackground(.java.awt.Color~magenta)~~add(.javax.swing.JLabel~new("Author"))
+    author = .javax.swing.JPanel~new
+    author~add(.javax.swing.JLabel~new("Markus Moldaschl"))
+    docpanel = .javax.swing.JPanel~new
+    docpanel~~setBackground(.java.awt.Color~magenta)~~add(.javax.swing.JLabel~new("Documentation"))
+    doc = .javax.swing.JPanel~new
+    docbutton = .javax.swing.JButton~new("PDF")
     rexxDocEH = .Doc~new
-    rpDocEH = BsfCreateRexxProxy(rexxDocEH, slotDir~userData, .ActionListener)
+    rpDocEH = BsfCreateRexxProxy(rexxDocEH, slotDir~userData, .java.awt.event.ActionListener)
     docbutton~addActionListener(rpDocEH)
     doc~add(docbutton)
-    c~fill = .GridBagConstraints~horizontal
+    c~fill = .java.awt.GridBagConstraints~horizontal
     c~weightx = 1.0
-    c~gridwidth = .GridBagConstraints~remainder
-    c~insets = .Insets~new(2,3,0,3)
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
+    c~insets = .java.awt.Insets~new(2,3,0,3)
     gridbag~setConstraints(verpanel, c)
     gridbag~setConstraints(version, c)
     gridbag~setConstraints(atpanel, c)
@@ -238,18 +244,18 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
 ::method getListCellRendererComponent
 	use arg list, value, index, isSelected, cellHasFocus, slotDir
 
-    listarea = .JTextArea~new
-    listarea~setFont(.Font~new(.mm.dir~fontname, .Font~plain, "12"))
+    listarea = .javax.swing.JTextArea~new
+    listarea~setFont(.java.awt.Font~new(.mm.dir~fontname, .java.awt.Font~plain, "12"))
     listarea~setText(value~makeString)
     listarea~setLineWrap(.true)
 
     if isSelected then
         do
             listarea~setBackground(listarea~getSelectionColor)
-            listarea~setForeground(.Color~white)
+            listarea~setForeground(.java.awt.Color~white)
             slotDir~userData~restorebutton~setEnabled(.true)
         end
-    laScrollPane = .JScrollPane~new(listarea, .JScrollPane~vertical_scrollbar_as_needed, .JScrollPane~horizontal_scrollbar_never)
+    laScrollPane = .javax.swing.JScrollPane~new(listarea, .javax.swing.JScrollPane~vertical_scrollbar_as_needed, .javax.swing.JScrollPane~horizontal_scrollbar_never)
     return laScrollPane
 
 
@@ -325,35 +331,35 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
         when source~equals(argsCo) then
             do
                 cp_content  = .mm.dir~argsArea~getText
-		cp_string = .StringSelection~new(cp_content)
+		cp_string = .java.awt.datatransfer.StringSelection~new(cp_content)
                 self~toClipboard(cp_string)
                 .local~mm.dir~imsg = 'Arguments Are On ClipBoard'
             end
         when source~equals(codeCo) then
             do
                 cp_content  = codeArea~getText
-		cp_string = .StringSelection~new(cp_content)
+		cp_string = .java.awt.datatransfer.StringSelection~new(cp_content)
                 self~toClipboard(cp_string)
                 .local~mm.dir~imsg = 'Code Is On ClipBoard'
             end
         when source~equals(saysCo) then
             do
                 cp_content  = .mm.dir~saysArea~getText
-		cp_string = .StringSelection~new(cp_content)
+		cp_string = .java.awt.datatransfer.StringSelection~new(cp_content)
                 self~toClipboard(cp_string)
                 .local~mm.dir~imsg = 'Says Are On ClipBoard'
             end
         when source~equals(returnsCo) then
             do
                 cp_content  = .mm.dir~returnsArea~getText
-		cp_string = .StringSelection~new(cp_content)
+		cp_string = .java.awt.datatransfer.StringSelection~new(cp_content)
                 self~toClipboard(cp_string)
                 .local~mm.dir~imsg = 'Returns Are On ClipBoard'
             end
         when source~equals(errorsCo) then
             do
                 cp_content  = .mm.dir~errorsArea~getText
-		cp_string = .StringSelection~new(cp_content)
+		cp_string = .java.awt.datatransfer.StringSelection~new(cp_content)
                 self~toClipboard(cp_string)
                 .local~mm.dir~imsg = 'Errors Are On ClipBoard'
             end
@@ -374,7 +380,7 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
 
                 cp_content  = .mm.dir~errorsArea~getText
                 allData = allData||'Errors/Information'||.endOfLine||cp_content||.endOfLine||'-'~copies(20)||.endOfLine
-		allData = .StringSelection~new(allData)
+		allData = .java.awt.datatransfer.StringSelection~new(allData)
                 self~toClipboard(allData)
                 .local~mm.dir~imsg = 'All Data Is On ClipBoard'
             end
@@ -387,7 +393,7 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
 ::method toClipboard
 	use arg data
 
-    systemClip = .Toolkit~getDefaultToolkit~getSystemClipboard
+    systemClip = .java.awt.Toolkit~getDefaultToolkit~getSystemClipboard
     systemClip~setContents(data, .nil)
 
 
@@ -405,8 +411,8 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
     .mm.dir~srvSock = newSocket
     .mm.dir~listening = .true
     do while .mm.dir~listening = .true
-        runnableSocket = BsfCreateRexxProxy(.SocketConnection~new, ,.Runnable)
-        .Thread~new(runnableSocket)~~bsf.dispatch("start")
+        runnableSocket = BsfCreateRexxProxy(.SocketConnection~new, ,.java.lang.Runnable)
+        .java.lang.Thread~new(runnableSocket)~~bsf.dispatch("start")
     end
     .mm.dir~srvSock~close
 
@@ -595,14 +601,14 @@ syntax2:
         if eventObject~getClickCount == 2 then userData~rexxRestore~restoreData(userData)
         return
       end
-    if comp~equals(.mm.dir~codeArea) then if .mm.dir~codeArea~getSelectionColor~equals(.Color~red) -
+    if comp~equals(.mm.dir~codeArea) then if .mm.dir~codeArea~getSelectionColor~equals(.java.awt.Color~red) -
     then self~resetSelectionColor
 
 ::method mousePressed
     use arg eventObject, slotDir
 
     comp = eventObject~getComponent
-    if comp~equals(.mm.dir~codeArea) then if .mm.dir~codeArea~getSelectionColor~equals(.Color~red) -
+    if comp~equals(.mm.dir~codeArea) then if .mm.dir~codeArea~getSelectionColor~equals(.java.awt.Color~red) -
     then self~resetSelectionColor
 
 ::method resetSelectionColor
@@ -634,12 +640,12 @@ slotDir~javaObject~setSize_forwardToSuper((.mm.dir~frame~getWidth/wdivider)~form
         msg = "The ooRexxTry.pdf help documentation could not be located." || '0a0a'x -
               "Tried:" .mm.dir~ooRexxTry.pdf       || '0a0a'x -
               "Sorry, no help is available."
-        errordialog = .JDialog~new(.mm.dir~frame, "Error")
+        errordialog = .javax.swing.JDialog~new(.mm.dir~frame, "Error")
         errordialog~setResizable(.false)
         mainframe = .mm.dir~frame
         errordialog~setBounds((mainframe~getX+mainframe~getWidth/3)~format(,0), (mainframe~getY+mainframe~getHeight/3)~format(,0), 200, 150)
-        errorpanel = .JPanel~new
-        errorarea = .JTextArea~new(msg)
+        errorpanel = .javax.swing.JPanel~new
+        errorarea = .javax.swing.JTextArea~new(msg)
         errorarea~setEditable(.false)
         errorarea~setOpaque(.false)
         errorpanel~add(errorarea)
@@ -656,7 +662,7 @@ slotDir~javaObject~setSize_forwardToSuper((.mm.dir~frame~getWidth/wdivider)~form
     else if .bsf4rexx~opsys3="LIN" then   -- assume some Linux with xdg-open available
        'xdg-open' .mm.dir~ooRexxTry.pdf
     else -- unknown/unsupported operating system, just beep
-       .Toolkit~getDefaultToolkit~beep
+       .java.awt.Toolkit~getDefaultToolkit~beep
 
 -- Class that dynamically creates a method to take the arguments and execute the code.
 ::class executor public
@@ -673,7 +679,7 @@ return
 ExecSynTax:
     call ppCondition condition("o")
 
-    .Toolkit~getDefaultToolkit~beep
+    .java.awt.Toolkit~getDefaultToolkit~beep
     .local~mm.dir~Error? = .true
 
     if .mm.dir~infilestream \= .nil then .mm.dir~infilestream~close
@@ -713,8 +719,8 @@ return
         .mm.dir~returnsArea~setText(.mm.dir~run_results['returns'])
 
     if \.mm.dir~silent then        -- Let the user know when code execution is complete
-        .Toolkit~getDefaultToolkit~beep
-    .mm.dir~frame~setCursor(.Cursor~getDefaultCursor)
+        .java.awt.Toolkit~getDefaultToolkit~beep
+    .mm.dir~frame~setCursor(.java.awt.Cursor~getDefaultCursor)
     .mm.dir~codeArea~requestFocus   -- Return the focus to the code input area
 
     -- Close the file streams after the run or when an error occurred. Allow to immediate (re)view file code or alternate it.
@@ -729,8 +735,8 @@ RunSyntax:
     call ppCondition condition("o")
 
      if \.mm.dir~silent then        -- Let the user know when code execution is complete
-        .Toolkit~getDefaultToolkit~beep
-    .mm.dir~frame~setCursor(.Cursor~getDefaultCursor)
+        .java.awt.Toolkit~getDefaultToolkit~beep
+    .mm.dir~frame~setCursor(.java.awt.Cursor~getDefaultCursor)
 
      -- Close the file streams after the run or when an error occurred. Allow to immediate (re)view file code or alternate it.
     if .mm.dir~infilestream \= .nil then .mm.dir~infilestream~close
@@ -768,13 +774,13 @@ RunSyntax:
     saveAs = slotDir~userData~fileMenu~getItem(2)
     open = slotDir~userData~fileMenu~getItem(1)
     frame = .mm.dir~frame
-    fc = .JFileChooser~new
+    fc = .javax.swing.JFileChooser~new
     fc~setCurrentDirectory( .bsf~new("java.io.File", .mm.dir~preferred_path))
     -- Create an instance of the Rexx FileFilter class to filter the file list
      rexxFilter=.RexxFileFilter~new("*.rex;*.rxj;*.rxo;*.txt", .set~of('rex', 'rxj', 'rxo', 'txt'))
      /* create a RexxProxy, supply the Rexx FileFilter object and demand it to be used as
         an implemenation of the abstract Java class "javax.swing.filechooser.FileFilter" */
-     rpFilter=BsfCreateRexxProxy(rexxFilter, , .FileFilter)
+     rpFilter=BsfCreateRexxProxy(rexxFilter, , .javax.swing.filechooser.FileFilter)
     fc~setFileFilter(rpFilter)  -- set JFileChooser to use the filter
     if source~equals(saveAs) then
         do
@@ -791,7 +797,7 @@ RunSyntax:
 
     /* Confirming the opening/saving process in the dialog, creates a stream and writes/reads,
        depending on the chosen option, data to/from an external file*/
-    if returnVal == .JFileChooser~approve_option then
+    if returnVal == .javax.swing.JFileChooser~approve_option then
         do
 	    a_file = fc~getSelectedFile
             filename = a_file~getName
@@ -866,7 +872,7 @@ RunSyntax:
 -- Called every time the font is switched
 ::method ReDraw
 
-    currentfont = .Font~new(.mm.dir~fontname, .Font~plain, .mm.dir~fontsize)
+    currentfont = .java.awt.Font~new(.mm.dir~fontname, .java.awt.Font~plain, .mm.dir~fontsize)
     .mm.dir~argsArea~setFont(currentfont)
     .mm.dir~codeArea~setFont(currentfont)
     .mm.dir~inputArea~setFont(currentfont)
@@ -916,58 +922,58 @@ RunSyntax:
     if .bsf4rexx~opsys="MACOSX" then
     do
          -- create a RexxProxy for our Rexx event handler
-       rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , .ActionListener, "java.awt.event.WindowListener", "com.apple.eawt.ApplicationListener")
+       rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , .java.awt.event.ActionListener, "java.awt.event.WindowListener", "com.apple.eawt.ApplicationListener")
        .bsf4rexx~apple_application~addApplicationListener(rpCloseEH) -- CMD-Quit-callback (Apple)
     end
     else  -- not running under Apple
     do
-       rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, userData, .ActionListener, "java.awt.event.WindowListener" )
+       rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, userData, .java.awt.event.ActionListener, "java.awt.event.WindowListener" )
     end
 
     userData~rexxCloseEH=rexxCloseEH   -- save Rexx event handler for later use
     userData~rpCloseEH=rpCloseEH       -- save RexxProxy for Rexx event handler for later use
 
     rexxRunEH = .RunIt~new
-    rpRunEH = BsfCreateRexxProxy(rexxRunEH, userData, .ActionListener)
+    rpRunEH = BsfCreateRexxProxy(rexxRunEH, userData, .java.awt.event.ActionListener)
     userData~rpRunEH = rpRunEH
 
     rexxFileDialogEH = .FileDialog~new
-    rpFileDialogEH = BsfCreateRexxProxy(rexxFileDialogEH, userData, .ActionListener)
+    rpFileDialogEH = BsfCreateRexxProxy(rexxFileDialogEH, userData, .java.awt.event.ActionListener)
     userData~rpFileDialogEH = rpFileDialogEH
 
     fontmanager = .FontManager~new
     userData~fontmanager = fontmanager
-    rpFontManagerEH = BsfCreateRexxProxy(fontmanager, userData, .ActionListener)
+    rpFontManagerEH = BsfCreateRexxProxy(fontmanager, userData, .java.awt.event.ActionListener)
     userData~rpFontManagerEH = rpFontManagerEH
 
     rexxCopySubMenuEH = .CopyToClipboard~new
-    rpCopySubMenuEH = BsfCreateRexxProxy(rexxCopySubMenuEH, userData, .ActionListener)
+    rpCopySubMenuEH = BsfCreateRexxProxy(rexxCopySubMenuEH, userData, .java.awt.event.ActionListener)
     userData~rexxCopySubMenu = rexxCopySubMenuEH
     userData~rpCopySubMenuEH = rpCopySubMenuEH
 
     rexxClearEH = .ClearData~new
-    rpClearEH = BsfCreateRexxProxy(rexxClearEH, userData, .ActionListener)
+    rpClearEH = BsfCreateRexxProxy(rexxClearEH, userData, .java.awt.event.ActionListener)
     userData~rexxClearEH = rexxClearEH
     userData~rpClearEH = rpClearEH
 
     rexxSilentSubMenuEH = .Silence~new
-    rpSilentSubMenuEH = BsfCreateRexxProxy(rexxSilentSubMenuEH, userData, .ActionListener)
+    rpSilentSubMenuEH = BsfCreateRexxProxy(rexxSilentSubMenuEH, userData, .java.awt.event.ActionListener)
     userData~rpSilentSubMenuEH = rpSilentSubMenuEH
 
     savesettings = .SaveSettings~new
     userData~savesettings = savesettings
-    rpSaveSettingsEH = BsfCreateRexxProxy(savesettings, , .ActionListener)
+    rpSaveSettingsEH = BsfCreateRexxProxy(savesettings, , .java.awt.event.ActionListener)
     userData~rpSaveSettingsEH = rpSaveSettingsEH
 
     settingsdialog = .SettingsDialog~new
-    rpSettingsDialogEH = BsfCreateRexxProxy(settingsdialog, , .ActionListener)
+    rpSettingsDialogEH = BsfCreateRexxProxy(settingsdialog, , .java.awt.event.ActionListener)
     userData~rpSettingsDialogEH = rpSettingsDialogEH
 
     aboutdialog = .AboutDialog~new
-    rpAboutDialogEH = BsfCreateRexxProxy(aboutdialog, userData, .ActionListener)
+    rpAboutDialogEH = BsfCreateRexxProxy(aboutdialog, userData, .java.awt.event.ActionListener)
     userData~rpAboutDialogEH = rpAboutDialogEH
 
-    rpKeyEH = BsfCreateRexxProxy(.KeyObserver~new, userData, .KeyListener)
+    rpKeyEH = BsfCreateRexxProxy(.KeyObserver~new, userData, .java.awt.event.KeyListener)
     userData~rpKeyEH = rpKeyEH
 
 ::method drawGUI
@@ -976,12 +982,12 @@ RunSyntax:
     -- Get and leverage the system look and feel if expected to be used and if it is available
     if .mm.dir~useSystemLookAndFeel then
         do
-            systemLookAndFeelClassName = .UIManager~getSystemLookAndFeelClassName
-            if systemLookAndFeelClassName \= .nil then .UIManager~setLookAndFeel(systemLookAndFeelClassName)
+            systemLookAndFeelClassName = .javax.swing.UIManager~getSystemLookAndFeelClassName
+            if systemLookAndFeelClassName \= .nil then .javax.swing.UIManager~setLookAndFeel(systemLookAndFeelClassName)
             else .mm.dir~useSystemLookAndFeel = .false
         end
     -- Create the frame window
-    frame = .JFrame~new(.mm.dir~title)
+    frame = .javax.swing.JFrame~new(.mm.dir~title)
 
     if .bsf4rexx~hasEntry("bsf4oorexx_048") then	-- rgf, 2011-02-21
     do
@@ -993,46 +999,46 @@ RunSyntax:
     frame~setIconImage(.bsf~new("javax.swing.ImageIcon", .mm.dir~ooRexxTry.png)~getImage)
 
 
-    gridbag = .GridBagLayout~new
-    c = .GridBagConstraints~new
+    gridbag = .java.awt.GridBagLayout~new
+    c = .java.awt.GridBagConstraints~new
     contentPane = frame~getContentPane
-    contentPane~setLayout(.BorderLayout~new)
+    contentPane~setLayout(.java.awt.BorderLayout~new)
     frame~addWindowListener(userData~rpCloseEH) -- add Rexx event handler supplying the RexxProxy of it
 
 
 /*Build the menu bar*/
 /*===============================================*/
-    menuBar = .JMenuBar~new
-    mainpanel = .JPanel~new(gridbag)
-    fileMenu = .JMenu~new('File')
-    fileMenu~setMnemonic(.KeyEvent~VK_F)
-    	newMenuItem = .JMenuItem~new('New')
-        newMenuItem~setMnemonic(.KeyEvent~VK_N)
-        newMenuItem~setAccelerator(.KeyStroke~getKeyStroke(.KeyEvent~VK_N, .Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
-        openMenuItem = .JMenuItem~new('Open ...')
-        openMenuItem~setMnemonic(.KeyEvent~VK_O)
-        openMenuItem~setAccelerator(.KeyStroke~getKeyStroke(.KeyEvent~VK_O, .Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
-    	saveAsMenuItem = .JMenuItem~new('Save As ...')
-        saveAsMenuItem~setMnemonic(.KeyEvent~VK_S)
-        saveAsMenuItem~setAccelerator(.KeyStroke~getKeyStroke(.KeyEvent~VK_S, .Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
-        runMenuItem = .JMenuItem~new('Run')
-        runMenuItem~setMnemonic(.KeyEvent~VK_R)
-        runMenuItem~setAccelerator(.KeyStroke~getKeyStroke(.KeyEvent~VK_R, .Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
-    	exitMenuItem = .JMenuItem~new
+    menuBar = .javax.swing.JMenuBar~new
+    mainpanel = .javax.swing.JPanel~new(gridbag)
+    fileMenu = .javax.swing.JMenu~new('File')
+    fileMenu~setMnemonic(.java.awt.event.KeyEvent~VK_F)
+    	newMenuItem = .javax.swing.JMenuItem~new('New')
+        newMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_N)
+        newMenuItem~setAccelerator(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_N, .java.awt.Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
+        openMenuItem = .javax.swing.JMenuItem~new('Open ...')
+        openMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_O)
+        openMenuItem~setAccelerator(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_O, .java.awt.Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
+    	saveAsMenuItem = .javax.swing.JMenuItem~new('Save As ...')
+        saveAsMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_S)
+        saveAsMenuItem~setAccelerator(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_S, .java.awt.Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
+        runMenuItem = .javax.swing.JMenuItem~new('Run')
+        runMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_R)
+        runMenuItem~setAccelerator(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_R, .java.awt.Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
+    	exitMenuItem = .javax.swing.JMenuItem~new
 /* rgf, 2011-02-20: let the original "E"xit menu item be used on MacOSX as well; the "Q"uit app menu item gets automatically
                     added by Apple's Java support for JFRame menus
         if .mm.dir~opSys = "M" then
           do
             exitMenuItem~setLabel("Quit")
-            exitMenuItem~setMnemonic(.KeyEvent~VK_Q)
-            exitMenuItem~setAccelerator(.KeyStroke~getKeyStroke(.KeyEvent~VK_Q, .Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
+            exitMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_Q)
+            exitMenuItem~setAccelerator(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_Q, .Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
           end
         else
 */
           do
             exitMenuItem~setLabel("Exit")
-            exitMenuItem~setMnemonic(.KeyEvent~VK_E)
-            exitMenuItem~setAccelerator(.KeyStroke~getKeyStroke(.KeyEvent~VK_E, .Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
+            exitMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_E)
+            exitMenuItem~setAccelerator(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_E, .java.awt.Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
           end
         newMenuItem~addActionListener(userData~rpClearEH)
     	runMenuItem~addActionListener(userData~rpRunEH)
@@ -1042,103 +1048,103 @@ RunSyntax:
     fileMenu~~insert(newMenuItem, 0)~~insert(openMenuItem, 1)~~insert(saveAsMenuItem, 2)~~insert(runMenuItem, 3)~~insert(exitMenuItem, 4)
     userData~fileMenu = fileMenu
 
-    editMenu = .JMenu~new("Edit")
-    editMenu~setMnemonic(.KeyEvent~VK_E)
-        copySubMenu = .JMenu~new("Copy")
-        copySubMenu~setMnemonic(.KeyEvent~VK_C)
-		argsCoMenuItem = .JMenuItem~new("Args")
-		argsCoMenuItem~~addActionListener(userData~rpCopySubMenuEH)~~setMnemonic(.KeyEvent~VK_G)
-		codeCoMenuItem = .JMenuItem~new("Code")
-		codeCoMenuItem~~addActionListener(userData~rpCopySubMenuEH)~~setMnemonic(.KeyEvent~VK_C)
-		saysCoMenuItem = .JMenuItem~new("Says")
-		saysCoMenuItem~~addActionListener(userData~rpCopySubMenuEH)~~setMnemonic(.KeyEvent~VK_S)
-		returnsCoMenuItem = .JMenuItem~new("Returns")
-		returnsCoMenuItem~~addActionListener(userData~rpCopySubMenuEH)~~setMnemonic(.KeyEvent~VK_R)
-		errorsCoMenuItem = .JMenuItem~new("Errors")
-		errorsCoMenuItem~~addActionListener(userData~rpCopySubMenuEH)~~setMnemonic(.KeyEvent~VK_E)
-		allCoMenuItem = .JMenuItem~new("All")
-		allCoMenuItem~~addActionListener(userData~rpCopySubMenuEH)~~setMnemonic(.KeyEvent~VK_A)
+    editMenu = .javax.swing.JMenu~new("Edit")
+    editMenu~setMnemonic(.java.awt.event.KeyEvent~VK_E)
+        copySubMenu = .javax.swing.JMenu~new("Copy")
+        copySubMenu~setMnemonic(.java.awt.event.KeyEvent~VK_C)
+		argsCoMenuItem = .javax.swing.JMenuItem~new("Args")
+		argsCoMenuItem~~addActionListener(userData~rpCopySubMenuEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_G)
+		codeCoMenuItem = .javax.swing.JMenuItem~new("Code")
+		codeCoMenuItem~~addActionListener(userData~rpCopySubMenuEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_C)
+		saysCoMenuItem = .javax.swing.JMenuItem~new("Says")
+		saysCoMenuItem~~addActionListener(userData~rpCopySubMenuEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_S)
+		returnsCoMenuItem = .javax.swing.JMenuItem~new("Returns")
+		returnsCoMenuItem~~addActionListener(userData~rpCopySubMenuEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_R)
+		errorsCoMenuItem = .javax.swing.JMenuItem~new("Errors")
+		errorsCoMenuItem~~addActionListener(userData~rpCopySubMenuEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_E)
+		allCoMenuItem = .javax.swing.JMenuItem~new("All")
+		allCoMenuItem~~addActionListener(userData~rpCopySubMenuEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_A)
 	copySubMenu~~insert(argsCoMenuItem, 0)~~insert(codeCoMenuItem, 1)~~insert(saysCoMenuItem, 2)~~insert(returnsCoMenuItem, 3)~~insert(errorsCoMenuItem, 4) -
 	~~insert(allCoMenuItem, 5)
         userData~copySubMenu = copySubMenu
-	clearSubMenu = .JMenu~new("Clear")
-        clearSubMenu~setMnemonic(.KeyEvent~VK_L)
-		argsClMenuItem = .JMenuItem~new("Args")
-		argsClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.KeyEvent~VK_G)
-		codeClMenuItem = .JMenuItem~new("Code")
-		codeClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.KeyEvent~VK_C)
-		saysClMenuItem = .JMenuItem~new("Says")
-		saysClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.KeyEvent~VK_S)
-		returnsClMenuItem = .JMenuItem~new("Returns")
-		returnsClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.KeyEvent~VK_R)
-		errorsClMenuItem = .JMenuItem~new("Errors")
-		errorsClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.KeyEvent~VK_E)
-                historyClMenuItem = .JMenuItem~new("History")
-		historyClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.KeyEvent~VK_H)
-		allClMenuItem = .JMenuItem~new("All")
-		allClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.KeyEvent~VK_A)
+	clearSubMenu = .javax.swing.JMenu~new("Clear")
+        clearSubMenu~setMnemonic(.java.awt.event.KeyEvent~VK_L)
+		argsClMenuItem = .javax.swing.JMenuItem~new("Args")
+		argsClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_G)
+		codeClMenuItem = .javax.swing.JMenuItem~new("Code")
+		codeClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_C)
+		saysClMenuItem = .javax.swing.JMenuItem~new("Says")
+		saysClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_S)
+		returnsClMenuItem = .javax.swing.JMenuItem~new("Returns")
+		returnsClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_R)
+		errorsClMenuItem = .javax.swing.JMenuItem~new("Errors")
+		errorsClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_E)
+                historyClMenuItem = .javax.swing.JMenuItem~new("History")
+		historyClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_H)
+		allClMenuItem = .javax.swing.JMenuItem~new("All")
+		allClMenuItem~~addActionListener(userData~rpClearEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_A)
 	clearSubMenu~~insert(argsClMenuItem, 0)~~insert(codeClMenuItem, 1)~~insert(saysClMenuItem, 2)~~insert(returnsClMenuItem, 3)~~insert(errorsClMenuItem, 4) -
 	~~insert(historyClMenuItem, 5)~~insert(allClMenuItem, 6)
 	userData~clearSubMenu = clearSubMenu
 
     editMenu~~add(copySubMenu)~~add(clearSubMenu)
 
-    settingsMenu = .JMenu~new("Settings")
-    settingsMenu~setMnemonic(.KeyEvent~VK_S)
-        fontNameSubMenu = .JMenu~new("FontName")
-        fontNameSubMenu~setMnemonic(.KeyEvent~VK_F)
+    settingsMenu = .javax.swing.JMenu~new("Settings")
+    settingsMenu~setMnemonic(.java.awt.event.KeyEvent~VK_S)
+        fontNameSubMenu = .javax.swing.JMenu~new("FontName")
+        fontNameSubMenu~setMnemonic(.java.awt.event.KeyEvent~VK_F)
 
         i = 0
         do name over .mm.dir~availableFonts~allItems
-         menuItem = .JCheckBoxMenuItem~new(name)
+         menuItem = .javax.swing.JCheckBoxMenuItem~new(name)
          menuItem~addActionListener(userData~rpFontManagerEH)
          fontNameSubMenu~insert(menuItem, i)
          i = i+1
         end
 
 	userData~fontNameSubMenu = fontNameSubMenu
-    	fontSizeSubMenu = .JMenu~new("FontSize")
-        fontSizeSubMenu~setMnemonic(.KeyEvent~VK_N)
-    		fontSize1CheckBoxMenuItem = .JCheckBoxMenuItem~new("8")
+    	fontSizeSubMenu = .javax.swing.JMenu~new("FontSize")
+        fontSizeSubMenu~setMnemonic(.java.awt.event.KeyEvent~VK_N)
+    		fontSize1CheckBoxMenuItem = .javax.swing.JCheckBoxMenuItem~new("8")
                 fontSize1CheckBoxMenuItem~addActionListener(userData~rpFontManagerEH)
-		fontSize2CheckBoxMenuItem = .JCheckBoxMenuItem~new("10")
+		fontSize2CheckBoxMenuItem = .javax.swing.JCheckBoxMenuItem~new("10")
                 fontSize2CheckBoxMenuItem~addActionListener(userData~rpFontManagerEH)
-    		fontSize3CheckBoxMenuItem = .JCheckBoxMenuItem~new("12")
+    		fontSize3CheckBoxMenuItem = .javax.swing.JCheckBoxMenuItem~new("12")
                 fontSize3CheckBoxMenuItem~addActionListener(userData~rpFontManagerEH)
-    		fontSize4CheckBoxMenuItem = .JCheckBoxMenuItem~new("14")
+    		fontSize4CheckBoxMenuItem = .javax.swing.JCheckBoxMenuItem~new("14")
                 fontSize4CheckBoxMenuItem~addActionListener(userData~rpFontManagerEH)
-    		fontSize5CheckBoxMenuItem = .JCheckBoxMenuItem~new("16")
+    		fontSize5CheckBoxMenuItem = .javax.swing.JCheckBoxMenuItem~new("16")
                 fontSize5CheckBoxMenuItem~addActionListener(userData~rpFontManagerEH)
-    		fontSize6CheckBoxMenuItem = .JCheckBoxMenuItem~new("18")
+    		fontSize6CheckBoxMenuItem = .javax.swing.JCheckBoxMenuItem~new("18")
                 fontSize6CheckBoxMenuItem~addActionListener(userData~rpFontManagerEH)
     	fontSizeSubMenu~~insert(fontSize1CheckBoxMenuItem, 0)~~insert(fontSize2CheckBoxMenuItem, 1)~~insert(fontSize3CheckBoxMenuItem, 2) -
     	~~insert(fontSize4CheckBoxMenuItem, 3)~~insert(fontSize5CheckBoxMenuItem, 4)~~insert(fontSize6CheckBoxMenuItem, 5)
 	userData~fontSizeSubMenu = fontSizeSubMenu
-        monitorMenuItem = .JMenuItem~new("Set Monitors ...")
-        monitorMenuItem~setMnemonic(.KeyEvent~VK_M)
-        socketMenuItem = .JMenuItem~new("Socket Config ...")
-        socketMenuItem~setMnemonic(.KeyEvent~VK_O)
-        historyMenuItem = .JMenuItem~new("Set History Capacity ...")
-        historyMenuItem~setMnemonic(.KeyEvent~VK_H)
-	silentSubMenu = .JMenu~new("Silent")
-        silentSubMenu~setMnemonic(.KeyEvent~VK_I)
-		silentNoCheckBoxMenuItem = .JCheckBoxMenuItem~new("No")
-		silentNoCheckBoxMenuItem~~addActionListener(userData~rpSilentSubMenuEH)~~setMnemonic(.KeyEvent~VK_N)
-		silentYesCheckBoxMenuItem = .JCheckBoxMenuItem~new("Yes")
-		silentYesCheckBoxMenuItem~~addActionListener(userData~rpSilentSubMenuEH)~~setMnemonic(.KeyEvent~VK_Y)
+        monitorMenuItem = .javax.swing.JMenuItem~new("Set Monitors ...")
+        monitorMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_M)
+        socketMenuItem = .javax.swing.JMenuItem~new("Socket Config ...")
+        socketMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_O)
+        historyMenuItem = .javax.swing.JMenuItem~new("Set History Capacity ...")
+        historyMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_H)
+	silentSubMenu = .javax.swing.JMenu~new("Silent")
+        silentSubMenu~setMnemonic(.java.awt.event.KeyEvent~VK_I)
+		silentNoCheckBoxMenuItem = .javax.swing.JCheckBoxMenuItem~new("No")
+		silentNoCheckBoxMenuItem~~addActionListener(userData~rpSilentSubMenuEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_N)
+		silentYesCheckBoxMenuItem = .javax.swing.JCheckBoxMenuItem~new("Yes")
+		silentYesCheckBoxMenuItem~~addActionListener(userData~rpSilentSubMenuEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_Y)
 	silentSubMenu~~insert(silentNoCheckBoxMenuItem, 0)~~insert(silentYesCheckBoxMenuItem, 1)
 	userData~silentSubMenu = silentSubMenu
-        saveSettingsMenuItem = .JMenuItem~new("Save Settings")
-        saveSettingsMenuItem~~addActionListener(userData~rpSaveSettingsEH)~~setMnemonic(.KeyEvent~VK_S)
-        currentSettingsMenuItem = .JMenuItem~new("Current Settings ...")
-        currentSettingsMenuItem~~addActionListener(userData~rpSettingsDialogEH)~~setMnemonic(.KeyEvent~VK_C)
+        saveSettingsMenuItem = .javax.swing.JMenuItem~new("Save Settings")
+        saveSettingsMenuItem~~addActionListener(userData~rpSaveSettingsEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_S)
+        currentSettingsMenuItem = .javax.swing.JMenuItem~new("Current Settings ...")
+        currentSettingsMenuItem~~addActionListener(userData~rpSettingsDialogEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_C)
     settingsMenu~~add(fontNameSubMenu)~~add(fontSizeSubMenu)~~addSeparator~~add(silentSubMenu)~~addSeparator~~add(historyMenuItem) -
     ~~add(monitorMenuItem)~~add(socketMenuItem)~~addSeparator~~add(saveSettingsMenuItem)~~add(currentSettingsMenuItem)
 
-    helpMenu = .JMenu~new("Help")
-    helpMenu~setMnemonic(.KeyEvent~VK_P)
-	aboutMenuItem = .JMenuItem~new("About ...")
-        aboutMenuItem~~addActionListener(userData~rpAboutDialogEH)~~setMnemonic(.KeyEvent~VK_A)
+    helpMenu = .javax.swing.JMenu~new("Help")
+    helpMenu~setMnemonic(.java.awt.event.KeyEvent~VK_P)
+	aboutMenuItem = .javax.swing.JMenuItem~new("About ...")
+        aboutMenuItem~~addActionListener(userData~rpAboutDialogEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_A)
     helpMenu~add(aboutMenuItem)
 
     menuBar~add(fileMenu)
@@ -1151,93 +1157,93 @@ RunSyntax:
 /*Text input and output area units*/
 /*===============================================*/
     codepanel = self~createFrameComponent("Code", "white", "blue", "code")
-    codeScrollPane = .JScrollPane~new(.mm.dir~codeArea, .JScrollPane~vertical_scrollbar_always, .JScrollPane~horizontal_scrollbar_always)
-    .mm.dir~codeArea~addMouseListener(BsfCreateRexxProxy(.ClickHandler~new, userData, .MouseListener))
+    codeScrollPane = .javax.swing.JScrollPane~new(.mm.dir~codeArea, .javax.swing.JScrollPane~vertical_scrollbar_always, .javax.swing.JScrollPane~horizontal_scrollbar_always)
+    .mm.dir~codeArea~addMouseListener(BsfCreateRexxProxy(.ClickHandler~new, userData, .java.awt.event.MouseListener))
 
     inputpanel = self~createFrameComponent("Input", "black", "cyan", "input")
-    inputScrollPane = .JScrollPane~new(.mm.dir~inputArea, .JScrollPane~vertical_scrollbar_always, .JScrollPane~horizontal_scrollbar_always)
+    inputScrollPane = .javax.swing.JScrollPane~new(.mm.dir~inputArea, .javax.swing.JScrollPane~vertical_scrollbar_always, .javax.swing.JScrollPane~horizontal_scrollbar_always)
     .mm.dir~inputArea~addKeyListener(userData~rpKeyEH)
 
     argspanel = self~createFrameComponent("Arguments", "white", "magenta", "args")
-    argsScrollPane = .JScrollPane~new(.mm.dir~argsArea, .JScrollPane~vertical_scrollbar_always, .JScrollPane~horizontal_scrollbar_always)
+    argsScrollPane = .javax.swing.JScrollPane~new(.mm.dir~argsArea, .javax.swing.JScrollPane~vertical_scrollbar_always, .javax.swing.JScrollPane~horizontal_scrollbar_always)
 
     returnspanel = self~createFrameComponent("Returns", "black", "green", "returns")
-    returnsScrollPane = .JScrollPane~new(.mm.dir~returnsArea, .JScrollPane~vertical_scrollbar_always, .JScrollPane~horizontal_scrollbar_always)
+    returnsScrollPane = .javax.swing.JScrollPane~new(.mm.dir~returnsArea, .javax.swing.JScrollPane~vertical_scrollbar_always, .javax.swing.JScrollPane~horizontal_scrollbar_always)
 
     sayspanel = self~createFrameComponent("Output/Says", "black", "yellow", "says")
-    saysScrollPane = .JScrollPane~new(.mm.dir~saysArea, .JScrollPane~vertical_scrollbar_always, .JScrollPane~horizontal_scrollbar_always)
+    saysScrollPane = .javax.swing.JScrollPane~new(.mm.dir~saysArea, .javax.swing.JScrollPane~vertical_scrollbar_always, .javax.swing.JScrollPane~horizontal_scrollbar_always)
     .mm.dir~saysArea~~setWrapStyleWord(.true)~~setText("This area will receive the output of your commands." "Try 'say hello world' for example.")
 
     errorspanel = self~createFrameComponent("Errors/Information", "white", "red", "errors")
-    errorsScrollPane = .JScrollPane~new(.mm.dir~errorsArea, .JScrollPane~vertical_scrollbar_always, .JScrollPane~horizontal_scrollbar_always)
+    errorsScrollPane = .javax.swing.JScrollPane~new(.mm.dir~errorsArea, .javax.swing.JScrollPane~vertical_scrollbar_always, .javax.swing.JScrollPane~horizontal_scrollbar_always)
 /*===============================================*/
 
-    runButton = .JButton~new("Run")			-- Start code execution
-    runButton~~addActionListener(userData~rpRunEH)~~setMnemonic(.KeyEvent~VK_R)
+    runButton = .javax.swing.JButton~new("Run")			-- Start code execution
+    runButton~~addActionListener(userData~rpRunEH)~~setMnemonic(.java.awt.event.KeyEvent~VK_R)
 
-    exitButton = .JButton~new			-- Close the application
+    exitButton = .javax.swing.JButton~new			-- Close the application
     exitButton~~addActionListener(userData~rpCloseEH)
-    exitButton~~setLabel("Exit")~~setMnemonic(.KeyEvent~VK_E)
+    exitButton~~setLabel("Exit")~~setMnemonic(.java.awt.event.KeyEvent~VK_E)
 
-    historybutton = .JButton~new('Get History')		-- Retrieve the code execution history
-    historybutton~~setEnabled(.false)~~setMnemonic(.KeyEvent~VK_H)
+    historybutton = .javax.swing.JButton~new('Get History')		-- Retrieve the code execution history
+    historybutton~~setEnabled(.false)~~setMnemonic(.java.awt.event.KeyEvent~VK_H)
     userData~historybutton = historybutton
     .local~mm.dir~historybutton = historybutton
 
-    buttonpanel = .JPanel~new
+    buttonpanel = .javax.swing.JPanel~new
     buttonpanel~~add(runButton)~~add(historybutton)~~add(exitButton)
 
 
 /*Define the layout of the GUI main components*/
 /*===============================================*/
-    c~fill = .GridBagConstraints~both
+    c~fill = .java.awt.GridBagConstraints~both
     c~weightx = 1.0
-    c~gridwidth = .GridBagConstraints~remainder
-    c~insets = .Insets~new(3,3,0,3)
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
+    c~insets = .java.awt.Insets~new(3,3,0,3)
     gridbag~setConstraints(codepanel, c)
     c~weighty = 0.7
-    c~insets = .Insets~new(5,10,10,10)
+    c~insets = .java.awt.Insets~new(5,10,10,10)
     gridbag~setConstraints(codeScrollPane, c)
-    c~gridwidth = .GridBagConstraints~relative
+    c~gridwidth = .java.awt.GridBagConstraints~relative
     c~weighty = 0.0
-    c~insets = .Insets~new(0,3,5,5)
+    c~insets = .java.awt.Insets~new(0,3,5,5)
     gridbag~setConstraints(inputpanel, c)
-    c~gridwidth = .GridBagConstraints~remainder
-    c~insets = .Insets~new(0,3,5,3)
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
+    c~insets = .java.awt.Insets~new(0,3,5,3)
     gridbag~setConstraints(argspanel, c)
-    c~gridwidth = .GridBagConstraints~relative
+    c~gridwidth = .java.awt.GridBagConstraints~relative
     c~weighty = 0.2
-    c~insets = .Insets~new(0,10,10,12)
+    c~insets = .java.awt.Insets~new(0,10,10,12)
     c~gridheight = 3
     gridbag~setConstraints(inputScrollPane, c)
-    c~gridwidth = .GridBagConstraints~remainder
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
     c~weighty = 0.2
-    c~insets = .Insets~new(0,10,10,10)
+    c~insets = .java.awt.Insets~new(0,10,10,10)
     c~gridheight = 1
     gridbag~setConstraints(argsScrollPane, c)
     c~weighty = 0.0
-    c~insets = .Insets~new(0,3,0,3)
+    c~insets = .java.awt.Insets~new(0,3,0,3)
     gridbag~setConstraints(returnspanel, c)
-    c~insets = .Insets~new(5,10,10,10)
+    c~insets = .java.awt.Insets~new(5,10,10,10)
     c~weighty = 0.2
     gridbag~setConstraints(returnsScrollPane, c)
     c~weighty = 0.0
-    c~insets = .Insets~new(0,3,0,3)
+    c~insets = .java.awt.Insets~new(0,3,0,3)
     gridbag~setConstraints(sayspanel, c)
     c~weighty = 0.5
-    c~insets = .Insets~new(5,10,5,10)
+    c~insets = .java.awt.Insets~new(5,10,5,10)
     gridbag~setConstraints(saysScrollPane, c)
-    c~insets = .Insets~new(5,3,0,3)
+    c~insets = .java.awt.Insets~new(5,3,0,3)
     c~weighty = 0.0
     gridbag~setConstraints(errorspanel, c)
     c~weighty = 0.3
-    c~insets = .Insets~new(5,10,0,10)
+    c~insets = .java.awt.Insets~new(5,10,0,10)
     gridbag~setConstraints(errorsScrollPane, c)
-    c~fill = .GridBagConstraints~none
+    c~fill = .java.awt.GridBagConstraints~none
     c~weighty = 0.0
     mainpanel~~add(codepanel)~~add(codeScrollPane)~~add(inputpanel)~~add(argspanel)~~add(inputScrollPane)~~add(argsScrollPane) -
     ~~add(returnspanel)~~add(returnsScrollPane)~~add(sayspanel)~~add(saysScrollPane)~~add(errorspanel)~~add(errorsScrollPane)
-    c~insets = .Insets~new(10,10,10,10)
+    c~insets = .java.awt.Insets~new(10,10,10,10)
     gridbag~setConstraints(buttonpanel, c)
     mainpanel~add(buttonpanel)
 /*===============================================*/
@@ -1246,15 +1252,15 @@ RunSyntax:
     frame~setJMenuBar(menuBar)
     .local~mm.dir~frame = frame
     rexxMonitorEH = .MonitorDialog~new(userData)
-    rpMonitorEH = BsfCreateRexxProxy(rexxMonitorEH, , .ActionListener)
+    rpMonitorEH = BsfCreateRexxProxy(rexxMonitorEH, , .java.awt.event.ActionListener)
     userData~rpMonitorEH = rpMonitorEH
     monitorMenuItem~addActionListener(userData~rpMonitorEH)
-    rpSocketEH = BsfCreateRexxProxy(.SocketDialog~new(userData), , .ActionListener)
+    rpSocketEH = BsfCreateRexxProxy(.SocketDialog~new(userData), , .java.awt.event.ActionListener)
     socketMenuItem~addActionListener(rpSocketEH)
-    rpHistoryConfigEH = BsfCreateRexxProxy(.HistoryConfigDialog~new(userData), , .ActionListener)
+    rpHistoryConfigEH = BsfCreateRexxProxy(.HistoryConfigDialog~new(userData), , .java.awt.event.ActionListener)
     historyMenuItem~addActionListener(rpHistoryConfigEH)
     rexxHistoryEH = .HistoryDialog~new(userData)
-    rpHistoryEH = BsfCreateRexxProxy(rexxHistoryEH, userData, .ActionListener)
+    rpHistoryEH = BsfCreateRexxProxy(rexxHistoryEH, userData, .java.awt.event.ActionListener)
     historybutton~addActionListener(rpHistoryEH)
     userData~fontmanager~fontMenuHelper(userData)
     userData~fontmanager~setFontMenuChecks(userData)
@@ -1321,13 +1327,13 @@ RunSyntax:
 ::method createFrameComponent
     use arg text, fgcolor, bgcolor, type
 
-    panel = .JPanel~new(.BorderLayout~new)
-    label = .JLabel~new(text)
-    label~setHorizontalAlignment(.JLabel~center)
-    interpret "label~setForeground(.Color~"||fgcolor||")"
-    interpret "panel~setBackground(.Color~"||bgcolor||")"
-    panel~add(label, .BorderLayout~north)
-    area = .JTextArea~new
+    panel = .javax.swing.JPanel~new(.java.awt.BorderLayout~new)
+    label = .javax.swing.JLabel~new(text)
+    label~setHorizontalAlignment(.javax.swing.JLabel~center)
+    interpret "label~setForeground(.java.awt.Color~"||fgcolor||")"
+    interpret "panel~setBackground(.java.awt.Color~"||bgcolor||")"
+    panel~add(label, .java.awt.BorderLayout~north)
+    area = .javax.swing.JTextArea~new
     if type \= "args" & type \= "code" then area~setEditable(.false)
     area~setLineWrap(.true)
     interpret ".local~mm.dir~"||type||"Area" "= area"
@@ -1346,7 +1352,7 @@ RunSyntax:
     userData = slotDir~userData
     comp = eventObject~getComponent
     key = eventObject~getKeyCode
-    if key == .KeyEvent~VK_ENTER then
+    if key == .java.awt.event.KeyEvent~VK_ENTER then
       do
         if comp~equals(.mm.dir~inputArea) then
           do
@@ -1361,12 +1367,12 @@ RunSyntax:
        hlist = userData~hlist
        index = hlist~getSelectedIndex
        listSize = hlist~getModel~getSize
-       if (key == .KeyEvent~VK_DOWN | key == .KeyEvent~VK_RIGHT) & index == (listSize-1) then
+       if (key == .java.awt.event.KeyEvent~VK_DOWN | key == .java.awt.event.KeyEvent~VK_RIGHT) & index == (listSize-1) then
          do
            eventObject~consume
            hlist~~setSelectedIndex(0)~~ensureIndexIsVisible(0)
          end
-       if (key == .KeyEvent~VK_UP | key == .KeyEvent~VK_LEFT) & index == 0 then
+       if (key == .java.awt.event.KeyEvent~VK_UP | key == .java.awt.event.KeyEvent~VK_LEFT) & index == 0 then
          do
            eventObject~consume
            hlist~~setSelectedIndex(listSize-1)~~ensureIndexIsVisible(listSize-1)
@@ -1622,70 +1628,70 @@ syntax:
     .mm.dir~isEnabled = .false
 
     mainframe = .mm.dir~frame
-    hcdialog = .JDialog~new(mainframe, 'History Capacity Configuration')
-    rpHCEH = BsfCreateRexxProxy(.HistoryConfig~new, userData, "java.awt.event.WindowListener", .ActionListener)
+    hcdialog = .javax.swing.JDialog~new(mainframe, 'History Capacity Configuration')
+    rpHCEH = BsfCreateRexxProxy(.HistoryConfig~new, userData, "java.awt.event.WindowListener", .java.awt.event.ActionListener)
     hcdialog~addWindowListener(rpHCEH)
     hcdialog~setResizable(.false)
     contentpane = hcdialog~getContentPane
-    gridbag = .GridBagLayout~new
-    c = .GridBagConstraints~new
+    gridbag = .java.awt.GridBagLayout~new
+    c = .java.awt.GridBagConstraints~new
     contentpane~setLayout(gridbag)
-    desarea = .JTextArea~new("Decrease or increase the amount of items the code execution history can hold. If the previous size" -
+    desarea = .javax.swing.JTextArea~new("Decrease or increase the amount of items the code execution history can hold. If the previous size" -
                               " was larger than the new size, any extra items are removed in the specified order."||'0a'x '0a'x|| -
                               'Select "Fifo" to keep the most recently added items or "Lifo" to remove them.')
-    desarea~~setOpaque(.false)~~setEditable(.false)~~setLineWrap(.true)~~setWrapStyleWord(.true)~~setFont(.Font~new(.mm.dir~fontname, .Font~plain, 12))
-    currentSizeLabel = .JLabel~new("Current Size")
-    currentSizetf = .JTextField~new(.mm.dir~historySize, 5)
+    desarea~~setOpaque(.false)~~setEditable(.false)~~setLineWrap(.true)~~setWrapStyleWord(.true)~~setFont(.java.awt.Font~new(.mm.dir~fontname, .java.awt.Font~plain, 12))
+    currentSizeLabel = .javax.swing.JLabel~new("Current Size")
+    currentSizetf = .javax.swing.JTextField~new(.mm.dir~historySize, 5)
     currentSizetf~setEditable(.false)
     userData~currentSizetf = currentSizetf
-    newSizeLabel = .JLabel~new("New Size")
-    newSizetf = .JTextField~new('', 5)
+    newSizeLabel = .javax.swing.JLabel~new("New Size")
+    newSizetf = .javax.swing.JTextField~new('', 5)
     userData~newSizetf = newSizetf
-    orderlabel = .JLabel~new("Resize Order")
-    ordergroup = .ButtonGroup~new
-    fiforb = .JRadioButton~new('Fifo')
+    orderlabel = .javax.swing.JLabel~new("Resize Order")
+    ordergroup = .javax.swing.ButtonGroup~new
+    fiforb = .javax.swing.JRadioButton~new('Fifo')
     fiforb~~setActionCommand("fifo")~~setSelected(.true)
     userData~fiforb = fiforb
-    liforb = .JRadioButton~new('Lifo')
+    liforb = .javax.swing.JRadioButton~new('Lifo')
     liforb~setActionCommand("lifo")
     userData~liforb = liforb
     ordergroup~~add(fiforb)~~add(liforb)
-    orderpanel = .JPanel~new(.FlowLayout~new)
+    orderpanel = .javax.swing.JPanel~new(.java.awt.FlowLayout~new)
     orderpanel~~add(fiforb)~~add(liforb)
-    okbutton = .JButton~new('OK')
+    okbutton = .javax.swing.JButton~new('OK')
     okbutton~addActionListener(rpHCEH)
-    cancelbutton = .JButton~new('Cancel')
+    cancelbutton = .javax.swing.JButton~new('Cancel')
     cancelbutton~addActionListener(rpHCEH)
     userData~historyOkButton = okbutton
     userData~historyCancelButton = cancelbutton
-    buttonpanel = .JPanel~new
+    buttonpanel = .javax.swing.JPanel~new
     buttonpanel~~add(okbutton)~~add(cancelbutton)
     userData~hcdialog = hcdialog
 
-    c~gridwidth = .GridBagConstraints~remainder
-    c~fill = .GridBagConstraints~horizontal
-    c~insets = .Insets~new(5,0,10,5)
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
+    c~fill = .java.awt.GridBagConstraints~horizontal
+    c~insets = .java.awt.Insets~new(5,0,10,5)
     gridbag~setConstraints(desarea, c)
-    c~fill = .GridBagConstraints~none
-    c~anchor = .GridBagConstraints~west
+    c~fill = .java.awt.GridBagConstraints~none
+    c~anchor = .java.awt.GridBagConstraints~west
     c~gridwidth = 1
-    c~insets = .Insets~new(0,0,0,0)
+    c~insets = .java.awt.Insets~new(0,0,0,0)
     gridbag~setConstraints(currentSizeLabel, c)
-    c~gridwidth = .GridBagConstraints~remainder
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
     gridbag~setConstraints(currentSizetf, c)
     c~gridwidth = 1
-    c~insets = .Insets~new(5,0,0,0)
+    c~insets = .java.awt.Insets~new(5,0,0,0)
     gridbag~setConstraints(newSizeLabel, c)
-    c~gridwidth = .GridBagConstraints~remainder
-    c~insets = .Insets~new(10,0,0,210)
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
+    c~insets = .java.awt.Insets~new(10,0,0,210)
     gridbag~setConstraints(newSizetf, c)
-    c~insets = .Insets~new(0,0,0,0)
+    c~insets = .java.awt.Insets~new(0,0,0,0)
     c~gridwidth = 1
     gridbag~setConstraints(orderlabel, c)
-    c~gridwidth = .GridBagConstraints~remainder
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
     gridbag~setConstraints(orderpanel, c)
-    c~anchor = .GridBagConstraints~center
-    c~insets = .Insets~new(10,0,0,0)
+    c~anchor = .java.awt.GridBagConstraints~center
+    c~insets = .java.awt.Insets~new(10,0,0,0)
     gridbag~setConstraints(buttonpanel, c)
 
     contentpane~~add(desarea)~~add(currentSizeLabel)~~add(currentSizetf)~~add(newSizeLabel)~~add(newSizetf)~~add(orderlabel)~~add(orderpanel)~~add(buttonpanel)
@@ -1708,56 +1714,56 @@ syntax:
     use arg userData
 
     mainframe = .mm.dir~frame
-    hdialog = .JDialog~new(mainframe, 'Code Execution History')
+    hdialog = .javax.swing.JDialog~new(mainframe, 'Code Execution History')
     contentpane = hdialog~getContentPane
-    gridbag = .GridBagLayout~new
-    c = .GridBagConstraints~new
+    gridbag = .java.awt.GridBagLayout~new
+    c = .java.awt.GridBagConstraints~new
     contentpane~setLayout(gridbag)
 
-    historypanel = .JPanel~new
-    historylabel = .JLabel~new('History')
-    historylabel~setHorizontalTextPosition(.JLabel~center)
-    historylabel~setForeground(.Color~black)
-    historypanel~setBackground(.Color~orange)
+    historypanel = .javax.swing.JPanel~new
+    historylabel = .javax.swing.JLabel~new('History')
+    historylabel~setHorizontalTextPosition(.javax.swing.JLabel~center)
+    historylabel~setForeground(.java.awt.Color~black)
+    historypanel~setBackground(.java.awt.Color~orange)
     historypanel~add(historylabel)
 
-    listmodel = .DefaultListModel~new
+    listmodel = .javax.swing.DefaultListModel~new
     userData~listmodel = listmodel
     .local~mm.dir~listmodel = listmodel
 
     lcrRexxProxy = BsfCreateRexxProxy(.CellRenderer~new, userData, "javax.swing.ListCellRenderer") -- implement interface
-    hlist = .JList~new(listmodel)
+    hlist = .javax.swing.JList~new(listmodel)
     hlist~setCellRenderer(lcrRexxProxy)			-- assign custom cell renderer
-    hlist~setSelectionMode(.ListSelectionModel~single_selection)
-    hlist~setLayoutOrientation(.JList~vertical)
+    hlist~setSelectionMode(.javax.swing.ListSelectionModel~single_selection)
+    hlist~setLayoutOrientation(.javax.swing.JList~vertical)
     hlist~setVisibleRowCount(-1)
-    hlist~addMouseListener(BsfCreateRexxProxy(.ClickHandler~new, userData, .MouseListener))
-    hlist~addKeyListener(BsfCreateRexxProxy(.KeyObserver~new, userData, .KeyListener))
-    hScrollPane = .JScrollPane~new(hlist, .JScrollPane~vertical_scrollbar_as_needed, .JScrollPane~horizontal_scrollbar_never)
-    im = hlist~getInputMap(.JComponent~WHEN_FOCUSED)
-    im~put(.KeyStroke~getKeyStroke(.KeyEvent~VK_RIGHT, 0), "selectNextRow")
-    im~put(.KeyStroke~getKeyStroke(.KeyEvent~VK_LEFT, 0), "selectPreviousRow")
-    hlist~setInputMap(.JComponent~WHEN_FOCUSED, im)
+    hlist~addMouseListener(BsfCreateRexxProxy(.ClickHandler~new, userData, .java.awt.event.MouseListener))
+    hlist~addKeyListener(BsfCreateRexxProxy(.KeyObserver~new, userData, .java.awt.event.KeyListener))
+    hScrollPane = .javax.swing.JScrollPane~new(hlist, .javax.swing.JScrollPane~vertical_scrollbar_as_needed, .javax.swing.JScrollPane~horizontal_scrollbar_never)
+    im = hlist~getInputMap(.javax.swing.JComponent~WHEN_FOCUSED)
+    im~put(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_RIGHT, 0), "selectNextRow")
+    im~put(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_LEFT, 0), "selectPreviousRow")
+    hlist~setInputMap(.javax.swing.JComponent~WHEN_FOCUSED, im)
     userData~hlist = hlist
 
-    restorebutton = .JButton~new("Restore")
+    restorebutton = .javax.swing.JButton~new("Restore")
     rexxRestore = .Restore~new
     userData~rexxRestore = rexxRestore
-    restorebutton~addActionListener(BsfCreateRexxProxy(rexxRestore, userData, .ActionListener))
+    restorebutton~addActionListener(BsfCreateRexxProxy(rexxRestore, userData, .java.awt.event.ActionListener))
     restorebutton~setEnabled(.false)
-    restorebutton~setMnemonic(.KeyEvent~VK_E)
+    restorebutton~setMnemonic(.java.awt.event.KeyEvent~VK_E)
     userData~restorebutton = restorebutton
-    c~gridwidth = .GridBagConstraints~remainder
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
     c~weightx = 1.0
-    c~fill = .GridBagConstraints~both
-    c~insets = .Insets~new(5,2,0,2)
+    c~fill = .java.awt.GridBagConstraints~both
+    c~insets = .java.awt.Insets~new(5,2,0,2)
     gridbag~setConstraints(historypanel, c)
     c~weighty = 0.9
-    c~insets = .Insets~new(10,10,5,10)
+    c~insets = .java.awt.Insets~new(10,10,5,10)
     gridbag~setConstraints(hScrollPane, c)
     c~weighty = 0.0
-    c~fill = .GridBagConstraints~none
-    c~insets = .Insets~new(0,0,5,0)
+    c~fill = .java.awt.GridBagConstraints~none
+    c~insets = .java.awt.Insets~new(0,0,5,0)
     gridbag~setConstraints(restorebutton, c)
     contentpane~~add(historypanel)~~add(hScrollPane)~~add(restorebutton)
     hdialog~pack
@@ -1783,28 +1789,28 @@ syntax:
     use arg userData
 
     mainframe = .mm.dir~frame
-    mdialog = .JDialog~new(mainframe, 'Monitor Destination Configuration')
-    rpDSEH = BsfCreateRexxProxy(.DestinationSwitch~new, userData, "java.awt.event.WindowListener", .ActionListener)
+    mdialog = .javax.swing.JDialog~new(mainframe, 'Monitor Destination Configuration')
+    rpDSEH = BsfCreateRexxProxy(.DestinationSwitch~new, userData, "java.awt.event.WindowListener", .java.awt.event.ActionListener)
     rexxRadioButtonH = .RadioButtonHandler~new
     userData~rexxRadioButtonH = rexxRadioButtonH
-    rpRBEH = BsfCreateRexxProxy(rexxRadioButtonH, userData, .ActionListener)
+    rpRBEH = BsfCreateRexxProxy(rexxRadioButtonH, userData, .java.awt.event.ActionListener)
     mdialog~setResizable(.false)
     mdialog~addWindowListener(rpDSEH)
     contentpane = mdialog~getContentPane
-    gridbag = .GridBagLayout~new
-    c = .GridBagConstraints~new
-    mainpanel = .JPanel~new
-    mainpanel~setBorder(.EmptyBorder~new(15,15,15,15))
+    gridbag = .java.awt.GridBagLayout~new
+    c = .java.awt.GridBagConstraints~new
+    mainpanel = .javax.swing.JPanel~new
+    mainpanel~setBorder(.javax.swing.border.EmptyBorder~new(15,15,15,15))
     mainpanel~setLayout(gridbag)
-    inlabel = .JLabel~new("Select the destination of the Input Monitor: ")
-    ingroup = .ButtonGroup~new
-    indefaultrb = .JRadioButton~new('Default')
+    inlabel = .javax.swing.JLabel~new("Select the destination of the Input Monitor: ")
+    ingroup = .javax.swing.ButtonGroup~new
+    indefaultrb = .javax.swing.JRadioButton~new('Default')
     indefaultrb~~setActionCommand("indefault")~~addActionListener(rpRBEH)
     userData~indefaultrb = indefaultrb
-    infilerb = .JRadioButton~new('File')
+    infilerb = .javax.swing.JRadioButton~new('File')
     infilerb~~setActionCommand("infile")~~addActionListener(rpRBEH)
     userData~infilerb = infilerb
-    infiletf = .JTextField~new('', 10)
+    infiletf = .javax.swing.JTextField~new('', 10)
     infiletf~setEnabled(.false)
     if .mm.dir~inputMonitorDestination~equals('GUIInputStream') then indefaultrb~setSelected(.true)
     else
@@ -1815,17 +1821,17 @@ syntax:
     userData~infiletf = infiletf
     ingroup~~add(indefaultrb)~~add(infilerb)
     userData~ingroup = ingroup
-    inpanel = .JPanel~new(.FlowLayout~new)
+    inpanel = .javax.swing.JPanel~new(.java.awt.FlowLayout~new)
     inpanel~~add(indefaultrb)~~add(infilerb)
-    outlabel = .JLabel~new("Select the destination of the Output Monitor: ")
-    outgroup = .ButtonGroup~new
-    outdefaultrb = .JRadioButton~new('Default')
+    outlabel = .javax.swing.JLabel~new("Select the destination of the Output Monitor: ")
+    outgroup = .javax.swing.ButtonGroup~new
+    outdefaultrb = .javax.swing.JRadioButton~new('Default')
     outdefaultrb~~setActionCommand("outdefault")~~addActionListener(rpRBEH)
     userData~outdefaultrb = outdefaultrb
-    outfilerb = .JRadioButton~new('File')
+    outfilerb = .javax.swing.JRadioButton~new('File')
     outfilerb~~setActionCommand("outfile")~~addActionListener(rpRBEH)
     userData~outfilerb = outfilerb
-    outfiletf = .JTextField~new('', 10)
+    outfiletf = .javax.swing.JTextField~new('', 10)
     outfiletf~setEnabled(.false)
     if .mm.dir~outputMonitorDestination~equals('GUIOutputStream') then outdefaultrb~setSelected(.true)
     else
@@ -1836,17 +1842,17 @@ syntax:
     userData~outfiletf = outfiletf
     outgroup~~add(outdefaultrb)~~add(outfilerb)
     userData~outgroup = outgroup
-    outpanel = .JPanel~new(.FlowLayout~new)
+    outpanel = .javax.swing.JPanel~new(.java.awt.FlowLayout~new)
     outpanel~~add(outdefaultrb)~~add(outfilerb)
-    errlabel = .JLabel~new("Select the destination of the Error Monitor: ")
-    errgroup = .ButtonGroup~new
-    errdefaultrb = .JRadioButton~new('Default')
+    errlabel = .javax.swing.JLabel~new("Select the destination of the Error Monitor: ")
+    errgroup = .javax.swing.ButtonGroup~new
+    errdefaultrb = .javax.swing.JRadioButton~new('Default')
     errdefaultrb~~setActionCommand("errdefault")~~addActionListener(rpRBEH)
     userData~errdefaultrb = errdefaultrb
-    errfilerb = .JRadioButton~new('File')
+    errfilerb = .javax.swing.JRadioButton~new('File')
     errfilerb~~setActionCommand("errfile")~~addActionListener(rpRBEH)
     userData~errfilerb = errfilerb
-    errfiletf = .JTextField~new('', 10)
+    errfiletf = .javax.swing.JTextField~new('', 10)
     errfiletf~setEnabled(.false)
     if .mm.dir~errorMonitorDestination~equals('GUIErrorStream') then errdefaultrb~setSelected(.true)
     else
@@ -1857,43 +1863,43 @@ syntax:
     userData~errfiletf = errfiletf
     errgroup~~add(errdefaultrb)~~add(errfilerb)
     userData~errgroup = errgroup
-    errpanel = .JPanel~new(.FlowLayout~new)
+    errpanel = .javax.swing.JPanel~new(.java.awt.FlowLayout~new)
     errpanel~~add(errdefaultrb)~~add(errfilerb)
-    okbutton = .JButton~new('OK')
+    okbutton = .javax.swing.JButton~new('OK')
     okbutton~addActionListener(rpDSEH)
-    cancelbutton = .JButton~new('Cancel')
+    cancelbutton = .javax.swing.JButton~new('Cancel')
     cancelbutton~addActionListener(rpDSEH)
     userData~monitorOkButton = okbutton
     userData~monitorCancelButton = cancelbutton
-    buttonpanel = .JPanel~new
+    buttonpanel = .javax.swing.JPanel~new
     buttonpanel~~add(okbutton)~~add(cancelbutton)
     userData~mdialog = mdialog
 
-    c~gridwidth = .GridBagConstraints~remainder
-    c~fill = .GridBagConstraints~horizontal
-    c~anchor = .GridBagConstraints~west
-    c~gridwidth = .GridBagConstraints~remainder
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
+    c~fill = .java.awt.GridBagConstraints~horizontal
+    c~anchor = .java.awt.GridBagConstraints~west
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
     gridbag~setConstraints(inlabel, c)
-    c~gridwidth = .GridBagConstraints~relative
+    c~gridwidth = .java.awt.GridBagConstraints~relative
     gridbag~setConstraints(inpanel, c)
-    c~gridwidth = .GridBagConstraints~remainder
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
     gridbag~setConstraints(infiletf, c)
-    c~insets = .Insets~new(15,0,0,0)
+    c~insets = .java.awt.Insets~new(15,0,0,0)
     gridbag~setConstraints(outlabel, c)
-    c~gridwidth = .GridBagConstraints~relative
-    c~insets = .Insets~new(0,0,0,0)
+    c~gridwidth = .java.awt.GridBagConstraints~relative
+    c~insets = .java.awt.Insets~new(0,0,0,0)
     gridbag~setConstraints(outpanel, c)
-    c~gridwidth = .GridBagConstraints~remainder
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
     gridbag~setConstraints(outfiletf, c)
-    c~insets = .Insets~new(15,0,0,0)
+    c~insets = .java.awt.Insets~new(15,0,0,0)
     gridbag~setConstraints(errlabel, c)
-    c~gridwidth = .GridBagConstraints~relative
-    c~insets = .Insets~new(0,0,0,0)
+    c~gridwidth = .java.awt.GridBagConstraints~relative
+    c~insets = .java.awt.Insets~new(0,0,0,0)
     gridbag~setConstraints(errpanel, c)
-    c~gridwidth = .GridBagConstraints~remainder
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
     gridbag~setConstraints(errfiletf, c)
-    c~anchor = .GridBagConstraints~center
-    c~insets = .Insets~new(10,0,0,0)
+    c~anchor = .java.awt.GridBagConstraints~center
+    c~insets = .java.awt.Insets~new(10,0,0,0)
     gridbag~setConstraints(buttonpanel, c)
 
     mainpanel~~add(inlabel)~~add(inpanel)~~add(infiletf)~~add(outlabel) -
@@ -2019,7 +2025,7 @@ syntax:
 
 ::attribute description    -- description for the files we allow, a string that is shown in the GUI
 
-::attribute filter         -- a collection of filetypes, e.g. .array~of(".rex", ".jrexx", ".java")
+::attribute filter         -- a collection of filetypes, e.g. .array~of(".rex", ".javax.swing.JRexx", ".java")
 ::attribute bIgnoreCase    -- ignore case when checking filetype, set to .false
 
 -- implementations of the abstract Java methods
@@ -2065,7 +2071,7 @@ syntax:
     saysArea = .mm.dir~saysArea
     cursorpos = codeArea~getCaretPosition
     frame~setTitle(.mm.dir~title)
-    frame~setCursor(.Cursor~getPredefinedCursor(.Cursor~wait_cursor))
+    frame~setCursor(.java.awt.Cursor~getPredefinedCursor(.java.awt.Cursor~wait_cursor))
     argsArea = .mm.dir~argsArea
     if .mm.dir~hdialog \= .nil then if .mm.dir~hdialog~isShowing then .mm.dir~hdialog~hide
 
@@ -2121,8 +2127,8 @@ syntax:
 
     if \found_cc then
         do
-            runnable = BsfCreateRexxProxy(.ExecuteThread~new('oorexxtry.code', code_array, arg_array, slotDir~userData), ,.Runnable)
-            .Thread~new(runnable)~~bsf.dispatch("start")		-- Run code in separate thread
+            runnable = BsfCreateRexxProxy(.ExecuteThread~new('oorexxtry.code', code_array, arg_array, slotDir~userData), ,.java.lang.Runnable)
+            .java.lang.Thread~new(runnable)~~bsf.dispatch("start")		-- Run code in separate thread
         end
     else
         do
@@ -2145,9 +2151,9 @@ syntax:
             end
             arg_string = arg_string~strip('b',',')
 
-            -- runnable = BsfCreateRexxProxy(.ExecuteThread~new('oorexxtry.code','call ooRexxTry_test9999.rex' arg_string, arg_array, slotDir~userData), ,.Runnable)
-            runnable = BsfCreateRexxProxy(.ExecuteThread~new('oorexxtry.code','call' .mm.dir~tempFile arg_string, arg_array, slotDir~userData), ,.Runnable)
-            .Thread~new(runnable)~~bsf.dispatch("start")		-- Run code in separate thread
+            -- runnable = BsfCreateRexxProxy(.ExecuteThread~new('oorexxtry.code','call ooRexxTry_test9999.rex' arg_string, arg_array, slotDir~userData), ,.java.lang.Runnable)
+            runnable = BsfCreateRexxProxy(.ExecuteThread~new('oorexxtry.code','call' .mm.dir~tempFile arg_string, arg_array, slotDir~userData), ,.java.lang.Runnable)
+            .java.lang.Thread~new(runnable)~~bsf.dispatch("start")		-- Run code in separate thread
         end
 
 return
@@ -2158,12 +2164,12 @@ ArgSyntax:
     call ppCondition condition("o")
 
     if \.mm.dir~silent then
-        .Toolkit~getDefaultToolkit~beep
+        .java.awt.Toolkit~getDefaultToolkit~beep
     returnsArea~setText('')
 
     argsArea~requestFocus
     argsArea~select(arg_string~wordPos(errorarg),arg_string~wordPos(errorarg)+errorarg~length)
-    frame~setCursor(.Cursor~getDefaultCursor)
+    frame~setCursor(.java.awt.Cursor~getDefaultCursor)
 
     -- Close the file streams after the run or when an error occurred. Allow to immediate (re)view file code or alternate it.
     if .mm.dir~infilestream \= .nil then .mm.dir~infilestream~close
@@ -2186,7 +2192,7 @@ return
     -- Write out the configuration data like size,position,fontname,fontsize, & silent to the .rc file
     frame = .mm.dir~frame
     props = .mm.dir~props
-    if frame~getExtendedState \= .Frame~iconified & frame~getExtendedState \= .Frame~maximized_both then
+    if frame~getExtendedState \= .java.awt.Frame~iconified & frame~getExtendedState \= .java.awt.Frame~maximized_both then
         do
             props~setProperty("Xpos",frame~getX)
             props~setProperty("Ypos",frame~getY)
@@ -2221,154 +2227,154 @@ return
 ::method actionPerformed
 
     mainframe = .mm.dir~frame
-    sdialog = .JDialog~new(mainframe, 'Settings')
+    sdialog = .javax.swing.JDialog~new(mainframe, 'Settings')
     sdialog~setResizable(.false)
     contentpane = sdialog~getContentPane
-    tabbedPane = .JTabbedPane~new(.JTabbedPane~left)
+    tabbedPane = .javax.swing.JTabbedPane~new(.javax.swing.JTabbedPane~left)
 
-    fontGridBag = .GridBagLayout~new
-    fontc = .GridBagConstraints~new
-    fontPanel = .JPanel~new(fontGridBag)
-    fontNameLabel1 = .JLabel~new("Font Name: ")
-    fontNameLabel2 = .JLabel~new(.mm.dir~fontname)
-    fontSizeLabel1 = .JLabel~new("Font Size: ")
-    fontSizeLabel2 = .JLabel~new(.mm.dir~fontsize)
+    fontGridBag = .java.awt.GridBagLayout~new
+    fontc = .java.awt.GridBagConstraints~new
+    fontPanel = .javax.swing.JPanel~new(fontGridBag)
+    fontNameLabel1 = .javax.swing.JLabel~new("Font Name: ")
+    fontNameLabel2 = .javax.swing.JLabel~new(.mm.dir~fontname)
+    fontSizeLabel1 = .javax.swing.JLabel~new("Font Size: ")
+    fontSizeLabel2 = .javax.swing.JLabel~new(.mm.dir~fontsize)
 
-    fontc~fill = .GridBagConstraints~horizontal
-    fontc~insets = .Insets~new(0,0,5,0)
+    fontc~fill = .java.awt.GridBagConstraints~horizontal
+    fontc~insets = .java.awt.Insets~new(0,0,5,0)
     fontc~gridwidth = 1
     fontGridBag~setConstraints(fontNameLabel1, fontc)
-    fontc~gridwidth = .GridBagConstraints~remainder
+    fontc~gridwidth = .java.awt.GridBagConstraints~remainder
     fontGridBag~setConstraints(fontNameLabel2, fontc)
     fontc~gridwidth = 1
     fontGridBag~setConstraints(fontSizeLabel1, fontc)
-    fontc~gridwidth = .GridBagConstraints~remainder
+    fontc~gridwidth = .java.awt.GridBagConstraints~remainder
     fontGridBag~setConstraints(fontSizeLabel2, fontc)
 
     fontPanel~~add(fontNameLabel1)~~add(fontNameLabel2)~~add(fontSizeLabel1)~~add(fontSizeLabel2)
 
-    historyPanel = .JPanel~new(.BorderLayout~new)
-    historyLabel = .JLabel~new("History Size: "||.mm.dir~historySize, 0)
-    historyPanel~add(historyLabel, .BorderLayout~center)
+    historyPanel = .javax.swing.JPanel~new(.java.awt.BorderLayout~new)
+    historyLabel = .javax.swing.JLabel~new("History Size: "||.mm.dir~historySize, 0)
+    historyPanel~add(historyLabel, .java.awt.BorderLayout~center)
 
-    lAndFPanel = .JPanel~new(.BorderLayout~new)
+    lAndFPanel = .javax.swing.JPanel~new(.java.awt.BorderLayout~new)
     if .mm.dir~useSystemLookAndFeel then slaf = "yes"
     else slaf = "no"
-    lAndFLabel = .JLabel~new("Use System Look And Feel: "||slaf, 0)
-    lAndFPanel~add(lAndFLabel, .BorderLayout~center)
+    lAndFLabel = .javax.swing.JLabel~new("Use System Look And Feel: "||slaf, 0)
+    lAndFPanel~add(lAndFLabel, .java.awt.BorderLayout~center)
 
-    monGridBag = .GridBagLayout~new
-    monc = .GridBagConstraints~new
-    monitorPanel = .JPanel~new(monGridBag)
-    inMonitorLabel1 = .JLabel~new("Input Monitor Destination: ")
-    inMonitorLabel2 = .JLabel~new(.mm.dir~inputMonitorDestination)
-    outMonitorLabel1 = .JLabel~new("Output Monitor Destination: ")
-    outMonitorLabel2 = .JLabel~new(.mm.dir~outputMonitorDestination)
-    errMonitorLabel1 = .JLabel~new("Error Monitor Destination: ")
-    errMonitorLabel2 = .JLabel~new(.mm.dir~errorMonitorDestination)
+    monGridBag = .java.awt.GridBagLayout~new
+    monc = .java.awt.GridBagConstraints~new
+    monitorPanel = .javax.swing.JPanel~new(monGridBag)
+    inMonitorLabel1 = .javax.swing.JLabel~new("Input Monitor Destination: ")
+    inMonitorLabel2 = .javax.swing.JLabel~new(.mm.dir~inputMonitorDestination)
+    outMonitorLabel1 = .javax.swing.JLabel~new("Output Monitor Destination: ")
+    outMonitorLabel2 = .javax.swing.JLabel~new(.mm.dir~outputMonitorDestination)
+    errMonitorLabel1 = .javax.swing.JLabel~new("Error Monitor Destination: ")
+    errMonitorLabel2 = .javax.swing.JLabel~new(.mm.dir~errorMonitorDestination)
 
-    monc~fill = .GridBagConstraints~horizontal
-    monc~insets = .Insets~new(0,0,5,0)
+    monc~fill = .java.awt.GridBagConstraints~horizontal
+    monc~insets = .java.awt.Insets~new(0,0,5,0)
     monc~gridwidth = 1
     monGridBag~setConstraints(inMonitorLabel1, monc)
-    monc~gridwidth = .GridBagConstraints~remainder
+    monc~gridwidth = .java.awt.GridBagConstraints~remainder
     monGridBag~setConstraints(inMonitorLabel2, monc)
     monc~gridwidth = 1
     monGridBag~setConstraints(outMonitorLabel1, monc)
-    monc~gridwidth = .GridBagConstraints~remainder
+    monc~gridwidth = .java.awt.GridBagConstraints~remainder
     monGridBag~setConstraints(outMonitorLabel2, monc)
     monc~gridwidth = 1
     monGridBag~setConstraints(errMonitorLabel1, monc)
-    monc~gridwidth = .GridBagConstraints~remainder
+    monc~gridwidth = .java.awt.GridBagConstraints~remainder
     monGridBag~setConstraints(errMonitorLabel2, monc)
 
     monitorPanel~~add(inMonitorLabel1)~~add(inMonitorLabel2)~~add(outMonitorLabel1)~~add(outMonitorLabel2) -
     ~~add(errMonitorLabel1)~~add(errMonitorLabel2)
 
-    posGridBag = .GridBagLayout~new
-    posc = .GridBagConstraints~new
-    posPanel = .JPanel~new(posGridBag)
-    xPosLabel1 = .JLabel~new("XPos: ")
-    xPosLabel2 = .JLabel~new(.mm.dir~xpos)
-    yPosLabel1 = .JLabel~new("YPos: ")
-    yPosLabel2 = .JLabel~new(.mm.dir~ypos)
-    widthLabel1 = .JLabel~new("Width: ")
-    widthLabel2 = .JLabel~new(.mm.dir~width)
-    heightLabel1 = .JLabel~new("Height: ")
-    heightLabel2 = .JLabel~new(.mm.dir~height)
+    posGridBag = .java.awt.GridBagLayout~new
+    posc = .java.awt.GridBagConstraints~new
+    posPanel = .javax.swing.JPanel~new(posGridBag)
+    xPosLabel1 = .javax.swing.JLabel~new("XPos: ")
+    xPosLabel2 = .javax.swing.JLabel~new(.mm.dir~xpos)
+    yPosLabel1 = .javax.swing.JLabel~new("YPos: ")
+    yPosLabel2 = .javax.swing.JLabel~new(.mm.dir~ypos)
+    widthLabel1 = .javax.swing.JLabel~new("Width: ")
+    widthLabel2 = .javax.swing.JLabel~new(.mm.dir~width)
+    heightLabel1 = .javax.swing.JLabel~new("Height: ")
+    heightLabel2 = .javax.swing.JLabel~new(.mm.dir~height)
 
-    posc~fill = .GridBagConstraints~horizontal
-    posc~insets = .Insets~new(0,0,5,0)
+    posc~fill = .java.awt.GridBagConstraints~horizontal
+    posc~insets = .java.awt.Insets~new(0,0,5,0)
     posc~gridwidth = 1
     posGridBag~setConstraints(xPosLabel1, posc)
-    posc~gridwidth = .GridBagConstraints~remainder
+    posc~gridwidth = .java.awt.GridBagConstraints~remainder
     posGridBag~setConstraints(xPosLabel2, posc)
     posc~gridwidth = 1
     posGridBag~setConstraints(yPosLabel1, posc)
-    posc~gridwidth = .GridBagConstraints~remainder
+    posc~gridwidth = .java.awt.GridBagConstraints~remainder
     posGridBag~setConstraints(yPosLabel2, posc)
     posc~gridwidth = 1
     posGridBag~setConstraints(widthLabel1, posc)
-    posc~gridwidth = .GridBagConstraints~remainder
+    posc~gridwidth = .java.awt.GridBagConstraints~remainder
     posGridBag~setConstraints(widthLabel2, posc)
     posc~gridwidth = 1
     posGridBag~setConstraints(heightLabel1, posc)
-    posc~gridwidth = .GridBagConstraints~remainder
+    posc~gridwidth = .java.awt.GridBagConstraints~remainder
     posGridBag~setConstraints(heightLabel2, posc)
 
     posPanel~~add(xPosLabel1)~~add(xPosLabel2)~~add(yPosLabel1)~~add(yPosLabel2)~~add(widthLabel1)~~add(widthLabel2)~~add(heightLabel1)~~add(heightLabel2)
 
-    socketGridBag = .GridBagLayout~new
-    socketc = .GridBagConstraints~new
-    socketPanel = .JPanel~new(socketGridBag)
-    hostLabel1 = .JLabel~new("Host: ")
-    hostLabel2 = .JLabel~new(.mm.dir~host)
-    portLabel1 = .JLabel~new("Port: ")
-    portLabel2 = .JLabel~new(.mm.dir~port)
-    inputSocketLabel1 = .JLabel~new("Enable Input Stream On Socket: ")
+    socketGridBag = .java.awt.GridBagLayout~new
+    socketc = .java.awt.GridBagConstraints~new
+    socketPanel = .javax.swing.JPanel~new(socketGridBag)
+    hostLabel1 = .javax.swing.JLabel~new("Host: ")
+    hostLabel2 = .javax.swing.JLabel~new(.mm.dir~host)
+    portLabel1 = .javax.swing.JLabel~new("Port: ")
+    portLabel2 = .javax.swing.JLabel~new(.mm.dir~port)
+    inputSocketLabel1 = .javax.swing.JLabel~new("Enable Input Stream On Socket: ")
     if .mm.dir~enableInputSocket then InputSocket = "yes"
     else InputSocket = "no"
-    inputSocketLabel2 = .JLabel~new(inputSocket)
-    outputSocketLabel1 = .JLabel~new("Enable Output Stream On Socket: ")
+    inputSocketLabel2 = .javax.swing.JLabel~new(inputSocket)
+    outputSocketLabel1 = .javax.swing.JLabel~new("Enable Output Stream On Socket: ")
     if .mm.dir~enableOutputSocket then outputSocket = "yes"
     else outputSocket = "no"
-    outputSocketLabel2 = .JLabel~new(outputSocket)
-    errorSocketLabel1 = .JLabel~new("Enable Error Stream On Socket: ")
+    outputSocketLabel2 = .javax.swing.JLabel~new(outputSocket)
+    errorSocketLabel1 = .javax.swing.JLabel~new("Enable Error Stream On Socket: ")
     if .mm.dir~enableErrorSocket then errorSocket = "yes"
     else errorSocket = "no"
-    errorSocketLabel2 = .JLabel~new(errorSocket)
+    errorSocketLabel2 = .javax.swing.JLabel~new(errorSocket)
 
-    socketc~fill = .GridBagConstraints~horizontal
-    socketc~insets = .Insets~new(0,0,5,0)
+    socketc~fill = .java.awt.GridBagConstraints~horizontal
+    socketc~insets = .java.awt.Insets~new(0,0,5,0)
     socketc~gridwidth = 1
     socketGridBag~setConstraints(hostLabel1, socketc)
-    socketc~gridwidth = .GridBagConstraints~remainder
+    socketc~gridwidth = .java.awt.GridBagConstraints~remainder
     socketGridBag~setConstraints(hostLabel2, socketc)
     socketc~gridwidth = 1
     socketGridBag~setConstraints(portLabel1, socketc)
-    socketc~gridwidth = .GridBagConstraints~remainder
+    socketc~gridwidth = .java.awt.GridBagConstraints~remainder
     socketGridBag~setConstraints(portLabel2, socketc)
     socketc~gridwidth = 1
     socketGridBag~setConstraints(inputSocketLabel1, socketc)
-    socketc~gridwidth = .GridBagConstraints~remainder
+    socketc~gridwidth = .java.awt.GridBagConstraints~remainder
     socketGridBag~setConstraints(inputSocketLabel2, socketc)
     socketc~gridwidth = 1
     socketGridBag~setConstraints(outputSocketLabel1, socketc)
-    socketc~gridwidth = .GridBagConstraints~remainder
+    socketc~gridwidth = .java.awt.GridBagConstraints~remainder
     socketGridBag~setConstraints(outputSocketLabel2, socketc)
     socketc~gridwidth = 1
     socketGridBag~setConstraints(errorSocketLabel1, socketc)
-    socketc~gridwidth = .GridBagConstraints~remainder
+    socketc~gridwidth = .java.awt.GridBagConstraints~remainder
     socketGridBag~setConstraints(errorSocketLabel2, socketc)
 
     socketPanel~~add(hostLabel1)~~add(hostLabel2)~~add(portLabel1)~~add(portLabel2)~~add(inputSocketLabel1)~~add(inputSocketLabel2) -
     ~~add(outputSocketLabel1)~~add(outputSocketLabel2)~~add(errorSocketLabel1)~~add(errorSocketLabel2)
 
-    silentPanel = .JPanel~new(.BorderLayout~new)
+    silentPanel = .javax.swing.JPanel~new(.java.awt.BorderLayout~new)
     if .mm.dir~silent then silent = "yes"
     else silent = "no"
-    silentLabel = .JLabel~new("Silent Mode: "||silent, 0)
-    silentPanel~add(silentLabel, .BorderLayout~center)
+    silentLabel = .javax.swing.JLabel~new("Silent Mode: "||silent, 0)
+    silentPanel~add(silentLabel, .java.awt.BorderLayout~center)
 
     tabbedPane~~addTab("Font", fontPanel)~~addTab("History", historyPanel)~~addTab("Look & Feel", lAndFpanel)~~addTab("Monitor", monitorPanel) -
     ~~addTab("Position", posPanel)~~addTab("Socket", socketPanel)~~addTab("Sound Notification", silentPanel)
@@ -2436,8 +2442,8 @@ return
            call KillConnection
            .mm.dir~host = host
            .mm.dir~port = port
-           runnableSocket = BsfCreateRexxProxy(.CreateServerSocket~new, ,.Runnable)
-           .Thread~new(runnableSocket)~~bsf.dispatch("start")
+           runnableSocket = BsfCreateRexxProxy(.CreateServerSocket~new, ,.java.lang.Runnable)
+           .java.lang.Thread~new(runnableSocket)~~bsf.dispatch("start")
         end
         source = "ok"
         sdialog~hide
@@ -2496,8 +2502,8 @@ return
 
 ::method run
     if \.mm.dir~listening then return
-    .local~mm.dir~out = .PrintWriter~new(self~socket~getOutputStream, .true)		-- Writer for outband data
-    .local~mm.dir~in = .BufferedReader~new(.InputStreamReader~new(self~socket~getInputStream))		-- reader for inbound data
+    .local~mm.dir~out = .java.io.PrintWriter~new(self~socket~getOutputStream, .true)		-- Writer for outband data
+    .local~mm.dir~in = .java.io.BufferedReader~new(.java.io.InputStreamReader~new(self~socket~getInputStream))		-- reader for inbound data
     .mm.dir~out~println("Hello from Server. Type 'Exit' to quit connection.")
     .mm.dir~errorsArea~setText("Client connected.")
     .mm.dir~clientConnected = .true
@@ -2536,100 +2542,100 @@ return
     .mm.dir~isEnabled = .false
 
     mainframe = .mm.dir~frame
-    sdialog = .JDialog~new(mainframe, 'Socket Connection Configuration')
-    rpSCEH = BsfCreateRexxProxy(.SocketConfig~new, userData, "java.awt.event.WindowListener", .ActionListener)
+    sdialog = .javax.swing.JDialog~new(mainframe, 'Socket Connection Configuration')
+    rpSCEH = BsfCreateRexxProxy(.SocketConfig~new, userData, "java.awt.event.WindowListener", .java.awt.event.ActionListener)
     sdialog~addWindowListener(rpSCEH)
     sdialog~setResizable(.false)
     contentpane = sdialog~getContentPane
-    gridbag = .GridBagLayout~new
-    c = .GridBagConstraints~new
-    mainpanel = .JPanel~new
+    gridbag = .java.awt.GridBagLayout~new
+    c = .java.awt.GridBagConstraints~new
+    mainpanel = .javax.swing.JPanel~new
     mainpanel~setLayout(gridbag)
-    mainpanel~setBorder(.EmptyBorder~new(15,15,15,15))
-    hostlabel = .JLabel~new("Specifiy the remote host: ")
-    hosttf = .JTextField~new(.mm.dir~host, 10)
-    portlabel = .JLabel~new("Specify the port number to listen on: ")
-    porttf = .JTextField~new(.mm.dir~port, 5)
-    inlabel = .JLabel~new("Parse keyboard instructions from the client and append her/his input to the Code Area.")
-    insogroup = .ButtonGroup~new
-    indisabledrb = .JRadioButton~new('Disabled')
+    mainpanel~setBorder(.javax.swing.border.EmptyBorder~new(15,15,15,15))
+    hostlabel = .javax.swing.JLabel~new("Specifiy the remote host: ")
+    hosttf = .javax.swing.JTextField~new(.mm.dir~host, 10)
+    portlabel = .javax.swing.JLabel~new("Specify the port number to listen on: ")
+    porttf = .javax.swing.JTextField~new(.mm.dir~port, 5)
+    inlabel = .javax.swing.JLabel~new("Parse keyboard instructions from the client and append her/his input to the Code Area.")
+    insogroup = .javax.swing.ButtonGroup~new
+    indisabledrb = .javax.swing.JRadioButton~new('Disabled')
     indisabledrb~setActionCommand("indisabled")
     userData~indisabledrb = indisabledrb
-    inenabledrb = .JRadioButton~new('Enabled')
+    inenabledrb = .javax.swing.JRadioButton~new('Enabled')
     inenabledrb~setActionCommand("inenabled")
     if .mm.dir~enableInputSocket then inenabledrb~setSelected(.true)
     else indisabledrb~setSelected(.true)
     userData~inenabledrb = inenabledrb
     insogroup~~add(indisabledrb)~~add(inenabledrb)
-    inpanel = .JPanel~new(.FlowLayout~new)
+    inpanel = .javax.swing.JPanel~new(.java.awt.FlowLayout~new)
     inpanel~~add(indisabledrb)~~add(inenabledrb)
-    outlabel = .JLabel~new("Write any OUTPUT data to client (in addition to monitor destination).")
-    outsogroup = .ButtonGroup~new
-    outdisabledrb = .JRadioButton~new('Disabled')
+    outlabel = .javax.swing.JLabel~new("Write any OUTPUT data to client (in addition to monitor destination).")
+    outsogroup = .javax.swing.ButtonGroup~new
+    outdisabledrb = .javax.swing.JRadioButton~new('Disabled')
     outdisabledrb~setActionCommand("outdisabled")
     userData~outdisabledrb = outdisabledrb
-    outenabledrb = .JRadioButton~new('Enabled')
+    outenabledrb = .javax.swing.JRadioButton~new('Enabled')
     outenabledrb~setActionCommand("outenabled")
     if .mm.dir~enableOutputSocket then outenabledrb~setSelected(.true)
     else outdisabledrb~setSelected(.true)
     userData~outenabledrb = outenabledrb
     outsogroup~~add(outdisabledrb)~~add(outenabledrb)
-    outpanel = .JPanel~new(.FlowLayout~new)
+    outpanel = .javax.swing.JPanel~new(.java.awt.FlowLayout~new)
     outpanel~~add(outdisabledrb)~~add(outenabledrb)
-    errlabel = .JLabel~new("Write any ERROR data to client (in addition to monitor destination).")
-    errsogroup = .ButtonGroup~new
-    errdisabledrb = .JRadioButton~new('Disabled')
+    errlabel = .javax.swing.JLabel~new("Write any ERROR data to client (in addition to monitor destination).")
+    errsogroup = .javax.swing.ButtonGroup~new
+    errdisabledrb = .javax.swing.JRadioButton~new('Disabled')
     errdisabledrb~setActionCommand("errdisabled")
     userData~errdisabledrb = errdisabledrb
-    errenabledrb = .JRadioButton~new('Enabled')
+    errenabledrb = .javax.swing.JRadioButton~new('Enabled')
     errenabledrb~setActionCommand("errenabled")
     if .mm.dir~enableErrorSocket then errenabledrb~setSelected(.true)
     else errdisabledrb~setSelected(.true)
     userData~errenabledrb = errenabledrb
     errsogroup~~add(errdisabledrb)~~add(errenabledrb)
-    errpanel = .JPanel~new(.FlowLayout~new)
+    errpanel = .javax.swing.JPanel~new(.java.awt.FlowLayout~new)
     errpanel~~add(errdisabledrb)~~add(errenabledrb)
-    okbutton = .JButton~new('OK')
+    okbutton = .javax.swing.JButton~new('OK')
     okbutton~addActionListener(rpSCEH)
-    cancelbutton = .JButton~new('Cancel')
+    cancelbutton = .javax.swing.JButton~new('Cancel')
     cancelbutton~addActionListener(rpSCEH)
     userData~socketOkButton = okbutton
     userData~socketCancelButton = cancelbutton
-    buttonpanel = .JPanel~new
+    buttonpanel = .javax.swing.JPanel~new
     buttonpanel~~add(okbutton)~~add(cancelbutton)
     userData~sdialog = sdialog
 
-    c~gridwidth = .GridBagConstraints~remainder
-    c~anchor = .GridBagConstraints~west
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
+    c~anchor = .java.awt.GridBagConstraints~west
     c~gridwidth = 1
-    c~insets = .Insets~new(0,0,0,10)
+    c~insets = .java.awt.Insets~new(0,0,0,10)
     gridbag~setConstraints(hostlabel, c)
-    c~gridwidth = .GridBagConstraints~remainder
-    c~insets = .Insets~new(0,10,0,0)
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
+    c~insets = .java.awt.Insets~new(0,10,0,0)
     gridbag~setConstraints(portlabel, c)
     c~gridwidth = 1
-    c~insets = .Insets~new(5,0,20,10)
+    c~insets = .java.awt.Insets~new(5,0,20,10)
     gridbag~setConstraints(hosttf, c)
-    c~gridwidth = .GridBagConstraints~remainder
-    c~insets = .Insets~new(5,10,20,0)
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
+    c~insets = .java.awt.Insets~new(5,10,20,0)
     gridbag~setConstraints(porttf, c)
-    c~insets = .Insets~new(0,0,0,0)
+    c~insets = .java.awt.Insets~new(0,0,0,0)
     gridbag~setConstraints(inlabel, c)
-    c~gridwidth = .GridBagConstraints~remainder
-    c~insets = .Insets~new(0,0,10,0)
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
+    c~insets = .java.awt.Insets~new(0,0,10,0)
     gridbag~setConstraints(inpanel, c)
-    c~insets = .Insets~new(0,0,0,0)
+    c~insets = .java.awt.Insets~new(0,0,0,0)
     gridbag~setConstraints(outlabel, c)
-    c~gridwidth = .GridBagConstraints~remainder
-    c~insets = .Insets~new(0,0,10,0)
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
+    c~insets = .java.awt.Insets~new(0,0,10,0)
     gridbag~setConstraints(outpanel, c)
-    c~insets = .Insets~new(0,0,0,0)
+    c~insets = .java.awt.Insets~new(0,0,0,0)
     gridbag~setConstraints(errlabel, c)
-    c~gridwidth = .GridBagConstraints~remainder
-    c~insets = .Insets~new(0,0,10,0)
+    c~gridwidth = .java.awt.GridBagConstraints~remainder
+    c~insets = .java.awt.Insets~new(0,0,10,0)
     gridbag~setConstraints(errpanel, c)
-    c~anchor = .GridBagConstraints~center
-    c~insets = .Insets~new(5,0,0,0)
+    c~anchor = .java.awt.GridBagConstraints~center
+    c~insets = .java.awt.Insets~new(5,0,0,0)
     gridbag~setConstraints(buttonpanel, c)
 
     mainpanel~~add(hostlabel)~~add(portlabel)~~add(hosttf)~~add(porttf)~~add(inlabel) -
@@ -2690,58 +2696,58 @@ return
 /*Imports all necessary java classes so that they can be referred to
   by a dot an the specific class name without the package.*/
 ::routine importClasses
-    classes = ''
-    classes = classes 'javax.swing.JPanel'
-    classes = classes 'javax.swing.JMenu'
-    classes = classes 'javax.swing.JMenuItem'
-    classes = classes 'javax.swing.JCheckBoxMenuItem'
-    classes = classes 'javax.swing.JLabel'
-    classes = classes 'java.awt.GridBagLayout'
-    classes = classes 'java.awt.GridBagConstraints'
-    classes = classes 'javax.swing.JButton'
-    classes = classes 'javax.swing.JTextArea'
-    classes = classes 'javax.swing.JScrollPane'
-    classes = classes 'javax.swing.JFrame'
-    classes = classes 'javax.swing.JDialog'
-    classes = classes 'javax.swing.JMenuBar'
-    classes = classes 'javax.swing.UIManager'
-    classes = classes 'java.awt.event.ActionListener'
-    classes = classes 'java.awt.Color'
-    classes = classes 'java.awt.Insets'
-    classes = classes 'java.awt.Font'
-    classes = classes 'java.awt.datatransfer.StringSelection'
-    classes = classes 'java.awt.Toolkit'
-    classes = classes 'java.awt.BorderLayout'
-    classes = classes 'javax.swing.JList'
-    classes = classes 'javax.swing.ListSelectionModel'
-    classes = classes 'java.awt.Cursor'
-    classes = classes 'java.awt.Frame'
-    classes = classes 'javax.swing.JFileChooser'
-    classes = classes 'javax.swing.DefaultListModel'
-    classes = classes 'javax.swing.filechooser.FileFilter'
-    classes = classes 'java.io.File'
-    classes = classes 'java.awt.Dimension'
-    classes = classes 'javax.swing.ButtonGroup'
-    classes = classes 'javax.swing.JRadioButton'
-    classes = classes 'javax.swing.JTextField'
-    classes = classes 'java.awt.FlowLayout'
-    classes = classes 'java.io.PrintWriter'
-    classes = classes 'java.io.InputStreamReader'
-    classes = classes 'java.io.BufferedReader'
-    classes = classes 'java.lang.Runnable'
-    classes = classes 'java.lang.Thread'
-    classes = classes 'java.awt.event.KeyListener'
-    classes = classes 'java.awt.event.KeyEvent'
-    classes = classes 'java.awt.event.MouseListener'
-    classes = classes 'javax.swing.KeyStroke'
-    classes = classes 'javax.swing.JComponent'
-    classes = classes 'javax.swing.JTabbedPane'
-    classes = classes 'javax.swing.border.EmptyBorder'
+    list=.list~new
+    list ~ append( 'java.awt.BorderLayout'              )
+    list ~ append( 'java.awt.Color'                     )
+    list ~ append( 'java.awt.Cursor'                    )
+    list ~ append( 'java.awt.Dimension'                 )
+    list ~ append( 'java.awt.FlowLayout'                )
+    list ~ append( 'java.awt.Font'                      )
+    list ~ append( 'java.awt.Frame'                     )
+    list ~ append( 'java.awt.GridBagConstraints'        )
+    list ~ append( 'java.awt.GridBagLayout'             )
+    list ~ append( 'java.awt.Insets'                    )
+    list ~ append( 'java.awt.Toolkit'                   )
+    list ~ append( 'java.awt.datatransfer.StringSelection' )
+    list ~ append( 'java.awt.event.ActionListener'      )
+    list ~ append( 'java.awt.event.KeyEvent'            )
+    list ~ append( 'java.awt.event.KeyListener'         )
+    list ~ append( 'java.awt.event.MouseListener'       )
+    list ~ append( 'java.io.BufferedReader'             )
+--    list ~ append( 'java.io.File'                       )-- rgf, 2012-04-04, not used
+    list ~ append( 'java.io.InputStreamReader'          )
+    list ~ append( 'java.io.PrintWriter'                )
+    list ~ append( 'java.lang.Runnable'                 )
+    list ~ append( 'java.lang.Thread'                   )
+    list ~ append( 'javax.swing.ButtonGroup'            )
+    list ~ append( 'javax.swing.DefaultListModel'       )
+    list ~ append( 'javax.swing.JButton'                )
+    list ~ append( 'javax.swing.JCheckBoxMenuItem'      )
+    list ~ append( 'javax.swing.JComponent'             )
+    list ~ append( 'javax.swing.JDialog'                )
+    list ~ append( 'javax.swing.JFileChooser'           )
+    list ~ append( 'javax.swing.JFrame'                 )
+    list ~ append( 'javax.swing.JLabel'                 )
+    list ~ append( 'javax.swing.JList'                  )
+    list ~ append( 'javax.swing.JMenu'                  )
+    list ~ append( 'javax.swing.JMenuBar'               )
+    list ~ append( 'javax.swing.JMenuItem'              )
+    list ~ append( 'javax.swing.JPanel'                 )
+    list ~ append( 'javax.swing.JRadioButton'           )
+    list ~ append( 'javax.swing.JScrollPane'            )
+    list ~ append( 'javax.swing.JTabbedPane'            )
+    list ~ append( 'javax.swing.JTextArea'              )
+    list ~ append( 'javax.swing.JTextField'             )
+    list ~ append( 'javax.swing.KeyStroke'              )
+    list ~ append( 'javax.swing.ListSelectionModel'     )
+    list ~ append( 'javax.swing.UIManager'              )
+    list ~ append( 'javax.swing.border.EmptyBorder'     )
+    list ~ append( 'javax.swing.filechooser.FileFilter' )
 
-   do i = 1 to words(classes)
-      className = classes~word(i)~substr(classes~word(i)~lastpos('.')+1)
-      call bsf.importClass classes~word(i), className
-   end
+    do clz over list
+       call bsf.importClass clz
+    end
+
 return
 
 /*Establishes a socket connection one more time to get the server socket out of the
@@ -2763,7 +2769,7 @@ return
        startOff = lineElement~getStartOffset
        endoff = lineElement~getEndOffset
        oldcolor = codeArea~getSelectionColor
-       codeArea~setSelectionColor(.Color~red)
+       codeArea~setSelectionColor(.java.awt.Color~red)
        codeArea~~requestFocus~~select(startOff, endOff-1)
      end
    return
@@ -2793,7 +2799,7 @@ return
 
 
 ::routine LoadEnvironment
-    toolkit = .Toolkit~getDefaultToolkit
+    toolkit = .java.awt.Toolkit~getDefaultToolkit
     dimension = toolkit~getScreenSize
 -- Establish frame sizes based of the user's screen resolution - will only be used for the first
 -- execution - from then on data is retrieved from the .rc file, unless user specifies default as an
@@ -2846,7 +2852,7 @@ return
                       "Menlo", "Monaco", "Monospace", "Nimbus Mono L")
     .local~mm.dir~availableFonts = .array~new			-- list of fonts available on current OS
     do name over fonts~allItems
-      font = .Font~decode(name)
+      font = .java.awt.Font~decode(name)
       if  name="Monospace" | font~getFamily~equals(name) then
       do
           .mm.dir~availableFonts~append(name)	-- If a font is installed append it to the list of fonts
