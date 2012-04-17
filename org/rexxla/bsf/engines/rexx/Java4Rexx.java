@@ -17,7 +17,7 @@ import java.io.*;       // exception handling
  *  RexxEngine.getRexxInterface()}, a
  *  global reference is created via JNI while executing the method
  *  {@link RexxAndJava#jniInitialize4Rexx() RexxAndJava.jniInitialize4Rexx()}, which
- *  calls into the BSF4ooRexx-DLL.
+ *  calls into the BSF4ooRexx library.
  *
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
@@ -42,16 +42,19 @@ import java.io.*;       // exception handling
  */
 
 /* changes:
-    - 2012-02-09, rgf: need to use try-block for createRexxInterpreterInstance() as it now throws a BSFException
     - 2012-02-04, rgf: cater for new (deferred) logic of creating a Rexx interpreter instance
     - 2012-02-06, rgf: supply new (default) RexxConfiguration object for creating Rexx interpreter instance
+    - 2012-02-09, rgf: need to use try-block for createRexxInterpreterInstance() as it now throws a BSFException
+    - 2012-04-17, rgf: change logic as there is no need for creating and terminating another Rexx
+                       interpreter instance anymore (there was a bug too, that caused Terminate()
+                       to not be invoked at all)
 */
 
 class Java4Rexx {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "410.20120209";
+    static public String version = "410.20120417";
 
 
   /**  BSF-manager to be used to get (instantiate) the Rexx engine. */
@@ -88,27 +91,12 @@ class Java4Rexx {
 
         // now call into the DLL ("BSF4ooRexx.dll") in order to initialize; will set JVM in BSF4ooRexx.cc
     RexxAndJava raj=rxEngine.getRexxInterface();    // get the interface instance
-    try {
-        raj.createRexxInterpreterInstance(new RexxConfiguration());    // rgf, 20120204: create Rexx interpreter instance
-    }
-    catch (BSFException e)
-    {}
 
-    raj.jniInitialize4Rexx();                       // initialize Rexx, creates another Interpreter instance
+    raj.jniInitialize4Rexx();           // initialize BSF4ooRexx
 
-    String root_rii_ID=raj.jniGetRexxInterpreterInstanceRoot(); // get root of interpreter instances (defined in BsfLoader())
-
-    String rii_ID=rxEngine.get_rii_ID();
-
-// System.err.println("Java4Rexx.java: BSFGetTID()=["+raj.jniRexxGetTID()+"]");
-
-    if (rii_ID!=null)   // RexxEngine may not represent a created Rexx interpreter instance
-    {
-        raj.jniRexxTerminateInterpreterInstance(rii_ID); // terminate spurious Rexx interpreter instance
-    }
-
+    String root_rii_ID=raj.jniGetRexxInterpreterInstanceRoot(); // get primodal Rexx interpreter instance
+    raj.rii_ID=root_rii_ID;             // now tell engine instance which Rexx interpreter instance to use
     rxEngine.set_rii_ID(root_rii_ID);   // now tell engine instance which Rexx interpreter instance to use
-
   }
 }
 

@@ -41,6 +41,10 @@ import org.apache.bsf.util.type.*;
   */
 
  /*
+     2012-04-17, ---rgf, - fixed a bug in createRexxInterpreterInstance() where the new RII was
+                           not assigned to the RexxEngine if that had no RII assigned to it yet
+                         - changed visibility for rii_ID from private to protected, such that
+                           Java4Rexx is able to set it accordingly
      2012-03-12, ---rgf, - now loading BSF4ooRexx DLL/so after trying to fetch the netrexx.lang.Rexx class,
                            such that native library can access static field "nlR_class" and fetch the class object,
                            if Java found it
@@ -268,7 +272,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20120312";
+    static final public String version = "410.20120417";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -384,7 +388,8 @@ class RexxAndJava {
 
     /** Contains the RexxInterpreter instance ID this engine is associated with.
      */
-    private String rii_ID=null;
+    // private String rii_ID=null;
+    protected String rii_ID=null;
 
     /** Getter method.
      *  @return the RexxInterpreter instance ID
@@ -546,11 +551,9 @@ necessary anymore
     }
 
 
-    /** This native method makes sure that the function 'BSF' is
-      * registered with Rexx, making it thereby available to all
-      * Rexx and Object Rexx programs, called from Java.
-      */
-    // public native int jniRegisterBSF ();        // changed to int (---rgf, 2001-05-25)
+    /** This native method makes sure that the C++ library gets a hold to
+     *  this JVM in case it does not already have a pointer to it.
+     */
     protected native void jniSetupNativeJVMPointer ();     // changed 2012-02-06, rgf
 
 
@@ -6032,7 +6035,6 @@ System.err.println("***debug RexxAndJava.getCauseAsString(): InvocationTargetExc
         }
 
         jniSetupNativeJVMPointer();         // make sure C++ side gets a JVM pointer
-        // TODO: version that allows passing Java Rexx exit and command handler arrays, if configured
 
         Object options[]=null;
         if (rc!=null)
@@ -6045,20 +6047,11 @@ System.err.println("***debug RexxAndJava.getCauseAsString(): InvocationTargetExc
 
         if (this.rii_ID==null)  // no RII as of yet for this RAJO, set it!
         {
-            this.rii_ID=rii_ID;
+            this.rii_ID=tmp_rii_ID;
         }
 
-        // String rii_ID=jniRexxCreateInterpreterInstance(options);  // create interpreter instance
         return tmp_rii_ID;
     }
-
-
-
-    // TODO: create jni-accessors for
-    //       - the entire Rexx interpreter instance (all threads affected):
-    //            Halt(), SetTrace(0|1)
-    //       - Rexx-thread related APIs
-    //            RexxSetHalt(), SetThreadTrace(0|1), RexxException...()
 
 }
 /*
