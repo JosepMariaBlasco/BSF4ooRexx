@@ -43,8 +43,9 @@ import org.apache.bsf.util.type.*;
  /*
      2012-04-17, ---rgf, - fixed a bug in createRexxInterpreterInstance() where the new RII was
                            not assigned to the RexxEngine if that had no RII assigned to it yet
-                         - changed visibility for rii_ID from private to protected, such that
-                           Java4Rexx is able to set it accordingly
+                         - added protected void set_rii_ID(String rii_ID) to allow Java4Rexx to
+                           set the reference to the Rexx interpreter instance that invoked it
+
      2012-03-12, ---rgf, - now loading BSF4ooRexx DLL/so after trying to fetch the netrexx.lang.Rexx class,
                            such that native library can access static field "nlR_class" and fetch the class object,
                            if Java found it
@@ -388,8 +389,7 @@ class RexxAndJava {
 
     /** Contains the RexxInterpreter instance ID this engine is associated with.
      */
-    // private String rii_ID=null;
-    protected String rii_ID=null;
+    private String rii_ID=null;
 
     /** Getter method.
      *  @return the RexxInterpreter instance ID
@@ -399,6 +399,14 @@ class RexxAndJava {
     {
         return rii_ID;
     }
+
+    /** Setter method. Only meant to be used by Java4Rexx.java.
+     */
+    protected void set_rii_ID(String rii_ID)
+    {
+        this.rii_ID=rii_ID;
+    }
+
 
 
     /** Load the DLL, which allows interfacing Java with Rexx or Object Rexx, determines

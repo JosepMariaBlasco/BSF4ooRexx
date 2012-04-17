@@ -90,12 +90,11 @@ class Java4Rexx {
     // the Java side
 
         // now call into the DLL ("BSF4ooRexx.dll") in order to initialize; will set JVM in BSF4ooRexx.cc
-    RexxAndJava raj=rxEngine.getRexxInterface();    // get the interface instance
+    RexxAndJava raj=rxEngine.getRexxInterface();    // get the RexxAndJava (i.e. interface) instance
+    raj.jniInitialize4Rexx();           // initialize BSF4ooRexx (will cache interface instance)
 
-    raj.jniInitialize4Rexx();           // initialize BSF4ooRexx
-
-    String root_rii_ID=raj.jniGetRexxInterpreterInstanceRoot(); // get primodal Rexx interpreter instance
-    raj.rii_ID=root_rii_ID;             // now tell engine instance which Rexx interpreter instance to use
+    String root_rii_ID=raj.jniGetRexxInterpreterInstanceRoot(); // get reference to Rexx interpreter instance
+    raj.set_rii_ID(root_rii_ID);        // now tell engine instance which Rexx interpreter instance to use
     rxEngine.set_rii_ID(root_rii_ID);   // now tell engine instance which Rexx interpreter instance to use
   }
 }
