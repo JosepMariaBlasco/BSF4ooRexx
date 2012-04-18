@@ -52,6 +52,16 @@
                           this way there should be no interference with any other class (JLF
                           reported a name clash with .file, which is defined as an ooRexx class
                           and which was offset by java.io.File that was saved in .local as .file)
+
+            2012-04-05 JLF
+                        - Convert the result to a string before displaying in returnsArea
+                        - Support empty arguments : arg(N, "o") returns 1 if line N is empty in argsArea.
+                        - The temporary file ooRexxTry_test was created with a path in home directory,
+                          but then only the filename part was kept. Now keeps the whole path.
+                        - The path to ooRexxTry_test is surrounded by quotes to support whitespaces.
+                        - The file ooRexxTry.rc is saved in the home directory.
+                        - No longer accumulate text in say_stg and error_stg, better to use the method
+                          append of JTextArea.
 */
 
 /*----------------------------------------------------------------------------*/
@@ -186,8 +196,6 @@ else
     .error~destination(.mm.dir~errfilestream)
   end
 
-.local~mm.dir~say_stg = ''
-
 .CreateServerSocket~new~~run 		-- setup up a server socket
 
 userData~rexxCloseEH~waitforExit   -- wait until we are allowed to end the program
@@ -208,7 +216,7 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
     c = .java.awt.GridBagConstraints~new
     contentpane~setLayout(gridbag)
     verpanel = .javax.swing.JPanel~new
-    verpanel~~setBackground(.java.awt.Color~magenta)~~add(.JLabel~new("Version"))
+    verpanel~~setBackground(.java.awt.Color~magenta)~~add(.javax.swing.JLabel~new("Version"))
     version = .javax.swing.JPanel~new
     version~add(.javax.swing.JLabel~new(.mm.dir~version))
     atpanel = .javax.swing.JPanel~new
@@ -670,7 +678,6 @@ slotDir~javaObject~setSize_forwardToSuper((.mm.dir~frame~getWidth/wdivider)~form
     expose rt_method userData
     use arg method_name,code, userData
     .local~mm.dir~Error? = .false
-    .local~mm.dir~error_stg = ''
     signal on syntax name ExecSyntax
     rt_method = .method~new(method_name, code)
 return
@@ -697,7 +704,6 @@ return
     expose rt_method say_string userData
     signal on syntax name RunSyntax
     .local~mm.dir~run_results = .directory~new
-    .local~mm.dir~say_stg = ''
 
     my_result = ''
     if \.mm.dir~Error? then
@@ -710,13 +716,13 @@ return
             if symbol('result') = 'VAR' then my_result = result
             -- Load the says and returns into environment variables for updating the dialog areas
             .local~mm.dir~run_results['returns'] = my_result
-            if .mm.dir~error_stg == '' then .mm.dir~errorsArea~setText("Code Execution Complete")
+            .mm.dir~errorsArea~setText("Code Execution Complete")
         end
 
     .mm.dir~storage~storeData(.mm.dir~code_string)
 
     if .nil \= .mm.dir~run_results['returns'] then
-        .mm.dir~returnsArea~setText(.mm.dir~run_results['returns'])
+        .mm.dir~returnsArea~setText(.mm.dir~run_results['returns'])~string
 
     if \.mm.dir~silent then        -- Let the user know when code execution is complete
         .java.awt.Toolkit~getDefaultToolkit~beep
@@ -1401,8 +1407,9 @@ syntax:
 
     call attach2java       -- make sure we can interact with Java on this thread
 
-    .local~mm.dir~error_stg = .mm.dir~error_stg||output||.endOfLine
-    .mm.dir~errorsArea~~setText(.mm.dir~error_stg)~~setCaretPosition(.mm.dir~errorsArea~getDocument~getLength)
+    .mm.dir~errorsArea~append(output)
+    .mm.dir~errorsArea~append(.endOfLine)
+    .mm.dir~errorsArea~setCaretPosition(.mm.dir~errorsArea~getDocument~getLength)
     if .mm.dir~enableErrorSocket & .mm.dir~clientConnected then .mm.dir~out~println("[.ERROR] "||output)
     return 0
 
@@ -1515,8 +1522,9 @@ syntax:
 
     call attach2java       -- make sure we can interact with Java on this thread
 
-    .local~mm.dir~say_stg = .mm.dir~say_stg||output||.endOfLine
-    .mm.dir~saysArea~~setText(.mm.dir~say_stg)~~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
+    .mm.dir~saysArea~append(output)
+    .mm.dir~saysArea~append(.endOfLine)
+    .mm.dir~saysArea~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
     if .mm.dir~enableOutputSocket & .mm.dir~clientConnected
     then .mm.dir~out~println("[.OUTPUT] "||output)		        	-- Write output data also to client
 		                                                                      	-- connected via socket in case of
@@ -1534,8 +1542,8 @@ syntax:
         .error~lineout("Please specify a character to write.")
         return 0
       end
-    .local~mm.dir~say_stg = .mm.dir~say_stg||output
-    .mm.dir~saysArea~~setText(.mm.dir~say_stg)~~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
+    .mm.dir~saysArea~append(output)
+    .mm.dir~saysArea~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
     if .mm.dir~enableOutputSocket & .mm.dir~clientConnected -
     then .mm.dir~out~println("[.OUTPUT] "||output)
 
@@ -1552,8 +1560,9 @@ syntax:
         return 0
       end
     if \line~equals('LINE') then raise syntax 93.958
-    .local~mm.dir~say_stg = .mm.dir~say_stg||output||.endOfLine
-    .mm.dir~saysArea~~setText(.mm.dir~say_stg)~~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
+    .mm.dir~saysArea~append(output)
+    .mm.dir~saysArea~append(.endOfLine)
+    .mm.dir~saysArea~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
     if .mm.dir~enableOutputSocket & .mm.dir~clientConnected -
     then .mm.dir~out~println("[.OUTPUT] "||output)
 
@@ -2094,13 +2103,12 @@ syntax:
 
     .local~mm.dir~Error? = .false
     .local~mm.dir~badarg = ''
-    .local~mm.dir~say_stg = ''
-    .local~mm.dir~error_stg = ''
     -- Interpret each argument so that expressions can be used
     signal on syntax name ArgSyntax
     do i = 1 to arg_array~items
         .local~mm.dir~badarg = i arg_array[i]
-        interpret 'arg_array['i'] =' arg_array[i]
+        if arg_array[i]~strip == "" then arg_array~remove(i)
+        else interpret 'arg_array['i'] =' arg_array[i]
     end
     signal off syntax
     -- Run the code in a dynamically created method
@@ -2136,7 +2144,7 @@ syntax:
             -- .local~mm.dir~tempFile = 'ooRexxTry_test9999.rex'
             -- rgf, make sure, we get unique file names
             -- .mm.dir~tempFile = filespec("N",SysTempFileName(directory() || .bsf4rexx~file.separator || "ooRexxTry_test????.rex"))
-            .mm.dir~tempFile = filespec("N",SysTempFileName(getHomeDir() || .bsf4rexx~file.separator || "ooRexxTry_test????.rex"))
+            .mm.dir~tempFile = SysTempFileName(getHomeDir() || .bsf4rexx~file.separator || "ooRexxTry_test????.rex")
 
             c_stream = .stream~new(.mm.dir~tempFile)
             c_stream~open('Write Replace')
@@ -2152,7 +2160,7 @@ syntax:
             arg_string = arg_string~strip('b',',')
 
             -- runnable = BsfCreateRexxProxy(.ExecuteThread~new('oorexxtry.code','call ooRexxTry_test9999.rex' arg_string, arg_array, slotDir~userData), ,.java.lang.Runnable)
-            runnable = BsfCreateRexxProxy(.ExecuteThread~new('oorexxtry.code','call' .mm.dir~tempFile arg_string, arg_array, slotDir~userData), ,.java.lang.Runnable)
+            runnable = BsfCreateRexxProxy(.ExecuteThread~new('oorexxtry.code','call' enquote2(.mm.dir~tempFile) arg_string, arg_array, slotDir~userData), ,.java.lang.Runnable)
             .java.lang.Thread~new(runnable)~~bsf.dispatch("start")		-- Run code in separate thread
         end
 
@@ -2217,8 +2225,8 @@ return
     else props~setProperty("Use_System_Look_And_Feel","no")
     if .mm.dir~silent then props~setProperty("silentMode","yes")
     else props~setProperty("silentMode","no")
-    props~save("ooRexxTry.rc")
-    .mm.dir~errorsArea~setText("Settings Saved To ooRexxTry.rc")
+    props~save(.local~mm.dir~ooRexxTry.rc)
+    .mm.dir~errorsArea~setText("Settings Saved To" .local~mm.dir~ooRexxTry.rc)
     return
 
 
@@ -2883,7 +2891,8 @@ return
           return
       end
 
-    .local~mm.dir~props = .properties~load("ooRexxTry.rc")
+    .local~mm.dir~ooRexxTry.rc = getHomeDir() || .bsf4rexx~file.separator || "ooRexxTry.rc"
+    .local~mm.dir~props = .properties~load(.local~mm.dir~ooRexxTry.rc)
     props = .mm.dir~props
     .local~mm.dir~fontname = props~getProperty("FontName")
     if .mm.dir~fontname == .nil | \.mm.dir~availableFonts~hasItem(.mm.dir~fontname) then
@@ -2920,7 +2929,7 @@ return
    return						-- -to point of invokation
 
 ::requires bsf.cls
-
+::requires rgf_util2.rex
 
 ::routine dontBSFExit    -- rgf, 2011-02-21: RexxAndJava should not carry out "System.exit()" subcommand
 --  val   =bsf.wrap(bsf("carryOutSystemExit"))
