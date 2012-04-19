@@ -1,24 +1,19 @@
 /*
 
--- TODO:
+remarks:
 
-
-offene Probleme:
-
-    - RexxCondition ist nicht dokumentiert, wird aber in "rexxpg.pdf" gezeigt
-    - CallProgramFromData() fehlt! Stattdessen (RMG): NewRoutine+CallRoutine
+    - RexxCondition() is not documented, but is shown in "rexxpg.pdf"
+    - there is no CallProgramFromData()! Instead use (RMG): NewRoutine()+CallRoutine()
     - RFE: function to list loaded libraries and packages; function to list all/specific global/public
       routines and public classes
-    - list all current threads of a given Rexx interpreter instance
-    - statt NULLOBJECT verwende ich NULL, da wesentlich klarer, dass nichts zurückgeliefert wurde;
-      (NULLOBJECT könnte als .NIL angesehen werden)
-      [Begrifflichkeiten inkonsistent]
+    - using NULL instead of NULLOBJECT, as NULL more clearly indicates that nothing got returend
+      (NULLOBJECT could be mistaken to mean .NIL)
     - native APIs "Condition*()", aber "RaiseException()", inkonsistent; macht's wieder ein Stückchen
       schwieriger zu verstehen! :(
       [Begrifflichkeiten inkonsistent]
 
-    - 2010-02-10: keine Möglichkeit festzustellen, ob die Rexx-Instanz noch da ist bzw. noch
-                  benutzt werden darf/kann!
+    - 2010-02-10: no means to test whether a Rexx interpreter instance is still available for
+                  executing Rexx code (e.g. in callbacks from Java to Rexx)
 
    last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
@@ -28,6 +23,9 @@ offene Probleme:
   * it allows Java to call into Rexx using the new ooRexx 4.0 native APIs using JNI ("Java Native Interface").
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
+
+    4.1.-15 2012-04-19 - fixed a bug in free()ing options array in BsfLoadJava()-routine, reported
+                         by JLF, cf. <https://sourceforge.net/mailarchive/forum.php?thread_name=4F900B1A.8000104%40wu-wien.ac.at&forum_name=bsf4oorexx-devel>
 
     4.1.-14 2012-03-18 - fixed a bug in processing the return value for Rexx exits RXEXF and RXOFNC
                        - corrected the needed size of the parmBlock array for the RXHLT and RXVALUE exits
@@ -420,8 +418,8 @@ offene Probleme:
   *     2001-06-11, ---rgf, runs with JNI 1 (does *not* need JRE 1.2 or higher
   *             anymore, so OS/2 users with 1.1.8 can use this package as well)
   *
-  * author:  (c) 2001-2010 Rony G. Flatscher, WU (pronounced: "vey-u") Vienna University of Economics
-  *                          and Business Administration
+  * author:  Rony G. Flatscher, WU (pronounced: "vey-u") Vienna University of Economics
+  *          and Business Administration
   *
   *  LICENSE:
 
@@ -752,11 +750,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "410.20120318 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120419 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "410.20120318 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120419 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "410.20120318 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120419 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -8012,33 +8010,26 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
    char msg[1024]="";     // buffer for error message
 
 #ifndef ALLOW_LOADING_JVM    //   if not defined!
-
-       /* raise exception */
-   // sprintf(msg, "%.16s/routine/BsfLoadJava(), error 1.991: functionality not compiled into this version (symbol 'ALLOW_LOADING_JVM' was not defined at compile time)", DLLNAME);
+   /* raise exception */
    SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 1.991: functionality not compiled into this version (symbol 'ALLOW_LOADING_JVM' was not defined at compile time)", DLLNAME);
    context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
    return "-991";
 
 #else   // defined, make code available for compilation
-
    jint            res;
    jclass          cls;
    jmethodID       mid;
-// jstring         str;
    JNIEnv *jniEnv=NULL;
 
-
-        // JVM already loaded?
-    // if (globJvm!=NULL)
+   // JVM already loaded?
     if (currentJVM != NULL)
     {
-        // sprintf(msg, "%.16s/routine/BsfLoadJava(), error 1.999: JVM is already loaded", DLLNAME);
         SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 1.999: JVM is already loaded", DLLNAME);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         return "-999";
     }
 
-        // all JNI versions ------------->
+    // all JNI versions ------------->
     char *cp_env=getenv("CLASSPATH");   // get value of environment variable CLASSPATH (NULL, if not set)
 
     // JNI 1.2 and above ------------>
@@ -8049,9 +8040,6 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
     rgf_JNI_GetDefaultJavaVMInitArgs rgfGetDefaultJavaVMInitArgs=NULL;
 
 #if defined  (WINDOWS) //   ( WIN32 )
-    // HINSTANCE hVM = NULL;
-    // char *jni_12_library="jvm";
-    // hVM=LoadLibrary( jni_12_library );   // try to load the JNI 1.1 DLL
     HINSTANCE hVM=LoadLibrary( "jvm" );   // try to load the JavaVM
 
     #if defined( DEBUG )
@@ -8066,38 +8054,33 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 #elif defined ( UNIX )
    PVOID hVM = NULL;
 
-        // 2010-08-14, rgf: new strategy, now that we have a defined place on Unix ("/opt/BSF4ooRexx")
-        //                  look first in /opt/BSF4ooRexx, and thereafter let the system find "libjvm.so"
+   // 2010-08-14, rgf: new strategy, now that we have a defined place on Unix ("/opt/BSF4ooRexx")
+   //                  look first in /opt/BSF4ooRexx, and thereafter let the system find "libjvm.so"
+   // 2011-01-06, rgf: on Unix-based systems the BSF4ooRexx installation may have put a link to the
+   //                  JVM to be used into BSF4ooRexx home directory, so look there first
 
-	// 2011-01-06, rgf: on Unix-based systems the BSF4ooRexx installation may have put a link to the
-	//                  JVM to be used into BSF4ooRexx home directory, so look there first
+    #ifdef __APPLE__
+       hVM=dlopen("/opt/BSF4ooRexx/libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL );
+       if (hVM==NULL)   // not found, now look in system's location
+       {
+           hVM=dlopen("/System/Library/Frameworks/JavaVM.framework/JavaVM", RTLD_LAZY | RTLD_GLOBAL );
+       }
+    #else
+       hVM=dlopen("/opt/BSF4ooRexx/libjvm.so", RTLD_LAZY | RTLD_GLOBAL );
+    #endif
 
-   // char *jni_12_library="libjvm.so";
-   // hVM=dlopen(jni_12_library, RTLD_LAZY | RTLD_GLOBAL );
-
-#ifdef __APPLE__
-   hVM=dlopen("/opt/BSF4ooRexx/libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL );
-   if (hVM==NULL)   // not found, now look in system's location
-   {
-       hVM=dlopen("/System/Library/Frameworks/JavaVM.framework/JavaVM", RTLD_LAZY | RTLD_GLOBAL );
-   }
-#else
-   hVM=dlopen("/opt/BSF4ooRexx/libjvm.so", RTLD_LAZY | RTLD_GLOBAL );
-#endif
-
-   if (hVM==NULL)   // not found, now let the system search a "libjvm.so"
-   {
+       if (hVM==NULL)   // not found, now let the system search a "libjvm.so"
+       {
 #ifdef DEBUG2
-	fprintf(stderr, "hvm=[%p], now looking without an explicit path...\n", hVM);
+    fprintf(stderr, "hvm=[%p], now looking without an explicit path...\n", hVM);
 #endif
 
-#ifdef __APPLE__
-       hVM=dlopen("libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL );   // not found, now let the system find a "libjvm.so"...
-#else
-       hVM=dlopen("libjvm.so", RTLD_LAZY | RTLD_GLOBAL );   // not found, now let the system find a "libjvm.so"...
-#endif
-   }
-
+    #ifdef __APPLE__
+           hVM=dlopen("libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL );   // not found, now let the system find a "libjvm.so"...
+    #else
+           hVM=dlopen("libjvm.so", RTLD_LAZY | RTLD_GLOBAL );   // not found, now let the system find a "libjvm.so"...
+    #endif
+       }
 #endif
 
 
@@ -8110,37 +8093,32 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
        fprintf(stderr, "hVM=[%p], JNI_CreateJavaVM-proc=[%p]\n", hVM, dlsym(hVM, "JNI_CreateJavaVM"));
        fprintf(stderr, "dlerror() ---> [%s]\n", dlerror());
 
-if (hVM!=NULL)   // rgf, 2011-03-12
-{
-       Dl_info info;
-fprintf(stderr, "1) before dladdr(...)\n");fflush(stderr);
-       int rc=dladdr((void *) hVM, (Dl_info *) &info);
-fprintf(stderr, "2) after  dladdr(...), rc=[%d]\n", rc);fflush(stderr);
-
-       if (rc!=0)  // rc of 0 in this function indicates error! :-(
+       if (hVM!=NULL)   // rgf, 2011-03-12
        {
-       fprintf(stderr, "dladdr(), rc=[%d], dli_fname=[%s]\n", rc, info.dli_fname);fflush(stderr);
+              Dl_info info;
+              fprintf(stderr, "1) before dladdr(...)\n");fflush(stderr);
+              int rc=dladdr((void *) hVM, (Dl_info *) &info);
+              fprintf(stderr, "2) after  dladdr(...), rc=[%d]\n", rc);fflush(stderr);
 
+              if (rc!=0)  // rc of 0 in this function indicates error! :-(
+              {
+              fprintf(stderr, "dladdr(), rc=[%d], dli_fname=[%s]\n", rc, info.dli_fname);fflush(stderr);
+
+              }
+              fprintf(stderr, "3) after: dlerror() ---> [%s]\n", dlerror());fflush(stderr);
        }
-       fprintf(stderr, "3) after: dlerror() ---> [%s]\n", dlerror());fflush(stderr);
-}
 
-#ifdef __APPLE__
-    fprintf(stderr, "__APPLE__\n");
-#else
-    fprintf(stderr, "UNIX\n");
-
-
-#endif
-
+       #ifdef __APPLE__
+           fprintf(stderr, "__APPLE__\n");
+       #else
+           fprintf(stderr, "UNIX\n");
+       #endif
    #endif
 #endif
 
    if ( hVM == NULL)  // oops, no Java DLL/so found
    {
-       // sprintf(msg, "%.16s/routine/BsfLoadJava(), error 2.992: Java dynamic link/shared library not found", DLLNAME);
-//        SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 2.992: Java dynamic link/shared library \"/opt/BSF4ooRexx/libjvm.so\" not found (also looking for \"libjvm.so\" without success)", DLLNAME);
-// rgf, 2011-02-08
+       // rgf, 2011-02-08
 #if defined ( WINDOWS )
        SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 2.992: Java dynamic link/shared library \"jvm.dll\" not found", DLLNAME);
 #elif defined ( __APPLE__)
@@ -8166,19 +8144,15 @@ fprintf(stderr, "2) after  dladdr(...), rc=[%d]\n", rc);fflush(stderr);
 
 
 #ifdef DEBUG2
-fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
-                rgfCreateJavaVM, rgfGetDefaultJavaVMInitArgs);
-
+   fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
+           rgfCreateJavaVM, rgfGetDefaultJavaVMInitArgs);
 
     #ifdef DEBUG_HIT_ENTER_TO_CONTINUE
         RgfDebugHitEnterToContinue();
     #endif
-// { char *rgfStr="hallo";char *rgfRes="holla";rgfRes = fgets(rgfStr, 3, stdin); }
 #endif
-/////////////////////
 
-
-    if ( rgfCreateJavaVM == NULL)  // oops, no entry point found, cannot load Java !
+    if (rgfCreateJavaVM == NULL)    // oops, no entry point found, cannot load Java !
     {
         // sprintf(msg, "%.16s/routine/BsfLoadJava(), error 3.992: Java dynamic link/shared library not found", DLLNAME);
         SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 3.992: Java dynamic link/shared library: entry point \"JNI_CreateJavaVM\" not found", DLLNAME);
@@ -8186,37 +8160,22 @@ fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
         return "-992";
     }
 
-    jint resVer;
 #ifdef DEBUG2
     fprintf(stderr, "BsfLoadJava(): found DLL/so, now getting the default init args.\n");
-
-
     #ifdef DEBUG_HIT_ENTER_TO_CONTINUE
         RgfDebugHitEnterToContinue();
     #endif
-
-    // fprintf(stderr, "               now trying to get input from keyboard:\n");
-    // {
-    // char *rgfStr="hallo";char *rgfRes="holla";rgfRes = fgets(rgfStr, 3, stdin);
-    // fprintf(stderr, "              str=[%.256s], res=[%.256s]\n", rgfStr, rgfRes);
-    // }
 #endif
 
     vm_args2.version = USE_DEFINED_JNI_VERSION ;
-    resVer = rgfGetDefaultJavaVMInitArgs(&vm_args2);
+    jint resVer = rgfGetDefaultJavaVMInitArgs(&vm_args2);
 
 #ifdef DEBUG1        // ---rgf, 2003-04-30
     fprintf(stderr, "BsfLoadJava(): after rgf_JNI_GetDefaultJavaVMInitArgs, resVer=[%d]\n", (int) resVer);
-
-
     #ifdef DEBUG_HIT_ENTER_TO_CONTINUE
         RgfDebugHitEnterToContinue();
     #endif
-
-    // { char *rgfStr="hallo";char *rgfRes="holla";rgfRes = fgets(rgfStr, 3, stdin); }
 #endif
-
-
 
 /* as of 2006-01-04 rules have changed: only supply options, if arguments are supplied (and if so
                     pass them on verbatimely!
@@ -8227,150 +8186,130 @@ fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
            // default: no options !
     JavaVMOption *options=NULL;
     vm_args2.version = USE_DEFINED_JNI_VERSION ; // set version, >= JNI_VERSION_1_4
-    vm_args2.options = NULL;                 // set options-array (containing classpath)
-    vm_args2.nOptions = 0;                   // indicate how many entries in array
-    vm_args2.ignoreUnrecognized = FALSE;     // report unrecognized values !
-    // vm_args2.ignoreUnrecognized = TRUE ;     // report unrecognized values !
+    vm_args2.options = NULL;                // set options-array (containing classpath)
+    vm_args2.nOptions = 0;                  // indicate how many entries in array
+    vm_args2.ignoreUnrecognized = FALSE;    // report unrecognized values
 
+    int m=0;
+    size_t numArgs=context->ArraySize(argArray);    // if arguments supplied, honor them
+    // reserve enough space (make sure one entry is available for defining java.lang.classpath)
+    options=(JavaVMOption *) malloc( sizeof( JavaVMOption ) * (numArgs+1) );
+    bool bCPdefined=FALSE;  // is a classpath defined in the arguments? If so, use it otherwise use CLASSPATH value, if defined
+    const char *needle="-Djava.class.path="; // CLASSPATH needle to look for in the Rexx arguments; if
+                                             // supplied overrides any CLASSPATH set in the environment
+    size_t  needleLength=strlen(needle);
+
+    for (size_t i=1; i<=numArgs; i++)   // iterate over all Rexx arguments
     {
-        bool bCPdefined=FALSE; // is a classpath defined in the arguments? If so, use it and forgo
-        int m=0;
-                               // a possibly CLASSPATH environment variable definition
-        const char *needle="-Djava.class.path="; // needle to look for in the arguments
-        // int  needleLength=strlen(needle);
-        size_t  needleLength=strlen(needle);
-
-           // reserve enough space (one entry for java.lang.classpath)
-        // size_t numArgs=context->ArrayItems(argArray);
-        size_t numArgs=context->ArraySize(argArray);
-        options=(JavaVMOption *) malloc( sizeof( JavaVMOption ) * (numArgs) );
-
-        for (size_t i=1; i<=numArgs; i++)   // iterate over all Rexx arguments
+        RexxObjectPtr tmpObj=context->ArrayAt(argArray, i);    // get Object
+        if (tmpObj==NULL)              // no entry, ignore
         {
-            RexxObjectPtr tmpObj=context->ArrayAt(argArray, i);    // get Object
-            if (tmpObj==NULL)              // no entry, ignore
-            {
-                continue;
-            }
-               // get String value
-            RexxStringObject tmpStrObject=context->ObjectToString(tmpObj);
-            if (context->StringLength(tmpStrObject)==0)    // empty string, ignore
-            {
-                continue;
-            }
+            continue;
+        }
+        // get String value
+        RexxStringObject tmpStrObject=context->ObjectToString(tmpObj);
+        if (context->StringLength(tmpStrObject)==0)    // empty string, ignore
+        {
+            continue;
+        }
 
-            // o.k. classpath argument supplied, check it
-            const char * cTmpStrObj=context->CString(tmpStrObject);     // turn to ASCII-Z string
-            {
-                    // determine whether java.class.path is supplied via a Rexx argument
-                bCPdefined= (bCPdefined || (strncmp(cTmpStrObj, needle, needleLength)==0));
+        // turn supplied argument to CString for comparison with needle value
+        const char * cTmpStrObj=context->CString(tmpStrObject);     // turn to ASCII-Z string
+
+        // determine whether java.class.path is supplied via this Rexx argument, setting/overriding CLASSPATH
+        bCPdefined= (bCPdefined || (strncmp(cTmpStrObj, needle, needleLength)==0));
 #ifdef DEBUG3
-     fprintf(stderr, "BsfLoadJava(): Rexx arg # [%lu]=[%.256s]\n", i, cTmpStrObj);
-     fprintf(stderr, "               bCPDefined=[%d], strncmp=[%d]\n", bCPdefined, strncmp(cTmpStrObj, needle, needleLength));
-
+    fprintf(stderr, "BsfLoadJava(): Rexx arg # [%lu]=[%.256s]\n", i, cTmpStrObj);
+    fprintf(stderr, "               bCPDefined=[%d], strncmp=[%d]\n", bCPdefined, strncmp(cTmpStrObj, needle, needleLength));
 #endif
+        // create and save supplied option
+        size_t tmpLength=strlen(cTmpStrObj);
+        char *ch = (char *) malloc(tmpLength+1);   // copy Rexx argument
+        memset(ch, 0, tmpLength+1);	    // make sure that initialized to 0x00
 
-                         size_t tmpLength=strlen(cTmpStrObj);
-                         char *ch = (char *) malloc(tmpLength+1);           // copy Rexx argument
-			 memset(ch, 0, tmpLength+1);	// make sure that initialized to 0x00
-
-                         strncpy(ch, cTmpStrObj, tmpLength);
-                         options[m].optionString = ch;      //
-                         options[m].extraInfo    = NULL;    // Florian's Schuld! :) (2004-05-06)
+        strncpy(ch, cTmpStrObj, tmpLength);
+        options[m].optionString = ch;      //
+        options[m].extraInfo    = NULL;    // Florian's Schuld! :) (2004-05-06)
 #ifdef DEBUG3
     fprintf(stderr, "BsfLoadJava(): added Rexx argument [%.256s] as option # [%d]\n", options[m].optionString, m);
 #endif
-
-            m++;                   // increase counter to reflect number of available options
-        }
+        m++;                   // increase counter to reflect number of available options
     }
 
-
 #ifdef DEBUG3
-     if (bCPdefined!=FALSE)
-     {
-         fprintf(stderr, "BsfLoadJava(): CLASSPATH set by a REXX argument.\n");
-     }
-     else
-     {
+    if (bCPdefined!=FALSE)
+    {
+         fprintf(stderr, "BsfLoadJava(): CLASSPATH set by a REXX argument [%s].\n",needle);
+    }
+    else
+    {
          fprintf(stderr, "BsfLoadJava(): CLASSPATH was *NOT* set by a REXX argument.\n");
-     }
+    }
 #endif
 
-     // no java.class.path override in Rexx argument and CLASSPATH envirnoment variable given?
-        if ((bCPdefined==FALSE) && (cp_env!= NULL))
-        {
-            // int bufLen=strlen(cp_env)+needleLength;
-            size_t bufLen=strlen(cp_env)+needleLength;
-            options[m].optionString = (char *) malloc(bufLen+1);   // get needed memory
-            // sprintf(options[m].optionString, "%.256s%.256s", needle, cp_env);
-            SNPRINTF( options[m].optionString, bufLen+1, "%s%s", needle, cp_env);
+    if ((bCPdefined==FALSE) &&      // "java.class.path" not given in Rexx arguments
+        (cp_env!= NULL))            // CLASSPATH environment variable set
+    {
+        // create option for setting "java.class.path" to CLASSPATH
+        size_t bufLen=strlen(cp_env)+needleLength;
+        options[m].optionString = (char *) malloc(bufLen+1);    // get needed memory
+        SNPRINTF( options[m].optionString, bufLen+1, "%s%s", needle, cp_env);
 
-            options[m].extraInfo=NULL;
-            m++;                       // increase counter to reflect number of available options
+        options[m].extraInfo=NULL;
+        m++;                        // increase counter to reflect number of available options
 #ifdef DEBUG3
-     fprintf(stderr, "BsfLoadJava(): using CLASSPATH environment variable for JVM, retrieved and use value:    [%.256s]\n",
-                     options[m-1].optionString);
-#endif
-        }
-
-        vm_args2.options  = options;    // set options-array (containing classpath)
-        vm_args2.nOptions = m;          // indicate how many entries in array
-#ifdef DEBUG3
-    fprintf(stderr, "BsfLoadJava(): # of options for JVM is: [%d]\n\n", (int) vm_args2.nOptions);
+    fprintf(stderr, "BsfLoadJava(): using CLASSPATH environment variable for JVM, retrieved and use value:    [%.256s]\n",
+                 options[m-1].optionString);
 #endif
     }
 
+    vm_args2.options  = options;    // set options-array (containing classpath)
+    vm_args2.nOptions = m;          // indicate how many entries in options array
 
-    // res = rgfCreateJavaVM( &globJvm, (void **) &jniEnv, &vm_args2);
+#ifdef DEBUG3
+    fprintf(stderr, "BsfLoadJava(): # of options for loading JVM is: [%d]\n\n", (int) vm_args2.nOptions);
+#endif
+
 
     // according to Apple we must load the JVM in another thread such that the Java awt-thread is not created on the main thread
     // which would interfere with Apple's event dispatch loop; cf. <http://developer.apple.com/library/mac/#technotes/tn2005/tn2147.html>,
     // which links to <http://developer.apple.com/library/mac/#samplecode/simpleJavaLauncher/Introduction/Intro.html>
 #ifdef __APPLE__
-#ifdef DEBUG
-	fprintf(stderr, "BSFLoadJava(): __APPLE__, about to invoke 'loadJVMinNewThread(...)\n");
+    #ifdef DEBUG
+    	fprintf(stderr, "BSFLoadJava(): __APPLE__, about to invoke 'loadJVMinNewThread(...)\n");
         fprintf(stderr, "               &jniEnv=[%p], &vm_args2=[%p], rgfCreateJavaVM=[%p]\n", &jniEnv, &vm_args2, rgfCreateJavaVM);  fflush(stderr);
-#endif
+    #endif
 
 	// create JVM
     res = loadJVM4AppleMain  ((JNIEnv **) &jniEnv, (JavaVMInitArgs *)  &vm_args2, rgfCreateJavaVM);
 
+    #ifdef DEBUG
+        fprintf(stderr, "BSFLoadJava(): __APPLE__, #3a, before FindClass(), jniEnv=[%p]...\n", jniEnv); fflush(stderr);
 
-#ifdef DEBUG
-    fprintf(stderr, "BSFLoadJava(): __APPLE__, #3a, before FindClass(), jniEnv=[%p]...\n", jniEnv); fflush(stderr);
+    #endif
 
-//    jclass clzTest1=jniEnv->FindClass("java/lang/System");
-//    fprintf(stderr, "BSFLoadJava(): __APPLE__, #4a, after  FindClass(), clzTest1=[%p]...\n", clzTest1); fflush(stderr);
-#endif
-
-/* --- rgf, 2011-03-16: maybe wrong assumption that interferes with the rgf attach logic */
-
+    // --- rgf, 2011-03-16: maybe wrong assumption that interferes with the rgf attach logic
        // on APPLE: adapt, we need to attach to JVM as this is now running in a different thread
     jint resAttach=currentJVM->GetEnv((void **) jniEnv, USE_DEFINED_JNI_VERSION);  // this will indicate that we are not attached as of yet
-#ifdef DEBUG
-	fprintf(stderr, "BSFLoadJava(): __APPLE__, #1, resAttach=[%d], JNI_EDETACHED=[%d]\n", (int) resAttach, JNI_EDETACHED); fflush(stderr);
-#endif
+    #ifdef DEBUG
+    	fprintf(stderr, "BSFLoadJava(): __APPLE__, #1, resAttach=[%d], JNI_EDETACHED=[%d]\n", (int) resAttach, JNI_EDETACHED); fflush(stderr);
+    #endif
 
     if (resAttach==JNI_EDETACHED)   // not attached, attach this thread
     {
          // nope, not yet attached, try to attach
         resAttach=currentJVM->AttachCurrentThread((void **) &jniEnv, (void *) &defaultJavaVMAttachArgs);
-#ifdef DEBUG
-	fprintf(stderr, "BSFLoadJava(): __APPLE__, #2, resAttach=[%d], JNI_OK=[%d]\n", (int) resAttach, JNI_OK); fflush(stderr);
-#endif
+    #ifdef DEBUG
+    	fprintf(stderr, "BSFLoadJava(): __APPLE__, #2, resAttach=[%d], JNI_OK=[%d]\n", (int) resAttach, JNI_OK); fflush(stderr);
+    #endif
         res=resAttach; 	// rgf, use return-code from attachment
     }
 
-
-#ifdef DEBUG
-    fprintf(stderr, "BSFLoadJava(): __APPLE__, #3b, before FindClass(), jniEnv=[%p]...\n", jniEnv); fflush(stderr);
-
-    jclass clzTest=jniEnv->FindClass("java/lang/System");
-    fprintf(stderr, "BSFLoadJava(): __APPLE__, #4b, after  FindClass(), clzTest=[%p]...\n", clzTest); fflush(stderr);
-#endif
-/* --- */
-
+    #ifdef DEBUG
+        fprintf(stderr, "BSFLoadJava(): __APPLE__, #3b, before FindClass(), jniEnv=[%p]...\n", jniEnv); fflush(stderr);
+        jclass clzTest=jniEnv->FindClass("java/lang/System");
+        fprintf(stderr, "BSFLoadJava(): __APPLE__, #4b, after  FindClass(), clzTest=[%p]...\n", clzTest); fflush(stderr);
+    #endif
 
 #else
     res = rgfCreateJavaVM( &currentJVM, (void **) &jniEnv, &vm_args2);
@@ -8379,39 +8318,31 @@ fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
 
 #ifdef DEBUG3
 {
-	fprintf(stderr, "BSFLoadJava() - after JVM created, vm_args2.options=[%p], vm_args2.nOptions=[%d]\n", vm_args2.options, (int) vm_args2.nOptions);
-#ifdef DEBUG3
+	fprintf(stderr, "BSFLoadJava() - after JVM created, vm_args2.options=[%p], vm_args2.nOptions=[%d], dumping:\n", vm_args2.options, (int) vm_args2.nOptions);
 	for (int m=0;m<vm_args2.nOptions;m++)
 	{
     		fprintf(stderr, "\t---> options[%d]=[%.256s] \n", m, vm_args2.options[m].optionString);
 	}
-#endif
-    	fprintf(stderr, "\t--- --- --- \n" );
-	fflush(stderr);
-
+    fprintf(stderr, "\t--- --- --- \n" );fflush(stderr);
 }
 #endif
 
-// rgf, 2011-01-12: free malloc'ated memory for the JVM options
-{
+    // rgf, 2011-01-12: free malloc'ated memory for the JVM options
 #ifdef DEBUG3
-	fprintf(stderr, "BSFLoadJava() - after JVM created, vm_args2.options=[%p], vm_args2.nOptions=[%d], about to free memory...\n", vm_args2.options, (int) vm_args2.nOptions);
+    fprintf(stderr, "BSFLoadJava() - after JVM created, numArgs>0: vm_args2.options=[%p], vm_args2.nOptions=[%d], about to free memory...\n", vm_args2.options, (int) vm_args2.nOptions);
 #endif
-	for (int m=0;m<vm_args2.nOptions;m++)
-	{
+    for (int m=0;m<vm_args2.nOptions;m++)
+    {
 #ifdef DEBUG3
-    		fprintf(stderr, "\tabout to free ---> options[%d]=[%.256s] \n", m, vm_args2.options[m].optionString);  fflush(stderr);
+        fprintf(stderr, "\tabout to free ---> options[%d]=[%.256s] \n", m, vm_args2.options[m].optionString);  fflush(stderr);
 #endif
-                free(vm_args2.options[m].optionString);
-	}
+        free(vm_args2.options[m].optionString);
+    }
+
 #ifdef DEBUG3
-	fprintf(stderr, "\tabout to free vm_args2.options-array \n" ); fflush(stderr);
+    fprintf(stderr, "\tabout to free vm_args2.options=[%p] \n",vm_args2.options ); fflush(stderr);
 #endif
-	free(vm_args2.options);
-}
-
-
-
+    free(vm_args2.options);     // now free option array's memory
 
     bsfInvokedBy=2;    // invoked by Rexx (which loaded Java)
 
@@ -8432,12 +8363,10 @@ fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
      fprintf(stderr, "jniEnv=[%p], JAVA_4_REXX=[%.256s] \n", jniEnv, JAVA_4_REXX );
 #endif
     cls = (*jniEnv).FindClass(JAVA_4_REXX);    // or: cls = jniEnv->FindClass(JAVA_4_REXX);
-    // cls = jniEnv->FindClass(JAVA_4_REXX);    // or: cls = jniEnv->FindClass(JAVA_4_REXX);
 #ifdef DEBUG
      fprintf(stderr, "jniEnv=[%p], JAVA_4_REXX=[%.256s], cls=[%p]\n", jniEnv, JAVA_4_REXX, cls);
 #endif
     if (cls == 0) {
-        // sprintf(msg, "%.16s/routine/BsfLoadJava(), error 5.994: initialization error, cannot find class '%.256s'", DLLNAME, JAVA_4_REXX);
         SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 5.994: initialization error, cannot find class '%.256s'", DLLNAME, JAVA_4_REXX);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         return "-994";
@@ -8455,23 +8384,12 @@ fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
     // rgf, 20090523: get and save interpreter pointer, such that later invocations will be able to find it
     //                (this function gets only invoked, if Rexx had to load Java, hence only a RexxStart() is
     //                executing
-    //-- RexxInstance      *instance=context->threadContext->instance;
-    //-- const char c_rii_ID[ RGF_POINTER_STRING_WIDTH ]="";
-    //-- RgfPointer2String(instance, c_rii_ID);  // create a string
-
-    // RgfAcquireLock2(RII_lock);      // lock access to list of RexxInstance instances
-    // RgfAddRexxInterpreterInstanceToList(context->threadContext, c_rii_ID);
-    // RgfAddRexxInterpreterInstanceToList(context->threadContext);
-        // rgf, 2012-02-07: add NULL for rajo and rexxconf as this call path does not
-        //                  define exit and command handlers for the RII this is safe
+    // rgf, 2012-02-07: add NULL for rajo and rexxconf as this call path does not
+    //                  define exit and command handlers for the RII this is safe
     RgfAddRexxInterpreterInstanceToList(context->threadContext, NULL, NULL);
-    // RgfReleaseLock2(RII_lock);      // lock access to list of RexxInstance instances
 
-//    fprintf(stderr, "BsfLoadJava(): c_rii_ID=[%.256s]...\n", c_rii_ID);
-
-
-    /* call the static method, which in turn will initialize BSF4Rexx by creating
-       a BSFManager and having it load the "Rexx" (support) */
+    // call the static method, which in turn will initialize BSF4Rexx by creating
+    // a BSFManager and having it load the "Rexx" (support)
     jniEnv->CallStaticVoidMethod(cls, mid, NULL);      // invoke static method
 
     if ( jniEnv->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
@@ -8485,14 +8403,12 @@ fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
         if (sz>4000)
         {
             char * tmp=(char *) RexxAllocateMemory(sz+256);
-            // SNPRINTF( tmp, sz+256, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
             SNPRINTF( tmp, sz+256, "%.16s/routine/BsfLoadJava(), error 7.991: running static method 'Java4Rexx.createInterface4Rexx()' caused Java exception: [%s]", DLLNAME, context->StringData(rso));
             rso=context->String(tmp);           // turn into a RexxString
             RexxFreeMemory(tmp);
         }
         else
         {
-            // SNPRINTF( msg, 4096, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
             SNPRINTF( msg, 4096, "%.16s/routine/BsfLoadJava(), error 7.991: running static method 'Java4Rexx.createInterface4Rexx()' caused Java exception: [%s]", DLLNAME, context->StringData(rso));
             rso=context->String(msg);           // turn into a RexxString
         }
@@ -8500,12 +8416,10 @@ fprintf(stderr, "after finding procAddresses; h1=[%p], h2=[%p], leaving...\n",
         context->SetContextVariable(BSF_ERROR_STRING, rso);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
 
-        // rgf, 20091004 RgfNewDetach(); // 2009-06-07
         return "-990";  // return prematurely
     }
 
     init_STRUCT_JVM(jniEnv, defaultJVM, currentJVM);    // 20091003, initialize default structure
-
 
 
 #ifdef DEBUG        // ---rgf, 2003-04-30
