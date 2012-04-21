@@ -36,7 +36,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.1.0, 2012-03-12
+  * @version 4.1.0, 2012-04-17
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -45,6 +45,7 @@ import org.apache.bsf.util.type.*;
                            not assigned to the RexxEngine if that had no RII assigned to it yet
                          - added protected void set_rii_ID(String rii_ID) to allow Java4Rexx to
                            set the reference to the Rexx interpreter instance that invoked it
+                         - tidying up the code a bit (removing comments and TODOs that are not actual anymore)
 
      2012-03-12, ---rgf, - now loading BSF4ooRexx DLL/so after trying to fetch the netrexx.lang.Rexx class,
                            such that native library can access static field "nlR_class" and fetch the class object,
@@ -69,7 +70,7 @@ import org.apache.bsf.util.type.*;
      2012-02-06, ---rgf, - changed visibility of all jni*()-functions from public to protected
                          - changed jniRegisterBSF() to jniSetupNativeJVMPointer() to reflect the current purpose
                          - changed jniRexxCreateInterpreterInstance to accept new options argument
-                         - added private field "rii_ID" and getter "get_rii_ID()", could also be inforred via field "rexxEngine"
+                         - added private field "rii_ID" and getter "get_rii_ID()", could also be inferred via field "rexxEngine"
 
 
 
@@ -440,8 +441,6 @@ necessary anymore
         }
         catch (Exception e)
         {
-// System.err.println("could not load class 'netrexx.lang.Rexx'!\n"+e.toString());
-
             // rgf, 20070918: new class loader strategy, try BSFManager's defined class loader
             try {
                 // nlR_class = BSFManager.class.getClassLoader().loadClass("netrexx.lang.Rexx");
@@ -449,19 +448,13 @@ necessary anymore
                 nlR_class = Class.forName("netrexx.lang.Rexx");
             }
             catch (Exception e0){
-// System.err.println("could not load class 'netrexx.lang.Rexx'!\n"+e.toString());
                 ;
             }
         }
 
-
-// 2012-03-12, rgf: move loading the BSF4ooRexx library *after* loading the NetRexx class
-
-// System.err.println("---RexxAndJava() - static: before loadLibrary---");
+// 2012-03-12, rgf: move loading the BSF4ooRexx library *after* loading the NetRexx class, this
+//                  way it is clear whehter netrexx.lang.Rexx is available for BSF4ooRexx
         System.loadLibrary( DLL_NAME );
-// System.err.println("---RexxAndJava() - static: AFTER loadLibrary---");
-
-
     }
 
 
@@ -787,7 +780,7 @@ necessary anymore
 
 
      //  rgf, 2012-02-08, used for allowing exit and command handlers to interact with their RexxExitContext
-     //                  for raising conditions and querying/setting variables.
+     //                   for raising conditions and querying/setting variables.
      //
 
      protected native void    jniRaiseCondition    (Object[] slot, String conditionName, String description, Object[] additional, Object result);
@@ -2125,34 +2118,26 @@ private static final String STRING_CARRY_OUT_SYSTEM_EXIT          =  "carryOutSy
         {
             final boolean bDebug=    // if true, show debug infos
                   false;
-if (bDebug) System.err.println(this+".javaCallBSF(...)"
-                   +", mgr=["+mgr+"]"
-                   +                 ", args[0]=["+args[0]+"]"
-                   +(args.length>1 ? ", args[1]=["+args[1]+"]" : "")
-                   +(args.length>2 ? ", args[2]=["+args[2]+"]" : "")
-                   +(args.length>3 ? ", args[3]=["+args[3]+"]" : "")
-                   +(args.length>4 ? ", args[4]=["+args[4]+"]" : "")
-                   +(args.length>5 ? ", args[5]=["+args[5]+"]" : "")
-                   +(args.length>6 ? ", args[6]=["+args[6]+"]" : "")
-                   );
+            if (bDebug)
+            {
+                System.err.println(this+".javaCallBSF(...)"
+                                   +", mgr=["+mgr+"]"
+                                   +                 ", args[0]=["+args[0]+"]"
+                                   +(args.length>1 ? ", args[1]=["+args[1]+"]" : "")
+                                   +(args.length>2 ? ", args[2]=["+args[2]+"]" : "")
+                                   +(args.length>3 ? ", args[3]=["+args[3]+"]" : "")
+                                   +(args.length>4 ? ", args[4]=["+args[4]+"]" : "")
+                                   +(args.length>5 ? ", args[5]=["+args[5]+"]" : "")
+                                   +(args.length>6 ? ", args[6]=["+args[6]+"]" : "")
+                                   );
+                System.err.print("\n---> RexxAndJava.javaCallBSF(), args[0]=["+args[0]+"], nr args=["+args.length+"]: ");
+                for (int i=1; i<args.length;i++)
+                {
+                    System.err.print(" "+i+"=["+args[i]+"]");
+                }
+                System.err.println();
+            }
         }
-
-
-
-/*
-System.err.print("\n---> RexxAndJava.javaCallBSF(), args[0]=["+args[0]+"], nr args=["+args.length+"]: ");
-for (int i=1; i<args.length;i++)
-{
-    System.err.print(" "+i+"=["+args[i]+"]");
-}
-System.err.println();
-*/
-
-        // ---rgf, 2008-08-11: test the following, in case JNI-AttachCurrentThread() thread
-        //                     is not able to find classes
-        // Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
-
-
 
        // determine which function to invoke
 
@@ -2223,7 +2208,6 @@ System.err.println();
        else if (args[0].equalsIgnoreCase( STRING_IS_A                           )) choice = IS_INSTANCE               ;  // 20100220, rgf
 //       else if (args[0].equalsIgnoreCase( STRING_IS_INSTANCE                    )) choice = IS_INSTANCE               ;  // 20100220, rgf
 
-
        else if (args[0].equalsIgnoreCase( STRING_CARRY_OUT_SYSTEM_EXIT          )) choice = CARRY_OUT_SYSTEM_EXIT     ;  // 20110223, rgf
 
 
@@ -2270,90 +2254,12 @@ System.err.println();
                       }
                       catch (BSFException e)
                       {
-//                          e.printStackTrace ();
-//                          System.err.println("BSF4ooRexx subfunction "+'"'+args[0]+'"'+": could not add 'eventText', got BSF exception: " + e.getMessage ());
-
                           throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                    // "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": could not add 'eventText', got BSF exception: [" + e.getMessage ()+"]");
                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": could not add 'eventText', got exception: [" + e.toString ()+"]");
                       }
-
-/*
-                      catch (Exception e)   // rgf, 2008-06-28
-                      {
-//                          e.printStackTrace ();
-//                          System.err.println("BSF4ooRexx subfunction "+'"'+args[0]+'"'+": could not add 'eventText', got BSF exception: " + e.getMessage ());
-
-                          throw new BSFException (BSFException.REASON_OTHER_ERROR,
-                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": exception ["+e+
-                                "] occurred.", e);
-                      }
-*/
-
                   }
         // ==================================================================
-
-
-/*
-       case ADD_EVENT_LISTENER_2 :  // ---rgf, 2006-02-24
-               {
-               / * ********************************************************
-                * call BSF 'addEventListenerReturningeEventInfos', beanName, eventSetName, filter, script[, sendBackData]
-                *
-                * - beanName: the bean that fires the event
-                * - eventSetName: the set the event belongs to
-                * - filter: the actual event
-                * - script: the script to be run, if the event fires
-                * - sendBackData: optional data to be sent back for processing
-                ********************************************************* /
-
-                   if(args.length<5 && args.length>6)
-                   {
-                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" invalid # of args; usage: call BSF " +
-                           "'"+args[0]+"', beanName, eventSetName, filter, script[, sendBackData])");
-                   }
-
-                   Object bean = mgr.lookupBean(args[1]);
-
-                   if(bean==null)
-                   {
-                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' not registered");
-                   }
-
-                   args[3] = args[3].equals("") ? null : args[3];
-
-                   Object sendBackData=null;
-                   if (args.length==6)
-                   {
-                       if (args[5].equals(""))
-                       {
-                           sendBackData=null;
-                       }
-                   }
-
-                   try
-                   {
-                       EngineUtils.addEventListenerReturningEventInfos(bean, args[2], args[3],
-                                                    rexxEngine, mgr, EVENT_TEXT,
-                                                    0, 0, args[4],
-                                                    sendBackData
-                                                    );
-                       // return "1";   // return .true
-                       return makeString4Rexx("1");
-                   }
-                   catch (BSFException e)
-                   {
-//                          e.printStackTrace ();
-//                       System.err.println("BSF4ooRexx subfunction "+'"'+args[0]+'"'+": could not add 'eventText', got BSF exception: " + e.getMessage ());
-
-                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                                // "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": could not add 'eventText', got BSF exception: [" + e.getMessage ()+"]");
-                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": could not add 'eventText', got exception: [" + e.toString ()+"]");
-                   }
-               }
-*/
 
 
     // ==================================================================
@@ -2366,13 +2272,6 @@ System.err.println();
             *             if no values are given, then an array object will get created of size 0!
              *********************************************************/
            {
-/*
-System.err.println("CREATE_ARRAY_OBJECT_OF: args.length="+args.length);
-for (int i=0; i<args.length; i++)
-{
-    System.err.println("\targ["+i+"]=["+args[i]+"]");
-}
-*/
                if (args.length<2)
                {
                    throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -2413,8 +2312,8 @@ for (int i=0; i<args.length; i++)
                Class componentType=(Class) o_componentType;
                int   length=args.length-2;  // caclulate number of array elements
                Object arr=Array.newInstance( componentType, length); // create the array object of the desired length
-// TODO: determine number of element, create array object of given type, then assign the values to the array object
 
+               // determine number of element, create array object of given type, then assign the values to the array object
                for (int i=2; i<args.length; i++)    // iterate over arguments, convert and save them ...
                {
                    try
@@ -2576,6 +2475,9 @@ for (int i=0; i<args.length; i++)
             *********************************************************/
 
            {
+               final boolean bDebug=    // if true, show debug infos
+                     false;
+
                if (args[1].charAt(0) != '[')    // not an array object!
                {
                    throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -2639,7 +2541,7 @@ for (int i=0; i<args.length; i++)
                if (choice==ARRAY_PUT_STRICT)
                {
                    o_nv=convFromRexx( args[2], args[3] );     // get the Java object
-// System.err.print("ARRAY_PUT_STRICT:  args[2]=["+args[2]+"], "+"args[3]=["+args[3]+"]: o_nv=["+o_nv+"]");
+if (bDebug) System.err.print("ARRAY_PUT_STRICT:  args[2]=["+args[2]+"], "+"args[3]=["+args[3]+"]: o_nv=["+o_nv+"]");
                    firstIdx=4;          // first argument with index-information for arrayPut()
                }
                else if (choice==ARRAY_PUT)      // convert Rexx argument to be stored in array to the appropriate type
@@ -2648,7 +2550,7 @@ for (int i=0; i<args.length; i++)
                    Class cl=arrayObj.getClass(),
                          ct=aw.componentType;
 
-// System.err.print("ARRAY_PUT: cl=["+cl+"] isPrimitive: ["+cl.isPrimitive()+"] "+"aw.componentType=["+ct+"] isPrimitive(): "+ct.isPrimitive()+", args[2]=["+args[2]+"] --> o_nv=["+o_nv+"]");
+if (bDebug)  System.err.print("ARRAY_PUT: cl=["+cl+"] isPrimitive: ["+cl.isPrimitive()+"] "+"aw.componentType=["+ct+"] isPrimitive(): "+ct.isPrimitive()+", args[2]=["+args[2]+"] --> o_nv=["+o_nv+"]");
 
                    if (o_nv!=null && ct.isPrimitive() )      // if not null, determine component type of array
                    {
@@ -2715,7 +2617,7 @@ for (int i=0; i<args.length; i++)
 
                if (choice==ARRAY_AT)
                {
-// System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+"]...");
+if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+"]...");
                    return makeString4Rexx(aw.get(indices)); // get the element and return it to Rexx
                }
                else
@@ -2920,8 +2822,8 @@ if (iDebugLevel>0)
                              if (choice==GET_FIELD_VALUE || choice==SET_FIELD_VALUE)
                              {
 //????
-if (iDebugLevel>1)
-System.err.println("---> searching for fieldName (not case sensitively...)");
+if (iDebugLevel>1) System.err.println("---> searching for fieldName (not case sensitively...)");
+
                                  Object tmpBean = mgr.lookupBean(args[1]);
                                  if(tmpBean==null)
                                  {
@@ -2933,6 +2835,7 @@ System.err.println("---> searching for fieldName (not case sensitively...)");
                                      }
 
                                      tmpBean=args[1]; // 2003-06-11, ---rgf: not in BSF-registry, assuming a String object method
+
 if (bDebug) { System.err.println("get|set field|property(): bean not in registry, assuming a String object operation is desired for ["+bean+"]"); }
                                  }
 
@@ -2951,8 +2854,9 @@ if (bDebug) { System.err.println("get|set field|property(): bean not in registry
                                      if(fieldName.equalsIgnoreCase(f[i].getName()))
                                      {
                                          fieldName=f[i].getName();   // remember method name
-if (iDebugLevel>1)
-System.err.println("---> fieldName=[" + fieldName + "]");
+
+if (iDebugLevel>1) System.err.println("---> fieldName=[" + fieldName + "]");
+
                                          args[2]=fieldName;         // rgf, 2005-05-06: make sure right case is now used for fieldName
                                          i=f.length;               // leave for-loop
                                      }
@@ -2992,20 +2896,8 @@ if (bDebug) System.err.println("Trying 'SET"+args[2]+"' ? : " + ! (args[2].toUpp
                                                  "SET"+args[2],  // methName ==> fieldName ?
                                                  args[3]         // argument
                                                  } ;
-                                             // return javaCallBSF( tmpArg );    // if it works, already prepared for Rexx
-                                             // return makeString4Rexx(javaCallBSF( tmpArg ));
-
-
-/*
-                                             String tmpStr=javaCallBSF( tmpArg );
-System.err.println("--> #1 Subfunction 'SET' for ["+args[2]+"], tmpStr=["+tmpStr+"]");
-                                             return tmpStr;
-*/
                                              return javaCallBSF( tmpArg ); // rgf, 2008-06-23
-
-
                                          }
-
                                      }
                                      else // choice==GET_FIELD_VALUE
                                      {
@@ -3018,17 +2910,7 @@ if (bDebug) System.err.println("Trying 'GET"+args[2]+"' ? : " + ! (args[2].toUpp
                                                  args[1],        // beanName
                                                  "GET"+args[2]   // methName ==> fieldName ?
                                                  } ;
-                                             // return javaCallBSF( tmpArg );    // if it works, already prepared for Rexx
-                                             // return makeString4Rexx(javaCallBSF( tmpArg ));
-/*
-                                                 String tmpStr=javaCallBSF( tmpArg );
-    System.err.println("--> #2 Subfunction 'GET' for ["+args[2]+"], tmpStr=["+tmpStr+"]");
-                                                 return tmpStr;
-*/
-
                                              return javaCallBSF( tmpArg ); // rgf, 2008-06-23
-
-
                                          }
                                      }
 
@@ -3065,8 +2947,7 @@ if (bDebug) System.err.println("Trying 'GET"+args[2]+"' ? : " + ! (args[2].toUpp
                                  {
                                      Object tmpValue=convFromRexx(args[3]);    // relaxed version, need to determine type
 
-if (bDebug) System.err.println("--> --> about to set field's value: bean.type=["+bean.type+"]"+
-                                        ", tmpValue=["+tmpValue+"]");
+if (bDebug) System.err.println("--> --> about to set field's value: bean.type=["+bean.type+"]"+", tmpValue=["+tmpValue+"]");
 // rgf, 2010-04-17
                                      if (tmpValue != null && tmpValue instanceof String && (bean.type).isPrimitive())
                                      {
@@ -3091,12 +2972,14 @@ if (bDebug) System.err.println("--> --> TYPE-CONVERTOR (String.class!?!): now tm
                                     // strict (type explicitly stated):
                                  else bean.value=convFromRexx(args[3], args[4]);
 
-if (bDebug) System.err.println("--> ==> now setting the value: bean.type=["+bean.type+"], bean.value=["+bean.value+"]");
-if (bDebug) System.err.println("--> ==> now setting the value: bean.type.getClass=["+bean.type.getClass()+"], bean.value.getClass()=["+bean.value.getClass()+"]");
-if (bDebug) System.err.println("--> ==> now setting the value: o=["+o+"], args[2]="+args[2]+", bean=["+bean+"], glob_tcr=["+glob_tcr+"]");
+if (bDebug)
+{
+    System.err.println("--> ==> now setting the value: bean.type=["+bean.type+"], bean.value=["+bean.value+"]");
+    System.err.println("--> ==> now setting the value: bean.type.getClass=["+bean.type.getClass()+"], bean.value.getClass()=["+bean.value.getClass()+"]");
+    System.err.println("--> ==> now setting the value: o=["+o+"], args[2]="+args[2]+", bean=["+bean+"], glob_tcr=["+glob_tcr+"]");
+}
+
                                  ReflectionUtils.setField(o, args[2], bean, glob_tcr);
-
-
                              }
                              else
                              {
@@ -3141,11 +3024,6 @@ if (bDebug) System.err.println("--> ==> now setting the value: o=["+o+"], args[2
                      }
                      catch (Exception e)
                      {
-
-// System.err.println("<--------------------------------------------> begin2");
-// System.err.println("<<<< baos.toString(): [" + getPrintStackAsString(e) + "] >>>>");
-// System.err.println("<--------------------------------------------> end2");
-
                         throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": exception while accessing "
                                   +( (choice==GET_FIELD_VALUE        || choice==SET_FIELD_VALUE ||
@@ -3238,10 +3116,6 @@ if (bDebug) System.err.println("--> ==> now setting the value: o=["+o+"], args[2
                       }
                         // rgf, 2005-05-06 end
 
-// System.err.println("GET_STATIC_VALUE: ["+cl+"]");
-
-                      // cl=EngineUtils.loadClass(mgr, args[1]); // ---rgf, 2003-05-10
-
                           // rgf, 2005-05-06
                       if (choice==GET_STATIC_VALUE) // try to get field from case-INsensitive name
                       {
@@ -3293,7 +3167,6 @@ if (bDebug) System.err.println("--> ==> now setting the value: o=["+o+"], args[2
                   bStrongTyping=true;       // indicate that type information is passed in by Rexx
                   {
                       boolean bDebug=false;      // if true, show debug infos
-// bDebug=true;
 
                   /* ********************************************************
                    * value = BSF( 'invokeStrict', [beanName], function [, argType, arg]... )
@@ -3342,15 +3215,7 @@ if (bDebug) { System.err.println("invoke_strict(): bean not found, assuming a St
 
 
                       // find correct method name
-/*
-                      Class c = bean.getClass();    // class object for reflection
-                      if (c == Class.class)         // if already a class object, use all of its methods
-                      {
-                          c=(Class) bean;
-                      }
-*/
 
-                      // Class c = (bean instanceof Class ? (Class) bean : bean.getClass());
                       Class c = null;
                         // rgf, 2009-07-13, if a class object in hand, then in the first round look for
                         //                  static methods only
@@ -3360,9 +3225,7 @@ if (bDebug) { System.err.println("invoke_strict(): bean not found, assuming a St
                       boolean bFound=false;
 
                       int k=0;
-// TODO: rgf, 2010-04-20: implement same logic as in INVOKE; i.e. resolve the entire class tree
-//                        even for class object
-//
+                      // rgf, 2010-04-20: implement same logic as in INVOKE; i.e. resolve the entire class tree even for class object
                       for (k=0; k<2; k++)   // iterate twice at the most (2nd time using bean's class object)
                       {
                                 // determine correct case of method name
@@ -3374,7 +3237,7 @@ if (bDebug) { System.err.println("invoke_strict(): bean not found, assuming a St
                                   if (!Modifier.isStatic(m[i].getModifiers()))
                                       continue;
                               }
-                              // if(args[2].equalsIgnoreCase(m[i].getName()))
+
                               // rgf, 2005-05-06: do an exact match
                               if(args[2].equals(m[i].getName()))
                               {
@@ -3393,7 +3256,6 @@ if (bDebug) { System.err.println("invoke_strict(): bean not found, assuming a St
                                       // FOUND !
                                       bFound=true;   // don't look any further
 
-    //                                          coercedArgs=null;     // rgf, 2006-02-05
     if (bDebug) System.err.println("---> NO ARGS! Hence, FOUND !                                   ");
                                   }
                                   else
@@ -3443,50 +3305,34 @@ if (bDebug) System.err.println("                   result=["+result+"]");
                                           }
                                           catch (Exception e)
                                           {
-
 if (bDebug)
 {
-    // System.err.println("XYZ-XYZ-XYZ: System.getMethod('currentTimeMillis', null)=["+((Class) java.lang.System.class).getMethod("currentTimeMillis", null)+"]");
-
     System.err.println("                   BRRR, e.getMessage()=["+e.getMessage()+"].");
     System.err.println("                   BRRR, e.getCause()=["+e.getCause()+"], e.getCause().getMessage()=["+e.getCause().getMessage()+"]");
     System.err.println("                   BRRR, e.getClass().getName()=["+e.getClass().getName()+"]");
-
     e.printStackTrace();
     System.err.println("--- --- --- --- ---");
 }
-/* ---rgf, 2008-06-08: Exception.toString() does all that needs to be done already! ;)
-                                              String eMsg=e.getMessage();         // no message
-                                              if (eMsg==null)
-                                              {
-                                                  eMsg=e.getCause().toString();   // at least show cause
-                                              }
-
-                                              // System.err.println("/// Java-exception (RexxAndJava) occurred:\n["+eMsg+"]\n\\\\\\");
-*/
-
-
 
                                               Throwable originalCause=null;
                                               for (Throwable t=e; t!=null; t=t.getCause())
                                               {
-// System.err.println("        --> RexxAndJava.java(): looping # 1, t=["+t+"] ...");
+if (bDebug) System.err.println("        --> RexxAndJava.java(): looping # 1, t=["+t+"] ...");
                                                   if (t instanceof BSFException)      // BSFException found, throw it now
                                                   {
-// System.err.println("    ==> ==> RexxAndJava.java(): BINGO, throwing t=["+t+"].");
+if (bDebug) System.err.println("    ==> ==> RexxAndJava.java(): BINGO, throwing t=["+t+"].");
                                                       originalCause=t;
                                                   }
                                               }
-// System.err.println("    ==> ==> RexxAndJava.java(): NO BSFexception FOUND, proceeding as normal...");
+if (bDebug) System.err.println("    ==> ==> RexxAndJava.java(): NO BSFexception FOUND, proceeding as normal...");
                                               if (originalCause!=null)
                                               {
-// System.err.println("    ==> ==> RexxAndJava.java(): BINGO, throwing originalCause=["+originalCause+"].");
-// originalCause.printStackTrace();
+if (bDebug) System.err.println("    ==> ==> RexxAndJava.java(): BINGO, throwing originalCause=["+originalCause+"].");
                                                   throw (BSFException) originalCause;
                                               }
 
 
-// System.err.println("==> ==> ==> RexxAndJava(), throwing # 1...");
+if (bDebug) System.err.println("==> ==> ==> RexxAndJava(), throwing # 1...");
                                               throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
                                                           // "/// Java-exception (RexxAndJava) occurred: ["+eMsg+"] \\\\\\\n" +
                                                                       "/// Java-exception (RexxAndJava) occurred: ["+e.toString()+"]" +
@@ -3496,9 +3342,6 @@ if (bDebug)
                                                           );
                                           }
                                   }
-
-                                  // args[2]=m[i].getName();   // remember method name
-                                  // i=m.length;               // leave for-loop
                               }
                           }
 
@@ -3515,81 +3358,35 @@ if (bDebug)
 
                       }
 
-
-
-/* ---  ---  --->
-                            // determine correct case of method name
-                      Method[] m = c.getMethods();
-                      for (int i=0; i<m.length; i++)
+                        // one error could be: using a value which is a key into the BSF registry, hence give
                       {
-                          // if(args[2].equalsIgnoreCase(m[i].getName()))
-                          // rgf, 2005-05-06: do an exact match
-                          if(args[2].equals(m[i].getName()))
+                          StringBuffer dump=new StringBuffer();       // programmer as much information as possible to find out about this
+                          int i=0, j=0;
+                          for(i=3, j=0; i<args.length; i+=2, j++)
                           {
-                              args[2]=m[i].getName();   // remember method name
-                              i=m.length;               // leave for-loop
+                              dump.append("\n\t\targ # "+(j+1)+": typeIndicator=["+args[i]+"]"+
+                                        ", supplied argument=["+truncString(args[i+1],25)+
+    //                                    "] --> ["+ (funcArgs[j]) +"]");
+                                        "] --> value=["+ (truncString(""+funcArgs[j], 45)) +"]"
+                                        +" type=<"+(funcArgs[j]==null? "nulltype>" :
+                                                                       funcArgs[j].getClass().getName())+">"
+                                        );
                           }
-                      }
-
-                            // call the function/method
-                      Object result;
-
-
-                      try
-                      {
-                          result = EngineUtils.callBeanMethod(bean, args[2], funcArgs);
-                          if (result!=null)
+                          if (j>0)
                           {
-                             return makeString4Rexx(result);
+                              dump.append("\n");
                           }
-                      }
-                      catch (Exception e) {    // no method found?
-//                          e.printStackTrace ();
-                          System.err.println("/// Java-exception (RexxAndJava) occurred:\n["+e.getMessage()+"]\n\\\\\\");
-//                          System.err.println("BSF4ooRexx subfunction "+'"'+args[0]+'"'+": got exception [" + e.getMessage ()+"].");
 
-                             throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
-                                      "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"], method not found or error (exception) executing method!" );
+                          throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                   "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": "+
+                                   "\n\tbean:   ["+bean+"]"+
+                                   " type: ["+bean.getClass().toString()+"]"+  // rgf, 2009-04-13
+                                   "\n\tmethod: ["+args[2]+"] not found!" +
+                                   (dump.length()==0 ? ""
+                                                     : "\n\n\tcheck method name or arguments (number and types):\n"+dump)
+                                   );
                       }
-<---  ---  --- */
-
-                    // one error could be: using a value which is a key into the BSF registry, hence give
-                  {
-                      StringBuffer dump=new StringBuffer();       // programmer as much information as possible to find out about this
-                      int i=0, j=0;
-                      for(i=3, j=0; i<args.length; i+=2, j++)
-                      {
-                          dump.append("\n\t\targ # "+(j+1)+": typeIndicator=["+args[i]+"]"+
-                                    ", supplied argument=["+truncString(args[i+1],25)+
-//                                    "] --> ["+ (funcArgs[j]) +"]");
-                                    "] --> value=["+ (truncString(""+funcArgs[j], 45)) +"]"
-                                    +" type=<"+(funcArgs[j]==null? "nulltype>" :
-                                                                   funcArgs[j].getClass().getName())+">"
-                                    );
-                      }
-                      if (j>0)
-                      {
-                          dump.append("\n");
-                      }
-
-                      throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                               "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": "+
-                               "\n\tbean:   ["+bean+"]"+
-                               " type: ["+bean.getClass().toString()+"]"+  // rgf, 2009-04-13
-                               "\n\tmethod: ["+args[2]+"] not found!" +
-                               (dump.length()==0 ? ""
-                                                 : "\n\n\tcheck method name or arguments (number and types):\n"+dump)
-                               );
                   }
-
-
-/*
-                  throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
-                           "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"]: method not found (check arguments and types) or error (exception) executing method!" );
-*/
-                  }
-// unreachable:             break;
-
 
         // ==================================================================
 
@@ -3609,8 +3406,11 @@ if (bDebug)
                                       false;
                                       // true;
 
-if (bDebug) System.err.println("\n==> INVOKE <===");
-if (bDebug) System.err.println("invoke: beanName=["+args[1]+"], function: ["+args[2]+"] args.length="+args.length);
+if (bDebug)
+{
+    System.err.println("\n==> INVOKE <===");
+    System.err.println("invoke: beanName=["+args[1]+"], function: ["+args[2]+"] args.length="+args.length);
+}
 
                       int nrArgs=args.length-3; // contains nr of arguments for method
                       // Object coercedArgs[]=new Object[nrArgs];   // this array will contain the arguments co-erced to the appropriate typ
@@ -3639,7 +3439,6 @@ if (bDebug) { System.err.println("invoke(): bean not found, assuming a String ob
                       }
 if (bDebug) System.err.println("bean: ["+bean+"], bean.getClass()=["+bean.getClass()+"]");
                       //convert function-arguments to the correct type
-                      // Object funcArgs[] = new Object[(args.length-3)/2];
                       Object funcArgs[] = new Object[(args.length-3)];
                       if (nrArgs>0)
                       {
@@ -3661,34 +3460,17 @@ if (bDebug) System.err.println("bean: ["+bean+"], bean.getClass()=["+bean.getCla
                       boolean lookForStaticMethodsOnly= (bean instanceof Class);
                       c = (lookForStaticMethodsOnly ? (Class) bean : bean.getClass() );
 
-if (bDebug) System.err.println("\tnrArgs=["+nrArgs+"], lookForStaticMethodsOnly=["+lookForStaticMethodsOnly+"], c=["+c+"]");
+if (bDebug)
+{
+    System.err.println("\tnrArgs=["+nrArgs+"], lookForStaticMethodsOnly=["+lookForStaticMethodsOnly+"], c=["+c+"]");
+    System.err.println("\tStarting class to look for method: ["+c+"]");
+}
 
-                      // rgf, 2009-07-13, test: if class object used to invoke static method the following
-                      //                        does not work
-                      // Class c = bean.getClass();
-
-/*
-                      Class c = bean.getClass();    // class object for reflection
-                      if (c == Class.class)         // if already a class object, use all of its methods
-                      {
-                          c=(Class) bean;
-                          // isClassObject=true;
-if (bDebug) System.err.println("\tbean=["+bean+"] is a class object already, using it to look for methods.");
-if (bDebug) System.err.println("\t\t        bean instanceof Class?  ["+(bean instanceof Class)+"]");
-// if (bDebug) System.err.println("\t\tnew Object() instanceof Object? ["+(new Object() instanceof Object)+"]");
-// if (bDebug) System.err.println("\t\tnew Object() instanceof Class?  ["+(new Object() instanceof Class)+"]");
-                      }
-*/
-
-if (bDebug) System.err.println("\tStarting class to look for method: ["+c+"]");
                         // now find a method with the needed amount of arguments
                         // start out with present class and work up to root class
-
                       {
                           String methNameArg=args[2],   // name as passed in (all in upper case)
                                  methName="";           // name in correct casing
-                          // Object coercedArgs[]=new Object[nrArgs];   // this array will contain the arguments co-erced to the appropriate typ
-
 
                           boolean bLooking=true,
                                   bStopLooking=true;
@@ -3697,8 +3479,11 @@ if (bDebug) System.err.println("\tStarting class to look for method: ["+c+"]");
                                   tmpSuperClass;
                           while ( bLooking )
                           {
-if (bDebug) System.err.println("\n--> bLooking am Kopf: methNameArg=["+methNameArg+"]");
-if (bDebug) System.err.println("\t\t===> tmpClass: ["+tmpClass+"], lookForStaticMethodsOnly=["+lookForStaticMethodsOnly+"] ...");
+if (bDebug)
+{
+    System.err.println("\n--> bLooking am Kopf: methNameArg=["+methNameArg+"]");
+    System.err.println("\t\t===> tmpClass: ["+tmpClass+"], lookForStaticMethodsOnly=["+lookForStaticMethodsOnly+"] ...");
+}
                               Method[] m=tmpClass.getDeclaredMethods();
 
                               int i;
@@ -3707,6 +3492,7 @@ if (bDebug) System.err.println("\t\t===> tmpClass: ["+tmpClass+"], lookForStatic
                                   if (lookForStaticMethodsOnly)    // if a static object, look for static methods only!
                                   {
 if (bDebug) System.err.println("\t\t\t method to analyze: ["+m[i].getName()+"] isStatic? "+Modifier.isStatic(m[i].getModifiers()));
+
                                       if (!Modifier.isStatic(m[i].getModifiers()))
                                           continue;
                                   }
@@ -3718,6 +3504,7 @@ if (bDebug) System.err.println("\t\t\t\t method to analyze: ["+m[i]+"] ...");
                                   {
                                       Class paramTypes[]=m[i].getParameterTypes();
 if (bDebug) System.err.println("\t\t\tmethName=["+methName+"] paramTypes.length="+paramTypes.length+" | nrArgs="+nrArgs);
+
                                       if (paramTypes.length != nrArgs)  // wrong nr of arguments
                                           continue;
 
@@ -3731,8 +3518,7 @@ if (bDebug) System.err.println("\t\t\tmethName=["+methName+"] paramTypes.length=
                                           // FOUND !
                                           bLooking=false;       // don't look any further
 
-//                                          coercedArgs=null;     // rgf, 2006-02-05
-if (bDebug) System.err.println("---> NO ARGS! Hence, FOUND !                                   ");
+if (bDebug) System.err.println("---> NO ARGS! Hence, FOUND !");
                                       }
                                       else
                                       {
@@ -3800,57 +3586,30 @@ if (bDebug) // ---rgf, 2006-07-29
 
 if (bDebug)
 {
-    // System.err.println("XYZ-XYZ-XYZ: System.getMethod('currentTimeMillis', null)=["+((Class) java.lang.System.class).getMethod("currentTimeMillis", null)+"]");
-
     System.err.println("                   BRRR, e.toString()=["+e.toString()+"].");
     System.err.print  ("                   BRRR, e.printStackTrace()=\n["); e.printStackTrace();System.err.println("].");
     System.err.println("                   BRRR, e.getMessage()=["+e.getMessage()+"].");
-    // System.err.println("                   BRRR, e.getCause()=["+e.getCause()+"], e.getCause().getMessage()=["+e.getCause().getMessage()+"]");
     System.err.println("                   BRRR, e.getClass().getName()=["+e.getClass().getName()+"]");
 
     e.printStackTrace();
     System.err.println("--- --- --- --- ---");
 }
-/* ---rgf, 2008-06-08: Exception.toString() does all that needs to be done already! ;)
-                                              String eMsg=e.getMessage();         // no message
-                                              if (eMsg==null)
-                                              {
-                                                  eMsg=e.getCause().toString();   // at least show cause
-                                              }
 
-                                              // System.err.println("/// Java-exception (RexxAndJava) occurred:\n["+eMsg+"]\n\\\\\\");
-*/
-
-
-// to also add at INVOKE_STRICT method execution, and probably also at constructors
-// System.err.println("==> ==> ==> RexxAndJava.java() e=["+e+"]:\n");
                                                   // search a BSFException, if found, throw that instead
                                               Throwable originalCause=null;
                                               for (Throwable t=e; t!=null; t=t.getCause())
                                               {
-// System.err.println("        --> RexxAndJava.java(): looping # 2, t=["+t+"] ...");
                                                   if (t instanceof BSFException)      // BSFException found, throw it now
                                                   {
-// System.err.println("    ==> ==> RexxAndJava.java(): BINGO, throwing t=["+t+"].");
                                                       originalCause=t;
                                                   }
                                               }
-// System.err.println("    ==> ==> RexxAndJava.java(): NO BSFexception FOUND, proceeding as normal...");
                                               if (originalCause!=null)
                                               {
-// System.err.println("    ==> ==> RexxAndJava.java(): BINGO, throwing originalCause=["+originalCause+"].");
-// originalCause.printStackTrace();
                                                   throw (BSFException) originalCause;
                                               }
 
-
-// System.err.println("==> ==> ==> RexxAndJava(), throwing # 2...");
-// e.printStackTrace();
-
                                               throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
-                                                          // "/// Java-exception (RexxAndJava) occurred: ["+eMsg+"] \\\\\\\n" +
-                                                                      // "/// Java-exception (RexxAndJava) occurred: ["+e.toString()+"] \\\\\\\n" +
-// "\n\t[a-\u00e4-o-\u00f6-u-\u00fc-A-\u00c4-O-\u00d6-U-\u00dc-sz-\u00df]\t\n"+
                                                                       "/// Java-exception (RexxAndJava) occurred: ["+e.toString()+"]" +
                                                                       getCauseAsString(", getCause(): ", e)+" \\\\\\\n" +
                                                           "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"], method not found or error (exception) executing method!"
@@ -3858,7 +3617,6 @@ if (bDebug)
                                                           );
                                           }
                                       }
-
                                   }
                               }
 
@@ -3868,12 +3626,8 @@ if (bDebug)
 // ---> rgf, 2010-04-20
                               if (lookForStaticMethodsOnly)
                               {
-                                  // lookForStaticMethodsOnly = (tmpSuperClass==Object.class || tmpSuperClass==Class.class );
                                   lookForStaticMethodsOnly = (tmpSuperClass!=Object.class );
                               }
-
-//                              lookForStaticMethodsOnly=false;   // from now on look for all kind of methods
-
 // <---
 
 if (bDebug) System.err.println("\t\ttmpClass=["+tmpClass+"] tmpSuperClass: ["+tmpSuperClass+"] bLooking=["+bLooking+"] args.length=["+args.length+"]...");
@@ -3897,13 +3651,6 @@ if (bDebug) System.err.println("---> bStopLooking==true!!");
                                                   args[2]         // methName ==> fieldName ?
                                                   } ;
 if (bDebug) System.err.println("'invoke': trying '"+STRING_GET_FIELD_VALUE+"'...");
-                                              // return javaCallBSF( tmpArg );    // if it works, already prepared for Rexx
-                                              // return makeString4Rexx(javaCallBSF( tmpArg ));
-/*
-                                                 String tmpStr=javaCallBSF( tmpArg );
-    System.err.println("--> #3 Subfunction 'STRING_GET_FIELD_VALUE' for ["+args[2]+"], tmpStr=["+tmpStr+"]");
-                                                 return tmpStr;
-*/
 
                                               return javaCallBSF( tmpArg ); // rgf, 2008-06-23
                                           }
@@ -3953,8 +3700,6 @@ if (bDebug) System.err.println("\t --> --> 'invoke': trying to look for a method
 if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThread().getName()+"], BSFManager=["+mgr+"]\n");
 
                                   throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-
-// "\n\t[a-\u00e4-o-\u00f6-u-\u00fc-A-\u00c4-O-\u00d6-U-\u00dc-sz-\u00df]\t\n"+
                                            "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": "+
                                            "\n\tbean:   ["+bean+"]"+
                                            " type: ["+bean.getClass().toString()+"]"+  // rgf, 2009-04-13
@@ -3964,41 +3709,11 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
 
                                            );
                               }
-                              // tmpClass=tmpClass.getSuperclass();    // check for method in superclass
                               tmpClass=tmpSuperClass;   // try the new superclass
 
                           }
-//                          args[2]=methName;// assign correct cased method name
                       }
 
-/*
-                            // call the function/method
-                      Object result;
-                      try
-                      {
-if (bDebug)
-{
-   System.err.println("\t --> --> 'invoke': trying to invoke method, bean=["+bean+"], args[2]=["+args[2]+"]");
-   System.err.println("\t                   trying java.lang.Integer.class.getName()=["+java.lang.Integer.class.getName()+"]");
-   // System.err.println("\t                   trying java.lang.Integer.getName()      =["+java.lang.Integer.getName()+"]");
-}
-
-// result = EngineUtils.callBeanMethod( (useClassObject ? bean.getClass() : bean) , args[2], coercedArgs);
-                          result = EngineUtils.callBeanMethod(bean, args[2], coercedArgs);
-                          if (result!=null)
-                          {
-                             return makeString4Rexx(result);
-                          }
-                      }
-                      catch (Exception e) {    // no method found?
-if (bDebug) e.printStackTrace ();
-                          System.err.println("/// Java-exception (RexxAndJava) occurred:\n["+e.getMessage()+"]\n\\\\\\");
-//                          System.err.println("BSF4ooRexx subfunction "+'"'+args[0]+'"'+": got exception [" + e.getMessage ()+"].");
-
-                             throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
-                                      "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"], method not found or error (exception) executing method!" );
-                      }
-*/
                         // one error could be: using a value which is a key into the BSF registry, hence give
                       String dump="";       // programmer as much information as possible to find out about this
                       for (int i=0; i<funcArgs.length; i++)
@@ -4007,7 +3722,6 @@ if (bDebug) e.printStackTrace ();
                                     "] --> ["+funcArgs[i]+"]";
                       }
                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-// "\n\t[a-\u00e4-o-\u00f6-u-\u00fc-A-\u00c4-O-\u00d6-U-\u00dc-sz-\u00df]\t\n"+
                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": "+
                                "\n\tbean:   ["+bean+"]"+
                                " type: ["+bean.getClass().toString()+"]"+  // rgf, 2009-04-13
@@ -4016,9 +3730,6 @@ if (bDebug) e.printStackTrace ();
                                                  : "\n\n\tcheck method name or arguments (number and types):\n"+dump)
                                );
                   }
-// unreachable:             break;
-
-
 
         // ==================================================================
 
@@ -4352,15 +4063,6 @@ if (bDebug) e.printStackTrace ();
                    * - arg: the argument's value
                    *********************************************************/
 
-// TODO: rgf, 2010-04-18: if using newStrict on an extendedClass the logic herein needs to
-//                        be changed according to "REGISTER_BEAN";
-//       rgf, 2010-05-19: no, newStrict is a very restricted version which does not take into
-
-// TODO: char/Character - deal with the special case that an empty string is supplied, probably
-//                        because programmer supplied 0x00 on the Rexx side which gets transformed
-//                        to an empty string in JNI's NewStringUTF()
-
-
                       if((args.length<3) || ((args.length-3)%2!=0))
                       {
                           throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -4393,34 +4095,11 @@ if (bDebug) e.printStackTrace ();
                              beanName=makeBeanName(bean);
                           }
 
-/*
-                          // take care of ref-counters
-                          int refCount    = 1;                            // ref-Counter
-                          Integer i1 = (Integer) orxReferences.get( beanName );// is object already registered?
-                          if (i1 != null)                                 // increase its reference counter
-                          {
-                             refCount = i1.intValue()+1;
-                          }
-                          orxReferences.put(beanName, new Integer(refCount));
-
-                          // new object is always put into the Hashtable (replaces an existing value)
-// if (beanName instanceof String && bean instanceof String && beanName.equals((String)bean))
-// {
-//    System.err.println("===> ===> /// beanName==bean !! \\\\\\: ["+beanName+"]==["+bean+"] <=== <===");
-// }
-                          mgr.registerBean(beanName, bean);
-
-
-                          // return beanName;        // return beanName for the caller
-                          return makeString4Rexx(beanName);
-<--- 20080909, rgf */
                           return registerBean(beanName, bean);   // will use <O> indicator
 
                       }
                       catch (BSFException e)
                       {
-//                          e.printStackTrace ();
-
                           throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": could not create a bean from instantiating '"+
                                    args[2]+"', exception thrown: ["+e.toString()+"]"
@@ -4440,6 +4119,10 @@ if (bDebug) e.printStackTrace ();
                    * - beanType: the bean's type
                    * - arg: the argument's value
                    *********************************************************/
+
+                      final boolean bDebug=    // if true, show debug infos
+                            false;
+
                       if (args.length<3)
                       {
                           throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -4450,7 +4133,7 @@ if (bDebug) e.printStackTrace ();
                       // Class cl=EngineUtils.loadClass(mgr, args[2]);
 
                       // 2010-04-18, rgf
-// System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr.lookupBean(args[2])+"], cFR=["+convFromRexx(args[2])+"]");
+if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr.lookupBean(args[2])+"], cFR=["+convFromRexx(args[2])+"]");
 
                       Class cl=null;
 
@@ -4491,63 +4174,6 @@ if (bDebug) e.printStackTrace ();
                               // "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": class ["+args[2]+"], threw exception: ["+e.getLocalizedMessage()+"]");
                           }
                       }
-
-
-// char/Character - deal with the special case that an empty string is supplied, probably
-//                  because programmer supplied 0x00 on the Rexx side which gets transformed
-//                  to an empty string in JNI's NewStringUTF()
-
-/* ---> no special handling needed anymore (since 20100522, rgf)
-                        // handle Character.class as special case: on the Rexx side a 0x00 char would
-                        // be
-                      if (cl==Character.class)
-                      {
-                          if (args.length!=4)   // we expect exactly four arguments
-                          {
-                              throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": creation of a 'java.lang.Character' mandates a single character value argument!\n");
-                          }
-
-                          String arg3string = ( convFromRexx(args[3])==null? null : args[3]);
-
-                          Character res=null;
-
-// System.out.println("*** REGISTER_BEAN, Character.class: arg3String=["+arg3string+"]");
-                          if (arg3string==null || arg3string.length()==0)  // 0x00 from the Rexx side or empty string: deal with as 0x00
-                          {
-                              res=new Character((char)0);       // create 0x00 char
-                          }
-                          else
-                          {
-                              res=new Character(arg3string.charAt(0));
-
-// System.out.println("*** REGISTER_BEAN, Character.class: created Character from arg3string !! res=["+res+"]");
-                          }
-
-                          String beanName = ( convFromRexx(args[1])==null? null : args[1]);
-                          if (beanName==null || beanName.equals(""))
-                          {  // need to create a unique beanName
-                             beanName=makeBeanName(res);
-                          }
-
-// System.out.println("*** REGISTER_BEAN: new Character: res=["+res+"], Integer.toHexString()=["+Integer.toHexString(res.charValue())+"]");
-                          return registerBean(beanName, res);   // will use <O> indicator
-                      }
-<--- */
-
-/*
-if (cl==Character.class)
-{
-    int i1=0;
-    for (i1=0;i1<args.length;i1++)
-    {
-        System.out.println("*** REGISTER_BEAN: args["+i1+"]=["+args[i1]+"]");
-
-    }
-    i1=args.length;
-    System.out.println("*** REGISTER_BEAN: instantiating "+cl+", args["+i1+"]=["+args[i1]+"], .length()=["+args[i1].length()+"], .charAt(0).Integer.toHexString=["+Integer.toHexString(args[i1].charAt(0))+"]");
-}
-*/
 
                       Constructor [] constr=cl.getConstructors();
 
@@ -4622,14 +4248,6 @@ if (cl==Character.class)
                       catch (Exception e)   // 2003-05-09, --rgf, maybe an IllegalAccessException?
                       {
                           boolean bRaise=true;      // by default raise exception
-// TODO
-/*
-if (e instanceof InvocationTargetException)
-{
-    System.out.println("--> --> e=["+e+"]\n\te.getTargetException=["+((InvocationTargetException)e).getTargetException()+"]");
-
-}
-*/
 
                           if (e instanceof IllegalAccessException &&
                               // bMethodHasSetAccessible &&
@@ -4652,15 +4270,6 @@ if (e instanceof InvocationTargetException)
                           if (bRaise)   // do we have to raise an exception ?
                           {
                               // re-throw the exception
-                              // String tmpString=((e instanceof InvocationTargetException) ? " -> ["+((InvocationTargetException)e).getTargetException().toString()+"]" : "");
-                              // String tmpString=((e instanceof InvocationTargetException) ? " -> ["+((InvocationTargetException)e).getCause().toString()+"]" : "");
-
-                              // String tmpString=((e instanceof InvocationTargetException) ? getInvocationTargetExceptionInfos((InvocationTargetException)e) : "");
-                              // tmpString=" -> "+((InvocationTargetException)e).toString();
-                              // rgf, 2008-06-08
-                              // String tmpString=" -> "+pp(e.getCause().toString());
-
-
                               throw new BSFException (BSFException.REASON_OTHER_ERROR,
                                                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": could not create a Java object from instantiating '"+
                                                       args[2]+"' with the given arguments.\n"+
@@ -4681,26 +4290,7 @@ if (e instanceof InvocationTargetException)
                          // beanName=""+ bean.getClass().getName() + '@' + Integer.toHexString( bean.hashCode() );
                          beanName=makeBeanName(bean);
                       }
-/*
-                      // take care of ref-counters
-                      int refCount    = 1;                            // ref-Counter
-                      Integer i1 = (Integer) orxReferences.get( beanName );// is object already registered?
-                      if (i1 != null)                                 // increase its reference counter
-                      {
-                         refCount = i1.intValue()+1;
-                      }
-                      orxReferences.put(beanName, new Integer(refCount));
 
-                      // new object is always put into the Hashtable (replaces an existing value)
-// if (beanName instanceof String && bean instanceof String && beanName.equals((String)bean))
-// {
-//     System.err.println("===> ===> /// beanName==bean !! \\\\\\: ["+beanName+"]==["+bean+"] <=== <===");
-// }
-                      mgr.registerBean(beanName, bean);
-
-                      // return beanName;        // return beanName for the caller
-                      return makeString4Rexx(beanName);
-<-- 20080908, rgf */
                       return registerBean(beanName, bean);   // will use <O> indicator
                   }
         // ==================================================================
@@ -4712,6 +4302,9 @@ if (e instanceof InvocationTargetException)
                    *
                    * - beanName: the bean to unregister
                    *********************************************************/
+                      final boolean bDebug=    // if true, show debug infos
+                            false;
+
                       if(args.length!=2)
                       {
                           throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -4719,10 +4312,10 @@ if (e instanceof InvocationTargetException)
                               "'"+args[0]+"', beanName");
                       }
 
-// System.err.println("RexxAndJava()::UNREGISTER_BEAN(): about to unregister=["+args[1]+"]");
+if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): about to unregister=["+args[1]+"]");
                       if (unregisterBean(args[1]))  // bean got unregistered (removed)!
                       {
-// System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM REGISTRY! ["+args[1]+"]");
+if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM REGISTRY! ["+args[1]+"]");
                             // return beanName (index value), indicate that this is now a mere string
                           return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+args[1];
                       }
@@ -5017,9 +4610,6 @@ if (e instanceof InvocationTargetException)
        }
         // ==================================================================
 
-
-        // return null4Rexx;       // return the Rexx string representing explicitly "null"
-//        return makeString4Rexx(null4Rexx);
         return makeString4Rexx(null);
     }
 
@@ -5052,7 +4642,6 @@ if (e instanceof InvocationTargetException)
     {
         try
         {
-// System.err.println("==> in invokeMethod(), m=["+m+"], o=["+o+"], about to execute ...");
             return m.invoke(o, params);
         }
         catch (IllegalAccessException e)    // maybe an IllegalAccessException?
@@ -5065,23 +4654,6 @@ if (e instanceof InvocationTargetException)
             // }
             // throw e;    // re-throw exception
         }
-/*
-catch (IllegalArgumentException iae)
-{
-    System.err.println("==> IllegalAccessException in invokeMethod(), o=["+o+"]");
-    if (params!=null)
-    {
-        for (int i=0; i<params.length; i++)
-        {
-            System.err.println("\t\tparams["+i+"]=["+params[i]+"]");
-        }
-    }
-
-    throw iae;  // re-throw exception
-}
-
-        return null;
-*/
     }
 
 
@@ -5112,7 +4684,10 @@ catch (IllegalArgumentException iae)
       */
     private Object convFromRexx(String type, String value) throws BSFException
     {
-// System.err.println("type=["+type+"], value=["+value+"] value==null: ["+(value==null)+"] null4Rexx=["+null4Rexx+"]");
+        final boolean bDebug=    // if true, show debug infos
+              false;
+
+if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], value=["+value+"] value==null: ["+(value==null)+"] null4Rexx=["+null4Rexx+"]");
         if (value==null) return null;
 
          if (value.equals(null4Rexx))   // Rexx-String indicating "null" ?
@@ -5141,45 +4716,29 @@ catch (IllegalArgumentException iae)
                         Object tmp;
                         tmp = mgr.lookupBean(value);
 
-// System.err.println("===> RAJ()-convFromRexx: type="+pp(type)+", value="+pp(value)+" -> tmp="+pp(tmp));
-
                         if (tmp==null){
                             throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                 "Bean ["+value+"] not registered.");
                         }
 
-/*
-System.err.println("1a - convFromRexx: beanName/value=["+value+"], getClass()=("+tmp.getClass()+")");
-System.err.println("2a - convFromRexx: tmp.toString()=["+tmp.toString()+"]");
-*/
-
                         return tmp;
 
              case 'I':  return new Integer      (value);
              case 'C':
-
-/*
-System.err.println("===> RAJ() a) convFromRexx: TO --> type="+pp(type)+", value="+pp(value));
-System.err.println("===> RAJ() b) convFromRexx:    --> toHexString: ["+
-(value==null || value.length()==0 ? "" : Integer.toHexString(value.charAt(0)))
-+"]");
-*/
-
-// TODO: char/Character - deal with the special case that an empty string is supplied, probably
-//                        because programmer supplied 0x00 on the Rexx side which gets transformed
-//                        to an empty string in JNI's NewStringUTF()
+                        // char/Character - deal with the special case that an empty string is supplied, probably
+                        //                  because programmer supplied 0x00 on the Rexx side which gets transformed
+                        //                  to an empty string in JNI's NewStringUTF()
 
                         if (value==null || value.length()==0)  // 0x00 from the Rexx side or empty string: deal with as 0x00
                         {
-Character res=new Character((char)0);
-System.out.println("*** REGISTER_BEAN: new Character: res=["+res+"], Integer.toHexString()=["+Integer.toHexString(res.charValue())+"]");
+
+if (bDebug)
+{
+    Character res=new Character((char)0);
+    System.out.println("RexxAndJava.convFromRexx(): new Character: res=["+res+"], Integer.toHexString()=["+Integer.toHexString(res.charValue())+"]");
+}
                             return new Character((char)0);       // create 0x00 char
                         }
-
-Character res=new Character    (value.charAt(0));
-System.out.println("*** REGISTER_BEAN: new Character: res=["+res+"], Integer.toHexString()=["+Integer.toHexString(res.charValue())+"]");
-
-
 
                         return new Character    (value.charAt(0));
 
@@ -5271,7 +4830,6 @@ System.out.println("*** REGISTER_BEAN: new Character: res=["+res+"], Integer.toH
      *
      * @return the Java <code>object</code> stored in the BSF registry, <code>null</code> else
      **/
-    // private Object convFromRexx(String value) throws BSFException
     // 20090514, ---rgf, turn to package scope
     protected Object convFromRexx(String value) throws BSFException
     {
@@ -5284,11 +4842,6 @@ System.out.println("*** REGISTER_BEAN: new Character: res=["+res+"], Integer.toH
          // If so, return Java object
          Object tmp=mgr.lookupBean(value);
          if (tmp==null) return value;
-
-/*
-System.err.println("1b - convFromRexx: beanName/value=["+value+"], getClass()=("+tmp.getClass()+")");
-System.err.println("2b - convFromRexx: tmp.toString()=["+tmp.toString()+"]");
-*/
 
          return tmp;
     }
@@ -5327,8 +4880,6 @@ if (bDebug) System.err.println("\t\tfuncArgs[k]=["+funcArgs[k]+"] ---> ["+paramT
 if (bDebug) System.err.println("\t           ) ---> k=["+k+"]: null!");
                 coercedArgs[k]=null;
             }
-                  // if a Java object in hand, if so compatible with paramType ?
-//            else if (!(funcArgs[k] instanceof String))
 
                 // rgf, 2005-06-18, special case found: an interface is given, that is available for String as well!
             else if ( paramTypes[k].isInterface()  || (!(funcArgs[k] instanceof String)))
@@ -5455,25 +5006,7 @@ if (bDebug) System.err.println("\t\t\t>>>  tmpArg=\"true\"!");
 if (bDebug) System.err.println("\t\t\t>>>  Not a Boolean --> BREAK!");
                         break;
                     }
-
-
-/*
-                    if (((String)funcArgs[k]).compareTo("1")==0 ) // || ((String)funcArgs[k]).compareToIgnoreCase("TRUE")==0 )
-                    {
-if (bDebug) System.err.println("\t\t\t>>>  tmpArg=\"true\"!");
-                        tmpArg="true";
-                    }
-                    else
-                    {
-if (bDebug) System.err.println("\t\t\t>>>  tmpArg NOT set !");
-                    }
-*/
                 }
-
-// TODO: char/Character - deal with the special case that an empty string is supplied, probably
-//                        because programmer supplied 0x00 on the Rexx side which gets transformed
-//                        to an empty string in JNI's NewStringUTF()
-
 
                 // BSF uses str.charAt(0), accepting any string, which is far too unrestricted !
                 // a char/Character is only acceptable if the (Rexx) string consists of exactly one char
@@ -5481,17 +5014,7 @@ if (bDebug) System.err.println("\t\t\t>>>  tmpArg NOT set !");
                 {
 if (bDebug) System.err.println("\t  >>> >>>  checking for {char|Character} value!");
                     // ---rgf, 2006-05-29: be stricter than Java, only accept "0", "1", "false", "true", ".false" and ".true" as Character's
-                    // String s=(String)funcArgs[k];   // coerce to a string
 
-/* ---> this special case not needed anymore, rgf, 20100522
-                    if (tmpArg.length()==0)     // a char or Character must be exactly of size 1 !
-                    {
-                        coercedArgs[k]=new Character((char) 0); // save coerced object instead
-// if (bDebug) System.err.println("*** CREATED 'new Character((char) 0)' ");
-                        continue;
-                    }
-                    else
-<--- */
                     if (tmpArg.length()!=1)     // a char or Character must be exactly of size 1 !
                     {
 if (bDebug) System.err.println("\t\t\t>>>  Not a Character --> BREAK!");
@@ -5607,8 +5130,6 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
         }
         orxReferences.put(beanName, new Integer(refCount)); // remember refCount
 
- // System.err.println("===> /// makeString4Rexx() \\\\\\ beanName: ["+(bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+beanName+"], new refCount: ["+refCount+"] <===");
-
         if (tmp==null)      // need to newly register
         {
             mgr.registerBean( beanName, object ); // register the object under this new beanName
@@ -5632,9 +5153,9 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
         // take care of ref-counters
         Integer i1 = (Integer) orxReferences.get(beanName);    // get refCount-value
 
-//         final boolean bDebug = // true;
-//                                false;
-// if (bDebug) System.err.print("===> RexxAndJava.unregisterBean("+beanName+")");
+        final boolean bDebug = // true;
+                               false;
+if (bDebug) System.err.print("===> RexxAndJava.unregisterBean("+beanName+")");
 
         if (i1 != null)                                     // decrease its reference counter
         {
@@ -5643,18 +5164,18 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
            if (refCount > 0)                // still references on the (Object) Rexx side
            {
                orxReferences.put(beanName, new Integer(refCount));
-// if (bDebug) System.err.println("===> reducing reference count to: ["+refCount+"]");
+if (bDebug) System.err.println("===> reducing reference count to: ["+refCount+"]");
            }
            else                             // no more references on the (Object) Rexx side
            {                                // safe to remove Java object
                orxReferences.remove(beanName);
                mgr.unregisterBean(beanName);
-// if (bDebug) System.err.println("===> reducing reference count to: ["+refCount+"], REMOVED from REGISTRY! <== <==");
+if (bDebug) System.err.println("===> reducing reference count to: ["+refCount+"], REMOVED from REGISTRY! <== <==");
            }
            return true;
         }
 
-// if (bDebug) System.err.println("===> does NOT exist in registry!");
+if (bDebug) System.err.println("===> does NOT exist in registry!");
         return false;
     }
 
@@ -5673,7 +5194,10 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
       */
     protected String makeString4Rexx(Object o)  // changed 2003-01-06 from "makeResultString()" to "makeString4Rexx()"
     {
-// System.err.println("makeString4Rexx(): o.getClass()=\""+o.getClass()+"\", o=["+o.toString()+"]...");
+        final boolean bDebug=    // if true, show debug infos
+              false;
+
+if (bDebug) System.err.println("makeString4Rexx(): o.getClass()=\""+o.getClass()+"\", o=["+o.toString()+"]...");
 
        if (o==null)
        {
@@ -5682,7 +5206,7 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
 
        Class cl = o.getClass();
 
-// if (cl==Character.class) {System.err.println("\tcharValue="+((Character) o).charValue());}
+if (bDebug)  if (cl==Character.class) {System.err.println("\tcharValue="+((Character) o).charValue());}
 
        if (cl==String.class)
        {
@@ -5742,37 +5266,6 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
             //                  not apply to constructor objects only!), hence need for using
             //                  System.identityHashCode() instead
         return "" + o.getClass().getName() + '@' + Integer.toHexString( System.identityHashCode(o) );
-
-/*
-        beanName="" + o.getClass().getName() + '@' + Integer.toHexString( System.identityHashCode(o) );
-System.err.println("-- a makeBeanName(): o=["+o+"], beanName=["+beanName+"]");
-System.err.println("-- b makeBeanName():        o.toString()=["+       o.toString()+"],        o.hashCode()="+Integer.toHexString(o.hashCode())+", o.getClass()=("+o.getClass()+")");
-System.err.println("-- c makeBeanName(): beanName.toString()=["+beanName.toString()+"], beanName.hashCode()="+Integer.toHexString(beanName.hashCode())+", beanName.getClass()=("+beanName.getClass()+")");
-Object r=null;
-try
-{
-    r=convFromRexx(beanName);
-    System.err.println("-- d makeBeanName(): convFromRexx(beanName)=r, r=["+r+"]");
-}
-catch (Exception e)
-{
-    System.err.println("-- d makeBeanName(): EXCEPTION thrown!");
-}
-        return beanName;
-*/
-
-/*
-        String beanName = "" + o.getClass().getName() + '@' + Integer.toHexString( o.hashCode() );
-
-        // java.lang.reflect.Constructor returns the same hashCode()-value for all of its instances!
-        if (o instanceof Constructor)
-        {
-            // add the hashCode()-value from the string value to create a unique bean name
-            beanName=beanName+"_"+Integer.toHexString(o.toString().hashCode());
-        }
-
-        return beanName;
-*/
     }
 
 
@@ -5969,13 +5462,16 @@ catch (Exception e)
 
     static private String getCauseAsString (String title, Exception e)
     {
+        final boolean bDebug=    // if true, show debug infos
+              false;
+
         Throwable c=null;
 
         if (c instanceof InvocationTargetException) // rgf, 2010-03-27
         {
             c=((InvocationTargetException)e).getTargetException();   // unwrap and show exception the invoked method has thrown
 
-System.err.println("***debug RexxAndJava.getCauseAsString(): InvocationTargetException=["+e+"]\n"+
+if (bDebug) System.err.println("***debug RexxAndJava.getCauseAsString(): InvocationTargetException=["+e+"]\n"+
                    "\t--> getTargetException()=["+c+"]\n"+
                    "\t--> getCause()          =["+e.getCause()+"]");
         }
@@ -6026,7 +5522,7 @@ System.err.println("***debug RexxAndJava.getCauseAsString(): InvocationTargetExc
 
 
     /** Creates a new Rexx interpreter instance using the ooRexx 4.0 API <code>RexxCreateInterpreter()</code>.
-     *  TODO: This method honors optional Rexx interpreter instance settings, such that a default
+     *  This method honors optional Rexx interpreter instance settings, such that a default
      *        command environment can be defined, as well as Rexx command handlers
      *        (and eventually Rexx exit handlers) implemented in Java.
      *

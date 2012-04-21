@@ -1,4 +1,4 @@
-Additional information on BSF4ooRexx that may be interesting     2012-03-12
+Additional information on BSF4ooRexx that may be interesting     2012-04-20
 ===========================================================================
 
 BSF4ooRexx is an extension to Rexx and ooRexx, consisting of an external Rexx

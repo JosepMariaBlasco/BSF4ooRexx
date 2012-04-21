@@ -1,4 +1,4 @@
-BSF4ooRexx, 4.10 Mar 2012, BETA
+BSF4ooRexx, 4.10 Apr 2012, BETA
 ===============================
 
 BSF4ooRexx, version 4.10: this version makes the configuration of individual
