@@ -51,6 +51,6 @@ halt:                   -- a ctl-c causes a jump to this label
 
 ::method Multiply          -- implementation of "orx.rexxla.oorexx.demo.Hello.Multiply"
    use arg number1, number2, slotDir
-   say "Multply-request received: sender-bus=["slotDir~sender"]" "at=["slotDir~dateTime"]"
+   say "Multiply-request received: sender-bus=["slotDir~sender"]" "at=["slotDir~dateTime"]"
    return number1*number2
 

@@ -6536,6 +6536,8 @@ RexxMethod2(RexxObjectPtr, DbusNativeServerDisconnect, CSELF, serverPtr, OSELF, 
     return NULLOBJECT;
 }
 
+exit
+
 
 // -----------------------------------------------------------------------------------------------------
 // -------------------- Rexx package definitions ----------------------

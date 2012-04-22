@@ -3,13 +3,13 @@
    Name:    install_ooRexx_dbus.rex
    Purpose: link the necessary files to their target locations, such that liboorexx.dbus is operational
    Author:  Rony G. Flatscher (c) 2011
-   Date:    2011-07-19
+   Date:    2011-07-19, 2011-12-01
    Version: 1.0
    Changed: --
 
    Usage:   rexx install_ooRexx_dbus.rex [-u]
             ... no switch   -> install
-            ... swithc "-u" -> uninstall
+            ... switch "-u" -> uninstall
 
    license:
 

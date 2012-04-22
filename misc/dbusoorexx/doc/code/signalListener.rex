@@ -17,7 +17,7 @@ halt:                   -- a ctl-c causes a jump to this label
 ::method unknown           -- this method will service all invocations
   use arg methName, methArgs
 
-  slotDir=methArgs[methArgs~items]     -- last argument is slotDir
+  slotDir=methArgs[methArgs~size]     -- last argument is slotDir
   say "-->" pp(slotDir~messageTypeName) pp(slotDir~interface) -
             pp(slotDir~member)", nrArgs="methArgs~items-1
 
