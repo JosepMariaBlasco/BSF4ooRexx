@@ -1,4 +1,0 @@
-#!/bin/sh
-
-cd /opt/BSF4ooRexx/install
-sudo rexx /opt/BSF4ooRexx/install/setupAllAndRun.rex uninstall /@q:

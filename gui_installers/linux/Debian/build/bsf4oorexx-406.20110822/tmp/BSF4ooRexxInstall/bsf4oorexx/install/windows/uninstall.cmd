@@ -1,3 +1,0 @@
-@echo off
-@echo Starting un-installation ...
-rexx.exe kickoff.rex uninstall

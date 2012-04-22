@@ -1,7 +1,0 @@
-[Desktop Entry]
-Version=1.0
-Type=Application
-Icon=folder
-Exec=xdg-open /opt/BSF4ooRexx/information
-Name=Information (ReleaseNotes, introductions to ooRexx, BSF4ooRexx overview)
-Comment=Opens the BSF4ooRexx "information" folder.

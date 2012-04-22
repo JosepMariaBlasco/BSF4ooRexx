@@ -1,3 +1,0 @@
-@echo off
-@echo Starting installation ...
-rexx.exe kickoff.rex install

@@ -1,6 +1,0 @@
-parse source . . src
-
-rexxCode="parse arg str; say 'Rexx received:' str"
-vArgs=Vector()
-vArgs.addElement("Hello from NetRexx")
-org.apache.bsf.BSFManager().apply("rexx",src,0,0,rexxCode,null,vArgs)

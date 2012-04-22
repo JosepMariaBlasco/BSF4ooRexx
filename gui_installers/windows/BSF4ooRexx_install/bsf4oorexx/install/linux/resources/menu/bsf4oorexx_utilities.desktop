@@ -1,8 +1,0 @@
-[Desktop Entry]
-Version=1.0
-Type=Application
-# Icon=folder
-Icon=applications-utilities
-Exec=xdg-open /opt/BSF4ooRexx/utilities
-Name=Utilities (some platform-independent utility scripts)
-Comment=Opens the BSF4ooRexx "utilities" folder.
