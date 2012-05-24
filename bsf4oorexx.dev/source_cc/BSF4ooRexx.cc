@@ -23,6 +23,12 @@ remarks:
   * it allows Java to call into Rexx using the new ooRexx 4.0 native APIs using JNI ("Java Native Interface").
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
+    4.1.-16 2012-05-24 - changed "JNU_GetStringNativeCharsReturningRexxObjectPtr" to
+                                 "JNU_GetStringNativeCharsReturningRexxStringObject"
+                       - fixed OOM (out of memory) error reported by Erik Dujis by explicitly
+                         invoking DeleteLocalRef() on any jobject; bug report:
+                         <https://sourceforge.net/tracker/?func=detail&atid=1660873&aid=3525814&group_id=400586>
+                       - tidying up a little bit by deleting some outdated commented code
 
     4.1.-15 2012-04-19 - fixed a bug in free()ing options array in BsfLoadJava()-routine, reported
                          by JLF, cf. <https://sourceforge.net/mailarchive/forum.php?thread_name=4F900B1A.8000104%40wu-wien.ac.at&forum_name=bsf4oorexx-devel>
@@ -720,7 +726,7 @@ void    RgfSetupOrexxRegistry    (RexxThreadContext *rtc);
 void    RgfTearDownOrexxRegistry (RexxThreadContext *rtc);
 
 char *JNU_GetStringNativeChars(JNIEnv *env, jstring jstr);  // JNIEnv *env, jstring jstr)
-RexxObjectPtr JNU_GetStringNativeCharsReturningRexxObjectPtr(JNIEnv *env, jstring jstr, RexxThreadContext *context);  // JNIEnv *env, jstring jstr)
+RexxObjectPtr JNU_GetStringNativeCharsReturningRexxStringObject(JNIEnv *env, jstring jstr, RexxThreadContext *context);  // JNIEnv *env, jstring jstr)
     // only for debugging:
 VOID JAVA_TO_STRING (JNIEnv *env, jobject jo, char * buffer, int bufSize);
 
@@ -750,11 +756,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "410.20120419 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120524 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "410.20120419 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120524 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "410.20120419 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120524 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -2526,9 +2532,11 @@ inline jstring RgfStoreRexxProxyInBsfRegistry(JNIEnv *env, jobject rajo, jobject
 
     if (bReturnWithPrefix==1)
     {
+        env->DeleteLocalRef(j_keyValueWithoutPrefix);
         return j_keyValue;
     }
 
+    env->DeleteLocalRef(j_keyValue);
     return j_keyValueWithoutPrefix;
 }
 
@@ -2547,10 +2555,12 @@ inline jboolean RgfUnregisterBean(JNIEnv *env, jobject rajo, jobject beanName)
 
 //    return j_beanFound;
 
-    return env->CallBooleanMethod(rajo,
+
+    jboolean bRes=env->CallBooleanMethod(rajo,
                                   defaultJVM->mid_RexxAndJava_unregisterBean,
                                   beanName);
 
+    return bRes;
 }
 
 
@@ -2577,7 +2587,7 @@ inline jobject RgfCreateRexxProxy (JNIEnv *env, jobject rajo,
 //    jmethodID      mid=env->GetMethodID( clz, "getRexxEngine", "()Lorg/apache/bsf/BSFEngine;");
 //    jobject rexxEngine=env->CallObjectMethod(rajo, mid, NULL);
 
-    jobject rexxEngine=env->CallObjectMethod(rajo,
+    jobject j_rexxEngine=env->CallObjectMethod(rajo,
                                              defaultJVM->mid_RexxAndJava_getRexxEngine,
                                              NULL);
 
@@ -2619,25 +2629,26 @@ inline jobject RgfCreateRexxProxy (JNIEnv *env, jobject rajo,
 //    jobject rexxProxy=env->NewObject(clz, mid, env->NewStringUTF(c_rii_ID),
 //                                               env->NewStringUTF(c_objID),
 //                                               env->NewStringUTF(c_objID_userData),
-//                                               rexxEngine);
+//                                               j_rexxEngine);
 // -----------------------------
-    jobject rexxProxy=env->NewObject(defaultJVM->clz_RexxProxy,
+    jobject j_rexxProxy=env->NewObject(defaultJVM->clz_RexxProxy,
                                      defaultJVM->mid_RexxProxy_init,
                                                env->NewStringUTF(c_rii_ID),
                                                env->NewStringUTF(c_objID),
                                                env->NewStringUTF(c_objID_userData),
-                                               rexxEngine);
+                                               j_rexxEngine);
 
 
         // now register RexxProxy object with BSFRegistry and save beanName with the RexxProxy
-    // RgfStoreRexxProxyInBsfRegistry(env, rajo, rexxProxy);
+    // RgfStoreRexxProxyInBsfRegistry(env, rajo, j_rexxProxy);
+    env->DeleteLocalRef(j_rexxEngine);
 
 #if defined (DEBUG40) || defined (DEBUG_REXX_PROXY)
-    fprintf(stderr, "\t<-- RgfCreateRexxProxy(): returning rexxProxy=[%p]\n", rexxProxy);
+    fprintf(stderr, "\t<-- RgfCreateRexxProxy(): returning j_rexxProxy=[%p]\n", j_rexxProxy);
     fflush(stderr);
 #endif
 
-    return rexxProxy;
+    return j_rexxProxy;
 }
 
 
@@ -2708,6 +2719,8 @@ inline jthrowable RgfCreateRexxException4Java (JNIEnv *env, jobject rajo,
                                                           env->NewStringUTF(message),
                                                           jConditionObject
                                                );
+
+    env->DeleteLocalRef(jConditionObject);
 
 #if defined(DEBUG40)
    fprintf(stderr, "\t-->\tRgfCreateRexxException4Java() - end ...\n<-------\n");
@@ -2802,22 +2815,6 @@ inline jobject RgfProcessReturnValue4Java(JNIEnv *env, jobject rajo,
     }
 
 
-/*
-    if (robj==rtc->Nil())       // if .nil, then return NIL-string, raj.null4rexx -field
-    {
-        jclass clzRajo=env->GetObjectClass(rajo);
-fprintf(stderr, "RgfProcessReturnValue4Java(): clzRajo=[%p]\n", clzRajo);
-fflush(stderr);
-
-        // jfieldID null4Rexx_ID=env->GetStaticFieldID(clzRajo, "null4Rexx", "l");
-        jfieldID null4Rexx_ID=env->GetStaticFieldID(clzRajo, "null4Rexx", "Ljava/lang/String;");
-fprintf(stderr, "RgfProcessReturnValue4Java(): null4Rexx_ID=[%p]\n", null4Rexx_ID);
-fflush(stderr);
-
-        return env->GetStaticObjectField(clzRajo, null4Rexx_ID);    // return current "null4Rexx" string value
-    }
-*/
-
     // if RexxObject is an instance of the .String class, then return a jstring,
     // else return a RexxProxy
 
@@ -2829,43 +2826,18 @@ fflush(stderr);
    fprintf(stderr, "... RgfProcessReturnValue4Java(): a String in hand, returning it \n"); fflush(stderr);
 #endif
 
-// fprintf(stderr, "... RgfProcessReturnValue4Java(): a .String, j_returnType=[%p], string-value=[%.256s]\n",j_returnType, rtc->CString((RexxStringObject) robj));
-// fflush(stderr);
-
-// TODO: if primitive return type given, use rajo to create an appropriate return value
         jstring jstringValue=env->NewStringUTF(rtc->CString((RexxStringObject) robj));
         if (j_returnType==NULL)     // no (primitive/wrapper) return type defined
         {
             return jstringValue;    // return a jstring
         }
 
-        // TODO: get MID for "convFromJNI(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;",
-        //       use it to convert string value to needed wrapper value
-
-//        jclass rajoClz = env->GetObjectClass(rajo);     // get class object
-
-// fprintf(stderr, "rajoClz =[%p]\n", rajoClz ); fflush(stderr);
-
-        // get method ID
-//        jmethodID jmid=env->GetMethodID(rajoClz, "convFromJNI", "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
-
-// fprintf(stderr, "jmid=[%p]\n", jmid); fflush(stderr);
-
-//        jobject   jobj=env->CallObjectMethod(rajo, jmid, j_returnType, jstringValue);  // do the conversion
-
         jobject   jobj=env->CallObjectMethod(rajo,
                                              defaultJVM->mid_RexxAndJava_convFromJNI,
-                                                  j_returnType, jstringValue);  // do the conversion
+                                             j_returnType, jstringValue);  // do the conversion
 
-
-// fprintf(stderr, "TSK-TSK-TSK: jobj=[%p], ExceptionCheck()=[%d]\n", jobj, env->ExceptionCheck()); fflush(stderr);
-
+        env->DeleteLocalRef(jstringValue);
         return jobj;
-
-
-        // TODO: if something goes wrong here (could be very well the case!), then we need to
-        //       raise an exception OR leave exception and have the Java runtime raise it upon return
-
     }
 
 
@@ -2880,30 +2852,11 @@ fflush(stderr);
 
 #endif
 
-   // TODO:  get beanName, turn it into a Java string and use it as argument for convFromRexx();
-   //        lookup in raj method "convFromRexx(Ljava.lang.String;)Ljava.lang.Object;"
-   //
-        jstring beanName=env->NewStringUTF(rtc->CString((RexxStringObject) rtc->SendMessage0(robj, "OBJECTNAME")));
-// fprintf(stderr, "beanName=[%p]\n", beanName); fflush(stderr);
-// char buf1[2048];
-// buf1[0]='0';
-// JAVA_TO_STRING (env, rajo, buf1);
-// fprintf(stderr, "rajo~toString=[%.256s]\n", buf1); fflush(stderr);
-
-
-//        jclass rajoClz = env->GetObjectClass(rajo);     // get class object
-// fprintf(stderr, "rajoClz =[%p]\n", rajoClz ); fflush(stderr);
-
-        // get method ID
-//        jmethodID jmid=env->GetMethodID(rajoClz, "convFromRexx", "(Ljava/lang/String;)Ljava/lang/Object;");
-// fprintf(stderr, "jmid=[%p]\n", jmid); fflush(stderr);
-
-//        jobject   jobj=env->CallObjectMethod(rajo, jmid, beanName);  // invoke toString()
+        jstring jbeanName=env->NewStringUTF(rtc->CString((RexxStringObject) rtc->SendMessage0(robj, "OBJECTNAME")));
         jobject   jobj=env->CallObjectMethod(rajo,
                                              defaultJVM->mid_RexxAndJava_convFromRexx,
-                                             beanName);  // invoke toString()
-// fprintf(stderr, "jobj=[%p]\n", jobj); fflush(stderr);
-
+                                             jbeanName);  // invoke toString()
+        env->DeleteLocalRef(jbeanName);
 
         // TODO: check whether clearing exception is truly o.k.
         if ( env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
@@ -2914,33 +2867,7 @@ fflush(stderr);
             env->ExceptionClear();
         }
         return jobj;
-
-
-        // objectname is the BSFRegistry index value, rgf, 2009-06-22
-        // return env->NewStringUTF(rtc->CString((RexxStringObject) rtc->SendMessage0(robj, "OBJECTNAME")));
     }
-
-
-    // if (rtc->IsOfType(robj, "BSF") || rtc->IsOfType(robj, "UNO_PROXY"))
-    // {
-// fprintf(stderr, "... ..Value4Java(): a BSF or UNO_PROXY in hand, returning it \n"); fflush(stderr);
-    //     // objectname is the BSFRegistry index value
-    //     return env->NewStringUTF(rtc->CString((RexxStringObject) rtc->SendMessage0(robj, "OBJECTNAME")));
-    // }
-
-    //     // treat BSF4Rexx Java classs proxies as strings (RexxAndJava handles them appropriately)
-    // if (rtc->IsOfType(robj, "CLASS") && rtc->HasMethod(robj, "BSF.LOADCLASS"))
-    // {
-    //     // objectname is the BSFRegistry index value
-// fprintf(stderr, "... ..Value4Java(): a BSF JAVA class object in hand \n"); fflush(stderr);
-    //     return env->NewStringUTF(rtc->CString((RexxStringObject) rtc->SendMessage0(robj, "OBJECTNAME")));
-    // }
-
-
-        // get the current package object
-    // RexxPackageObject rpo=(RexxPackageObject) rtc->SendMessage0(rtc->GetCallerContext(),"PACKAGE");
-        // create and return a Java RexxProxy for this Rexx object
-    // return RgfCreateRexxProxy(env, rajo, rtc, robj, rpo, NULL);
 
 #if defined ( DEBUG_RETURN_VALUE_FOR_JAVA )
    fprintf(stderr, "... RgfProcessReturnValue4Java(): creating a RexxProxy and returning it \n"); fflush(stderr);
@@ -2950,6 +2877,7 @@ fflush(stderr);
         // this will allow Java to interact with the proxied Rexx object
     return RgfCreateRexxProxy(env, rajo, rtc, robj, NULL, NULL);
 }
+
 
 
 // 2012-02-107, rgf: handle single jobject value to be turned into RexxObjectPtr value
@@ -3035,6 +2963,7 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
 
         res=RgfGetProxyObject(rtc, rtc->String(tmpStr));  // get Rexx object
 
+        env->DeleteLocalRef(j_obj_ID);
         RexxFreeMemory(tmpStr);             // make sure we free the allocated memory
         return res;
     }
@@ -3054,7 +2983,7 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
         // if a jstring, get the RexxString value
     if (env->IsInstanceOf(j_obj, defaultJVM->clz_String)==JNI_TRUE )  // ---rgf, 2012-02-07
     {
-        res=JNU_GetStringNativeCharsReturningRexxObjectPtr(env, (jstring) j_obj, rtc);
+        res=JNU_GetStringNativeCharsReturningRexxStringObject(env, (jstring) j_obj, rtc);
 
 #if defined(DEBUG_RGF_PROCESS_J_ARG1)
     fprintf(stderr, "... RgfJavaObject2RexxObject(...): riid=[%p], .nil=[%p], res=[%p], res~string=[%.256s]:  ExceptionCheck()=[%d]\n", riid, rtc->Nil(), res, rtc->CString(rtc->ObjectToString(res)),env->ExceptionCheck());fflush(stderr);
@@ -3084,6 +3013,7 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
         const char * c_beanName    = env->GetStringUTFChars(j_beanName, JNI_FALSE);
         res=       rtc->String(c_beanName);    // create Rexx string
         env->ReleaseStringUTFChars(j_beanName, c_beanName);      // release
+        env->DeleteLocalRef(j_beanName);
     }
 
 
@@ -3326,6 +3256,7 @@ if (rtc->CheckCondition())
 #endif
 
             robj=RgfGetProxyObject(rtc, rtc->String(tmpStr));  // get Rexx object
+            env->DeleteLocalRef(j_obj_ID);
             RexxFreeMemory(tmpStr);             // make sure we free the allocated memory
         }
 
@@ -3335,7 +3266,7 @@ if (rtc->CheckCondition())
                 // if a jstring, get the RexxString value
             if (env->IsInstanceOf(jobj, defaultJVM->clz_String)==JNI_TRUE )  // ---rgf, 2012-02-07
             {
-                robj=JNU_GetStringNativeCharsReturningRexxObjectPtr(env, (jstring) jobj, rtc);
+                robj=JNU_GetStringNativeCharsReturningRexxStringObject(env, (jstring) jobj, rtc);
 
             }
 
@@ -3362,6 +3293,7 @@ if (rtc->CheckCondition())
                 const char * c_beanName    = env->GetStringUTFChars(j_beanName, JNI_FALSE);
                 robj=       rtc->String(c_beanName);    // create Rexx string
                 env->ReleaseStringUTFChars(j_beanName, c_beanName);      // release
+                env->DeleteLocalRef(j_beanName);
             }
 
             if (bClzBsf)    // .local~bsf available, use its bsf.wrap class method
@@ -3378,6 +3310,7 @@ if (rtc->CheckCondition())
 
             // set array entry
         rtc->ArrayPut(ra, robj, i+1);
+        env->DeleteLocalRef(jobj);
     }
 
     if (slotDir!=NULL)  // was a slotDir supplied ?
@@ -3401,31 +3334,6 @@ if (rtc->CheckCondition())
 }
 
 
-// -->
-// void testDumpRgf(const char *aha)
-// {
-//     const char *p=aha+10;
-//     fprintf(stderr, "---> --->\n%.256s\n<--- <---\n", aha);
-//
-//     for (int i=0; i<40, *p; i++, p++)
-//     {
-//         // fprintf(stderr, "[%c|0x%x|0d%d|0u%u] ", *p, *p, *p, *p);
-//         fprintf(stderr, "[%c] ", *p);
-//
-//         if (*p<0)
-//         {
-//             fprintf(stderr,"[0x%x]", *p);
-//         }
-//
-//         if (*p==10 || *p==13 || ((i+1)%10==0))
-//         {
-//             fprintf(stderr, "\n");
-//         }
-//     }
-//     fprintf(stderr, "\n-----------------------------------\n", aha);
-//
-// }
-// <--
 
 
     // create error message text from Java Throwable and return it
@@ -3454,36 +3362,14 @@ inline RexxStringObject RgfGetJavaThrowableAsString (JNIEnv *env, RexxThreadCont
 
         // get Java string
      const char *aha=env->GetStringUTFChars( (jstring) jobj, JNI_FALSE);
-
-// -->
-// testDumpRgf(aha);
-// <--
-
-     // RexxStringObject rso=(RexxStringObject) rtc->CString(aha);     // create RexxStringObject
      RexxStringObject rso=rtc->String(aha);     // create RexxStringObject
-
-
-// -->
-// org.apache.bsf.BSFException:
-//  RexxStringObject rso2=(RexxStringObject) rtc->SendMessage1(rso, "LEFT", rtc->String("34"));
-//
-//  RexxObjectPtr rexxStdout=rgfGetEntryFromLocal (rtc, "OUTPUT");  // .local~output, i.e. .output
-//  rtc->SendMessage1(rexxStdout, "SAY", rtc->String("rso:" ));
-//  rtc->SendMessage1(rexxStdout, "SAY", rso );
-//  rtc->SendMessage1(rexxStdout, "SAY", rtc->String("^^^^^^^^^" ));
-//  rtc->SendMessage1(rexxStdout, "SAY", rtc->String("rso2:" ));
-//  rtc->SendMessage1(rexxStdout, "SAY", rso2);
-//  rtc->SendMessage1(rexxStdout, "SAY", rtc->String("^^^^^^^^^" ));
-//
-//  fprintf(stderr, "\nNow dumping CSTRING converted from RexxStringObject:\n");
-//  testDumpRgf((const char *) rtc->CString(rso));
-// <---
-
      env->ReleaseStringUTFChars( (jstring) jobj, aha);
 
+     env->DeleteLocalRef(jo);
+     env->DeleteLocalRef(joc);
+     env->DeleteLocalRef(jobj);
+
      return rso;
-     // TODO: must use CallContext! rtc->SetContextVariable(BSF_ERROR_STRING, rso);    // save Java error text with BSF_ERROR_STRING
-     // inline RexxStringObject RgfGetJavaThrowableAsString (JNIEnv *env, RexxThreadContext *rtc)
 }
 
 
@@ -4320,106 +4206,6 @@ inline void removeNODE(JNIEnv *env, PSTRUCT_NODE node)
 
 
 
-/*
-<===
-    // ---------------------------------------------------------------------------------------
-    // remove a given node unconditionally, if last node in TID2NODE, remove TID2NODE as well !
-inline void removeNODE(JNIEnv *env, PSTRUCT_NODE node)
-{
-fprintf(stderr, "/// vor  (3a), removeNODE(), node=[%p]...\n", node);fflush(stderr);
-        // if this node is in a list of dependent nodes, remove it from the list
-    if (node->dependsOn!=NULL)      // we are dependent
-    {
-        PSTRUCT_NODE master=node->dependsOn;    // node, we depend on
-        if (master->firstDependent==node)       // we are the first node in the dependent list
-        {
-            master->firstDependent=node->nextDependent; // remove ourselves from the dependent list
-            node->nextDependent=NULL;           // reset dependent pointer
-        }
-        else    // we are somewhere in the middle of the dependent list
-        {
-            if (node->prevDependent!=NULL)      // if the previous node exists, let it point ahead
-            {
-                node->prevDependent->nextDependent=node->nextDependent;    // let previous node point to next dependent node
-            }
-
-            if (node->nextDependent!=NULL)      // if next dependent node exists, let it point back
-            {
-                node->nextDependent->prevDependent=node->prevDependent;
-            }
-            node->nextDependent=NULL;           // reset dependent pointer
-            node->prevDependent=NULL;           // reset dependent pointer
-        }
-    }
-
-
-        // next, remove dependent nodes, if any (cf. BsfAttachToTID())
-    for (PSTRUCT_NODE i=node->firstDependent; i!=NULL; )
-    {
-        PSTRUCT_NODE tmpNode=i;
-        i=i->nextDependent;                     // memorize next node in dependent list as 'i'-pointer won't be available after the next call
-        removeNODE(env, tmpNode);               // recurse
-    }
-
-        // adjust counters
-    node->rajoRef->refCounter-=node->nodeRefCounter;    // deduct nr of references
-    node->nodeRefCounter=0;
-
-    PSTRUCT_TID2NODE t2n=(PSTRUCT_TID2NODE) node->belongsToTID2NODE;    // pointer to TID2NODE this node belongs to
-    // try to find the TID2NODE node and continue processing (could be that that T2N node got deleted in a recursion above!)
-    int bBogusT2N=TRUE;
-
-    for (PSTRUCT_TID2NODE i=pRoot_TID2NODE; i!=NULL; i=i->next )
-    {
-        if (i==t2n)     // found, not yet deleted!
-        {
-            bBogusT2N=FALSE;       // node still exists, indicate that!
-            break;
-        }
-    }
-
-    if (!bBogusT2N && t2n->firstNode==node)           // first node
-    {
-        if (node->next==NULL)           // last node for this TID2NODE, so this must be removed as well!
-        {
-            RgfFreeMemory(node);        // free memory of node
-            removeTID2NODE(env, t2n);   // remove TID2NODE node
-            return;                     // we are done, return
-        }
-
-        t2n->firstNode=node->next;      // let TID2NODE point to node's next node
-
-        if (node->next!=NULL)           // if the next node exists, let it point to previous node
-        {
-            node->next->prev=node->prev;// let the next node point to this node's previous node
-        }
-    }
-    else    // not the first node in the list
-    {
-        if (node->prev!=NULL)           // if previous node exists, let it point ahead
-        {
-            node->prev->next=node->next;// let the previous node point to the node's next node
-        }
-
-        if (node->next!=NULL)           // if next node exists, let it point back
-        {
-            node->next->prev=node->prev;// let the next node point to the node's previous node
-        }
-    }
-
-        // check whether RAJO-nocde has dropped to 0, if so remove it
-    // if (node->rajoRef->refCounter==0)   // no more references for this RAJO, delete node
-    if (node->rajoRef!=NULL && node->rajoRef->refCounter==0)   // no more references for this RAJO, delete node
-    {
-        removeRAJO(env, node->rajoRef);
-    }
-
-    RgfFreeMemory(node);                // free memory of node
-    return;
-}
-===>
-*/
-
     // ---------------------------------------------------------------------------------------
     // remove all nodes unconditionally, that got created for the given Rexx instance (riid)
 inline void removeAll_RIID_nodes(JNIEnv *env, void *riid)
@@ -4915,92 +4701,6 @@ inline PSTRUCT_TID2NODE findTID2NODE(
 
 
 
-
-
-
-/* rgf, 20091004
-
-    // JRST: memorizes the JNI env, the RAJO and sets up important objects
-typedef struct _STRUCT_JRST {
-    struct _STRUCT_JRST        *dependsOn;          // if NULL, this creates global refs, else links to JRST that created global refs
-    struct _STRUCT_JRST        *hides;              // 20091001: if not NULL, points to JRST this one hides effectively (TID2JRST uses a LIFO lookup)
-    struct _STRUCT_JRST        *next;               // 20091002: if not NULL, points to next (hidden) JRST of this TID (which this one hides effectively; LIFO)
-    int                         countDependents;    // 20091002: if >0, then this JRST was used for at least one dependsOn-node (so a full scan of the JRST list might be necessary for cleanup)
-    int                         bImmortal;          // 20091001: if TRUE, then do never remove; scenario: Rexx loads Java and needs this to interact with Java via the BSF() function
-#ifdef UNIX
-    pthread_t                   tid;                // TID of this JRST
-#else
-    TID                         tid;                // TID of this JRST
-#endif
-    void                       *riid;               // Rexx interpreter instance pointer value: allow for finding JRSTs created because of a particular RIID (can be used for cleanup purposes, if RI gets terminated)
-    JavaVM                     *pjvm;               // JVM in use
-    JNIEnv                     *penv;               // JNI environment pointer
-    jobject                     rajo;               // RexxAndJava instance to communicate with
-    jmethodID                   mid_javaCallFromBSF;// method 'javaCallBSF' TODO: rename method name to "javaCallFromBSF" in RexxAndJava ?
-    jclass                      clz_String;         // java.lang.String class object
-    jstring                     emptyUTFString;     // Java empty string
-    jmethodID                   mid_initFromByteArray;  // <init> with byte-array
-    jmethodID                   mid_getBytes;       // "getBytes"-method
-}  STRUCT_JRST;
-
-typedef STRUCT_JRST *PSTRUCT_JRST;                  // pointer to structure
-long size_STRUCT_JRST=sizeof(STRUCT_JRST);          // get and memorize size of structure
-
-
-    // documents the mapping between TID <-> JRST
-typedef struct _STRUCT_TID2JRST {
-    struct _STRUCT_TID2JRST     *next;  // pointer to next block
-    int                         counter;               // counter, indicating how many different TID are using this JRST block
-#ifdef UNIX
-    pthread_t                   tid;
-#else
-    TID                         tid;    // current TID
-#endif
-    PSTRUCT_JRST                jrst;   // associated with JRST
-}  STRUCT_TID2JRST;
-
-typedef STRUCT_TID2JRST *PSTRUCT_TID2JRST;          // pointer to structure
-long size_STRUCT_TID2JRST=sizeof(STRUCT_TID2JRST);  // get and memorize size of structure
-PSTRUCT_TID2JRST pRoot_TID2JRST=NULL;               // root of TID2JRST list
-
-//  / *
-//      // rgf, 2008-08-14: list of nested TID2JRSTs (used as LIFO/stack)
-//      //                  nesting is only allowed, if for the nesting TID's JRST no other ooRexx
-//      //                  threads exist (tested by RgfCountUsageOfJRST() ), hence this
-//      //                  list only needs to save the (only) TID2JRST node
-//  typedef struct _STRUCT_SAVE_NESTED_JRST {
-//      struct _STRUCT_SAVE_NESTED_JRST  *next; // pointer to next SAVE_NESTED_JRST
-//  #ifdef UNIX
-//      pthread_t                   tid;
-//  #else
-//      TID                         tid;        // current TID
-//  #endif
-//      PSTRUCT_TID2JRST            tid2jrst;   // save its TID2JRST node
-//  }  STRUCT_SAVE_NESTED_JRST;
-//
-//  typedef STRUCT_SAVE_NESTED_JRST *PSTRUCT_SAVE_NESTED_JRST;        // pointer to structure
-//  long size_STRUCT_SAVE_NESTED_JRST=sizeof(STRUCT_SAVE_NESTED_JRST);// get and memorize size of structure
-//  PSTRUCT_SAVE_NESTED_JRST pRoot_SAVE_NESTED_JRST=NULL;             // root of list SAVE_NESTED_JRST
-//  * /
-
-
-// forward prototypes
-    VOID  RgfAcquireLock();
-    VOID  RgfReleaseLock();
-    int   RgfRemoveTID2JRST_node(PSTRUCT_JRST jrst, int bAllDependent);
-    int   RgfRemoveTID2JRST(PSTRUCT_JRST jrst, int bForce);
-    void  JNU_MessageBox (JNIEnv *env, const char *msg);
-
-    PSTRUCT_JRST RgfGetJRST_by_TID(
-    #ifdef UNIX
-        pthread_t
-    #else
-        TID
-    #endif
-                  tid);
-
-rgf, 20091004 */
-
     void RexxEntry rgfInitLocks();     // rgf, 2009-04-25, initialize critical section
     void RexxEntry rgfDestroyLocks();  //                  destroy/delete it
 
@@ -5027,6 +4727,8 @@ inline VOID JAVA_TO_STRING (JNIEnv *env, jobject jo, char * buffer, int bufSize)
         env->ExceptionDescribe();
         env->ExceptionClear();
         SNPRINTF(buffer, bufSize, "JAVA EXCEPTION OCCURED, Java object=[%p], its class object=[%p], 'toString'-MID=[%p]\n", jo, joc, jmidName);
+        env->DeleteLocalRef(joc);
+        env->DeleteLocalRef(jobj);
         return;
     }
 
@@ -5034,6 +4736,9 @@ inline VOID JAVA_TO_STRING (JNIEnv *env, jobject jo, char * buffer, int bufSize)
     // strcpy(buffer, tmpStr);
     SNPRINTF(buffer, bufSize, "%s", tmpStr);    // 2009-10-02, rgf
     env->ReleaseStringUTFChars( (jstring) jobj, tmpStr);
+
+    env->DeleteLocalRef(joc);
+    env->DeleteLocalRef(jobj);
 }
 
 
@@ -5056,1570 +4761,6 @@ RgfGetTID()
 }
 
 
-
-/*  rgf, 20091004: commenting out previous code
-
-    // create a string showing the TID2JRST-list, supplies a buffer ('val') of 4096 bytes
-    // (caller is responsible for having a MUTEX set)
-inline void RgfShowTID2JRSTlist(const char * title, int showMaxCount)
-{
-
-    fprintf(stderr, "RgfShowTID2JRSTlist [%s]:\n", title); fflush(stderr);
-
-    if (pRoot_TID2JRST==NULL)
-    {
-        fprintf(stderr, "%s", "    # 0: -> EMPTY TID2JRST (pRoot_TID2JRST==NULL) <-\n"); fflush(stderr);
-        return;
-    }
-
-
-        // ---> 20091002, find JNIENV for this TID in order to make sure that we use the correct one
-    #ifdef UNIX
-        pthread_t
-    #else   // WIN32
-        TID
-    #endif
-            thisTID=RgfGetTID();
-
-    PSTRUCT_JRST thisJRST=NULL;
-
-    for (PSTRUCT_TID2JRST k=pRoot_TID2JRST; k!=NULL; k=k->next)
-    {
-        if (k->tid==thisTID)    // found !
-        {
-            thisJRST=k->jrst;
-            break;
-        }
-    }
-
-    if (thisJRST==NULL)         // no JNIENV found for this TID !
-    {
-        fprintf(stderr, "    # 0: -> CANNOT find a JRST for thisTID=[%lu] to use for showing TID2JRST at this time\n", (unsigned long) thisTID); fflush(stderr);
-        return;
-    }
-
-    // <--- 20091002
-
-
-
-    PSTRUCT_TID2JRST i=NULL;
-    const char *pattern="    # %2d: node=[%p] tid=[%lu] counter=[%d] jrst=[%p/%p::%s] (jrst->dependent=[%p] jrst->countDependents=[%d] jrst->hides=[%p]) next=[%p]\n";
-    int n=1;
-    char strRajo[256];
-    for (i=pRoot_TID2JRST; i!=NULL; i=i->next, n++)
-    {
-        if (i==NULL || i->jrst==NULL)
-        {
-            strRajo[0]='0';
-        }
-        else
-        {
-// fprintf(stderr, "... RgfShow (1) ..., n=[%d], i=[%p], i->jrst=[%p], i->next=[%p]...\n", n, i, i->jrst, i->next);
-            JAVA_TO_STRING(thisJRST->penv, i->jrst->rajo,strRajo,256);
-
-            // org.rexxla.bsf.engines.rexx.RexxAndJava@17a8913
-            // extract unqualified class name with hashId
-            if (strRajo[0]=='o' && strRajo[1]=='r' && strRajo[2]=='g')
-            {
-                char tmpBuf[256];
-                sscanf(strRajo, "org.rexxla.bsf.engines.rexx.%s", tmpBuf);
-// fprintf(stderr, "... RgfShow (2) ..., strRajo=[%s], tmpBuf=[%s]\n", strRajo, tmpBuf);
-                SNPRINTF(strRajo, 256, "%s", tmpBuf);
-            }
-        }
-        // sprintf(str, pattern, n, i, i->tid, i->counter,
-        fprintf(stderr, pattern,
-                        n, i, i->tid, i->counter,
-                        i->jrst,
-                        (i->jrst==NULL ? NULL : i->jrst->penv),
-                // (i->jrst==NULL ? NULL : i->jrst->rajo),
-                        (i->jrst==NULL ? NULL : strRajo),
-                        (i->jrst==NULL ? NULL : i->jrst->dependsOn),
-                        (i->jrst==NULL ? NULL : i->jrst->countDependents),
-                        (i->jrst==NULL ? NULL : i->jrst->hides),
-                        i->next);
-        fflush(stderr);
-
-        if (showMaxCount>0 && n>=showMaxCount) // break, if showMaxCount is exceeded
-        {
-fprintf(stderr, ".... BREAKING, showMaxCount=[%d], n=[%d]\n", showMaxCount, n); fflush(stderr);
-            break;
-        }
-    }
-    return;
-}
-
-    // create a string showing the TID2JRST-list, supplies a buffer ('val') of 4096 bytes
-    // (caller is responsible for having a MUTEX set)
-inline void RgfShowTID2JRSTlist_old(const char * title, char * val, int valSize)
-{
-    PSTRUCT_TID2JRST i=NULL;
-    int n=0;
-    const char *pattern="        # %2d: node=[%p] tid=[%lu], counter=[%d], jrst=[%p/%p::%p] (jrst->dependent=[%p], jrst->countDependents=[%d], jrst->hides=[%p]), next=[%p]\n";
-    char str[256]="";
-
-    // sprintf(val, "    [%.256s]:\n", title);
-    SNPRINTF( val, valSize, "    [%.256s]:\n", title);
-
-    if (pRoot_TID2JRST==NULL) {
-        // strcat(val, "        # 0: -> EMPTY TID2JRST (pRoot_TID2JRST==NULL) <-");
-        SNPRINTF( val, valSize, "%s%s", val, "        # 0: -> EMPTY TID2JRST (pRoot_TID2JRST==NULL) <-");
-    }
-
-    for (i=pRoot_TID2JRST,n=1; i!=NULL && n<60; i=i->next, n++) {
-        // sprintf(str, pattern, n, i, i->tid, i->counter,
-        SNPRINTF( str, 256, pattern, n, i, i->tid, i->counter,
-                        i->jrst,
-                        (i->jrst==NULL ? NULL : i->jrst->penv),
-                        (i->jrst==NULL ? NULL : i->jrst->rajo),
-                        (i->jrst==NULL ? NULL : i->jrst->dependsOn),
-                        (i->jrst==NULL ? NULL : i->jrst->countDependents),
-                        (i->jrst==NULL ? NULL : i->jrst->hides),
-                        i->next);
-        // strcat(val, str);
-        SNPRINTF( val, valSize, "%s%s", val, str);
-    }
-}
-
-
-
-    // rgf, 2008-08-14, count and return total number of JRST usages
-    // (caller is responsible for having a MUTEX set)
-inline int RgfCountUsageOfJRST (
-    #ifdef UNIX
-        pthread_t
-    #else   // WIN32
-        TID
-    #endif
-                  tid
-#ifdef RGF_BIT
-    , JNIEnv *env
-#endif
-                  )
-{
-#if defined ( RGF_INFO )  || defined( DEBUG_JRST )
-         fprintf(stderr, "*** RGF_INFO: RgfCountUsageOfJRST 1 ...\n");
-         fflush(stderr);
-#endif
-
-         int                iCount=0;
-         PSTRUCT_TID2JRST       i=NULL;
-         PSTRUCT_JRST     tmpJrst=NULL;
-
-#ifdef RGF_BIT
-     {
-         char title2  [512]="";
-         // sprintf(title2, "BSF4Rexx.cc: \n... RgfCountUsageOfJRST(), 1: tid=[%lu]\n",
-         SNPRINTF( title2, 512, "BSF4Rexx.cc: \n... RgfCountUsageOfJRST(), 1: tid=[%lu]\n",
-                        (unsigned long) tid);
-         JNU_MessageBox(env, title2);
-     }
-#endif
-
-
-
-         // find TID2JRST node
-         for (i=pRoot_TID2JRST; i!=NULL; i=i->next) {
-             if (i->tid==tid) {
-                 tmpJrst=i->jrst;          // save JRST
-                 break;
-             }
-         }
-
-#ifdef RGF_BIT
-     {
-         char title2  [512]="";
-         // sprintf(title2, "BSF4Rexx.cc: \n... RgfCountUsageOfJRST(), 2: tid=[%lu], i=[%p], tmpJrst=[%p]\n",
-         SNPRINTF( title2, 512, "BSF4Rexx.cc: \n... RgfCountUsageOfJRST(), 2: tid=[%lu], i=[%p], tmpJrst=[%p]\n",
-                        (unsigned long) tid, i, tmpJrst);
-         JNU_MessageBox(env, title2);
-     }
-#endif
-
-         if (tmpJrst==NULL) {          // no entry for given tid found in TID2JRST list
-
-
-#ifdef RGF_BIT
-     {
-         char title2  [512]="";
-         // sprintf(title2, "BSF4Rexx.cc: \n... RgfCountUsageOfJRST(), 2a: tid=[%lu], i=[%p], tmpJrst=[%p]\n",
-         SNPRINTF( title2, 512, "BSF4Rexx.cc: \n... RgfCountUsageOfJRST(), 2a: tid=[%lu], i=[%p], tmpJrst=[%p]\n",
-                        (unsigned long) tid, i, tmpJrst);
-         JNU_MessageBox(env, title2);
-     }
-#endif
-
-#if defined (RGF_INFO_1)  || defined( DEBUG_JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfCountUsageOfJRST 2a - returning iCount=[%d]\n", iCount);
-         fflush(stderr);
-#endif
-             return 0;
-         }
-
-         // iCount all JRST-usages
-         for (i=pRoot_TID2JRST; i!=NULL; i=i->next) {
-             if ((i->jrst==tmpJrst) || (i->jrst->dependsOn==tmpJrst)) {
-                 iCount++;
-             }
-#ifdef RGF_BIT
-     {
-         char title2  [512]="";
-         // sprintf(title2, "BSF4Rexx.cc: \n... RgfCountUsageOfJRST(), 2b: tid=[%lu], i=[%p], i->next=[%p] -> iCount=[%d]\n",
-         SNPRINTF( title2, 512, "BSF4Rexx.cc: \n... RgfCountUsageOfJRST(), 2b: tid=[%lu], i=[%p], i->next=[%p] -> iCount=[%d]\n",
-                        (unsigned long) tid, i, i->next, iCount);
-         JNU_MessageBox(env, title2);
-     }
-#endif
-         }
-
-#ifdef RGF_BIT
-     {
-         char title2  [512]="";
-         // sprintf(title2, "BSF4Rexx.cc: \n... RgfCountUsageOfJRST(), 3: tid=[%lu], i=[%p], tmpJrst=[%p] -> iCount=[%d]\n",
-         SNPRINTF( title2, 512, "BSF4Rexx.cc: \n... RgfCountUsageOfJRST(), 3: tid=[%lu], i=[%p], tmpJrst=[%p] -> iCount=[%d]\n",
-                        (unsigned long) tid, i, tmpJrst, iCount);
-         JNU_MessageBox(env, title2);
-     }
-#endif
-
-#if defined (RGF_INFO_1)  || defined( DEBUG_JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfCountUsageOfJRST 2b - returning iCount=[%d]\n", iCount);
-         fflush(stderr);
-#endif
-         return iCount;
-}
-
-*/
-
-/*
-    // rgf, 2008-08-14, save TID2JRST node (and thereby reference to its JRST node)
-    //                  created for given "tid" // (caller is responsible for having a MUTEX set)
-inline int RgfSaveTID2JRST (
-    #ifdef UNIX
-        pthread_t
-    #else   // WIN32
-        TID
-    #endif
-                  tid)
-{
-#ifdef RGF_INFO
-         fprintf(stderr, "*** RGF_INFO: RgfSaveTID2JRST 1 ...\n");
-         fflush(stderr);
-#endif
-
-         PSTRUCT_TID2JRST    i=NULL, old=NULL;
-
-         // find TID2JRST node
-         for (i=pRoot_TID2JRST; i!=NULL; i=i->next) {
-             if (i->tid==tid) {
-                 break;             // found, leave loop
-             }
-             old=i;                 // save
-         }
-
-         if (i==NULL) {             // not found!
-#if defined (RGF_INFO_1)
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfSaveTID2JRST 2a - NO TID2JRST node matching tid=[%lu] found!\n",
-                                  (unsigned long) tid);
-         fflush(stderr);
-#endif
-             return FALSE;
-         }
-
-         // create a SAVE_NESTED_JRST node, push it into list
-         PSTRUCT_SAVE_NESTED_JRST newNode=(PSTRUCT_SAVE_NESTED_JRST) RgfAllocateMemory(size_STRUCT_SAVE_NESTED_JRST);
-         memset(newNode,0,size_STRUCT_SAVE_NESTED_JRST);     // set everything to 0
-
-         newNode->tid2jrst=i;       // save TID2JRST node
-         newNode->tid     =tid;     // save TID
-
-         if (pRoot_SAVE_NESTED_JRST!=NULL) {
-             newNode->next=pRoot_SAVE_NESTED_JRST;  // let newNode point to existing next
-         }
-         pRoot_SAVE_NESTED_JRST=newNode;    // let root now point to newNode
-
-         // remove saved TID2JRST node from TID2JRST list
-         if (old!=NULL) {           // let previous node now point to i's next node
-             old->next=i->next;
-         }
-         else {                     // next node is new root
-             pRoot_TID2JRST=i->next;
-         }
-         i->next=NULL;              // make sure, that next pointer on saved TID2JRST node is deleted
-
-
-#if defined (RGF_INFO_1)
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfSaveTID2JRST 2b - success!");
-         fflush(stderr);
-#endif
-         return TRUE;          // return TID2JRST node
-}
-
-
-
-    // rgf, 2008-08-14, restore saved TID2JRST node, make sure to delete current TID2JRST and JRST first,
-    //                  returns # of deleted (waning) TID2JRST nodes (caller is responsible for having a MUTEX set)
-inline int RgfRestoreTID2JRST (
-    #ifdef UNIX
-        pthread_t
-    #else   // WIN32
-        TID
-    #endif
-                  tid)
-{
-#ifdef RGF_INFO
-         fprintf(stderr, "*** RGF_INFO: RgfRestoreTID2JRST 1 ...\n");
-         fflush(stderr);
-#endif
-
-         PSTRUCT_TID2JRST           i=NULL;
-         PSTRUCT_SAVE_NESTED_JRST snj=NULL, snjOld=NULL;
-
-         // locate SAVE node, if not found return false
-         for (snj=pRoot_SAVE_NESTED_JRST; snj!=NULL; snj=snj->next) {
-             if (snj->tid==tid) {       // matching node found ?
-                 break;
-             }
-             snjOld=snj;        // save
-         }
-
-         if (snj==NULL) {       // not found!
-#if defined (RGF_INFO_1)
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfRestoreTID2JRST 2a - NO SAVE_NESTED_JRST node matching tid=[%lu] found!\n",
-                                  (unsigned long) tid);
-         fflush(stderr);
-#endif
-             return FALSE;
-         }
-
-
-/ * ---> TID2JRST node and all references to its JRST as well as the JRST node itself got already taken care at the end of ...jniRexxStart
-         // locate current TID2JRST node, if any
-            // if TID2JRST node exists, make sure it and its JRST (plus its usages) gets removed
-
-         // find TID2JRST node
-
-         int                   iCount=0;
-         for (i=pRoot_TID2JRST; i!=NULL; i=i->next) {
-             if (i->tid==tid) {
-                 break;             // found, leave loop
-             }
-         }
-
-         if (i!=NULL) {             // TID2JRST node exists
-             // delete all TID2JRST nodes that use/dependOn "i->jrst" and "i->jrst" node itself
-             iCount=RgfRemoveTID2JRST(i->jrst,TRUE);  // save count of TID2JRST removals
-         }
----> * /
-
-         // always insert SAVE node at head of TID2JRST list
-         if (pRoot_TID2JRST!=NULL) {
-             snj->tid2jrst->next=pRoot_TID2JRST; // let saved node point to root's next node
-         }
-         pRoot_TID2JRST=snj->tid2jrst;  // new root is restored TID2JRST node (LIFO)
-
-         // remove SAVE node
-         if (snjOld!=NULL) {        // let previous node point to next one
-             snjOld->next=snj->next;
-         }
-         else {                     // next node is new root
-             pRoot_SAVE_NESTED_JRST=snj->next;
-         }
-         RgfFreeMemory(snj);        // free SAVE_NESTED_JRST node
-
-
-#if defined (RGF_INFO_1)
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfRestoreTID2JRST 2b - success!");
-         fflush(stderr);
-#endif
-         return TRUE;
-}
-*/
-
-
-
-
-/* rgf, 20091004
-    // create and initialize a new JRST node, push it into the JRST list (becomes first node)
-    // (caller is responsible for having a MUTEX set)
-inline PSTRUCT_JRST RgfNewJRST (
-    #ifdef UNIX
-        pthread_t
-    #else
-        TID
-    #endif
-                  tid, JNIEnv *penv, jobject jo, PSTRUCT_JRST attachToJRST, void *riid)
-{
-
-#if defined ( RGF_INFO ) || defined( DEBUG_JRST )
-         fprintf(stderr, "*** RGF_INFO: RgfNewJRST - 1, tid=[%lu] ...\n", (unsigned long) tid);
-         fflush(stderr);
-#endif
-
-    PSTRUCT_JRST newNode=(PSTRUCT_JRST) RgfAllocateMemory(size_STRUCT_JRST);
-    memset(newNode,0,size_STRUCT_JRST);     // set everything to 0
-
-        // fill-in arguments
-    newNode->tid      =tid;     // save this TID
-    penv->GetJavaVM(& newNode->pjvm);   // get and save the JavaVM for this env
-    newNode->penv     =penv;    // save this thread's JNIEnv
-    newNode->riid     =riid;    // save RIID
-
-        // get and set global references to repeatedly needed Java objects (this is the first=main thread of the thread group)
-    if (attachToJRST==NULL) {
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) || defined( DEBUG_JRST )
-    fprintf(stderr, "*** *** RGF_INFO_1: RgfNewJRST - 3a, tid=[%lu]: new thread group ...\n",
-                      (unsigned long) tid);
-    fflush(stderr);
-#endif
-
-        newNode->rajo   =jo;        // save RexxAndJava object/instance
-
-            // get MID for the interface method in rajo
-        jclass tmpClz=penv->GetObjectClass(jo);     // get class object
-        newNode->mid_javaCallFromBSF=penv->GetMethodID( tmpClz, "javaCallBSF",
-                                              "([Ljava/lang/String;)Ljava/lang/String;" );
-
-            // get java.lang.String related objects
-        tmpClz                  =penv->FindClass("java/lang/String");
-        newNode->clz_String     =tmpClz;
-        newNode->emptyUTFString =penv->NewStringUTF("");  // was: (jstring) env->NewGlobalRef( env->NewStringUTF("") );
-
-        newNode->mid_initFromByteArray=penv->GetMethodID(tmpClz, "<init>", "([B)V");    // get constructor
-        newNode->mid_getBytes   =penv->GetMethodID(tmpClz, "getBytes", "()[B");         // getBytes()
-
-            // create global references for these important objects
-        jobject newRef;
-        newRef=penv->NewGlobalRef(newNode->clz_String);
-        newNode->clz_String=(jclass) newRef;
-
-        newRef=penv->NewGlobalRef(newNode->emptyUTFString);
-        newNode->emptyUTFString=(jstring) newRef;
-
-        newRef=penv->NewGlobalRef(newNode->rajo);
-        newNode->rajo=newRef;
-    }
-    else {  // re-use global references created in the first=main thread of this thread group
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) || defined( DEBUG_JRST )
-    fprintf(stderr, "*** *** RGF_INFO_1: RgfNewJRST - 3b, tid=[%lu]: reusing thread group with JRST=[%p] ...\n",
-                      (unsigned long) tid, attachToJRST);
-    fflush(stderr);
-#endif
-        // save JRST that holds the global refs (main thread of thread group)
-        newNode->dependsOn= (attachToJRST->dependsOn==NULL ? attachToJRST : attachToJRST->dependsOn);
-            // maintain dependency counter
-        newNode->dependsOn->countDependents++;    // rgf, 2009-10-01: make sure JRST gets marked that it is linked to
-
-        newNode->rajo               =attachToJRST->rajo;
-        newNode->mid_javaCallFromBSF=attachToJRST->mid_javaCallFromBSF;
-
-        newNode->clz_String         =attachToJRST->clz_String;
-        newNode->emptyUTFString     =attachToJRST->emptyUTFString;
-
-        newNode->mid_initFromByteArray=attachToJRST->mid_initFromByteArray;
-        newNode->mid_getBytes       =attachToJRST->mid_getBytes;
-    }
-
-/ * test stuff: all o.k.
-
-fprintf(stderr, "^^^^^ RgfNewJRST - TESTS, 01 cre...\n");fflush(stderr);
-jobject o1=penv->NewGlobalRef(newNode->rajo);
-fprintf(stderr, "^^^^^ RgfNewJRST - TESTS, 02 del...\n");fflush(stderr);
-penv->DeleteGlobalRef(o1);
-
-fprintf(stderr, "^^^^^ RgfNewJRST - TESTS, 03 cre...\n");fflush(stderr);
-jobject o2=penv->NewGlobalRef(newNode->rajo);
-
-fprintf(stderr, "^^^^^ RgfNewJRST - TESTS, 04 del ...\n");fflush(stderr);
-penv->DeleteGlobalRef(o2);
-
-fprintf(stderr, "^^^^^ RgfNewJRST - TESTS, 05 del ...\n");fflush(stderr);
-penv->DeleteGlobalRef(o2);
-
-fprintf(stderr, "^^^^^ RgfNewJRST - TESTS, 06 del ...\n");fflush(stderr);
-penv->DeleteGlobalRef(NULL);
-* /
-
-
-    return newNode;
-}
-*/
-
-
-/* rgf, 20091004
-    // create and initialize a new TID2JRST node, push it into the TID2JRST list (becomes first node)
-    // (caller is responsible for having a MUTEX set)
-inline PSTRUCT_TID2JRST RgfNewTID2JRST (
-    #ifdef UNIX
-        pthread_t
-    #else   // WIN32
-        TID
-    #endif
-                  tid, PSTRUCT_JRST jrst)
-{
-#if defined ( RGF_INFO )   ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** RGF_INFO: RgfNewTID2JRST 1 ...\n");
-         fflush(stderr);
-#endif
-        // create TID2JRST node
-    PSTRUCT_TID2JRST newNode=(PSTRUCT_TID2JRST) RgfAllocateMemory(size_STRUCT_TID2JRST);
-    memset(newNode,0,size_STRUCT_TID2JRST); // set everything to 0
-
-    newNode->counter=0;         // set to 0
-    newNode->tid=tid;           // save tid
-    newNode->jrst=jrst;         // save pointer to JRST node
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH)  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfNewTID2JRST 2 - pRoot_TID2JRST=[%p], newNode=[%p], newNode->next=[%p]\n",
-                                                        pRoot_TID2JRST, newNode, newNode->next);
-         fflush(stderr);
-#endif
-
-        // push node into list
-    if (pRoot_TID2JRST != NULL) {
-        newNode->next=pRoot_TID2JRST; // insert newNode at head, hence point to old start
-    }
-    pRoot_TID2JRST=newNode;     // new root (i.e. inserting at head of list)
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH)  ||  defined( DEBUG_TID2JRST )
-    fprintf(stderr, "*** *** RGF_INFO_1: RgfNewTID2JRST 3 - pRoot_TID2JRST=[%p] | newNode=[%p], newNode->next=[%p] .\n",
-                                                   pRoot_TID2JRST, newNode, newNode->next);
-    fflush(stderr);
-    RgfShowTID2JRSTlist("RgfNewTID2JRST", 100);
-
-/ *
-    char str[8192]="";
-    RgfShowTID2JRSTlist_old("RgfNewTID2JRST", str, 8192);
-    fprintf(stderr, str);
-    fflush(stderr);
-* /
-
-#endif
-
-
-    return newNode;
-}
-
-
-
-
-    // 20091002
-    // find TID2JRST node with the given TID and return it; if not found return NULL
-    //    if argument is NULL, then query current TID and use that
-    // caller is responsible for setting (and removing) the lock
-inline PSTRUCT_TID2JRST RgfGetTID2JRST_by_TID(
-    #ifdef UNIX
-        pthread_t
-    #else   // WIN32
-        TID
-    #endif
-                  tid)
-{
-
-#if defined ( RGF_INFO ) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** RGF_INFO: RgfGetTID2JRST_by_TID 1, RgfGetTid()=[%lu], find tid=[%lu] ...\n",
-                 (unsigned long) RgfGetTID(),
-                 (unsigned long) tid);
-         fflush(stderr);
-#endif
-//    if (tid==NULL) {    // rgf, 20090820, warning from 64-Bit gcc: "BSF4Rexx.cc:2757: warning: NULL used in arithmetic"
-    if (tid==0) {
-        tid=RgfGetTID();
-    }
-
-    PSTRUCT_TID2JRST i=NULL;
-
-    for (i=pRoot_TID2JRST; i!=NULL; i=i->next)
-    {
-        if (i->tid==tid)    // TID found ?
-        {
-#if defined ( RGF_INFO ) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** RGF_INFO: RgfGetTID2JRST_by_TID 2, NOT found! Returning TID2JRST=[%p] for tid=[%lu]...\n",
-                 (void *) NULL,
-                 (unsigned long) tid);
-         fflush(stderr);
-#endif
-            return i;       // return pointer to TID2JRST node
-        }
-    }
-
-#if defined ( RGF_INFO ) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** RGF_INFO: RgfGetTID2JRST_by_TID 3, NOT found! Returning TID2JRST=[%p] for tid=[%lu]...\n",
-                 (void *) NULL,
-                 (unsigned long) tid);
-         fflush(stderr);
-#endif
-    return NULL;
-}
-
-
-
-
-
-    // determine whether we have a TID2JRST node defined serving given "tid", if so, return the
-    // JRST it points to (LIFO), if bForceCreation==FALSE;
-    //     if not, then create a new TID2JRST node and insert it at the head of the TID2JRST list,
-    //           if TID has already a JRST node, then forcing a new JRST is only allowed, if the
-    //           current TID's JRST is not used by Rexx threads (otherwise wrong JRSTs may be used in
-    //           calls from those Rexx threads); in that case return NULL as JRST to indicate error
-    // also maintain the TID2JRST list
-inline PSTRUCT_JRST RgfGetJRST_or_create_new (
-    #ifdef UNIX
-        pthread_t
-    #else   // WIN32
-        TID
-    #endif
-                  tid, JNIEnv *penv, jobject jo, int bForceCreation, PSTRUCT_JRST attachToJRST, void *riid)
-{
-#if defined ( RGF_INFO ) ||  defined( DEBUG_JRST )  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** RGF_INFO: RgfGetJRST_or_create_new 1, tid=[%lu], pRoot_TID2JRST=[%p] ...\n",
-                 (unsigned long) tid, pRoot_TID2JRST);
-         fflush(stderr);
-#endif
-
-    RgfAcquireLock();           // block other threads from accessing this
-
-    PSTRUCT_TID2JRST k=RgfGetTID2JRST_by_TID(tid);  // try to get a TID2JRST, if tid in table
-
-#if defined ( RGF_INFO_1 ) ||  defined( DEBUG_JRST )  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfGetJRST_or_create_new 2 - tid=[%lu], k=[%p]\n",
-                         (unsigned long) tid, k);
-         fflush(stderr);
-#endif
-
-         // new TID, create new TID2JRST and new JRST
-    if (k!=NULL)        // pointer to TID2JRST not found !
-    {
-        // create JRST
-        PSTRUCT_JRST jrst=RgfNewJRST(tid, penv, jo, attachToJRST, riid);
-
-        // create TID2JRST, insert at head of TID2JRST list
-        k=RgfNewTID2JRST(tid, jrst);    // create new TID2JRST node
-        k->next=pRoot_TID2JRST;         // let new node point to current root
-        pRoot_TID2JRST=k;               // make this the new TID2JRST root
-
-        // TODO: activate (check for ??AtachToTID??
-        // AttachCurrentThread() ! ?
-        // jobj res=jrst->penv->AttachCurrentThread();
-
-#if defined ( RGF_INFO_1 ) ||  defined( DEBUG_JRST )  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfGetJRST_or_create_new 2a - CREATED NEW JRST & TID2JRST - tid=[%lu], k=[%p], jrst->penv->ExceptionCheck()=[%d]\n",
-                         (unsigned long) tid, k, jrst->penv->ExceptionCheck());
-         fflush(stderr);
-#endif
-
-        RgfReleaseLock();       // release lock
-        return jrst;
-    }
-
-
-#if defined ( RGF_INFO_1 ) ||  defined( DEBUG_JRST )  ||  defined( DEBUG_TID2JRST )
-     fprintf(stderr, "*** *** RGF_INFO_1: RgfGetJRST_or_create_new 3 - tid=[%lu], k=[%p] EXISTED ALREADY!\n",
-                     (unsigned long) tid, k);
-     fflush(stderr);
-#endif
-    // TOOD: 20091002: should we check whether rajo are the same, and if not, create a new one anyway?
-    if (!bForceCreation)        // if we are not forced to create a new JRST, return the found one
-    {
-        RgfReleaseLock();       // release lock
-        return k->jrst;
-    }
-
-
-    // is head JRST pointing to the same rajo, if so return that JRST
-    // else create new JRST, hide old one, insert at head, return that JRST
-
-    // PSTRUCT_JRST oldJRST=k->jrst;
-    PSTRUCT_JRST newJRST=NULL;
-
-#if defined ( RGF_INFO_1 ) ||  defined( DEBUG_JRST )  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfGetJRST_or_create_new 3aa - tid=[%lu], k->jrst=[%p], k->jrst->tid=[%lu], k->jrst->dependsOn=[%p], k->jrst->dependsOn->countDependents=[%d] EXISTED ALREADY;!\n",
-                         (unsigned long) tid,
-                         k->jrst,
-                         (unsigned long) k->tid,
-                         k->jrst->dependsOn,
-                         (k->jrst->dependsOn!=NULL ? k->jrst->dependsOn->countDependents : -999)
-                         );
-         fflush(stderr);
-#endif
-
-         // for this TID's JRST there are Rexx threads that use them !
-        if (k->jrst->countDependents>0 ||     // node in hand got linked?
-            (k->jrst->dependsOn!=NULL)        // a dependent node, is linked JRST
-           )
-        {
-            // if (k->rajo != jo) then interfacing with DIFFERENT RexxAndJava instance, which
-            // is a no-no as existing Rexx threads would use the wrong rajo on their next
-            // interfacing with Java, hence return NULL to indicate an error!
-
-#if defined ( RGF_INFO_1 ) ||  defined( DEBUG_JRST )  ||  defined( DEBUG_TID2JRST ) || defined (RGF_ATTACH)
-         char tmpBuf1[256], tmpBuf2[256];
-         JAVA_TO_STRING(penv, k->jrst->rajo, tmpBuf1, 256);
-         JAVA_TO_STRING(penv, jo,      tmpBuf2, 256);
-
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfGetJRST_or_create_new 3a - tid=[%lu], k=[%p] EXISTED ALREADY; \n\tpenv->IsSameObject(k->rajo=[%p][%s], jo=[%p][%s]): [%d]!\n",
-                         (unsigned long) tid, k->jrst, k->jrst->rajo, tmpBuf1, jo, tmpBuf2, penv->IsSameObject(k->jrst->rajo, jo));
-         fflush(stderr);
-#endif
-
-        if (penv->IsSameObject(k->jrst->rajo, jo)==JNI_FALSE)
-        {
-
-#if defined ( RGF_INFO_1 ) ||  defined( DEBUG_JRST )  ||  defined( DEBUG_TID2JRST ) || defined (RGF_ATTACH)
-
-     fprintf(stderr, "*** *** RGF_INFO_1: RgfGetJRST_or_create_new 3b - tid=[%lu], k->jrst=[%p] EXISTED ALREADY, ERROR, there are dependent Rexx threads!\n",
-                     (unsigned long) tid, k->jrst);
-     fflush(stderr);
-
-     char tmpMsg[256];
-     SNPRINTF(tmpMsg, 256, "RgfGetJRST_or_create_new(...)/problem with tid being used by Rexx threads; tid=[%lu], k->jrst=[%p]", (unsigned long) tid, k->jrst);
-     RgfShowTID2JRSTlist(tmpMsg, 100);
-#endif
-
-            RgfReleaseLock();       // release lock
-            return NULL;            // sorry, this would end in a mess, if the existing Rexx threads
-                                    // would get the wrong JRST returned at the next invocation of BSF() !
-        }
-    }
-#if defined ( RGF_INFO_1 ) ||  defined( DEBUG_JRST )  ||  defined( DEBUG_TID2JRST )
-     fprintf(stderr, "*** *** RGF_INFO_1: RgfGetJRST_or_create_new 3c - tid=[%lu], k->jrst=[%p] EXISTED ALREADY, O.K., FORCING a new JRST!\n",
-                     (unsigned long) tid, k->jrst);
-     fflush(stderr);
-#endif
-
-    // create a new JRST node & create global references
-    newJRST=RgfNewJRST(tid, penv, jo, NULL, riid);
-    newJRST->hides=k->jrst;     // assign 'old', it's either NULL or a JRST pointer, so this is fine
-    newJRST->next =k->jrst;     // chain to next JRST in this TID-group
-    k->jrst=newJRST;            // let TID2JRST point to new JRST (LIFO)
-
-#if defined ( RGF_INFO_1 ) ||  defined( DEBUG_JRST )  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfGetJRST_or_create_new 4 - tid=[%lu], new=[%p]\n",
-                         (unsigned long) tid, newJRST);
-         fflush(stderr);
-#endif
-
-#if defined (RGF_INFO_1) ||  defined( DEBUG_JRST )    ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfGetJRST_or_create_new 5 - tid=[%lu], pRoot_TID2JRST=[%p].\n",
-                         (unsigned long) tid, pRoot_TID2JRST);
-         fflush(stderr);
-#endif
-
-    RgfReleaseLock();           // release lock
-    return k->jrst;             // return pointer to new JRST node
-}
-
-
-
-
-    // find TID's JRST in TID2JRST list and return it; if not found return NULL
-    //    if argument is NULL, then query current TID and use that
-    // caller is responsible for setting (and removing) the lock
-inline PSTRUCT_JRST RgfGetJRST_by_TID(
-    #ifdef UNIX
-        pthread_t
-    #else   // WIN32
-        TID
-    #endif
-                  tid)
-{
-
-#if defined ( RGF_INFO ) ||  defined( DEBUG_JRST )  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** RGF_INFO: RgfGetJRST_by_TID 1, RgfGetTid()=[%lu], find tid=[%lu] ...\n",
-                 (unsigned long) RgfGetTID(),
-                 (unsigned long) tid);
-         fflush(stderr);
-#endif
-//    if (tid==NULL) {    // rgf, 20090820, warning from 64-Bit gcc: "BSF4Rexx.cc:2757: warning: NULL used in arithmetic"
-    if (tid==0) {
-        tid=RgfGetTID();
-    }
-
-    PSTRUCT_TID2JRST i=NULL;
-    PSTRUCT_JRST     k=NULL;
-
-    for (i=pRoot_TID2JRST; i!=NULL; i=i->next) {
-        if (i->tid==tid) {      // TID found ?
-            k=i->jrst;          // save pointer to JRST node
-
-#if defined ( RGF_INFO ) ||  defined( DEBUG_JRST )  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** RGF_INFO: RgfGetJRST_by_TID 1, FOUND! Returning k=PJRST=[%p] for tid=[%lu]...\n",
-                 k,
-                 (unsigned long) tid);
-         fflush(stderr);
-#endif
-
-            return k;           // return pointer to JRST node
-        }
-    }
-
-#if defined ( RGF_INFO ) ||  defined( DEBUG_JRST )
-         fprintf(stderr, "*** RGF_INFO: RgfGetJRST_by_TID 1, NOT found! Returning k=PJRST=[%p] for tid=[%lu]...\n",
-                 (void *) NULL,
-                 (unsigned long) tid);
-         fflush(stderr);
-#endif
-    return NULL;
-}
-
-
-
-    // Remove the node from TID2JRST which uses "jrst" (bAllDependent=FALSE, !bImmortal), *or*
-    // remove all nodes from TID2JRST that are dependent on "jrst" (bAllDependent<>FALSE)
-    //
-    // jvm->DetachingCurrentThread() needs to be done, before entering this routine
-inline int RgfRemoveTID2JRST_node(PSTRUCT_JRST jrst, int bAllDependent)
-{
-    PSTRUCT_TID2JRST i=NULL, prev=NULL;
-    int count=0;
-
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-    #ifdef UNIX
-       pthread_t
-    #else // WIN32
-       TID
-    #endif
-       tid=RgfGetTID();
-
-    fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveTID2JRST_node 1, tid=[%lu], jrst=[%p], pRoot_TID2JRST=[%p], bAllDependent=[%d] (1=dependent TID2JRST first) ...\n",
-                         (unsigned long) tid, jrst, pRoot_TID2JRST, bAllDependent);
-    fflush(stderr);
-#endif
-        // process TID2JRST list
-    for (i=pRoot_TID2JRST; i!=NULL;  )
-    {
-        // if bAllDependent==TRUE: delete all JRST nodes that dependOn "jrst"
-        // else                  : delete "jrst" itself
-        if ( (bAllDependent==FALSE ? i->jrst : i->jrst->dependsOn) == jrst)
-        {
-            if (prev != NULL)
-            {
-                prev->next=i->next; // let previous node point to next
-            }
-            else                   // no previous, hence adjust root node
-            {
-                pRoot_TID2JRST=i->next; // let root point to next
-            }
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveTID2JRST_node 2a, tid=[%lu], about to memfree: i->jrst=[%p], i->tid=[%lu]/i=[%p]->next=[%p]; now pRoot_TID2JRST=[%p] ...\n",
-                         (unsigned long) tid, i->jrst, (unsigned long) i->tid, i, i->next, pRoot_TID2JRST);
-         fflush(stderr);
-#endif
-            if (bAllDependent==TRUE)    // 20091002: removing the dependent nodes, adjust counter
-            {
-                i->jrst->dependsOn->countDependents--;
-            }
-
-            RgfFreeMemory(i->jrst); // free JRST node
-
-            PSTRUCT_TID2JRST tmpMem=i;  // save pointer to memory
-            i=i->next;      // advance by hand, now it is safe to free the node's memory
-            count++;        // increase counter
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveTID2JRST_node 2b, tid=[%lu], about to memfree: i=[%p]; now pRoot_TID2JRST=[%p] ...\n",
-                         (unsigned long) tid, i, pRoot_TID2JRST);
-         fflush(stderr);
-#endif
-
-            RgfFreeMemory(tmpMem);  // free TID2JRST node
-
-            if (bAllDependent==FALSE) {
-                return count;
-            }
-            continue;       // iterate
-        }
-
-        prev=i;             // memorize this node
-        i=i->next;          // advance by hand // rgf 2008-08-06
-    }
-    return count;
-}
-
-
-
-    // Remove given 'jrst' from JRST list and all nodes referring to it from the TID2JRST list.
-    // if bForce is set, then main=first thread of a thread group can be removed: remove all dependent
-    //                        TID2JRST (dependsOn==jrst) too
-    // caller is responsible for setting (and removing) the lock
-    // if removing a JRST that hides another one, then make sure that all JRSTs that "dependsOn" the to
-    // be deleted one will point to the hidden JRST (this case is only possible, if both JRSTs
-    // refer to the same RexxAndJava instance)
-    //     t2j    ... starting TID2JRST node
-    //     jrst   ... JRST to be deleted
-    //     bForce ... remove even if there are links (e.g. remove JRSTs of a specific RIID, because the RI has been terminated)
-inline int RgfRemoveJRST(PSTRUCT_TID2JRST rt2j, PSTRUCT_JRST jrst, int bForce)
-{
-    PSTRUCT_TID2JRST t2j=NULL, prev_t2j=NULL;
-    PSTRUCT_JRST     j  =NULL, prev_j  =NULL;
-    int            count=0;     // count will return total number of deleted nodes
-
-#if defined (RGF_INFO) || defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-    #ifdef UNIX
-       pthread_t
-    #else // WIN32
-       TID
-    #endif
-       tid=RgfGetTID();
-
-         fprintf(stderr, "*** RGF_INFO: RgfRemoveTID2JRST 1, tid=[%lu], jrst=[%p], bForce=[%d] (1=force) ...\n",
-                         (unsigned long) tid, jrst, bForce);
-         fflush(stderr);
-#endif
-
-    if (jrst==NULL) {
-        return 0;
-    }
-
-         // if JRST of main=first thread of a thread group and no bForce set, don't do anything
-    if (jrst->dependsOn==NULL)      // received main=first thread's JRST
-    {
-        if (bForce==FALSE)          // do not force removal
-        {
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveTID2JRST 2 - tid=[%lu]: main=first thread, bForce=FALSE, hence NOT removing it!\n", (unsigned long) tid  );
-         fflush(stderr);
-#endif
-            return 0;
-        }
-
-        // rgf, 20091001: if JRST hides another JRST, and countDependents, then scan all JRSTs
-        //                and let dependsOn point to the hidden JRST from now on
-        if (jrst->hides != NULL && jrst->countDependents>0)
-        {
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveTID2JRST 2a - tid=[%lu]: jrst=[%p], jrst->hides=[%p], jrst->countDependents=[%d] ...\n",
-                                  (unsigned long) tid, jrst, jrst->hides, jrst->countDependents);
-         fflush(stderr);
-#endif
-            for (PSTRUCT_TID2JRST i=pRoot_TID2JRST; i!=NULL; i=i->next)
-            {
-                if (i->jrst->dependsOn==jrst)           // depending on JRST that is about to be deleted?
-                {
-                    i->jrst->dependsOn=jrst->hides;     // let dependsOn point to hides JRST (addressing the same rajo)
-                }
-            }
-        }
-
-            // remove all dependent TID2JRST nodes first
-        count += RgfRemoveTID2JRST_node(jrst, TRUE);
-    }
-
-        // remove given TID2JRST node, unless it's the singleton immortal one (created for the use-case where
-        // Rexx loaded Java and needs a primodal JRST to allow interaction with Java from the primodal thread)
-    if (!jrst->bImmortal)
-    {
-
-        // this JRST has/had dependents, which are/may be present
-        // - find a dependent,
-        //   - if found:
-        //        - set dependsOn to NULL
-        //        - go down the list and if other dependents are found, let them point to this JRST from now on
-        //          (and set countDependents to TRUE)
-        //   - if not found, set countDependents to FALSE to allow deletion of the global refs
-        if (jrst->countDependents>0)    // this JRST has/had dependents
-        {
-            PSTRUCT_JRST tmpJRST=NULL;
-            // iterate over list
-            for (PSTRUCT_TID2JRST i=pRoot_TID2JRST; i!=NULL; i=i->next)
-            {
-                if (i->jrst->dependsOn==jrst)   // a dependent found !
-                {
-                    tmpJRST           =i->jrst; // save node
-
-                    tmpJRST->dependsOn->countDependents--;  // decrease counter
-                    tmpJRST->dependsOn=NULL;    // clear link to JRST
-
-                    for (i=i->next; i!=NULL; i=i->next)   // let the others dependents now point to tmpJRST
-                    {
-                        if (i->jrst->dependsOn==jrst)   // found another dependent node
-                        {
-                            i->jrst->dependsOn=tmpJRST; // point to new JRST
-                            tmpJRST->countDependents++; // increase counter
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-
-
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-    if (!(jrst->countDependents<1))  // no dependents (anymore), hence safe to delete global refs
-    {
-        fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveTID2JRST 3 - tid=[%lu]: jrst=[%p], before DeleteGlobalRef(...), jrst->countDependents=[%d]...\n",
-                                  (unsigned long) tid, jrst, jrst->countDependents);
-        fflush(stderr);
-    }
-#endif
-
-// TODO: remove, just temporarily not executing
-//        if (!jrst->countDependents<1)  // no dependents (anymore), hence safe to delete global refs
-        if (jrst->countDependents<1 && FALSE )  // no dependents (anymore), hence safe to delete global refs
-        {
-                // remove jrst's global references
-            jrst->penv->DeleteGlobalRef (jrst->clz_String);
-            jrst->penv->DeleteGlobalRef (jrst->emptyUTFString);
-            jrst->penv->DeleteGlobalRef (jrst->rajo);
-        }
-        count += RgfRemoveTID2JRST_node(jrst, FALSE);
-    }
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveTID2JRST 4 - tid=[%lu]: pRoot_TID2JRST=[%p].\n",
-                                                      (unsigned long) tid, pRoot_TID2JRST);
-         fflush(stderr);
-         RgfShowTID2JRSTlist("RgfRemoveTID2JRST", 100);
-
-/ *
-         char str[8192]="";
-         RgfShowTID2JRSTlist_old("RgfRemoveTID2JRST", str, 8192);
-         fprintf(stderr, str);
-         fflush(stderr);
-* /
-#endif
-
-    return count;
-}
-
-
-
-    // Remove given 'jrst' from JRST list and all nodes referring to it from the TID2JRST list.
-    // if bForce is set, then main=first thread of a thread group can be removed: remove all dependent
-    //                        TID2JRST (dependsOn==jrst) too
-    // caller is responsible for setting (and removing) the lock
-    // if removing a JRST that hides another one, then make sure that all JRSTs that "dependsOn" the to
-    // be deleted one will point to the hidden JRST (this case is only possible, if both JRSTs
-    // refer to the same RexxAndJava instance)
-inline int RgfRemoveTID2JRST_old(PSTRUCT_JRST jrst, int bForce)
-{
-    PSTRUCT_TID2JRST t2j=NULL, prev_t2j=NULL;
-    PSTRUCT_JRST     j  =NULL, prev_j  =NULL;
-    int            count=0;     // count will return total number of deleted nodes
-
-#if defined (RGF_INFO) || defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-    #ifdef UNIX
-       pthread_t
-    #else // WIN32
-       TID
-    #endif
-       tid=RgfGetTID();
-
-         fprintf(stderr, "*** RGF_INFO: RgfRemoveTID2JRST 1, tid=[%lu], jrst=[%p], bForce=[%d] (1=force) ...\n",
-                         (unsigned long) tid, jrst, bForce);
-         fflush(stderr);
-#endif
-
-    if (jrst==NULL) {
-        return 0;
-    }
-
-         // if JRST of main=first thread of a thread group and no bForce set, don't do anything
-    if (jrst->dependsOn==NULL)      // received main=first thread's JRST
-    {
-        if (bForce==FALSE)          // do not force removal
-        {
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveTID2JRST 2 - tid=[%lu]: main=first thread, bForce=FALSE, hence NOT removing it!\n", (unsigned long) tid  );
-         fflush(stderr);
-#endif
-            return 0;
-        }
-
-        // rgf, 20091001: if JRST hides another JRST, and countDependents, then scan all JRSTs
-        //                and let dependsOn point to the hidden JRST from now on
-        if (jrst->hides != NULL && jrst->countDependents>0)
-        {
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveTID2JRST 2a - tid=[%lu]: jrst=[%p], jrst->hides=[%p], jrst->countDependents=[%d] ...\n",
-                                  (unsigned long) tid, jrst, jrst->hides, jrst->countDependents);
-         fflush(stderr);
-#endif
-            for (PSTRUCT_TID2JRST i=pRoot_TID2JRST; i!=NULL; i=i->next)
-            {
-                if (i->jrst->dependsOn==jrst)           // depending on JRST that is about to be deleted?
-                {
-                    i->jrst->dependsOn=jrst->hides;     // let dependsOn point to hides JRST (addressing the same rajo)
-                }
-            }
-        }
-
-            // remove all dependent TID2JRST nodes first
-        count += RgfRemoveTID2JRST_node(jrst, TRUE);
-    }
-
-        // remove given TID2JRST node, unless it's the singleton immortal one (created for the use-case where
-        // Rexx loaded Java and needs a primodal JRST to allow interaction with Java from the primodal thread)
-    if (!jrst->bImmortal)
-    {
-
-        // this JRST has/had dependents, which are/may be present
-        // - find a dependent,
-        //   - if found:
-        //        - set dependsOn to NULL
-        //        - go down the list and if other dependents are found, let them point to this JRST from now on
-        //          (and set countDependents to TRUE)
-        //   - if not found, set countDependents to FALSE to allow deletion of the global refs
-        if (jrst->countDependents>0)    // this JRST has/had dependents
-        {
-            PSTRUCT_JRST tmpJRST=NULL;
-            // iterate over list
-            for (PSTRUCT_TID2JRST i=pRoot_TID2JRST; i!=NULL; i=i->next)
-            {
-                if (i->jrst->dependsOn==jrst)   // a dependent found !
-                {
-                    tmpJRST           =i->jrst; // save node
-
-                    tmpJRST->dependsOn->countDependents--;  // decrease counter
-                    tmpJRST->dependsOn=NULL;    // clear link to JRST
-
-                    for (i=i->next; i!=NULL; i=i->next)   // let the others dependents now point to tmpJRST
-                    {
-                        if (i->jrst->dependsOn==jrst)   // found another dependent node
-                        {
-                            i->jrst->dependsOn=tmpJRST; // point to new JRST
-                            tmpJRST->countDependents++; // increase counter
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-
-
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-    if (!(jrst->countDependents<1))  // no dependents (anymore), hence safe to delete global refs
-    {
-        fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveTID2JRST 3 - tid=[%lu]: jrst=[%p], before DeleteGlobalRef(...), jrst->countDependents=[%d]...\n",
-                                  (unsigned long) tid, jrst, jrst->countDependents);
-        fflush(stderr);
-    }
-#endif
-
-// TODO: remove, just temporarily not executing
-//        if (!jrst->countDependents<1)  // no dependents (anymore), hence safe to delete global refs
-        if (jrst->countDependents<1 && FALSE )  // no dependents (anymore), hence safe to delete global refs
-        {
-                // remove jrst's global references
-            jrst->penv->DeleteGlobalRef (jrst->clz_String);
-            jrst->penv->DeleteGlobalRef (jrst->emptyUTFString);
-            jrst->penv->DeleteGlobalRef (jrst->rajo);
-        }
-        count += RgfRemoveTID2JRST_node(jrst, FALSE);
-    }
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveTID2JRST 4 - tid=[%lu]: pRoot_TID2JRST=[%p].\n",
-                                                      (unsigned long) tid, pRoot_TID2JRST);
-         fflush(stderr);
-         RgfShowTID2JRSTlist("RgfRemoveTID2JRST", 100);
-
-/ *
-         char str[8192]="";
-         RgfShowTID2JRSTlist_old("RgfRemoveTID2JRST", str, 8192);
-         fprintf(stderr, str);
-         fflush(stderr);
-* /
-#endif
-
-    return count;
-}
-
-
-
-    // 2009-10-02, rgf
-    // remove all JRST's which were created for a given Rexx interpreter instance (denoted by RIID);
-    // remove JRST's that use that JRST in its "dependsOn" field as well
-    //
-    // caller is responsible for setting (and removing) the lock
-inline int RgfRemoveJRST_By_RIID(void * riid)
-{
-    int            count=0;     // count will return total number of deleted nodes
-
-#if defined (RGF_INFO) || defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-    #ifdef UNIX
-       pthread_t
-    #else // WIN32
-       TID
-    #endif
-       tid=RgfGetTID();
-
-         fprintf(stderr, "*** RGF_INFO: RgfRemoveJRST_by_RIID 1, tid=[%lu], ...\n",
-                         (unsigned long) tid);
-         fflush(stderr);
-#endif
-
-     PSTRUCT_TID2JRST oldT2J=NULL;
-     for (PSTRUCT_TID2JRST k=pRoot_TID2JRST; k!=NULL ; )
-     {
-         PSTRUCT_JRST jrst=k->jrst;
-         PSTRUCT_JRST oldJNode=NULL;
-
-         for (PSTRUCT_JRST j=k->jrst; j!=NULL; )
-         {
-             // find a JRST to delete
-             if (  j->riid==riid ||         // o.k. JRST is of sought for RIID
-                  (j->dependsOn!=NULL ? (j->dependsOn->riid==riid) : FALSE )    // JRST depends on a RIID, hence it needs to get removed as well
-                )
-             {
-                 PSTRUCT_JRST tmpJRST=j;    // save JRST
-                 j=j->next;                 // let i point to next node, before node pointed to by 'j' gets removed
-
-                 if (j==NULL && oldJNode==NULL)  // last JRST node for this TID2JRST
-                 {
-                     // j->penv->DetachCurrentThread(); // TODO: to be tested
-                 }
-                 // count+=RgfRemoveTID2JRST(tmp, TRUE);   // remove JRST and all its dependents
-                 count+=RgfRemoveJRST(tmpJRST, TRUE);   // remove JRST and all its dependents
-
-                 if (j==NULL && oldJNode==NULL)  // last JRST node for this TID2JRST
-                 {
-                                                // remove TID2JRST node !
-                     if (oldT2J!=NULL)          // a previous node exists, let it now point to the next node
-                     {
-                         oldT2J->next=k->next;
-                     }
-                     else                       // next node becomes new root
-                     {
-                         pRoot_TID2JRST=k->next;
-                     }
-
-                     PSTRUCT_TID2JRST tmpT2J=k; // save node to be deleted
-                     k=k->next;                 // let k now point to next node
-                     RgfFreeMemory(tmpT2J);     // free memory of T2J-node
-                 }
-             }
-             else       // o.k. process next node
-             {
-                 oldJNode=jrst;     // save node
-                 j=j->next;
-             }
-
-             oldT2J=k;          // save previous node
-         }
-     }
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveJRST_by_RIID 2 - tid=[%lu]: pRoot_TID2JRST=[%p].\n",
-                                                      (unsigned long) tid, pRoot_TID2JRST);
-         fflush(stderr);
-
-         RgfShowTID2JRSTlist("RgfRemoveJRST_by_RIID", 100);
-
-/ *
-         char str[8192]="";
-         RgfShowTID2JRSTlist_old("RgfRemoveJRST_by_RIID", str, 8192);
-         fprintf(stderr, str);
-         fflush(stderr);
-* /
-#endif
-
-    return count;
-}
-
-
-    // 2009-10-01, rgf
-    // remove all JRST's which were created for a given Rexx interpreter instance (denoted by RIID);
-    // remove JRST's that use that JRST in its "dependsOn" field as well
-    //
-    // caller is responsible for setting (and removing) the lock
-inline int RgfRemoveJRST_By_RIID_old(void * riid)
-{
-    int            count=0;     // count will return total number of deleted nodes
-
-#if defined (RGF_INFO) || defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-    #ifdef UNIX
-       pthread_t
-    #else // WIN32
-       TID
-    #endif
-       tid=RgfGetTID();
-
-         fprintf(stderr, "*** RGF_INFO: RgfRemoveJRST_by_RIID 1, tid=[%lu], ...\n",
-                         (unsigned long) tid);
-         fflush(stderr);
-#endif
-
-     for (PSTRUCT_TID2JRST i=pRoot_TID2JRST; i!=NULL ; )
-     {
-         if (i->jrst->riid==riid)    // found a JRST to delete
-         {
-             i=i->next;                         // let i point to next node, before node pointed to by 'i' gets removed
-             count+=RgfRemoveTID2JRST(i->jrst, TRUE);   // remove JRST and all its dependents
-         }
-         else       // o.k. point to next node
-         {
-             i=i->next;
-         }
-     }
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfRemoveJRST_by_RIID 2 - tid=[%lu]: pRoot_TID2JRST=[%p].\n",
-                                                      (unsigned long) tid, pRoot_TID2JRST);
-         fflush(stderr);
-
-         RgfShowTID2JRSTlist("RgfRemoveJRST_by_RIID", 100);
-
-/ *
-         char str[8192]="";
-         RgfShowTID2JRSTlist_old("RgfRemoveJRST_by_RIID", str, 8192);
-         fprintf(stderr, str);
-         fflush(stderr);
-* /
-#endif
-
-    return count;
-}
-
-
-
-
-    // new logic: 2008-08-03, ---rgf
-    // Find pointer to JRST node for 'targetTID' in TID2JRST list;
-    //      - (a) if 'targetTID' does not exist in TID2JRST:  return NULL
-    //      - (b) if 'myTid' exists and its JVM is the same as 'targetTID's JVM, then return JRST (already attached)
-    //      - (c) if 'myTid' exists and it points to a different JVM, then
-    //                          a) detach from JVM, remove JRST
-    //                          b) attach to 'targetTID's JVM, create a new JRST, return JRST
-    //      - (d) if 'myTid' does not exist, then attach to 'targetTID's JVM, create a new JRST,
-    //                          return newly created JRST
-inline PSTRUCT_JRST RgfNewAttachToTID(
-    #ifdef UNIX
-        pthread_t
-    #else   // WIN32
-        TID
-    #endif
-                  targetTID,
-                  void * riid
-                  )
-{
-#ifdef UNIX
-    pthread_t
-#else   // WIN32
-    TID
-#endif
-        myTid=RgfGetTID();  // get current TID
-
-#if defined ( RGF_INFO )  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** RGF_INFO: RgfNewAttachToTID 1, myTid=[%lu], targetTID=[%lu], ...\n",
-                 (unsigned long) myTid,
-                 (unsigned long) targetTID);
-         fflush(stderr);
-#endif
-
-
-        // does targetTID exist?
-    RgfAcquireLock();           // block other threads from accessing this
-    PSTRUCT_JRST tgtJRST=RgfGetJRST_by_TID(targetTID);    // try to get JRST, if tid in table
-
-    PSTRUCT_JRST tmpJRST=NULL;
-
-    if (tgtJRST==NULL) {                // (a): targetTID does not exist, we cannot attach !
-#if defined(RGF_INFO_1) || defined(RGF_ATTACH)  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfNewAttachToTID 2, cannot attach, targetTID [%lu] does NOT EXIST, returning NULL (PANIC!) ...\n",
-                 (unsigned long) targetTID);
-         fflush(stderr);
-#endif
-        RgfReleaseLock();
-        return NULL;
-    }
-
-
-        // do we have an entry already for myTid, if so, let it point to k!
-    PSTRUCT_TID2JRST i=NULL;
-    for (i=pRoot_TID2JRST; i!=NULL; i=i->next) {
-        if (i->tid==myTid) {    // TID found !
-                // check whether both use the same JVM, if so, we are attached already, return JRST
-            tmpJRST=i->jrst;
-
-            if (
-                 (tmpJRST->dependsOn==tgtJRST->dependsOn)                  ||  // both from same thread group
-                 (tgtJRST->dependsOn==NULL && tgtJRST==tmpJRST->dependsOn) ||  // tgtJRST: main=first thread
-                 (tmpJRST->dependsOn==NULL && tmpJRST==tgtJRST->dependsOn)     // tmpJRST: main=first thread
-            )
-            {
-
-                i->counter++;           // increase counter
-                RgfReleaseLock();       // release lock
-
-#if defined (RGF_INFO_1) || defined (RGF_ATTACH)  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfNewAttachToTID 3a, found current tid=[%lu] already in same thread group and attached, counter now=[%d], returning JRST=[%p], ...\n",
-                         (unsigned long) myTid, i->counter, tmpJRST);
-         fflush(stderr);
-#endif
-                return tmpJRST;         // same thread group & already attached to JVM, return it
-            }
-
-                // if current thread's JRST is a main thread, do not re-attach, but return an error
-            if (tmpJRST->dependsOn==NULL) {
-
-                RgfReleaseLock();       // release lock
-                // TODO: create Rexx-error
-#if defined(RGF_INFO_1) || defined(RGF_ATTACH)  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfNewAttachToTID 3b, cannot change main=first thread's JRST!, targetTID [%lu], returning NULL (PANIC!) ...\n",
-                 (unsigned long) targetTID);
-         fflush(stderr);
-#endif
-                return NULL;
-            }
-
-
-            // TODO: check logic
-#if defined(RGF_INFO_1) || defined(RGF_ATTACH)  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfNewAttachToTID 3c, about detaching from JVM, deleting JRST=[%p]\n",
-                         tmpJRST);
-         fflush(stderr);
-#endif
-                // detach from JVM, remove JRST
-            tmpJRST->pjvm->DetachCurrentThread();
-            RgfRemoveTID2JRST(tmpJRST, TRUE);
-            break;
-        }
-    }
-
-
-#if defined(RGF_INFO_1) || defined(RGF_ATTACH)  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1:  RgfNewAttachToTID 4, about attaching thread [%lu] to JVM...\n",
-                 (unsigned long) myTid);
-         fflush(stderr);
-#endif
-
-        // attach to JVM, create a JRST, insert it into TID2JRST
-    JNIEnv *tmpEnv=NULL;
-    // tgtJRST->pjvm->AttachCurrentThread((void **) &tmpEnv, NULL);    // attach to JVM
-    // rgf, 20091003:
-    tgtJRST->pjvm->AttachCurrentThread((void **) &tmpEnv, (void *) &defaultJavaVMAttachArgs); // attach to JVM
-
-    tmpJRST=RgfNewJRST(myTid, tmpEnv, tgtJRST->rajo, tgtJRST, riid);      // create new JRST
-    i=RgfNewTID2JRST(myTid, tmpJRST);   // create new TID2JRST node
-    i->counter=1;                       // set TID2JRST node counter to 1, such that
-                                        // only an explicit BSFDetach() can decrement counter to 0
-
-    RgfReleaseLock();           // release lock
-
-#if defined(RGF_INFO_1) || defined(RGF_ATTACH)  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1:  RgfNewAttachToTID 5, attached to thread [%lu] to JVM, returning JRST=[%p]...\n",
-                 (unsigned long) myTid,
-                 tmpJRST
-                 );
-         fflush(stderr);
-#endif
-
-    return tmpJRST;             // return newly created JRST
-}
-
-
-
-    // Find 'tid's TID2JRST node; if it is not the JRST 'tid' (main=first thread), then
-    // delete the node from the TID2JRST list and return .true; otherwise return .false
-inline int  RgfNewDetach()
-{
-    #ifdef UNIX
-    pthread_t
-    #else
-    TID
-    #endif
-              myTid=RgfGetTID();  // get current "myTid"
-
-#if defined (RGF_INFO) || defined (RGF_INFO_1) ||  defined (RGF_ATTACH) || defined (RGF_DETACH)  ||  defined( DEBUG_TID2JRST )
-    int tmpCounter=0;
-    fprintf(stderr, "*** RGF_INFO: RgfNewDetach 1, myTid=[%lu]...\n", (unsigned long) myTid);
-    fflush(stderr);
-#endif
-
-
-    // only remove from TID2JRST table, if TID is not JRST's TID!
-    PSTRUCT_TID2JRST i=NULL, prev=NULL;
-
-    RgfAcquireLock();           // block other threads from accessing this
-    for (i=pRoot_TID2JRST; i!=NULL; i=i->next) {
-        if (i->tid==myTid) {      // a TID2JRST node found for given 'tid' ?
-            i->counter--;           // decrease counter
-
-#if defined(RGF_INFO_1) || defined(RGF_DETACH)  ||  defined( DEBUG_TID2JRST )
-         tmpCounter=i->counter;
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfNewDetach 2a, a TID2JRST node found, i->tid=[%lu], i=[%p], i->jrst=[%p], counter=[%d]; pRoot_TID2JRST=[%p] ...\n",
-                 (unsigned long) i->tid, i, i->jrst, i->counter, pRoot_TID2JRST);
-         fflush(stderr);
-#endif
-            if (i->counter>0) {     // not yet removable
-                break;              // leave
-            }
-
-            // remove TID2JSR node
-            if (i->jrst->dependsOn != NULL) {   // JRST's is not the main=first thread of a thread group?
-
-#if defined(RGF_INFO_1) || defined(RGF_DETACH)  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfNewDetach 2b, before DetachCurrentThread() from JVM! for TID=[%lu]\n",
-                 (unsigned long) myTid);
-         fflush(stderr);
-#endif
-                // detach from JVM
-                i->jrst->pjvm->DetachCurrentThread();
-
-#if defined(RGF_INFO_1) || defined(RGF_DETACH)  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfNewDetach 2c, successfully DETACHED from JVM! for TID=[%lu], about to remove i=[%p], i->jrst=[%p]\n",
-                 (unsigned long) myTid, i, i->jrst);
-         fflush(stderr);
-#endif
-
-                int count=RgfRemoveTID2JRST(i->jrst, FALSE);   // remove JRST
-
-
-#if defined(RGF_INFO_1) || defined(RGF_DETACH)  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfNewDetach 2d, DETACHED from JVM! for TID=[%lu], # TID2JRST nodes removed: [%d]; pRoot_TID2JRST=[%p] \n",
-                 (unsigned long) myTid, count, pRoot_TID2JRST);
-         fflush(stderr);
-#endif
-
-                RgfReleaseLock();   // release lock
-                return TRUE;
-            }
-            else {                  // JRST's 'myTid', we do not remove this one as this is the founding one
-
-                i->counter++;       // increase counter (re-establish previous value)
-
-#if defined(RGF_INFO_1) || defined(RGF_DETACH)  ||  defined( DEBUG_TID2JRST )
-         fprintf(stderr, "*** *** RGF_INFO_1: RgfNewDetach 2e, NOT removing main=first thread node TID2JRST for TID=[%lu], counter reset to: [%d] ...\n",
-                 (unsigned long) myTid, i->counter);
-         fflush(stderr);
-#endif
-
-                RgfReleaseLock();   // release lock
-                return FALSE;
-            }
-        }
-        prev=i;                 // remember visited node
-    }
-
-        // hmm, no node with given 'myTid' found
-#if defined(RGF_INFO_1) || defined(RGF_DETACH)  ||  defined( DEBUG_TID2JRST )
-         if (tmpCounter!=0) {
-             fprintf(stderr, "*** *** RGF_INFO_1:  RgfNewDetach 3a, counter [%d] NOT 0 yet for TID=[%lu], ...\n",
-                     tmpCounter, (unsigned long) myTid);
-         }
-         else {
-             fprintf(stderr, "*** *** RGF_INFO_1:  RgfNewDetach 3b, TID2JRST NOT FOUND for TID=[%lu] !! ...\n",
-                     (unsigned long) myTid);
-         }
-         fflush(stderr);
-#endif
-
-    RgfReleaseLock();           // release lock
-    return FALSE;               // node not found, hence cannot remove it
-}
-
-
-
-
-
-rgf, 20091004 */
 
 
 
@@ -6695,78 +4836,6 @@ inline VOID RgfReleaseLock()
 
 
 
-/* rgf, 2009-06-07
-    // just for testing/debugging, ===> 2008-08-06:
-    // MUTEX, blocking RXSIO exit handler manipulation of global buffer
-    //        - initializing/setting up of 'RXSIO_lock' is done in JNI_OnLoad()
-#ifdef RGF_MUTEX4RXSIOTRC
-    inline VOID RgfAcquireLockRXSIO()
-    {
-
-    #if defined (RGF_INFO) // || defined (RGF_BIT)
-        #ifdef UNIX
-            pthread_t
-        #else   // WIN32
-            TID
-        #endif
-                tid=RgfGetTID();
-
-        fprintf(stderr, "*** RGF_INFO: RgfAcquireLockRXSIO(): tid=[%lu] ... \n", (unsigned long) tid);
-        fflush(stderr);
-    #endif
-
-    #ifdef WINDOWS // WIN32
-        #if defined (RGF_USE_MUTEX)
-            WaitForSingleObject(RXSIO_lock, INFINITE);
-        #else
-            EnterCriticalSection (&RXSIO_lock);
-        #endif
-
-    #elif defined UNIX
-        pthread_mutex_lock(&RXSIO_lock);
-    #endif
-
-
-    #if defined (RGF_INFO) // || defined (RGF_BIT)
-        fprintf(stderr, "*** RGF_INFO: RgfAcquireLockRXSIO(): tid=[%lu] ... now ACQUIRED !\n", (unsigned long) tid);
-        fflush(stderr);
-    #endif
-
-    }
-
-
-    // ===> 2008-07-23: MUTEX, release lock
-    inline VOID RgfReleaseLockRXSIO()
-    {
-    #if defined (RGF_INFO) // || defined (RGF_BIT)
-        #ifdef UNIX
-            pthread_t
-        #else   // WIN32
-            TID
-        #endif
-                tid=RgfGetTID();
-        fprintf(stderr, "*** RGF_INFO: RgfReleaseLockRXSIO(): tid=[%lu] ...\n", (unsigned long) tid);
-        fflush(stderr);
-    #endif
-
-    #if defined WINDOWS // WIN32
-        #if defined (RGF_USE_MUTEX)
-            ReleaseMutex(RXSIO_lock);
-        #else
-            LeaveCriticalSection (&RXSIO_lock);
-        #endif
-    #else
-        pthread_mutex_unlock(&RXSIO_lock);
-    #endif
-
-    #if defined (RGF_INFO) // || defined (RGF_BIT)
-        fprintf(stderr, "*** RGF_INFO: RgfReleaseLockRXSIO(): tid=[%lu] ... now RELEASED !\n", (unsigned long) tid);
-        fflush(stderr);
-    #endif
-    }
-#endif
-
-*/
 
     // inline function for reserving memory disposable for Rexx (guessing how Rexx is allocating it)
             // usage, e.g.: PSZ mem = (PSZ) RgfAllocateMemory(3451l);
@@ -6834,12 +4903,11 @@ inline void RgfFreeMemory (void * memory)
     // cf. "6.1.2 A Utility Function"
 void JNU_ThrowByName(JNIEnv *env, const char *clzName, const char *msg)
 {
-    jclass clz = env->FindClass(clzName);
+    jclass jclz = env->FindClass(clzName);
 
-    if (clz != NULL)    // if clz is NULL, an exception has already been thrown
+    if (jclz != NULL)    // if clz is NULL, an exception has already been thrown
     {
-        env->ThrowNew(clz, msg);    // create the exception for the Java side
-        env->DeleteLocalRef(clz);   // free the local ref
+        env->ThrowNew(jclz, msg);    // create the exception for the Java side
     }
 }
 
@@ -6853,26 +4921,20 @@ void JNU_ThrowByName(JNIEnv *env, const char *clzName, const char *msg)
 char *JNU_GetStringNativeChars(JNIEnv *env, jstring jstr)  // JNIEnv *env, jstring jstr)
 {
     char *result = 0;
-//    jbyteArray bytes = (jbyteArray) env->CallObjectMethod(jstr,
-//                                            env->GetMethodID(env->FindClass("java/lang/String"), "getBytes", "()[B")
-//                                         );
-
-    jbyteArray bytes = (jbyteArray) env->CallObjectMethod(jstr, defaultJVM->mid_String_getBytes);
-
+    jbyteArray jba = (jbyteArray) env->CallObjectMethod(jstr, defaultJVM->mid_String_getBytes);
 
     if ( env->ExceptionCheck()==JNI_FALSE )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
     {
-
-        jint len = env->GetArrayLength(bytes);
+        jint len = env->GetArrayLength(jba);
 
         result   = (char *)RexxAllocateMemory(len + 1);
         if (result == NULL)
         {
+            env->DeleteLocalRef(jba);
             JNU_ThrowByName(env, "java/lang/OutOfMemoryError", 0);
-            env->DeleteLocalRef(bytes);
             return NULL;
         }
-        env->GetByteArrayRegion(bytes, 0, len, (jbyte *)result);
+        env->GetByteArrayRegion(jba, 0, len, (jbyte *)result);
         result[len] = 0; /* NULL-terminate */
     }
 #if defined(DEBUG40)
@@ -6883,7 +4945,7 @@ char *JNU_GetStringNativeChars(JNIEnv *env, jstring jstr)  // JNIEnv *env, jstri
     }
 #endif
 
-    env->DeleteLocalRef(bytes);
+    env->DeleteLocalRef(jba);
 
     return result;      // resulting native chars buffer must be explicitly freed!
 }
@@ -6897,11 +4959,11 @@ void JNU_JavaString2pRxString(JNIEnv *env, jstring jstr, PRXSTRING rxstr)  // JN
 {
     char *result = 0;
 
-    jbyteArray bytes = (jbyteArray) env->CallObjectMethod(jstr, defaultJVM->mid_String_getBytes);
+    jbyteArray jba = (jbyteArray) env->CallObjectMethod(jstr, defaultJVM->mid_String_getBytes);
 
     if ( env->ExceptionCheck()==JNI_FALSE )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
     {
-        jint len = env->GetArrayLength(bytes);
+        jint len = env->GetArrayLength(jba);
         rxstr->strptr   =result;
 
         result   = (char *)RexxAllocateMemory(len + 1);
@@ -6909,41 +4971,38 @@ void JNU_JavaString2pRxString(JNIEnv *env, jstring jstr, PRXSTRING rxstr)  // JN
 
         if (result != NULL)
         {
-            env->GetByteArrayRegion(bytes, 0, len, (jbyte *)result);
+            env->GetByteArrayRegion(jba, 0, len, (jbyte *)result);
             result[len] = 0; /* NULL-terminate */
             rxstr->strlength=len;    // save length in bytes with RXSTRING
             rxstr->strptr   =result;
         }
     }
-    env->DeleteLocalRef(bytes);
+    env->DeleteLocalRef(jba);
 }
 
 
 
 // --- this macro creates the RexxString object, allowing embedded NULs to be part of the string
-RexxObjectPtr JNU_GetStringNativeCharsReturningRexxObjectPtr(JNIEnv *env, jstring jstr, RexxThreadContext *context)
+RexxObjectPtr JNU_GetStringNativeCharsReturningRexxStringObject(JNIEnv *env, jstring jstr, RexxThreadContext *context)
 {
     char *result = 0;
     RexxObjectPtr rop=NULL;
-//    jbyteArray bytes = (jbyteArray) env->CallObjectMethod(jstr,
-//                                            env->GetMethodID(env->FindClass("java/lang/String"), "getBytes", "()[B")
-//                                         );
-    jbyteArray bytes = (jbyteArray) env->CallObjectMethod(jstr, defaultJVM->mid_String_getBytes);
 
+    jbyteArray jba = (jbyteArray) env->CallObjectMethod(jstr, defaultJVM->mid_String_getBytes);
 
     if ( env->ExceptionCheck()==JNI_FALSE )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
     {
 
-        jint len = env->GetArrayLength(bytes);
+        jint len = env->GetArrayLength(jba);
 
         result   = (char *)RexxAllocateMemory(len + 1);
         if (result == NULL)
         {
             JNU_ThrowByName(env, "java/lang/OutOfMemoryError", 0);
-            env->DeleteLocalRef(bytes);
+            env->DeleteLocalRef(jba);
             return NULL;
         }
-        env->GetByteArrayRegion(bytes, 0, len, (jbyte *)result);
+        env->GetByteArrayRegion(jba, 0, len, (jbyte *)result);
         result[len] = 0; /* NULL-terminate */
 
         rop=context->NewString(result, len);  // get Rexx object off it
@@ -6957,8 +5016,7 @@ RexxObjectPtr JNU_GetStringNativeCharsReturningRexxObjectPtr(JNIEnv *env, jstrin
     }
 #endif
 
-
-    env->DeleteLocalRef(bytes);
+    env->DeleteLocalRef(jba);
 
     return rop;         // RexxObjectPointer/RexxString
 }
@@ -6966,27 +5024,29 @@ RexxObjectPtr JNU_GetStringNativeCharsReturningRexxObjectPtr(JNIEnv *env, jstrin
 
 
     // rgf, 20100520: controlling creation of Java strings, this version allows NUL chars be embedded in string
-jobject JNU_CreateJavaString(JNIEnv *env, RexxThreadContext *context, RexxStringObject rso)
+jstring JNU_CreateJavaString(JNIEnv *env, RexxThreadContext *context, RexxStringObject rso)
 {
         // create Java byte array from Rexx string: RexxString -> [B
         // this allows Rexx strings having embedded NUL chars to be fully converted to Java
     size_t      len=context->StringLength(rso); // get length
     const char *buf=context->CString(rso);
-    jbyteArray  jba=env->NewByteArray((jsize) len);     // create Java primitive byte array
 
     if (len>0)
     {
+        jbyteArray  jba=env->NewByteArray((jsize) len);     // create Java primitive byte array
         env->SetByteArrayRegion(jba, 0, (jsize) len, (jbyte *) buf);
-        return env->NewObject(defaultJVM->clz_String,
+        jstring jstr=(jstring) env->NewObject(defaultJVM->clz_String,
                             defaultJVM->mid_String_initFromByteArray,
                             jba);
+        env->DeleteLocalRef(jba);
+        return jstr;
     }
 
     return defaultJVM->jstring_emptyUTFString;
 }
 
     // rgf, 20120210: controlling creation of Java strings, this version allows NUL chars be embedded in string
-jobject JNU_CreateJavaStringFromCONSTRXSTRING(JNIEnv *env, RexxThreadContext *context, CONSTRXSTRING *rxstring)
+jstring JNU_CreateJavaStringFromCONSTRXSTRING(JNIEnv *env, RexxThreadContext *context, CONSTRXSTRING *rxstring)
 {
         // create Java byte array from Rexx string: RexxString -> [B
         // this allows Rexx strings having embedded NUL chars to be fully converted to Java
@@ -6997,9 +5057,11 @@ jobject JNU_CreateJavaStringFromCONSTRXSTRING(JNIEnv *env, RexxThreadContext *co
         const char *buf=rxstring->strptr;
         jbyteArray  jba=env->NewByteArray((jsize) len);     // create Java primitive byte array
         env->SetByteArrayRegion(jba, 0, (jsize) len, (jbyte *) buf);
-        return env->NewObject(defaultJVM->clz_String,
+        jstring jstr=(jstring) env->NewObject(defaultJVM->clz_String,
                             defaultJVM->mid_String_initFromByteArray,
                             jba);
+        env->DeleteLocalRef(jba);
+        return jstr;
     }
 
     return defaultJVM->jstring_emptyUTFString;
@@ -7010,15 +5072,14 @@ jobject JNU_CreateJavaStringFromCONSTRXSTRING(JNIEnv *env, RexxThreadContext *co
     // rgf, 2008-08-06: use Java for popup message box (available on every opsys)
 void JNU_MessageBox (JNIEnv *env, const char *msg)
 {
-    jclass    clz = env->FindClass("javax/swing/JOptionPane");
-    jmethodID mid = env->GetStaticMethodID(clz, "showMessageDialog", "(Ljava/awt/Component;Ljava/lang/Object;)V");
-    env->CallStaticVoidMethod(clz, mid, NULL, env->NewStringUTF(msg));
+    jclass    jclz = env->FindClass("javax/swing/JOptionPane");
+    jmethodID  mid = env->GetStaticMethodID(jclz, "showMessageDialog", "(Ljava/awt/Component;Ljava/lang/Object;)V");
+    // env->CallStaticVoidMethod(clz, mid, NULL, env->NewStringUTF(msg));
+    jstring j_msg = env->NewStringUTF(msg);
+    env->CallStaticVoidMethod(jclz, mid, NULL, j_msg);
+    env->DeleteLocalRef(j_msg);
+    env->DeleteLocalRef(jclz);
 }
-
-
-    // ---rgf, 2006-01-27: allow catching Rexx error messages to be used as the error text in a Java exception
-    //                     this way the Java side can parse and locate the cause, line# and col# (if given) of the error
-// LONG APIENTRY RGF_RXSIO_EXIT_NAME           ( LONG exitNumber, LONG subFunction, PEXIT parmBlock );
 
 
 
@@ -7109,85 +5170,90 @@ inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_P
     RexxThreadContext *rtc = (isCallContext==0 ? ((RexxExitContext *) argCtxt)->threadContext
                                                : ((RexxCallContext *) argCtxt)->threadContext);
 
-     jthrowable jo=param->env->ExceptionOccurred();    // get the Exception object
+    jthrowable jo=param->env->ExceptionOccurred();    // get the Exception object
 
-     if (bShowErrorString==1)       // print the stack?
-     {
-         param->env->ExceptionDescribe();    // print the stack
-     }
-     param->env->ExceptionClear();           // clear exception in the JVM
+    if (bShowErrorString==1)       // print the stack?
+    {
+        param->env->ExceptionDescribe();    // print the stack
+    }
+    param->env->ExceptionClear();           // clear exception in the JVM
 
-     RexxStringObject rso=NULL;             // RexxString used for error message
-     jclass joc=param->env->GetObjectClass(jo);    // get Throwable's class object
+    RexxStringObject rso=NULL;             // RexxString used for error message
+    jclass joc=param->env->GetObjectClass(jo);    // get Throwable's class object
 
-     jmethodID jmidName=param->env->GetMethodID(joc, "toString", "()Ljava/lang/String;");    // get method ID
-     jobject   jobj    =param->env->CallObjectMethod(jo, jmidName, NULL);  // invoke toString()
+    jmethodID jmidName=param->env->GetMethodID(joc, "toString", "()Ljava/lang/String;");    // get method ID
+    jobject   jobj    =param->env->CallObjectMethod(jo, jmidName, NULL);  // invoke toString()
 
-     if ( param->env->ExceptionCheck() )     // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
-     {
-         param->env->ExceptionDescribe();
-         param->env->ExceptionClear();
-         rso=rtc->String("<Unfortunately, Java was not able to create a string from the Throwable, because it threw another exception while attempting to do so! :( >");
-     }
-     else   // copy Java string to RexxString
-     {
-         const char *aha=param->env->GetStringUTFChars( (jstring) jobj, JNI_FALSE);
-         rso=rtc->String(aha);     // create RexxStringObject
-         param->env->ReleaseStringUTFChars( (jstring) jobj, aha);
-     }
+    if ( param->env->ExceptionCheck() )     // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+    {
+        param->env->ExceptionDescribe();
+        param->env->ExceptionClear();
+        rso=rtc->String("<Unfortunately, Java was not able to create a string from the Throwable, because it threw another exception while attempting to do so! :( >");
+    }
+    else   // copy Java string to RexxString
+    {
+        const char *aha=param->env->GetStringUTFChars( (jstring) jobj, JNI_FALSE);
+        rso=rtc->String(aha);     // create RexxStringObject
+        param->env->ReleaseStringUTFChars( (jstring) jobj, aha);
+    }
 
-        // ---> create full error message for Rexx
-     size_t sz=rtc->StringLength(rso);   // get needed string length
-     char * tmp=(char *) RexxAllocateMemory(sz+256);
+       // ---> create full error message for Rexx
+    size_t sz=rtc->StringLength(rso);   // get needed string length
+    char * tmp=(char *) RexxAllocateMemory(sz+256);
 
-     // SNPRINTF( tmp, sz+256, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-     SNPRINTF( tmp, sz+256, errorStringPattern, DLLNAME, rtc->StringData(rso));
-     rso=rtc->String(tmp);      // turn into a RexxString
-     RexxFreeMemory(tmp);
+    // SNPRINTF( tmp, sz+256, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
+    SNPRINTF( tmp, sz+256, errorStringPattern, DLLNAME, rtc->StringData(rso));
+    rso=rtc->String(tmp);      // turn into a RexxString
+    RexxFreeMemory(tmp);
 
-        // use Rexx{Call|Exit}Context to set context variable
-     if (isCallContext==0)
-     {
-         ((RexxExitContext *) argCtxt)->SetContextVariable(BSF_ERROR_STRING, rso);    // set also the context variable to the error message
-     }
-     else
-     {
-         ((RexxCallContext *) argCtxt)->SetContextVariable(BSF_ERROR_STRING, rso);    // set also the context variable to the error message
-     }
+       // use Rexx{Call|Exit}Context to set context variable
+    if (isCallContext==0)
+    {
+        ((RexxExitContext *) argCtxt)->SetContextVariable(BSF_ERROR_STRING, rso);    // set also the context variable to the error message
+    }
+    else
+    {
+        ((RexxCallContext *) argCtxt)->SetContextVariable(BSF_ERROR_STRING, rso);    // set also the context variable to the error message
+    }
 
-     // rcc->SetContextVariable(BSF_ERROR_STRING, rso);    // set also the context variable to the error message
 
-        // ---> register Java throwable in BSFRegistry
-     // create a bean of the Java object; if .BSF is available, then return a bsf.wrap() of it
-     jstring j_beanName = (jstring) param->env->CallObjectMethod(param->rajo,
-                                        defaultJVM->mid_RexxAndJava_registerBean4JNI,
-                                        jo);
+       // ---> register Java throwable in BSFRegistry
+    // create a bean of the Java object; if .BSF is available, then return a bsf.wrap() of it
+    jstring j_beanName = (jstring) param->env->CallObjectMethod(param->rajo,
+                                       defaultJVM->mid_RexxAndJava_registerBean4JNI,
+                                       jo);
 
-     // get char* beanName, do a bsf.wrap() if available; return that result
-     const char * c_beanName    = param->env->GetStringUTFChars(j_beanName, JNI_FALSE);
-     RexxStringObject r_beanName=       rtc->String(c_beanName);    // create Rexx string
-     param->env->ReleaseStringUTFChars(j_beanName, c_beanName);      // release
+    // get char* beanName, do a bsf.wrap() if available; return that result
+    const char * c_beanName    = param->env->GetStringUTFChars(j_beanName, JNI_FALSE);
+    RexxStringObject r_beanName=       rtc->String(c_beanName);    // create Rexx string
+    param->env->ReleaseStringUTFChars(j_beanName, c_beanName);      // release
 
-     RexxObjectPtr bsfClz=rgfGetEntryFromLocal (rtc, "BSF"); // get .BSF, if available
-     RexxObjectPtr rJavaThrowable=NULL;
-     if (bsfClz!=rtc->Nil())  // class found, do a bsf.wrap() on the beanName
-     {
-         rJavaThrowable=rtc->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_PROXY object
-     }
-     else    // cast RexxString to RexxObject
-     {
-         rJavaThrowable=(RexxObjectPtr) r_beanName;
-     }
+    RexxObjectPtr bsfClz=rgfGetEntryFromLocal (rtc, "BSF"); // get .BSF, if available
+    RexxObjectPtr rJavaThrowable=NULL;
+    if (bsfClz!=rtc->Nil())  // class found, do a bsf.wrap() on the beanName
+    {
+        rJavaThrowable=rtc->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_PROXY object
+    }
+    else    // cast RexxString to RexxObject
+    {
+        rJavaThrowable=(RexxObjectPtr) r_beanName;
+    }
 
-        // --- now create RexxArray used for condition's "ADDITIONAL", first entry: substitution text, second entry: Java Throwable object
-     RexxArrayObject ra=rtc->NewArray(2);
-     rtc->ArrayPut(ra, rso, 1);     // save Throwable's string
-     rtc->ArrayPut(ra, rJavaThrowable, 2);  // save wrapped Java Throwable object
+       // --- now create RexxArray used for condition's "ADDITIONAL", first entry: substitution text, second entry: Java Throwable object
+    RexxArrayObject ra=rtc->NewArray(2);
+    rtc->ArrayPut(ra, rso, 1);     // save Throwable's string
+    rtc->ArrayPut(ra, rJavaThrowable, 2);  // save wrapped Java Throwable object
 
-        // --- raise exception
-     rtc->RaiseException(Rexx_Error_Incorrect_call_user_defined, ra);
+        // --- make sure we remove local locks
+    param->env->DeleteLocalRef(jo);
+    param->env->DeleteLocalRef(joc);
+    param->env->DeleteLocalRef(jobj);
+    param->env->DeleteLocalRef(j_beanName);
 
-     return rso;            // return error string, such that caller can decide to set it to the environment as well
+       // --- raise exception
+    rtc->RaiseException(Rexx_Error_Incorrect_call_user_defined, ra);
+
+    return rso;            // return error string, such that caller can decide to set it to the environment as well
 }
 
 
@@ -7210,7 +5276,6 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
 #endif
 
 
-    // if (typeIndicator>=0)   // a RexxString, BSF/UNO_Proxy or any other RexxObject
     if (typeIndicator!=-1)     // a RexxString, BSF/UNO_Proxy or any other RexxObject
     {
 
@@ -7230,12 +5295,9 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
                                                         : context->ObjectToString(tmpObj) // needed for internal strings (e.g. for numbers!)
                                          );
         }
-        else    // TODO: this is a non-String Rexx object, create a proxy for Java !
+        else    // this is a non-String Rexx object, create a proxy for Java !
         {
                 // if .BSF or .UNO_proxy objects, they are registered in the BSFRegistry by their objectname
-            // if ( context->IsOfType(tmpObj, "BSF") || context->IsOfType(tmpObj, "UNO_PROXY") ||
-            //      (context->IsOfType(tmpObj, "CLASS") && context->HasMethod(tmpObj, "BSF.LOADCLASS"))
-            // )
             if (typeIndicator>1)    // a BSF/UNO_PROXY object in hand, Java object resides in BSF registry
             {
 #if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA) || defined (DEBUG_ARRAY_ARGS)
@@ -7282,6 +5344,7 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
         fflush(stderr);
     }
 #endif
+
     return jresult;
 }
 
@@ -7306,7 +5369,7 @@ jobjectArray RgfRexxArray2JavaArray(PSTRUCT_PARAM param, RexxThreadContext *cont
     size_t numArgs=context->ArraySize(argArray);   // get number of arguments
 
     //convert arguments array to Java format
-    jobjectArray arr = param->env->NewObjectArray (
+    jobjectArray jarr = param->env->NewObjectArray (
                               (jsize) numArgs,      // needed size (number of elements)
                               // defaultJVM->clz_String,   // (*env).FindClass("java/lang/String"),
                               defaultJVM->clz_Object,   // (*env).FindClass("java/lang/String"),
@@ -7314,7 +5377,7 @@ jobjectArray RgfRexxArray2JavaArray(PSTRUCT_PARAM param, RexxThreadContext *cont
                               // defaultJVM->jstring_emptyUTFString// (*env).NewStringUTF("")
                               );
 #if defined (RGF_INFO_1) || defined (DEBUG_ARRAY_ARGS) // rgf, 20090820
-    fprintf(stderr, "RgfRexxArray2JavaArray():\t 2 - after creating Java array object 'arr', CheckCondition()=[%d]...\n", context->CheckCondition());fflush(stderr);
+    fprintf(stderr, "RgfRexxArray2JavaArray():\t 2 - after creating Java array object 'jarr', CheckCondition()=[%d]...\n", context->CheckCondition());fflush(stderr);
 #endif
 
 
@@ -7361,14 +5424,17 @@ jobjectArray RgfRexxArray2JavaArray(PSTRUCT_PARAM param, RexxThreadContext *cont
     for (size_t i=0; i<numArgs; i++)   // iterate over all Rexx arguments
     {
         RexxObjectPtr tmpObj=context->ArrayAt(argArray, i+1);    // get Object from ooRexx argument array list
-        param->env->SetObjectArrayElement(arr, (jsize) i, RgfRexxObject2JavaObject(param,context,tmpObj));
+        // param->env->SetObjectArrayElement(jarr, (jsize) i, RgfRexxObject2JavaObject(param,context,tmpObj));
+        jobject jobj=RgfRexxObject2JavaObject(param,context,tmpObj);
+        param->env->SetObjectArrayElement(jarr, (jsize) i, jobj);
+        param->env->DeleteLocalRef(jobj);
     }
 
 #if defined (RGF_INFO_1) || defined (DEBUG_ARRAY_ARGS) // rgf, 20120221
     fprintf(stderr, "RgfRexxArray2JavaArray():\t 4 - before returning, CheckCondition()=[%d]...\n", context->CheckCondition());fflush(stderr);
 #endif
 
-    return arr;
+    return jarr;
 }
 
 
@@ -7626,34 +5692,37 @@ inline jobjectArray RgfConstrxStringArray2JavaArray(PSTRUCT_PARAM param, RexxThr
     }
 
     //convert arguments array to Java format
-    jobjectArray arr = param->env->NewObjectArray (
+    jobjectArray jarr = param->env->NewObjectArray (
                               (jsize) argc,      // needed size (number of elements)
                               defaultJVM->clz_String,   // (*env).FindClass("java/lang/String"),
                               defaultJVM->jstring_emptyUTFString// (*env).NewStringUTF("")
                               );
 
 #ifdef RGF_INFO_1
-    fprintf(stderr, "RgfConstrxStringArray2JavaArray():\t 1 - after creating Java array object 'arr'...\n");fflush(stderr);
+    fprintf(stderr, "RgfConstrxStringArray2JavaArray():\t 1 - after creating Java array object 'jarr'...\n");fflush(stderr);
 #endif
 
 
         // fill the Java argument array with the passed in objects
     for (size_t i=0; i<argc; i++)   // iterate over all Rexx arguments
     {
-// TODO: decide whtether NULL or empty string ?
         if (argv[i].strlength>0) // set Java String element to an empty Java string
         {
-            param->env->SetObjectArrayElement(arr, (jsize) i,
-                      JNU_CreateJavaStringFromCONSTRXSTRING(param->env, context, &argv[i])
-                      );
+            // param->env->SetObjectArrayElement(jarr, (jsize) i,
+            //           JNU_CreateJavaStringFromCONSTRXSTRING(param->env, context, &argv[i])
+            //           );
+
+            jstring jstr=JNU_CreateJavaStringFromCONSTRXSTRING(param->env, context, &argv[i]);
+            param->env->SetObjectArrayElement(jarr, (jsize) i, jstr);
+            param->env->DeleteLocalRef(jstr);
         }
     }
 
 #ifdef RGF_INFO_1
-    fprintf(stderr, "RgfConstrxStringArray2JavaArray():\t 2 - before returning String array object 'arr'...\n");fflush(stderr);
+    fprintf(stderr, "RgfConstrxStringArray2JavaArray():\t 2 - before returning String array object 'jarr'...\n");fflush(stderr);
 #endif
 
-    return arr;
+    return jarr;
 }
 
 
@@ -8017,7 +6086,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 
 #else   // defined, make code available for compilation
    jint            res;
-   jclass          cls;
+   jclass          j_clz;
    jmethodID       mid;
    JNIEnv *jniEnv=NULL;
 
@@ -8362,22 +6431,22 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 #ifdef DEBUG
      fprintf(stderr, "jniEnv=[%p], JAVA_4_REXX=[%.256s] \n", jniEnv, JAVA_4_REXX );
 #endif
-    cls = (*jniEnv).FindClass(JAVA_4_REXX);    // or: cls = jniEnv->FindClass(JAVA_4_REXX);
+    j_clz = (*jniEnv).FindClass(JAVA_4_REXX);    // or: cls = jniEnv->FindClass(JAVA_4_REXX);
 #ifdef DEBUG
-     fprintf(stderr, "jniEnv=[%p], JAVA_4_REXX=[%.256s], cls=[%p]\n", jniEnv, JAVA_4_REXX, cls);
+     fprintf(stderr, "jniEnv=[%p], JAVA_4_REXX=[%.256s], j_clz=[%p]\n", jniEnv, JAVA_4_REXX, j_clz);
 #endif
-    if (cls == 0) {
+    if (j_clz == 0) {
         SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 5.994: initialization error, cannot find class '%.256s'", DLLNAME, JAVA_4_REXX);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         return "-994";
     }
 
     /* get static Method "createInterface4Rexx()" */
-    mid = jniEnv->GetStaticMethodID(cls, "createInterface4Rexx", "()V");
+    mid = jniEnv->GetStaticMethodID(j_clz, "createInterface4Rexx", "()V");
     if (mid == 0) {
-        // sprintf(msg, "%.16s/routine/BsfLoadJava(), error 6.993: initialization error, cannot find method 'Java4Rexx.createInterface4Rexx()", DLLNAME);
         SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 6.993: initialization error, cannot find method 'Java4Rexx.createInterface4Rexx()", DLLNAME);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+        jniEnv->DeleteLocalRef(j_clz);
         return "-993";
     }
 
@@ -8390,7 +6459,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 
     // call the static method, which in turn will initialize BSF4Rexx by creating
     // a BSFManager and having it load the "Rexx" (support)
-    jniEnv->CallStaticVoidMethod(cls, mid, NULL);      // invoke static method
+    jniEnv->CallStaticVoidMethod(j_clz, mid, NULL);      // invoke static method
 
     if ( jniEnv->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
     {
@@ -8416,6 +6485,8 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
         context->SetContextVariable(BSF_ERROR_STRING, rso);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
 
+        jniEnv->DeleteLocalRef(j_clz);
+
         return "-990";  // return prematurely
     }
 
@@ -8426,203 +6497,13 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
     fprintf(stderr, "BsfLoadJava(): about to leave...\n\n");
 #endif
 
+    jniEnv->DeleteLocalRef(j_clz);
 
     return "0";
 #endif
 }
 
 
-/*  rgf, 20091004
-#ifdef ALLOW_LOADING_JVM    //   ---rgf, 2005-08-23, #idef'ed - not for OS2 and not for Macintosh
-    // do the "gory" work: this way unloading can be done from any part of the program
-    inline long RgfUnloadJava()
-    {
-        // remove all TID2JRST (and JRST) nodes, disattach from JVM
-#ifdef RGF_INFO
-    fprintf(stderr, "*** RGF_INFO: RgfUnloadJava() 1, pRoot_TID2JRST=[%p]...\n", pRoot_TID2JRST);
-    fflush(stderr);
-#endif
-        if (pRoot_TID2JRST!=NULL) {     // cleanup before destroying JVM
-            RgfAcquireLock();
-            while (pRoot_TID2JRST!=NULL) {
-
-#ifdef RGF_INFO_1
-    fprintf(stderr, "*** *** RGF_INFO_1: RgfUnloadJava() 2, removing pRoot_TID2JRST->jrst=[%p]...\n", pRoot_TID2JRST->jrst);
-    fflush(stderr);
-#endif
-                RgfRemoveTID2JRST(pRoot_TID2JRST->jrst, TRUE); // make sure, JRST and all dependents get removed
-            }
-            RgfReleaseLock();
-        }
-
-        long ret=currentJVM->DestroyJavaVM ( ); // destroy JVM
-        currentJVM  =NULL;                      // set pointer to NULL
-        bsfInvokedBy=0;                         // invoked by Rexx !
-
-        return ret;
-    }
-#endif
-
-
-
-
-//   / ********************************************************************* /
-//   / * unload Java, according to tutorial: does not really work on       * /
-//   / *              Java 1.1, will always return an error                * /
-//   / *                                                                   * /
-//   / * returns:                                                          * /
-//   / *         0    ... indicate everything o.k.                         * /
-//   / *         -999 ... JVM was not loaded by Rexx, aborting             * /
-//   / *         -998 ... JVM is not loaded at all, hence cannot unload    * /
-//   / *         -997 ... this thread cannot attach to a JVM               * /
-//   / *         -991 ... UnloadJava()-code not compiled into this version (20090507) * /
-//   / *                                                                   * /
-//   / * ---rgf, 2003-01-15,21, 26                                         * /
-//   / ********************************************************************* /
-RexxRoutine0(RexxStringObject, BsfUnloadJava)  // 20090505, ---rgf, only a stub for backward compatibility
-{
-
-#ifdef RGF_INFO
-    fprintf(stderr, "*** RGF_INFO: BsfUnloadJava() 1 ...\n");
-    fflush(stderr);
-#endif
-    char msg[1024]="";
-
-#ifndef ALLOW_LOADING_JVM    //   if not defined!
-
-    // raise exception
-    // sprintf(msg, "%.16s/routine/BsfUnloadJava(), error 1.991: functionality not compiled into this version (symbol 'ALLOW_LOADING_JVM' was not defined at compile time)", DLLNAME);
-    SNPRINTF( msg, 1024, "%.16s/routine/BsfUnloadJava(), error 1.991: functionality not compiled into this version (symbol 'ALLOW_LOADING_JVM' was not defined at compile time)", DLLNAME);
-    context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-    return context->String("-991");
-
-#else
-
-
-    if (currentJVM == NULL) // JVM was not loaded by Rexx, hence show error
-    {
-        // sprintf(msg, "%.16s/routine/BsfUnloadJava(), error 1.999: JVM was not loaded by Rexx", DLLNAME);
-        SNPRINTF( msg, 1024, "%.16s/routine/BsfUnloadJava(), error 1.999: JVM was not loaded by Rexx", DLLNAME);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        return context->String("-999");
-    }
-
-
-    if (pRoot_TID2JRST == NULL) // JVM is not loaded, error!
-    {
-        // sprintf(msg, "%.16s/routine/BsfUnloadJava(), error 2.998: no JVM loaded at all", DLLNAME);
-        SNPRINTF( msg, 1024, "%.16s/routine/BsfUnloadJava(), error 2.998: no JVM loaded at all", DLLNAME);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        return context->String("-998");
-    }
-
-
-    PSTRUCT_JRST tmpJRST=RgfNewAttachToTID(RgfGetTID(), (void *) context->threadContext->instance);
-    if (tmpJRST == NULL) // no JRST associated with this thread !
-    {
-        // sprintf(msg, "%.16s/routine/BsfUnloadJava(), error 3.997: cannot attach to Java thread context", DLLNAME);
-        SNPRINTF( msg, 1024, "%.16s/routine/BsfUnloadJava(), error 3.997: cannot attach to Java thread context", DLLNAME);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        return context->String("-997");
-    }
-
-
-        // bsfInvokedBy: 0=noJVM, 1=byJava, 2=byRexx
-        // gracefully ignore BsfUnload() ?
-    if (bsfInvokedBy == 1) // invoked by Java, do not unload Java!
-    {
-        // sprintf(msg, "%.16s/routine/BsfUnloadJava(), error 4.999: JVM was not loaded by Rexx", DLLNAME);
-        SNPRINTF( msg, 1024, "%.16s/routine/BsfUnloadJava(), error 4.999: JVM was not loaded by Rexx", DLLNAME);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        RgfNewDetach();         // 2009-06-07
-        return context->String("-999");
-    }
-
-
-        // remove all JRST (and its TID2JRST nodes)
-#ifdef RGF_INFO_1
-    fprintf(stderr, "*** *** RGF_INFO_1: BsfUnloadJava() 2 - pRoot_TID2JRST=[%p], bsfInvokedBy=[%d]\n",
-                                  pRoot_TID2JRST, bsfInvokedBy);
-    fflush(stderr);
-#endif
-
-    // main thread that attached JVM, hence no need to explicitly jvm->DetachCurrentThread()
-    RgfAcquireLock();
-    int tmpRes=RgfRemoveTID2JRST(tmpJRST, TRUE); // make sure, JRST and all dependents get removed
-    RgfReleaseLock();
-
-#ifdef RGF_INFO_1
-    fprintf(stderr, "*** *** RGF_INFO_1: BsfUnloadJava() 3 - # TID2JRST nodes removed=[%d], pRoot_TID2JRST=[%p]\n",
-                                  tmpRes, pRoot_TID2JRST);
-    fflush(stderr);
-#endif
-
-        // now destroy the JVM
-#ifdef ALLOW_LOADING_JVM    //   ---rgf, 2005-08-23, #idef'ed - not for OS2 and not for Macintosh
-    long ret=RgfUnloadJava();   // unload the JVM (pseudo unload due to JNI 1.1 restrictions)
-#endif
-
-    char retStr [32] = "";
-    // sprintf(retStr, "%ld%c", ret, 0);    // create return value
-    SNPRINTF( retStr, 32, "%ld%c", ret, 0);    // create return value
-
-
-#ifdef DEBUG        // ---rgf, 2003-04-30
-    fprintf(stderr, "BsfUnloadJava(): about to leave...\n\n");
-#endif
-
-    RgfNewDetach();         // 2009-06-07
-    return context->String(retStr);
-#endif
-}
-
-
-rgf, 20091004 */
-
-
-
-
-
-
-
-/* rgf, 20091004
-#ifdef ALLOW_LOADING_JVM    //   ---rgf, 2005-08-23, #idef'ed - not for OS2 and not for Macintosh
-    // do the "gory" work: this way unloading can be done from any part of the program
-inline long RgfUnloadJava(JNIEnv *env)
-{
-        // remove all TID2JRST (and JRST) nodes, disattach from JVM
-#if defined ( RGF_INFO )
-    fprintf(stderr, "*** RGF_INFO: RgfUnloadJava() 1, pRoot_TID2JRST=[%p]...\n", pRoot_TID2JRST);
-    fflush(stderr);
-#endif
-
-       // emtpy RAJO/TID2NODE structures
-    empty_RAJO_TID2NODE_structures(env);
-
-       // empty JavaVM structure
-    JavaVM *tmpJVM=defaultJVM->jvm;     // save pointer to JVM
-    uninit_STRUCT_JVM(env, defaultJVM); // will DeleteGlobalRef(...), nullify structure
-
-#if defined ( RGF_INFO_1 )
-    fprintf(stderr, "*** *** RGF_INFO_1: RgfUnloadJava() 4, now calling DestroyJava() ...\n", pRoot_RAJO);
-    fflush(stderr);
-#endif
-
-    long ret=tmpJVM->DestroyJavaVM ( ); // destroy JVM
-
-#if defined ( RGF_INFO_1 )
-    fprintf(stderr, "*** *** RGF_INFO_1: RgfUnloadJava() 4, AFTER calling DestroyJava(), ret=[%d] ...\n", ret);
-    fflush(stderr);
-#endif
-
-    currentJVM  =NULL;                      // set pointer to NULL
-    memset(defaultJVM, 0, size_STRUCT_JVM); // clear the structure, rgf, 20091004
-    bsfInvokedBy=0;                         // reset indicator
-    return ret;
-}
-#endif
-
-rgf, 20091004 */
 
 
 
@@ -9058,20 +6939,6 @@ RexxRoutine1(logical_t, BsfAttachToTID, CSTRING, toTID)    // 20090505, ---rgf, 
 
    // return (param.error==NULL);      // return .true, if no error, .false else
    return (param.error==0);         // return .true, if no error, .false else
-
-/*
-   return (RgfNewAttachToTID(
-                   #ifdef UNIX
-                       (pthread_t)
-                   #else    // WIN32
-                       (TID)
-                   #endif
-                i,
-                (void *) context->threadContext->instance
-                )
-               !=NULL);
-*/
-
 }
 
 
@@ -9140,9 +7007,6 @@ RexxRoutine0(logical_t, BsfDetach)    // 20090505, ---rgf, only a stub for backw
 
     // return (param.error==NULL);      // no error, hence worked
     return (param.error==0);         // no error, hence worked
-
-//    return (RgfNewDetach()==TRUE ? 1 : 0);   // indicate success
-
 }
 
 
@@ -9224,12 +7088,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
         r_obj=context->CallProgram(REXX_PROXY_STUB_PROGRAM, context->ArrayOfOne(r_obj));
         if (context->CheckCondition()) // oops, something went wrong, let the condition prevail
         {
-               // TODO: maybe remove this and rely on condition only ?
-               //       check, whether we have to raise explicitly an own exception
-            // fprintf(stderr, "%.256s/routine/BsfCreateRexxProxy(), error 2: Rexx raised condition while calling \"BSF_OnTheFly.cls\" to attach code to", DLLNAME);
-
             char tmpStr[1024]="";
-            // sprintf(tmpStr, "/routine/BsfCreateRexxProxy(), error 2: [Rexx raised condition while calling \"%.256s\" to attach code to dynamically]", REXX_PROXY_STUB_PROGRAM);
             SNPRINTF(tmpStr, 1024, "/routine/BsfCreateRexxProxy(), error 2: [Rexx raised condition while calling \"%s\" to attach code to dynamically]", REXX_PROXY_STUB_PROGRAM);
 
                 // get msg with embedded condition info
@@ -9239,22 +7098,15 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
                                                    // "/routine/BsfCreateRexxProxy() error 2: [Rexx raised condition while calling \"BSF_OnTheFly.cls\" to attach code to]");
             context->ClearCondition();
 
-// fprintf(stderr, "---> %.256s/CheckCondition: tmpMsg=[%.256s]...\n", REXX_PROXY_STUB_PROGRAM, tmpMsg); fflush(stderr);
-
                 // now raise new exception
             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(tmpMsg));
-
             RexxFreeMemory(tmpMsg);        // free memory
-
             return context->Nil();      // indicate with return value, that something went wrong
         }
     }
 
 
-    // RexxObjectPtr r_userData=(argumentExists(2) ? context->ArrayAt(argArray,2) : NULL);
     RexxObjectPtr r_userData=(context->ArrayAt(argArray, 2)!=NULL ? context->ArrayAt(argArray,2) : NULL);
-
-// fprintf(stderr, "r_userData=[%p], numArgs=[%u]...\n", r_userData, context->ArrayItems(argArray)); fflush(stderr);
 
 
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
@@ -9281,21 +7133,6 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
     }
     RgfReleaseLock();
 
-/*
-    // attach to Java thread interface
-    PSTRUCT_JRST a_JRST=RgfNewAttachToTID(tid, (void *) context->threadContext->instance);
-
-    if (a_JRST == NULL) // no JRST associated with this thread !
-    {
-        char tmpStr[256]="";
-        // sprintf(tmpStr, "%.16s/routine/BsfCreateRexxProxy(), error 3: cannot attach to a Java thread context", DLLNAME);
-        SNPRINTF( tmpStr, 256, "%.16s/routine/BsfCreateRexxProxy(), error 3: cannot attach to a Java thread context", DLLNAME);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(tmpStr));
-        return context->Nil();      // indicate with return value, that something went wrong
-    }
-*/
-
-
         // create a Java RexxProxy
     jobject j_rexxProxy=RgfCreateRexxProxy (param.env, param.rajo,
                                             context->threadContext, // ThreadContext, RMG: 20090514
@@ -9303,8 +7140,6 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
                                             rpo,                // Package object
                                             r_userData          // userData (slot)
                                             );
-
-
 
     // process received arguments
     // size_t numArgs=context->ArrayItems(argArray);   // get number of arguments
@@ -9314,7 +7149,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
     {
         numArgs=numArgs-2;
         //convert arguments array to Java format
-        jobjectArray arr = param.env->NewObjectArray (
+        jobjectArray jarr = param.env->NewObjectArray (
                                   (jsize) numArgs,  // needed size (number of elements)
                                   defaultJVM->clz_Object,       // type
                                   // a_JRST->penv->FindClass("java/lang/Object"),    // type
@@ -9323,7 +7158,6 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
 
         RexxObjectPtr bsfClz=rgfGetEntryFromLocal (context->threadContext, "BSF"); // get .BSF, if available
 
-
             // fill the Java argument array with the passed in ojbects
         for (size_t i=0; i<numArgs; i++)   // iterate over all Rexx arguments
         {
@@ -9331,7 +7165,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
 
             if (tmpObj==NULL)              // NULL (argument missing)
             {
-                param.env->SetObjectArrayElement(arr, (jsize) i, NULL);
+                param.env->SetObjectArrayElement(jarr, (jsize) i, NULL);
             }
             else    // either a string object or another ooRexx object in hand
             {
@@ -9340,7 +7174,10 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
                 if (context->IsOfType(tmpObj, "STRING"))      // is the object an instance of .String ?
                 {
                     char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-                    param.env->SetObjectArrayElement(arr, (jsize) i, param.env->NewStringUTF(tmpStrObject));
+                    // param.env->SetObjectArrayElement(jarr, (jsize) i, param.env->NewStringUTF(tmpStrObject));
+                    jstring j_str=param.env->NewStringUTF(tmpStrObject);
+                    param.env->SetObjectArrayElement(jarr, (jsize) i, j_str);
+                    param.env->DeleteLocalRef(j_str);
                 }
                 else
                 {
@@ -9362,10 +7199,14 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
                         rso=(RexxStringObject) context->ObjectToString(tmpObj);
                     }
                         // set Java array value, turn RexxStringObject to CString
-                    param.env->SetObjectArrayElement(arr,
-                                                        (jsize) i,
-                                                        param.env->NewStringUTF(context->CString(rso))
-                                                    );
+                    // param.env->SetObjectArrayElement(jarr,
+                    //                                     (jsize) i,
+                    //                                     param.env->NewStringUTF(context->CString(rso))
+                    //                                 );
+
+                    jstring j_str=param.env->NewStringUTF(context->CString(rso));
+                    param.env->SetObjectArrayElement(jarr, (jsize) i, j_str);
+                    param.env->DeleteLocalRef(j_str);
                 }
             }
         }
@@ -9375,22 +7216,10 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
         // create JavaProxy
         //-----------------
 
-            // get RexxProxy class object
-//        jclass  clz=a_JRST->penv->FindClass("org/rexxla/bsf/engines/rexx/RexxProxy");
-            // get method
-        // jmethodID mid=a_JRST->penv->GetMethodID(clz, "newJavaProxyInstanceFromRexx", "([Ljava/lang/Object;)Ljava/lang/Object;");
-//        jmethodID mid=a_JRST->penv->GetMethodID(clz, "newJavaOrExtendedProxyInstanceFromRexx", "([Ljava/lang/Object;)Ljava/lang/Object;");
-
-// fprintf(stderr, "BEFORe CallObjectMethod(), arr=[%p], length=[%d], ExceptionCheck()=[%d]...\n",
-//                 arr, a_JRST->penv->GetArrayLength(arr), a_JRST->penv->ExceptionCheck()); fflush(stderr);
-
             // run method and replace RexxProxy with JavaProxy
         j_rexxProxy=(jstring) param.env->CallObjectMethod(j_rexxProxy,
                                                              defaultJVM->mid_RexxProxy_newJavaOrExtendedProxyInstanceFromRexx,
-                                                             arr); // create JavaProxy
-
-// fprintf(stderr, "after CallObjectMethod...\n"); fflush(stderr);
-
+                                                             jarr); // create JavaProxy
 
         if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
         {
@@ -9399,32 +7228,9 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
                  1,         // RexxCallContext
                  context,
                  "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]");
-            // "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%.256s]");
-/*
 
-                // get Java Throwable toString() as a RexxString; will clear the pending Java exception
-            RexxStringObject rso=RgfGetJavaThrowableAsString (param.env, context->threadContext);
-
-            // create error message for Rexx
-            size_t sz=context->StringLength(rso);   // get needed string length, default msg buffer is 4 KB
-            if (sz>4000)
-            {
-                char * tmp=(char *) RexxAllocateMemory(sz+256);
-                // sprintf(tmp, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%.256s]", DLLNAME, context->StringData(rso));
-                SNPRINTF( tmp, sz+256, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-                rso=context->String(tmp);           // turn into a RexxString
-                RexxFreeMemory(tmp);
-            }
-            else
-            {
-                // sprintf(msg, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-                SNPRINTF( msg, 4096, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-                rso=context->String(msg);           // turn into a RexxString
-            }
-
-            context->SetContextVariable(BSF_ERROR_STRING, rso);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-*/
+            param.env->DeleteLocalRef(j_rexxProxy);
+            param.env->DeleteLocalRef(jarr);
 
             RgfAcquireLock();
             environmentDetachFrom(&param, FALSE);
@@ -9432,46 +7238,19 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
 
             return context->Nil();  // return prematurely
         }
+        param.env->DeleteLocalRef(jarr);
     }
 
 
         // register with BSFRegistry
-// fprintf(stderr, "before RgfStoreRexxProxyInBsfRegistry(): j_rexxProxy=[%p]...\n", j_rexxProxy); fflush(stderr);
-
     jstring j_bsfRegistryKey=RgfStoreRexxProxyInBsfRegistry(param.env, param.rajo, j_rexxProxy, 1); // return prefix, if active
-
-// fprintf(stderr, "AFTER  RgfStoreRexxProxyInBsfRegistry(): Exception=[%d]...\n", a_JRST->penv->ExceptionCheck()); fflush(stderr);
 
     if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
     {
-
         RexxStringObject rso=RgfCreateRexxSyntaxConditionWithJavaThrowable (&param,
              1,         // RexxCallContext
              context,
              "%.16s/routine/BsfCreateRexxProxy(), error 5: Java exception occurred: [%s]");
-/*
-            // get Java Throwable toString() as a RexxString; will clear the pending Java exception
-        RexxStringObject rso=RgfGetJavaThrowableAsString (param.env, context->threadContext);
-
-        // create error message for Rexx
-        size_t sz=context->StringLength(rso);   // get needed string length, default msg buffer is 4 KB
-        if (sz>4000)
-        {
-            char * tmp=(char *) RexxAllocateMemory(sz+256);
-            // sprintf(tmp, "%.16s/routine/BsfCreateRexxProxy(), error 5: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-            SNPRINTF( tmp, sz+256, "%.16s/routine/BsfCreateRexxProxy(), error 5: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-            rso=context->String(tmp);           // turn into a RexxString
-            RexxFreeMemory(tmp);
-        }
-        else
-        {
-            // sprintf(msg, "%.16s/routine/BsfCreateRexxProxy(), error 5: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-            SNPRINTF( msg, 4096, "%.16s/routine/BsfCreateRexxProxy(), error 5: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-            rso=context->String(msg);           // turn into a RexxString
-        }
-        context->SetContextVariable(BSF_ERROR_STRING, rso);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-*/
     }
 
         // get native string from jstring
@@ -9479,7 +7258,6 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
 
     // RexxObjectPtr r_result=(RexxObjectPtr) context->String(c_bsfRegistryKey);
     RexxObjectPtr r_result=(RexxObjectPtr) context->String(c_bsfRegistryKey);
-// fprintf(stderr, "** BsfCreateRexxProxy(): preparing FULL keyValue: [%.256s]\n", c_bsfRegistryKey);
 
         // if returned string looks like BSF.CLS is active, run BSF.WRAP to return a BSF_PROXY instead of the name only
     if (c_bsfRegistryKey[0]=='<' && c_bsfRegistryKey[2]=='>')   // looks like BSF.CLS induced prefix "<S>" or "<O>" is active, hence run bsf.wrap()
@@ -9488,17 +7266,20 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
         if (clz!=NULL)  // class found?
         {
             r_result=context->SendMessage1(clz, "BSF.WRAP", r_result);  // run bsf.wrap(), may return a BSF_PROXY object
-// fprintf(stderr, "** BsfCreateRexxProxy(): BSF available, running BSF.WRAP!\n");
         }
         else
         {
             r_result=(RexxObjectPtr) context->String(c_bsfRegistryKey+3);
-// fprintf(stderr, "** BsfCreateRexxProxy(): BSF NOT available, returning: [%.256s]\n", c_bsfRegistryKey+3);
         }
     }
 
     RexxFreeMemory(c_bsfRegistryKey);
-    // RgfNewDetach(); // 2009-06-07
+
+    param.env->DeleteLocalRef(j_rexxProxy);
+    param.env->DeleteLocalRef(j_bsfRegistryKey);
+    param.env->DeleteLocalRef(j_rii_ID);
+
+
     RgfAcquireLock();
     environmentDetachFrom(&param, FALSE);
     RgfReleaseLock();
@@ -9514,302 +7295,6 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
 }
 
 
-/* rgf, 20091005
-//    // rgf, 2009-05-09
-// / * creates a RexxProxy on the Java side, caches Rexx object and optional user data object
-//
-//            // used to create a RexxProxy
-//        arg1=RexxObject or CodeString
-//        arg2=optional, userData (any Rexx object)
-//
-//            // if given, then create and return a JavaProxy object
-//        arg3=optional, Java class (string, clz, jobj), ...
-//        argn=          - " -
-//
-//   returns BSF Registry index name, either for RexxProxy or JavaProxy object
-// * /
-RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 20090505, ---rgf, only a stub for backward compatibility
-{
-    #ifdef UNIX
-        pthread_t
-    #else
-        TID
-    #endif
-            tid=RgfGetTID();    // current thread
-
-#if defined (RGF_INFO) || defined (DEBUG_REXX_PROXY)
-    fprintf(stderr, "*** RGF_INFO: BsfCreateRexxProxy() 1, BEGIN: tid=[%lu] ...\n",
-            (unsigned long) tid
-            );
-    fflush(stderr);
-#endif
-
-    const char c_rii_ID[ RGF_POINTER_STRING_WIDTH ]="";
-    jstring            j_rii_ID=NULL;
-
-    char msg[4096]="";
-
-    if (context->ArrayAt(argArray, 1)==NULL)        // first argument omitted ?
-    {
-        // sprintf(msg, "%.16s/routine/BsfCreateRexxProxy(), error 1: first argument (a Rexx object or a string) is missing", DLLNAME);
-        SNPRINTF( msg, 4096, "%.16s/routine/BsfCreateRexxProxy(), error 1: first argument (a Rexx object or a string) is missing", DLLNAME);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        return context->Nil();
-    }
-
-       // get the package object from caller
-    RexxPackageObject rpo=(RexxPackageObject) context->SendMessage0(context->GetCallerContext(),"PACKAGE");
-
-    RexxObjectPtr r_obj     =context->ArrayAt(argArray,1);
-       // if object is string, it's code; attach it as UNKNOWN !
-    if (context->IsOfType(r_obj, "STRING") || context->IsOfType(r_obj, "METHOD") )  // a string object in hand? If so, it's the code to be run!
-    {
-
-// fprintf(stderr, "BSF_OnTheFly.cls !!! ...\n"); fflush(stderr);
-
-        r_obj=context->CallProgram(REXX_PROXY_STUB_PROGRAM, context->ArrayOfOne(r_obj));
-        if (context->CheckCondition()) // oops, something went wrong, let the condition prevail
-        {
-               // TODO: maybe remove this and rely on condition only ?
-               //       check, whether we have to raise explicitly an own exception
-            // fprintf(stderr, "%.256s/routine/BsfCreateRexxProxy(), error 2: Rexx raised condition while calling \"BSF_OnTheFly.cls\" to attach code to", DLLNAME);
-
-            char tmpStr[256]="";
-            // sprintf(tmpStr, "/routine/BsfCreateRexxProxy(), error 2: [Rexx raised condition while calling \"%.256s\" to attach code to dynamically]", REXX_PROXY_STUB_PROGRAM);
-            SNPRINTF(tmpStr, 256, "/routine/BsfCreateRexxProxy(), error 2: [Rexx raised condition while calling \"%.256s\" to attach code to dynamically]", REXX_PROXY_STUB_PROGRAM);
-
-                // get msg with embedded condition info
-            char * tmpMsg=RgfCreateRexxlikeErrorInfo (context->threadContext,
-                                                   context->GetConditionInfo(),
-                                                   tmpStr);
-                                                   // "/routine/BsfCreateRexxProxy() error 2: [Rexx raised condition while calling \"BSF_OnTheFly.cls\" to attach code to]");
-            context->ClearCondition();
-
-// fprintf(stderr, "---> %.256s/CheckCondition: tmpMsg=[%.256s]...\n", REXX_PROXY_STUB_PROGRAM, tmpMsg); fflush(stderr);
-
-                // now raise new exception
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(tmpMsg));
-
-            RexxFreeMemory(tmpMsg);        // free memory
-
-            return context->Nil();      // indicate with return value, that something went wrong
-        }
-    }
-
-
-    // RexxObjectPtr r_userData=(argumentExists(2) ? context->ArrayAt(argArray,2) : NULL);
-    RexxObjectPtr r_userData=(context->ArrayAt(argArray, 2)!=NULL ? context->ArrayAt(argArray,2) : NULL);
-
-// fprintf(stderr, "r_userData=[%p], numArgs=[%u]...\n", r_userData, context->ArrayItems(argArray)); fflush(stderr);
-
-
-
-    // attach to Java thread interface
-    PSTRUCT_JRST a_JRST=RgfNewAttachToTID(tid, (void *) context->threadContext->instance);
-
-    if (a_JRST == NULL) // no JRST associated with this thread !
-    {
-        char tmpStr[256]="";
-        // sprintf(tmpStr, "%.16s/routine/BsfCreateRexxProxy(), error 3: cannot attach to a Java thread context", DLLNAME);
-        SNPRINTF( tmpStr, 256, "%.16s/routine/BsfCreateRexxProxy(), error 3: cannot attach to a Java thread context", DLLNAME);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(tmpStr));
-        return context->Nil();      // indicate with return value, that something went wrong
-    }
-
-
-        // create a Java RexxProxy
-    jobject j_rexxProxy=RgfCreateRexxProxy (a_JRST->penv, a_JRST->rajo,
-                                            context->threadContext, // ThreadContext, RMG: 20090514
-                                            r_obj,              // Rexx object
-                                            rpo,                // Package object
-                                            r_userData          // userData (slot)
-                                            );
-
-
-
-    // process received arguments
-    // size_t numArgs=context->ArrayItems(argArray);   // get number of arguments
-    size_t numArgs=context->ArraySize(argArray);   // get number of arguments
-
-    if (numArgs>2)      // o.k. creation of a JavaProxy is requested
-    {
-        numArgs=numArgs-2;
-        //convert arguments array to Java format
-        jobjectArray arr = a_JRST->penv->NewObjectArray (
-                                  (jsize) numArgs,  // needed size (number of elements)
-                                  a_JRST->penv->FindClass("java/lang/Object"),    // type
-                                  NULL              // initial value
-                                  );
-
-        RexxObjectPtr bsfClz=rgfGetEntryFromLocal (context->threadContext, "BSF"); // get .BSF, if available
-
-
-            // fill the Java argument array with the passed in ojbects
-        for (size_t i=0; i<numArgs; i++)   // iterate over all Rexx arguments
-        {
-            RexxObjectPtr tmpObj=context->ArrayAt(argArray, i+3);    // get Object from ooRexx argument array list
-
-            if (tmpObj==NULL)              // NULL (argument missing)
-            {
-                a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, NULL);
-            }
-            else    // either a string object or another ooRexx object in hand
-            {
-                    // get the ooRexx String class object
-                // if (context->IsInstanceOf(tmpObj, STRING_CLASS(context->threadContext)))     // is the object an instance of it?
-                if (context->IsOfType(tmpObj, "STRING"))      // is the object an instance of .String ?
-                {
-                    char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-                    a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, a_JRST->penv->NewStringUTF(tmpStrObject));
-                }
-                else
-                {
-                    RexxStringObject rso=NULL;
-
-                    if (bsfClz!=context->Nil() && context->IsInstanceOf(tmpObj, (RexxClassObject) bsfClz))
-                    {
-                        rso=(RexxStringObject) context->SendMessage0(tmpObj, "OBJECTNAME"); // get beanName
-                    }
-
-                       // if UNO_PROXY object, then hasMethod("UNO.BSFOBJECT") is true
-                    else if (context->HasMethod(tmpObj, "UNO.BSFOBJECT"))
-                    {
-                        rso=(RexxStringObject) context->SendMessage0(context->SendMessage0(tmpObj, "UNO.BSFOBJECT"), "OBJECTNAME");
-                    }
-                    else    // use the string value instead
-                    {
-                        // if instance of .BSF or .UNO, use bsf's objectName, else raise an exception
-                        rso=(RexxStringObject) context->ObjectToString(tmpObj);
-                    }
-                        // set Java array value, turn RexxStringObject to CString
-                    a_JRST->penv->SetObjectArrayElement(arr,
-                                                        (jsize) i,
-                                                        a_JRST->penv->NewStringUTF(context->CString(rso))
-                                                    );
-                }
-            }
-        }
-
-
-
-        // create JavaProxy
-        //-----------------
-
-            // get RexxProxy class object
-        jclass  clz=a_JRST->penv->FindClass("org/rexxla/bsf/engines/rexx/RexxProxy");
-            // get method
-        // jmethodID mid=a_JRST->penv->GetMethodID(clz, "newJavaProxyInstanceFromRexx", "([Ljava/lang/Object;)Ljava/lang/Object;");
-        jmethodID mid=a_JRST->penv->GetMethodID(clz, "newJavaOrExtendedProxyInstanceFromRexx", "([Ljava/lang/Object;)Ljava/lang/Object;");
-
-// fprintf(stderr, "BEFORe CallObjectMethod(), arr=[%p], length=[%d], ExceptionCheck()=[%d]...\n",
-//                 arr, a_JRST->penv->GetArrayLength(arr), a_JRST->penv->ExceptionCheck()); fflush(stderr);
-
-            // run method and replace RexxProxy with JavaProxy
-        j_rexxProxy=(jstring) a_JRST->penv->CallObjectMethod(j_rexxProxy, mid, arr); // create JavaProxy
-
-// fprintf(stderr, "after CallObjectMethod...\n"); fflush(stderr);
-
-
-        if ( a_JRST->penv->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
-        {
-                // get Java Throwable toString() as a RexxString; will clear the pending Java exception
-            RexxStringObject rso=RgfGetJavaThrowableAsString (a_JRST->penv, context->threadContext);
-
-            // create error message for Rexx
-            size_t sz=context->StringLength(rso);   // get needed string length, default msg buffer is 4 KB
-            if (sz>4000)
-            {
-                char * tmp=(char *) RexxAllocateMemory(sz+256);
-                // sprintf(tmp, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%.256s]", DLLNAME, context->StringData(rso));
-                SNPRINTF( tmp, sz+256, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-                rso=context->String(tmp);           // turn into a RexxString
-                RexxFreeMemory(tmp);
-            }
-            else
-            {
-                // sprintf(msg, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-                SNPRINTF( msg, 4096, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-                rso=context->String(msg);           // turn into a RexxString
-            }
-
-            context->SetContextVariable(BSF_ERROR_STRING, rso);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-            RgfNewDetach(); // 2009-06-07
-            return context->Nil();  // return prematurely
-        }
-    }
-
-
-        // register with BSFRegistry
-// fprintf(stderr, "before RgfStoreRexxProxyInBsfRegistry(): j_rexxProxy=[%p]...\n", j_rexxProxy); fflush(stderr);
-
-    jstring j_bsfRegistryKey=RgfStoreRexxProxyInBsfRegistry(a_JRST->penv, a_JRST->rajo, j_rexxProxy, 1); // return prefix, if active
-
-// fprintf(stderr, "AFTER  RgfStoreRexxProxyInBsfRegistry(): Exception=[%d]...\n", a_JRST->penv->ExceptionCheck()); fflush(stderr);
-
-    if ( a_JRST->penv->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
-    {
-            // get Java Throwable toString() as a RexxString; will clear the pending Java exception
-        RexxStringObject rso=RgfGetJavaThrowableAsString (a_JRST->penv, context->threadContext);
-
-        // create error message for Rexx
-        size_t sz=context->StringLength(rso);   // get needed string length, default msg buffer is 4 KB
-        if (sz>4000)
-        {
-            char * tmp=(char *) RexxAllocateMemory(sz+256);
-            // sprintf(tmp, "%.16s/routine/BsfCreateRexxProxy(), error 5: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-            SNPRINTF( tmp, sz+256, "%.16s/routine/BsfCreateRexxProxy(), error 5: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-            rso=context->String(tmp);           // turn into a RexxString
-            RexxFreeMemory(tmp);
-        }
-        else
-        {
-            // sprintf(msg, "%.16s/routine/BsfCreateRexxProxy(), error 5: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-            SNPRINTF( msg, 4096, "%.16s/routine/BsfCreateRexxProxy(), error 5: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-            rso=context->String(msg);           // turn into a RexxString
-        }
-        context->SetContextVariable(BSF_ERROR_STRING, rso);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-    }
-
-        // get native string from jstring
-    char *c_bsfRegistryKey=JNU_GetStringNativeChars(a_JRST->penv, j_bsfRegistryKey);
-
-    // RexxObjectPtr r_result=(RexxObjectPtr) context->String(c_bsfRegistryKey);
-    RexxObjectPtr r_result=(RexxObjectPtr) context->String(c_bsfRegistryKey);
-// fprintf(stderr, "** BsfCreateRexxProxy(): preparing FULL keyValue: [%.256s]\n", c_bsfRegistryKey);
-
-        // if returned string looks like BSF.CLS is active, run BSF.WRAP to return a BSF_PROXY instead of the name only
-    if (c_bsfRegistryKey[0]=='<' && c_bsfRegistryKey[2]=='>')   // looks like BSF.CLS induced prefix "<S>" or "<O>" is active, hence run bsf.wrap()
-    {
-        RexxClassObject clz=context->FindClass("BSF");  // try to get the BSF class
-        if (clz!=NULL)  // class found?
-        {
-            r_result=context->SendMessage1(clz, "BSF.WRAP", r_result);  // run bsf.wrap(), may return a BSF_PROXY object
-// fprintf(stderr, "** BsfCreateRexxProxy(): BSF available, running BSF.WRAP!\n");
-        }
-        else
-        {
-            r_result=(RexxObjectPtr) context->String(c_bsfRegistryKey+3);
-// fprintf(stderr, "** BsfCreateRexxProxy(): BSF NOT available, returning: [%.256s]\n", c_bsfRegistryKey+3);
-        }
-    }
-
-    RexxFreeMemory(c_bsfRegistryKey);
-    RgfNewDetach(); // 2009-06-07
-
-#if defined (RGF_INFO) || defined (DEBUG_REXX_PROXY)
-    fprintf(stderr, "*** RGF_INFO: BsfCreateRexxProxy() 2, END  : tid=[%lu] ...\n",
-            (unsigned long) tid
-            );
-    fflush(stderr);
-#endif
-
-    return r_result;        // return Rexx object
-}
-
-
-rgf, 20091005 */
 
 
 
@@ -10074,22 +7559,21 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
         if (errorKind==0)   // no error, o.k. to proceed
         {
             const char *buf=context->CString(rso_data);
-            jbyteArray   jo=param.env->NewByteArray((jsize) len);   // create Java primitive byte array
+            jbyteArray   jba=param.env->NewByteArray((jsize) len);   // create Java primitive byte array
 
             if ( ! param.env->ExceptionCheck() )   // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
             {
                 if (len>0)
                 {
-                    param.env->SetByteArrayRegion(jo, 0, (jsize) len, (jbyte *) buf);
+                    param.env->SetByteArrayRegion(jba, 0, (jsize) len, (jbyte *) buf);
                 }
-
 
                 if ( ! param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
                 {
                     // create a bean of the Java object; if .BSF is available, then return a bsf.wrap() of it
                     jstring j_beanName = (jstring) param.env->CallObjectMethod(param.rajo,
                                                        defaultJVM->mid_RexxAndJava_registerBean4JNI,
-                                                       jo);
+                                                       jba);
 
                     // get char* beanName, do a bsf.wrap() if available; return that result
                     const char * c_beanName = param.env->GetStringUTFChars(j_beanName, JNI_FALSE);
@@ -10105,21 +7589,21 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
                     {
                         result_Obj=r_beanName;
                     }
+                    param.env->DeleteLocalRef(j_beanName);
                 }
-
+                param.env->DeleteLocalRef(jba);
             }
         }
     }
     else                        // [B -> RexxString
     {
-
         // get bean from the Java side ----------------------------------------------------------------
-        jbyteArray jo=(jbyteArray) param.env->CallObjectMethod(param.rajo,
+        jbyteArray jba=(jbyteArray) param.env->CallObjectMethod(param.rajo,
                                                   defaultJVM->mid_RexxAndJava_lookupBean4JNI,
                                                   param.env->NewStringUTF(objectname)
                                                   );
 
-        if (jo==NULL)     // no bean found by the given beanName
+        if (jba==NULL)     // no bean found by the given beanName
         {
             char msg[4096]="";
             SNPRINTF( msg, 4096, "%.16s/routine/BsfRawBytes(), error 4: supplied argument (primitive Java byte array) with the beanName=[%s] cannot be found in the BSFRegistry)", DLLNAME, objectname);
@@ -10128,7 +7612,7 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
         }
         else                // now process the jbyteArray
         {
-            size_t len=(size_t) param.env->GetArrayLength(jo);
+            size_t len=(size_t) param.env->GetArrayLength(jba);
 
             if (argumentExists(2))      // lengthToUse argument given
             {
@@ -10158,7 +7642,7 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
                 else            // get bytes in Java array, create a Rexx string of it
                 {
                     char *buf=(char *) RexxAllocateMemory( len );
-                    param.env->GetByteArrayRegion(jo, 0, (jsize) len, (jbyte *) buf);
+                    param.env->GetByteArrayRegion(jba, 0, (jsize) len, (jbyte *) buf);
 
                     if ( ! param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
                     {
@@ -10167,6 +7651,7 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
                     RexxFreeMemory(buf);
                 }
             }
+            param.env->DeleteLocalRef(jba);
         }
     }
 
@@ -10177,247 +7662,7 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
              1,         // RexxCallContext
              context,
              "%.16s/routine/BsfRawBytes(), error 5: caused Java exception: [%s]");
-/*
-            // get Java Throwable toString() as a RexxString; will clear the pending Java exception
-        RexxStringObject rso=RgfGetJavaThrowableAsString (param.env, context->threadContext);
 
-        // create error message for Rexx
-        char msg[4096];
-        size_t sz=context->StringLength(rso);   // get needed string length, default msg buffer is 4 KB
-        if (sz>4000)
-        {
-            char * tmp=(char *) RexxAllocateMemory(sz+256);
-            // SNPRINTF( tmp, sz+256, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-            SNPRINTF( tmp, sz+256, "%.16s/routine/BsfRawBytes(), error 5: caused Java exception: [%s]", DLLNAME, context->StringData(rso));
-            rso=context->String(tmp);           // turn into a RexxString
-            RexxFreeMemory(tmp);
-        }
-        else
-        {
-            // SNPRINTF( msg, 4096, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-            SNPRINTF( msg, 4096, "%.16s/routine/BsfRawBytes(), error 5: caused Java exception: [%s]", DLLNAME, context->StringData(rso));
-            rso=context->String(msg);           // turn into a RexxString
-        }
-
-        context->SetContextVariable(BSF_ERROR_STRING, rso);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-*/
-
-        result_Obj=context->Nil();
-    }
-
-    RgfAcquireLock();
-    environmentDetachFrom(&param, FALSE);    // do not close group
-    RgfReleaseLock();
-
-    return result_Obj;
-}
-
-
-
-    // ---rgf, 2009-09-06: usage BsfRexxProxy(proxy [, "ooRexxObject" | "userData" | "refCount"])
-    // ---rgf, 2010-02-09: usage BsfRawBytes( RexxStringObject | JavaPrimitiveByteArray-proxy )
-    //
-    //      argument 1:
-    //          data      ... a RexxStringObject
-    //                        (returns primitive Java byte array proxy)
-    //                or
-    //                        a BSF proxy representing a primitive, single-dimensioned Java byte array
-    //                        (returns a RexxStringObject9
-
-
-RexxRoutine1(RexxObjectPtr, BsfRawBytes_ORI, RexxObjectPtr, data)
-{
-    #ifdef UNIX
-        pthread_t
-    #else
-        TID
-    #endif
-            tid=RgfGetTID();    // current thread
-
-#ifdef RGF_INFO
-    fprintf(stderr, "*** RGF_INFO: BsfRawBytes() 1, tid=[%lu] ... AO\n", (unsigned long) tid);
-    fflush(stderr);
-#endif
-
-    // process argument 1, check whether proxy is a RexxProxy indeed
-    // 1) instance of BSF or a subclass ? (a must)
-    // RexxStringObject rexxObjectID=NULL;
-    // logical_t flag=context->IsOfType(data, "BSF");
-    size_t  kind=0;         // kind of desired conversion
-    size_t  errorKind=0;    // kind of error
-    CSTRING objectname=NULL;// objectname of bean
-
-
-    if (context->IsOfType(data, "STRING"))  // convert from RexxString -> [B
-    {
-        kind=1;             // indicate 'data' is a RexxStringObject
-    }
-    else if (context->IsOfType(data, "BSF"))// convert from [B -> RexxString ?
-    {
-        kind=2;             // indicate 'data' is a BSF object
-        objectname=context->CString((RexxStringObject) context->SendMessage0(data, "OBJECTNAME"));
-            // a
-        if (! (objectname[0]=='[' && objectname[1]=='B' && objectname[2]=='@') )
-        {
-            errorKind=1;        // no single dimensioned primitive Java byte array object
-        }
-    }
-    else
-    {
-        errorKind=99;           // datatype that cannot be handled, neither RexxString, nor [B
-    }
-
-    if (errorKind>0)            // an argument error
-    {
-        char msg[1024]="";
-
-        // sprintf(msg, "%.16s/routine/BsfCreateRexxProxy(), error 1: first argument (a Rexx object or a string) is missing", DLLNAME);
-        SNPRINTF( msg, 1024, "%.16s/routine/BsfRawBytes(), error 1: argument neither a .String nor a .BSF object (representing a single dimensioned primitive byte array). Received argument=[%.512s]",
-                             DLLNAME,
-                             context->CString(context->ObjectToString(data))
-                             );
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        return context->Nil();
-    }
-
-
-    // ??? TODO: attach to Java, carry out conversions, return result
-
-    // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
-    STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, 0};
-
-    RgfAcquireLock();
-    environmentAttachTo(&param, FALSE); // attach to Java
-
-    if (param.error== -1)    // could not attach to Java
-    {
-        RgfReleaseLock();
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
-                                 createAttachErrorMessageRSO(context, "routine/BsfRawBytes(), error 2", &param)
-                                 );
-        return context->Nil();      // not attached, hence no detaching !
-    }
-    RgfReleaseLock();
-
-    RexxObjectPtr result_Obj=NULL;
-
-    if (kind==1)                // RexxString -> [B
-    {
-        // create [B from RexxString, put into BSFRegistry, return it
-        // 2010-05-23, rgf: could be that internally it is not (yet) a pure RexxStringObject,
-        //                  cf.
-        RexxStringObject rso_data= context->IsString(data) ? (RexxStringObject) data
-                                                           : context->ObjectToString(data) ;
-
-        size_t      len=context->StringLength(rso_data); // get length
-
-        const char *buf=context->CString(rso_data);
-        jbyteArray   jo=param.env->NewByteArray((jsize) len);   // create Java primitive byte array
-
-        if ( ! param.env->ExceptionCheck() )   // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
-        {
-            if (len>0)
-            {
-                param.env->SetByteArrayRegion(jo, 0, (jsize) len, (jbyte *) buf);
-            }
-
-
-            if ( ! param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
-            {
-                // create a bean of the Java object; if .BSF is available, then return a bsf.wrap() of it
-                jstring j_beanName = (jstring) param.env->CallObjectMethod(param.rajo,
-                                                   defaultJVM->mid_RexxAndJava_registerBean4JNI,
-                                                   jo);
-
-                // get char* beanName, do a bsf.wrap() if available; return that result
-                const char * c_beanName = param.env->GetStringUTFChars(j_beanName, JNI_FALSE);
-                RexxStringObject r_beanName=context->String(c_beanName);    // create Rexx string
-                param.env->ReleaseStringUTFChars(j_beanName, c_beanName);         // release
-
-                RexxObjectPtr bsfClz=rgfGetEntryFromLocal (context->threadContext, "BSF"); // get .BSF, if available
-                if (bsfClz!=context->Nil())  // class found, do a bsf.wrap() on the beanName
-                {
-                    result_Obj=context->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_PROXY object
-                }
-                else    // just return the supplied beanName (a String)
-                {
-                    result_Obj=r_beanName;
-                }
-            }
-
-        }
-    }
-    else                        // [B -> RexxString
-    {
-
-        // get bean from the Java side ----------------------------------------------------------------
-        jbyteArray jo=(jbyteArray) param.env->CallObjectMethod(param.rajo,
-                                                  defaultJVM->mid_RexxAndJava_lookupBean4JNI,
-                                                  param.env->NewStringUTF(objectname)
-                                                  );
-
-        if (jo==NULL)     // no bean found by the given beanName
-        {
-            char msg[4096]="";
-            SNPRINTF( msg, 4096, "%.16s/routine/BsfRawBytes(), error 3: supplied argument (primitive Java byte array) with the beanName=[%s] cannot be found in the BSFRegistry)", DLLNAME, objectname);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-            result_Obj=context->False();
-        }
-        else                // now process the jbyteArray
-        {
-            size_t len=(size_t) param.env->GetArrayLength(jo);
-            if (len==0)     // easy, empty array, return an empty string
-            {
-                result_Obj=context->NewString("", 0);
-            }
-            else            // get bytes in Java array, create a Rexx string of it
-            {
-                char *buf=(char *) RexxAllocateMemory( len );
-                param.env->GetByteArrayRegion(jo, 0, (jsize) len, (jbyte *) buf);
-
-                if ( ! param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
-                {
-                    result_Obj=context->NewString(buf, len);
-                }
-                RexxFreeMemory(buf);
-            }
-        }
-    }
-
-
-
-    if (param.env->ExceptionCheck())    // if a pending Java exception, handle it and create a Rexx exception
-    {
-        RexxStringObject rso=RgfCreateRexxSyntaxConditionWithJavaThrowable (&param,
-             1,         // RexxCallContext
-             context,
-             "%.16s/routine/BsfRawBytes(), error 4: caused Java exception: [%s]");
-/*
-            // get Java Throwable toString() as a RexxString; will clear the pending Java exception
-        RexxStringObject rso=RgfGetJavaThrowableAsString (param.env, context->threadContext);
-
-        // create error message for Rexx
-        char msg[4096];
-        size_t sz=context->StringLength(rso);   // get needed string length, default msg buffer is 4 KB
-        if (sz>4000)
-        {
-            char * tmp=(char *) RexxAllocateMemory(sz+256);
-            // SNPRINTF( tmp, sz+256, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-            SNPRINTF( tmp, sz+256, "%.16s/routine/BsfRawBytes(), error 4: caused Java exception: [%s]", DLLNAME, context->StringData(rso));
-            rso=context->String(tmp);           // turn into a RexxString
-            RexxFreeMemory(tmp);
-        }
-        else
-        {
-            // SNPRINTF( msg, 4096, "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]", DLLNAME, context->StringData(rso));
-            SNPRINTF( msg, 4096, "%.16s/routine/BsfRawBytes(), error 4: caused Java exception: [%s]", DLLNAME, context->StringData(rso));
-            rso=context->String(msg);           // turn into a RexxString
-        }
-
-        context->SetContextVariable(BSF_ERROR_STRING, rso);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-*/
         result_Obj=context->Nil();
     }
 
@@ -10563,26 +7808,26 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
     size_t numArgs=context->ArraySize(argArray);   // get number of arguments
 
     //convert arguments array to Java format
-    jobjectArray arr = param.env->NewObjectArray (
+    jobjectArray jarr = param.env->NewObjectArray (
                               (jsize) numArgs,      // needed size (number of elements)
                               defaultJVM->clz_String,   // (*env).FindClass("java/lang/String"),
                               defaultJVM->jstring_emptyUTFString// (*env).NewStringUTF("")
                               );
 #ifdef RGF_INFO_1 // rgf, 20090820
-    fprintf(stderr, "\t\t\t 1 - after creating Java array object 'arr'...\n");fflush(stderr);
+    fprintf(stderr, "\t\t\t 1 - after creating Java array object 'jarr'...\n");fflush(stderr);
 #endif
 
     // 4.0: if creating RexxProxy objects, they get registered in BSFRegistry, hence
     //      we need to remove them from the BSFRegistry after the BSF-invocation; this
     //      array will remember the beanNames of these
-    jobjectArray arrToRemove=param.env->NewObjectArray(
+    jobjectArray jarrToRemove=param.env->NewObjectArray(
                                (jsize) numArgs,     // the maximum number of entries
                                defaultJVM->clz_String,  // String type
                                NULL                 // use NULL for initialization
                                );
 
 #ifdef RGF_INFO_1 // rgf, 20090820
-    fprintf(stderr, "\t\t\t 2 - after creating Java array object 'arrToRemove'...\n");fflush(stderr);
+    fprintf(stderr, "\t\t\t 2 - after creating Java array object 'jarrToRemove'...\n");fflush(stderr);
 #endif
 
     size_t nrToRemove=0;                        // memorize nr of entries to remove
@@ -10635,8 +7880,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
 #if defined (DEBUG_REXX_PROXY_BSF)
     fprintf(stderr, "-> BSF()a: \targ[%lu] NULLOBJECT \n",(unsigned long) i); fflush(stderr);
 #endif
-
-                param.env->SetObjectArrayElement(arr, (jsize) i, NULL);
+                param.env->SetObjectArrayElement(jarr, (jsize) i, NULL);
             }
             else    // either a string object or another ooRexx object in hand
             {
@@ -10649,8 +7893,6 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
 #endif
 
                     // get the ooRexx String class object
-                // if (context->IsInstanceOf(tmpObj, STRING_CLASS(context->threadContext)))     // is the object an instance of it?
-                // if (context->IsOfType(tmpObj, "STRING"))      // is the object an instance of .String ?
                 if (typeIndicator==1)   // a .STRING
                 {
 
@@ -10660,17 +7902,14 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
        context->CString(RgfDebug_GetMaxStringValue(context->threadContext, tmpObj, 180))); fflush(stderr);
 #endif
 
-                    param.env->SetObjectArrayElement(arr, (jsize) i,
-                                    JNU_CreateJavaString(param.env,
-                                            context->threadContext,
-                                            context->IsString(tmpObj) ? (RexxStringObject) tmpObj
-                                                                      : context->ObjectToString(tmpObj)
-                                           )
-                                       );
+                    jobject jobj=JNU_CreateJavaString(param.env,
+                                                      context->threadContext,
+                                                      context->IsString(tmpObj) ? (RexxStringObject) tmpObj
+                                                                                : context->ObjectToString(tmpObj)
+                                                               );
 
-//                     char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-//                     param.env->SetObjectArrayElement(arr, (jsize) i, param.env->NewStringUTF(tmpStrObject));
-
+                    param.env->SetObjectArrayElement(jarr, (jsize) i, jobj);
+                    param.env->DeleteLocalRef(jobj);
                 }
                 else    // TODO: this is a non-String Rexx object, create a proxy for Java !
                 {
@@ -10684,7 +7923,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
     fprintf(stderr, "-> BSF()d: \targ[%lu] BSF/UNO_PROXY val=[%.256s]\n",(unsigned long) i, context->CString(RgfDebug_GetMaxStringValue(context->threadContext, tmpObj, 90)) ); fflush(stderr);
 #endif
                         char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-                        param.env->SetObjectArrayElement(arr, (jsize) i, param.env->NewStringUTF(tmpStrObject));
+                        param.env->SetObjectArrayElement(jarr, (jsize) i, param.env->NewStringUTF(tmpStrObject));
                     }
                     else    // any other Rexx object, submit as a RexxProxy argument
                     {
@@ -10709,91 +7948,19 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
                         jstring j_bsfRegistryKey=RgfStoreRexxProxyInBsfRegistry(param.env, param.rajo, j_rexxProxy, 0);
 
                             // save the beanName with the array
-                        param.env->SetObjectArrayElement(arr, (jsize) i, j_bsfRegistryKey);
+                        param.env->SetObjectArrayElement(jarr, (jsize) i, j_bsfRegistryKey);
 
                             // add to remove list (bean needs to removed from BSFRegistry after the run)
-                        param.env->SetObjectArrayElement(arrToRemove, (jsize) nrToRemove++, j_bsfRegistryKey);
+                        param.env->SetObjectArrayElement(jarrToRemove, (jsize) nrToRemove++, j_bsfRegistryKey);
+
+                        param.env->DeleteLocalRef(j_rexxProxy);
+                        param.env->DeleteLocalRef(j_bsfRegistryKey);
                     }
                 }
             }
 
-/* ==> ==> ==>
-            if (tmpObj==NULL)              // NULL (argument missing)
-            {
-#if defined (DEBUG_REXX_PROXY)
-    fprintf(stderr, "-> BSF(): \targ[%u] NULLOBJECT \n",i); fflush(stderr);
-#endif
-
-                a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, NULL);
-            }
-            else    // either a string object or another ooRexx object in hand
-            {
-
-#if defined (DEBUG_REXX_PROXY)
-    fprintf(stderr, "... BSF(): arg[%u]=[%.256s]\n", i, context->CString(context->SendMessage0(tmpObj, "STRING")));
-#endif
-
-                    // get the ooRexx String class object
-                // if (context->IsInstanceOf(tmpObj, STRING_CLASS(context->threadContext)))     // is the object an instance of it?
-                if (context->IsOfType(tmpObj, "STRING"))      // is the object an instance of .String ?
-                {
-#if defined (DEBUG_REXX_PROXY)
-    fprintf(stderr, "-> BSF(): \targ[%u] STRING       val=[%.256s]\n",i, context->CString(context->ObjectToString(tmpObj))); fflush(stderr);
-#endif
-
-                    char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-                    a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, a_JRST->penv->NewStringUTF(tmpStrObject));
-                }
-                else    // TODO: this is a non-String Rexx object, create a proxy for Java !
-                {
-                        // if .BSF or .UNO_proxy objects, they are registered in the BSFRegistry by their objectname
-                    if ( context->IsOfType(tmpObj, "BSF") || context->IsOfType(tmpObj, "UNO_PROXY") ||
-                         (context->IsOfType(tmpObj, "CLASS") && context->HasMethod(tmpObj, "BSF.LOADCLASS"))
-                    )
-                    {
-#if defined (DEBUG_REXX_PROXY)
-    fprintf(stderr, "-> BSF(): \targ[%u] BSF/UNO_PROXY val=[%.256s]\n",i, context->CString(context->ObjectToString(tmpObj))); fflush(stderr);
-#endif
-                        char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-                        a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, a_JRST->penv->NewStringUTF(tmpStrObject));
-                    }
-                    else    // any other Rexx object, submit as a RexxProxy argument
-                    {
-
-#if defined (DEBUG_REXX_PROXY)
-    char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-    fprintf(stderr, "->BSF(): debug! \targ[%u] is a non-String, non-BSF/UNO RexxObject, type=[%.256s]: creating a RexxProxy for it!\n\t~string=[%.256s]",
-                     i,
-                     context->CString(context->ObjectToString(context->SendMessage0(tmpObj,"CLASS"))),
-                     tmpStrObject);
-    fflush(stderr);
-#endif
-                            // create RexxProxy for it
-                        jobject j_rexxProxy=RgfCreateRexxProxy (a_JRST->penv, a_JRST->rajo,
-                                                                context->threadContext, // ThreadContext, RMG: 20090514
-                                                                tmpObj,                 // Rexx object
-                                                                NULL,                   // Package object
-                                                                NULL                    // userData (slot)
-                                                                );
-
-                            // store beanName (without prefix) in BSFRegistry, hence we can keep the String[] signature
-                        jstring j_bsfRegistryKey=RgfStoreRexxProxyInBsfRegistry(a_JRST->penv, a_JRST->rajo, j_rexxProxy, 0);
-
-                            // save the beanName with the array
-                        a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, j_bsfRegistryKey);
-
-                            // add to remove list (bean needs to removed from BSFRegistry after the run)
-                        a_JRST->penv->SetObjectArrayElement(arrToRemove, (jsize) nrToRemove++, j_bsfRegistryKey);
-                    }
-                }
-            }
-<=== <=== <=== */
-
-
+            context->ReleaseLocalReference(tmpObj); // explicitly remove local reference (object protection)
         }
-
-
-
 
 
     // rgf, 2008-07-28: TODO check whether needed, if test-phase over
@@ -10832,22 +7999,18 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
 }
 
 #endif
-// *** <<< ???
 
 
-// RgfAcquireLock();
         // call Java method and create Rexx return value
-        jstring ReturnValue = (jstring) param.env->CallObjectMethod(// obj, globMid, arr);
+        jstring j_returnValue = (jstring) param.env->CallObjectMethod(// obj, globMid, arr);
                                  param.rajo,
                                  defaultJVM->mid_RexxAndJava_javaCallFromBSF,
-                                 arr);
-// RgfReleaseLock();
+                                 jarr);
 
 #if defined(RGF_INFO_1) || defined (DEBUG_BSF_FUNCTION)  // || defined (RGF_BIT2)
-    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 5 - <==> (AFTER  -> CallObjectMethod(), tid=[%lu], ReturnValue=[%p] ...)\n", (unsigned long) tid, ReturnValue);
+    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 5 - <==> (AFTER  -> CallObjectMethod(), tid=[%lu], j_returnValue=[%p] ...)\n", (unsigned long) tid, j_returnValue);
     fflush(stderr);
 #endif
-// a_JRST->penv->MonitorExit(a_JRST->rajo);
 
                 // pending exception ?
         if ( param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
@@ -10856,29 +8019,6 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
                  1,         // RexxCallContext
                  context,
                  "%.16s/routine/BSF(), error 3: Java exception occurred: [%s]");
-/*
-                // get Java Throwable toString() as a RexxString; will clear the pending Java exception
-            RexxStringObject rso=RgfGetJavaThrowableAsString (param.env, context->threadContext);
-            // create error message for Rexx
-            size_t sz=context->StringLength(rso);   // get needed string length, default msg buffer is 4 KB
-            if (sz>4000)
-            {
-                char * tmp=(char *) RexxAllocateMemory(sz+256);
-                // sprintf(tmp, "%.16s/routine/BSF(), error 3: Java exception occurred: [%s]", DLLNAME, context->CString(rso));
-                SNPRINTF( tmp, sz+256, "%.16s/routine/BSF(), error 3: Java exception occurred: [%s]", DLLNAME, context->CString(rso));
-                rso=context->String(tmp);           // turn into a RexxString
-                RexxFreeMemory(tmp);
-            }
-            else
-            {
-                // sprintf(msg, "%.16s/routine/BSF(), error 3: Java exception occurred: [%s]", DLLNAME, context->CString(rso));
-                SNPRINTF( msg, 4096, "%.16s/routine/BSF(), error 3: Java exception occurred: [%s]", DLLNAME, context->CString(rso));
-                rso=context->String(msg);           // turn into a RexxString
-            }
-            context->SetContextVariable(BSF_ERROR_STRING, rso);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-*/
-
 
 #if defined ( RGF_INVALID_ROUTINE_NIXINOXI )
     // char tmpStr[2560]=0;"\n<<< BSF(...): ExceptionCheck(), exception occurred:\n[%2048s] >>>\n\n";
@@ -10894,37 +8034,35 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
             // make sure we remove those RexxProxies we registered on this invocation dynamically
             for (size_t z=0; z<nrToRemove; z++)
             {
-                RgfUnregisterBean(param.env, param.rajo, (jstring) param.env->GetObjectArrayElement(arrToRemove, (jsize) z));
+                // RgfUnregisterBean(param.env, param.rajo, (jstring) param.env->GetObjectArrayElement(jarrToRemove, (jsize) z));
+                jobject jobj=param.env->GetObjectArrayElement(jarrToRemove, (jsize) z);
+                RgfUnregisterBean(param.env, param.rajo, (jstring) jobj);
+                param.env->DeleteLocalRef(jobj);
             }
 
-            // int rndRes=RgfNewDetach();  // detach from thread
+            param.env->DeleteLocalRef(jarr);
+            param.env->DeleteLocalRef(jarrToRemove);
+            param.env->DeleteLocalRef(j_returnValue);
+
             RgfAcquireLock();
             environmentDetachFrom(&param, FALSE);    // do not close group
             RgfReleaseLock();
 
-#ifdef RGF_INFO_1
-    // test new detaching
-    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 6  - RgfNewDetach(), error=[%d]\n", param.error);
-    fflush(stderr);
-#endif
-
-            // return context->String("0");
-            // context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-#if defined (RGF_INVALID_ROUTINE) || defined (DEBUG_BSF_FUNCTION)
-    fprintf(stderr, ">>> BSF(), /// around line # 4797, about to return to Rexx, context->CheckCondition()=[%d] \\\\\\ <<<\n", (int) context->CheckCondition());
-    fflush(stderr);
-#endif
             return context->String("-1");
-             // return NULLOBJECT;
         }
 
         // make sure we remove those RexxProxies we registered on this invocation dynamically
         for (size_t z=0; z<nrToRemove; z++)
         {
-            RgfUnregisterBean(param.env, param.rajo, (jstring) param.env->GetObjectArrayElement(arrToRemove, (jsize) z));
+            // RgfUnregisterBean(param.env, param.rajo, (jstring) param.env->GetObjectArrayElement(jarrToRemove, (jsize) z));
+            jobject jobj=param.env->GetObjectArrayElement(jarrToRemove, (jsize) z);
+            RgfUnregisterBean(param.env, param.rajo, (jstring) jobj);
+            param.env->DeleteLocalRef(jobj);
         }
+        param.env->DeleteLocalRef(jarr);
+        param.env->DeleteLocalRef(jarrToRemove);
 
-        if (ReturnValue==NULL)          // null returned from Java
+        if (j_returnValue==NULL)          // null returned from Java
         {
             // int rndRes=RgfNewDetach();  // detach from thread
             RgfAcquireLock();
@@ -10936,566 +8074,25 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
     fflush(stderr);
 #endif
 
-            return context->String("");
-            // return NULLOBJECT;
+            // return context->String("");
+            return context->NullString();
         }
 
+        RexxObjectPtr result=JNU_GetStringNativeCharsReturningRexxStringObject(param.env, j_returnValue, context->threadContext);       // rgf, 2009-04-20, 20090515
+        param.env->DeleteLocalRef(j_returnValue);
 
-            // checking return value from Java
-        // char * resString=NULL;      // default to NULL (Java returned null)
-
-        // if (ReturnValue!=NULL)          // value returned from Java?
-        {
-
-            // TODO: test if return value is a Rexx Proxy; if so get and return it instead
-
- //               const char *str = env->GetStringUTFChars(ReturnValue, 0);  // rgf, 2006-01-22
-
-            // this will convert the jstring to a local single-byte string using the current locale of the session
-            // const char *str=JNU_GetStringNativeChars(a_JRST, ReturnValue);           // rgf, 2006-01-22
-
-// TODO: rgf, 20100519 - we need to get the byte count from the ReturnValue and create a
-//       Rexx string that may contain NUL chars! Currently the NUL char stops the string;
-//       maybe using "NewString(buffer, bufferlength)" ?
-//       Probably best: create another "JNU_GetStringNativeCharsAsRexxString" macro that returns a RexxString object
-//                      cf. BsfRawBytes()
-
-// rgf,20100520
-/*
-            char        *str=JNU_GetStringNativeChars(param.env, ReturnValue);       // rgf, 2009-04-20, 20090515
-            RexxObjectPtr result=context->String(str);  // get Rexx object off it
-            RexxFreeMemory(str);        // make sure memory is freed
-*/
-            RexxObjectPtr result=JNU_GetStringNativeCharsReturningRexxObjectPtr(param.env, ReturnValue, context->threadContext);       // rgf, 2009-04-20, 20090515
-
-            // size_t      len = strlen(str);
-
-            // o.k. not enough space available, free Rexx-allocated memory, re-allocate new chunk
-            // resString = (char *) RgfAllocateMemory(len+1) ; // allocate new buffer
-            // strcpy(resString, str);
-
-            // int rndRes=RgfNewDetach();  // detach from thread
-            RgfAcquireLock();
-            environmentDetachFrom(&param, FALSE);    // do not close group
-            RgfReleaseLock();
+        RgfAcquireLock();
+        environmentDetachFrom(&param, FALSE);    // do not close group
+        RgfReleaseLock();
 
 #if defined (DEBUG_BSF_FUNCTION)
     fprintf(stderr, "<-- BSF(), upon return to Rexx with a result from Java, context->CheckCondition()=[%d] (all o.k., should be 0)\n", (int) context->CheckCondition());
     fflush(stderr);
 #endif
 
-            return result;
-//                env->ReleaseStringUTFChars(ReturnValue, str); // rgf, 2006-01-22
-        }
-
-
-/*
-     int rndRes=RgfNewDetach();  // detach from thread
-
-#ifdef RGF_INFO_1
-    // test new detaching
-    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 7  - RgfNewDetach()=[%d]\n", rndRes);
-    fflush(stderr);
-#endif
-     return VALID_ROUTINE;
-*/
+        return result;
 }
 
-
-
-/* rgf, 20091005
-// / *
-// * External Rexx function "BSF". This function allows Rexx programs to call into Java.
-//  * /
-
-// --------------------------------->
-RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only a stub for backward compatibility
-{
-#ifdef UNIX
-    pthread_t
-#else   // WIN32
-    TID
-#endif
-        tid=RgfGetTID();
-    char msg[4096]="";      // error message buffer
-
-
-#if defined(RGF_INFO) || defined (RGF_BIT2) || defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_BSF_FUNCTION)
-    fprintf(stderr, "*** RGF_INFO: BSF() 1, tid=[%lu], ", (unsigned long) tid);
-    fflush(stderr);
-#endif
-
-    // test new attaching
-    PSTRUCT_JRST a_JRST=RgfNewAttachToTID(tid, (void *) context->threadContext->instance);
-
-#if defined (RGF_BIT) || defined (RGF_BIT2) || defined (DEBUG_JRST)
-    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 1 - after RgfNewAttachToTID(): tid=[%lu] --> a_JRST=[%p/%p::%p] ...\n",
-                                         (unsigned long) tid,
-                                         a_JRST,
-                                         (a_JRST==NULL ? NULL : a_JRST->penv),
-                                         (a_JRST==NULL ? NULL : a_JRST->rajo));
-    fflush(stderr);
-#endif
-
-    // the following may happen, if BsfUnloadJava() was called and UNINIT operations on BSF proxies
-    // get triggered, which would unregister the counterpart Java objects from the BSFRegistry;
-    // this lets Rexx shutdown gracefully
-    // also: if invoking BSF() from a thread that was not attached to JVM beforehand
-
-    if (a_JRST==NULL)   // thread is not attached to a JVM
-    {
-        if (currentJVM==NULL || pRoot_TID2JRST==NULL ) {     // no JVM available at all
-            // sprintf(msg, "%.16s/routine/BSF(), error 1: no JVM (Java Virtual Machine) available", DLLNAME);
-            SNPRINTF( msg, 4096, "%.16s/routine/BSF(), error 1: no JVM (Java Virtual Machine) available", DLLNAME);
-            RexxStringObject rso=context->String(msg);
-            context->SetContextVariable(BSF_ERROR_STRING, rso);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-        }
-        else
-        {
-            // sprintf(msg, "%.16s/routine/BSF(), error 2: thread [%lu] could not be attached to the existing JVM (Java Virtual Machine), maybe the Rexx interpreter instance was shut down in the meantime?",
-            // sprintf(msg, "%.16s/routine/BSF(), error 2: thread [%lu] cannot attach to a matching Java thread context",
-            SNPRINTF( msg, 4096, "%.16s/routine/BSF(), error 2: thread [%lu] cannot attach to a matching Java thread context",
-                          DLLNAME, (unsigned long) tid);
-
-            RexxStringObject rso=context->String(msg);
-            context->SetContextVariable(BSF_ERROR_STRING, rso);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-        }
-        return context->String("0");    // this will now raise the exception in the caller
-    }
-
-
-    // size_t numArgs=context->ArrayItems(argArray);   // get number of arguments
-    size_t numArgs=context->ArraySize(argArray);   // get number of arguments
-
-
-
-#ifdef RGF_INFO_1
-    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 2 - tid=[%lu], a_JRST->penv=[%p]\n",
-                                     (unsigned long) tid, (a_JRST==NULL ? NULL : a_JRST->penv) );
-
-    fflush(stderr);  // rgf, 20090820
-    fprintf(stderr, "\t/ tid=[%lu]: umArgs=%d, a_JRST->clz_String=[%p], a_JRST->emptyUTFString=[%p]\n\tabout to create a Java array:\n",
-                    (unsigned long) tid, (int) numArgs, a_JRST->clz_String, a_JRST->emptyUTFString);
-    fprintf(stderr, "\t\ttid=[%lu]: (jsize) numArgs       =[%lu]\n", (unsigned long) tid, numArgs);fflush(stderr);
-    fprintf(stderr, "\t\ttid=[%lu]: a_JRST->clz_String    =[%p]\n", (unsigned long) tid, a_JRST->clz_String    );fflush(stderr);
-    fprintf(stderr, "\t\ttid=[%lu]: a_JRST->emptyUTFString=[%p]\n", (unsigned long) tid, a_JRST->emptyUTFString);fflush(stderr);
-
-#endif
-
-    //convert arguments array to Java format
-    jobjectArray arr = a_JRST->penv->NewObjectArray (
-                              (jsize) numArgs,      // needed size (number of elements)
-                              a_JRST->clz_String,   // (*env).FindClass("java/lang/String"),
-                              a_JRST->emptyUTFString// (*env).NewStringUTF("")
-                              );
-#ifdef RGF_INFO_1 // rgf, 20090820
-    fprintf(stderr, "\t\t\t 1 - after creating Java array object 'arr'...\n");fflush(stderr);
-#endif
-
-    // 4.0: if creating RexxProxy objects, they get registered in BSFRegistry, hence
-    //      we need to remove them from the BSFRegistry after the BSF-invocation; this
-    //      array will remember the beanNames of these
-    jobjectArray arrToRemove=a_JRST->penv->NewObjectArray(
-                               (jsize) numArgs,     // the maximum number of entries
-                               a_JRST->clz_String,  // String type
-                               NULL                 // use NULL for initialization
-                               );
-
-#ifdef RGF_INFO_1 // rgf, 20090820
-    fprintf(stderr, "\t\t\t 2 - after creating Java array object 'arrToRemove'...\n");fflush(stderr);
-#endif
-
-    size_t nrToRemove=0;                        // memorize nr of entries to remove
-
-
-#if defined (RGF_INFO_1 )  || defined (DEBUG_REXX_PROXY_BSF_BSF)
-    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 3a, tid=[%lu], 'clz_string'=[%p], 'emptyUTFString=[%p] - <==> \n",
-                                                   (unsigned long) tid, a_JRST->clz_String, a_JRST->emptyUTFString);
-    fflush(stderr);
-#endif
-
-
-
-#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_BSF_FUNCTION)
-    fprintf(stderr, "--- RGF_INFO: BSF() 1, tid=[%lu], numArgs=[%lu]", (unsigned long) tid, numArgs);fflush(stderr);
-    if (numArgs>0)
-    {
-
-// rgf, 20090820
-fprintf(stderr, "\n"); fflush(stderr);
-for (size_t i=0; i<numArgs; i++)
-{
-   RexxObjectPtr tmpObj=context->ArrayAt(argArray, i+1);
-   fprintf(stderr, "\ti=%lu, tmpObj: %%ul=%ul %%p=%p", i+1, (long int) tmpObj, tmpObj);
-   fflush(stderr);
-
-   int tind=RgfValue4JavaIndicator(context->threadContext, tmpObj);
-   fprintf(stderr, ", typeIndicator=%d\n", tind);
-   fflush(stderr);
-}
-
-        for (size_t i=0; i<numArgs; i++)   // iterate over all Rexx arguments
-        {
-            RexxObjectPtr tmpObj=context->ArrayAt(argArray, i+1);
-            int tind=RgfValue4JavaIndicator(context->threadContext, tmpObj);
-            fprintf(stderr, "[%lu]=", i+1); fflush(stderr);
-            fprintf(stderr, "[%.256s]", (tind<0?"<null>":context->CString(tmpObj))); fflush(stderr);
-            // fprintf(stderr, " | [%u]=[%.256s]", i+1, context->CString(context->ArrayAt(argArray, i+1)));
-        }
-    }
-    fprintf(stderr, " ---\n");
-    fflush(stderr);
-#endif
-
-
-
-            // fill the Java argument array with the passed in objects
-        for (size_t i=0; i<numArgs; i++)   // iterate over all Rexx arguments
-        {
-            RexxObjectPtr tmpObj=context->ArrayAt(argArray, i+1);    // get Object from ooRexx argument array list
-
-
-            // get the indicator value; returns "2" (BSF/UNO_PRoxy), "1" (String), "0" (RexxProxy),
-            // "-1" (NULL), "-2" (.nil)
-            int typeIndicator=RgfValue4JavaIndicator(context->threadContext, tmpObj);
-
-            if (typeIndicator<0)        // NULL (argument missing) or .nil
-            {
-#if defined (DEBUG_REXX_PROXY_BSF) ||  defined( DEBUG_20090926 )
-    fprintf(stderr, "-> BSF()a: \targ[%lu] NULLOBJECT \n",(unsigned long) i); fflush(stderr);
-#endif
-
-                a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, NULL);
-            }
-            else    // either a string object or another ooRexx object in hand
-            {
-
-#if defined (DEBUG_REXX_PROXY_BSF) ||  defined( DEBUG_20090926 )
-    RexxStringObject strTmpObj= RgfDebug_GetMaxStringValue(context->threadContext, tmpObj, 90) ;
-    fprintf(stderr, "... BSF()b: arg[%lu]=[%.256s]\n", (unsigned long) i, context->CString(strTmpObj) );
-
-    // fprintf(stderr, "... BSF(): arg[%u]=[%.256s]\n", i, context->CString(context->SendMessage0(tmpObj, "STRING")));
-#endif
-
-                    // get the ooRexx String class object
-                // if (context->IsInstanceOf(tmpObj, STRING_CLASS(context->threadContext)))     // is the object an instance of it?
-                // if (context->IsOfType(tmpObj, "STRING"))      // is the object an instance of .String ?
-                if (typeIndicator==1)   // a .STRING
-                {
-#if defined (DEBUG_REXX_PROXY_BSF) ||  defined( DEBUG_20090926 )
-    // fprintf(stderr, "-> BSF(): \targ[%u] STRING       val=[%.256s]\n",i, context->CString(context->ObjectToString(tmpObj))); fflush(stderr);
-    fprintf(stderr, "-> BSF()c: \targ[%lu] STRING       val=[%.256s]\n",(unsigned long) i,
-       context->CString(RgfDebug_GetMaxStringValue(context->threadContext, tmpObj, 180))); fflush(stderr);
-#endif
-
-                    char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-                    a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, a_JRST->penv->NewStringUTF(tmpStrObject));
-                }
-                else    // TODO: this is a non-String Rexx object, create a proxy for Java !
-                {
-                        // if .BSF or .UNO_proxy objects, they are registered in the BSFRegistry by their objectname
-                    // if ( context->IsOfType(tmpObj, "BSF") || context->IsOfType(tmpObj, "UNO_PROXY") ||
-                    //      (context->IsOfType(tmpObj, "CLASS") && context->HasMethod(tmpObj, "BSF.LOADCLASS"))
-                    // )
-                    if (typeIndicator>1)    // a BSF/UNO_PROXY object in hand
-                    {
-#if defined (DEBUG_REXX_PROXY_BSF) ||  defined( DEBUG_20090926 )
-    fprintf(stderr, "-> BSF()d: \targ[%lu] BSF/UNO_PROXY val=[%.256s]\n",(unsigned long) i, context->CString(RgfDebug_GetMaxStringValue(context->threadContext, tmpObj, 90)) ); fflush(stderr);
-#endif
-                        char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-                        a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, a_JRST->penv->NewStringUTF(tmpStrObject));
-                    }
-                    else    // any other Rexx object, submit as a RexxProxy argument
-                    {
-
-#if defined (DEBUG_REXX_PROXY_BSF) ||  defined( DEBUG_20090926 )
-    char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-    fprintf(stderr, "->BSF()e: debug! \targ[%lu] is a non-String, non-BSF/UNO RexxObject, type=[%.256s]: creating a RexxProxy for it!\n\t~string=[%.256s]",
-                     (unsigned long) i,
-                     context->CString(context->ObjectToString(context->SendMessage0(tmpObj,"CLASS"))),
-                     tmpStrObject);
-    fflush(stderr);
-#endif
-                            // create RexxProxy for it
-                        jobject j_rexxProxy=RgfCreateRexxProxy (a_JRST->penv, a_JRST->rajo,
-                                                                context->threadContext, // ThreadContext, RMG: 20090514
-                                                                tmpObj,                 // Rexx object
-                                                                NULL,                   // Package object
-                                                                NULL                    // userData (slot)
-                                                                );
-
-                            // store beanName (without prefix) in BSFRegistry, hence we can keep the String[] signature
-                        jstring j_bsfRegistryKey=RgfStoreRexxProxyInBsfRegistry(a_JRST->penv, a_JRST->rajo, j_rexxProxy, 0);
-
-                            // save the beanName with the array
-                        a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, j_bsfRegistryKey);
-
-                            // add to remove list (bean needs to removed from BSFRegistry after the run)
-                        a_JRST->penv->SetObjectArrayElement(arrToRemove, (jsize) nrToRemove++, j_bsfRegistryKey);
-                    }
-                }
-            }
-
-/* ==> ==> ==>
-            if (tmpObj==NULL)              // NULL (argument missing)
-            {
-#if defined (DEBUG_REXX_PROXY)
-    fprintf(stderr, "-> BSF(): \targ[%u] NULLOBJECT \n",i); fflush(stderr);
-#endif
-
-                a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, NULL);
-            }
-            else    // either a string object or another ooRexx object in hand
-            {
-
-#if defined (DEBUG_REXX_PROXY)
-    fprintf(stderr, "... BSF(): arg[%u]=[%.256s]\n", i, context->CString(context->SendMessage0(tmpObj, "STRING")));
-#endif
-
-                    // get the ooRexx String class object
-                // if (context->IsInstanceOf(tmpObj, STRING_CLASS(context->threadContext)))     // is the object an instance of it?
-                if (context->IsOfType(tmpObj, "STRING"))      // is the object an instance of .String ?
-                {
-#if defined (DEBUG_REXX_PROXY)
-    fprintf(stderr, "-> BSF(): \targ[%u] STRING       val=[%.256s]\n",i, context->CString(context->ObjectToString(tmpObj))); fflush(stderr);
-#endif
-
-                    char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-                    a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, a_JRST->penv->NewStringUTF(tmpStrObject));
-                }
-                else    // TODO: this is a non-String Rexx object, create a proxy for Java !
-                {
-                        // if .BSF or .UNO_proxy objects, they are registered in the BSFRegistry by their objectname
-                    if ( context->IsOfType(tmpObj, "BSF") || context->IsOfType(tmpObj, "UNO_PROXY") ||
-                         (context->IsOfType(tmpObj, "CLASS") && context->HasMethod(tmpObj, "BSF.LOADCLASS"))
-                    )
-                    {
-#if defined (DEBUG_REXX_PROXY)
-    fprintf(stderr, "-> BSF(): \targ[%u] BSF/UNO_PROXY val=[%.256s]\n",i, context->CString(context->ObjectToString(tmpObj))); fflush(stderr);
-#endif
-                        char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-                        a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, a_JRST->penv->NewStringUTF(tmpStrObject));
-                    }
-                    else    // any other Rexx object, submit as a RexxProxy argument
-                    {
-
-#if defined (DEBUG_REXX_PROXY)
-    char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-    fprintf(stderr, "->BSF(): debug! \targ[%u] is a non-String, non-BSF/UNO RexxObject, type=[%.256s]: creating a RexxProxy for it!\n\t~string=[%.256s]",
-                     i,
-                     context->CString(context->ObjectToString(context->SendMessage0(tmpObj,"CLASS"))),
-                     tmpStrObject);
-    fflush(stderr);
-#endif
-                            // create RexxProxy for it
-                        jobject j_rexxProxy=RgfCreateRexxProxy (a_JRST->penv, a_JRST->rajo,
-                                                                context->threadContext, // ThreadContext, RMG: 20090514
-                                                                tmpObj,                 // Rexx object
-                                                                NULL,                   // Package object
-                                                                NULL                    // userData (slot)
-                                                                );
-
-                            // store beanName (without prefix) in BSFRegistry, hence we can keep the String[] signature
-                        jstring j_bsfRegistryKey=RgfStoreRexxProxyInBsfRegistry(a_JRST->penv, a_JRST->rajo, j_rexxProxy, 0);
-
-                            // save the beanName with the array
-                        a_JRST->penv->SetObjectArrayElement(arr, (jsize) i, j_bsfRegistryKey);
-
-                            // add to remove list (bean needs to removed from BSFRegistry after the run)
-                        a_JRST->penv->SetObjectArrayElement(arrToRemove, (jsize) nrToRemove++, j_bsfRegistryKey);
-                    }
-                }
-            }
-<=== <=== <=== * /
-
-
-        }
-
-
-
-
-
-    // rgf, 2008-07-28: TODO check whether needed, if test-phase over
-// a_JRST->penv->MonitorEnter(a_JRST->rajo);    // make sure other threads accessing the same object are blocked
-
-#if defined(RGF_INFO_1) || defined (DEBUG_BSF_FUNCTION) // || defined (RGF_BIT2)
-    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 4 - <==> (BEFORE -> CallObjectMethod(), tid=[%lu] ... ", (unsigned long) tid);
-    fflush(stderr);
-
-
-    if ( a_JRST->penv->ExceptionCheck() )
-    {
-        fprintf(stderr, "Sch..., ExceptionCheck() yields JNI_TRUE!");
-        // rgf, 20090912: gcc thinks the following is not available in this scope ?
-        // fprintf(stderr, "Sch..., ExceptionCheck()=[%d]", a_JRST->penv>ExceptionCheck());
-    }
-
-    fprintf(stderr, "\n");
-    fflush(stderr);
-#endif
-
-
-
-#if defined( DEBUG_20090926 )
-
-// inline VOID JAVA_TO_STRING (JNIEnv *env, jobject jo, char * buffer)
-{
-    char tmpBuf[1024];
-    JAVA_TO_STRING( a_JRST->penv, a_JRST->rajo, tmpBuf, 1024);
-    fprintf(stderr, "*** *** DEBUG_20090926: BSF() 1 - tid=[%lu], a_JRST->rajo=[%p] [%s]\n",
-                                     (unsigned long) tid,
-                                     a_JRST->rajo,
-                                     tmpBuf
-                                     );
-    fflush(stderr);
-}
-
-#endif
-
-
-// RgfAcquireLock();
-        // call Java method and create Rexx return value
-        jstring ReturnValue = (jstring) a_JRST->penv->CallObjectMethod(// obj, globMid, arr);
-                                 a_JRST->rajo,
-                                 a_JRST->mid_javaCallFromBSF,
-                                 arr);
-// RgfReleaseLock();
-
-#if defined(RGF_INFO_1) || defined (DEBUG_BSF_FUNCTION)  // || defined (RGF_BIT2)
-    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 5 - <==> (AFTER  -> CallObjectMethod(), tid=[%lu], ReturnValue=[%p] ...)\n", (unsigned long) tid, ReturnValue);
-    fflush(stderr);
-#endif
-// a_JRST->penv->MonitorExit(a_JRST->rajo);
-
-                // pending exception ?
-        if ( a_JRST->penv->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
-        {
-                // get Java Throwable toString() as a RexxString; will clear the pending Java exception
-            RexxStringObject rso=RgfGetJavaThrowableAsString (a_JRST->penv, context->threadContext);
-
-            // create error message for Rexx
-            size_t sz=context->StringLength(rso);   // get needed string length, default msg buffer is 4 KB
-            if (sz>4000)
-            {
-                char * tmp=(char *) RexxAllocateMemory(sz+256);
-                // sprintf(tmp, "%.16s/routine/BSF(), error 3: Java exception occurred: [%s]", DLLNAME, context->CString(rso));
-                SNPRINTF( tmp, sz+256, "%.16s/routine/BSF(), error 3: Java exception occurred: [%s]", DLLNAME, context->CString(rso));
-                rso=context->String(tmp);           // turn into a RexxString
-                RexxFreeMemory(tmp);
-            }
-            else
-            {
-                // sprintf(msg, "%.16s/routine/BSF(), error 3: Java exception occurred: [%s]", DLLNAME, context->CString(rso));
-                SNPRINTF( msg, 4096, "%.16s/routine/BSF(), error 3: Java exception occurred: [%s]", DLLNAME, context->CString(rso));
-                rso=context->String(msg);           // turn into a RexxString
-            }
-            context->SetContextVariable(BSF_ERROR_STRING, rso);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-
-
-#if defined ( RGF_INVALID_ROUTINE_NIXINOXI )
-    // char tmpStr[2560]=0;"\n<<< BSF(...): ExceptionCheck(), exception occurred:\n[%2048s] >>>\n\n";
-    char tmpStr[2560];
-    // sprintf(tmpStr, "\n<<< BSF(...): ExceptionCheck(), exception occurred:\n[%2048s] >>>\n\n", context->CString(rso));
-    // sprintf(tmpStr, "<<< RGF_INVALID_ROUTINE, RaiseException1(), now context->CheckCondition()=[%d] >>>\n<<< BSF(...): ExceptionCheck(), exception occurred:\n[%.2048s] >>>\n\n",
-    SNPRINTF( tmpStr, 2560, "<<< RGF_INVALID_ROUTINE, RaiseException1(), now context->CheckCondition()=[%d] >>>\n<<< BSF(...): ExceptionCheck(), exception occurred:\n[%.2048s] >>>\n\n",
-                    context->CheckCondition(), context->CString(rso));
-    fprintf(stderr, tmpStr);fflush(stderr);
-//    JNU_MessageBox(a_JRST->penv, tmpStr);
-#endif
-
-            // make sure we remove those RexxProxies we registered on this invocation dynamically
-            for (size_t z=0; z<nrToRemove; z++)
-            {
-                RgfUnregisterBean(a_JRST->penv, a_JRST->rajo, (jstring) a_JRST->penv->GetObjectArrayElement(arrToRemove, (jsize) z));
-            }
-
-
-            int rndRes=RgfNewDetach();  // detach from thread
-
-#ifdef RGF_INFO_1
-    // test new detaching
-    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 6  - RgfNewDetach()=[%d]\n", rndRes);
-    fflush(stderr);
-#endif
-
-            // return context->String("0");
-            // context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
-#if defined (RGF_INVALID_ROUTINE) || defined (DEBUG_BSF_FUNCTION)
-    fprintf(stderr, ">>> BSF(), /// around line # 4797, about to return to Rexx, context->CheckCondition()=[%d] \\\\\\ <<<\n", (int) context->CheckCondition());
-    fflush(stderr);
-#endif
-            return context->String("-1");
-             // return NULLOBJECT;
-        }
-
-        // make sure we remove those RexxProxies we registered on this invocation dynamically
-        for (size_t z=0; z<nrToRemove; z++)
-        {
-            RgfUnregisterBean(a_JRST->penv, a_JRST->rajo, (jstring) a_JRST->penv->GetObjectArrayElement(arrToRemove, (jsize) z));
-        }
-
-        if (ReturnValue==NULL)          // null returned from Java
-        {
-            int rndRes=RgfNewDetach();  // detach from thread
-
-#if defined (DEBUG_BSF_FUNCTION)
-    fprintf(stderr, "<-- BSF(), upon return to Rexx, Java returned NULL, we return \"\", context->CheckCondition()=[%d] (all o.k., should be 0)\n", (int) context->CheckCondition());
-    fflush(stderr);
-#endif
-
-            return context->String("");
-            // return NULLOBJECT;
-        }
-
-
-            // checking return value from Java
-        // char * resString=NULL;      // default to NULL (Java returned null)
-
-        // if (ReturnValue!=NULL)          // value returned from Java?
-        {
-
-            // TODO: test if return value is a Rexx Proxy; if so get and return it instead
-
- //               const char *str = env->GetStringUTFChars(ReturnValue, 0);  // rgf, 2006-01-22
-
-            // this will convert the jstring to a local single-byte string using the current locale of the session
-            // const char *str=JNU_GetStringNativeChars(a_JRST, ReturnValue);           // rgf, 2006-01-22
-            char        *str=JNU_GetStringNativeChars(a_JRST->penv, ReturnValue);       // rgf, 2009-04-20, 20090515
-            RexxObjectPtr result=context->String(str);  // get Rexx object off it
-            RexxFreeMemory(str);        // make sure memory is freed
-            // size_t      len = strlen(str);
-
-            // o.k. not enough space available, free Rexx-allocated memory, re-allocate new chunk
-            // resString = (char *) RgfAllocateMemory(len+1) ; // allocate new buffer
-            // strcpy(resString, str);
-
-            int rndRes=RgfNewDetach();  // detach from thread
-
-#if defined (DEBUG_BSF_FUNCTION)
-    fprintf(stderr, "<-- BSF(), upon return to Rexx with a result from Java, context->CheckCondition()=[%d] (all o.k., should be 0)\n", (int) context->CheckCondition());
-    fflush(stderr);
-#endif
-
-            return result;
-//                env->ReleaseStringUTFChars(ReturnValue, str); // rgf, 2006-01-22
-        }
-
-
-/*
-     int rndRes=RgfNewDetach();  // detach from thread
-
-#ifdef RGF_INFO_1
-    // test new detaching
-    fprintf(stderr, "*** *** RGF_INFO_1: BSF() 7  - RgfNewDetach()=[%d]\n", rndRes);
-    fflush(stderr);
-#endif
-     return VALID_ROUTINE;
-* /
-}
-rgf, 20091005 */
 
 
 
@@ -11708,13 +8305,13 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
             SNPRINTF( msg, 4096, "%.16s/routine/BsfJavaException(), error 6: supplied argument with the beanName=[%s] is not a sbuclass of 'java.lang.Throwable'", DLLNAME, c_beanNameOrMsg);
             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
             result_Obj=context->False();
+            param.env->DeleteLocalRef(jobj);
         }
         else
         {
             param.env->Throw((jthrowable) jobj);     // now raise the exception in Java
             result_Obj=context->True();
         }
-
     }
 
     else if (flag==2)                // check for pending Java exception
@@ -11755,7 +8352,9 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
             {
                 result_Obj=r_beanName;
             }
+            param.env->DeleteLocalRef(j_beanName);
         }
+        param.env->DeleteLocalRef(jo);
     }
 
     else if (flag==5)               // raise a fatalError in Java
@@ -12050,48 +8649,20 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInitializ
     if (currentJVM==NULL)   // invoked by Java, save JVM-pointer for later use
     {
 #if defined (RGF_INFO)  || defined (RGF_JNI)  || defined (DEBUG_JNI_ENTRY)
-    fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 1-1, tid=[%lu], currentJVM==NULL ... \n",
-                       (unsigned long) tid);
-    fflush(stderr);
+    fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 1-1, tid=[%lu], currentJVM==NULL ... \n", (unsigned long) tid);fflush(stderr);
 #endif
-
-
-
         env->GetJavaVM( & currentJVM );
         bsfInvokedBy=2;     // Java invoked by Rexx !
 
         // save and initialize JVM related data
         init_STRUCT_JVM(env, defaultJVM, currentJVM);    // 20091003, initialize default structure
-
-
-/*
-            // rgf, 20090526: initialize a JRST node!
-        RgfAcquireLock();           // block other threads from accessing this
-
-        if (RgfGetJRST_by_TID(tid)==NULL)   // no JRST for this tid, create one
-        {
-            // create new JRST, not dependent on any other
-            PSTRUCT_JRST tmpJRST=RgfNewJRST(tid, env, raj, NULL);      // create new JRST, not dependent on any other
-            PSTRUCT_TID2JRST i=RgfNewTID2JRST(tid, tmpJRST);   // create new TID2JRST node
-
-    #if defined(RGF_INFO_1) || defined(RGF_ATTACH)
-             fprintf(stderr, "*** *** RGF_INFO_1: ..._jniInitialize4Rexx() 2, tid=[%lu], created PSTRUCT_TID2JRST i=[%p], root=[%p] ...\n",
-                     (unsigned long) tid, i, pRoot_TID2JRST);
-             fflush(stderr);
-    #endif
-        }
-        RgfReleaseLock();           // release lock
-*/
     }
 //    else if (defaultJVM==NULL)  // rgf, 2011-03-18
     else if (defaultJVM->jvm==NULL)
     {
 #if defined (RGF_INFO)  || defined (RGF_JNI)  || defined (DEBUG_JNI_ENTRY)
-    fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 1-1, tid=[%lu], defaultJVM->jvm==NULL ... \n",
-                       (unsigned long) tid);
-    fflush(stderr);
+    fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 1-1, tid=[%lu], defaultJVM->jvm==NULL ... \n",(unsigned long) tid);fflush(stderr);
 #endif
-
         // save and initialize JVM related data
         init_STRUCT_JVM(env, defaultJVM, currentJVM);    // 20091003, initialize default structure
     }
@@ -12110,9 +8681,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInitializ
                         defaultJVM->jvm
                        );
     fflush(stderr);
-
 #endif
-
 
         // 20091005: this is loaded via Rexx, keep this
     JNIEnv *daemEnv;
@@ -12124,7 +8693,6 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInitializ
     dumpPARAM("... _jniInitialize4Rexx #1, after initializing param-structure", &param);
 #endif
 
-
     if (pRoot_RII!=NULL && pRoot_RII->next==NULL)   // if only a single RIID available, then use that one
     {
         param.riid=(void *)pRoot_RII->instance;
@@ -12132,10 +8700,12 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInitializ
 
     RgfAcquireLock();
     environmentAttachTo(&param, TRUE);      // attach to Java, force staying around after next environmentDetachFrom() !
+
 #if defined (RGF_INFO)  || defined (RGF_JNI)
     fprintf(stderr, "... _jniInitialize4Rexx #2 pre: defaultJVM->jvm=[%p]\n", defaultJVM->jvm);fflush(stderr);
     dumpPARAM("... _jniInitialize4Rexx #2 (after environmentAttachTo(&param, TRUE))", &param);
 #endif
+
     environmentDetachFrom(&param, FALSE);   // don't close group
 #if defined (RGF_INFO)  || defined (RGF_JNI)
     fprintf(stderr, "... _jniInitialize4Rexx #3 pre: defaultJVM->jvm=[%p]\n", defaultJVM->jvm);fflush(stderr);
@@ -12152,7 +8722,6 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInitializ
                         pRoot_TID2NODE
                        );
     fflush(stderr);
-
 #endif
 
 #if defined ( DEBUG_SHOW_STRUCTURES )
@@ -13531,7 +10100,11 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     {
         for (int i=0; i<nr_load_required_library; i++) {
             options[idx].optionName=LOAD_REQUIRED_LIBRARY;
-            options[idx].option=JNU_GetStringNativeChars(env, (jstring) env->GetObjectArrayElement(j_load_required_library,i));
+            // options[idx].option=JNU_GetStringNativeChars(env, (jstring) env->GetObjectArrayElement(j_load_required_library,i));
+            jstring jstr=(jstring) env->GetObjectArrayElement(j_load_required_library,i);
+            options[idx].option=JNU_GetStringNativeChars(env, jstr);
+            env->DeleteLocalRef(jstr);
+
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): required library, idx=[%d], .optionName=[%s] | i=[%d]: .option=[%s]\n",
                     idx, options[idx].optionName, i, options[idx].option);
@@ -13585,7 +10158,11 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         for (int i=0; i<nr_direct_environments; i++)
         {
             environments[i].handler=rexx_command_handler_entry;   // point to generic exit handler
-            environments[i].name=JNU_GetStringNativeChars(env, (jstring) env->GetObjectArrayElement(j_direct_environments,i));
+            // environments[i].name=JNU_GetStringNativeChars(env, (jstring) env->GetObjectArrayElement(j_direct_environments,i));
+            jstring jstr=(jstring) env->GetObjectArrayElement(j_direct_environments,i);
+            environments[i].name=JNU_GetStringNativeChars(env, jstr);
+            env->DeleteLocalRef(jstr);
+
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
     fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): environment # [%d], name=[%s]\n",
                     i, environments[i].name);
@@ -13652,16 +10229,17 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         char msg[1024]="";
         SNPRINTF( msg, 1024, "%.16s/routine/jniCreateInterpreterInstance(), error 1.001: could not create RexxInterpreter instance", DLLNAME);
 
-        jthrowable rexxException=RgfCreateRexxException4Java(env, jobj,
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              NULL, // rtc,
                                                              NULL, // conditionObject
                                                              // NULL, // packageObject
                                                              REASON_INVALID_ARGUMENT,   // reason
                                                              msg   // message
                                                         );
-        env->Throw(rexxException); // throw the exception in the JVM
-
+        env->DeleteLocalRef(j_rii_ID);
         j_rii_ID=NULL;
+
+        env->Throw(j_rexxException); // throw the exception in the JVM
     }
 
         // free memory allocated in this routine
@@ -13695,6 +10273,13 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
                         (unsigned long) thisTid, c_rii_ID);
     fflush(stderr);
 #endif
+
+    env->DeleteLocalRef(j_initial_address_environment);
+    env->DeleteLocalRef(j_external_call_path);
+    env->DeleteLocalRef(j_external_call_extensions);
+    env->DeleteLocalRef(j_load_required_library);
+    env->DeleteLocalRef(j_direct_exits);
+    env->DeleteLocalRef(j_direct_environments);
 
     return j_rii_ID;    // return jstring of rii_ID
 }
@@ -13787,38 +10372,6 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
     RexxFreeMemory(c_rii_ID);
-
-/* --->
-    PSTRUCT_JRST a_JRST=RgfGetJRST_or_create_new (tid,
-                                                  env,
-                                                  raj,
-                                                  TRUE,
-                                                  NULL,     // independent JRST
-                                                  instance); // 2009-05-24, make sure a TID2JRST exists
-    if (a_JRST==NULL)
-    {
-        char msg[1024]="";
-        // sprintf(msg, "%.16s/routine/jniRexxRunProgram(), error 6: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
-        SNPRINTF( msg, 1024, "%.16s/routine/jniRexxRunProgram(), error 1: thread's (tid=[%lu]) interface to Java already used by multiple Rexx threads, cannot (temporarily) overload Java interface with a different Java object as addressee therefore.", DLLNAME, (unsigned long) tid);
-
-        jthrowable rexxException=RgfCreateRexxException4Java(env, raj,
-                                                             NULL, // rtc,
-                                                             NULL, // conditionObject
-                                                             // NULL, // packageObject
-                                                             REASON_INVALID_ARGUMENT,   // reason
-                                                             msg   // message
-                                                        );
-        env->Throw(rexxException);  // throw the exception in the JVM
-
-#if defined(DEBUG_JNI) || defined (DEBUG40)
-    fprintf(stderr, "<-- returning: .._jniRexxRunProgram(...): tid=[%lu], error, Java interface with multiple Rexx threads exists!\n",
-                    (unsigned long) tid);
-    fflush(stderr);
-#endif
-        return NULL;
-    }
-<--- */
-
 
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={tid, env, raj, instance, 0, 0, 0, 0};
@@ -13918,14 +10471,14 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
             SNPRINTF( msg, 1024, "%.16s/routine/jniRexxRunProgram(), error 6: invocation type arguments in error", DLLNAME);
         }
 
-        jthrowable rexxException=RgfCreateRexxException4Java(env, raj,
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
                                                              NULL, // rtc,
                                                              NULL, // conditionObject
                                                              // NULL, // packageObject
                                                              REASON_INVALID_ARGUMENT,   // reason
                                                              msg   // message
                                                         );
-        env->Throw(rexxException);  // throw the exception in the JVM
+        env->Throw(j_rexxException);  // throw the exception in the JVM
 
 
 #if defined(DEBUG_JNI) || defined (DEBUG40)
@@ -13934,9 +10487,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     fflush(stderr);
 #endif
 
-    // TODO: remove JRST ? ---rgf, 2009-09-28
         RgfAcquireLock();
-        // RgfRemoveTID2JRST(a_JRST, TRUE);    // force removal
         environmentDetachFrom(&param, FALSE);
         RgfReleaseLock();
         return NULL;
@@ -13944,9 +10495,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
 
     RexxInstance *tmpInstance=NULL;
-    // RgfAcquireLock2(RII_lock);      // lock access to list of RexxInstance instances
     tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
-    // RgfReleaseLock2(RII_lock);      // lock access to list of RexxInstance instances
 
     if (instance != tmpInstance)    // error (do not halt another Rexx Interpreter instance!)
     {
@@ -13954,14 +10503,14 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
         // sprintf(msg, "%.16s/routine/jniRexxRunProgram(), error 6: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
         SNPRINTF( msg, 1024, "%.16s/routine/jniRexxRunProgram(), error 7: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
 
-        jthrowable rexxException=RgfCreateRexxException4Java(env, raj,
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
                                                              NULL, // rtc,
                                                              NULL, // conditionObject
                                                              // NULL, // packageObject
                                                              REASON_INVALID_ARGUMENT,   // reason
                                                              msg   // message
                                                         );
-        env->Throw(rexxException);  // throw the exception in the JVM
+        env->Throw(j_rexxException);  // throw the exception in the JVM
 
 #if defined(DEBUG_JNI) || defined (DEBUG40)
     fprintf(stderr, "<-- returning: .._jniRexxRunProgram(...): tid=[%lu], error, cannot retrieve c_rii_ID=p=[%p], received=tmpInstance=[%p] instead\n",
@@ -13969,9 +10518,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     fflush(stderr);
 #endif
 
-    // TODO: remove JRST ? ---rgf, 2009-09-28
         RgfAcquireLock();
-        // RgfRemoveTID2JRST(a_JRST, TRUE);    // force removal
         environmentDetachFrom(&param, FALSE);
         RgfReleaseLock();
         return NULL;
@@ -13987,19 +10534,17 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 #if defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "UNSUCCESSFUL!  tid=[%lu]  :-( \n", (unsigned long) tid); fflush(stderr);
 #endif
-
         char msg[1024]="";
-        // sprintf(msg, "%.16s/routine/jniRexxRunProgram(), error 7: could not AttachThread() to Rexx interpreter instance with the ID '%p'", DLLNAME, instance);
         SNPRINTF( msg, 1024, "%.16s/routine/jniRexxRunProgram(), error 8: could not AttachThread() to Rexx interpreter instance with the ID '%p'", DLLNAME, instance);
 
-        jthrowable rexxException=RgfCreateRexxException4Java(env, raj,
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
                                                              NULL, // rtc,
                                                              NULL, // conditionObject
                                                              // NULL, // packageObject
                                                              REASON_EXECUTION_ERROR,   // reason
                                                              msg   // message
                                                         );
-         env->Throw(rexxException);  // throw the exception in the JVM
+         env->Throw(j_rexxException);  // throw the exception in the JVM
 
 #if defined(DEBUG_JNI) || defined (DEBUG40)
     fprintf(stderr, "<-- returning: .._jniRexxRunProgram(...): tid=[%lu], error, cannot do an instance->AttachThread()!\n",
@@ -14009,9 +10554,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
         // RexxFreeMemory(c_rii_ID);       // make sure we free the allocated memory
 
-    // TODO: remove JRST ? ---rgf, 2009-09-28
         RgfAcquireLock();
-        // RgfRemoveTID2JRST(a_JRST, TRUE);    // force removal
         environmentDetachFrom(&param,FALSE);
         RgfReleaseLock();
         return NULL;
@@ -14022,9 +10565,6 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 #endif
 
 
-    // RexxFreeMemory(c_rii_ID);           // make sure we free the allocated memory
-
-
         // set fileName
     char *c_fileName=(char *) JNU_GetStringNativeChars(env, j_fileName);    // convert to native string
 
@@ -14032,37 +10572,6 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
         // process Java argument array, get matching RexxArrayObject
     RexxArrayObject ra=RgfProcessJArgs(env, rtc, j_args, NULL, FALSE);
-
-/* --->
-if (ra!=NULL)
-{
-
-fprintf(stderr, "..._jniRexxRunProgram(): riid=[%p], tid=[%lu], trying to access ra=[%p]\n", ra);
-fflush(stderr);
-
-size_t oops=(size_t) rtc->ArraySize(ra);
-fprintf(stderr, "..._jniRexxRunProgram(): riid=[%p], tid=[%lu], after arguments got processed, [%lu] arguments:\n",
-          rtc->instance,
-          (unsigned long) tid,
-          oops
-          );
-fflush(stderr);
-
-for (size_t tsk=0; tsk < rtc->ArraySize(ra); tsk++)
-{
-    RexxObjectPtr rop=rtc->ArrayAt(ra, tsk);
-
-    fprintf(stderr, "..._jniRexxRunProgram(): riid=[%p], tid=[%lu]\tra[%lu]=[%p]=[%.256s]\n",
-            rtc->instance,
-            (unsigned long) tid,
-            tsk,
-            rop,
-            (CSTRING) (rop != NULL ? rtc->ObjectToStringValue(rop): NULL ));
-}
-fflush(stderr);
-}
-
-<<< */
 
     // invocationType:
     //   1: execute Rexx program from file, use the 4.0 API <code>CallProgram</code>
@@ -14133,14 +10642,13 @@ fflush(stderr);
     fprintf(stderr, "..._jniRexxRunProgram(...): BEFORE RgfCreateRexxException4Java(...) tid=[%lu]\n", (unsigned long) tid);
     fflush(stderr);
 #endif
-        jthrowable rexxException=RgfCreateRexxException4Java(env, raj,
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
                                                              rtc, // rtc,
                                                              condObj, // conditionObject
                                                              // NULL, // packageObject
                                                              REASON_EXECUTION_ERROR,   // reason
                                                              msg   // message
                                                         );
-
 
 #if defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxRunProgram tid=[%lu]... ", (unsigned long) tid); fflush(stderr);
@@ -14152,7 +10660,7 @@ fflush(stderr);
     fprintf(stderr, "done. <-------------- tid=[%lu] \n", (unsigned long) tid); fflush(stderr);
 #endif
 
-        env->Throw(rexxException);  // throw the exception in the JVM
+        env->Throw(j_rexxException);  // throw the exception in the JVM
 
 #if defined(DEBUG_JNI) || defined (DEBUG40)
     fprintf(stderr, "<-- returning: .._jniRexxRunProgram(...): tid=[%lu], Rexx runtime error occurred, throwing Java exception!\n\tmsg=[%.256s]\n",
@@ -14161,9 +10669,7 @@ fflush(stderr);
 #endif
 
         RexxFreeMemory(msg);
-        // TODO: remove JRST ? ---rgf, 2009-09-28
         RgfAcquireLock();
-        // RgfRemoveTID2JRST(a_JRST, TRUE);    // force removal
         environmentDetachFrom(&param, FALSE);
         RgfReleaseLock();
         return NULL;
@@ -14187,10 +10693,7 @@ fflush(stderr);
     fprintf(stderr, "done. <-------------- tid=[%lu] \n", (unsigned long) tid); fflush(stderr);
 #endif
 
-    // TODO: remove JRST ? ---rgf, 2009-09-28
-
     RgfAcquireLock();
-    // RgfRemoveTID2JRST(a_JRST, TRUE);    // force removal
     environmentDetachFrom(&param, FALSE);
     RgfReleaseLock();
 
@@ -14279,7 +10782,6 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         tid=RgfGetTID();   // get current TID
     // rgf, 2009-05-24, end.
 
-
     RexxThreadContext   *rtc=NULL;
     RexxObjectPtr result_obj;           // Rexx object returned from Rexx, NULLOBJECT, if none
 
@@ -14295,39 +10797,6 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         #endif                 /// <============
 
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
-
-
-/* rgf, 20091005
-
-    PSTRUCT_JRST a_JRST=RgfGetJRST_or_create_new (tid,
-                                                  env,
-                                                  jobj,
-                                                  RGF_TRUE,
-                                                  NULL,     // independent JRST
-                                                  instance); // 2009-05-24, make sure a TID2JRST exists
-    if (a_JRST==NULL)
-    {
-        char msg[1024]="";
-        // sprintf(msg, "%.16s/routine/jniRexxRunProgram(), error 6: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
-        SNPRINTF( msg, 1024, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 1: thread's (tid=[%lu]) interface to Java already used by multiple Rexx threads, cannot (temporarily) overload Java interface with a different Java object as addressee therefore.", DLLNAME, (unsigned long) tid);
-
-        jthrowable rexxException=RgfCreateRexxException4Java(env, jobj,
-                                                             NULL, // rtc,
-                                                             NULL, // conditionObject
-                                                             // NULL, // packageObject
-                                                             REASON_INVALID_ARGUMENT,   // reason
-                                                             msg   // message
-                                                        );
-        env->Throw(rexxException);  // throw the exception in the JVM
-
-#if defined(DEBUG_JNI) || defined (DEBUG40)
-    fprintf(stderr, "<-- returning: .._jniRexxSendMessageToRexxObject(...): tid=[%lu], error, Java interface with multiple Rexx threads exists!\n",
-                    (unsigned long) tid);
-    fflush(stderr);
-#endif
-        return NULL;
-    }
-rgf, 20091005 */
 
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={tid, env, jobj, instance, 0, 0, 0, 0};
@@ -14349,13 +10818,13 @@ rgf, 20091005 */
         char msg[1024]="";
         createAttachErrorMessage("routine/jniRexxSendMessageToRexxObject(), error 1", msg, 1024, &param);
 
-        jthrowable rexxException=RgfCreateRexxException4Java(env, jobj,
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              NULL, // rtc,
                                                              NULL, // conditionObject
                                                              REASON_INVALID_ARGUMENT,   // reason
                                                              msg   // message
                                                         );
-        env->Throw(rexxException);  // throw the exception in the JVM
+        env->Throw(j_rexxException);  // throw the exception in the JVM
 
 #if defined (RGF_TRUE) || defined(DEBUG_JNI) || defined (DEBUG40)
     fprintf(stderr, "<-- returning: .._jniRexxRunProgram(...): tid=[%lu], error, Java interface with multiple Rexx threads exists!\n",
@@ -14376,14 +10845,14 @@ rgf, 20091005 */
        // sprintf(msg, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 1: Rexx interpreter instance with the ID '%.256s' could not be found", DLLNAME, c_rii_ID);
        SNPRINTF( msg, 1024, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 2: Rexx interpreter instance with the ID '%.256s' could not be found", DLLNAME, c_rii_ID);
 
-        jthrowable rexxException=RgfCreateRexxException4Java(env, jobj,
+       jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              NULL, // rtc,
                                                              NULL, // conditionObject
                                                              // NULL, // packageObject
                                                              REASON_INVALID_ARGUMENT,   // reason
                                                              msg   // message
                                                         );
-        env->Throw(rexxException);  // throw the exception in the JVM
+        env->Throw(j_rexxException);  // throw the exception in the JVM
 
 #if defined (RGF_TRUE) || defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_REXX_PROXY)|| defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
     fprintf(stderr, "<-- returning: .._jniRexxSendMessageToRexxObject(...): thisTid=[%lu], error, cannot retrieve c_rii_ID=[%.256s]/p=[%p], received=[%p] instead\n",
@@ -14392,9 +10861,7 @@ rgf, 20091005 */
 #endif
 
         RexxFreeMemory(c_rii_ID);        // make sure we free the allocated memory
-        // TODO: remove JRST ? ---rgf, 2009-09-28
         RgfAcquireLock();
-        // RgfRemoveTID2JRST(a_JRST, RGF_TRUE);    // force removal
         environmentDetachFrom(&param, FALSE);
         RgfReleaseLock();
         return NULL;
@@ -14415,14 +10882,14 @@ rgf, 20091005 */
         // sprintf(msg, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 2: could not AttachThread() to Rexx interpreter instance with the ID '%.256s'", DLLNAME, c_rii_ID);
         SNPRINTF(msg, 1024, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 3: could not AttachThread() to Rexx interpreter instance with the ID '%.256s'", DLLNAME, c_rii_ID);
 
-        jthrowable rexxException=RgfCreateRexxException4Java(env, jobj,
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              NULL, // rtc,
                                                              NULL, // conditionObject
                                                              // NULL, // packageObject
                                                              REASON_EXECUTION_ERROR,   // reason
                                                              msg   // message
                                                         );
-         env->Throw(rexxException);  // throw the exception in the JVM
+         env->Throw(j_rexxException);  // throw the exception in the JVM
 
 
 
@@ -14645,17 +11112,14 @@ rgf, 20091005 */
 #endif
 
         RexxDirectoryObject condObj=rtc->GetConditionInfo();
-
         char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/routine/jniRexxSendMessageToRexxObject(), error 4");
-
-        jthrowable rexxException=RgfCreateRexxException4Java(env, jobj,
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              rtc, // rtc,
                                                              condObj, // conditionObject
                                                              // NULL, // packageObject
                                                              REASON_EXECUTION_ERROR,   // reason
                                                              msg   // message
                                                         );
-
 
 #if defined (RGF_TRUE) || defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxSendMessageToRexxObject... "); fflush(stderr);
@@ -14667,12 +11131,10 @@ rgf, 20091005 */
     fprintf(stderr, "done. <--------------\n"); fflush(stderr);
 #endif
 
-        env->Throw(rexxException);  // throw the exception in the JVM
+        env->Throw(j_rexxException);  // throw the exception in the JVM
 
 #if defined (RGF_TRUE) || defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_REXX_PROXY)  || defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
-    fprintf(stderr, "<-- returning: ...jniRexxSendMessageToRexxObject(...): thisTid=[%lu], Rexx runtime error occurred, throwing Java exception!\n\tmsg=[%.256s]\n",
-                       (unsigned long) tid, msg);
-    fflush(stderr);
+    fprintf(stderr, "<-- returning: ...jniRexxSendMessageToRexxObject(...): thisTid=[%lu], Rexx runtime error occurred, throwing Java exception!\n\tmsg=[%.256s]\n",(unsigned long) tid, msg);fflush(stderr);
 #endif
 
         RexxFreeMemory(msg);
@@ -14685,9 +11147,7 @@ rgf, 20091005 */
 
 
 #if defined (RGF_TRUE) || defined(DEBUG_JNI) || defined (DEBUG_40) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
-    fprintf(stderr, "<-- returning from: .._jniRexxSendMessageToRexxObject(...): thisTid=[%lu], everything o.k.\n",
-            (unsigned long) thisTid);
-    fflush(stderr);
+    fprintf(stderr, "<-- returning from: .._jniRexxSendMessageToRexxObject(...): thisTid=[%lu], everything o.k.\n",(unsigned long) thisTid);fflush(stderr);
 #endif
 
     jobject jresult=RgfProcessReturnValue4Java(env, jobj, rtc, result_obj, j_returnType);
@@ -14758,14 +11218,14 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltI
        // sprintf(msg, "%.16s/routine/jniRexxHaltInterpreterInstance(), error 1: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
        SNPRINTF(msg, 1024, "%.16s/routine/jniRexxHaltInterpreterInstance(), error 1: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
 
-        jthrowable rexxException=RgfCreateRexxException4Java(env, jobj,
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              NULL, // rtc,
                                                              NULL, // conditionObject
                                                              // NULL, // packageObject
                                                              REASON_INVALID_ARGUMENT,   // reason
                                                              msg   // message
                                                         );
-        env->Throw(rexxException); // throw the exception in the JVM
+        env->Throw(j_rexxException); // throw the exception in the JVM
 
 #if defined(DEBUG_JNI) || defined (DEBUG40)
     fprintf(stderr, "<-- returning: .._jniRexxHaltInterpreterInstance(...): thisTid=[%lu], error, cannot retrieve c_rii_ID=instance=[%p], received=tmpInstance=[%p] instead\n",
@@ -14831,27 +11291,15 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
     fflush(stderr);
 #endif
 
-/*
-    RgfAcquireLock();
-    fprintf(stderr, " RgfCountUsageOfJRST=[%d]\n", RgfCountUsageOfJRST (thisTid));
-    RgfReleaseLock();
-    fflush(stderr);
-*/
-// #endif
-
-
 // fprintf(stderr, "\n- - - - - - waiting for input, press a key! tid=[%lu]\n", (unsigned long)thisTid); fflush(stderr);
 // char mist=fgetc(stdin);
 // fscanf(stdin, "%c", &mist);
 // fprintf(stderr, "\n- - - - - - OK, continuing, tid=[%lu], mist=[%d]\n",(unsigned long)thisTid, mist); fflush(stderr);
 
-
-
     char *c_rii_ID=NULL;
     RexxInstance *instance=NULL, *tmpInstance=NULL;
 
     c_rii_ID=(char *) JNU_GetStringNativeChars(env, j_rii_ID);  // convert to native string
-
 
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
     fprintf(stderr, "(1)  .._jniRexxTerminateInterpreterInstance(...), thisTid=[%lu], c_rii_ID=[%.256s]\n", (unsigned long) thisTid, c_rii_ID);
@@ -14859,11 +11307,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
 #endif
 
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
-    // RexxFreeMemory(c_rii_ID);               // make sure we free the allocated memory
-
-    // RgfAcquireLock2(RII_lock);      // lock access to list of RexxInstance instances
     tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
-    // RgfReleaseLock2(RII_lock);      // lock access to list of RexxInstance instances
 
 #if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
     fprintf(stderr, "(2)  .._jniRexxTerminateInterpreterInstance(...), thisTid=[%lu], c_rii_ID=[%p]: after 'RgfGetRexxInterpreterInstanceFromList(instance)': tmpInstance=[%p] \n", (unsigned long) thisTid, instance, tmpInstance);
@@ -14879,13 +11323,10 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
     fflush(stderr);
 #endif
 
-
-
         char msg[1024]="";
-        // sprintf(msg, "%.16s/routine/jniRexxTerminateInterpreterInstance(), error 1: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
         SNPRINTF(msg, 1024, "%.16s/routine/jniRexxTerminateInterpreterInstance(), error 1: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
 
-        jthrowable rexxException=RgfCreateRexxException4Java(env, jobj,
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              NULL, // rtc,
                                                              NULL, // conditionObject
                                                              // NULL, // packageObject
@@ -14893,7 +11334,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
                                                              msg   // message
                                                         );
 
-        env->Throw(rexxException); // throw the exception in the JVM
+        env->Throw(j_rexxException); // throw the exception in the JVM
 
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
     fprintf(stderr, "<-- returning: .._jniRexxTerminateInterpreterInstance(...): thisTid=[%lu], error, cannot retrieve instance p=[%p], received=[%p] instead\n",
@@ -14923,8 +11364,6 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
     fflush(stderr);
 #endif
 
-        // RgfAcquireLock2(RII_lock);       // lock access to list of RexxInstance instances
-
         // 2012-02-07: get RII node, DeleteGlobalRef() for rajo and rexxconf, before structure gets freed
         PSTRUCT_RII struRii=RgfGetRexxInterpreterInstanceStructFromList(tmpInstance);
         jobject riiRajo=NULL;
@@ -14944,9 +11383,6 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
         if (riiRexxconf!=NULL) {
             env->DeleteGlobalRef(riiRexxconf);
         }
-
-
-        // RgfReleaseLock2(RII_lock);       // lock access to list of RexxInstance instances
 
         // remove instance from list
 #if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
@@ -14969,18 +11405,13 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
     fflush(stderr);
 #endif
 
-        tmpInstance->Terminate();    // wait until all interpreter threads terminated
+    tmpInstance->Terminate();    // wait until all interpreter threads terminated
 
 #if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
     fprintf(stderr, "(4b) .._jniRexxTerminateInterpreterInstance(...): AFTER Terminate(), thisTid=[%lu], tmpInstance=[%p]\n", (unsigned long) thisTid, tmpInstance);
     fflush(stderr);
 #endif
 
-
-
-
-// TODO: unlock
-// RgfReleaseLock2(RII_lock);       // lock access to list of RexxInstance instances
 
             // now take care of removing the JRST and all dependants of this instance
         #ifdef UNIX
@@ -14990,41 +11421,13 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
         #endif
                 tid=RgfGetTID();   // get current TID
 
-
-// #if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
-//     fprintf(stderr, "(5a) .._jniRexxTerminateInterpreterInstance(...), thisTid=[%lu], c_rii_ID=[%p]: before 'RgfGetJRST_or_create_new (...)'... \n", (unsigned long) thisTid, tmpInstance);
-//     fflush(stderr);
-// #endif
-//
-//     // TODO: check strategy to not force creation of a new JRST here
-//     // TODO: is this really needed (20091001) ?
-// //        PSTRUCT_JRST a_JRST=RgfGetJRST_or_create_new (tid, env, jobj, FALSE, instance); // 2008-07-23, rgf
-//
-// #if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
-//     fprintf(stderr, "(5b) .._jniRexxTerminateInterpreterInstance(...), thisTid=[%lu], c_rii_ID=[%p]: after \n",
-//                     (unsigned long) thisTid, instance); //, a_JRST);
-//     fflush(stderr);
-// #endif
-
-/*
-RgfAcquireLock();
-fprintf(stderr, ".._jniRexxTerminateInterpreterInstance(...): about to remove JRST, attached: tid=[%lu], RgfCountUsageOfJRST=[%d]\n", tid, RgfCountUsageOfJRST (tid));
-RgfReleaseLock();
-fflush(stderr);
-*/
-
-        // RgfAcquireLock();
-        // int tmpRes=RgfRemoveTID2JRST(a_JRST, TRUE); // make sure, JRST and all dependents get removed
 #if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
     fprintf(stderr, "(6a) .._jniRexxTerminateInterpreterInstance(...), thisTid=[%lu], c_rii_ID=[%p], before removeALL_RIID_nodes ...\n",
                     (unsigned long) thisTid, instance ); //, a_JRST);
     fflush(stderr);
 #endif
 
-
-    // TODO: make sure that all RIID-JRSTs get removed, force it ! rgf, 2009-10-01
         RgfAcquireLock();
-        // int tmpRes=RgfRemoveJRST_By_RIID((void *) instance);
         removeAll_RIID_nodes(env, (void *) instance);
         RgfReleaseLock();
 
@@ -15034,28 +11437,6 @@ fflush(stderr);
     fflush(stderr);
 #endif
 
-
-/*
-RgfAcquireLock();
-fprintf(stderr, ".._jniRexxTerminateInterpreterInstance(...): AFTER JRST removal, attached: tid=[%lu], RgfCountUsageOfJRST=[%d]\n", tid, RgfCountUsageOfJRST (tid));
-RgfReleaseLock();
-fflush(stderr);
-*/
-
-
-/*
-#if defined (RGF_INFO) || defined (RGF_ATTACH) || defined (RGF_DETACH) ||  defined(DEBUG_JNI) || defined (DEBUG40)
-    fprintf(stderr, ".._jniRexxTerminateInterpreterInstance(...): thisTid=[%lu], used RgfRemoveTID2JRST() to remove JRST, tid=[%u]: tmpRes=[%lu],",
-                     (unsigned long) thisTid, (unsigned long)tid, tmpRes);
-    fflush(stderr);
-
-    RgfAcquireLock();
-    fprintf(stderr, ", RgfCountUsageOfJRST=[%d]\n", RgfCountUsageOfJRST (tid));
-    RgfReleaseLock();
-    fflush(stderr);
-#endif
-*/
-
     }
 
     RexxFreeMemory(c_rii_ID);               // make sure we free the allocated memory
@@ -15064,17 +11445,6 @@ fflush(stderr);
 
     fprintf(stderr, "<-- returning from: .._jniRexxTerminateInterpreterInstance(...), thisTid=[%lu]\n", (unsigned long) thisTid);
     fflush(stderr);
-
-/*
-    RgfAcquireLock();
-    fprintf(stderr, " \tNOW: RgfCountUsageOfJRST=[%d]\n", RgfCountUsageOfJRST (thisTid));
-    RgfReleaseLock();
-    fflush(stderr);
-
-    fprintf(stderr, "<== returning from: .._jniRexxTerminateInterpreterInstance(...), thisTid=[%lu].\n", (unsigned long) thisTid);
-    fflush(stderr);
-*/
-
 #endif
 
     return (jint) 0;
@@ -15150,14 +11520,14 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregiste
 
         // JNU_ThrowByName(env, "org.apache.bsf.BSFException", msg);
 
-        jthrowable rexxException=RgfCreateRexxException4Java(env, jobj,
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              NULL, // rtc,
                                                              NULL, // conditionObject
                                                              // NULL, // packageObject
                                                              REASON_INVALID_ARGUMENT,   // reason
                                                              msg   // message
                                                         );
-        env->Throw(rexxException); // throw the exception in the JVM
+        env->Throw(j_rexxException); // throw the exception in the JVM
 
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_UNREGISTER_REXX_OBJECT)
     fprintf(stderr, "*** <-- returning: .._jniRexxUnregisterRexxObject(...): thisTid=[%lu], error, obj_ID=[NULL] !\n",
@@ -15387,6 +11757,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     tmpFlags[2]=pb->rxfnc_flags.rxffsub;
                     param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
+                    param.env->DeleteLocalRef(jflags);
 
                         // process function name
                     CONSTRXSTRING function_name;
@@ -15396,6 +11767,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                  context->threadContext,
                                                 &function_name);
                     param.env->SetObjectArrayElement(jpb, (jint) 1, jrxfnc_name);
+                    param.env->DeleteLocalRef(jrxfnc_name);
 
                         // process current queue name
                     CONSTRXSTRING curr_queue_name;
@@ -15405,10 +11777,12 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                  context->threadContext,
                                                 &curr_queue_name);
                     param.env->SetObjectArrayElement(jpb, (jint) 2, jque_name);
+                    param.env->DeleteLocalRef(jque_name);
 
                         // process arguments
                     jobjectArray jargs=RgfConstrxStringArray2JavaArray(&param, context->threadContext, pb->rxfnc_argv, pb->rxfnc_argc);
                     param.env->SetObjectArrayElement(jpb, (jint) 3, jargs);
+                    param.env->DeleteLocalRef(jargs);
 
                        // index [4]: may be set by the exit handler to a return String (!) value
                 }
@@ -15448,6 +11822,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     tmpFlags[1]=pb->rxcmd_flags.rxfcerr;
                     param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
+                    param.env->DeleteLocalRef(jflags);
 
 
                         // process address name
@@ -15458,6 +11833,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                  context->threadContext,
                                                 &address_name);
                     param.env->SetObjectArrayElement(jpb, (jint) 1, jaddress);
+                    param.env->DeleteLocalRef(jaddress);
 
 
                         // process dllname name
@@ -15468,6 +11844,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                  context->threadContext,
                                                 &dllname_name);
                     param.env->SetObjectArrayElement(jpb, (jint) 2, jdllname);
+                    param.env->DeleteLocalRef(jdllname);
 
 
                         // process command
@@ -15475,6 +11852,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                  context->threadContext,
                                                 &pb->rxcmd_command);
                     param.env->SetObjectArrayElement(jpb, (jint) 3, jcommand);
+                    param.env->DeleteLocalRef(jcommand);
 
                        // index [4]: may be set by the exit handler to a return String (!) value
                 }
@@ -15521,12 +11899,14 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
 
                     param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
+                    param.env->DeleteLocalRef(jflags);
 
                         // process value to push
                     jobject jvalue=JNU_CreateJavaStringFromCONSTRXSTRING(param.env,
                                                  context->threadContext,
                                                 &pb->rxmsq_value);
                     param.env->SetObjectArrayElement(jpb, (jint) 1, jvalue);
+                    param.env->DeleteLocalRef(jvalue);
                 }
 
                 else if (subfunction==RXMSQSIZ)     // 3 - Returns the number of lines in the external data queue
@@ -15561,6 +11941,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                  context->threadContext,
                                                 &new_queue_name);
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jnewQueueName);
+                    param.env->DeleteLocalRef(jnewQueueName);
                 }
             }
             break;
@@ -15595,6 +11976,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                  context->threadContext,
                                                 &pb->rxsio_string);
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jrxsio_string);
+                    param.env->DeleteLocalRef(jrxsio_string);
                 }
 
                 else if (subfunction==RXSIOTRC)   // 2
@@ -15616,6 +11998,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                  context->threadContext,
                                                 &pb->rxsio_string);
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jrxsio_string);
+                    param.env->DeleteLocalRef(jrxsio_string);
                 }
 
 
@@ -15674,6 +12057,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     tmpFlags[0]=pb->rxhlt_flags.rxfhhalt;
                     param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
+                    param.env->DeleteLocalRef(jflags);
                 }
             }
             break;
@@ -15701,6 +12085,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     tmpFlags[0]=pb->rxtrc_flags.rxftrace;
                     param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
+                    param.env->DeleteLocalRef(jflags);
                 }
             }
             break;
@@ -15751,10 +12136,13 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                        defaultJVM->clz_Object,   // type
                                        NULL                      // initial value
                                        );
-                        param.env->SetObjectArrayElement(jpb, (jint) 0,
-                                                         param.env->NewStringUTF(context->CString(pb->variable_name))
-                                                         );
+                        // param.env->SetObjectArrayElement(jpb, (jint) 0,
+                        //                                  param.env->NewStringUTF(context->CString(pb->variable_name))
+                        //                                  );
 
+                        jstring jstr=param.env->NewStringUTF(context->CString(pb->variable_name));
+                        param.env->SetObjectArrayElement(jpb, (jint) 0, jstr);
+                        param.env->DeleteLocalRef(jstr);
                 }
             }
             break;
@@ -15820,6 +12208,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     }
                     param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
+                    param.env->DeleteLocalRef(jflags);
 
 
                         // process function name
@@ -15827,6 +12216,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                 &function_name);
 
                     param.env->SetObjectArrayElement(jpb, (jint) 1, jrxfnc_name);
+                    param.env->DeleteLocalRef(jrxfnc_name);
 
                         // create RexxArrayObject from RexxObjectPtr list and store it as a Java array object
                     RexxArrayObject rao=context->NewArray(argc);
@@ -15834,7 +12224,10 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     {
                         context->ArrayPut(rao, argv[i], i+1);
                     }
-                    param.env->SetObjectArrayElement(jpb, (jint) 2, RgfRexxArray2JavaArray(&param, context->threadContext, rao));
+                    // param.env->SetObjectArrayElement(jpb, (jint) 2, RgfRexxArray2JavaArray(&param, context->threadContext, rao));
+                    jobjectArray jao=RgfRexxArray2JavaArray(&param, context->threadContext, rao);
+                    param.env->SetObjectArrayElement(jpb, (jint) 2, jao);
+                    param.env->DeleteLocalRef(jao);
 
                     // fourth element remains NULL, needs to be set by handler, if a result is returned
                 }
@@ -15866,17 +12259,27 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                    );
 
                         // process selector
-                    param.env->SetObjectArrayElement(jpb, (jint) 0,
-                                param.env->NewStringUTF(context->CString(pb->selector)));
+                    // param.env->SetObjectArrayElement(jpb, (jint) 0,
+                    //             param.env->NewStringUTF(context->CString(pb->selector)));
+
+                    jstring jstr=param.env->NewStringUTF(context->CString(pb->selector));
+                    param.env->SetObjectArrayElement(jpb, (jint) 0, jstr);
+                    param.env->DeleteLocalRef(jstr);
 
                         // process variable_name
-                    param.env->SetObjectArrayElement(jpb, (jint) 1,
-                                param.env->NewStringUTF(context->CString(pb->variable_name)));
+                    // param.env->SetObjectArrayElement(jpb, (jint) 1,
+                    //             param.env->NewStringUTF(context->CString(pb->variable_name)));
+                    jstr=param.env->NewStringUTF(context->CString(pb->variable_name));
+                    param.env->SetObjectArrayElement(jpb, (jint) 1, jstr);
+                    param.env->DeleteLocalRef(jstr);
 
                         // process value
-                    param.env->SetObjectArrayElement(jpb, (jint) 2,
-                                RgfRexxObject2JavaObject(&param,context->threadContext,pb->value)
-                                                    );
+                    // param.env->SetObjectArrayElement(jpb, (jint) 2,
+                    //             RgfRexxObject2JavaObject(&param,context->threadContext,pb->value)
+                    //                                 );
+                    jobject jo= RgfRexxObject2JavaObject(&param,context->threadContext,pb->value);
+                    param.env->SetObjectArrayElement(jpb, (jint) 2,jo);
+                    param.env->DeleteLocalRef(jo);
                 }
             }
             break;
@@ -15890,6 +12293,9 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         fprintf(stderr,  "C++ >> >> >> 5 (default:) << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
     }
 #endif
+            param.env->DeleteLocalRef(jhandler);
+            param.env->DeleteLocalRef(jslot);
+            param.env->DeleteLocalRef(jpb);
 
             RgfAcquireLock();
             environmentDetachFrom(&param, FALSE);    // do not close group
@@ -15946,6 +12352,11 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
 #endif
 
         param.env->ExceptionClear();    // clear the Java exception
+
+        param.env->DeleteLocalRef(jhandler);
+        param.env->DeleteLocalRef(jslot);
+        param.env->DeleteLocalRef(jpb);
+
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
@@ -15953,6 +12364,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 4: Java exception, cannot find the Java Rexx exit handler method named [%s], needed for processing the Rexx system exit number=[%d], subfunction=[%d]",
                             DLLNAME, CONFIG_REXX_EXIT_HANDLER_NAME, exitNumber, subfunction);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+
         return RXEXIT_RAISE_ERROR;
     }
 
@@ -15983,6 +12395,11 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
              0,         // RexxExitContext
              context,
              msg);
+
+        param.env->DeleteLocalRef(jhandler);
+        param.env->DeleteLocalRef(jslot);
+        param.env->DeleteLocalRef(jpb);
+
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
@@ -15998,6 +12415,11 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
         fprintf(stderr,  "C++ >> >> >> 9 (Rexx-condition) << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
     }
 #endif
+
+        param.env->DeleteLocalRef(jhandler);
+        param.env->DeleteLocalRef(jslot);
+        param.env->DeleteLocalRef(jpb);
+
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
@@ -16038,6 +12460,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         pb->rxfnc_flags.rxffnfnd=tmpFlags[1];
                         pb->rxfnc_flags.rxffsub =tmpFlags[2];
                         param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                        param.env->DeleteLocalRef(jflags);
 
                             // get result, if any, turn it into a RexxObjectPtr
                         jobject jresult=param.env->GetObjectArrayElement(jpb, (jint) 4);
@@ -16050,6 +12473,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                             // TODO: could get Java object's String value and return that ?
                         else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
                         {
+                            param.env->DeleteLocalRef(jresult);
                             pb->rxfnc_flags.rxfferr =1; // indicate an error occurred
                             SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 6: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
                                                 DLLNAME, exitNumber, subfunction);
@@ -16059,6 +12483,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         else    // o.k., process Java String object
                         {
                             JNU_JavaString2pRxString(param.env, (jstring) jresult, &pb->rxfnc_retc);
+                            param.env->DeleteLocalRef(jresult);
                         }
                     }
                 }
@@ -16091,6 +12516,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         pb->rxcmd_flags.rxfcerr  =tmpFlags[1];
 
                         param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                        param.env->DeleteLocalRef(jflags);
 
                             // get result, if any, turn it into a RexxObjectPtr
                         jobject jresult=param.env->GetObjectArrayElement(jpb, (jint) 4);
@@ -16103,6 +12529,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                             // TODO: could get Java object's String value and return that ?
                         else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
                         {
+                            param.env->DeleteLocalRef(jresult);
                             pb->rxcmd_flags.rxfcerr =1; // indicate an error occurred
                             SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 7: Java RXCMD=3 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
                                                 DLLNAME, exitNumber, subfunction);
@@ -16112,6 +12539,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         else    // o.k., process Java String object
                         {
                             JNU_JavaString2pRxString(param.env, (jstring) jresult, &pb->rxcmd_retc);
+                            param.env->DeleteLocalRef(jresult);
                         }
                     }
                 }
@@ -16142,6 +12570,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                             // TODO: could get Java object's String value and return that ?
                         else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
                         {
+                            param.env->DeleteLocalRef(jresult);
                             SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 8: Java RXMSQ=4 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
                                                 DLLNAME, exitNumber, subfunction);
                             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
@@ -16150,6 +12579,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         else    // o.k., process Java String object
                         {
                             JNU_JavaString2pRxString(param.env, (jstring) jresult, &pb->rxmsq_retc);
+                            param.env->DeleteLocalRef(jresult);
                         }
                     }
 
@@ -16171,6 +12601,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                             // TODO: could get Java object's String value and return that ?
                         else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
                         {
+                            param.env->DeleteLocalRef(jresult);
                             SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 10: Java RXMSQ=4 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
                                                 DLLNAME, exitNumber, subfunction);
                             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
@@ -16180,6 +12611,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         {
                                 // turn Java value into size_t
                             char * c_result=(char *) JNU_GetStringNativeChars(param.env, (jstring) jresult);   // convert to native string
+                            param.env->DeleteLocalRef(jresult);
                             size_t size=0;
                                 // turn into RexxString, then create a size_t from it
                             size_t res=context->ObjectToStringSize(context->String(c_result), &size);
@@ -16248,6 +12680,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                             // TODO: could get Java object's String value and return that ?
                         else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
                         {
+                            param.env->DeleteLocalRef(jresult);
                             SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 12: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
                                                 DLLNAME, exitNumber, subfunction);
                             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
@@ -16256,6 +12689,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         else    // o.k., process Java String object
                         {
                             JNU_JavaString2pRxString(param.env, (jstring) jresult, &pb->rxsiotrd_retc);
+                            param.env->DeleteLocalRef(jresult);
                         }
                     }
 
@@ -16278,6 +12712,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                             // TODO: could get Java object's String value and return that ?
                         else  if ( param.env->IsInstanceOf(jresult, defaultJVM->clz_String)==JNI_FALSE )
                         {
+                            param.env->DeleteLocalRef(jresult);
                             SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 13: Java RXFNC=2 exit handler (exitNumber: [%d], subfunction: [%d]) did not return a Java String object",
                                                 DLLNAME, exitNumber, subfunction);
                             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
@@ -16286,6 +12721,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         else    // o.k., process Java String object
                         {
                             JNU_JavaString2pRxString(param.env, (jstring) jresult, &pb->rxsiodtr_retc);
+                            param.env->DeleteLocalRef(jresult);
                         }
                     }
 
@@ -16310,6 +12746,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                         pb->rxhlt_flags.rxfhhalt =tmpFlags[0];
                         param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                        param.env->DeleteLocalRef(jflags);
                     }
                 }
                 break;
@@ -16330,6 +12767,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                         jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                         pb->rxtrc_flags.rxftrace =tmpFlags[0];
                         param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                        param.env->DeleteLocalRef(jflags);
                     }
                 }
                 break;
@@ -16385,6 +12823,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                        jvalue,            // Java object to turn into a RexxObjectPtr
                                                        FALSE              // if FALSE, do not load .BSF, if not found
                                                        );
+                            param.env->DeleteLocalRef(jvalue);
                             if (rop==NULL)  // Java returned NULL, so we return .nil
                             {
                                 rop=context->Nil();
@@ -16445,6 +12884,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                 flags->rxffnfnd=tmpFlags[1];
                             }
                             param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                            param.env->DeleteLocalRef(jflags);
 
 
                                 // get result, if any, turn it into a RexxObjectPtr
@@ -16456,6 +12896,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                        jresult,           // Java object to turn into a RexxObjectPtr
                                                        FALSE              // if FALSE, do not load .BSF, if not found
                                                        );
+                            param.env->DeleteLocalRef(jresult);
                             if (rop==NULL)  // Java returned NULL, so we return .nil
                             {
                                 rop=context->Nil();
@@ -16504,6 +12945,7 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                                       jresult,           // Java object to turn into a RexxObjectPtr
                                                       FALSE              // if FALSE, do not load .BSF, if not found
                                                       );
+                                param.env->DeleteLocalRef(jresult);
                                 if (rop==NULL ) // Java returned NULL, so we return .nil
                                 {
                                     rop=context->Nil();
@@ -16523,6 +12965,11 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
     // --------------------------------------------------------------------------
     // --------------------------------------------------------------------------
     // ================== END:   system exit related special handling, before returning to Rexx
+
+
+    param.env->DeleteLocalRef(jhandler);
+    param.env->DeleteLocalRef(jslot);
+    param.env->DeleteLocalRef(jpb);
 
 
     RgfAcquireLock();
@@ -16623,6 +13070,10 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
              0,         // RexxExitContext
              context,
              msg);
+
+        param.env->DeleteLocalRef(jaddress);
+        param.env->DeleteLocalRef(jhandler);
+
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
@@ -16631,6 +13082,8 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
 
         // check whether jhandler==NULL, if so raise appropriate RexxCondtion
     if (jhandler==NULL) {
+        param.env->DeleteLocalRef(jaddress);
+
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
@@ -16652,16 +13105,23 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
 
         // index [0]: save rajo that created this Rexx interpreter instance
     param.env->SetObjectArrayElement(jslot, (jint) 0, struRii->rajo);
+
         // index [1]: save RexxConfiguration object of this RII
     param.env->SetObjectArrayElement(jslot, (jint) 1, struRii->rexxconf);
 
         // index [2]: save RexxExitContext pointer as a jstring
     const char c_context [ RGF_POINTER_STRING_WIDTH+1 ] = "";
     RgfPointer2String(context, c_context);  // create a string representation of RexxExitContext
-    param.env->SetObjectArrayElement(jslot, (jint) 2, param.env->NewStringUTF(c_context));
+    // param.env->SetObjectArrayElement(jslot, (jint) 2, param.env->NewStringUTF(c_context));
+    jstring jstr=param.env->NewStringUTF(c_context);
+    param.env->SetObjectArrayElement(jslot, (jint) 2, jstr);
+    param.env->DeleteLocalRef(jstr);
 
         // index [3]: add context pointer type: 0=ThreadContext, 1=MethodContext, 2=FunctionContext, 3=ExitContext
-    param.env->SetObjectArrayElement(jslot, (jint) 3, param.env->NewStringUTF("3"));
+    // param.env->SetObjectArrayElement(jslot, (jint) 3, param.env->NewStringUTF("3"));
+    jstr=param.env->NewStringUTF("3");
+    param.env->SetObjectArrayElement(jslot, (jint) 3, jstr);
+    param.env->DeleteLocalRef(jstr);
 
 
         // public abstract Object handleCommand(Object slot, String address, String command);
@@ -16686,6 +13146,12 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
     if (param.env->ExceptionCheck())
     {
         param.env->ExceptionClear();    // clear the Java exception
+
+        param.env->DeleteLocalRef(jaddress);
+        param.env->DeleteLocalRef(jhandler);
+        param.env->DeleteLocalRef(jslot);
+        param.env->DeleteLocalRef(jresult);
+
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
@@ -16706,7 +13172,6 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
 #endif
 
 
-
         // check for Java exception
     if (param.env->ExceptionCheck())
     {
@@ -16718,6 +13183,12 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
              0,         // RexxExitContext
              context,
              msg);
+
+        param.env->DeleteLocalRef(jaddress);
+        param.env->DeleteLocalRef(jhandler);
+        param.env->DeleteLocalRef(jslot);
+        param.env->DeleteLocalRef(jresult);
+
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
@@ -16727,6 +13198,11 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
 
         // a Rexx condition raised by the Java handler? If so, return immediately
     if (context->CheckCondition()) {
+        param.env->DeleteLocalRef(jaddress);
+        param.env->DeleteLocalRef(jhandler);
+        param.env->DeleteLocalRef(jslot);
+        param.env->DeleteLocalRef(jresult);
+
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
@@ -16741,6 +13217,10 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
                                      jresult,           // Java object to turn into a RexxObjectPtr
                                      FALSE              // if FALSE, do not load .BSF, if not found
                                      );
+
+    param.env->DeleteLocalRef(jaddress);
+    param.env->DeleteLocalRef(jhandler);
+    param.env->DeleteLocalRef(jslot);
 
     RgfAcquireLock();
     environmentDetachFrom(&param, FALSE);    // do not close group
@@ -16794,11 +13274,11 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseCond
 
         // get condition name in Rexx
     RexxStringObject rsoConditionName= (j_conditionName==NULL ? NULL :
-                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxObjectPtr(env, j_conditionName, context->threadContext)
+                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxStringObject(env, j_conditionName, context->threadContext)
                           );
 
     RexxStringObject rsoDescription= (j_description==NULL ? NULL :
-                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxObjectPtr(env, j_description, context->threadContext)
+                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxStringObject(env, j_description, context->threadContext)
                           );
 
     RexxArrayObject rao_additional=RgfProcessJArgs (env, context->threadContext,
@@ -16892,7 +13372,7 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseExce
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
 
     RexxStringObject rso_substitution1= (j_substitution1==NULL ? NULL :
-                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxObjectPtr(env, j_substitution1, context->threadContext));
+                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxStringObject(env, j_substitution1, context->threadContext));
 
     context->RaiseException1((size_t)j_definedErrorNumber,rso_substitution1);
 
@@ -16917,10 +13397,10 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseExce
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
 
     RexxStringObject rso_substitution1= (j_substitution1==NULL ? NULL :
-                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxObjectPtr(env, j_substitution1, context->threadContext));
+                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxStringObject(env, j_substitution1, context->threadContext));
 
     RexxStringObject rso_substitution2= (j_substitution2==NULL ? NULL :
-                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxObjectPtr(env, j_substitution2, context->threadContext));
+                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxStringObject(env, j_substitution2, context->threadContext));
 
     context->RaiseException2((size_t)j_definedErrorNumber,rso_substitution1,rso_substitution2);
 
@@ -16946,7 +13426,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCon
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
 
     RexxStringObject rso_variableName= (j_variableName==NULL ? NULL :
-                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxObjectPtr(env, j_variableName, context->threadContext));
+                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxStringObject(env, j_variableName, context->threadContext));
 
     char * c_variableName=(char *) JNU_GetStringNativeChars(env, j_variableName);   // convert to native string
 
@@ -16991,7 +13471,7 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContex
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
 
     RexxStringObject rso_variableName= (j_variableName==NULL ? NULL :
-                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxObjectPtr(env, j_variableName, context->threadContext));
+                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxStringObject(env, j_variableName, context->threadContext));
 
     char * c_variableName=(char *) JNU_GetStringNativeChars(env, j_variableName);   // convert to native string
 
@@ -17085,8 +13565,6 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCon
     STRUCT_PARAM param={0, env, rajo, 0, 0, 0, 0, 0};
     jobject jobj=RgfRexxObject2JavaObject(&param,context->threadContext,rop);
 
-    // jobjectArray joa=RgfRexxArray2JavaArray(&param, context->threadContext, context->ArrayOfOne(rop), NULL);
-
 #if defined (DEBUG_JNI)
     fprintf(stderr, "==> ==> 3/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetConditionInfo <== <==\n");
 #endif
@@ -17158,7 +13636,7 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniDropConte
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
 
     RexxStringObject rso_variableName= (j_variableName==NULL ? NULL :
-                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxObjectPtr(env, j_variableName, context->threadContext));
+                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxStringObject(env, j_variableName, context->threadContext));
 
     char * c_variableName=(char *) JNU_GetStringNativeChars(env, j_variableName);   // convert to native string
     context->DropContextVariable(c_variableName);
@@ -17186,7 +13664,7 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContex
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
 
     RexxStringObject rso_variableName= (j_variableName==NULL ? NULL :
-                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxObjectPtr(env, j_variableName, context->threadContext));
+                (RexxStringObject) JNU_GetStringNativeCharsReturningRexxStringObject(env, j_variableName, context->threadContext));
 
     char * c_variableName=(char *) JNU_GetStringNativeChars(env, j_variableName);   // convert to native string
     context->SetContextVariable(c_variableName, context->Nil());
