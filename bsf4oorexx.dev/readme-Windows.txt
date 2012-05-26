@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for Windows                20 Apr 2012
+BSF4ooRexx - Installation Directions for Windows                26 May 2012
 ================================================
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage

@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for Linux                  20 Apr 2012
+BSF4ooRexx - Installation Directions for Linux                  26 May 2012
 ==============================================
 Home: <http://sourceforge.net/projects/bsf4oorexx/>
 

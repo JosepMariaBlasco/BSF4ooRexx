@@ -15,5 +15,8 @@ From the 20th International Rexx Symposium (2009): <http://wi.wu.ac.at/rgf/rexx/
         2009_orx20_RGF_UTIL2-20100806-article.pdf (Utility package accompanying BSF4ooRexx)
         2009_orx20_RGF_UITL2-20110608-refcard.pdf
 
+From the 21st International Rexx Symposiuim (2012):
 
-Rony G. Flatscher, as of 2012-03-12
+        201202-CreatingOoRexxInterpreterInstances-article.pdf (new features for Java programmers)
+
+Rony G. Flatscher, as of 2012-05-26
