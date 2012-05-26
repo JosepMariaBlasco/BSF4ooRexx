@@ -2493,24 +2493,12 @@ inline void uninit_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM)
         // if 'bReturnWithPrefix'==1, then return optional "<O>", if present
 inline jstring RgfStoreRexxProxyInBsfRegistry(JNIEnv *env, jobject rajo, jobject proxy, int bReturnWithPrefix)
 {
-//    jclass       rajoClz=env->GetObjectClass(rajo);        // get class object of RexxAndJava object (rajo)
-
-        // store ProxyObject in BSFRegistry, fetch the String value that was used as the key
-//    jmethodID    midMakeString4Rexx=env->GetMethodID( rajoClz, "makeString4Rexx", "(Ljava/lang/Object;)Ljava/lang/String;");
-//    jstring j_keyValue=(jstring) env->CallObjectMethod(rajo, midMakeString4Rexx, proxy);
-
-//    jstring j_keyValueWithoutPrefix=j_keyValue;
-
-//    jclass  clzRexxProxy=env->FindClass("org/rexxla/bsf/engines/rexx/RexxProxy");
-
-
     jstring j_keyValue=(jstring) env->CallObjectMethod(rajo,
                                                        defaultJVM->mid_RexxAndJava_makeString4Rexx,
                                                        proxy);
     jstring j_keyValueWithoutPrefix=j_keyValue;
 
 
-//    if (!env->ExceptionCheck() && env->IsInstanceOf(proxy, clzRexxProxy) )  // a RexxProxy, save its registry key with the instance
     // a RexxProxy, save its registry key with the instance
     if (!env->ExceptionCheck() &&
          env->IsInstanceOf(proxy, defaultJVM->clz_RexxProxy) )
@@ -2521,14 +2509,10 @@ inline jstring RgfStoreRexxProxyInBsfRegistry(JNIEnv *env, jobject rajo, jobject
         if (c_keyValue[0]=='<' && c_keyValue[2]=='>')   // type indicator in hand, remove it
         {
             j_keyValueWithoutPrefix=env->NewStringUTF((char *) c_keyValue+3);
-// fprintf(stderr, "c_keyValue=[%.256s], c_keyValue+3=[%.256s]\n", c_keyValue, c_keyValue+3); fflush(stderr);
         }
         RexxFreeMemory(c_keyValue);     // free memory
 
             // now register Bean
-//        jmethodID midSetBsfRegistry=env->GetMethodID( clzRexxProxy, "setBsfRegistryKey", "(Ljava/lang/String;)V");
-//        env->CallObjectMethod(proxy, midSetBsfRegistry, j_keyValueWithoutPrefix);
-
         env->CallObjectMethod(proxy,
                               defaultJVM->mid_RexxProxy_setBsfRegistry,
                               j_keyValueWithoutPrefix);
@@ -2536,11 +2520,9 @@ inline jstring RgfStoreRexxProxyInBsfRegistry(JNIEnv *env, jobject rajo, jobject
 
     if (bReturnWithPrefix==1)
     {
-        // env->DeleteLocalRef(j_keyValueWithoutPrefix);
         return j_keyValue;
     }
 
-    // env->DeleteLocalRef(j_keyValue);
     return j_keyValueWithoutPrefix;
 }
 
@@ -2549,17 +2531,6 @@ inline jstring RgfStoreRexxProxyInBsfRegistry(JNIEnv *env, jobject rajo, jobject
     // allows to unregister a bean from the BSFRegistry
 inline jboolean RgfUnregisterBean(JNIEnv *env, jobject rajo, jobject beanName)
 {
-//    jclass       rajoClz=env->GetObjectClass(rajo);        // get class object of RexxAndJava object (rajo)
-
-        // store ProxyObject in BSFRegistry, fetch the String value that was used as the key
-//    jmethodID    midUnregisterBean=env->GetMethodID( rajoClz, "unregisterBean", "(Ljava/lang/String;)Z");
-
-
-//    jboolean     j_beanFound=env->CallBooleanMethod(rajo, midUnregisterBean, beanName);
-
-//    return j_beanFound;
-
-
     jboolean bRes=env->CallBooleanMethod(rajo,
                                   defaultJVM->mid_RexxAndJava_unregisterBean,
                                   beanName);
@@ -2587,19 +2558,9 @@ inline jobject RgfCreateRexxProxy (JNIEnv *env, jobject rajo,
 #endif
 
         // get RexxEngine instance
-//    jclass         clz=env->GetObjectClass(rajo);       // get class object
-//    jmethodID      mid=env->GetMethodID( clz, "getRexxEngine", "()Lorg/apache/bsf/BSFEngine;");
-//    jobject rexxEngine=env->CallObjectMethod(rajo, mid, NULL);
-
     jobject j_rexxEngine=env->CallObjectMethod(rajo,
                                              defaultJVM->mid_RexxAndJava_getRexxEngine,
                                              NULL);
-
-        // get class object for RexxProxy, locate its constructor
-//    clz=env->FindClass("org/rexxla/bsf/engines/rexx/RexxProxy");
-        // get constructor
-//    mid=env->GetMethodID(clz, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/rexxla/bsf/engines/rexx/RexxEngine;)V");
-
 
     const char * c_objID         =RgfAddProxyObject(rtc, robj, rpo);     // add to OREXX registry, save ID string
 
@@ -2608,9 +2569,6 @@ inline jobject RgfCreateRexxProxy (JNIEnv *env, jobject rajo,
     fflush(stderr);
 #endif
 
-    /*
-    const char * c_objID_userData=RgfAddProxyObject(rtc, userData, rpo); // add userData object to registry
-    */
     const char * c_objID_userData=NULL;
 
     if (userData!=NULL)     // userData object given, put it into OREXX registry, save ID string
@@ -2627,22 +2585,9 @@ inline jobject RgfCreateRexxProxy (JNIEnv *env, jobject rajo,
     // now create Java RexxProxy object!
     const char c_rii_ID [ RGF_POINTER_STRING_WIDTH+1 ] = "";
     RgfPointer2String(rtc->instance, c_rii_ID);  // create a string representation of interpreter instance pointer
-    // private RexxProxy(String rexxInterpreterId, String objectId, String userDataId, RexxEngine engine)
-//    jobject rexxProxy=env->NewObject(clz, mid, env->NewStringUTF(c_rii_ID),
-//                                               env->NewStringUTF(c_objID),
-//                                               env->NewStringUTF(c_objID_userData),
-//                                               j_rexxEngine);
-// -----------------------------
     jstring j_rii_ID=env->NewStringUTF(c_rii_ID);
     jstring j_objID =env->NewStringUTF(c_objID);
     jstring j_objID_userData=env->NewStringUTF(c_objID_userData);
-
-    // jobject j_rexxProxy=env->NewObject(defaultJVM->clz_RexxProxy,
-    //                                  defaultJVM->mid_RexxProxy_init,
-    //                                            env->NewStringUTF(c_rii_ID),
-    //                                            env->NewStringUTF(c_objID),
-    //                                            env->NewStringUTF(c_objID_userData),
-    //                                            j_rexxEngine);
 
     jobject j_rexxProxy=env->NewObject(defaultJVM->clz_RexxProxy,
                                      defaultJVM->mid_RexxProxy_init,
@@ -2656,7 +2601,6 @@ inline jobject RgfCreateRexxProxy (JNIEnv *env, jobject rajo,
     env->DeleteLocalRef(j_objID_userData);
 
         // now register RexxProxy object with BSFRegistry and save beanName with the RexxProxy
-    // RgfStoreRexxProxyInBsfRegistry(env, rajo, j_rexxProxy);
     env->DeleteLocalRef(j_rexxEngine);
 
 #if defined (DEBUG40) || defined (DEBUG_REXX_PROXY)
@@ -2687,26 +2631,12 @@ inline jthrowable RgfCreateRexxException4Java (JNIEnv *env, jobject rajo,
                                        )
 {
 
-fprintf(stderr, "... BBB BBB # 01 \n"); fflush(stderr);
-
 #if defined(DEBUG40)
    fprintf(stderr, "\t-->\tRgfCreateRexxException4Java() - start ...\t env=[%p], rajo=[%p], rtc=[%p], conditionObject=[%p]\n",
                      env, rajo, rtc, conditionObject);
 #endif
 
         // get class object for RexxException, locate its constructor
-//    jclass    clz=env->FindClass("org/rexxla/bsf/engines/rexx/RexxException");
-
-//    if (clz==NULL)      // Java class not found
-//    {
-//        fprintf(stderr, "RgfCreateRexxException4Java(): could not find Java class [org.rexxla.bsf.engines.rexx.RexxException], check setup.\n");
-//        fflush(stderr);
-//        return NULL;
-//    }
-
-        // get constructor
-//    jmethodID mid=env->GetMethodID(clz, "<init>", "(ILjava/lang/String;Lorg/rexxla/bsf/engines/rexx/RexxProxy;)V");
-
 #if defined(DEBUG40)
    fprintf(stderr, "\t-->\tRgfCreateRexxException4Java() - create RgfCreateRexxProxy ...\n");
 #endif
@@ -2730,7 +2660,6 @@ fprintf(stderr, "... BBB BBB # 01 \n"); fflush(stderr);
 #endif
 
         // public RexxException (int reason, String message, RexxProxy rexxCondition)
-//    jthrowable thr=(jthrowable) env->NewObject(clz, mid,
     jstring jMessage=env->NewStringUTF(message);
     jthrowable thr=(jthrowable) env->NewObject(defaultJVM->clz_RexxException,
                                                defaultJVM->mid_RexxException_init,
@@ -2738,12 +2667,6 @@ fprintf(stderr, "... BBB BBB # 01 \n"); fflush(stderr);
                                                           jMessage,
                                                           jConditionObject
                                                );
-    // jthrowable thr=(jthrowable) env->NewObject(defaultJVM->clz_RexxException,
-    //                                            defaultJVM->mid_RexxException_init,
-    //                                                       jint(reason),
-    //                                                       env->NewStringUTF(message),
-    //                                                       jConditionObject
-    //                                            );
 
     env->DeleteLocalRef(jMessage);
     env->DeleteLocalRef(jConditionObject);
@@ -2826,12 +2749,6 @@ inline jobject RgfProcessReturnValue4Java(JNIEnv *env, jobject rajo,
     // "-1" (NULL), "-2" (.nil)
     int typeIndicator=RgfValue4JavaIndicator(rtc, robj);
 
-    // if (robj==NULL || robj==NULLOBJECT )    // return null
-    // if (robj==NULL  || robj==rtc->Nil())    // return null
-    // {
-    //     return NULL;            // will be turned into .nil
-    // }
-
     if (typeIndicator<0)        // NULL or .nil
     {
 #if defined ( DEBUG_RETURN_VALUE_FOR_JAVA )
@@ -2844,8 +2761,6 @@ inline jobject RgfProcessReturnValue4Java(JNIEnv *env, jobject rajo,
     // if RexxObject is an instance of the .String class, then return a jstring,
     // else return a RexxProxy
 
-    // if (rtc->IsInstanceOf(robj, STRING_CLASS(rtc)))     // is the object an instance of .String ?
-    // if (rtc->IsOfType(robj, "STRING"))      // is the object an instance of .String ?
     if (typeIndicator==1)       // a .String object in hand
     {
 #if defined ( DEBUG_RETURN_VALUE_FOR_JAVA )
@@ -2870,7 +2785,6 @@ inline jobject RgfProcessReturnValue4Java(JNIEnv *env, jobject rajo,
         // treat BSF4Rexx Java proxies as strings (RexxAndJava handles them appropriately)
     if (typeIndicator>1)
     {
-// fprintf(stderr, "... ..Value4Java(): a BSF or UNO_PROXY in hand, returning it \n"); fflush(stderr);
 #if defined ( DEBUG_RETURN_VALUE_FOR_JAVA )
    fprintf(stderr, "... RgfProcessReturnValue4Java(): a BSF or UNO_PROXY in hand, returning bean_name=[%.256s] \n",
                    rtc->CString((RexxStringObject) rtc->SendMessage0(robj, "OBJECTNAME")));
@@ -2887,8 +2801,6 @@ inline jobject RgfProcessReturnValue4Java(JNIEnv *env, jobject rajo,
         // TODO: check whether clearing exception is truly o.k.
         if ( env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
         {
-// fprintf(stderr, "MIST MIST MIST MIST \n !!!!!!!!!!!!!!!");
-// fflush(stderr);
             env->ExceptionDescribe();
             env->ExceptionClear();
         }
@@ -2976,8 +2888,6 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
     fprintf(stderr, "... RgfJavaObject2RexxObject(...): riid=[%p]: a RexxProxy object !\n", riid);fflush(stderr);
 #endif
         char *tmpStr=NULL;
-
-        // jstring j_obj_ID=(jstring) env->CallObjectMethod(j_obj, mid, NULL); // get obj_ID
         jstring j_obj_ID=(jstring) env->CallObjectMethod(j_obj,
                                                defaultJVM->mid_RexxProxy_getRexxObjectID,
                                                NULL); // get obj_ID
@@ -3094,10 +3004,7 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
 #if defined(DEBUG_RGF_PROCESS_J_ARGS )
     fprintf(stderr, "RgfProcessJArgs(...): riid=[%p]\n\t---> len=[%d], len=[%d], len+(slotDir==NULL ? 0 : 1)=[%d], [%lu]\n\tCheckCondition=[%d] <---\n",
                     riid, (int) len, (int) len, (int) len+(slotDir==NULL ? 0 : 1) ,(size_t) (len+ (slotDir==NULL ? 0 : 1)),(int) rtc->CheckCondition());fflush(stderr);
-
-
     fprintf(stderr, "\triid=[%p] ---> ra~size=[%lu], ra~items=[%lu]\n",riid, rtc->ArraySize(ra),rtc->ArrayItems(ra));fflush(stderr);
-
     fprintf(stderr, "\tj_args.length=[%d]\n", env->GetArrayLength(j_args));
 
     jsize size=env->GetArrayLength(j_args);
@@ -3120,14 +3027,8 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
     fflush(stderr);
 #endif
 
-
-        // get references to RexxProxy class and the getRexxObjectID method
-//    jclass    clz=env->FindClass("org/rexxla/bsf/engines/rexx/RexxProxy");
-//    jmethodID mid=env->GetMethodID(clz, "getRexxObjectID", "()Ljava/lang/String;");
-
     RexxObjectPtr clzBSF=rgfGetEntryFromLocal (rtc, "BSF");  // .local~BSF
     logical_t  bClzBsf=(clzBSF!=rtc->Nil());    // determine whether we have .BSF available
-
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS )
    fprintf(stderr, "**** //1// bClzBsf=[%d], rtc->Nil()=[%p], clzBSF=[%p]\n", bClzBsf, rtc->Nil(), clzBSF);
@@ -3141,11 +3042,8 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
        fprintf(stderr, "**** //1b// clzBSF~string=[%s] (->ObjectToStringValue)\n", rtc->ObjectToStringValue(clzBSF));
        fprintf(stderr, "**** //1c// clzBSF~string=[%s] (->ObjectToString)\n", rtc->CString(rtc->ObjectToString(clzBSF)));
        fflush(stderr);
-
    }
 #endif
-
-// bLoadBSF=TRUE;
 
     if (!bClzBsf && bLoadBSF)       // rgf, 2009-09-26: if BSF.CLS was not required yet, require it now!
     {
@@ -3175,11 +3073,9 @@ if (rtc->CheckCondition())
 
 }
 #endif
-//---
 
         clzBSF=rgfGetEntryFromLocal (rtc, "BSF");  // .local~BSF
         bClzBsf=(clzBSF!=rtc->Nil());
-// fprintf(stderr, "**** //2// bClzBsf=[%d], rtc->Nil()=[%p], clzBSF=[%p]\n", (int) bClzBsf, rtc->Nil(), clzBSF);
     }
 
 
@@ -3193,19 +3089,10 @@ if (rtc->CheckCondition())
 
     if (bClzBsf)            // if BSF there, by any chance is there also UNO there? If so, use UNO.WRAP instead of BSF.WRAP
     {
-        // clzUNO=rgfGetEntryFromLocal (rtc, "UNO");  // .local~BSF
         clzUNO=rtc->FindClass("UNO");
 
         fprintf(stderr, "... RgfProcessJArgs(...): -1b riid=[%p], clzUNO=[%p]\n",  riid, clzUNO);
         fflush(stderr);
-
-
-//         RexxObjectPtr currMethod =rtc->GetMethod();
-//         RexxObjectPtr currRoutine=rtc->GetRoutine();
-//         fprintf(stderr, "... RgfProcessJArgs(...): ->1 riid=[%p], currMethod=[%p], currRoutine=[%p]\n",
-//                         riid, currMethod, currRoutine);
-//         fflush(stderr);
-
 
         bClzUno=(clzUNO!=NULL);          // determine whether we have .UNO available
         if (clzUNO==NULL)
@@ -3213,14 +3100,11 @@ if (rtc->CheckCondition())
             clzUNO=rtc->Nil();
         }
 
-        // bClzUno=(clzUNO!=rtc->Nil());    // determine whether we have .UNO available
-
         fprintf(stderr, "... RgfProcessJArgs(...): -1c riid=[%p], clzUNO~string=[%.256s]\n", riid,
                              rtc->CString(rtc->ObjectToString(clzUNO)) );
         fflush(stderr);
         fprintf(stderr, "... RgfProcessJArgs(...): -1d riid=[%p], clzUNO=[%p]\n",  riid, clzUNO);
         fflush(stderr);
-
     }
         #if defined(DEBUG_RGF_PROCESS_J_ARGS_UNO)
     fprintf(stderr, "... RgfProcessJArgs(...): 2 - riid=[%p], bClzBsf=[%d], bClzUno=[%d]\n", riid, bClzBsf, bClzUno);fflush(stderr);
@@ -3405,9 +3289,6 @@ inline RexxStringObject RgfGetJavaThrowableAsString (JNIEnv *env, RexxThreadCont
     // returned *msg must be freed
 inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryObject condObj, const char * header)
 {
-/*
-    RexxDirectoryObject condObj=rtc->GetConditionInfo();
-*/
     rtc->ClearCondition();
 
     RexxCondition cond;
@@ -3416,9 +3297,6 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
     // char *msg=(char *)RexxAllocateMemory(1024);
     char *msg=(char *)RexxAllocateMemory( 4096 );
     msg[0]=0;
-
-    // RexxStringObject condName=rtc->DirectoryAt(condObj, "CONDITION");
-// test: fprintf(stderr, "RexxDecode....: %s\n", cond.program==NULL ? rtc->CString(rtc->Nil()) : "n/a");
 
         // format message according to exception type
     if (rtc->SendMessage1(cond.conditionName, "EQUALS", rtc->String("SYNTAX"))==rtc->True()) // SYNTAX condition ?
@@ -3431,28 +3309,20 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
             line1=(const char *) rtc->CString(tbRop) ; // first traceback line=error line
         }
 
-        // char const *line1=rtc->CString(rtc->SendMessage0(rtc->DirectoryAt(condObj, "TRACEBACK"), "FIRSTITEM")) ; // first traceback line=error line
-        // line1=rtc->CString(rtc->SendMessage0(rtc->DirectoryAt(condObj, "TRACEBACK"), "FIRSTITEM")) ; // first traceback line=error line
-
         char line2[2048]="";        // will only use 1024 of it
-        // sprintf(line2, "Error %d running %.512s line %d:  %.1024s",
         SNPRINTF(line2, 2048, "Error %d running %.512s line %d:  %.1024s",
                             (int) cond.rc,      (NULL != cond.program   && rtc->Nil() != cond.program   ? rtc->CString( cond.program )  : "program n/a")   ,
                             (int) cond.position,(NULL != cond.errortext && rtc->Nil() != cond.errortext ? rtc->CString( cond.errortext ): "errortext n/a") );
 
         char line3[2048]="";        // will only use 1024 of it
-        // sprintf(line3, "Error %.3f: %.256s", (float) cond.code/1000l, rtc->CString(cond.message));
-        // sprintf(line3, "Error %d.%d:  %.1024s", (int) (cond.code / 1000),
         SNPRINTF( line3, 2048, "Error %d.%d:  %.1024s", (int) (cond.code / 1000),
                                      (int) (cond.code % 1000),
                                      (NULL != cond.message && rtc->Nil() != cond.message ? rtc->CString( cond.message ) : "message n/a") );
 
-        // sprintf(msg, "%.16s%.512s:\n%.1024s\n%.1024s\n%.1024s", DLLNAME, header, line1, line2, line3);
         SNPRINTF( msg, 4096, "%.16s%.512s:\n%.1024s\n%.1024s\n%.1024s", DLLNAME, header, line1, line2, line3);
     }
     else
     {
-        // sprintf(msg, "%.16s%.512s: Rexx condition [%.512s] raised", DLLNAME, header, rtc->CString(cond.conditionName));
         SNPRINTF( msg, 4096, "%.16s%.512s: Rexx condition [%.512s] raised",
                                   DLLNAME, header,
                                   (NULL != cond.conditionName && rtc->Nil() != cond.conditionName ? rtc->CString(cond.conditionName) : "conditionName n/a") );
@@ -3460,8 +3330,6 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
 
     return msg;
 }
-
-
 
 
 
@@ -5292,9 +5160,6 @@ inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_P
 //                  Java object and return that
 inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *context, RexxObjectPtr tmpObj)
 {
-
-fprintf(stderr, "... AAA AAA # 01 \n");
-
     // get the indicator value; returns "2" (BSF/UNO_PRoxy), "1" (String), "0" (RexxProxy),
     // "-1" (NULL), "-2" (.nil)
     int typeIndicator=RgfValue4JavaIndicator(context, tmpObj);
@@ -5339,18 +5204,9 @@ fprintf(stderr, "... AAA AAA # 01 \n");
                 // lookup the Java object from the BSF registry and return that Java object, i.e.
                 // get bean from the Java side --------------------------------------------------
                 jstring jstr=param->env->NewStringUTF(context->CString(context->ObjectToString(tmpObj)));
-
-                // jresult=param->env->CallObjectMethod(param->rajo,
-                //                        defaultJVM->mid_RexxAndJava_lookupBean4JNI,
-                //                        param->env->NewStringUTF(
-                //                            context->CString(context->ObjectToString(tmpObj))
-                //                                                )
-                //                                    );
-
                 jresult=param->env->CallObjectMethod(param->rajo,
                                        defaultJVM->mid_RexxAndJava_lookupBean4JNI,
                                        jstr);
-
                 param->env->DeleteLocalRef(jstr);
             }
             else    // any other Rexx object, wrap it up as a (Java) RexxProxy
@@ -5363,7 +5219,6 @@ fprintf(stderr, "... AAA AAA # 01 \n");
                      tmpStrObject);
     fflush(stderr);
 #endif
-fprintf(stderr, "... AAA AAA # 02 \n");
                     // create RexxProxy for it
                 jresult=RgfCreateRexxProxy (param->env, param->rajo,
                                             context,    // ThreadContext, RMG: 20090514
@@ -5371,8 +5226,6 @@ fprintf(stderr, "... AAA AAA # 02 \n");
                                             NULL,       // Package object
                                             NULL        // userData (slot)
                                             );
-
-fprintf(stderr, "... AAA AAA # 03 \n");
 
 #if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA) || defined (DEBUG_ARRAY_ARGS)
      fprintf(stderr, "-> RgfRexxObject2JavaObject(): AFTER creating RexxProxy jresult=[%p], CheckCondition()=[%d]\n",jresult,context->CheckCondition());fflush(stderr);
@@ -5388,8 +5241,6 @@ fprintf(stderr, "... AAA AAA # 03 \n");
         fflush(stderr);
     }
 #endif
-
-fprintf(stderr, "... AAA AAA # 02 \n");
 
     return jresult;
 }
@@ -5470,7 +5321,6 @@ jobjectArray RgfRexxArray2JavaArray(PSTRUCT_PARAM param, RexxThreadContext *cont
     for (size_t i=0; i<numArgs; i++)   // iterate over all Rexx arguments
     {
         RexxObjectPtr tmpObj=context->ArrayAt(argArray, i+1);    // get Object from ooRexx argument array list
-        // param->env->SetObjectArrayElement(jarr, (jsize) i, RgfRexxObject2JavaObject(param,context,tmpObj));
         jobject jobj=RgfRexxObject2JavaObject(param,context,tmpObj);
         param->env->SetObjectArrayElement(jarr, (jsize) i, jobj);
         param->env->DeleteLocalRef(jobj);
@@ -5754,10 +5604,6 @@ inline jobjectArray RgfConstrxStringArray2JavaArray(PSTRUCT_PARAM param, RexxThr
     {
         if (argv[i].strlength>0) // set Java String element to an empty Java string
         {
-            // param->env->SetObjectArrayElement(jarr, (jsize) i,
-            //           JNU_CreateJavaStringFromCONSTRXSTRING(param->env, context, &argv[i])
-            //           );
-
             jstring jstr=JNU_CreateJavaStringFromCONSTRXSTRING(param->env, context, &argv[i]);
             param->env->SetObjectArrayElement(jarr, (jsize) i, jstr);
             param->env->DeleteLocalRef(jstr);
@@ -7218,7 +7064,6 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
                 if (context->IsOfType(tmpObj, "STRING"))      // is the object an instance of .String ?
                 {
                     char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
-                    // param.env->SetObjectArrayElement(jarr, (jsize) i, param.env->NewStringUTF(tmpStrObject));
                     jstring j_str=param.env->NewStringUTF(tmpStrObject);
                     param.env->SetObjectArrayElement(jarr, (jsize) i, j_str);
                     param.env->DeleteLocalRef(j_str);
@@ -7243,11 +7088,6 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
                         rso=(RexxStringObject) context->ObjectToString(tmpObj);
                     }
                         // set Java array value, turn RexxStringObject to CString
-                    // param.env->SetObjectArrayElement(jarr,
-                    //                                     (jsize) i,
-                    //                                     param.env->NewStringUTF(context->CString(rso))
-                    //                                 );
-
                     jstring j_str=param.env->NewStringUTF(context->CString(rso));
                     param.env->SetObjectArrayElement(jarr, (jsize) i, j_str);
                     param.env->DeleteLocalRef(j_str);
@@ -7640,10 +7480,6 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
     {
         // get bean from the Java side ----------------------------------------------------------------
         jstring jObjectName=param.env->NewStringUTF(objectname);
-        // jbyteArray jba=(jbyteArray) param.env->CallObjectMethod(param.rajo,
-        //                                           defaultJVM->mid_RexxAndJava_lookupBean4JNI,
-        //                                           param.env->NewStringUTF(objectname)
-        //                                           );
         jbyteArray jba=(jbyteArray) param.env->CallObjectMethod(param.rajo,
                                                   defaultJVM->mid_RexxAndJava_lookupBean4JNI,
                                                   jObjectName
@@ -7960,9 +7796,6 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
                 else    // TODO: this is a non-String Rexx object, create a proxy for Java !
                 {
                         // if .BSF or .UNO_proxy objects, they are registered in the BSFRegistry by their objectname
-                    // if ( context->IsOfType(tmpObj, "BSF") || context->IsOfType(tmpObj, "UNO_PROXY") ||
-                    //      (context->IsOfType(tmpObj, "CLASS") && context->HasMethod(tmpObj, "BSF.LOADCLASS"))
-                    // )
                     if (typeIndicator>1)    // a BSF/UNO_PROXY object in hand
                     {
 #if defined (DEBUG_REXX_PROXY_BSF)
@@ -7970,7 +7803,6 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
 #endif
                         char *tmpStrObject=(char *) context->CString(context->ObjectToString(tmpObj));
                         jstring jStr=param.env->NewStringUTF(tmpStrObject);
-                        // param.env->SetObjectArrayElement(jarr, (jsize) i, param.env->NewStringUTF(tmpStrObject));
                         param.env->SetObjectArrayElement(jarr, (jsize) i, jStr);
                         param.env->DeleteLocalRef(jStr);
                     }
@@ -8082,7 +7914,6 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
             // make sure we remove those RexxProxies we registered on this invocation dynamically
             for (size_t z=0; z<nrToRemove; z++)
             {
-                // RgfUnregisterBean(param.env, param.rajo, (jstring) param.env->GetObjectArrayElement(jarrToRemove, (jsize) z));
                 jobject jobj=param.env->GetObjectArrayElement(jarrToRemove, (jsize) z);
                 RgfUnregisterBean(param.env, param.rajo, (jstring) jobj);
                 param.env->DeleteLocalRef(jobj);
@@ -8102,7 +7933,6 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
         // make sure we remove those RexxProxies we registered on this invocation dynamically
         for (size_t z=0; z<nrToRemove; z++)
         {
-            // RgfUnregisterBean(param.env, param.rajo, (jstring) param.env->GetObjectArrayElement(jarrToRemove, (jsize) z));
             jobject jobj=param.env->GetObjectArrayElement(jarrToRemove, (jsize) z);
             RgfUnregisterBean(param.env, param.rajo, (jstring) jobj);
             param.env->DeleteLocalRef(jobj);
@@ -8122,7 +7952,6 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
     fflush(stderr);
 #endif
 
-            // return context->String("");
             return context->NullString();
         }
 
@@ -8337,12 +8166,7 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
     if (flag==1)        // throw a Java exception
     {
         // get bean from the Java side ----------------------------------------------------------------
-
         jstring j_beanNameOrMsg=param.env->NewStringUTF(c_beanNameOrMsg);
-        // jobject jobj = param.env->CallObjectMethod(param.rajo,
-        //                                            defaultJVM->mid_RexxAndJava_lookupBean4JNI,
-        //                                            param.env->NewStringUTF(c_beanNameOrMsg)
-        //                                            );
         jobject jobj = param.env->CallObjectMethod(param.rajo,
                                                    defaultJVM->mid_RexxAndJava_lookupBean4JNI,
                                                    j_beanNameOrMsg
@@ -10155,7 +9979,6 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     {
         for (int i=0; i<nr_load_required_library; i++) {
             options[idx].optionName=LOAD_REQUIRED_LIBRARY;
-            // options[idx].option=JNU_GetStringNativeChars(env, (jstring) env->GetObjectArrayElement(j_load_required_library,i));
             jstring jstr=(jstring) env->GetObjectArrayElement(j_load_required_library,i);
             options[idx].option=JNU_GetStringNativeChars(env, jstr);
             env->DeleteLocalRef(jstr);
@@ -10213,7 +10036,6 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         for (int i=0; i<nr_direct_environments; i++)
         {
             environments[i].handler=rexx_command_handler_entry;   // point to generic exit handler
-            // environments[i].name=JNU_GetStringNativeChars(env, (jstring) env->GetObjectArrayElement(j_direct_environments,i));
             jstring jstr=(jstring) env->GetObjectArrayElement(j_direct_environments,i);
             environments[i].name=JNU_GetStringNativeChars(env, jstr);
             env->DeleteLocalRef(jstr);
@@ -11707,26 +11529,6 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
         environmentDetachFrom(&param, FALSE);    // do not close group
         RgfReleaseLock();
         return RXEXIT_RAISE_ERROR;
-
-/*
-             // "%.16s/routine/BsfJavaException(), error 4: unhandled Java exception pending: [%s], cannot throw a new Java exception or a fatal error");
-        // ------------------
-// show Java handler stack before raising a Rexx condition to help debug Java implemented handlers
-fprintf(stderr, "*** rexx_exit_handler_entry --> ****\n");
-param.env->ExceptionDescribe();    // clear the Java exception
-fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
-
-        param.env->ExceptionClear();    // clear the Java exception
-        RgfAcquireLock();
-        environmentDetachFrom(&param, FALSE);    // do not close group
-        RgfReleaseLock();
-
-        SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 3: Java exception while attempting to fetch the Java exit handler for system exit number=[%d]",
-                            DLLNAME, exitNumber);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        return RXEXIT_RAISE_ERROR;
-*/
-
     }
 
         // check whether jhandler==NULL, if so return RXEXIT_NOT_HANDLED (Java side may have nullified jhandler entry)
@@ -11770,11 +11572,9 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
     RgfPointer2String(context, c_context);  // create a string representation of RexxExitContext
 
     jstring jStr=param.env->NewStringUTF(c_context);
-    // param.env->SetObjectArrayElement(jslot, (jint) 2, param.env->NewStringUTF(c_context));
     param.env->SetObjectArrayElement(jslot, (jint) 2, jStr);
 
         // index [3]: add context pointer type: 0=ThreadContext, 1=MethodContext, 2=FunctionContext, 3=ExitContext
-    // param.env->SetObjectArrayElement(jslot, (jint) 3, param.env->NewStringUTF("3"));
     jStr=param.env->NewStringUTF("3");
     param.env->SetObjectArrayElement(jslot, (jint) 3, jStr);
 
@@ -12200,9 +12000,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                        defaultJVM->clz_Object,   // type
                                        NULL                      // initial value
                                        );
-                        // param.env->SetObjectArrayElement(jpb, (jint) 0,
-                        //                                  param.env->NewStringUTF(context->CString(pb->variable_name))
-                        //                                  );
 
                         jstring jstr=param.env->NewStringUTF(context->CString(pb->variable_name));
                         param.env->SetObjectArrayElement(jpb, (jint) 0, jstr);
@@ -12274,7 +12071,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
 
-
                         // process function name
                     jobject jrxfnc_name=JNU_CreateJavaStringFromCONSTRXSTRING(param.env, context->threadContext,
                                                 &function_name);
@@ -12288,7 +12084,6 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                     {
                         context->ArrayPut(rao, argv[i], i+1);
                     }
-                    // param.env->SetObjectArrayElement(jpb, (jint) 2, RgfRexxArray2JavaArray(&param, context->threadContext, rao));
                     jobjectArray jao=RgfRexxArray2JavaArray(&param, context->threadContext, rao);
                     param.env->SetObjectArrayElement(jpb, (jint) 2, jao);
                     param.env->DeleteLocalRef(jao);
@@ -12323,24 +12118,16 @@ fprintf(stderr,  "*** <--- ****\n");fflush(stderr);
                                    );
 
                         // process selector
-                    // param.env->SetObjectArrayElement(jpb, (jint) 0,
-                    //             param.env->NewStringUTF(context->CString(pb->selector)));
-
                     jstring jstr=param.env->NewStringUTF(context->CString(pb->selector));
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jstr);
                     param.env->DeleteLocalRef(jstr);
 
                         // process variable_name
-                    // param.env->SetObjectArrayElement(jpb, (jint) 1,
-                    //             param.env->NewStringUTF(context->CString(pb->variable_name)));
                     jstr=param.env->NewStringUTF(context->CString(pb->variable_name));
                     param.env->SetObjectArrayElement(jpb, (jint) 1, jstr);
                     param.env->DeleteLocalRef(jstr);
 
                         // process value
-                    // param.env->SetObjectArrayElement(jpb, (jint) 2,
-                    //             RgfRexxObject2JavaObject(&param,context->threadContext,pb->value)
-                    //                                 );
                     jobject jo= RgfRexxObject2JavaObject(&param,context->threadContext,pb->value);
                     param.env->SetObjectArrayElement(jpb, (jint) 2,jo);
                     param.env->DeleteLocalRef(jo);
@@ -13186,14 +12973,12 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
         // index [2]: save RexxExitContext pointer as a jstring
     const char c_context [ RGF_POINTER_STRING_WIDTH+1 ] = "";
     RgfPointer2String(context, c_context);  // create a string representation of RexxExitContext
-    // param.env->SetObjectArrayElement(jslot, (jint) 2, param.env->NewStringUTF(c_context));
 
     jstring jstr=param.env->NewStringUTF(c_context);
     param.env->SetObjectArrayElement(jslot, (jint) 2, jstr);
     param.env->DeleteLocalRef(jstr);
 
         // index [3]: add context pointer type: 0=ThreadContext, 1=MethodContext, 2=FunctionContext, 3=ExitContext
-    // param.env->SetObjectArrayElement(jslot, (jint) 3, param.env->NewStringUTF("3"));
     jstr=param.env->NewStringUTF("3");
     param.env->SetObjectArrayElement(jslot, (jint) 3, jstr);
     param.env->DeleteLocalRef(jstr);
