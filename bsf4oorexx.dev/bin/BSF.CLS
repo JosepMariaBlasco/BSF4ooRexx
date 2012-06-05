@@ -12,6 +12,10 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2012-06-05, rgf: - added uninit method to BSF_ARRAY_REFERENCE class to remove the
+                            array proxy for indexing from the BSF registry, if not needed
+                            anymore (i.e. when uninit runs)
+
          2012-02-11, rgf: - added public routines stringToUtf8(string) and utf8ToString(string)
 
          2012-02-09, rgf: - supply default values for some USE ARG arguments to inhibit the RXNOVAL exit to
@@ -408,7 +412,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="410.20120526" -- set version (date distribution got created)
+   .bsf4rexx~version="410.20120605" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -2197,7 +2201,7 @@ forward class (super)
 
    -- set up "indexArray" attribute to match dimension and capacity of the base Java array
    -- wrapping up occurs in the statement after the next, hence no bsf.wrap() !
-  -- bsf4rexx=.bsf~dir          -- 20080828, rgf
+   -- "<O>" will be removed, such that plain bean-name is assigned to 'indexArray'
   indexArray=bsf("invokeStrict", .bsf4rexx~array.class, -
                                  "newInstance", "o",    -
                                  .bsf4rexx~int, "int", dimension)~substr(4)
@@ -2211,6 +2215,12 @@ any:
   if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
+
+
+::method uninit      -- rgf, 20120604: make sure we also unregister the index array to avoid a memory leak
+  expose indexArray
+  call bsf 'unregisterBean', indexArray
+  self~uninit:super  -- now let superclass clean up
 
 
 ::METHOD dimension
@@ -2492,7 +2502,6 @@ any:
 -- .error~say( "*** BSF.CLS::BSF_ARRAY_PROXY::UNINIT: NOP !" pp(self~objectname)"@"pp(self~identityHash) )
 
   NOP
-
 
 
 
