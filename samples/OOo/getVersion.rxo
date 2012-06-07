@@ -1,5 +1,5 @@
 -- transcribed from Laurent Godard's e-mail from 2007-03-22 15:23:10 on dev@api.oo.o
--- rgf, 2007-06-19, 2008-10-21
+-- rgf, 2007-06-19, 2008-10-21, 2012-06-06, rgf, give more detailed version number, if available
 
 xContext = UNO.connect()  -- connect to server and retrieve the XContext object
 xMcf = xContext~getServiceManager   -- retrieve XMultiComponentFactory
@@ -16,7 +16,14 @@ propArr[1]=uno.createProperty("nodepath", "/org.openoffice.Setup/Product")
 service="com.sun.star.configuration.ConfigurationAccess"
 xSettings=xProvider~createInstanceWithArguments(service, propArr)~xNameAccess
 
-say xSettings~getByName("ooName") xSettings~getByName("ooSetupVersion")
+version=xSettings~getByName("ooName")  -- name of product
+needle="ooSetupVersionAboutBox"        -- this has a more detailed version numbering, if available
+if xSettings~hasByName(needle) then
+   version=version xSettings~getByName(needle)
+else
+   version=version xSettings~getByName("ooSetupVersion")
+
+say version
 
 ::requires uno.cls      -- get ooRexx support for OOo
 
