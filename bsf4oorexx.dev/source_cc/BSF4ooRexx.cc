@@ -23,6 +23,13 @@ remarks:
   * it allows Java to call into Rexx using the new ooRexx 4.0 native APIs using JNI ("Java Native Interface").
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
+
+    4.1.-19 2012-06-07 - changed logic in RgfAddRexxProxy() such that if the package object is NULL to
+                         not add it to the directory (it won't be removable in ooRexx 4.1.1)
+
+    4.1.-18 2012-06-06 - added an external Rexx function named BsfGetRegistryObjects() for debugging
+                         purposes only; to compile the flag CONFIG_MAKE_OREXX_REGISTRY_ACCESSIBLE must be defined
+
     4.1.-17 2012-05-26 - fixed errors because of wrongly placed DeleteLocalRef() (and in one instance
                          a GlobalRef'd Java object became illegal due to excercising DeleteLocalRef()
                          on it
@@ -495,8 +502,9 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 // #define DEBUG_REXX_ATTACH       // 2009-05-26, attaching/detaching to/from Rexx instances
 // #define DEBUG_OREXX_REGISTRY    // 2009-05-28, setting up/tearing down OREXX_REGISTRY
 // #define DEBUG_REXX_PROXY        // 2009-06-10
+// #define DEBUG_REGISTER_REXX_OBJECT // 2012-06-07
 // #define DEBUG_UNREGISTER_REXX_OBJECT    // 2009-09-02
-// #define DEBUG_UNREGISTER_REXX_OBJECT_NOISY    // 2009-09-03
+// #define DEBUG_UNREGISTER_REXX_OBJECT_NOISY   // 2009-09-03
 // #define DEBUG_REXX_PROXY_BSF    // 2009-06-14
 // #define DEBUG_RII_LIST          // 2009-05-28, adding/removing Rexx interpreter instances
 // #define DEBUG_LOADER_UNLOADER      // 2009-06-05
@@ -557,6 +565,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     #define DEBUG_REXX_ATTACH       // 2009-05-26, attaching/detaching to/from Rexx instances
     #define DEBUG_OREXX_REGISTRY    // 2009-05-28, setting up/tearing down OREXX_REGISTRY
     #define DEBUG_REXX_PROXY        // 2009-06-10
+    #define DEBUG_REGISTER_REXX_OBJECT // 2012-06-07
     #define DEBUG_UNREGISTER_REXX_OBJECT    // 2009-09-02
     #define DEBUG_UNREGISTER_REXX_OBJECT_NOISY    // 2009-09-03
     #define DEBUG_REXX_PROXY_BSF    // 2009-06-14
@@ -611,7 +620,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 #define CONFIG_REXX_EXIT_HANDLER_NAME         "handleExit"
 #define CONFIG_REXX_EXIT_HANDLER_SIGNATURE    "(Ljava/lang/Object;II[Ljava/lang/Object;)I"
 
-
+    // rgf, 2012-06-06
+#define CONFIG_MAKE_OREXX_REGISTRY_ACCESSIBLE   // meant for debugging
 
 
     // from: <http://ccollomb.free.fr/blog/?p=30>, rgf, 2009-06-02
@@ -760,11 +770,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "410.20120526 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120607 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "410.20120526 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120607 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "410.20120526 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "410.20120607 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -1638,7 +1648,18 @@ inline const char * RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj
         rtc->SendMessage2(OREXX_REGISTRY,            "PUT", robj, obj_id);  // save object
 
 #if defined (USE_OREXX_REGISTRY_PACKAGE)
-        rtc->SendMessage2(OREXX_REGISTRY_PACKAGE,    "PUT", rpo,  obj_id);  // save package object
+        if (rpo!=NULL)  // 2012-06-07, rgf: a NULL gets accepted, but then the entry can never be deleted in ooRexx 4.1.1
+        {
+            rtc->SendMessage2(OREXX_REGISTRY_PACKAGE,    "PUT", rpo,  obj_id);  // save package object
+        }
+
+    #if defined (DEBUG_REGISTER_REXX_OBJECT)
+        fprintf(stderr, "** RgfAddProxyObject: cstr_obj_id=[%s], rpo=[%s], ~items=[%s] <-- <-- <--\n",
+                        obj_id==NULL ? NULL : rtc->ObjectToStringValue(obj_id),
+                        rpo   ==NULL ? NULL : rtc->ObjectToStringValue(rpo),
+                        OREXX_REGISTRY_PACKAGE==NULL ? NULL : rtc->ObjectToStringValue(rtc->SendMessage0(OREXX_REGISTRY_PACKAGE, "ITEMS")));
+        fflush(stderr);
+    #endif
 #endif
 
         rtc->SendMessage2(OREXX_REGISTRY_REFCOUNTER, "PUT", rtc->String("1"), obj_id); // add counter entry, set to "1"
@@ -1863,13 +1884,32 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
     int32_t refs=0;
 
 #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
-    fprintf(stderr, "     ---> RgfRemoveProxyObject2, begin: rtc=[%p], obj_id=[%p]\n", rtc, obj_id); fflush(stderr);
+    RexxObjectPtr orxTrue=rtc->True();
+    CSTRING cstr_obj_id = obj_id==NULL ? NULL : rtc->ObjectToStringValue(obj_id);
+    fprintf(stderr, "     ---> RgfRemoveProxyObject2, begin: rtc=[%p], obj_id=%%p=[%p], %%s=[%s]\n", rtc, obj_id, cstr_obj_id); fflush(stderr);
 #endif
 
     RgfAcquireLock2(REGISTRY_lock);      // make sure, no one else can interfere
 
 #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
-    fprintf(stderr, "          RgfRemoveProxyObject2, acquired REGISTRY_lock, before rtc->SendMessage1(...) ...\n"); fflush(stderr);
+    fprintf(stderr, "          RgfRemoveProxyObject2, acquired REGISTRY_lock, before rtc->SendMessage1(\"HASENTRY\",[%s]) ...\n",cstr_obj_id); fflush(stderr);
+
+    fprintf(stderr, "\t\thasIndex([%s]): OREXX_REGISTRY=[%d], OREXX_REGISTRY_REFCOUNTER=[%d], OREXX_REGISTRY_PACKAGE=[%d]\n",
+                    cstr_obj_id,
+                    rtc->SendMessage1(OREXX_REGISTRY, "HASENTRY", obj_id)==orxTrue,
+                    rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "HASENTRY", obj_id)==orxTrue,
+                    rtc->SendMessage1(OREXX_REGISTRY_PACKAGE, "HASENTRY", obj_id)==orxTrue);
+
+
+    #if defined (USE_OREXX_REGISTRY_PACKAGE)
+            fprintf(stderr, "\t\t\thasItem([%s])=OREXX_RII2_OID_RELATION=[%d]\n",
+                            cstr_obj_id,
+                            rtc->SendMessage1(OREXX_RII2_OID_RELATION,"HASITEM", obj_id)==orxTrue);
+
+    #endif
+    fflush(stderr);
+
+
 #endif
 
     if (rtc->SendMessage1(OREXX_REGISTRY, "HASENTRY", obj_id)==rtc->True())     // not yet in registry
@@ -1877,7 +1917,7 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
 
 #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
     fprintf(stderr, "          RgfRemoveProxyObject2, before getting count: OREXX_REGISTRY_REFCOUNTER=[%p]", OREXX_REGISTRY_REFCOUNTER); fflush(stderr);
-    fprintf(stderr, ", rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, \"AT\", obj_id)=[%p]\n", rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id)); fflush(stderr);
+    fprintf(stderr, ", rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, \"AT\", obj_id=%%s=[%s]), result: %%p[%p]\n", cstr_obj_id, rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id)); fflush(stderr);
 #endif
 
         logical_t flag=rtc->ObjectToInt32(rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id), &refs);
@@ -1898,14 +1938,37 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
         {
 
 #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
-    fprintf(stderr, "          RgfRemoveProxyObject2, before removing from OREXX_REGISTRY=[%p]...\n", OREXX_REGISTRY);  fflush(stderr);
+    fprintf(stderr, "          RgfRemoveProxyObject2, before removing from OREXX_REGISTRY~remove(obj_id=[%s])...\n", cstr_obj_id);  fflush(stderr);
 #endif
 
             rtc->SendMessage1(OREXX_REGISTRY,            "REMOVE", obj_id); // object
 
 #if defined (USE_OREXX_REGISTRY_PACKAGE)
+    #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
+        size_t items_before;
+        rtc->ObjectToStringSize(rtc->SendMessage0(OREXX_REGISTRY_PACKAGE,"ITEMS"),&items_before);
+        CSTRING hasIndex_before=rtc->ObjectToStringValue(rtc->SendMessage1(OREXX_REGISTRY_PACKAGE,"HASINDEX",obj_id));
+        RexxObjectPtr rop=
+    #endif
             rtc->SendMessage1(OREXX_REGISTRY_PACKAGE,    "REMOVE", obj_id); // package object
+
+    #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
+        size_t items_after;
+        rtc->ObjectToStringSize(rtc->SendMessage0(OREXX_REGISTRY_PACKAGE,"ITEMS"),&items_after);
+        CSTRING hasIndex_after=rtc->ObjectToStringValue(rtc->SendMessage1(OREXX_REGISTRY_PACKAGE,"HASINDEX",obj_id));
+        fprintf(stderr, "/////// obj_id=[%s], removed-result=[%s], items-before=[%lu]|hasIndex=[%s], after=[%lu]|hasIndex=[%s]\n",
+                        rtc->CString(obj_id),
+                        rop==NULL ? NULL : rtc->CString(rop),
+                        items_before,
+                        hasIndex_before,
+                        items_after,
+                        hasIndex_after
+                        );
+        fflush(stderr);
+    #endif
+
 #endif
+
 
 
 #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
@@ -7840,12 +7903,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
                 }
             }
 
-            // rgf, 2012-05-25: the following statement abends ooRexx when running "ooRexxTry.rxj" !
-//            context->ReleaseLocalReference(tmpObj); // explicitly remove local reference (object protection)
         }
-
-    // rgf, 2008-07-28: TODO check whether needed, if test-phase over
-// a_JRST->penv->MonitorEnter(a_JRST->rajo);    // make sure other threads accessing the same object are blocked
 
 #if defined(RGF_INFO_1) || defined (DEBUG_BSF_FUNCTION) // || defined (RGF_BIT2)
     fprintf(stderr, "*** *** RGF_INFO_1: BSF() 4 - <==> (BEFORE -> CallObjectMethod(), tid=[%lu] ... ", (unsigned long) tid);
@@ -8249,6 +8307,31 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
     return result_Obj;
 }
 
+
+
+#if defined (CONFIG_MAKE_OREXX_REGISTRY_ACCESSIBLE)
+
+    // rgf, 2012-06-06: routine to help debugging, in case a need arises; hence only compiled, if flag set
+    //                  returns a directory containing the available ooRexx registry objects
+
+    RexxRoutine0(RexxObjectPtr, BsfGetRegistryObjects)
+    {
+        RexxDirectoryObject rdo=context->NewDirectory();    // create new directory
+        context->DirectoryPut(rdo, OREXX_REGISTRY, "OREXX_REGISTRY");
+
+    #if defined (USE_OREXX_REGISTRY_PACKAGE)
+        context->DirectoryPut(rdo, OREXX_REGISTRY_PACKAGE, "OREXX_REGISTRY_PACKAGE");
+    #endif
+
+        context->DirectoryPut(rdo, OREXX_REGISTRY_REFCOUNTER, "OREXX_REGISTRY_REFCOUNTER");
+
+    #ifdef USE_RII2OID_RELATION
+        context->DirectoryPut(rdo, OREXX_RII2_OID_RELATION, "OREXX_RII2_OID_RELATION");
+    #endif
+
+       return rdo;
+    }
+#endif
 
 
 
@@ -9766,6 +9849,11 @@ fprintf(stderr, "///  marker (5b), res=[%d]...\n", ret);fflush(stderr);
         REXX_TYPED_ROUTINE( BsfUnloadJava               , BsfUnloadJava               ),
         REXX_TYPED_ROUTINE( BsfVersion                  , BsfVersion                  ),
         REXX_TYPED_ROUTINE( BsfRawBytes                 , BsfRawBytes                 ),    // rgf, 2010-02-09
+
+#if defined (CONFIG_MAKE_OREXX_REGISTRY_ACCESSIBLE)
+        REXX_TYPED_ROUTINE( BsfGetRegistryObjects       , BsfGetRegistryObjects       ),    // rgf, 2010-06-06
+#endif
+
         REXX_LAST_ROUTINE()
     };
 
@@ -11341,6 +11429,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
           >0  still references left
           =0  no more references left, entries got removed from registry
           -1  Rexx proxy object could not be found
+          -2  Java was invoked by Rexx, do not free proxies, see comment inline
         -100  No RexxInterpreter instance could be found
         -101  thread could not be attached to RexxInterpreter instance
 
