@@ -2,6 +2,8 @@
 
    20100530: restructured code to take advantage of the ooRexx .local environment
    20100823: be a little bit more verbose
+   20110606: before ending Rexx, make sure that Java does not callback into Rexx while
+             shutting Rexx down (needed as of ooRexx 4.1.1)
 
    [The ooRexx support defined by the module UNO.CLS defines the public routines "uno.convertToUrl(fileName)" and
    "UNO.convertFromUrl(url)" which are recommended instead.]
@@ -27,6 +29,9 @@ say thisName": uriFileName:    ["uriFileName"]"
 
 systemFileName=convertFromURL(uriFileName)
 say thisName": systemFileName: ["systemFileName"]"
+
+-- inhibit callbacks from Java to Rexx from now on (Rexx will shut down afterwards; needed as of ooRexx 4.1.1)
+bsf.wrap(bsf('getBSFManager'))~loadScriptingEngine('rexx')~terminate
 
 ::requires UNO.CLS      -- get the UNO support
 
