@@ -9,7 +9,8 @@ CFLAGS = -fPIC
 LFLAGS = -shared
 
 # --------------------------------------------------------
-all: i386 x86_64 ppc universal
+#all: i386 x86_64 ppc universal
+all: i386 x86_64 universal
 
 # --------------------------------------------------------
 i386: BSF4ooRexx.cc
@@ -25,7 +26,7 @@ i386: BSF4ooRexx.cc
 x86_64: BSF4ooRexx.cc
 	g++ -c $(CFLAGS) $(INC_PATH) -I/opt/ooRexx-x86_64/include -m64 -arch x86_64 -DUSE_OREXX -DUNIX -DBSF4REXX_64_BIT -oBSF4ooRexx-mac-x86_64.o BSF4ooRexx.cc
 
-	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-x86_64.dylib BSF4ooRexx-mac-x86_64.o /opt/ooRexx-x86_64/lib/ooRexx/librexx.dylib /opt/ooRexx-x86_64/lib/ooRexx/librexxapi.dylib -framework JavaVM -arch x86_64
+	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-x86_64.dylib BSF4ooRexx-mac-x86_64.o /opt/ooRexx-x86_64/lib/librexx.dylib /opt/ooRexx-x86_64/lib/librexxapi.dylib -framework JavaVM -arch x86_64
 	cp -p libBSF4ooRexx-x86_64.dylib 64/libBSF4ooRexx.dylib
 
 # ---------------------------------------------------
