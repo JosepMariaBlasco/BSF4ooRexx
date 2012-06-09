@@ -12,6 +12,7 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2012-06-09, rgf: - added public routine BSF.terminateRexxEngine
          2012-06-05, rgf: - added uninit method to BSF_ARRAY_REFERENCE class to remove the
                             array proxy for indexing from the BSF registry, if not needed
                             anymore (i.e. when uninit runs)
@@ -323,9 +324,9 @@
 
 
 
-   version:     4.0.6 (20110822)
+   version:     4.10 (20120609)
 
-   authors:     (c) 2001-2009 Rony G. Flatscher, University of Augsburg, University of Essen,
+   authors:     (c) 2001-2012 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
                     Peter Kalender (October 2000 - February 2001), University of Essen, feasibility study
 
@@ -336,7 +337,7 @@
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2001-2011 Rony G. Flatscher
+   Copyright 2001-2012 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -354,7 +355,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2001-2011 Rony G. Flatscher
+   Copyright 2001-2012 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -412,7 +413,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="410.20120605" -- set version (date distribution got created)
+   .bsf4rexx~version="410.20120609" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3666,4 +3667,18 @@ syntax:
 ::routine utf8ToString public    -- needs BSF4ooRexx
   parse arg str
   return BsfRawBytes(.java.lang.String~new(bsfRawBytes(str),"UTF-8")~getBytes)
+
+
+   -- as of ooRexx 4.1.1 the following scenario may occur: Rexx starts Java and Java calls
+   -- back into ooRexx; this may take place even after the Rexx program ended and as a result the
+   -- Rexx interpreter shuts down; a callback in that situation will cause a crash!
+   -- Unfortunately, there is no way to tell currently whether the Rexx interpreter can be
+   -- safely used from within native code.
+   -- Hence this workaround: if Java was loaded by Rexx, then this routine will terminate
+   -- the Java RexxEngine, such that the Java side will become able to realize that callbacks
+   -- to Rexx are not safe anymore
+::routine BSF.terminateRexxEngine public
+
+  if BsfInvokedBy()==2 then   -- if Java was loaded by Rexx, only then carry out the termination
+     bsf.wrap(bsf('getRexxEngine'))~terminate   -- get this Java RexxEngine and terminate it to inhibit callbacks from Java
 

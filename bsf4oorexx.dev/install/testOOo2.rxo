@@ -73,7 +73,7 @@ say "---"
 say "    text~uno.getDefinition="ppd(text~uno.getDefinition)
 say "---"
 say "    text~uno.getProperties="ppd(text~uno.getProperties)
-text~setString("Hello OpenOffice.org/LibreOffice, this is ooRexx speaking! ("date("S") time()")")
+text~setString("Hello OpenOffice/LibreOffice, this is ooRexx speaking! ("date("S") time()")")
 call eyeCatcher
 
 say

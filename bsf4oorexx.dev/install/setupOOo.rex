@@ -196,9 +196,9 @@ call directory oldDir            /* reset directory                           */
 
 if cmd.ePath2OOoBase="" then         /* not found, give a message and abort ...   */
 do
-   say "OpenOffice.org/LibreOffice not installed?"
+   say "OpenOffice./LibreOffice not installed?"
    say
-   say "path to OpenOffice.org/LibreOffice directory" pp(path2OOo) "could not be found!"
+   say "path to OpenOffice/LibreOffice directory" pp(path2OOo) "could not be found!"
    say
    say "     usage: rexx setupOOo [path-to-OpenOffice/LibreOffice-directory]"
    say
@@ -263,7 +263,7 @@ cp=value("CLASSPATH", , "ENVIRONMENT") /* try to get the CLASSPATH value   */
 cmd.eSupportInfos=qc("Support: Internet newsgroup <news:comp.lang.rexx>, <http://www.OpenOffice.org> or via <http://www.RexxLA.org>")
 
 -- 2010-03-19: create a unique needle (e.g. to allow deleting lines with sed from profiles later)
-cmd.eInstallationNeedle="BSF4ooRexxNeedle - OpenOffice.org support" -- .dateTime~new~string
+cmd.eInstallationNeedle="BSF4ooRexxNeedle - OpenOffice support" -- .dateTime~new~string
 
 -- cmd.eIsUnix=.true -- rgf-DEBUG
 
@@ -526,7 +526,7 @@ createInstallScript: procedure expose cmd. path.
   hintString="created:" q(date("S") time()) "by user" q(userid())
 
   call lineout fn, cmd.eEcho qe("created:" q(date("S") time()))
-  call lineout fn, cmd.eEcho qe("installing BSF4ooRexx ""OpenOffice.org/LibreOffice"" support...")
+  call lineout fn, cmd.eEcho qe("installing BSF4ooRexx ""OpenOffice/LibreOffice"" support...")
   call lineout fn, cmd.eEcho qe(".")
   call lineout fn, cmd.eEchoOff
   call lineout fn, ""
@@ -534,10 +534,10 @@ createInstallScript: procedure expose cmd. path.
      /* uninstall: */
   call lineout ui, cmd.eEcho qe("created:" q(date("S") time()))
   call lineout ui, cmd.eEchoOff
-  call lineout ui, cmd.eEcho qe("uninstalling BSF4ooRexx ""OpenOffice.org/LibreOffice"" support...")
+  call lineout ui, cmd.eEcho qe("uninstalling BSF4ooRexx ""OpenOffice/LibreOffice"" support...")
   call lineout ui, cmd.eEcho qe(".")
   call lineout ui, ""
-  call lineout ui, cmd.eEcho qe("(make sure that no instances of ""OpenOffice.org/LibreOffice"" are running!)")
+  call lineout ui, cmd.eEcho qe("(make sure that no instances of ""OpenOffice/LibreOffice"" are running!)")
   call lineout ui, ""
 
   -- uninstall Rexx macros, before we uninstall the rest of the pack ... ???
@@ -697,7 +697,7 @@ createInstallScript: procedure expose cmd. path.
 
         call lineout fn, ""
 
-        call lineout ui, cmd.eEcho qe("removing BSF4ooRexx' OpenOffice.org/LibreOffice entries from" tmpTgt "...")
+        call lineout ui, cmd.eEcho qe("removing BSF4ooRexx' OpenOffice/LibreOffice entries from" tmpTgt "...")
         call lineout ui, cmd.e_sed_delete tmpTgt
         call lineout ui, ""
 
@@ -765,8 +765,8 @@ createInstallScript: procedure expose cmd. path.
          -- inform user
       -- call lineout fn, cmd.eEcho qc(tmpStr1)
       -- call lineout ui, cmd.eEcho qc(tmpStr2)
-      call lineout fn, cmd.eEcho qc("add OpenOffice.org/LibreOffice-paths to environment variable 'Path' via registry ...")
-      call lineout ui, cmd.eEcho qc("remove OpenOffice.org/LibreOffice-paths from environment variable 'Path' via registry ...")
+      call lineout fn, cmd.eEcho qc("add OpenOffice/LibreOffice-paths to environment variable 'Path' via registry ...")
+      call lineout ui, cmd.eEcho qc("remove OpenOffice/LibreOffice-paths from environment variable 'Path' via registry ...")
 
          -- carry out operation
       call lineout fn, tmpStr1
@@ -790,8 +790,8 @@ createInstallScript: procedure expose cmd. path.
          -- inform user
       -- call lineout fn, cmd.eEcho qc(tmpStr1)
       -- call lineout ui, cmd.eEcho qc(tmpStr2)
-      call lineout fn, cmd.eEcho qc("add OpenOffice.org/LibreOffice-jars to environment variable 'CLASSPATH' via registry ...")
-      call lineout ui, cmd.eEcho qc("remove OpenOffice.org/LibreOffice-jars from environment variable 'CLASSPATH' via registry ...")
+      call lineout fn, cmd.eEcho qc("add OpenOffice/LibreOffice-jars to environment variable 'CLASSPATH' via registry ...")
+      call lineout ui, cmd.eEcho qc("remove OpenOffice/LibreOffice-jars from environment variable 'CLASSPATH' via registry ...")
 
          -- carry out operation
       call lineout fn, tmpStr1
@@ -978,9 +978,9 @@ createEnvironmentScript: procedure expose cmd. path.
   call lineout fn, cmd.eLineComment "(allows running OOo scripts from the commandline)"
 
   if cmd.eIsUnix=.true then   -- don't echo in Unix as this script may be executed on every new shell
-     call lineout fn, cmd.eLineComment "setting the CLASSPATH environment variable to point to the OpenOffice.org/LibreOffice jar files"
+     call lineout fn, cmd.eLineComment "setting the CLASSPATH environment variable to point to the OpenOffice/LibreOffice jar files"
   else
-     call lineout fn, cmd.eEcho qe("setting the CLASSPATH environment variable to point to the OpenOffice.org/LibreOffice jar files")
+     call lineout fn, cmd.eEcho qe("setting the CLASSPATH environment variable to point to the OpenOffice/LibreOffice jar files")
 
 --  call lineout fn, cmd.eEcho qe("(make sure that the environment is set for BSF4ooRexx as well)...")
   call lineout fn, ""

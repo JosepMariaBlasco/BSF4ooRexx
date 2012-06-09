@@ -11,6 +11,7 @@
                2010-05-18, rgf, - adapting example to take full advantage of BSF4ooRexx
                                 - replacing bsf.addEventListener with a Rexx event handlers
                                 - employ the Java interface "java.io.FilenameFilter"
+               2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
 
     remarks:   adapted from an adapted Java program named "TestPrint.java" from
                Zukowski, J.: "Java AWT Reference", O'Reilly & Associates, 1997 and
@@ -21,7 +22,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2010 Rony G. Flatscher
+       Copyright (C) 2001-2012 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -99,7 +100,9 @@ If arg(1)='?' Then Do
   frame~~pack~~setVisible(.true)                   -- calc layout, show frame
 
   rexxCloseEH~waitForExit  -- wait until we are allowed to end the program
-  call SysSleep .2         -- let Java's RexxProxy finalizations find a running Rexx instance
+
+  -- if Java was loaded by Rexx, then terminate Java's RexxEngine to inhibit callbacks from Java
+  call BSF.terminateRexxEngine
 
 
 ::requires bsf.cls         -- get BSF4ooRexx (Java) support

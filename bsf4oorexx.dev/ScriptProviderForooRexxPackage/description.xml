@@ -3,7 +3,7 @@
 xmlns:d="http://openoffice.org/extensions/description/2006"
 xmlns:xlink="http://www.w3.org/1999/xlink">
 
-  <version value="406.20110429"/>
+  <version value="410.20120609"/>
 
   <identifier value="org.oorexx.uno.ScriptProviderForooRexx.package"/>
 

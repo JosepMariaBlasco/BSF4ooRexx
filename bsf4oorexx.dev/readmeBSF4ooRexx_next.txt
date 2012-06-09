@@ -1,5 +1,5 @@
-Additional information on BSF4ooRexx that may be interesting     2012-05-26
-===========================================================================
+Additional information on BSF4ooRexx that may be interesting  9 June 2012
+=========================================================================
 
 BSF4ooRexx is an extension to Rexx and ooRexx, consisting of an external Rexx
 function package ("BSF4ooRexx.dll", "libBSF4ooRexx") and a set of Java classes

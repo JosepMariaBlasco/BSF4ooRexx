@@ -95,7 +95,7 @@ dir~rxo.baseName="oorexx4ooo"
    /* template files (containing template code, if new file gets created via Explorer) */
 dir~rex.template ="RexxScript (Rexx script) executed by ooRexx.rex"
 dir~rxj.template ="RexxJavaScript (Rexx script using Java) executed by ooRexx.rxj"
-dir~rxo.template ="RexxOOoScript (Rexx script using OpenOffice.org) executed by ooRexx.rxo"
+dir~rxo.template ="RexxOOoScript (Rexx script using OpenOffice) executed by ooRexx.rxo"
 
    /* define available pixel sizes of the PNG versions (for Unix) */
 dir~png.imageSizes=.array~of(16,32,48,64,128,256)
@@ -121,7 +121,7 @@ dir ~ rxo.extensions = .array~of( ".rxo" )
 info = "executed by" dir~rexx.processor -- "version" dir~rexx.version
 dir ~rex.comment = dir~rex.name "(Rexx script)" info
 dir ~rxj.comment = dir~rxj.name "(Rexx script using Java)" info
-dir ~rxo.comment = dir~rxo.name "(Rexx script using OpenOffice.org)" info
+dir ~rxo.comment = dir~rxo.name "(Rexx script using OpenOffice)" info
 
 if switch="D" then      /* debug switch ? */
 do

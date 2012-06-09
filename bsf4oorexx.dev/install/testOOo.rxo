@@ -56,7 +56,7 @@ text = writerComponent~XTextDocument~getText
 
    /* set the text of the text object to salute the world of ooRexx           */
 say "... setting the text object ..."
-text~setString("Hello OpenOffice.org/LibreOffice, this is ooRexx speaking! ("date("S") time()")")
+text~setString("Hello OpenOffice/LibreOffice, this is ooRexx speaking! ("date("S") time()")")
 
 say
 say "done."

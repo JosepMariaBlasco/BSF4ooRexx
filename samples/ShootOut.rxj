@@ -26,11 +26,12 @@
                                 remove the first three chars from its result string)
             2009-07-05, Walter Pachl  add help
             2010-05-16, rgf, - replacing bsf.addEventListener with Rexx event handlers
+            2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2010 Rony G. Flatscher
+       Copyright (C) 2001-2012 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -134,7 +135,9 @@ userData~answers = answers    -- save answers for later use
 window ~~pack ~~setVisible(.true) ~~toFront
 
 rexxCloseEH~waitForExit -- wait until we are allowed to end the program
-call SysSleep .2        -- let Java's RexxProxy finalizations find a running Rexx instance
+
+-- if Java was loaded by Rexx, then terminate Java's RexxEngine to inhibit callbacks from Java
+call BSF.terminateRexxEngine
 
 
 ::requires BSF.CLS   -- get Java support

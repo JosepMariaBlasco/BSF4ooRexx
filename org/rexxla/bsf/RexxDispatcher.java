@@ -23,11 +23,13 @@ import java.io.*;
  * ----------------------------------------------------------------------------- </pre>
  *
  * @author   Rony G. Flatscher
- * @version  401.20110220
+ * @version  402.20120606
  */
 
  /*
      last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+     2012-02-06, ---rgf, - terminate() Rexx engine to inhibit callbacks from Java to Rexx
 
      2011-02-15, ---rgf, - adding support for MacOSX: Rexx' filename will be used in application title,
                            which gets set to "BSF4ooRexx [rexx-filename]"
@@ -52,7 +54,7 @@ public class RexxDispatcher {
         /** Version string indicating version of this class (majorVersion*100+minorVersion
          *  concatenated with a dot and the sorted date of last change.
          */
-        static final public String version = "401.20110220";
+        static final public String version = "402.20120606";
 
         /** Key for storing the received args-String array in the BSF registry for Rexx to
          *  get at it.
@@ -189,6 +191,7 @@ public class RexxDispatcher {
 
             System.gc();    // run the garbage collector, such that Java objects with finalizers get a chance to run
             System.runFinalization();   // run outstanding finalizers (e.g. from RexxProxy objects), if any
+            ap.terminate(); // terminate Rexx engine, will inhibit callbacks from Java to Rexx
             System.exit(0); // make sure JVM does not crash (there was a bug, if using JNI)
 	}
 }

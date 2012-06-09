@@ -4,6 +4,7 @@
    20100823: be a little bit more verbose
    20110606: before ending Rexx, make sure that Java does not callback into Rexx while
              shutting Rexx down (needed as of ooRexx 4.1.1)
+   20120609: inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
 
    [The ooRexx support defined by the module UNO.CLS defines the public routines "uno.convertToUrl(fileName)" and
    "UNO.convertFromUrl(url)" which are recommended instead.]
@@ -30,8 +31,8 @@ say thisName": uriFileName:    ["uriFileName"]"
 systemFileName=convertFromURL(uriFileName)
 say thisName": systemFileName: ["systemFileName"]"
 
--- inhibit callbacks from Java to Rexx from now on (Rexx will shut down afterwards; needed as of ooRexx 4.1.1)
-bsf.wrap(bsf('getBSFManager'))~loadScriptingEngine('rexx')~terminate
+-- if Java was loaded by Rexx, then terminate Java's RexxEngine to inhibit callbacks from Java
+call BSF.terminateRexxEngine
 
 ::requires UNO.CLS      -- get the UNO support
 

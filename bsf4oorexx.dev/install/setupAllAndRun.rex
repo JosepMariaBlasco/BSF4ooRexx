@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-05,14,18
-   version: 1.05
+   version: 1.06
    name:    setupAllAndRun.rex
    purpose: installer to install or reinstall the BSF4ooRexx package
 
@@ -37,6 +37,11 @@
                                 and files as well (this way anyone being in the admin group can change or
                                 uninstall the files)
             2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
+            2012-06-09, ---rgf, - if support for AOO/OOo/LO can not be installed, then do not
+                                  stop installation/reinstallation, but go on such, that in
+                                  interactive mode the user gets to see the popup window
+                                - change information for user to reassure, if BSF4ooRexx got [re-]installed
+                                  successfully
 
 
    remark:  ---
@@ -44,7 +49,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010-2011 Rony G. Flatscher
+       Copyright (C) 2010-2012 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -308,7 +313,7 @@ do
           if oooDirs.0=0 then
           do
              cmd.eBInstallOOo=.false      -- do not automatically install OOo support
-             say cmd.eThisName": Please note: rerun ""install.sh"", if you want to install the special BSF4ooRexx OpenOffice.org support"
+             say cmd.eThisName": Please note: rerun ""install.sh"", if you want to install the special BSF4ooRexx OpenOffice support"
              say cmd.eThisName"  (make sure that you have the original version from 'http://www.OpenOffice.org' installed on your system!)"
              say
           end
@@ -354,6 +359,8 @@ do
        end
    end
 
+   lf="0a"x
+   hint=""
    if cmd.eBInstallBSF=.true then   -- create and run BSF install scripts
    do
       res=createAndRunInstallationScripts(cmd., "install", cmd.eSetupBSF, cmd.eInstallScriptNameBSF, -12, -13)
@@ -361,30 +368,47 @@ do
       do
          if cmd.eBInteractive=.true then
          do
-            say cmd.eThisName": about to exit program, please hit enter to continue ..."
+            say cmd.eThisName": fatal error (could not install BSF4ooRexx) about to exit program, please hit enter to continue ..."
             parse pull input
          end
          exit res
+      end
+      else
+      do
+         hint=cmd.eThisName": BSF4ooRexx could be installed successfully."
       end
    end
 
    if cmd.eBInstallOOo=.true then   -- create and run OOo install scripts
    do
       res=createAndRunInstallationScripts(cmd., "install", cmd.eSetupOOo, cmd.eInstallScriptNameOOo, -14, -15)
+
+      if hint<>"" then  -- append LF ?
+         hint=hint lf
+
       if res<>0 then
       do
+         hint=hint || cmd.eThisName": error while setting up OpenOffice/LibreOffice support: res=["res"]. Maybe not installed?"
+
          if cmd.eBInteractive=.true then
          do
-            say cmd.eThisName": something went wrong with setting up OOo/LO support (res=["res"]), about to exit program, please hit enter to continue ..."
+            say hint
+            say "Hit enter to continue ..."
             parse pull input
-            exit res -- rgf, 20110608: only abort, if in interactive mode
+
+            -- exit res -- rgf, 20110608: only abort, if in interactive mode
          end
+      end
+      else
+      do
+         hint=hint || cmd.eThisName": OpenOffice/LibreOffice support could be installed successfully."
       end
    end
 
    title="BSF4ooRexx - Install"
-   msg="Install was carried out (this dialog uses BSF4ooRexx) !"
-   lf="0a"x
+   msg="Install was carried out (this dialog uses BSF4ooRexx already). "
+
+   if hint<>"" then msg=msg lf lf || hint
 
    if cmd.eOpSys<>"W", \cmd.eIsMacOSX then   -- neither under Windows, nor Mac
    do
@@ -394,7 +418,7 @@ do
               lf"(Otherwise look for the BSF4ooRexx menu options in the 'Applications' menu 'Other' and"             -
               lf"run the BSF4ooRexx programs by right-clicking and picking the appropriate launcher.)"
    end
-   msg=msg lf lf"(This very dialog is written in Rexx using Java for an operating system independent GUI dialog!)"
+   msg=msg lf lf"(This very dialog was written in Rexx using Java for an operating system independent GUI dialog!)"
    msg=msg~changeStr(lf,"/LF/")
 
    if cmd.eBQuiet=.false then
@@ -488,31 +512,51 @@ do
    end
 
       -- create and run install scripts
+   hint=""
+   lf="0a"x
    res=createAndRunInstallationScripts(cmd., "reinstall", cmd.eSetupBSF, cmd.eInstallScriptNameBSF, -32, -33)
    if res<>0 then
    do
       if cmd.eBInteractive=.true then
       do
+         hint=cmd.eThisName": error while reinstalling BSF4ooRexx: res=["res"]."
+         say hint
          say cmd.eThisName": about to exit program, please hit enter to continue ..."
          parse pull input
       end
       exit res
    end
+   else
+   do
+      hint=cmd.eThisName": BSF4ooRexx could be reinstalled successfully."
+   end
 
    res=createAndRunInstallationScripts(cmd., "reinstall", cmd.eSetupOOo, cmd.eInstallScriptNameOOo, -34, -35)
+
+   if hint<>"" then  -- append LF ?
+      hint=hint lf
+
    if res<>0 then
    do
+      hint=hint || cmd.eThisName": error while setting up OpenOffice/LibreOffice support: res=["res"]. Maybe not installed?"
+
       if cmd.eBInteractive=.true then
       do
-         say cmd.eThisName": something went wrong with setting up OOo/LO support (res=["res"]), about to exit program, please hit enter to continue ..."
+         say hint
+         say "Hit enter to continue ..."
          parse pull input
-         exit res -- rgf: 20110608 - only abort, if in interactive mode
+
+         -- exit res -- rgf: 20110608 - only abort, if in interactive mode
       end
+   end
+   else
+   do
+      hint=hint || cmd.eThisName": OpenOffice/LibreOffice support could be (re-)installed successfully."
    end
 
    title="BSF4ooRexx - Reinstall"
-   msg="Reinstall was carried out (this dialog uses BSF4ooRexx) !"
-   lf="0a"x
+   msg="Reinstall was carried out (this dialog uses BSF4ooRexx)."
+
    if cmd.eOpSys<>"W", \cmd.eIsMacOSX then   -- neither under Windows, nor Mac
    do
       msg=msg lf -
@@ -521,7 +565,10 @@ do
               lf"(Otherwise look for the BSF4ooRexx menu options in the 'Applications' menu 'Other' and"             -
               lf"run the BSF4ooRexx programs by right-clicking and picking the appropriate launcher.)"
    end
-   msg=msg lf lf"(This very dialog is written in Rexx using Java for an operating system independent GUI dialog!)"
+
+   if hint<>"" then msg=msg lf lf || hint
+
+   msg=msg lf lf"(This very dialog was written in Rexx using Java for an operating system independent GUI dialog!)"
    msg=msg~changeStr(lf,"/LF/")
 
    if cmd.eBQuiet=.false then
@@ -533,7 +580,8 @@ end
 
 if bPauseAtEnd=.true then    -- pause at end, such that user can
 do
-   say cmd.eThisName": about to close program, please hit enter to continue ..."
+   say cmd.eThisName": end of run."
+   say "Please hit enter to end program ..."
    parse pull input
 end
 
@@ -568,7 +616,7 @@ exit 0
    call (createInstallScript)
    if result<>"RESULT", result<>0 then       -- something went wrong, abort
    do
-       say cmd.eThisName' ('mode'-mode): running ['createInstallScript'] caused return code ['result'], aborting...'
+       say cmd.eThisName' ('mode'-mode): running ['createInstallScript'] caused return code ['result'], aborting routine "createAndRunInstallationScripts()"...'
        exit rc1
    end
 
@@ -578,7 +626,7 @@ exit 0
    runInstallScript        -- let the shell execute the generated script
    if rc<>"RC", rc<>0 then
    do
-      say cmd.eThisName' ('mode'-mode): running ['runInstallScript'] caused return code ['result'], aborting...'
+      say cmd.eThisName' ('mode'-mode): running ['runInstallScript'] caused return code ['result'], aborting routine "createAndRunInstallationScripts()"...'
       exit rc2
    end
 
