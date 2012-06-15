@@ -1,3 +1,62 @@
+-------------------------------------- 2012-06-09 ----------------------------------
+
+- BSF.CLS
+
+        - added public routine BSF.terminateRexxEngine(): this allows a Rexx program
+          to stop callbacks from Java to Rexx; it also will inhibit the Java side
+          to use this Rexx interpreter instance to execute new Rexx programs
+
+-------------------------------------- 2012-06-05 ----------------------------------
+
+- BSF.CLS
+
+        - fix memory leak: added uninit method to BSF_ARRAY_REFERENCE class to remove
+          thearray proxy for indexing from the BSF registry, if not needed
+          anymore (i.e. when uninit runs)
+
+-------------------------------------- 2012-06-07 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - changed logic in RgfAddRexxProxy() such that if the package object is NULL to
+          not add it to the directory (it won't be removable in ooRexx 4.1.1)
+
+-------------------------------------- 2012-06-06 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - added an external Rexx function named BsfGetRegistryObjects() for debugging
+          purposes only; to compile the flag CONFIG_MAKE_OREXX_REGISTRY_ACCESSIBLE must
+          be defined
+
+-------------------------------------- 2012-05-26 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - fixed errors because of wrongly placed DeleteLocalRef() (and in one instance
+          a GlobalRef'd Java object became illegal due to excercising DeleteLocalRef()
+          on it
+
+-------------------------------------- 2012-05-24 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - changed "JNU_GetStringNativeCharsReturningRexxObjectPtr" to
+                  "JNU_GetStringNativeCharsReturningRexxStringObject"
+
+        - memory leak: fixed OOM (out of memory) error reported by Erik Dujis by explicitly
+          invoking DeleteLocalRef() on any jobject; bug report:
+          <https://sourceforge.net/tracker/?func=detail&atid=1660873&aid=3525814&group_id=400586>
+
+        - tidying up a little bit by deleting some outdated commented code
+
+-------------------------------------- 2012-04-19 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - fixed a bug in free()ing options array in BsfLoadJava()-routine, reported
+          by JLF, cf. <https://sourceforge.net/mailarchive/forum.php?thread_name=4F900B1A.8000104%40wu-wien.ac.at&forum_name=bsf4oorexx-devel>
+
 -------------------------------------- 2012-03-12 ----------------------------------
 - RexxAndJava.java
 
@@ -32,6 +91,127 @@
 
         - Unix: changed logic to determine which target lib to copy libBSF4ooRexx.so to
                 (using location of "librexx.so")
+
+-------------------------------------- 2012-06-09 ----------------------------------
+
+- Java4Rexx.java
+
+        - need to use try-block for createRexxInterpreterInstance() as it now throws a BSFException
+
+- samples/Greetings.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/HelloWorld.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/OOo/listPathSettings-pure-ooo.rxo
+
+        - new sample to demonstrate using the URL-converter service of OOo, rather than BSF.CLS'
+
+- samples/OOo/demoFileUriConvert.rxo
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/PrintFile.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/ShootOut.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/ShootOut2.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/ShowCount.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/ShowSize.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+
+-------------------------------------- 2012-04-17 ----------------------------------
+
+- Java4Rexx.java
+
+        - change logic as there is no need for creating and terminating another Rexx
+          interpreter instance anymore (there was a bug too, that caused Terminate()
+          to not be invoked at all
+
+- RexxAndJava.java
+
+        - fixed a bug in createRexxInterpreterInstance() where the new RII was
+          not assigned to the RexxEngine if that had no RII assigned to it yet
+
+        - added protected void set_rii_ID(String rii_ID) to allow Java4Rexx to
+          set the reference to the Rexx interpreter instance that invoked it
+
+        - tidying up the code a bit (removing comments and TODOs that are not actual anymore)
+
+-------------------------------------- 2012-04-05 ----------------------------------
+
+- utilities/ooRexxTry.rxj
+
+        - Jean-Louis Faucher:
+                - Convert the result to a string before displaying in returnsArea
+
+                - Support empty arguments : arg(N, "o") returns 1 if line N is empty in argsArea.
+
+                - The temporary file ooRexxTry_test was created with a path in home directory,
+                  but then only the filename part was kept. Now keeps the whole path.
+
+                - The path to ooRexxTry_test is surrounded by quotes to support whitespaces.
+
+                - The file ooRexxTry.rc is saved in the home directory.
+
+                - No longer accumulate text in say_stg and error_stg, better to use the method
+                  append of JTextArea.
+
+-------------------------------------- 2012-04-03 ----------------------------------
+
+- utilities/ooRexxTry.rxj
+
+        - fix bug ID: 3514658
+
+        - Java classes are now stored in .local by there fully qualified name;
+          this way there should be no interference with any other class (JLF
+          reported a name clash with .file, which is defined as an ooRexx class
+          and which was offset by java.io.File that was saved in .local as .file)
+
+-------------------------------------- 2012-03-29 ----------------------------------
+
+- utilities/ooRexxTry.rxj
+
+        - make sure that .input, .output and .error GUI interface can be used,
+          even if Rexx code is run on a separate thread; quick fix, experimental
+
+-------------------------------------- 2012-03-27 ----------------------------------
+
+- utilities/ooRexxTry.rxj
+
+        - Jean-Louis Faucher:  Fix bug 3512053
+
+-------------------------------------- 2012-03-12 ----------------------------------
+
+- RexxAndJava.java
+
+        - now loading BSF4ooRexx DLL/so after trying to fetch the netrexx.lang.Rexx class,
+          such that native library can access static field "nlR_class" and fetch the class object,
+          if Java found it
+
+        - change scope of "bsfPrefixReturnValue" from static to instance, such that
+          the Rexx interpreter instances can run with different settings
+
+-------------------------------------- 2012-02-06 ----------------------------------
+
+- RexxDispatcher.java
+
+        - terminate() Rexx engine to inhibit callbacks from Java to Rexx
 
 -------------------------------------- 2011-06-18 ----------------------------------
 - install/images

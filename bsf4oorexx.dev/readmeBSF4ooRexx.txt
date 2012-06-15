@@ -1,5 +1,5 @@
-BSF4ooRexx, 4.10 9 June 2012, BETA
-==================================
+BSF4ooRexx, 4.10 18 June 2012
+=============================
 
 BSF4ooRexx, version 4.10: this version makes the configuration of individual
 Rexx interpreter instances possible, as well implementing Rexx exit handlers

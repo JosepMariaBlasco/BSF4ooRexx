@@ -1,3 +1,19 @@
+-------------------------------------- 2012-06-19 ----------------------------------
+
+- samples/getVersion.rxj
+
+        - give more detailed version information, if available (i.e. about the exact
+          name of the OpenOffice at hand)
+
+-------------------------------------- 2012-06-09 ----------------------------------
+
+- samples/demoFileUriConvert.rxj
+
+        - inhibit callbacks from Java to Rexx, once Rexx program ends; employs new
+          public routine "BSF.terminateRexxEngine()", defined in BSF.CLS (which
+          will also will inhibit that the Java side could reuse this Rexx interpreter
+          instance)
+
 -------------------------------------- 2011-04-10 ----------------------------------
 - installation/setupOOo.rex
 
