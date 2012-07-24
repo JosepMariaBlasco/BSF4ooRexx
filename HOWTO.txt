@@ -1,0 +1,64 @@
+HOWTO compile and create a distribution
+
+
+- Java:
+ 
+  - the Java source of this package can be found in "bsf4oorexx.dev/source_java"
+
+  - to compile
+
+    - you need to have a JDK installed
+
+    - make sure CLASSPATH points to trunk (such that the directories "com" and "org" can be found by Java)
+
+    - change into "bsf4oorexx.dev" and run "cmpj.cmd"
+
+
+
+
+- C++:
+
+  - you need to have a JDK installed, let INCLUDE point to its include directories to be able to resolve "jni.h"
+
+  - change into "bsf4oorexx/source_cc"
+
+  - compile on your platform
+
+	- Windows: using MS CPP, first set up the environment for a 32/64 build (cf. env4_{32|64}bit_xp.cmd)
+
+                   nmake /f Makefile{32|64} clean && nmake /f Makefile{32|64} RELEASE=1
+
+	- Linux: install gcc/g++
+
+                   make -f lin_bsf4rexx-{32|64}.mak rebuild
+
+	- MacOSX: install Xcode 
+
+                   make -f apple-Makefile.mak [all \ i386 | x86_64 | ppc | universal \ clean ]
+
+
+
+
+- Creating ScriptProviderForooRexx.oxt (OpenOffice.org support)
+
+	- this is a Java-based package
+
+	- before creating it, one needs to setup CLASSPATH to point to the OOo-jars (Java implementation of the UNO-architecture), in addition one needs to have CLASSPATH point to OOo's ScriptFramework.jar
+
+	- run "createScriptProviderForooRexx.cmd" which will create jar-files and an "ScriptProviderForooRexx.oxt" (an OOo-extension package) file 
+
+
+
+- Creating a distribution
+
+	- change the version date in "BSF.CLS"
+
+	- change the dates ("runDate" and "docDate") in "createDistributionForBSF4ooRexx4.cmd"
+
+	- run "createDistributionForBSF4ooRexx4.cmd"        
+
+
+Please feel free to add to this document.
+
+2011-04-05, Rony G. Flatscher
+

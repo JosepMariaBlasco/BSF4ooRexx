@@ -1,0 +1,15 @@
+parse source . . src
+
+rexxEngine=org.apache.bsf.BSFManager().loadScriptingEngine("rexx")
+rexxEngine.apply(src,0,0,"::requires BSF.CLS",null,null)
+
+rexxCode= "use arg javaObj                           ;" -
+          "say 'javaObj~class   :' javaObj~class     ;" -
+          "say 'javaObj~toString:' javaObj~toString  ;" -
+          "::requires BSF.CLS                        ;"
+
+vArgs=Vector()
+vArgs.addElement( System.getProperties )
+
+rexxEngine.apply(src,0,0,rexxCode,null,vArgs)
+

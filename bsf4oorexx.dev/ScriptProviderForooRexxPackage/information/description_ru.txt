@@ -1,0 +1,4 @@
+﻿Это позволяет использовать мощный и лёгко изучаемый язык ooRexx во всех приложениях OpenOffice/LibreOffice.
+
+    ooRexx:        http://www.ooRexx.org
+    BSF4ooRexx: http://sourceforge.net/projects/bsf4oorexx/

@@ -1,0 +1,101 @@
+#!/usr/bin/rexx
+/* classic Rexx version, ---rgf, 2003-02, 2003-05-10, 2003-09-04, 2005-12-28, 2006-01-06 */
+/* this version works on Java 1.1 too (because using "wrapEnumeration()") */
+
+/*
+
+   Invoke:  GetJavaSystemProperties
+
+             "rexx GetJavaSystemProperties.rxj"
+              ... Rexx script will load Java and use its classes
+
+              or
+
+             "rexxj2 GetJavaSystemProperties.rxj"      (Windows)
+             "rexxj2.sh GetJavaSystemProperties.rxj"   (Unix)
+              ... Java will load Rexx and execute the Rexx script, which uses Java classes
+
+   Purpose: Get the Java System Properties from java.lang.System
+            using the services set up by "BSF.CLS" and show them on the console
+
+   last change: $Revision: 579 $ $Author: rony $ $Date: 2010-02-16 22:43:46 +0100 (Tue, 16 Feb 2010) $
+            05 July 2009 Walter Pachl add help and display line.separator in hex
+            2010-02-16, rgf, adapted library name to "BSF4ooRexx"
+
+   license(s): see end of this file
+*/
+
+If arg(1)='?' Then
+Do
+  Parse Source source
+  Say source
+  Say 'Get the Java System Properties from java.lang.System'
+  Say 'using the services set up by "BSF.CLS"'
+  Say 'and show them on the console'
+  Exit
+End
+
+      /* load the BSF4Rexx functions and start a JVM, if necessary */
+if rxFuncQuery("BSF") = 1 then   /* BSF() support not loaded yet ? */
+do
+   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx", "BsfLoadFuncs"
+   call BsfLoadFuncs          /* load all BSF*() functions  */
+   call BsfLoadJava           /* load Java                  */
+end
+
+   /* 'Class.class' is pre-registered for Rexx, cf. docs */
+system=bsf('loadClass', 'java.lang.System')
+
+properties=bsf('invoke', system, "getProperties")  /* get the System properties  */
+
+enum=bsf('invoke', properties, 'propertyNames')    /* get an enumeration of the property names */
+
+   /* wrap the Enumeration object, so Java 1.1 can handle this too (overcome Java inner class access restriction) */
+   /* the following statement is *not* necessary for Java >= 1.2 */
+enum=bsf('wrapEnumeration', enum)
+
+say copies("=", 70)
+
+do while bsf('invoke', enum, 'hasMoreElements') /* loop over enumeration   */
+   key=bsf('invoke', enum, 'nextElement')       /* get next element        */
+   say "key:" left("["key"]", 30) "value: ["||bsf('invoke', properties, 'getProperty', key)"]"
+end
+
+/*
+   license(s): choice of
+
+    ------------------------ Apache Version 2.0 license (AL2.0)-------------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+
+    or
+
+    ------------------------ GNU Lesser Public License 3.0 (LGPL3.0) ----------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the GNU Lesser Pubilc License, 3.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.gnu.org/licenses/lgpl.html
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+

@@ -1,0 +1,63 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited by Rony G. Flatscher, 2010-07-17/20 */
+/* Example 10: open an existing writer/text file using OOo's FilePicker service and convert the loaded file to PDF */
+
+   /* initialize connection to the OOo server, get its XContext */
+xContext = UNO.connect()            /* connect to the OOo server */
+
+say "using the OOo FilePicker service to let the user pick a file to convert to PDF (it may be hidden by other windows) ..."
+url = getFileName(xContext)         /* get file name from user */
+if url =.nil then exit              /* user did not pick a file, leave program */
+
+   /* load the writer/text file hiddenly */
+/* retrieve the Desktop object from the received XContext, we need its XComponentLoader interface to load the picked document */
+xDesktop         = UNO.createDesktop(xContext)  /* get the OOo XDesktop interface to the service object  */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+props = bsf.createJavaArray(.UNO~propertyValue, 1) /* create Java array */
+props[1]=uno.createProperty("Hidden", box("boolean", .true))
+writerComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, props)
+
+   /* convert file to PDF using a PDF export filter to be applied in "storeToURL" */
+xStorable = writerComponent~XStorable -- get xStorable interface
+
+props = bsf.createJavaArray(.UNO~propertyValue, 2) /* create Java array for two PropertyValue entries */
+props[1]=uno.createProperty("FilterName",   "writer_pdf_Export")
+props[2]=uno.createProperty("CompressMode", 2)     /* argument for the PDF export filter */
+
+storeURL = substr(url, 1, lastpos(".", url)) || "pdf"   -- create output file name
+.bsf.dialog~messageBox("About to convert the picked document ("uno.convertFromUrl(url)") to PDF ...", "Export Writer/Text Document to PDF","info")
+say "converting document" pp(uno.convertFromUrl(url)) "to PDF..."
+xStorable~storeToUrl(storeURL, props)          -- store the file with props to URL
+say "conversion done, stored to:" pp(uno.convertFromUrl(storeUrl))
+.bsf.dialog~messageBox("Conversion done, file stored to" pp(uno.convertFromUrl(storeUrl)) "...", "Export Writer/Text Document to PDF","info")
+
+::requires UNO.CLS    -- get UNO support
+
+
+::routine getFileName   /* use the FilePicker dialog to ask the user to pick a file to convert to PDF */
+   use arg xContext
+
+   xMcf = xContext~getServiceManager   /* get the XMultiComponentFactory from the XContext */
+   fd = xMcf~createInstanceWithContext("com.sun.star.ui.dialogs.FilePicker", xContext)
+   xfp = fd~XFilePicker /* get the interface for driving the FilePicker functionality  */
+
+   -- urlPath = uno.convertToUrl(directory())   /* convert current directory to URL       */
+   urlPath = uno.ConvertToUrl(.java.lang.System~getProperty("user.home"))
+   xfp~setDisplayDirectory(urlPath)    /* determine directory to start out with  */
+   ret = xfp~setTitle(.dateTime~new || ": Please choose the writer/text file that you wish to convert to PDF!")
+
+   xfm = xfp~XFilterManager      /* get the filter manager interface */
+   fileTypes = "*.sxw;*.odt;*.doc;*.txt;*.text"
+   xfm~appendFilter("Text files" pp(fileTypes), fileTypes)  /* first filter is "current" one   */
+   xfm~appendFilter("All files", "*")                       /* this filter will show all files */
+
+   ret = xfp~execute             /* execute the dialog      */
+   if ret=1 then                 /* 1=o.k., 0=cancel        */
+      file = xfp~files[1]        /* get the picked file from array */
+
+   fd~XComponent~dispose         /* close the dialog        */
+
+   if ret=1 then return file     /* return picked file      */
+
+   return .nil                   /* canceled by user, hence return .nil */

@@ -1,0 +1,60 @@
+#!/usr/bin/rexx
+/*
+   name:             String testGroup
+   author:           Michael Lex
+   date:             2009-05-07
+   version:          1.0.0
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.String.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "String.testGroup" subclass ooTestCase public
+
+::method "test_1"
+	.bsf~bsf.import("java.lang.String","JString") /* import java String class */
+	s=.JString~new() /* create new Java String */
+	self~assertTrue(s~equals("")) /* test if its the same string */
+
+::method "test_2"
+	.bsf~bsf.import("java.lang.String","JString") /* import java String class */
+	s=.JString~new("teststring"); /* create new Java String with value teststring */
+	self~assertTrue(s~equals("teststring")) /* test if its the same string */
+
+::method "test_3"
+	.bsf~bsf.import("java.lang.String","JString") /* import java String class */
+	s=.JString~new("teststring"); /* create new Java String with value teststring */
+	s2=.JString~new(s) /* create new string with old string */
+	self~assertTrue(s2~equals("teststring")) /* test if its the same string */
+
+::method "test_4"
+	.bsf~bsf.import("java.lang.String","JString") /* import java String class */
+	s=.JString~new() /* create new Java String */
+	self~assertEquals(s~substring(0),"") /* test if its the same string */
+
+::method "test_5"
+	.bsf~bsf.import("java.lang.String","JString") /* import java String class */
+	s=.JString~new("teststring"); /* create new Java String with value teststring */
+	self~assertEquals(s~substring(0),"teststring") /* test if its the same string */
+
+::method "test_6"
+	.bsf~bsf.import("java.lang.String","JString") /* import java String class */
+	s=.JString~new("teststring"); /* create new Java String with value teststring */
+	s2=.JString~new(s) /* create new string with old string */
+	self~assertEquals(s2~substring(0),"teststring") /* test if its the same string */
+
+
+return
+

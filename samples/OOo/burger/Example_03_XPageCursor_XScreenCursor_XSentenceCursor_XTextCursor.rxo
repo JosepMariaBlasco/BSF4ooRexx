@@ -1,0 +1,88 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_200601>, edited by Rony G. Flatscher, 2010-07-07/20 */
+
+use arg slotArg   /* fetch the "slotArg", a java.util.Hashtable object which contains invocation
+                     information from OpenOffice.org, will always be the very last argument     */
+
+scriptContext=uno.getScriptContext(slotArg)  /* get the xScriptContext object, if any           */
+if scriptContext<>.nil then                  /* o.k., we are invoked as a macro from OOo        */
+do
+   xDesktop=scriptContext~getDesktop            /* get the desktop (a XDesktop) object          */
+   xContext=scriptContext~getComponentContext   /* get the context (a XComponentContext) object */
+   thisPath=uno.getScriptPath(.nil, slotArg)    /* will return the physical path to this script */
+end
+else              /* this program was called from outside of OOo, e.g. from the commandline     */
+do
+   xContext = UNO.connect()                  /* get a connection to OOo server                  */
+   xDesktop = UNO.createDesktop(xContext)    /* create the XDesktop from xContext               */
+   thisPath = directory()                    /* determine path to this script                   */
+end
+
+xComponentLoader=xDesktop~XComponentLoader   /* get componentLoader interface                   */
+
+   /* open the given *.odt - file */
+url = uno.convertToUrl(thisPath"\myTestDocument.odt")
+writerComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0,.UNO~noProps)
+xTextDocument = writerComponent~XTextDocument   /* get the XTextDocument interface              */
+
+   /* create a text cursor */
+xText = XTextDocument~getText
+xTextCursor = xText~createTextCursor            /* create a text cursor       */
+xSentenceCursor = xTextCursor~xSentenceCursor   /* create a sentence cursor   */
+
+   /* create a screen and page cursor */
+viewCursor = xTextDocument~XModel~getCurrentController~XtextViewCursorSupplier~getViewCursor
+xScreenCursor = viewCursor~XScreenCursor
+xPageCursor   = viewCursor~XPageCursor
+
+/*
+-- does not fully solve the screen update problems, if running via Tools->Macro;
+if scriptContext<>.nil then   /* if run via Tools->Macro, make sure that screen gets updated */
+do
+   call SysSleep 0.5          /* sleep for 1/2 second */
+   writerComponent~XModel~getCurrentController~getFrame~getContainerWindow~XTopWindow~toFront
+end
+*/
+.bsf.dialog~messageBox("About to insert text with light-blue background color.", "Please Press Button to Continue...", "information")
+
+   /* create the cursor property */
+lightBlue=box("int", "e6e6fa"x ~c2d)   /* define a color, box it as a Java integer  */
+lightRed =box("int", "fae6e6"x ~c2d)   /* define a color, box it as a Java integer  */
+
+xTextCursor~gotoStart(.false)
+xTextCursor~xPropertySet~setPropertyValue("CharBackColor", lightBlue)
+xText~insertString(xTextCursor, "===> Additional Text <=== ", .false)
+
+xSentenceCursor~gotoNextSentence(.false)
+xSentenceCursor~xPropertySet~setPropertyValue("CharBackColor", lightBlue)
+   /* demonstrate three insertStrings using the same xSentenceCursor having a background color */
+xText~insertString(xSentenceCursor,"===> This is page number ", .false)
+xText~insertString(xSentenceCursor, xPageCursor~getPage, .false)
+xText~insertString(xSentenceCursor, " (using the sentence cursor for determining the insert string position) <=== ", .false)
+
+loop=2            /* Rexx does not have reserved words   */
+loop loop         /* same as "loop 2"                    */
+   xSentenceCursor~gotoNextSentence(.false)
+end
+xSentenceCursor~gotoStartOfSentence(.false)
+
+xTextCursor~xPropertySet~setPropertyValue("CharBackColor", lightBlue)
+xText~insertString(xTextCursor, "===> This text is inserted after executing 'xSentenceCursor~gotoNextSentence(.false)'" loop "times! <=== ", .false)
+
+.bsf.dialog~messageBox("Inserted additional texts, one including page number.", "Please Press Button to Continue...", "information")
+
+   /* move the screen down using ooRexx cascading messages to ease programming */
+xScreenCursor~~screenDown~~screenDown
+.bsf.dialog~messageBox("Scrolled screen down twice (about to scroll screen up three times).", "Please Press Button to Continue...", "information")
+   /* move the screen up using ooRexx cascading messages to ease programming  */
+xScreenCursor~~screenUp~~screenUp~~screenUp
+
+xSentenceCursor~gotoNextSentence(.false)     /* move xSentenceCursor, then insert new string */
+xSentenceCursor~xPropertySet~setPropertyValue("CharBackColor", lightRed)
+xText~insertString(xSentenceCursor,"===> Back again <=== ", .false)
+
+.bsf.dialog~messageBox("Scrolled screen up. Inserted text with a light-red background color.", "Please Press Button to Finish...", "information")
+
+writerComponent~XModifiable~setModified(.false) /* allow to close (abort) document without saving-dialog */
+
+::requires UNO.CLS   -- load UNO support for OpenOffice.org

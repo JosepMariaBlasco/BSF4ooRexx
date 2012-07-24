@@ -1,0 +1,95 @@
+#!/usr/bin/rexx
+/* fileopendialogEE.rxj */
+/*
+This demonstration was written in ooRexx by Lee Peedin
+using BSF4ooRexx, created and distributed by Dr. Rony Flatscher.
+The latest release of BSF4ooRexx can be found at:
+<http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/>
+The latest information on ooRexx can be found at:
+<http://www.oorexx.org/>
+Some demonstrations may require these additional Java classes
+SWT         <http://www.eclipse.org/swt/>
+FreeTTS     <http://freetts.sourceforge.net/docs/index.php>
+
+This demonstration has been tested using:
+ooRexx              3.0.1
+Java Version        1.5.0_06
+Windows Version     Microsoft Windows XP [Version 5.1.2600]
+Linux Version       Suse 10
+-- changed:         2009-10-17, rgf, renamed extension to '.rxj'
+                    2010-05-16, rgf, - removing usage of undocumented 'org.oorexx.misc.RgfFilter', as not necessary anymore
+*/
+    parse source os how what
+    call SysCls
+    lf = '0a'x
+-- Create a file chooser by importing the Java class
+    fchooser = .bsf~new('javax.swing.JFileChooser')
+-- Create a frame to place the file chooser in by importing the Java class
+    frame = .bsf~new('javax.swing.JFrame','Frame')
+-- Set the current directory by importing the java.io.File class (the '.' indicates the current folder)
+    fchooser~setCurrentDirectory( .bsf~new("java.io.File", ".") )
+-- Give our file chooser a dialog
+    fchooser~setDialogTitle('Java Swing File OPEN Dialog')
+
+-- Create an instance of the Rexx FileFilter class to filter the file list
+     newFilter=.RexxFileFilter~new("*.rex;*.rxj;*.rxo;*.txt", .set~of('rex', 'rxj', 'rxo', 'txt'))
+     /* create a RexxProxy, supply the Rexx FileFilter object and demand it to be used as
+        an implemenation of the abstract Java class "javax.swing.filechooser.FileFilter" */
+     rexxProxy=BsfCreateRexxProxy(newFilter, , "javax.swing.filechooser.FileFilter")
+     fchooser~setFileFilter(rexxProxy)    -- set JFileChooser to use the filter
+
+-- Show the dialog and display back to the user their selection
+    myfile = fchooser~showOpenDialog(frame)
+    text = 'Result Of The File OPEN Dialog With EE'
+    if myfile = 0 then
+        do
+            text = text||lf'Fully Qualified File =' fchooser~getSelectedFile~getPath
+            text = text||lf'Just File Name       =' fchooser~getSelectedFile~getName
+        end
+    else
+        text = text||lf'You Clicked Cancel'
+    call elpFrame 'Example of the Java FOD Class With Filters', text, 3, 74
+
+::requires 'elpFrame.rxj'
+
+
+
+/* This Rexx class implements the abstract methods "getDescription" and "accept" of
+   the abstract Java class "javax.swing.filechooser.FileFilter". Creating of an instance
+   of this Rexx class and passing it as the first argument
+*/
+::class RexxFileFilter
+::method init
+  expose description filter bIgnoreCase
+  use arg description, filter=(.set~new), bIgnoreCase=.false
+
+::attribute description    -- description for the files we allow, a string that is shown in the GUI
+
+::attribute filter         -- a collection of filetypes, e.g. .array~of(".rex", ".jrexx", ".java")
+::attribute bIgnoreCase    -- ignore case when checking filetype, set to .false
+
+-- implementations of the abstract Java methods
+::method getDescription    -- implementation for the abstract Java method
+  expose description
+  return description
+
+
+::method accept            -- implementation for the abstract Java method
+  expose  filter bIgnoreCase
+  use arg file
+
+  if file~isDirectory then return .true   -- accept (include) directories in any case!
+
+   -- create explicitly a Java String object (makes the Java String methods available to us)
+  strRef=.bsf~new("java.lang.String", file~getName)
+  if bIgnoreCase then strRef=strRef~upper
+
+  do elem over filter        -- iterate over all file types
+      if bIgnoreCase then
+         res=strRef~endsWith(elem~upper)
+      else
+         res=strRef~endsWith(elem)
+
+      if res then return .true
+  end
+  return .false

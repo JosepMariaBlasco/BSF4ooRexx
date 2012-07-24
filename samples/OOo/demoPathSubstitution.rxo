@@ -1,0 +1,56 @@
+/*
+   name:    demoPathSubstitution.rxo
+   author:  Rony G. Flatscher
+   date:    2008-06-14
+   changed: 2010-05-30, rgf, cf. <http://api.openoffice.org/docs/DevelopersGuide/OfficeDev/OfficeDev.xhtml#1_2_7_2_Path_Variables>
+            - changed name to "demoPathSubstition.rxo"
+            - demonstrate also substitution of language related substitution keys
+   remarks: demonstrate the service "com.sun.star.util.PathSubstitution"
+   license: choice of ASL 2.0 or LGPL 3.0
+*/
+
+
+parse source . . script
+thisName=filespec("Name", script)
+
+say thisName": connecting to OOo ..."
+xContext = UNO.connect()  -- connect to server and retrieve the XContext object
+XMcf = xContext~getServiceManager   -- retrieve XMultiComponentFactory
+
+service="com.sun.star.util.PathSubstitution"
+say thisName": creating a service object of type" pp(service) "..."
+oPathSubstitution=XMcf~createInstanceWithContext(service, xContext)
+
+say thisName": dumping definition of the just created service object ..."
+say
+say ppd(oPathSubstitution~uno.getDefinition)
+say "--"
+
+say
+say thisName": getting and dumping its 'XStringSubstitution' interface ... "
+say
+xPathSubstitution=oPathSubstitution~XStringSubstitution
+say ppd(uno.getDefinition("com.sun.star.util.XStringSubstitution"))
+say "--"
+
+say
+say "Here are some path substitution values:"
+say
+arr=.array~of("inst", "prog", "user", "work", "home", "temp", -
+              "insturl", "userurl", "progpath", "path")~sortWith(.caselessComparator~new)
+
+do idx over arr
+   say (pp(idx)":")~left(11) pp(xPathSubstitution~getSubstituteVariableValue("$("idx")"))
+end
+
+say "--"
+say
+say "Here are some non-path substitution values:"
+say
+arr=.array~of("lang", "langid", "vlang")~sortWith(.caselessComparator~new)
+do idx over arr
+   say (pp(idx)":")~left(11) pp(xPathSubstitution~getSubstituteVariableValue("$("idx")"))
+end
+
+
+::requires uno.cls

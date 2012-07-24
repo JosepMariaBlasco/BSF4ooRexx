@@ -1,0 +1,4 @@
+﻿このように学びやすくかつパワフルなスクリプト言語であるOpen Object Rexx (ooRexx)は、OpenOffice/LibreOfficeの全てのアプリケーションに対応しています。
+
+    ooRexx:        http://www.ooRexx.org
+    BSF4ooRexx: http://sourceforge.net/projects/bsf4oorexx/

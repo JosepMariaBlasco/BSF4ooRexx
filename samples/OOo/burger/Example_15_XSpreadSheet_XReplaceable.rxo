@@ -1,0 +1,47 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_200601>, edited by Rony G. Flatscher, 2010-07-07/20 */
+
+use arg slotArg   /* fetch the "slotArg", a java.util.Hashtable object which contains invocation
+                     information from OpenOffice.org, will always be the very last argument     */
+
+scriptContext=uno.getScriptContext(slotArg)  /* get the xScriptContext object, if any           */
+if scriptContext<>.nil then                  /* o.k., we are invoked as a macro from OOo        */
+do
+   xDesktop=scriptContext~getDesktop            /* get the desktop (a XDesktop) object          */
+   xContext=scriptContext~getComponentContext   /* get the context (a XComponentContext) object */
+end
+else              /* this program was called from outside of OOo, e.g. from the commandline     */
+do
+   xContext = UNO.connect()                  /* get a connection to OOo server                  */
+   xDesktop = UNO.createDesktop(xContext)    /* create the XDesktop from xContext               */
+end
+
+xComponentLoader=xDesktop~XComponentLoader   /* get componentLoader interface                   */
+
+   /* create a blank *.ods - file      */
+url = "private:factory/scalc"
+calcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0,.UNO~noProps)
+
+   /* get first sheet in spreadsheet   */
+xSheet=calcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0) ~XSpreadSheet
+
+   /* fill in some values              */
+call UNO.setCell xSheet, "A1", "33"
+call UNO.setCell xSheet, "A2", "44"
+call UNO.setCell xSheet, "A3", "66"
+call UNO.setCell xSheet, "A4", "23"
+call UNO.setCell xSheet, "A5", "0"
+call UNO.setCell xSheet, "A6", "67"
+
+.bsf.dialog~messageBox("About to change all occurrences of the value ""0"" with the value ""zero"" in the range ""A1:A6"".", "Please Press Button to Finish...", "information")
+
+xReplace = xSheet~xCellRange~getCellRangeByName("A1:A6")~XReplaceable   /* define replacement area */
+   /* get and define the RecplaceDescriptor  */
+xReplaceDescriptor = xReplace~createReplaceDescriptor
+xReplaceDescriptor~~setSearchString("0")~~setReplaceString("zero")
+xReplace~replaceAll(xReplaceDescriptor)      /* apply the ReplaceDescriptor            */
+
+calcComponent~XModifiable~setModified(.false)   /* allow to close (abort) document without saving-dialog */
+
+::requires UNO.CLS   -- load UNO support for OpenOffice.org
+

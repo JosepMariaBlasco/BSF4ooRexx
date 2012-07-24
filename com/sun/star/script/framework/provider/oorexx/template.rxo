@@ -1,0 +1,161 @@
+/* ooRexx (http://www.ooRexx.org) template, version: 2011-04-10, Rony G. Flatscher */
+
+/* The following ooRexx code realizes an OOo macro that can be run against each
+   OOo document type. It demonstrates how to get the document object and determine
+   of which type it is and act accordingly.
+
+   In addition it demonstrates how to intercept execution errors and position the
+   error indicator at the offending line, if invoked via the editor.
+
+   License: Apache Software Foundation (ASF) License 2.0
+*/
+
+
+/*
+      This is an ooRexx template script: just delete everything you do not need from
+      it and then add your own code. (This template will be able to say hello from ooRexx
+      no matter from which kind of OOo document it got invoked from.)
+
+      This template can can be executed as a macro for any document. It demonstrates how to:
+
+      - get at the document object, the desktop object and the ComponentContext object
+        as supplied by OOo for this macro invocation; starting with OOo 3.0 also the new
+        XScriptInvocationContext object, if the script should run against a different
+        document (XModel),
+
+      - determine the document type for which the macro was activated; demonstrate how to
+        interact with a text and a spreadsheet document.
+*/
+signal on syntax                    /* in case of a syntax error jump to label "syntax:" below  */
+
+use arg slotArg   /* fetch the "slotArg", a java.util.Hashtable object which contains invocation
+                     information from OpenOffice.org, will always be the very last argument     */
+
+scriptContext=uno.getScriptContext(slotArg)  /* get the xScriptContext object                   */
+if scriptContext<>.nil then                  /* o.k., we are invoked as a macro from OOo        */
+do
+   xContext=scriptContext~getComponentContext   /* get the context (a XComponentContext) object */
+   xDesktop=scriptContext~getDesktop            /* get the desktop (a XDesktop) object          */
+   oDoc=getDocument(scriptContext~getDocument)  /* get the document service (a XModel) object   */
+end
+else  /* this program was called from outside of OOo, e.g. from the commandline  */
+do
+   xContext = UNO.connect()                     /* get a connection to OOo server               */
+   xDesktop = UNO.createDesktop(xContext)       /* create the XDesktop from xContext            */
+      /* create a word processor document */
+   oDoc=xDesktop~XComponentLoader~loadComponentFromURL("private:factory/swriter", "_blank", 0, .UNO~noProps)
+end
+
+
+/* replace the following part with your code (begin) ==>          */
+      /* demonstration of how to interact with different document types */
+      /* define some text:                                              */
+str="Hello world [".dateTime~new~string"], this is ooRexx (cf. <http://www.ooRexx.org>) speaking ! "
+
+if oDoc~uno.supportsService("TextDocument") then   /* a TextDcoument in hand?                   */
+do
+   xTextDoc=oDoc~XTextDocument               /* get the XTextDocument interface                 */
+   xTextDoc~getText~getEnd~setString(str)    /* add text at the end of the text document        */
+end
+else if oDoc~uno.supportsService("SpreadsheetDocument") then   /* a SpreadsheetDocument?        */
+do
+   xSheet = oDoc~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0)~XSpreadSheet
+   cell=uno.getCell(xSheet, "A1")            /* get cell object                                 */
+   -- or: cell=uno.getCell(xSheet, 0, 0)     /* co-ordinates as 0-based numbers                 */
+   text=cell~getFormula                      /* get unedited text                               */
+   -- or: text=cell~XText~getString          /* use the XText interface method "getString"      */
+
+   if text<>"" then str=text str             /* add "str" to existing text                      */
+
+   call uno.setCell xSheet, "A1", str        /* set the text in the cell                        */
+   -- or: call uno.setCell xSheet, 0, 0, str /* co-ordinates as 0-based numbers                 */
+end
+else  /* an unknown document type, display its implemented service(s)   */
+do
+   LF="0a"x                                  /* LF (line-feed) character                        */
+   hint="- "                                 /* define a hint string (a dash and a blank)       */
+
+   url=oDoc~getUrl                           /* get Document's name (an URL)                    */
+   if url<>"" then str=str LF || "Document URL/Name:" url LF LF
+   str=str LF LF "Implemented services:"
+      /* get blank delimited service names, prepend blank, then change blank to LF and the hint:*/
+   str=str LF || (" "oDoc~uno.getServiceNames)~changestr(" ", LF || hint) LF
+
+   title="Unknown Document Type Implementing the Following Service(s)"
+   .bsf.dialog~messageBox(str, title, "information")
+end
+/* <== replace the previous part with your code (end)   */
+
+return
+
+
+
+/* this is a sample of how one could exploit ooRexx and BSF4Rexx error information */
+syntax:    /* create and display condition/exception information in a popup dialog */
+   co=condition("O")    -- get condition object, describing the condition/exception
+   LF="0a"x             -- the line-feed character
+   TAB="        "       -- blanks simulating a tab character
+
+   tmpStr=""            -- set to empty string
+   do idx over co~makeArray~sort /* sort the directory indexes and iterate over them */
+      val=co[idx]       -- get the associated value from the condition object (a directory)
+      tmpStr=tmpStr || (idx || ":")~left(25) pp(val) LF
+
+      if val~hasmethod("items") then   -- a collection? show its content
+      do item over val
+         tmpStr=tmpStr || tab || tab || pp(item) || LF
+      end
+   end
+
+   if length(tmpStr)>750 then tmpStr=left(tmpStr,750)"..." -- show only the first 750 chars
+
+   /* Are there any Java error messages/stack traces available, if so, show them */
+   if var("BSF_ERROR_MESSAGE") | .local~hasEntry("BSF_ERROR_MESSAGE") then -- a BSF error message ?
+   do
+      if var("BSF_ERROR_MESSAGE") then errStr=BSF_ERROR_MESSAGE   -- variable from this scope
+                                  else errStr=.bsf_error_message  -- value from .local environment
+
+      tmpStr=tmpStr LF LF || "-"~copies(80) LF   -- extend the string
+      tmpStr=tmpStr          "*** BSF4Rexx Error Information: ***" LF LF
+      if length(errStr)>1000 then
+         tmpStr=tmpStr || left(errStr,1000)"..."
+      else
+         tmpStr=tmpStr || errStr
+   end
+
+   -- if invoked from the macro editor, then show/point to error line
+   scriptModel=uno.getScriptSourceModel(slotArg)
+   if scriptModel<>.nil then scriptModel~indicateErrorLine(co~position)
+   call SysSleep 0.001  -- let Java awt/swing get its time to update
+
+   .bsf.dialog~messageBox(tmpStr, "Runtime error #" co~code, "error") -- display the string
+
+
+::requires UNO.CLS   /* load UNO support (OpenOffice/LibreOffice) for ooRexx   */
+
+/* OOo >= 3.0: get the invocation context (a XScriptInvocationContext) object; if not .nil, then
+               use this document instead of the result of scriptContext~getDocument!            */
+::routine getDocument
+   use arg oDoc
+   signal on any
+   xInvocationContext=scriptContext~getInvocationContext
+   if xInvocationContext<>.nil then          /* this script got invoked for a different document*/
+      return xInvocationContext              /* use the supplied document instead               */
+any:
+  return oDoc                                /* either not 3.0 or script context document to use*/
+
+
+
+
+
+/*
+/* A simple "HelloWorld"-macro in ooRexx using a writer document: */
+
+   use arg slotArg                                  /* fetch the "slotArg"              */
+
+   oDoc = uno.getScriptContext(slotArg)~getDocument /* get the document object          */
+   xTextRange = oDoc~XTextDocument~getText~getEnd   /* get the end of the text range    */
+   xTextRange~setString("Hello World (in ooRexx)")  /* string goes to the end           */
+
+   ::requires UNO.CLS               /* make sure the UNO support for ooRexx is loaded  */
+*/

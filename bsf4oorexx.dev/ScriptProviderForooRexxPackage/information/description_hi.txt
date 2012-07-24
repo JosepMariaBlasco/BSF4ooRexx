@@ -1,0 +1,4 @@
+﻿यह OpenOffice/LibreOffice के उत्पादों को सक्शम और सीखने में आसान Open Object Rexx (ooRexx) भाषा उपलब्ध कराता है|
+
+    ooRexx:        http://www.ooRexx.org
+    BSF4ooRexx: http://sourceforge.net/projects/bsf4oorexx/

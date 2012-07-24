@@ -1,0 +1,381 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testInterface1.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2009-08-26
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4Rexx 4.0 new proxying of Java interfaces
+   needs:            compiled Java classes in this directory
+   hint:             you may want to run this test under Java 1.4, 1.5 and 1.6 separately
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testInterface1)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "testInterface1" subclass ooTestCase public
+
+
+::method "test_01_unknown"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+    ro=.RexxProxy_UsingUnknown_no_boxing~new(self)
+    rp=BsfCreateRexxProxy(ro, , "rgf.C_interfaceClasses.ITest")  -- create a RexxProxy representing the Java "ITest" interface
+    jo=.bsf~new("rgf.C_interfaceClasses.Test_ITest") -- create an instance of the Java class that uses an ITest object
+    jo~test_ITest(rp)         -- now let the Java object excercise all interface methods
+
+
+::method "test_02_unknown_box_result"
+    ro=.RexxProxy_UsingUnknown~new(self)
+    rp=BsfCreateRexxProxy(ro, , "rgf.C_interfaceClasses.ITest")  -- create a RexxProxy representing the Java "ITest" interface
+    jo=.bsf~new("rgf.C_interfaceClasses.Test_ITest") -- create an instance of the Java class that uses an ITest object
+    jo~test_ITest(rp)         -- now let the Java object excercise all interface methods
+
+
+::method "test_C_individualMethods"
+    ro=.RexxProxy_Using_IndividualMethods_no_boxing~new(self)
+    rp=BsfCreateRexxProxy(ro, , "rgf.C_interfaceClasses.ITest")  -- create a RexxProxy representing the Java "ITest" interface
+    jo=.bsf~new("rgf.C_interfaceClasses.Test_ITest") -- create an instance of the Java class that uses an ITest object
+    jo~test_ITest(rp)         -- now let the Java object excercise all interface methods
+
+
+::method "test_04_individualMethods_box_result"
+    ro=.RexxProxy_Using_IndividualMethods~new(self)
+    rp=BsfCreateRexxProxy(ro, , "rgf.C_interfaceClasses.ITest")  -- create a RexxProxy representing the Java "ITest" interface
+    jo=.bsf~new("rgf.C_interfaceClasses.Test_ITest") -- create an instance of the Java class that uses an ITest object
+    jo~test_ITest(rp)         -- now let the Java object excercise all interface methods
+
+
+
+
+
+
+/* ==================================================================================== */
+/* this class will serve a RexxProxy */
+::class RexxProxy_UsingUnknown
+::method init
+  expose testRunner
+  use arg testRunner
+
+::method getTestRunner
+  expose testRunner
+--   call dumpArgs arg(1, 'A')
+  return testRunner
+
+::method unknown
+  use arg methName, argArray
+
+  select
+     when methName="BOOLEAN_METHOD" then return box("bool",\argArray[1])   -- return inverse value
+
+     when methName="BYTE_METHOD"    then return box("byte", argArray[1]%2)  -- return halved value
+
+     when methName="CHAR_METHOD" | methName="CHARACTER_METHOD" then
+                                    return box("char", argArray[1])       -- just return received argument
+
+     when methName="SHORT_METHOD"   then return box("short", argArray[1]%2)  -- return halved value
+
+     when methName="INT_METHOD" | methName="INTEGER_METHOD" then
+                                    do
+                                       numeric digits 10     -- account for 2**31
+                                       return box('int',argArray[1]%2)  -- return halved value
+                                    end
+
+     when methName="LONG_METHOD" then
+                                    do
+                                       numeric digits 19     -- account for 2**31
+                                       return box('long',argArray[1]%2)  -- return halved value
+                                    end
+
+
+     when methName="FLOAT_METHOD" | methName="DOUBLE_METHOD" | methName="OBJECT_METHOD" then
+                                    return box(methName~left(2),argArray[1])       -- just return received argument
+
+
+     when methName="VOID_METHOD"    then return                -- return nothing
+
+     when methName="STRING_METHOD"  then return argArray[1]~right(3) -- return last three chars
+
+     when methName="ALL_ARGS_METHOD" then    -- iterate over all args, create an array off it
+                                      do
+                                          tmpStr=""
+                                          do i=1 to argArray~items-1
+                                             if tmpStr="" then tmpStr=argArray[i]
+                                                          else tmpStr=tmpStr argArray[i]
+                                          end
+                                          return tmpStr
+                                      end
+
+     otherwise    -- error, must not arrive here !
+              raise syntax 93.900 array (self~string": UNKNOWN method" pp(methName)", arrived unexpectedly in OTHERWISE !")
+  end
+
+
+
+/* ==================================================================================== */
+/* this class will serve a RexxProxy */
+::class RexxProxy_UsingUnknown_no_boxing
+::method init
+  expose testRunner
+  use arg testRunner
+
+::method getTestRunner
+  expose testRunner
+  -- call dumpArgs arg(1, 'A')
+  return testRunner
+
+::method unknown
+  use arg methName, argArray
+
+
+  select
+     when methName="BOOLEAN_METHOD" then return \argArray[1]   -- return inverse value
+
+     when methName="BYTE_METHOD"    then return argArray[1]%2  -- return halved value
+
+     when methName="CHAR_METHOD" | methName="CHARACTER_METHOD" then
+                                    return argArray[1]       -- just return received argument
+
+     when methName="SHORT_METHOD"   then return argArray[1]%2  -- return halved value
+
+     when methName="INT_METHOD" | methName="INTEGER_METHOD" then
+                                    do
+                                       numeric digits 10     -- account for 2**31
+                                       return argArray[1]%2  -- return halved value
+                                    end
+
+     when methName="LONG_METHOD" then
+                                    do
+                                       numeric digits 19     -- account for 2**31
+                                       return argArray[1]%2  -- return halved value
+                                    end
+
+
+     when methName="FLOAT_METHOD" | methName="DOUBLE_METHOD" | methName="OBJECT_METHOD" then
+                                    return argArray[1]       -- just return received argument
+
+
+     when methName="VOID_METHOD"    then return                -- return nothing
+
+     when methName="STRING_METHOD"  then return argArray[1]~right(3) -- return last three chars
+
+     when methName="ALL_ARGS_METHOD" then    -- iterate over all args, create an array off it
+                                      do
+                                          tmpStr=""
+                                          do i=1 to argArray~items-1
+                                             if tmpStr="" then tmpStr=argArray[i]
+                                                          else tmpStr=tmpStr argArray[i]
+                                          end
+                                          return tmpStr
+                                      end
+
+     otherwise    -- error, must not arrive here !
+              raise syntax 93.900 array (self~string": UNKNOWN method" pp(methName)", arrived unexpectedly in OTHERWISE !")
+  end
+
+
+
+-- dump all arguments in array; show last argument's ("slot"-argument) indexes and associated values
+::routine dumpArgs
+  use arg argArray
+  tab="09"x
+  items=argArray~items
+  if items=0 then return
+
+  say "---> begin dumpArgs() --->"
+  say tab "dumpArgs: argArray~items="pp(items)
+  do i=1 to items
+     say tab tab "#" i":" pp(argArray[i])
+  end
+  say
+
+  say tab "dumping last argument's entries:"
+  a=argArray[items]
+  do i over a
+     say tab "->" pp(i) pp(a[i])
+  end
+  say "<--- end dumpArgs() <---"
+
+
+
+
+/* ==================================================================================== */
+/* this class will serve a RexxProxy */
+::class RexxProxy_Using_IndividualMethods
+::method init
+  expose testRunner
+  use arg testRunner
+
+::method getTestRunner
+  expose testRunner
+--  call dumpArgs arg(1, 'A')
+  return testRunner
+
+::method Boolean_Method          -- return negated value
+  use arg value
+  return box("bool",\value)
+
+::method Byte_Method             -- return half the value
+  use arg value
+  return box("byte", value%2)
+
+::method Char_Method             -- roundtrip, return received value
+  use arg value
+  return box("char", value)
+
+::method Character_Method        -- roundtrip, return received value
+  use arg value
+  return box("char", value)
+
+::method Short_Method            -- return half the value
+  use arg value
+  return box("short", value%2)
+
+::method int_Method              -- return half the value
+  use arg value
+  numeric digits 10              -- account for 2**31
+  return box('int',value%2)
+
+::method Integer_Method          -- return half the value
+  use arg value
+  numeric digits 10              -- account for 2**31
+  return box('int',value%2)
+
+::method long_Method             -- return half the value
+  use arg value
+  numeric digits 19              -- account for 2**63
+  return box('long',value%2)
+
+::method float_Method
+  use arg value
+  return box("float",value)      -- just return received argument
+
+::method double_Method
+  use arg value
+  return box("double",value)     -- just return received argument
+
+::method object_Method
+  use arg value
+  return box("object",value)     -- just return received argument
+
+::method void_Method             -- return nothing
+  use arg value
+  return
+
+::method string_Method           -- return the last three characters
+  use arg value
+  return value~right(3)
+
+::method all_args_Method         -- iterate over all args, create an array off it
+
+  tmpStr=""
+  do i=1 to arg()-1              -- do not process appended slot argument
+     if tmpStr="" then tmpStr=arg(i)
+                  else tmpStr=tmpStr arg(i)
+  end
+  return tmpStr
+
+
+::method unknown
+  use arg methName, argArray
+  raise syntax 93.900 array (self~string": UNKNOWN method" pp(methName)", arrived unexpectedly in OTHERWISE !")
+
+
+/* ==================================================================================== */
+/* this class will serve a RexxProxy */
+::class RexxProxy_Using_IndividualMethods_no_boxing
+::method init
+  expose testRunner
+  use arg testRunner
+
+::method getTestRunner
+  expose testRunner
+--  call dumpArgs arg(1, 'A')
+  return testRunner
+
+::method Boolean_Method          -- return negated value
+  use arg value
+  return \value
+
+::method Byte_Method             -- return half the value
+  use arg value
+  return value%2
+
+::method Char_Method             -- roundtrip, return received value
+  use arg value
+  return value
+
+::method Character_Method        -- roundtrip, return received value
+  use arg value
+  return value
+
+::method Short_Method            -- return half the value
+  use arg value
+  return value%2
+
+::method int_Method              -- return half the value
+  use arg value
+  numeric digits 10              -- account for 2**31
+  return value%2
+
+::method Integer_Method          -- return half the value
+  use arg value
+  numeric digits 10              -- account for 2**31
+  return value%2
+
+::method long_Method             -- return half the value
+  use arg value
+  numeric digits 19              -- account for 2**63
+  return value%2
+
+::method float_Method
+  use arg value
+  return value                   -- just return received argument
+
+::method double_Method
+  use arg value
+  return value                   -- just return received argument
+
+::method object_Method
+  use arg value
+  return value                   -- just return received argument
+
+::method void_Method             -- return nothing
+  use arg value
+  return
+
+::method string_Method           -- return the last three characters
+  use arg value
+  return value~right(3)
+
+::method all_args_Method         -- iterate over all args, create an array off it
+
+  tmpStr=""
+  do i=1 to arg()-1              -- do not process appended slot argument
+     if tmpStr="" then tmpStr=arg(i)
+                  else tmpStr=tmpStr arg(i)
+  end
+  return tmpStr
+
+
+::method unknown
+  use arg methName, argArray
+  raise syntax 93.900 array (self~string": UNKNOWN method" pp(methName)", arrived unexpectedly in OTHERWISE !")
+
+

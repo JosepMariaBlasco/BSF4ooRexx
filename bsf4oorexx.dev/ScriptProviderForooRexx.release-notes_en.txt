@@ -1,0 +1,11 @@
+----------------- 2011-04-29 ------------
+BSF4ooRexx support for OOo, release version ""406.20110429""
+
+- This release includes the OOo update mechanism
+
+- Standalone OOo ooRexx scripts (extension ".rxo") can now be started by double-clicking
+  on them via the graphical Explorer interfaces on MacOSX, Linux and Windows, if their
+  icons display the superimposed OOo icon as well.
+
+Rony G. Flatscher, Wien (Vienna), Austria, Europe
+

@@ -1,0 +1,8 @@
+- Eventually use Apache Maven to create the binaries (http://maven.apache.org/)
+
+- Once ooRexx debugging and profiling is available in the kernel
+
+        - whenever debugging and/or profiling APIs are added to ooRexx, make them available to Java
+
+2012-02-25, ---rgf
+
