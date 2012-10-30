@@ -191,7 +191,7 @@ public class RexxDispatcher {
 
             System.gc();    // run the garbage collector, such that Java objects with finalizers get a chance to run
             System.runFinalization();   // run outstanding finalizers (e.g. from RexxProxy objects), if any
-            ap.terminate(); // terminate Rexx engine, will inhibit callbacks from Java to Rexx
+            ap_rexx.terminate(); // terminate Rexx engine, will inhibit callbacks from Java to Rexx
             System.exit(0); // make sure JVM does not crash (there was a bug, if using JNI)
 	}
 }
