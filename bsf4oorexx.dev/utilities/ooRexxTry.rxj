@@ -3,7 +3,7 @@
    Purpose: GUI supported testing of ooRexx and Bsf4ooRexx enhanced Java support
    Author:  Markus Moldaschl
 
-   Version: 1.1
+   Version: 1.2
    Changes: 2011-02-20, Rony G. Flatscher:
                         - removed MacOSX-related change to name of menu "Exit"
                           to "Quit" as MacOSX has its own application
@@ -62,6 +62,9 @@
                         - The file ooRexxTry.rc is saved in the home directory.
                         - No longer accumulate text in say_stg and error_stg, better to use the method
                           append of JTextArea.
+
+            2012-11-02  Rony G. Flatscher
+                        - fix bug https://sourceforge.net/tracker/index.php?func=detail&aid=3582365&group_id=400586&atid=1660873
 */
 
 /*----------------------------------------------------------------------------*/
@@ -805,8 +808,8 @@ RunSyntax:
        depending on the chosen option, data to/from an external file*/
     if returnVal == .javax.swing.JFileChooser~approve_option then
         do
-	    a_file = fc~getSelectedFile
-            filename = a_file~getName
+	         a_file = fc~getSelectedFile
+            filename=a_file~getAbsolutePath
             ostream = .stream~new(filename)
             if source~equals(saveAs) then
                 do
@@ -2837,7 +2840,7 @@ return
     end
 
 -- Need a few generic variables
-    .local~mm.dir~version        = '2.0'             -- Internal version control
+    .local~mm.dir~version        = '2.1'             -- Internal version control
 
 
        /* Default starting path for Save As dialog - will be either
