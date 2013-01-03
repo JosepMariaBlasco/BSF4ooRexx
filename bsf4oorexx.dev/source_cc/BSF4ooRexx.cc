@@ -8663,9 +8663,15 @@ fprintf(stderr, "//// ---> _jniInitialize4Rexx, #1 AFTER init_STRUCT_JVM, about 
     fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 1-1, tid=[%lu], defaultJVM->jvm==NULL ... \n",(unsigned long) tid);fflush(stderr);
 #endif
         // save and initialize JVM related data
-fprintf(stderr, "//// ---> _jniInitialize4Rexx, #2 BEFORE init_STRUCT_JVM ...\n");fflush(stderr);
+#if defined (RGF_INFO)  || defined (RGF_JNI)  || defined (DEBUG_JNI_ENTRY)
+   fprintf(stderr, "//// ---> _jniInitialize4Rexx, #2 BEFORE init_STRUCT_JVM ...\n");fflush(stderr);
+#endif
+
         init_STRUCT_JVM(env, defaultJVM, currentJVM);    // 20091003, initialize default structure
-fprintf(stderr, "//// ---> _jniInitialize4Rexx, #2 AFTER init_STRUCT_JVM, about to return ...\n");fflush(stderr);
+
+#if defined (RGF_INFO)  || defined (RGF_JNI)  || defined (DEBUG_JNI_ENTRY)
+   fprintf(stderr, "//// ---> _jniInitialize4Rexx, #2 AFTER init_STRUCT_JVM, about to return ...\n");fflush(stderr);
+#endif
     }
 
 
@@ -9970,10 +9976,6 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     fflush(stderr);
 #endif
 
-
-//    RgfAcquireLock2(RII_creation_lock);      // 2012-12-30, rgf: lock access to list of RexxInstance instances to this thread
-
-
     // check # of  needed options, allocate necessary memory
         // option[0]: REGISTER_LIBRARY
         // option[1]: EXTERNAL_CALL_EXTENSIONS (if not supplied use default)
@@ -10323,8 +10325,6 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 #endif
         env->Throw(j_rexxException); // throw the exception in the JVM
     }
-
-//    RgfReleaseLock2(RII_creation_lock);      // 2012-12-30, rgf: unlock
 
     return j_rii_ID;    // return jstring of rii_ID
 }
