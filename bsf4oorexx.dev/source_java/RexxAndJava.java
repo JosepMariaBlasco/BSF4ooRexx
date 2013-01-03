@@ -36,11 +36,13 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.1.0, 2012-11-01
+  * @version 4.1.0, 2013-01-03
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
+     2012-01-03, ---rgf, - fix bug
+
      2012-11-01, ---rgf, - fix bug https://sourceforge.net/tracker/?func=detail&aid=3581957&group_id=400586&atid=1660873
 
      2012-04-17, ---rgf, - fixed a bug in createRexxInterpreterInstance() where the new RII was
@@ -276,7 +278,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20121101";
+    static final public String version = "410.20130103";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -3470,6 +3472,14 @@ if (bDebug) System.err.println("bean: ["+bean+"], bean.getClass()=["+bean.getCla
                         // rgf, 2009-07-13, if a class object in hand, then in the first round look for
                         //                  static methods only
                       boolean lookForStaticMethodsOnly= (bean instanceof Class);
+
+    if (bean instanceof Class && ((Class) bean).isInterface())
+    {
+        lookForStaticMethodsOnly=false;
+        if (bDebug) System.err.println("\tRGF: bean ["+bean+"] is an Interface, looking for instance methods as well!");
+    }
+
+
                       c = (lookForStaticMethodsOnly ? (Class) bean : bean.getClass() );
 
 if (bDebug)
