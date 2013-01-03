@@ -65,6 +65,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.Attribute;
@@ -107,7 +109,7 @@ import org.apache.bsf.BSFException;
  * to explicitly invoke masked methods in the super (extended) class.
  *
 * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2009 Rony G. Flatscher
+ *    Copyright (C) 2009, 2013 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -123,11 +125,19 @@ import org.apache.bsf.BSFException;
  * ----------------------------------------------------------------------------- </pre>
  *
  * @author Rony G. Flatscher (<a href="http://www.wu.ac.at">WU Vienna </a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
- * @version 1.0
+ * @version 1.1
  * @since   2009-07-29
  */
 
  /*
+    2013-01-03, rgf: - fixed a bug when extending an abstract class that possesses unimplemented
+                       interface methods like javax.swing.AbstractAction; the fix now correctly
+                       implements any declared abstract methods from interfaces (including any
+                       of its super interfaces) that are not implemented in the abstract class
+
+                     - fixed wrong setting that caused concrete methods to be created, although
+                       the documentation explained that only abstract methods get created
+
     2009-09-06, rgf: supply class object in static method invocations for callbacks, such that
                      invoked Rexx method can directly address the class object for "_forwardToSuper"
                      static methods
@@ -144,7 +154,7 @@ public class RexxExtendClass extends ClassAdapter implements ClassVisitor, Opcod
      */
     protected ClassVisitor cv;
 
-    final static protected boolean bDebugClassVisitor=false;    // true;
+    final static protected boolean bDebugClassVisitor =false;   // true;
     final static protected boolean bDebugMethodVisitor=false;   // true;
 
     final static String thisPgmName="RexxExtendClass";
@@ -273,8 +283,9 @@ public class RexxExtendClass extends ClassAdapter implements ClassVisitor, Opcod
 
 
     /**
-     * Constructs a new {@link ClassAdapter} object. This mode of operation will
-     * only implement abstract methods which will be executed by the RexxProxy.
+     * Constructs a new {@link ClassAdapter} object.
+     *
+     * <p>This constructor will only create proxy methods for public abstract methods.
      *
      * @param cv the class visitor to which this adapter must delegate calls.
      */
@@ -288,9 +299,7 @@ public class RexxExtendClass extends ClassAdapter implements ClassVisitor, Opcod
 
     /**
      * Constructs a new {@link ClassAdapter} object. This mode of operation will
-     * implement public abstract methods which will be executed by the RexxProxy. In addition
-     * it creates proxy methods for each Java method that carries a name as supplied
-     * in the <code>methodNamesToAdd</code> array.
+     * implement public abstract methods which will be executed by the RexxProxy.
      *
      * <p>This constructor will only create proxy methods for public abstract methods.
      *
@@ -326,14 +335,28 @@ if (bDebugClassVisitor) System.out.println("--> ---> RexxExtendClass(cv, newClas
      * in the <code>methodNamesToAdd</code> array. If the <code>methodNamesToAdd</code> array
      * is <code>null</code> or empty, then all public methods will have a proxy method created for.
      *
+     * <p>If concrete methods get proxied, then there will be new methods added by the same name
+     * extended with the string "_forwardToSuper", which allows one to reach those concrete methods
+     * from ooRexx. If so, then the ooRexx handler needs to fetch the entry
+     * <code>&quot;JAVAOBJECT&quot;</code> from the <code>slotDir</code> argument
+     * (an ooRexx directory), which gets added as the last argument for ooRexx when callinb back
+     *  from Java to ooRexx.
+     *
      * @param cv the class visitor to which this adapter must delegate calls.
      * @param newClassName determines new name of the class, if null, an attempt to create
      *                     a unique name is undertaken
      * @param newClassVersion if >0 overrides the source class' version
+     *
      * @param methodNamesToAdd a String array containing (caseless) method names for
      *        which proxy methods should be created; if callbacks to the RexxProxy are desired
      *        from constructors, then they need to be added to this String array under the name
      *        &quot;<init>&quot; (the Java internal name of constructors).
+     *
+     *        <p>If all methods should be proxied without explicitly denoting them, then supply
+     *           a String array of size <code>0</code>.
+     *
+     *        <p>If this parameter is <code>null</code>, then proxy methods will get created
+     *           for public abstract methods only.
      */
     public RexxExtendClass(final ClassVisitor cv,
                           final String newClassName,
@@ -346,20 +369,22 @@ if (bDebugClassVisitor) System.out.println("--> ---> RexxExtendClass(cv, newClas
                                                      ", newClassVersion="+pp(""+newClassVersion)+
                                                      ", methodNamesToAdd)...");
 
-        if (methodNamesToAdd==null || methodNamesToAdd.length==0)
+        if (methodNamesToAdd!=null) // (methodNamesToAdd==null || methodNamesToAdd.length==0)
         {
-            tranData.bProcessAllMethods=true;   // create proxies for all methods!
-        }
-        else    // add methods to proxy to appropriate HashSet, turn into uppercase
-        {
-            for (int i=0; i<methodNamesToAdd.length; i++)
+            if (methodNamesToAdd.length==0)    // create proxies for all methods!
             {
-if (bDebugClassVisitor) System.out.println("--> ---> RexxExtendClass(cv, newClassName, ...): i="+i+" ["+methodNamesToAdd[i]+"]");
-                tranData.simpleMethodNamesToAdd.add(methodNamesToAdd[i].toUpperCase());
+                tranData.bProcessAllMethods=true;   // create proxies for all methods!
+            }
+
+            else    // add methods to proxy to appropriate HashSet, turn into uppercase
+            {
+                for (int i=0; i<methodNamesToAdd.length; i++)
+                {
+                    tranData.simpleMethodNamesToAdd.add(methodNamesToAdd[i].toUpperCase());
+                }
             }
         }
     }
-
 
 
 
@@ -376,6 +401,13 @@ if (bDebugClassVisitor) System.out.println("--> ---> RexxExtendClass(cv, newClas
 if (bDebugClassVisitor) System.err.println("--> "+"visit(version="+version+", access="+access+
                           ", name="+name+", signature="+signature+", superName="+superName+
                           ", [] interfaces="+interfaces+")\n\tnewClassVersion="+tranData.newClassVersion);
+if (bDebugClassVisitor && interfaces!=null)
+{
+    for (int i=0; i<interfaces.length;i++)
+    {
+        System.err.println("    - interfaces["+i+"/"+interfaces.length+"]=["+interfaces[i]+"]");
+    }
+}
 
         if ((access & ACC_INTERFACE)!=0)    // an interface in hand
         {
@@ -553,6 +585,17 @@ if (bDebugClassVisitor) System.err.println("--> "+"visitMethod(access="+access+"
                           ", desc="+desc+", signature="+signature+", [] exceptions="+exceptions+")");
 
 if (bDebugMethodVisitor) System.err.println("\t---> desc=["+getMethodAccessAsString(access)+"]");
+
+            // don't process concrete methods, except for constructors
+        if ( tranData.bProcessAllMethods==false &&
+             (access & ACC_ABSTRACT)==0         &&
+             !name.equals("<init>")
+            )
+        {
+
+if (bDebugMethodVisitor) System.err.println("\tNOT PROCESSING! (not abstract)");
+            return null;
+        }
 
         if ((access & ACC_PUBLIC)==0)       // don't process non-public methods
         {
@@ -754,6 +797,8 @@ if (bDebugClassVisitor) System.err.println("--> "+"visitEnd().");
         workAddFields(cv);          // add field definitions
         workAddMethods(cv);         // add instance and static methods we need
         workAddClinitMethod(cv);    // add class initializer code
+
+        workAddInterfaceMethods(cv); // 2013-01-02, rgf: add abstract methods from interfaces, if needed
 
             // if methods got masked, create slot methods to super
         for (int i=0; i<tranData.listOfMethodsForwardToSuper.size(); i++)
@@ -2152,6 +2197,134 @@ if (bDebugMethodVisitor) System.err.println("\t     adding support for Java 1.4 
             mv.visitEnd();
         }
     }
+
+
+
+
+    /** Create methods for an abstract class which defines interfaces with (partially) unimplemented methods.
+     *  At this point any abstract method declared in the class itself was already processed.
+     * @since 2013-01-03
+     */
+    void workAddInterfaceMethods(ClassVisitor cv)
+    {
+if (bDebugMethodVisitor) System.err.println("\t===> "+"workAddInterfaceMethods()...");
+        if ((tranData.srcClassAccess & ACC_ABSTRACT) == 0 )
+        {
+if (bDebugMethodVisitor) System.err.println("\t\t"+"--- class in hand is not ABSTRACT, hence nothing to process ...");
+            return;
+        }
+
+        if (tranData.srcClassInterfaces==null || tranData.srcClassInterfaces.length==0 )
+        {
+if (bDebugMethodVisitor) System.err.println("\t\t"+"--- nothing to process (no interfaces defined)...");
+            return;
+        }
+
+        Class wrkClz=null;
+        try {
+            wrkClz=Class.forName(tranData.srcClassName.replace('/','.'));
+        }
+        catch (Exception e) {           // TODO: create a RuntimeError instead ?
+            return;
+        }
+
+        String [] interfaces=tranData.srcClassInterfaces;   // get interface names (may have superclasses)
+
+        for (int i=0; i<interfaces.length; i++)
+        {
+            String interfaceClzName=interfaces[i].replace('/','.');
+
+            Class tmpInterfaceClz=null;
+            try {
+                tmpInterfaceClz=Class.forName(interfaceClzName);  // load Class for interrogation
+            }
+            catch (Exception e) {
+                throw new RuntimeException(thisPgmName+": cannot load interface \""+interfaceClzName+"\"");
+            }
+
+            processInterface(tmpInterfaceClz, wrkClz);
+        }
+    }
+
+    /** For each interface get the defined methods, if no concrete implementations exist
+     *  nor proxy methods got created so far, then add that method to the extended class.
+     *  Recursively process super interfaces, if any.
+     */
+    private void processInterface(Class clzInt, Class wrkClz)
+    {
+if (bDebugMethodVisitor) System.err.println("\t\t"+"--- processing interface ["+clzInt.getName()+"] ...");
+        // do the work
+
+        Method [] meths=clzInt.getDeclaredMethods();
+        for (int k=0; k<meths.length; k++)
+        {
+            Method m       =meths[k];
+            String name    =m.getName();
+            String desc    =Type.getMethodDescriptor(m);
+            String fullName=name+desc;
+
+if (bDebugMethodVisitor) System.err.println("\t\t\t"+clzInt+" - meths["+k+"/"+meths.length+"]: ["+m+"]");
+
+            if (tranData.fullMethodNamesAdded.contains(fullName))   // method already created
+            {
+if (bDebugMethodVisitor) System.err.println("\t\t\t\t method got implemented in this run.");
+                continue;
+            }
+
+            Method mDeclared=null;  // does base class have the method implemented concretely?
+            try
+            {
+                mDeclared=wrkClz.getDeclaredMethod(name, m.getParameterTypes());
+            }
+            catch (Exception e) {}
+
+                // if method exists, but is not abstract, skip
+            if (mDeclared!=null && (!Modifier.isAbstract(mDeclared.getModifiers())))
+            {
+if (bDebugMethodVisitor) System.err.println("\t\t\t\t method already implemented in base class.");
+                continue;
+            }
+
+            // if (tranData.fullMethodNamesAdded.contains(fullName)==false)    // method not implemented
+            {
+                int modifiers=m.getModifiers();
+
+                    // if exeption types defined, get and supply them
+                String [] exceptions=null;
+                Class [] clzExceptions=m.getExceptionTypes();
+
+                if (clzExceptions.length>0)
+                {
+                    exceptions= new String [clzExceptions.length];
+                    for (int i=0; i<clzExceptions.length; i++)
+                    {
+                        exceptions[i]=clzExceptions[i].getName().replace('.', '/');
+                    }
+                }
+
+                // invoke visitMethod(...) directly, it will use the ClassVisitor "cv" instance to create the method
+                    // TODO: when Java baseline moves from 1.4 to 1.5 and higher, check out whether to supply a signature
+                this.visitMethod(modifiers, name, desc, null, exceptions);
+            }
+        }
+
+        Class clzInterfaces[]=clzInt.getInterfaces();  // get super interfaces, if any
+
+        if (clzInterfaces==null || clzInterfaces.length==0) // no super interface classes available anymore?
+        {
+            return;
+        }
+
+        for (int i=0;i<clzInterfaces.length;i++)    // iterate over all interface classes
+        {
+            processInterface(clzInterfaces[i], wrkClz); // recurse over super interfaces
+        }
+    }
+
+
+
+
+
 
 
     // return methods as string
