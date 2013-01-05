@@ -21,7 +21,7 @@ import org.apache.bsf.util.type.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2012 Rony G. Flatscher
+ *    Copyright (C) 2001-2013 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -36,12 +36,14 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.1.0, 2013-01-03
+  * @version 4.1.0, 2013-01-04
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
-     2012-01-03, ---rgf, - fix bug
+     2013-01-04, ---rgf, - use alternative code to fix bug https://sourceforge.net/tracker/?func=detail&aid=3599351&group_id=400586&atid=1660873
+
+     2013-01-03, ---rgf, - fix bug https://sourceforge.net/tracker/?func=detail&aid=3599351&group_id=400586&atid=1660873
 
      2012-11-01, ---rgf, - fix bug https://sourceforge.net/tracker/?func=detail&aid=3581957&group_id=400586&atid=1660873
 
@@ -278,7 +280,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20130103";
+    static final public String version = "410.20130104";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -3473,13 +3475,6 @@ if (bDebug) System.err.println("bean: ["+bean+"], bean.getClass()=["+bean.getCla
                         //                  static methods only
                       boolean lookForStaticMethodsOnly= (bean instanceof Class);
 
-    if (bean instanceof Class && ((Class) bean).isInterface())
-    {
-        lookForStaticMethodsOnly=false;
-        if (bDebug) System.err.println("\tRGF: bean ["+bean+"] is an Interface, looking for instance methods as well!");
-    }
-
-
                       c = (lookForStaticMethodsOnly ? (Class) bean : bean.getClass() );
 
 if (bDebug)
@@ -3654,6 +3649,7 @@ if (bDebug)
 
 if (bDebug) System.err.println("\t\ttmpClass=["+tmpClass+"] tmpSuperClass: ["+tmpSuperClass+"] bLooking=["+bLooking+"] args.length=["+args.length+"]...");
 
+                                // an interface class has null as its root class
                               bStopLooking=(bLooking && (tmpClass==Object.class || tmpSuperClass==null));
 
                               if (bStopLooking)   // root class, method not found
@@ -3683,9 +3679,17 @@ if (bDebug) System.err.println("'invoke': trying '"+STRING_GET_FIELD_VALUE+"'...
                                   }
 
                                     // ---rgf, 2006-02-05: need to look for method in java.lang.Class ?
-                                  if ((startClass instanceof Class) && (startClass!=Class.class))
+                                  if ( (startClass instanceof Class) && (startClass!=Class.class
+                                       || (tmpSuperClass==null && lookForStaticMethodsOnly==true))  // an interface class in hand?
+                                     )
                                   {
 if (bDebug) System.err.println("---> ---> looking in class-object of bean! startClass=["+startClass+"], startClass.getClass()=["+startClass.getClass()+"]");
+                                        // an interface class, now look for its instance methods
+                                      if (tmpSuperClass==null && lookForStaticMethodsOnly==true)
+                                      {
+                                          lookForStaticMethodsOnly=false;
+                                      }
+
                                       bLooking=true;
                                       tmpClass=startClass.getClass();
                                       startClass=tmpClass;
