@@ -21,7 +21,7 @@ import org.apache.bsf.util.type.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2012 Rony G. Flatscher
+ *    Copyright (C) 2001-2013 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -36,11 +36,17 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.1.0, 2012-04-17
+  * @version 4.1.0, 2013-01-04
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
+     2013-01-04, ---rgf, - use alternative code to fix bug https://sourceforge.net/tracker/?func=detail&aid=3599351&group_id=400586&atid=1660873
+
+     2013-01-03, ---rgf, - fix bug https://sourceforge.net/tracker/?func=detail&aid=3599351&group_id=400586&atid=1660873
+
+     2012-11-01, ---rgf, - fix bug https://sourceforge.net/tracker/?func=detail&aid=3581957&group_id=400586&atid=1660873
+
      2012-04-17, ---rgf, - fixed a bug in createRexxInterpreterInstance() where the new RII was
                            not assigned to the RexxEngine if that had no RII assigned to it yet
                          - added protected void set_rii_ID(String rii_ID) to allow Java4Rexx to
@@ -274,7 +280,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20120417";
+    static final public String version = "410.20130104";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -368,6 +374,16 @@ class RexxAndJava {
       * the Object Rexx proxy objects are garbage collected.
       */
     Hashtable orxReferences = new Hashtable();
+
+
+    /** Field used, if System.identityHashCode() returns duplicate values in method
+     *  {@link #makeBeanName(Object o)}, to allow adding a unique number to make the
+     *  resulting identifying string unique.
+     *
+     * @since 2012-11-01
+     * @author Rony G. Flatscher
+     */
+    int spilloverCounter=0;
 
 
     /* * Allows storing successfully reflected methods. If a method is invoked
@@ -3458,6 +3474,7 @@ if (bDebug) System.err.println("bean: ["+bean+"], bean.getClass()=["+bean.getCla
                         // rgf, 2009-07-13, if a class object in hand, then in the first round look for
                         //                  static methods only
                       boolean lookForStaticMethodsOnly= (bean instanceof Class);
+
                       c = (lookForStaticMethodsOnly ? (Class) bean : bean.getClass() );
 
 if (bDebug)
@@ -3632,6 +3649,7 @@ if (bDebug)
 
 if (bDebug) System.err.println("\t\ttmpClass=["+tmpClass+"] tmpSuperClass: ["+tmpSuperClass+"] bLooking=["+bLooking+"] args.length=["+args.length+"]...");
 
+                                // an interface class has null as its root class
                               bStopLooking=(bLooking && (tmpClass==Object.class || tmpSuperClass==null));
 
                               if (bStopLooking)   // root class, method not found
@@ -3661,9 +3679,17 @@ if (bDebug) System.err.println("'invoke': trying '"+STRING_GET_FIELD_VALUE+"'...
                                   }
 
                                     // ---rgf, 2006-02-05: need to look for method in java.lang.Class ?
-                                  if ((startClass instanceof Class) && (startClass!=Class.class))
+                                  if ( (startClass instanceof Class) && (startClass!=Class.class
+                                       || (tmpSuperClass==null && lookForStaticMethodsOnly==true))  // an interface class in hand?
+                                     )
                                   {
 if (bDebug) System.err.println("---> ---> looking in class-object of bean! startClass=["+startClass+"], startClass.getClass()=["+startClass.getClass()+"]");
+                                        // an interface class, now look for its instance methods
+                                      if (tmpSuperClass==null && lookForStaticMethodsOnly==true)
+                                      {
+                                          lookForStaticMethodsOnly=false;
+                                      }
+
                                       bLooking=true;
                                       tmpClass=startClass.getClass();
                                       startClass=tmpClass;
@@ -5242,30 +5268,39 @@ if (bDebug)  if (cl==Character.class) {System.err.println("\tcharValue="+((Chara
 
 
 
-    /** This method creates a unique string value for the passed in object.
+    /** This method creates an identifer (unique) string value for the passed in object.
       *
-     * the code to create the unique name is the same
-     *        as the documented &quot;Object.hashCode()&quot;:
-     *        <br>
-     *        <code>o.getClass().getName() + &quot;@&quot;
-     *              + Integer.toHexString(o.hashCode())</code>.
-     *
       *  @param o the object for which a unique string value should be created
       *
       *  @return  <code>null</code>, if the argument was <code>null</code>,
-     *            else a String, uniquely denoting the object
+     *            else a String, identifying (uniquely) the object for use with the BSF registry
       */
     public String makeBeanName(Object o)
     {
+        final boolean bDebug=    // if true, show debug infos
+              false;
+
         if (o==null)
         {
             return null;
         }
 
+
             // rgf, 2009-07-13: all method objects of the same name have the same hashCode() (does
             //                  not apply to constructor objects only!), hence need for using
             //                  System.identityHashCode() instead
-        return "" + o.getClass().getName() + '@' + Integer.toHexString( System.identityHashCode(o) );
+        String beanName="" + o.getClass().getName() + '@' + Integer.toHexString( System.identityHashCode(o) );
+
+            // rgf, 2012-11-01: handle case where System.identityHashCode() returns duplicates
+        Object olb=mgr.lookupBean(beanName);    // check whether an existing object is identical to the one we got
+
+        if (olb!=null && o!=olb)   // oops, we got a duplicate identityHashCode for the same class!
+        {   // make it into an identifier (unique) string
+            beanName=beanName+"_"+Integer.toHexString(++spilloverCounter);
+if (bDebug)  System.err.println("makeBeanName(): duplicate identityHashCode, spilloverCounter used, now beanName=["+beanName+"]");
+        }
+
+        return beanName;
     }
 
 

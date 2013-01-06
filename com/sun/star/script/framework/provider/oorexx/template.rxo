@@ -1,4 +1,4 @@
-/* ooRexx (http://www.ooRexx.org) template, version: 2011-04-10, Rony G. Flatscher */
+/* ooRexx (http://www.ooRexx.org) template, version: 2012-10-23, Rony G. Flatscher */
 
 /* The following ooRexx code realizes an OOo macro that can be run against each
    OOo document type. It demonstrates how to get the document object and determine
@@ -36,7 +36,7 @@ if scriptContext<>.nil then                  /* o.k., we are invoked as a macro 
 do
    xContext=scriptContext~getComponentContext   /* get the context (a XComponentContext) object */
    xDesktop=scriptContext~getDesktop            /* get the desktop (a XDesktop) object          */
-   oDoc=getDocument(scriptContext~getDocument)  /* get the document service (a XModel) object   */
+   oDoc=getDocument(scriptContext,scriptContext~getDocument)  /* get the document service (a XModel) object   */
 end
 else  /* this program was called from outside of OOo, e.g. from the commandline  */
 do
@@ -136,7 +136,7 @@ syntax:    /* create and display condition/exception information in a popup dial
 /* OOo >= 3.0: get the invocation context (a XScriptInvocationContext) object; if not .nil, then
                use this document instead of the result of scriptContext~getDocument!            */
 ::routine getDocument
-   use arg oDoc
+   use arg scriptContext,oDoc
    signal on any
    xInvocationContext=scriptContext~getInvocationContext
    if xInvocationContext<>.nil then          /* this script got invoked for a different document*/
