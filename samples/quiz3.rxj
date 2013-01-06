@@ -1,0 +1,389 @@
+/*
+   name:       quiz3.rxj
+   author:     Rony G. Flatscher
+   date:       2013-01-06
+   purpose:    demo how to create a Java GUI version of Walter Pachl's quiz program,
+               such that his daughter can use it on Apple, but also to demo Walter
+               how one could solve this too (he marvelously created a BSF4ooRexx
+               version all on his own, which is just great!!)
+
+               This version makes sure that the cells do not change in size, once
+               a button text gets changed, also inserts space before the buttons
+               using insets.
+
+               Employing in this case the GridBagLayout, cf. the tutorial at
+               <http://docs.oracle.com/javase/tutorial/uiswing/layout/gridbag.html>
+               (as of 2012-12-16).
+
+               This version demonstrates how to exploit Actions, key bindings, and fonts cf.
+               the tutorials at
+               <http://docs.oracle.com/javase/tutorial/uiswing/misc/action.html>
+               <http://docs.oracle.com/javase/tutorial/uiswing/misc/keybinding.html>
+               <http://docs.oracle.com/javase/tutorial/2d/text/fonts.html>
+
+   License:    Apache License 2.0, copyright 2012-2013 Rony G. Flatscher
+   Usage:      rexx quiz3.rxj
+*/
+
+.local~verbose=0  -- if "0" no debug messages, "1" event handler invocations, "2" show event objects
+
+q=.quiz~new    -- create an instance, will create a GUI
+q~wait         -- let this (main) thread wait until user ends GUI
+
+   -- show popup with statistics
+userDir=q~userDir       -- get userDir
+dlg=.bsf.dialog~new(userDir~jframe) -- make this dialog modal
+dlg~messageBox('Displayed:' userDir~count.displayed', correct:' userDir~count.guessed, "Quiz Results")
+
+
+::requires BSF.CLS      -- get Java support
+::requires "rgf_util2.rex"
+
+   /* =============================================== */
+::class quiz
+
+   /* ----------------------------------------------- */
+::attribute userDir
+
+   /* ----------------------------------------------- */
+::method init
+   expose wait userDir
+   wait=.true           -- control variable
+   userDir=.directory~new     -- directory to store useful data and some Java GUI objects
+   userDir~quiz=self          -- save this instance to allow references use in Actions
+   userDir~count.guessed=0    -- count correctly guessed capitals
+   userDir~count.displayed=0  -- count total of quiz questions
+
+   title="US Capitals Quiz"
+   fn   ="uscaps.txt"
+   self~setupQuestions(fn)
+
+      -- define button texts
+   userDir~txt.show="Show"
+   userDir~txt.knew="I knew this"
+   userDir~txt.quit="Quit"
+   userDir~txt.repeat="Please repeat"
+
+   self~setupGUI(title)       -- create GUI
+   self~nextQuestion          -- show question
+
+   /* ----------------------------------------------- */
+::attribute wait get    -- used to wait to synchronize with awt thread
+   expose wait          -- control attribute
+   guard on when wait=.false   -- blocks until attribute turns to .false
+
+::attribute wait set    -- allows to set control variable
+   expose wait          -- establish direct access to attribute
+   use arg wait         -- fetch new value and assign to attribute
+
+
+::method setupGUI private  -- setup and display GUI
+   expose userDir
+   use arg title
+
+signal on syntax
+
+      -- create a frame (a GUI container for GUI components)
+   jframe=.bsf~new("javax.swing.JFrame", title)
+   userDir~jframe=jframe         -- save JFrame object
+   weh=BsfCreateRexxProxy(.WindowEventHandler~new, userDir, "java.awt.event.WindowListener")
+   jframe~addWindowListener(weh)    -- add event handler
+
+   newSize=box("float",20)          -- set new font-size to 20f
+
+   rootPane=jFrame~getRootPane      -- get root pane (for key and action bindings)
+   call bsf.import 'javax.swing.JMenuItem', 'JMenuItem' -- import Java class
+   menuBar=.bsf~new('javax.swing.JMenuBar')
+   menu   =.bsf~new('javax.swing.JMenu', "File")
+   menu~setMnemonic('F')
+   menu~setFont(menu~getFont~deriveFont(newSize))  -- set font size to 20 points
+   menuBar~add(menu)
+   jframe~setJMenuBar(menuBar)
+
+      -- assign a grid bag layout manager
+   gbl=.bsf~new("java.awt.GridBagLayout")
+   jframe~setLayout(gbl)
+
+   /* layout of grid:
+         x:      0 !          1 !           2 !
+     y:  +---------+--------------------------+
+      0  ! State   ! xxxxxxxxxxxxxxxxxxxxx    !
+         +---------+--------------------------+
+      1  ! Capital ! yyyyyyyyyyyyyyyyyyyyy    !
+         +---------+------------+-------------+
+      2  !         ! Show       ! I knew this !
+         +---------+------------+-------------+
+      3  !         ! Quit       ! Pls repeat  !
+         +---------+------------+-------------+
+   */
+      -- import Java class, camouflage it as an ooRexx class
+   gbcClz=bsf.importClass("java.awt.GridBagConstraints", .nil)
+   c=gbcClz~new                     -- create an instance
+   c~fill=gbcClz~HORIZONTAL         -- fill components horizontally
+   c~insets=.bsf~new("java.awt.Insets", 1,10,1,10) -- define insets
+
+
+      -- add first row
+   c~gridx=0; c~gridy=0             -- cell 0,0
+   l=.bsf~new("javax.swing.JLabel", "State:")
+   l~setFont(l~getFont~deriveFont(newSize))
+   jframe~add(l, c)
+
+   c~gridx=1; c~gridy=0             -- cell 1,0
+   c~gridwidth=2                    -- use two cells
+   cols=userDir~maxLength
+   ta=.bsf~new("javax.swing.JTextArea", 1, cols)  -- 1 row, maxLength cols
+   ta~setFont(ta~getFont~deriveFont(newSize))
+   ta~setEditable(.false)           -- user must not edit this field
+   userDir~state=ta                 -- add Java component to user directory
+   jframe~add(ta, c)                -- add Java component to frame
+   c~gridwidth=1                    -- reset to 1 cell
+
+      -- add second row
+   c~gridx=0; c~gridy=1             -- cell 0,1
+   l=.bsf~new("javax.swing.JLabel", "Capital:")
+   l~setFont(l~getFont~deriveFont(newSize))
+   jframe~add(l, c)
+
+   c~gridx=1; c~gridy=1             -- cell 0,1
+   c~gridwidth=2                    -- use two cells
+   ta=.bsf~new("javax.swing.JTextArea", 1, cols)  -- 1 row, maxLength cols
+   ta~setFont(ta~getFont~deriveFont(newSize))
+   ta~setEditable(.false)           -- user must not edit this field
+   userDir~capital=ta               -- add Java component to user directory
+   jframe~add(ta, c)                -- add Java component to frame
+   c~gridwidth=1                    -- reset to 1 cell
+
+      -- add third row (buttons), control logic implemented with Actions
+   actionClz="javax.swing.AbstractAction"
+   keyStroke=bsf.loadClass("javax.swing.KeyStroke")
+   keyEvent =bsf.loadClass("java.awt.event.KeyEvent")
+
+         -- Show-Button
+   c~insets=.bsf~new("java.awt.Insets", 10,10,1,1) -- define insets
+   c~gridx=1; c~gridy=2             -- cell 0,2
+   b1=.bsf~new("javax.swing.JButton", userDir~txt.show)
+   newFont=b1~getFont~deriveFont(newSize)
+   b1~setFont(b1~getFont~deriveFont(newSize))
+   userDir~btn.show=b1              -- save this button in userDir for callback (focus)
+      -- create and configure action, will be put in use when creating buttons and menu items
+   act=bsfCreateRexxProxy(.Action_Show_Answer~new, userDir, actionClz, userDir~txt.show)
+   act~putValue(act~mnemonic_key,      box("int",keyEvent~VK_S))  -- define mnemonic key
+   act~putValue(act~short_description, "Show answer")  -- define tooltip text
+   userDir~action.show=act          -- make action available to callback
+   jmi=.JMenuItem~new(act)
+   jmi~setFont(jmi~getFont~deriveFont(newSize))  -- set font size to 20 points
+   menu~add(jmi)
+   b1=.bsf~new("javax.swing.JButton", act)
+   rootPane~getInputMap ~put(keyStroke~getKeyStroke("SPACE"),"show")
+   rootPane~getActionMap~put("show", act)
+   jframe~add(b1, c)                -- add Java component to frame
+   b1~setDefaultCapable(.true)      -- make it the default button
+   rootPane~setDefaultButton(b1)    -- set this button to be the default push button
+
+         -- Knew-Button
+   c~insets=.bsf~new("java.awt.Insets", 10,1,1,10) -- define insets
+   c~gridx=2; c~gridy=2             -- cell 2,2
+      -- create and configure action, will be put in use when creating buttons and menu items
+   act=bsfCreateRexxProxy(.Action_knew_answer~new, userDir, actionClz, userDir~txt.knew)
+   act~putValue(act~mnemonic_key,      box("int",keyEvent~VK_K))  -- define mnemonic key
+   act~putValue(act~short_description, "I knew the correct answer")  -- define tooltip text
+   act~putValue(act~accelerator_key,   keyStroke~getKeyStroke("F2")) -- displayed in JMenuItem
+   act~enabled=.false
+   userDir~action.knew=act          -- make action available to callback
+   jmi=.JMenuItem~new(act)
+   jmi~setFont(jmi~getFont~deriveFont(newSize))  -- set font size to 20 points
+   menu~add(jmi)
+   b2=.bsf~new("javax.swing.JButton", act)
+   b2~setFont(newFont)
+   jframe~add(b2, c)                -- add Java component to frame
+
+         -- Repeat-Button
+   c~insets=.bsf~new("java.awt.Insets", 10,1,1,10) -- define insets
+   c~gridx=2; c~gridy=3             -- cell 2,2
+      -- create and configure action, will be put in use when creating buttons and menu items
+   act=bsfCreateRexxProxy(.Action_repeat_question~new, userDir, actionClz, userDir~txt.repeat)
+   act~putValue(act~mnemonic_key,      box("int",keyEvent~VK_R))  -- define mnemonic key
+   act~putValue(act~short_description, "Did not know the answer, please repeat the question")  -- define tooltip text
+   act~putValue(act~accelerator_key,   keyStroke~getKeyStroke("F3")) -- displayed in JMenuItem
+   act~enabled=.false
+   userDir~action.repeat=act        -- make action available to callback
+   jmi=.JMenuItem~new(act)
+   jmi~setFont(jmi~getFont~deriveFont(newSize))  -- set font size to 20 points
+   menu~add(jmi)
+   b3=.bsf~new("javax.swing.JButton", act)
+   b3~setFont(newFont)
+   jframe~add(b3, c)                -- add Java component to frame
+
+         -- Quit-Button
+   c~insets=.bsf~new("java.awt.Insets", 10,10,1,1)  -- define insets
+   c~gridx=1; c~gridy=3             -- cell 1,2
+      -- create and configure action, will be put in use when creating buttons and menu items
+   act=bsfCreateRexxProxy(.Action_Quit~new, userDir, actionClz, userDir~txt.quit)
+   act~putValue(act~mnemonic_key,      box("int",keyEvent~VK_Q))  -- define mnemonic key
+   act~putValue(act~short_description, "Quit the quiz")  -- define tooltip text
+   act~putValue(act~accelerator_key,   keyStroke~getKeyStroke("ESCAPE")) -- displayed in JMenuItem
+   jmi=.JMenuItem~new(act)
+   jmi~setFont(jmi~getFont~deriveFont(newSize))  -- set font size to 20 points
+   menu~add(jmi)
+   b4=.bsf~new("javax.swing.JButton", act)
+   b4~setFont(newFont)
+   jframe~add(b4, c)                -- add Java component to frame
+
+      -- determine longest button text, let layout manager use it for rendering
+   lbt=getLongestButtonText(userDir)-- get longest button text
+   b1~setText(lbt)                  -- set button 1 to longest text; may reset font to default
+   b1~setFont(newFont)              -- make sure that font is as large as we wish
+   jFrame~~pack                     -- let layout manager realize sizes
+
+   dim=b1~getSize                   -- get effective size of button
+   b1~text=userDir~txt.show         -- reset to initial text
+   b1~setPreferredSize(dim)         -- set as preferred size for button 1
+   b2~setPreferredSize(dim)         -- set as preferred size for button 2
+   b3~setPreferredSize(dim)         -- set as preferred size for button 2
+   b4~setPreferredSize(dim)         -- set as preferred size for button 3
+
+   jFrame~~setSize(jFrame~getPreferredSize)~~setResizable(.false)~~show
+   return
+
+getLongestButtonText: procedure  -- get max chars, return string of "N" num chars
+   use arg userDir
+
+   str=""
+   len=0
+   do text over .array~of(userDir~txt.show, userDir~txt.knew, -
+                          userDir~txt.repeat, userDir~txt.quit)
+      if length(text)>len then
+      do
+         str=text
+         len=length(text)
+      end
+   end
+   return "N"~copies(len)  -- use "N" which is an average width in most fonts
+
+syntax:                    -- for debug purposes
+   co=condition('o')
+   say ppCondition2(co)
+   say "--- Rexx message:"
+   say co~additional~at(1)
+   say "--- --- Java throwable:"
+   ex=co~additional~at(2)
+   say pp2(ex~toString)
+say "=== ==="
+
+   /* ----------------------------------------------- */
+::method setupQuestions private
+  expose userDir
+  use arg fn
+  dir=.directory~new
+
+  allEntries=.stream~new(fn)~arrayin   -- get all entries
+  len=0
+  do i=1 to allEntries ~items
+     parse value allEntries[i] with state "-" capital
+     len=max(length(state), length(capital))
+     dir[strip(state)]=strip(capital)
+  end
+  userDir~questions=dir             -- make question directory available
+  userDir~maxLength=len             -- save maximum string length
+
+   /* ----------------------------------------------- */
+::method removeQuestion
+   expose userDir wait
+   if userDir~state<>.nil then
+      userDir~questions~remove(userDir~state~getText)   -- remove question from directory
+
+   say "... removeQuestion," pp(userDir~questions~items) "left ..."
+
+   if userDir~questions~items=0 then   -- no states anymore, end program
+      wait=.false
+
+   /* ----------------------------------------------- */
+::method nextQuestion
+   expose userDir
+   qu=userDir~questions
+   if qu~items=0 then               -- nothing to do anymore
+      return
+
+   userDir~capital~text="?"         -- empty JTextField
+   userDir~state~text=qu~makearray~at(random(1,qu~items))
+   userDir~count.displayed+=1       -- increase display result counter
+   userDir~btn.show~grabFocus      -- set focus to "Start" button
+
+
+/* ------------------------ Handlers ------------------------ */
+   /* =============================================== */
+::class WindowEventHandler
+::method unknown  -- intercept all WindowsListener events we are not interested in
+  use arg name, args -- windowEvent, slotDir
+if .verbose>0 then say self": windowEvent:" pp(name) "windowEvent:" pp(args[1])
+if .verbose>1 then say pp(args[1]~toString)
+if .verbose>0 then say "<---"
+
+   /* ----------------------------------------------- */
+::method windowClosing     -- WindowListener event method for closing window
+  expose wait
+  use arg windowEvent, slotDir
+if .verbose>0 then say self": windowEvent:" pp("WINDOWCLOSING")
+if .verbose>1 then say pp(windowEvent~toString)
+  slotDir~userData~quiz~wait=.false -- unblock main thread waiting on quiz'
+if .verbose>0 then say "<---"
+
+
+   /* =============================================== */
+::class Action_Show_Answer          -- JButton "Show", Default push button, i.e. "Enter"-Key
+::method actionPerformed
+  use arg actionEvent, slotDir
+if .verbose>0 then say self": actionPerformed(actionEvent)"
+if .verbose>1 then say pp(actionEvent~toString)
+  userDir=slotDir~userData          -- get our supplied directory object
+  userDir~capital~text=userDir~questions~at(userDir~state~getText)  -- show capital name
+  userDir~action.knew~enabled=.true    -- enable "I knew this" button
+  userDir~action.repeat~setEnabled(.true) -- enable repeat button
+  userDir~action.show~enabled=.false   -- disable show button
+if .verbose>0 then say "<---"
+
+   /* =============================================== */
+::class Action_Knew_Answer          -- JButton "I knew that", "F2"-key
+::method actionPerformed
+  use arg actionEvent, slotDir
+if .verbose>0 then say self": actionPerformed(actionEvent)"
+if .verbose>1 then say pp(actionEvent~toString)
+  userDir=slotDir~userData          -- get our supplied directory object
+  userDir~action.knew  ~enabled=.false -- disable "I knew this" button
+  userDir~action.repeat~enabled=.false -- disable repeat button
+  userDir~action.show  ~enabled=.true  -- enable show button
+
+  userDir~count.guessed+=1          -- increase guessed-counter
+  userDir~quiz~removeQuestion       -- guessed, hence remove question
+  userDir~quiz~nextQuestion         -- get next question
+
+  userDir~btn.show~grabFocus        -- set focus to "Start" button
+if .verbose>0 then say "<---"
+
+   /* =============================================== */
+::class Action_Repeat_Question      -- JButton "Please repeat", "F3"-key
+::method actionPerformed
+  use arg actionEvent, slotDir
+if .verbose>0 then say self": actionPerformed(actionEvent)"
+if .verbose>1 then say pp(actionEvent~toString)
+  userDir=slotDir~userData          -- get our supplied directory object
+
+  userDir~action.knew  ~enabled=.false -- disable "I knew this" button
+  userDir~action.repeat~enabled=.false -- disable repeat button
+  userDir~action.show~enabled=.true    -- enable show button
+
+  userDir~quiz~nextQuestion         -- get and display next question
+
+  userDir~btn.show~grabFocus        -- set focus to "Start" button
+if .verbose>0 then say "<---"
+
+   /* =============================================== */
+::class Action_Quit                 -- end quiz: JButton "Quit", "ESC"-key
+::method actionPerformed
+  use arg actionEvent, slotDir
+if .verbose>0 then say self": actionPerformed(actionEvent)"
+if .verbose>1 then say pp(actionEvent~toString)
+  slotDir~userData~quiz~wait=.false -- unblock main thread waiting on quiz'
+if .verbose>0 then say "<---"
+

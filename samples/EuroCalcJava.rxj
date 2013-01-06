@@ -28,6 +28,7 @@
                              these subfunctions
             2010-05-16, rgf, heightened frame a little bit (made it parametrized in addition)
             2011-04-16, rgf, added Estonian crown (EEK)
+            2013-01-03, rgf, added bsf.exit to make sure that no callbacks from Java occur anymore at the end
 
    Author:   Rony G. Flatscher, University of Augsburg, WU Wien University
 
@@ -85,6 +86,7 @@ do forever      /* wait and fetch the text to be sent by Java           */
    if result= "SHUTDOWN, REXX !" then leave     /* JVM will be shutdown in 1/10sec      */
 end
 
+call bsf.exit .01       /* make sure there are no more callbacks from Java to Rexx  */
 exit
 
 
