@@ -6,3 +6,18 @@
 
 2012-02-25, ---rgf
 
+- check on AOO MacOSX:
+
+        - oxt is installable for "user", but not for "shared" !
+
+2012-11-18, ---rgf
+
+
+- remove Janino eventually and use asm exclusively; it's faster and has support for
+  creating Android dex renderings on-the-fly of the Java byte code;
+
+  - Janino would be nice as generating Java source code is easier than bytecode,
+    however it seems stalled at Java 1.4 and there seems to be no further initiative
+    to make it address the Android Dalvik VM
+
+2013-01-06, ---rgf

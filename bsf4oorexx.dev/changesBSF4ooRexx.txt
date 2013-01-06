@@ -1,3 +1,68 @@
+
+-------------------------------------- 2013-01-06 ----------------------------------
+
+- samples\quiz1.rxj, samples\quiz2.rxj, samples\quiz3.rxj, samples\uscaps.txt
+
+        - new examples to demonstrate various GUI features available with Java
+          by creating a US capital quiz application with ooRexx
+
+-------------------------------------- 2013-01-04 ----------------------------------
+
+- RexxAndJava.java
+
+        - fix bug "Bug in Class Method resolution for interface class objects ",
+          using alternative code to fix bug, cf.
+          https://sourceforge.net/tracker/?func=detail&aid=3599351&group_id=400586&atid=1660873
+
+-------------------------------------- 2013-01-03 ----------------------------------
+
+- RexxAndJava.java
+
+        - fix bug "Bug in Class Method resolution for interface class objects ", cf.
+          https://sourceforge.net/tracker/?func=detail&aid=3599351&group_id=400586&atid=1660873
+
+-------------------------------------- 2013-01-03 ----------------------------------
+
+- RexxExtendClass.java
+
+        - fix bug "BsfCreateRexxProxy with abstract class missing abstract meth", cf.
+          https://sourceforge.net/tracker/?func=detail&aid=3599340&group_id=400586&atid=1660873
+
+                - fixed a bug when extending an abstract class that possesses unimplemented
+                  interface methods like javax.swing.AbstractAction; the fix now correctly
+                  implements any declared abstract methods from interfaces (including any
+                  of its super interfaces) that are not implemented in the abstract class
+
+                - fixed wrong setting that caused concrete methods to be created, although
+                  the documentation explained that only abstract methods get created
+
+-------------------------------------- 2012-12-30 ----------------------------------
+- BSF4ooRexx.cc
+
+        - serializing initializations of JVM-dependent structures to fix reported bug
+          <https://sourceforge.net/tracker/?func=detail&atid=1660873&aid=3591015&group_id=400586>
+
+-------------------------------------- 2012-11-17 ----------------------------------
+
+- samples\demo.BSF.dialog.rxj
+
+        - new sample to demonstrate the easy to use cross-platform .bsf.dialog class
+          for creating and using dialog windows; it seems no one is aware of this
+          helpful utility class
+
+-------------------------------------- 2012-11-02 ----------------------------------
+
+- utilities\ooRexxTry.rxj
+        - fix bug "ooRexxTry in Mac OS X, filehandling", cf.
+          https://sourceforge.net/tracker/index.php?func=detail&aid=3582365&group_id=400586&atid=1660873
+
+-------------------------------------- 2012-11-01 ----------------------------------
+
+- RexxAndJava.java
+
+        - fix bug "BSF4ooRexx returns wrong values", cf.
+          https://sourceforge.net/tracker/?func=detail&aid=3581957&group_id=400586&atid=1660873
+
 -------------------------------------- 2012-06-09 ----------------------------------
 
 - BSF.CLS
