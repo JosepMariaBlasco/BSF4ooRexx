@@ -13,14 +13,18 @@
 
    Needs:    ooRexx, BSF4Rexx
 
-
    Date:    2001-12-05 (on the way from Augsburg to Vienna)
+
+   Author:   Rony G. Flatscher, University of Augsburg, WU Wien University
+
+   Changes:
             2003-01-23 (on the way from Augsburg to Vienna), 2003-05-10
             2003-09-05 creating java.awt.Color with giving strict types for arguments
             2005-06-05 adapting to name changes in BSF's class methods
             2005-12-28 rgf, changed license
             2008-06-01 rgf, changed name, updated text, added the new states (Slovenia,
                             Malta, Cyprus)
+            2008-07-19, rgf, added hash-bang line at the top
             2008-08-23, ---rgf, if using BSF.CLS, then do not use BSF() directly (or
                                 remove the first three chars from its result string)
             2008-09-09, rgf, changed "registerBean" and "registerBeanStrict" to their synonyms
@@ -30,11 +34,8 @@
             2011-04-16, rgf, added Estonian crown (EEK)
             2013-01-03, rgf, added bsf.exit to make sure that no callbacks from Java occur anymore at the end
             2013-01-20, rgf, removed usage of deprecated BSF4ooRexx APIs, reworked code
-
-   Author:   Rony G. Flatscher, University of Augsburg, WU Wien University
-
-   Changes:
-         2008-07-19, rgf, added hash-bang line at the top
+            2013-01-21, rgf, tidying up a little bit, using 'keyReleased' instead of 'keyPressed'
+                             event in order to get access to the latest value in the text field
 
    last change: $Revision: 684 $ $Author: rony $ $Date: 2010-05-16 23:04:56 +0200 (Sun, 16 May 2010) $
 
@@ -58,22 +59,21 @@
 */
 
 
-If arg(1)='?' Then
-Do
-  Parse Source source
-  Say source
-  Say 'This program displays a window showing the equivalent of 1 Euro'
-  Say '   in all old currencies that have so far been changed to Euro.'
-  Say 'Entering an Euro amount shows its equivalent instantaneously.'
-  Exit
-End
+if arg(1)='?' then
+do
+  parse source source
+  say source
+  say 'This program displays a window showing the equivalent of 1 Euro'
+  say '   in all old currencies that have so far been changed to Euro.'
+  say 'Entering an Euro amount shows its equivalent instantaneously.'
+  exit
+end
 
 if      BsfInvokedBy()=1 then say "This Rexx program was invoked by Java!"
 else if BsfInvokedBy()=2 then say "This Rexx program was invoked by Rexx, JVM loaded by Rexx!"
 else                          say "No JVM present, we got troubles ..."
 
-say "...arrived in Rexx!"
-call time "r"
+call time "r"                    /* reset timer                            */
 
 call setup_euro_infos            /* setup Euro-currency information        */
 
@@ -81,17 +81,10 @@ userDir=.directory~new           /* will be used to save Java GUI objects  */
 call setup_java_awt_gui userDir  /* setup awt-GUI        */
 
 say "...finished with setting up, time needed:" time("e")
-userDir~closeEH~waitForExit   -- get closing Rexx event handler object, block
+userDir~closeEH~waitForExit   -- get closing Rexx event handler object, block main program
 
 
 ::options digits 10     /* use 10 digits for numeric arithmetics by default   */
-
-     /* action handler, if any key was typed in the input test-field */
--- key_Typed : procedure expose euro.
-::routine key_Typed
-  parse arg input
-  call dothework input  /* now do the work ...  */
-  return
 
 
     /* make choice and return appropriate argument      */
@@ -129,7 +122,6 @@ userDir~closeEH~waitForExit   -- get closing Rexx event handler object, block
     euro.eek =    15.6466  ;  euro.EEK.eCountry = "EEK: Estonia (Crown)"      ; euro.EEK.eSince=2011
 
 
-
         /* determine processing order of currencies, will also be used as index
            into "euro."-stem, hence UPPERCASE (!) spelling     */
     euro.eOrder = "EUR ATS BEF CYP DEM ESP FIM FRF GRD IEP ITL LUF MTL NLG PTE SIT SKK EEK"
@@ -143,15 +135,14 @@ userDir~closeEH~waitForExit   -- get closing Rexx event handler object, block
   use strict arg euro_betrag, userDir
   euro.=.eurostem -- fetch euro. stem object from .local, assign to stem variable
 
-  IF euro_betrag = 1 THEN stellen=6  /* rate of exchange ? */
-                     ELSE stellen=2
+  if euro_betrag = 1 then stellen=6  /* rate of exchange ? */
+                     else stellen=2
 
   betrag_id=201
   do i=201 to 201+euro.eCount-1
      tmpEuro = word(euro.eOrder, i-201+1)
-     -- call bsf 'invoke', "label."i, "setText", FORMAT(euro_betrag*euro.tmpEuro,,stellen)
-     userDir~entry("label."i)~setText(FORMAT(euro_betrag*euro.tmpEuro,,stellen))
-  END
+     userDir~entry("label."i)~setText(format(euro_betrag*euro.tmpEuro,,stellen))
+  end
   return
 
 
@@ -162,14 +153,15 @@ userDir~closeEH~waitForExit   -- get closing Rexx event handler object, block
 
   euro.=.eurostem -- fetch stem object from .local, assign to stem variable
         /* bsf.import some Java class       */
-  -- .bsf~bsf.import('java.awt.Label', 'javaLabelClz')
   javaLabelClz=.bsf~bsf.import('java.awt.Label',.nil)
 
         /* create a color               */
          /* 2003-09-05, changed to strict-form which allows indicating the type of the arguments;
                         reason: there are two Color-constructors which could match, one with three
                                 float args in the range of 0.0-1.0, one with three int args in the
-                                range of 0-255 */
+                                range of 0-255
+            2013-01-20, changed scrict form (complicated) to boxed form, achieving the same effect
+         */
   i150=box('int',150)   -- box int as Integer object (forces int-signature to be used)
   bgColour=.bsf~new('java.awt.Color', i150, i150, box('int',250))
 
@@ -305,48 +297,48 @@ userDir~closeEH~waitForExit   -- get closing Rexx event handler object, block
 
 
 /* ------------------------------------------------------------------------ */
-/* Rexx event handler to process tab changes */
+/* Rexx event handler to process changes in the TextField */
 ::class RexxKeyEventHandler
 ::method unknown              -- ignore all other events
   use arg methName, args
   -- say "... unknown, methName:" pp(methName) "..." pp(args[1]~toString)
 
-::method keyTyped
+::method keyReleased          -- this event is after keyPressed (TextField sets new value)
   use arg eventObject, slotDir
   userDir=slotDir~userData    -- fetch userDir directory
 
   euro.=.eurostem -- fetch euro. stem object from .local, assign to stem variable
 
   input=userDir~input         -- fetch input text field
-  PARSE UPPER VALUE input~getText WITH Amount InputCurrency .
+  parse upper value input~getText with Amount InputCurrency .
 
         /* RGF - clear message fields */
   label_401=userDir~entry("label."401)
-  label_401~setText(pp(date("S") time()))
+  label_401~setText(pp(date("S") time())) -- set info label
 
   label_402=userDir~entry("label."402)
-  label_402~setText("")  -- clear input
+  label_402~setText("")                   -- clear hint label
 
-  IF Amount = "" | Amount = 1 THEN      /* nothing given, show exchange rates  */
-  DO
-     call display 1, userDir     /* display value for 1 Euro     */
+  if Amount = "" then         /* nothing given, show exchange rates  */
+  do
+     call display 1, userDir  /* display value for 1 Euro      */
      label_402~setText("(Exchange rates)")
      return
-  END
+  end
 
-  IF DATATYPE(Amount, "Number") = 0 THEN
-  DO
+  if datatype(Amount, "Number") = 0 then
+  do
      label_402~setText("Input Currency not a number!")
      call beep 500, 10
-     RETURN
-  END
+     return
+  end
 
-  IF InputCurrency = "" THEN InputCurrency = "EUR" /* default      */
-  ELSE IF wordpos(InputCurrency, euro.eOrder) = 0 THEN
-  DO
+  if InputCurrency = "" then InputCurrency = "EUR" /* default     */
+  else if wordPos(InputCurrency, euro.eOrder) = 0 then
+  do
      label_402~setText("Unknown currency given!")
      call beep 200, 10
-     RETURN
-  END
-  call display amount/euro.InputCurrency, userDir  /* display values       */
+     return
+  end
+  call display amount/euro.InputCurrency, userDir  /* display values */
   return
