@@ -1,0 +1,150 @@
+/* querydir.rxj */
+/*
+This demonstration was written in ooRexx by Lee Peedin
+using BSF4Rexx, created and distributed by Dr. Rony Flatscher.
+The latest release of BSF4Rexx can be found at:
+<http://wi.wu-wien.ac.at/rgf/rexx/bsf4rexx/current/>
+The latest information on ooRexx can be found at:
+<http://www.oorexx.org/>
+Some demonstrations may require these additional Java classes
+SWT         <http://www.eclipse.org/swt/>
+FreeTTS     <http://freetts.sourceforge.net/docs/index.php>
+
+This demonstration has been tested using:
+ooRexx              3.0.1
+Java Version        1.5.0_06
+Windows Version     Microsoft Windows XP [Version 5.1.2600]
+Linux Version       Suse 10
+-- changed:         2009-10-17, rgf, renamed extension to '.rxj'
+*/
+    parse source os how what
+    call SysCls
+    lf = '0a'x
+
+    call bsf.import 'javax.swing.JFrame'         ,'JFrame'
+
+    if os~translate~pos('LINUX') > 0 then
+        slash = '/'
+    else
+        slash = '\'
+    call bsf.import 'javax.swing.JProgressBar','JProgressBar'
+-- Define the Jave NumberFormat class and import it - we'll use it to format our total
+    clazz = "java.text.NumberFormat"
+    nfc = bsf.import(clazz)
+-- Create a file chooser by importing the Java class
+    fchooser = .bsf~new('javax.swing.JFileChooser')
+-- Create a frame to place the file chooser in by importing the Java class
+    frame = .bsf~new('javax.swing.JFrame','Frame')
+-- Give our file chooser a dialog title
+    fchooser~setDialogTitle('Java Swing FOLDER Selection Dialog')
+-- Set the selection mode to Directories only
+    fchooser~setFileSelectionMode(1)
+-- Show the dialog and display back to the user their selection
+    myfile = fchooser~showOpenDialog(frame)
+    if myfile = 0 then
+        afolder = fchooser~getSelectedFile~getPath
+    else
+        exit
+-- Build a list of all sub-folders
+    rv = time('r')
+    folder_list = afolder
+    filespec = afolder||slash
+    rv = sysfiletree(filespec,allfolders.,'ds')
+    pb = .JProgressBar~new(0,allfolders.0)
+    pb~setStringPainted(.true)
+    pb~setString('')
+    pb~setVisible(.true)
+    pb~setString('Building Folder List')
+    frame = .JFrame~new('Folder Progress')
+    frame~getContentPane~add(pb)   -- rgf, 2008-06-23: otherwise Frame class throws an exception :-(
+    frame~pack
+    sw = frame~getToolkit~getScreenSize~getWidth
+    sh = frame~getToolkit~getScreenSize~getHeight
+    fw = frame~getWidth
+    fh = frame~getHeight
+    fx = ((sw/2)-(fw/2))~format(,0)
+    fy = ((sh/2)-(fh/2))~format(,0)
+    frame~setLocation(fx,fy)
+    frame~~show~~tofront
+    do i = 1 to allfolders.0
+        pb~setValue(i-1)
+        folder_list = folder_list','allfolders.i~subword(5)
+    end
+    frame~dispose
+    folder_list = folder_list~strip
+    tot_size = 0
+    files = 0
+    folders = allfolders.0
+    pb = .JProgressBar~new(0,folders)
+    pb~setStringPainted(.true)
+    pb~setString('')
+    pb~setVisible(.true)
+    frame = .JFrame~new('Folder Progress')
+    frame~getContentPane~add(pb)
+    frame~pack
+    sw = frame~getToolkit~getScreenSize~getWidth
+    sh = frame~getToolkit~getScreenSize~getHeight
+    fw = frame~getWidth
+    fh = frame~getHeight
+    fx = ((sw/2)-(fw/2))~format(,0)
+    fy = ((sh/2)-(fh/2))~format(,0)
+    frame~setLocation(fx,fy)
+    frame~~show~~tofront
+    call time('r')
+    ctr = 0
+    do until folder_list = ''
+        ctr = ctr + 1
+        pb~setValue(ctr)
+        pb~setString(ctr-1 'of' folders 'Folders')
+        parse var folder_list afolder','folder_list
+        obj = .bsf~new('java.io.File',afolder)
+        jarray = obj~listFiles()
+        do i = 1 to jarray~items
+            if \jarray[i]~isDirectory() then
+                do
+                    files = files + 1
+                    tot_size = tot_size + jarray[i]~length
+                    aline = jarray[i]~getPath()','jarray[i]~length
+                end
+        end
+    end
+    et = time('e')
+    frame~dispose
+-- Create a JFrame instance and give it a name
+    f = .bsf~new("javax.swing.JFrame","Results of Query Directory")
+    f~bsf.addEventListener("window", "windowClosing", ".bsf~bsf.exit") -- if close icon on frame window is pressed
+    p = .bsf~new("javax.swing.JPanel");                  -- create a panel
+    call bsf.import "java.awt.Button", "javaButton"  -- import Button class, make it available as .Button in Rexx
+    closeButton=.javaButton~new("Close")             -- create a button
+    closeButton~bsf.addEventListener("action", "", ".bsf~bsf.exit")  -- if button is pressed, close app
+    p~add(closeButton)                               -- add button to panel
+    f~getContentPane~add(p, "South")                 -- add panel to south (bottom) of frame
+-- Define a text area & where to place the text in the JFrame
+    textArea=.bsf~new("javax.swing.JTextArea", 4, 43)
+-- Center is .5 X & Y (relative to the position of the frame
+    f~getContentPane~add(textArea, "Center")
+-- Set the font and size of the text
+    textArea~setFont("Courier" 14)
+-- Set the font and size of the text
+    f~pack
+    sw = f~getToolkit~getScreenSize~getWidth
+    sh = f~getToolkit~getScreenSize~getHeight
+    fw = f~getWidth
+    fh = f~getHeight
+    fx = (sw-fw)~format(,0)
+    fy = 0
+    f~setLocation(fx,fy)
+    f~~show~~tofront
+    textArea~setFont("Courier" 14)
+    text = 'files        =' files||lf
+    text = text'folders      =' folders||lf
+    text = text'tot_size     =' nfc~getInstance~format(tot_size)||lf
+    text = text'elasped time =' time('e')
+    textArea~setText(text)
+    do forever
+        txt = bsf.pollEventText()                    --  wait for an eventText to be sent
+        interpret txt                                 -- execute as a Rexx program
+        if result= "SHUTDOWN, REXX !" then leave      -- JVM will be shutdown in 1/10sec
+    end
+::requires bsf.cls
+

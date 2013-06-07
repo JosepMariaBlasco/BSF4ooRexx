@@ -1,0 +1,104 @@
+/*
+   name:    listPathSettings.rxo
+   author:  Rony G. Flatscher
+   date:    2012-06-06
+   remarks: demonstrate the service "com.sun.star.util.PathSettings", using pure OOo services,
+            even for URL-conversion; modelled after listPathSettings.rxo
+   license: choice of ASL 2.0 or LGPL 3.0
+*/
+xContext = UNO.connect()            -- connect to server and retrieve the XContext object
+XMcf = xContext~getServiceManager   -- retrieve XMultiComponentFactory
+oPathSettings=XMcf~createInstanceWithContext("com.sun.star.util.PathSettings", xContext)
+xpaths=oPathSettings~XPropertySet   -- get XPropertySet interface
+paths=xpaths~getPropertySetInfo~getProperties   -- get the sequence of properties
+call setupFileIdentifierConverter xContext   -- setup service object
+
+do i=1 to paths~items               -- iterate over all properties
+   name=paths[i]~name               -- get the Property's name
+   call printPathSetting i, name, xpaths~getPropertyValue(name)
+end
+
+-- inhibit callbacks from Java to Rexx from now on (Rexx will shut down afterwards; needed as of ooRexx 4.1.1)
+bsf.wrap(bsf('getBSFManager'))~loadScriptingEngine('rexx')~terminate
+
+::requires UNO.CLS   -- get the UNO/OOo support, which itself gets the Java support
+
+
+   /* print the PathSetting name with its value(s) */
+::routine printPathSetting
+  use arg i, name, propValue
+
+  tmpStr=i~right(3)":" pp(name)
+
+  resArr=processPathUrls(propValue)
+  say tmpStr || detTabs(tmpStr) pp(resArr[1])
+  do k=2 to resArr~items
+     say "090909"x pp(resArr[k])
+  end
+
+  return
+
+
+   /* procedure local to routine    */
+   /* make sure that the path setting's value is indented at least three tabs deep  */
+detTabs: procedure
+  parse arg string
+
+  len=length(string)
+  if      len<8  then return "090909"x
+  else if len<16 then return "0909"x
+  else if len<24 then return "09"x
+  else    return ""
+
+
+   /* procedure local to routine    */
+   /* take care of special case that multiple paths are encoded in a single
+      value (instead of defining them as an array of java.lang.String;
+      the URL-style will delimit different paths with the semi-colon char (;)
+      on all platforms; will return a Rexx array of strings representing the
+      defined URLs rendered to the operating system's file system format   */
+processPathUrls: procedure
+   use arg propValue
+
+   resArr=.array~new
+
+   if propValue~string~left(18)=="[Ljava.lang.String" then
+   do
+      if propValue~items=0 then     -- empty array
+         resArr~append("")
+      else
+      do k=1 to propValue~items
+         resArr~appendAll(convertPathUrl(propValue[k]))
+      end
+   end
+   else                             -- value is a string already (representing single path)
+   do
+      resArr~appendAll(convertPathUrl(propValue))
+   end
+   return resArr
+
+
+   /* procedure local to routine    */
+   /* parse string, could be that more than one path is encoded and delimited by semi-colon,
+      return an array of converted strings */
+convertPathUrl: procedure
+   parse arg str
+
+   arr=.array~new
+   if str="" then       -- path is explicitly an empty string
+      arr~append(str)
+   else
+   do while str<>""
+      parse var str before ";" str     -- parse using ";" as delimiter
+      arr~append(.xFileConverter~getSystemPathFromFileURL(before))
+   end
+   return arr
+
+
+   /* create and store XFileIdentifierConverter in ooRexx .local environment  */
+::routine setupFileIdentifierConverter
+  use arg xContext
+  service="com.sun.star.ucb.FileContentProvider"
+  xMCf = xContext~getServiceManager   -- retrieve XMultiComponentFactory
+  .local~xFileConverter=xMCF~createInstanceWithContext(service,xContext) ~XFileIdentifierConverter
+

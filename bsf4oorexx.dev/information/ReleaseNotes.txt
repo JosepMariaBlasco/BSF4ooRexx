@@ -1,0 +1,51 @@
+--- Rexx external function package "BSF4ooRexx" ---
+
+BSF4ooRexx is a package for the easy to learn, yet powerful scripting language
+ooRexx (http://www.ooRexx.org) which makes Java available to ooRexx, and ooRexx
+available to Java.
+
+        -> ooRexx programmers become able to address all of the Java classes and
+        Java objects in their runtime-environment as ooRexx classes and ooRexx
+        objects. (Using the ooRexx package BSF.CLS camouflages all of Java as if
+        it was the dynamic, case-insensitive programming language ooRexx!)
+
+        - ooRexx programs become able to implement Java interfaces or abstract
+          classes directly in ooRexx.
+
+        - One could e.g. use the Java awt or swing packages to create truly
+          portable (platform independent) GUIs for ooRexx programs, where the
+          necessary callback methods for many of the awt/swing classes get
+          implemented in ooRexx as well.
+
+        - and much more...
+
+                        ---
+
+        -> Java/NetRexx programmers please note:
+
+         Java programs can invoke ooRexx programs and even send messages from Java
+         directly to ooRexx objects, intercept and anaylze Rexx conditions, create
+         multiple and even differently configured ooRexx interpreters, and even
+         supply ooRexx exit and command handlers implemented in Java! Java/NetRexx
+         coders please see the Javadocs and the installed samples in samples/Java or
+         samples/NetRexx.)
+
+Known problems:
+
+        - none
+
+Support:
+
+        - BSF4ooRexx Sourceforge home: <https://sourceforge.net/projects/bsf4oorexx/>
+
+          - mailing lists at <https://sourceforge.net/mail/?group_id=400586&source=navbar>
+
+        - RexxLA member's mailing list, cf. <http://www.RexxLA.org>
+
+        - Newsgroup <news:comp.lang.rexx>
+
+        - ooRexx home: <http://www.ooRexx.org>, <https://sourceforge.net/projects/oorexx/>
+
+
+Rony G. Flatscher, Wien/Vienna, Austria, Europe
+

@@ -1,0 +1,259 @@
+/*
+   name:       quiz2.rxj
+   author:     Rony G. Flatscher
+   date:       2012-12-16, 2012-12-17, 2013-01-06, 2013-01-07
+   version:    1.00
+   purpose:    demo how to create a Java GUI version of Walter Pachl's quiz program,
+               such that his daughter can use it on Apple, but also to demo Walter
+               how one could solve this too (he marvelously created a BSF4ooRexx
+               version all on his own, which is just great!!)
+
+               This version makes sure that the cells do not change in size, once
+               a button text gets changed, also inserts space before the buttons
+               using insets.
+
+               Employing in this case the GridBagLayout, cf. the tutorial at
+               <http://docs.oracle.com/javase/tutorial/uiswing/layout/gridbag.html>
+               (as of 2012-12-16).
+
+   License:    Apache License 2.0, copyright 2012-2013 Rony G. Flatscher
+   Usage:      rexx quiz2.rxj
+*/
+
+q=.quiz~new    -- create an instance, will create a GUI
+q~wait         -- let this (main) thread wait until user ends GUI
+
+   -- show popup with statistics
+userDir=q~userDir       -- get userDir
+dlg=.bsf.dialog~new(userDir~jframe) -- make this dialog modal
+dlg~messageBox('Displayed:' userDir~count.displayed', correct:' userDir~count.guessed, "Quiz Results")
+
+
+::requires BSF.CLS      -- get Java support
+::requires "rgf_util2.rex"
+
+   /* =============================================== */
+::class quiz
+
+   /* ----------------------------------------------- */
+::attribute userDir
+
+   /* ----------------------------------------------- */
+::method init
+   expose wait userDir
+   wait=.true           -- control variable
+   userDir=.directory~new     -- directory to store useful data and some Java GUI objects
+   userDir~count.guessed=0    -- count correctly guessed capitals
+   userDir~count.displayed=0  -- count total of quiz questions
+
+   title="US Capitals Quiz"
+   fn   ="uscaps.txt"
+   parse source . . thisScript   -- get fully qualified path of this script
+   fn   =fileSpec("l",thisScript) || fn   -- turn into fully qualified path
+   self~setupQuestions(fn)
+
+      -- define button texts
+   userDir~txt.show="Show"
+   userDir~txt.knew="I knew this"
+   userDir~txt.end="End"
+   userDir~txt.repeat="Pls repeat"
+
+   self~setupGUI(title)       -- create GUI
+   self~nextQuestion          -- show question
+
+   /* ----------------------------------------------- */
+::method wait           -- used to wait to synchronize with awt thread
+   expose wait           -- control attribute
+   guard on when wait=.false   -- blocks until attribute turns to .false
+
+
+::method setupGUI private  -- setup and display GUI
+   expose userDir
+   use arg title
+
+      -- create a Java proxy for this ooRexx object, which also implements the
+      -- needed event handlers; let Java send us "userDir" as last argument
+   eh=BsfCreateRexxProxy(self, userDir, "java.awt.event.WindowListener", -
+                                        "java.awt.event.ActionListener")
+
+      -- create a frame (a GUI container for GUI components)
+   jframe=.bsf~new("javax.swing.JFrame", title)
+   userDir~jframe=jframe         -- save JFrame object
+   jframe~addWindowListener(eh)  -- add event handler
+
+      -- assign a grid bag layout manager
+   gbl=.bsf~new("java.awt.GridBagLayout")
+   jframe~setLayout(gbl)
+
+   /* layout of grid:
+         x:      0 !          1 !         2 !
+     y:  +---------+------------------------+
+      0  ! State   ! xxxxxxxxxxxxxxxxxxxxx  !
+         +---------+------------------------+
+      1  ! Capital ! yyyyyyyyyyyyyyyyyyyyy  !
+         +---------+------------+-----------+
+      2  ! Show    ! Pls repeat !    End    !
+         +---------+------------+-----------+
+   */
+      -- import Java class, camouflage it as an ooRexx class
+   gbcClz=bsf.importClass("java.awt.GridBagConstraints", .nil)
+   c=gbcClz~new                     -- create an instance
+   c~fill=gbcClz~HORIZONTAL         -- fill components horizontally
+   c~insets=.bsf~new("java.awt.Insets", 1,10,1,10) -- define insets
+
+      -- add first row
+   c~gridx=0; c~gridy=0             -- cell 0,0
+   jframe~add(.bsf~new("javax.swing.JLabel", "State:"), c)
+
+   c~gridx=1; c~gridy=0             -- cell 1,0
+   c~gridwidth=2                    -- use two cells
+   cols=userDir~maxLength
+   ta=.bsf~new("javax.swing.JTextArea", 1, cols)  -- 1 row, maxLength cols
+   ta~setEditable(.false)           -- user must not edit this field
+   userDir~state=ta                 -- add Java component to user directory
+   jframe~add(ta, c)                -- add Java component to frame
+   c~gridwidth=1                    -- reset to 1 cell
+
+      -- add second row
+   c~gridx=0; c~gridy=1             -- cell 0,1
+   jframe~add(.bsf~new("javax.swing.JLabel", "Capital:"), c)
+
+   c~gridx=1; c~gridy=1             -- cell 0,1
+   c~gridwidth=2                    -- use two cells
+   ta=.bsf~new("javax.swing.JTextArea", 1, cols)  -- 1 row, maxLength cols
+   ta~setEditable(.false)           -- user must not edit this field
+   userDir~capital=ta               -- add Java component to user directory
+   jframe~add(ta, c)                -- add Java component to frame
+   c~gridwidth=1                    -- reset to 1 cell
+
+      -- add third row (buttons)
+   c~insets=.bsf~new("java.awt.Insets", 10,10,1,1) -- define insets
+   c~gridx=0; c~gridy=2             -- cell 0,2
+   b1=.bsf~new("javax.swing.JButton", userDir~txt.show)
+   userDir~btn.start=b1             -- save this button in userDir
+   b1~addActionListener(eh)         -- add event handler
+   b1~setDefaultCapable(.true)      -- make it the default button
+   jframe~add(b1, c)                -- add Java component to frame
+
+   c~insets=.bsf~new("java.awt.Insets", 10,1,1,1)  -- define insets
+   c~gridx=1; c~gridy=2             -- cell 1,2
+   b2=.bsf~new("javax.swing.JButton", userDir~txt.repeat)
+   userDir~btn.repeat=b2            -- save this button in userDir
+   b2~addActionListener(eh)         -- add event handler
+   b2~setEnabled(.false)            -- disable button
+   jframe~add(b2, c)                -- add Java component to frame
+
+   c~insets=.bsf~new("java.awt.Insets", 10,1,1,10) -- define insets
+   c~gridx=2; c~gridy=2             -- cell 2,2
+   b3=.bsf~new("javax.swing.JButton", userDir~txt.end)
+   b3~addActionListener(eh)         -- add event handler
+   jframe~add(b3, c)                -- add Java component to frame
+
+   lbt=getLongestButtonText(userDir)-- get longest button text
+   b1~setText(lbt)                  -- set button 1 to longest text
+   jFrame~~pack                     -- let layout manager realize sizes
+
+   dim=b1~getSize                   -- get effective size
+   b1~setPreferredSize(dim)         -- set as preferred size for button 1
+   b1~text=userDir~txt.show         -- set to initial text
+   b2~setPreferredSize(dim)         -- set as preferred size for button 2
+   b3~setPreferredSize(dim)         -- set as preferred size for button 3
+
+   jFrame~~setSize(jFrame~getPreferredSize)~~show
+   return
+
+getLongestButtonText: procedure  -- get max chars, return string of "N" num chars
+   use arg userDir
+
+   str=""
+   len=0
+   do text over .array~of(userDir~txt.show, userDir~txt.knew, -
+                          userDir~txt.repeat, userDir~txt.end)
+      if length(text)>len then
+      do
+         str=text
+         len=length(text)
+      end
+   end
+   return "N"~copies(len)  -- use "N" which is an average width in most fonts
+
+
+   /* ----------------------------------------------- */
+::method unknown  -- intercept all WindowsListener events we are not interested in
+
+   /* ----------------------------------------------- */
+::method windowClosing     -- WindowListener event method for closing window
+  expose wait
+  wait=.false                       -- unblock
+
+
+   /* ----------------------------------------------- */
+::method actionPerformed   -- ActionListener event method for all three buttons
+  expose wait
+  use arg eventObj, slotDir         -- source: a button object
+
+  userDir=slotDir~userData          -- get our supplied directory object
+  source=eventObj~getSource         -- get component being the source of the event
+  btnName=source~getText            -- get name of pressed button
+  select
+     when btnName=userDir~txt.end then
+            wait=.false             -- unblock
+
+     when btnName=userDir~txt.show then
+        do
+            userDir~capital~text=userDir~questions~at(userDir~state~getText)  -- show capital name
+            source~setText(userDir~txt.knew)      -- change label on button
+            userDir~btn.repeat~setEnabled(.true)   -- enable repeat button
+        end
+
+     otherwise
+        do
+           userDir~btn.repeat~enabled=.false -- disable repeat button
+           userDir~btn.start~text=userDir~txt.show    -- reset first button's label
+
+           if btnName=userDir~txt.knew then  -- knew button got pressed
+           do
+              userDir~count.guessed+=1       -- increase guessed-counter
+              self~removeQuestion            -- guessed, hence remove question
+           end
+
+           self~nextQuestion                 -- get next question
+        end
+  end
+
+
+::method setupQuestions private
+  expose userDir
+  use arg fn
+  dir=.directory~new
+
+  allEntries=.stream~new(fn)~arrayin   -- get all entries
+  len=0
+  do i=1 to allEntries ~items
+     parse value allEntries[i] with state "-" capital
+     len=max(length(state), length(capital))
+     dir[strip(state)]=strip(capital)
+  end
+  userDir~questions=dir             -- make question directory available
+  userDir~maxLength=len             -- save maximum string length
+
+::method removeQuestion private
+   expose userDir wait
+   if userDir~state<>.nil then
+      userDir~questions~remove(userDir~state~getText)   -- remove question from directory
+
+   say "... removeQuestion," pp(userDir~questions~items) "left ..."
+
+   if userDir~questions~items=0 then   -- no states anymore, end program
+      wait=.false
+
+::method nextQuestion private
+   expose userDir
+   qu=userDir~questions
+   if qu~items=0 then               -- nothing to do anymore
+      return
+
+   userDir~capital~text="?"         -- empty JTextField
+   userDir~state~text=qu~makearray~at(random(1,qu~items))
+   userDir~count.displayed+=1       -- increase display result counter
+   userDir~btn.start~grabFocus      -- set focus to "Start" button

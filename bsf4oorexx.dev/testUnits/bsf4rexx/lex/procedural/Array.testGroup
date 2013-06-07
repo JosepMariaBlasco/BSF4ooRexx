@@ -1,0 +1,1780 @@
+#!/usr/bin/rexx
+/*
+   name:             Array testGroup
+   author:           Michael Lex
+   version:          1.0.0
+*/
+/*
+
+  Due to the circumstance that the error codes were change from
+  BSF4Rexx version 2.8 to version 4.0 the following local variable
+  indicates the current used version.
+
+  For version 4.0:
+	.local~ver = 4
+
+  For version 2.8:
+	.local~ver = 2 -- or any other value since the check is only if 4 is present
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.Array.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "Array.testGroup" subclass ooTestCase public
+
+::method "test_1"
+	.local~ver = 4
+
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPut", arr, 12345, 2)
+	self~assertEquals(arr[3], 12345)
+
+::method "test_2"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345, 7)
+
+::method "test_3"
+	arr=bsf.createArray("int.class", 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2)
+	self~assertEquals(arr[3,3], 12345)
+
+::method "test_4"
+	arr=bsf.createArray("int.class", 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 12345)
+
+::method "test_5"
+	arr=bsf.createArray("int.class", 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 12345)
+
+::method "test_6"
+	arr=bsf.createArray("int.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 12345)
+
+::method "test_7"
+	arr=bsf.createArray("int.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 12345)
+
+::method "test_8"
+	arr=bsf.createArray("int.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+
+::method "test_9"
+	arr=bsf.createArray("int.class", 128623)
+	r=BSF("arrayPut", arr, 12345, 54321)
+	self~assertEquals(arr[54322], 12345)
+
+::method "test_10"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("int.class", foo)
+
+::method "test_11"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("int.class", -1)
+
+::method "test_12"
+	arr=bsf.createArray("int.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345, 0)
+
+::method "test_13"
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPut", arr, -12345, 2)
+	self~assertEquals(arr[3], -12345)
+
+::method "test_14"
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPut", arr, 2147483647, 2)
+	self~assertEquals(arr[3], 2147483647)
+
+::method "test_15"
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPut", arr, '-2147483648', 2)
+	self~assertEquals(arr[3], '-2147483648')
+
+::method "test_16"
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, '2147483648', 2)
+
+::method "test_17"
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, '-2147483649', 2)
+
+::method "test_18"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, foo, 2)
+
+::method "test_19"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPut", arr, "foo", 2)
+
+::method "test_20"
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345, -1)
+
+::method "test_21"
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("foo", 5)
+
+::method "test_22"
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", foo, 12345, 2)
+
+::method "test_23"
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345)
+
+::method "test_24"
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr)
+
+::method "test_25"
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, , )
+
+::method "test_26"
+	arr=bsf.createArray("String.class", 128623)
+	r=BSF("arrayPut", arr, 12345, 54321)
+	self~assertEquals(arr[54322], 12345)
+
+::method "test_27"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("String.class", foo)
+
+::method "test_28"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("String.class", -1)
+
+::method "test_29"
+	arr=bsf.createArray("String.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, "foo", 0)
+
+::method "test_30"
+	arr=bsf.createArray("String.class", 5)
+	r=BSF("arrayPut", arr, -12345, 2)
+	self~assertEquals(arr[3], -12345)
+
+::method "test_31"
+	arr=bsf.createArray("String.class", 5)
+	r=BSF("arrayPut", arr, "foo", 2)
+	self~assertEquals(arr[3], "foo")
+
+::method "test_32"
+	arr=bsf.createArray("String.class", 5)
+	r=BSF("arrayPut", arr, "foo", 2)
+	self~assertNotEquals(arr[3], "bar")
+
+::method "test_33"
+	arr=bsf.createArray("String.class", 5)
+	r=BSF("arrayPut", arr, '"', 2)
+	self~assertEquals(arr[3], '"')
+
+::method "test_34"
+	arr=bsf.createArray("String.class", 5)
+	r=BSF("arrayPut", arr, "'", 2)
+	self~assertEquals(arr[3], "'")
+
+::method "test_35"
+	arr=bsf.createArray("String.class", 5)
+	r=BSF("arrayPut", arr, "AAAaaa", 2)
+	self~assertEquals(arr[3], "AAAaaa")
+
+::method "test_36"
+	arr=bsf.createArray("boolean.class", 128623)
+	r=BSF("arrayPut", arr, .true, 54321)
+	self~assertEquals(arr[54322], .false)
+
+::method "test_37"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("boolean.class", foo)
+
+::method "test_38"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("boolean.class", -1)
+
+::method "test_39"
+	arr=bsf.createArray("boolean.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 1, 0)
+
+::method "test_40"
+	arr=bsf.createArray("boolean.class", 5)
+	r=BSF("arrayPut", arr, .false, 2)
+	self~assertEquals(arr[3], .false)
+
+::method "test_41"
+	arr=bsf.createArray("boolean.class", 5)
+	r=BSF("arrayPut", arr, .true, 2)
+	self~assertEquals(arr[3], .false)
+
+::method "test_42"
+	arr=bsf.createArray("boolean.class", 5)
+	r=BSF("arrayPut", arr, 0, 2)
+	self~assertEquals(arr[3], 0)
+
+::method "test_43"
+	arr=bsf.createArray("boolean.class", 5)
+	r=BSF("arrayPut", arr, 2, 2)
+	self~assertEquals(arr[3], .false)
+
+::method "test_44"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("boolean.class", 5)
+	r=BSF("arrayPut", arr, "foo", 2)
+	self~assertEquals(arr[3], .false)
+
+::method "test_45"
+	arr=bsf.createArray("boolean.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 1, -1)
+
+::method "test_46"
+	arr=bsf.createArray("byte.class", 5)
+	r=BSF("arrayPut", arr, 123, 2)
+	self~assertEquals(arr[3], 123)
+
+::method "test_47"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("byte.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 123, 7)
+
+::method "test_48"
+	arr=bsf.createArray("byte.class", 5, 5)
+	r=BSF("arrayPut", arr, 123, 2, 2)
+	self~assertEquals(arr[3,3], 123)
+
+::method "test_49"
+	arr=bsf.createArray("byte.class", 5, 5, 5)
+	r=BSF("arrayPut", arr, 123, 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 123)
+
+::method "test_50"
+	arr=bsf.createArray("byte.class", 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 123, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 123)
+
+::method "test_51"
+	arr=bsf.createArray("byte.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 123, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 123)
+
+::method "test_52"
+	arr=bsf.createArray("byte.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 123, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 123)
+
+::method "test_53"
+	arr=bsf.createArray("byte.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 123, 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 123)
+
+::method "test_54"
+	arr=bsf.createArray("byte.class", 128623)
+	r=BSF("arrayPut", arr, 123, 54321)
+	self~assertEquals(arr[54322], 123)
+
+::method "test_55"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("byte.class", foo)
+
+::method "test_56"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("byte.class", -1)
+
+::method "test_57"
+	arr=bsf.createArray("byte.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 123, 0)
+
+::method "test_58"
+	arr=bsf.createArray("byte.class", 5)
+	r=BSF("arrayPut", arr, -123, 2)
+	self~assertEquals(arr[3], -123)
+
+::method "test_59"
+	arr=bsf.createArray("byte.class", 5)
+	r=BSF("arrayPut", arr, 127, 2)
+	self~assertEquals(arr[3], 127)
+
+::method "test_60"
+	arr=bsf.createArray("byte.class", 5)
+	r=BSF("arrayPut", arr, -128, 2)
+	self~assertEquals(arr[3], -128)
+
+::method "test_61"
+	arr=bsf.createArray("byte.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 128, 2)
+
+::method "test_62"
+	arr=bsf.createArray("byte.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, -129, 2)
+
+::method "test_63"
+	arr=bsf.createArray("byte.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 255, 2)
+
+::method "test_64"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("byte.class", 5)
+	r=BSF("arrayPut", arr, "foo", 2)
+
+::method "test_65"
+	arr=bsf.createArray("byte.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 123, -1)
+
+::method "test_66"
+	arr=bsf.createArray("char.class", 5)
+	r=BSF("arrayPut", arr, 'a', 2)
+	self~assertEquals(arr[3], 'a')
+
+::method "test_67"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("char.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 'a', 7)
+
+::method "test_68"
+	arr=bsf.createArray("char.class", 5, 5)
+	r=BSF("arrayPut", arr, 'a', 2, 2)
+	self~assertEquals(arr[3,3], 'a')
+
+::method "test_69"
+	arr=bsf.createArray("char.class", 5, 5, 5)
+	r=BSF("arrayPut", arr, 'a', 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 'a')
+
+::method "test_70"
+	arr=bsf.createArray("char.class", 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 'a', 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 'a')
+
+::method "test_71"
+	arr=bsf.createArray("char.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 'a', 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 'a')
+
+::method "test_72"
+	arr=bsf.createArray("char.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 'a', 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 'a')
+
+::method "test_73"
+	arr=bsf.createArray("char.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 'a', 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 'a')
+
+::method "test_74"
+	arr=bsf.createArray("char.class", 128623)
+	r=BSF("arrayPut", arr, 'a', 54321)
+	self~assertEquals(arr[54322], 'a')
+
+::method "test_75"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("char.class", foo)
+
+::method "test_76"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("char.class", -1)
+
+::method "test_77"
+	arr=bsf.createArray("char.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 'a', 0)
+
+::method "test_78"
+	arr=bsf.createArray("char.class", 5)
+	r=BSF("arrayPut", arr, '1', 2)
+	self~assertEquals(arr[3], '1')
+
+::method "test_79"
+	arr=bsf.createArray("char.class", 5)
+	r=BSF("arrayPut", arr, '"', 2)
+	self~assertEquals(arr[3], '"')
+
+::method "test_80"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("char.class", 5)
+	r=BSF("arrayPut", arr, "foo", 2)
+	self~assertEquals(arr[3], 'f')
+
+::method "test_81"
+	arr=bsf.createArray("char.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 'a', -1)
+
+::method "test_82"
+	arr=bsf.createArray("short.class", 5)
+	r=BSF("arrayPut", arr, 12345, 2)
+	self~assertEquals(arr[3], 12345)
+
+::method "test_83"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("short.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345, 7)
+
+::method "test_84"
+	arr=bsf.createArray("short.class", 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2)
+	self~assertEquals(arr[3,3], 12345)
+
+::method "test_85"
+	arr=bsf.createArray("short.class", 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 12345)
+
+::method "test_86"
+	arr=bsf.createArray("short.class", 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 12345)
+
+::method "test_87"
+	arr=bsf.createArray("short.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 12345)
+
+::method "test_88"
+	arr=bsf.createArray("short.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 12345)
+
+::method "test_89"
+	arr=bsf.createArray("short.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+
+::method "test_90"
+	arr=bsf.createArray("short.class", 128623)
+	r=BSF("arrayPut", arr, 12345, 54321)
+	self~assertEquals(arr[54322], 12345)
+
+::method "test_91"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("short.class", foo)
+
+::method "test_92"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("short.class", -1)
+
+::method "test_93"
+	arr=bsf.createArray("short.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345, 0)
+
+::method "test_94"
+	arr=bsf.createArray("short.class", 5)
+	r=BSF("arrayPut", arr, -12345, 2)
+	self~assertEquals(arr[3], -12345)
+
+::method "test_95"
+	arr=bsf.createArray("short.class", 5)
+	r=BSF("arrayPut", arr, 32767, 2)
+	self~assertEquals(arr[3], 32767)
+
+::method "test_96"
+	arr=bsf.createArray("short.class", 5)
+	r=BSF("arrayPut", arr, -32767, 2)
+	self~assertEquals(arr[3], -32767)
+
+::method "test_97"
+	arr=bsf.createArray("short.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 32768, 2)
+
+::method "test_98"
+	arr=bsf.createArray("short.class", 5)
+	r=BSF("arrayPut", arr, -32768, 2)
+	self~assertEquals(arr[3], -32768)
+
+::method "test_99"
+	arr=bsf.createArray("short.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 32769, 2)
+
+::method "test_100"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("short.class", 5)
+	r=BSF("arrayPut", arr, "foo", 2)
+
+::method "test_101"
+	arr=bsf.createArray("short.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345, -1)
+
+::method "test_102"
+	arr=bsf.createArray("long.class", 5)
+	r=BSF("arrayPut", arr, 12345, 2)
+	self~assertEquals(arr[3], 12345)
+
+::method "test_103"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("long.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345, 7)
+
+::method "test_104"
+	arr=bsf.createArray("long.class", 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2)
+	self~assertEquals(arr[3,3], 12345)
+
+::method "test_105"
+	arr=bsf.createArray("long.class", 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 12345)
+
+::method "test_106"
+	arr=bsf.createArray("long.class", 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 12345)
+
+::method "test_107"
+	arr=bsf.createArray("long.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 12345)
+
+::method "test_108"
+	arr=bsf.createArray("long.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 12345)
+
+::method "test_109"
+	arr=bsf.createArray("long.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+
+::method "test_110"
+	arr=bsf.createArray("long.class", 128623)
+	r=BSF("arrayPut", arr, 12345, 54321)
+	self~assertEquals(arr[54322], 12345)
+
+::method "test_111"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("long.class", foo)
+
+::method "test_112"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("long.class", -1)
+
+::method "test_113"
+	arr=bsf.createArray("long.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345, 0)
+
+::method "test_114"
+	arr=bsf.createArray("long.class", 5)
+	r=BSF("arrayPut", arr, -12345, 2)
+	self~assertEquals(arr[3], -12345)
+
+::method "test_115"
+	arr=bsf.createArray("long.class", 5)
+	r=BSF("arrayPut", arr, 9223372036854775807, 2)
+	self~assertEquals(arr[3], 9223372036854775807)
+
+::method "test_116"
+	arr=bsf.createArray("long.class", 5)
+	r=BSF("arrayPut", arr, '-9223372036854775808', 2)
+	self~assertEquals(arr[3], '-9223372036854775808')
+
+::method "test_117"
+	arr=bsf.createArray("long.class", 5)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 9223372036854775808, 2)
+
+::method "test_118"
+	arr=bsf.createArray("long.class", 5)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, '-9223372036854775809', 2)
+
+::method "test_119"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("long.class", 5)
+	r=BSF("arrayPut", arr, "foo", 2)
+
+::method "test_120"
+	arr=bsf.createArray("long.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345, -1)
+
+::method "test_121"
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPut", arr, 12345.123, 2)
+	self~assertEquals(arr[3], 12345.123)
+
+::method "test_122"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("float.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345.123, 7)
+
+::method "test_123"
+	arr=bsf.createArray("float.class", 5, 5)
+	r=BSF("arrayPut", arr, 12345.123, 2, 2)
+	self~assertEquals(arr[3,3], 12345.123)
+
+::method "test_124"
+	arr=bsf.createArray("float.class", 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 12345.123)
+
+::method "test_125"
+	arr=bsf.createArray("float.class", 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 12345.123)
+
+::method "test_126"
+	arr=bsf.createArray("float.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 12345.123)
+
+::method "test_127"
+	arr=bsf.createArray("float.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 12345.123)
+
+::method "test_128"
+	arr=bsf.createArray("float.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 12345.123)
+
+::method "test_129"
+	arr=bsf.createArray("float.class", 128623)
+	r=BSF("arrayPut", arr, 12345.123, 54321)
+	self~assertEquals(arr[54322], 12345.123)
+
+::method "test_130"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("float.class", foo)
+
+::method "test_131"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("float.class", -1)
+
+::method "test_132"
+	arr=bsf.createArray("float.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345.123, 0)
+
+::method "test_133"
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPut", arr, '-12345.123', 2)
+	self~assertEquals(arr[3], '-12345.123')
+
+::method "test_134"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPut", arr, "foo", 2)
+
+::method "test_135"
+	arr=bsf.createArray("float.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345, -1)
+
+::method "test_136"
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPut", arr, 3.14E5, 2)
+	self~assertEquals(arr[3], 314000.0)
+
+::method "test_137"
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPut", arr, 3.14E5, 2)
+	self~assertEquals(arr[3], 3.14E5)
+
+::method "test_138"
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPut", arr, 3.14E5F, 2)
+	self~assertEquals(arr[3], 3.14E5)
+
+::method "test_139"
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPut", arr, 314000.0, 2)
+	self~assertEquals(arr[3], 3.14E5)
+
+::method "test_140"
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPut", arr, 12345.123, 2)
+	self~assertEquals(arr[3], 12345.123)
+
+::method "test_141"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("double.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345.123, 7)
+
+::method "test_142"
+	arr=bsf.createArray("double.class", 5, 5)
+	r=BSF("arrayPut", arr, 12345.123, 2, 2)
+	self~assertEquals(arr[3,3], 12345.123)
+
+::method "test_143"
+	arr=bsf.createArray("double.class", 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 12345.123)
+
+::method "test_144"
+	arr=bsf.createArray("double.class", 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 12345.123)
+
+::method "test_145"
+	arr=bsf.createArray("double.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 12345.123)
+
+::method "test_146"
+	arr=bsf.createArray("double.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 12345.123)
+
+::method "test_147"
+	arr=bsf.createArray("double.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 12345.123)
+
+::method "test_148"
+	arr=bsf.createArray("double.class", 128623)
+	r=BSF("arrayPut", arr, 12345.123, 54321)
+	self~assertEquals(arr[54322], 12345.123)
+
+::method "test_149"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("double.class", foo)
+
+::method "test_150"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("double.class", -1)
+
+::method "test_151"
+	arr=bsf.createArray("double.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345.123, 0)
+
+::method "test_152"
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPut", arr, -12345.123, 2)
+	self~assertEquals(arr[3], -12345.123)
+
+::method "test_153"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPut", arr, "foo", 2)
+
+::method "test_154"
+	arr=bsf.createArray("double.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPut", arr, 12345, -1)
+
+::method "test_155"
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPut", arr, 3.14E5, 2)
+	self~assertEquals(arr[3], 314000.0)
+
+::method "test_156"
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPut", arr, 3.14E5, 2)
+	self~assertEquals(arr[3], 3.14E5)
+
+::method "test_157"
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPut", arr, 3.14E5F, 2)
+	self~assertEquals(arr[3], 3.14E5)
+
+::method "test_158"
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPut", arr, 314000.0, 2)
+	self~assertEquals(arr[3], 3.14E5)
+
+::method "test_159"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("", 5)
+
+::method "test_160"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray(, 5)
+
+::method "test_161"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray(5)
+
+::method "test_162"
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2)
+	self~assertEquals(arr[3], 12345)
+
+::method "test_163"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "int.class", 12345, 7)
+
+::method "test_164"
+	arr=bsf.createArray("int.class", 5, 5)
+	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2, 2)
+	self~assertEquals(arr[3,3], 12345)
+
+::method "test_165"
+	arr=bsf.createArray("int.class", 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 12345)
+
+::method "test_166"
+	arr=bsf.createArray("int.class", 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 12345)
+
+::method "test_167"
+	arr=bsf.createArray("int.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 12345)
+
+::method "test_168"
+	arr=bsf.createArray("int.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 12345)
+
+::method "test_169"
+	arr=bsf.createArray("int.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+
+::method "test_170"
+	arr=bsf.createArray("int.class", 128623)
+	r=BSF("arrayPutStrict", arr, "int.class", 12345, 54321)
+	self~assertEquals(arr[54322], 12345)
+
+::method "test_171"
+	arr=bsf.createArray("int.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "int.class", 12345, 0)
+
+::method "test_172"
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPutStrict", arr, "int.class", -12345, 2)
+	self~assertEquals(arr[3], -12345)
+
+::method "test_173"
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPutStrict", arr, "int.class", 2147483647, 2)
+	self~assertEquals(arr[3], 2147483647)
+
+::method "test_174"
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPutStrict", arr, "int.class", '-2147483648', 2)
+	self~assertEquals(arr[3], '-2147483648')
+
+::method "test_175"
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "int.class", '2147483648', 2)
+
+::method "test_176"
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "int.class", '-2147483649', 2)
+
+::method "test_177"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "int.class", foo, 2)
+
+::method "test_178"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("int.class", 5)
+	r=BSF("arrayPutStrict", arr, "int.class", "foo", 2)
+
+::method "test_179"
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "int.class", 12345, -1)
+
+::method "test_180"
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", foo, "int.class", 12345, 2)
+
+::method "test_181"
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "int.class", 12345)
+
+::method "test_182"
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr)
+
+::method "test_183"
+	arr=bsf.createArray("int.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, , )
+
+::method "test_184"
+	arr=bsf.createArray("String.class", 128623)
+	r=BSF("arrayPutStrict", arr, "String.class", 12345, 54321)
+	self~assertEquals(arr[54322], 12345)
+
+::method "test_185"
+	arr=bsf.createArray("String.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "String.class", "foo", 0)
+
+::method "test_186"
+	arr=bsf.createArray("String.class", 5)
+	r=BSF("arrayPutStrict", arr, "String.class", -12345, 2)
+	self~assertEquals(arr[3], -12345)
+
+::method "test_187"
+	arr=bsf.createArray("String.class", 5)
+	r=BSF("arrayPutStrict", arr, "String.class", "foo", 2)
+	self~assertEquals(arr[3], "foo")
+
+::method "test_188"
+	arr=bsf.createArray("String.class", 5)
+	r=BSF("arrayPutStrict", arr, "String.class", "foo", 2)
+	self~assertNotEquals(arr[3], "bar")
+
+::method "test_189"
+	arr=bsf.createArray("String.class", 5)
+	r=BSF("arrayPutStrict", arr, "String.class", '"', 2)
+	self~assertEquals(arr[3], '"')
+
+::method "test_190"
+	arr=bsf.createArray("String.class", 5)
+	r=BSF("arrayPutStrict", arr, "String.class", "'", 2)
+	self~assertEquals(arr[3], "'")
+
+::method "test_191"
+	arr=bsf.createArray("String.class", 5)
+	r=BSF("arrayPutStrict", arr, "String.class", "AAAaaa", 2)
+	self~assertEquals(arr[3], "AAAaaa")
+
+::method "test_192"
+	arr=bsf.createArray("boolean.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "boolean.class", 1, 0)
+
+::method "test_193"
+	arr=bsf.createArray("boolean.class", 5)
+	r=BSF("arrayPutStrict", arr, "boolean.class", .false, 2)
+	self~assertEquals(arr[3], .false)
+
+::method "test_194"
+	arr=bsf.createArray("boolean.class", 5)
+	r=BSF("arrayPutStrict", arr, "boolean.class", 0, 2)
+	self~assertEquals(arr[3], 0)
+
+::method "test_195"
+	arr=bsf.createArray("boolean.class", 5)
+	r=BSF("arrayPutStrict", arr, "boolean.class", 2, 2)
+	self~assertEquals(arr[3], .false)
+
+::method "test_196"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("boolean.class", 5)
+	r=BSF("arrayPutStrict", arr, "boolean.class", "foo", 2)
+	self~assertEquals(arr[3], .false)
+
+::method "test_197"
+	arr=bsf.createArray("boolean.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "boolean.class", 1, -1)
+
+::method "test_198"
+	arr=bsf.createArray("byte.class", 5)
+	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2)
+	self~assertEquals(arr[3], 123)
+
+::method "test_199"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("byte.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "byte.class", 123, 7)
+
+::method "test_200"
+	arr=bsf.createArray("byte.class", 5, 5)
+	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2, 2)
+	self~assertEquals(arr[3,3], 123)
+
+::method "test_201"
+	arr=bsf.createArray("byte.class", 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 123)
+
+::method "test_202"
+	arr=bsf.createArray("byte.class", 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 123)
+
+::method "test_203"
+	arr=bsf.createArray("byte.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 123)
+
+::method "test_204"
+	arr=bsf.createArray("byte.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 123)
+
+::method "test_205"
+	arr=bsf.createArray("byte.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 123)
+
+::method "test_206"
+	arr=bsf.createArray("byte.class", 128623)
+	r=BSF("arrayPutStrict", arr, "byte.class", 123, 54321)
+	self~assertEquals(arr[54322], 123)
+
+::method "test_207"
+	arr=bsf.createArray("byte.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "byte.class", 123, 0)
+
+::method "test_208"
+	arr=bsf.createArray("byte.class", 5)
+	r=BSF("arrayPutStrict", arr, "byte.class", -123, 2)
+	self~assertEquals(arr[3], -123)
+
+::method "test_209"
+	arr=bsf.createArray("byte.class", 5)
+	r=BSF("arrayPutStrict", arr, "byte.class", 127, 2)
+	self~assertEquals(arr[3], 127)
+
+::method "test_210"
+	arr=bsf.createArray("byte.class", 5)
+	r=BSF("arrayPutStrict", arr, "byte.class", -128, 2)
+	self~assertEquals(arr[3], -128)
+
+::method "test_211"
+	arr=bsf.createArray("byte.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "byte.class", 128, 2)
+
+::method "test_212"
+	arr=bsf.createArray("byte.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "byte.class", -129, 2)
+
+::method "test_213"
+	arr=bsf.createArray("byte.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "byte.class", 255, 2)
+
+::method "test_214"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("byte.class", 5)
+	r=BSF("arrayPutStrict", arr, "byte.class", "foo", 2)
+
+::method "test_215"
+	arr=bsf.createArray("byte.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "byte.class", 123, -1)
+
+::method "test_216"
+	arr=bsf.createArray("char.class", 5)
+	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2)
+	self~assertEquals(arr[3], 'a')
+
+::method "test_217"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("char.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "char.class", 'a', 7)
+
+::method "test_218"
+	arr=bsf.createArray("char.class", 5, 5)
+	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2, 2)
+	self~assertEquals(arr[3,3], 'a')
+
+::method "test_219"
+	arr=bsf.createArray("char.class", 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 'a')
+
+::method "test_220"
+	arr=bsf.createArray("char.class", 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 'a')
+
+::method "test_221"
+	arr=bsf.createArray("char.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 'a')
+
+::method "test_222"
+	arr=bsf.createArray("char.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 'a')
+
+::method "test_223"
+	arr=bsf.createArray("char.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 'a')
+
+::method "test_224"
+	arr=bsf.createArray("char.class", 128623)
+	r=BSF("arrayPutStrict", arr, "char.class", 'a', 54321)
+	self~assertEquals(arr[54322], 'a')
+
+::method "test_225"
+	arr=bsf.createArray("char.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "char.class", 'a', 0)
+
+::method "test_226"
+	arr=bsf.createArray("char.class", 5)
+	r=BSF("arrayPutStrict", arr, "char.class", '1', 2)
+	self~assertEquals(arr[3], '1')
+
+::method "test_227"
+	arr=bsf.createArray("char.class", 5)
+	r=BSF("arrayPutStrict", arr, "char.class", '"', 2)
+	self~assertEquals(arr[3], '"')
+
+::method "test_228"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("char.class", 5)
+	r=BSF("arrayPutStrict", arr, "char.class", "foo", 2)
+	self~assertEquals(arr[3], 'f')
+
+::method "test_229"
+	arr=bsf.createArray("char.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "char.class", 'a', -1)
+
+::method "test_230"
+	arr=bsf.createArray("short.class", 5)
+	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2)
+	self~assertEquals(arr[3], 12345)
+
+::method "test_231"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("short.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "short.class", 12345, 7)
+
+::method "test_232"
+	arr=bsf.createArray("short.class", 5, 5)
+	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2, 2)
+	self~assertEquals(arr[3,3], 12345)
+
+::method "test_233"
+	arr=bsf.createArray("short.class", 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 12345)
+
+::method "test_234"
+	arr=bsf.createArray("short.class", 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 12345)
+
+::method "test_235"
+	arr=bsf.createArray("short.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 12345)
+
+::method "test_236"
+	arr=bsf.createArray("short.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 12345)
+
+::method "test_237"
+	arr=bsf.createArray("short.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+
+::method "test_238"
+	arr=bsf.createArray("short.class", 128623)
+	r=BSF("arrayPutStrict", arr, "short.class", 12345, 54321)
+	self~assertEquals(arr[54322], 12345)
+
+::method "test_239"
+	arr=bsf.createArray("short.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "short.class", 12345, 0)
+
+::method "test_240"
+	arr=bsf.createArray("short.class", 5)
+	r=BSF("arrayPutStrict", arr, "short.class", -12345, 2)
+	self~assertEquals(arr[3], -12345)
+
+::method "test_241"
+	arr=bsf.createArray("short.class", 5)
+	r=BSF("arrayPutStrict", arr, "short.class", 32767, 2)
+	self~assertEquals(arr[3], 32767)
+
+::method "test_242"
+	arr=bsf.createArray("short.class", 5)
+	r=BSF("arrayPutStrict", arr, "short.class", -32767, 2)
+	self~assertEquals(arr[3], -32767)
+
+::method "test_243"
+	arr=bsf.createArray("short.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "short.class", 32768, 2)
+
+::method "test_244"
+	arr=bsf.createArray("short.class", 5)
+	r=BSF("arrayPutStrict", arr, "short.class", -32768, 2)
+	self~assertEquals(arr[3], -32768)
+
+::method "test_245"
+	arr=bsf.createArray("short.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "short.class", 32769, 2)
+
+::method "test_246"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("short.class", 5)
+	r=BSF("arrayPutStrict", arr, "short.class", "foo", 2)
+
+::method "test_247"
+	arr=bsf.createArray("short.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "short.class", 12345, -1)
+
+::method "test_248"
+	arr=bsf.createArray("long.class", 5)
+	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2)
+	self~assertEquals(arr[3], 12345)
+
+::method "test_249"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("long.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "long.class", 12345, 7)
+
+::method "test_250"
+	arr=bsf.createArray("long.class", 5, 5)
+	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2, 2)
+	self~assertEquals(arr[3,3], 12345)
+
+::method "test_251"
+	arr=bsf.createArray("long.class", 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 12345)
+
+::method "test_252"
+	arr=bsf.createArray("long.class", 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 12345)
+
+::method "test_253"
+	arr=bsf.createArray("long.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 12345)
+
+::method "test_254"
+	arr=bsf.createArray("long.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 12345)
+
+::method "test_255"
+	arr=bsf.createArray("long.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+
+::method "test_256"
+	arr=bsf.createArray("long.class", 128623)
+	r=BSF("arrayPutStrict", arr, "long.class", 12345, 54321)
+	self~assertEquals(arr[54322], 12345)
+
+::method "test_257"
+	arr=bsf.createArray("long.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "long.class", 12345, 0)
+
+::method "test_258"
+	arr=bsf.createArray("long.class", 5)
+	r=BSF("arrayPutStrict", arr, "long.class", -12345, 2)
+	self~assertEquals(arr[3], -12345)
+
+::method "test_259"
+	arr=bsf.createArray("long.class", 5)
+	r=BSF("arrayPutStrict", arr, "long.class", 9223372036854775807, 2)
+	self~assertEquals(arr[3], 9223372036854775807)
+
+::method "test_260"
+	arr=bsf.createArray("long.class", 5)
+	r=BSF("arrayPutStrict", arr, "long.class", '-9223372036854775808', 2)
+	self~assertEquals(arr[3], '-9223372036854775808')
+
+::method "test_261"
+	arr=bsf.createArray("long.class", 5)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "long.class", 9223372036854775808, 2)
+
+::method "test_262"
+	arr=bsf.createArray("long.class", 5)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "long.class", '-9223372036854775809', 2)
+
+::method "test_263"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("long.class", 5)
+	r=BSF("arrayPutStrict", arr, "long.class", "foo", 2)
+
+::method "test_264"
+	arr=bsf.createArray("long.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "long.class", 12345, -1)
+
+::method "test_265"
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2)
+	self~assertEquals(arr[3], 12345.123)
+
+::method "test_266"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("float.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 7)
+
+::method "test_267"
+	arr=bsf.createArray("float.class", 5, 5)
+	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2, 2)
+	self~assertEquals(arr[3,3], 12345.123)
+
+::method "test_268"
+	arr=bsf.createArray("float.class", 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 12345.123)
+
+::method "test_269"
+	arr=bsf.createArray("float.class", 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 12345.123)
+
+::method "test_270"
+	arr=bsf.createArray("float.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 12345.123)
+
+::method "test_271"
+	arr=bsf.createArray("float.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 12345.123)
+
+::method "test_272"
+	arr=bsf.createArray("float.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 12345.123)
+
+::method "test_273"
+	arr=bsf.createArray("float.class", 128623)
+	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 54321)
+	self~assertEquals(arr[54322], 12345.123)
+
+::method "test_274"
+	arr=bsf.createArray("float.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 0)
+
+::method "test_275"
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPutStrict", arr, "float.class", '-12345.123', 2)
+	self~assertEquals(arr[3], '-12345.123')
+
+::method "test_276"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPutStrict", arr, "float.class", "foo", 2)
+
+::method "test_277"
+	arr=bsf.createArray("float.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "float.class", 12345, -1)
+
+::method "test_278"
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPutStrict", arr, "float.class", 3.14E5, 2)
+	self~assertEquals(arr[3], 314000.0)
+
+::method "test_279"
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPutStrict", arr, "float.class", 3.14E5, 2)
+	self~assertEquals(arr[3], 3.14E5)
+
+::method "test_280"
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPutStrict", arr, "float.class", 3.14E5F, 2)
+	self~assertEquals(arr[3], 3.14E5)
+
+::method "test_281"
+	arr=bsf.createArray("float.class", 5)
+	r=BSF("arrayPutStrict", arr, "float.class", 314000.0, 2)
+	self~assertEquals(arr[3], 3.14E5)
+
+::method "test_282"
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2)
+	self~assertEquals(arr[3], 12345.123)
+
+::method "test_283"
+	show_msg = BsfShowErrorMessage(0)
+	arr=bsf.createArray("double.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 7)
+
+::method "test_284"
+	arr=bsf.createArray("double.class", 5, 5)
+	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2, 2)
+	self~assertEquals(arr[3,3], 12345.123)
+
+::method "test_285"
+	arr=bsf.createArray("double.class", 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2, 2, 2)
+	self~assertEquals(arr[3,3,3], 12345.123)
+
+::method "test_286"
+	arr=bsf.createArray("double.class", 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3], 12345.123)
+
+::method "test_287"
+	arr=bsf.createArray("double.class", 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3], 12345.123)
+
+::method "test_288"
+	arr=bsf.createArray("double.class", 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3], 12345.123)
+
+::method "test_289"
+	arr=bsf.createArray("double.class", 5, 5, 5, 5, 5, 5, 5)
+	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2, 2, 2, 2, 2, 2, 2)
+	self~assertEquals(arr[3,3,3,3,3,3,3], 12345.123)
+
+::method "test_290"
+	arr=bsf.createArray("double.class", 128623)
+	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 54321)
+	self~assertEquals(arr[54322], 12345.123)
+
+::method "test_291"
+	arr=bsf.createArray("double.class", 0)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 0)
+
+::method "test_292"
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPutStrict", arr, "double.class", -12345.123, 2)
+	self~assertEquals(arr[3], -12345.123)
+
+::method "test_293"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPutStrict", arr, "double.class", "foo", 2)
+
+::method "test_294"
+	arr=bsf.createArray("double.class", 5)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "double.class", 12345, -1)
+
+::method "test_295"
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPutStrict", arr, "double.class", 3.14E5, 2)
+	self~assertEquals(arr[3], 314000.0)
+
+::method "test_296"
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPutStrict", arr, "double.class", 3.14E5, 2)
+	self~assertEquals(arr[3], 3.14E5)
+
+::method "test_297"
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPutStrict", arr, "double.class", 3.14E5F, 2)
+	self~assertEquals(arr[3], 3.14E5)
+
+::method "test_298"
+	arr=bsf.createArray("double.class", 5)
+	r=BSF("arrayPutStrict", arr, "double.class", 314000.0, 2)
+	self~assertEquals(arr[3], 3.14E5)
+
+::method "test_299"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("int", 5)
+
+::method "test_300"
+	arr=bsf.createArray(.bsf4rexx~int, 5)
+	r=BSF("arrayPut", arr, 12345, 2)
+	self~assertEquals(arr[3], 12345)
+
+::method "test_301"
+	arr=bsf.createArray(.bsf4rexx~byte, 5)
+	r=BSF("arrayPut", arr, 123, 2)
+	self~assertEquals(arr[3], 123)
+
+::method "test_302"
+	arr=bsf.createArray(.bsf4rexx~char, 5)
+	r=BSF("arrayPut", arr, 'a', 2)
+	self~assertEquals(arr[3], 'a')
+
+::method "test_303"
+	arr=bsf.createArray(.bsf4rexx~double, 5)
+	r=BSF("arrayPut", arr, 12345, 2)
+	self~assertEquals(arr[3], 12345)
+
+::method "test_304"
+	arr=bsf.createArray(.bsf4rexx~float, 5)
+	r=BSF("arrayPut", arr, 12345, 2)
+	self~assertEquals(arr[3], 12345)
+
+::method "test_305"
+	arr=bsf.createArray(.bsf4rexx~long, 5)
+	r=BSF("arrayPut", arr, 12345, 2)
+	self~assertEquals(arr[3], 12345)
+
+::method "test_306"
+	arr=bsf.createArray(.bsf4rexx~short, 5)
+	r=BSF("arrayPut", arr, 123, 2)
+	self~assertEquals(arr[3], 123)
+
+::method "test_307"
+	arr=bsf.createArray(.bsf4rexx~boolean, 5)
+	r=BSF("arrayPut", arr, .false, 2)
+	self~assertEquals(arr[3], .false)
+
+::method "test_308"
+	arr=bsf.createArray("int.class", 5)
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("arrayPutStrict", arr, "float.class", 12345, 2)
+
+::method "test_309"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("byte", 5)
+
+::method "test_310"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("char", 5)
+
+::method "test_311"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("double", 5)
+
+::method "test_312"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("float", 5)
+
+::method "test_313"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("long", 5)
+
+::method "test_314"
+	show_msg = BsfShowErrorMessage(0)
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	arr=bsf.createArray("short", 5)
+
+return
+

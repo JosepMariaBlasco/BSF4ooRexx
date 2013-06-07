@@ -1,0 +1,612 @@
+#!/usr/bin/rexx
+/* swing_multiinput4.rxj */
+/*
+This demonstration was written in ooRexx by Lee Peedin
+using BSF4ooRexx, created and distributed by Dr. Rony Flatscher.
+The latest release of BSF4ooRexx can be found at:
+<http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/>
+The latest information on ooRexx can be found at:
+<http://www.oorexx.org/>
+Some demonstrations may require these additional Java classes
+SWT         <http://www.eclipse.org/swt/>
+FreeTTS     <http://freetts.sourceforge.net/docs/index.php>
+
+This demonstration has been tested using:
+ooRexx              3.0.1
+Java Version        1.5.0_06
+Windows Version     Microsoft Windows XP [Version 5.1.2600]
+Linux Version       Suse 10
+-- changed:         2009-10-17, rgf, renamed extension to '.rxj'
+                    2010-05-11, rgf, - adapting example to take full advantage of BSF4ooRexx
+                                     - replacing bsf.addEventListener[WithEventObject] with a Rexx event handlers
+                                     - defining default push button
+*/
+    parse source os how what
+    call SysCls
+    lf = '0a'x
+
+-- Import those classes that are needed more than once or that make coding (a little bit) simpler
+    call bsf.importClass 'java.awt.Color'             , 'Color'
+    call bsf.importClass 'java.awt.Font'              , 'Font'
+    call bsf.importClass 'java.awt.GridBagConstraints', 'GridBagConstraints'
+    call bsf.importClass 'javax.swing.JButton'        , 'JButton'
+    call bsf.importClass 'javax.swing.JLabel'         , 'JLabel'
+    call bsf.importClass 'javax.swing.JPanel'         , 'JPanel'
+    call bsf.importClass 'javax.swing.JRadioButton'   , 'JRadioButton'
+    call bsf.importClass 'javax.swing.JTextField'     , 'JTextField'
+
+-- Create a userData directory
+    userData=.directory~new         -- a directory which will be passed to Rexx with the event
+
+-- Create a RexxProxy for controlling the closing of the application
+    rexxCloseEH =.RexxCloseAppEventHandler~new  -- an instance of the RexxCloseAppEventHandler class
+      -- Create a Java RexxProxy and the interfaces it can be used for, controlling the ending of the app
+    rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, userData, "java.awt.event.ActionListener", -
+                                                        "java.awt.event.KeyListener",    -
+                                                        "java.awt.event.WindowListener" )
+
+--  Define a font
+    courier_norm = .Font~new('Courier',.Font~PLAIN,14)
+
+-- Retrieve the value of several colors
+    gray         = .Color~lightgray
+    blue         = .Color~blue
+    orange       = .Color~orange
+
+-- Create a Rexx queue to hold our "posted" data
+    pique = .queue~new
+
+-- Create a frame with a title
+    frame = .BSF~new('javax.swing.JFrame', 'Swing MultiInput GUI')
+
+-- Don't let the user click the X button
+    frame~setDefaultCloseOperation(frame~DO_NOTHING_ON_CLOSE)
+-- Don't let the user resize the frame
+    frame~setResizable(.false)
+
+-- Get the default pane of the frame
+    pane = frame~getContentPane
+-- Apply gridbaglayout manager to the pane
+    pane~setLayout(.BSF~new('java.awt.GridBagLayout'))
+
+-- Create the constraints
+    c = .GridBagConstraints~new
+-- Set the constraints
+    c~insets = .BSF~new('java.awt.Insets',5,5,5,5)
+    c~fill   = .GridBagConstraints~vertical
+    c~anchor = .GridBagConstraints~line_start
+
+-- Create a label with a value
+    fname_label = .JLabel~new('First Name')
+    c~gridx = 0   -- Set the x position for this label
+    c~gridY = 0   -- Set the y position for this label
+-- Add the label to the pane using the constraints (c)
+    pane~add(fname_label,c)
+
+-- Create an empty text field 30 characters wide
+    fname_field = .JTextField~new('',30)
+-- Create and add a focus listener for the fname_field
+    rpFirstNameEH=BsfCreateRexxProxy(.RexxFirstNameEventHandler~new, userData, "java.awt.event.FocusListener")
+    fname_field~addFocusListener(rpFirstNameEH)
+-- Add a key listener
+    fname_field~addKeyListener(rpCloseEH)
+
+    c~gridx = 1   -- Set the x position of this field
+    c~gridY = 0   -- Set the y position of this field
+-- Add the field to the pane
+    pane~add(fname_field,c)
+
+-- Continue creating labels & textfields and adding them to the pane
+    lname_label = .JLabel~new('Last Name')
+    c~gridx = 0
+    c~gridY = 1
+    pane~add(lname_label,c)
+
+    lname_field = .JTextField~new('',20)
+    rpLastNameEH = BsfCreateRexxProxy(.RexxLastNameEventHandler~new, userData, "java.awt.event.FocusListener")
+    lname_field~addFocusListener(rpLastNameEH)
+    lname_field~addKeyListener(rpCloseEH)
+    c~gridx = 1
+    c~gridY = 1
+    pane~add(lname_field,c)
+
+    age_label = .JLabel~new('Age')
+    c~gridx = 0
+    c~gridY = 2
+    pane~add(age_label,c)
+
+    age_field = .JTextField~new('',2)
+    rpAgeEH   = BsfCreateRexxProxy(.RexxAgeEventHandler~new, userData, "java.awt.event.FocusListener")
+    age_field~addFocusListener(rpAgeEH)
+    age_field~addKeyListener(rpCloseEH)
+    c~gridx = 1
+    c~gridY = 2
+    pane~add(age_field,c)
+
+-- Create buttons with hot-keys & listeners
+    OkButton = .JButton~new('OK')
+    OkButton~setMnemonic('o')
+      -- Create a Java RexxProxy to be used for pressing the OK-button
+    rpOkEH=BsfCreateRexxProxy(.rexxOKEventHandler~new, userData, "java.awt.event.ActionListener")
+    okButton~addActionListener(rpOkEH)
+    c~gridx = 0
+    c~gridY = 3
+    pane~~add(OkButton,c)
+
+    exitButton = .JButton~new('Exit')
+    exitButton~setMnemonic('x')
+    exitButton~addActionListener(rpCloseEH)
+    exitButton~addKeyListener(rpCloseEH)
+    c~gridx = 1
+    c~gridY = 3
+    pane~add(exitButton,c)
+
+    rb1 = .JRadioButton~new('Change Entry')
+    rb1~setMnemonic('c')
+    rb1~addKeyListener(rpCloseEH)      -- add the event handler that controls closing of app
+      -- Create a Java RexxProxy to be used for clicking the "Change" radio-button
+    rpChangeEH=BsfCreateRexxProxy(.rexxChangeEventHandler~new, userData, "java.awt.event.ActionListener")
+    rb1~addActionListener(rpChangeEH)
+
+    rb2 = .JRadioButton~new('Delete Entry')
+    rb2~setMnemonic('d')
+    rb2~addKeyListener(rpCloseEH)      -- add the event handler that controls closing of app
+      -- Create a Java RexxProxy to be used for clicking the "Delete" radio-button
+    rpDeleteEH=BsfCreateRexxProxy(.rexxDeleteEventHandler~new, userData, "java.awt.event.ActionListener")
+    rb2~addActionListener(rpDeleteEH)
+
+    rb3 = .JRadioButton~new('Average Age')
+    rb3~setMnemonic('a')
+    rb3~addKeyListener(rpCloseEH)      -- add the event handler that controls closing of app
+      -- Create a Java RexxProxy to be used for clicking the "Average" radio-button
+         -- save a reference to the "Average" routine of this package in the "userData" directory
+    userData~AverageRoutine=.context~package~findRoutine("Average")  -- save routine in userData
+         -- create code to fetch "slotDir" and its entry "userData" and invoke the routine "Average"
+    code="userData=bsf.getSlotDir(arg(2))~userData;userData~AverageRoutine~call(userData)"
+         -- make sure that "userData" gets sent with the action event (as an entry in "slotDir")
+    rpAverageEH=BsfCreateRexxProxy(code, userData, "java.awt.event.ActionListener")
+    -- rpAverageEH=BsfCreateRexxProxy(.rexxAverageEventHandler~new, userData, "java.awt.event.ActionListener")
+    rb3~addActionListener(rpAverageEH) -- assign event handler to JRadioButton
+
+-- Create a gridlayout 4 rows by 1 column
+    glo = .BSF~new('java.awt.GridLayout',4,1)
+-- Create a panel
+    panel1 = .JPanel~new
+-- Apply the layout to the panel
+    panel1~setLayout(glo)
+-- Add the radio buttons to the panel
+    panel1~~add(rb1)~~add(rb2)~~add(rb3)
+-- Add the panel to the frame
+    c~gridx = 0
+    c~gridY = 4
+    pane~add(panel1,c)
+
+-- Create another panel
+    panel2 = .JPanel~new
+-- Create a text area 7 rows by 60 columns
+    textArea = .BSF~new('javax.swing.JTextArea',7,60)
+    textArea~setFont(courier_norm)  -- Set the font of the textarea
+    textArea~setBackGround(gray)    -- Set the background color
+    textArea~setForeGround(blue)    -- Set the foreground color
+    textArea~setEditable(.false)    -- Make the text area non-editable
+-- Add the text area to the panel
+    panel2~add(textArea)
+-- Add the panel to the frame
+    c~gridx = 1
+    c~gridY = 4
+    pane~add(panel2,c)
+
+-- Pack & show the frame
+    frame~pack
+    sw = frame~getToolkit~getScreenSize~getWidth
+    sh = frame~getToolkit~getScreenSize~getHeight
+    fw = frame~getWidth
+    fh = frame~getHeight
+    fx = (sw-fw)~format(,0)
+    fy = 0
+    frame~setLocation(fx,fy)
+    frame~getRootPane~setDefaultButton(okButton)   -- set default push button
+
+-- Create a bsf.dialog modal to "frame" for our message dialogs
+    frameDlg=.bsf.dialog~new(frame)
+
+-- Save Java objects and variables for the event handlers and routines
+    userData~fname_field = fname_field
+    userData~lname_field = lname_field
+    userData~age_field = age_field
+    userData~rb1 = rb1
+    userData~rb2 = rb2
+    userData~rb3 = rb3
+    userData~textArea = textArea
+    userData~pique = pique
+    userData~lf = lf
+    userData~changed_one = 0
+    userData~orange = orange
+    userData~normalbg = fname_field~getBackGround
+    userData~fd = frameDlg
+
+    frame~~setVisible(.true)~~tofront  -- show frame
+
+-- Wait for being allowed to close the app
+    rexxCloseEH~waitForExit   -- wait until we are allowed to end the program
+    call SysSleep .2          -- let Java's RexxProxy finalizations find a running Rexx instance
+
+
+::requires bsf.cls
+
+::routine ShowIt
+    use arg userData
+    fname_field = userData~fname_field
+    lname_field = userData~lname_field
+    age_field = userData~age_field
+    textArea = userData~textArea
+    lf = userData~lf
+    pique = userData~pique
+    changed_one = userData~changed_one
+    orange = userData~orange
+    normalbg = userData~normalbg
+    frameDlg = userData~fd
+
+    fname = fname_field~getText~strip
+    lname = lname_field~getText~strip
+    age = age_field~getText~strip
+
+    select
+        when fname = '' then
+                call check_field userData,"FNAME_FIELD", 'First Name Can Not Be Empty','Error In First Name','error'
+
+        when lname = '' then
+                call check_field userData,"LNAME_FIELD", 'Last Name Can Not Be Empty','Error In Last Name','error'
+
+        when \age~datatype('w') then
+                call check_age userData,"AGE_FIELD", 'Age Must Be A Whole Number','Error In Age','error'
+
+        otherwise
+            do
+                stg = fname~left(30) lname~left(20) age~right(3)
+                if changed_one > 0 then
+                    do
+                        pique[changed_one] = stg
+                    end
+                else
+                    do
+                        if pique~items = 5 then
+                            pique~remove(5)
+                        pique~push(stg)
+                    end
+
+                textArea~setText('')
+                text = '#  ' 'First Name'~left(30) 'Last Name'~left(20) 'Age'~left(3) lf
+                do i = 1 to pique~items
+                    text = text||i~left(3) pique[i] lf
+                end
+                textArea~setText(text)
+
+                fname_field~setText('')
+                lname_field~setText('')
+                age_field~setText('')
+                fname_field~setBackGround(normalbg)
+                lname_field~setBackGround(normalbg)
+                age_field~setBackGround(normalbg)
+                fname_field~grabFocus
+                userData~changed_one = 0
+            end
+    end
+
+
+   -- checks that a field contains a value upon leaving it, returns .true, if so, .false else
+::routine check_field
+  use arg userData, fieldName, errorMessage, errorTitle
+
+  fieldName=fieldName~upper            -- make sure fieldName is in uppercase
+  field=userData[fieldName]            -- get field object
+
+  bgCOlor=userData~normalbg
+  userData~lname_field~setBackGround(bgColor)
+  userData~fname_field~setBackGround(bgColor)
+  userData~age_field  ~setBackGround(bgColor)
+
+  if field~getText="" then
+  do
+     field~setBackGround(userData~orange)
+     field~grabFocus                -- also possible: field~requestFocus
+     userData~fd~messageBox(errorMessage,errorTitle,'error')   -- show error dialog
+     return .false                  -- indicate error
+  end
+  return .true                      -- indicate o.k.
+
+
+::routine check_age
+  use arg userData
+
+  if check_field( userData,"AGE_FIELD",'Age Can Not Be Empty','Error In Age Field')=.false then
+     return .false
+
+  -- o.k. so far, check whether age is a number
+  age_field=userData~age_field
+  if \age_field~getText~datatype('w') then
+  do
+      userData~fname_field~setBackGround(userData~normalbg)
+      userData~lname_field~setBackGround(userData~normalbg)
+      age_field~setBackGround(userData~orange)
+      age_field~grabFocus
+      userData~fd~messageBox('Age Must Be A Whole Number','Error In Age Field','error')
+      return .false
+  end
+  return .true
+
+
+::routine ChangeOne
+    use arg userData
+    fname_field = userData~fname_field
+    lname_field = userData~lname_field
+    age_field = userData~age_field
+    pique = userData~pique
+    rb1 = userData~rb1
+    frameDlg = userData~fd
+    text='Select The Line To Change'
+
+    prev = .array~new
+
+    do aa = 1 to pique~items
+        if pique[aa] \= '' then
+            do
+                prev[prev~items+1] = aa~right(2) '-' pique[aa]
+            end
+    end
+    rv = frameDlg~inputBox(text, 'Change Existing Entry', 'question', .nil, prev)
+    if .nil \= rv then
+        do
+            w_one = rv~word(1)
+            fname = pique[w_one]~left(30)~strip
+            lname = pique[w_one]~substr(32,20)~strip
+            age = pique[w_one]~right(3)~strip
+            fname_field~setText(fname)
+            lname_field~setText(lname)
+            age_field~setText(age)
+
+            changed_one = w_one
+            userData~changed_one = changed_one
+        end
+    fname_field~grabFocus
+    rb1~setSelected(.false)
+
+::routine DeleteOne
+    use arg userData
+    fname_field = userData~fname_field
+    lname_field = userData~lname_field
+    age_field = userData~age_field
+    pique = userData~pique
+    rb2 = userData~rb2
+    frameDlg = userData~fd
+    textArea = userData~textArea
+    lf = userData~lf
+
+    text='Select The Line To Delete'
+
+    prev = .array~new
+
+    do aa = 1 to pique~items
+        if pique[aa] \= '' then
+            do
+                prev[prev~items+1] = aa~right(2) '-' pique[aa]
+            end
+    end
+    rv = frameDlg~inputBox(text, 'Delete Existing Entry', 'question', .nil, prev)
+    if .nil \= rv then
+        do
+            w_one = rv~word(1)
+            pique~remove(w_one)
+
+            textArea~setText('')
+            text = '#  ' 'First Name'~left(30) 'Last Name'~left(20) 'Age'~left(3) lf
+            do i = 1 to pique~items
+                text = text||i~left(3) pique[i] lf
+            end
+            textArea~setText(text)
+
+            fname_field~setText('')
+            lname_field~setText('')
+            age_field~setText('')
+        end
+
+    fname_field~grabFocus
+    rb2~setSelected(.false)
+
+
+::routine Average
+    use arg userData
+    fname_field = userData~fname_field
+    pique = userData~pique
+    rb3 = userData~rb3
+    frameDlg = userData~fd
+
+    text='The Average Age Is'
+
+    total = 0
+    ctr = 0
+    do aa = 1 to pique~items
+        if pique[aa] \= '' then
+            do
+                ctr = ctr + 1
+                total = total + pique[aa]~right(3)
+            end
+    end
+    if ctr > 0 then
+        do
+            average = total / ctr
+            rv = frameDlg~messageBox(text average, 'Average Existing Entries', 'information', .nil, average)
+        end
+    else
+        do
+            text = 'No Existing Entries To Average'
+            rv = frameDlg~messageBox(text, 'Error', 'error', .nil)
+        end
+    fname_field~grabFocus
+    rb3~setSelected(.false)
+
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to set "close app" indicator, either pressing the exit-button or
+   pressing the esc-key while the focus is in a field. */
+::class RexxCloseAppEventHandler
+::method init        /* constructor */
+  expose vk_escape closeApp bInfo
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+  vk_escape = bsf.getstaticvalue("java.awt.event.KeyEvent", "VK_ESCAPE")   -- "27"
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method actionPerformed      -- event method
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method keyPressed           -- event method
+  expose vk_escape closeApp bInfo
+  use arg eventObject
+
+  if eventObject~keyCode= vk_escape then  -- integer value of 27
+  do
+     closeApp=.true           -- indicate that the app should close
+     return
+  end
+
+  source=eventObject~getSource
+  if source~bsf.isA(.JButton), source~getText="Exit" then
+     closeApp=.true
+
+::method windowClosing        -- event method
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler for ok-button */
+::class RexxOKEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call showIt slotDir~userData      -- invoke appropriate routine
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler for change radio-button   */
+::class RexxChangeEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call ChangeOne slotDir~userData   -- invoke appropriate routine
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler for delete radio-button   */
+::class RexxDeleteEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call DeleteOne slotDir~userData   -- invoke appropriate routine
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler for average radio-button  */
+::class RexxAverageEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call Average slotDir~userData     -- invoke appropriate routine
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to select all text in or check the value of the fname_field  */
+::class RexxFirstNameEventHandler
+::method unknown              -- intercept unhandled events, do nothing
+
+::method focusGained
+  use arg eventObject, slotDir
+  userData=slotDir~userData   -- get userData directory from slot argument (always last)
+  userData~fname_field~selectAll  -- select text in fname_field
+
+
+::method focusLost            -- check whether field has a value
+  use arg eventObject, slotDir
+
+   -- one focusLost may induce additional lost focii, distinguish from them, if possible
+  if eventObject~bsf.isA('sun.awt.CausedFocusEvent') then   -- Sun's Java?
+  do
+     cause=eventObject~cause~toString  -- Sun's Java implementation, get cause
+     if pos("ACTIVATION", cause)>0 | pos("CLEAR", cause)>0 | pos("UNKNOWN", cause)>0 then return
+  end
+  if eventObject~isTemporary then return  -- don't handle temporary lost focii
+
+  userData=slotDir~userData   -- get userData directory from slot argument (always last)
+   -- if empty record, then do not block
+  if eventObject~getOppositeComponent~bsf.isA('javax.swing.JTextField')=.false, -
+     userData~fname_field~getText="", userData~lname_field~getText="", userData~age_field~getText="" then
+     return
+
+  if check_field(userData, "FNAME_FIELD",'First Name Can Not Be Empty','Error In First Name') then
+     eventObject~source~setBackground(userData~normalBG)
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to select all text in or check the value of the lname_field  */
+::class RexxLastNameEventHandler
+::method unknown              -- intercept unhandled events, do nothing
+
+::method focusGained
+  use arg eventObject, slotDir
+  slotDir~userData~lname_field~selectAll  -- select text in fname_field
+
+::method focusLost            -- check whether field has a value
+  use arg eventObject, slotDir
+
+   -- one focusLost may induce additional lost focii, distinguish from them, if possible
+  if eventObject~bsf.isA('sun.awt.CausedFocusEvent') then   -- Sun's Java?
+  do
+     cause=eventObject~cause~toString  -- Sun's Java implementation, get cause
+     if pos("ACTIVATION", cause)>0 | pos("CLEAR", cause)>0 | pos("UNKNOWN", cause)>0 then return
+  end
+  if eventObject~isTemporary then return  -- don't handle temporary lost focii
+
+  userData=slotDir~userData   -- get userData directory from slot argument (always last)
+   -- if empty record, then do not block
+  if eventObject~getOppositeComponent~bsf.isA('javax.swing.JTextField')=.false, -
+     userData~fname_field~getText="", userData~lname_field~getText="", userData~age_field~getText="" then
+     return
+
+  if check_field(userData, "LNAME_FIELD",'Last Name Can Not Be Empty','Error In Last Name') then
+     eventObject~source~setBackground(userData~normalBG)
+
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to select all text in or check the value of the age_field  */
+::class RexxAgeEventHandler
+::method unknown              -- intercept unhandled events, do nothing
+
+::method focusGained
+  use arg eventObject, slotDir
+  slotDir~userData~age_field~selectAll    -- select text in fname_field
+
+
+::method focusLost            -- check whether field has a value
+  use arg eventObject, slotDir
+
+   -- one focusLost may induce additional lost focii, distinguish from them, if possible
+  if eventObject~bsf.isA('sun.awt.CausedFocusEvent') then   -- Sun's Java?
+  do
+     cause=eventObject~cause~toString  -- Sun's Java implementation, get cause
+     if pos("ACTIVATION", cause)>0 | pos("CLEAR", cause)>0 | pos("UNKNOWN", cause)>0 then return
+  end
+  if eventObject~isTemporary then return  -- don't handle temporary lost focii
+
+  userData=slotDir~userData   -- get userData directory from slot argument (always last)
+   -- if empty record, then do not block
+  if eventObject~getOppositeComponent~bsf.isA('javax.swing.JTextField')=.false, -
+     userData~fname_field~getText="", userData~lname_field~getText="", userData~age_field~getText="" then
+     return
+
+  if check_age(userData) then
+     eventObject~source~setBackground(userData~normalBG)
+

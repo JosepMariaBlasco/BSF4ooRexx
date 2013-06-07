@@ -1,0 +1,631 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testAbstract1.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2009-09-04
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4Rexx 4.0 new proxying of Java interfaces
+   needs:            compiled Java classes in this directory
+   hint:             you may want to run this test under Java 1.4, 1.5 and 1.6 separately
+*/
+
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testExtendNormal1)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::routine dumpPathProperty
+  use arg propertyName
+  tab="09"x
+  say "---> Java propertyName:" pp(propertyName)
+  val=.java.lang.System~getProperty(propertyName)
+  if val=.nil then
+  do
+      say tab pp(.nil)
+      return
+  end
+  valArr=val~makeArray(";")
+  do i over valArr
+      say tab pp(i)
+  end
+
+::class "testExtendNormal1" subclass ooTestCase public
+
+
+
+::method "test_01_unknown"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+    -- get an instance of the RexxExtendingClassLoader
+    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+    newName="test_01_ExtendedNormal"
+      -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
+    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+
+    -- find constructor with single RexxProxy argument
+    constructor=.nil
+    constructors=extClz~getDeclaredConstructors
+    do con over constructors
+       if con~getParameterTypes~items=1 then    -- found
+       do
+          constructor=con
+          leave
+       end
+    end
+
+/*
+    argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
+    alternatively=extClz~getDeclaredConstructor(argArray)
+say "constructor:  " constructor~toString
+say "alternatively:" alternatively~toString
+*/
+
+    ---
+    ro=.RexxProxy_UsingUnknown_no_boxing~new(self) -- create Rexx object to send messages to
+    rp=BsfCreateRexxProxy(ro)                     -- create RexxProxy Java object
+
+    -- create an instance of our dynamically created extended Java class
+    argArray=bsf.createArrayOf("java.lang.Object", rp)
+    jForwarderObject=constructor~newInstance(argArray) -- create an instance of it
+
+    ---
+    jo=.bsf~new("rgf.E_extendNormalClasses.Test_NormalTest") -- create an instance of the Java class that uses an NormalTest object as an argument
+    jo~test_NormalTest(jForwarderObject)  -- now let the Java object excercise all defined methods
+
+    self~assertNotNull(constructor, "constructor<>.nil")
+
+
+::method "test_02_unknown_box_result"
+    -- get an instance of the RexxExtendingClassLoader
+    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+    newName="test_02_ExtendedNormal"
+      -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
+    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+
+    -- find constructor with single RexxProxy argument
+    argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
+    constructor=extClz~getDeclaredConstructor(argArray)
+    self~assertNotNull(constructor, "constructor<>.nil")
+
+    ---
+    ro=.RexxProxy_UsingUnknown~new(self)
+    rp=BsfCreateRexxProxy(ro)                     -- create RexxProxy Java object
+
+    -- create an instance of our dynamically created extended Java class
+    argArray=bsf.createArrayOf("java.lang.Object", rp)
+    jForwarderObject=constructor~newInstance(argArray) -- create an instance of it
+
+    jo=.bsf~new("rgf.E_extendNormalClasses.Test_NormalTest") -- create an instance of the Java class that uses an NormalTest object
+    jo~test_NormalTest(jForwarderObject)  -- now let the Java object excercise all defined methods
+
+
+::method "test_03_individualMethods"
+    -- get an instance of the RexxExtendingClassLoader
+    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+    newName="test_03_ExtendedNormal"
+      -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
+    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+
+    -- find constructor with single RexxProxy argument
+    argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
+    constructor=extClz~getDeclaredConstructor(argArray)
+    self~assertNotNull(constructor, "constructor<>.nil")
+
+    ---
+    ro=.RexxProxy_Using_IndividualMethods_no_boxing~new(self)
+    rp=BsfCreateRexxProxy(ro)                     -- create RexxProxy Java object
+
+    -- create an instance of our dynamically created extended Java class
+    argArray=bsf.createArrayOf("java.lang.Object", rp)
+    jForwarderObject=constructor~newInstance(argArray) -- create an instance of it
+
+    jo=.bsf~new("rgf.E_extendNormalClasses.Test_NormalTest") -- create an instance of the Java class that uses an NormalTest object
+    jo~test_NormalTest(jForwarderObject)  -- now let the Java object excercise all defined methods
+
+
+::method "test_04_individualMethods_box_result"
+    -- get an instance of the RexxExtendingClassLoader
+    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+    newName="test_04_ExtendedNormal"
+      -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
+    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+
+    -- find constructor with single RexxProxy argument
+    argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
+    constructor=extClz~getDeclaredConstructor(argArray)
+    self~assertNotNull(constructor, "constructor<>.nil")
+
+    ---
+    ro=.RexxProxy_Using_IndividualMethods~new(self)
+    rp=BsfCreateRexxProxy(ro)                     -- create RexxProxy Java object
+
+    -- create an instance of our dynamically created extended Java class
+    argArray=bsf.createArrayOf("java.lang.Object", rp)
+    jForwarderObject=constructor~newInstance(argArray) -- create an instance of it
+
+    jo=.bsf~new("rgf.E_extendNormalClasses.Test_NormalTest") -- create an instance of the Java class that uses an NormalTest object
+    jo~test_NormalTest(jForwarderObject)  -- now let the Java object excercise all defined methods
+
+
+::method "test_05_test_correct_methods_generated"
+    -- get an instance of the RexxExtendingClassLoader
+    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+    newName="test_04_ExtendedNormal"
+      -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
+    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+
+
+/*
+    ro=.RexxProxy_UsingUnknown~new(self)
+    rp=BsfCreateRexxProxy(ro, , "NormalTest")  -- create a RexxProxy representing the Java "NormalTest" interface
+    rpClz=rp~getClass                     -- get dynamically created class object
+*/
+    rpClz=extClz
+
+    declaredMethods=.set~new              -- get all declared methods
+    do method over rpClz~getDeclaredMethods()   -- iterate over all declared method objects
+       declaredMethods~put(method~getName)-- put method name into set
+    end
+
+    -- define expected methods
+    expectedMethods=.set~of("all_args_Method",    "all_args_Method_forwardToSuper",   -
+                            "Boolean_Method",     "Boolean_Method_forwardToSuper",    -
+                            "boolean_Method",     "boolean_Method_forwardToSuper",    -
+                            "Byte_Method",        "Byte_Method_forwardToSuper",       -
+                            "byte_Method",        "byte_Method_forwardToSuper",       -
+                            "char_Method",        "char_Method_forwardToSuper",       -
+                            "Character_Method",   "Character_Method_forwardToSuper",  -
+                            "Double_Method",      "Double_Method_forwardToSuper",     -
+                            "double_Method",      "double_Method_forwardToSuper",     -
+                            "dummy_Method",       "dummy_Method_forwardToSuper",      -
+                            "Float_Method",       "Float_Method_forwardToSuper",      -
+                            "float_Method",       "float_Method_forwardToSuper",      -
+                            "int_Method",         "int_Method_forwardToSuper",        -
+                            "Integer_Method",     "Integer_Method_forwardToSuper",    -
+                            "Long_Method",        "Long_Method_forwardToSuper",       -
+                            "long_Method",        "long_Method_forwardToSuper",       -
+                            "Object_Method",      "Object_Method_forwardToSuper",     -
+                            "Short_Method",       "Short_Method_forwardToSuper",      -
+                            "short_Method",       "short_Method_forwardToSuper",      -
+                            "String_Method",      "String_Method_forwardToSuper",     -
+                            "void_Method",        "void_Method_forwardToSuper",       -
+                            "getDefaultHandler",  "setDefaultHandler",                -
+                            "getTargetRexxProxy", "setTargetRexxProxy",               -
+                            "getTestRunner",      "getTestRunner_forwardToSuper")
+
+    javaRuntimeVersion=.java.lang.system~getProperty("java.version")
+    if javaRuntimeVersion<1.5 then     -- if running on Java 1.4, then take the synthetic method into account
+       expectedMethods~put("class$")
+--    call compareAndDump "declared<-->expected", declaredMethods, expectedMethods
+
+    self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods)")
+    self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods)")
+
+    self~assertTrue(rpClz~getDeclaredConstructors~items=1, "only one (default) constructor")
+    return
+
+
+  -- display declared and expected methods in sorted order, showing missing methods on either side
+::routine compareAndDump
+    use arg title, declSet, expSet
+    say "dumping:" pp(title)
+    tab="09"x
+    declArr=declSet~allIndexes~stableSortWith(.caselesscomparator~new)
+    expArr =expSet~allIndexes~stableSortWith(.caselesscomparator~new)
+    len=30
+    i=1; dItems=declArr~items
+    k=1; eItems=expArr~items
+
+    do forever
+       dL=declArr[i]                -- declared
+       if dL=.nil then dL=""
+       eL=expArr[k]                 -- expected
+       if eL=.nil then eL=""
+
+       if dL="", eL="" then leave
+
+       dLUpper=dL~upper
+       eLUpper=eL~upper
+
+       if dLUpper=eLUpper then
+       do
+           say tab dL~left(len) el  -- both equal
+           i+=1
+           k+=1
+       end
+       else if dLUpper<eLUpper then -- show declared, no expected
+       do
+           say tab dL
+           i+=1
+       end
+       else
+       do
+           say tab " "~left(len) el -- no declared, show expected
+           k+=1
+       end
+
+       if i>dItems then             -- declared exhausted, dump expected
+       do
+          do k=k to eItems
+             say tab " "~left(len) expArr[k]
+          end
+          leave
+       end
+       else if k>eItems then        -- dump declared, expected exhausted
+       do
+          do i=i to dItems
+             say tab declArr[i]
+          end
+          leave
+       end
+    end
+    return
+
+
+
+
+/* ==================================================================================== */
+/* this class will serve a RexxProxy */
+::class RexxProxy_UsingUnknown
+::method init
+  expose testRunner
+  use arg testRunner
+
+::method getTestRunner
+  expose testRunner
+--  call dumpArgs arg(1, 'A')
+  return testRunner
+
+::method unknown
+  use arg methName, argArray
+
+  select
+     when methName="BOOLEAN_METHOD" then return box("bool",\argArray[1])   -- return inverse value
+
+     when methName="BYTE_METHOD"    then return box("byte", argArray[1]%2)  -- return halved value
+
+     when methName="CHAR_METHOD" | methName="CHARACTER_METHOD" then
+                                    return box("char", argArray[1])       -- just return received argument
+
+     when methName="SHORT_METHOD"   then return box("short", argArray[1]%2)  -- return halved value
+
+     when methName="INT_METHOD" | methName="INTEGER_METHOD" then
+                                    do
+                                       numeric digits 10     -- account for 2**31
+                                       return box('int',argArray[1]%2)  -- return halved value
+                                    end
+
+     when methName="LONG_METHOD" then
+                                    do
+                                       numeric digits 19     -- account for 2**31
+                                       return box('long',argArray[1]%2)  -- return halved value
+                                    end
+
+
+     when methName="FLOAT_METHOD" | methName="DOUBLE_METHOD" | methName="OBJECT_METHOD" then
+                                    return box(methName~left(2),argArray[1])       -- just return received argument
+
+
+     when methName="VOID_METHOD"    then return                -- return nothing
+
+     when methName="STRING_METHOD"  then return argArray[1]~right(3) -- return last three chars
+
+     when methName="ALL_ARGS_METHOD" then    -- iterate over all args, create an array off it
+                                      do
+                                          tmpStr=""
+                                          do i=1 to argArray~items-1
+                                             if tmpStr="" then tmpStr=argArray[i]
+                                                          else tmpStr=tmpStr argArray[i]
+                                          end
+                                          return tmpStr
+                                      end
+
+     when methName="<INIT>"         then return -- constructor, return nothing
+
+     otherwise    -- error, must not arrive here !
+              raise syntax 93.900 array (self~string": UNKNOWN method" pp(methName)", arrived unexpectedly in OTHERWISE !")
+  end
+
+
+
+/* ==================================================================================== */
+/* this class will serve a RexxProxy */
+::class RexxProxy_UsingUnknown_no_boxing
+::method init
+  expose testRunner
+  use arg testRunner
+
+::method getTestRunner
+  expose testRunner
+--  call dumpArgs arg(1, 'A')
+  return testRunner
+
+::method unknown
+  use arg methName, argArray
+
+
+  select
+     when methName="BOOLEAN_METHOD" then return \argArray[1]   -- return inverse value
+
+     when methName="BYTE_METHOD"    then return argArray[1]%2  -- return halved value
+
+     when methName="CHAR_METHOD" | methName="CHARACTER_METHOD" then
+                                    return argArray[1]       -- just return received argument
+
+     when methName="SHORT_METHOD"   then return argArray[1]%2  -- return halved value
+
+     when methName="INT_METHOD" | methName="INTEGER_METHOD" then
+                                    do
+                                       numeric digits 10     -- account for 2**31
+                                       return argArray[1]%2  -- return halved value
+                                    end
+
+     when methName="LONG_METHOD" then
+                                    do
+                                       numeric digits 19     -- account for 2**31
+                                       return argArray[1]%2  -- return halved value
+                                    end
+
+
+     when methName="FLOAT_METHOD" | methName="DOUBLE_METHOD" | methName="OBJECT_METHOD" then
+                                    return argArray[1]       -- just return received argument
+
+
+     when methName="VOID_METHOD"    then return                -- return nothing
+
+     when methName="STRING_METHOD"  then return argArray[1]~right(3) -- return last three chars
+
+     when methName="ALL_ARGS_METHOD" then    -- iterate over all args, create an array off it
+                                      do
+                                          tmpStr=""
+                                          do i=1 to argArray~items-1
+                                             if tmpStr="" then tmpStr=argArray[i]
+                                                          else tmpStr=tmpStr argArray[i]
+                                          end
+                                          return tmpStr
+                                      end
+
+     when methName="<INIT>"         then return -- constructor, return nothing
+
+     otherwise    -- error, must not arrive here !
+              raise syntax 93.900 array (self~string": UNKNOWN method" pp(methName)", arrived unexpectedly in OTHERWISE !")
+  end
+
+
+
+-- dump all arguments in array; show last argument's ("slot"-argument) indexes and associated values
+::routine dumpArgs
+  use arg argArray
+  tab="09"x
+  items=argArray~items
+  if items=0 then return
+
+  say "---> begin dumpArgs() --->"
+  say tab "dumpArgs: argArray~items="pp(items)
+  do i=1 to items
+     say tab tab "#" i":" pp(argArray[i])
+  end
+  say
+
+  say tab "dumping last argument's entries:"
+  a=argArray[items]
+  do i over a
+     say tab "->" pp(i) pp(a[i])
+  end
+  say "<--- end dumpArgs() <---"
+
+
+
+
+/* ==================================================================================== */
+/* this class will serve a RexxProxy */
+::class RexxProxy_Using_IndividualMethods
+::method init
+  expose testRunner
+  use arg testRunner
+
+::method getTestRunner
+  expose testRunner
+--  call dumpArgs arg(1, 'A')
+  return testRunner
+
+::method Boolean_Method          -- return negated value
+  use arg value
+  return box("bool",\value)
+
+::method Byte_Method             -- return half the value
+  use arg value
+  return box("byte", value%2)
+
+::method Char_Method             -- roundtrip, return received value
+  use arg value
+  return box("char", value)
+
+::method Character_Method        -- roundtrip, return received value
+  use arg value
+  return box("char", value)
+
+::method Short_Method            -- return half the value
+  use arg value
+  return box("short", value%2)
+
+::method int_Method              -- return half the value
+  use arg value
+  numeric digits 10              -- account for 2**31
+  return box('int',value%2)
+
+::method Integer_Method          -- return half the value
+  use arg value
+  numeric digits 10              -- account for 2**31
+  return box('int',value%2)
+
+::method long_Method             -- return half the value
+  use arg value
+  numeric digits 19              -- account for 2**63
+  return box('long',value%2)
+
+::method float_Method
+  use arg value
+  return box("float",value)      -- just return received argument
+
+::method double_Method
+  use arg value
+  return box("double",value)     -- just return received argument
+
+::method object_Method
+  use arg value
+  return box("object",value)     -- just return received argument
+
+::method void_Method             -- return nothing
+  use arg value
+  return
+
+::method string_Method           -- return the last three characters
+  use arg value
+  return value~right(3)
+
+::method all_args_Method         -- iterate over all args, create an array off it
+
+  tmpStr=""
+  do i=1 to arg()-1              -- do not process appended slot argument
+     if tmpStr="" then tmpStr=arg(i)
+                  else tmpStr=tmpStr arg(i)
+  end
+  return tmpStr
+
+::method "<init>"                -- Java constructor
+  -- say self"::<init> sendMessaged"
+
+
+
+
+::method unknown
+  use arg methName, argArray
+  raise syntax 93.900 array (self~string": UNKNOWN method" pp(methName)", arrived unexpectedly in OTHERWISE !")
+
+
+/* ==================================================================================== */
+/* this class will serve a RexxProxy */
+::class RexxProxy_Using_IndividualMethods_no_boxing
+::method init
+  expose testRunner
+  use arg testRunner
+
+::method getTestRunner
+  expose testRunner
+--  call dumpArgs arg(1, 'A')
+  return testRunner
+
+::method Boolean_Method          -- return negated value
+  use arg value
+  return \value
+
+::method Byte_Method             -- return half the value
+  use arg value
+  return value%2
+
+::method Char_Method             -- roundtrip, return received value
+  use arg value
+  return value
+
+::method Character_Method        -- roundtrip, return received value
+  use arg value
+  return value
+
+::method Short_Method            -- return half the value
+  use arg value
+  return value%2
+
+::method int_Method              -- return half the value
+  use arg value
+  numeric digits 10              -- account for 2**31
+  return value%2
+
+::method Integer_Method          -- return half the value
+  use arg value
+  numeric digits 10              -- account for 2**31
+  return value%2
+
+::method long_Method             -- return half the value
+  use arg value
+  numeric digits 19              -- account for 2**63
+  return value%2
+
+::method float_Method
+  use arg value
+  return value                   -- just return received argument
+
+::method double_Method
+  use arg value
+  return value                   -- just return received argument
+
+::method object_Method
+  use arg value
+  return value                   -- just return received argument
+
+::method void_Method             -- return nothing
+  use arg value
+  return
+
+::method string_Method           -- return the last three characters
+  use arg value
+  return value~right(3)
+
+::method all_args_Method         -- iterate over all args, create an array off it
+
+  tmpStr=""
+  do i=1 to arg()-1              -- do not process appended slot argument
+     if tmpStr="" then tmpStr=arg(i)
+                  else tmpStr=tmpStr arg(i)
+  end
+  return tmpStr
+
+::method "<init>"                -- Java constructor
+  -- say self"::<init> sendMessaged"
+
+
+
+::method unknown
+  use arg methName, argArray
+  raise syntax 93.900 array (self~string": UNKNOWN method" pp(methName)", arrived unexpectedly in OTHERWISE !")
+
+
+
+::routine dumpAbstractImplementation
+  use arg rp
+
+  say "rp:" pp(rp)
+  rpClz=rp~getClass
+  say "rp~getClass:" pp(rpClz)
+
+  say "dumping methods:"
+  meths=rpClz~getMethods
+  do i=1 to meths~items
+     say "    " "#" i":" pp(meths[i]~toString)
+  end
+  say "----"
+
+  say "dumping declared methods:"
+  meths=rpClz~getDeclaredMethods
+  do i=1 to meths~items
+     say "    " "#" i":" pp(meths[i]~toString)
+  end
+  say "----"
+
+

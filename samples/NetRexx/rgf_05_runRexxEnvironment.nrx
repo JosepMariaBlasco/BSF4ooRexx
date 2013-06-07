@@ -1,0 +1,23 @@
+parse source . . src
+envName ="RexxLA"
+value="<Rexx Language Association>"
+
+rexxCode='if arg()=1 then return value(arg(1),,"ENVIRONMENT");' -
+         'call value arg(1),arg(2),"ENVIRONMENT"'
+
+rexxEngine=org.apache.bsf.BSFManager().loadScriptingEngine("rexx")
+
+vArgs1=Vector()
+vArgs1.addElement(envName)
+result=rexxEngine.apply(src,0,0,rexxCode,null,vArgs1)
+say 'Value of process environment variable "'envName'":' '['result']'
+
+say 'Defining a process environment variable named "'envName'" ...'
+vArgs2=Vector()
+vArgs2.addElement(envName)
+vArgs2.addElement(value)
+rexxEngine.apply(src,0,0,rexxCode,null,vArgs2)
+
+result=rexxEngine.apply(src,0,0,rexxCode,null,vArgs1)
+say 'Value of process environment variable "'envName'":' '['result']'
+

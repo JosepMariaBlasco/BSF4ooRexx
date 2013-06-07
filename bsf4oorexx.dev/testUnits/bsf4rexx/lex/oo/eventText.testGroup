@@ -1,0 +1,113 @@
+#!/usr/bin/rexx
+/*
+   name:             EventText testGroup
+   author:           Michael Lex
+   version:          1.0.0
+*/
+/*
+
+  Due to the circumstance that the error codes were change from
+  BSF4Rexx version 2.8 to version 4.0 the following local variable
+  indicates the current used version.
+
+  For version 4.0:
+	.local~ver = 4
+
+  For version 2.8:
+	.local~ver = 2 -- or any other value since the check is only if 4 is present
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.eventText.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "eventText.testGroup" subclass ooTestCase public
+
+::method "test_1"
+	.local~ver = 4
+
+	e=bsf.postEventText("eventtest")
+	self~assertEquals(e, "eventtest")
+
+::method "test_2"
+	e=bsf.postEventText("eventtest", 0)
+	self~assertEquals(e, "eventtest")
+
+::method "test_3"
+	e=bsf.postEventText("eventtest", 1)
+	self~assertEquals(e, "eventtest")
+
+::method "test_4"
+	e=bsf.postEventText("eventtest", 2)
+	self~assertEquals(e, "eventtest")
+
+::method "test_5"
+	e=bsf.postEventText("eventtest", 3)
+	self~assertEquals(e, "eventtest")
+
+::method "test_6"
+	e=bsf.postEventText("eventtest", 1111111111)
+	self~assertEquals(e, "eventtest")
+
+::method "test_7"
+	e=bsf.postEventText("eventtest")
+	r=bsf.pollEventText(100)
+	self~assertEquals(r, "eventtest")
+
+::method "test_8"
+	e=bsf.postEventText("eventtest")
+	r=bsf.pollEventText(500)
+	self~assertEquals(r, "eventtest")
+
+::method "test_9"
+	e=bsf.postEventText("eventtest")
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=bsf.pollEventText(-1)
+
+::method "test_10"
+	e=bsf.postEventText("eventtest")
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=bsf.pollEventText(-500, 1, 1, 1, 1, 1)
+
+::method "test_11"
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	e=bsf.postEventText("eventtest", 1, 1)
+
+
+::method "test_12"
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	r=BSF("pollEventText", 1, 1, 1)
+
+
+::method "test_13"
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	e=bsf.pollEventText(1, 1, 1, 1, 1, 1, "foo")
+
+::method "test_14"
+	e=bsf.postEventText("eventtest")
+	r=bsf.pollEventText()
+	self~assertEquals(r, "eventtest")
+
+::method "test_15"
+	e=bsf.postEventText("eventtest")
+	r=.bsf~bsf.pollEventText
+	self~assertEquals(r, "eventtest")
+
+return
+

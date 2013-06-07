@@ -1,0 +1,246 @@
+#!/usr/bin/rexx
+/*
+   Name:    "Greetings.rxj"
+
+   Invoke:  "rexx Greetings.rxj"
+                or
+            "rexxj Greetings.rxj" (Windows)
+                or
+            "rexxj.sh Greetings.rxj" (Unix)
+
+   Purpose:  create a window with a choice-object and two text-fields and buttons;
+             if the ok-button is pressed then popup another window and display what
+             was chosen and entered.
+
+             This version stresses Object Rexx and the wrapper class "BSF.CLS" which
+             makes Java look like if it was Object Rexx ...
+             ;)
+
+   Needs:    ooRexx, BSF4Rexx
+
+   Date:    2001-04-18, 2003-01-23, 2003-05-10
+
+   Author:   Rony G. Flatscher, University of Essen, WU Wien University,
+             derived from Peter Kalender's proof-of-concept work for the "Essener Ski Seminar",
+             University of Essen (Oct 2000 to Feb 2001)
+
+   Changes:
+            2003-09-05 creating java.awt.Color with giving strict types for arguments
+            2005-06-05, adjusted for name changes of BSF class methods
+            2005-12-28, added Apache license
+            2008-06-01, updated text
+            2008-07-19, rgf, added hash-bang line at the top
+            2008-08-23, ---rgf, if using BSF.CLS, then do not use BSF() directly (or
+                                remove the first three chars from its result string)
+            2009-07-05  Walter Pachl add help
+            2010-05-16, rgf, - adapting example to take full advantage of BSF4ooRexx
+                             - replacing bsf.addEventListener[WithEventObject] with a Rexx event handler
+                             - make sure that awt-thread is not blocked on second GUI popup
+            2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+   last change: $Revision: 684 $ $Author: rony $ $Date: 2010-05-16 23:04:56 +0200 (Sun, 16 May 2010) $
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2001-2012 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+If arg(1)='?' Then Do
+  Parse Source source
+  Say source
+  Say 'Create a window with a choice-object and two text-fields and buttons;'
+  Say '   if the ok-button is pressed then popup another window and display'
+  Say '   what was chosen and entered, respectively.'
+  Exit
+  End
+
+if      BsfInvokedBy()=1 then say "This Rexx program was invoked by Java!"
+else if BsfInvokedBy()=2 then say "This Rexx program was invoked by Rexx, JVM loaded by Rexx!"
+else                          say "No JVM present, we got troubles ..."
+
+/* create userData for use with the Greetings routine and event handlers;
+   this allows us to access the registered objects      */
+userData=.directory~new
+userData~mainTID=BsfGetTID()  -- save main TID, such that we can attach to this thread's Java bridge
+
+rexxCloseEH=.RexxCloseAppEventHandler~new -- create Rexx event handler
+      -- create a RexxProxy for our Rexx event handler
+rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , "java.awt.event.ActionListener", -
+                                            "java.awt.event.WindowListener")
+
+        /* create Object Rexx prox-classes for the following "java"-classes:    */
+.BSF~bsf.import('java.awt.Button'    , 'awtButton'      )
+.BSF~bsf.import('java.awt.Choice'    , 'awtChoice'      )
+.BSF~bsf.import('java.awt.Color'     , 'awtColor'       )
+.BSF~bsf.import('java.awt.Frame'     , 'awtFrame'       )
+.BSF~bsf.import('java.awt.GridLayout', 'awtGridLayout'  )
+.BSF~bsf.import('java.awt.Label'     , 'awtLabel'       )
+.BSF~bsf.import('java.awt.TextField' , 'awtTextField'   )
+
+        /* create 3 labels                                      */
+label1 = .awtLabel~new('Gender: ')
+label2 = .awtLabel~new('First Name: ')
+label3 = .awtLabel~new('Surname: ')
+
+        /* create a drop down list with 2 entries               */
+dropDown = .awtChoice~new
+dropDown~~addItem('male')~~addItem('female')
+
+        /* create 2 textfields                                  */
+surname = .awtTextField~new
+name    = .awtTextField~new
+
+        /* create userData for use with the Greetings routine;
+           this allows us to access the registered objects      */
+userData~DropDown = DropDown     -- register DropDown object
+userData~Surname  = Surname      -- register Surname object
+userData~Name     = Name         -- register Name object
+
+        /* create 2 buttons and add addEventListeners to them   */
+oK     = .awtButton~new('OK')
+rpOk=BsfCreateRexxProxy(.RexxOkHandler~new, userData, "java.awt.event.ActionListener")
+ok~addActionListener(rpOk)
+
+cancel = .awtButton~new('Cancel')
+cancel~addActionListener(rpCloseEH)
+
+        /* set the window layout                                */
+-- Background = .awtColor~new(150, 150, 250)
+background = .awtColor~newStrict("int", 150, "int", 150, "int", 250)
+gLayout    = .awtGridLayout~new(4, 2)
+window     = .awtFrame~new('OO-Greetings!')
+window~addWindowListener(rpCloseEH)
+
+        /* add all the elements to the window                   */
+window~setLayout(GLayout)
+window~~add(Label1)~~add(DropDown)
+window~~add(Label2)~~add(Name)
+window~~add(Label3)~~add(Surname)
+window~~add(OK)    ~~add(Cancel)
+window~setSize(200, 200)
+window~setBackground(Background)
+window~~pack~~setVisible(.true)~~toFront
+
+        /* no access needed anymore, free the references to
+           the objects (just to demonstrate this feature)       */
+drop label1
+drop label2
+drop label3
+
+rexxCloseEH~waitForExit -- wait until we are allowed to end the program
+window~dispose          -- dispose of the Window
+
+-- if Java was loaded by Rexx, then terminate Java's RexxEngine to inhibit callbacks from Java
+call BSF.terminateRexxEngine
+
+
+::REQUIRES BSF.CLS   -- get the Java support
+
+        --open up a new window and greet the user
+::ROUTINE Greetings
+    use arg userData       -- stores the objects to get to the gender and names
+
+    window2 = .awtFrame~new     /* create another window        */
+
+    greet   = .awtLabel~new     /* create a label               */
+    bye     = .awtButton~new('Bye!')  /* create a button      */
+
+                /* add label and button to the window           */
+    window2~~add('North', greet)~~add('South', Bye)
+    window2~~pack~~setVisible(.true)~~toFront
+
+                /* now prepare to put something into that window        */
+    gender  = userData~DropDown~getSelectedItem    /* get chosen Item      */
+    n1      = userData~Name~getText                /* get entered text     */
+    n2      = userData~Surname~getText             /* get entered text     */
+
+    if Gender = "male" then Greet~setText('Hello Mr.'  N1 N2)
+                       else Greet~setText('Hello Mrs.' N1 N2)
+
+    rexxCloseEH=.RexxClosePopupEventHandler~new -- create Rexx event handler
+         -- create a RexxProxy for our Rexx event handler
+    rp=BsfCreateRexxProxy(rexxCloseEH, , "java.awt.event.ActionListener", -
+                                         "java.awt.event.WindowListener")
+    window2~addWindowListener(rp)
+    bye~addActionListener(rp)
+
+    rexxcloseEH~waitForExit   -- wait until we are allowed to end the program
+    window2~dispose           -- dispose of this window
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to set "close app" indicator */
+::class RexxCloseAppEventHandler
+::method init        /* constructor */
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::attribute closeApp          -- indicates whether app should be closed
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method actionPerformed      -- event method (from ActionListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method windowClosing        -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to process tab changes */
+::class RexxOkHandler
+
+::method actionPerformed
+  use arg eventObject, slotDir
+
+  reply              -- do not block awt-thread, proceed execution on a new thread
+  signal on syntax   -- in case this thread was already attached to the main thread, intercept condition
+  call bsfAttachToTID slotDir~userData~mainTid  -- attach to main thread's Java bridge
+
+syntax:
+  call Greetings slotDir~userData
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to set "close app" indicator */
+::class RexxClosePopupEventHandler
+::method init        /* constructor */
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::attribute closeApp          -- indicates whether app should be closed
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method actionPerformed      -- event method (from ActionListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method windowClosing        -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+

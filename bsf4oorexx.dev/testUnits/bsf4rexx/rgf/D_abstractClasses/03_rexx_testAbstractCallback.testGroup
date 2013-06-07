@@ -1,0 +1,863 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testAbstract1.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2009-08-31, 2009-09-05, 2009-09-07
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4Rexx 4.0 new callback from Java to ooRexx
+   hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
+                     hence this test unit needs to address RexxProxy objects in a Java fashion, using
+                     the RexxProxy method "sendMessage(String methodName, Object[] args)"; any Rexx object
+                     that gets returned will be wrapped up as a RexxProxy as well
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testAbstractCallback1)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+
+::class "testAbstractCallback1" subclass ooTestCase public
+
+
+::method "test_01_plain_sendMessage_no_args"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+    ro=.SomeRexxClass~new           -- create an instance of an ooRexx class
+
+    rpo=BsfCreateRexxProxy(ro, ,"rgf.D_abstractClasses.AbstractTest")  -- create Java RexxProxy object, being used as an AbstractTest object
+    listOfEntries=.list~of("METHODNAME", "METHODDESCRIPTOR", "JAVAOBJECT")
+
+    expected=.directory~new
+    expected~methodName="dummy_Method"
+    expected~argArrayItems=1+1         -- one for argument, one for slotArgument
+    expected~slotArgument=.true
+
+    rp_arr=rpo~dummy_Method("oha1")     -- sendMessage interface method, fetch result from Rexx object's unknown
+
+    noArgs=bsf.createArrayOf("java.lang.Object")   -- no arguments (= empty array of arguments)
+      -- get UNKNOWN's arguments
+    oneArg=bsf.createArrayOf("java.lang.String", 1)
+    rp_arg1=rp_arr~sendMessage("AT", oneArg)
+
+    oneArg[1]=2
+    rp_arg2=rp_arr~sendMessage("[]", oneArg)
+    items=rp_arg2~sendMessage("items", noArgs)
+
+    oneArg[1]=3
+    rp_arg3=rp_arr~sendMessage("AT", oneArg)
+
+    self~assertTrue(checkReturnedValues(expected, rp_arg1, rp_arg2, items, rp_arg3, listOfEntries, noArgs, oneArg))
+
+
+::method "test_02_plain_sendMessage_one_arg"
+    ro=.SomeRexxClass~new           -- create an instance of an ooRexx class
+
+    rpo=BsfCreateRexxProxy(ro, ,"rgf.D_abstractClasses.AbstractTest")  -- create Java RexxProxy object, being used as an AbstractTest object
+    listOfEntries=.list~of("METHODNAME", "METHODDESCRIPTOR", "JAVAOBJECT")
+
+    expected=.directory~new
+    expected~methodName="dummy_Method"
+    expected~argArrayItems=1+1
+    expected~slotArgument=.true
+
+    noArgs=bsf.createArrayOf("java.lang.Object")   -- no arguments (= empty array of arguments)
+    oneArg=bsf.createArrayOf("java.lang.String", 1)
+    rp_arr=rpo~dummy_Method("oha2")     -- sendMessage interface method, fetch result from Rexx object's unknown
+
+      -- get UNKNOWN's arguments
+    oneArg[1]=1
+    rp_arg1=rp_arr~sendMessage("AT", oneArg)
+
+    oneArg[1]=2
+    rp_arg2=rp_arr~sendMessage("[]", oneArg)
+    items=rp_arg2~sendMessage("items", noArgs)
+
+    oneArg[1]=3
+    rp_arg3=rp_arr~sendMessage("AT", oneArg)
+
+    self~assertTrue(checkReturnedValues(expected, rp_arg1, rp_arg2, items, rp_arg3, listOfEntries, noArgs, oneArg))
+
+
+::method "test_03_plain_sendMessage_two_args"
+    ro=.SomeRexxClass~new           -- create an instance of an ooRexx class
+
+    rpo=BsfCreateRexxProxy(ro, ,"rgf.D_abstractClasses.AbstractTest")  -- create Java RexxProxy object, being used as an AbstractTest object
+    listOfEntries=.list~of("METHODNAME", "METHODDESCRIPTOR", "JAVAOBJECT")
+
+    expected=.directory~new
+    expected~methodName="dummy_Method"
+    expected~argArrayItems=1+1
+    expected~slotArgument=.true
+
+    noArgs=bsf.createArrayOf("java.lang.Object")   -- no arguments (= empty array of arguments)
+    oneArg=bsf.createArrayOf("java.lang.String", 1)
+    rp_arr=rpo~dummy_Method("oha3")     -- sendMessage interface method, fetch result from Rexx object's unknown
+
+      -- get UNKNOWN's arguments
+    oneArg[1]=1
+    rp_arg1=rp_arr~sendMessage("AT", oneArg)
+
+    oneArg[1]=2
+    rp_arg2=rp_arr~sendMessage("[]", oneArg)
+    items=rp_arg2~sendMessage("items", noArgs)
+
+    oneArg[1]=3
+    rp_arg3=rp_arr~sendMessage("AT", oneArg)
+
+    self~assertTrue(checkReturnedValues(expected, rp_arg1, rp_arg2, items, rp_arg3, listOfEntries, noArgs, oneArg))
+
+
+::method "test_04_sendMessage_with_userData_no_args"
+    ro=.SomeRexxClass~new           -- create an instance of an ooRexx class
+
+    rpo=BsfCreateRexxProxy(ro, "max","rgf.D_abstractClasses.AbstractTest")  -- create Java RexxProxy object, being used as an AbstractTest object
+    listOfEntries=.list~of("USERDATA", "METHODNAME", "METHODDESCRIPTOR", "JAVAOBJECT")
+
+    expected=.directory~new
+    expected~methodName="dummy_Method"
+    expected~argArrayItems=1+1            -- plus appended slotDir argument!
+    expected~slotArgument=.true
+
+    noArgs=bsf.createArrayOf("java.lang.Object")   -- no arguments (= empty array of arguments)
+    rp_arr=rpo~dummy_Method("oha4")     -- sendMessage interface method, fetch result from Rexx object's unknown
+
+      -- get UNKNOWN's arguments
+    oneArg=bsf.createArrayOf("java.lang.String", 1)
+    rp_arg1=rp_arr~sendMessage("AT", oneArg)
+
+    oneArg[1]=2
+    rp_arg2=rp_arr~sendMessage("[]", oneArg)
+    items=rp_arg2~sendMessage("items", noArgs)
+
+    oneArg[1]=3
+    rp_arg3=rp_arr~sendMessage("AT", oneArg)
+
+    self~assertTrue(checkReturnedValues(expected, rp_arg1, rp_arg2, items, rp_arg3, listOfEntries, noArgs, oneArg))
+
+
+::method "test_05_sendMessage_with_userData_one_arg"
+    ro=.SomeRexxClass~new           -- create an instance of an ooRexx class
+
+    rpo=BsfCreateRexxProxy(ro, "moritz","rgf.D_abstractClasses.AbstractTest")  -- create Java RexxProxy object, being used as an AbstractTest object
+    listOfEntries=.list~of("USERDATA", "METHODNAME", "METHODDESCRIPTOR", "JAVAOBJECT")
+
+    expected=.directory~new
+    expected~methodName="dummy_Method"
+    expected~argArrayItems=1+1            -- plus appended slotDir argument!
+    expected~slotArgument=.true
+
+    noArgs=bsf.createArrayOf("java.lang.Object")   -- no arguments (= empty array of arguments)
+    oneArg=bsf.createArrayOf("java.lang.String", 1)
+    rp_arr=rpo~dummy_Method("oha4")     -- sendMessage interface method, fetch result from Rexx object's unknown
+
+      -- get UNKNOWN's arguments
+    oneArg[1]=1
+    rp_arg1=rp_arr~sendMessage("AT", oneArg)
+
+    oneArg[1]=2
+    rp_arg2=rp_arr~sendMessage("[]", oneArg)
+    items=rp_arg2~sendMessage("items", noArgs)
+
+    oneArg[1]=3
+    rp_arg3=rp_arr~sendMessage("AT", oneArg)
+
+    self~assertTrue(checkReturnedValues(expected, rp_arg1, rp_arg2, items, rp_arg3, listOfEntries, noArgs, oneArg))
+
+
+::method "test_06_sendMessage_with_userData_two_args"
+    ro=.SomeRexxClass~new           -- create an instance of an ooRexx class
+
+    rpo=BsfCreateRexxProxy(ro, "maria","rgf.D_abstractClasses.AbstractTest")  -- create Java RexxProxy object, being used as an AbstractTest object
+    listOfEntries=.list~of("USERDATA", "METHODNAME", "METHODDESCRIPTOR", "JAVAOBJECT")
+
+    expected=.directory~new
+    expected~methodName="dummy_Method"
+    expected~argArrayItems=1+1            -- plus appended slotDir argument!
+    expected~slotArgument=.true
+
+    noArgs=bsf.createArrayOf("java.lang.Object")   -- no arguments (= empty array of arguments)
+    oneArg=bsf.createArrayOf("java.lang.String", 1)
+    rp_arr=rpo~dummy_Method("oha4")     -- sendMessage interface method, fetch result from Rexx object's unknown
+
+      -- get UNKNOWN's arguments
+    oneArg[1]=1
+    rp_arg1=rp_arr~sendMessage("AT", oneArg)
+
+    oneArg[1]=2
+    rp_arg2=rp_arr~sendMessage("[]", oneArg)
+    items=rp_arg2~sendMessage("items", noArgs)
+
+    oneArg[1]=3
+    rp_arg3=rp_arr~sendMessage("AT", oneArg)
+
+    self~assertTrue(checkReturnedValues(expected, rp_arg1, rp_arg2, items, rp_arg3, listOfEntries, noArgs, oneArg))
+
+
+::method "test_07_test_correct_methods_generated"
+    ro=.SomeRexxClass~new(self)
+    rp=BsfCreateRexxProxy(ro, , "rgf.D_abstractClasses.AbstractTest_03")  -- create a RexxProxy representing the Java "AbstractTest" interface
+    rpClz=rp~getClass                     -- get dynamically created class object
+
+    declaredMethods=.set~new              -- get all declared methods
+    do method over rp~getClass~getDeclaredMethods()   -- iterate over all declared method objects
+       declaredMethods~put(method~getName)-- put method name into set
+    end
+
+    -- define expected methods
+    expectedMethods=.set~of("dummy_Method", "Boolean_Method",                                   -
+                            "double_Method", "Double_Method",                                   -
+                            "String_Method", "Object_Method", "void_Method", "all_args_Method", -
+                            "getTestRunner",                                                    -
+                            "getDefaultHandler", "getTargetRexxProxy",                          -
+                            "setDefaultHandler", "setTargetRexxProxy")
+
+--    call compareAndDump "declared<-->expected", declaredMethods, expectedMethods
+
+    self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods)")
+    self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods)")
+
+      -- three constructors to cover
+    self~assertEquals(3, rpClz~getDeclaredConstructors~items, "exactly three constructors")
+
+    return
+
+
+
+/* This test case fetches the dynamically created, extended class; it excercises the three
+   constructors that expect a RexxProxy (injected) as the first argument, and then no more,
+   one more or sixteen more arguments.
+   The supplied values will be stored in appropriate fields and are then checked for correct
+   values.
+*/
+::method "test_08_test_constructors_and_fields"
+    ro=.SomeRexxClass~new(self)
+    rpSolo=BsfCreateRexxProxy(ro)         -- needed as argument
+
+    rp=BsfCreateRexxProxy(ro, , "rgf.D_abstractClasses.AbstractTest_03")  -- create a RexxProxy representing the Java "AbstractTest" interface
+    rpClz=rp~getClass                     -- get dynamically created class object
+
+    constrs=rpClz~getDeclaredConstructors
+    do c over constrs
+       paramTypes=c~getParameterTypes
+       if paramTypes~items=1 then
+          constr0=c
+       else if paramTypes~items=2 then
+          constr1=c
+       else
+          constrMany=c
+
+--       say "paramTypes~items="pp(paramTypes~items)": c~toString="pp(c~toString)
+    end
+
+      -- constructor expects a RexxProxy as very first argument
+    argArray=bsf.createArrayOf("java.lang.Object", rpSolo)
+    o1=constr0~newInstance(argArray)
+    self~assertEquals(.nil, o1~fld_o1)
+
+    val="oha, Dackel!"
+    argArray=bsf.createArrayOf("java.lang.Object", rpSolo, val)
+    o2=constr1~newInstance(argArray)   -- use constructor with original one argument
+    self~assertEquals(val, o2~fld_o1)
+
+      -- check whether initial field values are correct
+    self~assertEquals(.true,   o2~fld_b1, "o2~fld_b1" )
+    self~assertEquals(.true,   o2~fld_b2, "o2~fld_b2" )
+    self~assertEquals( -1  ,   o2~fld_b3, "o2~fld_b3" )
+    self~assertEquals( -1  ,   o2~fld_b4, "o2~fld_b4" )
+    self~assertEquals( "a" ,   o2~fld_c1, "o2~fld_c1" )
+    self~assertEquals( "a" ,   o2~fld_c2, "o2~fld_c2" )
+    self~assertEquals( -1  ,   o2~fld_s1, "o2~fld_s1" )
+    self~assertEquals( -1  ,   o2~fld_s2, "o2~fld_s2" )
+    self~assertEquals( -1  ,   o2~fld_i1, "o2~fld_i1" )
+    self~assertEquals( -1  ,   o2~fld_i2, "o2~fld_i2" )
+    self~assertEquals( -1  ,   o2~fld_l1, "o2~fld_l1" )
+    self~assertEquals( -1  ,   o2~fld_l2, "o2~fld_l2" )
+    self~assertEquals( -1  ,   o2~fld_f1, "o2~fld_f1" )
+    self~assertEquals( -1  ,   o2~fld_f2, "o2~fld_f2" )
+    self~assertEquals( -1  ,   o2~fld_d1, "o2~fld_d1" )
+    self~assertEquals( -1  ,   o2~fld_d2, "o2~fld_d2" )
+
+
+      -- constructor expects a RexxProxy as very first argument, all primitive types need to be boxed (wrapped)
+    boxFalse =box("bool", .false)
+    boxByte  =box("byte", 3)
+    boxChar  =box("char", "b")
+    boxShort =box("short", 4)
+    boxInt   =box("int", 5)
+    boxLong  =box("long", 6)
+    boxFloat =box("float", 7.07)
+    boxDouble=box("double", 8.08)
+
+    argArray=bsf.createArrayOf("java.lang.Object", rpSolo, -
+                               boxFalse, boxFalse, -
+                               boxByte,  boxByte , -
+                               boxChar,  boxChar , -
+                               boxShort, boxShort, -
+                               boxInt,   boxInt,   -
+                               boxLong,  boxLong,  -
+                               boxFloat, boxFloat, -
+                               boxDouble,boxDouble )
+--    say "argArray~items:" pp(argArray~items)
+    o3=constrMany~newInstance(argArray)   -- use constructor with original one argument
+
+      -- check whether field values were changed correctly
+    self~assertEquals(.false,  o3~fld_b1, "o2~fld_b1" )
+    self~assertEquals(.false,  o3~fld_b2, "o2~fld_b2" )
+    self~assertEquals( 3    ,  o3~fld_b3, "o2~fld_b3" )
+    self~assertEquals( 3    ,  o3~fld_b4, "o2~fld_b4" )
+    self~assertEquals( "b"  ,  o3~fld_c1, "o2~fld_c1" )
+    self~assertEquals( "b"  ,  o3~fld_c2, "o2~fld_c2" )
+    self~assertEquals( 4    ,  o3~fld_s1, "o2~fld_s1" )
+    self~assertEquals( 4    ,  o3~fld_s2, "o2~fld_s2" )
+    self~assertEquals( 5    ,  o3~fld_i1, "o2~fld_i1" )
+    self~assertEquals( 5    ,  o3~fld_i2, "o2~fld_i2" )
+    self~assertEquals( 6    ,  o3~fld_l1, "o2~fld_l1" )
+    self~assertEquals( 6    ,  o3~fld_l2, "o2~fld_l2" )
+    self~assertEquals( 7.07 ,  o3~fld_f1, "o2~fld_f1" )
+    self~assertEquals( 7.07 ,  o3~fld_f2, "o2~fld_f2" )
+    self~assertEquals( 8.08 ,  o3~fld_d1, "o2~fld_d1" )
+    self~assertEquals( 8.08 ,  o3~fld_d2, "o2~fld_d2" )
+
+    return
+
+
+/* This test case will create dynamically created extended classes that inject a RexxProxy
+   as first argument in the created methods.
+*/
+::method "test_09_test_maskConcreteMethods"
+    -- say;say "self:" self
+
+      -- get current's Java class version
+    javaClzVersion=.java.lang.System~getProperty("java.class.version")
+
+    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+
+    -- abstract methods for which by default methods get created
+    abstractPublicMethods=.set~of("dummy_Method", "Boolean_Method",             -
+            "double_Method", "Double_Method",                                   -
+            "String_Method", "Object_Method", "void_Method", "all_args_Method", -
+            "getTestRunner")
+
+      -- method 'class$' only for Java 1.4 or earlier (class.version<49)
+
+    defaultSyntheticMethods=.set~of(                     -
+            "getDefaultHandler", "getTargetRexxProxy",   -  -- class methods
+            "setDefaultHandler", "setTargetRexxProxy")      -- instance methods
+
+      -- if masking methods, then the synthetic methods get generated depending on instance or static methods
+--     forwardToSuperMethods=.set~of("convertFromStringTo$", "instance_String_Method", "forwardToSuper", "forwardToSuperStrict")   -- for instance methods
+--     forwardToSuperStaticMethods=.set~of("convertFromStringTo$", "static_String_Method", "forwardToSuperStatic", "forwardToSuperStaticStrict")   -- for static methods
+    forwardToSuperMethods=.set~of("instance_String_Method", "instance_String_Method_forwardToSuper")   -- for instance methods
+    forwardToSuperStaticMethods=.set~of("static_String_Method", "static_String_Method_forwardToSuper")   -- for static methods
+
+    -------------------------------------------------------------------------------------------------
+    --> just create methods for public abstract methods
+    testFamily="_family_01"
+    do classVersion=48 to 50
+       if javaClzVersion<classVersion then leave   -- oops current Java class version cannnot handle target class version anymore, skip
+       newName="AbstractTest_03_"classVersion"_Java_1_4" || testFamily
+       clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03", newName, classVersion)
+       self~assertTrue(abbrev(clz~getName, newName), "clz: test new class name for java.class.version="classVersion)
+
+       self~assertEquals(3, clz~getDeclaredConstructors~items, "exactly three constructors for java.class.version="classVersion)
+
+       declaredMethods=getSetOfNames(clz~getDeclaredMethods)
+       expectedMethods=abstractPublicMethods~union(defaultSyntheticMethods)
+
+-- call compareAndDump "declared<-->expected for version:" classVersion"/"testFamily, declaredMethods, expectedMethods
+
+       self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods) for java.class.version="classVersion)
+       self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods) for java.class.version="classVersion)
+    end
+
+    -------------------------------------------------------------------------------------------------
+    --> just create explicitly methods for the constructors in addition (should be the same as above)
+    testFamily="_family_02"
+    do classVersion=48 to 50
+       if javaClzVersion<classVersion then leave   -- oops current Java class version cannnot handle target class version anymore, skip
+       newName="AbstractTest_03_"classVersion"_Java_1_4" || testFamily
+       argArray=bsf.createArrayOf("java.lang.String", "<init>")
+       clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03", newName, classVersion, argArray)
+       self~assertTrue(abbrev(clz~getName, newName), "clz: test new class name for java.class.version="classVersion)
+
+       self~assertEquals(3, clz~getDeclaredConstructors~items, "exactly three constructors for java.class.version="classVersion)
+
+       declaredMethods=getSetOfNames(clz~getDeclaredMethods)
+       expectedMethods=abstractPublicMethods~union(defaultSyntheticMethods)
+
+-- call compareAndDump "declared<-->expected for version:" classVersion"/"testFamily, declaredMethods, expectedMethods
+
+       self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods) for java.class.version="classVersion)
+       self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods) for java.class.version="classVersion)
+    end
+
+
+    -------------------------------------------------------------------------------------------------
+    --> just create explicitly method for concrete method 'instance_String_Method'
+    testFamily="_family_03"
+    do classVersion=48 to 50
+       if javaClzVersion<classVersion then leave   -- oops current Java class version cannnot handle target class version anymore, skip
+       newName="AbstractTest_03_"classVersion"_Java_1_4" || testFamily
+       argArray=bsf.createArrayOf("java.lang.String", "instance_String_Method")
+       clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03", newName, classVersion, argArray)
+       self~assertTrue(abbrev(clz~getName, newName), "clz: test new class name for java.class.version="classVersion)
+
+       self~assertEquals(3, clz~getDeclaredConstructors~items, "exactly three constructors for java.class.version="classVersion)
+
+       declaredMethods=getSetOfNames(clz~getDeclaredMethods)
+       expectedMethods=abstractPublicMethods~union(defaultSyntheticMethods)
+       expectedMethods~putAll(forwardToSuperMethods)
+       if classVersion=48 then  -- if Java 1.4 or earlier, then we have the static synthetic method "class$" as well
+          expectedMethods~put("class$")
+
+-- call compareAndDump "declared<-->expected for version:" classVersion"/"testFamily, declaredMethods, expectedMethods
+
+       self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods) for java.class.version="classVersion)
+       self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods) for java.class.version="classVersion)
+
+       ------- test invocation of a method in the new extended Java object, excerise the forward to super, compare both results
+       -- create an instance
+       ro=.RexxWithForwardToSuperMethods~new(self)  -- create a Rexx object
+       rp=BsfCreateRexxProxy(ro)             -- create a RexxProxy (Java) object of it
+
+       -- create an instance of the extended class, supplying the RexxProxy object
+            -- get constructor
+       argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
+       constructor=clz~getDeclaredConstructor(argArray)
+       self~assertNotNull(constructor, "constructor<>.nil")
+
+            -- create instance
+       argArr=bsf.createArrayOf("java.lang.Object", rp)
+       jo=constructor~newInstance(argArr)    -- create instance of extended Java class
+
+       -- sendMessage methods via the RexxProxy
+       argArray=bsf.createArrayOf("java.lang.String", "hallo")
+       res1=jo~instance_String_Method("hallo")      -- will sendMessage method in Rexx object
+
+       argArray=bsf.createArrayOf("java.lang.Object", "hallo")
+
+       res2=jo~instance_String_Method_ForwardToSuper("hallo")
+-- say "---> untyped: res1="pp(res1) "res2="pp(res2)
+         -- should both be "hallo"
+       self~assertEquals(res1~left(5), res2~left(5), "res1~left(5)=res2~left(5)") -- check whether both return the same value
+         -- should differ, one should contain "Java", the other "ooRexx"
+       self~assertNotEquals(res1~substr(6), res2~substr(6), "res1~substr(6)=res2~substr(6)") -- check whether both return the same value
+    end
+
+
+    -------------------------------------------------------------------------------------------------
+    --> just create explicitly method for concrete method 'static_String_Method'
+    testFamily="_family_04"
+    do classVersion=48 to 50
+       if javaClzVersion<classVersion then leave   -- oops current Java class version cannnot handle target class version anymore, skip
+       newName="AbstractTest_03_"classVersion"_Java_1_4" || testFamily
+       argArray=bsf.createArrayOf("java.lang.String", "static_String_Method")
+       clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03", newName, classVersion, argArray)
+       self~assertTrue(abbrev(clz~getName, newName), "clz: test new class name for java.class.version="classVersion)
+
+       self~assertEquals(3, clz~getDeclaredConstructors~items, "exactly three constructors for java.class.version="classVersion)
+
+       declaredMethods=getSetOfNames(clz~getDeclaredMethods)
+       expectedMethods=abstractPublicMethods~union(defaultSyntheticMethods)
+       expectedMethods~putAll(forwardToSuperStaticMethods)
+       if classVersion=48 then  -- if Java 1.4 or earlier, then we have the static synthetic method "class$" as well
+          expectedMethods~put("class$")
+
+-- call compareAndDump "declared<-->expected for version:" classVersion"/"testFamily, declaredMethods, expectedMethods
+
+       self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods) for java.class.version="classVersion)
+       self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods) for java.class.version="classVersion)
+
+       ------- test invocation of a method in the new extended Java object, excerise the forward to super, compare both results
+       -- create an instance
+       ro=.RexxWithForwardToSuperMethods~new(self)  -- create a Rexx object
+       rp=BsfCreateRexxProxy(ro)             -- create a RexxProxy (Java) object of it
+
+       clz~setDefaultHandler(rp)             -- define a RexxProxy default handler (for static methods)
+       -- create an instance of the extended class, supplying the RexxProxy object
+            -- get constructor
+       argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
+       constructor=clz~getDeclaredConstructor(argArray)
+       self~assertNotNull(constructor, "constructor<>.nil")
+
+            -- create instance of extended Java class, supplying RexxProxy to forward to
+       argArr=bsf.createArrayOf("java.lang.Object", rp)
+       jo=constructor~newInstance(argArr)    -- create instance
+
+       -- sendMessage methods via the RexxProxy
+       res1=jo~static_String_Method("ollah")    -- will sendMessage method in Rexx object
+       res2=jo~static_String_Method_forwardToSuper("ollah")  -- will sendMessage method in superclass (the Java base class!)
+
+-- say "---> untyped: res1="pp(res1) "res2="pp(res2)
+         -- should both be "ollah"
+       self~assertEquals(res1~left(5), res2~left(5), "forwardToSuperStatic: res1~left(5)=res2~left(5)") -- check whether both return the same value
+         -- should differ, one should contain "Java", the other "ooRexx"
+       self~assertNotEquals(res1~substr(6), res2~substr(6), "forwardToSuperStatic: res1~substr(6)=res2~substr(6)") -- check whether both return the same value
+
+
+    end
+
+    -------------------------------------------------------------------------------------------------
+    --> just create explicitly methods for *all* methods; empty list of methods or .nil for this argument causes this
+    testFamily="_family_05"
+    do classVersion=48 to 50
+       if javaClzVersion<classVersion then leave   -- oops current Java class version cannnot handle target class version anymore, skip
+       newName="AbstractTest_03_"classVersion"_Java_1_4" || testFamily
+       argArray=bsf.createArrayOf("java.lang.String")
+       clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03", newName, classVersion, argArray)
+       self~assertTrue(abbrev(clz~getName, newName), "clz: test new class name for java.class.version="classVersion)
+
+       self~assertEquals(3, clz~getDeclaredConstructors~items, "exactly three constructors for java.class.version="classVersion)
+
+       declaredMethods=getSetOfNames(clz~getDeclaredMethods)
+       expectedMethods=abstractPublicMethods~union(defaultSyntheticMethods)
+       expectedMethods ~~putAll(forwardToSuperMethods) ~~putAll(forwardToSuperStaticMethods)
+       if classVersion=48 then  -- if Java 1.4 or earlier, then we have the static synthetic method "class$" as well
+          expectedMethods~put("class$")
+
+-- call compareAndDump "declared<-->expected for version:" classVersion"/"testFamily, declaredMethods, expectedMethods
+
+       self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods) for java.class.version="classVersion)
+       self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods) for java.class.version="classVersion)
+    end
+
+
+    -------------------------------------------------------------------------------------------------
+    --> just create explicitly methods for *all* methods; empty list of methods or .nil for this argument causes this
+    testFamily="_family_06"
+    do classVersion=48 to 50
+       if javaClzVersion<classVersion then leave   -- oops current Java class version cannnot handle target class version anymore, skip
+       newName="AbstractTest_03_"classVersion"_Java_1_4" || testFamily
+       argArray=.nil
+       clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03", newName, classVersion, argArray)
+       self~assertTrue(abbrev(clz~getName, newName), "clz: test new class name for java.class.version="classVersion)
+
+       self~assertEquals(3, clz~getDeclaredConstructors~items, "exactly three constructors for java.class.version="classVersion)
+
+       declaredMethods=getSetOfNames(clz~getDeclaredMethods)
+       expectedMethods=abstractPublicMethods~union(defaultSyntheticMethods)
+       expectedMethods ~~putAll(forwardToSuperMethods) ~~putAll(forwardToSuperStaticMethods)
+       if classVersion=48 then  -- if Java 1.4 or earlier, then we have the static synthetic method "class$" as well
+          expectedMethods~put("class$")
+
+-- call compareAndDump "declared<-->expected for version:" classVersion"/"testFamily, declaredMethods, expectedMethods
+
+       self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods) for java.class.version="classVersion)
+       self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods) for java.class.version="classVersion)
+    end
+
+
+
+
+   -- default name starts with "XYZ_$RexxExtendClass$_", where "XYZ" is the name of the class to extend
+::method "test_10_test_name_of_simple_extension"
+    -- say;say "self:" self
+    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+    clz2=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03")
+
+    self~assertTrue(abbrev(clz2~getName, "rgf.D_abstractClasses.AbstractTest_03_$RexxExtendClass$_"), "clz2: test automatic generated new class name")
+
+
+::method "test_11_creating_specific_class_version_48_Java_1_4" -- Java 1.4 (which is the minum version for BSF4Rexx 4.0)
+    -- say;say "self:" self
+    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+
+    -- this allows to define the name of the new class and the class version to use (50=Java6,
+    -- 49=Java1.5, 48=Java1.4, 47=Java1.3, 46=Java1.2, 45.3=Java1.1.8
+    clzVersion=.java.lang.System~getProperty("java.class.version")
+    newName="NixiNoxi_48"
+    argArr=bsf.createArrayOf("java.lang.String", "instance_String_Method")
+    clz2=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03", newName, 48, argArr)
+
+    self~assertTrue(abbrev(clz2~getName, newName), "clz2: test new class name")
+
+    -- on Java 1.4 the synthetic method "class$" must be created
+    self~assertTrue(getSetOfNames(clz2~getDeclaredMethods)~hasIndex('class$'), "'class$' must be available on Java 1.4")
+
+
+::method "test_12_creating_specific_class_version_49_Java_1_5" -- Java 1.5
+    -- say;say "self:" self
+    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+
+    -- this allows to define the name of the new class and the class version to use (50=Java6,
+    -- 49=Java1.5, 48=Java1.4, 47=Java1.3, 46=Java1.2, 45.3=Java1.1.8
+    clzVersion=.java.lang.System~getProperty("java.class.version")
+-- say "clzVersion="pp(clzVersion)"<49 ?" (clzVersion<49)
+    if clzVersion<49 then  -- will cause a "java.lang.UnsupportedClassVersionError"
+       self~expectSyntax(40.900)
+
+    newName="NixiNoxi_49"
+    -- create all methods
+    clz2=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03", newName, 49, .nil)
+
+    self~assertEquals(newName, clz2~getName)
+
+    -- on Java 1.5 the synthetic method "class$" must NOT be created
+    self~assertFalse(getSetOfNames(clz2~getDeclaredMethods)~hasIndex('class$'), "'class$' must not be available on Java 1.5")
+
+
+::method "test_13_creating_specific_class_version_50_Java_1_6" -- Java 1.6
+    -- say;say "self:" self
+    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+
+    -- this allows to define the name of the new class and the class version to use (50=Java6,
+    -- 49=Java1.5, 48=Java1.4, 47=Java1.3, 46=Java1.2, 45.3=Java1.1.8
+    clzVersion=.java.lang.System~getProperty("java.class.version")
+-- say "clzVersion="pp(clzVersion)"<50 ?" (clzVersion<50)
+    if clzVersion<50 then  -- will cause a "java.lang.UnsupportedClassVersionError"
+       self~expectSyntax(40.900)
+
+    newName="NixiNoxi_50"
+    argArray=bsf.createArrayOf("java.lang.String")
+
+    clz2=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03", newName, 50, argArray)
+    self~assertEquals(newName, clz2~getName)
+
+    -- on Java 1.6 the synthetic method "class$" must NOT be created
+    self~assertFalse(getSetOfNames(clz2~getDeclaredMethods)~hasIndex('class$'), "'class$' must not be available on Java 6/1.6")
+
+
+
+
+/* ==================================================================================== */
+-- just return the method name and the arguments accompanying it
+::class SomeRexxClass
+::method init
+  expose testRunner
+  use arg testRunner
+
+::method getTestRunner
+  expose testRunner
+  return testrunner
+
+::method unknown
+  use arg methName, argArray, arg3=.nil
+
+/*
+  say "UNKNOWN, methodName:" pp(methName)
+  do i=1 to argArray~items
+     o=argArray[i]
+     say "   arg #" i":" pp(o)
+     if o~isA(.directory) then
+     do
+        do idx over o
+           say "      entry:" pp(idx)
+        end
+     end
+
+  end
+  say "---"
+*/
+
+  return .array~of(methName, argArray, arg3)
+
+
+-- just return the method name and the arguments accompanying it
+::class "RexxWithForwardToSuperMethods"
+::method init
+  expose testRunner
+  use arg testRunner             -- fetch this testRunner
+
+::method getTestRunner
+  expose testRunner
+  return testrunner
+
+
+::method "instance_String_Method"
+  use arg value, slotDir
+  -- say self~class~id": instance_String_Method ..." "value="pp(value) "slotDir="pp(slotDir) pp(slotDir~allIndexes~makeString) pp(slotDir~javaObject)
+  return value "instance_String_Method from ooRexx"   -- return inverted value
+
+
+::method "static_String_Method"
+  use arg value, slotDir
+  -- say self~class~id": static_String_Method ..."   "value="pp(value) "slotDir="pp(slotDir)
+  return value "static_String_Method from ooRexx"     -- return inverted value
+
+
+::method unknown
+  use arg methName, argArray, arg3=.nil
+
+  say "UNKNOWN, methodName:" pp(methName)
+  do i=1 to argArray~items
+     o=argArray[i]
+     say "   arg #" i":" pp(o)
+     if o~isA(.directory) then
+     do
+        do idx over o
+           say "      entry:" pp(idx)
+        end
+     end
+
+  end
+  say "---"
+
+  return .array~of(methName, argArray, arg3)
+
+
+/* ==================================================================================== */
+::routine checkReturnedValues
+  use arg expected, rp_arg1, rp_arg2, items, rp_arg3, listOfEntries=.nil, noArgs, oneArg
+
+  bDebug=.false -- .true
+
+  if bDebug then say "1:" expected~methodName~upper "<>" rp_arg1
+  if expected~methodName~upper<>rp_arg1 then return .false
+
+  if bDebug then say "2:" expected~argArrayItems "<>" items
+  if expected~argArrayItems<>items then return .false
+
+  if bDebug then say "3:" expected~slotArgument "," listOfEntries
+  if expected~slotArgument, listOfEntries=.nil then return .false
+
+  if listOfEntries<>.nil then    -- slot argument given, check it
+  do
+     if bDebug then dbgDir=.directory~new
+
+     oneArg[1]=items
+     slotDir=rp_arg2~sendMessage("at", oneArg)    -- get slotDir object from argArray
+
+      -- get all entries in slotDir and save them in a set
+     allIndexes=slotDir~sendMessage("allIndexes", noArgs)  -- get allIndexes
+     tmpSet=.set~new
+     do i=1 to allIndexes~sendMessage("items", noArgs)     -- iterate over all entries
+        oneArg[1]=i              -- set index
+        idx=allIndexes~sendMessage("at", oneArg)
+        tmpSet~put(idx)          -- retrieve string value
+
+        if bDebug then
+        do
+           oneArg[1]=idx
+           dbgDir[idx]=slotDir~sendMessage("at",oneArg)
+        end
+     end
+
+     if bDebug then
+     do
+        tmpStr=""
+        do i over tmpSet
+           if tmpStr="" then tmpStr=i
+                        else tmpStr=tmpStr i
+        end
+        say "--"
+        call dumpDir dbgDir
+        say "---"
+     end
+
+     if bDebug then say "4:" tmpSet~items "<>" listOfEntries~items"; tmpSet="pp(tmpStr)
+     if tmpSet~items <> listOfEntries~items then return .false -- mismatch, cannot be o.k.!
+
+      -- remove the expected entries from the set
+     do entry over listOfEntries       -- check whether slotDir contains all expected entries
+        if bDebug then say "...entry:" pp(entry)
+        tmpSet~remove(entry)           -- remove entry from the set
+     end
+     return (tmpSet~items=0)           -- returns .true, if all entries got removed
+  end
+
+  return .true
+
+dumpDir: procedure
+  use arg dir
+
+  tab="09"x
+  do idx over dir
+     o=dir[idx]
+     say "idx="pp(idx) "o="pp(o) "o~class="pp(o~class)
+  end
+  return
+
+
+
+  -- display declared and expected methods in sorted order, showing missing methods on either side
+::routine compareAndDump
+    use arg title, declSet, expSet
+    say "dumping:" pp(title)
+    tab="09"x
+    declArr=declSet~allIndexes~stableSortWith(.caselesscomparator~new)
+    expArr =expSet~allIndexes~stableSortWith(.caselesscomparator~new)
+    len=30
+    i=1; dItems=declArr~items
+    k=1; eItems=expArr~items
+
+    do forever
+       dL=declArr[i]                -- declared
+       if dL=.nil then dL=""
+       eL=expArr[k]                 -- expected
+       if eL=.nil then eL=""
+
+       if dL="", eL="" then leave
+
+       dLUpper=dL~upper
+       eLUpper=eL~upper
+
+       if dLUpper=eLUpper then
+       do
+           say tab dL~left(len) el  -- both equal
+           i+=1
+           k+=1
+       end
+       else if dLUpper<eLUpper then -- show declared, no expected
+       do
+           say tab dL
+           i+=1
+       end
+       else
+       do
+           say tab " "~left(len) el -- no declared, show expected
+           k+=1
+       end
+
+       if i>dItems then             -- declared exhausted, dump expected
+       do
+          do k=k to eItems
+             say tab " "~left(len) expArr[k]
+          end
+          leave
+       end
+       else if k>eItems then        -- dump declared, expected exhausted
+       do
+          do i=i to dItems
+             say tab declArr[i]
+          end
+          leave
+       end
+    end
+    return
+
+
+
+--  expects a Java array of java.lang.reflect members and queries the names and returns them
+::routine getSetOfNames
+  use arg arr
+  tmpSet=.set~new
+  do el over arr
+     tmpSet~put(el~getName)      -- save name in set (removes duplicates)
+  end
+  return tmpSet
+
+--  expects a Java array of java.lang.reflect members and queries the names and returns them
+::routine getBagOfNames
+  use arg arr
+  tmpBag=.Bag~new
+  do el over arr
+     tmpBag~put(el~getName)      -- save name in Bag (removes duplicates)
+  end
+  return tmpBag
+

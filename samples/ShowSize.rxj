@@ -1,0 +1,155 @@
+#!/usr/bin/rexx
+/*
+   Name:     "ShowSize.rxj"
+
+   Invoke:   "rexx ShowSize.rxj"
+                or
+             "rexxj2 ShowSize.rxj" (Windows)
+                or
+             "rexxj2 ShowSize.rxj" (Unix)
+
+   Purpose:  create a little resizable window with a push button to reveal the actual
+             size; adds EventListeners in order for Rexx to be notified, if a button
+             is pressed or the Window closed (by pressing the System close button)
+
+             This version works also, if called from the command line, as it is able
+             to load Java and the bsf4rexx support by itself.
+
+   Needs:    - Apache software foundation's "Bean Scripting Framework" (BSF)
+               (cf. "http://oss.software.ibm.com/developerworks/projects/bsf")
+             - the BSF4ooRexx package
+               (cf. <http://sourceforge.net/projects/bsf4rexx/> or
+                    <http://wi.wu.ac.at/rgf/rexx/bsf4oorexx/>
+
+   Date:    2001-04-18, 2003-01-23, 2003-05-10, 2005-06-05
+            2005-12-28, added Apache license
+            2009-07-05, Walter Pachl  add help
+            2010-05-16, rgf, - adapting example to take full advantage of BSF4ooRexx
+                             - replacing bsf.addEventListener[WithEventObject] with a Rexx event handler
+            2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+
+   Author:   Rony G. Flatscher, University of Essen, WU Wien University,
+             derived from Peter Kalender's proof-of-concept work for the "Essener Ski Seminar",
+             University of Essen (Oct 2000 to Feb 2001)
+
+   last change: $Revision: 903 $ $Author: Administrator $ $Date: 2010-08-22 17:14:30 +0200 (Sun, 22 Aug 2010) $
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2001-2012 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+If arg(1)='?' Then Do
+  Parse Source source
+  Say source
+  Say 'Create a resizable window showing its size (width and height) in the middle'
+  Say 'After a short time this window is automatically downsized and then'
+  Say 'enlarged a couple of times  and the actual size is displayed each time.'
+  Say 'Thereafter you can resize the window yourself and display the actual size'
+  Say 'by pressing the respective button.'
+  Exit
+  End
+
+if      BsfInvokedBy()=1 then say "This Rexx program was invoked by Java!"
+else if BsfInvokedBy()=2 then say "This Rexx program was invoked by Rexx, JVM loaded by Rexx!"
+else                          say "No JVM present, we got troubles ..."
+
+   -- Create a userData directory
+userData=.directory~new    -- a directory which will be passed to Rexx with the event
+
+   -- Create a framed window
+window = .bsf~new("java.awt.Frame", "Show Size")
+userData~window=window     -- save window object for later use in event handler
+
+   -- Create a Java RexxProxy for controlling the closing of the application
+rexxCloseEH =.RexxCloseAppEventHandler~new   -- Rexx event handler
+   -- Create Java RexxProxy for the Rexx event handler
+rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , "java.awt.event.WindowListener" )
+window~addWindowListener(rpCloseEH) -- add RexxProxy event handler
+
+   -- Create a button
+button = .bsf~new("java.awt.Button", 'Press me to show the actual size!')
+   -- Create a RexxProxy for the button Rexx event handler
+rp=BsfCreateRexxProxy(.RexxShowSizeEventHandler~new, userData, "java.awt.event.ActionListener")
+button~addActionListener(rp)        -- add RexxProxy event handler
+
+   -- Create a label
+label = .bsf~new("java.awt.Label")
+userData~label=label       -- save label object for later use in event handler
+label~setAlignment(label~CENTER)
+
+   -- add label and button to framed window, pack it
+window ~~add("Center", label) ~~add("South", button) ~~pack
+   -- set initial size and location, make frame visible and put it to front
+window ~~setSize(250, 150) ~~setLocation(100, 100) ~~setVisible(.true) ~~toFront
+
+secs=3                  -- seconds to sleep
+info="sleeping" secs  "seconds ..."
+label~setText(info)
+call SysSleep secs      -- sleep given seconds
+
+do i=100 to 300 by 10   -- animate the window a little bit
+   call bsf 'sleep', .1         /* sleep i seconds using bsf4rexx       */
+   window  ~setLocation(i, (i/3)%1)
+   window ~~setSize((i*.9)%1, 100+i%3 ) ~~show
+   call showSize userData
+end
+
+rexxCloseEH~waitForExit -- wait until we are allowed to end the program
+
+-- if Java was loaded by Rexx, then terminate Java's RexxEngine to inhibit callbacks from Java
+call BSF.terminateRexxEngine
+
+
+::requires BSF.CLS      -- add Java suppoert
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to set "close app" indicator */
+::class RexxCloseAppEventHandler
+::method init        /* constructor */
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::attribute closeApp          -- indicates whether app should be closed
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method windowClosing        -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to process tab changes */
+::class RexxShowSizeEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call showSize slotDir~userData
+
+
+/* ------------------------------------------------------------------------ */
+::routine ShowSize            -- query and display current size
+   use arg userData
+   size=userData~window~getSize
+   userData~label~setText(size~width "/" size~height "at:" pp(time()) )
+
