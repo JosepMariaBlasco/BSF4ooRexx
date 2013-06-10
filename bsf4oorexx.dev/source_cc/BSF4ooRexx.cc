@@ -24,6 +24,7 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+
     4.1.1   2013-06-10 - changed logic in Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
                          to really terminate Rexx interpreter instances (RII) with the exception of the
                          primodal RII, which needs to stay alive due to using it for maintaining RexxProxy
