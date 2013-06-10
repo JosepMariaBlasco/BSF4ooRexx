@@ -1,4 +1,32 @@
 
+-------------------------------------- 2013-06-10 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - changed logic in Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
+          to really terminate Rexx interpreter instances (RII) with the exception of the
+          primodal RII, which needs to stay alive due to using it for maintaining RexxProxy
+          objects with Rexx collection objects in native code
+
+- RexxEngine.java
+
+        - added public getter method isTerminated()
+
+        - added "synchronized" keyword to terminate();
+          note: the primodal Rexx interpreter instance is never terminated, use isTerminated()
+          to check for that after terminating a Rexx engine
+
+- BSF.CLS
+
+        - make BSF.terminateRexxEngine() return .true, if RexxEngine got terminated, .false else
+
+-------------------------------------- 2013-01-07 ----------------------------------
+
+- RexxDispatcher.java
+
+        - somehow a local copy of this file was wrong, introducing an error, reordering
+          Rexx termination sequences
+
 -------------------------------------- 2013-01-06 ----------------------------------
 
 - samples\quiz1.rxj, samples\quiz2.rxj, samples\quiz3.rxj, samples\uscaps.txt

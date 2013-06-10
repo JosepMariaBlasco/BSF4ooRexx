@@ -6,12 +6,15 @@
 
 2012-02-25, ---rgf
 
+-----------------------------
+
 - check on AOO MacOSX:
 
         - oxt is installable for "user", but not for "shared" !
 
 2012-11-18, ---rgf
 
+-----------------------------
 
 - remove Janino eventually and use asm exclusively; it's faster and has support for
   creating Android dex renderings on-the-fly of the Java byte code;
@@ -21,3 +24,70 @@
     to make it address the Android Dalvik VM
 
 2013-01-06, ---rgf
+
+-----------------------------
+
+- adapt setupOOo.rex to honor the upcoming AOO 4.0 locations and Windows registry keys
+
+        -------- Original Message --------
+        Subject: 	Re: Adapt the naming of our project deliverables - "OpenOffice.org" --> "Apache OpenOffice"
+        Date: 	Thu, 10 Jan 2013 15:56:02 +0100
+        From: 	Oliver-Rainer Wittmann <orwittmann@googlemail.com>
+        Reply-To: 	dev@openoffice.apache.org
+        To: 	dev@openoffice.apache.org
+
+
+        Hi,
+
+        On 10.01.2013 11:55, Rony G. Flatscher wrote:
+        > Hi Oliver-Rainer,
+        >
+        > On 10.01.2013 11:23, Oliver-Rainer Wittmann wrote:
+        >> I have finished the renaming from "OpenOffice.org" to "Apache OpenOffice" - see issue 121388.
+        >>
+        >> Beside corresponding changes in the user interface this change has impact on the following
+        >> important and critical stuff:
+        >> - folder/directory names
+        >> - package names
+        >> - Windows registry key names and values
+        >> - ...
+        >>
+        >> As the folder/directory path to the user profile is also changed, the user profile of a former
+        >> installed AOO (or OOo) version is not taken over.
+        > for installation script purposes of add-ons etc., where can one find the concrete strings for
+        > folder/directory names on the various operating system platforms and the Windows registry key names
+        > and values?
+        >
+
+        Unfortunately, there is no single place in the source code. I also had not the
+        resources to clean this up during the renaming work - hint, hint, hint :-)
+
+        Please have a look at issue 121388, the wiki page referenced in one of the
+        issue's comments and the intrinsic changes I have made.
+
+        The product installation folder is more or less a form of the $PRODUCTNAME +
+        [major version number]. E.g.:
+        - Windows: "Apache OpenOffice 3"
+        - Linux: "apache_openoffice3"
+        On Linux platforms we have also the basis installation folder. It name is found
+        in /main/instsetoo_native/util/openoffice.lst
+
+        The user profile folder is more or less $PRODUCTNAME/[major version number]/
+
+        The Windows registry keys and values can be found in module main/scp2/
+
+        I hope that helps a little bit.
+
+        Best regards, Oliver.
+
+2013-01-10, ---rgf
+
+
+-----------------------------
+
+- Rework all old samples
+        - they may be unaware of the new "<S|O>" prefixes
+        - replace deprecated bsf.addEventListener()
+        - maybe add bsf.terminateRexxEngine() where currently bsf.exit is used
+
+2013-01-19, ---rgf

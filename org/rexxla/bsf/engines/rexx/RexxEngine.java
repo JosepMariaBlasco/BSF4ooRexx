@@ -14,7 +14,7 @@ import java.lang.reflect.Method;
   * using the RexxSAA interface.
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2012 Rony G. Flatscher
+ *    Copyright (C) 2001-2013 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 4.1.0, 20120219
+  * @version 4.1.1, 20130610
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,10 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+    2013-06-10, ---rgf, - added public getter method isTerminated()
+                        - added "synchronized" keyword to terminate();
+                          note: the primodal Rexx interpreter instance is never terminated, use isTerminated()
+                          to check for that after terminating a Rexx engine
 
     2012-02-19, ---rgf, - added public methods registerBean(), unregisterBean(), lookupBean() as
                           pass-through methods for the protected RexxAndJava methods
@@ -103,7 +107,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20120219";
+    static final public String version = "411.20130610";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -1037,13 +1041,20 @@ if (bDebug)
     /** Waits until all Rexx threads of this engine's Rexx interpreter instance peer have terminated
      *  (using the new ooRExx 4.0 APIs); this method <em>must be</em> called from the same thread
      *  that created the Rexx interpreter instance (i.e. the thread that created this instance of
-     *  the RexxEngine).
+     *  the RexxEngine). It is not possible to terminate the primodal Rexx interpreter instance, use
+     *  {@link public boolean isTerminated()} to test whether the Rexx interpreter instance of
+     *  this {@link RexxEngine} got terminated.
      *
      * To halt all Rexx threads of this engine's Rexx interpreter instance peer use
      * {@link #halt()}.
      *
     */
-    public void terminate() {
+    synchronized public void terminate() {
+        if (bTerminated==true)  // already terminated, return
+        {
+            return;
+        }
+
         bTerminated=true;   // do not allow any invocations via this instance anymore
 
         if (rii_ID!=null)   // if RII got created
@@ -1051,13 +1062,28 @@ if (bDebug)
             // this waits until all threads of the instance have finished
 if (bDebug) System.err.println("RexxEngine().terminate(): before jniRexxTerminateInterpreterInstance("+rii_ID+")...");
 
-        rexxInterface.jniRexxTerminateInterpreterInstance(rii_ID);  // wait for termination of all Rexx threads of this interpreter instance
+            int res=rexxInterface.jniRexxTerminateInterpreterInstance(rii_ID);  // wait for termination of all Rexx threads of this interpreter instance
+
+            if (res==-2)         // primodal RII will never get terminated, re-allow using it
+            {
+                bTerminated=false;
+                return;
+            }
 
 if (bDebug) System.err.println("RexxEngine().terminate(): AFTER jniRexxTerminateInterpreterInstance("+rii_ID+")");
 
         }
 
         super.terminate();                  // now let the superclass do its work
+    }
+
+    /** Getter method for field <code>bTerminated</code>.
+     *
+     * @return <code>true</code>, if Rexx engine got successfully terminated, <code>false</else>
+     */
+    public boolean isTerminated()
+    {
+        return bTerminated;
     }
 
 
