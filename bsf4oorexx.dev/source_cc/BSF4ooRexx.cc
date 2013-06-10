@@ -24,6 +24,11 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.1.1   2013-06-10 - changed logic in Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
+                         to really terminate Rexx interpreter instances (RII) with the exception of the
+                         primodal RII, which needs to stay alive due to using it for maintaining RexxProxy
+                         objects with Rexx collection objects in native code
+
     4.1.-20 2012-12-30 - serializing initializations of JVM-dependent structures to fix bug #
                          <https://sourceforge.net/tracker/?func=detail&atid=1660873&aid=3591015&group_id=400586>
 
@@ -774,11 +779,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "410.20121230 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "411.20130610 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "410.20121230 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "411.20130610 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "410.20121230 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "411.20130610 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -1762,7 +1767,7 @@ inline const char * RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj
         RgfAcquireLock2(REGISTRY_lock);      // make sure, no one else can interfere
 
     #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
-        fprintf(stderr, "          RgfRemoveAllProxyObjectsByRIID2, acquired REGISTRY_lock, before rtc->SendMessage1(...) ...\n"); fflush(stderr);
+        fprintf(stderr, "          RgfRemoveAllProxyObjectsByRIID2, acquired REGISTRY_lock, before rtc->SendMessage1(...), rtc=[%p], rii_id=[%p], OREXX_RII2_OID_RELATION=[%p] ...\n", rtc, rii_id, OREXX_RII2_OID_RELATION); fflush(stderr);
     #endif
 
         // get all objects associated with given RII_ID
@@ -11747,8 +11752,21 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
         RexxFreeMemory(c_rii_ID);               // make sure we free the allocated memory
         return (jint) -1;
     }
+
+// TODO: if primodalRII return (which is needed for maintaining Rexx objects this program uses for managing ProxyObjects for all RIIs)
+
     else
     {
+
+#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
+    fprintf(stderr, "/// .._jniRexxTerminateInterpreterInstance(...): thisTid=[%lu], (priModalInstance=[%p] == instance p=[%p]) ? [%d]\n",
+                    (unsigned long) thisTid, pRoot_RII->instance, instance, (pRoot_RII->instance==instance));
+    fflush(stderr);
+#endif
+        if (pRoot_RII->instance == instance)    // do not terminate primodal RII !
+        {
+            return -2;
+        }
 
 // TODO: lock
 // RgfAcquireLock2(RII_lock);       // lock access to list of RexxInstance instances
@@ -11794,10 +11812,28 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
 
     // ---rgf, 20090903: remove all created Rexx proxy objects created in the given RII_ID
     // global variable: int bsfInvokedBy = 0;     // 0=noJVM, 1=byJava, 2=byRexx
-    if (bsfInvokedBy==1)    // BSF4Rexx invoked by Java, then o.k. to remove the cached Rexx objects
+// TODO: removing RII's proxy objects independent of how BSF4ooRexx got started
+//    if (bsfInvokedBy==1)    // BSF4Rexx invoked by Java, then o.k. to remove the cached Rexx objects
     {
+
+#if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
+        fprintf(stderr, "---> ---> ---> ");
+        fprintf(stderr, "(3c) .._jniRexxTerminateInterpreterInstance(...): BEFORE** RgfRemoveAllProxyObjectsByRIID...\n");
+        fflush(stderr);
+#endif
+
         int32_t nrFreed=RgfRemoveAllProxyObjectsByRIID(tmpInstance, c_rii_ID);
-        return -2;                  // indicate that not processed
+
+// TODO: Terminate() RII, unless primodalRII (which is needed for maintaining Rexx objects this program uses for managing ProxyObjects for all RIIs)
+
+#if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
+        fprintf(stderr, "---> ---> ---> ");
+        fprintf(stderr, "(3c) .._jniRexxTerminateInterpreterInstance(...): after*** RgfRemoveAllProxyObjectsByRIID, nrFreed=[%d] (cached ooRexx objects)\n", nrFreed);
+        fflush(stderr);
+#endif
+
+
+//        return -2;                  // indicate that not processed
     }
 
 
