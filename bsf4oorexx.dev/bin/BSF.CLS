@@ -12,6 +12,8 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2013-06-10, rg:  - make BSF.terminateRexxEngine() return .true, if RexxEngine got terminated,
+                            .false else
          2012-06-09, rgf: - added public routine BSF.terminateRexxEngine
          2012-06-05, rgf: - added uninit method to BSF_ARRAY_REFERENCE class to remove the
                             array proxy for indexing from the BSF registry, if not needed
@@ -413,7 +415,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="410.20130107" -- set version (date distribution got created)
+   .bsf4rexx~version="410.20130119" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3680,5 +3682,7 @@ syntax:
 ::routine BSF.terminateRexxEngine public
 
   if BsfInvokedBy()==2 then   -- if Java was loaded by Rexx, only then carry out the termination
-     bsf.wrap(bsf('getRexxEngine'))~terminate   -- get this Java RexxEngine and terminate it to inhibit callbacks from Java
-
+  do
+  re=bsf.wrap(bsf('getRexxEngine'))
+  re~terminate                -- will not terminate the primodal Rexx interpreter instance!
+  return re~isTerminated      -- indicate whether terminating the Rexx engine was successful
