@@ -38,7 +38,7 @@ Support:
 
         - BSF4ooRexx Sourceforge home: <https://sourceforge.net/projects/bsf4oorexx/>
 
-          - mailing lists at <https://sourceforge.net/mail/?group_id=400586&source=navbar>
+          - mailing lists at <https://sourceforge.net/p/bsf4oorexx/mailman/?source=navbar>
 
         - RexxLA member's mailing list, cf. <http://www.RexxLA.org>
 
