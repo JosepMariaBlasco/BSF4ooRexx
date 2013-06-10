@@ -7,7 +7,7 @@ import java.io.*;
 /** Invokes given Rexx or ooRexx program and supplies the commandline arguments.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2006-2011 Rony G. Flatscher
+ *    Copyright (C) 2006-2013 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -28,6 +28,9 @@ import java.io.*;
 
  /*
      last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+     2013-01-07, ---rgf, - somehow I mangled a local copy of this file, introducing an error,
+                           reordering Rexx termination sequences
 
      2012-02-06, ---rgf, - terminate() Rexx engine to inhibit callbacks from Java to Rexx
 
@@ -177,6 +180,8 @@ public class RexxDispatcher {
                     // executing; once could sleep to allow them to end, but this is not acceptable
                     // for a general purpose dispatcher; a sleep statement may look like:
                     // try { Thread.sleep(750); } catch (Exception e) {}
+                    System.gc();    // run the garbage collector, such that Java objects with finalizers get a chance to run
+                    System.runFinalization();   // run outstanding finalizers (e.g. from RexxProxy objects), if any
                     ap_rexx.terminate();    // wait for termination of the Rexx instance
                 }
                 catch (Throwable t2)
@@ -189,9 +194,6 @@ public class RexxDispatcher {
                 }
             }
 
-            System.gc();    // run the garbage collector, such that Java objects with finalizers get a chance to run
-            System.runFinalization();   // run outstanding finalizers (e.g. from RexxProxy objects), if any
-            ap_rexx.terminate(); // terminate Rexx engine, will inhibit callbacks from Java to Rexx
             System.exit(0); // make sure JVM does not crash (there was a bug, if using JNI)
 	}
 }
