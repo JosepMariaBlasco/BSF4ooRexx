@@ -10,4 +10,6 @@ rexxCode= "parse arg beanName                        ;" -
 vArgs=Vector()
 vArgs.addElement( System.getProperties )
 
-org.apache.bsf.BSFManager().apply("rexx",src,0,0,rexxCode,null,vArgs)
+mgr=org.apache.bsf.BSFManager() -- create the BSFManager
+mgr.apply("rexx",src,0,0,rexxCode,null,vArgs)   -- execute the rexx program
+mgr.terminate() -- let BSFManager terminate the Rexx intepreter instance

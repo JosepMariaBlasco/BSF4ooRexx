@@ -15,6 +15,11 @@
  * -----------------------------------------------------------------------------
  *
  * purpose: demonstrate the possibilities of a Java command handler
+ *
+ * Changed:    2013-06-13, demonstrate that one should use BSFManager's terminate() method,
+ *                         if that particular Rexx interpreter instance is not needed anymore,
+ *                         such that its reserved system resources can be reclaimed
+ *
  * needs:   testRexxWithCommandHandler.rxj
  *
  * @author  Rony G. Flatscher
@@ -61,7 +66,7 @@ public class JavaRunRexxWithCommandHandler implements RexxCommandHandler
 
         // invoke the interpreter and run the Rexx program
         rexxEngine.apply ("JavaRunRexxWithCommandHandler.rex", 0, 0, rexxCode, null, null);
-        rexxEngine.terminate();     // terminate this Rexx interpreter instance
+        mgr.terminate();    // make sure that the Rexx interpreter instance gets terminated!
     }
 
 

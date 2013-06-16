@@ -3,5 +3,7 @@ parse source . . src; parse version v; say src"/"v": Hello world!"
 
         /* 'Hello world!' using a Rexx interpreter */
 rexxCode="parse source . . src; parse version v; say src'/'v': Hello world!'"
-org.apache.bsf.BSFManager().apply("rexx",src,0,0,rexxCode,null,null)
 
+mgr       =org.apache.bsf.BSFManager()
+mgr.apply("rexx",src,0,0,rexxCode,null,null)
+mgr.terminate() -- let BSFManager terminate the Rexx intepreter instance

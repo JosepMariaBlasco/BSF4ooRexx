@@ -3,5 +3,9 @@ parse source . . src
 rexxCode="parse arg str; return reverse(str)"
 vArgs=Vector()
 vArgs.addElement("Hello from NetRexx")
-result=org.apache.bsf.BSFManager().apply("rexx",src,0,0,rexxCode,null,vArgs)
+
+mgr       =org.apache.bsf.BSFManager()
+result=mgr.apply("rexx",src,0,0,rexxCode,null,vArgs)
+mgr.terminate() -- let BSFManager terminate the Rexx intepreter instance
+
 say "NetRexx received:" result

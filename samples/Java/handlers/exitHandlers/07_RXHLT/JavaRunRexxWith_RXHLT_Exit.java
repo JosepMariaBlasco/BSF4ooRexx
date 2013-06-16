@@ -21,6 +21,12 @@
  * @since   2012-02-20
  */
 
+/*
+    Changed: 2013-06-17, rgf, demonstrate that one should use BSFManager's terminate() method,
+                            if that particular Rexx interpreter instance is not needed anymore,
+                            such that its reserved system resources can be reclaimed
+*/
+
 import org.apache.bsf.*;
 import org.rexxla.bsf.engines.rexx.*;
 
@@ -46,9 +52,16 @@ public class JavaRunRexxWith_RXHLT_Exit implements RexxExitHandler
         System.err.println("edited  rexxConf=["+rexxConf+"]\n===> Java - starting Rexx program ===>");
 
         // invoke the interpreter and run the Rexx program
-        rexxEngine.apply ("JavaRunRexxWithSystemExits.rex", 0, 0, rexxCode, null, null);
-        rexxEngine.terminate();
-        System.err.println("<=== Java - after Rexx program has finished. <===");
+        try
+        {
+            rexxEngine.apply ("JavaRunRexxWithSystemExits.rex", 0, 0, rexxCode, null, null);
+            System.err.println("<=== Java - after Rexx program has finished. <===");
+        }
+        finally
+        {
+            mgr.terminate();    // make sure that the Rexx interpreter instance gets terminated!
+            System.err.println("<=== finally: terminated Rexx interpreter instance with the help of the manager.");
+        }
     }
 
 
