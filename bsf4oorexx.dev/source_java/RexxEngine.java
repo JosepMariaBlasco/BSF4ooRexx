@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 4.1.1, 20130610
+  * @version 4.1.1, 20130625
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,22 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+    2013-06-24, ---rgf, - terminate() now invokes the new RexxAndJava.terminate() in order to allow it
+                          to release references to BSFManager and RexxEngine, afterwards releasing
+                          the reference to its RexxAndJava peer;
+                          experimental: if trying to terminate the primodal Rexx interpreter instance a
+                          warning will get issued on System.err that informs the reader, that Java cannot
+                          use the primodal Rexx interpreter instance anymore; in effect the primodal
+                          Rexx interpreter instance does never get terminated, such that the native code
+                          has it always available for its own purposes
+
+                        - added bJNITerminated which is set to true, if a Rexx interpreter instance
+                          got terminated via JNI; bTerminated logically terminates the usage of a
+                          RexxEngine (usually changed by the peer RexxAndJava object's "exit" subfunction
+
+    2013-06-10, ---rgf, - now terminating RexxAndJava peer using its new method terminate(),
+                          then nullifying references to it
+
     2013-06-10, ---rgf, - added public getter method isTerminated()
                         - added "synchronized" keyword to terminate();
                           note: the primodal Rexx interpreter instance is never terminated, use isTerminated()
@@ -107,11 +123,17 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "411.20130610";
+    static final public String version = "411.20130625";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
     protected boolean bTerminated=false;
+
+    /** Will be set to true, if terminate() used JNI to successfully terminate the Rexx interpreter
+     *  instance.
+     * @since 2013-06-25
+     */
+    protected boolean bJNITerminated=false;
 
     /** Contains the RexxInterpreter instance ID this engine is associated with.
      */
@@ -1041,8 +1063,10 @@ if (bDebug)
     /** Waits until all Rexx threads of this engine's Rexx interpreter instance peer have terminated
      *  (using the new ooRExx 4.0 APIs); this method <em>must be</em> called from the same thread
      *  that created the Rexx interpreter instance (i.e. the thread that created this instance of
-     *  the RexxEngine). It is not possible to terminate the primodal Rexx interpreter instance, use
-     *  {@link public boolean isTerminated()} to test whether the Rexx interpreter instance of
+     *  the RexxEngine). Terminating the primodal Rexx interpreter instance makes it unavailable for
+     *  use by the Java side, but remains running for the native code. All other Rexx interpreter
+     *  instances will be terminated for good.
+     *  Use {@link public boolean isTerminated()} to test whether the Rexx interpreter instance of
      *  this {@link RexxEngine} got terminated.
      *
      * To halt all Rexx threads of this engine's Rexx interpreter instance peer use
@@ -1050,7 +1074,8 @@ if (bDebug)
      *
     */
     synchronized public void terminate() {
-        if (bTerminated==true)  // already terminated, return
+
+        if (bJNITerminated==true)  // already terminated, return
         {
             return;
         }
@@ -1064,9 +1089,9 @@ if (bDebug) System.err.println("RexxEngine().terminate(): before jniRexxTerminat
 
             int res=rexxInterface.jniRexxTerminateInterpreterInstance(rii_ID);  // wait for termination of all Rexx threads of this interpreter instance
 
-            if (res==-2)         // primodal RII will never get terminated, re-allow using it
+            if (res==-2)         // primodal RII will never get terminated, to allow JNI to use it from the Rexx side to maintain Rexx collections for its purposes
             {
-                bTerminated=false;
+                // System.err.println(this+": terminated primodal Rexx interpreter instance=["+rii_ID+"] (cannot be used from Java anymore)");
                 return;
             }
 
@@ -1074,17 +1099,13 @@ if (bDebug) System.err.println("RexxEngine().terminate(): AFTER jniRexxTerminate
 
         }
 
-        super.terminate();                  // now let the superclass do its work
+        bJNITerminated=true;    // indicate that JNI successfully carried out Terminate() on the RII
+
+        super.terminate();          // now let the superclass do its work
+        rexxInterface.terminate();  // let RexxAndJava peer terminate as well
+        rexxInterface=null;         // remove reference to RexxAndJava peer
     }
 
-    /** Getter method for field <code>bTerminated</code>.
-     *
-     * @return <code>true</code>, if Rexx engine got successfully terminated, <code>false</else>
-     */
-    public boolean isTerminated()
-    {
-        return bTerminated;
-    }
 
 
     /**

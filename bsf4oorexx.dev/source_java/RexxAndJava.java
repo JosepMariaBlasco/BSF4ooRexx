@@ -36,11 +36,14 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.1.0, 2013-01-04
+  * @version 4.1.1, 2013-06-25
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
+     2013-06-25, ---rgf, - add a terminate() method which nullifies the peer BSFManager and RexxEngine
+                           object to allow a terminated BSFManager RexxEngine to be garbage collected
+
      2013-01-04, ---rgf, - use alternative code to fix bug https://sourceforge.net/tracker/?func=detail&aid=3599351&group_id=400586&atid=1660873
 
      2013-01-03, ---rgf, - fix bug https://sourceforge.net/tracker/?func=detail&aid=3599351&group_id=400586&atid=1660873
@@ -280,7 +283,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "410.20130104";
+    static final public String version = "411.20130625";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -424,6 +427,11 @@ class RexxAndJava {
         this.rii_ID=rii_ID;
     }
 
+
+
+    /** If terminate() was invoked, then this instance's BSFManager and BSFEngine must not be used anymore.
+     */
+    protected boolean bTerminated=false;
 
 
     /** Load the DLL, which allows interfacing Java with Rexx or Object Rexx, determines
@@ -2130,6 +2138,11 @@ private static final String STRING_CARRY_OUT_SYSTEM_EXIT          =  "carryOutSy
 
     public String javaCallBSF (String args[])  throws BSFException
     {
+
+        if (bTerminated==true)       // RexxAndJava got terminated, cannot use it anymore
+        {
+            throw new RexxException("RexxAndJava "+this+" got terminated, cannot be used anymore.");
+        }
 
         {
             final boolean bDebug=    // if true, show debug infos
@@ -5116,6 +5129,11 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
      */
     private Object lookupBean4JNI(String beanName)
     {
+        if (bTerminated==true)
+        {
+            // return null;
+            return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
+        }
         return mgr.lookupBean(beanName);
     }
 
@@ -5128,6 +5146,11 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
      */
     private String registerBean4JNI(Object object)
     {
+        if (bTerminated==true)
+        {
+            // return null;
+            return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
+        }
         return registerBean(makeBeanName(object), object);
     }
 
@@ -5145,6 +5168,12 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
       */
     protected String registerBean(String beanName, Object object)
     {
+        if (bTerminated==true)
+        {
+            // return null;
+            return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
+        }
+
         Object tmp = mgr.lookupBean( beanName );    // already defined?
         // take care of ref-counters
         int refCount    = 1;                        // ref-Counter
@@ -5176,6 +5205,11 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
       */
     protected boolean unregisterBean(String beanName )
     {
+        if (bTerminated==true)
+        {
+            return false;
+        }
+
         // take care of ref-counters
         Integer i1 = (Integer) orxReferences.get(beanName);    // get refCount-value
 
@@ -5302,6 +5336,36 @@ if (bDebug)  System.err.println("makeBeanName(): duplicate identityHashCode, spi
 
         return beanName;
     }
+
+
+    /** Called by {@link RexxEngine.terminate()}, Will free the references to {@link BSFManager} and {@link RexxEngine}.
+     *
+     *  {@link public boolean isTerminated()} to test whether the Rexx interpreter instance of
+     *  this {@link RexxEngine} got terminated.
+     *
+     * To halt all Rexx threads of this engine's Rexx interpreter instance peer use
+     * {@link #halt()}.
+     *
+     * @since 2013-06-25
+    */
+    synchronized protected void terminate()
+    {
+        bTerminated=true;       // from now on do not use BSFManager and RexxEngine related methods
+        rexxEngine=null;        // nullify, release reference
+        mgr       =null;        // nullify, release reference
+    }
+
+    /** Getter method for field <code>bTerminated</code>.
+     *
+     * @return <code>true</code>, if Rexx engine got successfully terminated, <code>false</else>
+     *
+     * @since 2013-06-25
+     */
+    public boolean isTerminated()
+    {
+        return bTerminated;
+    }
+
 
 
 /* up to 2009-07-13
@@ -5591,6 +5655,7 @@ if (bDebug) System.err.println("***debug RexxAndJava.getCauseAsString(): Invocat
 
         return tmp_rii_ID;
     }
+
 
 }
 /*
