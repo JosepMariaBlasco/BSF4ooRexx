@@ -1,9 +1,5 @@
-BSF4ooRexx, 4.10 06 Jan 2013 (07 Jan 2013 refresh)
-==================================================
-
-BSF4ooRexx, version 4.10: this version makes the configuration of individual
-Rexx interpreter instances possible, as well implementing Rexx exit handlers
-and Rexx command handlers in Java/NetRexx.
+BSF4ooRexx, 4.11 29 Feb 2013 BETA
+=================================
 
 *******************************************************************************
 * *ATTENTION*  Java's bitness must match the bitness of ooRexx ("rexx -v"):   *

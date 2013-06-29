@@ -1,4 +1,54 @@
 
+-------------------------------------- 2013-06-29 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - applying ReleaseLocalReference() wherever a Rexx thread context may have returned
+          a RexxObjectPtr for which the thread context creates a local reference to protect
+          it to be garbage collected; a ReleaseLocalReference() therefore has to be issued to
+          inhibit memory leaks
+
+        - removed compiler warnings
+
+- BSFManager.java
+
+        - if terminating engines, make sure to remove engine as PropertyChange listener to
+          inhibit memory leaks
+
+- RexxEngine.java
+
+        - get isTerminated() back into the code; was mistakingly deleted between rev 137 and 148
+
+-------------------------------------- 2013-06-27 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - slight tidying up (removed an obsolete function)
+
+-------------------------------------- 2013-06-25 ----------------------------------
+
+- RexxAndJava.java
+
+        - add a terminate() method which nullifies the peer BSFManager and RexxEngine
+          object to allow a terminated BSFManager RexxEngine to be garbage collected
+
+-------------------------------------- 2013-06-24 ----------------------------------
+
+- RexxEngine.java
+
+        - terminate() now invokes the new RexxAndJava.terminate() in order to allow it
+          to release references to BSFManager and RexxEngine, afterwards releasing
+          the reference to its RexxAndJava peer;
+          experimental: if trying to terminate the primodal Rexx interpreter instance a
+          warning will get issued on System.err that informs the reader, that Java cannot
+          use the primodal Rexx interpreter instance anymore; in effect the primodal
+          Rexx interpreter instance does never get terminated, such that the native code
+          has it always available for its own purposes
+
+        - added bJNITerminated which is set to true, if a Rexx interpreter instance
+          got terminated via JNI; bTerminated logically terminates the usage of a
+          RexxEngine (usually changed by the peer RexxAndJava object's "exit" subfunction
+
 -------------------------------------- 2013-06-10 ----------------------------------
 
 - BSF4ooRexx.cc
