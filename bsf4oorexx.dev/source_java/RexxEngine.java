@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 4.1.1, 20130625
+  * @version 4.1.1, 20130629
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,8 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+    2013-06-29, ---rgf, - get isTerminated() back into the code; was mistakingly deleted between rev 137 and 148
+
     2013-06-24, ---rgf, - terminate() now invokes the new RexxAndJava.terminate() in order to allow it
                           to release references to BSFManager and RexxEngine, afterwards releasing
                           the reference to its RexxAndJava peer;
@@ -123,11 +125,20 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "411.20130625";
+    static final public String version = "411.20130629";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
     protected boolean bTerminated=false;
+
+    /** Getter method for field <code>bTerminated</code>.
+     *
+     * @return <code>true</code>, if Rexx engine got successfully terminated, <code>false</else>
+     */
+    public boolean isTerminated()
+    {
+       return bTerminated;
+    }
 
     /** Will be set to true, if terminate() used JNI to successfully terminate the Rexx interpreter
      *  instance.
