@@ -11944,7 +11944,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                     tmpFlags[0]=pb->rxfnc_flags.rxfferr;
                     tmpFlags[1]=pb->rxfnc_flags.rxffnfnd;
                     tmpFlags[2]=pb->rxfnc_flags.rxffsub;
-                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
 
@@ -12010,7 +12010,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                     jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                     tmpFlags[0]=pb->rxcmd_flags.rxfcfail;
                     tmpFlags[1]=pb->rxcmd_flags.rxfcerr;
-                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
 
@@ -12088,7 +12088,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                     jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                     tmpFlags[0]=pb->rxmsq_flags.rxfmlifo;
 
-                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
 
@@ -12246,7 +12246,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                     jbooleanArray jflags= param.env->NewBooleanArray((jsize) 1); // needed size (number of elements)
                     jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                     tmpFlags[0]=pb->rxhlt_flags.rxfhhalt;
-                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
                 }
@@ -12274,7 +12274,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                     jbooleanArray jflags= param.env->NewBooleanArray((jsize) 1); // needed size (number of elements)
                     jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                     tmpFlags[0]=pb->rxtrc_flags.rxftrace;
-                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
                 }
@@ -12394,7 +12394,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                         tmpFlags[1]=flags.rxffnfnd;
                         tmpFlags[2]=flags.rxffsub;
                     }
-                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
 
@@ -12637,7 +12637,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                         pb->rxfnc_flags.rxfferr =tmpFlags[0];
                         pb->rxfnc_flags.rxffnfnd=tmpFlags[1];
                         pb->rxfnc_flags.rxffsub =tmpFlags[2];
-                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                         param.env->DeleteLocalRef(jflags);
 
                             // get result, if any, turn it into a RexxObjectPtr
@@ -12694,7 +12694,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                         pb->rxcmd_flags.rxfcfail =tmpFlags[0];
                         pb->rxcmd_flags.rxfcerr  =tmpFlags[1];
 
-                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                         param.env->DeleteLocalRef(jflags);
 
                             // get result, if any, turn it into a RexxObjectPtr
@@ -12930,7 +12930,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                         jbooleanArray jflags= (jbooleanArray) param.env->GetObjectArrayElement(jpb, (jint) 0);
                         jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                         pb->rxhlt_flags.rxfhhalt =tmpFlags[0];
-                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                         param.env->DeleteLocalRef(jflags);
                     }
                 }
@@ -12951,7 +12951,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                         jbooleanArray jflags= (jbooleanArray) param.env->GetObjectArrayElement(jpb, (jint) 0);
                         jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                         pb->rxtrc_flags.rxftrace =tmpFlags[0];
-                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                         param.env->DeleteLocalRef(jflags);
                     }
                 }
@@ -13069,7 +13069,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                                 flags->rxfferr =tmpFlags[0];
                                 flags->rxffnfnd=tmpFlags[1];
                             }
-                            param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                            param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                             param.env->DeleteLocalRef(jflags);
 
 
@@ -13348,7 +13348,7 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
         RgfReleaseLock();
 
         SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_handler_entry(), error 5: Java exception, cannot find the Java Rexx exit handler method named [%s], needed for processing the command addressed to: [%s]",
-                            DLLNAME, context->CString(address));
+                            DLLNAME, CONFIG_REXX_EXIT_HANDLER_NAME, context->CString(address));
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         return NULL;
     }
