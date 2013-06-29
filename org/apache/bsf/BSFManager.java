@@ -60,6 +60,7 @@ import org.apache.bsf.util.ObjectRegistry;
  */
 
 /*  changed:
+    2013-06-29: ---rgf, if terminating engines, make sure to remove engine as PropertyChange listener
     2011-01-08: ---rgf, static constructor: fixed logic error in fallback code for getResources()
     2009-09-10: ---rgf, context class loader may not be set, account for it
 
@@ -1014,6 +1015,9 @@ public class BSFManager {
         BSFEngine engine;
         while (enginesEnum.hasMoreElements()) {
             engine = (BSFEngine) enginesEnum.nextElement();
+
+            pcs.removePropertyChangeListener(engine);   // rgf, 2013-06-29: removing memory leak
+
             engine.terminate();
         }
 
