@@ -24,6 +24,8 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.1.1   2013-06-30 - removed last compiler warning (-Wwrite-strings)
+
     4.1.1   2013-06-29 - applying ReleaseLocalReference() wherever a Rexx thread context may have returned
                          a RexxObjectPtr for which the thread context creates a local reference to protect
                          it to be garbage collected; a ReleaseLocalReference() therefore has to be issued to
@@ -788,11 +790,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "411.20130629 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "411.20130630 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "411.20130629 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "411.20130630 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "411.20130629 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "411.20130630 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -10155,7 +10157,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         // 2009-10-11, rgf, add extensions for BSF.CLS
         // 2012-02-08, rgf, process possible argument from Java
     options[1].optionName= EXTERNAL_CALL_EXTENSIONS;
-    char* c_external_call_extensions=NULL;
+    const char* c_external_call_extensions=NULL;    // TODO: rgf, 20130630 - test change from "char *" to "const char *" !
     if (j_external_call_extensions==NULL)       // o.k. not supplied by Java, set original default
     {
         c_external_call_extensions = ".rxj,.rxo,.rxjo,.jrexx";  //  ".jrexx,.rexxj,.rexxjo";
@@ -10163,7 +10165,8 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     else
     {
         // resulting value needs to get freed at the end !
-        c_external_call_extensions=(char *) JNU_GetStringNativeChars(env, j_external_call_extensions);   // convert to native string
+        c_external_call_extensions=JNU_GetStringNativeChars(env, j_external_call_extensions);   // convert to native string
+//        c_external_call_extensions=(char *) JNU_GetStringNativeChars(env, j_external_call_extensions);   // convert to native string
     }
     options[1].option    = c_external_call_extensions;
 
@@ -10177,7 +10180,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         // now process possible Java options
 
         // INITIAL_ADDRESS_ENVIRONMENT
-    char * c_initial_address_environment=NULL;
+    const char * c_initial_address_environment=NULL;
     if (j_initial_address_environment!=NULL)
     {
         // resulting value needs to get freed at the end !
@@ -10195,7 +10198,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     }
 
         // EXTERNAL_CALL_PATH
-    char * c_external_call_path=NULL;
+    const char * c_external_call_path=NULL;
     if (j_external_call_path!=NULL)
     {
         c_external_call_path=(char *) JNU_GetStringNativeChars(env, j_external_call_path);   // convert to native string
