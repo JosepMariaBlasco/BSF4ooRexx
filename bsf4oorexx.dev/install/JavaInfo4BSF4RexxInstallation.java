@@ -6,7 +6,7 @@
  * <p>
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2005-2010 Rony G. Flatscher
+ *    Copyright (C) 2005-2013 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -22,13 +22,18 @@
  * ----------------------------------------------------------------------------- </pre>
  *
  *
- * @author Rony G. Flatscher (c) 2005-2008
- * @version 1.2
+ * @author Rony G. Flatscher (c) 2005-2013
+ * @version 1.3
  *
  */
 
  /*
     changes:
+        2013-07-02: OOo-support: add variant "getClassPath4OOo-only" which will replace
+                    the '\0' in the string "unoinfo java" returns by the system's file
+                    separator, but will not prepend or append anything; this way shell
+                    scripts can get easily at the needed classpath values for OOo/LO
+
         2008-07-12: OOo-support: added processing of an argument "getClassPath4OOo", which
                     may be optionally followed by the fully qualified (enquoted) path to
                     "unoinfo"; prints "CLASSPATH" and the necessary CLASSPATH string, delimited
@@ -108,8 +113,12 @@ for (int i=0; i<argv.length; i++)
         }
         else
         {
-                //
-            boolean bQueryOOoClassPath=argv[0].equalsIgnoreCase("getClassPath4OOo");
+            String argv0=argv[0].toLowerCase();
+
+                // "getClassPath4OOo" (add prefix "CLASSPATH " for Rexx parsing), "getClassPath4OOo-only"
+            boolean bQueryOOoClassPath      =  argv0.startsWith("getclasspath4ooo");
+            boolean bQueryOOoClassPathPrefix=!(argv0.endsWith("-only"));
+            // boolean bQueryOOoClassPath=argv[0].equalsIgnoreCase("getClassPath4OOo");
 
             String res="";
             if (argv.length==1)     // get and return just the value
@@ -120,12 +129,12 @@ for (int i=0; i<argv.length; i++)
                 }
                 else        // no fully qualified path to executable "unoinfo" given!
                 {
-                    res=getClassPath4OOo(null);
+                    res=getClassPath4OOo(null,bQueryOOoClassPathPrefix);
                 }
             }
             else if (bQueryOOoClassPath && argv.length==2)    // two argv
             {
-                res=getClassPath4OOo(argv[1]);
+                res=getClassPath4OOo(argv[1],bQueryOOoClassPathPrefix);
             }
             else
             {
@@ -374,7 +383,7 @@ System.out.println("  idx=["+idx+"]: ["+hexstring.substring(i, endPos)+"]...");
      * @param path2unoinfo    fully qualified path to the 'unoinfo' executable, or null if available via PATH
      * @return                string to be used to define or extend the CLASSPATH environment variable
      */
-    static private String getClassPath4OOo (String path2unoinfo)
+    static private String getClassPath4OOo (String path2unoinfo, boolean bWithPrefix)
     {
         String res="";
         if (path2unoinfo==null)       // no path given, hence assume "unoinfo" is available via PATH
@@ -384,6 +393,12 @@ System.out.println("  idx=["+idx+"]: ["+hexstring.substring(i, endPos)+"]...");
 
         try {
             String line=null, prefix="CLASSPATH ";
+
+            if (bWithPrefix==false)     // do not add the prefix (prefix needed by setup*.rex for parsing)
+            {
+                prefix="";
+            }
+
             Process p=null;
             p = Runtime.getRuntime().exec(path2unoinfo+" java");  // add argument to command
 
