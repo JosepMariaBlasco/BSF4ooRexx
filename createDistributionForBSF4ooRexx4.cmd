@@ -28,8 +28,10 @@ set runDate=20130629
 set doc_date=2013-06-29
 
 @rem values to use for creating the BSF jarfile
-set bsfDate=20090910
-set bsfVersion=v400
+@rem set bsfDate=20090910
+set bsfDate=20130629
+@rem set bsfVersion=v400
+set bsfVersion=v411
 set bsfJarNameBin=bsf-%bsfVersion%-%bsfDate%.jar
 set bsfJarNameSource=bsf-%bsfVersion%-%bsfDate%-source.jar
 
