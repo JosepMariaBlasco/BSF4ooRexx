@@ -60,6 +60,7 @@ import org.apache.bsf.util.ObjectRegistry;
  */
 
 /*  changed:
+    2013-06-30: ---rgf, update the version's date to reflect that the source code has changed
     2013-06-29: ---rgf, if terminating engines, make sure to remove engine as PropertyChange listener
     2011-01-08: ---rgf, static constructor: fixed logic error in fallback code for getResources()
     2009-09-10: ---rgf, context class loader may not be set, account for it
@@ -81,7 +82,7 @@ public class BSFManager {
     // and "yyyy" a four digit year, "mm" a two digit month, "dd" a two digit day.
     //
     // Example: "245.20090910" stands for: BSF version "2.4.5" as of "2009-09-10"
-    protected static String version="245.20090910";
+    protected static String version="245.20130629";
 
     // table of registered scripting engines
     protected static Hashtable registeredEngines = new Hashtable();
