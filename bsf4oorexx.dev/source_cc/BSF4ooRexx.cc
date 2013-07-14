@@ -2188,7 +2188,7 @@ inline RexxObjectPtr RgfGetProxyObjectRefCount(RexxThreadContext *rtc, RexxStrin
 
 
 
-
+// TODO: RgfAcquire_Lock2 obsoleted?
     // ===> 20090503: MUTEX, blocking invocation, waits until lock was successfully acquired
 inline VOID RgfAcquire_Lock2(
     #ifdef WINDOWS
@@ -2236,6 +2236,7 @@ inline VOID RgfAcquire_Lock2(
 
 
 
+// TODO: RgfRelease_Lock2 obsoleted?
     // ===> 2009-05-03: MUTEX, release lock
 inline VOID RgfRelease_Lock2(
     #ifdef WINDOWS

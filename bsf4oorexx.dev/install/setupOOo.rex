@@ -71,13 +71,15 @@
             2011-05-31, ---rgf, - Unix: look for LibreOffice first in "/opt/libreoffice/program" (default installation
                                         location for genuine LO from www.LibreOffice.org)
             2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
+            2013-07-14, ---rgf, - Make output more verbose, such that logfile reflects what was found about OOo/LO
+                                  (displays values for cmd.eSetPath and cmd.eSetCP)
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2011 Rony G. Flatscher
+       Copyright (C) 2006-2013 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -1082,6 +1084,15 @@ iif: procedure                   /* VBasic-like function          */
 
 
 info:                            /* tell user what has happened   */
+  say "setupOOo.rex - info():"
+  say
+  say "cmd.eSetPath:"
+  say cmd.eSetPath
+  say "---"
+  say "cmd.eSetCP:"
+  say cmd.eSetCP
+  say "---"
+  say
   say
   say "the following scripts have been created:"
   say
