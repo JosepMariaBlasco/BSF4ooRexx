@@ -73,6 +73,8 @@
             2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
             2013-07-14, ---rgf, - Make output more verbose, such that logfile reflects what was found about OOo/LO
                                   (displays values for cmd.eSetPath and cmd.eSetCP)
+            2013-07-15, ---rgf, - output additional log messages to ease debugging
+                                - Unix: make sure to look for all kind of "libreoffice" variants
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
@@ -187,6 +189,9 @@ do
 end
 cmd.ePath2OOoBase=canonizePath(cmd.ePath2OOoBase)
 
+say "cmd.ePath2OOoBase:     ["cmd.ePath2OOoBase"]"
+
+
 /*
 oldDir=directory()               /* memorize actual directory                 */
 cmd.ePath2OOoBase=directory(strip(path2OOo, 'B', '"'))   -- remove quotes, if any; change to directory
@@ -250,6 +255,8 @@ if \cmd.eIsMacOSX then  -- on MacOSX depend on "unoinfo"
 
 cmd.eThisDirectory=directory() || cmd.eFile.sep -- save this directory
 
+say "cmd.ePath2OOoPrograms: ["cmd.ePath2OOoPrograms"]"
+say "cmd.ePath2OOoJars:     ["cmd.ePath2OOoJars"]"
 
 /* for forcing testing Unix on Windows
 j.cmd.eFile.separator="/" -- rgf, debug
@@ -425,9 +432,20 @@ end
 
 -- rgf, 2008-07-12: check whether "unoinfo" executable exists (starting with OOo 3.x), if so, use it
 if cmd.eIsUnix then
-   tmpPath=stream(cmd.ePath2OOoPrograms || cmd.eFile.sep || "unoinfo", "C", "QUERY EXISTS")
+do
+   tmpPath=cmd.ePath2OOoPrograms || cmd.eFile.sep || "unoinfo"
+   -- tmpPath=stream(cmd.ePath2OOoPrograms || cmd.eFile.sep || "unoinfo", "C", "QUERY EXISTS")
+end
 else                 -- Windows
-   tmpPath=stream(cmd.ePath2OOoPrograms || cmd.eFile.sep || "unoinfo.exe", "C", "QUERY EXISTS")
+do
+   tmpPath=cmd.ePath2OOoPrograms || cmd.eFile.sep || "unoinfo.exe"
+   -- tmpPath=stream(cmd.ePath2OOoPrograms || cmd.eFile.sep || "unoinfo.exe", "C", "QUERY EXISTS")
+end
+
+say "a) checking existence of ["tmpPath"]..."
+
+tmpPath=stream(tmpPath, "C", "QUERY EXISTS")
+say "b) query exists returns: ["tmpPath"]"
 
 if tmpPath<>"" then
 do
@@ -1297,10 +1315,19 @@ syntax2:                   -- no OOo-entry
 */
 ::routine getOOoHomeDirUnix
 
+/*
     -- rgf, 2011-05-31: check for "/opt/libreoffice/soffice" first (default installation location for http://www.LibreOffice.org)
   path="/opt/libreoffice/program"
   if sysFileExists(path"/soffice") then
      return path
+*/
+
+   -- cater for new name variants of "libreoffice"
+  call sysFileTree "/opt/libreoffice*", "dirs.", "DO"
+  do i=dirs.0 to 1 by -1
+     if sysFileExists(dirs.i"/program/soffice") then
+        return path
+  end
 
   val=value("PATH", , "environment")   -- get PATH environment variable's value
   paths=val~makeArray(":")       -- create array from string, use Unix path delimiter (":")
@@ -1360,7 +1387,12 @@ syntax2:                   -- no OOo-entry
    if path2unoinfo<>"", pos(" ",path2unoinfo)>0, path2unoinfo~left(1)<>'"' then
       path2unoinfo='"'path2unoinfo'"'
 
-   "java -cp . JavaInfo4BSF4RexxInstallation getClassPath4OOo" path2unoinfo "| rxqueue"
+   say "getClassPath4OOo() - directory():  ["directory()"]"
+   say "getClassPath4OOo() - path2unoinfo: ["path2unoinfo"]"
+
+   cmd="java -cp . JavaInfo4BSF4RexxInstallation getClassPath4OOo" path2unoinfo "| rxqueue"
+   say "getClassPath4OOo() - cmd:          ["cmd"]"
+   cmd
 
    parse pull "CLASSPATH " classPath2OOo  -- parse classpath string from return value
 
@@ -1368,6 +1400,7 @@ syntax2:                   -- no OOo-entry
       parse pull .
    end
 
+   say "getClassPath4OOo() returns:        ["classPath2OOo"]"
    return classPath2OOo
 
 

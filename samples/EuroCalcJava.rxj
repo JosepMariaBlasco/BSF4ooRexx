@@ -36,6 +36,7 @@
             2013-01-20, rgf, removed usage of deprecated BSF4ooRexx APIs, reworked code
             2013-01-21, rgf, tidying up a little bit, using 'keyReleased' instead of 'keyPressed'
                              event in order to get access to the latest value in the text field
+            2013-07-09, rgf, added Latvian Lats
 
    last change: $Revision: 684 $ $Author: rony $ $Date: 2010-05-16 23:04:56 +0200 (Sun, 16 May 2010) $
 
@@ -121,10 +122,12 @@ userDir~closeEH~waitForExit   -- get closing Rexx event handler object, block ma
 
     euro.eek =    15.6466  ;  euro.EEK.eCountry = "EEK: Estonia (Crown)"      ; euro.EEK.eSince=2011
 
+    euro.lvl =    0.702804 ;  euro.LVL.eCountry = "LVL: Latvia (Lats)"        ; euro.LVL.eSince=2014
+
 
         /* determine processing order of currencies, will also be used as index
            into "euro."-stem, hence UPPERCASE (!) spelling     */
-    euro.eOrder = "EUR ATS BEF CYP DEM ESP FIM FRF GRD IEP ITL LUF MTL NLG PTE SIT SKK EEK"
+    euro.eOrder = "EUR ATS BEF CYP DEM ESP FIM FRF GRD IEP ITL LUF MTL NLG PTE SIT SKK EEK LVL"
 
     euro.eCount=words(euro.eOrder)     /* save number of currencies */
     RETURN
@@ -175,7 +178,8 @@ userDir~closeEH~waitForExit   -- get closing Rexx event handler object, block ma
   insets=  frame~getInsets      -- get and parse insets
   parse value insets~toString with . "top=" top "," "left=" left "," "bottom=" bottom "," "right=" right "]" .
 
-  w_width =660                  -- desired inner width
+  -- w_width =660                  -- desired inner width
+  w_width =700                  -- desired inner width
   w_col1  = 10                  -- start of first column
   w_col2  = w_width/2+w_col1    -- start of second column
   -- w_height=300                  -- desired inner height
@@ -212,15 +216,17 @@ userDir~closeEH~waitForExit   -- get closing Rexx event handler object, block ma
         label=javaLabelClz~new         -- create label object
         userDir~setEntry(name, label)  -- save label object using calculated name
         label ~setAlignment(choose(j=0, label_right, label_left))
-        label ~setSize(choose(j=0, 115, 175), 16)
+        -- label ~setSize(choose(j=0, 115, 175), 16)
+        label ~setSize(choose(j=0, 120, 180), 16)
 
                 -- first eight currencies on left column, rest in right column
-        x=choose(id<secondCol, w_col1, w_col2) + choose(j=0, 0, 120)  /* add offset if necessary */
+        -- x=choose(id<secondCol, w_col1, w_col2) + choose(j=0, 0, 120)  /* add offset if necessary */
+        x=choose(id<secondCol, w_col1, w_col2) + choose(j=0, 0, 145)  /* add offset if necessary */
         label ~setLocation(x+left, y+top)
 
                 -- set values (exchange rates)
         idx=word(euro.eOrder, right(id,2)) -- get appropriate index
-        label~setText(choose(j=0, euro.idx, euro.idx.eCountry))
+        label~setText(choose(j=0, euro.idx, euro.idx.eCountry"," euro.idx.eSince))
 
                 -- add label to window
         frame~add(label)

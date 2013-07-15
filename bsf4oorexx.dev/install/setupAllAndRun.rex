@@ -49,6 +49,11 @@
                                 - add logfile statements, make sure logfile gets closed after each log message,
                                   such that redirecting commands to it works as well
                                 - log environment
+            2013-07-15, rgf   - add additional log info about received target directory
+                              - fixed a bug that created a wrong path on Unix for creating needed directories to target directory
+                                (two leading '/' as root, which may cause the copy to not take place)
+                              - fixed logfile name on Unix to point to a directory with write rights (home directory of user)
+                              - Unix: make sure that logfile gets chown'ed to user who runs the script
 
    remark:  ---
 
@@ -273,7 +278,7 @@ do
    say pp("arguments supplied", cmd.eParseArg) .endOfLine
    say pp("cmd.eRexxBitness", cmd.eRexxBitness)
 
-   say "Operating system version, command:" cmd.eShowOperatingSystemVersion
+   say "Operating system version, command: ["cmd.eShowOperatingSystemVersion"], yielding:"
    cmd.eShowOperatingSystemVersion cmd.eRedirect2LogFile
    say pp("cmd.eOpSys", cmd.eOpSys)
    say pp("cmd.eOpSysFull", cmd.eOpSysFull)
@@ -751,6 +756,8 @@ exit 0
 ::routine copyPackage   -- will copy the BSF4ooRexx package to the given location, returns new install dir name
   use strict arg cmd., targetDir
 
+  if cmd.eBLogFile=.true then cmd.eLogFile~say("copyPackage(): targetDir=["targetDir"]")
+
   if cmd.eOpSys='W' then   -- Windows
   do
       if targetDir~right(1)<>'\' then
@@ -767,10 +774,14 @@ exit 0
       newDir=""
       do while tmpDir<>""
          parse var tmpDir dirName "/" tmpDir    -- first run dirName="" as nothing before first "/"
-         if newDir="" then newDir="/"
-                      else newDir=newDir"/"dirName
 
-         if cmd.eBDebug=.true then say "*** SysFileExists("newDir")=" SysFileExists(newDir)
+         select
+            when newDir=""  then newDir="/"
+            when newDir="/" then newDir=newDir||dirName
+            otherwise            newDir=newDir"/"dirName
+         end
+
+         if cmd.eBDebug=.true | cmd.eBLogFile=.true then say "*** SysFileExists("newDir")=" SysFileExists(newDir)
 
          if SysFileExists(newDir)=.false then  -- dreate directory, if necessary
          do
@@ -933,10 +944,34 @@ any:                 -- something went wrong while executing the program
   use strict arg cmd.
 
   filename="BSF4ooRexx.log"      -- logfile name
-  if cmd.eOpSys="W" then fileName=value("USERPROFILE",,"ENVIRONMENT")"\"fileName
-                    else fileName="~/"fileName
 
-  cmd.eLogFileName=enQQ(fileName)   -- save quoted fully qualified logfile name in stem
+  if cmd.eOpSys="W" then
+     fileName=value("USERPROFILE",,"ENVIRONMENT")"\"fileName
+  else   -- Unix operating systems
+  do
+         -- root dir of home directories
+     rootDir="/home/"
+     if cmd.eOpSys="M" then
+        rootDir="/Users/"
+
+         -- determine current user ids
+     logname =value("LOGNAME",,"ENVIRONMENT")
+     sudoUser=value("SUDO_USER",,"ENVIRONMENT")
+
+         -- determine real user name and define location
+     if logName="root", sudoUser<>"" then
+        realName=sudoUser        --  cmd.eRealUserName=cmd.eSudoUser
+     else
+        realName=logName         -- cmd.eRealUserName=cmd.eLogName
+
+     fileName=rootDir || realname || "/" || fileName
+  end
+
+  if pos(" ",fileName)>0 then    -- if path/filename contains blank(s), quote it
+     cmd.eLogFileName=enQQ(fileName)   -- save quoted fully qualified logfile name in stem
+  else
+     cmd.eLogFileName=fileName   -- save quoted fully qualified logfile name in stem
+
   stream=.stream~new(filename)   -- create stream for logfile and assign it to attribute
 
   .output~destination(self)      -- replace monitored object
@@ -945,10 +980,11 @@ any:                 -- something went wrong while executing the program
 
   cmd.eLoggingStarted=.dateTime~new
   say "--- logging started --->"  -- this will already be processed by our unknown method
+  say "    logging to file ["fileName"] ..."
 
 
 ::method unknown           -- special processing for SAY/LINEOUT/CLOSE, otherwise forward to stream
-  expose stream cmd.
+  expose filename stream cmd.
   use arg methName, methArgs
 
   -- .stdout~say(self": UNKNOWN, methName=["methName"]")
@@ -969,6 +1005,11 @@ any:                 -- something went wrong while executing the program
      stream ~say(str)                  -- write to logfile
      .stderr~say(str)                  -- write to stderr
      stream~close                      -- close stream
+
+     if cmd.eOpSys<>"W" then           -- on Unix, make sure to change file-owner
+     do
+         "chown" cmd.eRealUserName filename
+     end
      return                            -- already processed, return
   end
 

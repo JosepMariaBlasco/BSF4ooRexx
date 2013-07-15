@@ -10,6 +10,7 @@
             2013-07-14, ---rgf, - Make output more verbose, such that logfile reflects environment at installation time
                                   (displays values for cmd.eSetBSF4REXX_HOME, cmd.eSetPath and cmd.eSetCP), will
                                   allow to analyze Java at hand
+                                - add log message, if environment variable 'processor_architeW6432' is present
             2012-02-25, ---rgf, - Unix: remove "-n" flag from "ldconfig"
                                 - Unix: detect target so-dir by looking for the lib-dir librexx.so got installed to
             2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
@@ -1784,6 +1785,8 @@ determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: det
    /* check whether running 32-bit on a 64-bit Windows; if so adapt accordingly */
    if value("processor_architeW6432",,"environment")<>"" then
    do
+      say "determinePath2javaBinary(), 'processor_architeW6432': ["value("processor_architeW6432",,"environment")"]"
+
       windir=value("windir",,"environment")
       wow64 =windir"\SysWOW64\java.exe"
       win32 =windir"\system32\java.exe"

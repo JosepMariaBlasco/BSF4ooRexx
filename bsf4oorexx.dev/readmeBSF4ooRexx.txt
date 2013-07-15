@@ -1,5 +1,11 @@
-BSF4ooRexx, 4.11 29 Feb 2013 BETA
+BSF4ooRexx, 4.11 14 Jul 2013 BETA
 =================================
+
+This is a package that creates a bridge between ooRexx and Java. For that
+reason Java must be installed on your machine as well, which is easy and
+a one click away e.g. from <http://www.java.com>. See box below for an
+important information.
+
 
 *******************************************************************************
 * *ATTENTION*  Java's bitness must match the bitness of ooRexx ("rexx -v"):   *

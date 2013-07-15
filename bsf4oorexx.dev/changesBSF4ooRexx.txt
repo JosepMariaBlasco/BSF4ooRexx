@@ -1,3 +1,25 @@
+-------------------------------------- 2013-07-14 ----------------------------------
+
+- setupBSF.rex
+
+        - Make output more verbose, such that logfile reflects environment at installation time
+          (displays values for cmd.eSetBSF4REXX_HOME, cmd.eSetPath and cmd.eSetCP), will
+          allow to analyze Java at hand
+
+- setupOOo.rex
+
+        - Make output more verbose, such that logfile reflects what was found about OOo/LO
+          (displays values for cmd.eSetPath and cmd.eSetCP)
+
+-------------------------------------- 2013-07-08 ----------------------------------
+
+- setupAllAndRun.rex
+
+        - add logfile ability, add appropriate logfile output statements
+        - increase ooRexx minimum version to 4.1.0 as BSF4ooRexx.cc mandates it
+        - add logfile statements, make sure logfile gets closed after each log message,
+          such that redirecting commands to it works as well
+        - log environment
 
 -------------------------------------- 2013-06-29 ----------------------------------
 

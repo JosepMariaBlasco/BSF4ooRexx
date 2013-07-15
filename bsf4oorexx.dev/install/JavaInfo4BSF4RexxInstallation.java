@@ -29,6 +29,11 @@
 
  /*
     changes:
+        2013-07-15: determining classpath for OOo/LO; it seems that starting with Java 1.7
+                    Runtime.exec(cmd) was changed such, that runtime errors occur that inhibit
+                    the fetching of the classpath values needed for OOo/LO, if the path to
+                    unoinfo contains a blank
+
         2013-07-02: OOo-support: add variant "getClassPath4OOo-only" which will replace
                     the '\0' in the string "unoinfo java" returns by the system's file
                     separator, but will not prepend or append anything; this way shell
@@ -400,7 +405,9 @@ System.out.println("  idx=["+idx+"]: ["+hexstring.substring(i, endPos)+"]...");
             }
 
             Process p=null;
-            p = Runtime.getRuntime().exec(path2unoinfo+" java");  // add argument to command
+            // p = Runtime.getRuntime().exec(path2unoinfo+" java");  // add argument to command
+            String args[]={ path2unoinfo, "java"};
+            p = Runtime.getRuntime().exec(args);  // add argument to command
 
             BufferedReader input = new BufferedReader (new InputStreamReader(p.getInputStream()));
             line = input.readLine();      // read the single line
