@@ -1323,11 +1323,18 @@ syntax2:                   -- no OOo-entry
 */
 
    -- cater for new name variants of "libreoffice"
-  call sysFileTree "/opt/libreoffice*", "dirs.", "DO"
-  do i=dirs.0 to 1 by -1
-     if sysFileExists(dirs.i"/program/soffice") then
-        return path
+  do needle over .list~of("/opt/*openoffice*", "/opt/libreoffice*")
+     -- call sysFileTree "/opt/libreoffice*", "dirs.", "DO"
+     call sysFileTree needle, "dirs.", "DO"
+     do i=1 to dirs.0
+        if sysFileExists(dirs.i"/program/soffice") then
+        do
+           say "getOOoHomeDirUnix(): returning ["dirs.i"/program" || "]"
+           return dirs.i"/program"     -- supply subdirectory "/program" as that will be cut off by caller
+        end
+     end
   end
+
 
   val=value("PATH", , "environment")   -- get PATH environment variable's value
   paths=val~makeArray(":")       -- create array from string, use Unix path delimiter (":")
