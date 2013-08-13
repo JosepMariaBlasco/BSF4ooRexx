@@ -1,6 +1,8 @@
 # usage: make -f apple-Makefile.mak [all \ i386 | x86_64 | ppc | universal \ clean ]
 # rgf, 2011-01-02, 2011-01-12, 2011-02-20
 
+# rgf, 2013-08-12: to support an earlier version of MacOSX use e.g. "export MACOSX_DEPLOYMENT_TARGET=10.6" before compiling (cf. "man g++")
+
 INC_PATH = -I. -I/System/Library/Frameworks/JavaVM.framework/headers
 
 INC_PATH_ORX = -I/opt/ooRexx/include $(INC_PATH)
