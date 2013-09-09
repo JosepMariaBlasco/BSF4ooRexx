@@ -7,6 +7,10 @@
    Date:    2006-01-07
    Version: 1.27
    Changed:
+            2013-07-14, ---rgf, - Make output more verbose, such that logfile reflects environment at installation time
+                                  (displays values for cmd.eSetBSF4REXX_HOME, cmd.eSetPath and cmd.eSetCP), will
+                                  allow to analyze Java at hand
+                                - add log message, if environment variable 'processor_architeW6432' is present
             2012-02-25, ---rgf, - Unix: remove "-n" flag from "ldconfig"
                                 - Unix: detect target so-dir by looking for the lib-dir librexx.so got installed to
             2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
@@ -130,7 +134,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2012 Rony G. Flatscher
+       Copyright (C) 2006-2013 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -188,14 +192,21 @@ cmd.eArgSeparator="09"x          /* separator for delimiting Rexx arguments   */
                                  /* paths to Java and desired bin-dir given?  */
 parse value parseArgs(arg(1)) with cmd.eJavaBinary (cmd.eArgSeparator) cmd.eBinDir
 if cmd.eJavaBinary="" then       /* no path to java.exe given, determine it   */
+do
+   say "setupBSF.rex: no path to Java's binary supplied, using determinePath2javaBinary()..."
    call determinePath2javaBinary
+end
+else
+do
+   say "setupBSF.rex: path to Java's binary supplied, using: ["cmd.eJavaBinary"]"
+end
 
 
 call getJavaProps                /* get the properties of the installed Java  */
 
-/*
+
+say 'setupBSF.rex - dumpJavaProps():'
 call dumpJavaProps               /* dump the Java properties in sorted order  */
-*/
 
 /* for forcing testing Unix on Windows
 j.file.separator="/" -- rgf, debug
@@ -238,7 +249,13 @@ cmd.eSuperDir2=cmd.eSuperDir || j.file.separator   -- supply a trailing separato
 
    /* set BSF4REXX_HOME */
 cmd.eSetBSF4REXX_HOME=iif(cmd.eIsUnix=1, "", "set ") || "BSF4REXX_HOME="cmd.eSuperDir
-call SysFileTree cmd.eSuperDir2||"bsf*.jar", "cmd.eJarBaseNames.", "FO" /* query for the jars we need */
+   -- 2013-07-14, ---rgf: ooRexx 4.1.3 introduced an error if using a compound symbol ending in a dot
+-- call SysFileTree cmd.eSuperDir2||"bsf*.jar", "cmd.eJarBaseNames.", "FO" /* query for the jars we need */
+call SysFileTree cmd.eSuperDir2||"bsf*.jar", "files.", "FO" /* query for the jars we need */
+cmd.eJarBaseNames.0=files.0
+do i=1 to files.0             -- now assign elements from files. to cmd.eJarBaseNames.
+   cmd.eJarBaseNames.i=files.i
+end
 
 
 -- rgf, 2010-03-18
@@ -1536,6 +1553,13 @@ iif: procedure                   /* VBasic-like function          */
   return arg(3)
 
 info:                            /* tell user what has happened   */
+  say "setupBSF.rex - info():"
+  say
+  say "cmd.eSetBSF4REXX_HOME: ["cmd.eSetBSF4REXX_HOME"]"
+  say "cmd.eSetPath:          ["cmd.eSetPath"]"
+  say "cmd.eSetCP:            ["cmd.eSetCP"]"
+  say
+  say "---"
   say
   say "the following scripts have been created:"
   say
@@ -1754,12 +1778,15 @@ determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: det
    if cmd.eIsWindows=.false then
    do
       cmd.eJavaBinary=getFromPath("java") /* get fully qualified path   */
+      say "determinePath2javaBinary(), getFromPath() returned: ["cmd.eJavaBinary"]"
       return
    end
 
    /* check whether running 32-bit on a 64-bit Windows; if so adapt accordingly */
    if value("processor_architeW6432",,"environment")<>"" then
    do
+      say "determinePath2javaBinary(), 'processor_architeW6432': ["value("processor_architeW6432",,"environment")"]"
+
       windir=value("windir",,"environment")
       wow64 =windir"\SysWOW64\java.exe"
       win32 =windir"\system32\java.exe"
@@ -1774,12 +1801,19 @@ determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: det
    do
       javaExe="java.exe"                 -- executable's name
       tmpJavaBinary=getFromPath(javaExe) -- on path ?
+      say "determinePath2javaBinary(), getFromPath() returned: ["tmpJavaBinary"]"
+
       if tmpJavaBinary=javaExe then      -- not found on path, try JRE registry entry
       do
+         say "determinePath2javaBinary(), Java binary not found, consulting registry ..."
          wsh  = .OleObject~new("WScript.Shell")
          baseKey = "HKLM\Software\JavaSoft\Java Runtime Environment"
+
          version=wsh~regRead(basekey"\CurrentVersion")
+         say "... ["||basekey"\CurrentVersion]:" version
+
          javaHome=wsh~regRead(basekey"\"version"\JavaHome")
+         say "... ["||basekey"\"version"\JavaHome}: ["javaHome"]"
          binJava=javaHome"\bin\java.exe"
 
          if sysFileExists(binJava) then   -- o.k. finally found !
@@ -1790,6 +1824,7 @@ determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: det
          cmd.eJavaBinary=qw(tmpJavaBinary)
       end
    end
+   say "determinePath2javaBinary():" cmd.eJavaBinary
    return
 
 

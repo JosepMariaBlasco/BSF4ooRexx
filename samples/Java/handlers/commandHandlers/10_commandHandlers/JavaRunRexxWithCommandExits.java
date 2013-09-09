@@ -1,5 +1,5 @@
 /* ------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2012 Rony G. Flatscher
+ *    Copyright (C) 2012-2013 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -14,9 +14,14 @@
  *    limitations under the License.
  * -----------------------------------------------------------------------------
  *
- * purpose: demonstrate the possibilities Java command handlers allows for
- * needs:   testRexxWithCommandExits.rxj
  *
+ * purpose: demonstrate the possibilities Java command handlers allows for
+ *
+ * Changed:    2013-06-13, demonstrate that one should use BSFManager's terminate() method,
+ *                         if that particular Rexx interpreter instance is not needed anymore,
+ *                         such that its reserved system resources can be reclaimed
+ *
+ * needs:   testRexxWithCommandExits.rxj
  * @author  Rony G. Flatscher
  * @since   2012-02-21
  */
@@ -62,7 +67,7 @@ public class JavaRunRexxWithCommandExits
 
         // invoke the interpreter and run the Rexx program
         rexxEngine.apply ("JavaRunRexxWithCommandExits.rex", 0, 0, rexxCode, null, null);
-        rexxEngine.terminate();     // terminate Rexx interpreter instance
+        mgr.terminate();    // make sure that the Rexx interpreter instance gets terminated!
     }
 
 

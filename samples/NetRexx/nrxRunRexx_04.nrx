@@ -1,7 +1,8 @@
 import org.rexxla.bsf.engines.rexx.
 parse source . . src
 
-rexxEngine=org.apache.bsf.BSFManager().loadScriptingEngine("rexx")
+mgr=org.apache.bsf.BSFManager()
+rexxEngine=mgr.loadScriptingEngine("rexx")
 
 rexxCode= "a=1                                         \n" -
           "b=0                                         \n" -
@@ -9,7 +10,7 @@ rexxCode= "a=1                                         \n" -
           "::requires BSF.CLS                            "
 
 do
-    result=rexxEngine.apply(src,0,0,rexxCode,null,null)
+    rexxEngine.apply(src,0,0,rexxCode,null,null)
 
 catch re=RexxException
     System.out.println("Rexx program threw an exception:\n")
@@ -23,3 +24,5 @@ catch re=RexxException
     traceBack=RexxProxy rp.sendMessage0("traceback")
     say '    traceBack.sendMessage0("firstItem"): \n\t['traceBack.sendMessage0("firstItem")']'
 end
+
+mgr.terminate() -- let BSFManager terminate the Rexx intepreter instance

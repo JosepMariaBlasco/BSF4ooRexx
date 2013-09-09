@@ -1,6 +1,7 @@
 parse source . . src
 
-rexxEngine=org.apache.bsf.BSFManager().loadScriptingEngine("rexx")
+mgr=org.apache.bsf.BSFManager()
+rexxEngine=mgr.loadScriptingEngine("rexx")
 rexxEngine.apply(src,0,0,"::requires BSF.CLS",null,null)
 
 rexxCode= "use arg javaObj                           ;" -
@@ -13,3 +14,4 @@ vArgs.addElement( System.getProperties )
 
 rexxEngine.apply(src,0,0,rexxCode,null,vArgs)
 
+mgr.terminate() -- let BSFManager terminate the Rexx intepreter instance

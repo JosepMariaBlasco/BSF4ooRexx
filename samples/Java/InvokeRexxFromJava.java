@@ -30,13 +30,20 @@ import java.io.*;       // exception handling
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  * @version 1.2, 2008-06-14, 2009-10-17
  */
+
+/*
+    Changed: 2013-06-17 rgf, demonstrate that one should use BSFManager's terminate() method,
+                        if that particular Rexx interpreter instance is not needed anymore,
+                        such that its reserved system resources can be reclaimed
+*/
+
 public class InvokeRexxFromJava {
 
   /** Running an in-line defined Rexx script.
    */
   public static void main (String[] args) throws IOException {
+    BSFManager mgr        = new BSFManager ();                // get an instance of BSFManager
     try {
-      BSFManager mgr        = new BSFManager ();                // get an instance of BSFManager
       BSFEngine  rexxViaBSF = mgr.loadScriptingEngine("rexx");  // load the Rexx engine
 
         // create Rexx code right here in Java (could be read from file as well!): in this case
@@ -99,7 +106,12 @@ public class InvokeRexxFromJava {
     {
       e.printStackTrace();
     }
-    System.exit(0);             // stop Java
+    finally
+    {
+        mgr.terminate();    // make sure that the Rexx interpreter instance gets terminated!
+    }
+
+    System.exit(0);     // stop Java
   }
 }
 

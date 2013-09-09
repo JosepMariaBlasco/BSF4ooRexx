@@ -9,12 +9,16 @@
 
                 - then sends messages to the Rexx object from Java
 
+    Changed:    2013-06-13, demonstrate that one should use BSFManager's terminate() method,
+                            if that particular Rexx interpreter instance is not needed anymore,
+                            such that its reserved system resources can be reclaimed
+
     Needs:      ooRexx 4.0, BSF4ooRexx
 
     License:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2009 Rony G. Flatscher
+       Copyright (C) 2009-2013 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -69,6 +73,8 @@ public class JavaRunRexx_03
         // messages with one argument
         System.out.println("rp~entry(\"BSF4ooRexx\") = ["+rp.sendMessage1("entry", "BSF4ooRexx")+"]");
         System.out.println("rp[\"BSF4OOREXX\"]       = ["+rp.sendMessage1("[]", "BSF4OOREXX")+"]");
+
+        mgr.terminate();    // make sure that the Rexx interpreter instance gets terminated!
     }
 }
 

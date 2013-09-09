@@ -22,7 +22,8 @@
 
    needs:   to be run as sudo or "runas" Administrator or a user with administrative rights
 
-   changed: 2010-08-28, rgf, - on install and reinstall show a BSF4ooRexx dialog about success
+   changed:
+            2010-08-28, rgf, - on install and reinstall show a BSF4ooRexx dialog about success
                              - make sure that script starts out of its own homedirectory (to allow
                                catering for some Windows 7 new "security" behaviour regarding setting
                                the homedirectory of cmd.exe scripts; so now elevating rexx.exe instead)
@@ -42,14 +43,24 @@
                                   interactive mode the user gets to see the popup window
                                 - change information for user to reassure, if BSF4ooRexx got [re-]installed
                                   successfully
-
+            2013-07-08 - 2013-07-14, ---rgf,
+                                - add logfile ability, add appropriate logfile output statements
+                                - increase ooRexx minimum version to 4.1.0 as BSF4ooRexx.cc mandates it
+                                - add logfile statements, make sure logfile gets closed after each log message,
+                                  such that redirecting commands to it works as well
+                                - log environment
+            2013-07-15, rgf   - add additional log info about received target directory
+                              - fixed a bug that created a wrong path on Unix for creating needed directories to target directory
+                                (two leading '/' as root, which may cause the copy to not take place)
+                              - fixed logfile name on Unix to point to a directory with write rights (home directory of user)
+                              - Unix: make sure that logfile gets chown'ed to user who runs the script
 
    remark:  ---
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010-2012 Rony G. Flatscher
+       Copyright (C) 2010-2013 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -65,11 +76,33 @@
     -----------------------------------------------------------------------------
 */
 
+cmd.eOpSysFull=sysVersion()
+cmd.eOpSys=cmd.eOpsysFull~left(1)~upper
+
+parse upper source s +1    -- get operating system name in uppercase
+cmd.eIsMacOSX=(s="M")      -- determine whether running on "MACOSX"
+
+
+cmd.eOriginalDirectory=directory()  -- original directory from where this script go started
+
 bPauseAtEnd=.true                -- pause at end, such that user can see the output in the console
 
-cmd.eBDebug=.false               -- if set to .true, then debug mode
+cmd.eBDebug=.false               -- if set to .true, then debug mode, does not execute statements
 cmd.eBInteractive=.true          -- if set to .true, then Rexx-"pause" are carried out
 cmd.eBQuiet=.false               -- if set to .true, then no dialogs are presented
+
+cmd.eBLogFile=.true              -- if set to .true, a logfile gets created and used
+
+cmd.eRedirect2LogFile=""         -- string to append to commands to redirect stdout and stderr to logfile, if any
+if cmd.eBLogFile=.true then
+do
+   .Logfile~new(cmd.)  -- create logfile object, redirect .output and .error
+   cmd.eRedirect2LogFile=">>" cmd.eLogFileName "2>&1" -- works on Linux and Windows XP
+end
+
+cmd.eRexxBitness=getRexxBitness()-- get Rexx bitness
+parse arg v
+cmd.eParseArg=v                  -- save arguments given
 
 parse source . . s
 cmd.eThisLocation=filespec("Location", s) -- get location (including drive letter, if any)
@@ -80,10 +113,11 @@ call directory cmd.eThisLocation
 
 parse version '-' name '_' v '(' . level .
 
-minVersion="4.0.1"
+minVersion="4.1.0"
 if v<minVersion | level<6.03 then
 do
-   say cmd.eThisName": this package needs ooRexx version" minVersion "or higher, you are running:" name v", aborting..."
+   say cmd.eThisName": this package needs ooRexx version" "["minVersion"]" "or higher, you are running version:" "["name v"], aborting..."
+   if cmd.eBLogFile=.true then cmd.eLogFile~close
    if cmd.eBInteractive=.true then
    do
       say cmd.eThisName": about to exit program, please hit enter to continue ..."
@@ -101,6 +135,7 @@ do
    if quietArg~upper<>"Q" then      -- must be in the form of "/@qr:"
    do
       say cmd.eThisName", usage:  setupAllAndRun.rex [install [targetDir] [/@q:]] | reinstall [/@q:] | uninstall [keep] [/@q:]"
+      if cmd.eBLogFile=.true then cmd.eLogFile~close
       if cmd.eBInteractive=.true then
       do
          say cmd.eThisName": about to exit program, please hit enter to continue ..."
@@ -118,6 +153,7 @@ end
 if runTypeArg="" then
 do
    say cmd.eThisName", usage:  setupAllAndRun.rex [install [targetDir] [/@q:]] | reinstall [/@q:] | uninstall [keep] [/@q:]"
+   if cmd.eBLogFile=.true then cmd.eLogFile~close
    if cmd.eBInteractive=.true then
    do
       say cmd.eThisName": about to exit program, please hit enter to continue ..."
@@ -131,6 +167,7 @@ do
    if pos(runType, "IRU")=0 then
    do
        say cmd.eThisName': unknown run mode ['runTypeArg'], must be one of "I[install]", "R[einstall]", or "U[ninstall]", aborting...'
+       if cmd.eBLogFile=.true then cmd.eLogFile~close
 
        if cmd.eBInteractive=.true then
        do
@@ -150,11 +187,6 @@ cmd.eSetupOOo="setupOOo.rex"
 cmd.eGeneratedScripts.BSF=.array~of("installBSF", "uninstallBSF", "fileAssociations_for_")
 cmd.eGeneratedScripts.OOo=.array~of("installOOo", "uninstallOOo", "fileAssociations_for_RXO")
 
-cmd.eOpSysFull=sysVersion()
-cmd.eOpSys=cmd.eOpsysFull~left(1)~upper
-
-parse upper source s +1  -- get operating system name in uppercase
-cmd.eIsMacOSX=(s="M")    -- determine whether running on "MACOSX"
 
 -- if sysVersion()~left(1)~upper="W" then       -- determine opsys and default target installation directory
 if cmd.eOpSys="W" then
@@ -171,6 +203,8 @@ do
    cmd.eScriptExtension=".cmd"
    cmd.eRexxJ="rexxj.cmd"
 
+   cmd.eShowEnvironment="set"    -- for debugging: show all environment variables
+   cmd.eShowOperatingSystemVersion="ver"  -- show Windows version
    -- xcopy:   xcopy /s /r /k /y test1\* test2\
 
    -- del:     del test2 /s /f /q
@@ -201,6 +235,9 @@ do
    cmd.eRexxJ="./rexxj.sh"
 
    cmd.eMkDir755 = "mkdir -v -m u=rwx,go=rx"   /* verbose, created directories have umask 755 */
+
+   cmd.eShowEnvironment=""             -- not defined for Unix-variants (TODO: research shell-related commands)
+   cmd.eShowOperatingSystemVersion="uname -a"   -- Linux, MacOSX
 
 /* ---> new strategy: symbolically link matchitng "libjvm.so" to "/opt/BSF4ooRexx" where it will
                       be looked for fist, then "libjvm.so" is searched without path
@@ -234,14 +271,29 @@ end
 cmd.eBInstallBSF=.true    -- start out to install BSF
 cmd.eBInstallOOo=.true    -- start out to install OOo
 
-if cmd.eBDebug=.true then
+cmd.eThisDir=directory()   -- get current directory
+
+if cmd.eBDebug=.true | cmd.eBLogFile=.true then
 do
+   say pp("arguments supplied", cmd.eParseArg) .endOfLine
+   say pp("cmd.eRexxBitness", cmd.eRexxBitness)
+
+   say "Operating system version, command: ["cmd.eShowOperatingSystemVersion"], yielding:"
+   cmd.eShowOperatingSystemVersion cmd.eRedirect2LogFile
    say pp("cmd.eOpSys", cmd.eOpSys)
    say pp("cmd.eOpSysFull", cmd.eOpSysFull)
+
+   if cmd.eShowEnvironment<>"" then
+   do
+       say "Operating system's environment, command:" cmd.eShowEnvironment
+       cmd.eShowEnvironment cmd.eRedirect2LogFile
+   end
+
+   say pp("cmd.eOriginalDirectory", cmd.eOriginalDirectory)
    say pp("cmd.eDefaultTargetDir", cmd.eDefaultTargetDir)
+   say pp("cmd.eThisDir"         , cmd.eThisDir) .endOfLine
 end
 
-cmd.eThisDir=directory()   -- get current directory from which this script got started
 
 -- process arguments: setupAllAndRun.rex [install [targetDir]] | reinstall | uninstall [keep]
 targetDir=strip(targetDir)
@@ -252,6 +304,8 @@ do
    if SysFileExists(targetDir) then
    do
        say cmd.eThisName': target directory ['targetDir'] exists already, aborting...'
+       if cmd.eBLogFile=.true then cmd.eLogFile~close  -- close logfile
+
        if cmd.eBInteractive=.true then
        do
           say cmd.eThisName": about to exit program, please hit enter to continue ..."
@@ -268,6 +322,7 @@ do
     else if pos(cmd.eSwitch, "KR")=0 then
     do
        say cmd.eThisName': unknown reinstall switch ['targetDir'], must be "K[eep]" or "R[emove]" (default) or empty, aborting...'
+       if cmd.eBLogFile=.true then cmd.eLogFile~close  -- close logfile
 
        if cmd.eBInteractive=.true then
        do
@@ -289,11 +344,12 @@ bUninstallOOoExists=SysFileExists(cmd.eThisDir || cmd.eFile.sep || cmd.eUninstal
    -- installation ------------------------------------------------------------------------
 if runType="I" then     -- control installation, rc-values -10...-19
 do
-   if cmd.eBDebug=.true then say cmd.eThisName': debug mode, install branch with targetDir=['targetDir'] ...'
+   if cmd.eBDebug=.true | cmd.eBLogFile=.true then say cmd.eThisName': install branch with targetDir=['targetDir'] ...'
 
    if cmd.eBInstallBSF=.false, cmd.eBInstallOOo=.false then  -- already installed, don't do anything
    do
        say cmd.eThisName' (install-mode): installation scripts exist already, aborting... (you may run this program as root/Administrator with the "reinstall" switch)'
+       if cmd.eBLogFile=.true then cmd.eLogFile~close  -- close logfile
 
        if cmd.eBInteractive=.true then
        do
@@ -330,6 +386,8 @@ do
           newInstallDir=copyPackage(cmd., targetDir)
           if datatype(newInstallDir, "Whole") then -- was a return code returned instead of the new installation dir ?
           do
+             if cmd.eBLogFile=.true then
+                cmd.eLogFile~~say("copyPackage(cmd., ["targetDir"]) failed, rc=["newInstallDir"]")~close
 
              if cmd.eBInteractive=.true then
              do
@@ -343,6 +401,7 @@ do
 
           if cmd.eOpSys="U" then    -- make sure the flags are setup the way we need them
           do
+             if cmd.eBLogFile=.true then cmd.eLogFile~say("about to 'call setChmod cmd., .true'")
              call setChmod cmd., .true -- .true: entire installation package, .false: *.sh in current directory only
           end
           else    -- Windows, make sure we switch to correct drive letter, if that has changed
@@ -353,7 +412,10 @@ do
                  if cmd.eBDebug=.true then
                     say pp("about to change drive to:", cmd)
                  else
-                    cmd             -- let shell execute command
+                 do
+                    if cmd.eBLogFile=.true then say pp("about to change drive to:", cmd)
+                    cmd cmd.eRedirect2LogFile   -- let shell execute command
+                 end
               end
           end
        end
@@ -366,6 +428,12 @@ do
       res=createAndRunInstallationScripts(cmd., "install", cmd.eSetupBSF, cmd.eInstallScriptNameBSF, -12, -13)
       if res<>0 then
       do
+         if cmd.eBLogFile=.true then
+         do
+            say "rc="res", fatal error running 'createAndRunInstallationScripts(cmd., ""install"", ...)'"
+            cmd.eLogFile~close  -- close logfile
+         end
+
          if cmd.eBInteractive=.true then
          do
             say cmd.eThisName": fatal error (could not install BSF4ooRexx) about to exit program, please hit enter to continue ..."
@@ -388,7 +456,7 @@ do
 
       if res<>0 then
       do
-         hint=hint || cmd.eThisName": error while setting up OpenOffice/LibreOffice support: res=["res"]. Maybe not installed?"
+         hint=hint || cmd.eThisName": error while setting up OpenOffice/LibreOffice support: res=["res"]. Maybe AOO/OOo/LO is not installed?"
 
          if cmd.eBInteractive=.true then
          do
@@ -398,6 +466,7 @@ do
 
             -- exit res -- rgf, 20110608: only abort, if in interactive mode
          end
+         else if cmd.eBLogFile=.true then cmd.eLogFile~say(hint)
       end
       else
       do
@@ -418,7 +487,12 @@ do
               lf"(Otherwise look for the BSF4ooRexx menu options in the 'Applications' menu 'Other' and"             -
               lf"run the BSF4ooRexx programs by right-clicking and picking the appropriate launcher.)"
    end
+
+   msg=msg lf lf"Logfile for this run can be found at:" "["cmd.eLogFileName"]"
    msg=msg lf lf"(This very dialog was written in Rexx using Java for an operating system independent GUI dialog!)"
+
+   if cmd.eBLogFile=.true then cmd.eLogFile~say(msg)
+
    msg=msg~changeStr(lf,"/LF/")
 
    if cmd.eBQuiet=.false then
@@ -432,7 +506,7 @@ end
    -- uninstallation ----------------------------------------------------------------------
 else if runType="U" then   -- control uninstallation, rc-values -20...-29
 do
-   if cmd.eBDebug=.true then say cmd.eThisName': debug mode, un-install branch with switch=['cmd.eSwitch'] ...'
+   if cmd.eBDebug=.true | cmd.eBLogFile=.true then say cmd.eThisName': un-install branch with switch=['cmd.eSwitch'] ...'
 
    bProceed=.true          -- default: proceed with uninstalling
 
@@ -448,6 +522,8 @@ do
          do
             say cmd.eThisName": you do not want to uninstall and delete ""BSF4ooRexx"", hit enter to return ..."
             parse pull answer
+
+            if cmd.eBLogFile=.true then cmd.eLogFile~~say("User did not want to uninstall.")~~close
             exit -20
          end
       end
@@ -460,7 +536,10 @@ do
          if cmd.eBDebug=.true then
             say cmd.eThisName': debug mode, would run ['cmd.eUninstallScriptNameOOo'] ...'
          else
-            cmd.eUninstallScriptNameOOo   -- let the shell execute the script
+         do
+            if cmd.eBLogFile=.true then say cmd.eThisName': about to run ['cmd.eUninstallScriptNameOOo']'
+            cmd.eUninstallScriptNameOOo cmd.eRedirect2LogFile   -- let the shell execute the script
+         end
       end
 
       if SysFileExists(cmd.eUninstallScriptNameBSF)=.true then -- uninstall OOo support, if present
@@ -468,7 +547,10 @@ do
          if cmd.eBDebug=.true then
             say cmd.eThisName': debug mode, would run ['cmd.eUninstallScriptNameBSF'] ...'
          else
-            cmd.eUninstallScriptNameBSF   -- let the shell execute the script
+         do
+            if cmd.eBLogFile=.true then say cmd.eThisName': about to run ['cmd.eUninstallScriptNameBSF']'
+            cmd.eUninstallScriptNameBSF cmd.eRedirect2LogFile   -- let the shell execute the script
+         end
       end
 
       if cmd.eSwitch="R" then          -- remove all BSF4ooRexx package files
@@ -477,9 +559,19 @@ do
             say cmd.eThisName': debug mode, would run [removeInstallationDir(cmd.)] ...'
          else
          do
+            if cmd.eBLogFile=.true then cmd.eLogFile~say("about to run 'removeInstallationDir(cmd.)'")
+
             res=removeInstallationDir(cmd.)
+
+            if cmd.eBLogFile=.true then
+            do
+               say cmd.eThisName": rc="res", while running 'removeInstallationDir(...)'"
+            end
+
             if res<>0 then
             do
+               if cmd.eBLogFile=.true then cmd.eLogFile~close  -- close logfile
+
                if cmd.eBInteractive=.true then
                do
                   say cmd.eThisName": about to exit program, please hit enter to continue ..."
@@ -495,19 +587,28 @@ end
    -- reinstallation ----------------------------------------------------------------------
 else -- runType="R"     -- control re-installation, rc-values -30...-39
 do
-   if cmd.eBDebug=.true then say cmd.eThisName': debug mode, re-install branch ...'
+   if cmd.eBDebug=.true | cmd.eBLogFile=.true  then say cmd.eThisName': re-install branch ...'
       -- remove currently installed packages
    if SysFileExists(cmd.eUninstallScriptNameOOo)=.true then -- uninstall OOo support, if present
    do
       if cmd.eBDebug<>.true then
-         cmd.eUninstallScriptNameOOo   -- let the shell execute the script
+      do
+         if cmd.eBLogFile=.true then cmd.eLogFile~say("about to run ["cmd.eUninstallScriptNameOOo"]")
+
+         cmd.eUninstallScriptNameOOo cmd.eRedirect2LogFile   -- let the shell execute the script
+      end
+      if cmd.eBLogFile=.true then cmd.eLogFile~say("'call removeInstallationScripts cmd., ""OOo""'")
       call removeInstallationScripts cmd., "OOo"
    end
 
    if SysFileExists(cmd.eUninstallScriptNameBSF)=.true then -- uninstall OOo support, if present
    do
       if cmd.eBDebug<>.true then
-         cmd.eUninstallScriptNameBSF   -- let the shell execute the script
+      do
+         if cmd.eBLogFile=.true then cmd.eLogFile~say("about to run ["cmd.eUninstallScriptNameBSF"]")
+         cmd.eUninstallScriptNameBSF cmd.eRedirect2LogFile   -- let the shell execute the script
+      end
+      if cmd.eBLogFile=.true then cmd.eLogFile~say("'call removeInstallationScripts cmd., ""BSF""'")
       call removeInstallationScripts cmd., "BSF"
    end
 
@@ -517,12 +618,16 @@ do
    res=createAndRunInstallationScripts(cmd., "reinstall", cmd.eSetupBSF, cmd.eInstallScriptNameBSF, -32, -33)
    if res<>0 then
    do
-      if cmd.eBInteractive=.true then
+      if cmd.eBInteractive=.true | cmd.eBLogFile=.true then
       do
          hint=cmd.eThisName": error while reinstalling BSF4ooRexx: res=["res"]."
          say hint
-         say cmd.eThisName": about to exit program, please hit enter to continue ..."
-         parse pull input
+         cmd.eLogFile~close
+         if cmd.eBInteractive=.true then
+         do
+            say cmd.eThisName": about to exit program, please hit enter to continue ..."
+            parse pull input
+         end
       end
       exit res
    end
@@ -540,11 +645,14 @@ do
    do
       hint=hint || cmd.eThisName": error while setting up OpenOffice/LibreOffice support: res=["res"]. Maybe not installed?"
 
-      if cmd.eBInteractive=.true then
+      if cmd.eBInteractive=.true  | cmd.eBLogFile=.true then
       do
          say hint
-         say "Hit enter to continue ..."
-         parse pull input
+         if cmd.eBInteractive=.true then
+         do
+            say "Hit enter to continue ..."
+            parse pull input
+         end
 
          -- exit res -- rgf: 20110608 - only abort, if in interactive mode
       end
@@ -568,7 +676,9 @@ do
 
    if hint<>"" then msg=msg lf lf || hint
 
+   msg=msg lf lf"Logfile for this run can be found at:" "["cmd.eLogFileName"]"
    msg=msg lf lf"(This very dialog was written in Rexx using Java for an operating system independent GUI dialog!)"
+   cmd.eLogFile~say(msg)
    msg=msg~changeStr(lf,"/LF/")
 
    if cmd.eBQuiet=.false then
@@ -578,7 +688,9 @@ do
    end
 end
 
-if bPauseAtEnd=.true then    -- pause at end, such that user can
+if cmd.eBLogFile=.true then cmd.eLogFile~close  -- close logfile
+
+if bPauseAtEnd=.true then  -- pause at end, such that user can
 do
    say cmd.eThisName": end of run."
    say "Please hit enter to end program ..."
@@ -599,7 +711,10 @@ exit 0
      if cmd.eBDebug=.true then      -- display generated command
         say "*** (debug), cmd=["cmd"]"
      else
-        cmd                         -- execute command
+     do
+        if cmd.eBLogFile=.true then cmd.eLogFile~say("removeInstallationScripts(): cmd=["cmd"]")
+        cmd cmd.eRedirect2LogFile                        -- execute command
+     end
   end
   return
 
@@ -613,6 +728,7 @@ exit 0
       return 0
    end
 
+   if cmd.eBLogFile=.true then cmd.eLogFile~say("createAndRunInstallationScripts(): mode=["mode"], 'call createInstallScript("createInstallScript")'")
    call (createInstallScript)
    if result<>"RESULT", result<>0 then       -- something went wrong, abort
    do
@@ -621,9 +737,12 @@ exit 0
    end
 
    if cmd.eOpSys="U" then     -- on Unix set execution flags for freshly generated .sh scripts
+   do
       call setChmod cmd., .false   -- .false: *.sh in current directory only
+   end
 
-   runInstallScript        -- let the shell execute the generated script
+   if cmd.eBLogFile=.true then cmd.eLogFile~say("createAndRunInstallationScripts(): mode=["mode"], run '"runInstallScript"'")
+   runInstallScript cmd.eRedirect2LogFile       -- let the shell execute the generated script
    if rc<>"RC", rc<>0 then
    do
       say cmd.eThisName' ('mode'-mode): running ['runInstallScript'] caused return code ['result'], aborting routine "createAndRunInstallationScripts()"...'
@@ -636,6 +755,8 @@ exit 0
 
 ::routine copyPackage   -- will copy the BSF4ooRexx package to the given location, returns new install dir name
   use strict arg cmd., targetDir
+
+  if cmd.eBLogFile=.true then cmd.eLogFile~say("copyPackage(): targetDir=["targetDir"]")
 
   if cmd.eOpSys='W' then   -- Windows
   do
@@ -653,29 +774,33 @@ exit 0
       newDir=""
       do while tmpDir<>""
          parse var tmpDir dirName "/" tmpDir    -- first run dirName="" as nothing before first "/"
-         if newDir="" then newDir="/"
-                      else newDir=newDir"/"dirName
 
-         if cmd.eBDebug=.true then say "*** SysFileExists("newDir")=" SysFileExists(newDir)
+         select
+            when newDir=""  then newDir="/"
+            when newDir="/" then newDir=newDir||dirName
+            otherwise            newDir=newDir"/"dirName
+         end
+
+         if cmd.eBDebug=.true | cmd.eBLogFile=.true then say "*** SysFileExists("newDir")=" SysFileExists(newDir)
 
          if SysFileExists(newDir)=.false then  -- dreate directory, if necessary
          do
             cmd = cmd.eMkDir755 newDir
             say cmd.eThisName" (install-mode): about to run '"cmd"' ..."
-            cmd
+            cmd cmd.eRedirect2LogFile
          end
       end
 
       cmd='cp -rfv ../*' enQQ(targetDir)
   end
 
-  say cmd.eThisName" (install-mode): about to run '"cmd"' ..."
+  say cmd.eThisName" copyPackage() - (install-mode): about to run '"cmd"' ..."
   if cmd.eBDebug<>.true then
   do
-     cmd
+     cmd cmd.eRedirect2LogFile
      if rc<>0 then
      do
-        say cmd.eThisName" (install-mode): something went wrong, rc='"rc"', aborting ..."
+        say cmd.eThisName" copyPackage() - (install-mode): something went wrong, rc='"rc"', aborting ..."
         exit rc
      end
   end
@@ -691,20 +816,20 @@ exit 0
 
    if cmd.eThisDir~right(7)<>'install' then    -- we must be started from the 'install' directory, otherwise stop for security reasons
    do
-      say cmd.eThisName' (uninstall-mode): panic - current directory ['cmd.eThisDir'] is not spelled "install", aborting...'
+      say cmd.eThisName' removeInstallationDir() - (uninstall-mode): panic - current directory ['cmd.eThisDir'] is not spelled "install", aborting...'
       exit -31
    end
 
    parentDir=directory("..")  -- go up one level
    if SysFileExists("BSF.CLS")=.false then
    do
-      say cmd.eThisName' (uninstall-mode): panic wrong directory ? - current directory ['parentDir'] does not contain the file "BSF.CLS", aborting...'
+      say cmd.eThisName' removeInstallationDir() - (uninstall-mode): panic wrong directory ? - current directory ['parentDir'] does not contain the file "BSF.CLS", aborting...'
       exit -32
    end
 
    if parentDir<>cmd.eDefaultTargetDir then
    do
-      say cmd.eThisName' (uninstall-mode): panic wrong directory ? - current directory ['parentDir'] is not in expected place (['cmd.eDefaultTargetDir']), not allowed to remove it via script, aborting...'
+      say cmd.eThisName' removeInstallationDir() - (uninstall-mode): panic wrong directory ? - current directory ['parentDir'] is not in expected place (['cmd.eDefaultTargetDir']), not allowed to remove it via script, aborting...'
       exit -33
    end
 
@@ -714,10 +839,10 @@ exit 0
    else
        cmd="rm -rfv" cmd.eDefaultTargetDir   -- delete subdirectory recursively
 
-   say cmd.eThisName' (uninstall-mode): about to run "'cmd'" ...'
+   say cmd.eThisName' removeInstallationDir() - (uninstall-mode): about to run "'cmd'" ...'
    if cmd.eBDebug<>.true then
    do
-      cmd                     -- let the shell execute
+      cmd cmd.eRedirect2LogFile                     -- let the shell execute
       if rc<>0 then exit rc
    end
    return 0
@@ -771,7 +896,7 @@ exit 0
                       else tmpStr = tmpStr '-o -iname "*'ext'"'
       end
       cmd = chunk1 "\(" tmpStr "\)" chunk2   -- build command
-      cmd                                    -- let the shell run the command
+      cmd cmd.eRedirect2LogFile                                    -- let the shell run the command
    end
    else  /* just make sure that all (possibly newly created) .sh-files in the current directory get set to: 775 */
    do
@@ -798,4 +923,96 @@ exit 0
   return .true       -- indicate success
 
 any:                 -- something went wrong while executing the program
+  cmd.eLogFile~say("-> showMessageBoxViaBSF(): condition ["condition("C")"] raised when executing 'msgBox.rxj'")
   return .false      -- indicate error
+
+
+
+
+   /* Class to establish a logfile and use it for all installation messages, exploiting
+      ooRexx monitors for .stdout and .stderr, rgf, 2013-07-07
+      sets: cmd.eLogFileName, cmd.eLogFile (stream object), cmd.eLoggingStarted and cmd.eLoggingEnded
+      */
+::class logfile
+
+::attribute fileName             -- fully qualified file name (cmd.eLogFileName)
+::attribute stream               -- logfile stream to forward SAY/LINEOUT/CLOSE to
+::attribute cmd.                 -- keep a reference to the cmd. stem to calculate duration
+
+::method init
+  expose fileName stream cmd.
+  use strict arg cmd.
+
+  filename="BSF4ooRexx.log"      -- logfile name
+
+  if cmd.eOpSys="W" then
+     fileName=value("USERPROFILE",,"ENVIRONMENT")"\"fileName
+  else   -- Unix operating systems
+  do
+         -- root dir of home directories
+     rootDir="/home/"
+     if cmd.eOpSys="M" then
+        rootDir="/Users/"
+
+         -- determine current user ids
+     logname =value("LOGNAME",,"ENVIRONMENT")
+     sudoUser=value("SUDO_USER",,"ENVIRONMENT")
+
+         -- determine real user name and define location
+     if logName="root", sudoUser<>"" then
+        realName=sudoUser        --  cmd.eRealUserName=cmd.eSudoUser
+     else
+        realName=logName         -- cmd.eRealUserName=cmd.eLogName
+
+     fileName=rootDir || realname || "/" || fileName
+  end
+
+  if pos(" ",fileName)>0 then    -- if path/filename contains blank(s), quote it
+     cmd.eLogFileName=enQQ(fileName)   -- save quoted fully qualified logfile name in stem
+  else
+     cmd.eLogFileName=fileName   -- save quoted fully qualified logfile name in stem
+
+  stream=.stream~new(filename)   -- create stream for logfile and assign it to attribute
+
+  .output~destination(self)      -- replace monitored object
+  .error~destination(self)       -- replace montiored object
+  cmd.eLogFile=self              -- save logfile's stream object
+
+  cmd.eLoggingStarted=.dateTime~new
+  say "--- logging started --->"  -- this will already be processed by our unknown method
+  say "    logging to file ["fileName"] ..."
+
+
+::method unknown           -- special processing for SAY/LINEOUT/CLOSE, otherwise forward to stream
+  expose filename stream cmd.
+  use arg methName, methArgs
+
+  -- .stdout~say(self": UNKNOWN, methName=["methName"]")
+
+  if wordpos(methName, "SAY LINEOUT")>0 then
+  do
+     str=.dateTime~new":" methArgs[1]  -- prepend date and time
+     stream ~say(str)                  -- write to logfile
+     .stderr~say(str)                  -- write to stderr
+     stream~close                      -- close stream, such that we can use the log file for redirections with commands
+     return                            -- already processed, return
+  end
+  else if methName="CLOSE" then
+  do
+     cmd.eLoggingEnded=.dateTime~new
+     say "script execution duration ["||(cmd.eLoggingEnded-cmd.eLoggingStarted)"]"
+     str=.dateTime~new":" "<--- logging ended. ---" .endofline || copies("-",79) .endofline .endOfLine
+     stream ~say(str)                  -- write to logfile
+     .stderr~say(str)                  -- write to stderr
+     stream~close                      -- close stream
+
+     if cmd.eOpSys<>"W" then           -- on Unix, make sure to change file-owner
+     do
+         "chown" cmd.eRealUserName filename
+     end
+     return                            -- already processed, return
+  end
+
+  say self": UNKNOWN message ["methName"] received, where does it come from?"
+--  forward to (stream) message (methName) arguments (methArgs)
+

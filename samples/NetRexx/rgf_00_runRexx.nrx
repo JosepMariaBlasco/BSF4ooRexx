@@ -7,5 +7,7 @@ do
    rexxEngine.exec("rexx",0,0,rexxCode)
 catch e=BSFException
    e.printStackTrace
+finally
+   mgr.terminate() -- let BSFManager terminate the Rexx intepreter instance
 end
 

@@ -10,12 +10,16 @@
                   bsf.wrap() to turn a Java object reference into a BSF object, one must prepend
                   the beanName with the type indicator "<O>"
 
+    Changed:    2013-06-13, demonstrate that one should use BSFManager's terminate() method,
+                            if that particular Rexx interpreter instance is not needed anymore,
+                            such that its reserved system resources can be reclaimed
+
     Needs:      ooRexx 4.0, BSF4ooRexx
 
     License:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2009 Rony G. Flatscher
+       Copyright (C) 2009-2013 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -58,5 +62,6 @@ public class JavaRunRexx_01
 
         rexxEngine.apply ("InvokeFromJavaRunRexx_01.java", 0, 0, rexxCode, null, vArgs);
 
+        mgr.terminate();    // make sure that the Rexx interpreter instance gets terminated!
     }
 }

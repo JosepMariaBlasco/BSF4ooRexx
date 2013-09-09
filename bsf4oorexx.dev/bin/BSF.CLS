@@ -415,7 +415,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="410.20130119" -- set version (date distribution got created)
+   .bsf4rexx~version="411.20130714" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3680,9 +3680,6 @@ syntax:
    -- the Java RexxEngine, such that the Java side will become able to realize that callbacks
    -- to Rexx are not safe anymore
 ::routine BSF.terminateRexxEngine public
-
-  if BsfInvokedBy()==2 then   -- if Java was loaded by Rexx, only then carry out the termination
-  do
   re=bsf.wrap(bsf('getRexxEngine'))
   re~terminate                -- will not terminate the primodal Rexx interpreter instance!
   return re~isTerminated      -- indicate whether terminating the Rexx engine was successful

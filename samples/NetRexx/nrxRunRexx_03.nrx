@@ -1,7 +1,8 @@
 import org.rexxla.bsf.engines.rexx.
 parse source . . src
 
-rexxEngine=org.apache.bsf.BSFManager().loadScriptingEngine("rexx")
+mgr=org.apache.bsf.BSFManager()
+rexxEngine=mgr.loadScriptingEngine("rexx")
 
 rexxCode="d=.directory~new                                             ;" -
          "d~ooRexx='Open Object Rexx'                                  ;" -
@@ -18,3 +19,5 @@ say 'rp["OOREXX"]           = ['rp.sendMessage1("[]",    "OOREXX")']\n'
 say 'rp~BSF4ooRexx          = ['rp.sendMessage0("Bsf4ooRexx")']'
 say 'rp~entry("BSF4ooRexx") = ['rp.sendMessage1("entry", "BSF4ooRexx")"]"
 say 'rp["BSF4OOREXX"]       = ['rp.sendMessage1("[]", "BSF4OOREXX")']'
+
+mgr.terminate() -- let BSFManager terminate the Rexx intepreter instance

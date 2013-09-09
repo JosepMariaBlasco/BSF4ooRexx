@@ -24,6 +24,16 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.1.1   2013-06-30 - removed last compiler warning (-Wwrite-strings)
+
+    4.1.1   2013-06-29 - applying ReleaseLocalReference() wherever a Rexx thread context may have returned
+                         a RexxObjectPtr for which the thread context creates a local reference to protect
+                         it to be garbage collected; a ReleaseLocalReference() therefore has to be issued to
+                         inhibit memory leaks
+
+                       - removed compiler warnings
+
+    4.1.1   2013-06-27 - slight tidying up (removed an obsolete function)
 
     4.1.1   2013-06-10 - changed logic in Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
                          to really terminate Rexx interpreter instances (RII) with the exception of the
@@ -780,11 +790,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "411.20130610 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "411.20130630 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "411.20130610 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "411.20130630 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "411.20130610 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "411.20130630 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -1466,12 +1476,20 @@ inline RexxClassObject NIXI_STRING_CLASS(RexxThreadContext *rtc)
     // return
 inline RexxObjectPtr rgfGetEntryFromLocal (RexxThreadContext *rtc, CSTRING entry)
 {
-    return rtc->SendMessage0(rtc->GetLocalEnvironment(), entry);
+    RexxObjectPtr rop1=rtc->GetLocalEnvironment();
+    RexxObjectPtr rop2=rtc->SendMessage0(rop1, entry);
+    rtc->ReleaseLocalReference(rop1);
+    return rop2;
+    // return rtc->SendMessage0(rtc->GetLocalEnvironment(), entry);
 }
 
 inline RexxObjectPtr rgfGetEntryFromEnvironment (RexxThreadContext *rtc, CSTRING entry)
 {
-    return rtc->SendMessage0(rtc->GetGlobalEnvironment(), entry);
+    RexxObjectPtr rop1=rtc->GetGlobalEnvironment();
+    RexxObjectPtr rop2=rtc->SendMessage0(rop1, entry);
+    rtc->ReleaseLocalReference(rop1);
+    return rop2;
+    // return rtc->SendMessage0(rtc->GetGlobalEnvironment(), entry);
 }
 
 
@@ -1521,7 +1539,13 @@ inline void RgfSetupOrexxRegistry(RexxThreadContext *rtc)
 
 #ifdef USE_RII2OID_RELATION
         // get .Relation, create an instance of it and assign it
-   OREXX_RII2_OID_RELATION = rtc->SendMessage0(rtc->SendMessage0(rtc->GetGlobalEnvironment(), "RELATION"), "NEW");
+   RexxObjectPtr rop1=rtc->GetGlobalEnvironment();
+   RexxObjectPtr rop2=rtc->SendMessage0(rop1, "RELATION");
+   OREXX_RII2_OID_RELATION = rtc->SendMessage0(rop2, "NEW");
+   rtc->ReleaseLocalReference(rop2);
+   rtc->ReleaseLocalReference(rop1);
+   // OREXX_RII2_OID_RELATION = rtc->SendMessage0(rtc->SendMessage0(rtc->GetGlobalEnvironment(), "RELATION"), "NEW");
+
    rtc->RequestGlobalReference(OREXX_RII2_OID_RELATION); // globally lock it (all its collected object will be protected from gc as well)
 #endif
 
@@ -1675,20 +1699,36 @@ inline const char * RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj
     #endif
 #endif
 
-        rtc->SendMessage2(OREXX_REGISTRY_REFCOUNTER, "PUT", rtc->String("1"), obj_id); // add counter entry, set to "1"
+        RexxStringObject rso=rtc->String("1");
+        rtc->SendMessage2(OREXX_REGISTRY_REFCOUNTER, "PUT", rso, obj_id); // add counter entry, set to "1"
+        // rtc->SendMessage2(OREXX_REGISTRY_REFCOUNTER, "PUT", rtc->String("1"), obj_id); // add counter entry, set to "1"
+        rtc->ReleaseLocalReference(rso);
 
 #ifdef USE_RII2OID_RELATION
         const char c_rii_ID [ RGF_POINTER_STRING_WIDTH+1 ] = "";
         RgfPointer2String(rtc->instance, c_rii_ID);  // create a string representation of interpreter instance pointer
-        rtc->SendMessage2(OREXX_RII2_OID_RELATION,   "PUT", obj_id, rtc->String(c_rii_ID));  // save object
+
+        rso=rtc->String(c_rii_ID);
+        rtc->SendMessage2(OREXX_RII2_OID_RELATION,   "PUT", obj_id, rso);  // save object
+        // rtc->SendMessage2(OREXX_RII2_OID_RELATION,   "PUT", obj_id, rtc->String(c_rii_ID));  // save object
+        rtc->ReleaseLocalReference(rso);
+
 #endif
     }
     else    // entry exists already, just adjust the ref-counter
     {
         int32_t refs=0;
-        logical_t flag=rtc->ObjectToInt32(rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id), &refs);
+        RexxObjectPtr rop=rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id);
+        logical_t flag=rtc->ObjectToInt32(rop, &refs);
+        rtc->ReleaseLocalReference(rop);
+        // logical_t flag=rtc->ObjectToInt32(rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id), &refs);
+
         refs++;     // increase ref-counter by one
-        rtc->SendMessage2(OREXX_REGISTRY_REFCOUNTER, "PUT", rtc->Int32ToObject(refs), obj_id); // add counter entry, set to "1"
+        rop=rtc->Int32ToObject(refs);
+        // RexxObjectPtr rop=rtc->Int32ToObject(refs);
+        rtc->SendMessage2(OREXX_REGISTRY_REFCOUNTER, "PUT", rop, obj_id); // add counter entry, set to "1"
+        // rtc->SendMessage2(OREXX_REGISTRY_REFCOUNTER, "PUT", rtc->Int32ToObject(refs), obj_id); // add counter entry, set to "1"
+        rtc->ReleaseLocalReference(rop);
     }
     RgfReleaseLock2(REGISTRY_lock);
 
@@ -1698,7 +1738,10 @@ inline const char * RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj
     fflush(stderr);
 #endif
 
-    return rtc->CString((RexxStringObject) obj_id);
+    const char *returnValue=rtc->CString(obj_id);
+    rtc->ReleaseLocalReference(obj_id);
+    return returnValue;
+    // return rtc->CString((RexxStringObject) obj_id);
 }
 
 
@@ -1734,6 +1777,7 @@ inline const char * RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj
         RexxStringObject rii_id=rtc->String(c_rii_id);  // turn into a RexxString object
 
         int32_t refs=RgfRemoveAllProxyObjectsByRIID2(rtc, rii_id);    // now carry out the work
+        rtc->ReleaseLocalReference(rii_id);
 
     #if defined (DEBUG_REXX_ATTACH) || defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
         fprintf(stderr, "<-------------- ooRexx->DetachThread() - RgfRemoveAllProxyObjectsByRIID... "); fflush(stderr);
@@ -1783,7 +1827,11 @@ inline const char * RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj
 
                 // get reference count, decrease it by one, remove rii_id/obj_id from relation
                 int32_t refCount=0;
-                logical_t flag=rtc->ObjectToInt32(rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id), &refCount);
+                RexxObjectPtr rop=rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id);
+                logical_t flag=rtc->ObjectToInt32(rop, &refCount);
+                rtc->ReleaseLocalReference(rop);
+                // logical_t flag=rtc->ObjectToInt32(rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id), &refCount);
+
                 refCount--;     // decrease ref-counter by one
                 if (refCount>0) // not yet at 0, save actual refCount
                 {
@@ -1791,16 +1839,25 @@ inline const char * RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj
                 }
                 else    // if refcount is 0 or lower, remove object from refCount and object registry in addition
                 {
-                    rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "REMOVE", obj_id); // remove counter entry
-                    rtc->SendMessage1(OREXX_REGISTRY,            "REMOVE", obj_id); // remove object from proxy cache altogether
+                    rop=rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "REMOVE", obj_id); // remove counter entry
+                    rtc->ReleaseLocalReference(rop);
+                    rop=rtc->SendMessage1(OREXX_REGISTRY,            "REMOVE", obj_id); // remove object from proxy cache altogether
+                    rtc->ReleaseLocalReference(rop);
+                    // rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "REMOVE", obj_id); // remove counter entry
+                    // rtc->SendMessage1(OREXX_REGISTRY,            "REMOVE", obj_id); // remove object from proxy cache altogether
 
         #if defined (USE_OREXX_REGISTRY_PACKAGE)
-                    rtc->SendMessage1(OREXX_REGISTRY_PACKAGE,    "REMOVE", obj_id); // package object
+                    rop=rtc->SendMessage1(OREXX_REGISTRY_PACKAGE,    "REMOVE", obj_id); // package object
+                    rtc->ReleaseLocalReference(rop);
         #endif
                 }
 
                 // remove rii_id/obj_id pair from relation
-                rtc->SendMessage2(OREXX_RII2_OID_RELATION,   "REMOVEITEM", obj_id, rii_id);  // remove object
+                rop=rtc->SendMessage2(OREXX_RII2_OID_RELATION,   "REMOVEITEM", obj_id, rii_id);  // remove object
+                rtc->ReleaseLocalReference(rop);
+                // rtc->SendMessage2(OREXX_RII2_OID_RELATION,   "REMOVEITEM", obj_id, rii_id);  // remove object
+
+                rtc->ReleaseLocalReference(obj_id);
             }
             refs= (int32_t) items;      // return number of objets we have freed
         }
@@ -1870,6 +1927,7 @@ inline int32_t RgfRemoveProxyObject(char * c_obj_id)
     RexxStringObject obj_id=rtc->String(c_obj_id);  // turn into a RexxString object
 
     refs=RgfRemoveProxyObject2(rtc, obj_id);         // now carry out the work
+    rtc->ReleaseLocalReference(obj_id);
 
 #if defined (DEBUG_REXX_ATTACH) || defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - RgfRemoveProxyObject... "); fflush(stderr);
@@ -1933,7 +1991,11 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
     fprintf(stderr, ", rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, \"AT\", obj_id=%%s=[%s]), result: %%p[%p]\n", cstr_obj_id, rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id)); fflush(stderr);
 #endif
 
-        logical_t flag=rtc->ObjectToInt32(rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id), &refs);
+        RexxObjectPtr rop=rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id);
+        logical_t flag=rtc->ObjectToInt32(rop, &refs);
+        rtc->ReleaseLocalReference(rop);
+        // logical_t flag=rtc->ObjectToInt32(rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id), &refs);
+
         refs--;     // decrease ref-counter by one
 
 #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
@@ -1953,8 +2015,9 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
 #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
     fprintf(stderr, "          RgfRemoveProxyObject2, before removing from OREXX_REGISTRY~remove(obj_id=[%s])...\n", cstr_obj_id);  fflush(stderr);
 #endif
-
-            rtc->SendMessage1(OREXX_REGISTRY,            "REMOVE", obj_id); // object
+            RexxObjectPtr rop=rtc->SendMessage1(OREXX_REGISTRY, "REMOVE", obj_id); // object
+            rtc->ReleaseLocalReference(rop);
+            // rtc->SendMessage1(OREXX_REGISTRY,            "REMOVE", obj_id); // object
 
 #if defined (USE_OREXX_REGISTRY_PACKAGE)
     #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
@@ -1987,7 +2050,9 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
 #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
     fprintf(stderr, "          RgfRemoveProxyObject2, before removing from OREXX_REGISTRY_REFCOUNTER=[%p]...\n", OREXX_REGISTRY_REFCOUNTER);  fflush(stderr);
 #endif
-            rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "REMOVE", obj_id); // add counter entry, set to "1"
+            rop=rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "REMOVE", obj_id); // add counter entry, set to "1"
+            rtc->ReleaseLocalReference(rop);
+            // rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "REMOVE", obj_id); // add counter entry, set to "1"
 
 
 #ifdef USE_RII2OID_RELATION
@@ -2123,7 +2188,7 @@ inline RexxObjectPtr RgfGetProxyObjectRefCount(RexxThreadContext *rtc, RexxStrin
 
 
 
-
+// TODO: RgfAcquire_Lock2 obsoleted?
     // ===> 20090503: MUTEX, blocking invocation, waits until lock was successfully acquired
 inline VOID RgfAcquire_Lock2(
     #ifdef WINDOWS
@@ -2171,6 +2236,7 @@ inline VOID RgfAcquire_Lock2(
 
 
 
+// TODO: RgfRelease_Lock2 obsoleted?
     // ===> 2009-05-03: MUTEX, release lock
 inline VOID RgfRelease_Lock2(
     #ifdef WINDOWS
@@ -2933,6 +2999,7 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
 #if defined(DEBUG_RGF_PROCESS_J_ARG1)
    fprintf(stderr, "... RgfJavaObject2RexxObject(...): riid=[%p], about to require BSF.CLS rtc->CheckCondition()=[%d], RUNTIME (PRE-)LOADING OF BSF.CLS ! | [1] ...\n", riid, (int) rtc->CheckCondition());fflush(stderr);
 #endif
+        rtc->ReleaseLocalReference(clzBSF);
 
         RexxObjectPtr result_obj=NULL;
         // RexxRoutineObject rro=rtc->NewRoutine("FROM_BSF4ooRexx_DLL", "::requires BSF.CLS", 18);
@@ -2941,6 +3008,8 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
         if (rro!=NULL)      // object got created, let us run it
         {
             result_obj=rtc->CallRoutine(rro, NULL);   // call the program ?? NULL correct ??
+            rtc->ReleaseLocalReference(rro);
+            rtc->ReleaseLocalReference(result_obj);
         }
 
 #if defined(DEBUG_RGF_PROCESS_J_ARG1)
@@ -2957,7 +3026,6 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
 
     }
 #endif
-
         clzBSF=rgfGetEntryFromLocal (rtc, "BSF");  // .local~BSF
         bClzBsf=(clzBSF!=rtc->Nil());
     }
@@ -2985,7 +3053,11 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
     fprintf(stderr, "                       riid=[%p], tmpStr =[%.256s], ExceptionCheck()=[%d]    \n", riid, tmpStr, env->ExceptionCheck());fflush(stderr);
 #endif
 
-        res=RgfGetProxyObject(rtc, rtc->String(tmpStr));  // get Rexx object
+        RexxStringObject rso=rtc->String(tmpStr);
+        res=RgfGetProxyObject(rtc, rso);  // get Rexx object
+        rtc->ReleaseLocalReference(rso);
+        rtc->ReleaseLocalReference(clzBSF);
+        // res=RgfGetProxyObject(rtc, rtc->String(tmpStr));  // get Rexx object
 
         env->DeleteLocalRef(j_obj_ID);
         RexxFreeMemory(tmpStr);             // make sure we free the allocated memory
@@ -3050,12 +3122,17 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
 #endif
 
             // blocked; unguarded class method; probably rtc->SetGuardOff() would have worked as well
-        res=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", res); // try to wrap it up as a Rexx proxy
+        RexxObjectPtr rop=res;
+        res=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop); // try to wrap it up as a Rexx proxy
+        rtc->ReleaseLocalReference(rop);
+        // res=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", res); // try to wrap it up as a Rexx proxy
     }
 
 #if defined(DEBUG_RGF_PROCESS_J_ARG1)
     fprintf(stderr, "... RgfJavaObject2RexxObject(...): riid=[%p], at end, returning=[%p], ExceptionCheck()=[%d]...\n", riid, res, env->ExceptionCheck());fflush(stderr);
 #endif
+
+    rtc->ReleaseLocalReference(clzBSF);
 
     return res;
 }
@@ -3144,6 +3221,8 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
         if (rro!=NULL)      // object got created, let us run it
         {
             result_obj=rtc->CallRoutine(rro, ra);   // call the program
+            rtc->ReleaseLocalReference(result_obj);
+            rtc->ReleaseLocalReference(rro);
         }
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS)
@@ -3297,7 +3376,10 @@ if (rtc->CheckCondition())
             if (bClzBsf)    // .local~bsf available, use its bsf.wrap class method
             {
                     // blocked; unguarded class method; probably rtc->SetGuardOff() would have worked as well
-                robj=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", robj); // try to wrap it up as a Rexx proxy
+                RexxStringObject rso=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", robj); // try to wrap it up as a Rexx proxy;
+                rtc->ReleaseLocalReference(robj);
+                robj=(RexxStringObject) rso;
+                // robj=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", robj); // try to wrap it up as a Rexx proxy
             }
 
 #if defined(DEBUG_RGF_PROCESS_J_ARG1)
@@ -3308,6 +3390,7 @@ if (rtc->CheckCondition())
 
             // set array entry
         rtc->ArrayPut(ra, robj, i+1);
+        rtc->ReleaseLocalReference(robj);
         env->DeleteLocalRef(jobj);
     }
 
@@ -3328,6 +3411,7 @@ if (rtc->CheckCondition())
     fprintf(stderr, "\triid=[%p], ---> ra~items=[%lu]\n",riid, rtc->ArrayItems(ra));fflush(stderr);
 #endif
 
+    rtc->ReleaseLocalReference(clzBSF);
     return ra;
 }
 
@@ -5235,8 +5319,13 @@ inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_P
     param->env->DeleteLocalRef(jobj);
     param->env->DeleteLocalRef(j_beanName);
 
+    rtc->ReleaseLocalReference(rJavaThrowable);
+    rtc->ReleaseLocalReference(bsfClz);
+    rtc->ReleaseLocalReference(r_beanName);
+
        // --- raise exception
     rtc->RaiseException(Rexx_Error_Incorrect_call_user_defined, ra);
+    rtc->ReleaseLocalReference(ra);
 
     return rso;            // return error string, such that caller can decide to set it to the environment as well
 }
@@ -5395,6 +5484,8 @@ jobjectArray RgfRexxArray2JavaArray(PSTRUCT_PARAM param, RexxThreadContext *cont
         {
             RexxObjectPtr tmpObj=context->ArrayAt(argArray, i+1);
             int tind=RgfValue4JavaIndicator(context, tmpObj);
+            context->ReleaseLocalReference(tmpObj);
+
             fprintf(stderr, "[%lu]=", i+1); fflush(stderr);
             fprintf(stderr, "[%.256s]", (tind<0?"<null>":context->CString(tmpObj))); fflush(stderr);
             // fprintf(stderr, " | [%u]=[%.256s]", i+1, context->CString(context->ArrayAt(argArray, i+1)));
@@ -5409,6 +5500,7 @@ jobjectArray RgfRexxArray2JavaArray(PSTRUCT_PARAM param, RexxThreadContext *cont
     {
         RexxObjectPtr tmpObj=context->ArrayAt(argArray, i+1);    // get Object from ooRexx argument array list
         jobject jobj=RgfRexxObject2JavaObject(param,context,tmpObj);
+        context->ReleaseLocalReference(tmpObj);
         param->env->SetObjectArrayElement(jarr, (jsize) i, jobj);
         param->env->DeleteLocalRef(jobj);
     }
@@ -10066,7 +10158,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         // 2009-10-11, rgf, add extensions for BSF.CLS
         // 2012-02-08, rgf, process possible argument from Java
     options[1].optionName= EXTERNAL_CALL_EXTENSIONS;
-    char* c_external_call_extensions=NULL;
+    const char* c_external_call_extensions=NULL;    // TODO: rgf, 20130630 - test change from "char *" to "const char *" !
     if (j_external_call_extensions==NULL)       // o.k. not supplied by Java, set original default
     {
         c_external_call_extensions = ".rxj,.rxo,.rxjo,.jrexx";  //  ".jrexx,.rexxj,.rexxjo";
@@ -10074,7 +10166,8 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     else
     {
         // resulting value needs to get freed at the end !
-        c_external_call_extensions=(char *) JNU_GetStringNativeChars(env, j_external_call_extensions);   // convert to native string
+        c_external_call_extensions=JNU_GetStringNativeChars(env, j_external_call_extensions);   // convert to native string
+//        c_external_call_extensions=(char *) JNU_GetStringNativeChars(env, j_external_call_extensions);   // convert to native string
     }
     options[1].option    = c_external_call_extensions;
 
@@ -10088,7 +10181,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         // now process possible Java options
 
         // INITIAL_ADDRESS_ENVIRONMENT
-    char * c_initial_address_environment=NULL;
+    const char * c_initial_address_environment=NULL;
     if (j_initial_address_environment!=NULL)
     {
         // resulting value needs to get freed at the end !
@@ -10106,7 +10199,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     }
 
         // EXTERNAL_CALL_PATH
-    char * c_external_call_path=NULL;
+    const char * c_external_call_path=NULL;
     if (j_external_call_path!=NULL)
     {
         c_external_call_path=(char *) JNU_GetStringNativeChars(env, j_external_call_path);   // convert to native string
@@ -10336,361 +10429,6 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 }
 
 
-JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCreateInterpreterInstance_NIXI_NOXI_OLD_20121230
-  (JNIEnv *env, jobject jobj, jobjectArray joptions)
-{
-#if defined(RGF_JNI_RII) || defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-
-    #ifdef UNIX
-        pthread_t
-    #else   // WIN32
-        TID
-    #endif
-            thisTid=RgfGetTID();
-
-    fprintf(stderr, "--> arrived: .._jniRexxCreateInterpreterInstance(...), thisTid=[%lu]\n", (unsigned long) thisTid);
-    fflush(stderr);
-#endif
-
-
-    // check # of  needed options, allocate necessary memory
-        // option[0]: REGISTER_LIBRARY
-        // option[1]: EXTERNAL_CALL_EXTENSIONS (if not supplied use default)
-        // option[...]
-        // option[n]: for indicating end of options by: optionName=NULL
-    int    countOptions=3;
-    jstring j_initial_address_environment = NULL;   // [1]
-    jstring j_external_call_path          = NULL;   // [2]
-    jstring j_external_call_extensions    = NULL;   // [3]
-
-    jobjectArray j_load_required_library  = NULL;   // [4]
-    long    nr_load_required_library      = 0;              // number of libraries to call
-
-    jintArray j_direct_exits              = NULL;   // [5]
-    long    nr_direct_exits               = 0;              // number of exits
-
-    jobjectArray  j_direct_environments   = NULL;   // [6]
-    long    nr_direct_environments        = 0;              // number of commands
-
-    if (joptions!=NULL)     // options from Java ?
-    {
-            // INITIAL_ADDRESS_ENVIRONMENT, jstring
-        j_initial_address_environment = (jstring) env->GetObjectArrayElement(joptions,1);
-        if ( j_initial_address_environment != NULL) {
-             countOptions++;
-        }
-
-            // EXTERNAL_CALL_PATH, jstring
-        j_external_call_path          = (jstring) env->GetObjectArrayElement(joptions,2);
-        if (j_external_call_path!=NULL) {
-            countOptions++;
-        }
-
-            // EXTERNAL_CALL_EXTENSION (already counted), jstring
-        j_external_call_extensions= (jstring) env->GetObjectArrayElement(joptions,3);
-
-
-            // LOAD_REQUIRED_LIBRARY (multiples allowed, one option for each), jstring[]
-        j_load_required_library = (jobjectArray) env->GetObjectArrayElement(joptions,4);
-        if ( j_load_required_library != NULL) {
-            nr_load_required_library=env->GetArrayLength( j_load_required_library );
-            countOptions+=nr_load_required_library;
-        }
-
-            // DIRECT_EXITS (one option with a RexxContextExit[]), int[]
-        j_direct_exits = (jintArray) env->GetObjectArrayElement(joptions,5);
-        if ( j_direct_exits != NULL) {
-            nr_direct_exits=env->GetArrayLength( j_direct_exits );
-            countOptions++;
-        }
-
-            // DIRECT_ENVIRONMENTS (one option with a RexxContextEnvironment[]), jstring[]
-        j_direct_environments = (jobjectArray) env->GetObjectArrayElement(joptions,6);
-        if ( j_direct_environments != NULL) {
-            nr_direct_environments=env->GetArrayLength( j_direct_environments );
-            countOptions++;
-        }
-    }
-
-
-        // allocate necessary memory for RexxOption items
-    long sizeOptions=countOptions*sizeof(RexxOption);
-    RexxOption *options=(RexxOption *) RgfAllocateMemory(sizeOptions);
-    memset(options,0,sizeOptions);
-
-    const char c_rii_ID[ RGF_POINTER_STRING_WIDTH+1 ]="";
-    RexxInstance      *instance;
-    RexxThreadContext *threadContext;
-    // RexxOption         options[3];
-
-
-    jstring            j_rii_ID=NULL;   // Rexx interpreter instance (RII) pointer encoded as a jstring
-
-        // load the external functions from the defined RexxPackageEntry from this very dynamic Rexx library
-    RexxLibraryPackage pkg;
-    pkg.registeredName   = "BSF4ooRexx";
-    pkg.table            = &bsf_package_entry;
-
-    options[0].optionName= REGISTER_LIBRARY;
-    options[0].option    = (void *) &pkg; // &bsf_external_functions;  //
-
-        // 2009-10-11, rgf, add extensions for BSF.CLS
-        // 2012-02-08, rgf, process possible argument from Java
-    options[1].optionName= EXTERNAL_CALL_EXTENSIONS;
-    char* c_external_call_extensions=NULL;
-    if (j_external_call_extensions==NULL)       // o.k. not supplied by Java, set original default
-    {
-        c_external_call_extensions = ".rxj,.rxo,.rxjo,.jrexx";  //  ".jrexx,.rexxj,.rexxjo";
-    }
-    else
-    {
-        // resulting value needs to get freed at the end !
-        c_external_call_extensions=(char *) JNU_GetStringNativeChars(env, j_external_call_extensions);   // convert to native string
-    }
-    options[1].option    = c_external_call_extensions;
-
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[1], .optionName=[%s], .option=[%s]\n",
-                    options[1].optionName, options[1].option);
-#endif
-
-    long idx=2;     // already two options, another option needs to be the third one
-
-        // now process possible Java options
-
-        // INITIAL_ADDRESS_ENVIRONMENT
-    char * c_initial_address_environment=NULL;
-    if (j_initial_address_environment!=NULL)
-    {
-        // resulting value needs to get freed at the end !
-        c_initial_address_environment=(char *) JNU_GetStringNativeChars(env, j_initial_address_environment);   // convert to native string
-
-        options[idx].optionName=INITIAL_ADDRESS_ENVIRONMENT;
-        options[idx].option=c_initial_address_environment;
-
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%d], .optionName=[%s], .option=[%s]\n",
-                    idx, options[idx].optionName, options[idx].option);
-#endif
-
-        idx++;  // increase index
-    }
-
-        // EXTERNAL_CALL_PATH
-    char * c_external_call_path=NULL;
-    if (j_external_call_path!=NULL)
-    {
-        c_external_call_path=(char *) JNU_GetStringNativeChars(env, j_external_call_path);   // convert to native string
-
-        options[idx].optionName=EXTERNAL_CALL_PATH;
-        options[idx].option=c_external_call_path;
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%d], .optionName=[%s], external call path=[%s]\n",
-                    idx, options[idx].optionName, c_external_call_path);
-#endif
-
-        idx++;  // increase index
-    }
-
-        // LOAD_REQUIRED_LIBRARY: jstring[] - for each library set one option
-    if (j_load_required_library!=NULL)
-    {
-        for (int i=0; i<nr_load_required_library; i++) {
-            options[idx].optionName=LOAD_REQUIRED_LIBRARY;
-            jstring jstr=(jstring) env->GetObjectArrayElement(j_load_required_library,i);
-            options[idx].option=JNU_GetStringNativeChars(env, jstr);
-            env->DeleteLocalRef(jstr);
-
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): required library, idx=[%d], .optionName=[%s] | i=[%d]: .option=[%s]\n",
-                    idx, options[idx].optionName, i, options[idx].option);
-#endif
-            idx++;  // increase options index
-        }
-    }
-
-        // DIRECT_EXITS: int[] - for each library set one option
-    RexxContextExit *exits=NULL;
-    if (j_direct_exits!=NULL)
-    {
-            // allocate necessary memory for RexxContextExits
-        long tmpSize=(nr_direct_exits+1)*sizeof(RexxContextExit);
-        exits=(RexxContextExit *) RgfAllocateMemory(tmpSize);
-        memset(exits,0,tmpSize);
-
-        jint * tmpArrExits=env->GetIntArrayElements(j_direct_exits,NULL);
-        for (int i=0; i<nr_direct_exits; i++)
-        {
-            exits[i].handler=(RexxContextExitHandler *) rexx_exit_handler_entry;   // point to generic exit handler
-            exits[i].sysexit_code=tmpArrExits[i];
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): exit # [%d], sysexit_code=[%d]\n",
-                    i, exits[i].sysexit_code);
-#endif
-        }
-        env->ReleaseIntArrayElements(j_direct_exits, tmpArrExits, JNI_ABORT);  // do not copy elements back to Java
-
-        exits[nr_direct_exits].sysexit_code=0;     // indicate list has ended
-
-        options[idx].optionName=DIRECT_EXITS;
-        options[idx].option=(void *)exits;
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%d], .optionName=[%s]\n",
-                    idx, options[idx].optionName);
-#endif
-
-        idx++;  // increase options index
-    }
-
-    // DIRECT_ENVIRONMENTS: jstring[] - for each library set one option
-    RexxContextEnvironment *environments=NULL;
-    if (j_direct_environments!=NULL)
-    {
-            // allocate necessary memory for RexxContextEnvironment
-        long tmpSize=(nr_direct_environments+1)*sizeof(RexxContextEnvironment);
-        environments=(RexxContextEnvironment *) RgfAllocateMemory(tmpSize);
-        memset(environments,0,tmpSize);
-
-        for (int i=0; i<nr_direct_environments; i++)
-        {
-            environments[i].handler=rexx_command_handler_entry;   // point to generic exit handler
-            jstring jstr=(jstring) env->GetObjectArrayElement(j_direct_environments,i);
-            environments[i].name=JNU_GetStringNativeChars(env, jstr);
-            env->DeleteLocalRef(jstr);
-
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): environment # [%d], name=[%s]\n",
-                    i, environments[i].name);
-#endif
-        }
-        environments[nr_direct_environments].name=NULL;     // indicate list has ended
-
-        options[idx].optionName=DIRECT_ENVIRONMENTS;
-        options[idx].option=(void *)environments;
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%d], .optionName=[%s]\n",
-                    idx, options[idx].optionName);
-#endif
-        idx++;  // increase options index
-    }
-
-        // indicate end of options
-    options[idx].optionName=NULL;
-
-
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "\n===> _jniRexxCreateInterpreterInstance(): iterating over all options, display option names, idx=[%d], optionCount=[%d]:\n", idx, countOptions);
-
-    {
-        for (int i=0; i<countOptions;i++)
-        {
-            fprintf(stderr, "\toption[%d].optionName=[%s]\n", i, options[i].optionName);
-        }
-    }
-#endif
-
-
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "\n===> _jniRexxCreateInterpreterInstance(): before creating RII, iniEnv=[%s], callPath=[%s], callExt=[%s], #opts=[%d], #req_lib=[%lu], #exits=[%lu], #env=[%lu]\n",
-            c_initial_address_environment, c_external_call_path, c_external_call_extensions, countOptions,
-            nr_load_required_library, nr_direct_exits, nr_direct_environments);
-#endif
-
-
-    // if (RexxCreateInterpreter(&instance, &threadContext, options))
-
-#if defined(RGF_JNI_RII) || defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY)
-    fprintf(stderr, "\n===> _jniRexxCreateInterpreterInstance(): BEFORE creating RII, thisTid=[%lu]\n", (unsigned long) thisTid);fflush(stderr);
-#endif
-
-    int bSuccess=RexxCreateInterpreter(&instance, &threadContext, options);
-
-#if defined(RGF_JNI_RII) || defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY)
-    fprintf(stderr, "\n===> _jniRexxCreateInterpreterInstance(): AFTER  creating RII, thisTid=[%lu], bSuccess=[%d]\n", (unsigned long) thisTid,bSuccess);fflush(stderr);
-#endif
-
-    if (bSuccess)
-    {
-        // RgfPointer2String(instance, c_rii_ID);  // create a string
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-        fprintf(stderr, "===---=== .._jniRexxCreateInterpreterInstance(...), thisTid=[%lu], CREATED: c_rii_ID={%p]\n", (unsigned long) thisTid, instance);
-        fflush(stderr);
-#endif
-
-            // rgf, 2012-02-07, save RexxAndJava (rajo) and RexxConfiguration (rexxconf) object with RII-structure
-        RgfAddRexxInterpreterInstanceToList(threadContext,
-                                            env->NewGlobalRef(jobj),                                    // rajo
-                                            env->NewGlobalRef(env->GetObjectArrayElement(joptions,0))   // rexxconfig
-                                            );
-
-        RgfPointer2String(instance, c_rii_ID);  // create a string
-
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-        fprintf(stderr, "===---=== .._jniRexxCreateInterpreterInstance(...), thisTid=[%lu], CREATED: c_rii_ID={%p]=[%s]\n", (unsigned long) thisTid, instance, c_rii_ID);
-        fflush(stderr);
-#endif
-
-        j_rii_ID=env->NewStringUTF( c_rii_ID ); // create Java string
-    }
-    else    // RexxInstance could not be created!
-    {
-        char msg[1024]="";
-        SNPRINTF( msg, 1024, "%.16s/routine/jniCreateInterpreterInstance(), error 1.001: could not create RexxInterpreter instance", DLLNAME);
-
-        jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
-                                                             NULL, // rtc,
-                                                             NULL, // conditionObject
-                                                             // NULL, // packageObject
-                                                             REASON_INVALID_ARGUMENT,   // reason
-                                                             msg   // message
-                                                        );
-        env->DeleteLocalRef(j_rii_ID);
-        j_rii_ID=NULL;
-
-        env->Throw(j_rexxException); // throw the exception in the JVM
-    }
-
-        // free memory allocated in this routine
-    if ( j_initial_address_environment!=NULL ) {RexxFreeMemory((void *)c_initial_address_environment);}
-    if ( j_external_call_extensions   !=NULL ) {RexxFreeMemory((void *)c_external_call_extensions);}
-    if ( j_external_call_path         !=NULL ) {RexxFreeMemory((void *)c_external_call_path);}
-
-    if ( exits!=NULL ) {RexxFreeMemory(exits);}
-
-    if ( environments!=NULL)
-    {
-        for (int i=0;i<nr_direct_environments;i++) {
-            RexxFreeMemory((void *)environments[i].name);
-        }
-        RexxFreeMemory(environments);
-    }
-
-        // delete required library names, if any
-    for (int i=2; i<(countOptions-1);i++) {
-        if ( options[i].option==LOAD_REQUIRED_LIBRARY )
-        {
-            RexxFreeMemory((void *)options[i].optionName);
-        }
-    }
-
-    RexxFreeMemory(options);
-
-
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "<-- returning from: .._jniRexxCreateInterpreterInstance(...), thisTid=[%lu], c_rii_ID=[%.256s]\n",
-                        (unsigned long) thisTid, c_rii_ID);
-    fflush(stderr);
-#endif
-
-    env->DeleteLocalRef(j_initial_address_environment);
-    env->DeleteLocalRef(j_external_call_path);
-    env->DeleteLocalRef(j_external_call_extensions);
-    env->DeleteLocalRef(j_load_required_library);
-    env->DeleteLocalRef(j_direct_exits);
-    env->DeleteLocalRef(j_direct_environments);
-
-    return j_rii_ID;    // return jstring of rii_ID
-}
 
 
 
@@ -11025,12 +10763,15 @@ fflush(stderr);
 #endif
 
                 result_obj=rtc->CallRoutine(rro, ra);   // call the program
+                rtc->ReleaseLocalReference(rro);
             }
             else
             {
                 result_obj=rtc->LoadPackageFromData(c_fileName, c_programData, len);    // load & run the program
             }
     }
+    rtc->ReleaseLocalReference(ra);
+
     RexxFreeMemory(c_fileName);      // make sure we free the allocated memory
     RexxFreeMemory(c_programData);      // make sure we free the allocated memory
 
@@ -11061,7 +10802,8 @@ fflush(stderr);
 #if defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxRunProgram tid=[%lu]... ", (unsigned long) tid); fflush(stderr);
 #endif
-
+        rtc->ReleaseLocalReference(result_obj);
+        rtc->ReleaseLocalReference(condObj);
         rtc->DetachThread();
 
 #if defined (DEBUG_REXX_ATTACH)
@@ -11095,6 +10837,7 @@ fflush(stderr);
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxRunProgram tid=[%lu] ... ", (unsigned long) tid); fflush(stderr);
 #endif
 
+    rtc->ReleaseLocalReference(result_obj);
     rtc->DetachThread();
 
 #if defined (DEBUG_REXX_ATTACH)
@@ -11327,7 +11070,10 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             fprintf(stderr, "\\\\\\\\ 03 - tid=[%lu], env->ExceptionCheck()=[%d] //// \n", (unsigned long) thisTid, env->ExceptionCheck()); fflush(stderr);
         #endif                 /// <============
 
-    RexxObjectPtr ro=RgfGetProxyObject(rtc, rtc->String(c_obj_ID));     // get Rexx object
+    RexxStringObject rso=rtc->String(c_obj_ID);
+    RexxObjectPtr ro=RgfGetProxyObject(rtc, rso);     // get Rexx object
+    rtc->ReleaseLocalReference(rso);
+    // RexxObjectPtr ro=RgfGetProxyObject(rtc, rtc->String(c_obj_ID));     // get Rexx object
     // RexxObjectPtr ro=RgfGetProxyObjectPackage(rtc, rtc->String(c_obj_ID);
 
 
@@ -11360,9 +11106,14 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             // if (env->ExceptionCheck())
             fprintf(stderr, "\\\\\\\\ 05 - tid=[%lu], env->ExceptionCheck()=[%d] //// \n", (unsigned long) thisTid, env->ExceptionCheck()); fflush(stderr);
         #endif                 /// <============
-            RexxObjectPtr ro_userData=RgfGetProxyObject(rtc, rtc->String(c_userData_ID));      // get userData Rexx object
+
+            rso=rtc->String(c_userData_ID);
+            RexxObjectPtr ro_userData=RgfGetProxyObject(rtc, rso);  // get userData Rexx object
+            rtc->ReleaseLocalReference(rso);
+            // RexxObjectPtr ro_userData=RgfGetProxyObject(rtc, rtc->String(c_userData_ID));      // get userData Rexx object
             rtc->DirectoryPut(slotDir, ro_userData, "USERDATA");            // make userData available
             RexxFreeMemory(c_userData_ID);      // make sure we free the allocated memory
+            rtc->ReleaseLocalReference(ro_userData);
         }
 
 
@@ -11379,10 +11130,14 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             RexxObjectPtr clzBSF=rgfGetEntryFromLocal (rtc, "BSF");
             if (clzBSF != rtc->Nil() ) // BSF.CLS got loaded ?
             {
-                ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", ro_methodObject);
+                RexxObjectPtr rop=ro_methodObject;
+                ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
+                rtc->ReleaseLocalReference(rop);
             }
 
             rtc->DirectoryPut(slotDir, ro_methodObject, "METHODOBJECT");    // save it in callback directory
+            rtc->ReleaseLocalReference(clzBSF);
+            rtc->ReleaseLocalReference(ro_methodObject);
         }
 
         if (! rtc->CheckCondition())    // so far no problems? then proceed
@@ -11400,10 +11155,15 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
                 RexxObjectPtr clzBSF=rgfGetEntryFromLocal (rtc, "BSF"); // BSF.CLS available, if so, wrap it up as a BSF proxy
                 if (clzBSF != rtc->Nil() ) // BSF.CLS got loaded ?
                 {
-                    ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", ro_methodObject);
+                    RexxObjectPtr rop=ro_methodObject;
+                    // ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", ro_methodObject);
+                    ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
+                    rtc->ReleaseLocalReference(rop);
                 }
 
                 rtc->DirectoryPut(slotDir, ro_methodObject, "JAVAOBJECT");    // save it in callback directory
+                rtc->ReleaseLocalReference(clzBSF);
+                rtc->ReleaseLocalReference(ro_methodObject);
             }
 
 
@@ -11414,11 +11174,18 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             // if (env->ExceptionCheck())
             fprintf(stderr, "\\\\\\\\ 08 - tid=[%lu], env->ExceptionCheck()=[%d] //// \n", (unsigned long) thisTid, env->ExceptionCheck()); fflush(stderr);
         #endif                 /// <============
-                rtc->DirectoryPut(slotDir, rtc->String(c_msgDesc), "METHODDESCRIPTOR");   // make original method name available
+                RexxStringObject rso=rtc->String(c_msgDesc);
+                rtc->DirectoryPut(slotDir, rso, "METHODDESCRIPTOR");   // make original method name available
+                rtc->ReleaseLocalReference(rso);
+                // rtc->DirectoryPut(slotDir, rtc->String(c_msgDesc), "METHODDESCRIPTOR");   // make original method name available
+
                 RexxFreeMemory(c_msgDesc);      // make sure we free the allocated memory
             }
 
-            rtc->DirectoryPut(slotDir, rtc->String(c_msg), "METHODNAME");   // make original method name available
+            RexxStringObject rso=rtc->String(c_msg);
+            rtc->DirectoryPut(slotDir, rso, "METHODNAME");   // make original method name available
+            rtc->ReleaseLocalReference(rso);
+            // rtc->DirectoryPut(slotDir, rtc->String(c_msg), "METHODNAME");   // make original method name available
         }
     }
 
@@ -11488,6 +11255,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 // fprintf(stderr, "...jniRexxSendMessageToRexxObject(): BEFORE SendMessage(), ro=[%p], c_msg=[%.256s], ra=[%p], size=[%u]...\n",ro, c_msg, ra, rtc->ArraySize(ra));fflush(stderr);
 
             result_obj=rtc->SendMessage(ro, c_msg, ra); // with arguments
+            rtc->ReleaseLocalReference(ra);
 
 // fprintf(stderr, "...jniRexxSendMessageToRexxObject(): AFTER SendMessage(),...\n");fflush(stderr);
 
@@ -11528,6 +11296,10 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
                                                              REASON_EXECUTION_ERROR,   // reason
                                                              msg   // message
                                                         );
+        rtc->ReleaseLocalReference(condObj);
+        rtc->ReleaseLocalReference(result_obj);
+        rtc->ReleaseLocalReference(ro);
+        rtc->ReleaseLocalReference(slotDir);
 
 #if defined (RGF_TRUE) || defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxSendMessageToRexxObject... "); fflush(stderr);
@@ -11568,6 +11340,9 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxSendMessageToRexxObject... "); fflush(stderr);
 #endif
 
+    rtc->ReleaseLocalReference(result_obj);
+    rtc->ReleaseLocalReference(ro);
+    rtc->ReleaseLocalReference(slotDir);
     rtc->DetachThread();
 
 #if defined (RGF_TRUE) || defined (DEBUG_REXX_ATTACH)
@@ -12180,7 +11955,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                     tmpFlags[0]=pb->rxfnc_flags.rxfferr;
                     tmpFlags[1]=pb->rxfnc_flags.rxffnfnd;
                     tmpFlags[2]=pb->rxfnc_flags.rxffsub;
-                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
 
@@ -12246,7 +12021,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                     jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                     tmpFlags[0]=pb->rxcmd_flags.rxfcfail;
                     tmpFlags[1]=pb->rxcmd_flags.rxfcerr;
-                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
 
@@ -12324,7 +12099,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                     jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                     tmpFlags[0]=pb->rxmsq_flags.rxfmlifo;
 
-                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
 
@@ -12482,7 +12257,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                     jbooleanArray jflags= param.env->NewBooleanArray((jsize) 1); // needed size (number of elements)
                     jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                     tmpFlags[0]=pb->rxhlt_flags.rxfhhalt;
-                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
                 }
@@ -12510,7 +12285,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                     jbooleanArray jflags= param.env->NewBooleanArray((jsize) 1); // needed size (number of elements)
                     jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                     tmpFlags[0]=pb->rxtrc_flags.rxftrace;
-                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
                 }
@@ -12630,7 +12405,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                         tmpFlags[1]=flags.rxffnfnd;
                         tmpFlags[2]=flags.rxffsub;
                     }
-                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                    param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                     param.env->SetObjectArrayElement(jpb, (jint) 0, jflags);
                     param.env->DeleteLocalRef(jflags);
 
@@ -12873,7 +12648,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                         pb->rxfnc_flags.rxfferr =tmpFlags[0];
                         pb->rxfnc_flags.rxffnfnd=tmpFlags[1];
                         pb->rxfnc_flags.rxffsub =tmpFlags[2];
-                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                         param.env->DeleteLocalRef(jflags);
 
                             // get result, if any, turn it into a RexxObjectPtr
@@ -12930,7 +12705,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                         pb->rxcmd_flags.rxfcfail =tmpFlags[0];
                         pb->rxcmd_flags.rxfcerr  =tmpFlags[1];
 
-                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                         param.env->DeleteLocalRef(jflags);
 
                             // get result, if any, turn it into a RexxObjectPtr
@@ -13166,7 +12941,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                         jbooleanArray jflags= (jbooleanArray) param.env->GetObjectArrayElement(jpb, (jint) 0);
                         jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                         pb->rxhlt_flags.rxfhhalt =tmpFlags[0];
-                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                         param.env->DeleteLocalRef(jflags);
                     }
                 }
@@ -13187,7 +12962,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                         jbooleanArray jflags= (jbooleanArray) param.env->GetObjectArrayElement(jpb, (jint) 0);
                         jboolean * tmpFlags=param.env->GetBooleanArrayElements(jflags,NULL);
                         pb->rxtrc_flags.rxftrace =tmpFlags[0];
-                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                        param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                         param.env->DeleteLocalRef(jflags);
                     }
                 }
@@ -13305,7 +13080,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                                 flags->rxfferr =tmpFlags[0];
                                 flags->rxffnfnd=tmpFlags[1];
                             }
-                            param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, NULL);  // do not copy elements back to Java
+                            param.env->ReleaseBooleanArrayElements(jflags, tmpFlags, 0);  // copy back the content, free buffer
                             param.env->DeleteLocalRef(jflags);
 
 
@@ -13584,7 +13359,7 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
         RgfReleaseLock();
 
         SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_handler_entry(), error 5: Java exception, cannot find the Java Rexx exit handler method named [%s], needed for processing the command addressed to: [%s]",
-                            DLLNAME, context->CString(address));
+                            DLLNAME, CONFIG_REXX_EXIT_HANDLER_NAME, context->CString(address));
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         return NULL;
     }
