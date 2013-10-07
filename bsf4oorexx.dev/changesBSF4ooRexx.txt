@@ -1,3 +1,16 @@
+-------------------------------------- 2013-10-07 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - removing DeleteLocalReference(...) from:
+
+          - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRunProgram(...)
+          - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSendMessageToRexxObject(...)
+
+          otherwise rtc->DetachThread() may cause an exception in native code,
+          if a Rexx exception occurs (reason for bug19 <http://sourceforge.net/p/bsf4oorexx/bugs/19/>);
+          as DetachThread() will remove local references anyway, there is no possible memory leak
+
 -------------------------------------- 2013-07-14 ----------------------------------
 
 - setupBSF.rex
