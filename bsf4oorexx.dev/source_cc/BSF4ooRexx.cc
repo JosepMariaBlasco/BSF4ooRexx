@@ -24,6 +24,14 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.1.2   2013-10-07 - removing DeleteLocalReference(...) from:
+
+                            - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRunProgram(...)
+                            - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSendMessageToRexxObject(...)
+
+                         otherwise rtc->DetachThread() may cause an exception in native code,
+                         cf. <http://sourceforge.net/p/bsf4oorexx/bugs/19/>
+
     4.1.1   2013-06-30 - removed last compiler warning (-Wwrite-strings)
 
     4.1.1   2013-06-29 - applying ReleaseLocalReference() wherever a Rexx thread context may have returned
@@ -565,7 +573,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // #define RGF_JNI_RII     // rgf, 2012-12-29, debugging crash documented by TestConcurrencyCrash.java
 
-#if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
+// #if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
+#if defined (WINDOWS)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
     #define DEBUG
     #define DEBUG1
     #define DEBUG2
@@ -790,11 +799,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "411.20130630 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "412.20131007 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "411.20130630 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "412.20131007 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "411.20130630 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "412.20131007 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -2024,7 +2033,6 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
         size_t items_before;
         rtc->ObjectToStringSize(rtc->SendMessage0(OREXX_REGISTRY_PACKAGE,"ITEMS"),&items_before);
         CSTRING hasIndex_before=rtc->ObjectToStringValue(rtc->SendMessage1(OREXX_REGISTRY_PACKAGE,"HASINDEX",obj_id));
-        RexxObjectPtr rop=
     #endif
             rtc->SendMessage1(OREXX_REGISTRY_PACKAGE,    "REMOVE", obj_id); // package object
 
@@ -10674,6 +10682,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     fprintf(stderr, "--------------> ooRexx->AttachThread() - jniRexxRunProgram tid=[%lu] ... ", (unsigned long) tid); fflush(stderr);
 #endif
 
+    // rgf, 2013-10-07: no need to do a rtc->ReleaseLocalReference(ro) as these references get released upon rtc->DetachThread() !
     if (!instance->AttachThread(&rtc))          // get a ThreadContext
     {
 
@@ -10763,14 +10772,14 @@ fflush(stderr);
 #endif
 
                 result_obj=rtc->CallRoutine(rro, ra);   // call the program
-                rtc->ReleaseLocalReference(rro);
+                // rgf, 201310 rtc->ReleaseLocalReference(rro);
             }
             else
             {
                 result_obj=rtc->LoadPackageFromData(c_fileName, c_programData, len);    // load & run the program
             }
     }
-    rtc->ReleaseLocalReference(ra);
+    // rgf, 201310 rtc->ReleaseLocalReference(ra);
 
     RexxFreeMemory(c_fileName);      // make sure we free the allocated memory
     RexxFreeMemory(c_programData);      // make sure we free the allocated memory
@@ -10802,8 +10811,8 @@ fflush(stderr);
 #if defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxRunProgram tid=[%lu]... ", (unsigned long) tid); fflush(stderr);
 #endif
-        rtc->ReleaseLocalReference(result_obj);
-        rtc->ReleaseLocalReference(condObj);
+        // rgf, 201310 rtc->ReleaseLocalReference(result_obj);
+        // rgf, 201310 rtc->ReleaseLocalReference(condObj);
         rtc->DetachThread();
 
 #if defined (DEBUG_REXX_ATTACH)
@@ -10837,7 +10846,7 @@ fflush(stderr);
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxRunProgram tid=[%lu] ... ", (unsigned long) tid); fflush(stderr);
 #endif
 
-    rtc->ReleaseLocalReference(result_obj);
+    // rgf, 201310 rtc->ReleaseLocalReference(result_obj);
     rtc->DetachThread();
 
 #if defined (DEBUG_REXX_ATTACH)
@@ -11022,6 +11031,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     fprintf(stderr, "--------------> ooRexx->AttachThread() - jniRexxSendMessageToRexxObject... "); fflush(stderr);
 #endif
 
+    // rgf, 2013-10-07: no need to do a rtc->ReleaseLocalReference(ro) as these references get released upon rtc->DetachThread() !
     if (!instance->AttachThread(&rtc))          // get a ThreadContext
     {
 
@@ -11072,7 +11082,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
     RexxStringObject rso=rtc->String(c_obj_ID);
     RexxObjectPtr ro=RgfGetProxyObject(rtc, rso);     // get Rexx object
-    rtc->ReleaseLocalReference(rso);
+    // rgf, 201310 rtc->ReleaseLocalReference(rso);
     // RexxObjectPtr ro=RgfGetProxyObject(rtc, rtc->String(c_obj_ID));     // get Rexx object
     // RexxObjectPtr ro=RgfGetProxyObjectPackage(rtc, rtc->String(c_obj_ID);
 
@@ -11109,11 +11119,11 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
             rso=rtc->String(c_userData_ID);
             RexxObjectPtr ro_userData=RgfGetProxyObject(rtc, rso);  // get userData Rexx object
-            rtc->ReleaseLocalReference(rso);
+            // rgf, 201310 rtc->ReleaseLocalReference(rso);
             // RexxObjectPtr ro_userData=RgfGetProxyObject(rtc, rtc->String(c_userData_ID));      // get userData Rexx object
             rtc->DirectoryPut(slotDir, ro_userData, "USERDATA");            // make userData available
             RexxFreeMemory(c_userData_ID);      // make sure we free the allocated memory
-            rtc->ReleaseLocalReference(ro_userData);
+            // rgf, 201310 rtc->ReleaseLocalReference(ro_userData);
         }
 
 
@@ -11132,12 +11142,12 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             {
                 RexxObjectPtr rop=ro_methodObject;
                 ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
-                rtc->ReleaseLocalReference(rop);
+                // rgf, 201310 rtc->ReleaseLocalReference(rop);
             }
 
             rtc->DirectoryPut(slotDir, ro_methodObject, "METHODOBJECT");    // save it in callback directory
-            rtc->ReleaseLocalReference(clzBSF);
-            rtc->ReleaseLocalReference(ro_methodObject);
+            // rgf, 201310 rtc->ReleaseLocalReference(clzBSF);
+            // rgf, 201310 rtc->ReleaseLocalReference(ro_methodObject);
         }
 
         if (! rtc->CheckCondition())    // so far no problems? then proceed
@@ -11158,12 +11168,12 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
                     RexxObjectPtr rop=ro_methodObject;
                     // ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", ro_methodObject);
                     ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
-                    rtc->ReleaseLocalReference(rop);
+                    // rgf, 201310 rtc->ReleaseLocalReference(rop);
                 }
 
                 rtc->DirectoryPut(slotDir, ro_methodObject, "JAVAOBJECT");    // save it in callback directory
-                rtc->ReleaseLocalReference(clzBSF);
-                rtc->ReleaseLocalReference(ro_methodObject);
+                // rgf, 201310 rtc->ReleaseLocalReference(clzBSF);
+                // rgf, 201310 rtc->ReleaseLocalReference(ro_methodObject);
             }
 
 
@@ -11176,7 +11186,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         #endif                 /// <============
                 RexxStringObject rso=rtc->String(c_msgDesc);
                 rtc->DirectoryPut(slotDir, rso, "METHODDESCRIPTOR");   // make original method name available
-                rtc->ReleaseLocalReference(rso);
+                // rgf, 201310 rtc->ReleaseLocalReference(rso);
                 // rtc->DirectoryPut(slotDir, rtc->String(c_msgDesc), "METHODDESCRIPTOR");   // make original method name available
 
                 RexxFreeMemory(c_msgDesc);      // make sure we free the allocated memory
@@ -11184,7 +11194,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
             RexxStringObject rso=rtc->String(c_msg);
             rtc->DirectoryPut(slotDir, rso, "METHODNAME");   // make original method name available
-            rtc->ReleaseLocalReference(rso);
+            // rgf, 201310 rtc->ReleaseLocalReference(rso);
             // rtc->DirectoryPut(slotDir, rtc->String(c_msg), "METHODNAME");   // make original method name available
         }
     }
@@ -11255,7 +11265,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 // fprintf(stderr, "...jniRexxSendMessageToRexxObject(): BEFORE SendMessage(), ro=[%p], c_msg=[%.256s], ra=[%p], size=[%u]...\n",ro, c_msg, ra, rtc->ArraySize(ra));fflush(stderr);
 
             result_obj=rtc->SendMessage(ro, c_msg, ra); // with arguments
-            rtc->ReleaseLocalReference(ra);
+            // rgf, 201310 rtc->ReleaseLocalReference(ra);
 
 // fprintf(stderr, "...jniRexxSendMessageToRexxObject(): AFTER SendMessage(),...\n");fflush(stderr);
 
@@ -11296,10 +11306,10 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
                                                              REASON_EXECUTION_ERROR,   // reason
                                                              msg   // message
                                                         );
-        rtc->ReleaseLocalReference(condObj);
-        rtc->ReleaseLocalReference(result_obj);
-        rtc->ReleaseLocalReference(ro);
-        rtc->ReleaseLocalReference(slotDir);
+        // rgf, 201310 rtc->ReleaseLocalReference(condObj);
+        // rgf, 201310 rtc->ReleaseLocalReference(result_obj);
+        // rgf, 201310 rtc->ReleaseLocalReference(ro);
+        // rgf, 201310 rtc->ReleaseLocalReference(slotDir);
 
 #if defined (RGF_TRUE) || defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxSendMessageToRexxObject... "); fflush(stderr);
@@ -11340,9 +11350,9 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxSendMessageToRexxObject... "); fflush(stderr);
 #endif
 
-    rtc->ReleaseLocalReference(result_obj);
-    rtc->ReleaseLocalReference(ro);
-    rtc->ReleaseLocalReference(slotDir);
+    // rgf, 201310 rtc->ReleaseLocalReference(result_obj);
+    // rgf, 201310 rtc->ReleaseLocalReference(ro);
+    // rgf, 201310 rtc->ReleaseLocalReference(slotDir);
     rtc->DetachThread();
 
 #if defined (RGF_TRUE) || defined (DEBUG_REXX_ATTACH)
