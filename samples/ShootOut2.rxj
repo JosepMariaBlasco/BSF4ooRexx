@@ -25,6 +25,7 @@
             2010-05-17, rgf, - adapting example to take full advantage of BSF4ooRexx
                              - replacing bsf.addEventListener with Rexx event handlers
             2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+            2013-12-19, rgf, - resolve path to file "ShootAnswers.txt"
 
    Author:   Rony G. Flatscher, WU Wien University,
 
@@ -33,7 +34,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2012 Rony G. Flatscher
+       Copyright (C) 2001-2013 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -160,7 +161,11 @@ rp=BsfCreateRexxProxy(.RexxPwdPopupEventHandler~new, mainUserData, "java.awt.eve
 mEdit~addActionListener(rp)
 
         /* read answers from file       */
-mainUserData~file.name="ShootAnswers.txt"
+parse source . . thisScript   -- get fully qualified path of this script
+-- fn   =fileSpec("l",thisScript) || "ShootAnswers.txt"   -- turn into fully qualified path
+-- answers = .stream~new(fn)~arrayin      /* read answers from file       */
+-- mainUserData~file.name="ShootAnswers.txt"
+mainUserData~file.name=fileSpec("l",thisScript) || "ShootAnswers.txt"
 call readAnswersFromFile mainUserData
 
         /* pack the elements, show the window, bring it to the front    */
