@@ -162,9 +162,6 @@ mEdit~addActionListener(rp)
 
         /* read answers from file       */
 parse source . . thisScript   -- get fully qualified path of this script
--- fn   =fileSpec("l",thisScript) || "ShootAnswers.txt"   -- turn into fully qualified path
--- answers = .stream~new(fn)~arrayin      /* read answers from file       */
--- mainUserData~file.name="ShootAnswers.txt"
 mainUserData~file.name=fileSpec("l",thisScript) || "ShootAnswers.txt"
 call readAnswersFromFile mainUserData
 
