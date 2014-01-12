@@ -5,7 +5,7 @@
             to point to the Java archives needed to drive/automate OpenOffice.org
             resp. LibreOffice
    Author:  Rony G. Flatscher
-   Version: 1.18
+   Version: 1.19
    Date:    2006-01-04
    Changed:
             2006-01-16, ---rgf, make sure CLASSPATH is used in any case
@@ -75,13 +75,14 @@
                                   (displays values for cmd.eSetPath and cmd.eSetCP)
             2013-07-15, ---rgf, - output additional log messages to ease debugging
                                 - Unix: make sure to look for all kind of "libreoffice" variants
+            2014-01-12, ---rgf, - Windows: make sure "OpenOffice" is searched in registry
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2013 Rony G. Flatscher
+       Copyright (C) 2006-2014 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -1275,7 +1276,9 @@ canonizePath: procedure expose cmd. path.
     to OOo's program directory
 */
 ::routine getOOoHomeDirWindows
-  regpaths=.array~of("Software\OpenOffice.org\UNO\InstallPath\", "Software\LibreOffice\UNO\InstallPath\")
+  regpaths=.array~of("Software\OpenOffice\UNO\InstallPath\", -
+                     "Software\OpenOffice.org\UNO\InstallPath\", -
+                     "Software\LibreOffice\UNO\InstallPath\")
   wsh=.OleObject~new("WScript.Shell")
 
   do key over regpaths

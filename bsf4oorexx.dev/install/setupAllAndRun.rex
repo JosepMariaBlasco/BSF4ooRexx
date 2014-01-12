@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-05,14,18
-   version: 1.06
+   version: 1.07
    name:    setupAllAndRun.rex
    purpose: installer to install or reinstall the BSF4ooRexx package
 
@@ -54,13 +54,14 @@
                                 (two leading '/' as root, which may cause the copy to not take place)
                               - fixed logfile name on Unix to point to a directory with write rights (home directory of user)
                               - Unix: make sure that logfile gets chown'ed to user who runs the script
+            2014-01-12, rgf   - Unix: if real user name is "root", then place the logfile into "/tmp"
 
    remark:  ---
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010-2013 Rony G. Flatscher
+       Copyright (C) 2010-2014 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -965,6 +966,10 @@ any:                 -- something went wrong while executing the program
         realName=logName         -- cmd.eRealUserName=cmd.eLogName
 
      fileName=rootDir || realname || "/" || fileName
+
+     -- if Unix user is root, then we place the logfile into "/tmp"
+     if realName="root" then
+        fileName="/tmp/"fileName
   end
 
   if pos(" ",fileName)>0 then    -- if path/filename contains blank(s), quote it
@@ -975,7 +980,7 @@ any:                 -- something went wrong while executing the program
   stream=.stream~new(filename)   -- create stream for logfile and assign it to attribute
 
   .output~destination(self)      -- replace monitored object
-  .error~destination(self)       -- replace montiored object
+  .error~destination(self)       -- replace monitored object
   cmd.eLogFile=self              -- save logfile's stream object
 
   cmd.eLoggingStarted=.dateTime~new

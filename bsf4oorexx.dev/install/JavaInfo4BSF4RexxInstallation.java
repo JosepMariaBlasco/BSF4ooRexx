@@ -6,7 +6,7 @@
  * <p>
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2005-2013 Rony G. Flatscher
+ *    Copyright (C) 2005-2014 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -22,13 +22,16 @@
  * ----------------------------------------------------------------------------- </pre>
  *
  *
- * @author Rony G. Flatscher (c) 2005-2013
- * @version 1.3
+ * @author Rony G. Flatscher (c) 2005-2014
+ * @version 1.4
  *
  */
 
  /*
     changes:
+        2014-01-12: method getClassPath4OOo() simply does a replaceAll(), if unoinfo data
+                    is UTF-16LE encoded
+
         2013-07-15: determining classpath for OOo/LO; it seems that starting with Java 1.7
                     Runtime.exec(cmd) was changed such, that runtime errors occur that inhibit
                     the fetching of the classpath values needed for OOo/LO, if the path to
@@ -418,14 +421,15 @@ System.out.println("  idx=["+idx+"]: ["+hexstring.substring(i, endPos)+"]...");
                 return "";
             }
 
-            if (line.charAt(0)=='0')        // 8-Bit-ASCII encoded, '\0' char delimits paths
+            if (line.charAt(0)=='0')    // 8-Bit-ASCII encoded, '\0' char delimits paths
             {
-                res=prefix+line.substring(1).      // skip first char
+                res=prefix+line.substring(1).       // skip first char
                          replace('\0', System.getProperty("path.separator").charAt(0));
             }
-            else    // (line.charAt(0)=='1')        // "UTF-16LE" encoded!
+            else                        // "UTF-16LE" encoded, two nul-bytes ("\0\0") delimit paths
             {
-                res=prefix+getCP_FromUTF16LE(line.substring(1));   // skip first char
+                res=prefix+line.substring(1).       // skip first char
+                         replaceAll("\0\0", System.getProperty("path.separator"));
             }
         }
         catch (Exception err) {
@@ -435,46 +439,6 @@ System.out.println("  idx=["+idx+"]: ["+hexstring.substring(i, endPos)+"]...");
             return "";
         }
         return res;
-    }
-
-
-    /** Edits string received from 'unoinfo java' to build a valid CLASSPATH string.
-     *
-     * @param   UTF-16LE string, end of path indicated by x'0000' chars
-     * @return  edited string: x'0000' replaced by path.separator
-     *
-    */
-    static private String getCP_FromUTF16LE(String argStr) throws java.io.UnsupportedEncodingException
-    {
-        String     psep=System.getProperty("path.separator");
-        byte       b []=argStr.getBytes();  // get byte array from String
-        StringBuffer sb=new StringBuffer(); // result
-
-        boolean bNullByte=false;            // no null byte seen so far
-
-        int start=0;                        // start position in byte array
-        int stop =b.length-1;               // 0-based length
-        for (int i=0; i<b.length; i++)
-        {
-            if ( (bNullByte && b[i]==0) || (i==stop) )  // 0x000000 in hand or at end of string ?
-            {
-                if (sb.length()!=0)         // do we need a path separator ?
-                {
-                    sb.append(psep);
-                }
-                                            // create String chunk from byte array
-                sb=sb.append(new String(b, start, i-start+(i==stop?1:0), "UTF-16LE"));
-                if (i!=stop)                // nullBytes
-                {
-                    i++;                    // increment
-                    start=i+1;
-                    bNullByte=false;
-                    continue;
-                }
-            }
-            bNullByte=(b[i]==0);            // null byte in hand ?
-        }
-        return sb.toString();
     }
 
 }
