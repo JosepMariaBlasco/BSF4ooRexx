@@ -1,8 +1,10 @@
+#!/bin/sh
 #    Purpose: load and run Rexx script via Java, allow for supplying arguments to the Rexx script
 #    Author:  Rony G. Flatscher
 #    Date:    2006-01-02
 #    Changed: 2007-02-03, ---rgf, renamed file, changed year-range
 #             2010-06-10, ---rgf, honor environment variable 'BSF4Rexx.JavaStartupOptions', if set
+#             2014-01-22, ---rgf, add missing hashbang line at the top
 #    Remark:  Rexx script can retrieve all arguments as passed to Java via the BSFRegistry, including
 #             the name of the Rexx script to be invoked/dispatched
 #
@@ -12,7 +14,7 @@
 #
 #    license:
 #    ------------------------ Apache Version 2.0 license -------------------------
-#       Copyright 2006-2010 Rony G. Flatscher
+#       Copyright 2006-2014 Rony G. Flatscher
 #
 #       Licensed under the Apache License, Version 2.0 (the "License");
 #       you may not use this file except in compliance with the License.
