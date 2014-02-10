@@ -5,7 +5,7 @@
             to point to the Java archives needed to drive/automate OpenOffice.org
             resp. LibreOffice
    Author:  Rony G. Flatscher
-   Version: 1.19
+   Version: 1.20
    Date:    2006-01-04
    Changed:
             2006-01-16, ---rgf, make sure CLASSPATH is used in any case
@@ -76,6 +76,7 @@
             2013-07-15, ---rgf, - output additional log messages to ease debugging
                                 - Unix: make sure to look for all kind of "libreoffice" variants
             2014-01-12, ---rgf, - Windows: make sure "OpenOffice" is searched in registry
+            2014-02-10, ---rgf, - MacOSX: make sure the new location "/Applications/OpenOffice.app" is searched first (AOO 4.1 and up)
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
@@ -1378,7 +1379,9 @@ syntax2:                   -- no OOo-entry
 /* rgf, 2011-02-25, try to find OOo's home dir on MacOSX, 2011-04-10: add search for LibreOffice */
 ::routine getOOoHomeDirMacOSX
 -- well defined home directory
-  paths=.array~of("/Applications/OpenOffice.org.app/Contents/MacOS", "/Applications/LibreOffice.app/Contents/MacOS")
+  paths=.array~of("/Applications/OpenOffice.app/Contents/MacOS", -
+                  "/Applications/OpenOffice.org.app/Contents/MacOS",     -
+                  "/Applications/LibreOffice.app/Contents/MacOS")
 
   do path over paths
      soffice=path"/soffice"

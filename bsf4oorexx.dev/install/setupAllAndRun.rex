@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-05,14,18
-   version: 1.07
+   version: 1.08
    name:    setupAllAndRun.rex
    purpose: installer to install or reinstall the BSF4ooRexx package
 
@@ -55,6 +55,8 @@
                               - fixed logfile name on Unix to point to a directory with write rights (home directory of user)
                               - Unix: make sure that logfile gets chown'ed to user who runs the script
             2014-01-12, rgf   - Unix: if real user name is "root", then place the logfile into "/tmp"
+            2014-02-10, rgf   - Unix: use environment HOME to determine home directory for non-"root"
+                                      users
 
    remark:  ---
 
@@ -950,11 +952,6 @@ any:                 -- something went wrong while executing the program
      fileName=value("USERPROFILE",,"ENVIRONMENT")"\"fileName
   else   -- Unix operating systems
   do
-         -- root dir of home directories
-     rootDir="/home/"
-     if cmd.eOpSys="M" then
-        rootDir="/Users/"
-
          -- determine current user ids
      logname =value("LOGNAME",,"ENVIRONMENT")
      sudoUser=value("SUDO_USER",,"ENVIRONMENT")
@@ -965,11 +962,14 @@ any:                 -- something went wrong while executing the program
      else
         realName=logName         -- cmd.eRealUserName=cmd.eLogName
 
-     fileName=rootDir || realname || "/" || fileName
-
      -- if Unix user is root, then we place the logfile into "/tmp"
      if realName="root" then
         fileName="/tmp/"fileName
+     else
+     do
+        homeDir =value("HOME",,"ENVIRONMENT")  -- fetch home directory on Unix
+        fileName=homeDir || "/" || fileName
+     end
   end
 
   if pos(" ",fileName)>0 then    -- if path/filename contains blank(s), quote it

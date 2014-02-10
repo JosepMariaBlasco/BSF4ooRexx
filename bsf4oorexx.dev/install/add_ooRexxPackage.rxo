@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2006-06-25
-   version: 1.0.5
+   version: 1.0.6
    name:    add_ooRexxPackage.rex
    purpose: adds package "ScriptProviderForooRexx.jar" for all OOo users ("shared" context)
    needs:   UNO.CLS
@@ -25,6 +25,9 @@
                                 user needs to run previous uninstall scripts or remove a left over using "unopkg[.exe]" or
                                 the OOo extension manager
             2010-08-24, ---rgf, fixed bug in remove (uninitialized variable got used mistakingly)
+            2014-02-10, ---rgf, if oxt cannot be installed into 'shared' context, try to install it to 'user';
+                                when removing, make sure that both contextes are tried, "shared" and
+                                "user"
 
    remark:  one can add or remove a package via the command-line as well using the
             executable "unopkg[.exe]" from the OOo "program" directory or the OOo extension manager (Tools -> Extension Manager)
@@ -44,7 +47,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2010 Rony G. Flatscher
+       Copyright (C) 2006-2014 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -90,15 +93,25 @@ end
 
 if switch="R" then   -- remove the installed package
 do
-   res=doit(unopkg "remove --shared" extension nullDevice) -- make sure (older?) deinstalled from user
-   if res=1  then say "Success! Package" pp(extension) "successfully removed from 'shared' context!"
-             else say "ERROR! Package" pp(extension) "could *NOT* be removed from 'shared context!"
+   res1=doit(unopkg "remove --shared" extension nullDevice) -- make sure (older?) deinstalled from user
+   if res1=1  then say "Success! Package" pp(extension) "successfully removed from 'shared' context!"
+
+   res2=doit(unopkg "remove" extension nullDevice) -- make sure (older?) deinstalled from user
+   if res2=1  then say "Success! Package" pp(extension) "successfully removed from 'user' context!"
+
+   if (res1 + res2) = 0 then
+      say "Information: package" pp(extension) "could *NOT* be removed from 'shared' nor from 'user' context, maybe not installed?"
 end
 else                 -- if no remove switch given, install the package
 do
    res=doit(unopkg "add --shared" extension)   -- now add as a shared package
    if res=1  then say "Success! Package" pp(extension) "successfully added as a 'shared' package!"
-             else say "ERROR! Package" pp(extension) "could *NOT* be added as a 'shared' package!"
+             else    -- try to add oxt as a user extension
+             do
+                res=doit(unopkg "add" extension)   -- now add as a package for the user only
+                if res=1 then say "Success! Package" pp(extension) "successfully added as a 'user' package!"
+                         else say "ERROR! Package" pp(extension) "could *NOT* be added as a 'shared' nor as a 'user' package!"
+             end
 end
 
 
