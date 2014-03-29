@@ -21,7 +21,7 @@ import org.apache.bsf.util.type.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2013 Rony G. Flatscher
+ *    Copyright (C) 2001-2014 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -36,11 +36,18 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.1.1, 2013-06-25
+  * @version 4.2.0, 2014-03-29
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
+     2014-03-29, ---rgf, - add jniProcEnvironment(...): this allows to get, set and unset the
+                           process environment from Java; reason: AOO 4.x removes the PATH environment
+                           variable (seems to be unintended, hence an error), which inhibits the
+                           Rexx interpreter to initialize successfully; this jni function is intended
+                           to allow as a last resort to set the missing PATH environment variable;
+                           the subfunctions "getEnv" and "setEnv" will not be explicitly documented
+
      2013-06-25, ---rgf, - add a terminate() method which nullifies the peer BSFManager and RexxEngine
                            object to allow a terminated BSFManager RexxEngine to be garbage collected
 
@@ -283,7 +290,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "411.20130625";
+    static final public String version = "420.20140329";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -843,6 +850,10 @@ necessary anymore
      protected native long    jniLanguageLevel     (Object[] slot);
 
 
+     // rgf, 2014-03-29
+     protected native String  jniProcEnvironment(int function, String envName, String envValue);
+
+
     /**  rgf, 2003-01-15, used for allowing the BSF4ooRexx-DLL to get at *env, *obj and then to mid etc.
      * */
     protected native int jniInitialize4Rexx() ;
@@ -898,6 +909,9 @@ private static final int           IS_INSTANCE               =  40 ;   // 2010-0
 
 private static final int           CARRY_OUT_SYSTEM_EXIT     =  41 ;   // 2011-02-23, ---rgf
 
+private static final int           ENV_GET                   =  42;    // 2014-03-29, ---rgf
+private static final int           ENV_SET                   =  43;    // 2014-03-29, ---rgf
+
 
         // define the constant strings for the function names passed from Rexx
 private static final String STRING_ADD_EVENT_LISTENER             = "addEventListener"                     ;
@@ -950,6 +964,10 @@ private static final String STRING_KUDOS                          = "kudos"     
 private static final String STRING_IS_A                           = "isA"                                  ; // rgf, 2010-02-20
 
 private static final String STRING_CARRY_OUT_SYSTEM_EXIT          =  "carryOutSystemExit";   // 2011-02-23, ---rgf
+
+
+private static final String STRING_ENV_GET                        =  "getEnv";               // 2014-03-29, ---rgf
+private static final String STRING_ENV_SET                        =  "setEnv";               // 2014-03-29, ---rgf
 
 
     /** Entry point for Rexx calls into Java. This method carries out
@@ -2238,6 +2256,9 @@ private static final String STRING_CARRY_OUT_SYSTEM_EXIT          =  "carryOutSy
 //       else if (args[0].equalsIgnoreCase( STRING_IS_INSTANCE                    )) choice = IS_INSTANCE               ;  // 20100220, rgf
 
        else if (args[0].equalsIgnoreCase( STRING_CARRY_OUT_SYSTEM_EXIT          )) choice = CARRY_OUT_SYSTEM_EXIT     ;  // 20110223, rgf
+
+       else if (args[0].equalsIgnoreCase( STRING_ENV_GET                        )) choice = ENV_GET                   ;  // 20140329, rgf
+       else if (args[0].equalsIgnoreCase( STRING_ENV_SET                        )) choice = ENV_SET                   ;  // 20140329, rgf
 
 
         // ==================================================================
@@ -4554,6 +4575,53 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                         // now halt given thread
                        return makeString4Rexx(""+jniRexxSetHalt(args[1]));
                    }
+
+
+        // ==================================================================
+        // ---rgf, 2014-03-29
+
+           case ENV_GET:
+           case ENV_SET:
+               /*********************************************************
+                * value = BSF( 'getEnv', envName)
+                * value = BSF( 'setEnv', envName, newValue )
+                        -- remove environment variable:
+                * value = BSF( 'setEnv', envName) or
+                * value = BSF( 'setEnv', envName, null)
+                *
+                * - arrayObject:   array to be worked upon
+                *********************************************************/
+               {
+                   final int GET_ENVIRONMENT_VARIABLE=1;
+                   final int SET_ENVIRONMENT_VARIABLE=2;
+
+                   if ( choice==ENV_GET && (args.length!=2 || args[1]==null ) )
+                   {
+                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid arguments; usage: call BSF " +
+                           "'"+args[0]+"', envName");
+                   }
+                   else if (args.length<2 || args.length>3 || args[1]==null )
+                   {
+                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid arguments; usage: call BSF " +
+                           "'"+args[0]+"', envName [, newValue=.nil]");
+                   }
+
+                   String res=null;
+
+                   if (choice==ENV_GET)
+                   {
+                       res=jniProcEnvironment(GET_ENVIRONMENT_VARIABLE, args[1], null);    // get current value for environment variable
+                   }
+
+                   if (choice==ENV_SET)     // set or unset
+                   {
+                       res=jniProcEnvironment(SET_ENVIRONMENT_VARIABLE, args[1], args.length==2 ? null : args[2]);
+                   }
+
+                   return makeString4Rexx( res );           // wrap the object and return it to Rexx
+               }
 
 
 

@@ -7,10 +7,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-/* Inaccessible static: carryOutSystemExit */
-/* Inaccessible static: null4Rexx */
-/* Inaccessible static: bsfPrefixReturnValue */
-/* Inaccessible static: nlR_class */
 #undef org_rexxla_bsf_engines_rexx_RexxAndJava_ADD_EVENT_LISTENER
 #define org_rexxla_bsf_engines_rexx_RexxAndJava_ADD_EVENT_LISTENER 1L
 #undef org_rexxla_bsf_engines_rexx_RexxAndJava_ARRAY_AT
@@ -95,22 +91,10 @@ extern "C" {
 #define org_rexxla_bsf_engines_rexx_RexxAndJava_IS_INSTANCE 40L
 #undef org_rexxla_bsf_engines_rexx_RexxAndJava_CARRY_OUT_SYSTEM_EXIT
 #define org_rexxla_bsf_engines_rexx_RexxAndJava_CARRY_OUT_SYSTEM_EXIT 41L
-/* Inaccessible static: class_00024java_00024lang_00024Class */
-/* Inaccessible static: class_00024java_00024lang_00024Object */
-/* Inaccessible static: class_00024java_00024lang_00024reflect_00024Method */
-/* Inaccessible static: class_00024java_00024lang_00024reflect_00024Array */
-/* Inaccessible static: class_00024java_00024lang_00024String */
-/* Inaccessible static: class_00024java_00024lang_00024System */
-/* Inaccessible static: class_00024java_00024lang_00024Thread */
-/* Inaccessible static: class_00024java_00024lang_00024Boolean */
-/* Inaccessible static: class_00024java_00024lang_00024Byte */
-/* Inaccessible static: class_00024java_00024lang_00024Character */
-/* Inaccessible static: class_00024java_00024lang_00024Double */
-/* Inaccessible static: class_00024java_00024lang_00024Float */
-/* Inaccessible static: class_00024java_00024lang_00024Integer */
-/* Inaccessible static: class_00024java_00024lang_00024Long */
-/* Inaccessible static: class_00024java_00024lang_00024Short */
-/* Inaccessible static: class_00024java_00024lang_00024Void */
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_ENV_GET
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_ENV_GET 42L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_ENV_SET
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_ENV_SET 43L
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniSetupNativeJVMPointer
@@ -374,6 +358,14 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpre
  */
 JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguageLevel
   (JNIEnv *, jobject, jobjectArray);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniProcEnvironment
+ * Signature: (ILjava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniProcEnvironment
+  (JNIEnv *, jobject, jint, jstring, jstring);
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava

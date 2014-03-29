@@ -24,6 +24,14 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.2.0   2014-03-29 ---rgf,
+                       - add jniProcEnvironment(...): this allows to get, set and unset the
+                         process environment from Java; reason: AOO 4.x removes the PATH environment
+                         variable (seems to be unintended, hence an error), which inhibits the
+                         Rexx interpreter to initialize successfully; this jni function is intended
+                         to allow as a last resort to set the missing PATH environment variable;
+                         the subfunctions "getEnv" and "setEnv" will not be explicitly documented
+
     4.1.2   2013-10-07 - removing DeleteLocalReference(...) from:
 
                             - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRunProgram(...)
@@ -799,11 +807,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "412.20131007 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "420.20140329 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "412.20131007 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "420.20140329 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "412.20131007 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "420.20140329 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -14061,6 +14069,91 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
     fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguageLevel <== <==\n");fflush(stderr);
 #endif
     return res;
+}
+
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniProcEnvironment
+ * Signature: (ILjava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+
+        invocationType: 1=get, 2=set; if jNewValue is NULL, then remove envName
+
+        returns value of jEnvName
+
+        ---rgf, 2014-03-29
+ */
+JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniProcEnvironment
+  (JNIEnv *env, jobject rajo, jint j_InvocationType, jstring j_EnvName, jstring j_NewValue)
+{
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 1/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniProcEnvironment <== <==\n");fflush(stderr);
+#endif
+
+    char * c_EnvName=(char *) JNU_GetStringNativeChars(env, j_EnvName);   // convert to native string
+
+    char * c_NewValue=NULL;
+    if (j_NewValue!=NULL)       // could be NULL for removing j_EnvName from process environment
+    {
+        c_NewValue=(char *) JNU_GetStringNativeChars(env, j_NewValue);   // convert to native string
+    }
+
+#ifdef UNIX
+
+     char *envBuffer= getenv(c_EnvName);   // get current value, if any
+
+     if (j_InvocationType==2)   // setenv or unsetenv ?
+     {
+         int res= j_NewValue==NULL ? unsetenv(c_EnvName)                :
+                                       setenv(c_EnvName, c_NewValue, 1)   ;
+         // if res<>0, then errno would indicate error, not needed in this context
+     }
+
+#else   // WINDOWS
+     const int MAX_LENGTH=32767;
+     char envBuffer[MAX_LENGTH];   // pointer to hold environment value
+
+     DWORD nr_chars = GetEnvironmentVariable(c_EnvName, (LPTSTR) envBuffer, MAX_LENGTH);
+     if (nr_chars==0)       // no chars returned, probably not set (could test:  GetLastError returns ERROR_ENVVAR_NOT_FOUND, but not needed in this context)
+     {
+         envBuffer[0]=NULL;
+     }
+
+     if (j_InvocationType==2)   // setenv or unsetenv ?
+     {
+         SetEnvironmentVariable(c_EnvName, (LPTSTR) c_NewValue );    // maybe type now: LPCTSTR
+     }
+#endif
+
+
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "--> invocation type=[%d], c_EnvName=[%s], envBuffer=[%s], c_NewValue=[%s] <--\n",
+                       j_InvocationType, c_EnvName, envBuffer, c_NewValue);
+    fflush(stderr);
+#endif
+
+
+
+        // make sure we free memory
+    RexxFreeMemory(c_EnvName);
+
+    if (c_NewValue!=NULL)
+    {
+        RexxFreeMemory(c_NewValue);
+    }
+
+
+#if defined (DEBUG_JNI)
+    fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniProcEnvironment <== <==\n");fflush(stderr);
+#endif
+
+    // create Java string from the C string and return it
+//    return ( envBuffer==NULL || envBuffer[0]==NULL ? NULL : env->NewStringUTF( envBuffer ) );
+#ifdef UNIX
+    return ( envBuffer==NULL ? NULL : env->NewStringUTF( envBuffer ) );
+#else   // WINDOWS
+    return ( envBuffer==NULL || envBuffer[0]==NULL ? NULL : env->NewStringUTF( envBuffer ) );
+#endif
 }
 
 
