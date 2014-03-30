@@ -14,7 +14,7 @@ import java.lang.reflect.Method;
   * using the RexxSAA interface.
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2013 Rony G. Flatscher
+ *    Copyright (C) 2001-2014 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 4.1.1, 20130629
+  * @version 4.5.0, 20140330
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,9 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+    2014-03-30, ---rgf, - add undocumented pass-thru method procEnvironment(...) to allow a last resort means
+                          (allow Java to set/get process environment variables via JNI)
+
     2013-06-29, ---rgf, - get isTerminated() back into the code; was mistakingly deleted between rev 137 and 148
 
     2013-06-24, ---rgf, - terminate() now invokes the new RexxAndJava.terminate() in order to allow it
@@ -125,7 +128,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "411.20130629";
+    static final public String version = "450.20140330";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -1238,6 +1241,19 @@ if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterprete
         }
         return rexxInterface.lookupBean(beanName);
     }
+
+    /* 2014-03-30: ---rgf, no documentation generated, a last resort means to get and set the process environment via Java using JNI.
+     */
+    public String procEnvironment(int t, String n, String v)  throws RexxException
+    {
+        if (bTerminated==true)       // engine got terminated, cannot use it anymore
+        {
+            throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
+        }
+        return rexxInterface.jniProcEnvironment(t, n, v);
+    }
+
+
 
 }
 
