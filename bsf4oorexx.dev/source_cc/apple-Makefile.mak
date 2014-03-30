@@ -3,7 +3,11 @@
 
 # rgf, 2013-08-12: to support an earlier version of MacOSX use e.g. "export MACOSX_DEPLOYMENT_TARGET=10.6" before compiling (cf. "man g++")
 
-INC_PATH = -I. -I/System/Library/Frameworks/JavaVM.framework/headers
+# INC_PATH = -I. -I/System/Library/Frameworks/JavaVM.framework/headers
+
+# rgf, 2014-03-30
+INC_PATH = -I. -I/Developer/SDKs/MacOSX10.6.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers
+
 
 INC_PATH_ORX = -I/opt/ooRexx/include $(INC_PATH)
 
