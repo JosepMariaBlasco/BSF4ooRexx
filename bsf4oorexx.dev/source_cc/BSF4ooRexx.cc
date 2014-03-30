@@ -3949,7 +3949,7 @@ void environmentAttachTo(PSTRUCT_PARAM param, int bNewGroup)
         if ((param->attachResult=defaultJVM->jvm->GetEnv((void **)&param->env, USE_DEFINED_JNI_VERSION))==JNI_EDETACHED)
         {
             // nope, not yet attached, try to attach
-            if (param->attachResult=defaultJVM->jvm->AttachCurrentThread((void **) &param->env, (void *) &defaultJavaVMAttachArgs)!=JNI_OK) // attach to JVM
+            if ( (param->attachResult=defaultJVM->jvm->AttachCurrentThread((void **) &param->env, (void *) &defaultJavaVMAttachArgs)) != JNI_OK) // attach to JVM
             {
 #if defined (DEBUG_JAVA_ATTACH_DETACH)
     fprintf(stderr, "environmentAttachTo() - AttachCurrentThread did NOT work ! :-( :-(, attachResult=[%d]\n", (int) param->attachResult);
