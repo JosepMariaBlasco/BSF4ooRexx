@@ -1,3 +1,48 @@
+-------------------------------------- 2014-03-30 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - major addition, hence augmenting version to 4.5
+
+        - save primodal TID as BSF.PRIMODALTID for each Rexx interpreter instance;
+          this allows to do a BSFAttachToTID() without supplying a TID, added code
+          to BSFLoadJava(...), jniCreateRexxInterpreterInstance(...)
+
+        - now possible to do an "auto-attach" to the Java interface taking advantage
+          of this new information, implemented for the RexxRoutines (sending messages
+          from Java to Rexx will always occur on an established Java connection):
+
+          - BSFAttachTo(): argument now optional, in order to remain backwardly
+                 compatible, if a programmer uses this routine for an already
+                 attached ooRexx thread, the same condition will be raised such
+                 that Rexx code expecting this behaviour keeps on working as designed
+
+          - BSFCreateRexxProxy()
+          - BSFJavaException()
+          - BSFRawBytes()
+          - BSF()
+
+-------------------------------------- 2014-03-29 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - add jniProcEnvironment(...): this allows to get, set and unset the
+          process environment from Java; reason: AOO 4.x removes the PATH environment
+          variable (seems to be unintended, hence an error), which inhibits the
+          Rexx interpreter to initialize successfully; this jni function is intended
+          to allow as a last resort to set the missing PATH environment variable;
+          the subfunctions "getEnv" and "setEnv" will not be explicitly documented
+
+
+- RexxAndJava.java
+
+        - add jniProcEnvironment(...): this allows to get, set and unset the
+          process environment from Java; reason: AOO 4.x removes the PATH environment
+          variable (seems to be unintended, hence an error), which inhibits the
+          Rexx interpreter to initialize successfully; this jni function is intended
+          to allow as a last resort to set the missing PATH environment variable;
+          the subfunctions "getEnv" and "setEnv" will not be explicitly documented
+
 -------------------------------------- 2013-10-07 ----------------------------------
 
 - BSF4ooRexx.cc

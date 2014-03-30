@@ -24,6 +24,25 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.5.0   2014-03-30 ---rgf, major addition, hence augmenting version to 4.5 !
+                         - save primodal TID as BSF.PRIMODALTID for each Rexx interpreter instance;
+                           this allows to do a BSFAttachToTID() without supplying a TID, added code
+                           to BSFLoadJava(...), jniCreateRexxInterpreterInstance(...)
+
+                         - now possible to do an "auto-attach" to the Java interface taking advantage
+                           of this new information, implemented for the RexxRoutines (sending messages
+                           from Java to Rexx will always occur on an established Java connection):
+
+                           - BSFAttachTo(): argument now optional, in order to remain backwardly
+                                  compatible, if a programmer uses this routine for an already
+                                  attached ooRexx thread, the same condition will be raised such
+                                  that Rexx code expecting this behaviour keeps on working as designed
+
+                           - BSFCreateRexxProxy()
+                           - BSFJavaException()
+                           - BSFRawBytes()
+                           - BSF()
+
     4.2.0   2014-03-29 ---rgf,
                        - add jniProcEnvironment(...): this allows to get, set and unset the
                          process environment from Java; reason: AOO 4.x removes the PATH environment
@@ -660,6 +679,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     // rgf, 2012-06-06
 #define CONFIG_MAKE_OREXX_REGISTRY_ACCESSIBLE   // meant for debugging
 
+    // rgf, 2014-03-30, name of entry into .local for primodal TID (will allow one to attach even if no TID is known to the Rexx programmer)
+#define LOCAL_PRIMODAL_TID                    "BSF.PRIMODALTID"
 
     // from: <http://ccollomb.free.fr/blog/?p=30>, rgf, 2009-06-02
 // __asm Int 3;    // break, popup to break will be shown
@@ -807,11 +828,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "420.20140329 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140330 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "420.20140329 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140330 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "420.20140329 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140330 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -6584,6 +6605,30 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
     fprintf(stderr, "BsfLoadJava(): about to leave...\n\n");
 #endif
 
+    // rgf, 20140330: add TID to .local to save the primodal TID for this Rexx interpreter instance
+    {
+        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+
+        #ifdef UNIX
+            pthread_t
+        #else   // WINDOWS
+            TID
+        #endif
+                tid=RgfGetTID();
+
+        char strTid[32]="";         // define a string long enough to receive an integer
+        // sprintf(strTid, "%lu%c", ((unsigned long) tid), 0);  // create decimal number
+        SNPRINTF( strTid, 32, "%lu%c", ((unsigned long) tid), 0);  // create decimal number
+
+        #ifdef RGF_INFO
+            fprintf(stderr, "*** RGF_INFO: BsfLoadJava(), tid=[%lu], %%s=[%s] ...\n", (unsigned long) tid, strTid);
+            fflush(stderr);
+        #endif
+
+        context->DirectoryPut(localDir, context->String(strTid), LOCAL_PRIMODAL_TID);
+    }
+
+    // ------------------------------------
     jniEnv->DeleteLocalRef(j_clz);
 
     return "0";
@@ -6672,6 +6717,30 @@ RexxRoutine0(RexxStringObject, BsfUnloadJava)  // 20090505, ---rgf, only a stub 
     fprintf(stderr, "*** *** RGF_INFO_1: RgfUnloadJava() 2, now calling DestroyJava() ...\n");
     fflush(stderr);
 #endif
+
+
+    // rgf, 20140330: remove primodal TID entry in .local for this Rexx interpreter instance
+    {
+        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+
+        #ifdef UNIX
+            pthread_t
+        #else   // WINDOWS
+            TID
+        #endif
+                tid=RgfGetTID();
+
+        char strTid[32]="";         // define a string long enough to receive an integer
+        SNPRINTF( strTid, 32, "%lu%c", ((unsigned long) tid), 0);  // create decimal number
+
+        #ifdef RGF_INFO
+            fprintf(stderr, "*** RGF_INFO: BsfUnloadJava(), tid=[%lu], %%s=[%s] ...\n", (unsigned long) tid, strTid);
+            fflush(stderr);
+        #endif
+
+        context->DirectoryRemove(localDir, LOCAL_PRIMODAL_TID); // remove entry in .local, not useful anymore
+    }
+
 
     long ret=tmpJVM->DestroyJavaVM ( ); // destroy JVM
 
@@ -6901,7 +6970,7 @@ RexxRoutine0(RexxStringObject, BsfGetTID)    // 20090505, ---rgf, only a stub fo
 
 
     // ---rgf, 2003-08-06: allow Rexx to use the Java environment of another Rexx thread
-RexxRoutine1(logical_t, BsfAttachToTID, CSTRING, toTID)    // 20090505, ---rgf, only a stub for backward compatibility
+RexxRoutine1(logical_t, BsfAttachToTID, OPTIONAL_CSTRING, toTID)    // 20090505, ---rgf, only a stub for backward compatibility
 {
 
     #ifdef UNIX
@@ -6920,6 +6989,25 @@ RexxRoutine1(logical_t, BsfAttachToTID, CSTRING, toTID)    // 20090505, ---rgf, 
 
         // extract "tid" value from Rexx string; TODO: check for MacOSX
     unsigned long  attachToTID=0;
+    bool bUsingPrimodialTID=false;
+
+    if (toTID==NULL)    // rgf, 20140330: no TID given, try to use BSF.PRIMTODALTID
+    {
+        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+        RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
+
+        if (obj==NULLOBJECT)
+        {
+            char msg[256];
+            SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return FALSE;
+        }
+
+        toTID=(char *) context->CString(context->ObjectToString(obj));
+        bUsingPrimodialTID=true;
+    }
+
     sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
 
     int bAlreadyAttached=FALSE;
@@ -6955,13 +7043,20 @@ RexxRoutine1(logical_t, BsfAttachToTID, CSTRING, toTID)    // 20090505, ---rgf, 
     if (bTargetTIDMissing==TRUE)
     {
         char msg[256];
-        SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 2: target thread [%lu] does not exist or has currently no established interface to Java", DLLNAME, (unsigned long) attachToTID);
+        if (bUsingPrimodialTID==true)
+        {
+            SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 2: target (.%s) thread [%lu] does not exist or has currently no established interface to Java", DLLNAME, LOCAL_PRIMODAL_TID, (unsigned long) attachToTID);
+        }
+        else
+        {
+            SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 2: target thread [%lu] does not exist or has currently no established interface to Java", DLLNAME, (unsigned long) attachToTID);
+        }
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         return FALSE;
     }
 
 
-   // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
+   // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
    STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0,
 (
 #ifdef UNIX
@@ -7204,6 +7299,54 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
     //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
     //                  -4 ... cannot attach to target TID
     //                 -99 ... no JVM available !
+
+#ifdef DEBUG_JAVA_ATTACH_DETACH
+    fprintf(stderr, "---> BSFCreateRexxProxy() // 1--> param.error=[%d]\n", param.error); fflush(stderr);
+#endif
+    if (param.error==-2)    // ---rgf, 2014-03-30: thread not attached, use primodal TID
+    {
+        RgfReleaseLock();
+
+        bool bUsingPrimodialTID=false;
+
+        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+        RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
+
+        if (obj==NULLOBJECT)
+        {
+            char msg[256];
+            SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return FALSE;
+        }
+
+        char *toTID=(char *) context->CString(context->ObjectToString(obj));
+        bUsingPrimodialTID=true;
+
+        #ifdef UNIX
+            pthread_t
+        #else
+            TID
+        #endif
+                attachToTID;
+
+        sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
+
+        // now try to attach
+                  // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
+        STRUCT_PARAM param2={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, attachToTID };
+
+        RgfAcquireLock();
+        environmentAttachTo(&param2, TRUE); // attach to Java, keep attached
+
+        param=param2;   // copy param2 fields to param to let the checking go on
+
+#ifdef DEBUG_JAVA_ATTACH_DETACH
+    fprintf(stderr, "---> BSFCreateRexxProxy() // 2 --> used primodal TID! param.error=[%d], param2.error=[%d]\n", param.error, param2.error); fflush(stderr);
+#endif
+    }
+
+
     if (param.error!= 0)    // problem attaching, cannot proceed
     {
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
@@ -7591,7 +7734,55 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
     RgfAcquireLock();
     environmentAttachTo(&param, FALSE); // attach to Java
 
-    if (param.error== -1)    // could not attach to Java
+#ifdef DEBUG_JAVA_ATTACH_DETACH
+    fprintf(stderr, "---> BSFRawBytes() // 1--> param.error=[%d]\n", param.error); fflush(stderr);
+#endif
+    if (param.error==-2)    // ---rgf, 2014-03-30: thread not attached, use primodal TID
+    {
+        RgfReleaseLock();
+
+        bool bUsingPrimodialTID=false;
+
+        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+        RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
+
+        if (obj==NULLOBJECT)
+        {
+            char msg[256];
+            SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return FALSE;
+        }
+
+        char *toTID=(char *) context->CString(context->ObjectToString(obj));
+        bUsingPrimodialTID=true;
+
+        #ifdef UNIX
+            pthread_t
+        #else
+            TID
+        #endif
+                attachToTID;
+
+        sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
+
+        // now try to attach
+                  // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
+        STRUCT_PARAM param2={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, attachToTID};
+
+        RgfAcquireLock();
+        environmentAttachTo(&param2, TRUE); // attach to Java, keep attached
+
+        param=param2;   // copy param2 fields to param to let the checking go on
+
+#ifdef DEBUG_JAVA_ATTACH_DETACH
+    fprintf(stderr, "---> BSFRawBytes() // 2 --> used primodal TID! param.error=[%d], param2.error=[%d]\n", param.error, param2.error); fflush(stderr);
+#endif
+    }
+
+
+    // if (param.error== -1)    // could not attach to Java
+    if (param.error!=0)    // rgf, 2014-03-30, problem attaching, cannot proceed
     {
         RgfReleaseLock();
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
@@ -7853,6 +8044,20 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
     fflush(stderr);
 #endif
 
+/*
+{   // mist, rgf, 2014-03-30, temporary (ad-hoc) debug
+    size_t numArgs=context->ArraySize(argArray);   // get number of arguments
+
+    for (size_t i=1; i<=numArgs; i++)
+    // if (numArgs>0)
+    {
+        fprintf(stderr, "\t numArgs=[%lu] argArray[%lu]=[%s]\n",
+                        numArgs, i,
+                        context->CString(context->ArrayAt(argArray,i)));
+
+    }
+}
+*/
 
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, 0};
@@ -7868,6 +8073,55 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
     // error '-99' may may happen, if BsfUnloadJava() was called and UNINIT operations on BSF proxies
     // get triggered, which would unregister the counterpart Java objects from the BSFRegistry;
     // this lets Rexx shutdown gracefully
+
+#ifdef DEBUG_JAVA_ATTACH_DETACH
+    fprintf(stderr, "---> BSF() // 1 --> param.error=[%d]\n", param.error); fflush(stderr);
+#endif
+
+    if (param.error==-2)    // ---rgf, 2014-03-30: thread not attached, use primodal TID
+    {
+        RgfReleaseLock();
+
+        bool bUsingPrimodialTID=false;
+
+        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+        RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
+
+        if (obj==NULLOBJECT)
+        {
+            char msg[256];
+            SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return FALSE;
+        }
+
+        char *toTID=(char *) context->CString(context->ObjectToString(obj));
+        bUsingPrimodialTID=true;
+
+        #ifdef UNIX
+            pthread_t
+        #else
+            TID
+        #endif
+                attachToTID;
+
+        sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
+
+        // now try to attach
+                  // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
+        STRUCT_PARAM param2={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, attachToTID};
+
+        RgfAcquireLock();
+        environmentAttachTo(&param2, TRUE); // attach to Java, keep attached
+
+        param=param2;   // copy param2 fields to param to let the checking go on
+
+#ifdef DEBUG_JAVA_ATTACH_DETACH
+    fprintf(stderr, "---> BSF() // 2 --> used primodal TID! param.error=[%d], param2.error=[%d]\n", param.error, param2.error); fflush(stderr);
+#endif
+
+    }
+
     if (param.error!= 0)    // problem attaching, cannot proceed
     {
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
@@ -8289,6 +8543,53 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
     STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, 0};
     RgfAcquireLock();
     environmentAttachTo(&param, FALSE); // attach to Java
+
+#ifdef DEBUG_JAVA_ATTACH_DETACH
+    fprintf(stderr, "---> BSFJavaException() // 1 --> param.error=[%d]\n", param.error); fflush(stderr);
+#endif
+
+    if (param.error==-2)    // ---rgf, 2014-03-30: thread not attached, use primodal TID
+    {
+        RgfReleaseLock();
+
+        bool bUsingPrimodialTID=false;
+
+        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+        RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
+
+        if (obj==NULLOBJECT)
+        {
+            char msg[256];
+            SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return FALSE;
+        }
+
+        char *toTID=(char *) context->CString(context->ObjectToString(obj));
+        bUsingPrimodialTID=true;
+
+        #ifdef UNIX
+            pthread_t
+        #else
+            TID
+        #endif
+                attachToTID;
+
+        sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
+
+        // now try to attach
+                  // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
+        STRUCT_PARAM param2={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, attachToTID};
+
+        RgfAcquireLock();
+        environmentAttachTo(&param2, TRUE); // attach to Java, keep attached
+
+        param=param2;   // copy param2 fields to param to let the checking go on
+
+#ifdef DEBUG_JAVA_ATTACH_DETACH
+    fprintf(stderr, "---> BSFJavaException() // 2 --> used primodal TID! param.error=[%d], param2.error=[%d]\n", param.error, param2.error); fflush(stderr);
+#endif
+    }
 
     // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
     //                  -2 ... no rajo found, raise an exception in caller
@@ -10354,6 +10655,32 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         fprintf(stderr, "===---=== .._jniRexxCreateInterpreterInstance(...), thisTid=[%lu], CREATED: c_rii_ID={%p]\n", (unsigned long) thisTid, instance);
         fflush(stderr);
 #endif
+
+
+        // rgf, 20140330: add TID to .local to save the primodal TID for this Rexx interpreter instance
+        {
+            #ifdef UNIX
+                pthread_t
+            #else   // WINDOWS
+                TID
+            #endif
+                    tid=RgfGetTID();
+
+            char strTid[32]="";         // define a string long enough to receive an integer
+            // sprintf(strTid, "%lu%c", ((unsigned long) tid), 0);  // create decimal number
+            SNPRINTF( strTid, 32, "%lu%c", ((unsigned long) tid), 0);  // create decimal number
+
+            #ifdef RGF_INFO
+                fprintf(stderr, "*** RGF_INFO: BsfLoadJava(), tid=[%lu], %%s=[%s] ...\n", (unsigned long) tid, strTid);
+                fflush(stderr);
+            #endif
+
+            RexxDirectoryObject localDir = threadContext->GetLocalEnvironment();   // get .local
+            threadContext->DirectoryPut(localDir, threadContext->String(strTid), LOCAL_PRIMODAL_TID);
+            threadContext->ReleaseLocalReference(localDir);
+        }
+        // ----------------------------------------------------------
+
 
             // rgf, 2012-02-07, save RexxAndJava (rajo) and RexxConfiguration (rexxconf) object with RII-structure
         RgfAddRexxInterpreterInstanceToList(threadContext,

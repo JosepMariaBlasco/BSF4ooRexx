@@ -326,9 +326,9 @@
 
 
 
-   version:     4.10 (20130107)
+   version:     4.50 (20140330)
 
-   authors:     (c) 2001-2012 Rony G. Flatscher, University of Augsburg, University of Essen,
+   authors:     (c) 2001-2014 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
                     Peter Kalender (October 2000 - February 2001), University of Essen, feasibility study
 
@@ -339,7 +339,7 @@
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2001-2012 Rony G. Flatscher
+   Copyright 2001-2014 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -357,7 +357,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2001-2012 Rony G. Flatscher
+   Copyright 2001-2014 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -415,7 +415,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="412.20131007" -- set version (date distribution got created)
+   .bsf4rexx~version="450.20140330" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
