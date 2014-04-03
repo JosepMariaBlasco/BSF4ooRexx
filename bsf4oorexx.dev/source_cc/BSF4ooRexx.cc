@@ -4718,7 +4718,7 @@ inline int subtractRajoFromTID2NODE (JNIEnv *env,
 
 // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 01 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
 
-                // decrease counters, unless we should keep the primodal group (if invoked via BSFDetach()) and counter==1
+                // decrease counters, unless we should keep the primodal group (if invoked via BSFDetach()) and counter>2
                 // make sure that we have at least two references, such that BSFDetach() cannot detach from primodal thread
             if (bKeepPrimodalGroup==0 || (bKeepPrimodalGroup!= 0 && t2ListNode->firstNode->nodeRefCounter>2) )
             {
@@ -4730,7 +4730,7 @@ inline int subtractRajoFromTID2NODE (JNIEnv *env,
                 if (bCloseGroup==TRUE)  // BsfDetach() as BsfAttachToTID() make sure that counters are '1' higher than usual to keep the node
                 {
 // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 03 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
-                        // decrease counters, unless we should keep the primodal group (if invoked via BSFDetach()) and counter==1
+                        // decrease counters, unless we should keep the primodal group (if invoked via BSFDetach()) and counter>2
                     if (bKeepPrimodalGroup==0 || (bKeepPrimodalGroup!= 0 && t2ListNode->firstNode->nodeRefCounter>2) )
                     {
                         t2ListNode->firstNode->rajoRef->refCounter--;
