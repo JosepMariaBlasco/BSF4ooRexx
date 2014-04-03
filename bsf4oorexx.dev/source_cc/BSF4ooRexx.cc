@@ -24,6 +24,8 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.5.0   2014-04-03, - make sure that BSFDetach() does not detach from the primodal thread
+
     4.5.0   2014-03-31 ---rgf
                         - rewrite all "const char*" types with "char*" types as the latest Clang
                           on MacOSX creates bus errors, if forcing "char*" on "const char*" (which is fine);
@@ -838,11 +840,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "450.20140331 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140403 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "450.20140331 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140403 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "450.20140331 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140403 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -3710,7 +3712,8 @@ int subtractRajoFromTID2NODE (JNIEnv *env,
                                 TID
                             #endif
                                      tid,
-                              int bCloseGroup
+                              int bCloseGroup,
+                              int bKeepPrimodalGroup
                          );
 
 
@@ -4070,7 +4073,7 @@ void environmentDetachFrom(PSTRUCT_PARAM param, int bCloseGroup)
     // if (param->error==NULL)     // maintain structures
     if (param->error==0)     // maintain structures
     {
-        int res=subtractRajoFromTID2NODE(param->env, param->tid, bCloseGroup);
+        int res=subtractRajoFromTID2NODE(param->env, param->tid, bCloseGroup, 0); // do not indicate to keep primodal group (only necessary for BSFDetach())
     }
 
     if (param->bDetach==TRUE)   // doe we need to explicitly detach ?
@@ -4686,7 +4689,8 @@ inline int subtractRajoFromTID2NODE (JNIEnv *env,
                                 TID
                             #endif
                                      tid,
-                            int bCloseGroup
+                            int bCloseGroup,
+                            int bKeepPrimodalGroup
                          )
 {
     // if (tid==NULL)          // no tid given, get this TID
@@ -4702,36 +4706,64 @@ inline int subtractRajoFromTID2NODE (JNIEnv *env,
     PSTRUCT_NODE           node=NULL;
     PSTRUCT_TID2NODE t2ListNode=NULL;
 
+
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # -1 tid=[%lu], bKeepPrimodalGroup=[%d], pRoot_TID2NODE=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, pRoot_TID2NODE);fflush(stderr);
         // find tid in tid2jrst
     for (t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
     {
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 0a tid=[%lu], t2ListNode=[%p]\n",(unsigned long) tid, t2ListNode);fflush(stderr);
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 0b tid=[%lu], t2ListNode->tid=[%lu], t2ListNode->next=[%p]\n",(unsigned long) tid, (unsigned long) t2ListNode->tid, t2ListNode->next);fflush(stderr);
         if (t2ListNode->tid == tid)     // tid found !
         {
-                // maintain counters and return
-            t2ListNode->firstNode->rajoRef->refCounter--;
-            t2ListNode->firstNode->nodeRefCounter--;
 
-            if (bCloseGroup==TRUE)  // BsfDetach() as BsfAttachToTID() makes soure that counters are '1' higher than usual to keep the node
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 01 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
+
+                // decrease counters, unless we should keep the primodal group (if invoked via BSFDetach()) and counter==1
+                // make sure that we have at least two references, such that BSFDetach() cannot detach from primodal thread
+            if (bKeepPrimodalGroup==0 || (bKeepPrimodalGroup!= 0 && t2ListNode->firstNode->nodeRefCounter>2) )
             {
+                    // maintain counters and return
                 t2ListNode->firstNode->rajoRef->refCounter--;
                 t2ListNode->firstNode->nodeRefCounter--;
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 02 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
+
+                if (bCloseGroup==TRUE)  // BsfDetach() as BsfAttachToTID() make sure that counters are '1' higher than usual to keep the node
+                {
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 03 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
+                        // decrease counters, unless we should keep the primodal group (if invoked via BSFDetach()) and counter==1
+                    if (bKeepPrimodalGroup==0 || (bKeepPrimodalGroup!= 0 && t2ListNode->firstNode->nodeRefCounter>2) )
+                    {
+                        t2ListNode->firstNode->rajoRef->refCounter--;
+                        t2ListNode->firstNode->nodeRefCounter--;
+
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 04 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
+                    }
+                }
             }
 
-            if (t2ListNode->firstNode->nodeRefCounter==0)   // remove node
+            // if (t2ListNode->firstNode->nodeRefCounter==0)   // remove node
+            if (t2ListNode->firstNode->nodeRefCounter<1)    // remove node
             {
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 05a tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
                 removeNODE(env, t2ListNode->firstNode);
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 05b tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode);fflush(stderr);
 
                 if (t2ListNode->firstNode==NULL)        // 20091006, no more nodes, remove TID2NODE as well
                 {
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 06a tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode);fflush(stderr);
                     removeTID2NODE(env, t2ListNode);
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 06b tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode);fflush(stderr);
                 }
 
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 09a returning TRUE ! tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode);fflush(stderr);
                 return TRUE;        // signal node got removed
             }
 
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 09b returning FALSE ! tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
             return FALSE;           // signal node was not yet removed (still references to it)
         }
     }
+// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 09c returning -1 ! tid=[%lu], bKeepPrimodalGroup=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup);fflush(stderr);
     return -1;      // TID not in TID2NODE list
 }
 
@@ -7070,7 +7102,7 @@ RexxRoutine1(logical_t, BsfAttachToTID, OPTIONAL_CSTRING, toTID)    // 20090505,
         RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
         RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
 
-        if (obj==NULLOBJECT)
+        if (obj==NULL) // NULLOBJECT)
         {
             char msg[256];
             SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
@@ -7231,7 +7263,12 @@ RexxRoutine0(logical_t, BsfDetach)    // 20090505, ---rgf, only a stub for backw
     STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, 0};
 
     RgfAcquireLock();
+
+// fprintf(stderr, "BsfDetach() 1a, tid=[%lu],       environmentAttachTo()\n", (unsigned int) tid); fflush(stderr);
+
     environmentAttachTo(&param, FALSE); // attach to Java
+
+// fprintf(stderr, "BsfDetach() 1b, tid=[%lu], after environmentAttachTo()\n", (unsigned int) tid); fflush(stderr);
 
 #if defined ( DEBUG_SHOW_STRUCTURES )
     dumpPARAM(   "BsfDetach(), after environmentAttachTo(...): param:", &param);
@@ -7249,10 +7286,43 @@ RexxRoutine0(logical_t, BsfDetach)    // 20090505, ---rgf, only a stub for backw
     }
     // detachFromTID_2(&param);       // carry out the detachment
 
-    subtractRajoFromTID2NODE(param.env, param.tid, FALSE);    // carry out the detachment
+
+    // fetch .bsf.primodalTID, if current make sure that it does not get removed
+    int  bIsPrimodalThread=0;
+    {
+        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+        RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
+
+        if (obj==NULL) // NULLOBJECT)
+        {
+            char msg[256];
+            SNPRINTF(msg, 256, "%.16s/routine/BsfDetach(), error 2: no %s defined in .local, cannot execute function", DLLNAME, LOCAL_PRIMODAL_TID);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return FALSE;
+        }
+
+        char *toTid=(char *) context->CString(context->ObjectToString(obj));
+
+        unsigned long  ulPrimodalTID=0;
+        sscanf(toTid, "%lu", &ulPrimodalTID);    // get integer value from string
+        unsigned long ulTID= (unsigned int) tid;
+        // sscanf(tid, "%lu", &ulTID);    // get integer value from string
+
+        bIsPrimodalThread= (ulTID==ulPrimodalTID ? 1 : 0);
+
+// fprintf(stderr, "toTid=[%lu], ulPrimodalTID=[%lu]\n", ulTID, ulPrimodalTID); fflush(stderr);
+    }
+
+    // determine whether we run in the primodal thread, if so make sure that we never detach by user demand
+
+    int res=subtractRajoFromTID2NODE(param.env, param.tid, FALSE, bIsPrimodalThread);    // carry out the detachment
+
+// fprintf(stderr, "BsfDetach() 1a, tid=[%lu],       environmentDetachFrom()\n", (unsigned int) tid); fflush(stderr);
 
     param.bDetach=TRUE;      // make sure we detached from this thread
     environmentDetachFrom(&param, FALSE);    // do not close group
+
+// fprintf(stderr, "BsfDetach() 1b, tid=[%lu],       environmentDetachFrom()\n", (unsigned int) tid); fflush(stderr);
 
 #if defined ( DEBUG_SHOW_STRUCTURES )
     dumpPARAM(   "BsfDetach(), after environmentDetach(): param:", &param);
@@ -7260,6 +7330,11 @@ RexxRoutine0(logical_t, BsfDetach)    // 20090505, ---rgf, only a stub for backw
     dumpTID2NODE("BsfDetach(), after environmentDetach(): ");
 #endif
     RgfReleaseLock();
+
+    if (bIsPrimodalThread==1 && res==FALSE)
+    {
+        return FALSE;
+    }
 
     // return (param.error==NULL);      // no error, hence worked
     return (param.error==0);         // no error, hence worked
@@ -7399,7 +7474,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
         RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
         RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
 
-        if (obj==NULLOBJECT)
+        if (obj==NULL) // NULLOBJECT)
         {
             // char msg[256];
             char *msg2=new char[256];
@@ -7687,8 +7762,8 @@ RexxRoutine2(RexxObjectPtr, BsfRexxProxy, RexxObjectPtr, proxy, OPTIONAL_CSTRING
     fflush(stderr);
 #endif
 
-
-    if (flag==0 || rexxObjectID==NULLOBJECT || context->CheckCondition())    // not a RexxProxy object that points to a valid (cached) Rexx object!
+    // if (flag==0 || rexxObjectID==NULLOBJECT || context->CheckCondition())    // not a RexxProxy object that points to a valid (cached) Rexx object!
+    if (flag==0 || rexxObjectID==NULL || context->CheckCondition())    // not a RexxProxy object that points to a valid (cached) Rexx object!
     {
 
         if (context->CheckCondition())  // clear a pending condition
@@ -7853,7 +7928,7 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
         RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
         RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
 
-        if (obj==NULLOBJECT)
+        if (obj==NULL) // NULLOBJECT)
         {
             char msg[256];
             SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
@@ -8203,7 +8278,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
         RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
         RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
 
-        if (obj==NULLOBJECT)
+        if (obj==NULL) // NULLOBJECT)
         {
             // char msg2[256];
             char *msg2=new char[256];
@@ -8333,7 +8408,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
             if (typeIndicator<0)        // NULL (argument missing) or .nil
             {
 #if defined (DEBUG_REXX_PROXY_BSF)
-    fprintf(stderr, "-> BSF()a: \targ[%lu] NULLOBJECT \n",(unsigned long) i); fflush(stderr);
+    fprintf(stderr, "-> BSF()a: \targ[%lu] NULL[OBJECT] \n",(unsigned long) i); fflush(stderr);
 #endif
                 param.env->SetObjectArrayElement(jarr, (jsize) i, NULL);
             }
@@ -8689,7 +8764,7 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
         RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
         RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
 
-        if (obj==NULLOBJECT)
+        if (obj==NULL) // NULLOBJECT)
         {
             // char msg2[256];
             char *msg2=new char[256];
@@ -11092,7 +11167,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
 
     RexxThreadContext   *rtc=NULL;
-    RexxObjectPtr result_obj;           // Rexx object returned from Rexx, NULLOBJECT, if none
+    RexxObjectPtr result_obj;           // Rexx object returned from Rexx, NULL[OBJECT], if none
 
     bool argOK= ((invocationType==1 || invocationType==3) && j_fileName!=NULL && j_programData==NULL) ||
                 ((invocationType==2 || invocationType==4) && j_fileName!=NULL && j_programData!=NULL);
@@ -11452,7 +11527,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     // rgf, 2009-05-24, end.
 
     RexxThreadContext   *rtc=NULL;
-    RexxObjectPtr result_obj;           // Rexx object returned from Rexx, NULLOBJECT, if none
+    RexxObjectPtr result_obj;           // Rexx object returned from Rexx, NULL[OBJECT], if none
 
         // get interpreter instance
     char *c_rii_ID=NULL;
