@@ -7305,7 +7305,7 @@ RexxRoutine0(logical_t, BsfDetach)    // 20090505, ---rgf, only a stub for backw
 
         unsigned long  ulPrimodalTID=0;
         sscanf(toTid, "%lu", &ulPrimodalTID);    // get integer value from string
-        unsigned long ulTID= (unsigned int) tid;
+        unsigned long ulTID= (unsigned long) tid;
         // sscanf(tid, "%lu", &ulTID);    // get integer value from string
 
         bIsPrimodalThread= (ulTID==ulPrimodalTID ? 1 : 0);
