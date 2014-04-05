@@ -65,7 +65,11 @@ endlocal
 rem to compile:
 rem    add path to "ScriptFramework.jar", eg.
 rem    set CLASSPATH=%CLASSPATH%;D:\Programme\OpenOffice.org 3\Basis\program\classes\ScriptFramework.jar
+rem    set CLASSPATH=%CLASSpATH%;D:\Programme\OpenOffice 4\program\classes\ScriptFramework.jar
 
 rem    compile using Java 1.4 class file format
 rem    javac -source 1.4 -target 1.4 *.java
+
+rem    if using bDebug, then generics are needed, hence use:
+rem    javac -source 1.5 -target 1.5 *.java
 

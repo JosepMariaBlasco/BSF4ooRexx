@@ -36,11 +36,14 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.2.0, 2014-03-29
+  * @version 4.2.0, 2014-04-02
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
+     2014-04-02, ---rgf, - move initialization of JNI library to RexxAndJava constructor to make
+                           sure that non-Rexx JNI functions are available to Java (like jniProcEnvironment())
+
      2014-03-29, ---rgf, - add jniProcEnvironment(...): this allows to get, set and unset the
                            process environment from Java; reason: AOO 4.x removes the PATH environment
                            variable (seems to be unintended, hence an error), which inhibits the
@@ -290,7 +293,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "420.20140329";
+    static final public String version = "420.20140402";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -580,6 +583,8 @@ necessary anymore
                  // register this type-convertor
             glob_tcr.register (String.class, Object.class, tc); // rgf, 2005-07-30
         }
+
+        jniSetupNativeJVMPointer();     // make sure the JNI library can initialize the Java related datastructures
     }
 
 
@@ -5705,7 +5710,8 @@ if (bDebug) System.err.println("***debug RexxAndJava.getCauseAsString(): Invocat
             throw new BSFException("A Rexx interpreter instance has been created already having the ID ["+rii_ID+"]");
         }
 
-        jniSetupNativeJVMPointer();         // make sure C++ side gets a JVM pointer
+        // --rgf, 2014-04-02: now initialization takes place in constructor, such that calling jniProcEnvironment() can be carried out without a physical Rexx interpreter instance
+        // jniSetupNativeJVMPointer();         // make sure C++ side gets a JVM pointer
 
         Object options[]=null;
         if (rc!=null)

@@ -1,3 +1,36 @@
+-------------------------------------- 2014-04-03 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - make sure that BSFDetach() does not detach from the primodal thread
+
+-------------------------------------- 2014-04-02 ----------------------------------
+
+- RexxAndJava.java
+
+        - move initialization of JNI library to RexxAndJava constructor to make
+          sure that non-Rexx JNI functions are available to Java (like jniProcEnvironment())
+
+- ScriptProviderForooRexx.java
+
+        - add code in getBSFManager() to cater for a stupid error in MacOSX AOO 4.0.x and 4.1.
+          (process environment not set, so PATH missing, such that ooRexx cannot be
+          initialized at all)
+
+
+-------------------------------------- 2014-03-31 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - rewrite all "const char*" types with "char*" types as the latest Clang
+          on MacOSX creates bus errors, if forcing "char*" on "const char*" (which is fine);
+          replacing:
+              char bla[nnn]="";
+          with
+                 char *bla=new char[nnn];
+              and
+                 delete [] bla;
+
 -------------------------------------- 2014-03-30 ----------------------------------
 
 - BSF4ooRexx.cc
@@ -21,6 +54,11 @@
           - BSFJavaException()
           - BSFRawBytes()
           - BSF()
+
+- RexxEngine.java
+
+          - add undocumented pass-thru method procEnvironment(...) to allow a last resort means
+            (allow Java to set/get process environment variables via JNI using RexxAndJava)
 
 -------------------------------------- 2014-03-29 ----------------------------------
 

@@ -61,6 +61,10 @@
 
 /* changed: 2008-06-14, ---rgf, now using "ScriptProviderForooRexx.makeFilenameLedgible()",
                                 now supplying filename to ooRexx
+
+            2014-03-24, ---rgf
+                        - fixed typo in method name "ScriptProviderForooRexx.makeFilenameLedgible()"
+                          to "ScriptProviderForooRexx.makeFilenameLegible()" (removed 'd')
 */
 package com.sun.star.script.framework.provider.oorexx;
 
@@ -201,9 +205,10 @@ public class ScriptSourceModel {
             // RexxEngine re=(RexxEngine) mgr.loadScriptingEngine("rexx"); // get Rexx BSF scripting engine
 
             // result=mgr.apply(ScriptProviderForooRexx.OOREXX_BSFLANGUAGE, "OOo.ooRexx-editor", 0, 0, ( view.isModified() ? view.getText() : getText()), null, args);
+// TODO: invokeLater ?? or is it already executing on a non-AppKit-thread ?
             result=mgr.apply(ScriptProviderForooRexx.OOREXX_BSFLANGUAGE,
                              // "OOo.ooRexx-editor ["+filename+"]",
-                             // (filename==null ? "OOo.ScriptProviderForooRexx-ScriptSourceModel.execute()" : ScriptProviderForooRexx.makeFilenameLedgible (filename)),
+                             // (filename==null ? "OOo.ScriptProviderForooRexx-ScriptSourceModel.execute()" : ScriptProviderForooRexx.makeFilenameLegible (filename)),
                              filename,
                              0, 0,
                              ( view.isModified() ? view.getText() : getText()),
@@ -218,7 +223,7 @@ public class ScriptSourceModel {
             // re.setThreadedRexxStart(true); // rgf, 2008-08-13: tell engine to invoke the Rexx interpreter on a separate Java thread
             result=re.apply(
                              // "OOo.ooRexx-editor ["+filename+"]",
-                             // (filename==null ? "OOo.ScriptProviderForooRexx-ScriptSourceModel.execute()" : ScriptProviderForooRexx.makeFilenameLedgible (filename)),
+                             // (filename==null ? "OOo.ScriptProviderForooRexx-ScriptSourceModel.execute()" : ScriptProviderForooRexx.makeFilenameLegible (filename)),
                              filename,
                              0, 0,
                              ( view.isModified() ? view.getText() : getText()),

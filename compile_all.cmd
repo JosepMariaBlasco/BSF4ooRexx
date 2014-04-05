@@ -2,6 +2,10 @@
 @rem needs junit (for BSF tests) and Xalan (for BSF-xslt-engine) on classpath
 setlocal
 
+rem TODO: for compiling the script provider need to add "ScriptFramework.jar" to CLASSPATH, e.g.
+rem          D:\Programme\OpenOffice 4\program\classes\ScriptFramework.jar
+rem       rgf, 2014-02-10
+
 
 goto end_01
 @echo setting environment to point to asm and janino explicitly ...

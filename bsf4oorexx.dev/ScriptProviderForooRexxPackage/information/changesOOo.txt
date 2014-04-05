@@ -1,3 +1,26 @@
+-------------------------------------- 2014-04-02 ----------------------------------
+
+- ScriptProviderForooRexx.java
+
+        - add code in getBSFManager() to cater for a stupid error in MacOSX AOO 4.0.x and 4.1.
+          (process environment not set, so PATH missing, such that ooRexx cannot be
+          initialized at all)
+
+-------------------------------------- 2014-03-24 ----------------------------------
+
+- ScriptProviderForooRexx.java
+
+        - fixed typo in method name "ScriptProviderForooRexx.makeFilenameLedgible()"
+          to "ScriptProviderForooRexx.makeFilenameLegible()" (removed 'd')
+
+        - cf. RFE "#5 Add more detailed error information to ScriptProviderForooRexx ",
+          <http://sourceforge.net/p/bsf4oorexx/feature-requests/5/>
+
+        - add an interactive debug mode at compilation time (flag is a static
+          field, such that the compiler can remove dependent code if flag is set
+          to false), which uses popups and copies exception data to the clipboard
+
+
 -------------------------------------- 2012-06-19 ----------------------------------
 
 - samples/getVersion.rxj

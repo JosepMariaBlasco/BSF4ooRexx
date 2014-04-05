@@ -6,18 +6,7 @@
 *
 *  last change: $Author: rony $ $Date: 2009-04-06 17:51:23 +0200 (Mon, 06 Apr 2009) $
 *
-*  changed: 2006-01-17, ---rgf: using Thread.currentThread().getContextClassLoader().loadClass(...)
-*                               instead of Class.forName(...);
-*
-*           2006-01-28, ---rgf: taking care of the new BSF4Rexx behaviour, which throws a Java exception
-*                               supplying the Rexx execution error messages via the exception object;
-*                               will now extract the error line number, position on that line and
-*                               give the error message for the developer
 
-*           2008-06-23, ---rgf: changed logic to parse the line number from Rexx error messages
-
-            2011-02-18, ---rgf: applying fix that Stephan Bergman created for the ScriptEdtiorForBeanShell,
-                                cf. <http://www.openoffice.org/issues/show_bug.cgi?id=92926>
 *
 *
 *  The Contents of this file are made available subject to the terms of
@@ -73,10 +62,28 @@
 *
 ************************************************************************/
 
-/* changed: 2008-06-14, ---rgf, now using "ScriptProviderForooRexx.makeFilenameLedgible()" to
+/* changed: 2006-01-17, ---rgf: using Thread.currentThread().getContextClassLoader().loadClass(...)
+                                instead of Class.forName(...);
+
+            2006-01-28, ---rgf: taking care of the new BSF4Rexx behaviour, which throws a Java exception
+                                supplying the Rexx execution error messages via the exception object;
+                                will now extract the error line number, position on that line and
+                                give the error message for the developer
+
+            2008-06-14, ---rgf, now using "ScriptProviderForooRexx.makeFilenameLedgible()" to
                                 make the filename in the title bar more ledgible
-   changed: 2009-02-21, ---rgf, added mnemonics to the editor buttons to allow
+
+            2008-06-23, ---rgf: changed logic to parse the line number from Rexx error messages
+
+            2009-02-21, ---rgf, added mnemonics to the editor buttons to allow
                                 accelerator key navigation
+
+            2011-02-18, ---rgf: applying fix that Stephan Bergman created for the ScriptEdtiorForBeanShell,
+                                cf. <http://www.openoffice.org/issues/show_bug.cgi?id=92926>
+
+            2014-03-24, ---rgf
+                        - fixed typo in method name "ScriptProviderForooRexx.makeFilenameLedgible()"
+                          to "ScriptProviderForooRexx.makeFilenameLegible()" (removed 'd')
 */
 
 package com.sun.star.script.framework.provider.oorexx;
@@ -418,7 +425,7 @@ public class ScriptEditorForooRexx
 
     private void initUI() {
 
-        String title= ScriptProviderForooRexx.makeFilenameLedgible(filename);
+        String title= ScriptProviderForooRexx.makeFilenameLegible(filename);
 
         // frame = new JFrame(ScriptProviderForooRexx.OOREXX_LANGUAGE + " Debug Window: " + filename);
         // 20070921, rgf: use shorter title

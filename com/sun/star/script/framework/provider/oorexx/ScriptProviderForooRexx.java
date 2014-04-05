@@ -1,3 +1,24 @@
+/**************************************************************
+ *
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ *
+ *************************************************************/
+
 /*************************************************************************
 *
 *  $RCSfile: ScriptProviderForooRexx.java,v $
@@ -5,6 +26,9 @@
 *  $Revision: 572 $
 *
 *  last change: $Author: rony $ $Date: 2010-02-16 21:53:17 +0100 (Tue, 16 Feb 2010) $
+
+
+
 *
 *  The Contents of this file are made available subject to the terms of
 *  either of the following licenses
@@ -59,7 +83,7 @@
 *
 ************************************************************************/
 
-/* changed: 2008-06-14, ---rgf, now supplying filename to ooRexx, added utiltiy
+/* changed: 2008-06-14, ---rgf, now supplying filename to ooRexx, added utility
                         method "ScriptProviderForooRexx.makeFilenameLedgible()"
 
             2008-06-17, ---rgf, now supplying the fully qualified file name in the
@@ -141,10 +165,30 @@
                           If "slotParam" (a Hashtable) is not supplied the BSFRegistry is looked up as
                           before.
 
+            2014-03-24, ---rgf
+                        - fixed typo in method name "ScriptProviderForooRexx.makeFilenameLedgible()"
+                          to "ScriptProviderForooRexx.makeFilenameLegible()" (removed 'd')
+
+                        - cf. RFE "#5 Add more detailed error information to ScriptProviderForooRexx ",
+                          <http://sourceforge.net/p/bsf4oorexx/feature-requests/5/>
+
+                        - add an interactive debug mode at compilation time (flag is a static
+                          field, such that the compiler can remove dependent code if flag is set
+                          to false), which uses popups and copies exception data to the clipboard
+
+            2014-04-02, ---rgf
+                        - add code in getBSFManager() to cater for a stupid error in MacOSX AOO 4.0.x and 4.1.
+                          (process environment not set, so PATH missing, such that ooRexx cannot be
+                          initialized at all)
+
 
 */
 
 package com.sun.star.script.framework.provider.oorexx;
+
+
+import java.awt.datatransfer.*; // rgf, 2014-03-24
+import java.awt.Toolkit;        // rgf, 2014-03-24
 
 import org.apache.bsf.BSFManager;       // rgf, 2005-07-08
 import org.rexxla.bsf.engines.rexx.RexxEngine;  // rgf, 2008-08-28, 2009-04-06
@@ -180,6 +224,8 @@ import com.sun.star.script.CannotConvertException;
 
 import java.util.Hashtable;         // rgf, 2009-10-31
 import java.lang.reflect.Method;    // rgf, 2008-08-09 (for OOo 3.0 support)
+import java.lang.reflect.Field;     // rgf, 2014-03-27
+import java.util.Collections;       // rgf, 2014-03-27
 import java.util.Properties;
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -207,6 +253,8 @@ import com.sun.star.script.framework.container.ScriptMetaData;
 
 public class ScriptProviderForooRexx
 {
+    static final private boolean bDebug                   = false; // true;       // 2014-03-24 interactive debug?
+
     static final String OOREXX_LANGUAGE           = "ooRexx";    // define string for script language
     static final String OOREXX_BSFLANGUAGE        = "rexx";    // define string for script language
 
@@ -219,7 +267,7 @@ public class ScriptProviderForooRexx
 
     static final String OOREXX_XSCRIPTCONTEXT_KEY = "OOo.xScriptContext";
     static final String OOREXX_VERSION_KEY        = "OOo.ooRexxScriptProvider.version";
-    static final String OOREXX_VERSION_VALUE      = "108.20091031";       // 20070921
+    static final String OOREXX_VERSION_VALUE      = "109.20140330";       // 20070921
     static final String OOREXX_FILENAME           = "OOo.fileName";       // 20070920
     static final String OOREXX_SCRIPTMETADATA     = "OOo.ScriptMetaData"; // 20070920
 
@@ -247,17 +295,149 @@ public class ScriptProviderForooRexx
     // protected static BSFManager getBSFManager() throws BSFException     // 2009-10-30, rgf
     public static BSFManager getBSFManager() throws BSFException    // 2009-10-31, after releasing Beta 2
     {
-        if (bsfManager==null)
+        if (bDebug==true)   // 2014-03-24, rgf
         {
-            bsfManager=new BSFManager();    // create a new manager
-            // initialize the UNO support for this Rexx instance, such that any Rexx script thereafter
-            // that requires UNO.CLS just re-uses it (exploiting the new requires-behaviour in ooRexx 4.0)
-            bsfManager.apply(OOREXX_BSFLANGUAGE,
-                                // source ("program name"):
-                             "com.sun.star.script.framework.provider.oorexx.ScriptProviderForooRexx.requires_UNO.CLS.rex",
-                             0, 0,
-                             "::requires UNO.CLS",     // Rexx code to execute
-                             null, null);
+            ScriptImpl.showErrorMessage("ScriptProviderForooRexx.getBSFManager(...), arrived in getBSFManager(), bsfManager=["+bsfManager+"]");
+        }
+
+        if (bsfManager==null)   // no BSFManager yet, initiate one
+        {
+
+            bsfManager=new BSFManager();    // create a new BSFManager for dispatching ooRexx scripts
+
+            // make sure that on AOO for MacOSX, PATH is set (maybe even PWD);
+            // AOO 4.0.x and possibly AOO 4.1.x do not set environment correctly due to using outdated putenv() on MacOSX
+            // supply default values, such that the ooRexx interpreter can start
+            if (System.getenv("PATH")==null)    // PATH not set, we have a serious problem (ooRexx cannot initialize!)
+            {
+
+                if (System.getProperty("os.name").charAt(0)=='M')   // on MacOSX
+                {
+                    final int GETENV=1;
+                    final int SETENV=2;
+                    org.rexxla.bsf.engines.rexx.RexxEngine  re = (RexxEngine) bsfManager.loadScriptingEngine("rexx");
+
+                    if (re.procEnvironment(GETENV,"PATH",null)==null)    // PATH not set, then set it!
+                    {
+                        re.procEnvironment(SETENV, "PATH", "/usr/bin:/bin:/user/sbin:/sbin:/usr/local/bin");
+                    }
+
+                    if (re.procEnvironment(GETENV, "PWD", null)==null)   // PWD not set, set it to user's home
+                    {
+                        re.procEnvironment(SETENV, "PWD", System.getProperty("user.home"));
+                    }
+
+                    if (bDebug==true)   // 2014-03-24, rgf
+                    {
+                        String s="ScriptProviderForooRexx.getBSFManager(...), MACOSX, set PATH and PWD:\n"+
+                                 "PATH=["+re.procEnvironment(GETENV,"PATH",null)+"]\n"+
+                                 "PWD=["+re.procEnvironment(GETENV, "PWD", null)+"]";
+
+                        ;
+                        ScriptImpl.copy2clipboard(s);
+                        ScriptImpl.showErrorMessage(s);
+                    }
+                }
+                else    // raise an error, hinting at the problem!
+                {
+                    bsfManager=null;    // make sure we nullify
+                    throw new BSFException("\"PATH\" environment variable not set, ooRexx cannot be fully initialized, aborting!");
+                }
+
+
+
+/* ---> 2014-03-27, --rgf: throw exception, if PATH not set as ooRexx cannot initialize, but crashes!
+                // probably MacOSX, but let us make that sure
+                if (System.getProperty("os.name").charAt(0)=='M')
+                {
+                    // does not work as no "setenv()"
+                    // System.setenv("PATH", "/usr/bin:/bin:/user/sbin:/sbin:/usr/local/bin");
+
+                    // supply default paths
+                    Hashtable<String,String> ht=new Hashtable<String,String>();
+
+                    ht.putAll(System.getenv());
+
+                    ht.put("PATH","/usr/bin:/bin:/user/sbin:/sbin:/usr/local/bin");
+                    ht.put("PWD", System.getProperty("user.dir"));
+                    setEnv((Map<String,String>) ht);
+
+                    // although works on Java, ooRexx does not get to see the newly added
+                    // environment variables :-(
+
+
+                    if (bDebug==true)   // 2014-03-24, rgf
+                    {
+                        String s="ScriptProviderForooRexx.getBSFManager(...),  MacOSX, PATH now: \""+System.getenv("PATH")+"\""+
+                            ", \"PWD\" now: \""+System.getenv("PWD")+"\"";
+                        ;
+                        ScriptImpl.copy2clipboard(s);
+                        ScriptImpl.showErrorMessage(s);
+                    }
+                }
+                else
+                {
+                    bsfManager=null;    // make sure we nullify
+                    throw new BSFException("\"PATH\" environment variable not set, ooRexx cannot be fully initialized, aborting!");
+                }
+<--- */
+
+
+
+            }
+
+            if (bDebug==true)   // 2014-03-24, rgf
+            {
+                String s="ScriptProviderForooRexx.getBSFManager(...), after trying to create a new BSFManager: ["+bsfManager+"] !";
+                ScriptImpl.copy2clipboard(s);
+                ScriptImpl.showErrorMessage(s);
+            }
+
+            org.apache.bsf.BSFEngine eng=bsfManager.loadScriptingEngine("rexx");
+            if (bDebug==true)   // 2014-03-24, rgf
+            {
+                String s="ScriptProviderForooRexx.getBSFManager(...), after trying to load rexx engine: ["+eng+"] !";
+                ScriptImpl.copy2clipboard(s);
+                ScriptImpl.showErrorMessage(s);
+
+                String str="";
+                Map<String, String> env = System.getenv();
+                for (String envName : env.keySet()) {
+                    str=str+String.format("%s=%s%n",
+                                      envName,
+                                      env.get(envName));
+                }
+
+                s="ScriptProviderForooRexx.getBSFManager(...), process environment:\n"+str;
+                ScriptImpl.copy2clipboard(s);
+                ScriptImpl.showErrorMessage(s);
+
+            }
+
+
+                // initialize UNO.CLS support (which itself loads BSF.CLS, on MacOSX loading awt-related Java class)
+            try
+            {
+                // initialize the UNO support for this Rexx instance, such that any Rexx script thereafter
+                // that requires UNO.CLS just re-uses it (exploiting the new requires-behaviour in ooRexx 4.0)
+                bsfManager.apply(OOREXX_BSFLANGUAGE,
+                                    // source ("program name"):
+                                 "com.sun.star.script.framework.provider.oorexx.ScriptProviderForooRexx.requires_UNO.CLS.rex",
+                                 0, 0,
+                                 "::requires UNO.CLS",     // Rexx code to execute
+                                 null, null);
+            }
+            catch (BSFException  t)
+            {
+                if (bDebug==true)   // 2014-03-24, rgf
+                {
+                    String s="ScriptProviderForooRexx.getBSFManager(...), intercepted BSFException\nwhile running \"::requires UNO.CLS\":\n"+ScriptImpl.getThrowableInfos(t);
+                    ScriptImpl.copy2clipboard(s);
+                    ScriptImpl.showErrorMessage(s);
+                }
+                throw(t);   // rethrow
+            }
+
         }
         return bsfManager;
     }
@@ -281,7 +461,7 @@ public class ScriptProviderForooRexx
      *
      * @return string that contains the shortened (URL) path with file name of the script/macro
     */
-    public static String makeFilenameLedgible (String filename)
+    public static String makeFilenameLegible (String filename)
     {
         String chunks[]=filename.split("}");    // split at closing curly bracket
         if (chunks.length>1)
@@ -301,7 +481,7 @@ public class ScriptProviderForooRexx
 
     /** Returns the fully qualified, operating system dependent path to the script, if it
      *  is located in the 'user' or 'share' location. Otherwise returns what
-     *  'makeFilenameLedgible(String fileName)' returns.
+     *  'makeFilenameLegible(String fileName)' returns.
      *
      * @return string fully qualified, operating system dependent path to the script in the
      *                'user' or 'share' location, otherwise a short form of the OOo URL-string
@@ -436,7 +616,8 @@ public class ScriptProviderForooRexx
     }
 
 
-    /**
+
+    /* *
      * Writes the service information into the given registry key.
      * This method is called by the <code>JavaLoader</code>
      * <p>
@@ -445,6 +626,8 @@ public class ScriptProviderForooRexx
      * @return         returns true if the operation succeeded
      * @see            com.sun.star.comp.loader.JavaLoader
      */
+/* --->  2014-03-25, rgf: still needed, although beanshell on AOO 4.1 does not have it (anymore?)
+*/
     public static boolean __writeRegistryServiceInfo( XRegistryKey regKey )
     {
         String impl = "com.sun.star.script.framework.provider.oorexx." +
@@ -465,10 +648,63 @@ public class ScriptProviderForooRexx
         return false;
     }
 
+
+// TODO: 2014-03-27, remove alltogether, does not allow ooRexx to see newly added PATH ! :-(
+/* --->
+    // 2014-03-27, rgf, cf. <http://stackoverflow.com/questions/318239/how-do-i-set-environment-variables-from-java>
+    protected static void setEnv(Map<String, String> newenv) throws BSFException
+    {
+      try
+        {
+            Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
+            Field theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment");
+            theEnvironmentField.setAccessible(true);
+            Map<String, String> env = (Map<String, String>) theEnvironmentField.get(null);
+            env.putAll(newenv);
+            Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment");
+            theCaseInsensitiveEnvironmentField.setAccessible(true);
+            Map<String, String> cienv = (Map<String, String>)     theCaseInsensitiveEnvironmentField.get(null);
+            cienv.putAll(newenv);
+        }
+        catch (NoSuchFieldException e)
+        {
+          try {
+            Class[] classes = Collections.class.getDeclaredClasses();
+            Map<String, String> env = System.getenv();
+            for(Class cl : classes) {
+                if("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
+                    Field field = cl.getDeclaredField("m");
+                    field.setAccessible(true);
+                    Object obj = field.get(env);
+                    Map<String, String> map = (Map<String, String>) obj;
+                    map.clear();
+                    map.putAll(newenv);
+                }
+            }
+          } catch (Exception e2) {
+            // e2.printStackTrace();
+            // throw e2;
+
+            throw new BSFException("setEnv(...), e2-exception: "+e2.toString());
+
+          }
+        } catch (Exception e1) {
+            // e1.printStackTrace();
+            // throw e1;
+            throw new BSFException("setEnv(...), e1-exception: "+e1.toString());
+        }
+    }
+<--- */
+
+
+
+/* ---> */
+
 }   // end of ScriptProviderForooRexx
 
 class ScriptImpl implements XScript
 {
+    static final private boolean bDebug                   = false; // true;       // 2014-03-24 interactive debug?
 
     // the following static fields (populated in the static anonymous block) is
     // used for caching purposes;
@@ -532,8 +768,11 @@ class ScriptImpl implements XScript
     private Object m_xInvocContext;   // new for OOo 3.0
     // private ScriptContext m_xInvocContext;   // new for OOo 3.0
 
+// TODO: 2014-03-25, remove OOo 2.x support, not needed anymore; no need to use reflection as a result
+//                   the following is outdated:
     ScriptImpl( XComponentContext ctx, ScriptMetaData metaData, XModel xModel ) throws com.sun.star.uno.RuntimeException
     {
+
         this.metaData = metaData;
         this.m_xContext = ctx;
         this.m_xModel = xModel;
@@ -617,6 +856,14 @@ class ScriptImpl implements XScript
             }
             catch ( java.net.MalformedURLException mfu )
             {
+
+                if (bDebug==true)   // 2014-03-24, rgf
+                {
+                    String s="ScriptProviderForooRexx.ScriptImpl.invoke(...)-java.net.MalformedURLException mfu:\n"+getThrowableInfos(mfu);
+                    ScriptImpl.copy2clipboard(s);
+                    ScriptImpl.showErrorMessage(s);
+                }
+
                 // Framework error
                 throw new ScriptFrameworkErrorException(
                     mfu.getMessage(), null,
@@ -625,6 +872,13 @@ class ScriptImpl implements XScript
             }
             catch ( NoSuitableClassLoaderException nsc )
             {
+                if (bDebug==true)   // 2014-03-24, rgf
+                {
+                    String s="ScriptProviderForooRexx.ScriptImpl.invoke(...)-NoSuitableClassLoaderException nsc:\n"+getThrowableInfos(nsc);
+                    ScriptImpl.copy2clipboard(s);
+                    ScriptImpl.showErrorMessage(s);
+                }
+
                 // Framework error
                 throw new ScriptFrameworkErrorException(
                     nsc.getMessage(), null,
@@ -695,13 +949,14 @@ class ScriptImpl implements XScript
             }
             catch (Exception e) {
                 t.setContextClassLoader(clTmp); // 20070920 rgf: re-set CL
+
                 // Framework error setting up context
-/*
-                throw new ScriptFrameworkErrorException(
-                    e.getMessage(), null,
-                    metaData.getLanguageName(), metaData.getLanguage(),
-                    ScriptFrameworkErrorType.UNKNOWN );
-*/
+                if (bDebug==true)   // 2014-03-24, rgf
+                {
+                    String s="ScriptProviderForooRexx.ScriptImpl.invoke(...) while creating arguments for Rexx script:\n"+getThrowableInfos(e);
+                    ScriptImpl.copy2clipboard(s);
+                    ScriptImpl.showErrorMessage(s);
+                }
 
                 // rgf, 20091017: maybe toString() should be replaced by code assembling
                 //                the full error message as reported by Rexx ?
@@ -712,7 +967,7 @@ class ScriptImpl implements XScript
 
             }
 
-
+            String filename=null;
             try {
                 String source = null;
                 Object result = null;
@@ -747,17 +1002,20 @@ class ScriptImpl implements XScript
 
                 URL scriptSourceUrl=metaData.getSourceURL();    // get source URL from meta data
 
-                // String filename=(scriptSourceUrl==null ?"OOo.ScriptProviderForooRexx-ScriptProviderForooRexx.invoke()" :ScriptProviderForooRexx.makeFilenameLedgible (scriptSourceUrl.getFile()));
+                // String filename=(scriptSourceUrl==null ?"OOo.ScriptProviderForooRexx-ScriptProviderForooRexx.invoke()" :ScriptProviderForooRexx.makeFilenameLegible (scriptSourceUrl.getFile()));
 
                 // rgf, 2008-06-17
-                String filename=ScriptProviderForooRexx.getSystemPathFromFileURL(m_xContext,metaData);
+                // String
+                filename=ScriptProviderForooRexx.getSystemPathFromFileURL(m_xContext,metaData);
 
                 // RexxEngine re=(RexxEngine) mgr.loadScriptingEngine("rexx"); // get Rexx BSF scripting engine
+
+// TODO: invokeLater ?? or is it already executing on a non-AppKit-thread ?
 
                    // rgf, 2005-07-08
                 result=mgr.apply(ScriptProviderForooRexx.OOREXX_BSFLANGUAGE,
                                  filename,
-                                 // (sourceUrl==null ? "OOo.ScriptProviderForooRexx-ScriptProviderForooRexx.invoke()" : ScriptProviderForooRexx.makeFilenameLedgible (sourceUrl.getFile())+" ScriptProviderForooRexx"),
+                                 // (sourceUrl==null ? "OOo.ScriptProviderForooRexx-ScriptProviderForooRexx.invoke()" : ScriptProviderForooRexx.makeFilenameLegible (sourceUrl.getFile())+" ScriptProviderForooRexx"),
                                  // "OOo.ScriptProviderForooRexx",
                                  0, 0, source, null, args);
 
@@ -768,7 +1026,7 @@ class ScriptImpl implements XScript
                 // re.setThreadedRexxStart(true); // rgf, 2008-08-13: tell engine to invoke the Rexx interpreter on a separate Java thread
                 result=re.apply(
                                 filename,
-                                // (sourceUrl==null ? "OOo.ScriptProviderForooRexx-ScriptProviderForooRexx.invoke()" : ScriptProviderForooRexx.makeFilenameLedgible (sourceUrl.getFile())+" ScriptProviderForooRexx"),
+                                // (sourceUrl==null ? "OOo.ScriptProviderForooRexx-ScriptProviderForooRexx.invoke()" : ScriptProviderForooRexx.makeFilenameLegible (sourceUrl.getFile())+" ScriptProviderForooRexx"),
                                 // "OOo.ScriptProviderForooRexx",
                                 0, 0, source, null, args);
 */
@@ -785,6 +1043,14 @@ class ScriptImpl implements XScript
             catch ( Exception e )
             {
                 t.setContextClassLoader(clTmp); // 20070920 rgf: re-set CL
+
+                if (bDebug==true)   // 2014-03-24, rgf
+                {
+                    String s="ScriptProviderForooRexx.ScriptImpl.invoke(...) while trying to run a ooRexx script\nfilename=\""+filename+"\":\n"+getThrowableInfos(e);
+                    ScriptImpl.copy2clipboard(s);
+                    ScriptImpl.showErrorMessage(s);
+                }
+
                 throw new ScriptFrameworkErrorException(
                     // "Failed to read script", null,
                     e.getMessage(), null,
@@ -855,9 +1121,41 @@ class ScriptImpl implements XScript
         }
 
 
-        private static void showErrorMessage(String message) {
+        final static void showErrorMessage(String message) {
             javax.swing.JOptionPane.showMessageDialog(null, message,
                 "Error", javax.swing.JOptionPane.INFORMATION_MESSAGE);
         }
+
+
+
+
+        // rgf, 2014-03-24, cf. <http://stackoverflow.com/questions/1149703/stacktrace-to-string-in-java>
+        final static String getThrowableInfos(final Throwable ta)
+        {
+            // create a list of causes, show their messages
+            int i=0;
+            StringBuilder sb=new StringBuilder();
+
+            for (Throwable d=ta;d!=null;d.getCause())
+            {
+                sb.append("Cause level # ").append(i++).
+                   append(' ').append(d.toString()).append(": [").append(d.getMessage()).append("]\n");
+            }
+
+            // get stack trace as string
+            StringWriter sw = new StringWriter();
+            ta.printStackTrace(new PrintWriter(sw));
+            return sb.toString()+"\n--- stack trace:\n"+sw.toString();
+        }
+
+        // rgf, 2014-03-24, cf. <http://stackoverflow.com/questions/6710350/copying-text-to-the-clipboard-using-java>
+
+        final static void copy2clipboard(String s) {
+            Toolkit.getDefaultToolkit().
+                    getSystemClipboard().
+                    setContents(new StringSelection(s), null);;
+        }
+
+
 
 }      // end of ScriptImpl

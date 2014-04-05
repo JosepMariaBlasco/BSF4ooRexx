@@ -3,7 +3,7 @@
 xmlns:d="http://openoffice.org/extensions/description/2006"
 xmlns:xlink="http://www.w3.org/1999/xlink">
 
-  <version value="410.20120609"/>
+  <version value="450.20140404"/>
 
   <identifier value="org.oorexx.uno.ScriptProviderForooRexx.package"/>
 
@@ -13,10 +13,12 @@ xmlns:xlink="http://www.w3.org/1999/xlink">
 
   <update-information>
       <src xlink:href="http://wi.wu-wien.ac.at/rgf/rexx/OOo/ScriptProviderForooRexx.update.xml" lang="en"/>
+<!--
       <src xlink:href="http://www.rexxla.org/updates/ScriptProviderForooRexx.update.xml" lang="en"/>
       <src xlink:href="http://www.oorexx.org/updates/ScriptProviderForooRexx.update.xml" lang="en"/>
       <src xlink:href="http://www.netrexx.org/updates/ScriptProviderForooRexx.update.xml" lang="en"/>
       <src xlink:href="http://sourceforge.net/projects/bsf4oorexx/files/ScriptProviderForooRexx.update.html" lang="en"/>
+-->
   </update-information>
 
   <publisher>
@@ -24,8 +26,9 @@ xmlns:xlink="http://www.w3.org/1999/xlink">
   </publisher>
 
   <release-notes>
-      <src xlink:href="http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/ReleaseNotes.txt" lang="en"/>
+      <src xlink:href="http://wi.wu-wien.ac.at/rgf/rexx/OOo/ScriptProviderForooRexx.release-notes_en.txt" lang="en"/>
 <!--
+    <src xlink:href="http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/ReleaseNotes.txt" lang="en"/>
     <src xlink:href="information/changesOOo.txt" lang="en"/>
 -->
   </release-notes>

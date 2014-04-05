@@ -38,7 +38,7 @@ import java.lang.reflect.Method;
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
     2014-03-30, ---rgf, - add undocumented pass-thru method procEnvironment(...) to allow a last resort means
-                          (allow Java to set/get process environment variables via JNI)
+                          (allow Java to set/get process environment variables via JNI using RexxAndJava)
 
     2013-06-29, ---rgf, - get isTerminated() back into the code; was mistakingly deleted between rev 137 and 148
 
