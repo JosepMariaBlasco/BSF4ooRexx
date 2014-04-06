@@ -1,0 +1,50 @@
+#!/usr/bin/rexx
+/*
+   name:      list_charsets.rxj
+   purpose:   list available character set names with their aliases
+   author:    Rony G. Flatscher
+   date:      2014-04-06
+
+   last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
+
+   remarks:   inspired by <http://www.java2s.com/Tutorial/Java/0180__File/DisplaysAvailableCharsetsandaliases.htm>
+
+   license:   Apache Version 2.0 license
+    ------------------------ Apache Version 2.0 license (AL2.0)-------------------------
+       Copyright (C) 2014 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+
+*/
+
+   -- get available character sets
+charSets=bsf.loadClass("java.nio.charset.Charset")~availableCharsets
+cs=charSets~keySet~iterator   -- get an iterator from charsets' keys
+loop while cs~hasNext         -- loop over collection
+    name=cs~next              -- get name
+    .output~charOut(name)     -- output name, do not add CR-LF
+    al=charSets~get(name)~aliases~iterator   -- get aliases, if any
+    if al~hasNext then        -- alias(es) available
+    do
+        .output~charOut(": ")
+        loop while al~hasNext  -- loop over aliases
+           .output~charOut(al~next)
+           if al~hasNext then
+              .output~charOut(", ")
+        end
+    end
+    say                       -- make sure a CR-LF is output
+end
+
+::requires bsf.cls
