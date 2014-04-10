@@ -176,10 +176,10 @@
                           field, such that the compiler can remove dependent code if flag is set
                           to false), which uses popups and copies exception data to the clipboard
 
-            2014-04-02, ---rgf
-                        - add code in getBSFManager() to cater for a stupid error in MacOSX AOO 4.0.x and 4.1.
-                          (process environment not set, so PATH missing, such that ooRexx cannot be
-                          initialized at all)
+            2014-04-08, ---rgf
+                        - add code in getBSFManager() to cater for a stupid error in MacOSX AOO 4.0.x
+                          (process environment not set correctly, so PATH missing, such that ooRexx cannot
+                          be initialized at all)
 
 
 */
@@ -267,7 +267,7 @@ public class ScriptProviderForooRexx
 
     static final String OOREXX_XSCRIPTCONTEXT_KEY = "OOo.xScriptContext";
     static final String OOREXX_VERSION_KEY        = "OOo.ooRexxScriptProvider.version";
-    static final String OOREXX_VERSION_VALUE      = "109.20140330";       // 20070921
+    static final String OOREXX_VERSION_VALUE      = "109.20140408";       // 20070921
     static final String OOREXX_FILENAME           = "OOo.fileName";       // 20070920
     static final String OOREXX_SCRIPTMETADATA     = "OOo.ScriptMetaData"; // 20070920
 
@@ -306,11 +306,10 @@ public class ScriptProviderForooRexx
             bsfManager=new BSFManager();    // create a new BSFManager for dispatching ooRexx scripts
 
             // make sure that on AOO for MacOSX, PATH is set (maybe even PWD);
-            // AOO 4.0.x and possibly AOO 4.1.x do not set environment correctly due to using outdated putenv() on MacOSX
-            // supply default values, such that the ooRexx interpreter can start
+            // AOO 4.0.x does not set environment correctly due to using outdated putenv() on MacOSX
+            // supply default value for PATH, such that the ooRexx interpreter can start
             if (System.getenv("PATH")==null)    // PATH not set, we have a serious problem (ooRexx cannot initialize!)
             {
-
                 if (System.getProperty("os.name").charAt(0)=='M')   // on MacOSX
                 {
                     final int GETENV=1;
@@ -340,66 +339,36 @@ public class ScriptProviderForooRexx
                 }
                 else    // raise an error, hinting at the problem!
                 {
-                    bsfManager=null;    // make sure we nullify
-                    throw new BSFException("\"PATH\" environment variable not set, ooRexx cannot be fully initialized, aborting!");
-                }
-
-
-
-/* ---> 2014-03-27, --rgf: throw exception, if PATH not set as ooRexx cannot initialize, but crashes!
-                // probably MacOSX, but let us make that sure
-                if (System.getProperty("os.name").charAt(0)=='M')
-                {
-                    // does not work as no "setenv()"
-                    // System.setenv("PATH", "/usr/bin:/bin:/user/sbin:/sbin:/usr/local/bin");
-
-                    // supply default paths
-                    Hashtable<String,String> ht=new Hashtable<String,String>();
-
-                    ht.putAll(System.getenv());
-
-                    ht.put("PATH","/usr/bin:/bin:/user/sbin:/sbin:/usr/local/bin");
-                    ht.put("PWD", System.getProperty("user.dir"));
-                    setEnv((Map<String,String>) ht);
-
-                    // although works on Java, ooRexx does not get to see the newly added
-                    // environment variables :-(
-
-
-                    if (bDebug==true)   // 2014-03-24, rgf
+                    if (bDebug==true)   // 20140407, rgf
                     {
-                        String s="ScriptProviderForooRexx.getBSFManager(...),  MacOSX, PATH now: \""+System.getenv("PATH")+"\""+
-                            ", \"PWD\" now: \""+System.getenv("PWD")+"\"";
-                        ;
+                        String str="";
+                        Map<String, String> env = System.getenv();
+                        for (String envName : env.keySet()) {
+                            str=str+String.format(" %s=%s%n",
+                                              envName,
+                                              env.get(envName));
+                        }
+
+                        String s="ScriptProviderForooRexx.getBSFManager(...), ) PATH not set, about to throw BSFException()\nprocess environment:\n"+str;
+
+                        s=s+"\n--- using JNI to fetch PATH and PWD:\n";
+
+                        final int GETENV=1;
+                        org.rexxla.bsf.engines.rexx.RexxEngine  re = (RexxEngine) bsfManager.loadScriptingEngine("rexx");
+                        s=s+"\tPATH=["+re.procEnvironment(GETENV,"PATH",null)+"]\n"
+                           +"\tPWD =["+re.procEnvironment(GETENV,"PWD",null)+"]";
+
+
                         ScriptImpl.copy2clipboard(s);
                         ScriptImpl.showErrorMessage(s);
                     }
-                }
-                else
-                {
                     bsfManager=null;    // make sure we nullify
                     throw new BSFException("\"PATH\" environment variable not set, ooRexx cannot be fully initialized, aborting!");
                 }
-<--- */
-
-
-
             }
 
-            if (bDebug==true)   // 2014-03-24, rgf
+            if (bDebug==true)   // 20140407, rgf
             {
-                String s="ScriptProviderForooRexx.getBSFManager(...), after trying to create a new BSFManager: ["+bsfManager+"] !";
-                ScriptImpl.copy2clipboard(s);
-                ScriptImpl.showErrorMessage(s);
-            }
-
-            org.apache.bsf.BSFEngine eng=bsfManager.loadScriptingEngine("rexx");
-            if (bDebug==true)   // 2014-03-24, rgf
-            {
-                String s="ScriptProviderForooRexx.getBSFManager(...), after trying to load rexx engine: ["+eng+"] !";
-                ScriptImpl.copy2clipboard(s);
-                ScriptImpl.showErrorMessage(s);
-
                 String str="";
                 Map<String, String> env = System.getenv();
                 for (String envName : env.keySet()) {
@@ -408,10 +377,18 @@ public class ScriptProviderForooRexx
                                       env.get(envName));
                 }
 
-                s="ScriptProviderForooRexx.getBSFManager(...), process environment:\n"+str;
+                String s="ScriptProviderForooRexx.getBSFManager(...), new BSFManager=["+bsfManager+"], before \".loadScriptingEngine(\"rexx\")\"\nprocess environment:\n"+str;
                 ScriptImpl.copy2clipboard(s);
                 ScriptImpl.showErrorMessage(s);
+            }
 
+            org.apache.bsf.BSFEngine eng=bsfManager.loadScriptingEngine("rexx");
+
+            if (bDebug==true)   // 2014-03-24, rgf
+            {
+                String s="ScriptProviderForooRexx.getBSFManager(...), after trying to load rexx engine: ["+eng+"] !";
+                ScriptImpl.copy2clipboard(s);
+                ScriptImpl.showErrorMessage(s);
             }
 
 
