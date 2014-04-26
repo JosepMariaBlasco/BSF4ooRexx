@@ -57,6 +57,9 @@
             2014-01-12, rgf   - Unix: if real user name is "root", then place the logfile into "/tmp"
             2014-02-10, rgf   - Unix: use environment HOME to determine home directory for non-"root"
                                       users
+            2014-04-26, rgf   - Windows: using elevate{32|64}.exe in wait-mode, some Windows installations do
+                                not close the command line window automatically, therefore inform the user
+                                what to do
 
    remark:  ---
 
@@ -89,6 +92,9 @@ cmd.eIsMacOSX=(s="M")      -- determine whether running on "MACOSX"
 cmd.eOriginalDirectory=directory()  -- original directory from where this script go started
 
 bPauseAtEnd=.true                -- pause at end, such that user can see the output in the console
+   -- using 'elevate{32|64}.exe' in wait mode; if command line window does not close, the user
+   -- must enter "EXIT" and hit the return key on some Windows installations, inform the user about it
+strHintToExit="you may need to enter 'EXIT' and hit the enter key in order to close this window to proceed operation..."
 
 cmd.eBDebug=.false               -- if set to .true, then debug mode, does not execute statements
 cmd.eBInteractive=.true          -- if set to .true, then Rexx-"pause" are carried out
@@ -126,6 +132,7 @@ do
       say cmd.eThisName": about to exit program, please hit enter to continue ..."
       parse pull input
    end
+   say strHintToExit
    exit -1
 end
 
@@ -144,6 +151,7 @@ do
          say cmd.eThisName": about to exit program, please hit enter to continue ..."
          parse pull input
       end
+      say strHintToExit
       exit -40
    end
 
@@ -162,6 +170,7 @@ do
       say cmd.eThisName": about to exit program, please hit enter to continue ..."
       parse pull input
    end
+   say strHintToExit
    exit -99
 end
 else
@@ -177,6 +186,7 @@ do
           say cmd.eThisName": about to exit program, please hit enter to continue ..."
           parse pull input
        end
+       say strHintToExit
        exit -2
    end
 end
@@ -314,6 +324,7 @@ do
           say cmd.eThisName": about to exit program, please hit enter to continue ..."
           parse pull input
        end
+       say strHintToExit
        exit -3
    end
 end
@@ -332,6 +343,7 @@ do
           say cmd.eThisName": about to exit program, please hit enter to continue ..."
           parse pull input
        end
+       say strHintToExit
        exit -4
     end
 end
@@ -359,6 +371,7 @@ do
           say cmd.eThisName": about to exit program, please hit enter to continue ..."
           parse pull input
        end
+       say strHintToExit
        exit -11
    end
 
@@ -397,6 +410,7 @@ do
                 say cmd.eThisName": about to exit program, please hit enter to continue ..."
                 parse pull input
              end
+             say strHintToExit
              exit newInstallDir  -- abort installation with the received return code
           end
 
@@ -442,6 +456,7 @@ do
             say cmd.eThisName": fatal error (could not install BSF4ooRexx) about to exit program, please hit enter to continue ..."
             parse pull input
          end
+         say strHintToExit
          exit res
       end
       else
@@ -527,6 +542,7 @@ do
             parse pull answer
 
             if cmd.eBLogFile=.true then cmd.eLogFile~~say("User did not want to uninstall.")~~close
+            say strHintToExit
             exit -20
          end
       end
@@ -573,6 +589,7 @@ do
 
             if res<>0 then
             do
+               say cmd.eThisName": rc="res "while removing" enQQ(cmd.eDefaultTargetDir)
                if cmd.eBLogFile=.true then cmd.eLogFile~close  -- close logfile
 
                if cmd.eBInteractive=.true then
@@ -580,6 +597,7 @@ do
                   say cmd.eThisName": about to exit program, please hit enter to continue ..."
                   parse pull input
                end
+               say strHintToExit
                exit res
             end
          end
@@ -632,6 +650,7 @@ do
             parse pull input
          end
       end
+      say strHintToExit
       exit res
    end
    else
@@ -700,6 +719,7 @@ do
    parse pull input
 end
 
+say strHintToExit
 exit 0
 
 ::routine removeInstallationScripts    -- remove generated (un-)installation scripts (for regenerating them)

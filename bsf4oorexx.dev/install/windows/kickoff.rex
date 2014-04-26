@@ -95,10 +95,11 @@ say "---> using 'Shell.Application'"
 end
 else  -- Vista and up
 do
-say "===> using Elevate{32|64}.exe"
+say "===>"
 --   rexxExe     = quote( qualify( value("REXX_HOME",,"ENVIRONMENT")"\rexx.exe" ) )
    rexxExe     = "rexx.exe"   -- will be found along the path
-   setupScript = quote( qualify(workDir"\..\setupAllAndRun.rex") )   -- fully qualify script
+--   setupScript = quote( qualify(workDir"\..\setupAllAndRun.rex") )   -- fully qualify script
+   setupScript = "..\setupAllAndRun.rex"  -- fully qualify script
    rexxBits=getRexxBitness()
    elevateExe = "Elevate"rexxBits".exe"
    mode="Elevate"rexxBits".exe"
@@ -106,8 +107,8 @@ say "===> using Elevate{32|64}.exe"
 
    if .kickoff.bDebug<>.true then
    do
--- say "elevation mode, command: ["cmd"]..."
-
+      say "elevation mode, command: ["cmd"]..."
+      say "waiting on elevated command line window to be closed (enter 'exit' there) ..."
       cmd               -- let subcommand handler process the command
    end
    else  -- debug mode
