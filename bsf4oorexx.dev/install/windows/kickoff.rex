@@ -8,20 +8,26 @@
                 an error, just runs it without; this way starting with Windows2000/XP
                 elevation is attempted, the fallback is to run re/un/installation as is
 
-   Version: 1.00
-   Changes: ---
+   Version: 1.01
+   Changes: - 2014-04-26 rgf: use "elevate{32|64}.exe" on Windows Vista and higher
+                         to run the [re|un]install elevated
 
    Info-URLs:  <http://technet.microsoft.com/en-us/magazine/2007.06.utilityspotlight.aspx>
                <http://technet.microsoft.com/en-us/magazine/2008.06.elevation.aspx>
                <http://forums.techarena.in/vista-administration/977482.htm>
                <http://blogs.technet.com/b/heyscriptingguy/archive/2005/10/31/how-can-i-start-an-application-from-an-hta.aspx>
 
+               ad elevate-tool, cf: <http://jpassing.com/2007/12/08/launch-elevated-processes-from-the-command-line/>,
+               licensed under the MIT-license (see file "license_mit.txt" or
+               <http://opensource.org/licenses/mit-license.php>)
+
+
    Last svn check-in: $Revision: 912 $ $Author: Administrator $ $Date: 2010-08-23 16:49:55 +0200 (Mon, 23 Aug 2010) $
 
    License:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010 Rony G. Flatscher
+       Copyright (C) 2014 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -36,7 +42,7 @@
        limitations under the License.
     -----------------------------------------------------------------------------
 */
-bDebug=.false        -- debug switch
+.local~kickoff.bDebug=.false        -- debug switch
 
 parse source . . s
 
@@ -48,32 +54,108 @@ do
    exit -1
 end
 
-args ="..\setupAllAndRun.rex" args  -- build argument to be passed to Rexx
 pgm2exec="rexx.exe"
 workDir =directory()
 
-if bDebug then say "pgm2exec=["pgm2exec"] args=["args"] ..."   -- debug output
+/* Get Windows version:
+      use "runas" via WShell:
+                        XP                   = 5.1 (ooRexx returns 5.01)
+                        Server 2003          = 5.2
+
+      from here on use Elevate32.exe/Elevate64.exe:
+                        Vista & Server 2008  = 6.0
+                        W7 & Server 2008 R2  = 6.1
+                        W8 & RT & Server 2012= 6.2
+                        W8.1 & Server 2012 R2= 6.3
+*/
+parse value sysVersion() with . winVersion
+
+if .kickoff.bDebug then say "pgm2exec=["pgm2exec"] args=["args"] winVersion=["winVersion"]..."   -- debug output
 
 signal on any        -- if something goes wrong with wscript, then address the plain command
-sh=.OleObject~new("Shell.Application")
-if bDebug<>.true then
-   sh~ShellExecute(pgm2exec, args, workDir, "runas")
-else  -- debug mode
+
+if winVersion<6 then    -- up to and including XP, Server 2003
 do
-   say "sh~ShellExecute(...) worked..."
-   say "now raising exception..."
-   signal 99.901
-   parse pull answer
+   mode="sh~ShellExecute(...)"
+   args ="..\setupAllAndRun.rex" args  -- build argument to be passed to Rexx
+say "---> using 'Shell.Application'"
+   if .kickoff.bDebug<>.true then
+   do
+      sh=.OleObject~new("Shell.Application")
+      sh~ShellExecute(pgm2exec, args, workDir, "runas")
+   end
+   else  -- debug mode
+   do
+      say "sh~ShellExecute(...) worked..."
+      say "now raising exception..."
+      signal 99.901
+      parse pull answer
+   end
+   exit 0
 end
-exit 0
+else  -- Vista and up
+do
+say "===> using Elevate{32|64}.exe"
+--   rexxExe     = quote( qualify( value("REXX_HOME",,"ENVIRONMENT")"\rexx.exe" ) )
+   rexxExe     = "rexx.exe"   -- will be found along the path
+   setupScript = quote( qualify(workDir"\..\setupAllAndRun.rex") )   -- fully qualify script
+   rexxBits=getRexxBitness()
+   elevateExe = "Elevate"rexxBits".exe"
+   mode="Elevate"rexxBits".exe"
+   cmd= elevateExe "-wait" "-k" rexxExe setupScript args
+
+   if .kickoff.bDebug<>.true then
+   do
+-- say "elevation mode, command: ["cmd"]..."
+
+      cmd               -- let subcommand handler process the command
+   end
+   else  -- debug mode
+   do
+      say "elevation mode, command: ["cmd"]..."
+      say "now raising exception..."
+      signal 99.901
+      parse pull answer
+   end
+   exit 0
+end
 
 any:                 -- something went wrong, try to invoke without elevation
-if bDebug<>.true then pgm2exec args
 
-if bDebug then
-do
-   say "sh~ShellExecute(...) did NOT work, invoking without elevation: ["pgm2exec args"]..."
-   parse pull answer
-end
-exit 1
+   say quote(mode) "did NOT work, trying to invoke without elevation at all: ["pgm2exec args"]..."
+   if .kickoff.bDebug=.true then
+   do
+      parse pull answer -- wait for user to hit enter
+   end
+   else                 -- try to execute without elevation
+   do
+      pgm2exec args
+   end
+
+   exit 1
+
+
+-- return bitness of Rexx interpreter (e.g. 32, 64, etc.)
+::routine getRexxBitness
+   -- starting with ooRexx 4.2.0 we can get the bitness information out of the version string
+  parse version '_'version'(' '_' bitness '-'
+  if version>="4.2", bitness<>"" then
+  do
+     if .kickoff..bDebug=.true then say "kickoff.rex/getRexxBitness, >= 4.2, bitness="||bitness
+     return bitness
+  end
+
+  -- do not use ADDRESS CMD as on Linux this causes an error :(
+  "rexx -v 2>&1 | rxqueue"
+  bitness=.nil                  -- default value
+  do while queued()>0           -- make sure we process entire queue (to empty it)
+     parse pull hint ":" val .
+     if hint="Addressing Mode" then bitness=val
+  end
+
+  if .kickoff..bDebug=.true then say "kickoff.rex/getRexxBitness, < 4.2, bitness="||bitness
+  return bitness
+
+::routine quote
+  return '"' || arg(1) || '"'
 
