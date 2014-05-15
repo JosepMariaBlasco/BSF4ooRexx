@@ -3,7 +3,7 @@
    Purpose: GUI supported testing of ooRexx and Bsf4ooRexx enhanced Java support
    Author:  Markus Moldaschl
             Gerald Leitner
-   Version: 2.0
+   Version: 2.2
    Changes: 2011-02-20, Rony G. Flatscher:
                         - removed MacOSX-related change to name of menu "Exit"
                           to "Quit" as MacOSX has its own application
@@ -72,8 +72,9 @@
 */
 
 /*----------------------------------------------------------------------------*/
-/*  Copyright 2011 Markus Moldaschl, 2011-2014 Rony G. Flatscher              */
-/*                                                                                                                    */
+/*  Copyright 2011 Markus Moldaschl, 2011-2014 Rony G. Flatscher,             */
+/*            2013-2014 G. Leitner                                            */
+/*                                                                            */                                      */
 /*  Licensed under the Apache License, Version 2.0 (the "License");           */
 /*  you may not use this file except in compliance with the License.          */
 /*  You may obtain a copy of the License at                                   */
@@ -5043,7 +5044,7 @@ return
     end
 
     -- a few generic variables
-    .local~mm.dir~version        = '2.0'             -- Internal version control
+    .local~mm.dir~version        = '2.2'             -- Internal version control
 
     -- Default starting path for Save As dialog - will be either
     -- the folder ooRexxTry is executed from or the last folder that

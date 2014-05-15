@@ -3,7 +3,7 @@
    Purpose: GUI supported testing of ooRexx and Bsf4ooRexx enhanced Java support
    Author:  Markus Moldaschl
 
-   Version: 1.2
+   Version: 2.2
    Changes: 2011-02-20, Rony G. Flatscher:
                         - removed MacOSX-related change to name of menu "Exit"
                           to "Quit" as MacOSX has its own application
@@ -65,10 +65,15 @@
 
             2012-11-02  Rony G. Flatscher
                         - fix bug https://sourceforge.net/tracker/index.php?func=detail&aid=3582365&group_id=400586&atid=1660873
+
+            2014-05-15 Rony G. Flatscher
+                        - make sure that on MacOSX the application looks like a Mac application by calling
+                          first the new BSF.CLS routine "makeBSF4ooRexxLookLikeMacOSX"
+
 */
 
 /*----------------------------------------------------------------------------*/
-/*  Copyright 2011 Markus Moldaschl, 2011-2012 Rony G. Flatscher              */
+/*  Copyright 2011 Markus Moldaschl, 2011-2014 Rony G. Flatscher              */
 /*								                                                      */
 /*  Licensed under the Apache License, Version 2.0 (the "License");           */
 /*  you may not use this file except in compliance with the License.          */
@@ -123,6 +128,7 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
+call makeBSF4ooRexxLookLikeMacOSX   -- make sure that on MacOSX the application looks like a Mac application
 
 userData = .directory~new                   -- Directory to certain objects
 .local~mm.dir = .directory~new			-- locally accessable directory
@@ -2840,7 +2846,7 @@ return
     end
 
 -- Need a few generic variables
-    .local~mm.dir~version        = '2.1'             -- Internal version control
+    .local~mm.dir~version        = '2.2'             -- Internal version control
 
 
        /* Default starting path for Save As dialog - will be either
