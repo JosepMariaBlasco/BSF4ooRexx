@@ -36,11 +36,14 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.2.0, 2014-05-14
+  * @version 4.2.0, 2014-05-15
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
  /*
+     2014-05-15, ---rgf, - correct new method lookup for INVOKE (did not find fields, nor was coercing
+                           the arguments rather used the INVOKE_STRICT logic)
+
      2014-05-14, ---rgf, - change method lookup for INVOKE to use Class.getMethods() instead of Class.getDeclaredMethods();
                            getMethods() returns all public methods, which in Java 8 also includes default (interface) methods,
                            if necessary
@@ -297,7 +300,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "420.20140514";
+    static final public String version = "420.20140515";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -3306,7 +3309,8 @@ if (bDebug)
                             // start out with present class and work up to root class
 // --> 20140514
 // <--- 20140514
-                          boolean bFound=false;
+                          // boolean bFound=false;
+                          boolean bLooking=true;
 
                           int k=0;
                           // rgf, 2010-04-20: implement same logic as in INVOKE; i.e. resolve the entire class tree even for class object
@@ -3326,7 +3330,131 @@ if (bDebug)
                                   if(args[2].equalsIgnoreCase(m[i].getName()))
                                   {
                                       Class paramTypes[]=m[i].getParameterTypes();
-                      if (bDebug) System.err.println("\t\t\tmethName=["+m[i].getName()+"] paramTypes.length="+paramTypes.length);
+if (bDebug) System.err.println("\t\t\tmethName=["+m[i].getName()+"] paramTypes.length="+paramTypes.length+" | nrArgs="+nrArgs);
+
+                                      if (paramTypes.length != nrArgs)  // wrong nr of arguments
+                                          continue;
+
+                                        // only access method if it is defined to be public
+                                      if (!Modifier.isPublic(m[i].getModifiers()))
+                                          continue ;
+
+                                        // right number of arguments, can we coerce to them?
+                                      if (nrArgs==0)     // no argument, hence found
+                                      {
+                                          // FOUND !
+                                          bLooking=false;       // don't look any further
+
+if (bDebug) System.err.println("---> NO ARGS! Hence, FOUND !");
+                                      }
+                                      else
+                                      {
+                                          coercedArgs=this.coerceArgs( funcArgs, paramTypes);
+                                          bLooking=(coercedArgs==null); // if null, keep on searching
+if (bDebug)
+{
+    if (bLooking)
+    {
+if (bDebug) System.err.println("---> coercedArgs() did *NOT* find matching arguments, hence looking further...");
+    }
+    else
+    {
+if (bDebug) System.err.println("---> coercedArgs() found matching, about to invoke via method!!");
+    }
+}
+
+
+                                      }
+if (bDebug) System.err.println("\t\tmethod was public, nrArgs matched, bLooking="+bLooking);
+
+                                      if (bLooking==false)    // not looking anymore, found!
+                                      {
+if (bDebug) System.err.println("                   bean=["+bean+"], coercedArgs["+coercedArgs+"]");
+                                          try
+                                          {
+                                              // Object result=m[i].invoke(bean , coercedArgs);
+                                              Object result=invokeMethod(m[i], bean, coercedArgs);
+
+if (bDebug) // ---rgf, 2006-07-29
+{
+    System.err.println("                   result=["+result+"]#");
+    if (result!=null)
+    {
+        if (result.getClass().isArray())
+        {
+            try
+            {
+                Object aha[]=(Object[]) result;
+                System.out.println("\taha.length=["+aha.length+"]");
+
+                for (int i1=0; i1<aha.length; i1++)
+                {
+                    System.out.print  ("\t\tiaha["+i1+"]=["            );
+                    System.out.print  (                   aha[i1]+"]");
+                    System.out.println(", hashCode="+(aha[i1]==null? "<null>" : Integer.toHexString( aha[i1].hashCode())) );
+                }
+            }
+            catch (Exception e)
+            {
+                System.err.println(" -->-->-->-->-->   exception while trying to debug-dump:");
+                e.printStackTrace();
+            }
+        }
+        System.err.println("result=["+result+"], result.getClass()=["+result.getClass()+"], about to return makeString4Rexx(...)");
+
+    }
+
+}
+
+                                              return makeString4Rexx(result);
+                                          }
+                                          catch (Exception e)
+                                          {
+
+if (bDebug)
+{
+    System.err.println("                   BRRR, e.toString()=["+e.toString()+"].");
+    System.err.print  ("                   BRRR, e.printStackTrace()=\n["); e.printStackTrace();System.err.println("].");
+    System.err.println("                   BRRR, e.getMessage()=["+e.getMessage()+"].");
+    System.err.println("                   BRRR, e.getClass().getName()=["+e.getClass().getName()+"]");
+
+    e.printStackTrace();
+    System.err.println("--- --- --- --- ---");
+}
+
+                                                  // search a BSFException, if found, throw that instead
+                                              Throwable originalCause=null;
+                                              for (Throwable t=e; t!=null; t=t.getCause())
+                                              {
+                                                  if (t instanceof BSFException)      // BSFException found, throw it now
+                                                  {
+                                                      originalCause=t;
+                                                  }
+                                              }
+                                              if (originalCause!=null)
+                                              {
+                                                  throw (BSFException) originalCause;
+                                              }
+
+                                              throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
+                                                                      "/// Java-exception (RexxAndJava) occurred: ["+e.toString()+"]" +
+                                                                      getCauseAsString(", getCause(): ", e)+" \\\\\\\n" +
+                                                          "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"], method not found or error (exception) executing method!"
+                                                          , e  // rgf, 2011-06-04: supply Exception object
+                                                          );
+                                          }
+                                      }
+                                  }
+
+
+
+//===================================================
+/* --->
+                                  {
+
+                                      Class paramTypes[]=m[i].getParameterTypes();
+                      // if (bDebug)
+                      System.err.println("\t\t\tmethName=["+m[i].getName()+"] paramTypes.length="+paramTypes.length+", nrArgs="+nrArgs);
                                       if (paramTypes.length != nrArgs)  // wrong nr of arguments
                                           continue;
 
@@ -3357,6 +3485,8 @@ if (bDebug)
                                               {
                                                   Class pCl=paramTypes[j],
                                                         fCl=funcArgs[j].getClass();
+
+System.err.println("\t\t\ti="+i+", pCl=["+pCl+"], fCl=["+fCl+"]");
 
                                                        if (pCl==boolean.class) { bFound=( Boolean.class.isAssignableFrom(fCl)) ;}
                                                   else if (pCl==int.class )    { bFound=( Integer.class.isAssignableFrom(fCl)) ;}
@@ -3427,6 +3557,10 @@ if (bDebug)
                                               }
                                       }
                                   }
+<-- */
+//===================================
+
+
                               }
 
 
@@ -3441,6 +3575,31 @@ if (bDebug)
                               }
 
                           }
+
+                          if (args.length==3)    // rgf, 2005-05-06, no argument given, maybe a getField intended?
+                          {
+// ??????
+                              // if not a getter method, try to access a field by the name of the method
+                              if (! (args[2].toUpperCase()).startsWith("GET") )
+                              {
+                                  try
+                                  {
+                                      String tmpArg[]={
+                                          STRING_GET_FIELD_VALUE ,
+                                          args[1],        // beanName
+                                          args[2]         // methName ==> fieldName ?
+                                          } ;
+if (bDebug) System.err.println("'invoke': trying '"+STRING_GET_FIELD_VALUE+"'...");
+
+                                      return javaCallBSF( tmpArg ); // rgf, 2008-06-23
+                                  }
+                                  catch (Exception e) { };
+
+                              }
+// ??????
+                          }
+
+
 
                             // one error could be: using a value which is a key into the BSF registry, hence give
                           {

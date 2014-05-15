@@ -1,3 +1,36 @@
+-------------------------------------- 2014-05-15 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - do not report deprecated BSFAttachToTID() and BSFDetach() anymore
+
+- BSF.CLS
+
+        - moved MacOSX initialization code to public routine "makeBSF4ooRexxLookLikeMacOSX":
+          ooRexx macros in AOO 4.x on MacOSX do not run, as this setup code uses
+          an awt class which must nor run on the main thread on MacOSX. As a result
+          ooRexx macros on AOO 4.x cause a runtime exception and do not run. Moving
+          the initialization into a routine that needs to be explicitly called
+          should solve the problem.
+
+- ooRexxTry.rxj
+
+        - make sure that on MacOSX the application looks like a Mac application by calling
+          first the new BSF.CLS routine "makeBSF4ooRexxLookLikeMacOSX"
+
+- RexxAndJava.java
+
+        - correct new method lookup for INVOKE (did not find fields, nor was coercing
+          the arguments rather used the INVOKE_STRICT logic)
+
+-------------------------------------- 2014-05-14 ----------------------------------
+
+- RexxAndJava.java
+
+        - change method lookup for INVOKE to use Class.getMethods() instead of Class.getDeclaredMethods();
+          getMethods() returns all public methods, which in Java 8 also includes default (interface) methods,
+          if necessary
+
 -------------------------------------- 2014-04-03 ----------------------------------
 
 - BSF4ooRexx.cc

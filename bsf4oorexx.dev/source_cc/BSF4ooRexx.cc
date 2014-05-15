@@ -24,6 +24,8 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.5.0   2014-05-15, - do not report deprecated BSFAttachToTID() and BSFDetach() anymore
+
     4.5.0   2014-04-03, - make sure that BSFDetach() does not detach from the primodal thread
 
     4.5.0   2014-03-31 ---rgf
@@ -840,11 +842,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "450.20140403 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140515 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "450.20140403 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140515 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "450.20140403 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140515 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -5260,9 +5262,9 @@ void JNU_MessageBox (JNIEnv *env, const char *msg)
 PSZ ApiFncTable[]=      // if invoked via Rexx, these are the functions we report
 {
     "BSF"                         ,
-    "BsfAttachToTID"              , // ---rgf, 2003-08-06
+//    "BsfAttachToTID"              , // ---rgf, 2003-08-06, 2014-05-15: do not report anymore (auto-attach implemented)
     "BsfCreateRexxProxy"          , // ---rgf, 2009-09-12
-    "BsfDetach"                   , // ---rgf, 2008-07-26
+//    "BsfDetach"                   , // ---rgf, 2008-07-26, 2014-05-15: do not report anymore (auto-attach implemented)
     "BsfDropFuncs"                ,
     "BsfGetTID"                   , // ---rgf, 2003-08-06
     "BsfInvokedBy"                ,
@@ -5286,9 +5288,9 @@ PSZ ApiFncTable[]=      // if invoked via Rexx, these are the functions we repor
 PSZ ApiFncTable4Java[]=      // if invoked via Java, these are the functions we report
 {
     "BSF"                         ,
-    "BsfAttachToTID"              , // ---rgf, 2003-08-06
+//    "BsfAttachToTID"              , // ---rgf, 2003-08-06, 2014-05-15: do not report anymore (auto-attach implemented)
     "BsfCreateRexxProxy"          , // ---rgf, 2009-09-12
-    "BsfDetach"                   , // ---rgf, 2008-07-26
+//    "BsfDetach"                   , // ---rgf, 2008-07-26, 2014-05-15: do not report anymore (auto-attach implemented)
     "BsfDropFuncs"                ,
     "BsfGetTID"                   , // ---rgf, 2003-08-06
     "BsfInvokedBy"                ,

@@ -12,7 +12,14 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
-         2013-06-10, rg:  - make BSF.terminateRexxEngine() return .true, if RexxEngine got terminated,
+         2014-05-15, rgf: - moved MacOSX initialization code to public routine "makeBSF4ooRexxLookLikeMacOSX":
+                            ooRexx macros in AOO 4.x on MacOSX do not run, as this setup code uses
+                            an awt class which must nor run on the main thread on MacOSX. As a result
+                            ooRexx macros on AOO 4.x cause a runtime exception and do not run. Moving
+                            the initialization into a routine that needs to be explicitly called
+                            should solve the problem.
+
+         2013-06-10, rgf: - make BSF.terminateRexxEngine() return .true, if RexxEngine got terminated,
                             .false else
          2012-06-09, rgf: - added public routine BSF.terminateRexxEngine
          2012-06-05, rgf: - added uninit method to BSF_ARRAY_REFERENCE class to remove the
@@ -378,7 +385,7 @@
 
    signal on syntax
    parse version v .
-   minimumVersion="4.0.1"
+   minimumVersion="4.0.1"     -- minimum ooRexx version
    if v < "REXX-ooRexx_"||minimumVersion then
    do
        parse source s . name  -- extract name of this module
@@ -415,7 +422,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="450.20140426" -- set version (date distribution got created)
+   .bsf4rexx~version="450.20140515" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -427,7 +434,24 @@
 
    call getAndSetPathToIcons
 
-   if opsys="MACOSX" then
+
+   call BSfShowErrorMessage .false  -- turn off displaying the Java exception message (leftover from the very early BSF4Rexx days)
+
+   return
+
+syntax:
+   raise propagate
+
+
+::requires "BSF4ooRexx" library
+
+   /* ooRexx macros in AOO 4.x on MacOSX do not run, as this setup code uses an awt class which
+      must nor run on the main thread on MacOSX. As a result ooRexx macros on AOO 4.x cause a
+      runtime exception and do not run. Moving the initialization into a routine that needs to
+      be explicitly called should solve the problem.
+   */
+::routine makeBSF4ooRexxLookLikeMacOSX public
+   if .bsf4rexx~opsys="MACOSX" then
    do
       .java.lang.system~setProperty('apple.laf.useScreenMenuBar','true') -- just used on Macs: use Apple's menu dock, for JFrame-menus insteadof the window's menu bar
            -- by default hide "About" and "Preferences" menu in Apple's menu bar
@@ -439,15 +463,6 @@
          app~setDockIconImage(.bsf~new("javax.swing.ImageIcon",.bsf4rexx~bsf4oorexx_256)~getImage)
    end
 
-   call BSfShowErrorMessage .false  -- turn off displaying the Java exception message (leftover from the very early BSF4Rexx days)
-
-   return
-
-syntax:
-   raise propagate
-
-
-::requires "BSF4ooRexx" library
 
 ::routine getAndSetPathToIcons	-- rgf, 2011-02-21: find path to icons, if found save icons
   opsys=.bsf4rexx~opsys~left(1)     -- get first letter of operating system (L=Linux, M=MacOSX, W=Windows, ...)

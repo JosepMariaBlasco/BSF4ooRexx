@@ -65,11 +65,14 @@
 
             2013-10-10  changes bachelor thesis LEITNER marked by G.LEITNER
 
+            2014-05-15 Rony G. Flatscher
+                        - make sure that on MacOSX the application looks like a Mac application by calling
+                          first the new BSF.CLS routine "makeBSF4ooRexxLookLikeMacOSX"
 
 */
 
 /*----------------------------------------------------------------------------*/
-/*  Copyright 2011 Markus Moldaschl, 2011-2012 Rony G. Flatscher              */
+/*  Copyright 2011 Markus Moldaschl, 2011-2014 Rony G. Flatscher              */
 /*                                                                                                                    */
 /*  Licensed under the Apache License, Version 2.0 (the "License");           */
 /*  you may not use this file except in compliance with the License.          */
@@ -129,20 +132,22 @@
 /**
 * name:             main program
 * parameters:
-*    isDefault      use the default settings or use the settings from settings file rexxtry.rc     
+*    isDefault      use the default settings or use the settings from settings file rexxtry.rc
 * main variables:
-*    userData       main controls of the program 
-*                   a rexx directory that contains window structure and all program settings  
+*    userData       main controls of the program
+*                   a rexx directory that contains window structure and all program settings
 *    .local~mm      variable that holds information valid for all instances
 * functionality:    load java classes and the environment
 *                   set monitor destinations either to stdin/stdout or file
-*                   set isdebug variable to false 
+*                   set isdebug variable to false
 *                   create GUI - open the GUI window
 *                   create server socket
 * special features: isdebug      redirect say output to console so debugging is possible
 *                   transparency experimental setting
 *                   these variables have to be set to true or false in code
 */
+
+call makeBSF4ooRexxLookLikeMacOSX   -- make sure that on MacOSX the application looks like a Mac application
 
 userData = .directory~new                   -- Directory to certain objects
 .local~mm.dir = .directory~new              -- locally accessable directory
@@ -179,7 +184,7 @@ if .mm.dir~isdebug == true then say "DEBUGGING OPTION GLEITNER ACTIVE"
 call dontBSFExit                            -- do not carry out a bsf.exit as this would abort this program as well
 call importClasses                          -- Import all utilized java classes
 call LoadEnvironment                        -- Set up the environment to work with
-userData~trans = 0                          -- no transparency default. 
+userData~trans = 0                          -- no transparency default.
                                             -- use instead trans=50 for experimentation with transparency
 .mm.dir~storage = .Store~new                -- Instance, later on used to store code executions
 .mm.dir~storage~makeQueue(5)
@@ -229,7 +234,7 @@ else
   end
 
 .mm.dir~hcque = .Cirqqueue~new /* G.LEITNER */
-.mm.dir~hcque~setsize(50)      /* G.LEITNER */  
+.mm.dir~hcque~setsize(50)      /* G.LEITNER */
 
 .CreateServerSocket~new~~run            -- setup up a server socket
 
@@ -241,16 +246,16 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
 * name: AboutDialog
 * menue item:
 *    help->about
-* functionality:  
+* functionality:
 *    Creates a dialog, providing some meta data and a link to the documentation .pdf.
 * method: actionPerformed
 * parameters:
 *    slotdir is used as pointer to userdata
-* special features: 
+* special features:
 *    the documentation pdf is expected in the program directory as oorexxtry.pdf
 *    the window boundaries are defined by
 *    adialog~setBounds((mainframe~getX+mainframe~getWidth/3)~format(,0),           top x edge
-*                      (mainframe~getY+mainframe~getHeight/3)~format(,0),          top y edge 
+*                      (mainframe~getY+mainframe~getHeight/3)~format(,0),          top y edge
 *                      200, 250)                                                   width, height
 *    where mainframe is the gui frame
 * special java classes:
@@ -304,8 +309,8 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
 
 /**
 * name: CellRenderer
-* method: getListCellRendererComponent (overwrites java method) 
-* functionality: Custom list cell renderer; 
+* method: getListCellRendererComponent (overwrites java method)
+* functionality: Custom list cell renderer;
 *                renders the elements from the listmodel with seperate JTextAreas in a JList on the screen.
 */
 
@@ -332,7 +337,7 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
 /**
 * name: ClearData
 * menue item: edit->clear
-*             each of the 6 windowareas (code ... error) and the history can be cleared via menue 
+*             each of the 6 windowareas (code ... error) and the history can be cleared via menue
 *             programmatically this happens here by simply setting the text to ''
 * functionality: Clear all text from appropriate input and output areas according to the menu item clicked on.
 */
@@ -385,14 +390,14 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
         otherwise
             nop
     end
- 
+
     .mm.dir~codeArea~requestFocus
 
 /**
 * name: CopyToClipboard
 * functionality: Copies certain data from the input and output areas to the system clipboard.
-*                decide what windowarea (code ... error) is selected 
-*                and get the selected string from the windowarea 
+*                decide what windowarea (code ... error) is selected
+*                and get the selected string from the windowarea
 *                or concatenate all areas
 */
 
@@ -487,7 +492,7 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
 * special java classes: java.net.ServerSocket
 *                       SocketConnection
 */
-  
+
 ::class CreateServerSocket
 ::method run
     newSocket=create_socket(.mm.dir~port) -- try to create a server socket
@@ -556,12 +561,12 @@ syntax2:
 /**
 * name: DestinationSwitch
 * menue item: settings->set monitor
-* functionality: Whenever settings in the the monitor option dialog gets approved 
+* functionality: Whenever settings in the the monitor option dialog gets approved
 *                the method configures the monitors according to the choosen configuration.
 *                there is an input, output and error monitor
 *                each one can be directed to the associated window area or to a file
-*                see dialog monitor destination configuration in menu 
-* methods: resetselection handles the problem, that settings have been changed but the 
+*                see dialog monitor destination configuration in menu
+* methods: resetselection handles the problem, that settings have been changed but the
 *          cancel instead the ok button was pressed, so undo the changes
 */
 
@@ -689,7 +694,7 @@ syntax2:
 * name: ClickHandler
 * special java classes: java.awt.event.MouseListener
 * functionality: Enables code restoration via double click on the history list and resets
-*                the selection color of the code area if necessary 
+*                the selection color of the code area if necessary
 */
 
 ::class ClickHandler
@@ -736,7 +741,7 @@ slotDir~javaObject~setSize_forwardToSuper((.mm.dir~frame~getWidth/wdivider)~form
 /**
 * name: Doc
 * menue item: help->about...pdf
-* functionality: Check the parent directory of ooRexxTry.rxj for the help document. 
+* functionality: Check the parent directory of ooRexxTry.rxj for the help document.
 *                If not found an error dialog is shown.
 */
 
@@ -1037,7 +1042,7 @@ RunSyntax:
     self~setFontMenuChecks(slotDir~userData)
 
 /**
-* name: GUI 
+* name: GUI
 * methods: init calls setupproxies and drawGUI
 *          setupproxies make eventhandler for buttons like RUN, HISTORY, CLOSE
 *                       or menu options like SAVE SETTINGS, ABOUT DIALOG
@@ -1055,7 +1060,7 @@ RunSyntax:
 * main variables: props a property variable that contains the values of the oorexxtry.rc ini file
 *                 contentpanel a variable, that contains then window organisation
 * functionality: draw the GUI with the MENU
-*                
+*
 * special features: in the settings there are 5 window organisations possible:
 *                   YDISP splitpanes with headers
 *                   ZDISP splitpanes without headers
@@ -1064,7 +1069,7 @@ RunSyntax:
 *                   LDISP splitpanes with headers and disappearable windows
 *                   to switch between these window organisations is the main feature of the apr2014 version
 * special java classes: java.awt.event.ActionListener
-*                       java.awt.event.KeyListener                         
+*                       java.awt.event.KeyListener
 *                       javax.swing.JPanel
 * special remarks to the code apr2014:
 *                   the WDISP option is functional but should be harmonized with the colors of the other options
@@ -1111,7 +1116,7 @@ RunSyntax:
     rexxRunEH = .RunIt~new
     rpRunEH = BsfCreateRexxProxy(rexxRunEH, userData, .java.awt.event.ActionListener)
     userData~rpRunEH = rpRunEH
-    
+
     rexxFileDialogEH = .FileDialog~new
     rpFileDialogEH = BsfCreateRexxProxy(rexxFileDialogEH, userData, .java.awt.event.ActionListener)
     userData~rpFileDialogEH = rpFileDialogEH
@@ -1158,7 +1163,7 @@ RunSyntax:
 ::method drawGUI
     expose userData
 
-    newLine = "0a"x          
+    newLine = "0a"x
     userData~colors = .mm.dir~colors
     colors  = userData~colors
 
@@ -1170,7 +1175,7 @@ RunSyntax:
             else .mm.dir~useSystemLookAndFeel = .false
         end
     -- Create the frame window
-    
+
     /* GLEITNER changes begin */
 
    /*Build the window content*/
@@ -1178,93 +1183,93 @@ RunSyntax:
    frame = .bsf~new("javax.swing.JFrame", .mm.dir~title)
 
    -- Call BSF 'invoke', frame, 'setBounds', 1, 1, 800, 560
-     
+
    -- check if translucency available
    ge = .GraphicsEnvironment~getLocalGraphicsEnvironment()
    gd = ge~getDefaultScreenDevice()
    transsup = TRUE
    -- transsup = gd~isWindowTranslucencySupported(TRANSLUCENT)
-      
-   if transsup == TRUE then do  
-      if userData~trans > 0 then do                    
-         btrue = box("boolean", TRUE) 
-         -- translucency only works for undecorated frames                           
-         Call BSF 'invoke', frame, 'setUndecorated', btrue                     
-         f055 = box("float", 0.85) -- hier gehoert der wert vom slider hinein  
-         Call BSF 'invoke', frame, 'setOpacity', f055                         
+
+   if transsup == TRUE then do
+      if userData~trans > 0 then do
+         btrue = box("boolean", TRUE)
+         -- translucency only works for undecorated frames
+         Call BSF 'invoke', frame, 'setUndecorated', btrue
+         f055 = box("float", 0.85) -- hier gehoert der wert vom slider hinein
+         Call BSF 'invoke', frame, 'setOpacity', f055
       end
-   end                         
+   end
    /* generate contentPane and a layoutmanager for the window -- */
-                            
+
    contentpanel = .bsf~new("javax.swing.JPanel")
    Call BSF 'invoke', frame, setContentPane, contentpanel
-                            
+
    dimframe = frame~getsize
-                               
+
    s1 = .Csplitcontentp~new(dimframe,colors)
-   
+
    .mm.dir~codeArea~addMouseListener(BsfCreateRexxProxy(.ClickHandler~new, userData, .java.awt.event.MouseListener))
    .mm.dir~inputArea~addKeyListener(userData~rpKeyEH)
    .mm.dir~saysArea~~setWrapStyleWord(.true)~~setText("This area will receive the output of your commands." "Try 'say hello world' for example.")
-   
+
    flowlayout = .FlowLayout~new
-   contentpanel~bsf.invoke("setLayout",flowlayout)                          
+   contentpanel~bsf.invoke("setLayout",flowlayout)
    Call BSF 'invoke', contentpanel, "add", s1~splitpane, ""
-   --  contentpanel~bsf.invoke("add", userData~buttonpanel) 
-                           
+   --  contentpanel~bsf.invoke("add", userData~buttonpanel)
+
    Call BSF 'invoke', frame, "pack"
    -- frame~bsf.invokestrict("setVisible", "boolean", "true")
 
    userData~dtype        = "splitpane"
    userData~frame        = frame
    -- userData~s1           = s1
-   userData~splitpane    = s1~splitpane     
-   userData~splitpane1   = s1~splitpane1    
-   userData~splitpane2   = s1~splitpane2    
-   userData~splitpane3   = s1~splitpane3    
-   userData~splitpane4   = s1~splitpane4    
-   userData~p1           = s1~p1            
-   userData~p2           = s1~p2            
-   userData~p3           = s1~p3            
-   userData~p4           = s1~p4          
-   userData~p5           = s1~p5            
-   userData~p6           = s1~p6            
+   userData~splitpane    = s1~splitpane
+   userData~splitpane1   = s1~splitpane1
+   userData~splitpane2   = s1~splitpane2
+   userData~splitpane3   = s1~splitpane3
+   userData~splitpane4   = s1~splitpane4
+   userData~p1           = s1~p1
+   userData~p2           = s1~p2
+   userData~p3           = s1~p3
+   userData~p4           = s1~p4
+   userData~p5           = s1~p5
+   userData~p6           = s1~p6
    userData~contentpanel = contentpanel
    userData~maxedpane    = NIL
    userData~colors = colors
    .mm.dir~colors = colors
-    
+
    rexxFrameCL = .CFrameCL~new
    rpFrameCL = BsfCreateRexxProxy(rexxFrameCL, userData, "java.awt.event.ComponentListener")
    frame~~addComponentListener(rpFrameCL);
-                            
+
    rexxButton1EH = .CButton1EH~new
    rpButton1EH = BsfCreateRexxProxy(rexxButton1EH, userData, "java.awt.event.ActionListener")
    s1~p1~maxbutton~~addActionListener(rpButton1EH);
-                            
+
    rexxButton2EH = .CButton2EH~new
    rpButton2EH = BsfCreateRexxProxy(rexxButton2EH, userData, "java.awt.event.ActionListener")
    s1~p2~maxbutton~~addActionListener(rpButton2EH);
-                            
+
    rexxButton3EH = .CButton3EH~new
    rpButton3EH = BsfCreateRexxProxy(rexxButton3EH, userData, "java.awt.event.ActionListener")
    s1~p3~maxbutton~~addActionListener(rpButton3EH);
-                            
+
    rexxButton4EH = .CButton4EH~new
    rpButton4EH = BsfCreateRexxProxy(rexxButton4EH, userData, "java.awt.event.ActionListener")
    s1~p4~maxbutton~~addActionListener(rpButton4EH);
-                            
+
    rexxButton5EH = .CButton5EH~new
    rpButton5EH = BsfCreateRexxProxy(rexxButton5EH, userData, "java.awt.event.ActionListener")
    s1~p5~maxbutton~~addActionListener(rpButton5EH);
-                            
+
    rexxButton6EH = .CButton6EH~new
    rpButton6EH = BsfCreateRexxProxy(rexxButton6EH, userData, "java.awt.event.ActionListener")
    s1~p6~maxbutton~~addActionListener(rpButton6EH);
-                            
+
    -- frame~bsf.invokestrict("setVisible", "boolean", "true")
-    
-    /* GLEITNER changes end */  
+
+    /* GLEITNER changes end */
 
     if .bsf4rexx~hasEntry("bsf4oorexx_048") then        -- rgf, 2011-02-21
     do
@@ -1404,14 +1409,14 @@ RunSyntax:
         /* GLEITNER add color and disp menu items */
         ColorMenuItem = .javax.swing.JMenuItem~new("Set COLORS")
         ColorMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_C)
-        
+
         YDispMenuItem = .JMenuItem~new('YDisp',.KeyEvent~VK_Y)
         ZDispMenuItem = .JMenuItem~new('ZDisp',.KeyEvent~VK_Z)
         TDispMenuItem = .JMenuItem~new('TDisp',.KeyEvent~VK_T)
-                            
+
         WDispMenuItem = .JMenuItem~new('WDisp',.KeyEvent~VK_W)
         LDispMenuItem = .JMenuItem~new('LDisp',.KeyEvent~VK_L)
-                                                        
+
         /* GLEITNER add color and disp menu items */
 
         monitorMenuItem = .javax.swing.JMenuItem~new("Set Monitors ...")
@@ -1447,9 +1452,9 @@ RunSyntax:
     settingsMenu~add(YDispMenuItem) -- splitscreen with headers
     settingsMenu~add(ZDispMenuItem) -- splitscreen without headers
     settingsMenu~add(TDispMenuItem) -- tabbed pane
-                         
+
     settingsMenu~add(WDispMenuItem) -- internal frames
-    settingsMenu~add(LDispMenuItem) -- splitscreen onetouchexpandable set    
+    settingsMenu~add(LDispMenuItem) -- splitscreen onetouchexpandable set
 
     helpMenu = .javax.swing.JMenu~new("Help")
     helpMenu~setMnemonic(.java.awt.event.KeyEvent~VK_P)
@@ -1469,7 +1474,7 @@ RunSyntax:
 /*
     codepanel = self~createFrameComponent("Code", "white", "blue", "code")
     codeScrollPane = .javax.swing.JScrollPane~new(.mm.dir~codeArea, .javax.swing.JScrollPane~vertical_scrollbar_always, .javax.swing.JScrollPane~horizontal_scrollbar_always)
-    
+
     inputpanel = self~createFrameComponent("Input", "black", "cyan", "input")
     inputScrollPane = .javax.swing.JScrollPane~new(.mm.dir~inputArea, .javax.swing.JScrollPane~vertical_scrollbar_always, .javax.swing.JScrollPane~horizontal_scrollbar_always)
 
@@ -1521,9 +1526,9 @@ RunSyntax:
     rpMonitorEH = BsfCreateRexxProxy(rexxMonitorEH, , .java.awt.event.ActionListener)
     userData~rpMonitorEH = rpMonitorEH
     monitorMenuItem~addActionListener(userData~rpMonitorEH)
-    
+
     /* GLEITNER Event Handler for Color Menu Item and disp items */
-  
+
     rexxColorMenuEH = .CColorChooserEH~new
     rpColorEH = BsfCreateRexxProxy(rexxColorMenuEH, userData, .java.awt.event.ActionListener)
     ColorMenuItem~~addActionListener(rpColorEH)
@@ -1531,36 +1536,36 @@ RunSyntax:
 
     rexxYDispMenuEH = .CYDispMenu~new
     rpYDispMenuEH = BsfCreateRexxProxy(rexxYDispMenuEH, userData, "java.awt.event.ActionListener")
-    YDispMenuItem~~addActionListener(rpYDispMenuEH)    
-                            
+    YDispMenuItem~~addActionListener(rpYDispMenuEH)
+
     rexxZDispMenuEH = .CZDispMenu~new
     rpZDispMenuEH = BsfCreateRexxProxy(rexxZDispMenuEH, userData, "java.awt.event.ActionListener")
-    ZDispMenuItem~~addActionListener(rpZDispMenuEH)    
-                            
+    ZDispMenuItem~~addActionListener(rpZDispMenuEH)
+
     rexxTDispMenuEH = .CTDispMenu~new
     rpTDispMenuEH = BsfCreateRexxProxy(rexxTDispMenuEH, userData, "java.awt.event.ActionListener")
-    TDispMenuItem~~addActionListener(rpTDispMenuEH)    
-                                                      
+    TDispMenuItem~~addActionListener(rpTDispMenuEH)
+
     rexxWDispMenuEH = .CWDispMenu~new
     rpWDispMenuEH = BsfCreateRexxProxy(rexxWDispMenuEH, userData, "java.awt.event.ActionListener")
-    WDispMenuItem~~addActionListener(rpWDispMenuEH)    
-                            
+    WDispMenuItem~~addActionListener(rpWDispMenuEH)
+
     rexxLDispMenuEH = .CLDispMenu~new
     rpLDispMenuEH = BsfCreateRexxProxy(rexxLDispMenuEH, userData, "java.awt.event.ActionListener")
-    LDispMenuItem~~addActionListener(rpLDispMenuEH)    
+    LDispMenuItem~~addActionListener(rpLDispMenuEH)
 
     /* GLEITNER end */
-  
+
     rpSocketEH = BsfCreateRexxProxy(.SocketDialog~new(userData), , .java.awt.event.ActionListener)
     socketMenuItem~addActionListener(rpSocketEH)
     rpHistoryConfigEH = BsfCreateRexxProxy(.HistoryConfigDialog~new(userData), , .java.awt.event.ActionListener)
     historyMenuItem~addActionListener(rpHistoryConfigEH)
-    
+
     rexxHistoryEH = .HistoryDialog~new(userData)
     rpHistoryEH = BsfCreateRexxProxy(rexxHistoryEH, userData, .java.awt.event.ActionListener)
     historybutton~addActionListener(rpHistoryEH)
     GhistoryMenuItem~addActionListener(rpHistoryEH)
-    
+
     userData~fontmanager~fontMenuHelper(userData)
     userData~fontmanager~setFontMenuChecks(userData)
     if \.mm.dir~silent then silentNoCheckBoxMenuItem~setSelected(.true)
@@ -1786,9 +1791,9 @@ syntax:
         input = charString~subchar(1)
         if \.mm.dir~clientConnected & \.mm.dir~enableInputSocket then inputArea~setText(charString~substr(2))
       end
-    
+
     -- G.LEITNER charin handling for history ?
-      
+
     return input
 
 ::method lineIn
@@ -1856,9 +1861,9 @@ syntax:
     .mm.dir~saysArea~append(output)
     .mm.dir~saysArea~append(.endOfLine)
     .mm.dir~saysArea~setCaretPosition(.mm.dir~saysArea~getDocument~getLength)
-    
+
     if .mm.dir~enableOutputSocket & .mm.dir~clientConnected -
-    then .mm.dir~out~println("[.OUTPUT] "||output)                              
+    then .mm.dir~out~println("[.OUTPUT] "||output)
     -- Write output data also to client
     -- connected via socket in case of
     .mm.dir~hcque~setelem(TIME("L"),"S",output .endOfLine) /* G.LEITNER */
@@ -2075,9 +2080,9 @@ syntax:
 * name: HistoryDialog
 * functionality: Draws the code execution history dialog
 *                actionperformed uses different colors to show the type of the history entry
-* menu item: get history button in main window 
+* menu item: get history button in main window
 * methods: init initialize history dialog
-*          actionperformed 
+*          actionperformed
 * variables: circqarray contains entries, that are marked.
 *            E error output
 *            S say output
@@ -2096,12 +2101,12 @@ syntax:
 *          another idea would be to save the position and size in the configuration
 * special java classes: javax.swing.ListCellRenderer for cells containing more than one line
 *                       javax.swing.ListSelectionModel
-*                       
+*
 */
 
 ::class HistoryDialog /* G.LEITNER changes begin use for output hcque because of type information */
 ::method init
-    expose hdialog 
+    expose hdialog
     use arg userData
 
     if .mm.dir~isdebug == true then say "color history " userData~colors~b7
@@ -2123,8 +2128,8 @@ syntax:
     userData~listmodel = listmodel
     .local~mm.dir~listmodel = listmodel
 
-    /* G.LEITNER remove listmodel because of problems with code renderer in java 1.4 - in java 7 reactivated okay*/ 
-    
+    /* G.LEITNER remove listmodel because of problems with code renderer in java 1.4 - in java 7 reactivated okay*/
+
     lcrRexxProxy = BsfCreateRexxProxy(.CellRenderer~new, userData, "javax.swing.ListCellRenderer") -- implement interface
     hlist = .javax.swing.JList~new(listmodel)
     hlist~setCellRenderer(lcrRexxProxy)                 -- assign custom cell renderer
@@ -2139,9 +2144,9 @@ syntax:
     im~put(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_LEFT, 0), "selectPreviousRow")
     hlist~setInputMap(.javax.swing.JComponent~WHEN_FOCUSED, im)
     userData~hlist = hlist
-    
+
     /* end GLEITNER remove 1.4 */
-    
+
     hTextpane = .bsf~new("javax.swing.JTextPane")
     hScrollPane = .javax.swing.JScrollPane~new(hTextpane, .javax.swing.JScrollPane~vertical_scrollbar_as_needed, .javax.swing.JScrollPane~horizontal_scrollbar_never)
     .local~mm.dir~hTextpane = hTextpane
@@ -2168,7 +2173,7 @@ syntax:
     gridbag~setConstraints(restorebutton, c)
     contentpane~~add(historypanel)~~add(hScrollPane)~~add(restorebutton)
     hdialog~pack
-    
+
 ::method actionPerformed
     expose hdialog
     use arg , slotDir
@@ -2176,10 +2181,10 @@ syntax:
     if \hdialog~isShowing then
       do
         mainframe = .mm.dir~frame
- 
-        circqarray = .mm.dir~hcque~hcqueue~makeArray('F') 
+
+        circqarray = .mm.dir~hcque~hcqueue~makeArray('F')
         if .mm.dir~isdebug == true then say(circqarray~size)
-       
+
         -- i do not know why this does not work ...
         if .local~mm.dir~fontsize ==  8 then x = '<p style="line-height:9px;">'
         if .local~mm.dir~fontsize == 10 then x = '<p style="line-height:11px;">'
@@ -2187,20 +2192,20 @@ syntax:
         if .local~mm.dir~fontsize == 14 then x = '<p style="line-height:15px;">'
         if .local~mm.dir~fontsize == 16 then x = '<p style="line-height:17px;">'
         if .local~mm.dir~fontsize == 18 then x = '<p style="line-height:19px;">'
-        
+
         DocumentText = "<html><pre>"
         -- does not work properly:
         -- DocumentText = DocumentText "<body bgcolor = #F0F0E0>"
-        
+
         .local~mm.dir~htextPane~setContentType("text/html")
-  
+
         fsize = 3
-        if .local~mm.dir~fontsize ==  8 then fsize = 1 
-        if .local~mm.dir~fontsize == 10 then fsize = 2 
-        if .local~mm.dir~fontsize == 12 then fsize = 3 
-        if .local~mm.dir~fontsize == 14 then fsize = 4 
-        if .local~mm.dir~fontsize == 16 then fsize = 5 
-        if .local~mm.dir~fontsize == 18 then fsize = 6 
+        if .local~mm.dir~fontsize ==  8 then fsize = 1
+        if .local~mm.dir~fontsize == 10 then fsize = 2
+        if .local~mm.dir~fontsize == 12 then fsize = 3
+        if .local~mm.dir~fontsize == 14 then fsize = 4
+        if .local~mm.dir~fontsize == 16 then fsize = 5
+        if .local~mm.dir~fontsize == 18 then fsize = 6
 
         do i=1 to circqarray~size
            x = circqarray~at(i)
@@ -2211,24 +2216,24 @@ syntax:
            if typx == 'S' then textelement = "<font color='blue'  size =" fsize">" textelement "</font>"
            if typx == 'O' then textelement = "<font color='green' size =" fsize">" textelement "</font>"
            if typx == 'I' then textelement = "<font color='black' size =" fsize">" textelement "</font>"
-               
+
            DocumentText = DocumentText textelement
         end
 
         .local~mm.dir~hTextpane~setText(DocumentText)
 
-       
+
         hctopw = (mainframe~getX +      mainframe~getWidth  / 23)~format(,0)
         hctoph = (mainframe~getY +      mainframe~getHeight / 23)~format(,0)
         hcactw = (mainframe~getWidth -  mainframe~getWidth  / 15)~format(,0)
         hcacth = (mainframe~getHeight - mainframe~getHeight / 15)~format(,0)
         hdialog~setBounds(hctopw, hctoph, hcactw, hcacth)
-        
+
         hdialog~~show~~tofront
         .mm.dir~hdialog = hdialog
         slotDir~userData~restorebutton~setEnabled(.false)
       end
- 
+
    if .mm.dir~isdebug == true then say("action term")
 /* G.LEITNER changes end */
 
@@ -2239,11 +2244,11 @@ syntax:
 *                Monitors catch I/O, here input, output and error
 *                These might be directed to the specific window area in the main frame (default) or
 *                to a file - in this case a file name must be given.
-* special java classes: java.awt.GridBagLayout layout manager for the whole dialog 
+* special java classes: java.awt.GridBagLayout layout manager for the whole dialog
 *                       java.awt.FlowLayout for subparts of the dialog (in,out,errgroup)
 *                       java.awt.event.ActionListener handle input text fields
 *                       java.awt.event.WindowListener handle radio buttons
-*/ 
+*/
 
 ::class MonitorDialog
 ::method init
@@ -2384,8 +2389,8 @@ syntax:
 
 /**
 * name: RadioButtonHandler
-* functionality: Enables and disables the text fields in case of a file stream selected. 
-*                used in monitordialog 
+* functionality: Enables and disables the text fields in case of a file stream selected.
+*                used in monitordialog
 * commentapr2014: one of the problems of the whole program is a tight coupling between
 *                 the classes due to the userData global field. This is clearly visible here.
 */
@@ -2497,8 +2502,8 @@ syntax:
 * name: class RexxFileFilter
 * methods: runCode
 * attributes: description
-*             filter 
-*             bIgnoreCase 
+*             filter
+*             bIgnoreCase
 * menue item: RUN button
 * functionality: it obviously runs the code
 * commentapr2014:  i do not understand ...
@@ -2549,7 +2554,7 @@ syntax:
 
 ::method runCode
     expose slotDir
-    
+
     frame = .mm.dir~frame
     codeArea = .mm.dir~codeArea
     returnsArea = .mm.dir~returnsArea
@@ -2611,10 +2616,10 @@ syntax:
     end
 
     if .mm.dir~isdebug == true then say "runit method before execution XXX"
-    
+
     if \found_cc then
         do
-            
+
             code_string = ""
             do item over code_array
                code_string = code_string item "\n"
@@ -2628,12 +2633,12 @@ syntax:
             mgr=.bsf~new("org.apache.bsf.BSFManager") -- create a new BSFManager instance
             -- rexxEngine=org.apache.bsf.BSFManager().loadScriptingEngine("rexx")
             rexxEngine=mgr~loadScriptingEngine("rexx")
-            result=rexxEngine~apply(null,0,0,code_string,arg_string,null)  
-            */                       
+            result=rexxEngine~apply(null,0,0,code_string,arg_string,null)
+            */
             runnable = BsfCreateRexxProxy(.ExecuteThread~new('oorexxtry.code', code_array, arg_array, slotDir~userData), ,.java.lang.Runnable)
-            .java.lang.Thread~new(runnable)~~bsf.dispatch("start")              -- Run code in separate thread       
-            
-            if .mm.dir~isdebug == true then say "ZZZ runit1" code_string 
+            .java.lang.Thread~new(runnable)~~bsf.dispatch("start")              -- Run code in separate thread
+
+            if .mm.dir~isdebug == true then say "ZZZ runit1" code_string
         end
     else
         do
@@ -2660,8 +2665,8 @@ syntax:
 
             -- runnable = BsfCreateRexxProxy(.ExecuteThread~new('oorexxtry.code','call ooRexxTry_test9999.rex' arg_string, arg_array, slotDir~userData), ,.java.lang.Runnable)
             runnable = BsfCreateRexxProxy(.ExecuteThread~new('oorexxtry.code','call' enquote2(.mm.dir~tempFile) arg_string, arg_array, slotDir~userData), ,.java.lang.Runnable)
-            .java.lang.Thread~new(runnable)~~bsf.dispatch("start")              -- Run code in separate thread       
-            if .mm.dir~isdebug == true then say "ZZZ runit2"   
+            .java.lang.Thread~new(runnable)~~bsf.dispatch("start")              -- Run code in separate thread
+            if .mm.dir~isdebug == true then say "ZZZ runit2"
         end
 
 return
@@ -2700,7 +2705,7 @@ return
 * functionality: generate a property directory and save it as property file
 * commentapr2014: we have 5 different window appearances (in the menue: YDISP ...)
 *                 but the program starts definitly with the YDISP setting.
-*                 the window area structure of the YDISP type is not saved at all in the settings 
+*                 the window area structure of the YDISP type is not saved at all in the settings
 *                 from the window structure the settings only save the frame size and position
 *                 what should be the enhancements:
 *                 firstly the window area settings for YDISP should be saved and retrieved
@@ -2736,7 +2741,7 @@ return
     props~setProperty("Error_Monitor_Destination",.mm.dir~errorMonitorDestination)
     props~setProperty("Host",.mm.dir~host)
     props~setProperty("Port",.mm.dir~port)
-    
+
     -- color settings
     props~setProperty("colorb1",.mm.dir~colors~b1~getRGB)
     props~setProperty("colorb2",.mm.dir~colors~b2~getRGB)
@@ -2752,7 +2757,7 @@ return
     props~setProperty("colort5",.mm.dir~colors~t5~getRGB)
     props~setProperty("colort6",.mm.dir~colors~t6~getRGB)
     props~setProperty("colort7",.mm.dir~colors~t7~getRGB)
-    
+
     /*
     props~setProperty("colorb1a",.mm.dir~colors~b1~getAlpha)
     props~setProperty("colorb2a",.mm.dir~colors~b2~getAlpha)
@@ -2769,7 +2774,7 @@ return
     props~setProperty("colort6a",.mm.dir~colors~t6~getAlpha)
     props~setProperty("colort7a",.mm.dir~colors~t7~getAlpha)
     */
-    
+
     if .mm.dir~enableInputSocket then props~setProperty("Enable_Input_Stream_On_Socket","yes")
     else props~setProperty("Enable_Input_Stream_On_Socket","no")
     if .mm.dir~enableOutputSocket then props~setProperty("Enable_Output_Stream_On_Socket","yes")
@@ -2959,7 +2964,7 @@ return
 
 /**
 * name: class Silence
-* functionality: Switches silent status. 
+* functionality: Switches silent status.
 *                If set to false, the user does not hear a signal noise, when code execution is completed.
 */
 
@@ -2991,7 +2996,7 @@ return
 
 /**
 * name: class Transparency
-* functionality: Switches transparency status. 
+* functionality: Switches transparency status.
 *                If set to false, no transparency.
 */
 
@@ -3011,9 +3016,9 @@ return
             if .mm.dir~isdebug == true then say "trans NO"
             slotDir~userData~trans = 0
 
-            .mm.dir~frame~~dispose 
+            .mm.dir~frame~~dispose
 
-            slotDir~userData~gui~drawGUI                      
+            slotDir~userData~gui~drawGUI
         end
         when source~equals("<S>Yes") then do
             .local~mm.dir~trans = .true
@@ -3022,9 +3027,9 @@ return
             if .mm.dir~isdebug == true then say "trans Yes"
             slotDir~userData~trans = 50
 
-            .mm.dir~frame~~dispose 
+            .mm.dir~frame~~dispose
 
-            slotDir~userData~gui~drawGUI                      
+            slotDir~userData~gui~drawGUI
         end
         otherwise
             nop
@@ -3040,7 +3045,7 @@ return
 *          windowActivated
 *          windowDeactivated
 *          resetSelection
-* commentapr2014: i do not understand ... 
+* commentapr2014: i do not understand ...
 */
 
 ::class SocketConfig
@@ -3299,7 +3304,7 @@ return
 /* G.LEITNER begin */
 
 /**
-* name: Cirqqueue 
+* name: Cirqqueue
 * functionality: Creates and handles a circular queue for history
 */
 
@@ -3310,7 +3315,7 @@ return
    expose hcqueue
    hcqueue = .circularQueue~new(50)
    return
-   
+
 ::method setsize
    expose hcqueue
    use arg size
@@ -3320,7 +3325,7 @@ return
 ::method getsize
    expose hcqueue
    return hcqueue~size
-   
+
 ::method setelem
    expose hcqueue
    use arg timx, typx, datx
@@ -3331,7 +3336,7 @@ return
    hcqueue~queue(cqentry)
    -- .stdout~say("setelem circqueue " typx)
    return
-   
+
 ::method gettimx
    expose hcqueue
    use arg index
@@ -3393,7 +3398,7 @@ return
     end
     .mm.dir~historybutton~setEnabled(.true)
 
-/* GLEITNER classes begin */                   
+/* GLEITNER classes begin */
 
 
 /**
@@ -3403,31 +3408,31 @@ return
 * functionality: the type of GUI appearance if YDISP, ZDISP is selected in the menu
 *                6 moveable splitwindows with label
 *                window areas cannot disappear here
-*                there is a maximise button, where a window area can be made to ful screen 
-* used classes: Cpanelscrolllabel                
+*                there is a maximise button, where a window area can be made to ful screen
+* used classes: Cpanelscrolllabel
 * special java classes: javax.swing.JSplitPane
 * explanation: window area refers to six subwindows in the mainframe (code, input, arguments, returns, output, error)
 */
 
-      
+
 ::class Csplitcontentp public
-::attribute p1           
-::attribute p2           
-::attribute p3           
-::attribute p4           
-::attribute p5           
-::attribute p6           
-::attribute splitpane    
-::attribute splitpane1   
-::attribute splitpane2   
-::attribute splitpane3   
-::attribute splitpane4   
-                         
-::method init            
+::attribute p1
+::attribute p2
+::attribute p3
+::attribute p4
+::attribute p5
+::attribute p6
+::attribute splitpane
+::attribute splitpane1
+::attribute splitpane2
+::attribute splitpane3
+::attribute splitpane4
+
+::method init
    expose p1 p2 p3 p4 p5 p6 splitpane splitpane1 splitpane2 splitpane3 splitpane4
-   use arg dimframe, colors     
-                                             
-                         
+   use arg dimframe, colors
+
+
    if .mm.dir~isdebug == true then say "Csplitcontentp" dimframe~getwidth dimframe~getheight
 
    p1 = .Cpanelscrolllabel~new(1)
@@ -3443,7 +3448,7 @@ return
    p4~label~settext("Returns")
    p5~label~settext("Output / Says")
    p6~label~settext("Errors / Informations")
-   -- alt-key 1...6      
+   -- alt-key 1...6
    p1~maxbutton~setMnemonic(.KeyEvent~VK_1)
    p2~maxbutton~setMnemonic(.KeyEvent~VK_2)
    p3~maxbutton~setMnemonic(.KeyEvent~VK_3)
@@ -3463,64 +3468,64 @@ return
    p4~label~setForeground(colors~t4)
    p5~label~setForeground(colors~t5)
    p6~label~setForeground(colors~t6)
-                         
+
    dimsp = .Dimension~new()
    -- dimsp~setsize(dimframe~getwidth-12,dimframe~getheight-64)
    dimsp~setsize(dimframe~getwidth-12,dimframe~getheight-94)
-                            
+
    splitpane  = .bsf~new("javax.swing.JSplitPane")
    Call BSF 'invoke', splitpane, 'setOrientation',       .JSplitPane~VERTICAL_SPLIT
-                         
+
    Call BSF 'invoke', splitpane, 'setpreferredsize',     dimsp
-   w1 = trunc(dimsp~getwidth) 
+   w1 = trunc(dimsp~getwidth)
    h1 = trunc(dimsp~getheight)
    Call BSF 'invoke', splitpane, 'setsize', w1, h1
-                         
+
    Call BSF 'invoke', splitpane, 'setdividersize',       "2"
    splitpane~bsf.invokeStrict("setDividerLocation", "double", "0.5")
    splitpane~bsf.invokestrict("setResizeWeight", "double", "0.3")
-                         
+
    splitpane4 = .bsf~new("javax.swing.JSplitPane")
    Call BSF 'invoke', splitpane4, 'setOrientation',      .JSplitPane~VERTICAL_SPLIT
    Call BSF 'invoke', splitpane4, 'settopcomponent',     p3~panel
    Call BSF 'invoke', splitpane4, 'setbottomcomponent',  p4~panel
-                         
+
    splitpane3 = .bsf~new("javax.swing.JSplitPane")
    Call BSF 'invoke', splitpane3, 'setOrientation',      .JSplitPane~HORIZONTAL_SPLIT
    Call BSF 'invoke', splitpane3, 'settopcomponent',     p2~panel
    Call BSF 'invoke', splitpane3, 'setbottomcomponent',  splitpane4
-                         
-   splitpane1 = .bsf~new("javax.swing.JSplitPane") 
+
+   splitpane1 = .bsf~new("javax.swing.JSplitPane")
    Call BSF 'invoke', splitpane1, 'setOrientation',      .JSplitPane~VERTICAL_SPLIT
    Call BSF 'invoke', splitpane1, 'settopcomponent',     p1~panel
    Call BSF 'invoke', splitpane1, 'setbottomcomponent',  splitpane3
    -- Call BSF 'invoke', splitpane1, 'setbottomcomponent',  p2~panel
-                         
+
    splitpane2 = .bsf~new("javax.swing.JSplitPane")
    Call BSF 'invoke', splitpane2, 'setOrientation',      .JSplitPane~VERTICAL_SPLIT
    Call BSF 'invoke', splitpane2, 'settopcomponent',     p5~panel
    Call BSF 'invoke', splitpane2, 'setbottomcomponent',  p6~panel
-                         
+
    splitpane1~bsf.invokestrict("setResizeWeight", "double", "0.6")
    splitpane2~bsf.invokestrict("setResizeWeight", "double", "0.4")
    splitpane3~bsf.invokestrict("setResizeWeight", "double", "0.5")
    splitpane4~bsf.invokestrict("setResizeWeight", "double", "0.5")
-                         
+
    Call BSF 'invoke', splitpane1, 'setdividersize',       "2"
    Call BSF 'invoke', splitpane2, 'setdividersize',       "2"
    Call BSF 'invoke', splitpane3, 'setdividersize',       "2"
    Call BSF 'invoke', splitpane4, 'setdividersize',       "2"
-                         
+
    Call BSF 'invoke', splitpane, 'settopcomponent',      splitpane1
    Call BSF 'invoke', splitpane, 'setbottomcomponent',   splitpane2
-                         
+
 /**
 * name: Cinternalframepane
 * attributes: f1... the window area, a scrollable subwindow
 * functionality: the type of GUI appearance if WDISP is selected in the menu
 *                6 moveable internal frames with label
 *                desktopp contains the specific window areas
-* used classes: desktopp of type javax.swing.JDesktopPane                
+* used classes: desktopp of type javax.swing.JDesktopPane
 * special java classes: javax.swing.JInternalFrame
 * commentapr2014: this representation has much potential that is not developped in current code
 *                 at least the signalling colors for the window areas should be used
@@ -3528,27 +3533,27 @@ return
 *                 a good idea would be to have several standard settings
 * explanation: window area refers to six internal frames (code, input, arguments, returns, output, error)
 */
-                         
+
 ::class Cinternalframepane public
-::attribute f1           
-::attribute f2           
-::attribute f3           
-::attribute f4           
-::attribute f5           
-::attribute f6           
-::attribute desktopp     
-                         
-::method init            
+::attribute f1
+::attribute f2
+::attribute f3
+::attribute f4
+::attribute f5
+::attribute f6
+::attribute desktopp
+
+::method init
 expose f1 f2 f3 f4 f5 f6 desktopp
 use arg bounds
--- here also buttonpanel should be passed           
-   if .mm.dir~isdebug == true then say "Cinternalframe " bounds~width bounds~height bounds~x bounds~y 
-                         
+-- here also buttonpanel should be passed
+   if .mm.dir~isdebug == true then say "Cinternalframe " bounds~width bounds~height bounds~x bounds~y
+
    desktopp = .bsf~new("javax.swing.JDesktopPane")
-                         
+
    dimsp = .Dimension~new(bounds~width, bounds~height)
    Call BSF 'invoke', desktopp, 'setpreferredsize',     dimsp
-                         
+
    f1 = .bsf~new("javax.swing.JInternalFrame", "code",              .true,.true,.true,.true)
    f2 = .bsf~new("javax.swing.JInternalFrame", "input",             .true,.true,.true,.true)
    f3 = .bsf~new("javax.swing.JInternalFrame", "arguments",         .true,.true,.true,.true)
@@ -3558,276 +3563,276 @@ use arg bounds
    swidth  = trunc(bounds~width*2 / 3)
    sheight = trunc(bounds~height*2 / 3)
    sheight2 = trunc(sheight/2)
-                         
-   Call BSF 'invoke', f1, 'setSize', swidth, sheight 
-   Call BSF 'invoke', f2, 'setSize', swidth, sheight 
-   Call BSF 'invoke', f3, 'setSize', swidth, sheight2 
-   Call BSF 'invoke', f4, 'setSize', swidth, sheight2 
-   Call BSF 'invoke', f5, 'setSize', swidth, sheight2 
-   Call BSF 'invoke', f6, 'setSize', swidth, sheight2 
-                         
-   lx = 1                
-   ly = 1                
+
+   Call BSF 'invoke', f1, 'setSize', swidth, sheight
+   Call BSF 'invoke', f2, 'setSize', swidth, sheight
+   Call BSF 'invoke', f3, 'setSize', swidth, sheight2
+   Call BSF 'invoke', f4, 'setSize', swidth, sheight2
+   Call BSF 'invoke', f5, 'setSize', swidth, sheight2
+   Call BSF 'invoke', f6, 'setSize', swidth, sheight2
+
+   lx = 1
+   ly = 1
    Call BSF 'invoke', f1, 'setLocation', lx,ly
-                         
-   divskal = 16          
+
+   divskal = 16
    lx = trunc(lx + swidth / divskal)
    ly = trunc(ly + sheight / divskal)
    Call BSF 'invoke', f2, 'setLocation', lx,ly
-                         
+
    lx = trunc(lx + swidth / divskal)
    ly = trunc(ly + sheight / divskal)
    Call BSF 'invoke', f3, 'setLocation', lx,ly
-                         
+
    lx = trunc(lx + swidth / divskal)
    ly = trunc(ly + sheight / divskal)
    Call BSF 'invoke', f4, 'setLocation', lx,ly
-                         
+
    lx = trunc(lx + swidth / divskal)
    ly = trunc(ly + sheight / divskal)
    Call BSF 'invoke', f5, 'setLocation', lx,ly
-                         
+
    lx = trunc(lx + swidth / divskal)
    ly = trunc(ly + sheight / divskal)
    Call BSF 'invoke', f6, 'setLocation', lx,ly
-                         
-   Call BSF 'invoke', f1, 'setVisible', .true 
+
+   Call BSF 'invoke', f1, 'setVisible', .true
    Call BSF 'invoke', f2, 'setVisible', .true
    Call BSF 'invoke', f3, 'setVisible', .true
    Call BSF 'invoke', f4, 'setVisible', .true
    Call BSF 'invoke', f5, 'setVisible', .true
    Call BSF 'invoke', f6, 'setVisible', .true
-                         
-   Call BSF 'invoke', desktopp, 'add', f1  
-   Call BSF 'invoke', desktopp, 'add', f2  
-   Call BSF 'invoke', desktopp, 'add', f3  
-   Call BSF 'invoke', desktopp, 'add', f4  
-   Call BSF 'invoke', desktopp, 'add', f5  
-   Call BSF 'invoke', desktopp, 'add', f6  
-                         
-   Call BSF 'invoke', f1, 'setSelected', .true  
-   Call BSF 'invoke', f2, 'setSelected', .false  
-   Call BSF 'invoke', f3, 'setSelected', .false 
-   Call BSF 'invoke', f4, 'setSelected', .false 
-   Call BSF 'invoke', f5, 'setSelected', .false 
-   Call BSF 'invoke', f6, 'setSelected', .false 
-                         
-                         
-   Call BSF 'invoke', desktopp, 'setDragMode', .JDesktopPane~OUTLINE_DRAG_MODE 
-   
+
+   Call BSF 'invoke', desktopp, 'add', f1
+   Call BSF 'invoke', desktopp, 'add', f2
+   Call BSF 'invoke', desktopp, 'add', f3
+   Call BSF 'invoke', desktopp, 'add', f4
+   Call BSF 'invoke', desktopp, 'add', f5
+   Call BSF 'invoke', desktopp, 'add', f6
+
+   Call BSF 'invoke', f1, 'setSelected', .true
+   Call BSF 'invoke', f2, 'setSelected', .false
+   Call BSF 'invoke', f3, 'setSelected', .false
+   Call BSF 'invoke', f4, 'setSelected', .false
+   Call BSF 'invoke', f5, 'setSelected', .false
+   Call BSF 'invoke', f6, 'setSelected', .false
+
+
+   Call BSF 'invoke', desktopp, 'setDragMode', .JDesktopPane~OUTLINE_DRAG_MODE
+
    /*
-   Call BSF 'invoke', desktopp, 'add', buttonpanel  
+   Call BSF 'invoke', desktopp, 'add', buttonpanel
    lx = trunc(10)
    ly = trunc((14 * sheight) / divskal)
-   Call BSF 'invoke', buttonpanel, 'setLocation', lx,ly                         
-   Call BSF 'invoke', buttonpanel, 'setVisible', .true 
+   Call BSF 'invoke', buttonpanel, 'setLocation', lx,ly
+   Call BSF 'invoke', buttonpanel, 'setVisible', .true
    */
 
-                         
+
 /**
 * name: Cpanelscrolllabel
-* parameter: wnumber 1..6 identifies if this window area is code, input .. errors 
-* attributes: panel              
-*             scrollpane scroller around the textarea        
-*             textarea           
-*             label the header label of the window area              
-*             gridbag layout manager            
-*             maxbutton button for ismax         
-*             cscroll c... help to position the element correct           
-*             clabel             
-*             cbutton            
-*             ismax is this window area maximized or part of the 6 window area main frame              
+* parameter: wnumber 1..6 identifies if this window area is code, input .. errors
+* attributes: panel
+*             scrollpane scroller around the textarea
+*             textarea
+*             label the header label of the window area
+*             gridbag layout manager
+*             maxbutton button for ismax
+*             cscroll c... help to position the element correct
+*             clabel
+*             cbutton
+*             ismax is this window area maximized or part of the 6 window area main frame
 * functionality: class for one scrollable window area
 *                the pane consists of label maxbutton and the scrollable textarea
 *                the three elements are put into the pane with the gridbag layoutmanager
-* methods: init 
+* methods: init
 *          disppanelscrolllabel
 *          getmax
 *          setmax
 * special features: set rows is an initial setting, so that scroller appears
 *                   the text area is as expandable to infinity
 * special java classes: javax.swing.JTextArea
-* commentapr2014: somehow the core class of the swing version 
-*                 the wnumber parameter is okay, but the code is ugly   
+* commentapr2014: somehow the core class of the swing version
+*                 the wnumber parameter is okay, but the code is ugly
 */
 
-                         
+
 ::class Cpanelscrolllabel public
-                         
-::attribute panel        
-::attribute scrollpane   
-::attribute textarea     
-::attribute label        
-::attribute gridbag      
-::attribute maxbutton    
-::attribute cscroll      
-::attribute clabel       
-::attribute cbutton      
-::attribute ismax        
-                         
-::method init            
+
+::attribute panel
+::attribute scrollpane
+::attribute textarea
+::attribute label
+::attribute gridbag
+::attribute maxbutton
+::attribute cscroll
+::attribute clabel
+::attribute cbutton
+::attribute ismax
+
+::method init
    expose panel scrollpane textarea label gridbag maxbutton cscroll clabel cbutton ismax
    use arg wnumber
-   
-   if .mm.dir~isdebug == true then say "initialize panel: " wnumber                 
-   if wnumber == 1 then do                     
+
+   if .mm.dir~isdebug == true then say "initialize panel: " wnumber
+   if wnumber == 1 then do
       codeArea = .bsf~new("javax.swing.JTextArea")
-      .mm.dir~codeArea = codeArea 
-      textarea = codeArea                     
+      .mm.dir~codeArea = codeArea
+      textarea = codeArea
       textarea~setEditable(.true)
       textarea~setLineWrap(.true)
    end
-   if wnumber == 2 then do                   
+   if wnumber == 2 then do
       inputArea = .bsf~new("javax.swing.JTextArea")
-      .mm.dir~inputArea = inputArea 
-      textarea = inputArea                     
+      .mm.dir~inputArea = inputArea
+      textarea = inputArea
       textarea~setEditable(.false)
       textarea~setLineWrap(.true)
    end
-   if wnumber == 3 then do                      
+   if wnumber == 3 then do
       argsArea = .bsf~new("javax.swing.JTextArea")
-      .mm.dir~argsArea = argsArea 
-      textarea = argsArea                     
+      .mm.dir~argsArea = argsArea
+      textarea = argsArea
       textarea~setEditable(.true)
       textarea~setLineWrap(.true)
    end
-   if wnumber == 4 then do                     
+   if wnumber == 4 then do
       returnsArea = .bsf~new("javax.swing.JTextArea")
-      .mm.dir~returnsArea = returnsArea 
-      textarea = returnsArea     
-      textarea~setEditable(.false)
-      textarea~setLineWrap(.true)                
-   end
-   if wnumber == 5 then do                      
-      saysArea = .bsf~new("javax.swing.JTextArea")
-      .mm.dir~saysArea = saysArea 
-      textarea = saysArea                     
+      .mm.dir~returnsArea = returnsArea
+      textarea = returnsArea
       textarea~setEditable(.false)
       textarea~setLineWrap(.true)
    end
-   if wnumber == 6 then do                      
-      errorsArea = .bsf~new("javax.swing.JTextArea")
-      .mm.dir~errorsArea = errorsArea 
-      textarea = errorsArea      
+   if wnumber == 5 then do
+      saysArea = .bsf~new("javax.swing.JTextArea")
+      .mm.dir~saysArea = saysArea
+      textarea = saysArea
       textarea~setEditable(.false)
-      textarea~setLineWrap(.true)               
+      textarea~setLineWrap(.true)
    end
-                         
+   if wnumber == 6 then do
+      errorsArea = .bsf~new("javax.swing.JTextArea")
+      .mm.dir~errorsArea = errorsArea
+      textarea = errorsArea
+      textarea~setEditable(.false)
+      textarea~setLineWrap(.true)
+   end
+
    -- textarea = .bsf~new("javax.swing.JTextArea")
    Call BSF 'invoke', textarea, "setColumns", 1
    Call BSF 'invoke', textarea, "setRows", 40
-                         
-   cscroll = .GridBagConstraints~new 
+
+   cscroll = .GridBagConstraints~new
    cscroll~fill = .GridBagConstraints~BOTH
    cscroll~gridwidth = .GridBagConstraints~REMAINDER
    cscroll~insets = .Insets~new(1,1,1,1)
    cscroll~anchor = .GridBagConstraints~LINE_START
-                         
+
    clabel = cscroll~clone
    cbutton= cscroll~clone
-                         
+
    scrollpane = .bsf~new("javax.swing.JScrollPane", textarea)
    -- panel = .bsf~new("javax.swing.JPanel")
    label = .bsf~new("javax.swing.JLabel", 'text', .JLabel~CENTER)
    maxbutton = .bsf~new("javax.swing.JButton")
    -- gridbag = .bsf~new("java.awt.GridBagLayout")
-                         
+
    self~disppanelscrolllabel()
-                         
+
 ::method disppanelscrolllabel public
    expose panel scrollpane textarea label gridbag maxbutton cscroll clabel cbutton ismax
-                         
+
    panel = .bsf~new("javax.swing.JPanel")
    gridbag = .bsf~new("java.awt.GridBagLayout")
-                         
+
    Call BSF 'invoke', textarea, "setColumns", 1
    Call BSF 'invoke', textarea, "setRows", 40
-                         
-   cscroll~fill = .GridBagConstraints~BOTH 
+
+   cscroll~fill = .GridBagConstraints~BOTH
    cscroll~gridwidth = .GridBagConstraints~REMAINDER
    cscroll~insets = .Insets~new(1,1,1,1)
    cscroll~anchor = .GridBagConstraints~LINE_START
-                         
+
    clabel~fill = .GridBagConstraints~BOTH
    clabel~insets = .Insets~new(1,1,1,1)
    clabel~anchor = .GridBagConstraints~LINE_START
-                         
+
    cbutton~fill = .GridBagConstraints~BOTH
    cbutton~gridwidth = .GridBagConstraints~REMAINDER
    cbutton~insets = .Insets~new(1,1,1,1)
    cbutton~anchor = .GridBagConstraints~LINE_START
-                         
-   ismax = .false        
-                         
-   clabel~weightx = 2    
+
+   ismax = .false
+
+   clabel~weightx = 2
    clabel~gridwidth = .GridBagConstraints~RELATIVE
    cbutton~gridwidth = .GridBagConstraints~REMAINDER
    cbutton~anchor = .GridBagConstraints~LINE_END
-   cbutton~weightx = 0   
-                         
-   cscroll~weightx = 2   
-   cscroll~weighty = 2   
-                         
+   cbutton~weightx = 0
+
+   cscroll~weightx = 2
+   cscroll~weighty = 2
+
    label~bsf.invokestrict("setOpaque", "boolean", "true")
-                         
+
    dimmax = .Dimension~new()
-   dimmax~setsize(60,12) 
+   dimmax~setsize(60,12)
    Call BSF 'invoke', maxbutton, setmaximumsize, dimmax
-   color1 = .Color~cyan  
+   color1 = .Color~cyan
    label~setBackground(color1)
-   color2 = .Color~red   
+   color2 = .Color~red
    label~setForeground(color2)
-                         
+
    Call BSF 'invoke', gridbag, setConstraints, label, clabel
    Call BSF 'invoke', gridbag, setConstraints, maxbutton, cbutton
    Call BSF 'invoke', gridbag, setConstraints, scrollpane, cscroll
-                         
+
    Call BSF 'invoke', panel, setlayout, gridbag
    Call BSF 'invoke', panel, add, label
    CALL BSF 'invoke', panel, add, maxbutton
    Call BSF 'invoke', panel, add, scrollpane
-                         
-                         
-::method getmax          
-   return self~ismax     
-   if .mm.dir~isdebug == true then say self~ismax        
-::method setmax          
-   use arg val           
-   self~ismax = val      
-                  
+
+
+::method getmax
+   return self~ismax
+   if .mm.dir~isdebug == true then say self~ismax
+::method setmax
+   use arg val
+   self~ismax = val
+
 
 /**
 * name: CYDispMenu
 * functionality: clean the whole frame (contentpanel)
-*                get the size of the whole frame 
+*                get the size of the whole frame
 *                generate the 6 scrollable panels
 *                organize the 6 panels in 4 splitpanes
 *                disable LDISP option (setonetouchexpandable)
 *                the assignment of the real text (code...error) to the areas is in Cpanelscrolllabel
-* variables: methArgs~userData~dtype = "splitpane" 
+* variables: methArgs~userData~dtype = "splitpane"
 *            userData is the main structure that contains all window settings
 *            methArgs is a pointer to userData and parameter in this class
 *            dtype in userData contains the appearance type
 *            if YDISP is selected in the menu we are here and the type is splitpane
 *            other possible types are tabbedpane or intframes ...
 *            the splitpane type has 3 subtypes, YDISP, ZDISP, LDISP
-*            YDISP is the default type, 
-*            ZDISP has a better screen usage by omitting labels and 
-*            LDISP has the additional option to eliminate window areas 
+*            YDISP is the default type,
+*            ZDISP has a better screen usage by omitting labels and
+*            LDISP has the additional option to eliminate window areas
 * commentapr2014: to make this organisation useful it should be possible to store several window setting
 *                 in different files and restore them.
 */
-                         
-                         
+
+
 ::class CYDispMenu public
-::method actionPerformed 
+::method actionPerformed
    use arg methName, methArgs
 
    -- if (methArgs~userData~dtype == "splitpane" ) THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~splitpane)
    -- if (methArgs~userData~dtype == "tabbedpane") THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~tabbedpane)
    -- if (methArgs~userData~dtype == "intframes" ) THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~d1)
    methArgs~userData~contentpanel~bsf.invoke("removeall")
-                         
+
    methArgs~userData~dtype = "splitpane"
    wf = methArgs~userdata~frame~getsize~width
    hf = methArgs~userdata~frame~getsize~height
@@ -3835,9 +3840,9 @@ use arg bounds
    -- h1 = methArgs~userdata~frame~getsize~height - 64
    h1 = methArgs~userdata~frame~getsize~height - 94
    dimsp = .Dimension~new(w1,h1)
-   w1 = trunc(dimsp~getwidth) 
+   w1 = trunc(dimsp~getwidth)
    h1 = trunc(dimsp~getheight)
-                         
+
    methArgs~userData~p1~setmax(.false)
    methArgs~userData~p2~setmax(.false)
    methArgs~userData~p3~setmax(.false)
@@ -3845,7 +3850,7 @@ use arg bounds
    methArgs~userData~p5~setmax(.false)
    methArgs~userData~p6~setmax(.false)
    methArgs~userData~maxedpane = NIL
-   
+
    methArgs~userData~p1~disppanelscrolllabel
    methArgs~userData~p2~disppanelscrolllabel
    methArgs~userData~p3~disppanelscrolllabel
@@ -3867,58 +3872,58 @@ use arg bounds
    methArgs~userData~p6~label~setForeground(methArgs~userData~colors~t6)
 
    flowlayout = .FlowLayout~new
-   methArgs~userData~contentpanel~bsf.invoke("setLayout",flowlayout)                          
-   methArgs~userData~contentpanel~bsf.invoke("add", methArgs~userData~splitpane) 
-   methArgs~userData~contentpanel~bsf.invoke("add", methArgs~userData~buttonpanel) 
+   methArgs~userData~contentpanel~bsf.invoke("setLayout",flowlayout)
+   methArgs~userData~contentpanel~bsf.invoke("add", methArgs~userData~splitpane)
+   methArgs~userData~contentpanel~bsf.invoke("add", methArgs~userData~buttonpanel)
    if .mm.dir~isdebug == true then say "CYDISP buttonpanel"
-                         
+
    Call BSF 'invoke', methArgs~userData~splitpane, 'setOrientation',       .JSplitPane~VERTICAL_SPLIT
    Call BSF 'invoke', methArgs~userData~splitpane, 'settopcomponent',      methArgs~userData~splitpane1
    Call BSF 'invoke', methArgs~userData~splitpane, 'setbottomcomponent',   methArgs~userData~splitpane2
-                         
+
    Call BSF 'invoke', methArgs~userData~splitpane4, 'setOrientation',      .JSplitPane~VERTICAL_SPLIT
    Call BSF 'invoke', methArgs~userData~splitpane4, 'settopcomponent',     methArgs~userData~p3~panel
    Call BSF 'invoke', methArgs~userData~splitpane4, 'setbottomcomponent',  methArgs~userData~p4~panel
-                         
+
    Call BSF 'invoke', methArgs~userData~splitpane3, 'setOrientation',      .JSplitPane~HORIZONTAL_SPLIT
    Call BSF 'invoke', methArgs~userData~splitpane3, 'settopcomponent',     methArgs~userData~p2~panel
    Call BSF 'invoke', methArgs~userData~splitpane3, 'setbottomcomponent',  methArgs~userData~splitpane4
-                         
+
    Call BSF 'invoke', methArgs~userData~splitpane1, 'setOrientation',      .JSplitPane~VERTICAL_SPLIT
    Call BSF 'invoke', methArgs~userData~splitpane1, 'settopcomponent',     methArgs~userData~p1~panel
    Call BSF 'invoke', methArgs~userData~splitpane1, 'setbottomcomponent',  methArgs~userData~splitpane3
-                         
+
    Call BSF 'invoke', methArgs~userData~splitpane2, 'setOrientation',      .JSplitPane~VERTICAL_SPLIT
    Call BSF 'invoke', methArgs~userData~splitpane2, 'settopcomponent',     methArgs~userData~p5~panel
    Call BSF 'invoke', methArgs~userData~splitpane2, 'setbottomcomponent',  methArgs~userData~p6~panel
-                         
+
    -- methArgs~userData~splitpane~bsf.invokeStrict("setDividerLocation", "double", "0.6")
    methArgs~userData~splitpane~bsf.invokestrict("setResizeWeight", "double", "0.5")
-                         
+
    --methArgs~userData~splitpane1~bsf.invokeStrict("setDividerLocation", "double", "0.5")
    methArgs~userData~splitpane1~bsf.invokestrict("setResizeWeight", "double", "0.6")
-                         
+
    --methArgs~userData~splitpane2~bsf.invokeStrict("setDividerLocation", "double", "0.5")
    methArgs~userData~splitpane2~bsf.invokestrict("setResizeWeight", "double", "0.5")
-                         
+
    --methArgs~userData~splitpane3~bsf.invokeStrict("setDividerLocation", "double", "0.5")
    methArgs~userData~splitpane3~bsf.invokestrict("setResizeWeight", "double", "0.5")
-                         
+
    --methArgs~userData~splitpane4~bsf.invokeStrict("setDividerLocation", "double", "0.5")
    methArgs~userData~splitpane4~bsf.invokestrict("setResizeWeight", "double", "0.5")
-                         
+
    Call BSF 'invoke', methArgs~userData~splitpane , 'setdividersize',       "2"
    Call BSF 'invoke', methArgs~userData~splitpane1, 'setdividersize',       "2"
    Call BSF 'invoke', methArgs~userData~splitpane2, 'setdividersize',       "2"
    Call BSF 'invoke', methArgs~userData~splitpane3, 'setdividersize',       "2"
    Call BSF 'invoke', methArgs~userData~splitpane4, 'setdividersize',       "2"
-                         
+
    Call BSF 'invoke', methArgs~userdata~splitpane, 'setpreferredsize',     dimsp
    Call BSF 'invoke', methArgs~userdata~splitpane, 'reshape', 0, 0, w1, h1
    Call BSF 'invoke', methArgs~userdata~splitpane, 'revalidate'
-                         
+
    methArgs~userData~splitpane~bsf.invokestrict("setVisible", "boolean", "true")
-                         
+
    -- neutralize alt-x-y-z return from maxbutton
    methArgs~userData~p1~maxbutton~setMnemonic(.KeyEvent~VK_1)
    methArgs~userData~p2~maxbutton~setMnemonic(.KeyEvent~VK_2)
@@ -3926,13 +3931,13 @@ use arg bounds
    methArgs~userData~p4~maxbutton~setMnemonic(.KeyEvent~VK_4)
    methArgs~userData~p5~maxbutton~setMnemonic(.KeyEvent~VK_5)
    methArgs~userData~p6~maxbutton~setMnemonic(.KeyEvent~VK_6)
-                         
+
    Call BSF 'invoke', methArgs~userData~splitpane,  setOneTouchExpandable, .false
    Call BSF 'invoke', methArgs~userData~splitpane1, setOneTouchExpandable, .false
    Call BSF 'invoke', methArgs~userData~splitpane2, setOneTouchExpandable, .false
    Call BSF 'invoke', methArgs~userData~splitpane3, setOneTouchExpandable, .false
    Call BSF 'invoke', methArgs~userData~splitpane4, setOneTouchExpandable, .false
-                         
+
    -- Call BSF 'invoke', methArgs~userData~frame, "pack"
    methArgs~userData~frame~bsf.invokestrict("setVisible", "boolean", "true")
 
@@ -3940,17 +3945,17 @@ use arg bounds
 * name: CZDispMenu
 * functionality: same as CYDISPMenu
 *                only label and maxbutton is omitted
-* variables: methArgs~userData~dtype = "splitpane" 
+* variables: methArgs~userData~dtype = "splitpane"
 *            same as CYDISPMenu
 * commentapr2014: this is pretty much a copy of CYDISPmenu
 *                 but there are slight differences, after all there is some streamlinig possible
 */
 
-                                                  
+
 ::class CZDispMenu public
-::method actionPerformed 
+::method actionPerformed
    use arg methName, methArgs
-                         
+
    methArgs~userData~dtype        = "splitpane"
    wf = methArgs~userdata~frame~getsize~width
    hf = methArgs~userdata~frame~getsize~height
@@ -3958,9 +3963,9 @@ use arg bounds
    -- h1 = methArgs~userdata~frame~getsize~height - 64
    h1 = methArgs~userdata~frame~getsize~height - 94
    dimsp = .Dimension~new(w1,h1)
-   w1 = trunc(dimsp~getwidth) 
+   w1 = trunc(dimsp~getwidth)
    h1 = trunc(dimsp~getheight)
-                         
+
    methArgs~userData~p1~setmax(.false)
    methArgs~userData~p2~setmax(.false)
    methArgs~userData~p3~setmax(.false)
@@ -3968,51 +3973,51 @@ use arg bounds
    methArgs~userData~p5~setmax(.false)
    methArgs~userData~p6~setmax(.false)
    methArgs~userData~maxedpane = NIL
-   
+
    -- if (methArgs~userData~dtype == "splitpane" ) THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~splitpane)
    -- if (methArgs~userData~dtype == "tabbedpane") THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~tabbedpane)
    -- if (methArgs~userData~dtype == "intframes" ) THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~d1)
    methArgs~userData~contentpanel~bsf.invoke("removeall")
- 
- 
+
+
    flowlayout = .FlowLayout~new
-   methArgs~userData~contentpanel~bsf.invoke("setLayout",flowlayout)                          
-   methArgs~userData~contentpanel~bsf.invoke("add", methArgs~userData~splitpane) 
+   methArgs~userData~contentpanel~bsf.invoke("setLayout",flowlayout)
+   methArgs~userData~contentpanel~bsf.invoke("add", methArgs~userData~splitpane)
    methArgs~userData~contentpanel~bsf.invoke("add", methArgs~userData~buttonpanel)
-   if .mm.dir~isdebug == true then say "zeile 3355 buttonpanel z" w1 h1 methArgs~userdata~frame~getsize~width                      
-                      
+   if .mm.dir~isdebug == true then say "zeile 3355 buttonpanel z" w1 h1 methArgs~userdata~frame~getsize~width
+
    Call BSF 'invoke', methArgs~userData~splitpane, 'setOrientation',       .JSplitPane~VERTICAL_SPLIT
    Call BSF 'invoke', methArgs~userData~splitpane, 'settopcomponent',      methArgs~userData~splitpane1
    Call BSF 'invoke', methArgs~userData~splitpane, 'setbottomcomponent',   methArgs~userData~splitpane2
-                         
+
    Call BSF 'invoke', methArgs~userData~splitpane4, 'setOrientation',      .JSplitPane~VERTICAL_SPLIT
    Call BSF 'invoke', methArgs~userData~splitpane4, 'settopcomponent',     methArgs~userData~p3~scrollpane
    Call BSF 'invoke', methArgs~userData~splitpane4, 'setbottomcomponent',  methArgs~userData~p4~scrollpane
-                         
+
    Call BSF 'invoke', methArgs~userData~splitpane3, 'setOrientation',      .JSplitPane~HORIZONTAL_SPLIT
    Call BSF 'invoke', methArgs~userData~splitpane3, 'settopcomponent',     methArgs~userData~p2~scrollpane
    Call BSF 'invoke', methArgs~userData~splitpane3, 'setbottomcomponent',  methArgs~userData~splitpane4
-                         
+
    Call BSF 'invoke', methArgs~userData~splitpane1, 'setOrientation',      .JSplitPane~VERTICAL_SPLIT
    Call BSF 'invoke', methArgs~userData~splitpane1, 'settopcomponent',     methArgs~userData~p1~scrollpane
    Call BSF 'invoke', methArgs~userData~splitpane1, 'setbottomcomponent',  methArgs~userData~splitpane3
-                         
+
    Call BSF 'invoke', methArgs~userData~splitpane2, 'setOrientation',      .JSplitPane~VERTICAL_SPLIT
    Call BSF 'invoke', methArgs~userData~splitpane2, 'settopcomponent',     methArgs~userData~p5~scrollpane
    Call BSF 'invoke', methArgs~userData~splitpane2, 'setbottomcomponent',  methArgs~userData~p6~scrollpane
-                         
+
    -- methArgs~userData~splitpane~bsf.invokeStrict("setDividerLocation", "double", "0.6")
    methArgs~userData~splitpane~bsf.invokestrict("setResizeWeight", "double", "0.5")
-                         
+
    --methArgs~userData~splitpane1~bsf.invokeStrict("setDividerLocation", "double", "0.5")
    methArgs~userData~splitpane1~bsf.invokestrict("setResizeWeight", "double", "0.6")
-                         
+
    --methArgs~userData~splitpane2~bsf.invokeStrict("setDividerLocation", "double", "0.5")
    methArgs~userData~splitpane2~bsf.invokestrict("setResizeWeight", "double", "0.5")
-                         
+
    --methArgs~userData~splitpane3~bsf.invokeStrict("setDividerLocation", "double", "0.5")
    methArgs~userData~splitpane3~bsf.invokestrict("setResizeWeight", "double", "0.5")
-                         
+
    --methArgs~userData~splitpane4~bsf.invokeStrict("setDividerLocation", "double", "0.5")
    methArgs~userData~splitpane4~bsf.invokestrict("setResizeWeight", "double", "0.5")
 
@@ -4021,13 +4026,13 @@ use arg bounds
    Call BSF 'invoke', methArgs~userData~splitpane2, 'setdividersize',       "2"
    Call BSF 'invoke', methArgs~userData~splitpane3, 'setdividersize',       "2"
    Call BSF 'invoke', methArgs~userData~splitpane4, 'setdividersize',       "2"
-                         
+
    Call BSF 'invoke', methArgs~userdata~splitpane, 'setpreferredsize',     dimsp
    Call BSF 'invoke', methArgs~userdata~splitpane, 'reshape', 0, 0, w1, h1
    Call BSF 'invoke', methArgs~userdata~splitpane, 'revalidate'
 
    methArgs~userData~splitpane~bsf.invokestrict("setVisible", "boolean", "true")
-                         
+
    -- neutralize alt-x-y-z return from maxbutton
    methArgs~userData~p1~maxbutton~setMnemonic(.KeyEvent~VK_1)
    methArgs~userData~p2~maxbutton~setMnemonic(.KeyEvent~VK_2)
@@ -4041,102 +4046,102 @@ use arg bounds
    Call BSF 'invoke', methArgs~userData~splitpane2, setOneTouchExpandable, .false
    Call BSF 'invoke', methArgs~userData~splitpane3, setOneTouchExpandable, .false
    Call BSF 'invoke', methArgs~userData~splitpane4, setOneTouchExpandable, .false
-                         
+
    -- Call BSF 'invoke', methArgs~userData~frame, "pack"
 
    methArgs~userData~frame~bsf.invokestrict("setVisible", "boolean", "true")
-   if .mm.dir~isdebug == true then say "z end" methArgs~userdata~frame~getsize~width                      
-          
+   if .mm.dir~isdebug == true then say "z end" methArgs~userdata~frame~getsize~width
+
 
 /**
 * name: CTDispMenu
-* functionality: make the tabbed pane TDISP appaearance 
-* special java classes: javax.swing.JTabbedPane 
+* functionality: make the tabbed pane TDISP appaearance
+* special java classes: javax.swing.JTabbedPane
 * commentapr2014: a part of the code containing icon01..6 is commented
 *                 the problem is, that the benefit of using an icon in the tabbed pane is small
 *                 and afterwards there is not only one file but also ressources to handle
 *                 in case the program is expanded more a resource subdirectory is recommended
 *                 there we could store the setting file, additional setting files and also gifs ...
-*/        
-                         
+*/
+
 ::class CTDispMenu public
-::method actionPerformed 
+::method actionPerformed
    use arg methName, methArgs
 
    -- if (methArgs~userData~dtype == "splitpane" ) THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~splitpane)
    -- if (methArgs~userData~dtype == "tabbedpane") THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~tabbedpane)
    -- if (methArgs~userData~dtype == "intframes" ) THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~d1)
    methArgs~userData~contentpanel~bsf.invoke("removeall")
-                         
+
    methArgs~userData~dtype = "tabbedpane"
    if .mm.dir~isdebug == true then say "Tabbed disp called"
-                         
+
    tabbedpane = .bsf~new("javax.swing.JTabbedPane")
-                         
-/*                       
+
+/*
    icon01 = .bsf~new("javax.swing.ImageIcon", 'images/pk1c.gif')
    icon02 = .bsf~new("javax.swing.ImageIcon", 'images/pk2c.gif')
    icon03 = .bsf~new("javax.swing.ImageIcon", 'images/pk3c.gif')
    icon04 = .bsf~new("javax.swing.ImageIcon", 'images/pk4c.gif')
    icon05 = .bsf~new("javax.swing.ImageIcon", 'images/pk5c.gif')
    icon06 = .bsf~new("javax.swing.ImageIcon", 'images/pk6c.gif')
-                         
+
    Call BSF 'invoke', tabbedpane, 'addTab', "code", icon01, methArgs~userdata~p1~scrollpane, "panel1"
    Call BSF 'invoke', tabbedpane, 'addTab', "inpt", icon02, methArgs~userdata~p2~scrollpane, "panel2"
    Call BSF 'invoke', tabbedpane, 'addTab', "args", icon03, methArgs~userdata~p3~scrollpane, "panel3"
    Call BSF 'invoke', tabbedpane, 'addTab', "rets", icon04, methArgs~userdata~p4~scrollpane, "panel4"
    Call BSF 'invoke', tabbedpane, 'addTab', "says", icon05, methArgs~userdata~p5~scrollpane, "panel5"
    Call BSF 'invoke', tabbedpane, 'addTab', "errs", icon06, methArgs~userdata~p6~scrollpane, "panel6"
-*/                       
+*/
    Call BSF 'invoke', tabbedpane, 'addTab', "code", .NIL, methArgs~userdata~p1~scrollpane, "panel1"
    Call BSF 'invoke', tabbedpane, 'addTab', "inpt", .NIL, methArgs~userdata~p2~scrollpane, "panel2"
    Call BSF 'invoke', tabbedpane, 'addTab', "args", .NIL, methArgs~userdata~p3~scrollpane, "panel3"
    Call BSF 'invoke', tabbedpane, 'addTab', "rets", .NIL, methArgs~userdata~p4~scrollpane, "panel4"
    Call BSF 'invoke', tabbedpane, 'addTab', "says", .NIL, methArgs~userdata~p5~scrollpane, "panel5"
    Call BSF 'invoke', tabbedpane, 'addTab', "errs", .NIL, methArgs~userdata~p6~scrollpane, "panel6"
-                         
+
    tabbedpane~setMnemonicAt(0, .KeyEvent~VK_1)
    tabbedpane~setMnemonicAt(1, .KeyEvent~VK_2)
    tabbedpane~setMnemonicAt(2, .KeyEvent~VK_3)
    tabbedpane~setMnemonicAt(3, .KeyEvent~VK_4)
    tabbedpane~setMnemonicAt(4, .KeyEvent~VK_5)
    tabbedpane~setMnemonicAt(5, .KeyEvent~VK_6)
-                         
+
    tabbedpane~setTabPlacement(.JTabbedPane~RIGHT)
-                         
-                         
+
+
    gridlayout = .bsf~new("java.awt.GridLayout")
 
 
    flowlayout = .FlowLayout~new
-   methArgs~userData~contentpanel~bsf.invoke("setLayout",flowlayout)                          
-   methArgs~userData~contentpanel~bsf.invoke("add", tabbedpane) 
+   methArgs~userData~contentpanel~bsf.invoke("setLayout",flowlayout)
+   methArgs~userData~contentpanel~bsf.invoke("add", tabbedpane)
    methArgs~userData~contentpanel~bsf.invoke("add", methArgs~userData~buttonpanel)
-                         
+
    methArgs~userdata~tabbedpane = tabbedpane
    bounds = .Rectangle~new
-   bounds = methArgs~userData~frame~getbounds()   
-                         
+   bounds = methArgs~userData~frame~getbounds()
+
    dimscroll = .Dimension~new
    dimscroll~setSize( bounds~width - 132, bounds~height - 104)
-                         
+
    methArgs~userdata~p1~scrollpane~setpreferredSize(dimscroll)
    methArgs~userdata~p2~scrollpane~setpreferredSize(dimscroll)
    methArgs~userdata~p3~scrollpane~setpreferredSize(dimscroll)
    methArgs~userdata~p4~scrollpane~setpreferredSize(dimscroll)
    methArgs~userdata~p5~scrollpane~setpreferredSize(dimscroll)
    methArgs~userdata~p6~scrollpane~setpreferredSize(dimscroll)
-                         
+
    Call BSF 'invoke', methArgs~userdata~p1~textarea, "setRows", 20
    Call BSF 'invoke', methArgs~userdata~p2~textarea, "setRows", 20
    Call BSF 'invoke', methArgs~userdata~p3~textarea, "setRows", 20
    Call BSF 'invoke', methArgs~userdata~p4~textarea, "setRows", 20
    Call BSF 'invoke', methArgs~userdata~p5~textarea, "setRows", 20
    Call BSF 'invoke', methArgs~userdata~p6~textarea, "setRows", 20
-                         
+
    Call BSF 'invoke', methArgs~userData~frame, "pack"
-   Call BSF 'invoke', methArgs~userData~frame, 'setBounds', bounds~x, bounds~y, bounds~width, bounds~height  
-                         
+   Call BSF 'invoke', methArgs~userData~frame, 'setBounds', bounds~x, bounds~y, bounds~width, bounds~height
+
    methArgs~userData~frame~bsf.invokestrict("setVisible", "boolean", "true")
 
 /**
@@ -4145,86 +4150,86 @@ use arg bounds
 *                and put the 6 internal frames on certain places in the free area
 *                make the WDISP (internal frames representation)
 * commentapr2014: there is an error when switching from WDISP to LDISP
-*/        
+*/
 
-                         
+
 ::class CWDispMenu public
-::method actionPerformed 
+::method actionPerformed
    use arg methName, methArgs
-                         
+
    -- if (methArgs~userData~dtype == "splitpane" ) THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~splitpane)
    -- if (methArgs~userData~dtype == "tabbedpane") THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~tabbedpane)
    -- if (methArgs~userData~dtype == "intframes" ) THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~d1)
-   methArgs~userData~contentpanel~bsf.invoke("removeall")                        
-                         
+   methArgs~userData~contentpanel~bsf.invoke("removeall")
+
    methArgs~userData~dtype        = "intframes"
-   if .mm.dir~isdebug == true then say "wdisp called"    
-                         
+   if .mm.dir~isdebug == true then say "wdisp called"
+
    bounds = .Rectangle~new
    bounds = methArgs~userData~frame~getbounds()
    bounds~height = bounds~height
    d1 = .Cinternalframepane~new(bounds)
 
    flowlayout = .FlowLayout~new
-   methArgs~userData~contentpanel~bsf.invoke("setLayout",flowlayout)                               
-   methArgs~userData~contentpanel~bsf.invoke("add", d1~desktopp) 
-   methArgs~userData~contentpanel~bsf.invoke("add", methArgs~userData~buttonpanel) 
-                              
+   methArgs~userData~contentpanel~bsf.invoke("setLayout",flowlayout)
+   methArgs~userData~contentpanel~bsf.invoke("add", d1~desktopp)
+   methArgs~userData~contentpanel~bsf.invoke("add", methArgs~userData~buttonpanel)
+
    dimspx = .Dimension~new(0,0)
-                         
-   d1~f1~getsize(dimspx) 
+
+   d1~f1~getsize(dimspx)
    dimspx~width = dimspx~width - 12
    dimspx~height = dimspx~height - 48
    Call BSF 'invoke', d1~f1, add, methArgs~userData~p1~scrollpane
    methArgs~userData~p1~panel~bsf.invoke("setpreferredSize", dimspx)
    Call BSF 'invoke', methArgs~userData~p1~panel, 'reshape', 0, 0, dimspx~width, dimspx~height
    Call BSF 'invoke', methArgs~userData~p1~panel, 'revalidate'
-                         
-   d1~f2~getsize(dimspx) 
+
+   d1~f2~getsize(dimspx)
    dimspx~width = dimspx~width - 12
    dimspx~height = dimspx~height - 48
    Call BSF 'invoke', d1~f2, add, methArgs~userData~p2~scrollpane
    methArgs~userData~p2~panel~bsf.invoke("setpreferredSize", dimspx)
    Call BSF 'invoke', methArgs~userData~p2~panel, 'reshape', 0, 0, dimspx~width, dimspx~height
    Call BSF 'invoke', methArgs~userData~p2~panel, 'revalidate'
-                         
-   d1~f3~getsize(dimspx) 
+
+   d1~f3~getsize(dimspx)
    dimspx~width = dimspx~width - 12
    dimspx~height = dimspx~height - 48
    Call BSF 'invoke', d1~f3, add, methArgs~userData~p3~scrollpane
    methArgs~userData~p3~panel~bsf.invoke("setpreferredSize", dimspx)
    Call BSF 'invoke', methArgs~userData~p3~panel, 'reshape', 0, 0, dimspx~width, dimspx~height
    Call BSF 'invoke', methArgs~userData~p3~panel, 'revalidate'
-                         
-   d1~f4~getsize(dimspx) 
+
+   d1~f4~getsize(dimspx)
    dimspx~width = dimspx~width - 12
    dimspx~height = dimspx~height - 48
    Call BSF 'invoke', d1~f4, add, methArgs~userData~p4~scrollpane
    methArgs~userData~p4~panel~bsf.invoke("setpreferredSize", dimspx)
    Call BSF 'invoke', methArgs~userData~p4~panel, 'reshape', 0, 0, dimspx~width, dimspx~height
    Call BSF 'invoke', methArgs~userData~p4~panel, 'revalidate'
-                         
-   d1~f5~getsize(dimspx) 
+
+   d1~f5~getsize(dimspx)
    dimspx~width = dimspx~width - 12
    dimspx~height = dimspx~height - 48
    Call BSF 'invoke', d1~f5, add, methArgs~userData~p5~scrollpane
    methArgs~userData~p2~panel~bsf.invoke("setpreferredSize", dimspx)
    Call BSF 'invoke', methArgs~userData~p5~panel, 'reshape', 0, 0, dimspx~width, dimspx~height
    Call BSF 'invoke', methArgs~userData~p5~panel, 'revalidate'
-                         
-   d1~f6~getsize(dimspx) 
+
+   d1~f6~getsize(dimspx)
    dimspx~width = dimspx~width - 12
    dimspx~height = dimspx~height - 48
    Call BSF 'invoke', d1~f6, add, methArgs~userData~p6~scrollpane
    methArgs~userData~p6~panel~bsf.invoke("setpreferredSize", dimspx)
    Call BSF 'invoke', methArgs~userData~p6~panel, 'reshape', 0, 0, dimspx~width, dimspx~height
    Call BSF 'invoke', methArgs~userData~p6~panel, 'revalidate'
-                         
-                         
+
+
    -- Call BSF 'invoke', methArgs~userData~frame, "pack"
-   Call BSF 'invoke', methArgs~userData~frame, 'setBounds', bounds~x, bounds~y, bounds~width, bounds~height  
+   Call BSF 'invoke', methArgs~userData~frame, 'setBounds', bounds~x, bounds~y, bounds~width, bounds~height
    methArgs~userData~frame~bsf.invokestrict("setVisible", "boolean", "true")
-                         
+
    methArgs~userData~d1 = d1
 
 /**
@@ -4233,19 +4238,19 @@ use arg bounds
 *                but set onetouchexpandable.
 *                if not splitpane then without consequence.
 *                if ismaximized then exit.
-*                reset occurs everytime YDISP or ZDISP explicitly called. 
+*                reset occurs everytime YDISP or ZDISP explicitly called.
 * commentapr2014: there is a problem when switching from WDISP to LDISP
 *                 which is clear after all: when we come from WDSIP there is no splitpane ...
-*/        
-                         
+*/
+
 ::class CLDispMenu public
-::method actionPerformed 
+::method actionPerformed
    use arg methName, methArgs
-                                                 
+
    if .mm.dir~isdebug == true then say "setonetouch expandable called"
-                         
+
    if methArgs~userdata~maxedpane == NIL then do
-      if .mm.dir~isdebug == true then say "setonetouch expandable to true"     
+      if .mm.dir~isdebug == true then say "setonetouch expandable to true"
       Call BSF 'invoke', methArgs~userData~splitpane,  setOneTouchExpandable, .true
       Call BSF 'invoke', methArgs~userData~splitpane1, setOneTouchExpandable, .true
       Call BSF 'invoke', methArgs~userData~splitpane2, setOneTouchExpandable, .true
@@ -4256,8 +4261,8 @@ use arg bounds
       Call BSF 'invoke', methArgs~userData~splitpane2, 'setdividersize',       "10"
       Call BSF 'invoke', methArgs~userData~splitpane3, 'setdividersize',       "10"
       Call BSF 'invoke', methArgs~userData~splitpane4, 'setdividersize',       "10"
-   end                   
-                  
+   end
+
 /**
 * name: CFrameCL
 * functionality: this class handles actions performed on the main frame of the GUI
@@ -4266,217 +4271,217 @@ use arg bounds
 * methods: componentresized
 * commentapr2014: somehow a trial and error approach
 *                 it works as it is programmed here but i am sure it is possible to make it a lot better
-*/                
-                  
-                         
-::class CFrameCL public        
+*/
+
+
+::class CFrameCL public
 ::method componentresized
    use arg methName, methArgs
    -- say methArgs~userdata~allindexes~toString
-                                                 
+
    w1 = methArgs~userdata~frame~getsize~width -12
    -- h1 = methArgs~userdata~frame~getsize~height - 64
    h1 = methArgs~userdata~frame~getsize~height - 94
    dimsp = .Dimension~new(w1,h1)
    if .mm.dir~isdebug == true then say "frame component listener resized" methArgs~userdata~dtype w1 h1
-                         
+
    if methArgs~userdata~dtype == "tabbedpane" then do
-      x = (methArgs~userdata~tabbedpane~getpreferredsize~width - w1 ) 
+      x = (methArgs~userdata~tabbedpane~getpreferredsize~width - w1 )
       y = (methArgs~userdata~tabbedpane~getpreferredsize~height - h1 )
-      z = x * x + y * y  
+      z = x * x + y * y
       if z < 99 then exit
       if .mm.dir~isdebug == true then say "tabbedpane handling"
       if .mm.dir~isdebug == true then say methArgs~userdata~tabbedpane~getpreferredsize~width methArgs~userdata~tabbedpane~getpreferredsize~height
       Call BSF 'invoke', methArgs~userdata~tabbedpane, 'setpreferredsize',     dimsp
       Call BSF 'invoke', methArgs~userdata~tabbedpane, 'revalidate'
-      exit               
-   end                   
-                         
+      exit
+   end
+
    if methArgs~userdata~dtype == "splitpane" then do
-                         
-      x = (methArgs~userdata~splitpane~getpreferredsize~width - w1 ) 
+
+      x = (methArgs~userdata~splitpane~getpreferredsize~width - w1 )
       y = (methArgs~userdata~splitpane~getpreferredsize~height - h1 )
-      z = x * x + y * y  
+      z = x * x + y * y
       if z < 99 then exit
-                         
+
       if .mm.dir~isdebug == true then say "splitpane handling"
       Call BSF 'invoke', methArgs~userdata~splitpane, 'setpreferredsize',     dimsp
       if .mm.dir~isdebug == true then say methArgs~userdata~splitpane~getpreferredsize~width methArgs~userdata~splitpane~getpreferredsize~height
       Call BSF 'invoke', methArgs~userdata~splitpane, 'reshape', 0, 0, w1, h1
       Call BSF 'invoke', methArgs~userdata~splitpane, 'revalidate'
-                         
-      select             
+
+      select
          when methArgs~userdata~p1~getmax == .true then do
             methArgs~userdata~p1~panel~bsf.invoke("setpreferredSize", dimsp)
             Call BSF 'invoke', methArgs~userdata~p1~panel, 'revalidate'
             Call BSF 'invoke', methArgs~userdata~p1~scrollpane, 'revalidate'
             if .mm.dir~isdebug == true then say "panelheight 1    " methArgs~userdata~p1~panel~getsize~height
             if .mm.dir~isdebug == true then say "scrollpane height" methArgs~userdata~p1~scrollpane~getsize~height
-         end             
+         end
          when methArgs~userdata~p2~getmax == .true then do
             methArgs~userdata~p2~panel~bsf.invoke("setpreferredSize", dimsp)
             Call BSF 'invoke', methArgs~userdata~p2~panel, 'revalidate'
             Call BSF 'invoke', methArgs~userdata~p2~scrollpane, 'revalidate'
             if .mm.dir~isdebug == true then say "panelheight 2    " methArgs~userdata~p2~panel~getsize~height
             if .mm.dir~isdebug == true then say "scrollpane height" methArgs~userdata~p2~scrollpane~getsize~height
-         end             
+         end
          when methArgs~userdata~p3~getmax == .true then do
             methArgs~userdata~p3~panel~bsf.invoke("setpreferredSize", dimsp)
             Call BSF 'invoke', methArgs~userdata~p3~panel, 'revalidate'
             Call BSF 'invoke', methArgs~userdata~p3~scrollpane, 'revalidate'
             if .mm.dir~isdebug == true then say "panelheight 3    " methArgs~userdata~p3~panel~getsize~height
             if .mm.dir~isdebug == true then say "scrollpane height" methArgs~userdata~p3~scrollpane~getsize~height
-         end             
+         end
          when methArgs~userdata~p4~getmax == .true then do
             methArgs~userdata~p4~panel~bsf.invoke("setpreferredSize", dimsp)
             Call BSF 'invoke', methArgs~userdata~p4~panel, 'revalidate'
             Call BSF 'invoke', methArgs~userdata~p4~scrollpane, 'revalidate'
             if .mm.dir~isdebug == true then say "panelheight 4    " methArgs~userdata~p4~panel~getsize~height
             if .mm.dir~isdebug == true then say "scrollpane height" methArgs~userdata~p4~scrollpane~getsize~height
-         end             
+         end
          when methArgs~userdata~p5~getmax == .true then do
             methArgs~userdata~p5~panel~bsf.invoke("setpreferredSize", dimsp)
             Call BSF 'invoke', methArgs~userdata~p5~panel, 'revalidate'
             Call BSF 'invoke', methArgs~userdata~p5~scrollpane, 'revalidate'
             if .mm.dir~isdebug == true then say "panelheight 5    " methArgs~userdata~p5~panel~getsize~height
             if .mm.dir~isdebug == true then say "scrollpane height" methArgs~userdata~p5~scrollpane~getsize~height
-         end             
+         end
          when methArgs~userdata~p6~getmax == .true then do
             methArgs~userdata~p6~panel~bsf.invoke("setpreferredSize", dimsp)
             Call BSF 'invoke', methArgs~userdata~p6~panel, 'revalidate'
             Call BSF 'invoke', methArgs~userdata~p6~scrollpane, 'revalidate'
             if .mm.dir~isdebug == true then say "panelheight 6    " methArgs~userdata~p6~panel~getsize~height
             if .mm.dir~isdebug == true then say "scrollpane height" methArgs~userdata~p6~scrollpane~getsize~height
-         end             
-         otherwise do    
-            if .mm.dir~isdebug == true then say "else"   
+         end
+         otherwise do
+            if .mm.dir~isdebug == true then say "else"
             Call BSF 'invoke', methArgs~userdata~splitpane, 'setpreferredsize',     dimsp
             if .mm.dir~isdebug == true then say "splitprefer " methArgs~userdata~splitpane~getpreferredsize~width methArgs~userdata~splitpane~getpreferredsize~height
             Call BSF 'invoke', methArgs~userdata~splitpane, 'reshape', 0, 0, w1, h1
             Call BSF 'invoke', methArgs~userdata~splitpane, 'revalidate'
-         end             
-      end                
-   end                   
-exit                     
-                         
-::method unknown  
+         end
+      end
+   end
+exit
+
+::method unknown
 /* all other methods of this class perform here ... and do nothing */
    use arg methName, methArgs
    if .mm.dir~isdebug == true then say "frame component listener:" methName
-                         
+
 /*
-::method componentmoved  
+::method componentmoved
    use arg methName, methArgs
-   if .mm.dir~isdebug == true then say "frame component listener moved"                        
-::method componenthidden 
+   if .mm.dir~isdebug == true then say "frame component listener moved"
+::method componenthidden
    use arg methName, methArgs
-   if .mm.dir~isdebug == true then say "frame component listener hidden" 
-::method componentshown  
+   if .mm.dir~isdebug == true then say "frame component listener hidden"
+::method componentshown
    use arg methName, methArgs
-   if .mm.dir~isdebug == true then say "frame component listener shown" 
+   if .mm.dir~isdebug == true then say "frame component listener shown"
 */
 
 /**
 * name: CButton1EH
 * functionality: event handler: maximise the code window area
-*/                
-                        
-::class CButton1EH       
-::method actionPerformed 
+*/
+
+::class CButton1EH
+::method actionPerformed
    use arg methName, methArgs
-   if .mm.dir~isdebug == true then say "button 1"        
+   if .mm.dir~isdebug == true then say "button 1"
    if methArgs~userdata~maxedpane == NIL then do
       methArgs~userdata~maxedpane = methArgs~userdata~p1
-      call pressmaxpane methArgs~userdata  
-   end                   
-   else do               
-      call pressshowsplitpane methArgs~userdata 
-   end                   
+      call pressmaxpane methArgs~userdata
+   end
+   else do
+      call pressshowsplitpane methArgs~userdata
+   end
 
 /**
 * name: CButton2EH
 * functionality: event handler: maximise the input window area
-*/                
-                         
-::class CButton2EH       
-::method actionPerformed 
+*/
+
+::class CButton2EH
+::method actionPerformed
    use arg methName, methArgs
-   if .mm.dir~isdebug == true then say "button 2"        
+   if .mm.dir~isdebug == true then say "button 2"
    if methArgs~userdata~maxedpane == NIL then do
       methArgs~userdata~maxedpane = methArgs~userdata~p2
-      call pressmaxpane methArgs~userdata 
-   end                   
-   else do               
-      call pressshowsplitpane methArgs~userdata 
-   end                   
+      call pressmaxpane methArgs~userdata
+   end
+   else do
+      call pressshowsplitpane methArgs~userdata
+   end
 
 /**
 * name: CButton3EH
 * functionality: event handler: maximise the arguments window area
-*/                
-                         
-::class CButton3EH       
-::method actionPerformed 
+*/
+
+::class CButton3EH
+::method actionPerformed
    use arg methName, methArgs
-   if .mm.dir~isdebug == true then say "button 3"        
+   if .mm.dir~isdebug == true then say "button 3"
    if methArgs~userdata~maxedpane == NIL then do
       methArgs~userdata~maxedpane = methArgs~userdata~p3
-      call pressmaxpane methArgs~userdata 
-   end                   
-   else do               
-      call pressshowsplitpane methArgs~userdata 
-   end                   
+      call pressmaxpane methArgs~userdata
+   end
+   else do
+      call pressshowsplitpane methArgs~userdata
+   end
 
 /**
 * name: CButton4EH
 * functionality: event handler: maximise the return window area
-*/                
-                         
-::class CButton4EH       
-::method actionPerformed 
+*/
+
+::class CButton4EH
+::method actionPerformed
    use arg methName, methArgs
-   if .mm.dir~isdebug == true then say "button 4"        
+   if .mm.dir~isdebug == true then say "button 4"
    if methArgs~userdata~maxedpane == NIL then do
       methArgs~userdata~maxedpane = methArgs~userdata~p4
-      call pressmaxpane methArgs~userdata 
-   end                   
-   else do               
-      call pressshowsplitpane methArgs~userdata 
-   end                   
-                
+      call pressmaxpane methArgs~userdata
+   end
+   else do
+      call pressshowsplitpane methArgs~userdata
+   end
+
 /**
 * name: CButton5EH
 * functionality: event handler: maximise the output window area
-*/                               
-                         
-::class CButton5EH       
-::method actionPerformed 
+*/
+
+::class CButton5EH
+::method actionPerformed
    use arg methName, methArgs
-   if .mm.dir~isdebug == true then say "button 5"        
+   if .mm.dir~isdebug == true then say "button 5"
    if methArgs~userdata~maxedpane == NIL then do
       methArgs~userdata~maxedpane = methArgs~userdata~p5
-      call pressmaxpane methArgs~userdata 
-   end                   
-   else do               
-      call pressshowsplitpane methArgs~userdata 
-   end                   
+      call pressmaxpane methArgs~userdata
+   end
+   else do
+      call pressshowsplitpane methArgs~userdata
+   end
 
 /**
 * name: CButton6EH
 * functionality: event handler: maximise the error window area
-*/                
-                         
-::class CButton6EH       
-::method actionPerformed 
+*/
+
+::class CButton6EH
+::method actionPerformed
    use arg methName, methArgs
-   if .mm.dir~isdebug == true then say "button 6"        
+   if .mm.dir~isdebug == true then say "button 6"
    if methArgs~userdata~maxedpane == NIL then do
       methArgs~userdata~maxedpane = methArgs~userdata~p6
-      call pressmaxpane methArgs~userdata 
-   end                   
-   else do               
-      call pressshowsplitpane methArgs~userdata 
-   end                   
+      call pressmaxpane methArgs~userdata
+   end
+   else do
+      call pressshowsplitpane methArgs~userdata
+   end
 
 /**
 * name: ColorEH
@@ -4485,42 +4490,42 @@ exit
 * commentapr2014: an idea might be to provide an OK and CANCEL button and depending on this
 *                 either do the changes or not.
 *                 simply to close the window is equivalent to the cancel button
-*/                               
-         
-::class ColorEH public       
-::method init            
-::method unknown               
-::method windowClosing   
+*/
+
+::class ColorEH public
+::method init
+::method unknown
+::method windowClosing
    if .mm.dir~isdebug == true then say "windowClosing colorchooser"
-::method waitForExit     
+::method waitForExit
 
 /**
 * name: CloseEH
 * functionality: close handler for the application
-*/                               
-                         
-::class CloseEH          
-::attribute closeApp     
-::method init            
-   expose closeApp       
-   closeApp = .false     
-::method unknown         
-::method actionPerformed      
-  expose closeApp        
-  closeApp=.true         
-::method windowClosing   
-   expose closeApp       
-   closeApp=.true                  
-::method waitForExit     
-   expose closeApp       
-   guard on when closeApp=.true 
-                         
+*/
+
+::class CloseEH
+::attribute closeApp
+::method init
+   expose closeApp
+   closeApp = .false
+::method unknown
+::method actionPerformed
+  expose closeApp
+  closeApp=.true
+::method windowClosing
+   expose closeApp
+   closeApp=.true
+::method waitForExit
+   expose closeApp
+   guard on when closeApp=.true
+
 /**
 * name: CColorChooserEH
 * menue item: settings->set COLOR
 * main variables: bccb1..7 color chooser buttons for background color (button color chooser background 1 ...)
 *                 bcct1..7 color chooser buttons for foreground color
-* event handler: rpbccEH handles event button pressed and opens a color panel 
+* event handler: rpbccEH handles event button pressed and opens a color panel
 * functionality: set colors for banner background and foreground
 * special java classes: java.awt.GridLayout
 * commentapr2014: this is not the best place for transparency setting (which is commented out here)
@@ -4528,8 +4533,8 @@ exit
 */
 
 
-::class CColorChooserEH public           
-::method actionPerformed 
+::class CColorChooserEH public
+::method actionPerformed
    use arg methName, methArgs
 
    if .mm.dir~isdebug == true then say methArgs~userData~colors~b1
@@ -4539,20 +4544,20 @@ exit
    Call BSF 'invoke', colorframe, 'setBounds',    100, 200, 200, 250
    Call BSF 'invoke', colorframe, 'setSize',     200, 250
 
-   dimframe = colorframe~getsize 
+   dimframe = colorframe~getsize
    colorpanel = .bsf~new("javax.swing.JPanel", )
    Call BSF 'invoke', colorframe, setContentPane, colorpanel
- 
+
    myGridLayout = .bsf~new("java.awt.GridLayout")
    Call BSF 'invoke', myGridLayout, "setColumns", 2
    Call BSF 'invoke', myGridLayout, "setRows", 7
 
-   rexxColorEH = .ColorEH~new                                   
-   rpColorEH = BsfCreateRexxProxy(rexxColorEH, , "java.awt.event.WindowListener")  
+   rexxColorEH = .ColorEH~new
+   rpColorEH = BsfCreateRexxProxy(rexxColorEH, , "java.awt.event.WindowListener")
    Call BSF 'invoke', colorframe, 'addWindowListener',     rpColorEH
 
    colorpanel~setLayout(myGridLayout)
- 
+
    bccb1 = .bsf~new("javax.swing.JButton", "Code banner color")
    bcct1 = .bsf~new("javax.swing.JButton", "Code Text color")
    bccb2 = .bsf~new("javax.swing.JButton", "Input banner color")
@@ -4574,7 +4579,7 @@ exit
    -- jtrans = .bsf~new("javax.swing.JSlider", .JSlider~HORIZONTAL,0,100,100);
    -- jcheck = .bsf~new("javax.swing.JCheckBox","Transparency Setting");
    -- jlab1  = .bsf~new("javax.swing.JLabel", "Transparency Setting",.javax.swing.JLabel~center);
-   
+
 
    if .mm.dir~isdebug == true then say methArgs~userData~bccb1 methArgs~userData~colors~b1
    Call BSF 'invoke', bccb1,  'setBackground', methArgs~userData~colors~b1
@@ -4582,8 +4587,8 @@ exit
    Call BSF 'invoke', bccb3,  'setBackground', methArgs~userData~colors~b3
    Call BSF 'invoke', bccb4,  'setBackground', methArgs~userData~colors~b4
    Call BSF 'invoke', bccb5,  'setBackground', methArgs~userData~colors~b5
-   Call BSF 'invoke', bccb6,  'setBackground', methArgs~userData~colors~b6   
-   Call BSF 'invoke', bccb7,  'setBackground', methArgs~userData~colors~b7   
+   Call BSF 'invoke', bccb6,  'setBackground', methArgs~userData~colors~b6
+   Call BSF 'invoke', bccb7,  'setBackground', methArgs~userData~colors~b7
 
    Call BSF 'invoke', bcct1,  'setForeground', methArgs~userData~colors~t1
    Call BSF 'invoke', bcct2,  'setForeground', methArgs~userData~colors~t2
@@ -4594,33 +4599,33 @@ exit
    Call BSF 'invoke', bcct7,  'setForeground', methArgs~userData~colors~t7
 
    -- Call BSF 'invoke', jcheck,  'setActionCommand', 'transset'
-   
+
    rexxbccEH = .CbccEH~new
    rpbccEH = BsfCreateRexxProxy(rexxbccEH, methArgs~userData, "java.awt.event.ActionListener")
    -- rexxxccEH = .CxccEH~new
-   -- rpxccEH = BsfCreateRexxProxy(rexxxccEH, methArgs~userData, "java.awt.event.ActionListener")  
+   -- rpxccEH = BsfCreateRexxProxy(rexxxccEH, methArgs~userData, "java.awt.event.ActionListener")
    -- rexxtccEH = .CtccEH~new
    -- rptccEH = BsfCreateRexxProxy(rexxtccEH, methArgs~userData, "java.awt.event.ChangeListener")
 
 
-   bccb1~~addActionListener(rpbccEH)    
-   bccb2~~addActionListener(rpbccEH)    
-   bccb3~~addActionListener(rpbccEH)    
-   bccb4~~addActionListener(rpbccEH)    
-   bccb5~~addActionListener(rpbccEH)    
-   bccb6~~addActionListener(rpbccEH)    
-   bccb7~~addActionListener(rpbccEH)    
-   bcct1~~addActionListener(rpbccEH)    
-   bcct2~~addActionListener(rpbccEH)    
-   bcct3~~addActionListener(rpbccEH)    
-   bcct4~~addActionListener(rpbccEH)    
-   bcct5~~addActionListener(rpbccEH)    
-   bcct6~~addActionListener(rpbccEH)    
-   bcct7~~addActionListener(rpbccEH)    
+   bccb1~~addActionListener(rpbccEH)
+   bccb2~~addActionListener(rpbccEH)
+   bccb3~~addActionListener(rpbccEH)
+   bccb4~~addActionListener(rpbccEH)
+   bccb5~~addActionListener(rpbccEH)
+   bccb6~~addActionListener(rpbccEH)
+   bccb7~~addActionListener(rpbccEH)
+   bcct1~~addActionListener(rpbccEH)
+   bcct2~~addActionListener(rpbccEH)
+   bcct3~~addActionListener(rpbccEH)
+   bcct4~~addActionListener(rpbccEH)
+   bcct5~~addActionListener(rpbccEH)
+   bcct6~~addActionListener(rpbccEH)
+   bcct7~~addActionListener(rpbccEH)
 
-   -- jcheck~~addActionListener(rpxccEH) 
-   -- jtrans~~addChangeListener(rptccEH) 
-   
+   -- jcheck~~addActionListener(rpxccEH)
+   -- jtrans~~addChangeListener(rptccEH)
+
    colorpanel~bsf.invoke("add", bccb1);
    colorpanel~bsf.invoke("add", bcct1);
    colorpanel~bsf.invoke("add", bccb2);
@@ -4639,20 +4644,20 @@ exit
    colorpanel~bsf.invoke("add", bccb7);
    colorpanel~bsf.invoke("add", bcct7);
 
-   methArgs~userData~colorframe = colorframe 
-   methArgs~userData~colorpanel = colorpanel 
-   methArgs~userData~bccb1 = bccb1 
+   methArgs~userData~colorframe = colorframe
+   methArgs~userData~colorpanel = colorpanel
+   methArgs~userData~bccb1 = bccb1
    methArgs~userData~bccb2 = bccb2
-   methArgs~userData~bccb3 = bccb3 
+   methArgs~userData~bccb3 = bccb3
    methArgs~userData~bccb4 = bccb4
-   methArgs~userData~bccb5 = bccb5 
+   methArgs~userData~bccb5 = bccb5
    methArgs~userData~bccb6 = bccb6
    methArgs~userData~bccb7 = bccb7
-   methArgs~userData~bcct1 = bcct1 
+   methArgs~userData~bcct1 = bcct1
    methArgs~userData~bcct2 = bcct2
-   methArgs~userData~bcct3 = bcct3 
+   methArgs~userData~bcct3 = bcct3
    methArgs~userData~bcct4 = bcct4
-   methArgs~userData~bcct5 = bcct5 
+   methArgs~userData~bcct5 = bcct5
    methArgs~userData~bcct6 = bcct6
    methArgs~userData~bcct7 = bcct7
 
@@ -4660,10 +4665,10 @@ exit
 
    Call BSF 'invoke', colorframe, "pack"
    colorframe~bsf.invokestrict("setVisible", "boolean", "true")
-                          
-   rexxcolorEH~waitForExit  
-   call SysSleep .2         
-              
+
+   rexxcolorEH~waitForExit
+   call SysSleep .2
+
 /**
 * name: CbccEH
 * parameter: methname contains the caller label of the class
@@ -4677,35 +4682,35 @@ exit
 *                                              set monitors ...
 *                 or even this one, where a color banner might be usefull
 */
-                                      
-::class CbccEH public         
-::attribute newColor      
-::method actionPerformed 
+
+::class CbccEH public
+::attribute newColor
+::method actionPerformed
    use arg methName, methArgs
    sourcelabel = bsf('invoke', methName~getSource, 'getLabel')
-   
+
    if .mm.dir~isdebug == true then say methArgs~userData~colors~b1
-   
+
    sbutton = "none"
-   if sourcelabel = "<S>Code banner color"     then sbutton = "b1"     
-   if sourcelabel = "<S>Code Text color"       then sbutton = "t1"  
-   if sourcelabel = "<S>Input banner color"    then sbutton = "b2"   
-   if sourcelabel = "<S>Input Text color"      then sbutton = "t2" 
-   if sourcelabel = "<S>Arg banner color"      then sbutton = "b3" 
+   if sourcelabel = "<S>Code banner color"     then sbutton = "b1"
+   if sourcelabel = "<S>Code Text color"       then sbutton = "t1"
+   if sourcelabel = "<S>Input banner color"    then sbutton = "b2"
+   if sourcelabel = "<S>Input Text color"      then sbutton = "t2"
+   if sourcelabel = "<S>Arg banner color"      then sbutton = "b3"
    if sourcelabel = "<S>Arg Text color"        then sbutton = "t3"
-   if sourcelabel = "<S>Ret banner color"      then sbutton = "b4" 
+   if sourcelabel = "<S>Ret banner color"      then sbutton = "b4"
    if sourcelabel = "<S>Ret Text color"        then sbutton = "t4"
-   if sourcelabel = "<S>Out banner color"      then sbutton = "b5" 
+   if sourcelabel = "<S>Out banner color"      then sbutton = "b5"
    if sourcelabel = "<S>Out Text color"        then sbutton = "t5"
-   if sourcelabel = "<S>Errors banner color"   then sbutton = "b6"   
-   if sourcelabel = "<S>Errors Text color"     then sbutton = "t6"  
-   if sourcelabel = "<S>History banner color"  then sbutton = "b7"   
-   if sourcelabel = "<S>History Text color"    then sbutton = "t7"   
-                                              
-   if .mm.dir~isdebug == true then say "wert von tab  stringed " sourcelabel sbutton                                              
-                                              
+   if sourcelabel = "<S>Errors banner color"   then sbutton = "b6"
+   if sourcelabel = "<S>Errors Text color"     then sbutton = "t6"
+   if sourcelabel = "<S>History banner color"  then sbutton = "b7"
+   if sourcelabel = "<S>History Text color"    then sbutton = "t7"
+
+   if .mm.dir~isdebug == true then say "wert von tab  stringed " sourcelabel sbutton
+
    emptypanel = .bsf~new("javax.swing.JPanel")
-   
+
    if sbutton == "b1" then oldColor = methArgs~userData~colors~b1
    if sbutton == "t1" then oldColor = methArgs~userData~colors~t1
    if sbutton == "b2" then oldColor = methArgs~userData~colors~b2
@@ -4720,17 +4725,17 @@ exit
    if sbutton == "t6" then oldColor = methArgs~userData~colors~t6
    if sbutton == "b7" then oldColor = methArgs~userData~colors~b7
    if sbutton == "t7" then oldColor = methArgs~userData~colors~t7
-   
-   rexxcolorchooser = .bsf~new("javax.swing.JColorChooser")
-   
-   rexxcolorchooser~setPreviewPanel(emptypanel)  
 
-   if oldColor == .nil then do 
+   rexxcolorchooser = .bsf~new("javax.swing.JColorChooser")
+
+   rexxcolorchooser~setPreviewPanel(emptypanel)
+
+   if oldColor == .nil then do
       i255 = box("int",255) /* java version compatibility problem: int and float */
-      oldColor = .Color~new(i255,   6,   1, 200) 
+      oldColor = .Color~new(i255,   6,   1, 200)
    end
    newColor = rexxcolorchooser~showDialog(.nil, 'ColorChooser', oldColor)
- 
+
    if newColor == .nil then return
    if sbutton == "b1" then do
       methArgs~userData~colors~b1 = newColor
@@ -4817,7 +4822,7 @@ exit
       methArgs~userData~frame~bsf.invokestrict("setVisible", "boolean", "true")
       methArgs~userData~colorframe~bsf.invokestrict("setVisible", "boolean", "true")
    end
-   
+
    if sbutton == "b7" then do
       methArgs~userData~colors~b7 = newColor
       Call BSF 'invoke', methArgs~userData~bccb7,  'setBackground', newColor
@@ -4828,7 +4833,7 @@ exit
    end
 
    return
-::method unknown         
+::method unknown
    use arg methName, methArgs
    if .mm.dir~isdebug == true then say "CbccEH called: " methName
 /* GLEITNER Classes end */
@@ -4911,7 +4916,7 @@ exit
   .bsf~bsf.import('java.awt.Insets',                  'Insets'             )
   .bsf~bsf.import('javax.swing.AbstractButton',       'AbstractButton'     )
   .bsf~bsf.import('javax.swing.BoxLayout',            'BoxLayout'          )
-  .bsf~bsf.import('javax.swing.ImageIcon',            'ImageIcon'          ) 
+  .bsf~bsf.import('javax.swing.ImageIcon',            'ImageIcon'          )
   .bsf~bsf.import('javax.swing.JColorChooser',        'JColorChooser'      )
   .bsf~bsf.import('javax.swing.colorchooser.ColorSelectionModel',           'ColorSelectionModel')
   .bsf~bsf.import('javax.swing.JInternalFrame',       'JInternalFrame'     )
@@ -4926,11 +4931,11 @@ exit
   .bsf~bsf.import('javax.swing.JSlider',              'JSlider'            )
   .bsf~bsf.import('javax.swing.JTabbedPane',          'JTabbedPane'        )
   .bsf~bsf.import('javax.swing.JTextArea',            'JTextArea'          )
-  .bsf~bsf.import('javax.swing.JSplitPane',           'JSplitPane'         ) 
+  .bsf~bsf.import('javax.swing.JSplitPane',           'JSplitPane'         )
   .bsf~bsf.import('javax.swing.JColorChooser',        'JColorChooser'      )
   .bsf~bsf.import('javax.swing.colorchooser.ColorSelectionModel',           'ColorSelectionModel')
-  .bsf~bsf.import('java.awt.GraphicsDevice',          'GraphicsDevice') 
-  .bsf~bsf.import('java.awt.GraphicsEnvironment',     'GraphicsEnvironment') 
+  .bsf~bsf.import('java.awt.GraphicsDevice',          'GraphicsDevice')
+  .bsf~bsf.import('java.awt.GraphicsEnvironment',     'GraphicsEnvironment')
 
 return
 
@@ -5042,8 +5047,8 @@ return
 
     -- Default starting path for Save As dialog - will be either
     -- the folder ooRexxTry is executed from or the last folder that
-    -- was accessed using the Windows File Dialog: 
-    
+    -- was accessed using the Windows File Dialog:
+
     -- .local~mm.dir~preferred_path = '.'
     .local~mm.dir~preferred_path = getHomeDir()
 
@@ -5071,7 +5076,7 @@ return
     end
 
     -- Load configuration data from the .rc file if present
-    
+
     -- make the default settings
     if .mm.dir~useDefault then
       do
@@ -5095,7 +5100,7 @@ return
       end
 
     -- get the ini file
-    
+
     .local~mm.dir~ooRexxTry.rc = getHomeDir() || .bsf4rexx~file.separator || "ooRexxTry.rc"
     .local~mm.dir~props = .properties~load(.local~mm.dir~ooRexxTry.rc)
     props = .mm.dir~props
@@ -5135,9 +5140,9 @@ return
 
     -- colors initialization
     /* GLEITNER begin */
-    newLine = "0a"x          
+    newLine = "0a"x
     colors          = .directory~new
-  
+
     i255 = box("int",255) /* java version compatibility problem: int and float */
     i240 = box("int",240) /* java version compatibility problem: int and float */
     colors~b1 = .Color~new( 151, 153,i255, 120)
@@ -5174,7 +5179,7 @@ return
        colors~t6 = .Color~new(i255,   6,   1, 200)
        colors~b7 = .Color~new(i255, 144,  22, 100)
        colors~t7 = .Color~new(i255,   6,   1, 200)
-    end   
+    end
     else do
        colors~b1 = .Color~new(props~getProperty("colorb1"), .TRUE)
        colors~b2 = .Color~new(props~getProperty("colorb2"), .TRUE)
@@ -5195,7 +5200,7 @@ return
     .mm.dir~colors = colors
     /* GLEITNER end */
 
-   return 
+   return
 
 ::requires bsf.cls
 ::requires rgf_util2.rex
@@ -5228,9 +5233,9 @@ any:
 * name: pressmaxpane (routine)
 * functionality: maximise a window area
 */
-                         
-::routine pressmaxpane   
-   use arg userData      
+
+::routine pressmaxpane
+   use arg userData
    if .mm.dir~isdebug == true then say userdata~maxedpane~label~gettext "maximieren gen"
    wf = userdata~frame~getsize~width
    hf = userdata~frame~getsize~height
@@ -5238,13 +5243,13 @@ any:
    -- h1 = userdata~frame~getsize~height - 64
    h1 = userdata~frame~getsize~height - 94
    dimsp = .Dimension~new(w1,h1)
-   if .mm.dir~isdebug == true then say wf hf w1 h1    
-      
+   if .mm.dir~isdebug == true then say wf hf w1 h1
+
    userData~contentpanel~bsf.invoke("remove", userData~splitpane)
    userData~contentpanel~bsf.invoke("remove", userData~buttonpanel)
-          
+
    userData~contentpanel~bsf.invoke("add", userData~maxedpane~panel)
-   userData~contentpanel~bsf.invoke("add", userData~buttonpanel) 
+   userData~contentpanel~bsf.invoke("add", userData~buttonpanel)
 
    userData~maxedpane~panel~bsf.invoke("setpreferredSize", dimsp)
    Call BSF 'invoke', userData~maxedpane~panel, 'reshape', 0, 0, w1, h1
@@ -5252,15 +5257,15 @@ any:
    Call BSF 'invoke', userData~maxedpane~scrollpane, 'revalidate'
    userData~maxedpane~setmax(.true)
    userData~maxedpane~maxbutton~setMnemonic(.KeyEvent~VK_0)
-exit                     
+exit
 
 /**
 * name: pressshowsplitpane (routine)
 * functionality: go back from maximised to split view
 */
-                         
+
 ::routine pressshowsplitpane
-   use arg userData      
+   use arg userData
    if .mm.dir~isdebug == true then say userdata~maxedpane~label~gettext "showsplit gen"
    wf = userdata~frame~getsize~width
    hf = userdata~frame~getsize~height
@@ -5269,10 +5274,10 @@ exit
    -- h1 = userdata~frame~getsize~height - 64
    h1 = userdata~frame~getsize~height - 94
    dimsp = .Dimension~new(w1,h1)
-   w1 = trunc(dimsp~getwidth) 
+   w1 = trunc(dimsp~getwidth)
    h1 = trunc(dimsp~getheight)
-   if .mm.dir~isdebug == true then say wf hf w1 h1       
-     
+   if .mm.dir~isdebug == true then say wf hf w1 h1
+
    userData~contentpanel~bsf.invoke("remove", userData~maxedpane~panel)
    userData~contentpanel~bsf.invoke("remove", userData~buttonpanel)
 
@@ -5283,7 +5288,7 @@ exit
    Call BSF 'invoke', userData~splitpane4, 'setbottomcomponent',  userData~p4~panel
    Call BSF 'invoke', userData~splitpane2, 'settopcomponent',     userData~p5~panel
    Call BSF 'invoke', userData~splitpane2, 'setbottomcomponent',  userData~p6~panel
-                         
+
    -- Call BSF 'invoke', userData~frame, "pack"
    Call BSF 'invoke', userData~splitpane, 'setdividersize',       "2"
    Call BSF 'invoke', userData~splitpane, 'setOrientation',       .JSplitPane~VERTICAL_SPLIT
@@ -5308,14 +5313,14 @@ exit
    Call BSF 'invoke', userdata~splitpane, 'setpreferredsize', dimsp
    Call BSF 'invoke', userdata~splitpane, 'reshape', 0, 0, w1, h1
    Call BSF 'invoke', userdata~splitpane, 'revalidate'
- 
+
    userData~contentpanel~bsf.invoke("add", userData~splitpane)
-   userData~contentpanel~bsf.invoke("add", userData~buttonpanel) 
+   userData~contentpanel~bsf.invoke("add", userData~buttonpanel)
 
    userData~frame~bsf.invokestrict("setVisible", "boolean", "true")
    userData~splitpane~bsf.invokestrict("setVisible", "boolean", "true")
    userData~maxedpane = NIL
-exit                     
+exit
 
 /* GLEITNER routines end */
 
