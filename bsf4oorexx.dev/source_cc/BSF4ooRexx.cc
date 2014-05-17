@@ -24,6 +24,10 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.5.0   2014-05-17, - simplified attaching/detaching to the JVM, a side effect will be a slight performance
+                          improvement (appr. 5%)
+                        - replace deprecated BSFAttachToTID() and BSFDetach() with body that always returns true
+
     4.5.0   2014-05-15, - do not report deprecated BSFAttachToTID() and BSFDetach() anymore
 
     4.5.0   2014-04-03, - make sure that BSFDetach() does not detach from the primodal thread
@@ -658,6 +662,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     #define DEBUG_RGF_PROCESS_J_ARG1    // rgf, 2012-02-07; renamed to RgfJavaObject2RexxObject, 2012-02-18
 
     #define DEBUG_ARRAY_ARGS            // rgf, 2012-02-21
+    #define DEBUG_RGF_ATTACH_NEW        // debug new attach/detach strategy
 #endif
 
 #if defined (__APPLE__) && NIXI      // only define, if rexx is started on the main thread and established a CFRunLoop (then awt's event dispatch thread needs to run on a separate thread)
@@ -695,6 +700,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
     // rgf, 2014-03-30, name of entry into .local for primodal TID (will allow one to attach even if no TID is known to the Rexx programmer)
 #define LOCAL_PRIMODAL_TID                    "BSF.PRIMODALTID"
+
+
+    // rgf, 2014-05-16, prepare and use new attach/detach to/from Java logic
+#define RGF_ATTACH_NEW
+// #define DEBUG_RGF_ATTACH_NEW        // debug new attach/detach strategy
 
     // from: <http://ccollomb.free.fr/blog/?p=30>, rgf, 2009-06-02
 // __asm Int 3;    // break, popup to break will be shown
@@ -842,11 +852,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "450.20140515 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140517 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "450.20140515 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140517 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "450.20140515 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140517 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -3665,6 +3675,19 @@ typedef STRUCT_PARAM *PSTRUCT_PARAM;          // pointer to structure
 long size_STRUCT_PARAM=sizeof(STRUCT_PARAM);  // get and memorize size of structure
 
 
+#ifdef RGF_ATTACH_NEW       // ---rgf, 2014-05-16: new (simplified) attach/detach logic
+        // structure for maintaining thread-related call information
+    typedef struct _STRUCT_ATTACH_PARAM {
+        JNIEnv                       *env;              // current JNIEnv or NULL
+        jobject                       rajo;             // current rajo or NULL
+        void                         *riid;             // to Rexx instance ID, needed e.g. for looking up rajo
+        bool                          bDetach;          // TRUE: use DetachCurrentThread(), FALSE: do nothing
+        int                           error;            // OK==0
+    } STRUCT_ATTACH_PARAM;
+
+    typedef STRUCT_ATTACH_PARAM *PSTRUCT_ATTACH_PARAM;          // pointer to structure
+    long size_STRUCT_ATTACH_PARAM=sizeof(STRUCT_ATTACH_PARAM);  // get and memorize size of structure
+#endif
 
 
 // ============ functions for the above structures (2009-10-03, rgf)
@@ -3678,7 +3701,13 @@ long size_STRUCT_PARAM=sizeof(STRUCT_PARAM);  // get and memorize size of struct
 // void RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, RexxThreadContext *rtc, const char * errorStringPattern); // rgf, 2011-06-04
 // RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, RexxThreadContext *rtc, const char * errorStringPattern); // rgf, 2011-06-04
 // RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, RexxCallContext *rcc, const char * errorStringPattern); // rgf, 2011-06-04
-RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, int isCallContext, void *argCtxt, const char * errorStringPattern);
+RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (
+    #ifdef RGF_ATTACH_NEW
+        PSTRUCT_ATTACH_PARAM
+    #else
+        PSTRUCT_PARAM
+    #endif
+        param, int isCallContext, void *argCtxt, const char * errorStringPattern);
 
 void removeRAJO(JNIEnv *env, PSTRUCT_RAJO node);
 void removeNODE(JNIEnv *env, PSTRUCT_NODE node);
@@ -3926,6 +3955,190 @@ inline void createAttachErrorMessage(const char *title, char *buf, size_t bufLen
 }
 
 
+#ifdef RGF_ATTACH_NEW
+
+    // Create the Rexx exception message, if something went wrong with environmentAttachTo
+inline void createAttachErrorMessageNew(const char *title, char *buf, size_t bufLen, PSTRUCT_ATTACH_PARAM param)
+{
+    switch (param->error)
+    {
+    case 1 :    // no JVM
+        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], panic! No JVM available for this Rexx interpreter instance: [%p]", DLLNAME, title, param->error, param->riid );
+        break;
+
+    case 2 :    // no RAJO
+        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], panic! No Java-RexxAndJava (RAJO) object to interact with available for this Rexx interpreter instance: [%p], jenv=[%p]", DLLNAME, title, param->error, param->riid, param->env );
+        break;
+
+    case -1 :   // JNI_ERR
+        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], JNI_ERR (\"unknown JNI error\"), Rexx interpreter instance: [%p], rajo: [%p], jenv=[%p]", DLLNAME, title, param->error, param->riid, param->rajo, param->env );
+        break;
+
+    case -2 :   // JNI_EDETACHED
+        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], JNI_EDETACHED (\"thread detached from the JVM\"), Rexx interpreter instance: [%p], rajo: [%p], jenv=[%p]", DLLNAME, title, param->error, param->riid, param->rajo, param->env );
+        break;
+
+    case -3 :   // JNI_EVERSION
+        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], JNI_EVERSION (\"JNI version error\"), Rexx interpreter instance: [%p], rajo: [%p], jenv=[%p]", DLLNAME, title, param->error, param->riid, param->rajo, param->env );
+        break;
+
+    case -4 :   // JNI_EMEM
+        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], JNI_EMEM (\"out of memory\"), Rexx interpreter instance: [%p], rajo: [%p], jenv=[%p]", DLLNAME, title, param->error, param->riid, param->rajo, param->env );
+        break;
+
+    case -5 :   // JNI_EEXIST
+        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], JNI_EEXIST (\"JVM already exists\"), Rexx interpreter instance: [%p], rajo: [%p], jenv=[%p]", DLLNAME, title, param->error, param->riid, param->rajo, param->env );
+        break;
+
+    case -6 :   // JNI_EINVAL
+        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], JNI_EINVAL (\"arguments invalid\"), Rexx interpreter instance: [%p], rajo: [%p], jenv=[%p]", DLLNAME, title, param->error, param->riid, param->rajo, param->env );
+        break;
+
+    default:
+        SNPRINTF( buf, bufLen, "%.16s/%.64s: unknown attach error [%d], Rexx interpreter instance: [%p], rajo: [%p], jenv=[%p]",
+                               DLLNAME, title, param->error, param->error, param->riid, param->rajo, param->env );
+    }
+}
+
+    // Create the Rexx exception message, if something went wrong with environmentAttachToNew
+inline RexxStringObject createAttachErrorMessageRSONew(RexxCallContext *rcc, const char *title, PSTRUCT_ATTACH_PARAM param)
+{
+    char buf[512];
+    createAttachErrorMessageNew(title, buf, 512, param);   // create the message
+    RexxStringObject rso=rcc->String(buf);              // turn it into a RSO
+    rcc->SetContextVariable(BSF_ERROR_STRING, rso);     // set context error variable
+    return rso;
+}
+
+
+    // attaching the current thread to the JVM (attaching does not nest)
+        // JNI_OK           0                 / * success * /
+        // JNI_ERR          (-1)              / * unknown error * /
+        // JNI_EDETACHED    (-2)              / * thread detached from the VM * /
+        // JNI_EVERSION     (-3)              / * JNI version error * /
+        // JNI_ENOMEM       (-4)              / * not enough memory * /
+        // JNI_EEXIST       (-5)              / * VM already created * /
+        // JNI_EINVAL       (-6)              / * invalid arguments * /
+        //                  +1                / * no JVM available
+        //                  +2                / * no RAJO found for RII * /
+
+    // rgf, 2011-03-19: all of a sudden inline will cause a problem as global variable defaultJVM is
+    //                  not addressed correctly anymore, removing inline remedies the situation!
+    // (i686-apple-darwin10-gcc-4.2.1 (GCC) 4.2.1 (Apple Inc. build 5664))
+    #ifndef __APPLE__
+        inline
+    #endif
+    void environmentAttachToNew(PSTRUCT_ATTACH_PARAM param)
+    {
+
+        if (defaultJVM->jvm == NULL)    // no JVM available !
+        {
+
+    #if defined (DEBUG_RGF_ATTACH_NEW)
+        fprintf(stderr, "environmentAttachToNew() - NO JVM! defaultJVM->jvm=[%p], defaultJVM->primodal_rajo=[%p]\n", defaultJVM->jvm, defaultJVM->primodal_rajo);
+        fflush(stderr);
+    #endif
+
+            param->error=1;             // no JVM available, error !
+            return;
+        }
+
+            // try to find this riid's rajo
+        for (PSTRUCT_RII i=pRoot_RII; i!=NULL; i=i->next)
+        {
+            if (param->riid==i->instance)
+            {
+                param->rajo=i->rajo;
+
+    #if defined (DEBUG_RGF_ATTACH_NEW)
+        fprintf(stderr, "environmentAttachToNew() - found riid=[%p] with rajo=[%p}\n", i->instance, i->rajo);
+        fflush(stderr);
+    #endif
+                break;
+            }
+        }
+
+        if (param->rajo == NULL)        // no rajo available, error !
+        {
+            param->error=2;
+            return;
+        }
+
+            // is this thread already attached, if so get it
+        if ((param->error=defaultJVM->jvm->GetEnv((void **)&param->env, USE_DEFINED_JNI_VERSION))==JNI_EDETACHED)
+        {
+            // nope, not yet attached, try to attach
+            if ( (param->error=defaultJVM->jvm->AttachCurrentThread((void **) &param->env, (void *) &defaultJavaVMAttachArgs)) != JNI_OK) // attach to JVM
+            {
+    #if defined (DEBUG_RGF_ATTACH_NEW)
+        fprintf(stderr, "environmentAttachToNew() - AttachCurrentThread did NOT work ! :-( :-(, parm->error=[%d]\n", (int) param->error);
+        fflush(stderr);
+    #endif
+                // JNI attach error, return prematurely
+                return;
+            }
+
+    #if defined (DEBUG_RGF_ATTACH_NEW)
+            fprintf(stderr, "environmentAttachToNew() - AttachCurrentThread() WORKED, bDetach=[true]! \n");
+            fflush(stderr);
+    #endif
+            param->bDetach=true;        // Carry out DetachCurrentThread() at the end, if not a RII primodal thread
+        }
+    #if defined (DEBUG_RGF_ATTACH_NEW)
+        else
+        {
+            fprintf(stderr, "environmentAttachToNew() - GetEnv() WORKED, bDetach=[false]! \n");
+            fflush(stderr);
+        }
+    #endif
+
+
+        return;
+    }
+
+
+    // ---------------------------------------------------------------------------------------
+    // - detach from JNIEnv, if bDetach==TRUE
+
+// rgf, 2011-03-19: all of a sudden inline will cause a problem as global variable defaultJVM is
+//                  not addressed correctly anymore, removing inline remedies the situation!
+//                  (i686-apple-darwin10-gcc-4.2.1 (GCC) 4.2.1 (Apple Inc. build 5664)); just make sure this function works correctly under Apple as well
+#ifndef __APPLE__
+   inline
+#endif
+void environmentDetachFromNew(PSTRUCT_ATTACH_PARAM param)
+{
+    #if defined (DEBUG_RGF_ATTACH_NEW)
+        fprintf(stderr, "environmentDetachFromNew(), param->bDetach=[%d]\n", param->bDetach);
+        fflush(stderr);
+    #endif
+
+    if (param->bDetach==true)   // do we need to explicitly detach ? (This will detach this thread from the JVM.)
+    {
+
+        if (defaultJVM->jvm == NULL)    // no JVM available !
+        {
+    #if defined (DEBUG_RGF_ATTACH_NEW)
+        fprintf(stderr, "environmentDetachFromNew() - NO JVM! defaultJVM->jvm=[%p], defaultJVM->primodal_rajo=[%p]\n", defaultJVM->jvm, defaultJVM->primodal_rajo);
+        fflush(stderr);
+    #endif
+
+            param->error=1;             // no JVM available, error !
+            return;
+        }
+        param->error=defaultJVM->jvm->DetachCurrentThread();
+    #if defined (DEBUG_RGF_ATTACH_NEW)
+        fprintf(stderr, "environmentDetachFromNew() - carried out DetachCurrentThread(), result=[%d]\n", param->error);
+        fflush(stderr);
+    #endif
+
+    }
+    return;
+}
+
+
+#endif
+
     // Create the Rexx exception message, if something went wrong with environmentAttachTo
     // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
     //                  -2 ... no rajo found, raise an exception in caller
@@ -3940,6 +4153,8 @@ inline RexxStringObject createAttachErrorMessageRSO(RexxCallContext *rcc, const 
     rcc->SetContextVariable(BSF_ERROR_STRING, rso);     // set context error variable
     return rso;
 }
+
+
 
 
     // ---------------------------------------------------------------------------------------
@@ -5339,7 +5554,13 @@ inline void make_upper (char * string)
 
 // inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, RexxCallContext *rcc, const char * errorStringPattern)
 // isCallContext: 0=ExitContext, 1=CallContext
-inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_PARAM param, int isCallContext, void *argCtxt, const char * errorStringPattern)
+inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (
+    #ifdef RGF_ATTACH_NEW
+    PSTRUCT_ATTACH_PARAM
+    #else
+    PSTRUCT_PARAM
+    #endif
+    param, int isCallContext, void *argCtxt, const char * errorStringPattern)
 {
     // RexxThreadContext *rtc = rcc->threadContext;
     RexxThreadContext *rtc = (isCallContext==0 ? ((RexxExitContext *) argCtxt)->threadContext
@@ -5440,7 +5661,13 @@ inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (PSTRUCT_P
 // --------------------------------------------
 // 2012-02-18, rgf: have an own function to turn a single RexxObjectPtr to the appropriate
 //                  Java object and return that
-inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *context, RexxObjectPtr tmpObj)
+inline jobject RgfRexxObject2JavaObject(
+#ifdef RGF_ATTACH_NEW
+    PSTRUCT_ATTACH_PARAM
+#else
+    PSTRUCT_PARAM
+#endif
+            param, RexxThreadContext *context, RexxObjectPtr tmpObj)
 {
     // get the indicator value; returns "2" (BSF/UNO_PRoxy), "1" (String), "0" (RexxProxy),
     // "-1" (NULL), "-2" (.nil)
@@ -5533,7 +5760,13 @@ inline jobject RgfRexxObject2JavaObject(PSTRUCT_PARAM param, RexxThreadContext *
 //                  a Java array; meant to be used by BSF(), but also in the exit/command handlers
 // TODO: after testing with handlers, use it also in BSF(), such that we have a single implementation
 //  -- arrToRemove is optional (hence may be set to NULL)
-jobjectArray RgfRexxArray2JavaArray(PSTRUCT_PARAM param, RexxThreadContext *context, RexxArrayObject argArray)
+jobjectArray RgfRexxArray2JavaArray(
+#ifdef RGF_ATTACH_NEW
+    PSTRUCT_ATTACH_PARAM
+#else
+    PSTRUCT_PARAM
+#endif
+            param, RexxThreadContext *context, RexxArrayObject argArray)
 {
 // *** >>>> ????
 #if defined (RGF_INFO_1) || defined (DEBUG_ARRAY_ARGS) // rgf, 20090820
@@ -5865,7 +6098,13 @@ jobjectArray RgfRexxArray2JavaArray__(PSTRUCT_PARAM param, RexxThreadContext *co
 
 // 2012-02-10, rgf: old Rexx style (i.e. only Rexx strings or empty strings !)
 //                  a Java array; meant to be used by BSF(), but also in the exit/command handlers
-inline jobjectArray RgfConstrxStringArray2JavaArray(PSTRUCT_PARAM param, RexxThreadContext *context, PCONSTRXSTRING argv, unsigned short argc)
+inline jobjectArray RgfConstrxStringArray2JavaArray(
+#ifdef RGF_ATTACH_NEW
+    PSTRUCT_ATTACH_PARAM
+#else
+    PSTRUCT_PARAM
+#endif
+        param, RexxThreadContext *context, PCONSTRXSTRING argv, unsigned short argc)
 {
     if (argc==0 || argv==NULL)      // no arguments, no pointer to args
     {
@@ -6643,7 +6882,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
     //                executing
     // rgf, 2012-02-07: add NULL for rajo and rexxconf as this call path does not
     //                  define exit and command handlers for the RII this is safe
-    RgfAddRexxInterpreterInstanceToList(context->threadContext, NULL, NULL);
+//    RgfAddRexxInterpreterInstanceToList(context->threadContext, NULL, NULL);
 
     // call the static method, which in turn will initialize BSF4Rexx by creating
     // a BSFManager and having it load the "Rexx" (support)
@@ -6681,7 +6920,13 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
         return "-990";  // return prematurely
     }
 
-    init_STRUCT_JVM(jniEnv, defaultJVM, currentJVM);    // 20091003, initialize default structure
+
+    // rgf, 2014-05-17: "createInterface4Rexx() will save the primodal_rajo and run "init_STRUCT_JVM()";
+    //                  this type of invocation cannot have a Java RII configuration object, hence NULL
+    RgfAddRexxInterpreterInstanceToList(context->threadContext, defaultJVM->primodal_rajo, NULL);
+
+// TODO: already done? rgf, 20140517
+//    init_STRUCT_JVM(jniEnv, defaultJVM, currentJVM);    // 20091003, initialize default structure
 
 
 #ifdef DEBUG        // ---rgf, 2003-04-30
@@ -6782,11 +7027,21 @@ RexxRoutine0(RexxStringObject, BsfUnloadJava)  // 20090505, ---rgf, only a stub 
     }
 
 
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={0, 0, (void *)context->threadContext->instance, false, 0};
+#else
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={0, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, 0};
+#endif
 
     RgfAcquireLock();
+
+#ifdef RGF_ATTACH_NEW
+    environmentAttachToNew(&param);     // attach thread to Java
+#else
     environmentAttachTo(&param, FALSE);    // attach to Java
+#endif
 
     if (param.error== -1)   // attaching to Java was not successful, we are in deep troubles !
     {
@@ -6796,6 +7051,8 @@ RexxRoutine0(RexxStringObject, BsfUnloadJava)  // 20090505, ---rgf, only a stub 
         delete[] msg;
         return context->String("-997");
     }
+
+// TODO: RAJO_TID2NODE structures needed anymore ?
 
        // emtpy RAJO/TID2NODE structures
     empty_RAJO_TID2NODE_structures(param.env);
@@ -7075,10 +7332,15 @@ RexxRoutine0(RexxStringObject, BsfGetTID)    // 20090505, ---rgf, only a stub fo
 
 
 
+    // ---rgf, 2014-05-17: not needed anymore (deprecated), return true to allow older programs to continue to run
+RexxRoutine1(logical_t, BsfAttachToTID, OPTIONAL_CSTRING, toTID)    // 20090505, ---rgf, only a stub for backward compatibility
+{
+    return true;
+}
 
 
     // ---rgf, 2003-08-06: allow Rexx to use the Java environment of another Rexx thread
-RexxRoutine1(logical_t, BsfAttachToTID, OPTIONAL_CSTRING, toTID)    // 20090505, ---rgf, only a stub for backward compatibility
+RexxRoutine1(logical_t, BsfAttachToTID_Old, OPTIONAL_CSTRING, toTID)    // 20090505, ---rgf, only a stub for backward compatibility
 {
 
     #ifdef UNIX
@@ -7234,6 +7496,13 @@ RexxRoutine1(logical_t, BsfAttachToTID, OPTIONAL_CSTRING, toTID)    // 20090505,
 
 
 
+    // ---rgf, 2014-05-17: not needed anymore (deprecated), return true to allow older programs to continue to run
+RexxRoutine0(logical_t, BsfDetach)    // 20090505, ---rgf, only a stub for backward compatibility
+{
+    return true;
+}
+
+
     // rgf, 2008-07-26
 /* Removes the TID2JRST entry with current TID. If removal was possible, return .true,
    else .false (indicating that no Java environment was attached to this TID).
@@ -7245,7 +7514,7 @@ RexxRoutine1(logical_t, BsfAttachToTID, OPTIONAL_CSTRING, toTID)    // 20090505,
 */
 
 // APIRET APIENTRY BsfDetach      ( PSZ name, LONG numargs, RXSTRING args[], PSZ queuename, PRXSTRING retstr )
-RexxRoutine0(logical_t, BsfDetach)    // 20090505, ---rgf, only a stub for backward compatibility
+RexxRoutine0(logical_t, BsfDetach_Old)    // 20090505, ---rgf, only a stub for backward compatibility
 {
     #ifdef UNIX
         pthread_t
@@ -7453,87 +7722,114 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
     RexxObjectPtr r_userData=(context->ArrayAt(argArray, 2)!=NULL ? context->ArrayAt(argArray,2) : NULL);
 
 
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={0, 0, (void *)context->threadContext->instance, false, 0};
+#else
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, 0};
+#endif
+
     RgfAcquireLock();
-    environmentAttachTo(&param, FALSE); // attach to Java
 
-    // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
-    //                  -2 ... no rajo found, raise an exception in caller
-    //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
-    //                  -4 ... cannot attach to target TID
-    //                 -99 ... no JVM available !
-
-#ifdef DEBUG_JAVA_ATTACH_DETACH
-    fprintf(stderr, "---> BSFCreateRexxProxy() // 1--> param.error=[%d]\n", param.error); fflush(stderr);
-#endif
-    if (param.error==-2)    // ---rgf, 2014-03-30: thread not attached, use primodal TID
-    {
-        RgfReleaseLock();
-
-        bool bUsingPrimodialTID=false;
-
-        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
-        RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
-
-        if (obj==NULL) // NULLOBJECT)
-        {
-            // char msg[256];
-            char *msg2=new char[256];
-            SNPRINTF(msg2, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg2));
-            delete [] msg2;
-
-            delete [] c_rii_ID;
-            delete [] msg;
-            return FALSE;
-        }
-
-        char *toTID=(char *) context->CString(context->ObjectToString(obj));
-        bUsingPrimodialTID=true;
-
-        unsigned long attachToTID=0;
-
-        sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
-
-        // now try to attach
-                  // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
-        STRUCT_PARAM param2={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0,
-            (
-            #ifdef UNIX
-                pthread_t
-            #else
-                TID
-            #endif
-            )
-            attachToTID };
-
-        RgfAcquireLock();
-        environmentAttachTo(&param2, TRUE); // attach to Java, keep attached
-
-        param=param2;   // copy param2 fields to param to let the checking go on
-
-#ifdef DEBUG_JAVA_ATTACH_DETACH
-    fprintf(stderr, "---> BSFCreateRexxProxy() // 2 --> used primodal TID! param.error=[%d], param2.error=[%d]\n", param.error, param2.error); fflush(stderr);
-#endif
-    }
-
+#ifdef RGF_ATTACH_NEW
+    environmentAttachToNew(&param); // attach to Java
 
     if (param.error!= 0)    // problem attaching, cannot proceed
     {
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
-                                 createAttachErrorMessageRSO(context, "routine/BsfCreateRexxProxy(), error 3", &param)
+                                 createAttachErrorMessageRSONew(context, "routine/BsfCreateRexxProxy(), error 3", &param)
                                  );
-        if (param.error != -1)  // if attaching worked, we need to make sure that we detach as ell
-        {
-            environmentDetachFrom(&param, FALSE);   // detach from Java
-        }
         RgfReleaseLock();
         delete [] c_rii_ID;
         delete [] msg;
         return FALSE;
     }
     RgfReleaseLock();
+#else
+    environmentAttachTo(&param, FALSE); // attach to Java
+
+        // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
+        //                  -2 ... no rajo found, raise an exception in caller
+        //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
+        //                  -4 ... cannot attach to target TID
+        //                 -99 ... no JVM available !
+
+    #ifdef DEBUG_JAVA_ATTACH_DETACH
+        fprintf(stderr, "---> BSFCreateRexxProxy() // 1--> param.error=[%d]\n", param.error); fflush(stderr);
+    #endif
+        if (param.error==-2)    // ---rgf, 2014-03-30: thread not attached, use primodal TID
+        {
+            RgfReleaseLock();
+
+            bool bUsingPrimodialTID=false;
+
+            RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+            RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
+
+            if (obj==NULL) // NULLOBJECT)
+            {
+                // char msg[256];
+                char *msg2=new char[256];
+                SNPRINTF(msg2, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
+                context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg2));
+                delete [] msg2;
+
+                delete [] c_rii_ID;
+                delete [] msg;
+                return FALSE;
+            }
+
+            char *toTID=(char *) context->CString(context->ObjectToString(obj));
+            bUsingPrimodialTID=true;
+
+            unsigned long attachToTID=0;
+
+            sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
+
+            // now try to attach
+                      // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
+            STRUCT_PARAM param2={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0,
+                (
+                #ifdef UNIX
+                    pthread_t
+                #else
+                    TID
+                #endif
+                )
+                attachToTID };
+
+            RgfAcquireLock();
+            environmentAttachTo(&param2, TRUE); // attach to Java, keep attached
+
+            param=param2;   // copy param2 fields to param to let the checking go on
+
+    #ifdef DEBUG_JAVA_ATTACH_DETACH
+        fprintf(stderr, "---> BSFCreateRexxProxy() // 2 --> used primodal TID! param.error=[%d], param2.error=[%d]\n", param.error, param2.error); fflush(stderr);
+    #endif
+        }
+
+
+        if (param.error!= 0)    // problem attaching, cannot proceed
+        {
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
+                                     createAttachErrorMessageRSO(context, "routine/BsfCreateRexxProxy(), error 3", &param)
+                                     );
+            if (param.error != -1)  // if attaching worked, we need to make sure that we detach as ell
+            {
+                environmentDetachFrom(&param, FALSE);   // detach from Java
+            }
+            RgfReleaseLock();
+            delete [] c_rii_ID;
+            delete [] msg;
+            return FALSE;
+        }
+        RgfReleaseLock();
+
+
+    // <--- old-attach
+#endif
+
 
         // create a Java RexxProxy
     jobject j_rexxProxy=RgfCreateRexxProxy (param.env, param.rajo,
@@ -7621,15 +7917,20 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
         {
 
             RexxStringObject rso=RgfCreateRexxSyntaxConditionWithJavaThrowable (&param,
-                 1,         // RexxCallContext
-                 context,
-                 "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]");
+                     1,         // RexxCallContext
+                     context,
+                     "%.16s/routine/BsfCreateRexxProxy(), error 4: Java exception occurred: [%s]");
 
             param.env->DeleteLocalRef(j_rexxProxy);
             param.env->DeleteLocalRef(jarr);
 
             RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+            environmentDetachFromNew(&param);
+#else
             environmentDetachFrom(&param, FALSE);
+#endif
+
             RgfReleaseLock();
 
             delete [] c_rii_ID;
@@ -7676,7 +7977,13 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
     param.env->DeleteLocalRef(j_bsfRegistryKey);
 
     RgfAcquireLock();
+
+#ifdef RGF_ATTACH_NEW
+    environmentDetachFromNew(&param);
+#else
     environmentDetachFrom(&param, FALSE);
+#endif
+
     RgfReleaseLock();
 
 #if defined (RGF_INFO) || defined (DEBUG_REXX_PROXY)
@@ -7911,16 +8218,22 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
 
 
     // ??? TODO: attach to Java, carry out conversions, return result
-
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={0, 0, (void *)context->threadContext->instance, false, 0};
+#else
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, 0};
+#endif
+
 
     RgfAcquireLock();
+
+#ifdef RGF_ATTACH_NEW
+    environmentAttachToNew(&param); // attach to Java
+#else
     environmentAttachTo(&param, FALSE); // attach to Java
 
-#ifdef DEBUG_JAVA_ATTACH_DETACH
-    fprintf(stderr, "---> BSFRawBytes() // 1--> param.error=[%d]\n", param.error); fflush(stderr);
-#endif
     if (param.error==-2)    // ---rgf, 2014-03-30: thread not attached, use primodal TID
     {
         RgfReleaseLock();
@@ -7967,13 +8280,25 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
 #endif
     }
 
+#endif
+
+
+#ifdef DEBUG_JAVA_ATTACH_DETACH
+    fprintf(stderr, "---> BSFRawBytes() // 1--> param.error=[%d]\n", param.error); fflush(stderr);
+#endif
+
 
     // if (param.error== -1)    // could not attach to Java
     if (param.error!=0)    // rgf, 2014-03-30, problem attaching, cannot proceed
     {
         RgfReleaseLock();
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
-                                 createAttachErrorMessageRSO(context, "routine/BsfRawBytes(), error 2", &param)
+#ifdef RGF_ATTACH_NEW
+                                 createAttachErrorMessageRSONew
+#else
+                                 createAttachErrorMessageRSO
+#endif
+                                 (context, "routine/BsfRawBytes(), error 2", &param)
                                  );
         return context->Nil();      // not attached, hence no detaching !
     }
@@ -8130,7 +8455,13 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
     }
 
     RgfAcquireLock();
+
+#ifdef RGF_ATTACH_NEW
+    environmentDetachFromNew(&param);
+#else
     environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
+
     RgfReleaseLock();
 
     return result_Obj;
@@ -8252,84 +8583,104 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
 }
 */
 
+#ifdef RGF_ATTACH_NEW
+   // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+   STRUCT_ATTACH_PARAM param={0, 0, (void *)context->threadContext->instance, false, 0};
+#else
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, 0};
+#endif
+
     RgfAcquireLock();
+
+#ifdef RGF_ATTACH_NEW
+    environmentAttachToNew(&param); // attach to Java
+#else
     environmentAttachTo(&param, FALSE); // attach to Java
 
-    // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
-    //                  -2 ... no rajo found, raise an exception in caller
-    //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
-    //                  -4 ... cannot attach to target TID
-    //                 -99 ... no JVM available !
+        // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
+        //                  -2 ... no rajo found, raise an exception in caller
+        //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
+        //                  -4 ... cannot attach to target TID
+        //                 -99 ... no JVM available !
 
-    // error '-99' may may happen, if BsfUnloadJava() was called and UNINIT operations on BSF proxies
-    // get triggered, which would unregister the counterpart Java objects from the BSFRegistry;
-    // this lets Rexx shutdown gracefully
+        // error '-99' may may happen, if BsfUnloadJava() was called and UNINIT operations on BSF proxies
+        // get triggered, which would unregister the counterpart Java objects from the BSFRegistry;
+        // this lets Rexx shutdown gracefully
 
-#ifdef DEBUG_JAVA_ATTACH_DETACH
-    fprintf(stderr, "---> BSF() // 1 --> param.error=[%d]\n", param.error); fflush(stderr);
-#endif
+    #ifdef DEBUG_JAVA_ATTACH_DETACH
+        fprintf(stderr, "---> BSF() // 1 --> param.error=[%d]\n", param.error); fflush(stderr);
+    #endif
 
-    if (param.error==-2)    // ---rgf, 2014-03-30: thread not attached, use primodal TID
-    {
-        RgfReleaseLock();
-
-        bool bUsingPrimodialTID=false;
-
-        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
-        RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
-
-        if (obj==NULL) // NULLOBJECT)
+        if (param.error==-2)    // ---rgf, 2014-03-30: thread not attached, use primodal TID
         {
-            // char msg2[256];
-            char *msg2=new char[256];
-            SNPRINTF(msg2, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg2));
-            delete[] msg2;
+            RgfReleaseLock();
 
-            delete[] msg;
-            return FALSE;
+            bool bUsingPrimodialTID=false;
+
+            RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+            RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
+
+            if (obj==NULL) // NULLOBJECT)
+            {
+                // char msg2[256];
+                char *msg2=new char[256];
+                SNPRINTF(msg2, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
+                context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg2));
+                delete[] msg2;
+
+                delete[] msg;
+                return FALSE;
+            }
+
+            char *toTID=(char *) context->CString(context->ObjectToString(obj));
+            bUsingPrimodialTID=true;
+
+            unsigned long attachToTID=0;
+
+            sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
+
+            // now try to attach
+                      // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
+            STRUCT_PARAM param2={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0,
+                (
+                #ifdef UNIX
+                    pthread_t
+                #else
+                    TID
+                #endif
+                )
+                attachToTID};
+
+            RgfAcquireLock();
+            environmentAttachTo(&param2, TRUE); // attach to Java, keep attached
+
+            param=param2;   // copy param2 fields to param to let the checking go on
+
+    #ifdef DEBUG_JAVA_ATTACH_DETACH
+        fprintf(stderr, "---> BSF() // 2 --> used primodal TID! param.error=[%d], param2.error=[%d]\n", param.error, param2.error); fflush(stderr);
+    #endif
+
         }
 
-        char *toTID=(char *) context->CString(context->ObjectToString(obj));
-        bUsingPrimodialTID=true;
-
-        unsigned long attachToTID=0;
-
-        sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
-
-        // now try to attach
-                  // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
-        STRUCT_PARAM param2={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0,
-            (
-            #ifdef UNIX
-                pthread_t
-            #else
-                TID
-            #endif
-            )
-            attachToTID};
-
-        RgfAcquireLock();
-        environmentAttachTo(&param2, TRUE); // attach to Java, keep attached
-
-        param=param2;   // copy param2 fields to param to let the checking go on
-
-#ifdef DEBUG_JAVA_ATTACH_DETACH
-    fprintf(stderr, "---> BSF() // 2 --> used primodal TID! param.error=[%d], param2.error=[%d]\n", param.error, param2.error); fflush(stderr);
 #endif
 
-    }
 
     if (param.error!= 0)    // problem attaching, cannot proceed
     {
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
-                                 createAttachErrorMessageRSO(context, "routine/BsfCreateRexxProxy(), error 3", &param)
+#ifdef RGF_ATTACH_NEW
+                                 createAttachErrorMessageRSONew
+#else
+                                 createAttachErrorMessageRSO
+#endif
+                                 (context, "routine/BsfCreateRexxProxy(), error 3", &param)
                                  );
         if (param.error != -1)  // if attaching worked, we need to make sure that we detach as well
         {
+#ifndef RGF_ATTACH_NEW
             environmentDetachFrom(&param, FALSE);   // detach from Java
+#endif
         }
         RgfReleaseLock();
         delete[] msg;
@@ -8569,7 +8920,12 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
             param.env->DeleteLocalRef(j_returnValue);
 
             RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+            environmentDetachFromNew(&param);
+#else
             environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
+
             RgfReleaseLock();
 
             delete[] msg;
@@ -8590,7 +8946,11 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
         {
             // int rndRes=RgfNewDetach();  // detach from thread
             RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+            environmentDetachFromNew(&param);
+#else
             environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
             RgfReleaseLock();
 
 #if defined (DEBUG_BSF_FUNCTION)
@@ -8606,7 +8966,11 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
         param.env->DeleteLocalRef(j_returnValue);
 
         RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+            environmentDetachFromNew(&param);
+#else
         environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
         RgfReleaseLock();
 
 #if defined (DEBUG_BSF_FUNCTION)
@@ -8748,64 +9112,77 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
 
     // ------------------------------------------------------------------------------------
     // attach to Java thread
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={0, 0, (void *)context->threadContext->instance, false, 0};
+#else
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, 0};
+#endif
+
     RgfAcquireLock();
+
+#ifdef RGF_ATTACH_NEW
+    environmentAttachToNew(&param);     // attach to Java
+#else
     environmentAttachTo(&param, FALSE); // attach to Java
 
-#ifdef DEBUG_JAVA_ATTACH_DETACH
-    fprintf(stderr, "---> BSFJavaException() // 1 --> param.error=[%d]\n", param.error); fflush(stderr);
-#endif
+    #ifdef DEBUG_JAVA_ATTACH_DETACH
+        fprintf(stderr, "---> BSFJavaException() // 1 --> param.error=[%d]\n", param.error); fflush(stderr);
+    #endif
 
-    if (param.error==-2)    // ---rgf, 2014-03-30: thread not attached, use primodal TID
-    {
-        RgfReleaseLock();
-
-        bool bUsingPrimodialTID=false;
-
-        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
-        RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
-
-        if (obj==NULL) // NULLOBJECT)
+        if (param.error==-2)    // ---rgf, 2014-03-30: thread not attached, use primodal TID
         {
-            // char msg2[256];
-            char *msg2=new char[256];
-            SNPRINTF(msg2, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg2));
-            delete[] msg2;
+            RgfReleaseLock();
 
-            delete[] msg;
-            return FALSE;
+            bool bUsingPrimodialTID=false;
+
+            RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+            RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
+
+            if (obj==NULL) // NULLOBJECT)
+            {
+                // char msg2[256];
+                char *msg2=new char[256];
+                SNPRINTF(msg2, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
+                context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg2));
+                delete[] msg2;
+
+                delete[] msg;
+                return FALSE;
+            }
+
+            char *toTID=(char *) context->CString(context->ObjectToString(obj));
+            bUsingPrimodialTID=true;
+
+            unsigned long attachToTID=0;
+
+            sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
+
+            // now try to attach
+                      // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
+            STRUCT_PARAM param2={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0,
+                (
+                #ifdef UNIX
+                    pthread_t
+                #else
+                    TID
+                #endif
+                )
+                attachToTID};
+
+            RgfAcquireLock();
+            environmentAttachTo(&param2, TRUE); // attach to Java, keep attached
+
+            param=param2;   // copy param2 fields to param to let the checking go on
+
+    #ifdef DEBUG_JAVA_ATTACH_DETACH
+        fprintf(stderr, "---> BSFJavaException() // 2 --> used primodal TID! param.error=[%d], param2.error=[%d]\n", param.error, param2.error); fflush(stderr);
+    #endif
         }
-
-        char *toTID=(char *) context->CString(context->ObjectToString(obj));
-        bUsingPrimodialTID=true;
-
-        unsigned long attachToTID=0;
-
-        sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
-
-        // now try to attach
-                  // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
-        STRUCT_PARAM param2={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0,
-            (
-            #ifdef UNIX
-                pthread_t
-            #else
-                TID
-            #endif
-            )
-            attachToTID};
-
-        RgfAcquireLock();
-        environmentAttachTo(&param2, TRUE); // attach to Java, keep attached
-
-        param=param2;   // copy param2 fields to param to let the checking go on
-
-#ifdef DEBUG_JAVA_ATTACH_DETACH
-    fprintf(stderr, "---> BSFJavaException() // 2 --> used primodal TID! param.error=[%d], param2.error=[%d]\n", param.error, param2.error); fflush(stderr);
 #endif
-    }
+
+
 
     // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
     //                  -2 ... no rajo found, raise an exception in caller
@@ -8815,12 +9192,19 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
     if (param.error!= 0)    // problem attaching, cannot proceed
     {
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
-                                 createAttachErrorMessageRSO(context, "routine/BsfJavaException(), error 3", &param)
+#ifdef RGF_ATTACH_NEW
+                                 createAttachErrorMessageRSONew
+#else
+                                 createAttachErrorMessageRSO
+#endif
+                                 (context, "routine/BsfJavaException(), error 3", &param)
                                  );
+#ifndef RGF_ATTACH_NEW
         if (param.error != -1)  // if attaching worked, we need to make sure that we detach as ell
         {
             environmentDetachFrom(&param, FALSE);   // detach from Java
         }
+#endif
         RgfReleaseLock();
         delete[] msg;
         return FALSE;
@@ -8861,7 +9245,12 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
 */
             RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+            environmentDetachFromNew(&param);
+#else
             environmentDetachFrom(&param, FALSE);
+#endif
+
             RgfReleaseLock();
 
             delete[] msg;
@@ -8953,7 +9342,11 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
     }
 
     RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+            environmentDetachFromNew(&param);
+#else
     environmentDetachFrom(&param, FALSE);   // detach from Java
+#endif
     RgfReleaseLock();
     delete[] msg;
     return result_Obj;
@@ -9333,8 +9726,11 @@ fprintf(stderr, "//// ---> _jniInitialize4Rexx, #1 AFTER init_STRUCT_JVM, about 
 
         // 20091005: this is loaded via Rexx, keep this
     JNIEnv *daemEnv;
+    RgfAcquireLock();
     int res=defaultJVM->jvm->AttachCurrentThreadAsDaemon((void **) &daemEnv, (void *) &defaultJavaVMAttachArgs);
+    RgfReleaseLock();
 
+/*
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={tid, daemEnv, defaultJVM->primodal_rajo, NULL, 0, 0, 0, 0};
 #if defined (RGF_INFO)  || defined (RGF_JNI)
@@ -9347,6 +9743,9 @@ fprintf(stderr, "//// ---> _jniInitialize4Rexx, #1 AFTER init_STRUCT_JVM, about 
     }
 
     RgfAcquireLock();
+
+// TODO: rgf, 20140517, add #ifdef RGF_ATTACH_NEW !!
+
     environmentAttachTo(&param, TRUE);      // attach to Java, force staying around after next environmentDetachFrom() !
 
 #if defined (RGF_INFO)  || defined (RGF_JNI)
@@ -9359,7 +9758,9 @@ fprintf(stderr, "//// ---> _jniInitialize4Rexx, #1 AFTER init_STRUCT_JVM, about 
     fprintf(stderr, "... _jniInitialize4Rexx #3 pre: defaultJVM->jvm=[%p]\n", defaultJVM->jvm);fflush(stderr);
     dumpPARAM("... _jniInitialize4Rexx #3 (after environmentDetachFrom(&param, FALSE))", &param);
 #endif
+
     RgfReleaseLock();
+*/
 
 
 #if defined (RGF_INFO)  || defined (RGF_JNI)
@@ -12398,6 +12799,8 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
     // char msg[1024]="";
     char *msg=new char[1024];
 
+
+// TODO: rgf, 20140517, do we really still need this?
         // get the RII structure to get access to
     RexxInstance *ri=context->threadContext->instance;
     PSTRUCT_RII struRii=RgfGetRexxInterpreterInstanceStructFromList(ri);
@@ -12422,19 +12825,35 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
 
     // TODO: attach to Java, get RexxConfiguration, use getExitHandler(int), invoke handler, if not null & check result
 // -----------------------------------------
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={0, 0, (void *) context->threadContext->instance, false, 0};
+#else
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={0, 0, struRii->rajo, (void *)ri, 0, 0, 0, 0};
+#endif
 
     RgfAcquireLock();
+
+#ifdef RGF_ATTACH_NEW
+    environmentAttachToNew(&param);    // attach to Java
+#else
     environmentAttachTo(&param, FALSE); // attach to Java
+#endif
 
 #if defined ( DEBUG_SHOW_STRUCTURES )
     dumpPARAM(   "rexx_command_exit_entry(), after environmentAttachTo(...): param:", &param);
-    dumpRAJO(    "rexx_command_exit_entry(), after environmentAttachTo(...), 1: ");
-    dumpTID2NODE("rexx_command_exit_entry(), after environmentAttachTo(...), 1: ");
+    #ifdef RGF_ATTACH_NEW
+        dumpRAJO(    "rexx_command_exit_entry(), after environmentAttachTo(...), 1: ");
+        dumpTID2NODE("rexx_command_exit_entry(), after environmentAttachTo(...), 1: ");
+    #endif
 #endif
 
-    if (param.error== -1)    // could not attach to Java
+#ifdef RGF_ATTACH_NEW
+    if (param.error != 0)   // could not attach to Java
+#else
+    if (param.error== -1)   // could not attach to Java
+#endif
     {
 #if defined ( RGF_SYSTEM_EXIT_HANDLER )
     if (exitNumber==RXINI || exitNumber==RXTER)
@@ -12474,7 +12893,11 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
              context,
              msg);
         RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+        environmentDetachFromNew(&param);
+#else
         environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
         RgfReleaseLock();
         delete[] msg;
         return RXEXIT_RAISE_ERROR;
@@ -12490,7 +12913,11 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
     }
 #endif
         RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+        environmentDetachFromNew(&param);
+#else
         environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
         RgfReleaseLock();
 
 #if defined ( RGF_INFO ) || defined ( RGF_SYSTEM_EXIT_HANDLER )
@@ -13102,7 +13529,13 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
             param.env->DeleteLocalRef(jpb);
 
             RgfAcquireLock();
+
+#ifdef RGF_ATTACH_NEW
+            environmentDetachFromNew(&param);
+#else
             environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
+
             RgfReleaseLock();
             delete[] msg;
             return RXEXIT_NOT_HANDLED;
@@ -13121,7 +13554,11 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
     }
 #endif
         RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+        environmentDetachFromNew(&param);
+#else
         environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
         RgfReleaseLock();
         delete[] msg;
         return RXEXIT_RAISE_ERROR;
@@ -13164,7 +13601,11 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
         param.env->DeleteLocalRef(jpb);
 
         RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+        environmentDetachFromNew(&param);
+#else
         environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
         RgfReleaseLock();
 
         SNPRINTF(msg, 1024, "%.16s/internal/rexx_exit_handler_entry(), error 4: Java exception, cannot find the Java Rexx exit handler method named [%s], needed for processing the Rexx system exit number=[%d], subfunction=[%d]",
@@ -13208,7 +13649,11 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
         param.env->DeleteLocalRef(jpb);
 
         RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+        environmentDetachFromNew(&param);
+#else
         environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
         RgfReleaseLock();
         delete[] msg;
         return RXEXIT_RAISE_ERROR;
@@ -13229,7 +13674,11 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
         param.env->DeleteLocalRef(jpb);
 
         RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+        environmentDetachFromNew(&param);
+#else
         environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
         RgfReleaseLock();
         delete[] msg;
         return RXEXIT_RAISE_ERROR;
@@ -13792,7 +14241,11 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
 
 
     RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+    environmentDetachFromNew(&param);
+#else
     environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
     RgfReleaseLock();
 
 // -----------------------------------------
@@ -13851,16 +14304,28 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
         return NULL;
     }
 
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={0, 0, (void *)context->threadContext->instance, false, 0};
+#else
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={0, 0, struRii->rajo, (void *)ri, 0, 0, 0, 0};
+#endif
 
     RgfAcquireLock();
+
+#ifdef RGF_ATTACH_NEW
+    environmentAttachToNew(&param);     // attach to Java
+#else
     environmentAttachTo(&param, FALSE); // attach to Java
+#endif
 
 #if defined ( DEBUG_SHOW_STRUCTURES )
     dumpPARAM(   "rexx_command_handler_entry(), after environmentAttachTo(...): param:", &param);
-    dumpRAJO(    "rexx_command_handler_entry(), after environmentAttachTo(...), 1: ");
-    dumpTID2NODE("rexx_command_handler_entry(), after environmentAttachTo(...), 1: ");
+    #ifdef RGF_ATTACH_NEW
+        dumpRAJO(    "rexx_command_handler_entry(), after environmentAttachTo(...), 1: ");
+        dumpTID2NODE("rexx_command_handler_entry(), after environmentAttachTo(...), 1: ");
+    #endif
 #endif
 
     if (param.error== -1)    // could not attach to Java
@@ -13898,7 +14363,13 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
         param.env->DeleteLocalRef(jhandler);
 
         RgfAcquireLock();
+
+#ifdef RGF_ATTACH_NEW
+        environmentDetachFromNew(&param);
+#else
         environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
+
         RgfReleaseLock();
         delete[] msg;
         return NULL;
@@ -13909,7 +14380,11 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
         param.env->DeleteLocalRef(jaddress);
 
         RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+        environmentDetachFromNew(&param);
+#else
         environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
         RgfReleaseLock();
 
         SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_handler_entry(), error 4: cannot find Java command handler (returned \"NULL\") for command name/address=[%s]",
@@ -13984,7 +14459,11 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
         param.env->DeleteLocalRef(jcommand);
 
         RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+        environmentDetachFromNew(&param);
+#else
         environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
         RgfReleaseLock();
 
         SNPRINTF(msg, 1024, "%.16s/internal/rexx_command_handler_entry(), error 5: Java exception, cannot find the Java Rexx exit handler method named [%s], needed for processing the command addressed to: [%s]",
@@ -14023,7 +14502,11 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
         param.env->DeleteLocalRef(jresult);
 
         RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+        environmentDetachFromNew(&param);
+#else
         environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
         RgfReleaseLock();
         delete[] msg;
         return NULL;
@@ -14039,7 +14522,11 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
         param.env->DeleteLocalRef(jresult);
 
         RgfAcquireLock();
+#ifdef RGF_ATTACH_NEW
+        environmentDetachFromNew(&param);
+#else
         environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
         RgfReleaseLock();
         delete[] msg;
         return NULL;
@@ -14061,7 +14548,11 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
     param.env->DeleteLocalRef(jresult);
 
     RgfAcquireLock();
-    environmentDetachFrom(&param, FALSE);    // do not close group
+#ifdef RGF_ATTACH_NEW
+        environmentDetachFromNew(&param);
+#else
+        environmentDetachFrom(&param, FALSE);    // do not close group
+#endif
     RgfReleaseLock();
 
 #if defined ( RGF_INFO ) // || defined ( RGF_COMMAND_HANDLER )
@@ -14401,7 +14892,14 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCon
     fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetConditionInfo rop=[%p] <== <==\n",rop);
 #endif
 
+
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={env, rajo, 0, false, 0};
+#else
     STRUCT_PARAM param={0, env, rajo, 0, 0, 0, 0, 0};
+#endif
+
     jobject jobj=RgfRexxObject2JavaObject(&param,context->threadContext,rop);
 
 #if defined (DEBUG_JNI)
@@ -14531,7 +15029,13 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCal
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
     RexxObjectPtr rop=context->GetCallerContext();
 
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={env, rajo, 0, false, 0};
+#else
     STRUCT_PARAM param={0, env, rajo, 0, 0, 0, 0, 0};
+#endif
+
     jobject jobj=RgfRexxObject2JavaObject(&param,context->threadContext,rop);
 
 #if defined (DEBUG_JNI)
@@ -14557,7 +15061,13 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetAll
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
     RexxObjectPtr rop=context->GetAllContextVariables();
 
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={env, rajo, 0, false, 0};
+#else
     STRUCT_PARAM param={0, env, rajo, 0, 0, 0, 0, 0};
+#endif
+
     jobject jobj=RgfRexxObject2JavaObject(&param,context->threadContext,rop);
 
 #if defined (DEBUG_JNI)
@@ -14582,7 +15092,13 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetLoc
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
     RexxObjectPtr rop=context->GetLocalEnvironment();
 
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={env, rajo, 0, false, 0};
+#else
     STRUCT_PARAM param={0, env, rajo, 0, 0, 0, 0, 0};
+#endif
+
     jobject jobj=RgfRexxObject2JavaObject(&param,context->threadContext,rop);
 
 #if defined (DEBUG_JNI)
@@ -14607,7 +15123,13 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlo
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
     RexxObjectPtr rop=context->GetGlobalEnvironment();
 
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={env, rajo, 0, false, 0};
+#else
     STRUCT_PARAM param={0, env, rajo, 0, 0, 0, 0, 0};
+#endif
+
     jobject jobj=RgfRexxObject2JavaObject(&param,context->threadContext,rop);
 
 #if defined (DEBUG_JNI)
@@ -14633,7 +15155,13 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniNil
     RexxExitContext  *context=(RexxExitContext *) rgfUnwrapPointer(env, (jstring) env->GetObjectArrayElement(j_slot, (jint) 2));
     RexxObjectPtr rop=context->Nil();
 
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={env, rajo, 0, false, 0};
+#else
     STRUCT_PARAM param={0, env, rajo, 0, 0, 0, 0, 0};
+#endif
+
     jobject jobj=RgfRexxObject2JavaObject(&param,context->threadContext,rop);
 
 #if defined (DEBUG_JNI)

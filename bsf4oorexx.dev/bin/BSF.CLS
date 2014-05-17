@@ -12,6 +12,7 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2014-05-17, rgf: - adjust bsf.terminateRexxEngine() to cater for the new behaviour
          2014-05-15, rgf: - moved MacOSX initialization code to public routine "makeBSF4ooRexxLookLikeMacOSX":
                             ooRexx macros in AOO 4.x on MacOSX do not run, as this setup code uses
                             an awt class which must nor run on the main thread on MacOSX. As a result
@@ -333,7 +334,7 @@
 
 
 
-   version:     4.50 (20140330)
+   version:     4.50 (20140517)
 
    authors:     (c) 2001-2014 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
@@ -422,7 +423,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="450.20140515" -- set version (date distribution got created)
+   .bsf4rexx~version="450.20140517" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3696,5 +3697,11 @@ syntax:
    -- to Rexx are not safe anymore
 ::routine BSF.terminateRexxEngine public
   re=bsf.wrap(bsf('getRexxEngine'))
-  re~terminate                -- will not terminate the primodal Rexx interpreter instance!
+  re~terminate                -- terminate Rexx interpreter instance to inhibit callbacks from Java
+
+  signal on syntax            -- if terminated, we now get a syntax error by BSF()
   return re~isTerminated      -- indicate whether terminating the Rexx engine was successful
+syntax:
+  return .true                -- terminated successfully
+
+

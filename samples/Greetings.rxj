@@ -18,7 +18,7 @@
 
    Needs:    ooRexx, BSF4Rexx
 
-   Date:    2001-04-18, 2003-01-23, 2003-05-10
+   Date:    2001-04-18, 2003-01-23, 2003-05-10, 2014-05-16
 
    Author:   Rony G. Flatscher, University of Essen, WU Wien University,
              derived from Peter Kalender's proof-of-concept work for the "Essener Ski Seminar",
@@ -37,13 +37,14 @@
                              - replacing bsf.addEventListener[WithEventObject] with a Rexx event handler
                              - make sure that awt-thread is not blocked on second GUI popup
             2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+            2014-05-15, rgf, - remove BSFAttachToTID()-logic, not needed anymore
 
    last change: $Revision: 684 $ $Author: rony $ $Date: 2010-05-16 23:04:56 +0200 (Sun, 16 May 2010) $
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2012 Rony G. Flatscher
+       Copyright (C) 2001-2014 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -75,7 +76,6 @@ else                          say "No JVM present, we got troubles ..."
 /* create userData for use with the Greetings routine and event handlers;
    this allows us to access the registered objects      */
 userData=.directory~new
-userData~mainTID=BsfGetTID()  -- save main TID, such that we can attach to this thread's Java bridge
 
 rexxCloseEH=.RexxCloseAppEventHandler~new -- create Rexx event handler
       -- create a RexxProxy for our Rexx event handler
@@ -214,10 +214,6 @@ call BSF.terminateRexxEngine
   use arg eventObject, slotDir
 
   reply              -- do not block awt-thread, proceed execution on a new thread
-  signal on syntax   -- in case this thread was already attached to the main thread, intercept condition
-  call bsfAttachToTID slotDir~userData~mainTid  -- attach to main thread's Java bridge
-
-syntax:
   call Greetings slotDir~userData
 
 

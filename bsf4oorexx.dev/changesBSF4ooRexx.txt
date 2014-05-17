@@ -1,3 +1,17 @@
+-------------------------------------- 2014-05-17 ----------------------------------
+
+- BSF4ooRexx.cc
+
+    - simplified attaching/detaching to the JVM, a side effect will be a slight performance
+      improvement (appr. 5%)
+
+
+- BSF.CLS
+
+    - adjust public routine BSF.terminateRexxEngine() to new behaviour (will return .true,
+      if termination was carried out already, such that message isTerminated cannot be
+      carried out anymore, causing a Rexx condition)
+
 -------------------------------------- 2014-05-15 ----------------------------------
 
 - BSF4ooRexx.cc

@@ -26,6 +26,7 @@
                              - replacing bsf.addEventListener with Rexx event handlers
             2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
             2013-12-19, rgf, - resolve path to file "ShootAnswers.txt"
+            2014-05-16, rgf, - remove BSFAttachToTID()-logic, not needed anymore
 
    Author:   Rony G. Flatscher, WU Wien University,
 
@@ -34,7 +35,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2013 Rony G. Flatscher
+       Copyright (C) 2001-2014 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -82,7 +83,6 @@ else                          say "No JVM present, we got troubles ..."
 
    -- Create a mainUserData directory for the event handlers
 mainUserData = .directory~new  -- a directory which will be passed to Rexx with the event
-mainUserData~mainTID=BsfGetTID()  -- save main TID, such that we can attach to this thread's Java bridge
 
         /* create labels                */
 label1 = .awtLabel~new('Your question?')
@@ -351,10 +351,6 @@ call BSF.terminateRexxEngine
 
   -- switch away from awt-thread, attach to main thread's Java bridge, make dialog visible
   reply              -- do not block awt-thread, proceed execution on a new thread
-  signal on syntax   -- in case this thread was already attached to the main thread, intercept condition
-  call bsfAttachToTID mainUserData~mainTid   -- attach to main thread's Java bridge
-
-syntax:
    -- make dialog visible
   pwDialog ~setVisible(.true)
   rexxPwdCloseEH~waitForExit  -- wait until we are allowed to end the program
@@ -416,10 +412,6 @@ syntax:
   -- switch away from awt-thread, attach to main thread's Java bridge, make dialog visible
   reply              -- do not block awt-thread, proceed execution on a new thread
       -- now executing on a new thread!
-  signal on syntax   -- in case this thread was already attached to the main thread, intercept condition
-  call bsfAttachToTID pwUserData~mainUserData~mainTid -- attach to main thread's Java bridge
-
-syntax:
    -- create edit answers dialog and let it execute
   call createEditAnswersDialog pwUserData
 
