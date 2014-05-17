@@ -861,22 +861,12 @@ RgfGetTID();
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
 
-// #define RGF_RXSIO_EXIT_NAME         Rgf_RXSIO_Exit     // ---rgf, 2006-01-27
-// #define RGF_RXSIO_EXIT_NAME_STRING "Rgf_RXSIO_Exit"    // ---rgf, 2006-01-27
-
-typedef struct {
-   PCHAR strBuffer ;        // buffer to contain the last four lines to stderr (< 512bytes)
-   PINT  intBuffer ;        // [0] ... present count, [1] ... points to next entry (0...3)
-} RGF_STDERR_BUFFER ;
-
-
 
 #define DLLNAME         "BSF4ooRexx"      // name of DLL and name for "PARSE SOURCE"
 // #define JAVA_CALL_BSF   "javaCallBSF"   // name of the Java method that carries out the BSF()-call
 
 #define  INVALID_ROUTINE 40            /* Rexx: raise Rexx error # 40   */
 #define  VALID_ROUTINE    0            /* Rexx: successful completion   */
-
 
 
 // globals, rgf, 2008-08-01
@@ -889,45 +879,15 @@ const int CONST_LENGTH_OF_POINTER_0 = sizeof( PVOID )*2+1;
     // ---rgf, 2006-11-19: define boolean and maximum length for Java's event trace
 int       bShowErrorString = 1;         // default to showing (dumping) Java traceback in case of an error
 #define BSF_ERROR_STRING  "BSF_ERROR_MESSAGE"    // variable name to use to save Java error message in Rexx variable
+
+#ifdef OBSOLETE
 const int lenBsfErrorString = (int) strlen(BSF_ERROR_STRING);   // calc length once and forever
-
-    // globals, rgf, 2009-05-10
-
-// RexxClassObject STRING_CLZ;     // .String
-
-
-
-/*
-    // macros that should correct/bypass problems in various versions of ooRexx
-
-    // rgf, 2010-05-21
-inline size_t REXX_STRING_LENGTH (RexxThreadContext *rtc, RexxStringObject rso)
-{
-        // in ooRexx 4.0.1 it may be the case that StringLength() returns a wrong value,
-        // cf. <https://sourceforge.net/tracker/?func=detail&atid=684730&aid=3005462&group_id=119701>
-    if (REXX_CURRENT_INTERPRETER_VERSION != REXX_INTERPRETER_4_0_1)
-    {
-        return rtc->StringLength(rso); // get and return string's length
-fprintf(stderr, "\nREXX_STRING_LENGHT: branch 4_0_1 ....");fflush(stderr);
-    }
-    else    // send the LENGTH message to the RexxStringObject instead
-    {
-fprintf(stderr, "\nREXX_STRING_LENGHT: OTHER branch ....");fflush(stderr);
-
-        size_t tmpLength;
-        logical_t res=rtc->ObjectToStringSize(rtc->SendMessage0(rso, "LENGTH"), &tmpLength);
-        return tmpLength;
-    }
-}
-*/
-
-
+#endif
 
 
 // forward prototypes
     PVOID RgfAllocateMemory(size_t size);
     void  RgfFreeMemory (void * memory);
-
 
 
 // === (BEGIN) ========================> maintain list of RexxInterpreterInstances, OREXX_REGISTRY ========>
@@ -3647,33 +3607,33 @@ typedef STRUCT_TID2NODE *PSTRUCT_TID2NODE;          // pointer to structure
 long size_STRUCT_TID2NODE=sizeof(STRUCT_TID2NODE);  // get and memorize size of structure
 PSTRUCT_TID2NODE pRoot_TID2NODE=NULL;       // root of TID2NODE list
 
+#ifndef RGF_ATTACH_NEW
+        // structure for maintaining thread-related call information
+    typedef struct _STRUCT_PARAM {
+    #ifdef UNIX
+        pthread_t
+    #else
+        TID
+    #endif
+                                      tid;              // current TID or NULL
+        JNIEnv                       *env;              // current JNIEnv or NULL
+        jobject                       rajo;             // current rajo or NULL
+        void                         *riid;             // to Rexx instance ID
 
-    // structure for maintaining thread-related call information
-typedef struct _STRUCT_PARAM {
-#ifdef UNIX
-    pthread_t
-#else
-    TID
+        int                           bDetach;          // TRUE: use DetachCurrentThread(), FALSE: do nothing
+        jint                          attachResult;     // JNI_OK (0), JNI_EDETACHED or JNI_EVERSION
+        int                           error;            // OK==0
+    #ifdef UNIX
+        pthread_t
+    #else
+        TID
+    #endif
+                                      attach2tid;       // TID to attach to or NULL
+    }  STRUCT_PARAM;
+
+    typedef STRUCT_PARAM *PSTRUCT_PARAM;          // pointer to structure
+    long size_STRUCT_PARAM=sizeof(STRUCT_PARAM);  // get and memorize size of structure
 #endif
-                                  tid;              // current TID or NULL
-    JNIEnv                       *env;              // current JNIEnv or NULL
-    jobject                       rajo;             // current rajo or NULL
-    void                         *riid;             // to Rexx instance ID
-
-    int                           bDetach;          // TRUE: use DetachCurrentThread(), FALSE: do nothing
-    jint                          attachResult;     // JNI_OK (0), JNI_EDETACHED or JNI_EVERSION
-    int                           error;            // OK==0
-#ifdef UNIX
-    pthread_t
-#else
-    TID
-#endif
-                                  attach2tid;       // TID to attach to or NULL
-}  STRUCT_PARAM;
-
-typedef STRUCT_PARAM *PSTRUCT_PARAM;          // pointer to structure
-long size_STRUCT_PARAM=sizeof(STRUCT_PARAM);  // get and memorize size of structure
-
 
 #ifdef RGF_ATTACH_NEW       // ---rgf, 2014-05-16: new (simplified) attach/detach logic
         // structure for maintaining thread-related call information
@@ -3709,251 +3669,424 @@ RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (
     #endif
         param, int isCallContext, void *argCtxt, const char * errorStringPattern);
 
-void removeRAJO(JNIEnv *env, PSTRUCT_RAJO node);
-void removeNODE(JNIEnv *env, PSTRUCT_NODE node);
-void removeTID2NODE(JNIEnv *env, PSTRUCT_TID2NODE node);
 
-void cleanTID2NODE (JNIEnv *env);
-void cleanRAJO (JNIEnv *env);
+#ifndef RGF_ATTACH_NEW
+    void removeRAJO(JNIEnv *env, PSTRUCT_RAJO node);
+    void removeNODE(JNIEnv *env, PSTRUCT_NODE node);
+    void removeTID2NODE(JNIEnv *env, PSTRUCT_TID2NODE node);
 
-PSTRUCT_RAJO findRAJO (
-    #ifdef UNIX
-        pthread_t
-    #else
-        TID
-    #endif
-             tid       // thread ID
-    );
+    void cleanTID2NODE (JNIEnv *env);
+    void cleanRAJO (JNIEnv *env);
 
-PSTRUCT_NODE findFirstNODE(
-    #ifdef UNIX
-        pthread_t
-    #else
-        TID
-    #endif
-             tid       // thread ID
-    );
+    PSTRUCT_RAJO findRAJO (
+        #ifdef UNIX
+            pthread_t
+        #else
+            TID
+        #endif
+                 tid       // thread ID
+        );
 
-PSTRUCT_TID2NODE addRajoToTID2NODE (PSTRUCT_PARAM param, int bNewGroup);
+    PSTRUCT_NODE findFirstNODE(
+        #ifdef UNIX
+            pthread_t
+        #else
+            TID
+        #endif
+                 tid       // thread ID
+        );
 
-int subtractRajoFromTID2NODE (JNIEnv *env,
-                            #ifdef UNIX
-                                pthread_t
-                            #else
-                                TID
-                            #endif
-                                     tid,
-                              int bCloseGroup,
-                              int bKeepPrimodalGroup
-                         );
+    PSTRUCT_TID2NODE addRajoToTID2NODE (PSTRUCT_PARAM param, int bNewGroup);
 
-
-PSTRUCT_TID2NODE findTID2NODE(
-    #ifdef UNIX
-        pthread_t
-    #else
-        TID
-    #endif
-             tid       // thread ID
-    );
+    int subtractRajoFromTID2NODE (JNIEnv *env,
+                                #ifdef UNIX
+                                    pthread_t
+                                #else
+                                    TID
+                                #endif
+                                         tid,
+                                  int bCloseGroup,
+                                  int bKeepPrimodalGroup
+                             );
 
 
+    PSTRUCT_TID2NODE findTID2NODE(
+        #ifdef UNIX
+            pthread_t
+        #else
+            TID
+        #endif
+                 tid       // thread ID
+        );
 
-    // ---------------------------------------------------------------------------------------
-    // ---------------------------------------------------------------------------------------
 
-    // dumpPARAM
-inline void dumpPARAM(const char *title, PSTRUCT_PARAM param)
-{
-    fprintf(stderr, "+++ dumpPARAM(), %s tid=[%lu], env=[%p], rajo=[%p], riid=[%p], bDetach=[%d], error=[%d], attachResult=[%d], attachToTID=[%lu]\n", title,
-                    (unsigned long) param->tid,
-                    param->env,
-                    param->rajo,
-                    param->riid,
-                    param->bDetach,
-                    param->error,
-                    (int) param->attachResult,
-                    (unsigned long) param->attach2tid
-                    );
-}
 
-    // dump RAJO-list
-inline void dumpRAJO(const char *title)
-{
-    fprintf(stderr, "+++ dumpRAJO(), %s pRoot_RAJO=[%p]\n", title, pRoot_RAJO); fflush(stderr);
+        // ---------------------------------------------------------------------------------------
+        // ---------------------------------------------------------------------------------------
 
-    if (pRoot_RAJO!=NULL)
+        // dumpPARAM
+    inline void dumpPARAM(const char *title, PSTRUCT_PARAM param)
     {
-        for (PSTRUCT_RAJO pr=pRoot_RAJO; pr!=NULL; pr=pr->next)
-        {
-            fprintf(stderr, "\tRAJO [%p]={prev=[%p], next=[%p], refCounter=[%d], rajo=[%p], riid=[%p]}\n",
-                                     pr,
-                                     pr->prev,
-                                     pr->next,
-                                     pr->refCounter,
-                                     pr->rajo, pr->riid
-                                    );
-            fflush(stderr);
-        }
-        fprintf(stderr, "\n"); fflush(stderr);
-    }
-}
-
-    // dump TID2NODE-list
-inline void dumpTID2NODE(const char *title)
-{
-    fprintf(stderr, "+++ dumpTID2NODE(), %s pRoot_TID2NODE=[%p]\n", title, pRoot_TID2NODE); fflush(stderr);
-
-    if (pRoot_TID2NODE!=NULL)
-    {
-        for (PSTRUCT_TID2NODE t2n=pRoot_TID2NODE; t2n!=NULL; t2n=t2n->next)
-        {
-            fprintf(stderr, "\tTID2NODE [%p]={tid=[%lu], prev=[%p], next=[%p], firstNode=[%p]}\n",
-                                     t2n,
-                                     (unsigned long) t2n->tid,
-                                     t2n->prev,
-                                     t2n->next,
-                                     t2n->firstNode
-                                    );
-            fflush(stderr);
-
-                // list node-list
-            for (PSTRUCT_NODE pn=t2n->firstNode; pn!=NULL; pn=pn->next)
-            {
-                fprintf(stderr, "\t\t  NODE\t[%p]={nodeRefCount=[%d], belongsT2N=[%p], dependsOn=[%p],\n\t\t\tprev=[%p], next=[%p], rajoRef=[%p], riid=[%p],\n\t\t\tfirstDependent=[%p], prevDependent=[%p], nextDependent=[%p]}\n",
-                                pn,
-                                pn->nodeRefCounter,
-                                pn->belongsToTID2NODE,
-                                pn->dependsOn,
-                                pn->prev,
-                                pn->next,
-                                pn->rajoRef,
-                                pn->riid,
-                                pn->firstDependent,
-                                pn->prevDependent,
-                                pn->nextDependent
+        fprintf(stderr, "+++ dumpPARAM(), %s tid=[%lu], env=[%p], rajo=[%p], riid=[%p], bDetach=[%d], error=[%d], attachResult=[%d], attachToTID=[%lu]\n", title,
+                        (unsigned long) param->tid,
+                        param->env,
+                        param->rajo,
+                        param->riid,
+                        param->bDetach,
+                        param->error,
+                        (int) param->attachResult,
+                        (unsigned long) param->attach2tid
                         );
+    }
+
+        // dump RAJO-list
+    inline void dumpRAJO(const char *title)
+    {
+        fprintf(stderr, "+++ dumpRAJO(), %s pRoot_RAJO=[%p]\n", title, pRoot_RAJO); fflush(stderr);
+
+        if (pRoot_RAJO!=NULL)
+        {
+            for (PSTRUCT_RAJO pr=pRoot_RAJO; pr!=NULL; pr=pr->next)
+            {
+                fprintf(stderr, "\tRAJO [%p]={prev=[%p], next=[%p], refCounter=[%d], rajo=[%p], riid=[%p]}\n",
+                                         pr,
+                                         pr->prev,
+                                         pr->next,
+                                         pr->refCounter,
+                                         pr->rajo, pr->riid
+                                        );
+                fflush(stderr);
+            }
+            fprintf(stderr, "\n"); fflush(stderr);
+        }
+    }
+
+        // dump TID2NODE-list
+    inline void dumpTID2NODE(const char *title)
+    {
+        fprintf(stderr, "+++ dumpTID2NODE(), %s pRoot_TID2NODE=[%p]\n", title, pRoot_TID2NODE); fflush(stderr);
+
+        if (pRoot_TID2NODE!=NULL)
+        {
+            for (PSTRUCT_TID2NODE t2n=pRoot_TID2NODE; t2n!=NULL; t2n=t2n->next)
+            {
+                fprintf(stderr, "\tTID2NODE [%p]={tid=[%lu], prev=[%p], next=[%p], firstNode=[%p]}\n",
+                                         t2n,
+                                         (unsigned long) t2n->tid,
+                                         t2n->prev,
+                                         t2n->next,
+                                         t2n->firstNode
+                                        );
                 fflush(stderr);
 
-                    // list dependent list
-                if (pn->firstDependent!=NULL)
+                    // list node-list
+                for (PSTRUCT_NODE pn=t2n->firstNode; pn!=NULL; pn=pn->next)
                 {
-                    fprintf(stderr, "\t\t\tdependents:\n");
-                    fflush(stderr);
-                    for (PSTRUCT_NODE i=pn->firstDependent; i!=NULL; i=i->nextDependent)
-                    {
-                        fprintf(stderr, "\t\t\t\t dependency-NODE [%p]={nodeRefCount=[%d], belongsT2N=[%p] (tid=[%lu]), dependsOn=[%p], rajoRef=[%p], riid=[%p],\n\t\t\t\t\t prevDependent=[%p], nextDependent=[%p]}\n",
-                                i,
-                                i->nodeRefCounter,
-                                i->belongsToTID2NODE,
-                                (unsigned long) ((PSTRUCT_TID2NODE) i->belongsToTID2NODE)->tid,
-                                i->dependsOn,
-                                i->rajoRef,
-                                i->riid,
-                                i->prevDependent,
-                                i->nextDependent);
-                    }
+                    fprintf(stderr, "\t\t  NODE\t[%p]={nodeRefCount=[%d], belongsT2N=[%p], dependsOn=[%p],\n\t\t\tprev=[%p], next=[%p], rajoRef=[%p], riid=[%p],\n\t\t\tfirstDependent=[%p], prevDependent=[%p], nextDependent=[%p]}\n",
+                                    pn,
+                                    pn->nodeRefCounter,
+                                    pn->belongsToTID2NODE,
+                                    pn->dependsOn,
+                                    pn->prev,
+                                    pn->next,
+                                    pn->rajoRef,
+                                    pn->riid,
+                                    pn->firstDependent,
+                                    pn->prevDependent,
+                                    pn->nextDependent
+                            );
                     fflush(stderr);
 
+                        // list dependent list
+                    if (pn->firstDependent!=NULL)
+                    {
+                        fprintf(stderr, "\t\t\tdependents:\n");
+                        fflush(stderr);
+                        for (PSTRUCT_NODE i=pn->firstDependent; i!=NULL; i=i->nextDependent)
+                        {
+                            fprintf(stderr, "\t\t\t\t dependency-NODE [%p]={nodeRefCount=[%d], belongsT2N=[%p] (tid=[%lu]), dependsOn=[%p], rajoRef=[%p], riid=[%p],\n\t\t\t\t\t prevDependent=[%p], nextDependent=[%p]}\n",
+                                    i,
+                                    i->nodeRefCounter,
+                                    i->belongsToTID2NODE,
+                                    (unsigned long) ((PSTRUCT_TID2NODE) i->belongsToTID2NODE)->tid,
+                                    i->dependsOn,
+                                    i->rajoRef,
+                                    i->riid,
+                                    i->prevDependent,
+                                    i->nextDependent);
+                        }
+                        fflush(stderr);
+
+                    }
                 }
             }
+            fprintf(stderr, "\n"); fflush(stderr);
         }
-        fprintf(stderr, "\n"); fflush(stderr);
     }
-}
 
 
 
-    // ---------------------------------------------------------------------------------------
-    // empty all RAJO/TID2NODE structures (e.g. when unloading Java)
-inline void empty_RAJO_TID2NODE_structures(JNIEnv *env)
-{
-
-#if defined ( RGF_INFO_1 )
-    fprintf(stderr, "*** *** RGF_INFO_1: empty_RAJO_TID2NODE_structures() 1, removing pRoot_TID2NODE=[%p] with all NODEs...\n", pRoot_TID2NODE);
-    fflush(stderr);
-#endif
-       // remove all TID2NODE nodes
-    //for (PSTRUCT_TID2NODE t2n=pRoot_TID2NODE; t2n=NULL; )
-    for (PSTRUCT_TID2NODE t2n=pRoot_TID2NODE; t2n!=NULL; ) // JLF fix the test (typo error)
+        // ---------------------------------------------------------------------------------------
+        // empty all RAJO/TID2NODE structures (e.g. when unloading Java)
+    inline void empty_RAJO_TID2NODE_structures(JNIEnv *env)
     {
-        PSTRUCT_TID2NODE nextT2N_node=t2n->next;    // save next node, as current t2n node pointed will be removed in the process
-        for (PSTRUCT_NODE i=t2n->firstNode; i!=NULL;)
+
+    #if defined ( RGF_INFO_1 )
+        fprintf(stderr, "*** *** RGF_INFO_1: empty_RAJO_TID2NODE_structures() 1, removing pRoot_TID2NODE=[%p] with all NODEs...\n", pRoot_TID2NODE);
+        fflush(stderr);
+    #endif
+           // remove all TID2NODE nodes
+        //for (PSTRUCT_TID2NODE t2n=pRoot_TID2NODE; t2n=NULL; )
+        for (PSTRUCT_TID2NODE t2n=pRoot_TID2NODE; t2n!=NULL; ) // JLF fix the test (typo error)
         {
-            PSTRUCT_NODE nextNode=i->next;          // save next node, as current node will be deleted
-            removeNODE(env, i);     // remove NODE, will also remove all dependents
-            i=nextNode;
+            PSTRUCT_TID2NODE nextT2N_node=t2n->next;    // save next node, as current t2n node pointed will be removed in the process
+            for (PSTRUCT_NODE i=t2n->firstNode; i!=NULL;)
+            {
+                PSTRUCT_NODE nextNode=i->next;          // save next node, as current node will be deleted
+                removeNODE(env, i);     // remove NODE, will also remove all dependents
+                i=nextNode;
+            }
+            removeTID2NODE(env, t2n);
+            t2n=nextT2N_node;
         }
-        removeTID2NODE(env, t2n);
-        t2n=nextT2N_node;
-    }
-    pRoot_TID2NODE=NULL;
+        pRoot_TID2NODE=NULL;
 
-#if defined ( RGF_INFO_1 )
-    fprintf(stderr, "*** *** RGF_INFO_1: empty_RAJO_TID2NODE_structures() 2, removing pRoot_RAJO=[%p] nodes ...\n", pRoot_RAJO);
-    fflush(stderr);
+    #if defined ( RGF_INFO_1 )
+        fprintf(stderr, "*** *** RGF_INFO_1: empty_RAJO_TID2NODE_structures() 2, removing pRoot_RAJO=[%p] nodes ...\n", pRoot_RAJO);
+        fflush(stderr);
+    #endif
+            // make sure all RAJO nodes are removed as well !
+        for (PSTRUCT_RAJO pr=pRoot_RAJO; pr!=NULL; )
+        {
+            PSTRUCT_RAJO nextNode=pr->next;
+            removeRAJO(env, pRoot_RAJO);
+            pr=nextNode;
+        }
+        pRoot_RAJO=NULL;
+    }
+
+
+        // Create the Rexx exception message, if something went wrong with environmentAttachTo
+        // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
+        //                  -2 ... no rajo found, raise an exception in caller
+        //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
+        //                  -4 ... cannot attach to target TID
+        //                 -99 ... no JVM available !
+    inline void createAttachErrorMessage(const char *title, char *buf, size_t bufLen, PSTRUCT_PARAM param)
+    {
+        if (param->error == -1)         // JNI attach error
+        {
+            SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], thread [%lu] cannot 'AttachCurrentThread(...)' to JVM=[%p], Java's return code=[%d] ('0'=JNI_OK, '-1'=JNI_ERR, '-2'=JNI_EDETACHED, '-3'=JNI_EVERSION, '-4'=JNI_ENOMEM, '-5'=JNI_EEXIST, '-6'=JNI_EINVAL)",
+                          DLLNAME, title, param->error, (unsigned long) param->tid, defaultJVM->jvm, (int) param->attachResult);
+        }
+        else if (param->error == -2)    // no rajo associated with this TID!
+        {
+            SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], cannot attach to thread [%lu] (not yet|no more set up for Java interaction, 'rajo' not found)",
+                          DLLNAME, title, param->error, (unsigned long) param->tid);
+        }
+        else if (param->error == -3)    // TID has Rexx threads using different 'rajo', dangerous, hence an error!
+        {
+
+            SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], thread's (tid=[%lu]) interface to Java already used by multiple Rexx threads, cannot (temporarily) overload Java interface with a different Java object as addressee therefore.",
+                          DLLNAME, title, param->error, (unsigned long) param->tid);
+        }
+        else if (param->error == -4)    // target TID is not set up with a 'rajo'
+        {
+            SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], cannot attach to thread [%lu] (not yet|no more set up for Java interaction)",
+                          DLLNAME, title, param->error, (unsigned long) param->tid);
+        }
+        else if (param->error == -99)   // no JVM available!
+        {
+            SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], panic! No JVM available", DLLNAME, title, param->error);
+        }
+
+        else                        // unknown error !
+        {
+            SNPRINTF( buf, bufLen, "%.16s/%.64s: unknown ATTACH ERROR: tid=[%lu], env=[%p], rajo=[%p], riid=[%p], bDetach=[%d], attachResult=[%d], error=[%d]",
+                          DLLNAME, title,
+                              (unsigned long) param->tid,
+                              param->env,
+                              param->rajo,
+                              param->riid,
+                              param->bDetach,
+                              (int) param->attachResult,
+                              param->error
+                          );
+        }
+    }
+
+
+        // Create the Rexx exception message, if something went wrong with environmentAttachTo
+        // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
+        //                  -2 ... no rajo found, raise an exception in caller
+        //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
+        //                  -4 ... cannot attach to target TID
+        //                 -99 ... no JVM available !
+    inline RexxStringObject createAttachErrorMessageRSO(RexxCallContext *rcc, const char *title, PSTRUCT_PARAM param)
+    {
+        char buf[512];
+        createAttachErrorMessage(title, buf, 512, param);   // create the message
+        RexxStringObject rso=rcc->String(buf);              // turn it into a RSO
+        rcc->SetContextVariable(BSF_ERROR_STRING, rso);     // set context error variable
+        return rso;
+    }
+
+
+
+
+        // ---------------------------------------------------------------------------------------
+        // - get JNIEnv, if necessary do a AttachCurrentThread() and remember that we need a (bDetach=TRUE)
+        // - if rajo is NULL get rajo; if a rajo then in any case use addRajoToTID2NODE(), else return NULL
+        // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
+        //                  -2 ... no rajo found, raise an exception in caller
+        //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
+        //                  -4 ... cannot attach to target TID
+        //                 -99 ... no JVM available !
+        // - bNewGroup:     TRUE=increase counters by 2 (instead of 1) to keep the nodes around after doing
+        //                  an environmentDetach
+        // NOTE: if an AttachCurrentThread() was carried out, and an error (-2 or -3) occurs, then
+        //       the caller is responsible to carry out a DetachCurrentThread()!
+        //       This way this function can be used for attaching, such that upon return interactions with
+        //       Java are possible.
+
+    // rgf, 2011-03-19: all of a sudden inline will cause a problem as global variable defaultJVM is
+    //                  not addressed correctly anymore, removing inline remedies the situation!
+    // (i686-apple-darwin10-gcc-4.2.1 (GCC) 4.2.1 (Apple Inc. build 5664))
+    #ifndef __APPLE__
+        inline
+    #endif
+    void environmentAttachTo(PSTRUCT_PARAM param, int bNewGroup)
+    {
+
+        if (defaultJVM->jvm == NULL)    // no JVM available !
+        {
+    #if defined (DEBUG_JAVA_ATTACH_DETACH)
+        fprintf(stderr, "environmentAttachTo() - NO JVM? defaultJVM->jvm=[%p], defaultJVM->primodal_rajo=[%p]\n", defaultJVM->jvm, defaultJVM->primodal_rajo);
+        fflush(stderr);
+    #endif
+
+            param->error=-99;
+            return;
+        }
+
+        // if (param->tid==NULL)           // no tid given, then get current TID
+        if (param->tid==0)              // no tid given, then get current TID
+        {
+            param->tid=RgfGetTID();
+        }
+
+        if (param->env==NULL)           // no JNIEnv object yet, get one
+        {
+                // is this thread already attached, if so get it
+            if ((param->attachResult=defaultJVM->jvm->GetEnv((void **)&param->env, USE_DEFINED_JNI_VERSION))==JNI_EDETACHED)
+            {
+                // nope, not yet attached, try to attach
+                if ( (param->attachResult=defaultJVM->jvm->AttachCurrentThread((void **) &param->env, (void *) &defaultJavaVMAttachArgs)) != JNI_OK) // attach to JVM
+                {
+    #if defined (DEBUG_JAVA_ATTACH_DETACH)
+        fprintf(stderr, "environmentAttachTo() - AttachCurrentThread did NOT work ! :-( :-(, attachResult=[%d]\n", (int) param->attachResult);
+        fflush(stderr);
+    #endif
+                    param->error=-1;    // JNI attach error
+                    return;
+                }
+                param->bDetach=TRUE;    // indicate we need an explicit DetachCurrentThread() in this case
+
+    #if defined (DEBUG_JAVA_ATTACH_DETACH)
+        fprintf(stderr, ":) :) :) environmentAttachTo(), tid=[%lu], AttachCurrentThread(...) successful.\n", (unsigned long) param->tid);
+        fflush(stderr);
+    #endif
+            }
+            else if (param->attachResult!=JNI_OK)   // a version error ?
+            {
+    #if defined (DEBUG_JAVA_ATTACH_DETACH)
+        fprintf(stderr, "environmentAttachTo() - GetEnv(...) did NOT work ! :-( :-(, attachResult=[%d]\n", (int) param->attachResult);
+        fflush(stderr);
+    #endif
+                param->error=-1;        // JNI attach error
+                return;
+            }
+            else
+            {
+    #if defined (DEBUG_JAVA_ATTACH_DETACH)
+        fprintf(stderr, ":) :) :) environmentAttachTo(), tid=[%lu], GetEnv() successful.\n", (unsigned long) param->tid);
+        fflush(stderr);
+    #endif
+            }
+        }
+
+        if (param->rajo==NULL)          // no rajo, try to get one
+        {
+    //        PSTRUCT_RAJO pr=findRAJO(param->attach2tid==NULL ? param->tid : param->attach2tid);
+            PSTRUCT_RAJO pr=findRAJO(param->attach2tid==0 ? param->tid : param->attach2tid);
+            if (pr==NULL)               // no rajo found, an error, return !
+            {
+                param->error=-2;        // no rajo found error, caller must detach
+                return;
+            }
+            else    // get and save rajo
+            {
+                param->rajo=pr->rajo;
+            }
+        }
+
+        // if (param->attach2tid==NULL)    // regular operation
+        if (param->attach2tid==0)   // regular operation
+        {
+                // check, whether we may attach to this TID
+            PSTRUCT_NODE node=findFirstNODE(param->tid);
+
+            if (node!=NULL && param->env->IsSameObject(node->rajoRef->rajo, param->rajo)!=TRUE &&
+                node->firstDependent!=NULL
+               )
+            {
+                param->error=-3;        // cannot use this rajo as it would cover a different rajo needed by other Rexx threads!
+                return;
+            }
+        }
+
+            // add new node or increase existing node's counter
+        // addRajoToTID2NODE(param->env, param->tid, param->rajo, param->riid, bNewGroup);
+        addRajoToTID2NODE(param, bNewGroup);
+        return;
+    }
+
+        // ---------------------------------------------------------------------------------------
+        // - subtractRajoFromTID
+        // - detach from JNIEnv if bDetach==TRUE
+        // - bCloseGroup: if TRUE subtract 2 instead of 1 to close group, i.e. nodes may be reclaimed (if not used by other TIDs)
+
+    // rgf, 2011-03-19: all of a sudden inline will cause a problem as global variable defaultJVM is
+    //                  not addressed correctly anymore, removing inline remedies the situation!
+    //                  (i686-apple-darwin10-gcc-4.2.1 (GCC) 4.2.1 (Apple Inc. build 5664)); just make sure this function works correctly under Apple as well
+    #ifndef __APPLE__
+       inline
+    #endif
+    void environmentDetachFrom(PSTRUCT_PARAM param, int bCloseGroup)
+    {
+        // if (param->error==NULL)     // maintain structures
+        if (param->error==0)     // maintain structures
+        {
+            int res=subtractRajoFromTID2NODE(param->env, param->tid, bCloseGroup, 0); // do not indicate to keep primodal group (only necessary for BSFDetach())
+        }
+
+        if (param->bDetach==TRUE)   // doe we need to explicitly detach ?
+        {
+            if (defaultJVM->jvm == NULL)    // no JVM available !
+            {
+                param->error=-99;
+                return;
+            }
+    #if defined (DEBUG_JAVA_ATTACH_DETACH)
+        fprintf(stderr, "environmentDetachFrom(), tid=[%lu], DetachCurrentThread, param->bDetach=[%d]\n", (unsigned long) param->tid, param->bDetach);
+        fflush(stderr);
+    #endif
+            defaultJVM->jvm->DetachCurrentThread();
+        }
+        return;
+    }
+
 #endif
-        // make sure all RAJO nodes are removed as well !
-    for (PSTRUCT_RAJO pr=pRoot_RAJO; pr!=NULL; )
-    {
-        PSTRUCT_RAJO nextNode=pr->next;
-        removeRAJO(env, pRoot_RAJO);
-        pr=nextNode;
-    }
-    pRoot_RAJO=NULL;
-}
-
-
-
-    // Create the Rexx exception message, if something went wrong with environmentAttachTo
-    // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
-    //                  -2 ... no rajo found, raise an exception in caller
-    //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
-    //                  -4 ... cannot attach to target TID
-    //                 -99 ... no JVM available !
-inline void createAttachErrorMessage(const char *title, char *buf, size_t bufLen, PSTRUCT_PARAM param)
-{
-    if (param->error == -1)         // JNI attach error
-    {
-        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], thread [%lu] cannot 'AttachCurrentThread(...)' to JVM=[%p], Java's return code=[%d] ('0'=JNI_OK, '-1'=JNI_ERR, '-2'=JNI_EDETACHED, '-3'=JNI_EVERSION, '-4'=JNI_ENOMEM, '-5'=JNI_EEXIST, '-6'=JNI_EINVAL)",
-                      DLLNAME, title, param->error, (unsigned long) param->tid, defaultJVM->jvm, (int) param->attachResult);
-    }
-    else if (param->error == -2)    // no rajo associated with this TID!
-    {
-        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], cannot attach to thread [%lu] (not yet|no more set up for Java interaction, 'rajo' not found)",
-                      DLLNAME, title, param->error, (unsigned long) param->tid);
-    }
-    else if (param->error == -3)    // TID has Rexx threads using different 'rajo', dangerous, hence an error!
-    {
-
-        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], thread's (tid=[%lu]) interface to Java already used by multiple Rexx threads, cannot (temporarily) overload Java interface with a different Java object as addressee therefore.",
-                      DLLNAME, title, param->error, (unsigned long) param->tid);
-    }
-    else if (param->error == -4)    // target TID is not set up with a 'rajo'
-    {
-        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], cannot attach to thread [%lu] (not yet|no more set up for Java interaction)",
-                      DLLNAME, title, param->error, (unsigned long) param->tid);
-    }
-    else if (param->error == -99)   // no JVM available!
-    {
-        SNPRINTF( buf, bufLen, "%.16s/%.64s: attach error [%d], panic! No JVM available", DLLNAME, title, param->error);
-    }
-
-    else                        // unknown error !
-    {
-        SNPRINTF( buf, bufLen, "%.16s/%.64s: unknown ATTACH ERROR: tid=[%lu], env=[%p], rajo=[%p], riid=[%p], bDetach=[%d], attachResult=[%d], error=[%d]",
-                      DLLNAME, title,
-                          (unsigned long) param->tid,
-                          param->env,
-                          param->rajo,
-                          param->riid,
-                          param->bDetach,
-                          (int) param->attachResult,
-                          param->error
-                      );
-    }
-}
-
 
 #ifdef RGF_ATTACH_NEW
 
@@ -4137,955 +4270,789 @@ void environmentDetachFromNew(PSTRUCT_ATTACH_PARAM param)
 }
 
 
+
 #endif
 
-    // Create the Rexx exception message, if something went wrong with environmentAttachTo
-    // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
-    //                  -2 ... no rajo found, raise an exception in caller
-    //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
-    //                  -4 ... cannot attach to target TID
-    //                 -99 ... no JVM available !
-inline RexxStringObject createAttachErrorMessageRSO(RexxCallContext *rcc, const char *title, PSTRUCT_PARAM param)
-{
-    char buf[512];
-    createAttachErrorMessage(title, buf, 512, param);   // create the message
-    RexxStringObject rso=rcc->String(buf);              // turn it into a RSO
-    rcc->SetContextVariable(BSF_ERROR_STRING, rso);     // set context error variable
-    return rso;
-}
 
+#ifndef RGF_ATTACH_NEW
 
-
-
-    // ---------------------------------------------------------------------------------------
-    // - get JNIEnv, if necessary do a AttachCurrentThread() and remember that we need a (bDetach=TRUE)
-    // - if rajo is NULL get rajo; if a rajo then in any case use addRajoToTID2NODE(), else return NULL
-    // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
-    //                  -2 ... no rajo found, raise an exception in caller
-    //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
-    //                  -4 ... cannot attach to target TID
-    //                 -99 ... no JVM available !
-    // - bNewGroup:     TRUE=increase counters by 2 (instead of 1) to keep the nodes around after doing
-    //                  an environmentDetach
-    // NOTE: if an AttachCurrentThread() was carried out, and an error (-2 or -3) occurs, then
-    //       the caller is responsible to carry out a DetachCurrentThread()!
-    //       This way this function can be used for attaching, such that upon return interactions with
-    //       Java are possible.
-
-// rgf, 2011-03-19: all of a sudden inline will cause a problem as global variable defaultJVM is
-//                  not addressed correctly anymore, removing inline remedies the situation!
-// (i686-apple-darwin10-gcc-4.2.1 (GCC) 4.2.1 (Apple Inc. build 5664))
-#ifndef __APPLE__
-    inline
-#endif
-void environmentAttachTo(PSTRUCT_PARAM param, int bNewGroup)
-{
-
-    if (defaultJVM->jvm == NULL)    // no JVM available !
+    /* 20091006, rgf
+        // ---------------------------------------------------------------------------------------
+        // worker for BsfAttachToTID(tid)
+        // - returns in param->error:   -4 ... if target TID was not found
+        //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
+    inline PSTRUCT_TID2NODE attachToTID_2(PSTRUCT_PARAM param,
+                                     #ifdef UNIX
+                                            pthread_t
+                                        #else
+                                            TID
+                                        #endif
+                                            attachToTID
+    )
     {
-#if defined (DEBUG_JAVA_ATTACH_DETACH)
-    fprintf(stderr, "environmentAttachTo() - NO JVM? defaultJVM->jvm=[%p], defaultJVM->primodal_rajo=[%p]\n", defaultJVM->jvm, defaultJVM->primodal_rajo);
-    fflush(stderr);
-#endif
+        param->error=0;             // make sure error is reset
 
-        param->error=-99;
+        PSTRUCT_RAJO pr=findRAJO(param->tid);   // find RAJO node
+
+    dumpPARAM(   "BsfUnloader(): param:", param);
+
+    fprintf(stderr, "/// aTT2 marker (1), tid=[%lu], RAJO=[%p]...\n", (unsigned long) param->tid, pr);fflush(stderr);
+
+
+        if (pr==NULL)               // no RAJO node for tid
+        {
+    fprintf(stderr, "/// aTT2 marker (2)...\n");fflush(stderr);
+            param->error=-4;        // indicate not target rajo found
+            return NULL;
+        }
+
+            // open a new group
+    fprintf(stderr, "/// aTT2 marker (3)...\n");fflush(stderr);
+        return addRajoToTID2NODE(param->env, param->tid, pr->rajo, param->riid, TRUE, attachToTID);
+    }
+
+
+        // ---------------------------------------------------------------------------------------
+        // worker for BsfDetach()
+        // returns 1=TRUE, 0=FALSE, -1=not found
+    inline int detachFromTID_2(PSTRUCT_PARAM param)
+    {
+            // only deduct one, an environmentDetach will subtract another one, which balances attachToTID_2
+        return subtractRajoFromTID2NODE(param->env, param->tid, FALSE);
+    }
+
+    20091006, rgf */
+
+        // ---------------------------------------------------------------------------------------
+        // remove a given node unconditionally
+    inline void removeTID2NODE(JNIEnv *env, PSTRUCT_TID2NODE node)
+    {
+        if (node->prev!=NULL)       // a previous node exists, adjusts its pointer
+        {
+            node->prev->next=node->next;    // let the previous node point to this node's next
+    //        node->prev=NULL;                 // clear
+        }
+        else    // no previous node (hence this is the root node), make next node the root node
+        {
+            pRoot_TID2NODE=node->next;      // let root point to next node
+        }
+
+        if (node->next!=NULL)       // a next node exists, let it point to this node's previous node
+        {
+            node->next->prev=node->prev;
+    //        node->next=NULL;                 // clear
+        }
+
+        // remove all NODEs of this TID2NODE list (mutating!)
+        while (node->firstNode!=NULL)
+        {
+            removeNODE(env, node->firstNode);
+        }
+        RgfFreeMemory(node);        // free memory of node
         return;
     }
 
-    // if (param->tid==NULL)           // no tid given, then get current TID
-    if (param->tid==0)              // no tid given, then get current TID
+
+        // ---------------------------------------------------------------------------------------
+        // remove a given node unconditionally
+    inline void removeRAJO(JNIEnv *env, PSTRUCT_RAJO node)
     {
-        param->tid=RgfGetTID();
+        if (node->prev!=NULL)       // a previous node exists, adjusts its pointer
+        {
+            node->prev->next=node->next;    // let the previous node point to this node's next
+    //        node->prev=NULL;    // clear
+        }
+        else    // no previous node (hence this is the root node), make next node the root node
+        {
+            pRoot_RAJO=node->next;      // let root point to next node
+        }
+
+        if (node->next!=NULL)       // a next node exists, let it point to this node's previous node
+        {
+            node->next->prev=node->prev;
+    //        node->next=NULL;    // clear
+        }
+
+        env->DeleteGlobalRef(node->rajo);   // delete global reference for this cached rajo
+
+        RgfFreeMemory(node);        // free memory of node
+        return;
     }
 
-    if (param->env==NULL)           // no JNIEnv object yet, get one
+
+        // ---------------------------------------------------------------------------------------
+        // remove a given node unconditionally, if last node in TID2NODE, remove TID2NODE as well !
+    inline void removeNODE(JNIEnv *env, PSTRUCT_NODE node)
     {
-            // is this thread already attached, if so get it
-        if ((param->attachResult=defaultJVM->jvm->GetEnv((void **)&param->env, USE_DEFINED_JNI_VERSION))==JNI_EDETACHED)
+    // fprintf(stderr, "/// marker (3a), removeNODE(), node=[%p]...\n", node);fflush(stderr);
+
+            // if this node is in a list of dependent nodes, remove it from the list
+        if (node->dependsOn!=NULL)      // we are dependent
         {
-            // nope, not yet attached, try to attach
-            if ( (param->attachResult=defaultJVM->jvm->AttachCurrentThread((void **) &param->env, (void *) &defaultJavaVMAttachArgs)) != JNI_OK) // attach to JVM
+            PSTRUCT_NODE master=node->dependsOn;    // node, we depend on
+
+    /*
+            PSTRUCT_NODE tmpLastNodeInList=NULL;    // tmp var
+
+                // if an own dependency list, get
+            if (node->firstDependent!=NULL)
             {
-#if defined (DEBUG_JAVA_ATTACH_DETACH)
-    fprintf(stderr, "environmentAttachTo() - AttachCurrentThread did NOT work ! :-( :-(, attachResult=[%d]\n", (int) param->attachResult);
-    fflush(stderr);
-#endif
-                param->error=-1;    // JNI attach error
-                return;
+                    // get last node in dependent list
+                for (tmpLastNodeInList=node->firstDependent; tmpLastNodeInList->next!=NULL; tmpLastNodeInList=tmpLastNodeInList->next)
+                {
+                    ;
+                }
             }
-            param->bDetach=TRUE;    // indicate we need an explicit DetachCurrentThread() in this case
+    */
 
-#if defined (DEBUG_JAVA_ATTACH_DETACH)
-    fprintf(stderr, ":) :) :) environmentAttachTo(), tid=[%lu], AttachCurrentThread(...) successful.\n", (unsigned long) param->tid);
-    fflush(stderr);
-#endif
+
+            if (master->firstDependent==node)       // we are the first node in the dependent list
+            {
+                master->firstDependent=node->nextDependent; // remove ourselves from the dependent list
+                node->nextDependent=NULL;           // reset dependent pointer
+            }
+            else    // we are somewhere in the middle of the dependent list
+            {
+                if (node->prevDependent!=NULL)      // if the previous node exists, let it point ahead
+                {
+                    node->prevDependent->nextDependent=node->nextDependent;    // let previous node point to next dependent node
+                }
+
+                if (node->nextDependent!=NULL)      // if next dependent node exists, let it point back
+                {
+                    node->nextDependent->prevDependent=node->prevDependent;
+                }
+                node->nextDependent=NULL;           // reset dependent pointer
+                node->prevDependent=NULL;           // reset dependent pointer
+            }
+            node->dependsOn=NULL;   // clear info
         }
-        else if (param->attachResult!=JNI_OK)   // a version error ?
-        {
-#if defined (DEBUG_JAVA_ATTACH_DETACH)
-    fprintf(stderr, "environmentAttachTo() - GetEnv(...) did NOT work ! :-( :-(, attachResult=[%d]\n", (int) param->attachResult);
-    fflush(stderr);
-#endif
-            param->error=-1;        // JNI attach error
-            return;
-        }
-        else
-        {
-#if defined (DEBUG_JAVA_ATTACH_DETACH)
-    fprintf(stderr, ":) :) :) environmentAttachTo(), tid=[%lu], GetEnv() successful.\n", (unsigned long) param->tid);
-    fflush(stderr);
-#endif
-        }
-    }
 
-    if (param->rajo==NULL)          // no rajo, try to get one
-    {
-//        PSTRUCT_RAJO pr=findRAJO(param->attach2tid==NULL ? param->tid : param->attach2tid);
-        PSTRUCT_RAJO pr=findRAJO(param->attach2tid==0 ? param->tid : param->attach2tid);
-        if (pr==NULL)               // no rajo found, an error, return !
-        {
-            param->error=-2;        // no rajo found error, caller must detach
-            return;
-        }
-        else    // get and save rajo
-        {
-            param->rajo=pr->rajo;
-        }
-    }
+    // fprintf(stderr, "/// marker (3b), removeNODE(), node=[%p]...\n", node);fflush(stderr);
 
-    // if (param->attach2tid==NULL)    // regular operation
-    if (param->attach2tid==0)   // regular operation
-    {
-            // check, whether we may attach to this TID
-        PSTRUCT_NODE node=findFirstNODE(param->tid);
-
-        if (node!=NULL && param->env->IsSameObject(node->rajoRef->rajo, param->rajo)!=TRUE &&
-            node->firstDependent!=NULL
-           )
-        {
-            param->error=-3;        // cannot use this rajo as it would cover a different rajo needed by other Rexx threads!
-            return;
-        }
-    }
-
-        // add new node or increase existing node's counter
-    // addRajoToTID2NODE(param->env, param->tid, param->rajo, param->riid, bNewGroup);
-    addRajoToTID2NODE(param, bNewGroup);
-    return;
-}
-
-    // ---------------------------------------------------------------------------------------
-    // - subtractRajoFromTID
-    // - detach from JNIEnv if bDetach==TRUE
-    // - bCloseGroup: if TRUE subtract 2 instead of 1 to close group, i.e. nodes may be reclaimed (if not used by other TIDs)
-
-// rgf, 2011-03-19: all of a sudden inline will cause a problem as global variable defaultJVM is
-//                  not addressed correctly anymore, removing inline remedies the situation!
-//                  (i686-apple-darwin10-gcc-4.2.1 (GCC) 4.2.1 (Apple Inc. build 5664)); just make sure this function works correctly under Apple as well
-#ifndef __APPLE__
-   inline
-#endif
-void environmentDetachFrom(PSTRUCT_PARAM param, int bCloseGroup)
-{
-    // if (param->error==NULL)     // maintain structures
-    if (param->error==0)     // maintain structures
-    {
-        int res=subtractRajoFromTID2NODE(param->env, param->tid, bCloseGroup, 0); // do not indicate to keep primodal group (only necessary for BSFDetach())
-    }
-
-    if (param->bDetach==TRUE)   // doe we need to explicitly detach ?
-    {
-        if (defaultJVM->jvm == NULL)    // no JVM available !
-        {
-            param->error=-99;
-            return;
-        }
-#if defined (DEBUG_JAVA_ATTACH_DETACH)
-    fprintf(stderr, "environmentDetachFrom(), tid=[%lu], DetachCurrentThread, param->bDetach=[%d]\n", (unsigned long) param->tid, param->bDetach);
-    fflush(stderr);
-#endif
-        defaultJVM->jvm->DetachCurrentThread();
-    }
-    return;
-}
-
-
-/* 20091006, rgf
-    // ---------------------------------------------------------------------------------------
-    // worker for BsfAttachToTID(tid)
-    // - returns in param->error:   -4 ... if target TID was not found
-    //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
-inline PSTRUCT_TID2NODE attachToTID_2(PSTRUCT_PARAM param,
-                                 #ifdef UNIX
-                                        pthread_t
-                                    #else
-                                        TID
-                                    #endif
-                                        attachToTID
-)
-{
-    param->error=0;             // make sure error is reset
-
-    PSTRUCT_RAJO pr=findRAJO(param->tid);   // find RAJO node
-
-dumpPARAM(   "BsfUnloader(): param:", param);
-
-fprintf(stderr, "/// aTT2 marker (1), tid=[%lu], RAJO=[%p]...\n", (unsigned long) param->tid, pr);fflush(stderr);
-
-
-    if (pr==NULL)               // no RAJO node for tid
-    {
-fprintf(stderr, "/// aTT2 marker (2)...\n");fflush(stderr);
-        param->error=-4;        // indicate not target rajo found
-        return NULL;
-    }
-
-        // open a new group
-fprintf(stderr, "/// aTT2 marker (3)...\n");fflush(stderr);
-    return addRajoToTID2NODE(param->env, param->tid, pr->rajo, param->riid, TRUE, attachToTID);
-}
-
-
-    // ---------------------------------------------------------------------------------------
-    // worker for BsfDetach()
-    // returns 1=TRUE, 0=FALSE, -1=not found
-inline int detachFromTID_2(PSTRUCT_PARAM param)
-{
-        // only deduct one, an environmentDetach will subtract another one, which balances attachToTID_2
-    return subtractRajoFromTID2NODE(param->env, param->tid, FALSE);
-}
-
-20091006, rgf */
-
-    // ---------------------------------------------------------------------------------------
-    // remove a given node unconditionally
-inline void removeTID2NODE(JNIEnv *env, PSTRUCT_TID2NODE node)
-{
-    if (node->prev!=NULL)       // a previous node exists, adjusts its pointer
-    {
-        node->prev->next=node->next;    // let the previous node point to this node's next
-//        node->prev=NULL;                 // clear
-    }
-    else    // no previous node (hence this is the root node), make next node the root node
-    {
-        pRoot_TID2NODE=node->next;      // let root point to next node
-    }
-
-    if (node->next!=NULL)       // a next node exists, let it point to this node's previous node
-    {
-        node->next->prev=node->prev;
-//        node->next=NULL;                 // clear
-    }
-
-    // remove all NODEs of this TID2NODE list (mutating!)
-    while (node->firstNode!=NULL)
-    {
-        removeNODE(env, node->firstNode);
-    }
-    RgfFreeMemory(node);        // free memory of node
-    return;
-}
-
-
-    // ---------------------------------------------------------------------------------------
-    // remove a given node unconditionally
-inline void removeRAJO(JNIEnv *env, PSTRUCT_RAJO node)
-{
-    if (node->prev!=NULL)       // a previous node exists, adjusts its pointer
-    {
-        node->prev->next=node->next;    // let the previous node point to this node's next
-//        node->prev=NULL;    // clear
-    }
-    else    // no previous node (hence this is the root node), make next node the root node
-    {
-        pRoot_RAJO=node->next;      // let root point to next node
-    }
-
-    if (node->next!=NULL)       // a next node exists, let it point to this node's previous node
-    {
-        node->next->prev=node->prev;
-//        node->next=NULL;    // clear
-    }
-
-    env->DeleteGlobalRef(node->rajo);   // delete global reference for this cached rajo
-
-    RgfFreeMemory(node);        // free memory of node
-    return;
-}
-
-
-    // ---------------------------------------------------------------------------------------
-    // remove a given node unconditionally, if last node in TID2NODE, remove TID2NODE as well !
-inline void removeNODE(JNIEnv *env, PSTRUCT_NODE node)
-{
-// fprintf(stderr, "/// marker (3a), removeNODE(), node=[%p]...\n", node);fflush(stderr);
-
-        // if this node is in a list of dependent nodes, remove it from the list
-    if (node->dependsOn!=NULL)      // we are dependent
-    {
-        PSTRUCT_NODE master=node->dependsOn;    // node, we depend on
-
-/*
-        PSTRUCT_NODE tmpLastNodeInList=NULL;    // tmp var
-
-            // if an own dependency list, get
+    /*
+            // remove dependent nodes, if any (cf. BsfAttachToTID())
         if (node->firstDependent!=NULL)
         {
-                // get last node in dependent list
-            for (tmpLastNodeInList=node->firstDependent; tmpLastNodeInList->next!=NULL; tmpLastNodeInList=tmpLastNodeInList->next)
+            for (PSTRUCT_NODE i=node->firstDependent; i!=NULL; )
             {
-                ;
+                PSTRUCT_NODE tmpNode=i;
+                i=i->nextDependent;                     // memorize next node in dependent list as 'i'-pointer won't be available after the next call
+    // fprintf(stderr, "/// marker (3b-1a), removeNODE(), node=[%p]...\n", node);fflush(stderr);
+                removeNODE(env, tmpNode);               // recurse
+    // fprintf(stderr, "/// marker (3b-1b), removeNODE(), node=[%p]...\n", node);fflush(stderr);
+            }
+            node->firstDependent=NULL;  // clear info
+        }
+    */
+
+            // 20091007, rgf, new strategy: make first dependent new master, adjust other dependents to point to its T2N instead
+        if (node->firstDependent!=NULL)
+        {
+            PSTRUCT_TID2NODE newMaster=(PSTRUCT_TID2NODE) node->firstDependent->belongsToTID2NODE;
+            newMaster->firstNode->dependsOn=NULL;       // clear dependsOn
+                // let newMaster node's dependent list start with the nextDependent in the old list
+            newMaster->firstNode->firstDependent=node->firstDependent->nextDependent;
+
+            // now adjust dependent nodes to point to newMaster instead
+            for (PSTRUCT_NODE i=node->firstDependent->nextDependent; i!=NULL; i=i->nextDependent)
+            {
+                i->dependsOn=newMaster->firstNode;
+            }
+
+            // remove dependent list from node's TID2NODE
+            node->firstDependent=NULL;  // clear info
+            node->dependsOn=NULL;       // clear info
+        }
+
+    // fprintf(stderr, "/// marker (3c), removeNODE(), node=[%p]...\n", node);fflush(stderr);
+
+            // adjust counters
+        node->rajoRef->refCounter-=node->nodeRefCounter;    // deduct nr of references
+        node->nodeRefCounter=0;
+
+    // fprintf(stderr, "/// marker (3d), removeNODE(), node=[%p]...\n", node);fflush(stderr);
+        PSTRUCT_TID2NODE t2n=(PSTRUCT_TID2NODE) node->belongsToTID2NODE;    // pointer to TID2NODE this node belongs to
+
+        if (t2n->firstNode==node)           // first node
+        {
+            t2n->firstNode=node->next;      // let TID2NODE point to node's next node
+
+            if (node->next!=NULL)           // if the next node exists, let it point to previous node
+            {
+                node->next->prev=node->prev;// let the next node point to this node's previous node
+
+    //            node->next=NULL;    // clear
+            }
+
+
+    // fprintf(stderr, "/// marker (3f), removeNODE(), node=[%p]...\n", node);fflush(stderr);
+        }
+        else    // not the first node in the list
+        {
+    // fprintf(stderr, "/// marker (3g), removeNODE(), node=[%p]...\n", node);fflush(stderr);
+            if (node->prev!=NULL)           // if previous node exists, let it point ahead
+            {
+                node->prev->next=node->next;// let the previous node point to the node's next node
+    //            node->prev=NULL;    // clear
+            }
+
+            if (node->next!=NULL)           // if next node exists, let it point back
+            {
+    // fprintf(stderr, "/// marker (3h), removeNODE(), node=[%p]...\n", node);fflush(stderr);
+                node->next->prev=node->prev;// let the next node point to the node's previous node
+    //            node->next=NULL;    // clear
             }
         }
-*/
 
 
-        if (master->firstDependent==node)       // we are the first node in the dependent list
+    // fprintf(stderr, "/// marker (3j), removeNODE(), node=[%p]...\n", node);fflush(stderr);
+        RgfFreeMemory(node);                // free memory of node
+    // fprintf(stderr, "/// marker (3k), removeNODE(), node=[%p]...\n", node);fflush(stderr);
+        return;
+    }
+
+
+    // TODO: ausgelagerte Löschroutinen
+
+            // check whether RAJO-nocde has dropped to 0, if so remove it
+    /*
+        if (node->rajoRef->refCounter==0)   // no more references for this RAJO, delete node
         {
-            master->firstDependent=node->nextDependent; // remove ourselves from the dependent list
-            node->nextDependent=NULL;           // reset dependent pointer
+            removeRAJO(env, node->rajoRef);
         }
-        else    // we are somewhere in the middle of the dependent list
+
+        if (t2n->firstNode==NULL)
         {
-            if (node->prevDependent!=NULL)      // if the previous node exists, let it point ahead
+            removeTID2NODE(env, t2n);   // remove TID2NODE node
+        }
+    */
+
+
+
+        // ---------------------------------------------------------------------------------------
+        // remove all nodes unconditionally, that got created for the given Rexx instance (riid)
+    inline void removeAll_RIID_nodes(JNIEnv *env, void *riid)
+    {
+            // iterate through all TID2NODE and remove NODEs that refer to the given riid
+    // fprintf(stderr, "/// marker (2a), pRoot_TID2NODE=[%p], riid=[%p]...\n", pRoot_TID2NODE, riid);fflush(stderr);
+        for (PSTRUCT_TID2NODE t2n=pRoot_TID2NODE; t2n!=NULL; )
+        {
+            PSTRUCT_TID2NODE tmpNext=t2n->next; // remember next node (makes it immune from deleting the node)
+
+                // iterate through all the NODEs
+            for (PSTRUCT_NODE i=t2n->firstNode; i!=NULL; )
             {
-                node->prevDependent->nextDependent=node->nextDependent;    // let previous node point to next dependent node
-            }
-
-            if (node->nextDependent!=NULL)      // if next dependent node exists, let it point back
-            {
-                node->nextDependent->prevDependent=node->prevDependent;
-            }
-            node->nextDependent=NULL;           // reset dependent pointer
-            node->prevDependent=NULL;           // reset dependent pointer
-        }
-        node->dependsOn=NULL;   // clear info
-    }
-
-// fprintf(stderr, "/// marker (3b), removeNODE(), node=[%p]...\n", node);fflush(stderr);
-
-/*
-        // remove dependent nodes, if any (cf. BsfAttachToTID())
-    if (node->firstDependent!=NULL)
-    {
-        for (PSTRUCT_NODE i=node->firstDependent; i!=NULL; )
-        {
-            PSTRUCT_NODE tmpNode=i;
-            i=i->nextDependent;                     // memorize next node in dependent list as 'i'-pointer won't be available after the next call
-// fprintf(stderr, "/// marker (3b-1a), removeNODE(), node=[%p]...\n", node);fflush(stderr);
-            removeNODE(env, tmpNode);               // recurse
-// fprintf(stderr, "/// marker (3b-1b), removeNODE(), node=[%p]...\n", node);fflush(stderr);
-        }
-        node->firstDependent=NULL;  // clear info
-    }
-*/
-
-        // 20091007, rgf, new strategy: make first dependent new master, adjust other dependents to point to its T2N instead
-    if (node->firstDependent!=NULL)
-    {
-        PSTRUCT_TID2NODE newMaster=(PSTRUCT_TID2NODE) node->firstDependent->belongsToTID2NODE;
-        newMaster->firstNode->dependsOn=NULL;       // clear dependsOn
-            // let newMaster node's dependent list start with the nextDependent in the old list
-        newMaster->firstNode->firstDependent=node->firstDependent->nextDependent;
-
-        // now adjust dependent nodes to point to newMaster instead
-        for (PSTRUCT_NODE i=node->firstDependent->nextDependent; i!=NULL; i=i->nextDependent)
-        {
-            i->dependsOn=newMaster->firstNode;
-        }
-
-        // remove dependent list from node's TID2NODE
-        node->firstDependent=NULL;  // clear info
-        node->dependsOn=NULL;       // clear info
-    }
-
-// fprintf(stderr, "/// marker (3c), removeNODE(), node=[%p]...\n", node);fflush(stderr);
-
-        // adjust counters
-    node->rajoRef->refCounter-=node->nodeRefCounter;    // deduct nr of references
-    node->nodeRefCounter=0;
-
-// fprintf(stderr, "/// marker (3d), removeNODE(), node=[%p]...\n", node);fflush(stderr);
-    PSTRUCT_TID2NODE t2n=(PSTRUCT_TID2NODE) node->belongsToTID2NODE;    // pointer to TID2NODE this node belongs to
-
-    if (t2n->firstNode==node)           // first node
-    {
-        t2n->firstNode=node->next;      // let TID2NODE point to node's next node
-
-        if (node->next!=NULL)           // if the next node exists, let it point to previous node
-        {
-            node->next->prev=node->prev;// let the next node point to this node's previous node
-
-//            node->next=NULL;    // clear
-        }
-
-
-// fprintf(stderr, "/// marker (3f), removeNODE(), node=[%p]...\n", node);fflush(stderr);
-    }
-    else    // not the first node in the list
-    {
-// fprintf(stderr, "/// marker (3g), removeNODE(), node=[%p]...\n", node);fflush(stderr);
-        if (node->prev!=NULL)           // if previous node exists, let it point ahead
-        {
-            node->prev->next=node->next;// let the previous node point to the node's next node
-//            node->prev=NULL;    // clear
-        }
-
-        if (node->next!=NULL)           // if next node exists, let it point back
-        {
-// fprintf(stderr, "/// marker (3h), removeNODE(), node=[%p]...\n", node);fflush(stderr);
-            node->next->prev=node->prev;// let the next node point to the node's previous node
-//            node->next=NULL;    // clear
-        }
-    }
-
-
-// fprintf(stderr, "/// marker (3j), removeNODE(), node=[%p]...\n", node);fflush(stderr);
-    RgfFreeMemory(node);                // free memory of node
-// fprintf(stderr, "/// marker (3k), removeNODE(), node=[%p]...\n", node);fflush(stderr);
-    return;
-}
-
-
-// TODO: ausgelagerte Löschroutinen
-
-        // check whether RAJO-nocde has dropped to 0, if so remove it
-/*
-    if (node->rajoRef->refCounter==0)   // no more references for this RAJO, delete node
-    {
-        removeRAJO(env, node->rajoRef);
-    }
-
-    if (t2n->firstNode==NULL)
-    {
-        removeTID2NODE(env, t2n);   // remove TID2NODE node
-    }
-*/
-
-
-
-    // ---------------------------------------------------------------------------------------
-    // remove all nodes unconditionally, that got created for the given Rexx instance (riid)
-inline void removeAll_RIID_nodes(JNIEnv *env, void *riid)
-{
-        // iterate through all TID2NODE and remove NODEs that refer to the given riid
-// fprintf(stderr, "/// marker (2a), pRoot_TID2NODE=[%p], riid=[%p]...\n", pRoot_TID2NODE, riid);fflush(stderr);
-    for (PSTRUCT_TID2NODE t2n=pRoot_TID2NODE; t2n!=NULL; )
-    {
-        PSTRUCT_TID2NODE tmpNext=t2n->next; // remember next node (makes it immune from deleting the node)
-
-            // iterate through all the NODEs
-        for (PSTRUCT_NODE i=t2n->firstNode; i!=NULL; )
-        {
-            PSTRUCT_NODE iNext=i->next;     // remember next node (makes it immune from deleting the node)
-            if (i->riid==riid)      // a node to remove found
-            {
-// fprintf(stderr, "/// rarn - marker (1a), removeNODE(), i=[%p]...\n", i);fflush(stderr);
-                removeNODE(env, i); // remove this node
-// fprintf(stderr, "/// rarn - nach (1b), removeNODE(), i=[%p], iNext=[%p]...\n", i, iNext);fflush(stderr);
-            }
-            i=iNext;
-        }
-
-// fprintf(stderr, "/// rarn - marker (2a), t2n=[%p]...\n", t2n);fflush(stderr);
-        if (t2n->firstNode==NULL)    // 20091006, rgf: made it conditional: only delete if no more nodes associated with this T2N
-        {
-            removeTID2NODE(env, t2n);
-        }
-// fprintf(stderr, "/// rarn - nach (2b), tmpNext=[%p]...\n", tmpNext);fflush(stderr);
-
-        t2n=tmpNext;
-    }
-
-
-// fprintf(stderr, "/// rarn - marker (3a), pRoot_RAJO=[%p], riid=[%p]...\n", pRoot_RAJO, riid);fflush(stderr);
-        // make sure we have no RIID RAJO leftover nodes (there should be none)
-    for (PSTRUCT_RAJO r=pRoot_RAJO; r!=NULL; )
-    {
-        PSTRUCT_RAJO rNext=r->next;         // remember next node (makes it immune from deleting the node)
-        if (r->riid==riid)      // a node to remove found
-        {
-            removeRAJO(env, r); // remove this node
-        }
-
-        r=rNext;
-    }
-// fprintf(stderr, "/// rarn - marker (3b), pRoot_TID2NODE=[%p], riid=[%p]...\n", pRoot_TID2NODE, riid);fflush(stderr);
-    return;
-}
-
-
-    // ---------------------------------------------------------------------------------------
-    // remove all nodes unconditionally, that got created for the given Rexx instance (riid)
-inline void removeAll_nodes(JNIEnv *env)
-{
-        // iterate through all TID2NODE and remove NODEs that refer to the given riid
-    //for (PSTRUCT_TID2NODE t2n=pRoot_TID2NODE; t2n!=NULL; t2n=t2n->next)
-    for (PSTRUCT_TID2NODE t2n=pRoot_TID2NODE; t2n!=NULL;) // JLF
-    {
-        PSTRUCT_TID2NODE t2nNext=t2n->next;
-        removeTID2NODE(env, t2n);
-        t2n=t2nNext;
-    }
-
-        // make sure we have no RIID RAJO leftover nodes (there should be none)
-    //for (PSTRUCT_RAJO r=pRoot_RAJO; r!=NULL; r=r->next)
-    for (PSTRUCT_RAJO r=pRoot_RAJO; r!=NULL;) // JLF
-    {
-        PSTRUCT_RAJO rNext=r->next;
-        removeRAJO(env, r); // remove this node
-        r=rNext;
-    }
-    return;
-}
-
-
-    // ---------------------------------------------------------------------------------------
-    // walk the RAJO list, remove nodes where counter < 1
-inline void cleanRAJO (JNIEnv *env)
-{
-    //for (PSTRUCT_RAJO r=pRoot_RAJO; r!=NULL; r=r->next)
-    for (PSTRUCT_RAJO r=pRoot_RAJO; r!=NULL;) // JLF
-    {
-        PSTRUCT_RAJO rNext=r->next;
-        if (r->refCounter<1)      // a node to remove found
-        {
-            if (r->refCounter<0)
-            {
-                fprintf(stderr, "BSF4ooRexx.cc: cleanRAJO(), refCounter<0, i.e. [%d]\n", r->refCounter);
-                fflush(stderr);
-            }
-            removeRAJO(env, r); // remove this node
-        }
-        r=rNext;
-    }
-}
-
-    // ---------------------------------------------------------------------------------------
-    // walk the TID2NODE list, remove nodes where counter < 1
-inline void cleanTID2NODE (JNIEnv *env)
-{
-    //for (PSTRUCT_TID2NODE r=pRoot_TID2NODE; r!=NULL; r=r->next)
-    for (PSTRUCT_TID2NODE r=pRoot_TID2NODE; r!=NULL;) // JLF
-    {
-        PSTRUCT_TID2NODE rNext=r->next;
-        if (r->firstNode==NULL)     // no nodes, hence safe to remove
-        {
-            removeTID2NODE(env, r); // remove this node
-        }
-        r=rNext;
-    }
-}
-
-
-inline PSTRUCT_NODE createNODE (PSTRUCT_RAJO rajoRef, void *riid)
-{
-    PSTRUCT_NODE newNode=(PSTRUCT_NODE) RgfAllocateMemory(size_STRUCT_NODE);
-    memset(newNode,0,size_STRUCT_NODE);
-
-    newNode->rajoRef=rajoRef;
-    newNode->riid   =riid;
-    return newNode;
-}
-
-
-    // ---------------------------------------------------------------------------------------
-    // create a node and return it
-inline PSTRUCT_TID2NODE createTID2NODE (
-                                    #ifdef UNIX
-                                        pthread_t
-                                    #else
-                                        TID
-                                    #endif
-                                             tid       // thread ID
-                                )
-{
-    PSTRUCT_TID2NODE newNode=(PSTRUCT_TID2NODE) RgfAllocateMemory(size_STRUCT_TID2NODE);
-    memset(newNode,0,size_STRUCT_TID2NODE);
-
-    newNode->tid=tid;
-
-    if (pRoot_TID2NODE!=NULL)
-    {
-        newNode->next       =pRoot_TID2NODE;// let newNode point to current root node
-        pRoot_TID2NODE->prev=newNode;       // let the root node point back to newNode
-    }
-
-    pRoot_TID2NODE=newNode;
-    return newNode;
-}
-
-
-    // ---------------------------------------------------------------------------------------
-    // get a RAJO node and return it;
-    // if not found, create a new one, insert it at the root of the list and return it
-inline PSTRUCT_RAJO getOrCreateRAJO(JNIEnv *env, jobject rajo, void *riid)
-{
-    for (PSTRUCT_RAJO i=pRoot_RAJO; i!=NULL; i=i->next)
-    {
-        if (env->IsSameObject(i->rajo, rajo)==JNI_TRUE) // found ?
-        {
-            return i;
-        }
-    }
-
-    // not found, create a new node, initialize it, insert and return it
-    PSTRUCT_RAJO newNode=(PSTRUCT_RAJO) RgfAllocateMemory(size_STRUCT_RAJO);
-    memset(newNode,0,size_STRUCT_RAJO);
-    newNode->rajo=env->NewGlobalRef(rajo);  // save rajo in form of a global reference
-    newNode->riid=riid;
-
-    if (pRoot_RAJO!=NULL)   // need to adjust pRoot_RAJO ?
-    {
-        newNode->next   =pRoot_RAJO;        // let newNode point to current root node
-        pRoot_RAJO->prev=newNode;           // let the root node point back to newNode
-    }
-
-    pRoot_RAJO=newNode;
-    return newNode;
-}
-
-
-    // ---------------------------------------------------------------------------------------
-    // add a rajo to the TID2NODE list, if necessary or increase the node's counter
-    // - get tid, if not supplied
-    // - locate tid2rajo
-    //    - if there, look at first node, if same rajo, increase counter
-    //    - else create (rajo, tid2rajo, node, whatever necessary)
-    // - bNewGroup:     TRUE=increase counters by 2 (instead of 1) to keep the nodes around after doing
-    //                  an environmentDetach
-    //
-    // caller needs to have blocked access to low level structures
-inline PSTRUCT_TID2NODE addRajoToTID2NODE (PSTRUCT_PARAM param, int bNewGroup)
-{
-    // if (param->tid==NULL)          // no tid given, get this TID
-    if (param->tid==0)             // no tid given, get this TID
-    {
-        param->tid=RgfGetTID();
-    }
-
-#if defined (DEBUG_RAJO)
-   fprintf(stderr, "...+... addRajoToTID2NODE(): param->tid=[%lu]", (unsigned long) param->tid); fflush(stderr);
-#endif
-
-    PSTRUCT_RAJO   rajoListNode=NULL;
-    PSTRUCT_NODE           node=NULL;
-    PSTRUCT_TID2NODE t2ListNode=NULL;
-    PSTRUCT_TID2NODE targetT2L =NULL;
-    targetT2L=t2ListNode;           // remember node in case we are attaching to it
-
-        // find tid in tid2jrst
-    for (t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
-    {
-// fprintf(stderr, "/// a2n marker (1), t2ListNode=[%p]...\n", t2ListNode);fflush(stderr);
-        if (t2ListNode->tid == param->tid)    // tid found !
-        {
-// fprintf(stderr, "/// a2n marker (2a)...\n");fflush(stderr);
-            // o.k. found !
-            if (param->env->IsSameObject(t2ListNode->firstNode->rajoRef->rajo, param->rajo)==JNI_TRUE)
-            {
-// fprintf(stderr, "/// a2n marker (2b)...\n");fflush(stderr);
-                // maintain counters and return
-                t2ListNode->firstNode->rajoRef->refCounter++;
-                t2ListNode->firstNode->nodeRefCounter++;
-                if (bNewGroup==TRUE)
+                PSTRUCT_NODE iNext=i->next;     // remember next node (makes it immune from deleting the node)
+                if (i->riid==riid)      // a node to remove found
                 {
+    // fprintf(stderr, "/// rarn - marker (1a), removeNODE(), i=[%p]...\n", i);fflush(stderr);
+                    removeNODE(env, i); // remove this node
+    // fprintf(stderr, "/// rarn - nach (1b), removeNODE(), i=[%p], iNext=[%p]...\n", i, iNext);fflush(stderr);
+                }
+                i=iNext;
+            }
+
+    // fprintf(stderr, "/// rarn - marker (2a), t2n=[%p]...\n", t2n);fflush(stderr);
+            if (t2n->firstNode==NULL)    // 20091006, rgf: made it conditional: only delete if no more nodes associated with this T2N
+            {
+                removeTID2NODE(env, t2n);
+            }
+    // fprintf(stderr, "/// rarn - nach (2b), tmpNext=[%p]...\n", tmpNext);fflush(stderr);
+
+            t2n=tmpNext;
+        }
+
+
+    // fprintf(stderr, "/// rarn - marker (3a), pRoot_RAJO=[%p], riid=[%p]...\n", pRoot_RAJO, riid);fflush(stderr);
+            // make sure we have no RIID RAJO leftover nodes (there should be none)
+        for (PSTRUCT_RAJO r=pRoot_RAJO; r!=NULL; )
+        {
+            PSTRUCT_RAJO rNext=r->next;         // remember next node (makes it immune from deleting the node)
+            if (r->riid==riid)      // a node to remove found
+            {
+                removeRAJO(env, r); // remove this node
+            }
+
+            r=rNext;
+        }
+    // fprintf(stderr, "/// rarn - marker (3b), pRoot_TID2NODE=[%p], riid=[%p]...\n", pRoot_TID2NODE, riid);fflush(stderr);
+        return;
+    }
+
+
+        // ---------------------------------------------------------------------------------------
+        // remove all nodes unconditionally, that got created for the given Rexx instance (riid)
+    inline void removeAll_nodes(JNIEnv *env)
+    {
+            // iterate through all TID2NODE and remove NODEs that refer to the given riid
+        //for (PSTRUCT_TID2NODE t2n=pRoot_TID2NODE; t2n!=NULL; t2n=t2n->next)
+        for (PSTRUCT_TID2NODE t2n=pRoot_TID2NODE; t2n!=NULL;) // JLF
+        {
+            PSTRUCT_TID2NODE t2nNext=t2n->next;
+            removeTID2NODE(env, t2n);
+            t2n=t2nNext;
+        }
+
+            // make sure we have no RIID RAJO leftover nodes (there should be none)
+        //for (PSTRUCT_RAJO r=pRoot_RAJO; r!=NULL; r=r->next)
+        for (PSTRUCT_RAJO r=pRoot_RAJO; r!=NULL;) // JLF
+        {
+            PSTRUCT_RAJO rNext=r->next;
+            removeRAJO(env, r); // remove this node
+            r=rNext;
+        }
+        return;
+    }
+
+
+        // ---------------------------------------------------------------------------------------
+        // walk the RAJO list, remove nodes where counter < 1
+    inline void cleanRAJO (JNIEnv *env)
+    {
+        //for (PSTRUCT_RAJO r=pRoot_RAJO; r!=NULL; r=r->next)
+        for (PSTRUCT_RAJO r=pRoot_RAJO; r!=NULL;) // JLF
+        {
+            PSTRUCT_RAJO rNext=r->next;
+            if (r->refCounter<1)      // a node to remove found
+            {
+                if (r->refCounter<0)
+                {
+                    fprintf(stderr, "BSF4ooRexx.cc: cleanRAJO(), refCounter<0, i.e. [%d]\n", r->refCounter);
+                    fflush(stderr);
+                }
+                removeRAJO(env, r); // remove this node
+            }
+            r=rNext;
+        }
+    }
+
+        // ---------------------------------------------------------------------------------------
+        // walk the TID2NODE list, remove nodes where counter < 1
+    inline void cleanTID2NODE (JNIEnv *env)
+    {
+        //for (PSTRUCT_TID2NODE r=pRoot_TID2NODE; r!=NULL; r=r->next)
+        for (PSTRUCT_TID2NODE r=pRoot_TID2NODE; r!=NULL;) // JLF
+        {
+            PSTRUCT_TID2NODE rNext=r->next;
+            if (r->firstNode==NULL)     // no nodes, hence safe to remove
+            {
+                removeTID2NODE(env, r); // remove this node
+            }
+            r=rNext;
+        }
+    }
+
+
+    inline PSTRUCT_NODE createNODE (PSTRUCT_RAJO rajoRef, void *riid)
+    {
+        PSTRUCT_NODE newNode=(PSTRUCT_NODE) RgfAllocateMemory(size_STRUCT_NODE);
+        memset(newNode,0,size_STRUCT_NODE);
+
+        newNode->rajoRef=rajoRef;
+        newNode->riid   =riid;
+        return newNode;
+    }
+
+
+        // ---------------------------------------------------------------------------------------
+        // create a node and return it
+    inline PSTRUCT_TID2NODE createTID2NODE (
+                                        #ifdef UNIX
+                                            pthread_t
+                                        #else
+                                            TID
+                                        #endif
+                                                 tid       // thread ID
+                                    )
+    {
+        PSTRUCT_TID2NODE newNode=(PSTRUCT_TID2NODE) RgfAllocateMemory(size_STRUCT_TID2NODE);
+        memset(newNode,0,size_STRUCT_TID2NODE);
+
+        newNode->tid=tid;
+
+        if (pRoot_TID2NODE!=NULL)
+        {
+            newNode->next       =pRoot_TID2NODE;// let newNode point to current root node
+            pRoot_TID2NODE->prev=newNode;       // let the root node point back to newNode
+        }
+
+        pRoot_TID2NODE=newNode;
+        return newNode;
+    }
+
+
+        // ---------------------------------------------------------------------------------------
+        // get a RAJO node and return it;
+        // if not found, create a new one, insert it at the root of the list and return it
+    inline PSTRUCT_RAJO getOrCreateRAJO(JNIEnv *env, jobject rajo, void *riid)
+    {
+        for (PSTRUCT_RAJO i=pRoot_RAJO; i!=NULL; i=i->next)
+        {
+            if (env->IsSameObject(i->rajo, rajo)==JNI_TRUE) // found ?
+            {
+                return i;
+            }
+        }
+
+        // not found, create a new node, initialize it, insert and return it
+        PSTRUCT_RAJO newNode=(PSTRUCT_RAJO) RgfAllocateMemory(size_STRUCT_RAJO);
+        memset(newNode,0,size_STRUCT_RAJO);
+        newNode->rajo=env->NewGlobalRef(rajo);  // save rajo in form of a global reference
+        newNode->riid=riid;
+
+        if (pRoot_RAJO!=NULL)   // need to adjust pRoot_RAJO ?
+        {
+            newNode->next   =pRoot_RAJO;        // let newNode point to current root node
+            pRoot_RAJO->prev=newNode;           // let the root node point back to newNode
+        }
+
+        pRoot_RAJO=newNode;
+        return newNode;
+    }
+
+
+        // ---------------------------------------------------------------------------------------
+        // add a rajo to the TID2NODE list, if necessary or increase the node's counter
+        // - get tid, if not supplied
+        // - locate tid2rajo
+        //    - if there, look at first node, if same rajo, increase counter
+        //    - else create (rajo, tid2rajo, node, whatever necessary)
+        // - bNewGroup:     TRUE=increase counters by 2 (instead of 1) to keep the nodes around after doing
+        //                  an environmentDetach
+        //
+        // caller needs to have blocked access to low level structures
+    inline PSTRUCT_TID2NODE addRajoToTID2NODE (PSTRUCT_PARAM param, int bNewGroup)
+    {
+        // if (param->tid==NULL)          // no tid given, get this TID
+        if (param->tid==0)             // no tid given, get this TID
+        {
+            param->tid=RgfGetTID();
+        }
+
+    #if defined (DEBUG_RAJO)
+       fprintf(stderr, "...+... addRajoToTID2NODE(): param->tid=[%lu]", (unsigned long) param->tid); fflush(stderr);
+    #endif
+
+        PSTRUCT_RAJO   rajoListNode=NULL;
+        PSTRUCT_NODE           node=NULL;
+        PSTRUCT_TID2NODE t2ListNode=NULL;
+        PSTRUCT_TID2NODE targetT2L =NULL;
+        targetT2L=t2ListNode;           // remember node in case we are attaching to it
+
+            // find tid in tid2jrst
+        for (t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
+        {
+    // fprintf(stderr, "/// a2n marker (1), t2ListNode=[%p]...\n", t2ListNode);fflush(stderr);
+            if (t2ListNode->tid == param->tid)    // tid found !
+            {
+    // fprintf(stderr, "/// a2n marker (2a)...\n");fflush(stderr);
+                // o.k. found !
+                if (param->env->IsSameObject(t2ListNode->firstNode->rajoRef->rajo, param->rajo)==JNI_TRUE)
+                {
+    // fprintf(stderr, "/// a2n marker (2b)...\n");fflush(stderr);
+                    // maintain counters and return
                     t2ListNode->firstNode->rajoRef->refCounter++;
                     t2ListNode->firstNode->nodeRefCounter++;
+                    if (bNewGroup==TRUE)
+                    {
+                        t2ListNode->firstNode->rajoRef->refCounter++;
+                        t2ListNode->firstNode->nodeRefCounter++;
+                    }
+    #if defined (DEBUG_RAJO)
+       fprintf(stderr, "...+... addRajoToTID2NODE(): param->tid=[%lu], a node exists already, increased counter.\n", (unsigned long) param->tid); fflush(stderr);
+    #endif
+
+                    return t2ListNode;
                 }
-#if defined (DEBUG_RAJO)
-   fprintf(stderr, "...+... addRajoToTID2NODE(): param->tid=[%lu], a node exists already, increased counter.\n", (unsigned long) param->tid); fflush(stderr);
-#endif
+                else    // not a node with the given rajo, create a new node, push it
+                {
+    #if defined (DEBUG_RAJO)
+       fprintf(stderr, "...+... addRajoToTID2NODE(): param->tid=[%lu], need to create new node.\n", (unsigned long) param->tid); fflush(stderr);
+    #endif
 
-                return t2ListNode;
-            }
-            else    // not a node with the given rajo, create a new node, push it
-            {
-#if defined (DEBUG_RAJO)
-   fprintf(stderr, "...+... addRajoToTID2NODE(): param->tid=[%lu], need to create new node.\n", (unsigned long) param->tid); fflush(stderr);
-#endif
-
-                break;  // found TID, but firstNode is not referring same rajo
+                    break;  // found TID, but firstNode is not referring same rajo
+                }
             }
         }
-    }
 
-    // if t2ListNode==NULL, no TID entry found, create one and use that
-    if (t2ListNode==NULL)
-    {
-// fprintf(stderr, "/// a2n marker (3--plain)...\n");fflush(stderr);
-        t2ListNode=createTID2NODE(param->tid);
-    }
+        // if t2ListNode==NULL, no TID entry found, create one and use that
+        if (t2ListNode==NULL)
+        {
+    // fprintf(stderr, "/// a2n marker (3--plain)...\n");fflush(stderr);
+            t2ListNode=createTID2NODE(param->tid);
+        }
 
-    // find in rajo list to get at rajoRef or create new node
-    rajoListNode=getOrCreateRAJO(param->env, param->rajo, param->riid);
+        // find in rajo list to get at rajoRef or create new node
+        rajoListNode=getOrCreateRAJO(param->env, param->rajo, param->riid);
 
 
-// fprintf(stderr, "/// a2n marker (4)...\n");fflush(stderr);
-    // create new PSTRUCT_NODE
-    node=createNODE (rajoListNode, param->riid);
+    // fprintf(stderr, "/// a2n marker (4)...\n");fflush(stderr);
+        // create new PSTRUCT_NODE
+        node=createNODE (rajoListNode, param->riid);
 
-    node->belongsToTID2NODE=(void *)t2ListNode; // save pointer to TID2NODE this node belongs to
+        node->belongsToTID2NODE=(void *)t2ListNode; // save pointer to TID2NODE this node belongs to
 
-    node->next=t2ListNode->firstNode;   // point to next node
-    t2ListNode->firstNode=node;         // now let t2n point to newly created node
+        node->next=t2ListNode->firstNode;   // point to next node
+        t2ListNode->firstNode=node;         // now let t2n point to newly created node
 
-    if (node->next!=NULL)               // if a next node exists, let it point back
-    {
-        node->next->prev=node;          // let new node's next node point back to it
-    }
+        if (node->next!=NULL)               // if a next node exists, let it point back
+        {
+            node->next->prev=node;          // let new node's next node point back to it
+        }
 
-    // maintain counters
-    rajoListNode->refCounter++;
-    t2ListNode->firstNode->nodeRefCounter++;
-
-    if (bNewGroup==TRUE)
-    {
+        // maintain counters
         rajoListNode->refCounter++;
         t2ListNode->firstNode->nodeRefCounter++;
-    }
 
-    // 20091006, rgf: if attaching to, we need to set up the dependency data
-    // if (param->attach2tid!=NULL)
-    if (param->attach2tid!=0)
-    {
-        PSTRUCT_TID2NODE tgt_T2L =NULL;
-// fprintf(stderr, "/// a2n marker (5-1), tgt_T2L=[%p], node=[%p]...\n", tgt_T2L, node);fflush(stderr);
-        // search target's T2L
-        for (tgt_T2L=pRoot_TID2NODE; tgt_T2L!=NULL; tgt_T2L=tgt_T2L->next)
+        if (bNewGroup==TRUE)
         {
-            if (tgt_T2L->tid == param->attach2tid)
-            {
-                // 20091007, rgf: if node to attach to dependsOn another, use that node's T2N instead !
-                if (tgt_T2L->firstNode->dependsOn!=NULL)
-                {
-                    tgt_T2L=(PSTRUCT_TID2NODE) tgt_T2L->firstNode->dependsOn->belongsToTID2NODE;
-                }
+            rajoListNode->refCounter++;
+            t2ListNode->firstNode->nodeRefCounter++;
+        }
 
-                break;
+        // 20091006, rgf: if attaching to, we need to set up the dependency data
+        // if (param->attach2tid!=NULL)
+        if (param->attach2tid!=0)
+        {
+            PSTRUCT_TID2NODE tgt_T2L =NULL;
+    // fprintf(stderr, "/// a2n marker (5-1), tgt_T2L=[%p], node=[%p]...\n", tgt_T2L, node);fflush(stderr);
+            // search target's T2L
+            for (tgt_T2L=pRoot_TID2NODE; tgt_T2L!=NULL; tgt_T2L=tgt_T2L->next)
+            {
+                if (tgt_T2L->tid == param->attach2tid)
+                {
+                    // 20091007, rgf: if node to attach to dependsOn another, use that node's T2N instead !
+                    if (tgt_T2L->firstNode->dependsOn!=NULL)
+                    {
+                        tgt_T2L=(PSTRUCT_TID2NODE) tgt_T2L->firstNode->dependsOn->belongsToTID2NODE;
+                    }
+
+                    break;
+                }
+            }
+    // fprintf(stderr, "/// a2n marker (5-2a), tgt_T2L=[%p], node=[%p]...\n", tgt_T2L, node);fflush(stderr);
+    // fprintf(stderr, "/// a2n marker (5-2b), tgt_T2L->firstNode=[%p] ...\n", tgt_T2L->firstNode);fflush(stderr);
+
+            PSTRUCT_NODE tgtNode=tgt_T2L->firstNode;  // get first node in target list
+
+            node->dependsOn=tgtNode;        // memorize that this node depends on another TID2NODE node
+
+            if (tgtNode->firstDependent==NULL)  // no dependent node yet?
+            {
+    // fprintf(stderr, "/// a2n marker (5a-NEW!)...\n");fflush(stderr);
+                tgtNode->firstDependent=node;   // that was easy
+            }
+            else                            // dependent list exists already, maintain it
+            {
+    // fprintf(stderr, "/// a2n marker (5b)...\n");fflush(stderr);
+                node->nextDependent=tgtNode->firstDependent;    // let node point to current firstDependent
+                tgtNode->firstDependent->prevDependent=node;    // let firstDependent point back to this node
+                tgtNode->firstDependent=node;   // make this node the firstDependent
             }
         }
-// fprintf(stderr, "/// a2n marker (5-2a), tgt_T2L=[%p], node=[%p]...\n", tgt_T2L, node);fflush(stderr);
-// fprintf(stderr, "/// a2n marker (5-2b), tgt_T2L->firstNode=[%p] ...\n", tgt_T2L->firstNode);fflush(stderr);
 
-        PSTRUCT_NODE tgtNode=tgt_T2L->firstNode;  // get first node in target list
 
-        node->dependsOn=tgtNode;        // memorize that this node depends on another TID2NODE node
-
-        if (tgtNode->firstDependent==NULL)  // no dependent node yet?
-        {
-// fprintf(stderr, "/// a2n marker (5a-NEW!)...\n");fflush(stderr);
-            tgtNode->firstDependent=node;   // that was easy
-        }
-        else                            // dependent list exists already, maintain it
-        {
-// fprintf(stderr, "/// a2n marker (5b)...\n");fflush(stderr);
-            node->nextDependent=tgtNode->firstDependent;    // let node point to current firstDependent
-            tgtNode->firstDependent->prevDependent=node;    // let firstDependent point back to this node
-            tgtNode->firstDependent=node;   // make this node the firstDependent
-        }
+    // fprintf(stderr, "/// a2n marker (6)...\n");fflush(stderr);
+        return t2ListNode;
     }
 
 
-// fprintf(stderr, "/// a2n marker (6)...\n");fflush(stderr);
-    return t2ListNode;
-}
 
-
-
-    // ---------------------------------------------------------------------------------------
-    // subtract NODE counter from matching TID2NODE; if counter drops to 0, remove NODE
-    // (returns TRUE=1 if removed, FALSE=0 if counter not yet 0, NOTFOUND=-1 if TID not in list)
-    //
-    // caller needs to have blocked access to low level structures
-    // - bCloseGroup: if TRUE subtract 2 instead of 1 to close group, i.e. nodes may be reclaimed (if not used by other TIDs)
-inline int subtractRajoFromTID2NODE (JNIEnv *env,
-                            #ifdef UNIX
-                                pthread_t
-                            #else
-                                TID
-                            #endif
-                                     tid,
-                            int bCloseGroup,
-                            int bKeepPrimodalGroup
-                         )
-{
-    // if (tid==NULL)          // no tid given, get this TID
-    if (tid==0)             // no tid given, get this TID
+        // ---------------------------------------------------------------------------------------
+        // subtract NODE counter from matching TID2NODE; if counter drops to 0, remove NODE
+        // (returns TRUE=1 if removed, FALSE=0 if counter not yet 0, NOTFOUND=-1 if TID not in list)
+        //
+        // caller needs to have blocked access to low level structures
+        // - bCloseGroup: if TRUE subtract 2 instead of 1 to close group, i.e. nodes may be reclaimed (if not used by other TIDs)
+    inline int subtractRajoFromTID2NODE (JNIEnv *env,
+                                #ifdef UNIX
+                                    pthread_t
+                                #else
+                                    TID
+                                #endif
+                                         tid,
+                                int bCloseGroup,
+                                int bKeepPrimodalGroup
+                             )
     {
-        tid=RgfGetTID();
-    }
-#if defined (DEBUG_RAJO)
-   fprintf(stderr, "...-... subtractRajoFromTID2NODE(): param->tid=[%lu]", (unsigned long) tid); fflush(stderr);
-#endif
-
-    PSTRUCT_RAJO   rajoListNode=NULL;
-    PSTRUCT_NODE           node=NULL;
-    PSTRUCT_TID2NODE t2ListNode=NULL;
-
-
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # -1 tid=[%lu], bKeepPrimodalGroup=[%d], pRoot_TID2NODE=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, pRoot_TID2NODE);fflush(stderr);
-        // find tid in tid2jrst
-    for (t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
-    {
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 0a tid=[%lu], t2ListNode=[%p]\n",(unsigned long) tid, t2ListNode);fflush(stderr);
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 0b tid=[%lu], t2ListNode->tid=[%lu], t2ListNode->next=[%p]\n",(unsigned long) tid, (unsigned long) t2ListNode->tid, t2ListNode->next);fflush(stderr);
-        if (t2ListNode->tid == tid)     // tid found !
+        // if (tid==NULL)          // no tid given, get this TID
+        if (tid==0)             // no tid given, get this TID
         {
+            tid=RgfGetTID();
+        }
+    #if defined (DEBUG_RAJO)
+       fprintf(stderr, "...-... subtractRajoFromTID2NODE(): param->tid=[%lu]", (unsigned long) tid); fflush(stderr);
+    #endif
 
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 01 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
+        PSTRUCT_RAJO   rajoListNode=NULL;
+        PSTRUCT_NODE           node=NULL;
+        PSTRUCT_TID2NODE t2ListNode=NULL;
 
-                // decrease counters, unless we should keep the primodal group (if invoked via BSFDetach()) and counter>2
-                // make sure that we have at least two references, such that BSFDetach() cannot detach from primodal thread
-            if (bKeepPrimodalGroup==0 || (bKeepPrimodalGroup!= 0 && t2ListNode->firstNode->nodeRefCounter>2) )
+
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # -1 tid=[%lu], bKeepPrimodalGroup=[%d], pRoot_TID2NODE=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, pRoot_TID2NODE);fflush(stderr);
+            // find tid in tid2jrst
+        for (t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
+        {
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 0a tid=[%lu], t2ListNode=[%p]\n",(unsigned long) tid, t2ListNode);fflush(stderr);
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 0b tid=[%lu], t2ListNode->tid=[%lu], t2ListNode->next=[%p]\n",(unsigned long) tid, (unsigned long) t2ListNode->tid, t2ListNode->next);fflush(stderr);
+            if (t2ListNode->tid == tid)     // tid found !
             {
-                    // maintain counters and return
-                t2ListNode->firstNode->rajoRef->refCounter--;
-                t2ListNode->firstNode->nodeRefCounter--;
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 02 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
 
-                if (bCloseGroup==TRUE)  // BsfDetach() as BsfAttachToTID() make sure that counters are '1' higher than usual to keep the node
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 01 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
+
+                    // decrease counters, unless we should keep the primodal group (if invoked via BSFDetach()) and counter>2
+                    // make sure that we have at least two references, such that BSFDetach() cannot detach from primodal thread
+                if (bKeepPrimodalGroup==0 || (bKeepPrimodalGroup!= 0 && t2ListNode->firstNode->nodeRefCounter>2) )
                 {
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 03 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
-                        // decrease counters, unless we should keep the primodal group (if invoked via BSFDetach()) and counter>2
-                    if (bKeepPrimodalGroup==0 || (bKeepPrimodalGroup!= 0 && t2ListNode->firstNode->nodeRefCounter>2) )
-                    {
-                        t2ListNode->firstNode->rajoRef->refCounter--;
-                        t2ListNode->firstNode->nodeRefCounter--;
+                        // maintain counters and return
+                    t2ListNode->firstNode->rajoRef->refCounter--;
+                    t2ListNode->firstNode->nodeRefCounter--;
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 02 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
 
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 04 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
+                    if (bCloseGroup==TRUE)  // BsfDetach() as BsfAttachToTID() make sure that counters are '1' higher than usual to keep the node
+                    {
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 03 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
+                            // decrease counters, unless we should keep the primodal group (if invoked via BSFDetach()) and counter>2
+                        if (bKeepPrimodalGroup==0 || (bKeepPrimodalGroup!= 0 && t2ListNode->firstNode->nodeRefCounter>2) )
+                        {
+                            t2ListNode->firstNode->rajoRef->refCounter--;
+                            t2ListNode->firstNode->nodeRefCounter--;
+
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 04 tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
+                        }
                     }
                 }
-            }
 
-            // if (t2ListNode->firstNode->nodeRefCounter==0)   // remove node
-            if (t2ListNode->firstNode->nodeRefCounter<1)    // remove node
-            {
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 05a tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
-                removeNODE(env, t2ListNode->firstNode);
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 05b tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode);fflush(stderr);
-
-                if (t2ListNode->firstNode==NULL)        // 20091006, no more nodes, remove TID2NODE as well
+                // if (t2ListNode->firstNode->nodeRefCounter==0)   // remove node
+                if (t2ListNode->firstNode->nodeRefCounter<1)    // remove node
                 {
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 06a tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode);fflush(stderr);
-                    removeTID2NODE(env, t2ListNode);
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 06b tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode);fflush(stderr);
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 05a tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
+                    removeNODE(env, t2ListNode->firstNode);
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 05b tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode);fflush(stderr);
+
+                    if (t2ListNode->firstNode==NULL)        // 20091006, no more nodes, remove TID2NODE as well
+                    {
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 06a tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode);fflush(stderr);
+                        removeTID2NODE(env, t2ListNode);
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 06b tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode);fflush(stderr);
+                    }
+
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 09a returning TRUE ! tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode);fflush(stderr);
+                    return TRUE;        // signal node got removed
                 }
 
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 09a returning TRUE ! tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode=[%p]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode);fflush(stderr);
-                return TRUE;        // signal node got removed
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 09b returning FALSE ! tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
+                return FALSE;           // signal node was not yet removed (still references to it)
             }
-
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 09b returning FALSE ! tid=[%lu], bKeepPrimodalGroup=[%d], t2ListNode->firstNode->nodeRefCounter=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup, t2ListNode->firstNode->nodeRefCounter);fflush(stderr);
-            return FALSE;           // signal node was not yet removed (still references to it)
         }
-    }
-// fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 09c returning -1 ! tid=[%lu], bKeepPrimodalGroup=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup);fflush(stderr);
-    return -1;      // TID not in TID2NODE list
-}
-
-
-    // ---------------------------------------------------------------------------------------
-    // find rajo for this TID, if none found return NULL
-inline PSTRUCT_RAJO findRAJO (
-                            #ifdef UNIX
-                                pthread_t
-                            #else
-                                TID
-                            #endif
-                                     tid       // thread ID
-                             )
-{
-    // if (tid==NULL)          // no tid given, get this TID
-    if (tid==0)             // no tid given, get this TID
-    {
-        tid=RgfGetTID();
+    // fprintf(stderr, "...-... subtractRajoFromTID2NODE(): # 09c returning -1 ! tid=[%lu], bKeepPrimodalGroup=[%d]\n",(unsigned long) tid, bKeepPrimodalGroup);fflush(stderr);
+        return -1;      // TID not in TID2NODE list
     }
 
-#if defined (DEBUG_FIND_RAJO) || defined (DEBUG_RAJO)  // RGF, 2011-03-12, TODO
-    fprintf(stderr, "findRAJO - start, tid=[%lu], pRoot_TID2NODE=[%p]\n", (unsigned long) tid, pRoot_TID2NODE );fflush(stderr);
-#endif
 
-        // find tid in tid2jrst
-    for (PSTRUCT_TID2NODE t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
+        // ---------------------------------------------------------------------------------------
+        // find rajo for this TID, if none found return NULL
+    inline PSTRUCT_RAJO findRAJO (
+                                #ifdef UNIX
+                                    pthread_t
+                                #else
+                                    TID
+                                #endif
+                                         tid       // thread ID
+                                 )
     {
-#if defined (DEBUG_FIND_RAJO) // RGF, 2011-03-12, TODO
-    fprintf(stderr, "findRAJO -     , t2ListNode->tid=[%lu], tid=[%lu]\n", (unsigned long) t2ListNode->tid, (unsigned long) tid );fflush(stderr);
-#endif
-
-        if (t2ListNode->tid == tid)    // tid found !
+        // if (tid==NULL)          // no tid given, get this TID
+        if (tid==0)             // no tid given, get this TID
         {
-            return t2ListNode->firstNode->rajoRef;
+            tid=RgfGetTID();
         }
-    }
-#if defined (DEBUG_FIND_RAJO) // RGF, 2011-03-12, TODO
-    fprintf(stderr, "findRAJO - end, tid=[%lu] not found!\n", (unsigned long) tid );fflush(stderr);
-#endif
 
-    return NULL;    // not found, return NULL
-}
-
-
-    // ---------------------------------------------------------------------------------------
-    // find TID2NODE->firstNode for this TID, if none found return NULL
-inline PSTRUCT_NODE findFirstNODE(
-    #ifdef UNIX
-        pthread_t
-    #else
-        TID
+    #if defined (DEBUG_FIND_RAJO) || defined (DEBUG_RAJO)  // RGF, 2011-03-12, TODO
+        fprintf(stderr, "findRAJO - start, tid=[%lu], pRoot_TID2NODE=[%p]\n", (unsigned long) tid, pRoot_TID2NODE );fflush(stderr);
     #endif
-             tid       // thread ID
-    )
-{
-    // if (tid==NULL)          // no tid given, get this TID
-    if (tid==0)             // no tid given, get this TID
-    {
-        tid=RgfGetTID();
-    }
 
-        // find tid in tid2jrst
-    for (PSTRUCT_TID2NODE t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
-    {
-        if (t2ListNode->tid == tid)    // tid found !
+            // find tid in tid2jrst
+        for (PSTRUCT_TID2NODE t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
         {
-            return t2ListNode->firstNode;
-        }
-    }
-
-    return NULL;    // not found, return NULL
-}
-
-
-
-    // ---------------------------------------------------------------------------------------
-    // find TID2NODE->firstNode for this TID, if none found return NULL
-inline PSTRUCT_TID2NODE findTID2NODE(
-    #ifdef UNIX
-        pthread_t
-    #else
-        TID
+    #if defined (DEBUG_FIND_RAJO) // RGF, 2011-03-12, TODO
+        fprintf(stderr, "findRAJO -     , t2ListNode->tid=[%lu], tid=[%lu]\n", (unsigned long) t2ListNode->tid, (unsigned long) tid );fflush(stderr);
     #endif
-             tid       // thread ID
-    )
-{
-    // if (tid==NULL)          // no tid given, get this TID
-    if (tid==0)             // no tid given, get this TID
-    {
-        tid=RgfGetTID();
-    }
 
-        // find tid in tid2jrst
-    for (PSTRUCT_TID2NODE t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
-    {
-        if (t2ListNode->tid == tid)    // tid found !
-        {
-            return t2ListNode;
+            if (t2ListNode->tid == tid)    // tid found !
+            {
+                return t2ListNode->firstNode->rajoRef;
+            }
         }
+    #if defined (DEBUG_FIND_RAJO) // RGF, 2011-03-12, TODO
+        fprintf(stderr, "findRAJO - end, tid=[%lu] not found!\n", (unsigned long) tid );fflush(stderr);
+    #endif
+
+        return NULL;    // not found, return NULL
     }
 
-    return NULL;    // not found, return NULL
-}
 
+        // ---------------------------------------------------------------------------------------
+        // find TID2NODE->firstNode for this TID, if none found return NULL
+    inline PSTRUCT_NODE findFirstNODE(
+        #ifdef UNIX
+            pthread_t
+        #else
+            TID
+        #endif
+                 tid       // thread ID
+        )
+    {
+        // if (tid==NULL)          // no tid given, get this TID
+        if (tid==0)             // no tid given, get this TID
+        {
+            tid=RgfGetTID();
+        }
+
+            // find tid in tid2jrst
+        for (PSTRUCT_TID2NODE t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
+        {
+            if (t2ListNode->tid == tid)    // tid found !
+            {
+                return t2ListNode->firstNode;
+            }
+        }
+
+        return NULL;    // not found, return NULL
+    }
+
+
+
+        // ---------------------------------------------------------------------------------------
+        // find TID2NODE->firstNode for this TID, if none found return NULL
+    inline PSTRUCT_TID2NODE findTID2NODE(
+        #ifdef UNIX
+            pthread_t
+        #else
+            TID
+        #endif
+                 tid       // thread ID
+        )
+    {
+        // if (tid==NULL)          // no tid given, get this TID
+        if (tid==0)             // no tid given, get this TID
+        {
+            tid=RgfGetTID();
+        }
+
+            // find tid in tid2jrst
+        for (PSTRUCT_TID2NODE t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
+        {
+            if (t2ListNode->tid == tid)    // tid found !
+            {
+                return t2ListNode;
+            }
+        }
+
+        return NULL;    // not found, return NULL
+    }
+
+#endif
 
 
     void RexxEntry rgfInitLocks();     // rgf, 2009-04-25, initialize critical section
@@ -6783,7 +6750,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 
     // --- rgf, 2011-03-16: maybe wrong assumption that interferes with the rgf attach logic
        // on APPLE: adapt, we need to attach to JVM as this is now running in a different thread
-    jint resAttach=currentJVM->GetEnv((void **) jniEnv, USE_DEFINED_JNI_VERSION);  // this will indicate that we are not attached as of yet
+    jint resAttach=currentJVM->GetEnv((void **) &jniEnv, USE_DEFINED_JNI_VERSION);  // this will indicate that we are not attached as of yet
     #ifdef DEBUG
     	fprintf(stderr, "BSFLoadJava(): __APPLE__, #1, resAttach=[%d], JNI_EDETACHED=[%d]\n", (int) resAttach, JNI_EDETACHED); fflush(stderr);
     #endif
@@ -7054,8 +7021,10 @@ RexxRoutine0(RexxStringObject, BsfUnloadJava)  // 20090505, ---rgf, only a stub 
 
 // TODO: RAJO_TID2NODE structures needed anymore ?
 
+#ifndef RGF_ATTACH_NEW
        // emtpy RAJO/TID2NODE structures
     empty_RAJO_TID2NODE_structures(param.env);
+#endif
 
        // empty JavaVM structure
     JavaVM *tmpJVM=defaultJVM->jvm;     // save pointer to JVM
@@ -7339,163 +7308,6 @@ RexxRoutine1(logical_t, BsfAttachToTID, OPTIONAL_CSTRING, toTID)    // 20090505,
 }
 
 
-    // ---rgf, 2003-08-06: allow Rexx to use the Java environment of another Rexx thread
-RexxRoutine1(logical_t, BsfAttachToTID_Old, OPTIONAL_CSTRING, toTID)    // 20090505, ---rgf, only a stub for backward compatibility
-{
-
-    #ifdef UNIX
-        pthread_t
-    #else   // WIN32
-        TID
-    #endif
-            tid=RgfGetTID();
-
-#ifdef RGF_INFO
-    fprintf(stderr, "*** RGF_INFO: BsfAttachToTID() 1, tid=[%lu], toTID=[%.256s] ...\n",
-            (unsigned long) tid, toTID
-            );
-    fflush(stderr);
-#endif
-
-        // extract "tid" value from Rexx string; TODO: check for MacOSX
-    unsigned long  attachToTID=0;
-    bool bUsingPrimodialTID=false;
-
-    if (toTID==NULL)    // rgf, 20140330: no TID given, try to use BSF.PRIMTODALTID
-    {
-        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
-        RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
-
-        if (obj==NULL) // NULLOBJECT)
-        {
-            char msg[256];
-            SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-            return FALSE;
-        }
-
-        toTID=(char *) context->CString(context->ObjectToString(obj));
-        bUsingPrimodialTID=true;
-    }
-
-    sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
-
-    int bAlreadyAttached=FALSE;
-    int bTargetTIDMissing=TRUE;
-    RgfAcquireLock();
-        // find tid in tid2jrst
-    for (PSTRUCT_TID2NODE t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
-    {
-// fprintf(stderr, "/// ba2i marker (1), t2ListNode=[%p], t2ListNode->tid=[%p], attachToTID=[%p]...\n", t2ListNode, t2ListNode->tid, attachToTID);fflush(stderr);
-        if (t2ListNode->tid == tid)    // tid exists already !
-        {
-            bAlreadyAttached=TRUE;
-// fprintf(stderr, "/// ba2i marker (2a), t2ListNode=[%p]...\n", t2ListNode);fflush(stderr);
-            break;
-        }
-
-        if ((unsigned long) t2ListNode->tid == attachToTID)   // target TID exists!
-        {
-// fprintf(stderr, "/// ba2i marker (2b), t2ListNode=[%p]...\n", t2ListNode);fflush(stderr);
-            bTargetTIDMissing=FALSE;
-        }
-    }
-    RgfReleaseLock();
-
-    if (bAlreadyAttached==TRUE)     // raise an error in caller
-    {
-        char msg[256];
-        SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 1: current thread [%lu] is already attached", DLLNAME, (unsigned long)tid);
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        return FALSE;
-    }
-
-    if (bTargetTIDMissing==TRUE)
-    {
-        char msg[256];
-        if (bUsingPrimodialTID==true)
-        {
-            SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 2: target (.%s) thread [%lu] does not exist or has currently no established interface to Java", DLLNAME, LOCAL_PRIMODAL_TID, (unsigned long) attachToTID);
-        }
-        else
-        {
-            SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 2: target thread [%lu] does not exist or has currently no established interface to Java", DLLNAME, (unsigned long) attachToTID);
-        }
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
-        return FALSE;
-    }
-
-
-   // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
-   STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0,
-(
-#ifdef UNIX
-    pthread_t
-#else
-    TID
-#endif
-)
-                       attachToTID};
-   RgfAcquireLock();
-
-#if defined ( DEBUG_SHOW_STRUCTURES )
-    dumpPARAM(   "BsfAttachToTID(), before environmentAttachTo(...): param:", &param);
-    dumpRAJO(    "BsfAttachToTID(), before environmentAttachTo(...), 0: ");
-    dumpTID2NODE("BsfAttachToTID(), before environmentAttachTo(...), 0: ");
-#endif
-
-   environmentAttachTo(&param, TRUE);       // attach to Java, force staying around after next environmentDetachFrom() !
-
-#if defined ( DEBUG_SHOW_STRUCTURES )
-    dumpPARAM(   "BsfAttachToTID(), AFTER environmentAttachTo(...): param:", &param);
-    dumpRAJO(    "BsfAttachToTID(), AFTER environmentAttachTo(...):, 1: ");
-    dumpTID2NODE("BsfAttachToTID(), AFTER environmentAttachTo(...):, 1: ");
-#endif
-
-   // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
-   //                  -2 ... no rajo found, raise an exception in caller
-   //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
-   //                  -4 ... cannot attach to target TID
-   //                 -99 ... no JVM available !
-   if (param.error== -1)    // could not attach to Java
-   {
-       context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
-                                createAttachErrorMessageRSO(context, "routine/BsfAttachToTID(), error 3", &param)
-                                );
-       RgfReleaseLock();
-       return FALSE;
-   }
-
-   // 20091006: attaching is now done in environmentAttach(...), if param has a value defined for attach2TID
-   // attachToTID_2(&param, attachToTID);       // carry out the attachment
-
-   if (param.error==-4)         // target TID not found, raise an exception!
-   {
-       context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
-                                createAttachErrorMessageRSO(context, "routine/BsfAttachToTID(), error 2", &param)
-                                );
-       environmentDetachFrom(&param, TRUE);     // close group
-       RgfReleaseLock();
-       return FALSE;
-   }
-
-   param.bDetach=FALSE;     // make sure we remain attached to this thread
-   environmentDetachFrom(&param, FALSE);    // do not close group
-
-#if defined ( DEBUG_SHOW_STRUCTURES )
-    dumpPARAM(   "BsfAttachToTID(), after environmentDetachFrom(): param:", &param);
-    dumpRAJO(    "BsfAttachToTID(), after environmentDetachFrom(): ");
-    dumpTID2NODE("BsfAttachToTID(), after environmentDetachFrom(): ");
-#endif
-    RgfReleaseLock();
-
-   // return (param.error==NULL);      // return .true, if no error, .false else
-   return (param.error==0);         // return .true, if no error, .false else
-}
-
-
-
-
     // ---rgf, 2014-05-17: not needed anymore (deprecated), return true to allow older programs to continue to run
 RexxRoutine0(logical_t, BsfDetach)    // 20090505, ---rgf, only a stub for backward compatibility
 {
@@ -7503,113 +7315,274 @@ RexxRoutine0(logical_t, BsfDetach)    // 20090505, ---rgf, only a stub for backw
 }
 
 
-    // rgf, 2008-07-26
-/* Removes the TID2JRST entry with current TID. If removal was possible, return .true,
-   else .false (indicating that no Java environment was attached to this TID).
+#ifndef RGF_ATTACH_NEW
+        // ---rgf, 2003-08-06: allow Rexx to use the Java environment of another Rexx thread
+    RexxRoutine1(logical_t, BsfAttachToTID_Old, OPTIONAL_CSTRING, toTID)    // 20090505, ---rgf, only a stub for backward compatibility
+    {
 
-    arg1=RexxObject or CodeString
-    arg2=optional, userData (any Rexx object)
-    arg3=optional, Java class (string, clz, jobj), ...
-    argn=          - " -
-*/
+        #ifdef UNIX
+            pthread_t
+        #else   // WIN32
+            TID
+        #endif
+                tid=RgfGetTID();
 
-// APIRET APIENTRY BsfDetach      ( PSZ name, LONG numargs, RXSTRING args[], PSZ queuename, PRXSTRING retstr )
-RexxRoutine0(logical_t, BsfDetach_Old)    // 20090505, ---rgf, only a stub for backward compatibility
-{
+    #ifdef RGF_INFO
+        fprintf(stderr, "*** RGF_INFO: BsfAttachToTID() 1, tid=[%lu], toTID=[%.256s] ...\n",
+                (unsigned long) tid, toTID
+                );
+        fflush(stderr);
+    #endif
+
+            // extract "tid" value from Rexx string; TODO: check for MacOSX
+        unsigned long  attachToTID=0;
+        bool bUsingPrimodialTID=false;
+
+        if (toTID==NULL)    // rgf, 20140330: no TID given, try to use BSF.PRIMTODALTID
+        {
+            RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+            RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
+
+            if (obj==NULL) // NULLOBJECT)
+            {
+                char msg[256];
+                SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 3: no TID given, nor %s defined in .local", DLLNAME, LOCAL_PRIMODAL_TID);
+                context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+                return FALSE;
+            }
+
+            toTID=(char *) context->CString(context->ObjectToString(obj));
+            bUsingPrimodialTID=true;
+        }
+
+        sscanf(toTID, "%lu", &attachToTID);    // get integer value from string
+
+        int bAlreadyAttached=FALSE;
+        int bTargetTIDMissing=TRUE;
+        RgfAcquireLock();
+            // find tid in tid2jrst
+        for (PSTRUCT_TID2NODE t2ListNode=pRoot_TID2NODE; t2ListNode!=NULL; t2ListNode=t2ListNode->next)
+        {
+    // fprintf(stderr, "/// ba2i marker (1), t2ListNode=[%p], t2ListNode->tid=[%p], attachToTID=[%p]...\n", t2ListNode, t2ListNode->tid, attachToTID);fflush(stderr);
+            if (t2ListNode->tid == tid)    // tid exists already !
+            {
+                bAlreadyAttached=TRUE;
+    // fprintf(stderr, "/// ba2i marker (2a), t2ListNode=[%p]...\n", t2ListNode);fflush(stderr);
+                break;
+            }
+
+            if ((unsigned long) t2ListNode->tid == attachToTID)   // target TID exists!
+            {
+    // fprintf(stderr, "/// ba2i marker (2b), t2ListNode=[%p]...\n", t2ListNode);fflush(stderr);
+                bTargetTIDMissing=FALSE;
+            }
+        }
+        RgfReleaseLock();
+
+        if (bAlreadyAttached==TRUE)     // raise an error in caller
+        {
+            char msg[256];
+            SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 1: current thread [%lu] is already attached", DLLNAME, (unsigned long)tid);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return FALSE;
+        }
+
+        if (bTargetTIDMissing==TRUE)
+        {
+            char msg[256];
+            if (bUsingPrimodialTID==true)
+            {
+                SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 2: target (.%s) thread [%lu] does not exist or has currently no established interface to Java", DLLNAME, LOCAL_PRIMODAL_TID, (unsigned long) attachToTID);
+            }
+            else
+            {
+                SNPRINTF(msg, 256, "%.16s/routine/BsfAttachToTID(), error 2: target thread [%lu] does not exist or has currently no established interface to Java", DLLNAME, (unsigned long) attachToTID);
+            }
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            return FALSE;
+        }
+
+
+       // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error,attach2tid};
+       STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0,
+    (
     #ifdef UNIX
         pthread_t
     #else
         TID
     #endif
-            tid=RgfGetTID();    // current thread
+    )
+                           attachToTID};
+       RgfAcquireLock();
 
-#if defined ( RGF_INFO )
-    fprintf(stderr, "*** RGF_INFO: BsfDetach() 1, tid=[%lu] ...\n",
-            (unsigned long) tid
-            );
-    fflush(stderr);
-#endif
+    #if defined ( DEBUG_SHOW_STRUCTURES )
+        dumpPARAM(   "BsfAttachToTID(), before environmentAttachTo(...): param:", &param);
+        dumpRAJO(    "BsfAttachToTID(), before environmentAttachTo(...), 0: ");
+        dumpTID2NODE("BsfAttachToTID(), before environmentAttachTo(...), 0: ");
+    #endif
 
-    // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
-    STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, 0};
+       environmentAttachTo(&param, TRUE);       // attach to Java, force staying around after next environmentDetachFrom() !
 
-    RgfAcquireLock();
+    #if defined ( DEBUG_SHOW_STRUCTURES )
+        dumpPARAM(   "BsfAttachToTID(), AFTER environmentAttachTo(...): param:", &param);
+        dumpRAJO(    "BsfAttachToTID(), AFTER environmentAttachTo(...):, 1: ");
+        dumpTID2NODE("BsfAttachToTID(), AFTER environmentAttachTo(...):, 1: ");
+    #endif
 
-// fprintf(stderr, "BsfDetach() 1a, tid=[%lu],       environmentAttachTo()\n", (unsigned int) tid); fflush(stderr);
+       // - param->error:  -1 ... Attach-error, attachResult holds Java error code, raise an exception in caller
+       //                  -2 ... no rajo found, raise an exception in caller
+       //                  -3 ... cannot safely use the given RAJO in TID, as actual RAJO is being used in multiple Rexx threads
+       //                  -4 ... cannot attach to target TID
+       //                 -99 ... no JVM available !
+       if (param.error== -1)    // could not attach to Java
+       {
+           context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
+                                    createAttachErrorMessageRSO(context, "routine/BsfAttachToTID(), error 3", &param)
+                                    );
+           RgfReleaseLock();
+           return FALSE;
+       }
 
-    environmentAttachTo(&param, FALSE); // attach to Java
+       // 20091006: attaching is now done in environmentAttach(...), if param has a value defined for attach2TID
+       // attachToTID_2(&param, attachToTID);       // carry out the attachment
 
-// fprintf(stderr, "BsfDetach() 1b, tid=[%lu], after environmentAttachTo()\n", (unsigned int) tid); fflush(stderr);
+       if (param.error==-4)         // target TID not found, raise an exception!
+       {
+           context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
+                                    createAttachErrorMessageRSO(context, "routine/BsfAttachToTID(), error 2", &param)
+                                    );
+           environmentDetachFrom(&param, TRUE);     // close group
+           RgfReleaseLock();
+           return FALSE;
+       }
 
-#if defined ( DEBUG_SHOW_STRUCTURES )
-    dumpPARAM(   "BsfDetach(), after environmentAttachTo(...): param:", &param);
-    dumpRAJO(    "BsfDetach(), after environmentAttachTo(...), 1: ");
-    dumpTID2NODE("BsfDetach(), after environmentAttachTo(...), 1: ");
-#endif
+       param.bDetach=FALSE;     // make sure we remain attached to this thread
+       environmentDetachFrom(&param, FALSE);    // do not close group
 
-    if (param.error== -1)    // could not attach to Java
-    {
+    #if defined ( DEBUG_SHOW_STRUCTURES )
+        dumpPARAM(   "BsfAttachToTID(), after environmentDetachFrom(): param:", &param);
+        dumpRAJO(    "BsfAttachToTID(), after environmentDetachFrom(): ");
+        dumpTID2NODE("BsfAttachToTID(), after environmentDetachFrom(): ");
+    #endif
         RgfReleaseLock();
-        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
-                                 createAttachErrorMessageRSO(context, "routine/BsfDetach(), error 1", &param)
-                                 );
-        return FALSE;
+
+       // return (param.error==NULL);      // return .true, if no error, .false else
+       return (param.error==0);         // return .true, if no error, .false else
     }
-    // detachFromTID_2(&param);       // carry out the detachment
 
 
-    // fetch .bsf.primodalTID, if current make sure that it does not get removed
-    int  bIsPrimodalThread=0;
+        // rgf, 2008-07-26
+    /* Removes the TID2JRST entry with current TID. If removal was possible, return .true,
+       else .false (indicating that no Java environment was attached to this TID).
+
+        arg1=RexxObject or CodeString
+        arg2=optional, userData (any Rexx object)
+        arg3=optional, Java class (string, clz, jobj), ...
+        argn=          - " -
+    */
+
+    // APIRET APIENTRY BsfDetach      ( PSZ name, LONG numargs, RXSTRING args[], PSZ queuename, PRXSTRING retstr )
+    RexxRoutine0(logical_t, BsfDetach_Old)    // 20090505, ---rgf, only a stub for backward compatibility
     {
-        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
-        RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
+        #ifdef UNIX
+            pthread_t
+        #else
+            TID
+        #endif
+                tid=RgfGetTID();    // current thread
 
-        if (obj==NULL) // NULLOBJECT)
+    #if defined ( RGF_INFO )
+        fprintf(stderr, "*** RGF_INFO: BsfDetach() 1, tid=[%lu] ...\n",
+                (unsigned long) tid
+                );
+        fflush(stderr);
+    #endif
+
+        // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
+        STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, 0};
+
+        RgfAcquireLock();
+
+    // fprintf(stderr, "BsfDetach() 1a, tid=[%lu],       environmentAttachTo()\n", (unsigned int) tid); fflush(stderr);
+
+        environmentAttachTo(&param, FALSE); // attach to Java
+
+    // fprintf(stderr, "BsfDetach() 1b, tid=[%lu], after environmentAttachTo()\n", (unsigned int) tid); fflush(stderr);
+
+    #if defined ( DEBUG_SHOW_STRUCTURES )
+        dumpPARAM(   "BsfDetach(), after environmentAttachTo(...): param:", &param);
+        dumpRAJO(    "BsfDetach(), after environmentAttachTo(...), 1: ");
+        dumpTID2NODE("BsfDetach(), after environmentAttachTo(...), 1: ");
+    #endif
+
+        if (param.error== -1)    // could not attach to Java
         {
-            char msg[256];
-            SNPRINTF(msg, 256, "%.16s/routine/BsfDetach(), error 2: no %s defined in .local, cannot execute function", DLLNAME, LOCAL_PRIMODAL_TID);
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            RgfReleaseLock();
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
+                                     createAttachErrorMessageRSO(context, "routine/BsfDetach(), error 1", &param)
+                                     );
+            return FALSE;
+        }
+        // detachFromTID_2(&param);       // carry out the detachment
+
+
+        // fetch .bsf.primodalTID, if current make sure that it does not get removed
+        int  bIsPrimodalThread=0;
+        {
+            RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+            RexxObjectPtr obj = context->DirectoryAt(localDir, LOCAL_PRIMODAL_TID);
+
+            if (obj==NULL) // NULLOBJECT)
+            {
+                char msg[256];
+                SNPRINTF(msg, 256, "%.16s/routine/BsfDetach(), error 2: no %s defined in .local, cannot execute function", DLLNAME, LOCAL_PRIMODAL_TID);
+                context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+                return FALSE;
+            }
+
+            char *toTid=(char *) context->CString(context->ObjectToString(obj));
+
+            unsigned long  ulPrimodalTID=0;
+            sscanf(toTid, "%lu", &ulPrimodalTID);    // get integer value from string
+            unsigned long ulTID= (unsigned long) tid;
+            // sscanf(tid, "%lu", &ulTID);    // get integer value from string
+
+            bIsPrimodalThread= (ulTID==ulPrimodalTID ? 1 : 0);
+
+    // fprintf(stderr, "toTid=[%lu], ulPrimodalTID=[%lu]\n", ulTID, ulPrimodalTID); fflush(stderr);
+        }
+
+        // determine whether we run in the primodal thread, if so make sure that we never detach by user demand
+
+        int res=subtractRajoFromTID2NODE(param.env, param.tid, FALSE, bIsPrimodalThread);    // carry out the detachment
+
+    // fprintf(stderr, "BsfDetach() 1a, tid=[%lu],       environmentDetachFrom()\n", (unsigned int) tid); fflush(stderr);
+
+        param.bDetach=TRUE;      // make sure we detached from this thread
+        environmentDetachFrom(&param, FALSE);    // do not close group
+
+    // fprintf(stderr, "BsfDetach() 1b, tid=[%lu],       environmentDetachFrom()\n", (unsigned int) tid); fflush(stderr);
+
+    #if defined ( DEBUG_SHOW_STRUCTURES )
+        dumpPARAM(   "BsfDetach(), after environmentDetach(): param:", &param);
+        dumpRAJO(    "BsfDetach(), after environmentDetach(): ");
+        dumpTID2NODE("BsfDetach(), after environmentDetach(): ");
+    #endif
+        RgfReleaseLock();
+
+        if (bIsPrimodalThread==1 && res==FALSE)
+        {
             return FALSE;
         }
 
-        char *toTid=(char *) context->CString(context->ObjectToString(obj));
-
-        unsigned long  ulPrimodalTID=0;
-        sscanf(toTid, "%lu", &ulPrimodalTID);    // get integer value from string
-        unsigned long ulTID= (unsigned long) tid;
-        // sscanf(tid, "%lu", &ulTID);    // get integer value from string
-
-        bIsPrimodalThread= (ulTID==ulPrimodalTID ? 1 : 0);
-
-// fprintf(stderr, "toTid=[%lu], ulPrimodalTID=[%lu]\n", ulTID, ulPrimodalTID); fflush(stderr);
+        // return (param.error==NULL);      // no error, hence worked
+        return (param.error==0);         // no error, hence worked
     }
 
-    // determine whether we run in the primodal thread, if so make sure that we never detach by user demand
-
-    int res=subtractRajoFromTID2NODE(param.env, param.tid, FALSE, bIsPrimodalThread);    // carry out the detachment
-
-// fprintf(stderr, "BsfDetach() 1a, tid=[%lu],       environmentDetachFrom()\n", (unsigned int) tid); fflush(stderr);
-
-    param.bDetach=TRUE;      // make sure we detached from this thread
-    environmentDetachFrom(&param, FALSE);    // do not close group
-
-// fprintf(stderr, "BsfDetach() 1b, tid=[%lu],       environmentDetachFrom()\n", (unsigned int) tid); fflush(stderr);
-
-#if defined ( DEBUG_SHOW_STRUCTURES )
-    dumpPARAM(   "BsfDetach(), after environmentDetach(): param:", &param);
-    dumpRAJO(    "BsfDetach(), after environmentDetach(): ");
-    dumpTID2NODE("BsfDetach(), after environmentDetach(): ");
 #endif
-    RgfReleaseLock();
 
-    if (bIsPrimodalThread==1 && res==FALSE)
-    {
-        return FALSE;
-    }
 
-    // return (param.error==NULL);      // no error, hence worked
-    return (param.error==0);         // no error, hence worked
-}
+
 
 
 
@@ -7746,6 +7719,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
         return FALSE;
     }
     RgfReleaseLock();
+
 #else
     environmentAttachTo(&param, FALSE); // attach to Java
 
@@ -10852,10 +10826,38 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
 
 // fprintf(stderr, "/// marker (1)...\n");fflush(stderr);
 
-    // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
+
+#ifdef RGF_ATTACH_NEW
+    // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
+    STRUCT_ATTACH_PARAM param={0, 0, 0, false, 0};
+#else
     STRUCT_PARAM param={tid, 0, 0, NULL, 0, 0, 0, 0};
+#endif
+    // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
+
     RgfAcquireLock();
+
+
+#ifdef RGF_ATTACH_NEW
+    JNIEnv *jenv=NULL;
+    jint res1=0, res2=0;
+
+// fprintf(stderr, "===> BSFUnloader(): before GetEnv(), currentJVM=[%p], defaultJVM=[%p]... \n", currentJVM, defaultJVM); fflush(stderr);
+    res1=defaultJVM->jvm->GetEnv((void **) &jenv, USE_DEFINED_JNI_VERSION);  // this will indicate that we are not attached as of yet
+    if (jenv==NULL)
+    {
+// fprintf(stderr, "===> BSFUnloader(): before AttachCurrentThread(), res1=[%d]... \n",res1); fflush(stderr);
+        res2=defaultJVM->jvm->AttachCurrentThread((void **) &jenv, (void *) &defaultJavaVMAttachArgs);
+    }
+
+    param.env=jenv;
+
+// fprintf(stderr, "===> BSFUnloader(): res1=[%d], res2=[%d], param.env=[%p], jenv=[%p]\n", res1, res2, param.env, jenv); fflush(stderr);
+
+
+#else
     environmentAttachTo(&param, FALSE); // attach to Java
+#endif
 
 #if defined ( DEBUG_SHOW_STRUCTURES )
     dumpPARAM(   "bsfUnloader(), after environmentAttachTo(...): param:", &param);
@@ -10882,7 +10884,9 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
     if (param.error==0 || (param.error > -1 && param.error < -99) )
     {
 // fprintf(stderr, "/// marker (2), pRoot_RAJO=[%p]...\n", pRoot_RAJO);fflush(stderr);
+#ifndef RGF_ATTACH_NEW
         removeAll_nodes(param.env);
+#endif
 
 // fprintf(stderr, "/// marker (3)...\n");fflush(stderr);
         uninit_STRUCT_JVM(param.env, defaultJVM);   // uninitialize data structures, remove global refs, nullify structure
@@ -11506,6 +11510,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
     RexxFreeMemory(c_rii_ID);
 
+/* ---> rgf, 2014-05-17: no need for attaching/detaching to JVM as we are invoked in that context!
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={tid, env, raj, instance, 0, 0, 0, 0};
     RgfAcquireLock();
@@ -11543,7 +11548,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 #endif
         return NULL;
     }
-
+<-- */
 
 
 #if defined(DEBUG_JNI) || defined (DEBUG40)
@@ -11557,13 +11562,14 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
                                      raj,
                                      tmpBuf
                                      );
-
+/* ---> rgf, 2014-05-17
     JAVA_TO_STRING( param.env, param.rajo, tmpBuf, 1024);
     fprintf(stderr, "*** *** DEBUG_JNI: ..._jniRexxRunProgram() 1b - tid=[%lu], param.rajo=[%p] [%s]\n",
                                      (unsigned long) tid,
                                      param.rajo,
                                      tmpBuf
                                      );
+<-- */
     fflush(stderr);
 }
 #endif
@@ -11624,9 +11630,12 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     fflush(stderr);
 #endif
 
+/* ---> rgf, 2014-05-17
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);
         RgfReleaseLock();
+<--- */
+
         return NULL;
     }
 
@@ -11657,9 +11666,12 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     fflush(stderr);
 #endif
 
+/* ---> rgf, 2014-05-17
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);
         RgfReleaseLock();
+<--- */
+
         return NULL;
     }
 
@@ -11696,9 +11708,11 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
         // RexxFreeMemory(c_rii_ID);       // make sure we free the allocated memory
 
+/* ---> rgf, 2014-05-17
         RgfAcquireLock();
         environmentDetachFrom(&param,FALSE);
         RgfReleaseLock();
+<-- */
         return NULL;
     }
 
@@ -11815,9 +11829,11 @@ fflush(stderr);
 #endif
 
         RexxFreeMemory(msg);
+/* ---> rgf, 2014-05-17
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);
         RgfReleaseLock();
+<--- */
         return NULL;
     }
 
@@ -11840,9 +11856,11 @@ fflush(stderr);
     fprintf(stderr, "done. <-------------- tid=[%lu] \n", (unsigned long) tid); fflush(stderr);
 #endif
 
+/* ---> rgf, 2014-05-17
     RgfAcquireLock();
     environmentDetachFrom(&param, FALSE);
     RgfReleaseLock();
+<--- */
 
     return jresult;
 }
@@ -11945,6 +11963,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
 
+
+/* ---> , rgf, 2014-05-17, no need
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
     STRUCT_PARAM param={tid, env, jobj, instance, 0, 0, 0, 0};
     RgfAcquireLock();
@@ -11982,7 +12002,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 #endif
         return NULL;
     }
-
+<--- */
 
     // RgfAcquireLock2(RII_lock);      // lock access to list of RexxInstance instances
     tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
@@ -12012,9 +12032,13 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 #endif
 
         RexxFreeMemory(c_rii_ID);        // make sure we free the allocated memory
+
+/* ---> rgf, 20140517
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);
         RgfReleaseLock();
+<-- */
+
         return NULL;
     }
 
@@ -12054,9 +12078,12 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
         RexxFreeMemory(c_rii_ID);       // make sure we free the allocated memory
 
+/* ---> rgf, 20140517
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);
         RgfReleaseLock();
+<--- */
+
         return NULL;
     }
 
@@ -12321,9 +12348,12 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
         RexxFreeMemory(msg);
 
+/* ---> rgf, 20140517
         RgfAcquireLock();
         environmentDetachFrom(&param, FALSE);
         RgfReleaseLock();
+<--- */
+
         return NULL;
     }
 
@@ -12351,10 +12381,11 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     fprintf(stderr, "done. <--------------\n"); fflush(stderr);
 #endif
 
-
+/* ---> rgf, 20140517
     RgfAcquireLock();
     environmentDetachFrom(&param, FALSE);
     RgfReleaseLock();
+<--- */
 
     return jresult;
 }
@@ -12647,9 +12678,12 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
     fflush(stderr);
 #endif
 
+#ifndef RGF_ATTACH_NEW
         RgfAcquireLock();
         removeAll_RIID_nodes(env, (void *) instance);
         RgfReleaseLock();
+#endif
+
 
 #if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
     fprintf(stderr, "(6b) .._jniRexxTerminateInterpreterInstance(...), thisTid=[%lu], c_rii_ID=[%p], after removeALL_RIID_nodes .\n",
