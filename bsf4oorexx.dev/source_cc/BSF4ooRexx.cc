@@ -852,11 +852,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "450.20140517 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140518 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "450.20140517 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140518 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "450.20140517 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "450.20140518 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -4129,7 +4129,7 @@ inline void createAttachErrorMessageNew(const char *title, char *buf, size_t buf
 
     default:
         SNPRINTF( buf, bufLen, "%.16s/%.64s: unknown attach error [%d], Rexx interpreter instance: [%p], rajo: [%p], jenv=[%p]",
-                               DLLNAME, title, param->error, param->error, param->riid, param->rajo, param->env );
+                               DLLNAME, title, param->error, param->riid, param->rajo, param->env );
     }
 }
 
@@ -12637,7 +12637,9 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
 
         int32_t nrFreed=RgfRemoveAllProxyObjectsByRIID(tmpInstance, c_rii_ID);
 
-// TODO: Terminate() RII, unless primodalRII (which is needed for maintaining Rexx objects this program uses for managing ProxyObjects for all RIIs)
+#ifdef RGF_ATTACH_NEW
+        defaultJVM->jvm->DetachCurrentThread();     // speculation: once returned from the JNI invocation this thread is not attached to the JVM anymore
+#endif
 
 #if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
         fprintf(stderr, "---> ---> ---> ");
@@ -12700,6 +12702,8 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
     fprintf(stderr, "<-- returning from: .._jniRexxTerminateInterpreterInstance(...), thisTid=[%lu]\n", (unsigned long) thisTid);
     fflush(stderr);
 #endif
+
+// TODO: ---rgf, 20140518detach thread from JVM at this point? Only if primodal thread?
 
     return (jint) 0;
 }
