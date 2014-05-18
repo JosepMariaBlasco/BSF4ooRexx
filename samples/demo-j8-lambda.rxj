@@ -4,7 +4,7 @@
    purpose:   demonstrate how to use ooRexx code to be used in Java 8's lambda-related
               functional programming patterns
    author:    Rony G. Flatscher
-   date:      2014-04-26
+   date:      2014-05-18
 
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
 
@@ -46,7 +46,7 @@ alist=bsf.loadClass("java.util.Arrays")~asList(refWordString~split(" "))
 
 -- create a RexxProxy of our Worker class which implements the two functional interface
 -- methods that we use
-rexxWorker=BsfCreateRexxProxy(.worker~new)
+rexxWorker=BsfCreateRexxProxy(.worker~new, , "java.util.function.Predicate", "java.util.function.Consumer")
 
 -- now run a filter stream operation on the list
 -- (the filter just selects words containing the letter 'k')
