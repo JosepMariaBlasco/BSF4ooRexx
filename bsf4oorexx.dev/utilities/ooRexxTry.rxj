@@ -69,9 +69,8 @@
 */
 
 /*----------------------------------------------------------------------------*/
-/*  Copyright 2011 Markus Moldaschl, 2011-2014 Rony G. Flatscher              */
-/*  Gerald Leitner, 2014                                                      */
-/*                                                                            */
+/*  Copyright 2011 Markus Moldaschl, 2011-2012 Rony G. Flatscher              */
+/*                                                                                                                    */
 /*  Licensed under the Apache License, Version 2.0 (the "License");           */
 /*  you may not use this file except in compliance with the License.          */
 /*  You may obtain a copy of the License at                                   */
@@ -126,7 +125,6 @@
 /*----------------------------------------------------------------------------*/
 
 
-call makeBSF4ooRexxLookLikeMacOSX   -- make sure that on MacOSX the application looks like a Mac application
 
 /**
 * name:             main program
@@ -181,6 +179,11 @@ if .mm.dir~isdebug == true then say "DEBUGGING OPTION GLEITNER ACTIVE"
 call dontBSFExit                            -- do not carry out a bsf.exit as this would abort this program as well
 call importClasses                          -- Import all utilized java classes
 call LoadEnvironment                        -- Set up the environment to work with
+.mm.dir~rexxinst = 0                        -- index of rexx interpreter instance
+.mm.dir~code_version = 0                    -- index of code version 
+.mm.dir~hcque = .Cirqqueue~new /* G.LEITNER */
+.mm.dir~hcque~setsize(50)      /* G.LEITNER */  
+call makenewinterpreter                     -- make a rexx interpreter with exit handler for the test-code
 userData~trans = 0                          -- no transparency default. 
                                             -- use instead trans=50 for experimentation with transparency
 .mm.dir~storage = .Store~new                -- Instance, later on used to store code executions
@@ -229,9 +232,6 @@ else
     else .mm.dir~errfilestream = .mm.dir~outfilestream
     .error~destination(.mm.dir~errfilestream)
   end
-
-.mm.dir~hcque = .Cirqqueue~new /* G.LEITNER */
-.mm.dir~hcque~setsize(50)      /* G.LEITNER */  
 
 .CreateServerSocket~new~~run            -- setup up a server socket
 
@@ -788,6 +788,7 @@ slotDir~javaObject~setSize_forwardToSuper((.mm.dir~frame~getWidth/wdivider)~form
     use arg method_name,code, userData
     .local~mm.dir~Error? = .false
     signal on syntax name ExecSyntax
+    if .mm.dir~isdebug == true then say "EXECUTOR: " method_name
     rt_method = .method~new(method_name, code)
 return
 
@@ -814,13 +815,25 @@ return
     signal on syntax name RunSyntax
     .local~mm.dir~run_results = .directory~new
 
+    -- GLEITNER: here we see the code for the code history
+    -- COPYCODECIRCQUEUE
+    if .mm.dir~isdebug == true then say .mm.dir~code_string
+    .mm.dir~code_version = .mm.dir~code_version + 1
+    
+    -- nice idea but not supported by java html window
+    -- htmlstring = "<A NAME="||.mm.dir~code_version||"></A><A HREF=#"||.mm.dir~code_version - 1||">PREV</A> <A HREF=#".mm.dir~code_version + 1||">NEXT</A>"
+    
+    .mm.dir~hcque~setelem(TIME("L"),"X","CODE VERSION " .mm.dir~code_version .endOfLine) 
+    .mm.dir~hcque~setelem(TIME("L"),"C",.mm.dir~code_string .endOfLine) 
+
     my_result = ''
     if \.mm.dir~Error? then
         do
             -- Run the Code
             args = arg(1)
-            self~run:super(rt_method, 'a', args)
-
+            -- self~run:super(rt_method, 'a', args)
+            if .mm.dir~isdebug == true then say "EXEC METHOD RUN"
+            .mm.dir~rexxEngine~apply("testcode.code",0,0,.mm.dir~code_string,.nil,.nil)
             -- Test if there was anything returned by the code
             if symbol('result') = 'VAR' then my_result = result
             -- Load the says and returns into environment variables for updating the dialog areas
@@ -829,11 +842,6 @@ return
         end
 
     .mm.dir~storage~storeData(.mm.dir~code_string)
-
-    -- GLEITNER: here we see the code for the code history
-    -- dirty code COPYCODECIRCQUEUE
-    if .mm.dir~isdebug == true then say .mm.dir~code_string
-    .mm.dir~hcque~setelem(TIME("L"),"C",.mm.dir~code_string .endOfLine) /* G.LEITNER */
 
 
     if .nil \= .mm.dir~run_results['returns'] then
@@ -1116,10 +1124,14 @@ RunSyntax:
     userData~rexxCloseEH=rexxCloseEH   -- save Rexx event handler for later use
     userData~rpCloseEH=rpCloseEH       -- save RexxProxy for Rexx event handler for later use
 
+    rexxNRunEH = .NRun~new
+    rpNRunEH = BsfCreateRexxProxy(rexxNRunEH, userData, .java.awt.event.ActionListener)
+    userData~rpNRunEH = rpNRunEH
+
     rexxRunEH = .RunIt~new
     rpRunEH = BsfCreateRexxProxy(rexxRunEH, userData, .java.awt.event.ActionListener)
     userData~rpRunEH = rpRunEH
-    
+   
     rexxFileDialogEH = .FileDialog~new
     rpFileDialogEH = BsfCreateRexxProxy(rexxFileDialogEH, userData, .java.awt.event.ActionListener)
     userData~rpFileDialogEH = rpFileDialogEH
@@ -1306,6 +1318,9 @@ RunSyntax:
         saveAsMenuItem = .javax.swing.JMenuItem~new('Save As ...')
         saveAsMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_S)
         saveAsMenuItem~setAccelerator(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_S, .java.awt.Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
+        nrunMenuItem = .javax.swing.JMenuItem~new('NewInstance')
+        nrunMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_9)
+        nrunMenuItem~setAccelerator(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_9, .java.awt.Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
         runMenuItem = .javax.swing.JMenuItem~new('Run')
         runMenuItem~setMnemonic(.java.awt.event.KeyEvent~VK_R)
         runMenuItem~setAccelerator(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_R, .java.awt.Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
@@ -1329,12 +1344,13 @@ RunSyntax:
             exitMenuItem~setAccelerator(.javax.swing.KeyStroke~getKeyStroke(.java.awt.event.KeyEvent~VK_E, .java.awt.Toolkit~getDefaultToolkit~getMenuShortcutKeyMask))
           end
         newMenuItem~addActionListener(userData~rpClearEH)
+        nrunMenuItem~addActionListener(userData~rpNRunEH)
         runMenuItem~addActionListener(userData~rpRunEH)
         -- historyMenuItem~addActionListener(userData~rpHistoryEH)
         saveAsMenuItem~addActionListener(userData~rpFileDialogEH)
         openMenuItem~addActionListener(userData~rpFileDialogEH)
         exitMenuItem~addActionListener(userData~rpCloseEH)
-    fileMenu~~insert(newMenuItem, 0)~~insert(openMenuItem, 1)~~insert(saveAsMenuItem, 2)~~insert(runMenuItem, 3)~~insert(GhistoryMenuItem, 4)~~insert(exitMenuItem, 5)
+    fileMenu~~insert(newMenuItem, 0)~~insert(openMenuItem, 1)~~insert(saveAsMenuItem, 2)~~insert(nrunMenuItem, 3)~~insert(runMenuItem, 4)~~insert(GhistoryMenuItem, 5)~~insert(exitMenuItem, 6)
     userData~fileMenu = fileMenu
 
     editMenu = .javax.swing.JMenu~new("Edit")
@@ -1724,7 +1740,7 @@ syntax:
 
     call attach2java       -- make sure we can interact with Java on this thread
 
-    .mm.dir~hcque~setelem(TIME("L"),"E",output .endOfLine) /* G.LEITNER */
+    -- .mm.dir~hcque~setelem(TIME("L"),"E",output .endOfLine) /* G.LEITNER */
 
     .mm.dir~errorsArea~append(output)
     .mm.dir~errorsArea~append(.endOfLine)
@@ -1819,7 +1835,7 @@ syntax:
           inputArea~setText('')
           .mm.dir~socketInputRequired = .false
           self~setControlVar(.false)
-          .mm.dir~hcque~setelem(TIME("L"),"I",input .endOfLine) /* G.LEITNER */
+          -- .mm.dir~hcque~setelem(TIME("L"),"I",input .endOfLine) /* G.LEITNER */
           return input
         end
       else
@@ -1829,7 +1845,7 @@ syntax:
             do
               input = text
               inputArea~setText('')
-              .mm.dir~hcque~setelem(TIME("L"),"I",input .endOfLine) /* G.LEITNER */
+              -- .mm.dir~hcque~setelem(TIME("L"),"I",input .endOfLine) /* G.LEITNER */
               return input
             end
           else
@@ -1840,7 +1856,7 @@ syntax:
               inputArea~setText('')
               self~setControlVar(.false)
               inputArea~setEditable(.false)
-              .mm.dir~hcque~setelem(TIME("L"),"I",input .endOfLine) /* G.LEITNER */
+              -- .mm.dir~hcque~setelem(TIME("L"),"I",input .endOfLine) /* G.LEITNER */
               return input
            end
         end
@@ -1869,7 +1885,7 @@ syntax:
     then .mm.dir~out~println("[.OUTPUT] "||output)                              
     -- Write output data also to client
     -- connected via socket in case of
-    .mm.dir~hcque~setelem(TIME("L"),"S",output .endOfLine) /* G.LEITNER */
+    -- .mm.dir~hcque~setelem(TIME("L"),"S",output .endOfLine) /* G.LEITNER */
     -- enabled direct output.
     return 0
 
@@ -1912,7 +1928,7 @@ syntax:
     if .mm.dir~enableOutputSocket & .mm.dir~clientConnected -
     then .mm.dir~out~println("[.OUTPUT] "||output)
 
-    .mm.dir~hcque~setelem(TIME("L"),"O",output .endOfLine) /* G.LEITNER */
+    -- .mm.dir~hcque~setelem(TIME("L"),"O",output .endOfLine) /* G.LEITNER */
 
     return 0
 
@@ -2222,6 +2238,7 @@ syntax:
            if typx == 'O' then textelement="<font color='green' size =" fsize">"textelement"</font>" newline
            if typx == 'I' then textelement="<font color='olive' size =" fsize">"textelement"</font>" newline
            if typx == 'C' then textelement="<font color='black' size =" fsize">"textelement"</font>" newline
+           if typx == 'X' then textelement="<font color='black' size =" fsize"><B>"textelement"</B></font>" newline
                
            DocumentText=DocumentText||textelement
         end
@@ -2549,6 +2566,13 @@ syntax:
       if res then return .true
   end
   return .false
+
+
+::class NRun
+::method actionPerformed
+    expose slotDir
+    use arg , slotDir
+    call makenewinterpreter
 
 
 -- Initialize code execution
@@ -4842,6 +4866,38 @@ exit
 ::method unknown         
    use arg methName, methArgs
    if .mm.dir~isdebug == true then say "CbccEH called: " methName
+
+/**
+* name: CExitHandler
+* functionality: When test-code is executed it is called by rexxEngine~apply
+*                The rexxEngine has this exitHandler associated.
+*                actually here strings are associated to certain streams
+*                furthermore entries for the history array are made
+*/
+::class CExitHandler
+::method handleExit
+use arg slot, exitNumber, subFunction, parmBlock
+
+if .mm.dir~isdebug == true then say "CEXITHANDLER" exitNumber subFunction parmBlock[1]
+
+-- generate history array
+if subFunction == 1 then mark = "S"
+if subFunction == 2 then mark = "E"
+if subFunction == 3 then mark = "I"
+if subFunction == 4 then mark = "I"
+
+if subFunction == 1 then .output~lineout(parmBlock[1])
+if subFunction == 2 then .error~lineout(parmBlock[1])
+if subFunction == 3 then .input~linein(parmBlock[1])
+if subFunction == 4 then .input~linein(parmBlock[1])
+
+if exitNumber == 5 then do 
+   .mm.dir~hcque~setelem(TIME("L"),mark,parmBlock[1]) 
+   return .mm.dir~RXEXIT_HANDLED
+end   
+else do
+   return .mm.dir~RXEXIT_NOT_HANDLED
+end
 /* GLEITNER Classes end */
 
 
@@ -5327,6 +5383,37 @@ exit
    userData~splitpane~bsf.invokestrict("setVisible", "boolean", "true")
    userData~maxedpane = NIL
 exit                     
+
+/**
+* name: makenewinterpreter (routine)
+* functionality: make a new rexx interpreter
+*                set a marker in the history file and increment version number.
+* comment:       the routine is called 
+*                - at application init (there the exit handlers are linked to the instance)
+*                - when newinstance in the menu is clicked
+*                to create a new instance of the interpreter eventually means that the local 
+*                environment is initialized. 
+*/
+
+::routine makenewinterpreter
+    clzname="org.rexxla.bsf.engines.rexx.RexxExitHandler"
+    clz=bsf.loadClass(clzname) 
+    .mm.dir~RXEXIT_HANDLED = clz~RXEXIT_HANDLED
+    .mm.dir~RXEXIT_NOT_HANDLED = clz~RXEXIT_NOT_HANDLED
+
+    .mm.dir~rexxinst = .mm.dir~rexxinst + 1
+ 
+    .mm.dir~rexxEngine = .bsf~new("org.apache.bsf.BSFManager")~loadScriptingEngine("rexx")
+    .mm.dir~rexxconf = .mm.dir~rexxEngine~getRexxConfiguration
+    .mm.dir~exitHandler = BsfCreateRexxProxy(.CExitHandler~new, ,clzname)
+    .mm.dir~rexxconf~addExitHandler(clz~RXSIO, .mm.dir~exitHandler)
+    
+    
+    if .mm.dir~isdebug == true then say "NEWINTERPETER: " .mm.dir~rexxinst  clz~RXEXIT_HANDLED clz~RXEXIT_NOT_HANDLED
+    .mm.dir~hcque~setelem(TIME("L"),"X","NEW REXX instance" .mm.dir~rexxinst .endOfLine) /* G.LEITNER */
+
+
+exit
 
 /* GLEITNER routines end */
 

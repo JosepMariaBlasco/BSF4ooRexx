@@ -1,3 +1,10 @@
+-------------------------------------- 2014-05-21 ----------------------------------
+
+- BSFException.java
+        - add getCause() method as synonym for getTargetException(), which makes it
+          orthogonal with Throwable's getCause() that got introduced since defining
+          BSFException
+
 -------------------------------------- 2014-05-17 ----------------------------------
 
 - BSF4ooRexx.cc
