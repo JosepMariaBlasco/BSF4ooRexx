@@ -5,8 +5,10 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.27
+   Version: 1.28
    Changed:
+            2014-05-25, ---rgf, - getRexxBitness(): use "parse version" starting with ooRexx 4.2 (encodes bitness in version string)
+                                - use elevation starting with Windows Vista (Windows version 6.0)
             2013-07-14, ---rgf, - Make output more verbose, such that logfile reflects environment at installation time
                                   (displays values for cmd.eSetBSF4REXX_HOME, cmd.eSetPath and cmd.eSetCP), will
                                   allow to analyze Java at hand
@@ -134,7 +136,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2013 Rony G. Flatscher
+       Copyright (C) 2006-2014 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -171,10 +173,26 @@ parse upper source cmd.eOperatingSystem . /* get name of operating system     */
    -- set most important flags
 cmd.eIsWindows=(cmd.eOperatingSystem~left(1)="W")
 cmd.eIsUnix   =\cmd.eIsWindows   /* if not Windows, it's a Unix dialect       */
+
+cmd.eBitness=getRexxBitness()    -- can be "0" if not determinable, else "32" or "64"
+
 if cmd.eIsWindows=.true then
 do
    j.file.separator="\"
    j.path.separator=";"
+   /* Get Windows version:
+         use "runas" via WShell:
+                           XP                   = 5.1 (ooRexx returns 5.01)
+                           Server 2003          = 5.2
+
+         from here on use Elevate32.exe/Elevate64.exe:
+                           Vista & Server 2008  = 6.0
+                           W7 & Server 2008 R2  = 6.1
+                           W8 & RT & Server 2012= 6.2
+                           W8.1 & Server 2012 R2= 6.3
+   */
+   parse value sysVersion() with . cmd.eWinVersion
+   cmd.eElevation.exe="windows\Elevate"cmd.eBitness".exe"   -- define elevate exe to use
 end
 else
 do
@@ -317,9 +335,6 @@ else
 cmd.eInstallDirectory=directory() || j.file.separator -- save this directory
 
 cmd.eSupportInfos=qc("Support: Internet newsgroup <news:comp.lang.rexx> or via <http://www.RexxLA.org>")
-
-cmd.eBitness=getRexxBitness()    -- can be "0" if not determinable, else "32" or "64"
-
 
 
 -- cmd.eIsUnix=.true -- for debugging only
@@ -466,7 +481,7 @@ do
    cmd.eInstallScriptName="installBSF.cmd"
    cmd.eUninstallScriptName="uninstallBSF.cmd"
 
-   cmd.eRunAsAdmin=getRunAsCmd() /* command to run as local Administrator  */
+   cmd.eRunAsAdmin=getRunAsCmd(cmd.) /* command to run as local Administrator  */
    cmd.eInstallScriptName.RunAsAdmin="installBSF_runAsAdministrator.cmd"
    cmd.eUninstallScriptName.RunAsAdmin="uninstallBSF_runAsAdministrator.cmd"
 
@@ -1850,27 +1865,45 @@ syntax:
 
 -- return bitness of Rexx interpreter (e.g. 32, 64, etc.)
 ::routine getRexxBitness
+   -- starting with ooRexx 4.2.0 we can get the bitness information out of the version string
+  parse version '_'version'(' '_' bitness '-'
+  if version>="4.2", bitness<>"" then
+  do
+     return bitness
+  end
 
   -- do not use ADDRESS CMD as on Linux this causes an error :(
-   "rexx -v 2>&1 | rxqueue"
+  "rexx -v 2>&1 | rxqueue"
    bitness=0
-   do while queued()>0
-      parse pull hint ":" val .
-      if hint="Addressing Mode" then bitness=val
-   end
-   return bitness
+  do while queued()>0           -- make sure we process entire queue (to empty it)
+     parse pull hint ":" val .
+     if hint="Addressing Mode" then bitness=val
+  end
+
+  return bitness
 
 
 
--- return "runas" command for this PC's local Administrator, rgf, 2010-03-07
+
+-- return "runas" command for this PC's local Administrator, rgf, 2010-03-07, 2014-05-25
 ::routine getRunAsCmd public
-   wnw = .OLEObject~New("WScript.Network")
+   use arg cmd.
 
-   computerName=wnw~ComputerName
-   -- userDomain  =wnw~UserDomain
-   -- userName    =wnw~UserName
+   if cmd.eWinVersion>= 6 then
+   do
+      return cmd.eElevation.Exe "-wait -k"
+   end
+   else     -- use runas
+   do
+      wnw = .OLEObject~New("WScript.Network")
 
-   return "runas /env /user:"wnw~ComputerName"\Administrator"
+      computerName=wnw~ComputerName
+      -- userDomain  =wnw~UserDomain
+      -- userName    =wnw~UserName
+
+      return "runas /env /user:"wnw~ComputerName"\Administrator"
+   end
+
 
 
 -- 2012-02-12, rgf: new logic - use cmd.eBitness and then look for "librexx.so" and

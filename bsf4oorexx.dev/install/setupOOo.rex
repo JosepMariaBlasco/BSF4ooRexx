@@ -77,6 +77,8 @@
                                 - Unix: make sure to look for all kind of "libreoffice" variants
             2014-01-12, ---rgf, - Windows: make sure "OpenOffice" is searched in registry
             2014-02-10, ---rgf, - MacOSX: make sure the new location "/Applications/OpenOffice.app" is searched first (AOO 4.1 and up)
+            2014-05-25, ---rgf, - routine getRexxBitness() added
+                                - use elevation starting with Windows Vista (Windows version 6.0)
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
@@ -122,12 +124,27 @@ cmd.eIsMacOSX=(s="M")    -- determine whether running on "MACOSX"
 
 -- cmd.eIsUnix=1     /* for debugging: force Unix-mode */
 
+cmd.eBitness=getRexxBitness()    -- can be "0" if not determinable, else "32" or "64"
 
 if cmd.eIsUnix=0 then
 do
    cmd.eIsUnix=0                 /* Windows/OS2 style       */
    cmd.eFile.sep="\"
    cmd.ePath.sep=";"
+
+   /* Get Windows version:
+         use "runas" via WShell:
+                           XP                   = 5.1 (ooRexx returns 5.01)
+                           Server 2003          = 5.2
+
+         from here on use Elevate32.exe/Elevate64.exe:
+                           Vista & Server 2008  = 6.0
+                           W7 & Server 2008 R2  = 6.1
+                           W8 & RT & Server 2012= 6.2
+                           W8.1 & Server 2012 R2= 6.3
+   */
+   parse value sysVersion() with . cmd.eWinVersion
+   cmd.eElevation.exe="windows\Elevate"cmd.eBitness".exe"   -- define elevate exe to use
 end
 else
 do
@@ -135,6 +152,7 @@ do
    cmd.eFile.sep="/"
    cmd.ePath.sep=":"
 end
+
 
                                  /* paths to Java and desired bin-dir given?  */
 parse arg path2OOo               /* get path to OpenOffice.org/LibreOffice */
@@ -416,7 +434,7 @@ do
    cmd.eInstallScriptName="installOOo.cmd"
    cmd.eUninstallScriptName="uninstallOOo.cmd"
 
-   cmd.eRunAsAdmin=getRunAsCmd() /* command to run as local Administrator  */
+   cmd.eRunAsAdmin=getRunAsCmd(cmd.) /* command to run as local Administrator  */
    cmd.eInstallScriptName.RunAsAdmin="installOOo_runAsAdministrator.cmd"
    cmd.eUninstallScriptName.RunAsAdmin="uninstallOOo_runAsAdministrator.cmd"
 
@@ -1417,14 +1435,42 @@ syntax2:                   -- no OOo-entry
    return classPath2OOo
 
 
-
--- return "runas" command for this PC's local Administrator, rgf, 2010-03-07
+-- return "runas" command for this PC's local Administrator, rgf, 2010-03-07, 2014-05-25
 ::routine getRunAsCmd public
-   wnw = .OLEObject~New("WScript.Network")
+   use arg cmd.
 
-   computerName=wnw~ComputerName
-   -- userDomain  =wnw~UserDomain
-   -- userName    =wnw~UserName
+   if cmd.eWinVersion>= 6 then
+   do
+      return cmd.eElevation.Exe "-wait -k"
+   end
+   else     -- use runas
+   do
+      wnw = .OLEObject~New("WScript.Network")
 
-   return "runas /env /user:"wnw~ComputerName"\Administrator"
+      computerName=wnw~ComputerName
+      -- userDomain  =wnw~UserDomain
+      -- userName    =wnw~UserName
+
+      return "runas /env /user:"wnw~ComputerName"\Administrator"
+   end
+
+
+-- return bitness of Rexx interpreter (e.g. 32, 64, etc.)
+::routine getRexxBitness
+   -- starting with ooRexx 4.2.0 we can get the bitness information out of the version string
+  parse version '_'version'(' '_' bitness '-'
+  if version>="4.2", bitness<>"" then
+  do
+     return bitness
+  end
+
+  -- do not use ADDRESS CMD as on Linux this causes an error :(
+  "rexx -v 2>&1 | rxqueue"
+   bitness=0
+  do while queued()>0           -- make sure we process entire queue (to empty it)
+     parse pull hint ":" val .
+     if hint="Addressing Mode" then bitness=val
+  end
+
+  return bitness
 
