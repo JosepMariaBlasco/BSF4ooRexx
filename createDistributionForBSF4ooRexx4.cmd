@@ -3,6 +3,7 @@
 @rem 2010-07-24, added 'information' folder to regular installation with an intro to ooRexx, plus docs for rgf_util2.rex
 @rem 2010-12-30/31, updated to new locations
 @rem 2011-03-20, add MacOSX support
+@rem 2014-05-25, create one jar only, containing both, bsf package et.al. and rexx engine
 
 @rem @echo createDistribution.cmd (for BSF4ooRexx)
 @echo %0 (for BSF4ooRexx)
@@ -29,11 +30,14 @@ set doc_date=2014-05-18
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
-set bsfDate=20130629
+set releaseDate=20140525
 @rem set bsfVersion=v400
-set bsfVersion=v411
-set bsfJarNameBin=bsf-%bsfVersion%-%bsfDate%.jar
-set bsfJarNameSource=bsf-%bsfVersion%-%bsfDate%-source.jar
+set releaseVersion=v450
+set releaseName=bsf4ooRexx-%releaseVersion%-%releaseDate%
+set bsfJarNameBin=%releaseName%-bin.jar
+set bsfJarNameSource=%releaseName%-source.jar
+set releaseInstallZip=BSF4ooRexx_install_%releaseVersion%-%releaseDate%
+
 
 set oorexx-uno=oorexx-uno.jar
 
@@ -52,7 +56,7 @@ del BSF4ooRexx-apache-bsf.jar BSF4ooRexx-apache-bsf-source.jar bsf-*.jar
 @echo creating %bsfJarNameBin% ...
 @rem jar cvMf %bsfJarNameBin% org/apache/bsf/
 @rem rgf, 20090815 jar cvMf %bsfJarNameBin% org/apache/bsf org/apache/taglibs
-jar cvMf %bsfJarNameBin% org/apache/bsf org/apache/taglibs org/objectweb/ org/codehaus/
+jar cvMf %bsfJarNameBin% org/apache/bsf org/apache/taglibs org/objectweb/ org/codehaus/ org/rexxla/ org/oorexx/
 zip -d %bsfJarNameBin% "*.svn*" "*bkp*" "*tmp*"
 
 rem rgf, 20070917, not needed, we have BSF4ooRexx-apache-bsf-source.jar instead
@@ -183,7 +187,8 @@ md bsf4oorexx\Templates
 
 
 copy *licens*.txt                                  bsf4oorexx\
-copy bsf-*.jar                                     bsf4oorexx\
+@rem copy bsf-*.jar                                     bsf4oorexx\
+copy %bsfJarNameBin%                               bsf4oorexx\
 copy ScriptProviderForooRexx.oxt                   bsf4oorexx\install\
 @rem copy ScriptProviderForooRexx.jar                   bsf4oorexx\install\
 copy %path2dev%\bin\add*.r*                        bsf4oorexx\
@@ -294,12 +299,12 @@ xcopy samples\*                         bsf4oorexx\samples\   /s/e/i/r/k/y
 @rem 2009-02-11, rgf
 rm -rf bsf4oorexx\samples\OOo\tmp
 
-del BSF4ooRexx_install.zip
-zip -9r BSF4ooRexx_install bsf4oorexx/*
-zip -d  BSF4ooRexx_install "*.svn*" "*bkp*" "*tmp*" "*cachedir*" "*~"
-zip -9r BSF4ooRexx_install ApacheLicense2.0.txt
-zip -9r BSF4ooRexx_install asm_LICENSE.TXT
-zip -9r BSF4ooRexx_install janino_LICENSE.TXT
+del %releaseInstallZip%.zip
+zip -9r %releaseInstallZip% bsf4oorexx/*
+zip -d  %releaseInstallZip% "*.svn*" "*bkp*" "*tmp*" "*cachedir*" "*~"
+zip -9r %releaseInstallZip% ApacheLicense2.0.txt
+zip -9r %releaseInstallZip% asm_LICENSE.TXT
+zip -9r %releaseInstallZip% janino_LICENSE.TXT
 
 @rem zip -d  BSF4ooRexx_install bsf4oorexx/samples/version4/
 
