@@ -60,6 +60,9 @@
             2014-04-26, rgf   - Windows: using elevate{32|64}.exe in wait-mode, some Windows installations do
                                 not close the command line window automatically, therefore inform the user
                                 what to do
+            2014-05-26, rgf   - if interactive install, allow removing "bsf4oorexx" target directory, if no BSF.CLS
+                                can be found there, assuming that a prior uninstall could not remove the tree because
+                                the uninstall program itself could not be removed (e.g. on Windows)
 
    remark:  ---
 
@@ -222,6 +225,7 @@ do
 
    -- del:     del test2 /s /f /q
    -- rmdir:   rd dirName /s /q     ... dirName<>"." because of lock an error would occur
+   cmd.eRmDir="rd /s /q"
 end
 else   -- Unix-like system, including MacOSX
 do
@@ -275,6 +279,9 @@ do
 -- cp -rfv * /opt/BSF4ooRexx
 
 -- rm -rfv /opt/BSF4ooRexx
+
+   cmd.eRmDir="rm -rf"
+
 -- rmdir --ignore-fail-on-non-empty /etc/skel/Templates
 
 -- 'id rony | rxqueue' ; parse pull 'gid=' . '(' gname ')';
@@ -316,16 +323,37 @@ do
 
    if SysFileExists(targetDir) then
    do
-       say cmd.eThisName': target directory ['targetDir'] exists already, aborting...'
-       if cmd.eBLogFile=.true then cmd.eLogFile~close  -- close logfile
-
-       if cmd.eBInteractive=.true then
+       bExit=.true
+         -- allow user to remove at installation time, if "bsf4oorexx"-directory does not contain BSF.CLS;
+         -- assuming that a prior uninstall kept the directory, because the uninstall-program could not
+         -- be removed (e.g. on Windows); only allow for this, if interactively installing BSF4ooRexx
+       if cmd.eBInteractive=.true, SysFileExists("BSF.CLS")=.false then
        do
-          say cmd.eThisName": about to exit program, please hit enter to continue ..."
-          parse pull input
+          say cmd.eThisName': target directory ['targetDir'] exists already, need to remove it prior to installation!'
+          say cmd.eThisName': remove target directory ['targetDir']? (YES/no)'
+          parse upper pull answer .
+          if answer~left(1)="Y" then
+          do
+              bExit=.false -- do not exit
+              command=cmd.eRmDir enQQ(targetDir)
+              say cmd.eThisName':' command
+              command      -- execute command
+          end
        end
-       say strHintToExit
-       exit -3
+
+       if bExit=.true | SysFileExists(targetDir) then
+       do
+          say cmd.eThisName': target directory ['targetDir'] exists, aborting...'
+          if cmd.eBLogFile=.true then cmd.eLogFile~close  -- close logfile
+
+          if cmd.eBInteractive=.true then
+          do
+             say cmd.eThisName": about to exit program, please hit enter to continue ..."
+             parse pull input
+          end
+          say strHintToExit
+          exit -3
+       end
    end
 end
 else if runType='U' then
