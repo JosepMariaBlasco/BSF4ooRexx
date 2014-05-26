@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for Linux                   18 June 2012
+BSF4ooRexx - Installation Directions for Linux                   26 May 2014
 ==============================================
 Home: <http://sourceforge.net/projects/bsf4oorexx/>
 
@@ -25,8 +25,7 @@ Prerequisites
 
 [2] ooRexx 4.1.0 or higher from its home: <http://www.ooRexx.org>.
 
-[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org> or
-              LibreOffice (LO) from <http://www.libreoffice.org/download/>.
+[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org>
 
     Please note: on Linux it is possible that your distribution has an altered
     version of OpenOffice.org installed, which may not be compatible in its Java
@@ -77,14 +76,4 @@ P.S.: Support is given either via the newsgroup <news:comp.lang.rexx> or the
 
       In addition check out the mailing lists and forums on the BSF4ooRexx
       home at <http://sourceforge.net/projects/bsf4oorexx/>.
-
-P.P.S.: Additional infos for Linux w.r.t. OpenOffice.or
-
-        - OpenOffice.org/LibreOffice could have been tampered with by the Linux
-          distribution and as a result not function correctly; if that is the case
-          (you cannot successfully run OpenOffice.org Rexx scripts) then you need
-          to deinstall your distribution's OpenOffice.org and instead install the
-          genuine OpenOffice.org from <http://download.OpenOffice.org> or LibreOffice
-          from <http://www.LibreOffice.org/download>; then choose
-          "BSF4ooRexx -> Installation -> reinstall"
 

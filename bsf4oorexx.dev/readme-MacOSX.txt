@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for MacOSX                 18 June 2012
+BSF4ooRexx - Installation Directions for MacOSX                 26 May 2014
 ===============================================
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
@@ -19,8 +19,7 @@ Prerequisites
 [2] Version 4.1.1 of ooRexx. This is part of the MacOSX BSF4ooRexx GUI
     installer from <http://sourceforge.net/projects/bsf4oorexx/files/>
 
-[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org> or
-              LibreOffice (LO) from <http://www.libreoffice.org/download/>.
+[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org>
 
 [4] Uninstall any previously installed version of BSF4[oo]Rexx, if any.
 

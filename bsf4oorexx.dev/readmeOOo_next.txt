@@ -1,5 +1,5 @@
-Additional information on the OpenOffice.org support that may be interesting 18 June 2012
-=========================================================================================
+Additional information on the OpenOffice.org support that may be interesting 26 May 2014
+========================================================================================
 
 The ooRexx OpenOffice.org (OOo) support is based on BSF4ooRexx as it uses
 the Java interfaces to and from OOo.  After installation of the OOo support

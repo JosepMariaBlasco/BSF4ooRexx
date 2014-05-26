@@ -327,10 +327,11 @@ do
          -- allow user to remove at installation time, if "bsf4oorexx"-directory does not contain BSF.CLS;
          -- assuming that a prior uninstall kept the directory, because the uninstall-program could not
          -- be removed (e.g. on Windows); only allow for this, if interactively installing BSF4ooRexx
-       if cmd.eBInteractive=.true, SysFileExists("BSF.CLS")=.false then
+
+       if cmd.eBInteractive=.true, SysFileExists(targetDir||cmd.eFile.sep"BSF.CLS")=.false then
        do
           say cmd.eThisName': target directory ['targetDir'] exists already, need to remove it prior to installation!'
-          say cmd.eThisName': remove target directory ['targetDir']? (YES/no)'
+          say cmd.eThisName': remove target directory ['targetDir']? (yes/NO)'
           parse upper pull answer .
           if answer~left(1)="Y" then
           do
@@ -502,7 +503,7 @@ do
 
       if res<>0 then
       do
-         hint=hint || cmd.eThisName": error while setting up OpenOffice/LibreOffice support: res=["res"]. Maybe AOO/OOo/LO is not installed?"
+         hint=hint || cmd.eThisName": error while setting up OpenOffice support: res=["res"]. Maybe AOO/OOo/LO is not installed?"
 
          if cmd.eBInteractive=.true then
          do
@@ -516,7 +517,7 @@ do
       end
       else
       do
-         hint=hint || cmd.eThisName": OpenOffice/LibreOffice support could be installed successfully."
+         hint=hint || cmd.eThisName": OpenOffice support could be installed successfully."
       end
    end
 
@@ -693,7 +694,7 @@ do
 
    if res<>0 then
    do
-      hint=hint || cmd.eThisName": error while setting up OpenOffice/LibreOffice support: res=["res"]. Maybe not installed?"
+      hint=hint || cmd.eThisName": error while setting up OpenOffice support: res=["res"]. Maybe not installed?"
 
       if cmd.eBInteractive=.true  | cmd.eBLogFile=.true then
       do
@@ -709,7 +710,7 @@ do
    end
    else
    do
-      hint=hint || cmd.eThisName": OpenOffice/LibreOffice support could be (re-)installed successfully."
+      hint=hint || cmd.eThisName": OpenOffice support could be (re-)installed successfully."
    end
 
    title="BSF4ooRexx - Reinstall"

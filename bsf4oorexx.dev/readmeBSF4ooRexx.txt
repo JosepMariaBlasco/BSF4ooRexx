@@ -1,4 +1,4 @@
-BSF4ooRexx, 4.11 14 Jul 2013 BETA
+BSF4ooRexx, 4.50 26 May 2014 BETA
 =================================
 
 This is a package that creates a bridge between ooRexx and Java. For that

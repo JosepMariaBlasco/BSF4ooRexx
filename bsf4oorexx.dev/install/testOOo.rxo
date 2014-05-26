@@ -7,6 +7,10 @@
    Changed: 2010-07-06, ---rgf, renamed to ".rxo" to indicate that this is a Rexx program using
                                 OpenOffice via Java
             2011-04-10, ---rgf, adding hint about LibreOffice
+            2014-05-26, ---rgf, removing hint about LibreOffice as oxt-package cannot
+                                be installed there anymore, there are no more tests
+                                conducted on that platform
+
    Needs:   UNO.CLS (Universal Network Objects support, component technology on
                      which OOo/SO are built)
 
@@ -56,7 +60,7 @@ text = writerComponent~XTextDocument~getText
 
    /* set the text of the text object to salute the world of ooRexx           */
 say "... setting the text object ..."
-text~setString("Hello OpenOffice/LibreOffice, this is ooRexx speaking! ("date("S") time()")")
+text~setString("Hello OpenOffice, this is ooRexx speaking! ("date("S") time()")")
 
 say
 say "done."

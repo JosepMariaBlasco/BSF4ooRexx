@@ -1,7 +1,7 @@
 #!/usr/bin/rexx
 /*
    Name:    testOOo2.rex
-   Purpose: test whether OpenOffice.org/LibreOffice can be automated via ooRexx,
+   Purpose: test whether OpenOffice.org can be automated via ooRexx,
             demonstrate some of the reflection methods for finding out informaton
             about UNO_PROXY objects at runtime
    Author:  Rony G. Flatscher
@@ -9,6 +9,9 @@
    Needs:   UNO.CLS (Universal Network Objects support, component technology on
                      which OOo/SO are built)
             2011-04-10, ---rgf, adding hint about LibreOffice
+            2014-05-26, ---rgf, removing hint about LibreOffice as oxt-package cannot
+                                be installed there anymore, there are no more tests
+                                conducted on that platform
 
    Remarks: For further information on programming OOo/SO and getting at ooRexx
             nutshell examples that jump-start you please refer to
@@ -20,7 +23,7 @@
    license:
 
    ------------------------ Apache Version 2.0 license -------------------------
-      Copyright 2006-2011 Rony G. Flatscher
+      Copyright 2006-2014 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.
@@ -73,7 +76,7 @@ say "---"
 say "    text~uno.getDefinition="ppd(text~uno.getDefinition)
 say "---"
 say "    text~uno.getProperties="ppd(text~uno.getProperties)
-text~setString("Hello OpenOffice/LibreOffice, this is ooRexx speaking! ("date("S") time()")")
+text~setString("Hello OpenOffice, this is ooRexx speaking! ("date("S") time()")")
 call eyeCatcher
 
 say
