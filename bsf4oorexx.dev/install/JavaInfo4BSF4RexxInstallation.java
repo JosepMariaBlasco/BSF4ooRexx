@@ -23,12 +23,18 @@
  *
  *
  * @author Rony G. Flatscher (c) 2005-2014
- * @version 1.4
+ * @version 1.5
  *
  */
 
  /*
     changes:
+        2014-06-16: ---rgf, unoinfo returns "1" indicator for UTF-16LE, however in AOO 4
+                            the encoded data may indeed be ASCII encoded with a single '\0'
+                            indicating end of path; adjust getClassPath4OOo() to cater for
+                            this situation (will convert from UTF-16LE only, if sequence of
+                            "\0\0\0" can be found in the returned unoinfo string)
+
         2014-01-12: method getClassPath4OOo() simply does a replaceAll(), if unoinfo data
                     is UTF-16LE encoded
 
@@ -94,7 +100,7 @@ import java.io.InputStreamReader;
 public class JavaInfo4BSF4RexxInstallation
 {
     /** Version field for introspection of this class. */
-    public final String version="102.20080712";
+    public final String version="105.20140616";
 
     public static void main (String argv[]) throws java.lang.Exception // java.io.UnsupportedEncodingException
     {
@@ -426,10 +432,27 @@ System.out.println("  idx=["+idx+"]: ["+hexstring.substring(i, endPos)+"]...");
                 res=prefix+line.substring(1).       // skip first char
                          replace('\0', System.getProperty("path.separator").charAt(0));
             }
-            else                        // "UTF-16LE" encoded, two nul-bytes ("\0\0") delimit paths
+
+            else    // "UTF-16LE" encoded, two nul-bytes ("\0\0") delimit paths
             {
-                res=prefix+line.substring(1).       // skip first char
-                         replaceAll("\0\0", System.getProperty("path.separator"));
+                // TODO: check for the following assumptions in the future (as of 2014-06-16):
+                // as AOO 4.x returns wrongly encoded data with indicator (reported on Windows) '1'
+                // for UTF-16LE we need to guess the encoding by checking for "\0\0\0"
+                // (two "\0\0" are path delimiters, the third one introduces another escaped char)
+                String tmpStr=line.substring(1);    // skip first (indicator) character, not part of the encoded string
+
+                if (tmpStr.indexOf("\0\0\0") != -1) // assume we have indeed an UTF-16LE encoding!
+                {
+                    byte b[]=tmpStr.getBytes();
+                    tmpStr=new String(b,0,b.length, "UTF-16LE");
+                    tmpStr=tmpStr.replace('\0',System.getProperty("path.separator").charAt(0));
+                }
+                else
+                {
+                    tmpStr=tmpStr.replaceAll("\0\0",System.getProperty("path.separator"));
+                }
+
+                res=prefix+tmpStr;
             }
         }
         catch (Exception err) {
