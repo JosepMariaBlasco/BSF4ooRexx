@@ -30,7 +30,7 @@
  /*
     changes:
         2014-06-16: ---rgf, unoinfo returns "1" indicator for UTF-16LE, however in AOO 4
-                            the encoded data may indeed be ASCII encoded with a single '\0'
+                            the encoded data may indeed be ASCII encoded with a "\0\0"
                             indicating end of path; adjust getClassPath4OOo() to cater for
                             this situation (will convert from UTF-16LE only, if sequence of
                             "\0\0\0" can be found in the returned unoinfo string)
