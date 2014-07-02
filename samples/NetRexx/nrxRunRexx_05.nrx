@@ -1,0 +1,71 @@
+/*
+import java.util.Vector;
+import org.apache.bsf.BSFException;
+import org.apache.bsf.BSFManager;
+import org.apache.bsf.BSFEngine;
+import org.rexxla.bsf.engines.rexx.RexxProxy;
+*/
+
+import org.rexxla.bsf.engines.rexx.
+parse source . . src
+
+mgr=org.apache.bsf.BSFManager()
+rexxEngine=mgr.loadScriptingEngine("rexx")
+
+say "--- 1 (NetRexx): create Rexx directory object named 'HOST', save it in .LOCAL and return it to NetRexx ..."
+    -- Rexx code to run
+rexxCode= ".local~host=.directory~new    ;" - -- create an ooRexx directory object
+          "return .host                  ;" - -- return the Rexx directory object to NetRexx
+          "::requires 'BSF.CLS'          ;"   -- get access to BSF4ooRexx support
+
+rexxDotHost = RexxProxy rexxEngine.apply(src"-01", 0, 0, rexxCode, null, null)
+
+say "--- 2 (NetRexx): add entries from NetRexx to the received '.HOST' directory ..."
+    -- add values to the returned Rexx directory object
+rexxDotHost.sendMessage2("setEntry", "from.netrexx",                "This is a value set by a NetRexx program!")
+rexxDotHost.sendMessage2("setEntry", "FROM.NETREXX.SYSTEM.CLASS",   System.class)
+rexxDotHost.sendMessage2("setEntry", "FrOm.NeTrExX.VeRsIoN.StRiNg", System.getProperty("java.version"))
+
+rexxCode="use arg val1, val2, val3                                                                ;" -
+         "say ' (ooRexx) val1='pp(val1) 'val2='pp(val2) 'val3='pp(val3) 'arg()='pp(arg())         ;" -
+         "say ' (ooRexx) .host~from.netrexx               :' pp(.host~from.netrexx               );" -
+         "say ' (ooRexx) .host~from.netrexx.system.class  :' pp(.host~from.netrexx.system.class  );" -
+         "say ' (ooRexx) .host~from.netrexx.version.string:' pp(.host~from.netrexx.version.string);" -
+         "say ' (ooRexx) Java version queried from Rexx   :' pp(.host~from.netrexx.system.class~getProperty('java.version')); " -
+         "::requires 'BSF.CLS'                                                             ;"   -- get access to BSF4ooRexx support
+
+vArgs = Vector()        -- Vector for arguments to be passed to Rexx
+vArgs.addElement(GregorianCalendar())
+vArgs.addElement(null)
+rexxEngine.apply(src"-02", 0, 0, rexxCode, null, vArgs)
+
+
+say "--- 3 (NetRexx): put all '.HOST' entries to '.LOCAL' thereby turning them into environment symbols ..."
+rexxCode="use arg val1, val2, val3                                                         ;" -
+         "say ' (ooRexx) val1='pp(val1) 'val2='pp(val2) 'val3='pp(val3) 'arg()='pp(arg())  ;" -
+         ".local~putAll(.host)                  ;" - -- put all .host direcotry entries to .local
+          "::requires 'BSF.CLS'                 ;"   -- get access to BSF4ooRexx support
+rexxEngine.apply(src"-03", 0, 0, rexxCode, null, null)
+
+
+say "--- 4 (NetRexx): now use the environment symbols of the '.HOST' entries ..."
+
+rexxCode="use arg val1, val2, val3                                                           ;" -
+         "say ' (ooRexx) val1='pp(val1) 'val2='pp(val2) 'val3='pp(val3) 'arg()='pp(arg())    ;" -
+         "say ' (ooRexx) .from.netrexx                    :' pp(.from.netrexx             )  ;" -
+         "say ' (ooRexx) .from.netrexx.system.class       :' pp(.from.netrexx.system.class)  ;" -
+         "say ' (ooRexx) .from.netrexx.version.string     :' pp(.from.netrexx.version.string);" -
+         "say ' (ooRexx) Java version queried from Rexx   :' pp(.from.netrexx.system.class~getProperty('java.version')); " -
+         ".host~rexx.hey='Greetings from ooRexx to NetRexx at:' .DateTime~new '!'            ;" -
+         "::requires 'BSF.CLS'                                                         ;"  -- get access to BSF4ooRexx support
+
+rexxEngine.apply(src"-04", 0, 0, rexxCode, null, vArgs)
+
+say "--- 5 (NetRexx): access '.HOST' entry 'REXX.HEY' ..."
+say " (NetRexx) rexxDotHost.sendMessage0(\"rexx.hey\"): [" || -
+                     rexxDotHost.sendMessage0("rexx.hey")"]"
+say " (NetRexx) rexxDotHost.sendMessage1(\"entry\", \"rexx.hey\"): [" || -
+                     rexxDotHost.sendMessage1("entry", "rexx.hey")"]"
+
+mgr.terminate()     -- make sure that the Rexx interpreter instance gets terminated!
+
