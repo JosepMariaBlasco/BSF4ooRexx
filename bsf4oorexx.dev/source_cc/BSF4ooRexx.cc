@@ -3379,24 +3379,36 @@ if (rtc->CheckCondition())
         else // 2012-02-09, rgf: either a Java string, possibly denoting a bean, or a Java object
         {
 //-------------------------------
+#if defined(DEBUG_RGF_PROCESS_J_ARGS)
+    fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], arg#=[%d]: NOT a RexxProxy!\n", riid, i);fflush(stderr);
+#endif
                 // if a jstring, get the RexxString value
             if (env->IsInstanceOf(jobj, defaultJVM->clz_String)==JNI_TRUE )  // ---rgf, 2012-02-07
             {
+#if defined(DEBUG_RGF_PROCESS_J_ARGS)
+    fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], arg#=[%d]: a Java String!\n", riid, i);fflush(stderr);
+#endif
                 robj=JNU_GetStringNativeCharsReturningRexxStringObject(env, (jstring) jobj, rtc);
 
             }
 
             else // a Java object, process it via RexxAndJava
             {
+#if defined(DEBUG_RGF_PROCESS_J_ARGS)
+    fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], arg#=[%d]: a Java object!\n", riid, i);fflush(stderr);
+#endif
                 if (rajo==NULL)     // not yet fetched ?
                 {
+#if defined(DEBUG_RGF_PROCESS_J_ARGS)
+    fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], arg#=[%d]: a Java object, rajo not fetched yet, going after it...\n", riid, i);fflush(stderr);
+#endif
                         // get the RII structure to get access to
                     RexxInstance *ri=rtc->instance;
                     PSTRUCT_RII struRii=RgfGetRexxInterpreterInstanceStructFromList(ri);
                     rajo=struRii->rajo;
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS)
-    fprintf(stderr, "... RgfProcessJArgs(...): !! rajo was null, now set to: [%p]\n", rajo);
+    fprintf(stderr, "... RgfProcessJArgs(...): !! \trajo was null, now set to: [%p]\n", rajo);
 #endif
                 }
 

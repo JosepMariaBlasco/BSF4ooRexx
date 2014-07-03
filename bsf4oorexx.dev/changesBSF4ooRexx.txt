@@ -1,6 +1,15 @@
+-------------------------------------- 2014-07-03 ----------------------------------
+
+- RexxEngine.java
+
+        - make sure that RexxProxy objects are always passed as Java objects in arguments;
+          adapt apply() as well to pass through RexxProxy objects in arguments
+
+
 -------------------------------------- 2014-05-21 ----------------------------------
 
 - BSFException.java
+
         - add getCause() method as synonym for getTargetException(), which makes it
           orthogonal with Throwable's getCause() that got introduced since defining
           BSFException

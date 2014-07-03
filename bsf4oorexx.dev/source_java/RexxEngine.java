@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 4.5.0, 20140330
+  * @version 4.5.0, 20140703
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,9 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+    2014-07-03, ---rgf, - make sure that RexxProxy objects are always passed as Java objects in arguments;
+                          adapt apply() as well to pass through RexxProxy objects in arguments
+
     2014-03-30, ---rgf, - add undocumented pass-thru method procEnvironment(...) to allow a last resort means
                           (allow Java to set/get process environment variables via JNI using RexxAndJava)
 
@@ -128,7 +131,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "450.20140330";
+    static final public String version = "450.20140703";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -400,7 +403,8 @@ if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii
            Object argVal=args[i];
            if (argVal!=null)
            {
-               if (bIs40Callback && argVal instanceof RexxProxy)    // leave RexxProxy arguments unchanged
+               // if (bIs40Callback && argVal instanceof RexxProxy)    // leave RexxProxy arguments unchanged
+               if (argVal instanceof RexxProxy)    // leave RexxProxy arguments unchanged
                {
                    editedArgs[i]=argVal;
                }
@@ -886,10 +890,11 @@ if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii
         }
 
         lastScriptCode=script;   // save script's code, fall 2002, ---rgf
-        lastSourceLocation=source;      // save script source info, 2008-06-14
+        lastSourceLocation=source;  // save script source info, 2008-06-14
 
-        Vector beanVector  = null;      // bean Vector to build (for each argument one entry)
-        String stringArg[] = null;      // args for Rexx
+        Vector beanVector  = null;  // bean Vector to build (for each argument one entry)
+
+        Object objArg[] = null;     // args for Rexx
         // 2003-01-06, ---rgf, deal with arguments (non-primitive Java objects) which need to be turned into Beans
         Object [] res;                  // to contain the results of args2RexxString()
 
@@ -904,24 +909,31 @@ if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii
 
             Enumeration e=vArgs.elements();
             // this works under JRE 1.1.8, i.e. under older versions of OS/2 Warp as well, 2001-05-23, ---rgf
-            stringArg = new String [vArgs.size()];
+            objArg = new Object [vArgs.size()];
             beanVector= new Vector(vArgs.size());
 
             for ( i=0; e.hasMoreElements() ; i++)
             {
-               Object ne=e.nextElement();
-               if (ne!=null)
+               Object argVal=e.nextElement();
+               if (argVal!=null)
                {
-                   res = args2RexxString( ne );             // get String or Bean for this argument
-                   if (((Boolean) res[0]).booleanValue())   // a Bean had to be created
+                   if (argVal instanceof RexxProxy)         // leave RexxProxy arguments unchanged
                    {
-                      beanVector.addElement(res[1]);   // remember beanName for later deregistering
+                       objArg[i]=argVal;
                    }
-                   stringArg[i]=(String) res[1];            // String value for Rexx
+                   else
+                   {
+                       res = args2RexxString( argVal );     // get String or Bean for this argument
+                       if (((Boolean) res[0]).booleanValue())   // a Bean had to be created
+                       {
+                          beanVector.addElement(res[1]);    // remember beanName for later deregistering
+                       }
+                       objArg[i]=(String) res[1];           // assign beanName (a String)
+                   }
                }
                else
                {
-                   stringArg[i]=null;
+                   objArg[i]=null;
                }
             }
         }
@@ -937,7 +949,7 @@ if (bDebug) System.err.println("===> RexxEngine.apply() - before: rexxInterface.
                 2,                      // invocationType,         // determines whether "CallProgram", "LoadPackage" or "LoadPackageFromData" is to be used
                 lastSourceLocation,     // String  fileName,               // filename which contains the program to run
                 lastScriptCode,         // String  programData,            // Rexx code to execute; if given "fileName" denotes a (symbolic) name for this code
-                stringArg               // Object[]args                    // arguments
+                objArg               // Object[]args                    // arguments
                 );
 
 if (bDebug) System.err.println("<=== RexxEngine.apply() - AFTER: rexxInterface.jniRexxRunProgram (...)");
@@ -1013,7 +1025,6 @@ if (bDebug)  System.err.println("RexxEngine.apply() - before returning ["+obj+"]
             return res;
         }
 
-        // TODO: allow RexxProxy objects to go through ?
 
         // not of a primitive type nor String, hence a bean will be created for it
 
@@ -1041,8 +1052,6 @@ if (bDebug)
     }
     catch (Exception e) {}
 }
-
-
 
         return res;
     }

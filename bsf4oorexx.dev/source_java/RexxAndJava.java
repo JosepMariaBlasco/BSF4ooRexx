@@ -42,7 +42,7 @@ import org.apache.bsf.util.type.*;
 
  /*
      2014-05-15, ---rgf, - correct new method lookup for INVOKE (did not find fields, nor was coercing
-                           the arguments rather used the INVOKE_STRICT logic)
+                           the arguments, rather used the INVOKE_STRICT logic)
 
      2014-05-14, ---rgf, - change method lookup for INVOKE to use Class.getMethods() instead of Class.getDeclaredMethods();
                            getMethods() returns all public methods, which in Java 8 also includes default (interface) methods,
