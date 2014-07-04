@@ -1,3 +1,30 @@
+-------------------------------------- 2014-07-04 ----------------------------------
+
+- new samples
+
+        - samples/Java/JavaRunRexx_05.java
+          samples/NetRexx/nrxRunRexx_05.nrx
+
+                - Demonstrate how to setup a .host directory in Rexx from Java, which then
+                  receives Java objects for use in Rexx programs; in addition a value is
+                  saved in .host by Rexx under the index REXX.HEY that upon return is
+                  fetched from Java.
+
+        - samples/Java/JavaRunRexx_06.java
+          samples/NetRexx/nrxRunRexx_06.nrx
+
+
+                - Demonstrate how to use the context of a Rexx routine for another Rexx
+                  routine.  The first routine requires BSF.CLS which adds public routines
+                  and public classes which then are made available to Rexx routines that get
+                  created and executed later via Java.  Then another Rexx routines gets
+                  defined to use the first package, and in addition defines a public routine
+                  named test.  Finally, the last Rexx routine demonstrates getting access to
+                  the package of the second routine which makes its public routine named
+                  test accessible.  In addition the last routine is called twice, once
+                  without Java supplied arguments, once with Java supplied arguments.
+
+
 -------------------------------------- 2014-07-03 ----------------------------------
 
 - RexxEngine.java
