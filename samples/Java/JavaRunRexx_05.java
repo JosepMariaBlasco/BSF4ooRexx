@@ -1,6 +1,6 @@
 /*
     Author:     Rony G. Flatscher
-    Date:       2014-07-01
+    Date:       2014-07-04
     Purpose:    Demonstrate how to setup a .host directory in Rexx from Java, which then
                 receives Java objects for use in Rexx programs; in addition demonstrates
                 turning all .host directory entries to environment symbols by merely putting
@@ -65,35 +65,12 @@ public class JavaRunRexx_05
                  "say ' (ooRexx) Java version queried from Rexx:' pp(.host~from.java.system.class~getProperty('java.version')); " +
                  "::requires 'BSF.CLS'                                                             ;"  ; // get access to BSF4ooRexx support
 
-        Vector vArgs = new java.util.Vector();  // Vector for arguments to be passed to Rexx
-        // vArgs.addElement(new Object());
+        Vector vArgs = new Vector();    // Vector for arguments to be passed to Rexx
         vArgs.addElement(new java.util.GregorianCalendar());
         vArgs.addElement(null);
         rexxEngine.apply ("InvokeFromJavaRunRexx_05.java-02", 0, 0, rexxCode, null, vArgs);
 
-
-        System.out.println("--- 3 (Java): put all '.HOST' entries to '.LOCAL' thereby turning them into environment symbols ...");
-        rexxCode="use arg val1, val2, val3                                                         ;" +
-                 "say ' (ooRexx) val1='pp(val1) 'val2='pp(val2) 'val3='pp(val3) 'arg()='pp(arg())            ;" +
-                 ".local~putAll(.host)                 ;" + // put all .host direcotry entries to .local
-                  "::requires 'BSF.CLS'                 ;" ; // get access to BSF4ooRexx support
-        rexxEngine.apply ("InvokeFromJavaRunRexx_05.java-03", 0, 0, rexxCode, null, null);
-
-
-        System.out.println("--- 4 (Java): now use the environment symbols of the '.HOST' entries ...");
-
-        rexxCode="use arg val1, val2, val3                                                     ;" +
-                 "say ' (ooRexx) val1='pp(val1) 'val2='pp(val2) 'val3='pp(val3) 'arg()='pp(arg())            ;" +
-                 "say ' (ooRexx) .from.java                    :' pp(.from.java             )  ;" +
-                 "say ' (ooRexx) .from.java.system.class       :' pp(.from.java.system.class)  ;" +
-                 "say ' (ooRexx) .from.java.version.string     :' pp(.from.java.version.string);" +
-                 "say ' (ooRexx) Java version queried from Rexx:' pp(.from.java.system.class~getProperty('java.version')); " +
-                 ".host~rexx.hey='Greetings from ooRexx to Java at:' .DateTime~new '!'         ;" +
-                 "::requires 'BSF.CLS'                                                         ;"  ; // get access to BSF4ooRexx support
-
-        rexxEngine.apply ("InvokeFromJavaRunRexx_05.java-04", 0, 0, rexxCode, null, vArgs);
-
-        System.out.println("--- 5 (Java): access '.HOST' entry 'REXX.HEY' ...");
+        System.out.println("--- 3 (Java): access '.HOST' entry 'REXX.HEY' ...");
         System.out.println(" (Java) rexxDotHost.sendMessage0(\"rexx.hey\"): ["+
                              rexxDotHost.sendMessage0("rexx.hey")+"]");
         System.out.println(" (Java) rexxDotHost.sendMessage1(\"entry\", \"rexx.hey\"): ["+

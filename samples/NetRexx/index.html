@@ -23,30 +23,44 @@ all platforms and can be downloaded from its homepage at
     <dt><a href="nrxRunRexx_01.nrx">nrxRunRexx_01.nrx</a>
     <dd>Defines and runs a Rexx program.
         The compiled Java class is stored in &quot;nrxRunRexx_01.class&quot;.
+        [Java version: <a href="../Java/JavaRunRexx_01.java">JavaRunRexx_01.java</a>.]
 
     <dt><a href="nrxRunRexx_02.nrx">nrxRunRexx_02.nrx</a>
     <dd>Preloads the Rexx interpreter, defines and runs a Rexx program.
         The compiled Java class is stored in &quot;nrxRunRexx_02.class&quot;.
+        [Java version: <a href="../Java/JavaRunRexx_02.java">JavaRunRexx_02.java</a>.]
 
     <dt><a href="nrxRunRexx_03.nrx">nrxRunRexx_03.nrx</a>
     <dd>Defines and runs a Rexx program, that returns an ooRexx directory, which then is
         used from NetRexx (Java).
         The compiled Java class is stored in &quot;nrxRunRexx_03.class&quot;.
+        [Java version: <a href="../Java/JavaRunRexx_03.java">JavaRunRexx_03.java</a>.]
 
     <dt><a href="nrxRunRexx_04.nrx">nrxRunRexx_04.nrx</a>
     <dd>Defines and runs a Rexx program, that contains a syntax error, which then is
         intercepted and inspected by NetRexx (Java).
         The compiled Java class is stored in &quot;nrxRunRexx_04.class&quot;.
+        [Java version: <a href="../Java/JavaRunRexx_04.java">JavaRunRexx_04.java</a>.]
 
     <dt><a href="nrxRunRexx_05.nrx">nrxRunRexx_05.nrx</a>
-    <dd>Demonstrate how to setup a <code>.host</code> directory in Rexx from
-        NetRexx (Java), which then receives NetRexx (Java) objects for use in
-        Rexx programs; in addition demonstrates turning all <code>.host</code>
-        directory entries to environment symbols by merely putting its entries
-        into <code>.local</code>; finally, a value is saved in <code>.host</code>
-        by Rexx under the index <code>rexx.hey</code> that upon return is
-        fetched from NetRexx (Java).
+    <dd>Demonstrate how to setup a <code>.host</code> directory in Rexx from NetRexx
+        (Java), which then receives Java objects for use in Rexx programs; in addition
+        a value is saved in <code>.host</code> by Rexx under the index <code>REXX.HEY</code>
+        that upon return is fetched from NetRexx (Java).
+        [Java version: <a href="../Java/JavaRunRexx_05.java">JavaRunRexx_05.java</a>.]
 
+    <dt><a href="nrxRunRexx_06.nrx">nrxRunRexx_06.nrx</a>
+    <dd>Demonstrate how to use the <em>context</em> of a Rexx routine for another
+        Rexx routine. The first routine requires <code>BSF.CLS</code> which adds
+        public routines and public classes which then are made available to Rexx
+        routines that get created and executed later via NetRexx (Java).
+        Then another Rexx routines gets defined to use the first package, and in addition
+        defines a public routine named <code>test</code>.
+        Finally, the last Rexx routine demonstrates getting access to the package
+        of the second routine which makes its public routine named <code>test</code>
+        accessible. In addition the last routine is called twice, once without
+        NetRexx (Java) supplied arguments, once with NetRexx (Java) supplied arguments.
+        [Java version: <a href="../Java/JavaRunRexx_06.java">JavaRunRexx_06.java</a>.]
 
     <dt><a href="rgf_01_runRexx.nrx">rgf_01_runRexx.nrx</a>
     <dd>Shows the output of <code>parse source</code> and <code>parse version</code> from
@@ -75,6 +89,6 @@ all platforms and can be downloaded from its homepage at
 <p>
 <hr>
 <p style="font-size: 80%;">
-Rony G. Flatscher, 2011-01-15, 2014-07-02, Wien/Vienna, Austria, Europe
+Rony G. Flatscher, 2011-01-15, 2014-07-04, Wien/Vienna, Austria, Europe
 </body>
 
