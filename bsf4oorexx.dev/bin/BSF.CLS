@@ -12,6 +12,16 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2014-07-06, rgf: - added public routine BSF.redirectTo (allows to redirect the ooRexx standard
+                            monitors to Java's standard System streams and reset them to the standard
+                            ooRexx standard streams)
+
+                          - added public class BSF.InputStream (allows ooRexx to treat Java InputStream
+                            objects as Rexx input streams)
+
+                          - added public class BSF.PrintStream (allows ooRexx to treat Java PrintStream
+                            objects - specialisation of OutputStream - as Rexx output streams)
+
          2014-05-17, rgf: - adjust bsf.terminateRexxEngine() to cater for the new behaviour
          2014-05-15, rgf: - moved MacOSX initialization code to public routine "makeBSF4ooRexxLookLikeMacOSX":
                             ooRexx macros in AOO 4.x on MacOSX do not run, as this setup code uses
@@ -334,7 +344,7 @@
 
 
 
-   version:     4.50 (20140526)
+   version:     4.50 (20140706)
 
    authors:     (c) 2001-2014 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
@@ -423,7 +433,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="450.20140526" -- set version (date distribution got created)
+   .bsf4rexx~version="450.20140706" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3704,4 +3714,148 @@ syntax:
 syntax:
   return .true                -- terminated successfully
 
+
+
+/* rgf, 2014-07-06 */
+
+/* Routine to allow redirecting ooRexx standard monitors (.input, .output, .error,
+   since ooRexx 4.2 in addition: .debugInput, .traceOutput) to Java input and output
+   streams and resetting to default ooRexx streams.
+
+   @param bRedirectTo  optional, "J"ava (default): redirect ooRexx monitors to
+                          Java's standard (System) streams;
+                          otherwise reset to standard ooRexx streams
+   @param input        optional, stream to redirect .input monitor to
+   @param output       optional, stream to redirect .output monitor to
+   @param error        optional, stream to redirect .error monitor to
+   @param debugInput   optional, stream to redirect .debugInput monitor to
+   @param traceOutput  optional, stream to redirect .traceOutput monitor to
+*/
+::routine bsf.redirectTo public
+  use strict arg redirectTo="J", input=.nil, output=.nil, error=.nil, debugInput=.nil, traceOutput=.nil
+
+  bRedirectToJava=redirectTo~strip~left(1)~caselessEquals("J")
+
+  if Input <>.nil then .input~destination(input)
+  else
+  do
+       if bRedirectToJava=.true then
+          .input~destination(.bsf.InputStream~new(.java.lang.System~in))
+       else
+          .input~destination(.stdin)
+  end
+
+  if Output <>.nil then .Output~destination(Output)
+  else
+  do
+       if bRedirectToJava=.true then
+          .Output~destination(.bsf.printStream~new(.java.lang.System~out))
+       else
+          .Output~destination(.stdout)
+  end
+
+  if Error <>.nil then .Error~destination(Error)
+  else
+  do
+       if bRedirectToJava=.true then
+          .Error~destination(.bsf.printStream~new(.java.lang.System~err))
+       else
+          .Error~destination(.stderr)
+  end
+
+  if .local~hasEntry("DebugInput") then   -- ooRexx<4.2 does not have this
+  do
+     If DebugInput <>.nil then .DebugInput~destination(DebugInput)
+     else
+     do
+          if bRedirectToJava=.true then
+             .DebugInput~destination(.bsf.InputStream~new(.java.lang.System~in))
+          else
+             .DebugInput~destination(.stdin)
+     end
+  end
+
+  if .local~hasEntry("TraceOutput") then   -- ooRexx<4.2 does not have this
+  do
+     if TraceOutput <>.nil then .TraceOutput~destination(TraceOutput)
+     else
+     do
+          if bRedirectToJava=.true then
+             .TraceOutput~destination(.bsf.printStream~new(.java.lang.System~err))
+          else
+             .TraceOutput~destination(.stderr)
+     end
+  end
+
+/* Allows to use a Java input stream as an ooRexx input stream. */
+::class "BSF.InputStream"  subclass inputStream  public
+::attribute javaInputStream         -- allow direct access to input stream object
+
+::method init                       -- constructor that takes the Java InputStream object
+  expose javaInputStream byteArray1
+  use strict arg javaInputStream
+  byteArray1=bsf.createJavaArray("byte.class",1)   -- Java byte array with capacity of one
+
+::method charIn
+  expose javaInputStream byteArray1
+  use strict arg start=1, length=1
+
+  if start>1 then
+  do
+     signal on syntax               -- if empty string, then InputStream raises an "invalid handle" exception
+     javaInputStream~skip(start-1)
+  end
+
+  if length=1 then
+     barr=byteArray1
+  else
+     barr=bsf.createJavaArray("byte.class", length)
+
+  n=javaInputStream~read(barr)
+  if n=0 then return ""
+  return BSFRawBytes(barr,n)
+syntax:
+   return ""
+
+::method chars
+  expose javaInputStream
+  return javaInputStream~available
+
+::method lineIn
+  expose javaInputStream byteArray1
+
+  mb=.mutableBuffer~new
+  do forever
+     char=self~charin            -- read a byte
+     if char="0d"x then          -- skip CR
+        iterate
+
+     if char="0a"x then          -- received LF, return chars gathered so far
+        return mb~string
+
+     mb~append(char)
+  end
+  return mb~string
+
+
+/* Allows to use a Java print (output) stream as an ooRexx output stream. */
+::class "BSF.PrintStream" subclass outputStream public
+::attribute JavaPrintStream        -- allow direct access to output stream object
+::method init
+  expose JavaPrintStream
+  use strict arg JavaPrintStream
+
+::method charOut
+  expose JavaPrintStream
+  use strict arg chars, start=1
+  if start=1 then JavaPrintStream~print(chars)
+             else JavaPrintStream~print(chars~subStr(start))
+
+::method lineOut
+  expose JavaPrintStream
+  use strict arg chars
+  JavaPrintStream~println(chars)
+
+::method say                        -- in ooRexx file streams a synonym for lineOut
+  forward message "lineout"
 

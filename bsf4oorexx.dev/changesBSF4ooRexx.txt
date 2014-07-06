@@ -1,3 +1,19 @@
+-------------------------------------- 2014-07-06 ----------------------------------
+
+- BSF.CLS
+
+        - added public routine BSF.redirectTo (allows to redirect the ooRexx standard
+          monitors to Java's standard System streams and reset them to the standard
+          ooRexx standard streams)
+
+        - added public class BSF.InputStream (allows ooRexx to treat Java InputStream
+          objects as Rexx input streams)
+
+        - added public class BSF.PrintStream (allows ooRexx to treat Java PrintStream
+          objects - specialisation of OutputStream - as Rexx output streams)
+
+
+
 -------------------------------------- 2014-07-04 ----------------------------------
 
 - new samples
