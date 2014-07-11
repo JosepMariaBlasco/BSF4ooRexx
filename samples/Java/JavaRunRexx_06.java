@@ -1,12 +1,12 @@
 /*
     Author:     Rony G. Flatscher
-    Date:       2014-07-04
+    Date:       2014-07-04, 2014-07-11
     Purpose:    Demonstrate how to run Rexx programs one after the other, using the
                 package (public routines, public classes) for the next Rexx invocation;
                 this allows one to run Rexx programs and aggregate all public routines
                 and public classes
 
-    Changed:    ---
+    Changed:    2014-07-11, ---rgf: demonstrate redirecting ooRexx standard streams to Java
 
     Needs:      ooRexx 4.0, BSF4ooRexx
 
@@ -49,8 +49,10 @@ public class JavaRunRexx_06
         String createRoutineWithContext="return .routine~new(arg(1),arg(2),arg(3))";
 
             // require BSF.CLS, which will cause an entry in .local named BSF, controlling argument conversion between Java and Rexx
-        System.out.println("--- 1 (Java): require BSF.CLS and keep routine in order to be able to access its package ...");
-        String rexxCode="::requires BSF.CLS -- get and activate the Java support\n";
+        System.out.println("--- 1 (Java): require BSF.CLS and keep routine in order to be able to access its package,\n" +
+                           "              redirect ooRexx standard streams to the standard Java streams...");
+        String rexxCode="call bsf.redirectTo 'Java'     -- redirect ooRexx' standard streams to Java streams \n" +
+                        "::requires BSF.CLS             -- get and activate the Java support                 \n";
 
         Vector    vArgs=new Vector();
         vArgs.addElement("rexxPackage1");    // routine/package name

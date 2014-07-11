@@ -54,12 +54,19 @@ all platforms and can be downloaded from its homepage at
         [NetRexx version: <a href="../NetRexx/nrxRunRexx_05.nrx">nrxRunRexx_05.nrx</a>.]
 
     <dt><a href="JavaRunRexx_06.java">JavaRunRexx_06.java</a>
-    <dd>Demonstrate how to use the <em>context</em> of a Rexx routine for another
-        Rexx routine. The first routine requires <code>BSF.CLS</code> which adds
+    <dd>Demonstrate how to use the <em>context</em> of a Rexx routine (i.e. all public
+        routines and public classes available to it) for another
+        Rexx routine.
+        <br>
+        The first routine requires <code>BSF.CLS</code> which adds
         public routines and public classes which then are made available to Rexx
-        routines that get created and executed later via Java. Then another
-        Rexx routines gets defined to use the first package, and in addition
+        routines that get created and executed later via Java. In addition the
+        ooRexx standard streams get redirected to the Java standard streams by
+        calling the public routine <code>bsf.redirectTo</code>.
+        <br>
+        Then another Rexx routines gets defined to use the first package, and in addition
         defines a public routine named <code>test</code>.
+        <br>
         Finally, the last Rexx routine demonstrates getting access to the package
         of the second routine which makes its public routine named <code>test</code>
         accessible. In addition the last routine is called twice, once without
@@ -70,6 +77,6 @@ all platforms and can be downloaded from its homepage at
 <p>
 <hr>
 <p style="font-size: 80%;">
-Rony G. Flatscher, 2010-08-23, 2014-07-04, Wien/Vienna, Austria, Europe
+Rony G. Flatscher, 2010-08-23, 2014-07-11, Wien/Vienna, Austria, Europe
 </body>
 

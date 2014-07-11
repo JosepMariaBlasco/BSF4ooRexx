@@ -9,8 +9,12 @@ createRoutine           ="return .routine~new(arg(1),arg(2))"
 createRoutineWithContext="return .routine~new(arg(1),arg(2),arg(3))"
 
     -- require BSF.CLS, which will cause an entry in .local named BSF, controlling argument conversion between Java and Rexx
-say "--- 1 (NetRexx): require BSF.CLS and keep routine in order to be able to access its package ..."
+say "--- 1 (NetRexx): require BSF.CLS and keep routine in order to be able to access its package," -
+    "\n\t\t redirect ooRexx standard streams to the standard Java streams..."
+
 rexxCode="::requires BSF.CLS -- get and activate the Java support\n";
+rexxCode="call bsf.redirectTo 'Java'     -- redirect ooRexx' standard streams to Java streams \n" -
+         "::requires BSF.CLS             -- get and activate the Java support                 \n"
 
 vArgs=Vector()
 vArgs.addElement("rexxPackage1")     -- routine/package name
