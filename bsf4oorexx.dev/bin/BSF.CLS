@@ -12,11 +12,11 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
-         2014-07-15, rgf: - renamed BSF.InputStream to BSF.Input, added code to also work on java.io.Reader in
-                            addition to java.io.InputStream (e.g. java.lang.System.in)
+         2014-07-15, rgf: - added code to BSF.InputStream to also work on java.io.Reader in addition to
+                            java.io.InputStream (e.g. java.lang.System.in)
 
-                          - renamed BSF.PrintStream to BSF.Output, added code to also work on java.io.Writer in
-                            addition to java.io.PrintStream (e.g. java.lang.System.{out|err})
+                          - renamed BSF.PrintStream to BSF.OutputStream, added code to also work on
+                            java.io.Writer in addition to java.io.PrintStream (e.g. java.lang.System.{out|err})
 
          2014-07-06, rgf: - added public routine BSF.redirectTo (allows to redirect the ooRexx standard
                             monitors to Java's standard System streams and reset them to the standard
@@ -3746,7 +3746,7 @@ syntax:
   else
   do
        if bRedirectToJava=.true then
-          .input~destination(.bsf.Input~new(.java.lang.System~in))
+          .input~destination(.bsf.InputStream~new(.java.lang.System~in))
        else
           .input~destination(.stdin)
   end
@@ -3755,7 +3755,7 @@ syntax:
   else
   do
        if bRedirectToJava=.true then
-          .Output~destination(.bsf.output~new(.java.lang.System~out))
+          .Output~destination(.bsf.outputStream~new(.java.lang.System~out))
        else
           .Output~destination(.stdout)
   end
@@ -3764,7 +3764,7 @@ syntax:
   else
   do
        if bRedirectToJava=.true then
-          .Error~destination(.bsf.output~new(.java.lang.System~err))
+          .Error~destination(.bsf.outputStream~new(.java.lang.System~err))
        else
           .Error~destination(.stderr)
   end
@@ -3775,7 +3775,7 @@ syntax:
      else
      do
           if bRedirectToJava=.true then
-             .DebugInput~destination(.bsf.Input~new(.java.lang.System~in))
+             .DebugInput~destination(.bsf.InputStream~new(.java.lang.System~in))
           else
              .DebugInput~destination(.stdin)
      end
@@ -3787,14 +3787,14 @@ syntax:
      else
      do
           if bRedirectToJava=.true then
-             .TraceOutput~destination(.bsf.output~new(.java.lang.System~err))
+             .TraceOutput~destination(.bsf.outputStream~new(.java.lang.System~err))
           else
              .TraceOutput~destination(.stderr)
      end
   end
 
 /* Allows to use a java.io.InputStream or a java.io.Reader object as an ooRexx input stream. */
-::class "BSF.Input"  subclass inputStream  public
+::class "BSF.InputStream"  subclass inputStream  public
 ::attribute javaInputObject         -- allow direct access to input stream object
 
 ::method init                       -- constructor that takes the Java InputStream object
@@ -3851,7 +3851,7 @@ syntax:
 
 
 /* Allows to use a java.io.PrintStream or a java.io.Writer object as an ooRexx output stream. */
-::class "BSF.Output" subclass outputStream public
+::class "BSF.OutputStream" subclass outputStream public
 ::attribute javaOutputObject        -- allow direct access to output stream object
 ::method init
   expose javaOutputObject isWriter
