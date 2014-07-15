@@ -1,3 +1,13 @@
+-------------------------------------- 2014-07-15 ----------------------------------
+
+- BSF.CLS
+
+        - renamed BSF.InputStream to BSF.Input, added code to also work on
+          java.io.Reader in addition to java.io.InputStream (e.g. java.lang.System.in)
+
+        - renamed BSF.PrintStream to BSF.Output, added code to also work on
+          java.io.Writer in addition to java.io.PrintStream (e.g. java.lang.System.{out|err})
+
 -------------------------------------- 2014-07-06 ----------------------------------
 
 - BSF.CLS

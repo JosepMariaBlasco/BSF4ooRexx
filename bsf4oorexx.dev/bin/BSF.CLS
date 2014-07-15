@@ -12,6 +12,12 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2014-07-15, rgf: - renamed BSF.InputStream to BSF.Input, added code to also work on java.io.Reader in
+                            addition to java.io.InputStream (e.g. java.lang.System.in)
+
+                          - renamed BSF.PrintStream to BSF.Output, added code to also work on java.io.Writer in
+                            addition to java.io.PrintStream (e.g. java.lang.System.{out|err})
+
          2014-07-06, rgf: - added public routine BSF.redirectTo (allows to redirect the ooRexx standard
                             monitors to Java's standard System streams and reset them to the standard
                             ooRexx standard streams)
@@ -344,7 +350,7 @@
 
 
 
-   version:     4.50 (20140706)
+   version:     4.50 (20140715)
 
    authors:     (c) 2001-2014 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
@@ -433,7 +439,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="450.20140706" -- set version (date distribution got created)
+   .bsf4rexx~version="450.20140715" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3740,7 +3746,7 @@ syntax:
   else
   do
        if bRedirectToJava=.true then
-          .input~destination(.bsf.InputStream~new(.java.lang.System~in))
+          .input~destination(.bsf.Input~new(.java.lang.System~in))
        else
           .input~destination(.stdin)
   end
@@ -3749,7 +3755,7 @@ syntax:
   else
   do
        if bRedirectToJava=.true then
-          .Output~destination(.bsf.printStream~new(.java.lang.System~out))
+          .Output~destination(.bsf.output~new(.java.lang.System~out))
        else
           .Output~destination(.stdout)
   end
@@ -3758,7 +3764,7 @@ syntax:
   else
   do
        if bRedirectToJava=.true then
-          .Error~destination(.bsf.printStream~new(.java.lang.System~err))
+          .Error~destination(.bsf.output~new(.java.lang.System~err))
        else
           .Error~destination(.stderr)
   end
@@ -3769,7 +3775,7 @@ syntax:
      else
      do
           if bRedirectToJava=.true then
-             .DebugInput~destination(.bsf.InputStream~new(.java.lang.System~in))
+             .DebugInput~destination(.bsf.Input~new(.java.lang.System~in))
           else
              .DebugInput~destination(.stdin)
      end
@@ -3781,29 +3787,33 @@ syntax:
      else
      do
           if bRedirectToJava=.true then
-             .TraceOutput~destination(.bsf.printStream~new(.java.lang.System~err))
+             .TraceOutput~destination(.bsf.output~new(.java.lang.System~err))
           else
              .TraceOutput~destination(.stderr)
      end
   end
 
-/* Allows to use a Java input stream as an ooRexx input stream. */
-::class "BSF.InputStream"  subclass inputStream  public
-::attribute javaInputStream         -- allow direct access to input stream object
+/* Allows to use a java.io.InputStream or a java.io.Reader object as an ooRexx input stream. */
+::class "BSF.Input"  subclass inputStream  public
+::attribute javaInputObject         -- allow direct access to input stream object
 
 ::method init                       -- constructor that takes the Java InputStream object
-  expose javaInputStream byteArray1
-  use strict arg javaInputStream
+  expose javaInputObject byteArray1 isReader
+  use strict arg javaInputObject
   byteArray1=bsf.createJavaArray("byte.class",1)   -- Java byte array with capacity of one
 
+  if \.local~hasEntry("java.io.Reader") then
+     call bsf.import "java.io.Reader"  -- load Java class and store it as "JAVA.IO.READER" in .local
+  isReader=.java.io.Reader~isInstance(javaInputObject)
+
 ::method charIn
-  expose javaInputStream byteArray1
+  expose javaInputObject byteArray1
   use strict arg start=1, length=1
 
   if start>1 then
   do
      signal on syntax               -- if empty string, then InputStream raises an "invalid handle" exception
-     javaInputStream~skip(start-1)
+     javaInputObject~skip(start-1)
   end
 
   if length=1 then
@@ -3811,19 +3821,21 @@ syntax:
   else
      barr=bsf.createJavaArray("byte.class", length)
 
-  n=javaInputStream~read(barr)
+  n=javaInputObject~read(barr)
   if n=0 then return ""
   return BSFRawBytes(barr,n)
 syntax:
    return ""
 
 ::method chars
-  expose javaInputStream
-  return javaInputStream~available
+  expose javaInputObject isReader
+
+  if isReader then
+     return javaInputObject~ready
+  else   -- assume an InputStream (e.g. java.lang.System.in)
+     return javaInputObject~available
 
 ::method lineIn
-  expose javaInputStream byteArray1
-
   mb=.mutableBuffer~new
   do forever
      char=self~charin            -- read a byte
@@ -3838,23 +3850,49 @@ syntax:
   return mb~string
 
 
-/* Allows to use a Java print (output) stream as an ooRexx output stream. */
-::class "BSF.PrintStream" subclass outputStream public
-::attribute JavaPrintStream        -- allow direct access to output stream object
+/* Allows to use a java.io.PrintStream or a java.io.Writer object as an ooRexx output stream. */
+::class "BSF.Output" subclass outputStream public
+::attribute javaOutputObject        -- allow direct access to output stream object
 ::method init
-  expose JavaPrintStream
-  use strict arg JavaPrintStream
+  expose javaOutputObject isWriter
+  use strict arg javaOutputObject
+
+  if \.local~hasEntry("java.io.Writer") then
+     call bsf.import "java.io.Writer"  -- load Java class and store it as "JAVA.IO.Writer" in .local
+  isWriter=.java.io.Writer~isInstance(javaOutputObject)
 
 ::method charOut
-  expose JavaPrintStream
+  expose javaOutputObject isWriter
   use strict arg chars, start=1
-  if start=1 then JavaPrintStream~print(chars)
-             else JavaPrintStream~print(chars~subStr(start))
+
+  if start=1 then
+  do
+     if isWriter then
+        javaOutputObject~write(chars)
+     else
+        javaOutputObject~print(chars)
+  end
+  else
+  do
+     if isWriter then
+        javaOutputObject~write(chars~subStr(start))
+     else
+        javaOutputObject~print(chars~subStr(start))
+  end
 
 ::method lineOut
-  expose JavaPrintStream
+  expose javaOutputObject isWriter
   use strict arg chars
-  JavaPrintStream~println(chars)
+
+  if isWriter then
+  do
+     javaOutputObject~write(chars)
+     javaOutputObject~write(.endofline)
+  end
+  else
+  do
+     javaOutputObject~println(chars)
+  end
 
 ::method say                        -- in ooRexx file streams a synonym for lineOut
   forward message "lineout"
