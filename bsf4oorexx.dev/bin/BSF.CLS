@@ -12,6 +12,9 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2014-07-16, rgf: - routine bsf.redirectTo(): default .debugInput to .input~current and
+                            .traceOutput to .error~current
+
          2014-07-15, rgf: - added code to BSF.InputStream to also work on java.io.Reader in addition to
                             java.io.InputStream (e.g. java.lang.System.in)
 
@@ -350,7 +353,7 @@
 
 
 
-   version:     4.50 (20140715)
+   version:     4.50 (20140716)
 
    authors:     (c) 2001-2014 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
@@ -439,7 +442,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="450.20140715" -- set version (date distribution got created)
+   .bsf4rexx~version="450.20140716" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3734,8 +3737,8 @@ syntax:
    @param input        optional, stream to redirect .input monitor to
    @param output       optional, stream to redirect .output monitor to
    @param error        optional, stream to redirect .error monitor to
-   @param debugInput   optional, stream to redirect .debugInput monitor to
-   @param traceOutput  optional, stream to redirect .traceOutput monitor to
+   @param debugInput   optional, stream to redirect .debugInput monitor to (defaults to .input~current)
+   @param traceOutput  optional, stream to redirect .traceOutput monitor to (defaults to .error~current)
 */
 ::routine bsf.redirectTo public
   use strict arg redirectTo="J", input=.nil, output=.nil, error=.nil, debugInput=.nil, traceOutput=.nil
@@ -3775,7 +3778,7 @@ syntax:
      else
      do
           if bRedirectToJava=.true then
-             .DebugInput~destination(.bsf.InputStream~new(.java.lang.System~in))
+             .DebugInput~destination(.input~current)
           else
              .DebugInput~destination(.stdin)
      end
@@ -3787,7 +3790,7 @@ syntax:
      else
      do
           if bRedirectToJava=.true then
-             .TraceOutput~destination(.bsf.outputStream~new(.java.lang.System~err))
+             .TraceOutput~destination(.error~current)
           else
              .TraceOutput~destination(.stderr)
      end

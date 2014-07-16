@@ -1,3 +1,10 @@
+-------------------------------------- 2014-07-16 ----------------------------------
+
+- BSF.CLS
+
+        - routine bsf.redirectTo(): default .debugInput to .input~current and
+          .traceOutput to .error~current
+
 -------------------------------------- 2014-07-15 ----------------------------------
 
 - BSF.CLS
