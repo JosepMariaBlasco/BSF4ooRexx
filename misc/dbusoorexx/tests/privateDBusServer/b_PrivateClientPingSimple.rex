@@ -106,9 +106,12 @@ call dump2 res[res~last], "roundtrip, 'res["res~last"]'-content"
 say
 
 say "DbusVersion():" dbusVersion()
-say "conn~isOpen:  " conn~isOpen
+-- say "conn~isOpen:  " conn~isOpen
+say "conn~isOpen:  " conn~query("open")
 conn~close
-say "conn~isOpen:  " conn~isOpen "(after closing)"
+
+say "conn~isOpen:  " conn~query("open") "(after closing)"
+-- say "conn~isOpen:  " conn~isOpen "(after closing)"
 
 call dumpConnectionStatistics conn
 
@@ -123,16 +126,21 @@ res=conn~message("call", iface, objectPath, interface, "Introspect", "s", "")
 say "res:" pp2(res)
 */
 
+say "this was for bustype:" pp(conn~bustype) "address:" pp(conn~address)
+
+conn~close
 
 exit
 
 halt:    -- stop the message loop thread
    say " ... ctl-c was pressed ..."
+   conn~close
    call dumpConnectionStatistics conn
    exit -1
 
 syntax:
    cond=condition('o')
+   conn~close
    say "exception occurred, showing dumpCondition2(condition('o'))..."
    say ppCondition2(cond)
    say

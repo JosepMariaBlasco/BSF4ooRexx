@@ -10,11 +10,13 @@
                  plain Rexx strings
       needs:   - ooRexx dbus support package
       date:    2011-08-04
+      changed: 2014-07-23, rgf: adapted logic to new infrastructure, hence a need to explicit stop
+                                the message loop thread in order to allow ooRexx to stop
       specs:   dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
       license: AL 2.0 (Apache License 2.0)
 
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011 Rony G. Flatscher
+               Copyright 2011-2014 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -29,6 +31,8 @@
                limitations under the License.
             -----------------------------------------------------------------------------
 */
+say "DBusVersion (library):" DBusVersion()
+say "     dbus.cls package:" .dbus.dir~version
 
 conn=.dbus~connect("session")    -- connect to the "session" bus
 
@@ -79,6 +83,7 @@ do
    end
 end
 
+conn~close           -- close, thereby terminating message loop thread
 
 
 ::requires "dbus.cls"         -- get dbus support for ooRexx

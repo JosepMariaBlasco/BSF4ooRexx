@@ -2,7 +2,7 @@
 /*
       author:  Rony G. Flatscher, (c) 2011
       name:    testPrivateClientPing.rex
-      date:    2011-08-07
+      date:    2011-08-07, 2011-08-24
       license: 3.0, AL 2.0
       purpose: - test marshalling and unmarshalling; will unmarshal received arguments and
                  marshal them for the reply using the same signature
@@ -47,21 +47,21 @@ objectPath="/org/rexxla/oorexx/dbus/test/Pong"
 busName   ="org.rexxla.oorexx.dbus.test.pong"
 interface =""
 
-/*
-busType="session"                  -- default to session bus
-say "creating a connection to the" pp2(busType) "message bus..."
-conn=.dbus~new(busType) -- get a connection
-*/
-
 address1="unix:path=/tmp/dbus-test"
 address2="tcp:host=localhost,port=23000,family=ipv4;" -- socket lingers after shutdown
-address3="unix:path=/tmp/dbus-test;tcp:host=localhost,port=23000,family=ipv4;"
+address3="tcp:host=localhost,port=23000,family=ipv4;unix:path=/tmp/dbus-test;"
 
--- address1="unix:path=/tmp/dbus-test-oopsla"
--- address1="tcp:host=localhost,port=23001,family=ipv4;" -- socket lingers after shutdown
--- address=address1
+parse arg otherAddress doNotTestUNIX_FDs
 
-parse arg otherAddress .
+if doNotTestUNIX_FDs<>"" then
+   .local~client.unix_Fd=.false
+
+/*
+say ".client.unix_fd="pp2(.client.unix_fd) "doNotTestUNIX_FDs="pp2(doNotTestUNIX_FDs)
+say "hit enter"
+parse pull aha
+*/
+
 if otherAddress<>"" then
    address=otherAddress
 else
@@ -93,8 +93,6 @@ say "<---***>"~copies(7)
 
 call testSimpleTypes      conn, busName, objectPath
 
-/*
-*/
 call testSimpleArrayTypes conn, busName, objectPath
 call test2dimensionalArrayTypes conn, busName, objectPath
 call test3dimensionalArrayTypes conn, busName, objectPath
@@ -107,9 +105,6 @@ call testVariantTypes1 conn, busName, objectPath
 say "/*\ "~copies(10)
 call testVariantTypes2 conn, busName, objectPath
 
-/*
-*/
-
 say "--*--  "~copies(10)
 say "activating makeReplySlotDir and reissuing message call:"
 conn~makeReplySlotDir=.true
@@ -121,12 +116,14 @@ call dump2 res[res~last], "roundtrip, 'res["res~last"]'-content"
 say
 
 say "DbusVersion():" dbusVersion()
+conn~close
 call dumpConnectionStatistics conn
 say "DbusVersion():" dbusVersion()
 exit
 
 halt:    -- stop the message loop thread
    say " ... ctl-c was pressed ..."
+   conn~close
    call dumpConnectionStatistics conn
    exit -1
 
@@ -139,6 +136,7 @@ syntax:
    call dump2 arr, "additional"
    say
    call dump2 arr[arr~last], "additional[last]"  -- error slotDir
+   conn~close
    call dumpConnectionStatistics conn
    exit -2
 
@@ -176,7 +174,10 @@ say center(" testSimpleTypes ", 50, "-")
    say "interface="pp2(interface) "methodName="pp2(methodName)
 
 
-   order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
+   if conn~query("typecode", "h"), .client.unix_Fd<>.false then    -- does the connection support UNIX_FD's ?
+      order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
+   else
+      order=.array~of("s","g","o","y","b","n","q","i","u","x","t","d")
 
    typeName=.directory~new
    typeName["s"]="STRING"
@@ -246,7 +247,10 @@ numeric digits 20
 
 say center(" testSimpleArrayTypes ", 50, "-")
 
-   order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
+   if conn~query("typecode", "h"), .client.unix_Fd<>.false then    -- does the connection support UNIX_FD's ?
+      order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
+   else
+      order=.array~of("s","g","o","y","b","n","q","i","u","x","t","d")
 
    typeName=.directory~new
    typeName["s"]="STRING"
@@ -380,7 +384,10 @@ parse pull key
 
    say center(" test2dimensionalArrayTypes ", 50, "-")
 
-   order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
+   if conn~query("typecode", "h"), .client.unix_Fd<>.false then    -- does the connection support UNIX_FD's ?
+      order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
+   else
+      order=.array~of("s","g","o","y","b","n","q","i","u","x","t","d")
 
    typeName=.directory~new
    typeName["s"]="STRING"
@@ -496,7 +503,10 @@ say "---> debug dump2dArray(): arr~dimension="arr~dimension "arr~items="arr~item
 
    say center(" test3dimensionalArrayTypes ", 50, "-")
 
-   order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
+   if conn~query("typecode", "h"), .client.unix_Fd<>.false then    -- does the connection support UNIX_FD's ?
+      order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
+   else
+      order=.array~of("s","g","o","y","b","n","q","i","u","x","t","d")
 
    typeName=.directory~new
    typeName["s"]="STRING"
@@ -637,9 +647,17 @@ say center(" testMapTypes ", 50, "-")
 
    say "conn="pp2(conn) "busName="pp2(busName) "objectPath="pp2(objectPath)
    say "interface="pp2(interface) "methodName="pp2(methodName)
+/*
+say center('conn~query("typecode", "h")='pp2(conn~query("typecode", "h")), 100, '*')
+say "supported typecodes:" pp2(conn~query("typecode"))
+say "hit enter"
+parse pull x
+*/
 
-
-   order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
+   if conn~query("typecode", "h"), .client.unix_Fd<>.false then    -- does the connection support UNIX_FD's ?
+      order=.array~of("s","g","o","y","b","n","q","i","h","u","x","t","d")
+   else
+      order=.array~of("s","g","o","y","b","n","q","i","u","x","t","d")
 
    typeName=.directory~new
    typeName["s"]="STRING"

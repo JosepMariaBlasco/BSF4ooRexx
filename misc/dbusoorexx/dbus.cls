@@ -13,7 +13,7 @@
 
       cf.:        dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
 
-      version:    099.20110912
+      version:    100.20140730
 
       changes:    - 2011-07-20, rgf; DBusProxyObject:
                     - added proxy.dispatch(methodName[,args...])-method to send messages that
@@ -74,11 +74,23 @@
                                            removed "service.objectPath"; changed method "service.signal" to
                                            accept the arguments in the following order "objectPath,interface,member, ...args...",
                                            a signal is sent to all connections the service object is registered with
+                  - 2014-07, rgf: - rework in order to cater for libdbus-limitation "interaction only in thread
+                                    that created the connection": making sure that all interaction with
+                                    DBus occurs in the thread that established the connection to DBus; reshuffled
+                                    and changed strategies in DBUS.CLS and oorexxdbus.cc (both are closely interwined)
+                                    - Added mixin class Worker and WorkerMessage
+                                    - make sure that all connection related interactions with DBus occurs
+                                      only in the thread that was used to connect to DBus; this implies that
+                                      stopping a message loop causes that connection to be not usable from
+                                      ooRexx anymore!
+                                    - if an error condition is raised in the message loop thread, it will get
+                                      re-raised on the blocked thread upon return
+
 
       license:    Apache License 2.0
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2011 Rony G. Flatscher
+   Copyright 2011-2014 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -101,7 +113,10 @@
 */
 .local~dbus.dir=.directory~new
 
-.dbus.dir~version="099.20110912"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
+.dbus.dir~bDebug=.false -- .true
+.dbus.dir~bDebugServer=.false -- .true
+
+.dbus.dir~version="100.20140730"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
 
 .dbus.dir~DBUS_SERVICE_DBUS            ="org.freedesktop.DBus"    -- "The bus name used to talk to the bus itself."
 .dbus.dir~DBUS_PATH_DBUS               ="/org/freedesktop/DBus"   -- "The object path used to talk to the bus itself."
@@ -174,8 +189,11 @@ dataTypes["v"]="variant"   -- container
 -- dataTypes["r"]="struct"    -- container: not directly used, rather "(abc)"
 .dbus.dir~dataTypes=dataTypes -- save the data type defs
 
+-- TODO: do we want BSF4ooRexx loaded automatically or on request ?
 -- try to require BSF4ooRexx dynamically
-call dynamicRequiresBSF4ooRexx
+call dynamicRequiresBSF4ooRexx   -- requires BSF.CLS
+
+-- TODO: 2014-07-26, rgf: determine whether we need an "::OPTIONS DIGITS 20" (if that influences int64 and double conversions in native code)
 
 ::requires "dbusoorexx" LIBRARY  -- get access to the native routines and methods
 
@@ -194,9 +212,10 @@ any:
 /* Define the DBus class, which allows connecting, getting objects to talk to,
    adding own servers on the bus.
 */
-::class "DBus" public
+::class "DBus" public inherit Worker
 
 /* --- class methods ------ */
+-- TODO: 201407 rgf
 ::method init        class
   expose system session
   system=.nil
@@ -211,34 +230,55 @@ any:
    /* unique id for the computer                         */
 ::method machineID   class external "LIBRARY dbusoorexx DbusGetUniqueMachineId"
 
+-- TODO: 201407 rgf
 ::method system      class    /* returns the shared system bus connection */
   expose system
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "arg(1):" pp(arg(1))
+
+  if arg(1)="CLEAR", arg(2)=system then   -- remove cached connection to force a new one to be created
+  do
+-- say "... clearing system cache..."
+     system=.nil
+     return
+  end
+
   if system=.nil then         /* if not available yet, get and rember it   */
-     system=self~connect("system")
+     system=self~new("system")
   return system
 
+-- TODO: 201407 rgf
 ::method session     class    /* returns the shared session bus connection */
   expose session
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "arg(1):" pp(arg(1))
+
+  if arg(1)="CLEAR", arg(2)=session then  -- remove cached connection to force a new one to be created
+  do
+-- say "... clearing session cache ..."
+     session=.nil
+     return
+  end
+
+
   if session=.nil then        /* if not available yet, get and rember it   */
-     session=self~connect("session")
+     session=self~new("session")
   return session
 
-
-::method getSystemBus  class private external "LIBRARY dbusoorexx DbusNativeGetSystemBus"
-::method getSessionBus class private external "LIBRARY dbusoorexx DbusNativeGetSessionBus"
 
 
 ::method connect     class    /* connect to an existing dbus connection    */
   -- use strict arg address -- "address" can also be "system", "session"
-  forward message ("NEW")
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
+  forward message ("NEW")     -- let our version of NEW handle this
 
-/* Creates a new bus instance. */
 
-::method nativeConnectPrivate private external "LIBRARY dbusoorexx DbusNativeConnectionOpenPrivate"
-
+-- TODO: 201407 rgf
 ::method new         class
   expose system session
   use strict arg address
+
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
+
+  bus=self~new:.class   -- return barely initialized
 
   signal on syntax
   lcAddress=address~strip~lower
@@ -249,7 +289,8 @@ any:
         if system<>.nil then        /* shared message bus already cached, use it */
            return system
 
-        bus=self~getSystemBus(self~new:.class)
+        -- self~getSystemBus(bus)
+        bus~connectToAddress(lcaddress)  -- will start message loop
         system=bus
      end
      else
@@ -257,29 +298,132 @@ any:
         if session<>.nil then       /* shared message bus already cached, use it */
            return session
 
-        bus=self~getSessionBus(self~new:.class)
+        bus~connectToAddress(lcaddress)   -- will start message loop
         session=bus
      end
   end
   else      -- address was given
   do
-     bus=self~new:.class   -- return barely initialized
      bus~busType="private" -- rest will be initialized from native code
 
-     if address<>"native" then
-     do
-         bus~nativeConnectPrivate(address) -- create a private connection to the address
-     end
+     -- "native" sent by native code which will initialize the connection after
+     -- receiving the new dbus object
+    if address<>"native" then
+    do
+         -- bus~nativeConnectPrivate(address) -- create a private connection to the address
+-- TODO: 201407 - o.k. to do that here? If so, how about the "native" connection (probably from DBusServer's native peer)
+        -- bus~startupMessageLoop
+        bus~connectToAddress(address)    -- use address verbatimly
+    end
 
   end
   return bus
 
 syntax: raise propagate    -- raise in caller
 
+::attribute address           get
+
+::attribute pseudoAddress     set      -- 20140728, rgf: allows private server to set a pseudo address for each connected client
+  expose address
+  use strict arg address               -- just assign whatever we receive
+
 /* --- instance methods --- */
-/* ::method init: everything is implemented in native code, including setting attributes
-                  'address', 'uniqueBusName' and 'wellKnownBusName', if given
+/* much is implemented in native code, including setting attributes 'address',
+  'uniqueBusName' and 'wellKnownBusName', if given
 */
+::method init
+  expose cself busType address makeSlotDir makeReplySlotDir active -
+         internalRegisteredServiceObjects internalSignalListeners -
+         unmarshalByteArrayAsString -
+         collectStatistics statistics server sendEmptyReply -
+         haltAllThreadsOnUnexpectedError
+
+if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name)
+
+  cself=.nil                  /* will be set by a native method   */
+  busType=.nil                /* will be set by native method     */
+  address=.nil
+  server=.nil                 /* if a client connection to a private Rexx server this will be set by the native method  */
+  makeSlotDir=.true           /* by default create and pass slotDir as last argument on received signals or method calls */
+  makeReplySlotDir=.false     /* by default do not create a slotDir for a regular message reply; if set to .true
+                                 the return value, if it is not an array will be placed as the first value
+                                 into a newly created array; the slotDir value will be appended to the array */
+  active=.nil                 /* native code: sets to .true, if connection is being listened to, .false, if message loop is not available */
+  stopLoop=.false             /* native code: message loop will stop, when set to .true   */
+
+  internalRegisteredServiceObjects=.directory~new
+  internalSignalListeners         =.array~new
+  unmarshalByteArrayAsString      =.false /* if .true, then return 'ay' as strings */
+
+  sendEmptyReply                  =.true  /* if .true, then sends an empty reply upon a message call */
+
+  haltAllThreadsOnUnexpectedError=.false  -- set to .true when all running threads should be halted, if the
+                                          -- there is an unexpected Rexx condition while servicing a request
+
+  collectStatistics               =.true  /* if .true, simple statistics are gathered and stored in 'statistics' */
+  statistics                      =.directory~new
+  statistics~started=.dateTime~new  -- remember this connection's creation time, define initial counter values
+  statistics~countSentErrors      =0
+  statistics~countSentMessages    =0
+  statistics~countSentSignals     =0
+  statistics~countReceivedErrors  =0
+  statistics~countReceivedMessages=0
+  statistics~countReceivedSignals =0
+
+  forward class (super)    -- let superclass initialize (Worker class)
+
+/** Allows read access, returns <code>.true</code> if the connection's message loop thread is running,
+*   <code>.false</code> else.
+*   @since 2014-07-24
+*/
+::attribute active get
+
+/* Creates or gets a new bus instance. */
+::method nativeConnectPrivate private external "LIBRARY dbusoorexx DbusNativeConnectionOpenPrivate"
+::method nativeGetSystemBus   private external "LIBRARY dbusoorexx DbusNativeGetSystemBus"
+::method nativeGetSessionBus  private external "LIBRARY dbusoorexx DbusNativeGetSessionBus"
+
+
+::method connectToAddress -- unguarded
+   expose active
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
+  forward message (connectToAddress"_worker") continue
+  guard on when active=.true     -- block (wait) until message queue is running, otherwise we get lock-ups
+
+/** This method will connect to DBus in an own thread which then remains active for the connection's
+*   message loop. This way the problems with libdbus (not fully multithreading safe) should be fixed.
+*/
+::method connectToAddress_worker -- rgf, 20140722
+  expose active address
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
+  if active=.true then return    -- message loop already up and running
+
+  reply              -- start a new thread which will start the message loop and block
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "after reply"
+
+  use arg address    -- get desired address
+  if      address="session" then
+  do
+        self~nativeGetSessionBus(self)
+  end
+  else if address="system" then
+  do
+        self~nativeGetSystemBus(self)
+  end
+  else if address="native" then     -- this comes from native code in the context of a privat Server,
+  do
+      NOP
+  end
+  else
+  do
+say "   -> self~nativeConnectPrivate(address)" pp(address) "-->"
+        self~nativeConnectPrivate(address) -- create a private connection to the address
+say "   <- self~nativeConnectPrivate(address)"
+  end
+
+  self~startMessageLoop       -- will start message loop in its own thread
+
+
 
 /* controls whether a received message call without defined return value will return an empty message reply */
 ::attribute sendEmptyReply    get
@@ -316,7 +460,7 @@ syntax:
 
    /* attribute controls whether the arguments from a reply (result of calling a message on
       a remote DBUS object) will get appended with a slotDir-directory supplying possibly
-      useful information about the DBUS message; default: .false
+      useful information about the DBUS message; default: .true
    */
 ::attribute makeReplySlotDir get
 ::attribute makeReplySlotDir set       -- default: .false (do not append slotDir to result of a message call (turning result into an array object)
@@ -336,7 +480,7 @@ syntax:
       Rexx string instead of a Rexx array with individual bytes
    */
 ::attribute unmarshalByteArrayAsString get
-::attribute unmarshalByteArrayAsString set       -- default: .false (do not append slotDir to result of a message call (turning result into an array object)
+::attribute unmarshalByteArrayAsString set       -- default: .true (append slotDir to result of a message call (turning result into an array object)
   expose unmarshalByteArrayAsString
   use strict arg argUnmarshalByteArrayAsString=.true
 
@@ -353,64 +497,113 @@ syntax:
 ::attribute statistics              -- a directory
 ::attribute haltAllThreadsOnUnexpectedError  -- if set to .true, then an unexpected Rexx condition will cause all Rexx threads to be halted
 
-::method init
-  expose cself busType makeSlotDir makeReplySlotDir active -
-         internalRegisteredServiceObjects internalSignalListeners -
-         unmarshalByteArrayAsString -
-         collectStatistics statistics server sendEmptyReply -
-         haltAllThreadsOnUnexpectedError
 
-  cself=.nil                  /* will be set by a native method   */
-  busType=.nil                /* will be set by native method     */
-  server=.nil                 /* if a client connection to a private Rexx server this will be set by the native method  */
-  makeSlotDir=.true           /* by default create and pass slotDir as last argument on received signals or method calls */
-  makeReplySlotDir=.false     /* by default do not create a slotDir for a regular message reply; if set to .true
-                                 the return value, if it is not an array will be placed as the first value
-                                 into a newly created array; the slotDir value will be appended to the array */
-  active=.nil                 /* native code: sets to .true, if connection is being listened to, .false, if connection got closed */
-  internalRegisteredServiceObjects=.directory~new
-  internalSignalListeners         =.array~new
-  unmarshalByteArrayAsString      =.false /* if .true, then return 'ay' as strings */
+/** Method blocks until connection got closed and message loop thread stopped, turning attribute
+*   <code>active</code> to <code>.false</code>.
+*/
+::method waitOnConnectionClosed unguarded
+  expose active
+  guard on when active=.false
 
-  sendEmptyReply                  =.true  /* if .true, then sends an empty reply upon a message call */
+/*
+::method waitOnMessageLoop private unguarded  -- block invocation until message loop stopped
+  expose active
+  use arg value=.false
 
-  haltAllThreadsOnUnexpectedError=.false  -- set to .true when all running threads should be halted, if the
-                                          -- there is an unexpected Rexx condition while servicing a request
-
-  collectStatistics               =.true  /* if .true, simple statistics are gathered and stored in 'statistics' */
-  statistics                      =.directory~new
-  statistics~started=.dateTime~new  -- remember this connection's creation time, define initial counter values
-  statistics~countSentErrors      =0
-  statistics~countSentMessages    =0
-  statistics~countSentSignals     =0
-  statistics~countReceivedErrors  =0
-  statistics~countReceivedMessages=0
-  statistics~countReceivedSignals =0
-
+  guard on when active=value  -- resume, once the attribute gets the received Boolean value
+*/
 
 ::method nativeStartMessageLoop   private external "LIBRARY dbusoorexx DbusMessageLoop"
 
-::method waitOnMessageLoop private unguarded  -- block invocation until message loop stopped
-  expose active
-  use arg value
+-- DEPRECATED, FUNCTION REMOVED, raising a condition hinting of what to use instead !
 
-  guard on when active=value  -- resume, once the attribute gets the received Boolean value
+-- TODO: rgf, 20140728 - temporarily allow for everyone to use this method (for server connections)
+-- ::method startMessageLoop unguarded private
+::method startMessageLoop unguarded
+  expose active stopLoop address busType
+  -- expose stopLoop address busType
+if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "arrived"
+
+  signal on syntax
+-- TODO: rgf, 20140728: if public then raise an error, if attempting to start a running messageLoop
+  if active=.true then
+  do
+      info="(bustype='"||bustype"'"
+      if var("ADDRESS") then info=info", address='"address"'"
+      info=info")"
+      raise syntax 98.900 array ("Message loop for this connection" info "already active (running)")
+      -- raise syntax 98.900 array ("Message loop for this connection (address='"address"', busType='"||busType"') got stopped already, cannot re-start it")
+  end
+
+  if stopLoop=.true then   -- message loop got already stopped, we do not allow to restart it, a new conncection needs to be established
+  do
+      info="(bustype='"||bustype"'"
+      if var("ADDRESS") then info=info", address='"address"'"
+      info=info")"
+      raise syntax 98.900 array ("Message loop for this connection" info "got stopped, cannot use it anymore")
+      -- raise syntax 98.900 array ("Message loop for this connection (address='"address"', busType='"||busType"') got stopped already, cannot re-start it")
+  end
+
+  reply              -- start a new thread and start message loop
+
+if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "BEFORE: self~nativeStartMessageLoop"
+  self~nativeStartMessageLoop -- start message loop
+if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "AFTER : self~nativeStartMessageLoop"
+  return
+
+syntax: raise propagate
 
 
+-- 2014-07-23: do not allow to start message loop by third parties!
 ::method messageLoop unguarded      -- query, start, stop messageLoop, waitUntilStopped
-  expose active
+  expose active stopLoop bustype
   parse upper arg action .
 
--- say "self="pp2(self) "self~active="pp2(active)
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "action:" pp(action)
+
+  msg="Method [messageLoop] not available anymore! 'start' is done at connection creation time,"
+  msg=msg"'stop' is done in new method 'close', 'active' is replaced by the get attribute named 'active',"
+  msg=msg"'wait' is replaced by method 'waitOnConnectionClosed'."
+
+  signal on syntax
+  -- raise syntax 88.900 array ('Argument "start" not  "stop" not available anymore, use method "close" instead"'value'"')
+  raise syntax 88.900 array (msg)
+
+/*
+     if active=.true then
+     do
+        guard on
+        stopLoop=.true  -- stop message loop, independent of the conncection's type
+        -- remove session or system bus object from cache (this will cause a new connection to be created)
+        if wordpos(busType,"session system")>0 then
+           self~class~send(busType,"CLEAR", self)  -- if cached, remove this shared connection
+        guard off
+     end
+     return
+  end
+  return
+
+syntax: raise propagate
+
+
 
   act=action~left(1)
   if pos(act,"AW")=0 then
      act=action~left(3) -- "STA", "STO"
 
+  pos=wordpos(act, "A W")
+-- pos=wordpos(act, "A STO W")
+
+  if pos=0 then
+     raise syntax 88.916 array ('"action"', '"A[ctive]", "W[aitUntilStopped]"', action)
+--     raise syntax 88.916 array ('"action"', '"Sto[p]", "A[ctive]", "W[aitUntilStopped]"', action)
+
+/*
   pos=wordpos(act, "A STA STO W")
 
   if pos=0 then
-     raise syntax 88.916 array ('"action"', '"Sta[rt]", "Sto[p]", "A[ctive]", "W[ait]"', action)
+     raise syntax 88.916 array ('"action"', '"Sta[rt]", "Sto[p]", "A[ctive]", "W[aitUntilStopped]"', action)
+*/
 
   if act="A" then return active  -- messageLoop active/running? can be .true, .false
 
@@ -426,42 +619,118 @@ syntax:
 
   if act="STO" then        -- stop message loop
   do
+     raise syntax 88.900 array ('Argument "stop" not available anymore, use method "close" instead"'value'"')
+/*
      if active=.true then
      do
         guard on
-        active=.false
+        stopLoop=.true  -- stop message loop, independent of the conncection's type
+        -- remove session or system bus object from cache (this will cause a new connection to be created)
+        if wordpos(busType,"session system")>0 then
+           self~class~send(busType,"CLEAR", self)  -- if cached, remove this shared connection
         guard off
      end
      return
+*/
   end
-
-  if active=.true then return -- already running
-
-   -- start message loop
-  reply              -- start a new thread and start message loop
-  signal on syntax
-   -- attribute "active" must be .false at this time, will be set to .true in native code !
-  self~nativeStartMessageLoop -- start message loop
   return
+*/
 
 syntax: raise propagate
 
 
-::method nativeCloseConnection    private EXTERNAL "LIBRARY dbusoorexx DbusNativeConnectionClose"
-::method close             -- close (private) connection
-  expose busType statistics cself
 
-  self~messageLoop("stop")    -- stop message loop, independent of the connection's type
+-- TODO: 201407, rgf: do we still need this or let us remove it ?
+/** Block until connection (message loop) gets closed (attribute <code>active</code> turns <code>.false</code>. */
+::method waitUntilClosed unguarded
+  expose active
+  guard on when active=.false
+
+
+::method nativeCloseConnection    private EXTERNAL "LIBRARY dbusoorexx DbusNativeConnectionClose"
+
+::method close -- unguarded   -- close (private) connection
+  expose busType address statistics active stopLoop
+
+if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name)
+
+  -- TODO: ?if stopLoop=.true, then already closed, raise syntax error?
+  if active=.false then return  -- nothing to close anymo
+
+  signal on syntax
+
+  -- close connection by shutting down message loop thread (which must be used for communication)
+  stopLoop=.true  -- stop message loop, independent of the conncection's type
+--  guard off       -- allow message loop to guard
+-- say "::close #2 - about to do a guard on" pp2(self) pp(bustype) pp(address)
+  guard on when active=.false -- wait until message loop is stopped (attribute will be set there in native code)
   statistics~closed=.dateTime~new   -- remember time of closing
+
   if busType="private" then   -- if a private connection, then truly close it
   do
--- send the "Disconnected" signal to the server, doesn't work :(
--- self~message("signal", "/org/freedesktop/DBus/Local", "org.freedesktop.DBus.Local", "Disconnected", "")
 
-     self~nativeCloseConnection
---     say self ":" "! ---> NATIVE CLOSE CONNECTION GOT CARRIED OUT <--- !" "busType:" pp2(busType) "self:" pp2(self) "server:" pp2(server)
+if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name)  "==> busType="pp(busType) "address="pp(address) "about to close connection!"
+
+     self~nativeCloseConnection        -- close the connection for good, will set CSELF to .nil
   end
-  cself=.nil               -- from now on this instance of a connection is not usable anymore
+  return
+
+syntax:  raise propagate
+
+
+
+
+
+-- keep these private so to not blow up the amount of methods one needs to be aware of
+::method nativeIsConnected       private external "LIBRARY dbusoorexx DbusConnectionIsConnected"
+::method nativeIsAuthenticated   private external "LIBRARY dbusoorexx DbusConnectionIsAuthenticated"
+::method nativeCanSendType       private external "LIBRARY dbusoorexx DbusConnectionCanSendType"
+
+::method query unguarded   -- reroute invocation through message loop thread
+  expose active stopLoop address bustype
+  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
+
+  signal on syntax
+  parse upper arg option +1 1 option3 +3 .      -- get first char and first three chars in uppercase
+
+  optionPos=pos(option, "ACOT")
+  if optionPos=0 then    -- option not identified just as of yet
+  do
+     option3Pos=wordPos(option3, "ISA ISC ISO")
+     if option3Pos>0 then
+     do
+        option="AOO"~subChar(option3Pos)        -- set option
+     end
+     else
+     do
+        raise syntax 88.916 array ('"option"', '"A[uthenticated]" or "IsA[uthenticated]", "O[pen]" or "IsO[pen]" or "C[onnected]" or "IsC[onnected]", "T[ypecode]"', arg(1))
+     end
+  end
+  else
+  do
+     if option="C" then option="O"  -- test "Open" functionality
+  end
+
+  if option="O" then    -- this (is connection open/connected) we can determine without using the connection
+  do
+      guard on          -- make sure that no one can change the values in the middle of the following tests
+      return active
+  end
+
+  if stopLoop=.true then   -- message loop got already stopped, we do not allow to restart it, a new conncection needs to be established
+  do
+      signal on syntax
+      info="(bustype='"||bustype"'"
+      if var("ADDRESS") then info=info", address='"address"'"
+      info=info")"
+      raise syntax 98.900 array ("Message loop for this connection" info "got stopped, cannot use it anymore to query connection properties")
+  end
+
+      -- add "_worker" to message name, submit any received arguments, dispatch via Worker's infrastructure
+  forward message ("POSTMESSAGE") array (.Message~new(self, .context~name"_worker", 'A', arg(1, "Array")))
+
+syntax: raise propagate
+
 
 
 /* Fold functions/methods that query the state or abilities of a connection.
@@ -470,9 +739,10 @@ syntax: raise propagate
    "Supports" or "TypeCode" are synonyms: if no second argument, returns all supported type codes; if
                                           second argument given, returns .true, if all type codes are supported, .false if any one is not supported
 */
-::method query
+::method query_worker
   parse upper arg option +1 1 option3 +3 .      -- get first char and first three chars in uppercase
 
+  signal on syntax
   optionPos=pos(option, "ACOT")
   if optionPos=0 then    -- option not identified just as of yet
   do
@@ -499,22 +769,10 @@ syntax: raise propagate
   use strict arg nix, char  -- fetch arguments
   return self~canSendTypeCode(char)    -- test whether given type codes are supported
 
+syntax: raise propagate
 
-::method nativeIsConnected       private external "LIBRARY dbusoorexx DbusConnectionIsConnected"
-::method nativeIsAuthenticated   private external "LIBRARY dbusoorexx DbusConnectionIsAuthenticated"
-/*
-::method isOpen            -- returns .true if connected (open), .false else; synonym for "isConnected"
-  return self~nativeIsConnected
 
-::method isConnected       -- returns .true if connected (open), .false else
-  return self~nativeIsConnected
-
-::method isAuthenticated
-  return self~nativeIsAuthenticated
-*/
-
--- keep these private so to not blow up the amount of methods one needs to be aware of
-::method nativeCanSendType       private external "LIBRARY dbusoorexx DbusConnectionCanSendType"
+-- TODO: 201407 rgf - assuming o.k. in any thread
 /*
       supports() ... return "typeCodes={a,...,x}" ... returns string denoting available types
       supports("T[ypecode]", typecode)            ... returns .false/.true; typecode can be a string: only returns .true then, if all characters are supported type codes
@@ -538,11 +796,6 @@ syntax: raise propagate
 
   use strict arg char  -- fetch arguments
 
-/*
-  if kind~strip~left(1)~upper<>"T" then
-     raise syntax 88.916 array ('"kind"', '"T[ypecode]"', action)
-*/
-
   do i=1 to char~length          -- iterate over characters
      if self~nativeCanSendType(char~subChar(i))=.false then return .false
   end
@@ -550,13 +803,17 @@ syntax: raise propagate
 
 
 
-::method uninit
-  expose busType cself
+::method uninit            -- make sure we stop the message loop thread, if necessary
+  expose busType active
 
---  say self"::UNINIT ! cself="pp2(cself) "busType="pp2(busType) "self:" pp2(self)
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "#1 (kick off loop)"
 
-  if cself<>.nil then      -- a DBUS connection pointer in hand ?
+  -- if cself<>.nil then      -- a DBUS connection pointer in hand ?
+  if active=.true then     -- is the message loop still active for this connection ?
+  do
      self~close            -- make sure connection gets closed
+  end
+
 
 
    /* add listener object, syntax:  - a[dd] | r[emove], object [,[interface] [,signalname]]
@@ -579,11 +836,13 @@ syntax: raise propagate
      else
         o=.DBUSSignalListener~new(object, interface, signalName)
 
-     guard on
+     guard on     -- accessing attributes
      internalSignalListeners~append(o)
      guard off
 
-     self~messageLoop("start")   -- start message loop
+-- TODO: really to start/stop message loop ? No - message loop is connection-related, not instance related
+-- TODO: 201407 rgf
+--     self~messageLoop("start")   -- start message loop
 
      return .true
   end
@@ -592,6 +851,7 @@ syntax: raise propagate
   do
      use strict arg action, object=.nil, interface=.nil, signalName=.nil
      count=0
+     guard on     -- accessing attributes
      do i=internalSignalListeners~size to 1 by -1
         o=internalSignalListeners~at(i)
 
@@ -603,12 +863,18 @@ syntax: raise propagate
           count += 1
         end
      end
+     guard off
 
+-- TODO: really to start/stop message loop ?
+-- TODO: 201407 rgf
+/*
      guard on        -- how many listener and service objects are there ?
      nr=internalSignalListeners~items+internalRegisteredServiceObjects~items
      guard off
-     if nr=0 then    -- no registered listener & server objects, make sure message loop is stopped
-        self~messageLoop("stop")
+
+    if nr=0 then    -- no registered listener & server objects, make sure message loop is stopped
+       self~messageLoop("stop")
+*/
 
      return count
   end
@@ -625,6 +891,7 @@ syntax:  raise propagate
 
 
 
+-- TODO: 201407 rgf
    /* add service Rexx object, syntax:  - a[dd], objectPath, rexxObject
                                         - r[emove], objectPath
                                         - g[etRegisteredServiceObjects]
@@ -668,7 +935,9 @@ syntax:  raise propagate
      internalRegisteredServiceObjects[objectPath]=rexxObject
      guard off
 
-     self~messageLoop("start")   -- start message loop
+-- TODO: really to start/stop message loop ?
+-- TODO: 201407, rgf, do not think so, we now have one connection-based message loop only!
+--     self~messageLoop("start")   -- start message loop
 
      return oldValue
   end
@@ -701,12 +970,16 @@ syntax:  raise propagate
         guard off
      end
 
+-- TODO: really to start/stop message loop ?
+-- TODO: 201407, rgf, no, we use the connection message loop now
+/*
      guard on        -- how many listener and service objects are there ?
      nr=internalSignalListeners~items+internalRegisteredServiceObjects~items
      guard off
 
      if nr=0 then    -- no registered listener & server objects, make sure message loop is stopped
         self~messageLoop("stop")
+*/
 
      return count
   end
@@ -726,26 +999,71 @@ syntax:  raise propagate
 
 
 ::attribute cself                   /* native's representation of this dbus object, set in native code */
-::attribute busType                 /* bustype for the dbus conneciton, if any;
+::attribute busType                 /* bustype for the dbus connection, if any;
                                        DBusBusType defines types that will be named
                                        "session", "system", "starter" and maybe "private" in Rexx*/
 ::attribute server                  /* if set, connection belongs to a DBusServer (i.e. a client connection) */
 
+-- TODO: 201407 rgf
    /* unique id for the bus                              */
 ::method    nativeUniqueBusID   private external "LIBRARY dbusoorexx DbusGetUniqueBusId"
 ::method    uniqueBusID
+  expose stopLoop address bustype
+  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
+
+  if stopLoop=.true then   -- message loop got already stopped, we do not allow to restart it, a new conncection needs to be established
+  do
+      signal on syntax
+      info="(bustype='"||bustype"'"
+      if var("ADDRESS") then info=info", address='"address"'"
+      info=info")"
+      raise syntax 98.900 array ("Message loop for this connection" info "got stopped, cannot use it anymore")
+  end
+
+  guard off    -- from now on unguarded to not block anything
+
+      -- add "_worker" to message name, submit any received arguments, dispatch via Worker's infrastructure
+  forward message ("POSTMESSAGE") array (.Message~new(self, .context~name"_worker", 'A', arg(1, "Array")))
+
+syntax: raise propagate
+
+::method    uniqueBusID_worker unguarded
    expose bustype
    if bustype="private" then return "private:rexx:"self~identityHash
    return self~nativeUniqueBusID
 
 
+
+
+-- TODO: 201407 rgf
    -- folding into a method busName( "request" | {"release"| "yield"} | "hasOwner" | "uniqueName", name [, flags] )
    /* unique bus name for the dbus connection            */
-::method  nativeUniqueBusName   private unguarded external "LIBRARY dbusoorexx DbusGetUniqueBusName"
+::method  nativeUniqueBusName   private external "LIBRARY dbusoorexx DbusGetUniqueBusName"
+::method  nativeRequestBusName  private external "LIBRARY dbusoorexx DbusBusNameRequest"
+::method  nativeBusNameHasOwner private external "LIBRARY dbusoorexx DbusBusNameHasOwner"   -- deprecated!
+::method  nativeReleaseBusName  private external "LIBRARY dbusoorexx DbusBusNameRelease"
 
-::method  nativeRequestBusName  private unguarded external "LIBRARY dbusoorexx DbusBusNameRequest"
-::method  nativeBusNameHasOwner private unguarded external "LIBRARY dbusoorexx DbusBusNameHasOwner"   -- deprecated!
-::method  nativeReleaseBusName  private unguarded external "LIBRARY dbusoorexx DbusBusNameRelease"
+
+::method busName           -- route invocation through the message loop thread
+  expose stopLoop address bustype
+  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
+
+  if stopLoop=.true then   -- message loop got already stopped, we do not allow to restart it, a new conncection needs to be established
+  do
+      signal on syntax
+      info="(bustype='"||bustype"'"
+      if var("ADDRESS") then info=info", address='"address"'"
+      info=info")"
+      raise syntax 98.900 array ("Message loop for this connection" info "got stopped, cannot use it anymore")
+  end
+
+  guard off    -- from now on unguarded to not block anything
+
+      -- add "_worker" to message name, submit any received arguments, dispatch via Worker's infrastructure
+  forward message ("POSTMESSAGE") array (.Message~new(self, .context~name"_worker", 'A', arg(1, "Array")))
+
+syntax: raise propagate
+
 
    /* folding methods of the "busName" group into one parametrized method,
       cf <http://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-names>
@@ -764,7 +1082,7 @@ syntax:  raise propagate
 
       -> constants directly available via .dbus.dir
    */
-::method busName unguarded
+::method busName_worker unguarded
   parse upper arg function .
 
   signal on syntax
@@ -815,8 +1133,30 @@ syntax:
 ::method  nativeAddMatch        private external "LIBRARY dbusoorexx DbusBusAddMatch"
 ::method  nativeRemoveMatch     private external "LIBRARY dbusoorexx DbusBusRemoveMatch"
 
+/** Delegate invocation to message loop thread using the Worker's class infrastructure. This way
+    invoking DBUs-connection related invocations take place in the thread, that
+*/
+::method match -- reroute invocation through message loop thread
+  expose stopLoop address bustype
+  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "/// arg(5):" pp(arg(5))
+
+  if stopLoop=.true then   -- message loop got already stopped, we do not allow to restart it, a new conncection needs to be established
+  do
+      signal on syntax
+      info="(bustype='"||bustype"'"
+      if var("ADDRESS") then info=info", address='"address"'"
+      info=info")"
+      raise syntax 98.900 array ("Message loop for this connection" info "got stopped, cannot use it anymore")
+  end
+
+  guard off    -- from now on unguarded to not block anything
+      -- add "_worker" to message name, submit any received arguments, dispatch via Worker's infrastructure
+  forward message ("POSTMESSAGE") array (.Message~new(self, .context~name"_worker", 'A', arg(1, "Array")))
+
+syntax: raise propagate
+
    /* folding methods of the "match" group into one parametrized method */
-::method match
+::method match_worker
   use strict arg action, filter, block=.false
 
   signal on syntax
@@ -834,23 +1174,50 @@ syntax:
                      else self~nativeRemoveMatch(filter, block)
   return
 
-syntax:
-  raise propagate
+syntax: raise propagate
 
 
 
+-- o.k. the following two native messages will be invoked in the message loop, cf. method "message"
 ::method  nativeSignalMessage    private external "LIBRARY dbusoorexx DbusBusSignalMessage"
 ::method  nativeCallMessage      private external "LIBRARY dbusoorexx DbusBusCallMessage"
 
+
    /* folding methods of the "message" group into one parametrized method */
-::method message        -- send message to service object
-  expose cself
+::method message -- send message to service object; reroute invocation through message loop thread
+  expose stopLoop address bustype
+  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "/// arg(5):" pp(arg(5))
+
+  if stopLoop=.true then   -- message loop got already stopped, we do not allow to restart it, a new conncection needs to be established
+  do
+      signal on syntax
+      info="(bustype='"||bustype"'"
+      if var("ADDRESS") then info=info", address='"address"'"
+      info=info")"
+      raise syntax 98.900 array ("Message loop for this connection" info "got stopped, cannot use it anymore")
+  end
+
+  guard off    -- from now on unguarded to not block anything
+
+      -- add "_worker" to message name, submit any received arguments, dispatch via Worker's infrastructure
+  forward message ("POSTMESSAGE") array (.Message~new(self, .context~name"_worker", 'A', arg(1, "Array")))
+
+syntax: raise propagate
+
+
+::method message_worker          -- send message to service object
+  expose cself active
   use strict arg function, ...
+
+  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
 
   signal on syntax
 
   if cself=.nil then    -- connection got closed, cannot use it anymore
      raise syntax 93.900 array ('Connection is closed, hence cannot be used anymore')
+
+  if active=.false then -- connection got closed, cannot use it anymore
+     raise syntax 93.900 array ('Message loop for connection is not active (not running yet/anymore)')
 
   firstLetter=function~strip~left(1)~upper
   if pos(firstLetter,"CS")=0 then
@@ -909,7 +1276,7 @@ syntax:
 
 
 
-::method getObject                     -- request remote object, return a Rexx proxy object to allow interaction with it
+::method getObject unguarded           -- request remote object, return a Rexx proxy object to allow interaction with it
   use strict arg busName, objectPath
 
   signal on syntax
@@ -928,7 +1295,7 @@ syntax:
 
 
 
-::method getObjectPaths    -- return an array of object paths for the supplied bus name / service name
+::method getObjectPaths unguarded   -- return an array of object paths for the supplied bus name / service name
   use strict arg busName
 
   objectPathList=.array~new
@@ -943,7 +1310,7 @@ syntax:
 
 
 
-::method workerGetObjectPaths private     -- interrogates service possessing bus/service name for object paths (if that service supports that)
+::method workerGetObjectPaths unguarded private     -- interrogates service possessing bus/service name for object paths (if that service supports that)
    use arg objPath, busName, objectPathList
 
    signal on syntax
@@ -988,6 +1355,7 @@ syntax:  -- mostlikely: org.freedesktop.DBus.Error.Reply or org.freedesktop.DBus
 
 
 
+-- TODO: 201407 rgf
    /* ---------------------------------------------------------------------------------------- */
    /* as of 2011-07-05 ooRexx from trunk does not support UTF-8, hence depending on BSF4ooRexx */
 ::routine stringToUtf8 public    -- needs BSF4ooRexx
@@ -1021,6 +1389,7 @@ utf8: procedure
   return out
 
 
+-- TODO: 201407 rgf
    /* ---------------------------------------------------------------------------------------- */
 ::routine utf8ToString public    -- needs BSF4ooRexx
   parse arg str
@@ -1033,12 +1402,12 @@ utf8: procedure
 
   signal on syntax
 
-  res=dbusDataType(signature,"s")
+  res=dbusDataType(signature,"s")   -- check whether valid DBus signature
 
   if res<>.true then
      raise syntax 93.900 array("'signature':" res)
 
-  return .array~of("useThisSignature="signature,argument)
+  return .array~of("useThisSignature="signature,argument)   -- native code looks for "useThisSignature="
   -- return .array~of("variantSignature="signature,argument)
 
 syntax: raise propagate
@@ -1064,6 +1433,7 @@ syntax: raise propagate
   expose proxy.busname proxy.connection proxy.objectPath proxy.methods proxy.introspectData
   use strict arg proxy.connection, proxy.busname, proxy.objectPath
 
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
   proxy.introspectRootNode=.nil
   proxy.introspectData    =""
 
@@ -1104,6 +1474,7 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
 ::method proxy.parseIntrospectData      -- parse introspect data, memorize introspectData and introspectFileName, if any
   expose proxy.introspectData proxy.introspectFileName
   use strict arg introData
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
 
   signal on syntax
   .ArgUtil~validateClass("introspectData", introData, .string) -- check for correct type
@@ -1134,6 +1505,7 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
 
 ::METHOD proxy.dispatch                -- allow sending messages that would be intercepted on the Rexx side (e.g. by .Object)
    parse arg methodName
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
    -- create UNKNOWN format (first argument is unknown method name)
    self~unknown(methodName, arg(2, 'A'))
    if var('RESULT') then return result -- if a return value given, return it
@@ -1143,6 +1515,7 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
 ::method unknown        -- implements sending message calls to remote object
   expose proxy.busname proxy.connection proxy.objectPath proxy.methods
   use arg msgName, msgArgs
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
 
   signal on syntax
   interface=""
@@ -1231,13 +1604,14 @@ syntax: raise propagate   -- raise condition in caller
 
 ::method init
   expose listenerObject interface signalName
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg listenerObject, interface=.nil, signalName=.nil
 
 ::attribute listenerObject
 ::attribute interface
 ::attribute signalName
 
-
+-- TODO: 201407: Sebastian Margiol suggested to add an UNKNOWN method; but then programmers might not realize what else they get?
 
 
 /* =============================================================================== */
@@ -1250,6 +1624,7 @@ syntax: raise propagate   -- raise condition in caller
 
 ::method init                 -- intorData, service.connection, service.objectPath; introData may be supplied later, using the respective methods
   expose  service.connections service.introspectRootNode service.methods
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 --  expose  service.connection service.objectPath service.introspectRootNode service.methods
 --  use strict arg introData=.nil, service.connection=.nil, service.objectPath=.nil
   use strict arg introData=.nil
@@ -1275,6 +1650,7 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
 
 ::method service.parseIntrospectData      -- parse introspect data, memorize introspectData and introspectFileName, if any
   expose service.introspectData service.introspectFileName
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg introData
 
   signal on syntax
@@ -1309,6 +1685,7 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
 
 ::method    Introspect              -- return introspection data to client
   expose    service.introspectData
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   return dbus.box("s", service.introspectData)
 
 ::attribute service.connections              /* object's connection to use  */
@@ -1375,6 +1752,7 @@ syntax: raise propagate
 ::method service.sendSignal   -- utility method to ease emitting signals from the service object;
                               -- will emit the signal to all connections this service object is registered with
   expose service.methods service.connections
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 --  expose service.methods service.connection service.objectPath
   use strict arg objectPath=.nil, interface="", member, ...
 
@@ -1452,14 +1830,20 @@ syntax:raise propagate
                /* service requests  */
 ::method unknown
   expose service.methods
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use arg msgName, msgArgs
+-- call dump2 msgArgs, pp2(self)"::UNKNOWN" pp(msgName)
 
-  errorText='Object "'self'" does not understand message "'msgName'"'
+  errorText='Object"' self '"does not understand message "'msgName'"'
 
   slotDir=.nil
   if msgArgs~isA(.array), msgArgs~size>0 then
+  do
      slotDir=msgArgs[msgArgs~last]  /* contains useful information about method invocation,
                                       like method name, method type, signature, etc.  */
+     if \slotDir~isA(.directory) then
+        slotDir=.nil
+  end
 
   /* if an org.freedesktop.DBus.Properties Get() or Set() invocation, reroute them to the
      respective Rexx attribute get/set */
@@ -1572,6 +1956,7 @@ syntax_set:       -- a syntax error occurred (due to wrong number of arguments?)
 */
 ::routine DbusDataType public    -- check or determine whether dbus datatype
   parse arg value, type .
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
 
@@ -1872,16 +2257,19 @@ syntax:
   raise propagate       -- raise in caller
 
 
-
+-- TODO: 201407: still .true ???
 /* as of 2011-07-29: not yet implemented in full in native code, hence not operational */
 
 /* =============================== DBusServer ====================================================== */
 
+-- TODO: 20140722 - which message loop to spawn and to control, just one, or multiples ?
 /* ------------------------------ class definition ------------------------------ */
 ::class "DBusServer"   public
 ::method init
   expose cself address allowAnonymous defaultService defaultListener connections  -
          watchLoopActive watchlist timeoutLoopActive watchConnections
+if .dbus.dir~bDebugServer=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+
   use strict arg address, defaultService=.nil, defaultListener=.nil, allowAnonymous=.false
 
   .ArgUtil~validateClass("address", address, .string)
@@ -1901,18 +2289,23 @@ syntax:
 
 ::attribute cself                   /* native's representation of this dbus object, set in native code */
 ::attribute address           get      -- address of the server
+
 ::attribute allowAnonymous             -- allow anonymous clients to connect
 ::attribute defaultService             -- default Rexx service object, used, if no matching entry found in internalRegisteredServiceObjects
 ::attribute defaultListener            -- default Rexx listener object, used, if internalSignalListeners is empty
 ::attribute connections get            -- list of established connections
   expose connections
+if .dbus.dir~bDebugServer=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   return connections~copy              -- return a copy of the current connections
 
 ::attribute watchLoopActive  get       -- indicates whether the server message loop is active or not
 
 ::method newConnection     -- new connection to this server received (from native code)
   expose defaultService defaultListener connections watchConnections
+if .dbus.dir~bDebugServer=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg conn
+
+  conn~startMessageLoop       -- TODO: rgf, 20140728
 
 -- signal on syntax
 -- say pp2(self)"::newConnection - just received a new connection conn="pp2(conn) "..." "defaultService~class="pp2(defaultService~class)
@@ -1923,8 +2316,8 @@ syntax:
      if defaultService~isA(.DBusServiceObject) then
      do
         aCopy=defaultService~copy         -- each DBusServiceObject keeps its own connection to its client
-        aCopy~service.connection=conn     -- assign this connection
-        aCopy~service.objectpath=.nil     -- make sure no object path
+        aCopy~service.connections~put(conn)     -- assign this connection
+        -- aCopy~service.objectpath=.nil     -- make sure no object path
         conn~serviceObject("add", "default", aCopy)   -- will start message loop automatically
      end
      else   -- plain object
@@ -1938,10 +2331,12 @@ syntax:
      conn~listener("add", defaultListener)                  -- will start message loop automatically
   end
 
+  -- TODO: rgf, temporarily disable, 28.7.2014
   if watchConnections=.false then      -- start the watchConnections thread
      self~watchConnections
 
 -- say pp2(self)"::newConnection - conn~messageLoop('active'):" pp2(conn~messageLoop('active'))
+-- say pp2(self)"::newConnection - conn~messageLoop('active'):" pp2(conn~active)
 -- say pp2(self)"::newConnection -" pp2(conn) "about to leave."
   return
 
@@ -1953,63 +2348,85 @@ syntax:
 */
 
 
+-- TODO: really to start/stop message loop ?
 ::method disconnect                    -- invoked from native code (not reliably invoked all the time as of 1.6.4 on Ubuntu)
   expose connections
+if .dbus.dir~bDebugServer=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg conn
 
 -- say "..." self"::disconnect, 'conn'="pp2(conn)
-  conn~messageLoop("stop")             -- stop the connection's message loop
-  res=connections~removeItem(conn)     -- remove the disconnected connection from the client
+--  conn~messageLoop("stop")             -- stop the connection's message loop
   conn~close                           -- make sure we cannot use it anymore (it wouldn't work)
+  res=connections~removeItem(conn)     -- remove the disconnected connection from the client
 
 
-::method nativeStartServerWatchLoop   private external "LIBRARY dbusoorexx DbusServerWatchLoop"
-::method nativeServerStartup      private external "LIBRARY dbusoorexx DbusNativeServerStartup"
+::method nativeServerWatchLoop   private external "LIBRARY dbusoorexx DbusServerWatchLoop"
+::method nativeServerStartup          private external "LIBRARY dbusoorexx DbusNativeServerStartup"
 ::method startup                  unguarded  -- startup server
   expose allowAnonymous cself address
+if .dbus.dir~bDebugServer=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   if cself<>.nil then
      raise syntax 93.900 array (self": server was already started")
 
   -- return self~nativeServerID
 -- say "address:" pp2(address) "cself="pp2(cself)
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "about to: self~nativeServerStartup"
   self~nativeServerStartup(address) -- create server listening on given address
 
   reply                             -- create a new thread
-  self~nativeStartServerWatchLoop   -- start the server message loop on the new thread
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "BEFORE: self~nativeServerWatchLoop"
+  self~nativeServerWatchLoop   -- start the server message loop on the new thread
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "AFTER : self~nativeServerWatchLoop"
 
 
 
 -- as of DBus 1.4.14, the private server does not receive a "Disconnected" signal
 ::method watchConnections  unguarded   -- check whether client connections are available, if not disconnect the stalled connecition
   expose connections watchConnections
+if .dbus.dir~bDebugServer=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg sleepTime=.1 -- check every 1/10 second
+
+-- TODO: rgf, make sleepTime higher to not disturb debug output
+sleepTime=1   -- try every second
+
 
   guard on
   watchConnections=.true      -- indicate that the watch Connections thread is started
   guard off
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "before reply"
   reply
 
 -- say "... ... probing" pp2(conn) "sleepTime:" pp2(sleepTime) "..."
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "after reply, BEFORE: entering the loop"
 
   signal on halt
   do forever while connections~items>0 -- as long as client connections, probe them
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "about to sleep" pp(sleepTime) "secs ..."
+
      call sysSleep sleepTime  -- sleep
+
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "awoke, connections~items="pp2(connections~items)
      guard on
      arr=connections~copy     -- get a copy of all connections
      guard off
      do conn over arr         -- iterate over all client connections and probe them
 -- say "... ... testing" pp2(conn)": conn~isOpen:" pp2(conn~isOpen)  "..."
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "conn~query('open': --> before, conn="pp2(conn) conn~query('open')
         if conn~query("open")=.false then
         do
 -- say "... ... BINGO! " pp2(conn) "not connected/open anymore, DISCONNECTing connection !"
-           self~disconnect(conn)
+if .dbus.dir~bDebugServer=.true then say "!!!" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "conn~query('open': --> DISCONNECTING conn="pp2(conn)
+           self~disconnect(conn)             -- disconnect will remove closed conn from connections !
         end
      end
   end
+if .dbus.dir~bDebugServer=.true then say "\\\" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "about to GUARD ON, to prepare to leave ..."
   guard on
   watchConnections=.false
   guard off
+
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(bsfGetTid()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "AFTER, about to return from method"
   return
 
 halt:       -- a HALT condition, make sure all known connections get closed
@@ -2026,6 +2443,7 @@ halt:       -- a HALT condition, make sure all known connections get closed
 ::method nativeStartServerTimeoutLoop   private external "LIBRARY dbusoorexx DbusServerTimeoutLoop"
 ::method timerLoop         unguarded         -- "START" or "STOP"
   expose timeoutLoopActive
+if .dbus.dir~bDebugServer=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   parse upper arg action +3
 
   if action="STO" then
@@ -2053,6 +2471,7 @@ halt:       -- a HALT condition, make sure all known connections get closed
 ::method nativeServerShutdown       private external "LIBRARY dbusoorexx DbusNativeServerDisconnect"
 ::method shutdown                   unguarded   -- shutdown server
   expose connections cself watchLoopActive
+if .dbus.dir~bDebugServer=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
 -- say "..." .dateTime~new " arrived in shutdown, cself="pp2(cself) "..."
 -- say "."~copies(50)
@@ -2076,6 +2495,7 @@ halt:       -- a HALT condition, make sure all known connections get closed
 ::method nativeServerID             private external "LIBRARY dbusoorexx DbusNativeServerGetId"
 ::method serverID
   expose cself
+if .dbus.dir~bDebugServer=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if cself=.nil then return .nil
   return self~nativeServerID
 
@@ -2083,6 +2503,7 @@ halt:       -- a HALT condition, make sure all known connections get closed
 ::method nativeActive               private external "LIBRARY dbusoorexx DbusNativeServerIsActive"
 ::method active
   expose cself
+if .dbus.dir~bDebugServer=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if cself=.nil then return .false
   return self~nativeActive
 
@@ -2090,6 +2511,7 @@ halt:       -- a HALT condition, make sure all known connections get closed
 ::method nativeServerAddress        private external "LIBRARY dbusoorexx DbusNativeServerGetAddress"
 ::method serverAddress
   expose cself
+if .dbus.dir~bDebugServer=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if cself=.nil then return .nil
   return self~nativeServerAddress
 
@@ -2954,4 +3376,234 @@ parseObjPath: procedure expose paths   -- create paths and save in relation
 ::attribute paths get      -- allow access to the relation with object path fragments pointing to next local fragment
 
 
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------
+/** This class allows for collecting messages to be executed in the same thread. The
+*   event loop needs to invoke the <code>executeQueuedMessages</code>.
+*   To add a message to the message queue use the method <code>postMessage</code>. To
+*   abort all queued messages use the method <code>abortQueuedMessages</code>.
+*   This class can be inherited by any other class, because its baseclass is the ooRexx
+*   root class <code>Object</code>.
+*/
+
+::class Worker mixinclass object
+
+/** Constructor method, initializing the <code>queuedMessages</code> attribute. */
+::method init
+  expose queuedMessages
+  queuedMessages=.queue~new
+  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "WORKER"
+  forward class (super)
+
+
+/** This method sends all the messages in the message queue and sets information on the
+*   WorkerMethod object to ease further processing. This method needs to be invoked from the
+*   thread that established the dbus connection in order for libdbus to work correctly.
+*/
+::method executeQueuedMessages
+  expose queuedMessages
+
+--  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "queuedMessages:" pp(queuedMessages~items)
+
+  signal on any   -- trap any error condition to allow us to re-raise any of the trappable conditions in the blocked thread later
+
+  do while queuedMessages~items>0
+     workerMessage=queuedMessages~pull    -- pull workerMessage object
+     if workerMessage~cancel=.false then  -- if not cancelled, send contained message
+     do
+        workerMessage~message~send  -- send contained ooRexx message
+        workerMessage~hasResult=var("RESULT")   -- indicate whether message yielded a result
+        workerMessage~isDone=.true  -- allow to unblock wait on this workerMessage
+     end
+  end
+  return
+
+any:
+-- say "... executeQueuedMessages, ANY condition:" condition("C")
+  workerMessage~hasError=.true         -- indicate an error, unblock waitForDone
+if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "queuedMessages:" pp(queuedMessages~items) "SIGNAL ANY received, flagging workerMessage as error in execution..."
+
+
+/** This method aborts all queued messages, setting the attribute <code>isAborted</code>
+*   to <code>.true</code>. This method can be invoked from any thread.
+*/
+::method abortQueuedMessages
+  expose queuedMessages
+  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
+
+  do while queuedMessages~items>0
+     workerMessage=queuedMessages~pull    -- pull workerMessage object
+      -- if not done or cancelled, abort message
+     if workerMessage~isDone=.false, workerMessage~cancel=.false then
+        workerMessage~isAborted=.true
+  end
+  return
+
+
+
+-- 2014-07-29, rgf: now added re-raising condition on blocked thread, if necessary
+/** This method expects an ooRexx message object (cf. the ooRexx class <code>Message</code>)
+*   which gets wrapped into a <code>WorkerMessage</code> object and then queued to the message queue
+*   for later execution in the method <code>executeQueuedMessages</code>. This method can
+*   be invoked from any thread. This is an unguarded method to not block concurrent invocation
+*   of the methods <code>executeQueuedMessages</code> and <code>abortQueuedMessages</code> due
+*   to this method being blocked on a <code>workerMessage</code> object. This method can be
+*   invoked from any thread.
+*
+*   <p><em>Hint:</em> If an error condition is raised while the method is executing on another thread, upon return
+*      this method will re-raise that very error condition, supplying the original condition object
+*      as the last item in the <code>ADDITIONAL</code> array created for the re-raise error condition
+*      to allow for further inspection, if necessary.
+*
+*  @param  message an instance of the ooRexx class <code>Message</code> that should be sent
+*          in the dbus connection thread
+*
+*  @return if the message yielded a result it will be returned, otherwise no value will be returned
+*/
+::method postMessage unguarded
+  expose queuedMessages
+  use strict arg message
+  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name)
+
+  .ArgUtil~validateClass("message", message, .Message)  -- check for correct type
+  workMsg=.WorkerMessage~new(message)
+  guard on
+  queuedMessages~queue(workMsg)-- queue message
+  guard off
+
+  workMsg~waitForDone      -- method will check for abort or error condition
+
+   -- if no error and a result returned
+  if message~hasError=.false then
+  do
+     if workMsg~hasResult then return message~result     -- access and return result
+     return    -- message did not return a result
+  end
+
+   -- while executing the method an error condition was raised, re-raise it on this thread as well
+      -- supply original error condition object for further inspection in addtional array
+  co=message~errorCondition   -- fetch error condition
+  condition=co~condition      -- fetch condition name for select
+  if co~hasentry("ADDITIONAL") then addtl=co~additional
+                               else addtl=.array~new
+  addtl~append(co)            -- append condition object to additional array to allow it to be inspected
+
+  descr=co~description        -- can be empty
+  if descr<>"" then descr=descr "- "
+  descr=co~description || "Hint: added original condition object as last item in ADDITIONAL array to allow for inspecting it"
+
+signal on any
+  select
+     when condition="SYNTAX"        then
+        raise syntax (co~code) additional (addtl) description (descr)
+
+     when condition="ERROR"         then
+        raise error (co~rc)    additional (addtl) description (descr)
+
+     when condition="FAILURE"       then
+        raise failure (co~rc)  additional (addtl) description (descr)
+
+     when condition="HALT"          then
+        raise halt             additional (addtl) description (descr)
+
+     when condition="LOSTDIGITS"    then
+        raise lostdigits       additional (addtl) description (descr)
+
+     when condition="NOMETHOD"      then
+        raise nomethod         additional (addtl) description (descr)
+
+     when condition="NOSTRING"      then
+        raise nostring         additional (addtl) description (descr)
+
+     when condition="NOTREADY"      then
+        raise notready         additional (addtl) description (descr)
+
+     when condition="NOVALUE"       then
+        raise novalue          additional (addtl) description (descr)
+
+     when condition~word(1)="USER"  then     -- as of ooRexx 4.2.0 "usercondition" cannot be supplied in an expression :(
+     do
+        descr=condition "-" descr
+        raise user surrogate_from_postMessage_method_see_description_in_condition_object additional (addtl) description (descr)
+     end
+
+     otherwise
+     do
+        arr=.array~of("No raise instruction for condition ["condition"], hence landed in otherwise branch giving this lousy error message!")
+        arr~appendAll(addtl)
+        raise syntax 98.900    additional (arr) description (descr)
+     end
+  end
+
+any:
+   raise propagate
+
+-------------------------------------------------------------------------------------------------------------------------------
+/** This class is needed by the <code>Worker</code> class and wraps up an ooRexx message
+*   object that will be sent in the dbus connection thread. It adds attributes to communicate
+*   various type of information about the embedded ooRexx message object.
+*/
+::class "WorkerMessage"    -- use terminology of Java's java.util.concurrent.Future
+/** Constructor method, sets the attributes <code>cancel</code>, <code>isAborted</code>,
+*  <code>isDone</code> and <code>hasResult</code> to <code>.false</code>.
+*
+*  @param  message an instance of the ooRexx class <code>Message</code>
+*
+*/
+::method init
+  expose cancel hasResult isAborted isDone message hasError
+  use strict arg message
+  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "WORKERMESSAGE"
+  .ArgUtil~validateClass("message", message, .Message) -- check for correct type
+  cancel=.false            -- allow to cancel sending/processing message
+  isAborted=.false         -- message was aborted
+  isDone=.false            -- message was not processed so far
+  hasResult=.false         -- message yielded a result?
+  hasError=.false          -- message caused an error condition
+
+/** Attribute: <code>.false</code> if message was not cancelled, <code>.true</code> if message got cancelled. */
+::attribute cancel
+
+/** Attribute: <code>.true</code>, if message yielded an error condition, <code>.false</code> else. Needed to
+*              allow a GUARD ON this attribute as well (@see method <code>waitForDone</code>.
+*/
+::attribute hasError       -- need to define in order to be able to guard on it
+
+/** Attribute: <code>.true</code>, if message yielded a result available in the ooRexx message object.
+    As of ooRexx 4.2 (2014) accessing the <code>result</code> attribute in the ooRexx message object when
+    no result is available causes an ooRexx error condition to be raised. */
+::attribute hasResult
+
+/** Attribute: <code>.true</code> if <code>sendQueuedMessages</code> got aborted and this message
+    was therefore not sent anymore. */
+::attribute isAborted
+
+/** Attribute: <code>.false</code> if message was not sent yet, <code>.true</code> if message got processed. */
+::attribute isDone
+
+/** Attribute: embedded ooRexx message object. */
+::attribute message
+
+/** Method that blocks until one of the <code>WorkerMessage</code> attributes <code>isDone</code>,
+*   <code>cancel</code>, <code>isAborted</code> changes its value to <code>.true</code>. If the
+*   message got aborted or the ooRexx message object indicates a condition object, an error condition
+*   gets raised. If a condition object was returned with the ooRexx message it gets supplied as
+*   an additional argument to the raised error condition.
+*/
+::method waitForDone unguarded
+  expose cancel isAborted isDone hasError message
+  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "before blocking" pp(self~identityHash)
+
+  guard on when isDone=.true | cancel=.true | isAborted=.true | hasError=.true
+  if .dbus.dir~bDebug=.true then say pp(bsfGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "after blocking " pp(self~identityHash)
+
+  signal on syntax
+  if isAborted=.true then
+     Raise syntax 98.900 array ("Message got aborted while still queued for execution.")
+  return
+syntax:
+  raise propagate
 

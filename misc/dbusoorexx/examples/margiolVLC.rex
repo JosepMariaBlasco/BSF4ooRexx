@@ -3,6 +3,8 @@
       author:     Rony G. Flatscher (c) 2011
       name:       margiolVLC.rex
       date:       2011-08-14
+      changed: 2014-07-23, rgf: adapted logic to new infrastructure, hence a need to explicit stop
+                                the message loop thread in order to allow ooRexx to stop
       purpose:    demonstrate how to code the Sebastian Margiol examples for controlling "vlc" with the direct
                   DBUS language binding for ooRexx
 
@@ -15,7 +17,7 @@
       license:    AL 2.0
 
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011 Rony G. Flatscher
+               Copyright 2011-2014 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -32,6 +34,9 @@
 
       dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html>
 */
+   say "DBusVersion (library):" DBusVersion()
+   say "     dbus.cls package:" .dbus.dir~version
+
    signal on syntax
    signal on halt name syntax
 

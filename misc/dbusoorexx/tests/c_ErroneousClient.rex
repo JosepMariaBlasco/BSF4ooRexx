@@ -6,11 +6,12 @@
       purpose: - test the errors the service object can raise
       needs:   - ooRexx dbus support package
       date:    2011-08-03/04
+      changes:    2014-07-24, rgf: explicitly close connection to stop message loop thread
       specs:   dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
       license: AL 2.0 (Apache License 2.0)
 
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011 Rony G. Flatscher
+               Copyright 2011-2014 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -77,6 +78,7 @@ call testError2d   o
 call testError1    o     -- this tears down the server
 
 call dumpConnectionStatistics conn
+conn~close
 
 ::requires "testDumpStats.rex"
 ::requires "dbus.cls"         -- get dbus support for ooRexx
@@ -105,6 +107,7 @@ syntax:
   name="testError2a"
   say "in routine" name "..."
   o~send(name)
+  say "in routine" name "..." "AFTER - returned ERROR message!!"
   return
 syntax:
   co=condition("object")

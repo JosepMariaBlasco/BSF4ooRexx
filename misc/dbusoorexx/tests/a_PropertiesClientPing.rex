@@ -3,6 +3,7 @@
       author:  Rony G. Flatscher, (c) 2011
       name:    testPingProperties.rex
       date:    2011-07-25
+      changes:    2014-07-24, rgf: explicitly close connection to stop message loop thread
       license: AL 2.0
       purpose: - test the special Rexx support for org.freedesktop.DBus.Properties Get() and Set():
                  makes properties available as Rexx attributes (to get the value, just send the
@@ -54,11 +55,13 @@ say
 say "DbusVersion():" dbusVersion()
 
 call dumpConnectionStatistics conn
+conn~close
 exit
 
 halt:    -- stop the message loop thread
    say " ... ctl-c was pressed, stopping messageLoop thread..."
    call dumpConnectionStatistics conn
+   conn~close
    exit -1
 
 syntax:
@@ -71,6 +74,7 @@ syntax:
    say
    call dump2 arr[arr~last], "additional[last]"  -- error slotDir
    call dumpConnectionStatistics conn
+   conn~close
    exit -2
 
 

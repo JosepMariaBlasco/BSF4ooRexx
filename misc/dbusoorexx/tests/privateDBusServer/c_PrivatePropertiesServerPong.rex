@@ -3,6 +3,7 @@
       author:  Rony G. Flatscher, (c) 2011
       name:    testPrivatePropertiesServerPong.rex
       date:    2011-07-27
+      changed: 2014-07-24, rgf, use conn~close
       purpose: - demonstrate how to realize a Rexx server that allows access to its
                  attributes via the org.freedesktop.DBus.Properties methods Get() and Set()
                - demonstrates how to create the introspect definitions on the fly
@@ -141,11 +142,13 @@ do c over connections            -- iterate over client connections and show the
 end
 
 say "DbusVersion()  ="pp2(DbusVersion())
+conn~close
 exit
 
 halt:    -- stop the message loop thread
    say " ... ctl-c was pressed, stopping messageLoop thread..."
-   conn~messageLoop("stop")      -- otherwise process hangs
+   -- conn~messageLoop("stop")      -- otherwise process hangs
+   conn~close
    say "DbusVersion()  ="pp2(DbusVersion())
    exit -1
 
@@ -154,7 +157,8 @@ syntax:  -- stop the message loop thread !
    say ":-( "~copies(10)
    say "a SYNTAX error has occurred, stopping the message loop ..."
    co=condition('o')
-   conn~messageLoop("stop")      -- otherwise process hangs
+   conn~close
+   -- conn~messageLoop("stop")      -- otherwise process hangs
    say
    say "the Rexx condition object contains the following information:"
    say ppCondition2(co)

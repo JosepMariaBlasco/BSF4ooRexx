@@ -1,9 +1,9 @@
 #!/usr/bin/rexx
 /*
       author:  Rony G. Flatscher, (c) 2011
-      name:    testPing.rex
-      date:    2011-07-03
-      license: LGPL 3.0, AL 2.0
+      name:    testPrivateClientPing.rex
+      date:    2011-08-07
+      license: 3.0, AL 2.0
       purpose: - test marshalling and unmarshalling; will unmarshal received arguments and
                  marshal them for the reply using the same signature
 
@@ -12,8 +12,14 @@
                - all DBus-methods directly (not taking advanatage of the class
                  DBusProxyObject
 
-      usage:   rexx testRawPingClient.rex
-      needs:   testRawPongServer.rex running
+      usage:   rexx testPrivateClientPing.rex
+
+      needs:   testPrivatePongServer.rex running and listening on the address this
+               clients attaches to
+
+      hint:    derived from testRawServerPong.rex, merely replaced "session" with the address
+               where the server is listening for clients
+
 
       dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
 
@@ -41,9 +47,30 @@ objectPath="/org/rexxla/oorexx/dbus/test/Pong"
 busName   ="org.rexxla.oorexx.dbus.test.pong"
 interface =""
 
+/*
 busType="session"                  -- default to session bus
 say "creating a connection to the" pp2(busType) "message bus..."
 conn=.dbus~new(busType) -- get a connection
+*/
+
+address1="unix:path=/tmp/dbus-test"
+address2="tcp:host=localhost,port=23000,family=ipv4;" -- socket lingers after shutdown
+address3="unix:path=/tmp/dbus-test;tcp:host=localhost,port=23000,family=ipv4;"
+
+-- address1="unix:path=/tmp/dbus-test-oopsla"
+-- address1="tcp:host=localhost,port=23001,family=ipv4;" -- socket lingers after shutdown
+-- address=address1
+
+parse arg otherAddress .
+if otherAddress<>"" then
+   address=otherAddress
+else
+   address=address3
+
+say "creating a connection to the" pp2(busType) "message bus..."
+say "creating a connection to" pp2(address) "message bus..."
+conn=.dbus~new(address) -- get a connection
+
 say "conn~uniqueBusName ="pp2(conn~busName("unique"))
 say "conn~uniqueBusId   ="pp2(conn~uniqueBusId)
 say "conn~busType       ="pp2(conn~busType)
@@ -93,17 +120,21 @@ say
 call dump2 res[res~last], "roundtrip, 'res["res~last"]'-content"
 say
 
+conn~close
 say "DbusVersion():" dbusVersion()
 call dumpConnectionStatistics conn
+say "DbusVersion():" dbusVersion()
 exit
 
 halt:    -- stop the message loop thread
    say " ... ctl-c was pressed ..."
+   conn~close
    call dumpConnectionStatistics conn
    exit -1
 
 syntax:
    cond=condition('o')
+   conn~close
    say "exception occurred, showing dumpCondition2(condition('o'))..."
    say ppCondition2(cond)
    say

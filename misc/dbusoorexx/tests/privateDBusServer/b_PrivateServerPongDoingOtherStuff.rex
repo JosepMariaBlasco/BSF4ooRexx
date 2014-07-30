@@ -88,6 +88,9 @@ server~shutdown
 say "server~active (after shutdown):   " pp2(server~active) -- "server2:" pp2(server2~active)
 say "DbusVersion()  ="pp2(DbusVersion())
 
+connSession~close
+connSystem~close
+
 exit
 
 halt:    -- stop the message loop thread
@@ -102,6 +105,8 @@ halt:    -- stop the message loop thread
    say "server~active (after shutdown):   " pp2(server~active)
 
    say "DbusVersion()  ="pp2(DbusVersion())
+   connSession~close
+   connSystem~close
    exit -1
 
 
@@ -121,6 +126,8 @@ syntax:  -- stop the message loop thread !
    say ":-( "~copies(10)
 
    say "DbusVersion()  ="pp2(DbusVersion())
+   connSession~close
+   connSystem~close
    exit -2
 
 

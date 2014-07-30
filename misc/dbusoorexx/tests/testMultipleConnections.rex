@@ -3,6 +3,7 @@
       author:  Rony G. Flatscher, (c) 2011
       name:    testMultipleConnections.rex
       date:    2011-07-20
+      changes:    2014-07-24, rgf: explicitly close connection to stop message loop thread
       license: LGPL 3.0, AL 2.0
       purpose: - retrieving system and session bus in three different ways,
                  allows checking that the identical connections are returned
@@ -38,6 +39,13 @@ end
 say "---"
 
 say "DbusVersion()  ="pp2(DbusVersion())
+
+-- 2014-07-24, rgf: now close all unique connections
+s=.set~new~union(conns~allItems)
+do c over s
+   say "closing c~busType="pp2(c~bustype) "c="pp2(c) "..."
+   c~close
+end
 
 
 ::requires "dbus.cls"         -- get DBus support for ooRexx

@@ -3,6 +3,7 @@
       author:  Rony G. Flatscher, (c) 2011
       name:    testPongProperties.rex
       date:    2011-07-27
+      changes: 2014-07-24, rgf: adhere to new dbus.cls
       purpose: - demonstrate how to realize a Rexx server that allows access to its
                  attributes via the org.freedesktop.DBus.Properties methods Get() and Set()
                - demonstrates how to create the introspect definitions on the fly
@@ -13,7 +14,7 @@
 
       license:    AL 2.0
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011 Rony G. Flatscher
+               Copyright 2011-2014 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -101,14 +102,16 @@ do
    say
 end
 
-conn~messageLoop("stop")         -- otherwise process hangs
+--conn~messageLoop("stop")         -- otherwise process hangs
+conn~close
 say "DbusVersion()  ="pp2(DbusVersion())
 call dumpConnectionStatistics conn
 exit
 
 halt:    -- stop the message loop thread
    say " ... ctl-c was pressed, stopping messageLoop thread..."
-   conn~messageLoop("stop")      -- otherwise process hangs
+   -- conn~messageLoop("stop")      -- otherwise process hangs
+   conn~close                    -- otherwise process hangs
    say "DbusVersion()  ="pp2(DbusVersion())
 call dumpConnectionStatistics conn
    exit -1
@@ -118,7 +121,8 @@ syntax:  -- stop the message loop thread !
    say ":-( "~copies(10)
    say "a SYNTAX error has occurred, stopping the message loop ..."
    co=condition('o')
-   conn~messageLoop("stop")      -- otherwise process hangs
+   -- conn~messageLoop("stop")      -- otherwise process hangs
+   conn~close                    -- otherwise process hangs
    say
    say "the Rexx condition object contains the following information:"
    say ppCondition2(co)

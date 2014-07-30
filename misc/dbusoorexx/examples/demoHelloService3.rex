@@ -10,11 +10,13 @@
                - the program demonstrates emitting signals
       needs:   - ooRexx dbus support package
       date:    2011-08-04
+      changed: 2014-07-23, rgf: adapted logic to new infrastructure, hence a need to explicit stop
+                                the message loop thread in order to allow ooRexx to stop
       specs:   dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
       license: AL 2.0 (Apache License 2.0)
 
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011 Rony G. Flatscher
+               Copyright 2011-2014 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -30,6 +32,8 @@
             -----------------------------------------------------------------------------
 */
 
+say "DBusVersion (library):" DBusVersion()
+say "     dbus.cls package:" .dbus.dir~version
 timeout=30     -- wait for 30 seconds (1 minute) for clients, then stop
 
 objectPath    ="/org/rexxla/oorexx/demo/Hello"
@@ -59,8 +63,8 @@ call syssleep timeout
 
 halt:
    o~service.sendSignal(objectPath, interface, "Exit", "exited at:" .dateTime~new~string)
-   conn~messageLoop("stop")-- stop message loop
-   say "after stopping message loop..."
+   conn~close           -- close, thereby terminating message loop thread
+   say "after closing connection (stopping message loop) ..."
    exit -1
 
 

@@ -7,11 +7,12 @@
                  defined within this program (cf. init-method)
       needs:   - ooRexx dbus support package
       date:    2011-07-29 (2011-07-17, 2011-09-12)
+      changes:    2014-07-24, rgf: explicitly close connection to stop message loop thread
       specs:   dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
       license: AL 2.0 (Apache License 2.0)
 
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011 Rony G. Flatscher
+               Copyright 2011-2014 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -37,6 +38,7 @@ conn=.dbus~session         -- get the session bus
 
 -- signal on syntax name halt -- make sure message loop gets stopped
 -- signal on halt             -- intercept ctl-c or closing terminal in which Rexx runs
+signal on any name halt   -- intercept ctl-c or closing terminal in which Rexx runs
 
 res=conn~busName("request", busName)
 if res<>.dbus.dir~primaryOwner & res<>.dbus.dir~alreadyOwner then   -- o.k., wait for clients
@@ -45,7 +47,7 @@ do
    exit -1
 end
 
-o=.HelloRexxServer~new
+o=.HelloRexxService~new
 conn~serviceObject("add", objectPath, o)
 say "o="pp2(o)
 say "---"
@@ -58,29 +60,31 @@ call IDbus.dumpIDBus o~service.introspectRootNode
 say "---"
 
 say "-- ** -- "~copies(5)
+-- conn~close
 
-
-/*
-/*
 o~service.sendSignal(objectPath, interface, "Start", "started at:" .dateTime~new~string)
 say "sleeping" timeout "secs ..."
 call syssleep timeout
 say "press return to end"
 parse pull x
+/*
 */
 
 halt:
+   say "after label halt: about to send a signal to inform about server shutting down ..."
    o~service.sendSignal(objectPath, interface, "Exit", "exited at:" .dateTime~new~string)
-   conn~messageLoop("stop")-- stop message loop
+--   conn~messageLoop("stop")-- stop message loop
+   conn~close
    say "after stopping message loop..."
    exit -1
+/*
 */
 
 
 ::requires "dbus.cls"         -- get dbus support for ooRexx
 ::requires "rgf_util2.rex"    -- installed with the BSF4ooRexx package
 
-::class HelloRexxServer subclass DBusServiceObject
+::class HelloRexxService subclass DBusServiceObject
 
 ::method init           -- constructor
   expose info

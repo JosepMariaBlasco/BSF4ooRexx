@@ -3,6 +3,7 @@
       author:  Rony G. Flatscher, (c) 2011
       name:    testPong.rex
       date:    2011-07-03
+      changes: 2014-07-24, rgf: adhere to new dbus.cls
       purpose: - test marshalling and unmarshalling; will unmarshal received arguments and
                  marshal them for the reply using the same signature
 
@@ -32,7 +33,7 @@
 
       license:    AL 2.0
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011 Rony G. Flatscher
+               Copyright 2011-2014 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -89,7 +90,8 @@ conn~match("add", matchRule)
 say "Hit enter to end program ..."
 parse pull x
 
-conn~messageLoop("stop")   -- stop message loop or we hang
+-- conn~messageLoop("stop")   -- stop message loop or we hang
+conn~close                 -- stop message loop or we hang
 
 say "DbusVersion()  ="pp2(DbusVersion())
 call dumpConnectionStatistics conn
@@ -98,8 +100,10 @@ exit
 halt:    -- stop the message loop thread
 
    say " ... ctl-c was pressed, stopping messageLoop thread..."
-   if conn~messageLoop("active")<>.false then
-      conn~messageLoop("stop")
+   -- if conn~messageLoop("active")<>.false then
+   --   conn~messageLoop("stop")
+   if conn~active=.true then
+      conn~close
    else
       say "message loop was stopped already."
 
@@ -112,8 +116,11 @@ syntax:  -- stop the message loop thread !
    say ":-( "~copies(10)
    say "a SYNTAX error has occurred, stopping the message loop ..."
    co=condition('o')
-   if conn~messageLoop("active")<>.false then
-      conn~messageLoop("stop")
+   -- if conn~messageLoop("active")<>.false then
+   --   conn~messageLoop("stop")
+
+   if conn~active=.true then
+      conn~close
 
    say
    say "the Rexx condition object contains the following information:"

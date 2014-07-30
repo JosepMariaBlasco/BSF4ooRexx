@@ -3,9 +3,10 @@
       author:     Rony G. Flatscher
       name:       testProxy2.rex
       purpose:    demonstrate how to use a Rexx proxy to interact with a DBUS object
+      changes:    2014-07-24, rgf: explicitly close connection to stop message loop thread
       license:    AL 2.0
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011 Rony G. Flatscher
+               Copyright 2011-2014 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -52,7 +53,8 @@ call IDbus.dumpIDBus o~proxy.introspectRootNode
 say
 
 say "hasMethods:" o~proxy.introspectRootNode~contains("methods")
-exit
+
+-- conn~close; exit
 
 say "Testing whether introspect parse tree has certain types:"
 titles=.array~of("arguments", "interfaces", "methods", "signals", "properties")
@@ -95,7 +97,7 @@ res=o~GetAll('')
 say "o~GetAll(''): returned" res "with" res~items "items"
 say
 
-
+conn~close
 
 
 ::requires "dbus.cls"

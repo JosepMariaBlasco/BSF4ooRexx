@@ -2,6 +2,7 @@
 /*
       author:     Rony G. Flatscher (c)
       date:       2011-07-16
+      changes:    2014-07-24, rgf: explicitly close connection to stop message loop thread
       name:       testProxy1.rex
       purpose:    demonstrate how to use a Rexx proxy to interact with a DBUS object
       license:    AL 2.0
@@ -59,6 +60,7 @@ do name over an~sort
 end
 say "There are currently" an~items "activatable bus names in total."
 
+conn~close
 
 ::requires "dbus.cls"
 

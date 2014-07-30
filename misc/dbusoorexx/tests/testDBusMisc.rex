@@ -2,6 +2,7 @@
 /*
       author:     Rony G. Flatscher (c)
       date:       2011-07-16
+      changes:    2014-07-24, rgf: explicitly close connection to stop message loop thread
       name:       testDBusMisc.rex
       purpose:    test miscellaneous things
       license:    AL 2.0
@@ -39,6 +40,8 @@ say "conn~query('isConnected')    :" pp2(conn~query("isConnected"))
 say "conn~query('isC')            :" pp2(conn~query("isC"))
 say "--"
 say "DBusVersion():" pp2(DBusVersion())
+
+conn~close
 
 
 ::requires "dbus.cls"      -- get access to the DBUS functionality from Rexx

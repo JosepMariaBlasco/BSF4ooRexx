@@ -1,3 +1,4 @@
+# make -f linuxMakefile32 all | clean
 # sudo cc -g -Wall `pkg-config --libs --cflags dbus-1` -o dbus-example-02 dbus-example-02.c
 
 # rgf, 20210602 from <http://maemo.org/development/training/maemo_platform_development_content/plain_html/node10/>

@@ -2,6 +2,7 @@
 /*
       author:     Rony G. Flatscher (c)
       date:       2011-07-29, 2011-08-04
+      changes:    2014-07-24, rgf: explicitly close connection to stop message loop thread
       version:    1.0
       name:       testGetObjectPaths.rex
       license:    AL 2.0
@@ -51,6 +52,7 @@ do
    say "Object paths for service/bus name ["serviceName"]:"
    call dump2 conn~getObjectPaths(serviceName)
 end
+conn~close
 
 
 ::requires 'dbus.cls'

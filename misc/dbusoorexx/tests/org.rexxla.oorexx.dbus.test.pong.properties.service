@@ -1,5 +1,6 @@
 [D-BUS Service]
 Name=org.rexxla.oorexx.dbus.test.pong.properties
 # adapt paths to your installation, rgf, 2011-07-27
-Exec=/mnt/root_f/work/svn/bsf4oorexx/sandbox/rgf/misc/dbusoorexx/tests/testPropertiesServerPong.rex
+# Exec=/mnt/root_f/work/svn/bsf4oorexx/sandbox/rgf/misc/dbusoorexx/tests/testPropertiesServerPong.rex
+Exec=/mnt/root_f/work/svn/bsf4oorexx/sandbox/rgf/misc/dbusoorexx/tests/a_PropertiesServerPong.rex
 #copy this service file to /usr/share/dbus-1/services

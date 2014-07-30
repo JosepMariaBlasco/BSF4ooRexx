@@ -3,10 +3,11 @@
       author:     Rony G. Flatscher (c) 2011
       name:       testHelloWorld.rex
       date:       2011-07-25, 2011-07-29
+      changes:    2014-07-24, rgf: explicitly close connection to stop message loop thread
       purpose:    demonstrate how to use a Rexx proxy to interact with a DBUS object
       license:    AL 2.0
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011 Rony G. Flatscher
+               Copyright 2011-2014 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -46,7 +47,7 @@ say "creating another notification, reusing current notification ..."
 id=o~notify("Rony's App", id, "oorexx", "This is summary info # 2", "This is the body info # 2", , , -1)
 say "notification's id:" id
 say dbusVersion()
-
+.dbus~session~close
 
 ::requires "dbus.cls"         -- get access to DBus
 ::requires "rgf_util2.rex"    -- utilties like dump2(), installed by BSF4ooRexx

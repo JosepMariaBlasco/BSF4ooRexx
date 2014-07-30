@@ -5,10 +5,12 @@
       usage:      rexx demoHelloListener.rex
       purpose:    - demonstrate how to listen for any dbus signal with a Rexx object
       date:       2011-07-29 (2011-07-17)
+      changes:    2014-07-23, rgf, adapt to new infrastructure logic, show DBusVersion,
+                                   accept "session" and or "system" as the bus from the commandline
       license:    AL 2.0 (Apache License 2.0)
 
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011 Rony G. Flatscher
+               Copyright 2011-2014 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -24,12 +26,28 @@
             -----------------------------------------------------------------------------
 */
 
+say "DBusVersion (library):" DBusVersion()
+say "     dbus.cls package:" .dbus.dir~version
+
 signal on syntax name halt -- make sure message loop gets stopped
 signal on halt             -- intercept ctl-c or closing terminal in which Rexx runs
 
-timeout=180    -- listen for 180 seconds (3 minutes) for signals, then stop
+parse lower arg busName .
 
-conn=.dbus~session      -- get the "session" connection
+-- timeout=180    -- listen for 180 seconds (3 minutes) for signals, then stop
+timeout=60     -- listen for 60 seconds for signals, then stop
+
+if busName="system" then
+do
+   conn=.dbus~system       -- get the "session" connection
+   say "... listening for SIGNALs on the 'system' bus ..."
+end
+else
+do
+   conn=.dbus~session      -- get the "session" connection
+   say "... listening for SIGNALs on the 'session' bus ..."
+end
+
 conn~listener("add", .rexxSignalListener~new)   -- add the Rexx listener object
 conn~match("add", "type='signal'")  -- ask for any signal on the bus, non-blocking mode
 
@@ -37,9 +55,8 @@ say "listening" timeout "secs for signals ..."
 call syssleep timeout
 
 halt:
-   say "stopping message loop."
-   conn~messageLoop("stop")-- stop message loop
-
+   say "closing the connection."
+   conn~close                 -- close, thereby terminating message loop thread
 
 
 ::requires "dbus.cls"         -- get dbus support for ooRexx
