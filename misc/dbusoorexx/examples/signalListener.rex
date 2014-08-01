@@ -7,6 +7,7 @@
       date:       2011-07-29 (2011-07-17)
       changes:    2014-07-23, rgf, adapt to new infrastructure logic, show DBusVersion,
                                    accept "session" and or "system" as the bus from the commandline
+               2014-07-31, rgf: adjust to new DBusVersion() routine
       license:    AL 2.0 (Apache License 2.0)
 
             ------------------------ Apache Version 2.0 license -------------------------
@@ -26,8 +27,7 @@
             -----------------------------------------------------------------------------
 */
 
-say "DBusVersion (library):" DBusVersion()
-say "     dbus.cls package:" .dbus.dir~version
+say "DBusVersion():" DBusVersion()
 
 signal on syntax name halt -- make sure message loop gets stopped
 signal on halt             -- intercept ctl-c or closing terminal in which Rexx runs

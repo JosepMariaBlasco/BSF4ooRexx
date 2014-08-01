@@ -117,6 +117,8 @@ call dump2 conn~serviceObject("getAll"), 'conn~serviceObject("getAll")'
 
 say "version #" r "..."
 
+call dump2 .environment, ".environment"
+call dump2 .local, ".local"
 
 sleepTime=30
 -- say "press enter to end program ..."

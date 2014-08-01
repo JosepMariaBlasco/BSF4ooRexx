@@ -7,6 +7,7 @@
       changed:    2014-07-23, rgf: adapted logic to new infrastructure, hence a need to explicit stop
                                    the message loop thread in order to allow ooRexx to stop (using the
                                    method 'close' on the connection object)
+               2014-07-31, rgf: adjust to new DBusVersion() routine
       license:    AL 2.0
             ------------------------ Apache Version 2.0 license -------------------------
                Copyright 2011-2014 Rony G. Flatscher
@@ -25,8 +26,7 @@
             -----------------------------------------------------------------------------
 */
 
-say "DBusVersion (library):" DBusVersion()
-say "     dbus.cls package:" .dbus.dir~version
+say "DBusVersion():" DBusVersion()
 
 o=.dbus~session~getObject("org.freedesktop.Notifications","/org/freedesktop/Notifications")
 

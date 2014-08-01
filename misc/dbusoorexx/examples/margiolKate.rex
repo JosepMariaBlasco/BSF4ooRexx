@@ -5,6 +5,7 @@
       date:       2011-08-14
       changed: 2014-07-23, rgf: adapted logic to new infrastructure, hence a need to explicit stop
                                 the message loop thread in order to allow ooRexx to stop
+               2014-07-31, rgf: adjust to new DBusVersion() routine
       purpose:    demonstrate how to code the Sebastian Margiol examples for controlling "kate" and "klipper" with
                   the direct DBUS language binding for ooRexx
 
@@ -32,8 +33,7 @@
 
       dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html>
 */
-   say "DBusVersion (library):" DBusVersion()
-   say "     dbus.cls package:" .dbus.dir~version
+   say "DBusVersion():" DBusVersion()
 
    signal on syntax              -- syntax condition handler
    signal on halt name syntax    -- CTL-C handler

@@ -66,6 +66,9 @@ say "server~serverAddress:          " pp2(server~serverAddress)
 signal on syntax
 signal on halt
 
+call dump2 .environment, ".environment"
+call dump2 .local      , ".local"
+
 say "DbusVersion()="pp2(DbusVersion())
 say "Private server listens at address:" pp2(server~address)
 say "Hit enter to end program ..."

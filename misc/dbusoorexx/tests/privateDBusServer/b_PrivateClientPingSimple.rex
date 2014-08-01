@@ -106,6 +106,9 @@ call dump2 res[res~last], "roundtrip, 'res["res~last"]'-content"
 say
 
 say "DbusVersion():" dbusVersion()
+
+call dump2 .environment, ".environment"
+call dump2 .local      , ".local"
 -- say "conn~isOpen:  " conn~isOpen
 say "conn~isOpen:  " conn~query("open")
 conn~close

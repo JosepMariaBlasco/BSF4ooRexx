@@ -70,6 +70,8 @@ signal on halt
 
 say "DbusVersion()="pp2(DbusVersion())
 say "Private server listens at address:" pp2(server~address)
+call dump2 .environment, ".environment"
+call dump2 .local, ".local"
 say "Hit enter to end program ..."
 parse pull x
 

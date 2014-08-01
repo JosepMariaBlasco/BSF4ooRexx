@@ -71,6 +71,9 @@ say "DbusVersion():" dbusVersion()
 
 call dumpConnectionStatistics conn
    conn~close
+
+call dump2 .environment, ".environment"
+call dump2 .local, ".local"
 exit
 
 halt:    -- stop the message loop thread

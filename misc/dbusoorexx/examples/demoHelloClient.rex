@@ -12,6 +12,7 @@
       date:    2011-08-04
       changed: 2014-07-23, rgf: adapted logic to new infrastructure, hence a need to explicit stop
                                 the message loop thread in order to allow ooRexx to stop
+               2014-07-31, rgf: adjust to new DBusVersion() routine
       specs:   dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
       license: AL 2.0 (Apache License 2.0)
 
@@ -31,8 +32,7 @@
                limitations under the License.
             -----------------------------------------------------------------------------
 */
-say "DBusVersion (library):" DBusVersion()
-say "     dbus.cls package:" .dbus.dir~version
+say "DBusVersion():" DBusVersion()
 
 conn=.dbus~connect("session")    -- connect to the "session" bus
 

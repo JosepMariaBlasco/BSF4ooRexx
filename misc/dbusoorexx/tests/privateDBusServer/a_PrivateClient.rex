@@ -115,6 +115,8 @@ say
 call dump2 res[res~last], "roundtrip, 'res["res~last"]'-content"
 say
 
+call dump2 .environment, ".environment"
+call dump2 .local, ".local"
 say "DbusVersion():" dbusVersion()
 conn~close
 call dumpConnectionStatistics conn
