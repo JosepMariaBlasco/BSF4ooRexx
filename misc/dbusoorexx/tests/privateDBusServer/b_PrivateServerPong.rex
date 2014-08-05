@@ -85,6 +85,7 @@ end
 
 say "about to do a server~shutdown..."
 server~shutdown
+say "main: after server~shutdown"
 say "server~active (after shutdown):   " pp2(server~active) -- "server2:" pp2(server2~active)
 say "DbusVersion()  ="pp2(DbusVersion())
 

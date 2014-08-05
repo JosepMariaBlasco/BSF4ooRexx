@@ -122,7 +122,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
    // rgf, 2011-06-11, cf. <>http://gcc.gnu.org/gcc-4.3/porting_to.html>
    // (needed for old dbus-example to be able to compile unaltered), but also for memset() strlen(), str[n]cpy()
-#include <cstring>    // ? maybe removable, once old code is replaced/tidied up ?
+// #include <cstring>    // ? maybe removable, once old code is replaced/tidied up ? Clang won't accept that anymore (20140805)
+#include <string.h>     // will allow access to memset() et.al.
 
 #ifdef _MSC_VER
 # pragma warning(disable:4100)
@@ -168,6 +169,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // #define DEBUG_MESSAGELOOP
 
+// #define DEBUG_CONNECTION
 
 /*
 #define DEBUG_VARIANT
@@ -222,6 +224,9 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 #define DEBUG_WATCHLOOP
 #define DEBUG_TIMEOUTLOOP
 #define DEBUG_PRIVATE_SERVER
+
+#define DEBUG_CONNECTION        // 2014-08-05, rgf: debug whether connection has a value or not
+
 */
 
 
@@ -700,7 +705,7 @@ RexxMethod1(RexxObjectPtr, DbusNativeGetSystemBus, RexxObjectPtr, genericBusObje
 
         // raise exception
        context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
-       return context->Nil();       // return .nil
+       return NULLOBJECT;           // return nothing
     }
 
     if (NULL == conn)
@@ -708,7 +713,7 @@ RexxMethod1(RexxObjectPtr, DbusNativeGetSystemBus, RexxObjectPtr, genericBusObje
         // raise exception
        SNPRINTF( msg, 1024, "%.16s/method/DbusNativeGetSystemBus(), connection error 2: no connection returned", DLLNAME);
        context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
-       return context->Nil();       // return .nil
+       return NULLOBJECT;           // return nothing
     }
 
         // save conn in a Rexx pointer object and save it as CSELF
@@ -745,7 +750,7 @@ RexxMethod1(RexxObjectPtr, DbusNativeGetSessionBus, RexxObjectPtr, genericBusObj
 
         // raise exception
        context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
-       return context->Nil();       // return .nil
+       return NULLOBJECT;           // return nothing
     }
 
     if (NULL == conn)
@@ -753,7 +758,7 @@ RexxMethod1(RexxObjectPtr, DbusNativeGetSessionBus, RexxObjectPtr, genericBusObj
         // raise exception
        SNPRINTF( msg, 1024, "%.16s/method/DbusNativeGetSessionBus(), connection error 2: no connection returned", DLLNAME);
        context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
-       return context->Nil();       // return .nil
+       return NULLOBJECT;           // return nothing
     }
 
         // save conn in a Rexx pointer object and save it as CSELF
@@ -770,10 +775,22 @@ RexxMethod1(RexxObjectPtr, DbusNativeGetSessionBus, RexxObjectPtr, genericBusObj
         // get and return unique bus name (.Dbus instance method)
 RexxMethod1(RexxStringObject, DbusGetUniqueBusName, CSELF, connPtr)
 {
-#if defined (DEBUG_METHODS)
-   fprintf(stderr, "===> arrived in DbusGetUniqueBusName\n");
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
+   fprintf(stderr, "===> arrived in DbusGetUniqueBusName, connPtr=[%p]\n", connPtr);
    fflush(stderr);
 #endif
+    if (connPtr==NULL)
+    {
+        {
+           char msg[1024]="";     // buffer for error message
+           SNPRINTF( msg, 1024, "%.16s/method/DbusGetUniqueBusName(), connection error 1: not connected (NULL)", DLLNAME);
+
+            // raise exception
+           context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
+           return NULLOBJECT;           // return nothing
+        }
+    }
+
     DBusConnection *conn=(DBusConnection *) connPtr;
 
     const char *tmpStr = dbus_bus_get_unique_name(conn);
@@ -798,7 +815,7 @@ RexxMethod0(RexxStringObject, DbusGetUniqueMachineId)
         // get and return unique bus id (.Dbus instance method)
 RexxMethod1(RexxObjectPtr, DbusGetUniqueBusId, CSELF, connPtr)
 {
-#if defined (DEBUG_METHODS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusGetUniqueBusId\n");
    fflush(stderr);
 #endif
@@ -817,7 +834,7 @@ RexxMethod1(RexxObjectPtr, DbusGetUniqueBusId, CSELF, connPtr)
 
         // raise exception
        context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
-       return context->Nil();       // return .nil
+       return NULLOBJECT;           // return nothing
     }
     RexxStringObject rso = context->String( (tmpStr==NULL ? "" : tmpStr) );
     dbus_free(tmpStr);
@@ -829,7 +846,7 @@ RexxMethod1(RexxObjectPtr, DbusGetUniqueBusId, CSELF, connPtr)
     // if open, returns true, false else; cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusConnection.html#ga611ae94556af36fe30bfb547366ca4e1>
 RexxMethod1(RexxObjectPtr, DbusConnectionIsConnected, CSELF, connPtr)
 {
-#if defined (DEBUG_METHODS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusConnectionIsConnected\n");
    fflush(stderr);
 #endif
@@ -845,7 +862,7 @@ RexxMethod1(RexxObjectPtr, DbusConnectionIsConnected, CSELF, connPtr)
     // expects a single char; if that is a supported type code returns .true, otherwise .false
 RexxMethod2(RexxObjectPtr, DbusConnectionCanSendType, CSTRING, typeCode, CSELF, connPtr)
 {
-#if defined (DEBUG_METHODS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusConnectionCanSendType\n");
    fflush(stderr);
 #endif
@@ -861,7 +878,7 @@ RexxMethod2(RexxObjectPtr, DbusConnectionCanSendType, CSTRING, typeCode, CSELF, 
     // if authenticated, returns true, false else
 RexxMethod1(RexxObjectPtr, DbusConnectionIsAuthenticated, CSELF, connPtr)
 {
-#if defined (DEBUG_METHODS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusConnectionIsAuthenticated\n");
    fflush(stderr);
 #endif
@@ -883,7 +900,7 @@ RexxMethod3(RexxObjectPtr, DbusBusNameRequest, CSTRING,       busName,
                                                OPTIONAL_RexxObjectPtr, flags,
                                                CSELF,         connPtr)
 {
-#if defined (DEBUG_METHODS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusBusNameRequest\n");
    fflush(stderr);
 #endif
@@ -903,7 +920,6 @@ RexxMethod3(RexxObjectPtr, DbusBusNameRequest, CSTRING,       busName,
                                  );
             // raise exception
            context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
-           // return context->Nil();       // return .nil
            return NULLOBJECT;           // return nothing
        }
     }
@@ -943,7 +959,7 @@ RexxMethod3(RexxObjectPtr, DbusBusNameRequest, CSTRING,       busName,
 RexxMethod2(RexxObjectPtr, DbusBusNameHasOwner, CSTRING, busName,
                                                 CSELF,   connPtr)
 {
-#if defined (DEBUG_METHODS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusBusNameHasOwner\n");
    fflush(stderr);
 #endif
@@ -975,7 +991,7 @@ RexxMethod2(RexxObjectPtr, DbusBusNameHasOwner, CSTRING, busName,
 RexxMethod2(RexxObjectPtr, DbusBusNameRelease, CSTRING, busName,
                                                CSELF,   connPtr)
 {
-#if defined (DEBUG_METHODS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusBusNameRelease\n");
    fflush(stderr);
 #endif
@@ -1010,7 +1026,7 @@ RexxMethod3(RexxObjectPtr, DbusBusAddMatch, CSTRING, rule,
                                             OPTIONAL_RexxObjectPtr, block,
                                             CSELF,   connPtr)
 {
-#if defined (DEBUG_METHODS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusBusAddMatch [%s] \n", rule);
    fflush(stderr);
 #endif
@@ -1030,7 +1046,6 @@ RexxMethod3(RexxObjectPtr, DbusBusAddMatch, CSTRING, rule,
                                   );
              // raise exception
             context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
-            // return context->Nil();       // return .nil
             return NULLOBJECT;           // return nothing
         }
     }
@@ -1072,7 +1087,7 @@ RexxMethod3(RexxObjectPtr, DbusBusRemoveMatch, CSTRING, rule,
                                                OPTIONAL_RexxObjectPtr, block,
                                                CSELF,   connPtr)
 {
-#if defined (DEBUG_METHODS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusBusRemoveMatch [%s] \n", rule);
    fflush(stderr);
 #endif
@@ -1092,7 +1107,6 @@ RexxMethod3(RexxObjectPtr, DbusBusRemoveMatch, CSTRING, rule,
                                   );
              // raise exception
             context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
-            // return context->Nil();       // return .nil
             return NULLOBJECT;           // return nothing
         }
     }
@@ -4779,7 +4793,7 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
     // - wrapped up as a Rexx method, hence easy to run it on a separate thread
 RexxMethod2(RexxObjectPtr, DbusMessageLoop, CSELF, connPtr, OSELF, self)
 {
-#ifdef DEBUG_MESSAGELOOP
+#if defined (DEBUG_MESSAGELOOP) || defined (DEBUG_CONNECTION)
     fprintf(stderr, "... MessageLoop(): just arrived ! ...\n"); fflush(stderr);
 #endif
 
@@ -6037,7 +6051,7 @@ else
 */
 
 
-#ifdef DEBUG_MESSAGELOOP
+#if defined (DEBUG_MESSAGELOOP) || defined (DEBUG_CONNECTION)
     fprintf(stderr, "... MessageLoop():  left message loop, changed instance variable 'active' to .false ...\n"); fflush(stderr);
 #endif
 
@@ -6061,7 +6075,7 @@ RexxMethod7(RexxObjectPtr, DbusBusSignalMessage, CSTRING,         senderObjectPa
     size_t items = (rexxArgs==NULLOBJECT ? 0 : context->ArraySize(rexxArgs)) ;
     size_t sigLen=strlen(signature);
 
-#if defined (DEBUG_METHODS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
    // fprintf(stderr, "===> arrived in DbusBusSignalMessage: rao=[%p], items=[%zu], signature=[%s]\n", rexxArgs, items, signature);fflush(stderr);
    fprintf(stderr, "===> arrived in DbusBusSignalMessage: rao=[%p], items=[%lu], signature=[%s]\n", rexxArgs, (unsigned long) items, signature);fflush(stderr);
 #endif
@@ -6185,7 +6199,6 @@ RexxMethod7(RexxObjectPtr, DbusBusSignalMessage, CSTRING,         senderObjectPa
        char msg[1024]="";     // buffer for error message
        SNPRINTF( msg, 1024, "%.16s/method/DbusBusSignalMessage(), error 7: could not send signal message, 'dbus_connection_send()()' returned NULL", DLLNAME);
 
-fprintf(stderr, "DBUS_SIG_TSK #1\n");fflush(stderr);
         // raise exception
        context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
        dbus_message_unref(dbusMsg); // free the message resources
@@ -6237,7 +6250,7 @@ RexxMethod9(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
     size_t items = (rexxArgs==NULLOBJECT ? 0 : context->ArraySize(rexxArgs)) ;
     size_t argSignatureLength=strlen(argSignature);
 
-#if defined (DEBUG_METHODS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
    // fprintf(stderr, "===> arrived in DbusBusCallMessage: rao=[%p], items=[%zu], argSignature=[%s] | replySignature=[%s]\n", rexxArgs, items, argSignature, replySignature);
    fprintf(stderr, "===> arrived in DbusBusCallMessage: rao=[%p], items=[%lu], argSignature=[%s] | replySignature=[%s]\n", rexxArgs, (unsigned long) items, argSignature, replySignature);
    fprintf(stderr, "===>                                ... busName=[%s], targetObjectPath=[%s], callInterfaceName=[%s], callMemberName=[%s]\n",
@@ -6436,7 +6449,6 @@ RexxMethod9(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
 
             dbus_message_unref(dbusMsg); // free the message resources
 
-fprintf(stderr, "DBUS_MSG_TSK #1\n");fflush(stderr);
              // raise exception
             context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
             return NULLOBJECT;           // return nothing
@@ -6446,7 +6458,6 @@ fprintf(stderr, "DBUS_MSG_TSK #1\n");fflush(stderr);
         {
             char msg[1024]="";     // buffer for error message
             SNPRINTF( msg, 1024, "%.16s/method/DbusBusCallMessage(), error 10: could not receive a valid pending message object from 'dbus_connection_send_with_reply()' (maybe you attempted to send Unix file descriptors and this connection does not support them?)", DLLNAME);
-fprintf(stderr, "DBUS_MSG_TSK #2\n");fflush(stderr);
             // raise exception
             context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
 
@@ -6487,7 +6498,6 @@ fprintf(stderr, "DBUS_MSG_TSK #2\n");fflush(stderr);
 
             char msg[1024]="";     // buffer for error message
             SNPRINTF( msg, 1024, "%.16s/method/DbusBusCallMessage(), error 11: could not receive a valid reply message object from 'dbus_connection_send_with_reply()'", DLLNAME);
-fprintf(stderr, "DBUS_MSG_TSK #3\n");fflush(stderr);
             // raise exception
             context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
             return NULLOBJECT;           // return nothing
@@ -6528,7 +6538,6 @@ fprintf(stderr, "DBUS_MSG_TSK #3\n");fflush(stderr);
 
         if (msgType==DBUS_MESSAGE_TYPE_ERROR) // reply was an error message, raise condition in caller and inform him !
         {
-fprintf(stderr, "DBUS_MSG_TSK #4a\n");fflush(stderr);
             char msg[1024]="";     // buffer for error message
             logical_t isNoReturnValueError=dbus_message_is_error(replyMsg, REXX_ERROR_MESSAGE_NO_RETURN_VALUE);
             if (!isNoReturnValueError)
@@ -6594,7 +6603,6 @@ fprintf(stderr, "DBUS_MSG_TSK #4a\n");fflush(stderr);
                 context->SetGuardOff();
             }
 
-fprintf(stderr, "DBUS_MSG_TSK #4\n");fflush(stderr);
             context->RaiseException(Rexx_Error_Incorrect_method_user_defined, ra);
 
             return NULLOBJECT;
@@ -6629,7 +6637,7 @@ fprintf(stderr, "DBUS_MSG_TSK #4\n");fflush(stderr);
         // close a private connection
 RexxMethod1(RexxObjectPtr, DbusNativeConnectionOpenPrivate, CSTRING, address)
 {
-#if defined (DEBUG_METHODS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusConnectionOpenPrivate: address=[%p] \n", address);
    fflush(stderr);
 #endif
@@ -6652,9 +6660,9 @@ RexxMethod1(RexxObjectPtr, DbusNativeConnectionOpenPrivate, CSTRING, address)
    }
    dbus_error_free(&err);  // not needed anymore
 
-        // save conn in a Rexx pointer object and save it as CSELF
+        // save conn in a Rexx pointer object and save it in attribute CSELF
    RexxPointerObject rpo = context->NewPointer(conn);
-   context->SetObjectVariable("CSELF", rpo); // set object's CSELF
+   context->SetObjectVariable("CSELF", rpo); // set object's CSELF attribute
 
    return NULLOBJECT;          // return nothing
 }
@@ -6664,16 +6672,24 @@ RexxMethod1(RexxObjectPtr, DbusNativeConnectionOpenPrivate, CSTRING, address)
         // close a private connection
 RexxMethod1(RexxObjectPtr, DbusNativeConnectionClose, CSELF, connPtr)
 {
-#if defined (DEBUG_METHODS)
-   fprintf(stderr, "===> arrived in DbusNativeConnectionClose: connPtr=[%p] \n", connPtr);
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
+   fprintf(stderr, "===> arrived in DbusNativeConnectionClose: connPtr=[%p], .nil=[%p] \n", connPtr, context->Nil());
    fflush(stderr);
 #endif
         // get self and carry out the
     DBusConnection *conn=(DBusConnection *) connPtr;
-    dbus_connection_close(conn);
-    dbus_connection_unref(conn);
-        // not a valid connection anymore, hence set CSELF to .nil
-    context->SetObjectVariable("CSELF", context->Nil());
+
+    if (connPtr!=NULL)      // rgf, 20140805
+    {
+#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
+        fprintf(stderr, "                DbusNativeConnectionClose:  about to close and unrer'ing...\n", connPtr); fflush(stderr);
+#endif
+        dbus_connection_close(conn);
+        dbus_connection_unref(conn);
+
+        // not a valid connection anymore, hence set CSELF attribute to .nil
+        context->SetObjectVariable("CSELF", context->Nil());
+    }
 
     return NULLOBJECT;          // return nothing
 }
@@ -6689,7 +6705,7 @@ RexxMethod1(RexxObjectPtr, DbusNativeConnectionClose, CSELF, connPtr)
 // --------------------------------------------------------------------------------
 void new_connection_callback (DBusServer *server, DBusConnection *conn, void *data) // callback on new connection
 {
-#if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_OOREXX_FIND_CLASS)
+#if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_OOREXX_FIND_CLASS) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in \"new_connection_callback(...)\", connPtr=[%p], data=[%p} \n", conn, data);
    fflush(stderr);
 #endif
@@ -6939,7 +6955,7 @@ void remove_timeout_callback (DBusTimeout *timeout, void *data) // callback on n
     // wrapped up as a Rexx method, hence easy to run it on a separate thread
 RexxMethod3(RexxObjectPtr, DbusServerTimeoutLoop, RexxObjectPtr, timeoutDataPointer, CSELF, connPtr, OSELF, self)
 {
-#if defined (DEBUG_TIMEOUTLOOP) || defined (DEBUG_METHODS)
+#if defined (DEBUG_TIMEOUTLOOP) || defined (DEBUG_METHODS)  || defined (DEBUG_CONNECTION)
     fprintf(stderr, "... TimeoutLoop(): just arrived ! ...\n"); fflush(stderr);
 #endif
 
@@ -7037,7 +7053,7 @@ RexxMethod3(RexxObjectPtr, DbusServerTimeoutLoop, RexxObjectPtr, timeoutDataPoin
     context->ReleaseLocalReference(ropTimeoutLoopActive);
 
 
-#if defined (DEBUG_TIMEOUTLOOP) || defined (DEBUG_METHODS)
+#if defined (DEBUG_TIMEOUTLOOP) || defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
     fprintf(stderr, "... TimeoutLoop(): about to leav.\n"); fflush(stderr);
 #endif
 
@@ -7171,7 +7187,7 @@ RexxMethod2(RexxObjectPtr, DbusNativeServerStartup,
     // wrapped up as a Rexx method, hence easy to run it on a separate thread
 RexxMethod2(RexxObjectPtr, DbusServerWatchLoop, CSELF, connPtr, OSELF, self)
 {
-#ifdef DEBUG_WATCHLOOP
+#if defined (DEBUG_WATCHLOOP) || defined (DEBUG_CONNECTION)
     fprintf(stderr, "... WatchLoop(): just arrived ! ...\n"); fflush(stderr);
 #endif
 
@@ -7368,7 +7384,7 @@ RexxMethod2(RexxObjectPtr, DbusServerWatchLoop, CSELF, connPtr, OSELF, self)
         }
     }       // end while
 
-#ifdef DEBUG_WATCHLOOP
+#if defined (DEBUG_WATCHLOOP) || defined (DEBUG_CONNECTION)
     fprintf(stderr, "... WatchLoop(): about to leave.\n"); fflush(stderr);
 #endif
 
@@ -7381,7 +7397,7 @@ RexxMethod2(RexxObjectPtr, DbusServerWatchLoop, CSELF, connPtr, OSELF, self)
         // test whether server instance is active
 RexxMethod1(logical_t, DbusNativeServerIsActive, CSELF, serverPtr)
 {
-#if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER)
+#if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusNativeServerIsActive: serverPtr=[%p] \n", serverPtr);
    fflush(stderr);
 #endif
@@ -7395,7 +7411,7 @@ RexxMethod1(logical_t, DbusNativeServerIsActive, CSELF, serverPtr)
         // get and return the server's id
 RexxMethod1(RexxObjectPtr, DbusNativeServerGetId, CSELF, serverPtr)
 {
-#if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER)
+#if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusNativeServerGetId: serverPtr=[%p] \n", serverPtr);
    fflush(stderr);
 #endif
@@ -7410,7 +7426,7 @@ RexxMethod1(RexxObjectPtr, DbusNativeServerGetId, CSELF, serverPtr)
 
         // raise exception
        context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
-       return NULL;
+       return NULLOBJECT;
     }
     RexxStringObject rso = context->String(tmpStr);
     dbus_free(tmpStr);
@@ -7422,7 +7438,7 @@ RexxMethod1(RexxObjectPtr, DbusNativeServerGetId, CSELF, serverPtr)
         // get and return server's address
 RexxMethod1(RexxObjectPtr, DbusNativeServerGetAddress, CSELF, serverPtr)
 {
-#if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER)
+#if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusNativeServerGetAddress: serverPtr=[%p] \n", serverPtr);
    fflush(stderr);
 #endif
@@ -7437,7 +7453,7 @@ RexxMethod1(RexxObjectPtr, DbusNativeServerGetAddress, CSELF, serverPtr)
 
         // raise exception
        context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
-       return NULL;
+       return NULLOBJECT;
     }
     RexxStringObject rso = context->String(tmpStr);
     dbus_free(tmpStr);
@@ -7449,17 +7465,21 @@ RexxMethod1(RexxObjectPtr, DbusNativeServerGetAddress, CSELF, serverPtr)
         // disconnect the server
 RexxMethod2(RexxObjectPtr, DbusNativeServerDisconnect, CSELF, serverPtr, OSELF, self)
 {
-#if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER)
+#if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_CONNECTION)
    fprintf(stderr, "===> arrived in DbusNativeServerDisconnect: serverPtr=[%p] \n", serverPtr);
    fflush(stderr);
 #endif
 
     DBusServer *server=(DBusServer *) serverPtr;
     dbus_server_disconnect(server);
-    dbus_server_unref(server);
+    dbus_server_unref(server);      // TODO: rgf, 20140805: the 2011 private build of dbus for 32-bit Windows will abend here;
 
     context->SendMessage1(self, "CSELF=", context->Nil()); // set CSELF
 
+#if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_CONNECTION)
+   fprintf(stderr, "                DbusNativeServerDisconnect: serverPtr=[%p], about to leave\n", serverPtr);
+   fflush(stderr);
+#endif
     return NULLOBJECT;
 }
 

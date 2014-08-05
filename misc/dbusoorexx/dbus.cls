@@ -119,7 +119,7 @@
 */
 .local~dbus.dir=.directory~new
 
-.dbus.dir~bDebug=.false -- .true -- .false -- .true
+.dbus.dir~bDebug      =.false -- .true -- .false -- .true
 .dbus.dir~bDebugServer=.false -- .true -- .false -- .true
 
 .dbus.dir~version="100.20140805"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
