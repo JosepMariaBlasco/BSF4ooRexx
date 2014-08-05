@@ -40,10 +40,17 @@
                                    may occur
                 2014-07-27, rgf: - marshalling and unmarshalling of dictionaries with multiple entries fixed
                 2014-07-31, rgf: - added routine DbusGetTID() to ease debugging
+                2014-08-05, rgf: - adding ReleaseLocalReference() where methods/routines may be running forever,ie.
+                                   in the various message/server loops and the functions that may be invoked from
+                                   within (ooRexx releases local references when returning from native
+                                   Rexx methods/routines)
+                                 - ooRexx 4.2.0 now required (because of using .context~name
+
+    possible todos: - add globals for Nil(), True(), Flase(), .Array, .DateTime, .DBus, "1", NullString()
 
 
 
-    version:    100.20140801
+    version:    100.20140805
     license:      Apache License 2.0
 
 ------------------------ Apache Version 2.0 license -------------------------
@@ -114,8 +121,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
    // rgf, 2011-06-11, cf. <>http://gcc.gnu.org/gcc-4.3/porting_to.html>
-   // (needed for old dbus-example to be able to compile unaltered)
-#include <cstring>    // ? maybe removable, once old code is replaced ?
+   // (needed for old dbus-example to be able to compile unaltered), but also for memset() strlen(), str[n]cpy()
+#include <cstring>    // ? maybe removable, once old code is replaced/tidied up ?
 
 #ifdef _MSC_VER
 # pragma warning(disable:4100)
@@ -128,11 +135,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 #ifdef DBUSOOREXX_32
-    #define DBUS_REXXVERSION    "100.20140801 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20140805 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (DBUSOOREXX_64)
-    #define DBUS_REXXVERSION    "100.20140801 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20140805 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define DBUS_REXXVERSION    "100.20140801 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20140805 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #ifndef TID
@@ -154,7 +161,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     // hence the following def is not really needed
 // #define REXX_AUTO_DISCONNECT_FROM_PRIVATE_SERVER
 
-#define  DEBUG_OOREXX_FIND_CLASS
+// #define  DEBUG_OOREXX_FIND_CLASS    // attempt to help RMG to debug FindClass() finding class that is not in .local or .environment
 
 
 // #define DEBUG_RGF           // for temporary debug output
@@ -415,25 +422,42 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
     RexxCondition cond;
     rtc->DecodeConditionInfo(condObj, &cond);
 
+    RexxObjectPtr        rxNil=rtc->Nil();
+    RexxObjectPtr       rxTrue=rtc->True();
+    RexxStringObject rsoSyntax=rtc->String("SYNTAX");
+
     char *msg=(char *)RexxAllocateMemory( 4096 );
     msg[0]=0;
 
         // format message according to exception type
-    if (rtc->SendMessage1(cond.conditionName, "EQUALS", rtc->String("SYNTAX"))==rtc->True()) // SYNTAX condition ?
+    // if (rtc->SendMessage1(cond.conditionName, "EQUALS", rtc->String("SYNTAX"))==rtc->True()) // SYNTAX condition ?
+    RexxObjectPtr ropRes=rtc->SendMessage1(cond.conditionName, "EQUALS", rsoSyntax);
+    // if (rtc->SendMessage1(cond.conditionName, "EQUALS", rsoSyntax)==rxTrue()) // SYNTAX condition ?
+    if (ropRes==rxTrue) // SYNTAX condition ?
     {
-        char const *line1=rtc->CString(rtc->SendMessage0(rtc->DirectoryAt(condObj, "TRACEBACK"), "FIRSTITEM")) ; // first traceback line=error line
+        RexxObjectPtr ropTraceback=rtc->DirectoryAt(condObj, "TRACEBACK");
+        // char const *line1=rtc->CString(rtc->SendMessage0(rtc->DirectoryAt(condObj, "TRACEBACK"), "FIRSTITEM")) ; // first traceback line=error line
+        RexxObjectPtr ropTmpRes=rtc->SendMessage0(ropTraceback, "FIRSTITEM");
+        // char const *line1=rtc->CString(rtc->SendMessage0(ropTraceback, "FIRSTITEM")) ; // first traceback line=error line
+        char const *line1=rtc->CString(ropTmpRes) ; // first traceback line=error line
 
         char line2[2048]="";        // will only use 1024 of it
         SNPRINTF(line2, 2048, "Error %d running %.512s line %d:  %.1024s",
-                            (int) cond.rc,      (NULL != cond.program   && rtc->Nil() != cond.program   ? rtc->CString( cond.program )  : "program n/a")   ,
-                            (int) cond.position,(NULL != cond.errortext && rtc->Nil() != cond.errortext ? rtc->CString( cond.errortext ): "errortext n/a") );
+                            // (int) cond.rc,      (NULL != cond.program   && rtc->Nil() != cond.program   ? rtc->CString( cond.program )  : "program n/a")   ,
+                            // (int) cond.position,(NULL != cond.errortext && rtc->Nil() != cond.errortext ? rtc->CString( cond.errortext ): "errortext n/a") );
+                            (int) cond.rc,      (NULL != cond.program   && rxNil != cond.program   ? rtc->CString( cond.program )  : "program n/a")   ,
+                            (int) cond.position,(NULL != cond.errortext && rxNil != cond.errortext ? rtc->CString( cond.errortext ): "errortext n/a") );
 
         char line3[2048]="";        // will only use 1024 of it
         SNPRINTF( line3, 2048, "Error %d.%d:  %.1024s", (int) (cond.code / 1000),
                                      (int) (cond.code % 1000),
-                                     (NULL != cond.message && rtc->Nil() != cond.message ? rtc->CString( cond.message ) : "message n/a") );
+                                     (NULL != cond.message && rxNil != cond.message ? rtc->CString( cond.message ) : "message n/a") );
+                                     // (NULL != cond.message && rtc->Nil() != cond.message ? rtc->CString( cond.message ) : "message n/a") );
 
         SNPRINTF( msg, 4096, "%.16s%.512s:\n%.1024s\n%.1024s\n%.1024s", DLLNAME, header, line1, line2, line3);
+
+        rtc->ReleaseLocalReference(ropTraceback);
+        rtc->ReleaseLocalReference(ropTmpRes);
     }
     else
     {
@@ -442,6 +466,10 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
                                   DLLNAME, header,
                                   (NULL != cond.conditionName && rtc->Nil() != cond.conditionName ? rtc->CString(cond.conditionName) : "conditionName n/a") );
     }
+    rtc->ReleaseLocalReference(ropRes);
+
+    rtc->ReleaseLocalReference(rxTrue);
+    rtc->ReleaseLocalReference(rxNil);
 
     return msg;
 }
@@ -626,6 +654,7 @@ RexxRoutine0(RexxStringObject, DbusHaltRexx)    // create Halt condition in all 
     // *                   --- Methods ---                                *
     // ********************************************************************
 
+/* --- rgf, 20140804
 RexxMethod0(RexxStringObject, DbusGetVersion)
 {
 #if defined (DEBUG_METHODS)
@@ -644,7 +673,7 @@ RexxMethod0(RexxStringObject, DbusGetVersion)
   return context->String(msg);
 }
 
-
+--- */
 
 
 RexxMethod1(RexxObjectPtr, DbusNativeGetSystemBus, RexxObjectPtr, genericBusObject)
@@ -3504,6 +3533,7 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
                 {
                     rso=pmarsh->context->ObjectToString(tmpRop);
                     bReleaseLocalReferenceRso=true;
+                    pmarsh->context->ReleaseLocalReference(tmpRop);
                 }
             }
             else        // rao==NULL !
@@ -6687,8 +6717,10 @@ void new_connection_callback (DBusServer *server, DBusConnection *conn, void *da
     RexxStringObject rsoAddr=rtc->String("native:connectionFromclient@");
     RexxStringObject rsoAddrWithDT=(RexxStringObject) rtc->SendMessage1(rsoAddr, "||", rsoDT);
 
+
         // create an instance of DBus (a connection)
     RexxClassObject      rco=rtc->FindClass("DBUS");    // get class
+
 
 #if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_OOREXX_FIND_CLASS)
    fprintf(stderr, "             in \"new_connection_callback(...)\", rco=[%p] \n", rco); fflush(stderr);
@@ -6948,7 +6980,9 @@ RexxMethod3(RexxObjectPtr, DbusServerTimeoutLoop, RexxObjectPtr, timeoutDataPoin
 #endif
 
         // allow loop thread to be ended by Rexx, e.g. checking the status of the "active" attribute (if .false return from message loop)
-    while (context->GetObjectVariable(timeoutLoopActive) == rxTrue) // while watch loop active, go ahead
+    RexxObjectPtr ropTimeoutLoopActive=context->GetObjectVariable(timeoutLoopActive);
+    // while (context->GetObjectVariable(timeoutLoopActive) == rxTrue) // while watch loop active, go ahead
+    while (ropTimeoutLoopActive == rxTrue) // while watch loop active, go ahead
     {
         if  (context->CheckCondition()) // is this thread affected by a Halt-condition? If so, leave
         {
@@ -6996,7 +7030,11 @@ RexxMethod3(RexxObjectPtr, DbusServerTimeoutLoop, RexxObjectPtr, timeoutDataPoin
 #endif
             dbus_timeout_handle(pto->timeout);  // let DBus act ...
         }
+
+        context->ReleaseLocalReference(ropTimeoutLoopActive);
+        ropTimeoutLoopActive=context->GetObjectVariable(timeoutLoopActive);
     }
+    context->ReleaseLocalReference(ropTimeoutLoopActive);
 
 
 #if defined (DEBUG_TIMEOUTLOOP) || defined (DEBUG_METHODS)
@@ -7285,13 +7323,17 @@ RexxMethod2(RexxObjectPtr, DbusServerWatchLoop, CSELF, connPtr, OSELF, self)
     fprintf(stderr, "... WatchLoop(): after select(maxfd+1,...) #2, res=[%d]... \n", res);
 #endif
 
-            if (context->GetObjectVariable(watchLoopActive) != rxTrue)  // stop watch loop ?
+            RexxObjectPtr ropWatchLoopActive=context->GetObjectVariable(watchLoopActive);
+            // if (context->GetObjectVariable(watchLoopActive) != rxTrue)  // stop watch loop ?
+            if (ropWatchLoopActive != rxTrue)  // stop watch loop ?
             {
 #ifdef DEBUG_WATCHLOOP
     fprintf(stderr, "... WatchLoop(): after select() #2, learned we need to stop watch loop, breaking! \n");
 #endif
+                context->ReleaseLocalReference(ropWatchLoopActive);
                 break;
             }
+            context->ReleaseLocalReference(ropWatchLoopActive);
 
                 // loop over list of DBusWatches
             for (PSTRUCT_WATCH pw=wl->watchList; pw && pw->watch; pw=pw->next )
@@ -7523,9 +7565,9 @@ RexxRoutine0(int, RgfTestStuff)
     RexxPackageEntry dbus_package_entry =
     {
         STANDARD_PACKAGE_HEADER
-        REXX_INTERPRETER_4_1_0,             // anything including and after 4.1.0 will work
+        REXX_INTERPRETER_4_2_0,             // anything including and after 4.2.0 will work
         "dbus",                             // name of the package
-        "0.96",                             // package information
+        "1.00",                             // package information
 
 #if defined(REXX_LOADER_UNLOADER) || defined (REXX_LOADER)
         dbusLoader,

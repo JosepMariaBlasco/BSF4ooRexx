@@ -86,6 +86,9 @@
                                     - if an error condition is raised in the message loop thread, it will get
                                       re-raised on the blocked thread upon return
                                   - added public routine DBusVersion() which includes the library and this package version
+                  - 2014-08-05, rgf: - adding .DBus to .local such that in native code FindClass("DBUS") will
+                                       remain able to find this class in the case that the reported bug
+                                       <http://sourceforge.net/p/oorexx/bugs/1275> gets fixed
 
 
       license:    Apache License 2.0
@@ -108,6 +111,8 @@
 */
 
 
+.local~dbus=.dbus       -- save .DBus class in .local to allow native code to use FindClass("DBUS") successfully
+
 /* Defining dbus shared constants, leaving the dbus names untouched, such that
    dbus-samples employing these constants can be easily transcribed to Rexx.
    Cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusShared.html>
@@ -117,7 +122,7 @@
 .dbus.dir~bDebug=.false -- .true -- .false -- .true
 .dbus.dir~bDebugServer=.false -- .true -- .false -- .true
 
-.dbus.dir~version="100.20140730"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
+.dbus.dir~version="100.20140805"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
 
 .dbus.dir~DBUS_SERVICE_DBUS            ="org.freedesktop.DBus"    -- "The bus name used to talk to the bus itself."
 .dbus.dir~DBUS_PATH_DBUS               ="/org/freedesktop/DBus"   -- "The object path used to talk to the bus itself."
@@ -202,6 +207,7 @@ call dynamicRequiresBSF4ooRexx   -- requires BSF.CLS
 
 ::routine dynamicRequiresBSF4ooRexx -- BSF4ooRexx: needed need for UTF-8 conversion routines
   signal on any
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   .context~package~loadPackage("BSF.CLS") -- if not found a syntax condition is raised and
                                           -- control transferred to (immediately following) "ANY:" label
 any:
@@ -351,6 +357,7 @@ syntax: raise propagate    -- raise in caller
 ::attribute pseudoAddress     set      -- 20140728, rgf: allows private server to set a pseudo address for each connected client
   expose address
   use strict arg address               -- just assign whatever we receive
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
 /* --- instance methods --- */
 /* much is implemented in native code, including setting attributes 'address',
@@ -455,6 +462,7 @@ say "   <- self~nativeConnectPrivate(address)"
 ::attribute sendEmptyReply    set       -- default: .true (append slotDir as last argument)
   expose sendEmptyReply
   use strict arg argSendEmptyReply=.true
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   if \datatype(argSendEmptyReply, "O") then
@@ -473,6 +481,7 @@ syntax:
 ::attribute makeSlotDir      set       -- default: .true (append slotDir as last argument)
   expose makeSlotDir
   use strict arg argMakeSlotDir=.true
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   if \datatype(argMakeSlotDir, "O") then
@@ -485,12 +494,13 @@ syntax:
 
    /* attribute controls whether the arguments from a reply (result of calling a message on
       a remote DBUS object) will get appended with a slotDir-directory supplying possibly
-      useful information about the DBUS message; default: .true
+      useful information about the DBUS message; default: .false
    */
 ::attribute makeReplySlotDir get
 ::attribute makeReplySlotDir set       -- default: .false (do not append slotDir to result of a message call (turning result into an array object)
   expose makeReplySlotDir
-  use strict arg argMakeReplySlotDir=.true
+  use strict arg argMakeReplySlotDir=.false  -- changed, 201407 rgf
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   if \datatype(argMakeReplySlotDir, "O") then
@@ -508,6 +518,7 @@ syntax:
 ::attribute unmarshalByteArrayAsString set       -- default: .true (append slotDir to result of a message call (turning result into an array object)
   expose unmarshalByteArrayAsString
   use strict arg argUnmarshalByteArrayAsString=.true
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   if \datatype(argUnmarshalByteArrayAsString, "O") then
@@ -528,6 +539,7 @@ syntax:
 */
 ::method waitOnConnectionClosed unguarded
   expose active
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   guard on when active=.false
 
 /*
@@ -669,6 +681,7 @@ syntax: raise propagate
 /** Block until connection (message loop) gets closed (attribute <code>active</code> turns <code>.false</code>. */
 ::method waitUntilClosed unguarded
   expose active
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   guard on when active=.false
 
 
@@ -766,6 +779,7 @@ syntax: raise propagate
 */
 ::method query_worker
   parse upper arg option +1 1 option3 +3 .      -- get first char and first three chars in uppercase
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   optionPos=pos(option, "ACOT")
@@ -803,6 +817,7 @@ syntax: raise propagate
       supports("T[ypecode]", typecode)            ... returns .false/.true; typecode can be a string: only returns .true then, if all characters are supported type codes
 */
 ::method canSendTypeCode  private  -- this name is neutral enough to allow extensions, if other connection-related tests are needed
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if arg()=0 then
   do
      str=""
@@ -847,6 +862,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 ::method listener unguarded
   expose internalSignalListeners internalRegisteredServiceObjects
 
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg action, ...
   .ArgUtil~validateClass("action", action, .string)
 
@@ -923,6 +939,8 @@ syntax:  raise propagate
    */
 ::method serviceObject unguarded
   expose internalSignalListeners internalRegisteredServiceObjects -- a directory
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+
   use strict arg action, objectPath=.nil, rexxObject=.nil
 
 -- say "---> rexxObject="pp2(rexxObject) "rexxObject~isA(.DbusServiceObject):" pp2(rexxObject~isA(.DbusServiceObject)) "self~bustype="pp2(self~bustype) "self~server="pp2(self~server)
@@ -1054,6 +1072,7 @@ syntax: raise propagate
 
 ::method    uniqueBusID_worker unguarded
    expose bustype
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
    if bustype="private" then return "private:rexx:"self~identityHash
    return self~nativeUniqueBusID
 
@@ -1109,6 +1128,7 @@ syntax: raise propagate
    */
 ::method busName_worker unguarded
   parse upper arg function .
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   firstLetter=function~left(1)
@@ -1183,6 +1203,7 @@ syntax: raise propagate
    /* folding methods of the "match" group into one parametrized method */
 ::method match_worker
   use strict arg action, filter, block=.false
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   firstLetter=action~strip~left(1)~upper
@@ -1303,6 +1324,7 @@ syntax:
 
 ::method getObject unguarded           -- request remote object, return a Rexx proxy object to allow interaction with it
   use strict arg busName, objectPath
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   res=DBusDatatype(busName,"Busname")
@@ -1322,6 +1344,7 @@ syntax:
 
 ::method getObjectPaths unguarded   -- return an array of object paths for the supplied bus name / service name
   use strict arg busName
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   objectPathList=.array~new
   self~workerGetObjectPaths("/",busName,objectPathList)
@@ -1337,6 +1360,7 @@ syntax:
 
 ::method workerGetObjectPaths unguarded private     -- interrogates service possessing bus/service name for object paths (if that service supports that)
    use arg objPath, busName, objectPathList
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
    signal on syntax
    o=self~getObject(busName, objPath)  -- try to get the DBus object
@@ -1385,6 +1409,7 @@ syntax:  -- mostlikely: org.freedesktop.DBus.Error.Reply or org.freedesktop.DBus
    /* as of 2011-07-05 ooRexx from trunk does not support UTF-8, hence depending on BSF4ooRexx */
 ::routine stringToUtf8 public    -- needs BSF4ooRexx
   parse arg str
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   if .bsf=".BSF" then   -- no BSF available (need to uncomment the ::requires BSF.CLS statement above), hence using the Rexx conversion procedure
      return utf8(str)
@@ -1418,12 +1443,14 @@ utf8: procedure
    /* ---------------------------------------------------------------------------------------- */
 ::routine utf8ToString public    -- needs BSF4ooRexx
   parse arg str
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   return BsfRawBytes(.java.lang.String~new(bsfRawBytes(str),"UTF-8")~getBytes)
 
 
    /* ---------------------------------------------------------------------------------------- */
 ::routine dbus.box       public     -- for variant types or overruling reply signatures, allow boxing
   use strict arg signature, argument=.nil
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
 
@@ -1444,6 +1471,7 @@ syntax: raise propagate
    the message loop of the DBus connection that invoked the Rexx method calling this routine   */
 ::routine raiseDBusError   public   -- this condition will be turned into an error-message in native code
   use arg errName="org.freedesktop.DBus.Error.RexxServiceRaised", errMessage=.nil
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   signal on syntax
   raise syntax 93.900 array (errName, errMessage, "ERRORREPLY")
 
@@ -1453,6 +1481,7 @@ syntax: raise propagate
    /* ---------------------------------------------------------------------------------------- */
 /* return the version information that includes the library version and this package's version */
 ::routine DBusVersion   public
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   return DBusVersionLibrary()", package dbus.cls=[".dbus.dir~version"]"
 
 
@@ -1496,6 +1525,7 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
 ::attribute proxy.introspectRootNode set  /* make introspection parse tree available */
   expose proxy.methods proxy.introspectRootNode
   use arg proxy.introspectRootNode
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
      -- create directory with those names that we should proxy for the proxy object
   proxy.methods=IDBus.getMethodsForProxy(proxy.introspectRootNode)
 
@@ -1756,6 +1786,7 @@ syntax: raise propagate
 
 ::attribute service.introspectRootNode set   /* make introspection parse tree available */
   expose service.methods service.introspectRootNode
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use arg service.introspectRootNode
      -- create directory with those names that we should proxy for the proxy object
   service.methods=IDBus.getMethodsForProxy(service.introspectRootNode)
@@ -1765,6 +1796,7 @@ syntax: raise propagate
 
 ::attribute service.replySignature get       /* returns the reply signature for the given member or .nil */
   expose service.methods service.objectPath
+if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use arg member, interface=""
 
   if service.methods<>.nil then
@@ -2494,6 +2526,7 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
 -- say "... timeoutDataPointer:" pp2(timeoutDataPointer) copies("<-/\",10)
   reply                                -- create a new thread
 
+if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "line:" pp(.line) "after REPLY"
   self~nativeStartServerTimeoutLoop(timeoutDataPointer)  -- start the timeout loop, pass (*data) via Rexx to native function
 
 
@@ -3436,7 +3469,7 @@ parseObjPath: procedure expose paths   -- create paths and save in relation
 */
 ::method executeQueuedMessages
   expose queuedMessages
-
+-- Uncommented as this method gets constantly invoked by the native message loop yielding too many debug outputs
 --  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "queuedMessages:" pp(queuedMessages~items)
 
   signal on any   -- trap any error condition to allow us to re-raise any of the trappable conditions in the blocked thread later
@@ -3557,8 +3590,12 @@ signal on any
 
      when condition~word(1)="USER"  then     -- as of ooRexx 4.2.0 "usercondition" cannot be supplied in an expression :(
      do
-        descr=condition "-" descr
-        raise user surrogate_from_postMessage_method_see_description_in_condition_object additional (addtl) description (descr)
+         -- as of 4.2.0 we cannot raise a user condition directly, hence doing it via an interpret keyword statement instead
+        stmt="raise" condition('c') "additional (arr) description (descr)"
+        interpret stmt
+
+        -- descr=condition "-" descr
+        -- raise user surrogate_from_postMessage_method_see_description_in_condition_object additional (addtl) description (descr)
      end
 
      otherwise
@@ -3638,3 +3675,8 @@ any:
 syntax:
   raise propagate
 
+
+/* Poor man's pretty pring, used in many code snippets. */
+::routine pp public
+  parse arg a
+  return "["a"]"
