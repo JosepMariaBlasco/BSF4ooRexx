@@ -43,14 +43,15 @@
                 2014-08-05, rgf: - adding ReleaseLocalReference() where methods/routines may be running forever,ie.
                                    in the various message/server loops and the functions that may be invoked from
                                    within (ooRexx releases local references when returning from native
-                                   Rexx methods/routines)
+                                   Rexx methods/routines); added a missing dbus_server_ref()-call (caused abend
+                                   on Windows)
                                  - ooRexx 4.2.0 now required (because of using .context~name
 
     possible todos: - add globals for Nil(), True(), Flase(), .Array, .DateTime, .DBus, "1", NullString()
+                    - change attribute name CSELF (probably misleading as it is not the same as CSELF in an
+                      ooRexx native method or routine argument type); if so, don't forget dbus.cls
 
-
-
-    version:    100.20140805
+    version:    100.20140806
     license:      Apache License 2.0
 
 ------------------------ Apache Version 2.0 license -------------------------
@@ -136,11 +137,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 #ifdef DBUSOOREXX_32
-    #define DBUS_REXXVERSION    "100.20140805 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20140806 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (DBUSOOREXX_64)
-    #define DBUS_REXXVERSION    "100.20140805 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20140806 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define DBUS_REXXVERSION    "100.20140805 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20140806 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #ifndef TID
@@ -6679,17 +6680,11 @@ RexxMethod1(RexxObjectPtr, DbusNativeConnectionClose, CSELF, connPtr)
         // get self and carry out the
     DBusConnection *conn=(DBusConnection *) connPtr;
 
-    if (connPtr!=NULL)      // rgf, 20140805
-    {
-#if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
-        fprintf(stderr, "                DbusNativeConnectionClose:  about to close and unrer'ing...\n", connPtr); fflush(stderr);
-#endif
-        dbus_connection_close(conn);
-        dbus_connection_unref(conn);
+    dbus_connection_close(conn);
+    dbus_connection_unref(conn);
 
-        // not a valid connection anymore, hence set CSELF attribute to .nil
-        context->SetObjectVariable("CSELF", context->Nil());
-    }
+    // not a valid connection anymore, hence set CSELF attribute to .nil
+    context->SetObjectVariable("CSELF", context->Nil());
 
     return NULLOBJECT;          // return nothing
 }
@@ -7096,6 +7091,8 @@ RexxMethod2(RexxObjectPtr, DbusNativeServerStartup,
     }
     dbus_error_free(&err);  // not needed anymore
 
+    dbus_server_ref(server);    // increase ref counter
+
         // save server's pointer
     RexxPointerObject rpo = context->NewPointer(server);
     context->SendMessage1(self, "CSELF=", rpo); // set CSELF
@@ -7472,6 +7469,7 @@ RexxMethod2(RexxObjectPtr, DbusNativeServerDisconnect, CSELF, serverPtr, OSELF, 
 
     DBusServer *server=(DBusServer *) serverPtr;
     dbus_server_disconnect(server);
+
     dbus_server_unref(server);      // TODO: rgf, 20140805: the 2011 private build of dbus for 32-bit Windows will abend here;
 
     context->SendMessage1(self, "CSELF=", context->Nil()); // set CSELF

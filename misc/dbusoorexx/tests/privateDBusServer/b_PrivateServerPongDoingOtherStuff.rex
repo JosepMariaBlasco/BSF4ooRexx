@@ -63,6 +63,7 @@ say "server~serverId:               " pp2(server~serverId)
 say "server~address:                " pp2(server~address)
 say "server~serverAddress:          " pp2(server~serverAddress)
 
+say "on Windows fetching the session and/or system bus will fail as of DBus 1.8.99."
 
 signal on syntax
 signal on halt

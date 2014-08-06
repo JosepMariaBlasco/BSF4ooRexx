@@ -1,0 +1,91 @@
+# debug, e.g.:    nmake /f Makefile64 clean && nmake /f Makefile64
+# release, e.g.:  nmake /f Makefile64 clean && nmake /f Makefile64 RELEASE=1
+# 64-bit version, rgf, 2014-08-06
+
+
+# rgf, 2011-09-20
+# DBUS_HOME       = e:\programme\dbus
+
+# rgf, 2014-08-06
+DBUS_HOME       = e:\programme\dbus-20140805-64bit
+DBUS_INCLUDE    = $(DBUS_HOME)\include
+DBUS_LIB_HOME   = $(DBUS_HOME)\lib
+
+LIB = $(LIB);$(DBUS_LIB_HOME)
+
+INC_PATH        = .;$(DBUS_INCLUDE)
+INCLUDE = $(INCLUDE);$(INC_PATH)
+OP_SYS          = -DWINDOWS
+# <--- rgf
+
+
+# What we are going to build
+all: dbusoorexx-64.dll
+
+# rgf: using path to directory that contains ooRexx 64-bit API files (to allow compilation on a 32-bit system)
+REXX_API=oorexx64api
+INCLUDE = $(INCLUDE);$(REXX_API)
+LIB = $(LIB);$(REXX_API)
+
+# !IF DEFINED(REXX_HOME)
+# INCLUDE = $(INCLUDE);$(REXX_HOME)\api
+# LIB = $(LIB);$(REXX_HOME)\api
+# !ENDIF
+
+REXX_LIBS = rexx.lib rexxapi.lib
+# DBUS_LIB  = dbus-1.lib
+# even on 64-bit with MS cl it is called "ws2_32.lib" !
+DBUS_LIB  = dbus-1.lib ws2_32.lib
+
+WARNINGFLAGS = /W3 /Wp64 /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE
+
+DEF_FILE = /def:dbusoorexx-64.def
+
+!IF DEFINED(RELEASE)
+# Set the compile and link flags for a release build
+# OOREXX_CFLAGS = /nologo /EHsc /O2 /Gs /FAcs /MT /showIncludes $(WARNINGFLAGS) -DWINDOWS -DDBUSOOREXX_64 /c
+OOREXX_CFLAGS = /nologo /EHsc /O2 /Gs /FAcs /MT $(WARNINGFLAGS) -DWINDOWS -DDBUSOOREXX_64 /c /Fo$(@B).obj
+DLL_LFLAGS = /nologo /SUBSYSTEM:Windows $(REXX_LIBS) $(DBUS_LIB) $(DEF_FILE) /DLL
+!ELSE # release not defined
+# Set the compile and link flags for a debug build
+OOREXX_CFLAGS =  /nologo /EHsc /Zi /Od /MTd $(WARNINGFLAGS) -DWINDOWS -DDBUSOOREXX_64 /c
+DLL_LFLAGS = /nologo /DEBUG -debugtype:cv /SUBSYSTEM:Windows $(REXX_LIBS) $(DBUS_LIB) $(DEF_FILE) /DLL
+!ENDIF
+
+
+dbusoorexx-64.dll: dbusoorexx-64.obj
+    @echo "DLL_LFLAGS :" $(DLL_LFLAGS)
+    @echo begin-LIB---
+    @echo $(LIB)
+    @echo begin-LINK---
+    @echo link $(DLL_LFLAGS) $(@B).obj -out:$(@B).dll
+    @echo start---
+#    link $(DLL_LFLAGS) $(@B).obj -out:$(@B).dll
+    link $(DLL_LFLAGS) $(@B).obj bufferoverflowu.lib -out:$(@B).dll
+    @echo end---
+    copy $(@B).dll ..
+    copy $(@B).dll dbusoorexx.dll
+#    copy $(@B).dll 64\dbusoorexx.dll
+    @if exist $(@B).exp copy $(@B).exp dbusoorexx.exp > nul
+    @if exist $(@B).ilk copy $(@B).ilk dbusoorexx.ilk > nul
+    @if exist $(@B).lib copy $(@B).lib dbusoorexx.lib > nul
+    @if exist $(@B).obj copy $(@B).obj dbusoorexx.obj > nul
+    @if exist $(@B).pdb copy $(@B).pdb dbusoorexx.pdb > nul
+
+
+
+dbusoorexx-64.obj: dbusoorexx.cc
+  @echo "OOREXX_CFLAGS:" $(OOREXX_CFLAGS)
+  @echo --begin--compile
+  @echo cl $(OOREXX_CFLAGS) /Fo$(@B).obj dbusoorexx.cc
+  @echo --start--compile
+  cl $(OOREXX_CFLAGS) /Fo$(@B).obj dbusoorexx.cc
+  @echo --end--compile
+
+mostlyclean:
+	del *.obj *.ilk *.lib *.exp  *.cod *.res *.map 1>nul 2>&1
+
+clean:
+  attrib -h *.suo 1>nul 2>&1
+	del *.exe *.dll *.obj *.ilk *.pdb *.lib *.exp *.suo *.cod *.res *.sln *.map 1>nul 2>&1
+
