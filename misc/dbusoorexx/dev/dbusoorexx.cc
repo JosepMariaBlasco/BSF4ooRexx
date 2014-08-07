@@ -1,3 +1,40 @@
+/** This is the ooRexx native library for interfacing with the DBus message infrastructure that
+ *  has been developed for Linux and has been employed by many Linux distributions. As ports to
+ *  Windows and MacOSX of DBus exist, those platforms are supported as well.
+ *
+ *  This library needs 'dbus.cls' which is tightly integrated as classes and methods of that ooRexx
+ *  package are being used from the native code.
+ *
+ *  The following scenarios are supported:
+ *
+ * <ul>
+ * <li> DBus interaction with DBus services. In this scenario first a connection to the DBus
+ *      has to be established (e.g. 'session', 'system', or any other 'private address'), which
+ *      kicks off a proper message loop (c.f. the RexxMethod DbusMessageLoop(...), which
+ *      fulfills the libdbus requirement that messages get received and sent within the same
+ *      thread. Code in the 'dbus.cls' package makes sure that any message to be sent via DBus
+ *      will be dispatched within the message loop thread.
+ *
+ * <li> ooRexx DBus singal listeners and ooRexx service objects. In this scenario any messages
+ *      directed to ooRexx signal listeners and ooRexx service objects get dispatched via the
+ *      message loop for the connection which is used to filter signals or which was used to
+ *      register the DBus service.
+ *
+ * <li> Private DBus servers. In this scenario an ooRexx program running on any operating system
+ *      can serve any DBus clients from any other operating systems. In this scenario for each
+ *      ooRexx private DBus server a watch loop is created in its own thread that dispatches
+ *      client connections, whenever a private DBus client tries to establish a connection. For
+ *      each new connection a proper message loop is established to receive and send DBus messages.
+ *      It is possible to add ooRexx DBus service objects and add ooRexx listener objects on that
+ *      connection as is the case in the first two scenarios above.
+ *
+ * </ul>
+ *
+ *  @author Rony G. Flatscher
+ *  @version 2014-08-07
+ *
+ */
+
 /*
     author:     Rony G. Flatscher (c) 2011
     date:       2011-07-17 (2011-06-11, 2011-07-17)
@@ -45,13 +82,16 @@
                                    within (ooRexx releases local references when returning from native
                                    Rexx methods/routines); added a missing dbus_server_ref()-call (caused abend
                                    on Windows)
-                                 - ooRexx 4.2.0 now required (because of using .context~name
+                                 - ooRexx 4.2.0 now required (because of using .context~name in 'dbus.cls' package
+                2014-08-07, rgf: - tidied up the source
 
-    possible todos: - add globals for Nil(), True(), Flase(), .Array, .DateTime, .DBus, "1", NullString()
+
+    possible todos: - add globals for Nil(), True(), Flase(), .Array, .DateTime, .DBus, "1", "", as well
+                      as index name in dateTime directory entries
                     - change attribute name CSELF (probably misleading as it is not the same as CSELF in an
                       ooRexx native method or routine argument type); if so, don't forget dbus.cls
 
-    version:    100.20140806
+    version:    100.20140807
     license:      Apache License 2.0
 
 ------------------------ Apache Version 2.0 license -------------------------
@@ -71,9 +111,6 @@
 -----------------------------------------------------------------------------
 */
 
-// TODO: 2014-07, rgf: - check for need of executing ReleaseLocalReference() !
-//                     - store ooRexx classes ARRAY, DATETIME, DBUS in global constants instead
-
 
 #ifdef __cplusplus
 extern "C" {            // make sure no C++ name mangling comes into the way
@@ -92,26 +129,9 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     #define DBUS_VERSION_STRING  "<n/a>"
 #endif
 
-
 #ifndef  DBUS_TYPE_UNIX_FD      // e.g. not defined for Windows, still incorporate it
     #define DBUS_TYPE_UNIX_FD ((int) 'h')
 #endif
-
-
-/*
-#include "oorexxapi.h"  // testing for cygwin-compilation, hence moved here because of re-definitions
-
-#include <sys/types.h> // rgf-temp
-#include <unistd.h>     // rgf-temp
-#include <sys/select.h> // rgf-temp
-
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <stdbool.h>    // rgf-temp
-#include <sys/types.h>  // rgf-temp
-#include <stdint.h>     // rgf-temp
-*/
 
 
 #include <stdio.h>
@@ -121,9 +141,6 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 #include "oorexxapi.h"
 
 
-   // rgf, 2011-06-11, cf. <>http://gcc.gnu.org/gcc-4.3/porting_to.html>
-   // (needed for old dbus-example to be able to compile unaltered), but also for memset() strlen(), str[n]cpy()
-// #include <cstring>    // ? maybe removable, once old code is replaced/tidied up ? Clang won't accept that anymore (20140805)
 #include <string.h>     // will allow access to memset() et.al.
 
 #ifdef _MSC_VER
@@ -137,11 +154,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 #ifdef DBUSOOREXX_32
-    #define DBUS_REXXVERSION    "100.20140806 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20140807 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (DBUSOOREXX_64)
-    #define DBUS_REXXVERSION    "100.20140806 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20140807 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define DBUS_REXXVERSION    "100.20140806 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20140807 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #ifndef TID
@@ -163,13 +180,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     // hence the following def is not really needed
 // #define REXX_AUTO_DISCONNECT_FROM_PRIVATE_SERVER
 
+
 // #define  DEBUG_OOREXX_FIND_CLASS    // attempt to help RMG to debug FindClass() finding class that is not in .local or .environment
 
-
 // #define DEBUG_RGF           // for temporary debug output
-
 // #define DEBUG_MESSAGELOOP
-
 // #define DEBUG_CONNECTION
 
 /*
@@ -188,6 +203,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 */
 
 
+#define DEBUG_TIMEOUTLOOP
 
 /*
     // for debugging private server
@@ -260,15 +276,13 @@ typedef struct _STRUCT_MARSHAL {
 
     RexxClassObject      arrayClass;    // for unmarshalling convenience
     logical_t            is_ay;         // special handling of byte array for Rexx active ?,
-                                        //   marshalling:   "s"->"ay", if "s" input and "ay" output!
-                                        //   unmarshalling: "aay" -> "as"
+                                        //   unmarshalling: "ay" -> "s"
     logical_t            unmarshal_ay_as_string;    // determined by connection attribute: true ay->string, ay->ay else
     logical_t            marshal_ay_as_string; // determined in marshal(...)'s array branch
 
     logical_t            is_dict;       // special handling of byte array for Rexx active ?,
                                         //   marshalling:   .directory->"a{sY}"
                                         //   unmarshalling: "a{xY}" -> .directory object !
-//    int                  filler;        // ---rgf, 2014-07-27, never used, but set to \0
 
 }  STRUCT_MARSHAL;
 
@@ -279,17 +293,6 @@ long size_STRUCT_MARSHAL=sizeof(STRUCT_MARSHAL);    // get and memorize size of 
 #if (defined (DEBUG_MARSHAL) || defined (DEBUG_UNMARSHAL)) && defined (DEBUG_STRUCT_MARSHAL_PRINT)   // rgf, 20140726
 void dump_struct_marshal(PSTRUCT_MARSHAL pm)
 {
-    // fprintf(stderr, " \t\t--- PSTRUCT_MARSHAL() --->: RTC=[%p], \n\t\t\tsignature=[%s]/length=[%lu], cursor=[%c]/pos=[%d], \n\t\t\telementStart=[%c]/pos=[%d], elementEnd=[%c]/pos=[%d], arrStart=[%c]/pos=[%d], arrEnd=[%c]/pos=[%d]\n\t\t\tis_ay=[%d], is_dict=[%d], marsh_ay_as_s=[%d], unmarsh_ay_as_s=[%d]\n",
-    // pm->context, pm->signature, pm->signatureLength,
-    // *pm->cursor, (int)(pm->cursor - pm->signature),
-    // *pm->elementStart, (int)(pm->elementStart - pm->signature),
-    // *pm->elementEnd, (int)(pm->elementEnd - pm->signature),
-    // *pm->arrStart, (int)(pm->arrStart - pm->signature),
-    // *pm->arrEnd, (int)(pm->arrEnd - pm->signature),
-    // (int) pm->is_ay, (int) pm->is_dict,
-    // (int) pm->marshal_ay_as_string, (int) pm->unmarshal_ay_as_string
-    // );
-
     fprintf(stderr, " ---prr---> PSTRUCT_MARSHAL() --->: RTC=[%p],signature=[%p], cursor=[%p], elStart=[%p], elEnd=[%p], arrStart=[%p], arrEnd=[%p], dimensions=[%lu] ",
                      pm->context,
                      pm->signature,
@@ -420,6 +423,10 @@ RgfGetTID()
         #endif
 }
 
+
+/** Create a Rexx-like/formatted error message (origin: BSF4ooRexx.cc.
+ *  @return errorString must be freed by receiver
+*/
     // from BSF4ooRexx.cc
     // allocates and creates a Rexx-like error message
     // returned *msg must be freed
@@ -436,21 +443,15 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
     msg[0]=0;
 
         // format message according to exception type
-    // if (rtc->SendMessage1(cond.conditionName, "EQUALS", rtc->String("SYNTAX"))==rtc->True()) // SYNTAX condition ?
     RexxObjectPtr ropRes=rtc->SendMessage1(cond.conditionName, "EQUALS", rsoSyntax);
-    // if (rtc->SendMessage1(cond.conditionName, "EQUALS", rsoSyntax)==rxTrue()) // SYNTAX condition ?
     if (ropRes==rxTrue) // SYNTAX condition ?
     {
         RexxObjectPtr ropTraceback=rtc->DirectoryAt(condObj, "TRACEBACK");
-        // char const *line1=rtc->CString(rtc->SendMessage0(rtc->DirectoryAt(condObj, "TRACEBACK"), "FIRSTITEM")) ; // first traceback line=error line
         RexxObjectPtr ropTmpRes=rtc->SendMessage0(ropTraceback, "FIRSTITEM");
-        // char const *line1=rtc->CString(rtc->SendMessage0(ropTraceback, "FIRSTITEM")) ; // first traceback line=error line
         char const *line1=rtc->CString(ropTmpRes) ; // first traceback line=error line
 
         char line2[2048]="";        // will only use 1024 of it
         SNPRINTF(line2, 2048, "Error %d running %.512s line %d:  %.1024s",
-                            // (int) cond.rc,      (NULL != cond.program   && rtc->Nil() != cond.program   ? rtc->CString( cond.program )  : "program n/a")   ,
-                            // (int) cond.position,(NULL != cond.errortext && rtc->Nil() != cond.errortext ? rtc->CString( cond.errortext ): "errortext n/a") );
                             (int) cond.rc,      (NULL != cond.program   && rxNil != cond.program   ? rtc->CString( cond.program )  : "program n/a")   ,
                             (int) cond.position,(NULL != cond.errortext && rxNil != cond.errortext ? rtc->CString( cond.errortext ): "errortext n/a") );
 
@@ -458,7 +459,6 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
         SNPRINTF( line3, 2048, "Error %d.%d:  %.1024s", (int) (cond.code / 1000),
                                      (int) (cond.code % 1000),
                                      (NULL != cond.message && rxNil != cond.message ? rtc->CString( cond.message ) : "message n/a") );
-                                     // (NULL != cond.message && rtc->Nil() != cond.message ? rtc->CString( cond.message ) : "message n/a") );
 
         SNPRINTF( msg, 4096, "%.16s%.512s:\n%.1024s\n%.1024s\n%.1024s", DLLNAME, header, line1, line2, line3);
 
@@ -467,7 +467,6 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
     }
     else
     {
-        // sprintf(msg, "%.16s%.512s: Rexx condition [%.512s] raised", DLLNAME, header, rtc->CString(cond.conditionName));
         SNPRINTF( msg, 4096, "%.16s%.512s: Rexx condition [%.512s] raised",
                                   DLLNAME, header,
                                   (NULL != cond.conditionName && rtc->Nil() != cond.conditionName ? rtc->CString(cond.conditionName) : "conditionName n/a") );
@@ -484,9 +483,11 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
 
 
 #if defined (REXX_LOADER_UNLOADER) || defined (REXX_LOADER)
-    // typedef void (RexxEntry *RexxPackageLoader)(RexxThreadContext *);
     // as of ooRexx 4.0: the library gets loaded once and is available globally to all RexxInstances,
     //                   hece it runs once per process only
+/** Run when ooRexx loads this native library. Could be used e.g. for creating ooRexx constant objects to
+*   be saved in gloabal variables.
+*/
 void RexxEntry dbusLoader (RexxThreadContext *rtc)
 {
 #if defined (DEBUG_LOADER_UNLOADER )
@@ -511,7 +512,6 @@ void RexxEntry dbusLoader (RexxThreadContext *rtc)
     fflush(stderr);
 #endif
 
-//    rgfInitLocks();        // Initialize critical section (from BSF4ooRexx)
 }
 #endif
 
@@ -519,7 +519,6 @@ void RexxEntry dbusLoader (RexxThreadContext *rtc)
 
 
 #if defined (REXX_LOADER_UNLOADER) || defined (REXX_UNLOADER)
-// typedef void (RexxEntry *RexxPackageUnloader)(RexxThreadContext *);
 // as of ooRexx 4.0: the library gets loaded once and is available globally to all RexxInstances,
 //                   hece it runs once per process only
 void RexxEntry dbusUnloader (RexxThreadContext * rtc)
@@ -547,7 +546,10 @@ void RexxEntry dbusUnloader (RexxThreadContext * rtc)
     // *                   --- Routines ---                               *
     // ********************************************************************
 
+
 // get and return various version information as a string
+/** Returns the library version information together with the versions of runtime DBus and compile time DBus.
+*/
 RexxRoutine0(RexxStringObject, DbusVersionLibrary)
 {
 #ifdef RGF_INFO
@@ -569,6 +571,13 @@ RexxRoutine0(RexxStringObject, DbusVersionLibrary)
 
 
     // ---rgf, 2003-08-06: allow Rexx to retrieve its TID (i.e. Java's "JNIEnv" object)
+/** Returns the thread identification string. Can be used for debugging thread-related activations.
+*
+* @pparam option optional, by default a 'H'uman conceivable string ('java n', where 'n' is a
+*         consecutively numbered value), otherwise 'S'ystem (numeric) value gets returned
+*
+* @return threadInfoString
+*/
 RexxRoutine1(RexxStringObject, DbusGetTID, OPTIONAL_CSTRING, option)    // 20090505, ---rgf, only a stub for backward compatibility
 {
 #ifdef UNIX
@@ -593,17 +602,19 @@ RexxRoutine1(RexxStringObject, DbusGetTID, OPTIONAL_CSTRING, option)    // 20090
     RexxStringObject    rsoOption=context->String(option==NULL ? "H" : option );
     RexxStringObject rsoFormatted=(RexxStringObject) context->SendMessage2(rco, "FORMATTID", rso, rsoOption);  // get DBus (bus connection) object
 
-
     return rsoFormatted;
 }
 
 
-
-
 // external Rexx function for validating values; as DBUS 1.4.x only supports validating signatures,
 // initially only signatures get evaluated
-//
-// validate signature: if o.k. return .true, else the error message
+/** Validates a signature.
+ *
+ * @param strValue the string to be validated
+ * @param option optional, currently only 'S'
+ *
+ * @return <code>.true</code> or <code>.false</code>
+ */
 RexxRoutine2(RexxObjectPtr, DbusValidate, CSTRING, strValue, OPTIONAL_CSTRING, flag)
 {
 #ifdef RGF_INFO
@@ -641,9 +652,7 @@ RexxRoutine2(RexxObjectPtr, DbusValidate, CSTRING, strValue, OPTIONAL_CSTRING, f
 
 
 
-
 // --------------------------------------------------------------------------------
-// TODO: decide whether to make it available
 // allows to halt all Rexx threads of current interpreter; experimental
 RexxRoutine0(RexxStringObject, DbusHaltRexx)    // create Halt condition in all threads
 {
@@ -660,28 +669,8 @@ RexxRoutine0(RexxStringObject, DbusHaltRexx)    // create Halt condition in all 
     // *                   --- Methods ---                                *
     // ********************************************************************
 
-/* --- rgf, 20140804
-RexxMethod0(RexxStringObject, DbusGetVersion)
-{
-#if defined (DEBUG_METHODS)
-   fprintf(stderr, "===> arrived in DbusGetVersion\n");
-   fflush(stderr);
-#endif
 
-    int major, minor, micro;
-    dbus_get_version(&major, &minor, &micro);
-
-  char msg[256]="";     // buffer for error message
-  SNPRINTF(msg, 256, "%s=[%s], compile-time dbus=[%s], runtime dbus=[%d.%d.%d]",
-                    DLLNAME, DBUS_REXXVERSION, DBUS_VERSION_STRING,
-                    major, minor, micro
-                    );
-  return context->String(msg);
-}
-
---- */
-
-
+// return a connection to the system bus
 RexxMethod1(RexxObjectPtr, DbusNativeGetSystemBus, RexxObjectPtr, genericBusObject)
 {
 #if defined (DEBUG_METHODS)
@@ -728,6 +717,7 @@ RexxMethod1(RexxObjectPtr, DbusNativeGetSystemBus, RexxObjectPtr, genericBusObje
 }
 
 
+// return a connection to the session bus
 RexxMethod1(RexxObjectPtr, DbusNativeGetSessionBus, RexxObjectPtr, genericBusObject)
 {
 #if defined (DEBUG_METHODS)
@@ -773,7 +763,7 @@ RexxMethod1(RexxObjectPtr, DbusNativeGetSessionBus, RexxObjectPtr, genericBusObj
 }
 
 
-        // get and return unique bus name (.Dbus instance method)
+// get and return unique bus name (.Dbus instance method)
 RexxMethod1(RexxStringObject, DbusGetUniqueBusName, CSELF, connPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
@@ -799,7 +789,8 @@ RexxMethod1(RexxStringObject, DbusGetUniqueBusName, CSELF, connPtr)
     return rso;
 }
 
-        // get and return unique machine id
+
+// get and return unique machine id
 RexxMethod0(RexxStringObject, DbusGetUniqueMachineId)
 {
 #if defined (DEBUG_METHODS)
@@ -813,7 +804,7 @@ RexxMethod0(RexxStringObject, DbusGetUniqueMachineId)
 }
 
 
-        // get and return unique bus id (.Dbus instance method)
+// get and return unique bus id (.Dbus instance method)
 RexxMethod1(RexxObjectPtr, DbusGetUniqueBusId, CSELF, connPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
@@ -839,12 +830,11 @@ RexxMethod1(RexxObjectPtr, DbusGetUniqueBusId, CSELF, connPtr)
     }
     RexxStringObject rso = context->String( (tmpStr==NULL ? "" : tmpStr) );
     dbus_free(tmpStr);
-    // context->SendMessage1(genericBusObject, "UNIQUEBUSNAME=", rso);
     return rso;
 }
 
 
-    // if open, returns true, false else; cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusConnection.html#ga611ae94556af36fe30bfb547366ca4e1>
+// if open, returns true, false else; cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusConnection.html#ga611ae94556af36fe30bfb547366ca4e1>
 RexxMethod1(RexxObjectPtr, DbusConnectionIsConnected, CSELF, connPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
@@ -860,7 +850,7 @@ RexxMethod1(RexxObjectPtr, DbusConnectionIsConnected, CSELF, connPtr)
 }
 
 
-    // expects a single char; if that is a supported type code returns .true, otherwise .false
+// expects a single char; if that is a supported type code returns .true, otherwise .false
 RexxMethod2(RexxObjectPtr, DbusConnectionCanSendType, CSTRING, typeCode, CSELF, connPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
@@ -876,7 +866,7 @@ RexxMethod2(RexxObjectPtr, DbusConnectionCanSendType, CSTRING, typeCode, CSELF, 
 }
 
 
-    // if authenticated, returns true, false else
+// if authenticated, returns true, false else
 RexxMethod1(RexxObjectPtr, DbusConnectionIsAuthenticated, CSELF, connPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
@@ -893,10 +883,10 @@ RexxMethod1(RexxObjectPtr, DbusConnectionIsAuthenticated, CSELF, connPtr)
 
 
 
-    // ============================================================================= //
-    // busname related --->
+// ============================================================================= //
+// busname related --->
 
-        // request a unique bus name (.Dbus instance method)
+// request a unique bus name (.Dbus instance method)
 RexxMethod3(RexxObjectPtr, DbusBusNameRequest, CSTRING,       busName,
                                                OPTIONAL_RexxObjectPtr, flags,
                                                CSELF,         connPtr)
@@ -955,8 +945,8 @@ RexxMethod3(RexxObjectPtr, DbusBusNameRequest, CSTRING,       busName,
 }
 
 
-        // test whether bus name has an owner (.Dbus instance method)
-        // deprecated because of race-conditions, cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusBus.html#ga5331b172dd8ed00eec130e894c5c2a0b>
+// test whether bus name has an owner (.Dbus instance method)
+// @deprecated because of race-conditions, cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusBus.html#ga5331b172dd8ed00eec130e894c5c2a0b>
 RexxMethod2(RexxObjectPtr, DbusBusNameHasOwner, CSTRING, busName,
                                                 CSELF,   connPtr)
 {
@@ -1019,10 +1009,11 @@ RexxMethod2(RexxObjectPtr, DbusBusNameRelease, CSTRING, busName,
 }
 
 
-    // ============================================================================= //
-    // match rule related --->
 
-        // removes the most recent added rule, if found
+// ============================================================================= //
+// match rule related --->
+
+// add match rule
 RexxMethod3(RexxObjectPtr, DbusBusAddMatch, CSTRING, rule,
                                             OPTIONAL_RexxObjectPtr, block,
                                             CSELF,   connPtr)
@@ -1083,7 +1074,7 @@ RexxMethod3(RexxObjectPtr, DbusBusAddMatch, CSTRING, rule,
 }
 
 
-        // removes the most recent added rule, if found
+// removes the most recent added rule, if found
 RexxMethod3(RexxObjectPtr, DbusBusRemoveMatch, CSTRING, rule,
                                                OPTIONAL_RexxObjectPtr, block,
                                                CSELF,   connPtr)
@@ -1143,11 +1134,13 @@ RexxMethod3(RexxObjectPtr, DbusBusRemoveMatch, CSTRING, rule,
 
 
 
-
 // --------------------------------------------------------------------------------
 // -------------------------------- helper functions ------------------------------
 
 // --------------------------------------------------------------------------------
+/** This function tests the string for the value "useThisSignature=" caselessly, which
+*   gets used in the pbulic 'dbus.cls' pacakge routine "DBus.box()".
+*/
 inline bool OVERRIDE_SIGNATURE_GIVEN(CSTRING fel)
 {
     return
@@ -1172,7 +1165,7 @@ inline bool OVERRIDE_SIGNATURE_GIVEN(CSTRING fel)
 }
 
 // --------------------------------------------------------------------------------
-    // return array's content as a comma-separated string
+    // return RexxArrayObject's content as a comma-separated CSTRING
 inline CSTRING ARR_AS_STRING( RexxArrayObject arrIdx , RexxThreadContext *context)
 {
     RexxObjectPtr arg1= context->NewString("L",1);
@@ -1182,7 +1175,11 @@ inline CSTRING ARR_AS_STRING( RexxArrayObject arrIdx , RexxThreadContext *contex
     context->ReleaseLocalReference(arg1);
     context->ReleaseLocalReference(arg2);
 
-    return context->ObjectToStringValue(rop);
+    // return context->ObjectToStringValue(rop);
+    CSTRING tmpValue=context->ObjectToStringValue(rop);
+    context->ReleaseLocalReference(rop);
+
+    return tmpValue;
 }
 
 
@@ -1192,9 +1189,7 @@ inline size_t GET_ARRAY_SIZE_AT_DIMENSION(RexxArrayObject rao, int32_t dimension
 {
     RexxObjectPtr ropLevel=context->Int32ToObject(dimension);
 
-    // flag=context->ObjectToStringSize(context->SendMessage1(rao, "DIMENSION", ropLevel), &val);
     RexxObjectPtr ropDim=context->SendMessage1(rao, "DIMENSION", ropLevel);
-    // logical_t flag;
     size_t    val=0;
     context->ObjectToStringSize(ropDim, &val);
 
@@ -1276,7 +1271,6 @@ fprintf(stderr, "     /// GET_UNMARSHAL_ARRAY..., ArrayAt(index=[%d)=[%p]\n", in
     RexxObjectPtr rop=context->ArrayAt(arrIdx, index);
     if (rop!=NULL)
     {
-        // flag=context->ObjectToStringSize(context->ArrayAt(arrIdx, index), &val);
         RexxObjectPtr ropVal=context->ArrayAt(arrIdx, index);
         context->ObjectToStringSize(ropVal, &val);
         context->ReleaseLocalReference(ropVal);
@@ -1286,17 +1280,17 @@ fprintf(stderr, "     /// GET_UNMARSHAL_ARRAY..., ArrayAt(index=[%d)=[%p]\n", in
     return val;
 }
 
+
 // --------------------------------------------------------------------------------
     // convenience inline function to set the index array to the desired value
 inline void SET_ARRAY_IDX(RexxArrayObject arrIdx, size_t idx, size_t numVal, RexxThreadContext *context)
 {
-    // context->ArrayPut(arrIdx, context->StringSizeToObject(numVal), idx);
-
     RexxObjectPtr rop=context->StringSizeToObject(numVal);
     context->ArrayPut(arrIdx, rop, idx);
     context->ReleaseLocalReference(rop);
 
 }
+
 
 // --------------------------------------------------------------------------------
     // convenience inline function to initialize a new (sub) STRUCT_MARSHAL
@@ -1327,13 +1321,11 @@ inline void SET_NEW_STRUCT_MARSHAL (PSTRUCT_MARSHAL pnewM, char *localSignature,
 
 
 
-
 // --------------------------------------------------------------------------------
 // main unmarshal() control
 logical_t unmarshal(DBusMessageIter *iter, char typeCode, RexxArrayObject rxResult, PSTRUCT_MARSHAL pmarsh)
 {
 #ifdef DEBUG_MARSHAL
-    // fprintf(stderr, "---> arrived in unmarshal(...), typeCode=[%c], cursor=[%zu], signature=[%s], iter=[%p], rxResult=[%p] \n",
     fprintf(stderr, "---> arrived in unmarshal(...), typeCode=[%c], cursor=[%lu], signature=[%s], iter=[%p], rxResult=[%p] \n",
                        typeCode,
                        (unsigned long) (pmarsh->cursor - pmarsh->signature),
@@ -1357,8 +1349,7 @@ logical_t unmarshal(DBusMessageIter *iter, char typeCode, RexxArrayObject rxResu
         RexxObjectPtr currRexxObj=NULL;
         switch (currentType)
         {
-        // case 's' :      // STRING (UTF-8): must not contain nul bytes, but must end wiht a nul byte
-        case DBUS_TYPE_STRING :     // STRING (UTF-8): must not contain nul bytes, but must end wiht a nul byte
+        case DBUS_TYPE_STRING :     // 's', STRING (UTF-8): must not contain nul bytes, but must end wiht a nul byte
             {
                 CSTRING str;
                 dbus_message_iter_get_basic(iter, &str);
@@ -1366,7 +1357,6 @@ logical_t unmarshal(DBusMessageIter *iter, char typeCode, RexxArrayObject rxResu
                 pmarsh->cursor++;       // let us point to the next typeCode if any
 
 #ifdef DEBUG_UNMARSHAL
-// fprintf(stderr, ".... unmarshal() - 's', cursor now: [%zu], end-element: [%zu], cursor>=end-element? [%d] - signature=[%s], value=[%s] /str=[%s] \n",
 fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], cursor>=end-element? [%d] - signature=[%s], value=[%s] /str=[%s] \n",
             (unsigned long) (pmarsh->cursor     - pmarsh->signature),
             (unsigned long) (pmarsh->elementEnd - pmarsh->signature),
@@ -1380,8 +1370,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             }
             break;
 
-        // case 'g' :      // SIGNATURE
-        case DBUS_TYPE_SIGNATURE :
+        case DBUS_TYPE_SIGNATURE :      // 'g'
             {
                 CSTRING str;
                 dbus_message_iter_get_basic(iter, &str);
@@ -1390,8 +1379,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             }
             break;
 
-        // case 'o' :      // OBJECT_PATH (like STRING)
-        case DBUS_TYPE_OBJECT_PATH :
+        case DBUS_TYPE_OBJECT_PATH :    // 'o'
             {
                 CSTRING str;
                 dbus_message_iter_get_basic(iter, &str);
@@ -1400,16 +1388,13 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             }
             break;
 
-        // case 'y' :      // BYTE
-        case DBUS_TYPE_BYTE :
+        case DBUS_TYPE_BYTE :           // 'y'
             {
                 char str[]="X";     // single 'X' (byte) will be overwritten by the fetched byte value
-
                 dbus_message_iter_get_basic(iter, str);
 
                 if (str==NULL)
                 {
-
 #ifdef DEBUG_UNMARSHAL
     fprintf(stderr, "unmarshal(BYTE), # 1 NullString() ... \n");
 #endif
@@ -1424,8 +1409,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             }
             break;
 
-        // case 'b' :      // BOOLEAN
-        case DBUS_TYPE_BOOLEAN :
+        case DBUS_TYPE_BOOLEAN :        // 'b'
             {
                 dbus_bool_t val=false;
                 dbus_message_iter_get_basic(iter, &val);
@@ -1434,8 +1418,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             }
             break;
 
-        // case 'n' :      // INT16
-        case DBUS_TYPE_INT16 :
+        case DBUS_TYPE_INT16 :          // 'n'
             {
                 dbus_int16_t val=0;
                 dbus_message_iter_get_basic(iter, &val);
@@ -1444,8 +1427,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             }
             break;
 
-        // case 'q' :      // UINT16
-        case DBUS_TYPE_UINT16 :
+        case DBUS_TYPE_UINT16 :         // 'q'
             {
                 dbus_uint16_t val=0;
                 dbus_message_iter_get_basic(iter, &val);
@@ -1455,8 +1437,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             break;
 
 
-        // case 'i' :      // INT32
-        case DBUS_TYPE_INT32 :
+        case DBUS_TYPE_INT32 :          // 'i'
             {
                 dbus_int32_t val=0;
                 dbus_message_iter_get_basic(iter, &val);
@@ -1466,9 +1447,8 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             break;
 
 
-#if defined ( DBUS_TYPE_UNIX_FD )      // e.g. not defined for Windows
-        // case 'h' :      // UNIX_FD: a 32-bit unsigned integer accordig to dbus-specification.html
-        case DBUS_TYPE_UNIX_FD :
+#if defined ( DBUS_TYPE_UNIX_FD )       // e.g. not defined for Windows
+        case DBUS_TYPE_UNIX_FD :        // 'h', UNIX_FD: a 32-bit unsigned integer accordig to dbus-specification.html
             {
                 dbus_uint32_t val=0;
                 dbus_message_iter_get_basic(iter, &val);
@@ -1478,8 +1458,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             break;
 #endif
 
-        // case 'u' :      // UINT32
-        case DBUS_TYPE_UINT32 :
+        case DBUS_TYPE_UINT32 :         // 'u'
             {
                 dbus_uint32_t val=0;
                 dbus_message_iter_get_basic(iter, &val);
@@ -1488,8 +1467,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             }
             break;
 
-        // case 'x' :      // INT64
-        case DBUS_TYPE_INT64 :
+        case DBUS_TYPE_INT64 :          // 'x'
             {
                 dbus_int64_t val=0;
                 dbus_message_iter_get_basic(iter, &val);
@@ -1498,8 +1476,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             }
             break;
 
-        // case 't' :      // UINT64
-        case DBUS_TYPE_UINT64 :
+        case DBUS_TYPE_UINT64 :         // 't'
             {
                 dbus_uint64_t val=0;
                 dbus_message_iter_get_basic(iter, &val);
@@ -1508,12 +1485,10 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             }
             break;
 
-        // case 'd' :      // DOUBLE (IEEE 754)
-        case DBUS_TYPE_DOUBLE :
+        case DBUS_TYPE_DOUBLE :         // 'd', DOUBLE (IEEE 754)
             {
                 double val=0;
                 dbus_message_iter_get_basic(iter, &val);
-                // currRexxObj=pmarsh->context->DoubleToObject(val);   // turn into Rexx string
                 // rgf, 2014-07-26: need to use DoubleToObjectWithPrecision such that ooRexx uses 20 digits and not 9 only!
                 //                  20 digits are enough for IEEE double (and also for uint64, ie 2**64)
                 currRexxObj=pmarsh->context->DoubleToObjectWithPrecision(val, 20);   // turn into Rexx string
@@ -1524,8 +1499,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
 
 
             // containers -------------------------------------
-        // case 'a' :      // ARRAY
-        case DBUS_TYPE_ARRAY :      // ARRAY
+        case DBUS_TYPE_ARRAY :      // 'a', ARRAY
             {
 #if defined (DEBUG_ARRAY)
    fprintf(stderr,"/unmarshal/DBUS_TYPE_ARRAY, 01, switch-top: ");
@@ -1590,8 +1564,6 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
 
             size_t cursorPos = pmarsh->cursor - pmarsh->signature;
 
-
-            // fprintf(stderr, "     /--> unmarshal(): DBUS_TYPE_ARRAY - signature=[%s], cursorPos=[%zu|%c]: arrStartPos=[%zu|%c], arrEndPos=[%zu|%c], arrLen=[%zu] | elStartPos=[%zu|%c], elEndPos=[%zu|%c], elLen=[%zu]\n",
             fprintf(stderr, "     /--> unmarshal(): DBUS_TYPE_ARRAY - signature=[%s], cursorPos=[%lu|%c]: arrStartPos=[%lu|%c], arrEndPos=[%lu|%c], arrLen=[%lu] | elStartPos=[%lu|%c], elEndPos=[%lu|%c], elLen=[%lu]\n",
                                          tmp,  (unsigned long) cursorPos, *(tmp+cursorPos),
                                          (unsigned long) arrStartPos, *(tmp+arrStartPos), (unsigned long) arrEndPos, *(tmp+arrEndPos),
@@ -1621,7 +1593,6 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
                                 (pmarsh->is_ay ? pmarsh->unmarshal_ay_as_string : 0); //  pmarsh->is_ay;
 
 #ifdef DEBUG_ARRAY
-    // fprintf(stderr, "     /--> unmarshal(): DBUS_TYPE_ARRAY - signature=[%s], about to create array with [%zu] dimensions\n",
     fprintf(stderr, "     /--> unmarshal(): DBUS_TYPE_ARRAY - signature=[%s], about to create array with [%lu] dimensions\n",
                                pmarsh->signature, (unsigned long) nrDims); fflush(stderr);
 
@@ -1645,19 +1616,16 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
 
                 for (size_t tmpIdx=1;tmpIdx<=nrDims;tmpIdx++)
                 {
-                    // pmarsh->context->ArrayAppend(rxWithArgs, pmarsh->context->ArrayAt(arrIdx, tmpIdx));
                     RexxObjectPtr rop=pmarsh->context->ArrayAt(arrIdx, tmpIdx);
                     pmarsh->context->ArrayAppend(rxWithArgs, rop);
                     pmarsh->context->ReleaseLocalReference(rop);
                 }
 
-                // currRexxObj=pmarsh->context->SendMessage2(pmarsh->arrayClass, "SENDWITH", pmarsh->context->String("NEW"), rxWithArgs);
                 RexxStringObject rso=pmarsh->context->String("NEW");
                 currRexxObj=pmarsh->context->SendMessage2(pmarsh->arrayClass, "SENDWITH", rso, rxWithArgs);
                 pmarsh->context->ReleaseLocalReference(rso);
 
 #ifdef DEBUG_ARRAY
-   // fprintf(stderr, "     unmarshal(...), 'a' - currRexxObj=[%p]~dimension=[%zu];  pmarsh->dimensions=[%zu] - nrDims=[%zu]; | ~size=[%zu], ~items=[%zu]\n",
    fprintf(stderr, "     unmarshal(...), 'a' - currRexxObj=[%p]~dimension=[%lu];  pmarsh->dimensions=[%lu] - nrDims=[%lu]; | ~size=[%lu], ~items=[%lu]\n",
                          currRexxObj,
                          (unsigned long) pmarsh->context->ArrayDimension((RexxArrayObject) currRexxObj),
@@ -1667,7 +1635,6 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
                          (unsigned long) pmarsh->context->ArrayItems((RexxArrayObject) currRexxObj)
                          );
 
-   // fprintf(stderr, "     unmarshal(...), 'a' - p->is_ay=[%zu], p->unmarshal_ay_as_string=[%zu], arrIdx=[%s], p->signature=[%s]\n",
    fprintf(stderr, "     unmarshal(...), 'a' - p->is_ay=[%lu], p->unmarshal_ay_as_string=[%lu], arrIdx=[%s], p->signature=[%s]\n",
                          (unsigned long) pmarsh->is_ay,
                          (unsigned long) pmarsh->unmarshal_ay_as_string,
@@ -1683,7 +1650,6 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
     {
         size_t cursorPos = pmarsh->cursor - pmarsh->signature;
 
-        // fprintf(stderr, "     /<-- signature=[%s], cursorPos=[%zu|%c]: end-of-array-processing #1. currRexxObj: dims=[%zu], items=[%zu], size=[%zu] \n",
         fprintf(stderr, "     /<-- signature=[%s], cursorPos=[%lu|%c]: end-of-array-processing #1. currRexxObj: dims=[%lu], items=[%lu], size=[%lu] \n",
                 pmarsh->signature,  (unsigned long) cursorPos, *(pmarsh->signature+cursorPos),
                 (unsigned long) pmarsh->context->ArrayDimension((RexxArrayObject) currRexxObj),
@@ -1728,8 +1694,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             break;
 
 
-        // case '(' :      // STRUCT - begin ("r")
-        case DBUS_TYPE_STRUCT :      // STRUCT - begin ("r")
+        case DBUS_TYPE_STRUCT :      // '(', STRUCT - begin ("r")
             {
 #ifdef DEBUG_STRUCT
     fprintf(stderr, "*** unmarshal(...): *** STRUCT - begin !\n");
@@ -1774,7 +1739,6 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
    fprintf(stderr, "... unmarshal(...): *** STRUCT: BEFORE - localM.signature=[%s], localM.cursor=[%s], localM.elementStart=[%s], localM.elementEnd=[%s]\n",
                         localM.signature, localM.cursor, localM.elementStart, localM.elementEnd);
 
-   // fprintf(stderr, "... unmarshal(...): *** STRUCT: BEFORE - localM.signature=[%s], localM.cursor=[%zu], localM.elementStart=[%zu], localM.elementEnd=[%zu]\n",
    fprintf(stderr, "... unmarshal(...): *** STRUCT: BEFORE - localM.signature=[%s], localM.cursor=[%lu], localM.elementStart=[%lu], localM.elementEnd=[%lu]\n",
                         localM.signature,
                         (unsigned long) (localM.cursor - localM.signature),
@@ -1828,15 +1792,13 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
             break;
 
 
-        // case '{' :      // DICT_ENTRY - begin ("e"): invoked via unmarshalArray(...)
-        case DBUS_TYPE_DICT_ENTRY :      // DICT_ENTRY - begin ("e"): invoked via unmarshalArray(...)
+        case DBUS_TYPE_DICT_ENTRY :      // '{', DICT_ENTRY - begin ("e"): invoked via unmarshalArray(...)
             {
                 fprintf(stderr, "%s: *** unmarshal(...): DICT ENTRY - begin: unmarshal() - ERROR !! SHOULD NEVER ARRIVE HERE!\n", DLLNAME);
                 pmarsh->cursor=pmarsh->elementEnd+2;       // let us point to the next typeCode if any
             }
             break;
 
-        // case '\0':      // INVALID (end-marker)
         default:
     fprintf(stderr, "%s: *** unmarshal(...): ??? default-branch ???: SHOULD NEVER ARRIVE HERE!\n", DLLNAME);
              break;
@@ -1846,7 +1808,6 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
         pmarsh->context->SendMessage1(rxResult, "APPEND", currRexxObj);     // append current Rexx object to array
 
 #ifdef DEBUG_UNMARSHAL
-    // fprintf(stderr, "\nrxResult=[%p], currRexxObj=[%p], currRexxObj~class=[%s], size=[%zu]\n",
     fprintf(stderr, "\nrxResult=[%p], currRexxObj=[%p], currRexxObj~class=[%s], size=[%lu]\n",
                    rxResult,
                    currRexxObj,
@@ -1863,9 +1824,7 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
         );
 #endif
 
-
         pmarsh->context->ReleaseLocalReference(currRexxObj);
-
 
             // check for errors, return with false, if any
         pmarsh->dbusError=(resDbus==0);     // a dbus-error occurred ?
@@ -1883,7 +1842,6 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
         dbus_message_iter_next (iter);  // move to next argument
     }
 
-
     return true;    // unmarshalling worked
 }
 
@@ -1894,14 +1852,12 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
 logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject rao, RexxArrayObject arrIdx, PSTRUCT_MARSHAL pmarsh)
 {
 #ifdef DEBUG_ARRAY
-       // fprintf(stderr, "---> arrived in unmarshalArray(...): level=[%zu], rao=[%s], arrIdx=[%s]\n",
        fprintf(stderr, "---> arrived in unmarshalArray(...): level=[%lu], rao=[%s], rao~items=[%lu], arrIdx=[%s]\n",
                          (unsigned long) level,
                          ARR_AS_STRING(rao, pmarsh->context),
                          pmarsh->context->ArrayItems(rao),
                          ARR_AS_STRING(arrIdx, pmarsh->context) );
 
-       // fprintf(stderr, "                unmarshalArray(...): signature=[%s], dims=[%zu] - cursor=[%zu], arrStart=[%zu], arrEnd=[%zu], elStart=[%zu], elEnd=[%zu]\n",
        fprintf(stderr, "                unmarshalArray(...): signature=[%s], dims=[%lu] - cursor=[%lu], arrStart=[%lu], arrEnd=[%lu], elStart=[%lu], elEnd=[%lu]\n",
                          pmarsh->signature,
                          (unsigned long) pmarsh->dimensions,
@@ -1912,6 +1868,7 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
                          (unsigned long) (pmarsh->elementEnd   - pmarsh->signature)
            );
 #endif
+
     DBusMessageIter iter_array;
 
 #ifdef DEBUG_ARRAY
@@ -1933,21 +1890,7 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
     char *localSignature=(char *) dbus_malloc0(pmarsh->signatureLength+1);  // that should be enough
 #endif
 
-    // original: 20140727, rgf
     char *start=pmarsh->arrStart+1;
-
-/*
-    // rgf, 2014-07-27-tests
-    char *start;
-    if (pmarsh->arrStart!=NULL && ((*pmarsh->arrStart)=='a') ) // ??? rgf ???
-    {
-        start=pmarsh->arrStart+1;
-    }
-    else
-    {
-        start=pmarsh->cursor; // ??? rgf ???
-    }
-*/
 
 #ifdef DEBUG_ARRAY
   size_t  brr=pmarsh->elementEnd-start+1;
@@ -1960,7 +1903,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
     strncpy(localSignature, start, pmarsh->elementEnd-start+1 );
 
 #ifdef DEBUG_ARRAY
-    // fprintf(stderr, "     - level=[%zu], localSignature=[%s], rao=[%p] \n", level, localSignature, rao); fflush(stderr);
     fprintf(stderr, "     - level=[%lu], strncpy(): localSignature=[%s], rao=[%p] \n", (unsigned long) level, localSignature, rao); fflush(stderr);
     fprintf(stderr, "    unmarshalArray(...): OPEN container ---> ---> ---> signature=[%s]\n", localSignature);
 #endif
@@ -2004,7 +1946,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
     if (pmarsh->is_ay && level==pmarsh->dimensions) // "ay" -> "s"
     {
 #ifdef DEBUG_ARRAY
-   // fprintf(stderr, "    unmarshalArray(...): BYTE-ARRAY-HANDLING ! localSignature=[%s], p->signature=[%s], level=[%zu], p->dimensions=[%zu], p->is_ay=[%d], p->unmarshal_ay_as_string=[%d]\n",
    fprintf(stderr, "    unmarshalArray(...): BYTE-ARRAY-HANDLING ! localSignature=[%s], p->signature=[%s], level=[%lu], p->dimensions=[%lu], p->is_ay=[%d], p->unmarshal_ay_as_string=[%d]\n",
                         localSignature,
                         pmarsh->signature,
@@ -2026,7 +1967,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
         dbus_message_iter_get_fixed_array (&iter_array, &array, &arrCount);
 
 #ifdef DEBUG_ARRAY
-   // fprintf(stderr, "    unmarshalArray(...): arrCount=[%d], arrIdx=[%s],  nrDims=[%zu], level=[%zu] \n",
    fprintf(stderr, "    unmarshalArray(...): arrCount=[%d], arrIdx=[%s],  nrDims=[%lu], level=[%lu] \n",
                              arrCount,
                              ARR_AS_STRING(arrIdx, pmarsh->context),
@@ -2034,7 +1974,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
                              (unsigned long) level
                         );
 
-   // fprintf(stderr, "    unmarshalArray(...): arrIdx~size=[%zu], nrDims=[%zu] \n",
    fprintf(stderr, "    unmarshalArray(...): arrIdx~size=[%lu], nrDims=[%lu] \n",
                              (unsigned long) pmarsh->context->ArraySize(arrIdx),
                              (unsigned long) nrDims );
@@ -2044,10 +1983,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
             // adjust index array (to not have too many dimensions!)
         if (pmarsh->context->ArraySize(arrIdx)>nrDims)
         {
-            // arrIdx=(RexxArrayObject) pmarsh->context->SendMessage2(arrIdx, "SECTION",
-            //                              pmarsh->context->String("1"),
-            //                              pmarsh->context->StringSizeToObject(nrDims) );
-
             RexxObjectPtr rop1=pmarsh->context->String("1");
             RexxObjectPtr rop2=pmarsh->context->StringSizeToObject(nrDims);
             RexxArrayObject tmpRao=(RexxArrayObject) pmarsh->context->SendMessage2(arrIdx, "SECTION", rop1, rop2);
@@ -2059,7 +1994,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
             pmarsh->context->ReleaseLocalReference(rop2);
 
 #ifdef DEBUG_ARRAY
-   // fprintf(stderr, "    unmarshalArray(...): must adjust arrIdx (too many indices!), now arrIdx=[%s] as nrDims=[%zu] \n ",
    fprintf(stderr, "    unmarshalArray(...): must adjust arrIdx (too many indices!), now arrIdx=[%s] as nrDims=[%lu] \n ",
                   ARR_AS_STRING(arrIdx, pmarsh->context), (unsigned long) nrDims);
 #endif
@@ -2130,7 +2064,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
         }
 
 #ifdef DEBUG_ARRAY
-    // fprintf(stderr, " ............... analyze signature, set arrStart/arrEnd  elStart/elEnd, dims=[%zu], calcDims=[%zu], lM.signature=[%s], lm.arrStart=[%c], lm.arrEnd=[%c]\n",
     fprintf(stderr, " ............... analyze signature, set arrStart/arrEnd  elStart/elEnd, dims=[%lu], calcDims=[%lu], lM.signature=[%s], lm.arrStart=[%c], lm.arrEnd=[%c]\n",
                   (unsigned long) localM.dimensions,
                   (unsigned long) (localM.arrEnd - localM.arrStart + 1),
@@ -2150,7 +2083,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
 
 
     if (level==pmarsh->dimensions)      // o.k. arrived at element
-    // if (localM.dimensions==0)      // o.k. arrived at element
     {
         if (*localSignature=='{')            // an array of DICTs
         {
@@ -2183,7 +2115,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
 #endif
             }
 
-            // pmarsh->cursor=pmarsh->elementEnd+1;    // let us point to the next typeCode if any
 #ifdef DEBUG_ARRAY
     fprintf(stderr, "     /<-- unmarshalArray(): DBUS_TYPE_ARRAY - signature=[%s], branch 'DICT ARRAY', dirRexxObj~itesm=[%s] \n",
                pmarsh->signature,
@@ -2224,7 +2155,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
     fprintf(stderr, "----> Ticker # 7b, about to put value=[%s] at arrIdx=[%s] \n", pmarsh->context->ObjectToStringValue(pmarsh->context->ArrayAt(tmpArr,1)), currArrIdx);
 #endif
 
-                // pmarsh->context->SendMessage2(rao, "PUT", pmarsh->context->ArrayAt(tmpArr,1), arrIdx);
                 RexxObjectPtr rop=pmarsh->context->ArrayAt(tmpArr,1);
                 pmarsh->context->SendMessage2(rao, "PUT", rop, arrIdx);
 
@@ -2234,7 +2164,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
                            currArrIdx
                            );
 
-    // fprintf(stderr, "----> Ticker # 7d, signature=[%s], cursor=[%zu], elementStart=[%zu] \n",
     fprintf(stderr, "----> Ticker # 7d, signature=[%s], cursor=[%lu], elementStart=[%lu] \n",
                     localM.signature,
                     (unsigned long) (localM.cursor - localM.signature),
@@ -2251,7 +2180,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
     else        // recurse into next dimension!
     {
 #ifdef DEBUG_ARRAY
-    // fprintf(stderr, "----> Ticker # 8-, level=[%zu], rao=[%p], arrIdx=[%s], &iter_array(arg_type=[%d])==[%d] (DBUS_ARRAY_TYPE) \n",
     fprintf(stderr, "----> Ticker # 8-, level=[%lu], rao=[%p], arrIdx=[%s], &iter_array(arg_type=[%d])==[%d] (DBUS_ARRAY_TYPE) \n",
                               (unsigned long) level, rao, ARR_AS_STRING(arrIdx, pmarsh->context),
                               dbus_message_iter_get_arg_type(&iter_array), DBUS_TYPE_ARRAY
@@ -2265,14 +2193,12 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
             SET_ARRAY_IDX(arrIdx, level+1, 0, pmarsh->context); // reset next higher dimension's index !
 
 #ifdef DEBUG_ARRAY
-    // fprintf(stderr, "----> Ticker # 8a, recursing with values, level+1=[%zu], rao=[%p], arrIdx=[%s] \n", level+1, rao, ARR_AS_STRING(arrIdx, pmarsh->context));
     fprintf(stderr, "----> Ticker # 8a, recursing with values, level+1=[%lu], rao=[%p], arrIdx=[%s] \n", (unsigned long) level+1, rao, ARR_AS_STRING(arrIdx, pmarsh->context));
 #endif
 
             unmarshalArray(&iter_array, level+1, rao, arrIdx, &localM);
 
 #ifdef DEBUG_ARRAY
-    // fprintf(stderr, "<---- Ticker # 8b, current level again: [%zu] \n", level);
     fprintf(stderr, "<---- Ticker # 8b, current level again: [%lu] \n", (unsigned long) level);
 #endif
             indexLevel++;
@@ -2280,7 +2206,6 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
             dbus_message_iter_next(&iter_array);
         }
 #ifdef DEBUG_ARRAY
-    // fprintf(stderr, "<---- Ticker # 9, back at level [%zu] \n", level);
     fprintf(stderr, "<---- Ticker # 9, back at level [%lu] \n", (unsigned long) level);
 #endif
     }
@@ -2303,8 +2228,8 @@ logical_t unmarshalDict(DBusMessageIter *iter_array, RexxDirectoryObject rxMap, 
 
 #if defined (DEBUG_DICT) && defined (DEBUG_UNMARSHAL)
    fprintf(stderr, "---> ARRIVED in unmarshalDict(...), rxMap=[%p], signature=[%s] \n", rxMap, pmarsh->signature);
-
    fprintf(stderr, "                =-> unmarshalDict(...): 8! 8! 8!  \n\t--> ");
+
   #if defined (DEBUG_STRUCT_MARSHAL_PRINT)
      dump_struct_marshal(pmarsh);
   #endif
@@ -2385,11 +2310,9 @@ logical_t unmarshalDict(DBusMessageIter *iter_array, RexxDirectoryObject rxMap, 
 #endif
         dbus_message_iter_recurse (iter_array, &iter_dict);
         int dtype=0;  // rgf, 20140727, debug
-        // if ( dbus_message_iter_get_arg_type (&iter_dict) != DBUS_TYPE_INVALID)
         if ((dtype=dbus_message_iter_get_arg_type (&iter_dict)) != DBUS_TYPE_INVALID)
         {
             RexxArrayObject key=pmarsh->context->NewArray(0);
-            // localKeyM.cursor=localKeyM.elementStart;  // let cursor point to element's start
             localKeyM.cursor=localKeyM.signature;     // let cursor point to its signature start
 
 #if defined (DEBUG_DICT) && defined (DEBUG_UNMARSHAL)
@@ -2405,7 +2328,6 @@ logical_t unmarshalDict(DBusMessageIter *iter_array, RexxDirectoryObject rxMap, 
             unmarshal(&iter_dict, *localKeySignature, key, &localKeyM); // process
 
             RexxArrayObject item=pmarsh->context->NewArray(0);
-            // localItemM.cursor=localItemM.elementStart;  // let cursor point to element's start
             localItemM.cursor=localItemM.signature;  // let cursor point to its signature start
 
 #if defined (DEBUG_DICT) && defined (DEBUG_UNMARSHAL)
@@ -2432,14 +2354,6 @@ logical_t unmarshalDict(DBusMessageIter *iter_array, RexxDirectoryObject rxMap, 
     fflush(stderr);
 #endif
             // add to directory
-//             pmarsh->context->SendMessage2(rxMap, "PUT",
-// //                                          (pmarsh->context->ArrayItems(item)==1 ?
-//                                                   pmarsh->context->ArrayAt(item,1) :
-//                                                   item
-//                                                   ),
-//                                           pmarsh->context->ArrayAt(key,1)
-//                                           );
-//
             RexxObjectPtr ropKey=pmarsh->context->ArrayAt(key,1);
             if (pmarsh->context->ArrayItems(item)==1)
             {
@@ -2499,7 +2413,6 @@ logical_t unmarshalDict(DBusMessageIter *iter_array, RexxDirectoryObject rxMap, 
 
 
         dbus_message_iter_next(iter_array);      // move to next element
-//        dbus_message_iter_next(&iter_dict);      // rgf, 201407-test
     }
 
 
@@ -2571,7 +2484,6 @@ logical_t unmarshalStruct(DBusMessageIter *iter, RexxArrayObject rao, PSTRUCT_MA
 #ifdef DEBUG_VARIANT_2
    fprintf(stderr, "     unmarshalStruct(...): about to return <--- <--- <---\n");
 #endif
-
 
     return true;
 }
@@ -2740,7 +2652,6 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
             fprintf(stderr, "        marshall() - 'y' - 1b \n");
 #endif
                 stringsize_t n;
-                // if (!pmarsh->context->IsString(rop))
                 if (!pmarsh->context->IsOfType(rop, "STRING"))
                 {
                     SNPRINTF(pmarsh->msgChunk256, 256, " not a string (value=[%.32s]), hence cannot convert to a byte value", pmarsh->context->ObjectToStringValue(rop));
@@ -3094,7 +3005,7 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
                     chEnd='}';                  // curly parenthesis (a dictionary)
                 }
 
-// TODO: rgf, 201407: can we run off the end here, or can we rely that signature got already checked ?
+                // signature already checked, hence we cannot run off the end
                 size_t open=1;
                 while (open>0 && *tmpCursor)   // as long as not closed and not end of string
                 {
@@ -3111,7 +3022,6 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
             }
             else
             {
-
                 pmarsh->elementEnd=tmpCursor;
             }
 
@@ -3127,8 +3037,6 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
 
     size_t cursorPos = pmarsh->cursor - pmarsh->signature;
 
-
-    // fprintf(stderr, "     /--> signature=[%s], cursorPos=[%zu|%c]: arrStartPos=[%zu|%c], arrEndPos=[%zu|%c], arrLen=[%zu] | elStartPos=[%zu|%c], elEndPos=[%zu|%c], elLen=[%zu]\n",
     fprintf(stderr, "     /--> signature=[%s], cursorPos=[%lu|%c]: arrStartPos=[%lu|%c], arrEndPos=[%lu|%c], arrLen=[%lu] | elStartPos=[%lu|%c], elEndPos=[%lu|%c], elLen=[%lu]\n",
                                      tmp,  (unsigned long) cursorPos, *(tmp+cursorPos),
                                      (unsigned long) arrStartPos, *(tmp+arrStartPos), (unsigned long) arrEndPos, *(tmp+arrEndPos),
@@ -3252,7 +3160,6 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
     {
     size_t cursorPos = pmarsh->cursor - pmarsh->signature;
 
-    // fprintf(stderr, "     /<-- signature=[%s], cursorPos=[%zu|%c]: end-of-array-processing #2. \n",
     fprintf(stderr, "     /<-- signature=[%s], cursorPos=[%lu|%c]: end-of-array-processing #2. \n",
             pmarsh->signature,  (unsigned long) cursorPos, *(pmarsh->signature+cursorPos));
     }
@@ -3312,7 +3219,7 @@ logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRU
                     break;
                 }
             }
-            // logical_t res=
+
             marshalStruct(iter, rao, pmarsh);
 
                 // move cursor to next char in signature
@@ -3413,7 +3320,7 @@ fprintf(stderr, "%s: *** marshal(...): DICT ENTRY - end: marshal() - ERROR !! SH
 
     // case '\0':      // INVALID (end-marker)
     default:
-fprintf(stderr, "%s: *** marshal(...): ??? default-branch ??? typeCode=[%c], signature=[%s]: SHOULD NEVER ARRIVE HERE, please report!\n",
+fprintf(stderr, "%s: *** marshal(...): ??? switch' default: ??? typeCode=[%c], signature=[%s]: SHOULD NEVER ARRIVE HERE, please report!\n",
                 DLLNAME, typeCode, pmarsh->signature);
          break;
     }
@@ -3440,7 +3347,6 @@ fprintf(stderr, "%s: *** marshal(...): ??? default-branch ??? typeCode=[%c], sig
 logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop, RexxArrayObject arrIdx, PSTRUCT_MARSHAL pmarsh)
 {
 #ifdef DEBUG_ARRAY
-   // fprintf(stderr, "---> arrived in marshalArray(...): signature=[%s] - cursor=[%zu], arrStart=[%zu], arrEnd=[%zu], elStart=[%zu], elEnd=[%zu]\n",
    fprintf(stderr, "---> arrived in marshalArray(...): signature=[%s] - cursor=[%lu], arrStart=[%lu], arrEnd=[%lu], elStart=[%lu], elEnd=[%lu]\n",
                          pmarsh->signature,
                          (unsigned long) (pmarsh->cursor   - pmarsh->signature    ) ,
@@ -3470,7 +3376,6 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
     strncpy(localSignature, start, pmarsh->elementEnd-start+1);
 
 #ifdef DEBUG_ARRAY
-    // fprintf(stderr, "     - level=[%zu], localSignature=[%s], anyRop=[%p]=[%s], p->dimensions=[%zu] <-> arrIdx=[%s]\n",
     fprintf(stderr, "     - level=[%lu], localSignature=[%s], anyRop=[%p]=[%s], p->dimensions=[%lu] <-> arrIdx=[%s]\n",
                             (unsigned long) level, localSignature,
                             anyRop,
@@ -3506,7 +3411,6 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
 #ifdef DEBUG_ARRAY
         fprintf(stderr, "       ... branch # 0: level==pmarsh->dimensions, a DICT in hand!\n");
 #endif
-            // if (!marshalDict(&iter_array, rao, &localM))    // process DICTs
             if (!marshal(&iter_array, *localM.cursor, anyRop, &localM))  // single type, typecode from cursor
             {                                                               // an error has occurred !
                 pmarsh->dbusError           = localM.dbusError;
@@ -3560,7 +3464,6 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
             CSTRING stringValue =pmarsh->context->CString(rso);  // get a CSTRING
 
 #ifdef DEBUG_ARRAY
-    // fprintf(stderr, "       ... branch # 1b: level==pmarsh->dimensions, a STRING in hand, size=[%zu], value=[%.64s]!\n",
     fprintf(stderr, "       ... branch # 1b: level==pmarsh->dimensions, a STRING in hand, size=[%lu], value=[%.64s]!\n",
                                     (unsigned long) stringLength, stringValue);
 #endif
@@ -3590,7 +3493,6 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
             size_t neededRexxArgs=GET_NUMBER_OF_REXX_ARGS_FOR_SIGNATURE((char *) localSignature);
 
 #ifdef DEBUG_ARRAY
-        // fprintf(stderr, "       ... branch # 2: level==pmarsh->dimensions == [%zu], neededRexxArgs=[%zu]\n",
         fprintf(stderr, "       ... branch # 2: level==pmarsh->dimensions == [%lu], neededRexxArgs=[%lu]\n",
                         (unsigned long) level, (unsigned long) neededRexxArgs);
 #endif
@@ -3599,7 +3501,6 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
             size_t items=GET_ARRAY_SIZE_AT_DIMENSION(rao, level, pmarsh->context);
 
 #ifdef DEBUG_ARRAY
-       // fprintf(stderr, "       ...ma(...): rao=[%s], has rao-size/items at level=[%zu]/dim|items: [%zu] | arrIdx=[%s]\n",
        fprintf(stderr, "       ...ma(...): rao=[%s], has rao-size/items at level=[%lu]/dim|items: [%lu] | arrIdx=[%s]\n",
                                      ARR_AS_STRING( rao , pmarsh->context),
                                      (unsigned long) level,
@@ -3611,7 +3512,6 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
             for (size_t i=1; i<=items; i++)     // process each array entry, which itself may have a signature
             {
 #ifdef DEBUG_ARRAY
-    // fprintf(stderr, "          marshalArray(...): processing array (level=[%zu]) item # i=[%zu]/items=[%zu]\n", level, i, items);
     fprintf(stderr, "          marshalArray(...): processing array (level=[%lu]) item # i=[%lu]/items=[%lu]\n",
                                (unsigned long) level, (unsigned long) i, (unsigned long) items);
 #endif
@@ -3635,7 +3535,6 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
    fprintf(stderr, "          ... ma(...): rao=[%p]", rao);
    if (rao!=NULL)
    {
-       // fprintf(stderr, "          - dims=[%zu], items=[%zu], size=[%zu] \n",
        fprintf(stderr, "          - dims=[%lu], items=[%lu], size=[%lu] \n",
                      (unsigned long) pmarsh->context->ArrayDimension(rao),
                      (unsigned long) pmarsh->context->ArrayItems    (rao),
@@ -3664,7 +3563,6 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
                     CSTRING stringValue =pmarsh->context->CString(rop);  // get a CSTRING
 
 #ifdef DEBUG_ARRAY
-            // fprintf(stderr, "       ... branch # 2:  BYTE-ARRAY / level==pmarsh->dimensions, a STRING in hand, stringLength=[%zu], stringValue=[%.64s]!\n",
             fprintf(stderr, "       ... branch # 2:  BYTE-ARRAY / level==pmarsh->dimensions, a STRING in hand, stringLength=[%lu], stringValue=[%.64s]!\n",
                                             (unsigned long) stringLength, stringValue);
         if (pmarsh->context->IsArray(rop))
@@ -3751,7 +3649,6 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
                         RexxObjectPtr currRop=pmarsh->context->ArrayAt(rao, idx);       // get array's entry
 
 #ifdef DEBUG_ARRAY
-        // fprintf(stderr, "    marshalArray(...): processing array item # [%zu]/[%zu] | subelement idx=[%zu]/[%zu] single type=[%c], value=[%s] ***\n",
         fprintf(stderr, "    marshalArray(...): processing array item # [%lu]/[%lu] | subelement idx=[%lu]/[%lu] single type=[%c], value=[%s] ***\n",
                                             (unsigned long) i, (unsigned long) items,
                                             (unsigned long) idx, (unsigned long) neededRexxArgs,
@@ -3788,7 +3685,6 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
                 else
                 {
 #ifdef DEBUG_ARRAY
-    // fprintf(stderr, "    marshalArray(...): neededRexxArgs<=1: processing level=[%zu], array item # i=[%zu]/items=[%zu]: single type=[%c]; arrIdx=[%s]: value=[%s] §§§\n",
     fprintf(stderr, "    marshalArray(...): neededRexxArgs<=1: processing level=[%lu], array item # i=[%lu]/items=[%lu]: single type=[%c]; arrIdx=[%s]: value=[%s] §§§\n",
                          (unsigned long) level,
                          (unsigned long) i, (unsigned long) items, *localM.cursor,
@@ -3835,7 +3731,6 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
             SET_ARRAY_IDX(arrIdx, level, i, pmarsh->context);
 
 #ifdef DEBUG_ARRAY
-    // fprintf(stderr, "    ...ma(...): recursing with level=[%zu] with [%zu] items, arrIdx=[%s]\n",  level, items, ARR_AS_STRING( arrIdx , pmarsh->context));
     fprintf(stderr, "    ...ma(...): recursing with level=[%lu] with [%lu] items, arrIdx=[%s]\n",
                             (unsigned long) level, (unsigned long) items, ARR_AS_STRING( arrIdx , pmarsh->context));
 #endif
@@ -3957,7 +3852,6 @@ logical_t marshalDict(DBusMessageIter *iter, RexxObjectPtr rxMap, PSTRUCT_MARSHA
         }
 
             // process index
-        // if (!marshal(&iter_dict, *localM.cursor, pmarsh->context->SupplierIndex(rso), &localM))   // an error has occurred !
         RexxObjectPtr ropIndex=pmarsh->context->SupplierIndex(rso);
         if (!marshal(&iter_dict, *localM.cursor, ropIndex, &localM))   // an error has occurred !
         {
@@ -3976,7 +3870,6 @@ logical_t marshalDict(DBusMessageIter *iter, RexxObjectPtr rxMap, PSTRUCT_MARSHA
         pmarsh->context->ReleaseLocalReference(ropIndex);
 
             // process item
-        // if (!marshal(&iter_dict, *localM.cursor, pmarsh->context->SupplierItem(rso), &localM))   // an error has occurred !
         RexxObjectPtr ropItem=pmarsh->context->SupplierItem(rso);
         if (!marshal(&iter_dict, *localM.cursor, ropItem, &localM))   // an error has occurred !
         {
@@ -4039,7 +3932,7 @@ logical_t marshalStruct(DBusMessageIter *iter, RexxArrayObject rao, PSTRUCT_MARS
     char *localSignature=(char *) dbus_malloc0(pmarsh->signatureLength+1);  // that should be enough
 #endif
 
-        // use signature withing parenthesis
+        // use signature within parenthesis
     strncpy(localSignature, pmarsh->elementStart,               // start position
                 pmarsh->elementEnd - pmarsh->elementStart +1    // length
                 );
@@ -4111,7 +4004,6 @@ logical_t marshalStruct(DBusMessageIter *iter, RexxArrayObject rao, PSTRUCT_MARS
             return false;
         }
 #ifdef DEBUG_STRUCT
-   // fprintf(stderr, "     success: done idx=[%zu], localM.cursor=[%s] ...\n", idx, localM.cursor);
    fprintf(stderr, "     success: done idx=[%lu], localM.cursor=[%s] ...\n", (unsigned long) idx, localM.cursor);
 #endif
     }
@@ -4430,7 +4322,6 @@ RexxArrayObject helperUnmarshalMessageArgs( DBusMessage  *dbusMsg,       // DBUS
     marsh.dbusError=false;
     marsh.rexxError=false;
 
-    // pmarsh->unmarshal_ay_as_string=pmarsh->context->GetObjectVariable("UNMARSHALBYTEARRAYASSTRING")==pmarsh->context->True();
     marsh.unmarshal_ay_as_string=argUnmarshalAyAsString;    // save for use in unmarshalling byte arrays
 
     marsh.msgChunk256=(char *) msgChunk;
@@ -4463,7 +4354,6 @@ RexxArrayObject helperUnmarshalMessageArgs( DBusMessage  *dbusMsg,       // DBUS
     }
 
 #ifdef DEBUG_UNMARSHAL
-    // fprintf(stderr, "\n ...  helperUnmarshalMessageArgs(...): unmarshalling SUCCESS, RxResult=[%p], dims=[%zu], items=[%zu], size=[%zu] !\n",
     fprintf(stderr, "\n ...  helperUnmarshalMessageArgs(...): unmarshalling SUCCESS, RxResult=[%p], dims=[%lu], items=[%lu], size=[%lu] !\n",
                              rxResult,
                              (unsigned long) context->ArrayDimension(rxResult),
@@ -4477,7 +4367,6 @@ RexxArrayObject helperUnmarshalMessageArgs( DBusMessage  *dbusMsg,       // DBUS
 
     if (context->IsArray(tmpO))
     {
-        // fprintf(stderr, ", dims=[%zu], items=[%zu], size=[%zu]",
         fprintf(stderr, ", dims=[%lu], items=[%lu], size=[%lu]",
                            (unsigned long) context->ArrayDimension((RexxArrayObject) tmpO),
                            (unsigned long) context->ArrayItems    ((RexxArrayObject) tmpO),
@@ -4513,7 +4402,6 @@ void helperMarshalMessageArgs( DBusMessage      *dbusMsg,       // DBUS message
 
    if (context->IsArray(rexxArgs))
    {
-       // fprintf(stderr, "     rexxArgs=[%p], size=[%zu], items=[%zu]\n",
        fprintf(stderr, "     rexxArgs=[%p], size=[%lu], items=[%lu]\n",
                           rexxArgs,
                          (unsigned long) (rexxArgs==NULL ? 0 : context->ArraySize(rexxArgs)),
@@ -4563,7 +4451,6 @@ void helperMarshalMessageArgs( DBusMessage      *dbusMsg,       // DBUS message
         RexxObjectPtr rop=context->ArrayAt(rexxArgs,rai);   // can return Nil(), but also NULL|NULLOBJECT
 
 #if defined (DEBUG_FUNCTIONS) || defined (DEBUG_MARSHAL)
-    // fprintf(stderr, " ...  helperMarshalMessageArgs(...):  rai=%zu/%zu, typeCode=[%c], rop=[%p]=[%s]\n",
             fprintf(stderr, " ...  helperMarshalMessageArgs(...):  rai=%lu/%lu, typeCode=[%c], rop=[%p]=[%s]\n",
                            (unsigned long) rai,
                            (unsigned long) neededNumberOfRexxArgs,
@@ -4616,20 +4503,17 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
     RexxObjectPtr rop=NULL;
     RexxObjectPtr ropIndex=NULL;
 
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("AUTOSTART"),
     ropIndex=context->CString("AUTOSTART");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex,
                             (dbus_message_get_auto_start(dbusMsg) == TRUE ? context->True() : context->False()) );
     context->ReleaseLocalReference(ropIndex);
 
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("CONNECTION"),   conn );
     ropIndex=context->CString("CONNECTION");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex,   conn );
     context->ReleaseLocalReference(ropIndex);
 
 
     str=dbus_message_get_destination(dbusMsg);
-    // rop=(str==NULL ? context->NullString() : context->CString(str));
     if (str==NULL)
     {
         rop=context->NullString();
@@ -4638,7 +4522,6 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
     {
         rop=context->CString(str);
     }
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("DESTINATION"),  rop );
     ropIndex=context->CString("DESTINATION");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex,  rop );
     context->ReleaseLocalReference(ropIndex);
@@ -4647,7 +4530,6 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
 
     RexxClassObject dtClz=context->FindClass("DATETIME");       // get the DateTime class
     RexxObjectPtr   dt   =context->SendMessage0(dtClz, "NEW");  // get an instance
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("DATETIME"), dt);
     ropIndex=context->CString("DATETIME");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex, dt);
     //                      GET_REXX_DATE_TIME_AS_REXX_STRING(context) );
@@ -4657,7 +4539,6 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
 
 
     str=dbus_message_get_interface(dbusMsg);
-//    rop=(str==NULL ? context->NullString() : context->CString(str));
     if (str==NULL)
     {
         rop=context->NullString();
@@ -4666,7 +4547,6 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
     {
         rop=context->CString(str);
     }
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("INTERFACE"),    rop );
     ropIndex=context->CString("INTERFACE");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex,    rop );
     context->ReleaseLocalReference(ropIndex);
@@ -4674,7 +4554,6 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
 
 
     str=dbus_message_get_member(dbusMsg);
-    //rop=(str==NULL ? context->NullString() : context->CString(str));
     if (str==NULL)
     {
         rop=context->NullString();
@@ -4683,7 +4562,6 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
     {
         rop=context->CString(str);
     }
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("MEMBER"),       rop );
     ropIndex=context->CString("MEMBER");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex,       rop );
     context->ReleaseLocalReference(ropIndex);
@@ -4691,7 +4569,6 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
 
 
     int msgType=dbus_message_get_type(dbusMsg);
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("MESSAGETYPE"),  context->Int32ToObject(msgType) );
     rop=context->Int32ToObject(msgType);
     ropIndex=context->CString("MESSAGETYPE");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex,   rop);
@@ -4700,7 +4577,6 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
 
 
     str=dbus_message_type_to_string(msgType);
-    // rop=(str==NULL ? context->NullString() : context->CString(str));
     if (str==NULL)
     {
         rop=context->NullString();
@@ -4709,21 +4585,18 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
     {
         rop=context->CString(str);
     }
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("MESSAGETYPENAME"), rop );
     ropIndex=context->CString("MESSAGETYPENAME");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex, rop );
     context->ReleaseLocalReference(ropIndex);
     context->ReleaseLocalReference(rop);
 
 
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("NOREPLY"),
     ropIndex=context->CString("NOREPLY");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex,
                           (dbus_message_get_no_reply(dbusMsg) == TRUE ? context->True() : context->False()) );
     context->ReleaseLocalReference(ropIndex);
 
     str=dbus_message_get_path(dbusMsg);
-    // rop=(str==NULL ? context->NullString() : context->CString(str));
     if (str==NULL)
     {
         rop=context->NullString();
@@ -4733,7 +4606,6 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
         rop=context->CString(str);
     }
     rop=(str==NULL ? context->NullString() : context->CString(str));
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("OBJECTPATH"),   rop );
     ropIndex=context->CString("OBJECTPATH");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex,   rop );
     context->ReleaseLocalReference(ropIndex);
@@ -4741,7 +4613,6 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
 
 
     str=dbus_message_get_sender(dbusMsg);
-    // rop=(str==NULL ? context->NullString() : context->CString(str));
     if (str==NULL)
     {
         rop=context->NullString();
@@ -4750,14 +4621,12 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
     {
         rop=context->CString(str);
     }
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("SENDER"),       rop );
     ropIndex=context->CString("SENDER");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex,       rop );
     context->ReleaseLocalReference(ropIndex);
     context->ReleaseLocalReference(rop);
 
 
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("SERIAL"),       context->UnsignedInt32ToObject(dbus_message_get_serial(dbusMsg)) );
     rop=context->UnsignedInt32ToObject(dbus_message_get_serial(dbusMsg));
     ropIndex=context->CString("SERIAL");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex,     rop);
@@ -4766,7 +4635,6 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
 
 
     str=dbus_message_get_signature(dbusMsg);
-    // rop=(str==NULL ? context->NullString() : context->CString(str));
     if (str==NULL)
     {
         rop=context->NullString();
@@ -4775,7 +4643,6 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
     {
         rop=context->CString(str);
     }
-    // context->SendMessage2(slotDir, "SETENTRY", context->CString("SIGNATURE"),    rop );
     ropIndex=context->CString("SIGNATURE");
     context->SendMessage2(slotDir, "SETENTRY", ropIndex,    rop );
     context->ReleaseLocalReference(ropIndex);
@@ -4802,12 +4669,10 @@ RexxMethod2(RexxObjectPtr, DbusMessageLoop, CSELF, connPtr, OSELF, self)
     if (context->GetObjectVariable("active") == context->True())     // already running ?
     {
         context->SetGuardOff();
-// TODO: 201407 create a Rexx condition as this should not happen!
          // raise exception
         context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String("Message loop is already active (running)"));
         return NULLOBJECT;      // return, do not start another message loop thread
     }
-
 
         // values we might need
     RexxObjectPtr rxTrue =context->True();
@@ -4853,16 +4718,12 @@ RexxMethod2(RexxObjectPtr, DbusMessageLoop, CSELF, connPtr, OSELF, self)
             ); fflush(stderr);
     fprintf(stderr, "... MessageLoop(): conn=[%p], connPtr=[%p] ...\n", conn, connPtr); fflush(stderr);
 
-    // size_t count=0, limit=10000/milliTimeout;
     size_t count=0, limit=100/milliTimeout;
 #endif
 
         // allow loop thread to be ended by Rexx, e.g. checking the status of the "active" attribute (if .false return from message loop)
     while (dbus_connection_read_write(conn,milliTimeout) )
     {
-
-// TODO: remove, just for debugging!
-// context->SendMessage0(self,"EXECUTEQUEUEDMESSAGES");    // if any messages for DBus queued, execute them!
 
 #ifdef DEBUG_MESSAGELOOP
         if (++count>=limit)
@@ -4871,22 +4732,6 @@ RexxMethod2(RexxObjectPtr, DbusMessageLoop, CSELF, connPtr, OSELF, self)
             count=0;
         }
 #endif
-
-//TODO: 20140729
-/* do not shut down message loop, new strategy does not allow to restart it!
-        if  (context->CheckCondition()) // is this thread affected by a Halt-condition? If so, leave
-        {
-
-fprintf(stderr, "BBBB---> #1 \n");fflush(stderr);
-// context->ClearCondition();
-            context->SetGuardOn();
-            context->SetObjectVariable("ACTIVE",rxFalse);
-            context->SetGuardOff();
-            break;
-        }
-*/
-        // logical_t bLeave=(context->GetObjectVariable("active") == rxFalse);
-        // rgf, 2014-07-23
 
         logical_t bLeave=(context->GetObjectVariable("stopLoop") == rxTrue);
 
@@ -4898,7 +4743,6 @@ fprintf(stderr, "BBBB---> #1 \n");fflush(stderr);
 #ifdef DEBUG_MESSAGELOOP
         if (++count>=limit)
         {
-            // fprintf(stderr, "... MessageLoop(): looped [%zu] times...\n", limit); fflush(stderr);
             fprintf(stderr, "... MessageLoop(): looped [%lu] times...\n", (unsigned long) limit); fflush(stderr);
             count=0;
         }
@@ -4932,12 +4776,6 @@ fprintf(stderr, "--- --- --- bClientForPrivateRexxServer=[%d]\n", bClientForPriv
 
     CSTRING tmpInterface=dbus_message_get_interface(dbusMsg);
     CSTRING tmpMember=dbus_message_get_member(dbusMsg);
-/*
-    if (   tmpInterface!=NULL && tmpMember!= NULL
-        && !strncmp("org.freedesktop.DBus.Local", tmpInterface, 26) // a client on a private server is disconnected
-        && !strncmp("Disconnected",         tmpMember,    12)
-    )
-*/
 
     if (msgType==DBUS_MESSAGE_TYPE_SIGNAL)
     {
@@ -4963,7 +4801,6 @@ fprintf(stderr, "--- --- --- bClientForPrivateRexxServer=[%d]\n", bClientForPriv
 #ifdef DEBUG_MESSAGELOOP
     fprintf(stderr, "    ... message is not a SIGNAL or a METHOD_CALL, msgType=[%d], continue ...\n", msgType); fflush(stderr);
 #endif
-
 
             dbus_message_unref(dbusMsg);    // free the message in hand
             context->SendMessage0(self,"EXECUTEQUEUEDMESSAGES");    // if any messages for DBus queued, execute them!
@@ -5061,8 +4898,6 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
             // create the slotDir argument, supply the message's interesting information with it
         RexxDirectoryObject slotDir=NULL;
 
-        // bool bMakeSlotDir      =context->GetObjectVariable("MAKESLOTDIR")==rxTrue;
-        // bool bCollectStatistics=context->GetObjectVariable("COLLECTSTATISTICS")==rxTrue;
         RexxObjectPtr rop1=context->GetObjectVariable("MAKESLOTDIR");
         bool bMakeSlotDir = rop1==rxTrue;
         context->ReleaseLocalReference(rop1);
@@ -5079,7 +4914,6 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
 
             // unmarshal arguments
         RexxArrayObject arrArgs=NULL;
-        // {
         arrArgs=helperUnmarshalMessageArgs(dbusMsg,
                        context->threadContext,
                        (context->GetObjectVariable("UNMARSHALBYTEARRAYASSTRING")==rxTrue), // context->True()),
@@ -5090,7 +4924,6 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
         {
             arrArgs=context->NewArray(0);
         }
-        // }
 
         if (bMakeSlotDir && slotDir!=NULL)
         {
@@ -5110,11 +4943,8 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
             // a signal, then invoke all listeners
         if (msgType==DBUS_MESSAGE_TYPE_SIGNAL)
         {
-// fprintf(stderr, "    ... MARKER # 01 ...\n"); fflush(stderr);
             size_t items=context->ArraySize(signalListeners);
-// fprintf(stderr, "    ... MARKER # 02 ...\n"); fflush(stderr);
             context->SetGuardOn();      // exclusive access to object variables/attributes
-// fprintf(stderr, "    ... MARKER # 03 ...\n"); fflush(stderr);
             for (size_t i=1; i<= items; i++)
             {
 
@@ -5127,7 +4957,6 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                 RexxObjectPtr rxTmp=context->SendMessage0(rop, "INTERFACE");    // get interface
                 if (rxTmp!=rxNil)   // given, hence must match!
                 {
-                    // if (context->SendMessage1(rxTmp, "equals", rxInterface)!=rxTrue)
                     RexxObjectPtr ropRes=context->SendMessage1(rxTmp, "equals", rxInterface);
                     if (ropRes!=rxTrue)
                     {
@@ -5168,13 +4997,11 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                     CSTRING countKind="COUNTRECEIVEDSIGNALS";
                     context->DirectoryPut(rdo,slotDir,kind);     // make error messages slotDir available
 
-                    // context->DirectoryPut(rdo,context->DirectoryAt(slotDir,"DATETIME"),sentKind);   // adjust "RECEIVED" datetime-stamp
                     RexxObjectPtr ropTmp=context->DirectoryAt(slotDir,"DATETIME");
                     context->DirectoryPut(rdo,ropTmp,sentKind);   // adjust "RECEIVED" datetime-stamp
 
                         // increase kind's count
                     RexxObjectPtr count=context->DirectoryAt(rdo,countKind);
-                    // count=context->SendMessage1(count, "+", context->Int32ToObject(1));
                     RexxObjectPtr ropIncr1=context->Int32ToObject(1);
                     count=context->SendMessage1(count, "+", ropIncr1);
                     context->DirectoryPut(rdo,count,countKind);
@@ -5199,19 +5026,12 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                 // message to the server supplying this connection as an argument
             if (bClientForPrivateRexxServer)
             {
-/*
-                if (   interface!=NULL && member!= NULL
-                    && !strncmp("org.freedesktop.DBus.Local", interface, 26) // a client on a private server is disconnected
-                    && !strncmp("Disconnected",               member,    12)
-                )
-*/
                 if (dbus_message_is_signal(dbusMsg,DBUS_INTERFACE_LOCAL,"Disconnected") )
                 {
 #if defined (DEBUG_RGF)     // debug private server connection to client
     fprintf(stderr, "---- BINGO BINGO #2 - DISCONNECT received: interfaceName=[%s], member=[%s]\n",interfaceName, member);
 #endif
                         // send DISCONNECT message to server, supplying this connection instance as an argument
-                    // context->SendMessage1(context->SendMessage0(self, "SERVER"), "DISCONNECT", self);
                     RexxObjectPtr ropRes=context->SendMessage0(self, "SERVER");
                     context->SendMessage1(ropRes, "DISCONNECT", self);
                     context->ReleaseLocalReference(ropRes);
@@ -5275,7 +5095,6 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                     CSTRING errName=dbus_message_get_error_name(errReply);
                     if (errName!=NULL)
                     {
-                        // context->DirectoryPut(slotDir,context->String(errName),"ERRORNAME");
                         RexxObjectPtr rop2=context->String(errName);
                         context->DirectoryPut(slotDir,rop2,"ERRORNAME");
                         context->ReleaseLocalReference(rop2);
@@ -5286,14 +5105,12 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                     CSTRING countKind="COUNTSENTERRORS";
                     context->DirectoryPut(rdo,slotDir,kind);     // make error messages slotDir available
 
-                    // context->DirectoryPut(rdo,context->DirectoryAt(slotDir,"DATETIME"),sentKind);   // adjust "RECEIVED" datetime-stamp
                     RexxObjectPtr rop=context->DirectoryAt(slotDir,"DATETIME");
                     context->DirectoryPut(rdo,rop,sentKind);   // adjust "RECEIVED" datetime-stamp
                     context->ReleaseLocalReference(rop);
 
                         // increase kind's count
                     RexxObjectPtr count=context->DirectoryAt(rdo,countKind);
-                    // count=context->SendMessage1(count, "+", context->Int32ToObject(1));
                     RexxObjectPtr rop1=context->Int32ToObject(1);
                     count=context->SendMessage1(count, "+", rop1);
                     context->ReleaseLocalReference(rop1);
@@ -5319,14 +5136,12 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                     CSTRING countKind="COUNTRECEIVEDMESSAGES";
                     context->DirectoryPut(rdo,slotDir,kind);     // make error messages slotDir available
 
-                    // context->DirectoryPut(rdo,context->DirectoryAt(slotDir,"DATETIME"),sentKind);   // adjust "RECEIVED" datetime-stamp
                     RexxObjectPtr ropTmp=context->DirectoryAt(slotDir,"DATETIME");
                     context->DirectoryPut(rdo,ropTmp,sentKind);   // adjust "RECEIVED" datetime-stamp
                     context->ReleaseLocalReference(ropTmp);
 
                         // increase kind's count
                     RexxObjectPtr count=context->DirectoryAt(rdo,countKind);
-                    // count=context->SendMessage1(count, "+", context->Int32ToObject(1));
                     RexxObjectPtr rop1=context->Int32ToObject(1);
                     count=context->SendMessage1(count, "+", rop1);
                     context->ReleaseLocalReference(rop1);
@@ -5352,11 +5167,7 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
     fprintf(stderr, "\n    ... message is a CALL, 1 - sending message [%s] (interfaceName=[%s]) to service object for [%s] ASYNCHRONEOUSLY (no reply expected) ... \n", member, interfaceName, objectPath); fflush(stderr);
 #endif
 
-// rgf: 20140719 test
-// TODO: rgf, 201407: once all calls to DBus are serialized, reinstate asynchroneous dispatching!
-                  context->SendMessage(rop, "STARTWITH", arr2);
-// rgf: 20140720 test
-// context->SendMessage(rop, "SENDWITH", arr2);
+                    context->SendMessage(rop, "STARTWITH", arr2);
 
                     // send an empty reply-message, controlled by connection's attribute 'sendEmptyReply'
                     if (context->GetObjectVariable("SENDEMPTYREPLY")==rxTrue)
@@ -5384,14 +5195,12 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                             CSTRING countKind="COUNTSENTMESSAGES";
                             context->DirectoryPut(rdo,slotDir,kind);     // make error messages slotDir available
 
-                            // context->DirectoryPut(rdo,context->DirectoryAt(slotDir,"DATETIME"),sentKind);   // adjust "RECEIVED" datetime-stamp
                             RexxObjectPtr ropTmp=context->DirectoryAt(slotDir,"DATETIME");
                             context->DirectoryPut(rdo,ropTmp,sentKind);   // adjust "RECEIVED" datetime-stamp
                             context->ReleaseLocalReference(ropTmp);
 
                                 // increase kind's count
                             RexxObjectPtr count=context->DirectoryAt(rdo,countKind);
-                            // count=context->SendMessage1(count, "+", context->Int32ToObject(1));
                             RexxObjectPtr rpo1=context->Int32ToObject(1);
                             count=context->SendMessage1(count, "+", rpo1);
                             context->DirectoryPut(rdo,count,countKind);
@@ -5403,9 +5212,6 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                         }
                         dbus_message_unref(returnMsg);
                     }
-
-// rgf: 20140719 test
-//  context->SendMessage(rop, "SENDWITH", arr2);
                 }
 
                 else                                    // dispatch synchroneously
@@ -5506,7 +5312,6 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                              CSTRING errName=dbus_message_get_error_name(errReply);
                              if (errName!=NULL)
                              {
-                                 // context->DirectoryPut(slotDir,context->String(errName),"ERRORNAME");
                                  RexxObjectPtr rpoTmp=context->String(errName);
                                  context->DirectoryPut(slotDir,rpoTmp,"ERRORNAME");
                                  context->ReleaseLocalReference(rpoTmp);
@@ -5517,14 +5322,12 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                              CSTRING countKind="COUNTSENTERRORS";
                              context->DirectoryPut(rdo,slotDir,kind);     // make error messages slotDir available
 
-                             // context->DirectoryPut(rdo,context->DirectoryAt(slotDir,"DATETIME"),sentKind);   // adjust "RECEIVED" datetime-stamp
                              RexxObjectPtr rpoTmp=context->DirectoryAt(slotDir,"DATETIME");
                              context->DirectoryPut(rdo,rpoTmp,sentKind);   // adjust "RECEIVED" datetime-stamp
                              context->ReleaseLocalReference(rpoTmp);
 
                                  // increase kind's count
                              RexxObjectPtr count=context->DirectoryAt(rdo,countKind);
-                             // count=context->SendMessage1(count, "+", context->Int32ToObject(1));
                              RexxObjectPtr rop1=context->Int32ToObject(1);
                              count=context->SendMessage1(count, "+", rop1);
                              context->DirectoryPut(rdo,count,countKind);
@@ -5536,31 +5339,6 @@ fprintf(stderr, "    ... message is a SIGNAL, but no signal handlers registered,
                          }
 
                          dbus_message_unref(errReply);
-
-/* do not shut down message loop, new strategy does not allow to restart it!
-                         if (!bSpecialReply)    // an unexpected Rexx condition got raised
-                         {
-                             // context->ClearCondition();     // let the service object continue to run
-                             // otherwise: stop message loop, such that Rexx program can fully stop
-                             // context->SetObjectVariable("active", rxFalse);
-// TODO: 20140729, rgf
-
-fprintf(stderr, "BBBB---> #2 \n");fflush(stderr);
-                             context->SetGuardOn();
-                             context->SetObjectVariable("ACTIVE", rxFalse);  // stop message loop thread
-                             context->SetGuardOff();
-
-                             if (context->GetObjectVariable("HALTALLTHREADSONUNEXPECTEDERROR")==rxTrue)  // halt all Rexx threads? (trying to force program to exit)
-                             {
-                                 context->threadContext->instance->Halt();  // raise Halt condition in all threads of this Rexx interpreter instance
-                             }
-                         }
-                         else   // clear Rexx condition and proceed as normal
-                         {
-                             context->ClearCondition();
-
-                         }
-*/
 
                          context->ClearCondition();   // rgf, 2014-07-30, new strategy
 
@@ -5601,7 +5379,6 @@ fprintf(stderr, "BBBB---> #2 \n");fflush(stderr);
                              CSTRING errName=dbus_message_get_error_name(errReply);
                              if (errName!=NULL)
                              {
-                                 // context->DirectoryPut(slotDir,context->String(errName),"ERRORNAME");
                                  RexxObjectPtr rpoTmp=context->String(errName);
                                  context->DirectoryPut(slotDir,rpoTmp,"ERRORNAME");
                                  context->ReleaseLocalReference(rpoTmp);
@@ -5612,14 +5389,12 @@ fprintf(stderr, "BBBB---> #2 \n");fflush(stderr);
                              CSTRING countKind="COUNTSENTERRORS";
                              context->DirectoryPut(rdo,slotDir,kind);     // make error messages slotDir available
 
-                             // context->DirectoryPut(rdo,context->DirectoryAt(slotDir,"DATETIME"),sentKind);   // adjust "RECEIVED" datetime-stamp
                              RexxObjectPtr rpoTmp=context->DirectoryAt(slotDir,"DATETIME");
                              context->DirectoryPut(rdo,rpoTmp,sentKind);   // adjust "RECEIVED" datetime-stamp
                              context->ReleaseLocalReference(rpoTmp);
 
                                  // increase kind's count
                              RexxObjectPtr count=context->DirectoryAt(rdo,countKind);
-                             // count=context->SendMessage1(count, "+", context->Int32ToObject(1));
                              RexxObjectPtr rpo1=context->Int32ToObject(1);
                              count=context->SendMessage1(count, "+", rpo1);
                              context->DirectoryPut(rdo,count,countKind);
@@ -5794,15 +5569,6 @@ fprintf(stderr, "BBBB---> #2 \n");fflush(stderr);
                                                          signature, err.name, err.message);
 
                                    dbus_message_unref(dbusMsg);    // make sure we free the message in hand
-
-//                                   dbus_error_free(&err);
-// TODO: 20140729, rgf: really stop message loop here ? NOPE, new strategy !
-// fprintf(stderr, "BBBB---> #3 \n");fflush(stderr);
-//                                   context->SetObjectVariable("active", context->False()); // indicate message processing has stopped
-
-//                                   context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
-//                                   return NULLOBJECT;
-
                                 }
                                 dbus_error_free(&err);      // not needed anymore
 
@@ -5959,7 +5725,6 @@ else
                                     CSTRING errName=dbus_message_get_error_name(errReply);
                                     if (errName!=NULL)
                                     {
-                                        // context->DirectoryPut(slotDir,context->String(errName),"ERRORNAME");
                                         RexxObjectPtr ropTmp=context->String(errName);
                                         context->DirectoryPut(slotDir,ropTmp,"ERRORNAME");
                                         context->ReleaseLocalReference(ropTmp);
@@ -5970,14 +5735,12 @@ else
                                     CSTRING countKind="COUNTSENTERRORS";
                                     context->DirectoryPut(rdo,slotDir,kind);     // make error messages slotDir available
 
-                                    // context->DirectoryPut(rdo,context->DirectoryAt(slotDir,"DATETIME"),sentKind);   // adjust "RECEIVED" datetime-stamp
                                     RexxObjectPtr ropTmp=context->DirectoryAt(slotDir,"DATETIME");
                                     context->DirectoryPut(rdo,ropTmp,sentKind);   // adjust "RECEIVED" datetime-stamp
                                     context->ReleaseLocalReference(ropTmp);
 
                                         // increase kind's count
                                     RexxObjectPtr count=context->DirectoryAt(rdo,countKind);
-                                    // count=context->SendMessage1(count, "+", context->Int32ToObject(1));
                                     RexxObjectPtr rop1=context->Int32ToObject(1);
                                     count=context->SendMessage1(count, "+", rop1);
                                     context->DirectoryPut(rdo,count,countKind);
@@ -5994,27 +5757,6 @@ else
                                 // -----------------------------------------
                                 // now raise condition in Rexx
                                 dbus_message_unref(dbusMsg);    // make sure we free the message in hand
-
-// TODO: 20140729, rgf: really stop message loop here ? NOPE, strategy has changed, NO return from message loop itself !
-//                                    // Rexx: try to raise a syntax exception
-//                                char msg[1024]="";     // buffer for error message
-//
-//                                    /* raise exception */
-//                                SNPRINTF( msg, 1024, "%.16s/DbusMessageLoop, panic! Unexpected marshalling error for return value [%.64s] with signature [%.256s] by service object [%s] after returning from Rexx method [%s] (interfaceName=[%s])",
-//                                                 DLLNAME,
-//                                                 context->ObjectToStringValue(rxResult),
-//                                                 signature,
-//                                                 objectPath,
-//                                                 member,
-//                                                 interfaceName
-//                                                 );
-//
-// fprintf(stderr, "BBBB---> #4 \n");fflush(stderr);
-//                                 context->SetObjectVariable("active", context->False()); // indicate message processing has stopped
-
-//                                context->RaiseException1(Rexx_Error_Incorrect_method_user_defined, context->String(msg));
-//                                return NULLOBJECT;
-
                             }
                         }
                         context->ReleaseLocalReference(arrRxResult);
@@ -6037,19 +5779,38 @@ else
     // o.k. here to indicate that messageloop is inactive, no communication possible anymore
     context->SetObjectVariable("active", rxFalse); // context->False()); // indicate message processing has stopped
 
-// TODO: 20140722, call method "abortQueuedMessages"
     context->SendMessage0(self,"ABORTQUEUEDMESSAGES");  // if any messages for DBus queued, abort them!
+
 
     // TODO: drain messages in incoming queue !? Question was not answered on DBus mailing list, hence not doing it
     //     20140722, rgf, cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusConnection.html#ga580d8766c23fe5f49418bc7d87b67dc6>
     //                    so we are supposed to read the message queue empty ?
-/* maybe like this?
+/* maybe like this? though tests show it is not working reliably on DBus 1.4.18 on 64-bit Ubuntu
+fprintf(stderr, "TICKER TICKER TICKER # 1\n");fflush(stderr);
+    DBusError       err;
+    dbus_error_init(&err);      // initialise the error value
     for (dbusMsg=dbus_connection_pop_message(conn);dbusMsg!=NULL;dbus_connection_pop_message(conn))
     {
-        dbus_message_unref(dbusMsg);    // free the message in hand
-    }
+        if (dbus_error_is_set(&err))  // !sigOK implies setting error according to implementation as of 2011-06-21
+        {
+fprintf(stderr, "\tTICKER TICKER TICKER # // - DBUS_ERROR: name=[%s], message=[%s], breaking...\n", err.name, err.message);fflush(stderr);
+            break;
+        }
+fprintf(stderr, "\tTICKER TICKER TICKER # 2a - about to dbus_message_unref, dbusMsg=[%p]\n", dbusMsg);fflush(stderr);
 
-*/
+        dbus_message_unref(dbusMsg);    // free the message in hand
+
+        if (dbus_error_is_set(&err))  // !sigOK implies setting error according to implementation as of 2011-06-21
+        {
+fprintf(stderr, "\tTICKER TICKER TICKER # \\\\ - DBUS_ERROR: name=[%s], message=[%s], breaking...\n", err.name, err.message);fflush(stderr);
+            break;
+        }
+fprintf(stderr, "\tTICKER TICKER TICKER # 2b - AFTER to dbus_message_unref\n");fflush(stderr);
+    }
+    dbus_error_free(&err);      // not needed anymore
+fprintf(stderr, "TICKER TICKER TICKER # 3\n");fflush(stderr);
+
+ */
 
 
 #if defined (DEBUG_MESSAGELOOP) || defined (DEBUG_CONNECTION)
@@ -6077,7 +5838,6 @@ RexxMethod7(RexxObjectPtr, DbusBusSignalMessage, CSTRING,         senderObjectPa
     size_t sigLen=strlen(signature);
 
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
-   // fprintf(stderr, "===> arrived in DbusBusSignalMessage: rao=[%p], items=[%zu], signature=[%s]\n", rexxArgs, items, signature);fflush(stderr);
    fprintf(stderr, "===> arrived in DbusBusSignalMessage: rao=[%p], items=[%lu], signature=[%s]\n", rexxArgs, (unsigned long) items, signature);fflush(stderr);
 #endif
 
@@ -6252,7 +6012,6 @@ RexxMethod9(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
     size_t argSignatureLength=strlen(argSignature);
 
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
-   // fprintf(stderr, "===> arrived in DbusBusCallMessage: rao=[%p], items=[%zu], argSignature=[%s] | replySignature=[%s]\n", rexxArgs, items, argSignature, replySignature);
    fprintf(stderr, "===> arrived in DbusBusCallMessage: rao=[%p], items=[%lu], argSignature=[%s] | replySignature=[%s]\n", rexxArgs, (unsigned long) items, argSignature, replySignature);
    fprintf(stderr, "===>                                ... busName=[%s], targetObjectPath=[%s], callInterfaceName=[%s], callMemberName=[%s]\n",
                          busName, targetObjectPath, callInterfaceName, callMemberName);
@@ -6413,7 +6172,6 @@ RexxMethod9(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
         }
 
 
-        // if (context->GetObjectVariable("COLLECTSTATISTICS")==context->True())
         if (bCollectStatistics)         // allows us to guard on only, if statistics should be collected !
         {
             context->SetGuardOn();          // update statistics on call method
@@ -6467,7 +6225,6 @@ RexxMethod9(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
         }
         dbus_connection_flush(conn);
 
-        // if (context->GetObjectVariable("COLLECTSTATISTICS")==context->True())
         if (bCollectStatistics)         // allows us to guard on only, if statistics should be collected !
         {
             context->SetGuardOn();          // update statistics on call method
@@ -6737,19 +6494,15 @@ void new_connection_callback (DBusServer *server, DBusConnection *conn, void *da
    fprintf(stderr, "             in \"new_connection_callback(...)\", rco=[%p] \n", rco); fflush(stderr);
 #endif
 
-   // RexxObjectPtr rxDBusConn=rtc->SendMessage1(rco, "NEW", rtc->String("native"));  // get DBus (bus connection) object
     RexxStringObject rsoNative=rtc->String("native");
     RexxObjectPtr rxDBusConn=rtc->SendMessage1(rco, "NEW", rsoNative);  // get DBus (bus connection) object
-    // RexxObjectPtr rxDBusConn=rtc->SendMessage0(rco, "NEW"); // get DBus (bus connection) object
 
     rtc->SendMessage1(rxDBusConn, "PSEUDOADDRESS=", rsoAddrWithDT); // set CSELF
 
         // save conn in a Rexx pointer object and save it as CSELF
     RexxPointerObject rpo = rtc->NewPointer(conn);
     rtc->SendMessage1(rxDBusConn, "CSELF=",         rpo); // set CSELF
-    // rtc->SendMessage1(rxDBusConn, "BUSTYPE=", rtc->String("private"));  // set bus type
     rtc->SendMessage1(rxDBusConn, "SERVER=", cbd->rxDbusServer);        // set server this connection belongs to
-
 
         // let Rexx code setup (save to connections, assigning default service and listener objects)
     rtc->SendMessage1(cbd->rxDbusServer, "NEWCONNECTION", rxDBusConn);
@@ -6794,7 +6547,6 @@ dbus_bool_t add_watch_callback (DBusWatch *watch, void *data) // callback on new
 #endif
    psw->watch=watch;       // save watch in node
 
-   // PSTRUCT_CALLBACK_DATA wl=(PSTRUCT_CALLBACK_DATA) data;  // cast to be able to use the watch list
    PSTRUCT_WATCH_LIST wl=(PSTRUCT_WATCH_LIST) data;    // cast toe able to use the watch list
 
    psw->next=wl->watchList;    // let new node point to current root node
@@ -6815,7 +6567,7 @@ void remove_watch_callback (DBusWatch *watch, void *data) // callback on new con
                          data, watch, dbus_watch_get_socket(watch));
    fflush(stderr);
 #endif
-   // PSTRUCT_CALLBACK_DATA wl=(PSTRUCT_CALLBACK_DATA) data;  // cast to be able to use the watch list
+
    PSTRUCT_WATCH_LIST wl=(PSTRUCT_WATCH_LIST) data;    // cast toe able to use the watch list
    PSTRUCT_WATCH pw=wl->watchList;
    PSTRUCT_WATCH tmpwatch=NULL;
@@ -6890,16 +6642,15 @@ dbus_bool_t add_timeout_callback (DBusTimeout *timeout, void *data) // callback 
 
    RexxPointerObject rpo=rtc->NewPointer(data); // wrap
        // start the timer loop via Rexx on an own thread, submit *data pointer wrapped in a Rexx ojbect
-   // rtc->SendMessage2(pto->rxDbusServer, "TIMERLOOP", rtc->String("START"), rpo);
    RexxObjectPtr ropStart=rtc->String("START");
    rtc->SendMessage2(pto->rxDbusServer, "TIMERLOOP", ropStart, rpo);
    rtc->ReleaseLocalReference(rpo);
    rtc->ReleaseLocalReference(ropStart);
 
-
 #if defined (DEBUG_TIMEOUTLOOP) || defined (DEBUG_METHODS)
    fprintf(stderr, "<--- end of add_timeout_callback(...), interval=[%d].\n", pto->currentInterval); fflush(stderr);
 #endif
+
     return true;
 }
 
@@ -6930,10 +6681,8 @@ void remove_timeout_callback (DBusTimeout *timeout, void *data) // callback on n
    pto->enabled        =false;
 
    // stop timeout thread
-   // rtc->SendMessage1(pto->rxDbusServer, "TIMERLOOP", rtc->String("STOP"));
    RexxObjectPtr ropStop=rtc->String("STOP");
    rtc->SendMessage1(pto->rxDbusServer, "TIMERLOOP", ropStop);
-
    rtc->ReleaseLocalReference(ropStop);
 
 #if defined (DEBUG_TIMEOUTLOOP) || defined (DEBUG_METHODS)
@@ -6992,7 +6741,6 @@ RexxMethod3(RexxObjectPtr, DbusServerTimeoutLoop, RexxObjectPtr, timeoutDataPoin
 
         // allow loop thread to be ended by Rexx, e.g. checking the status of the "active" attribute (if .false return from message loop)
     RexxObjectPtr ropTimeoutLoopActive=context->GetObjectVariable(timeoutLoopActive);
-    // while (context->GetObjectVariable(timeoutLoopActive) == rxTrue) // while watch loop active, go ahead
     while (ropTimeoutLoopActive == rxTrue) // while watch loop active, go ahead
     {
         if  (context->CheckCondition()) // is this thread affected by a Halt-condition? If so, leave
@@ -7021,7 +6769,6 @@ RexxMethod3(RexxObjectPtr, DbusServerTimeoutLoop, RexxObjectPtr, timeoutDataPoin
 #if defined (DEBUG_TIMEOUTLOOP)
         if (counter % 10000 == 1)
         {
-            // fprintf(stderr, "... TimeoutLoop(): after timeout, res=[%d], counter=[%zu], timeout_ms=[%d] timeout enabled=[%d]  \n",
             fprintf(stderr, "... TimeoutLoop(): after timeout, res=[%d], counter=[%lu], timeout_ms=[%d] timeout enabled=[%d]  \n",
                              res,
                              (unsigned long) counter,
@@ -7035,7 +6782,6 @@ RexxMethod3(RexxObjectPtr, DbusServerTimeoutLoop, RexxObjectPtr, timeoutDataPoin
 #if defined (DEBUG_TIMEOUTLOOP)
     if (counter % 1000 == 1)        // every second
     {
-    //    fprintf(stderr, "... TimeoutLoop(): after timeout, branch 'enabled', counter=[%zu], about to call 'dbus_timeout_handle()' ... \n",counter);
     fprintf(stderr, "... TimeoutLoop(): after timeout, branch 'enabled', counter=[%lu], about to call 'dbus_timeout_handle()' ... \n", (unsigned long) counter);
     }
 #endif
@@ -7261,7 +7007,6 @@ RexxMethod2(RexxObjectPtr, DbusServerWatchLoop, CSELF, connPtr, OSELF, self)
         fd_set rfds, wfds, efds;        // read, write, error fd sets
         int maxfd = 0;
         struct timeval tv;
-        // int res = 0;
 
         FD_ZERO (&rfds);
         FD_ZERO (&wfds);
@@ -7337,7 +7082,6 @@ RexxMethod2(RexxObjectPtr, DbusServerWatchLoop, CSELF, connPtr, OSELF, self)
 #endif
 
             RexxObjectPtr ropWatchLoopActive=context->GetObjectVariable(watchLoopActive);
-            // if (context->GetObjectVariable(watchLoopActive) != rxTrue)  // stop watch loop ?
             if (ropWatchLoopActive != rxTrue)  // stop watch loop ?
             {
 #ifdef DEBUG_WATCHLOOP
@@ -7483,7 +7227,7 @@ RexxMethod2(RexxObjectPtr, DbusNativeServerDisconnect, CSELF, serverPtr, OSELF, 
 
 
 
-
+/*
         // allow some tests
 RexxRoutine0(int, RgfTestStuff)
 {
@@ -7508,11 +7252,51 @@ RexxRoutine0(int, RgfTestStuff)
     flag=context->ObjectToDouble(rd2, &d2);
     fprintf(stderr, " d2=[%f], flag=[%d]\n", d2, (int) flag);
 
+    fprintf(stderr, "----------- now testing 64-bit int ------------\n");
+
+
+    int64_t      val=0;
+    RexxObjectPtr rop=NULL;
+
+    for (int64_t i=2147483645; i<2147483660; i++)
+    {
+        rop=context->Int64ToObject(i);
+        flag=false;
+        val=0;
+        flag=context->ObjectToInt64(rop, &val);
+        fprintf(stderr, "int64: [%lld], rop~string=[%s], flag=[%d], val=[%lld]\n",
+                                   i, context->ObjectToStringValue(rop), (int) flag, val);
+        fflush(stderr);
+    }
+
+    fprintf(stderr,"\n");
+    for (int64_t i=4294967295; i<4294967299; i++)
+    {
+        rop=context->Int64ToObject(i);
+        flag=false;
+        val=0;
+        flag=context->ObjectToInt64(rop, &val);
+        fprintf(stderr, "int64: [%lld], rop~string=[%s], flag=[%d], val=[%lld]\n",
+                                   i, context->ObjectToStringValue(rop), flag, val);
+        fflush(stderr);
+    }
+    fprintf(stderr,"\n");
+
+    fprintf(stderr, "----------- now testing conversion of ooRexx number to 64-bit int ------------\n");
+    CSTRING testVal="2147483660";
+    rop=context->String(testVal);
+
+    flag=false;
+    val=0;
+    flag=context->ObjectToInt64(rop, &val);
+    fprintf(stderr, "int64: rop~string=[%s], flag=[%d], val=[%lld]\n",
+                               context->ObjectToStringValue(rop), flag, val);
+    fflush(stderr);
 
     return 0;
 }
 
-
+*/
 
 // -----------------------------------------------------------------------------------------------------
 // -------------------- Rexx package definitions ----------------------
@@ -7526,7 +7310,7 @@ RexxRoutine0(int, RgfTestStuff)
         REXX_TYPED_ROUTINE( DbusHaltRexx            , DbusHaltRexx                ),
 
         REXX_TYPED_ROUTINE( DbusGetTID              , DbusGetTID                  ),
-        REXX_TYPED_ROUTINE( RgfTestStuff            , RgfTestStuff                ),
+//        REXX_TYPED_ROUTINE( RgfTestStuff            , RgfTestStuff                ),
 
         REXX_LAST_ROUTINE()
     };
@@ -7538,7 +7322,6 @@ RexxRoutine0(int, RgfTestStuff)
         REXX_METHOD( DbusNativeGetSystemBus         , DbusNativeGetSystemBus          ),
         REXX_METHOD( DbusNativeGetSessionBus        , DbusNativeGetSessionBus         ),
 
-//        REXX_METHOD( DbusGetVersion                 , DbusGetVersion                  ),
 
         REXX_METHOD( DbusGetUniqueBusName           , DbusGetUniqueBusName            ),
         REXX_METHOD( DbusGetUniqueBusId             , DbusGetUniqueBusId              ),

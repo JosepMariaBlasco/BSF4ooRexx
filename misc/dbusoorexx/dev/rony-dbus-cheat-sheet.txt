@@ -27,7 +27,7 @@ cd F:\work\git\dbus-win-20140805\dbus
 [- F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\source_cc\env4_32bit_xp.cmd]
 
 
-cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=E:/Programme/dbus-20140805 -DDBUS_USE_EXPAT=ON -DEXPAT_INCLUDE_DIR=E:/Programme/Expat_2.1.0/Source/lib F:/work/git/dbus-win-20140805/dbus/cmake
+cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=E:/Programme/dbus-20140807 -DEXPAT_INCLUDE_DIR=E:/Programme/Expat_2.1.0/Source/lib F:/work/git/dbus-win-20140807/dbus/cmake
 
 
 ------------------------------------------- 64-bit:
@@ -39,11 +39,7 @@ cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=E:/
 
 - "e:\Programme\Microsoft Visual Studio 10.0\VC\vcvarsall.bat" x86_amd64
 
-- "E:\Programme\Microsoft Visual Studio 9.0\VC\vcvarsall.bat" x86_amd64
-  "E:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\SetEnv.Cmd" /XP64 /RETAIL
-  ? "E:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\SetEnv.Cmd"  /AMD64 /RETAIL ?
-
-cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=E:/Programme/dbus-20140805-64bit -DEXPAT_LIBRARY=E:/Programme/expat-2.1.0-64bit/lib -DEXPAT_INCLUDE_DIR=E:/Programme/expat-2.1.0-64bit/include F:/work/git/dbus-win-20140805/dbus/cmake
+cmake -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=E:/Programme/dbus-20140807-64bit -DEXPAT_LIBRARY=E:/Programme/expat-2.1.0-64bit/lib/expat.lib -DEXPAT_INCLUDE_DIR=E:/Programme/expat-2.1.0-64bit/include F:/work/git/dbus-win-20140807/dbus/cmake 
 
 
 ------------------------------------------- both

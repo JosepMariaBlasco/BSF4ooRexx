@@ -2,7 +2,9 @@
 /*
       author:     Rony G. Flatscher (c)
       date:       2011-08-14
-      version:    1.0
+      changed:    2014-08-07, rgf, - explicitly close connection, otherwise thread remains lingering
+                                   - remove duplicate service names
+      version:    1.1
       name:       listObjectPaths.rex
       purpose:    interrogate given bus name for the object paths it publishes and list them
       license:    AL 2.0
@@ -41,9 +43,16 @@ if serviceName="" then     -- no service name given, list all known service name
 do
    o=conn~getObject(.dbus.dir~ServiceDBus, .dbus.dir~PathDBus) -- get the DBus object
    say "available service/bus names:"
-   do sn over .array~new ~union(o~listNames) ~union(o~listActivatableNames)~sort
-      say "   " sn
+   allServiceNames=.set~new ~union(o~listNames) ~union(o~listActivatableNames)
+   w=allServiceNames~items~length
+   i=1
+   tab="09"x
+   do sn over allServiceNames~allIndexes~sort
+      say "service name #" i~right(w)":"tab || sn
+      i+=1
    end
+   say
+   say "there are" allServiceNames~items "unique service names (including activatable names) available"
    say
    say "usage:  testGetObjectPaths serviceName"
 end
@@ -56,6 +65,7 @@ do
       say "  #" i": ["objPaths[i]"]"
    end
 end
+conn~close
 
 
 ::requires 'dbus.cls'      -- load DBUS support for ooRexx

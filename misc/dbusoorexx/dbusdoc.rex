@@ -2,9 +2,11 @@
 /*
       author:     Rony G. Flatscher (c)
       date:       2011-07-29/31, 2011-08-01/05, 2011-08-14
-      version:    1.0
+      changed:    2014-08-07, rgf - make sure that connection gets closed, otherwise message loop thread lingers
+      version:    1.1
       name:       dbusdoc.rex
       purpose:    documents given bus name in HTML form to allow the creation of API listings
+      usage:      rexx dbusdoc.rex [session|system] [service.bus.name]
       license:    AL 2.0
             ------------------------ Apache Version 2.0 license -------------------------
                Copyright 2011 Rony G. Flatscher
@@ -72,6 +74,7 @@ do
        say allBusNames~items "available bus names at the moment."
        say
 
+       conn~close
        signal usage     -- show usage
     end
 end
@@ -107,6 +110,7 @@ end
 if filtered~items=0 then
 do
    say 'no bus name found containing "'||needle'"'
+   conn~close
    exit
 end
 
@@ -139,6 +143,7 @@ call charout newFileName, m~string
 call stream newFileName, "C", "close"
 
 call dumpStatistics conn
+conn~close
 
 exit
 
@@ -159,6 +164,7 @@ syntax:
   co=condition('o')
   say ppCondition2(co)        -- "pretty prints" the condition object's information
   say
+  conn~close
   raise propagate
 
 
