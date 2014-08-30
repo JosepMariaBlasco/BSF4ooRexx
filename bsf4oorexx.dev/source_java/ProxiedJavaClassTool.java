@@ -15,6 +15,7 @@ java org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool TestAbstract Caesar
 /*
     2010-11-30, rgf:   - fixed bug in createConstructorsBase() which caused illegal class files to be created
     2010-05-31, rgf:   - use the ClassLoader of the class to proxy, otherwise dynamically created Java classes cannot be extended
+    2014-08-30, rgf:   - subclasses are allowed to access protected methods in superclasses, adjust for this
 */
 
 import java.lang.reflect.*;
@@ -35,7 +36,7 @@ import org.codehaus.janino.SimpleCompiler;
  *  proxied Java method invocations to their original target on the Java side.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2010-2012 Rony G. Flatscher
+ *    Copyright (C) 2010-2014 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -50,7 +51,7 @@ import org.codehaus.janino.SimpleCompiler;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 0.6.0, 2010-03-27, 2010-04-14, 2010-04-17, 2010-04-18, 2010-11-30, 2011-05-31
+  * @version 0.7.0, 2010-03-27, 2010-04-14, 2010-04-17, 2010-04-18, 2010-11-30, 2011-05-31, 2014-08-30
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu.ac.at">http://www.wu.ac.at</a>)
   */
 
@@ -64,7 +65,7 @@ public class ProxiedJavaClassTool
         // switches
     private final static boolean bDebug = false;    // true;
     public static boolean bTiming=false;            // true;
-    public static boolean bss=false;                // if set to .true, the generated source is printed to stderr
+    public static boolean bss= false;                // if set to .true, the generated source is printed to stderr
 
     // using Janino 1.5.2 and Java 6: bug in Janino which wrongly demands a synthetic bridge method to be implemented
     public  static boolean bDoNotProxySyntheticMethods=true; // this should be the correct mode (once Janino is fixed it should work with Janino as well)
@@ -151,6 +152,8 @@ public class ProxiedJavaClassTool
                                                String[] methodNames2proxy)
                                         throws BSFException
     {
+if (bDebug==true) System.err.println("... arrived in \"public static Class createProxiedJavaClass(...)\"");
+
         long crtSrcStartTime=0l, crtSrcEndTime=0l;
         if (bTiming==true) crtSrcStartTime=System.currentTimeMillis();
 
@@ -841,8 +844,11 @@ if (bDebug==true) System.err.println("!!! IS_SYNTHETIC_METHOD.invoke("+meths[k]+
                 }
                 int mMods=meths[k].getModifiers();
 
-                if ((mMods & (Modifier.FINAL | Modifier.PRIVATE | Modifier.PROTECTED)) != 0)
+                // rgf, 20140830: allow to override protected methods too as a subclass is allowed to invoke it
+                // if ((mMods & (Modifier.FINAL | Modifier.PRIVATE | Modifier.PROTECTED)) != 0)
+                if ((mMods & (Modifier.FINAL | Modifier.PRIVATE )) != 0)
                 {
+System.out.println(" ... RGF/ method ["+tmpName+", original spelling: ["+meths[k].getName()+"] - NOT processing, modifiers: ["+mMods+"]: PUBLIC=["+Modifier.PUBLIC+"], PROTECTED=["+Modifier.PROTECTED+"]");
                     continue;   // don't proxy
                 }
 
@@ -852,7 +858,7 @@ if (bDebug==true) System.err.println("!!! IS_SYNTHETIC_METHOD.invoke("+meths[k]+
 
             if (bMethodFound==false)    // no method by the given name found !
             {
-                throw new BSFException("ProxiedJavaClassTool.createMethods(): no public method definition found for the "+
+                throw new BSFException("ProxiedJavaClassTool.createMethods(): no public nor protected method definition to override found for the "+
                                        (i+1)+(i==0 ? "st" : (i==1 ? "nd" : (i==2 ? "rd" : "th") ) )+
                                        " (1-based) entry in the supplied String array of methods to proxy: ["+methods2proxy[i]+"].");
             }
