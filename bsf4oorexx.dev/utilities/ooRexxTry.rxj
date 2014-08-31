@@ -160,11 +160,8 @@ pngFn=filespec("Location",s) || .bsf4rexx~file.separator || 'ooRexxTry.png'
 
 if .bsf4rexx~opsys="MACOSX" then  -- on MacOSX display the standard ooRexx4OOo logo
 do
-   call makeBSF4ooRexxLookLikeMacOSX   -- make sure that on MacOSX the application looks like a Mac application
-
--- frame~setIconImage(.bsf~new("javax.swing.ImageIcon", pngFn)~getImage)
+  call makeBSF4ooRexxLookLikeMacOSX   -- make sure that on MacOSX the application looks like a Mac application
  .bsf4rexx~apple_application~setDockIconImage(.bsf~new("javax.swing.ImageIcon",pngFn)~getImage)
-
 end
 
 .mm.dir~isdebug = false
@@ -1617,6 +1614,7 @@ RunSyntax:
 
     -- contentpanel~add(buttonpanel)
     userData~buttonpanel = buttonpanel
+    .local~mm.dir~buttonpanel = buttonpanel
 
     contentpanel~bsf.invoke("add", buttonpanel)     -- GLEITNER
 
@@ -1695,6 +1693,10 @@ RunSyntax:
     else
             frame~setBounds(.mm.dir~xpos, .mm.dir~ypos, .mm.dir~width, .mm.dir~height)
     .mm.dir~frame = frame
+
+     -- remember the framesize for splitframe
+    .mm.dir~sWidth = frame~getWidth
+    .mm.dir~sHeight = frame~getHeight
 
 /*Define the minimum and preferred sizes of the main visual components of the GUI.
   Although the gridbag layout constraints meet most of the layout design requirements,
@@ -2983,6 +2985,12 @@ return
                props~setProperty("wy4",.mm.dir~wy4)
                props~setProperty("wy5",.mm.dir~wy5)
                props~setProperty("wy6",.mm.dir~wy6)
+               props~setProperty("ic1",.mm.dir~isicon1)
+               props~setProperty("ic2",.mm.dir~isicon2)
+               props~setProperty("ic3",.mm.dir~isicon3)
+               props~setProperty("ic4",.mm.dir~isicon4)
+               props~setProperty("ic5",.mm.dir~isicon5)
+               props~setProperty("ic6",.mm.dir~isicon6)
             end
         end
     props~setProperty("FontName",.mm.dir~fontname)
@@ -3872,15 +3880,16 @@ use arg bounds
 
    desktopp = .bsf~new("javax.swing.JDesktopPane")
 
-   dimsp = .Dimension~new(bounds~width, bounds~height)
+   dimsp = .Dimension~new(bounds~width, bounds~height - 110)
    Call BSF 'invoke', desktopp, 'setpreferredsize',     dimsp
+   Call BSF 'invoke', desktopp, 'setSize',              dimsp
 
-   f1 = .bsf~new("javax.swing.JInternalFrame", "code",              .true,.true,.true,.true)
-   f2 = .bsf~new("javax.swing.JInternalFrame", "input",             .true,.true,.true,.true)
-   f3 = .bsf~new("javax.swing.JInternalFrame", "arguments",         .true,.true,.true,.true)
-   f4 = .bsf~new("javax.swing.JInternalFrame", "returns",           .true,.true,.true,.true)
-   f5 = .bsf~new("javax.swing.JInternalFrame", "output/says",       .true,.true,.true,.true)
-   f6 = .bsf~new("javax.swing.JInternalFrame", "error/information", .true,.true,.true,.true)
+   f1 = .bsf~new("javax.swing.JInternalFrame", "code",              .true, .true, .true, .true)
+   f2 = .bsf~new("javax.swing.JInternalFrame", "input",             .true, .true, .true, .true)
+   f3 = .bsf~new("javax.swing.JInternalFrame", "arguments",         .true, .true, .true, .true)
+   f4 = .bsf~new("javax.swing.JInternalFrame", "returns",           .true, .true, .true, .true)
+   f5 = .bsf~new("javax.swing.JInternalFrame", "output/says",       .true, .true, .true, .true)
+   f6 = .bsf~new("javax.swing.JInternalFrame", "error/information", .true, .true, .true, .true)
    swidth  = trunc(bounds~width*2 / 3)
    sheight = trunc(bounds~height*2 / 3)
 
@@ -3983,16 +3992,23 @@ use arg bounds
    Call BSF 'invoke', f5, 'setSelected', .false
    Call BSF 'invoke', f6, 'setSelected', .false
 
+   if .mm.dir~isicon1 == 1 then Call BSF 'invoke', f1, 'setIcon', .true
+   if .mm.dir~isicon2 == 1 then Call BSF 'invoke', f2, 'setIcon', .true
+   if .mm.dir~isicon3 == 1 then Call BSF 'invoke', f3, 'setIcon', .true
+   if .mm.dir~isicon4 == 1 then Call BSF 'invoke', f4, 'setIcon', .true
+   if .mm.dir~isicon5 == 1 then Call BSF 'invoke', f5, 'setIcon', .true
+   if .mm.dir~isicon6 == 1 then Call BSF 'invoke', f6, 'setIcon', .true
+
+   /*
+   lx = trunc(10)
+   ly = trunc((14 * sheight) / divskal)
+   Call BSF 'invoke', .local~mm.dir~buttonpanel, 'setLocation', lx,ly
+   Call BSF 'invoke', .local~mm.dir~buttonpanel, 'setVisible', .true
+   Call BSF 'invoke', desktopp, 'add', .local~mm.dir~buttonpanel
+   */
 
    Call BSF 'invoke', desktopp, 'setDragMode', .JDesktopPane~OUTLINE_DRAG_MODE
 
-   /*
-   Call BSF 'invoke', desktopp, 'add', buttonpanel
-   lx = trunc(10)
-   ly = trunc((14 * sheight) / divskal)
-   Call BSF 'invoke', buttonpanel, 'setLocation', lx,ly
-   Call BSF 'invoke', buttonpanel, 'setVisible', .true
-   */
 
 
 /**
@@ -4196,11 +4212,7 @@ use arg bounds
 
   if methArgs~userData~dtype == "intframes" then call makesaveinternalwindow
 
-  .mm.dir~splitpane0 = methArgs~userData~splitpane~getDividerLocation
-  .mm.dir~splitpane1 = methArgs~userData~splitpane1~getDividerLocation
-  .mm.dir~splitpane2 = methArgs~userData~splitpane2~getDividerLocation
-  .mm.dir~splitpane3 = methArgs~userData~splitpane3~getDividerLocation
-  .mm.dir~splitpane4 = methArgs~userData~splitpane4~getDividerLocation
+  call adaptsplitwindowsize methArgs~userdata
 
    -- if (methArgs~userData~dtype == "splitpane" ) THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~splitpane)
    -- if (methArgs~userData~dtype == "tabbedpane") THEN methArgs~userData~contentpanel~bsf.invoke("remove", methArgs~userData~tabbedpane)
@@ -4279,12 +4291,6 @@ use arg bounds
    methArgs~userData~splitpane3~bsf.invokestrict("setResizeWeight", "double", "0.5")
    methArgs~userData~splitpane4~bsf.invokestrict("setResizeWeight", "double", "0.5")
 
-   if .mm.dir~isdebug == true then say "Y" methArgs~userData~splitpane~getDividerLocation
-   if .mm.dir~isdebug == true then say "Y" methArgs~userData~splitpane1~getDividerLocation
-   if .mm.dir~isdebug == true then say "Y" methArgs~userData~splitpane2~getDividerLocation
-   if .mm.dir~isdebug == true then say "Y" methArgs~userData~splitpane3~getDividerLocation
-   if .mm.dir~isdebug == true then say "Y" methArgs~userData~splitpane4~getDividerLocation
-
    methArgs~userData~splitpane~bsf.invokestrict("setDividerLocation",  "int", .mm.dir~splitpane0)
    methArgs~userData~splitpane1~bsf.invokestrict("setDividerLocation", "int", .mm.dir~splitpane1)
    methArgs~userData~splitpane2~bsf.invokestrict("setDividerLocation", "int", .mm.dir~splitpane2)
@@ -4296,6 +4302,12 @@ use arg bounds
    .mm.dir~splitpane2 = methArgs~userData~splitpane2~getDividerLocation
    .mm.dir~splitpane3 = methArgs~userData~splitpane3~getDividerLocation
    .mm.dir~splitpane4 = methArgs~userData~splitpane4~getDividerLocation
+
+   if .mm.dir~isdebug == true then say "Y" methArgs~userData~splitpane~getDividerLocation    .mm.dir~splitpane0
+   if .mm.dir~isdebug == true then say "Y" methArgs~userData~splitpane1~getDividerLocation   .mm.dir~splitpane1
+   if .mm.dir~isdebug == true then say "Y" methArgs~userData~splitpane2~getDividerLocation   .mm.dir~splitpane2
+   if .mm.dir~isdebug == true then say "Y" methArgs~userData~splitpane3~getDividerLocation   .mm.dir~splitpane3
+   if .mm.dir~isdebug == true then say "Y" methArgs~userData~splitpane4~getDividerLocation   .mm.dir~splitpane4
 
    Call BSF 'invoke', methArgs~userData~splitpane , 'setdividersize',       "2"
    Call BSF 'invoke', methArgs~userData~splitpane1, 'setdividersize',       "2"
@@ -4343,11 +4355,7 @@ use arg bounds
 
    if methArgs~userData~dtype == "intframes" then call makesaveinternalwindow
 
-   .mm.dir~splitpane0 = methArgs~userData~splitpane~getDividerLocation
-   .mm.dir~splitpane1 = methArgs~userData~splitpane1~getDividerLocation
-   .mm.dir~splitpane2 = methArgs~userData~splitpane2~getDividerLocation
-   .mm.dir~splitpane3 = methArgs~userData~splitpane3~getDividerLocation
-   .mm.dir~splitpane4 = methArgs~userData~splitpane4~getDividerLocation
+   call adaptsplitwindowsize methArgs~userdata
 
    methArgs~userData~dtype        = "splitpane"
    .mm.dir~dtype                  = methArgs~userData~dtype
@@ -4604,6 +4612,9 @@ use arg bounds
    methArgs~userData~d1 = d1
    .mm.dir~d1 = d1
 
+   -- zzz
+
+
    flowlayout = .FlowLayout~new
    methArgs~userData~contentpanel~bsf.invoke("setLayout",flowlayout)
    methArgs~userData~contentpanel~bsf.invoke("add", d1~desktopp)
@@ -4720,6 +4731,15 @@ use arg bounds
    dimsp = .Dimension~new(w1,h1)
    if .mm.dir~isdebug == true then say "frame component listener resized" methArgs~userdata~dtype w1 h1
 
+   if methArgs~userData~dtype == "intframes" then do
+      if .mm.dir~isdebug == true then say "f1: " .mm.dir~d1~f1~isicon
+      if .mm.dir~isdebug == true then say "f2: " .mm.dir~d1~f2~isicon
+      if .mm.dir~isdebug == true then say "f3: " .mm.dir~d1~f3~isicon
+      if .mm.dir~isdebug == true then say "f4: " .mm.dir~d1~f4~isicon
+      if .mm.dir~isdebug == true then say "f5: " .mm.dir~d1~f5~isicon
+      if .mm.dir~isdebug == true then say "f6: " .mm.dir~d1~f6~isicon
+   end
+
    if methArgs~userdata~dtype == "tabbedpane" then do
       x = (methArgs~userdata~tabbedpane~getpreferredsize~width - w1 )
       y = (methArgs~userdata~tabbedpane~getpreferredsize~height - h1 )
@@ -4750,6 +4770,10 @@ use arg bounds
       if .mm.dir~isdebug == true then say methArgs~userdata~splitpane~getpreferredsize~width methArgs~userdata~splitpane~getpreferredsize~height
       Call BSF 'invoke', methArgs~userdata~splitpane, 'reshape', 0, 0, w1, h1
       Call BSF 'invoke', methArgs~userdata~splitpane, 'revalidate'
+
+      -- remember the last framesize for splitframe
+      .mm.dir~sWidth = methArgs~userdata~frame~getWidth
+      .mm.dir~sHeight = methArgs~userdata~frame~getHeight
 
       select
          when methArgs~userdata~p1~getmax == .true then do
@@ -5681,10 +5705,20 @@ return
     .mm.dir~dtype      = props~getProperty("dtype")
 
     if props~getProperty("s0") == .nil then .mm.dir~splitpane0 = 300
+    else if props~getProperty("s0") < 1 then .mm.dir~splitpane0 = 300
+
     if props~getProperty("s1") == .nil then .mm.dir~splitpane1 = -1
+    else if props~getProperty("s1") < 1 then .mm.dir~splitpane1 = -1
+
     if props~getProperty("s2") == .nil then .mm.dir~splitpane2 = -1
+    else if props~getProperty("s2") < 1 then .mm.dir~splitpane2 = -1
+
     if props~getProperty("s3") == .nil then .mm.dir~splitpane3 = 400
+    else if props~getProperty("s3") < 1 then .mm.dir~splitpane3 = 400
     if props~getProperty("s4") == .nil then .mm.dir~splitpane4 = -1
+    else if props~getProperty("s4") < 1 then .mm.dir~splitpane4 = -1
+
+
     if props~getProperty("dtype") == .nil then .mm.dir~dtype = "splitpane"
 
     -- hole
@@ -5718,6 +5752,12 @@ return
     .mm.dir~wy5 = props~getProperty("wy5")
     .mm.dir~wy6 = props~getProperty("wy6")
 
+    .mm.dir~isicon1 = props~getProperty("ic1")
+    .mm.dir~isicon2 = props~getProperty("ic2")
+    .mm.dir~isicon3 = props~getProperty("ic3")
+    .mm.dir~isicon4 = props~getProperty("ic4")
+    .mm.dir~isicon5 = props~getProperty("ic5")
+    .mm.dir~isicon6 = props~getProperty("ic6")
 
     -- initialisiere
     -- .mm.dir~wh1..wh6
@@ -5749,7 +5789,12 @@ return
     if props~getProperty("wy4") == .nil then .mm.dir~wy4 = -1
     if props~getProperty("wy5") == .nil then .mm.dir~wy5 = -1
     if props~getProperty("wy6") == .nil then .mm.dir~wy6 = -1
-
+    if props~getProperty("ic1") == .nil then .mm.dir~isicon1 = 0
+    if props~getProperty("ic2") == .nil then .mm.dir~isicon2 = 0
+    if props~getProperty("ic3") == .nil then .mm.dir~isicon3 = 0
+    if props~getProperty("ic4") == .nil then .mm.dir~isicon4 = 0
+    if props~getProperty("ic5") == .nil then .mm.dir~isicon5 = 0
+    if props~getProperty("ic6") == .nil then .mm.dir~isicon6 = 0
 
    return
 
@@ -5966,7 +6011,58 @@ exit
    .mm.dir~wx6 = trunc(rectangle~getX)
    .mm.dir~wy6 = trunc(rectangle~getY)
 
+   .mm.dir~isicon1 = .mm.dir~d1~f1~isicon
+   .mm.dir~isicon2 = .mm.dir~d1~f2~isicon
+   .mm.dir~isicon3 = .mm.dir~d1~f3~isicon
+   .mm.dir~isicon4 = .mm.dir~d1~f4~isicon
+   .mm.dir~isicon5 = .mm.dir~d1~f5~isicon
+   .mm.dir~isicon6 = .mm.dir~d1~f6~isicon
+
+exit
+
+/**
+* name: adaptsplitwindowsize (routine)
+* functionality: check if splitwindow positions have to change and do it
+*                only relevant when coming from TDISP or WDISP
+*                check if .mm.dir~frame has the same size as current frame
+*                if not do something to adapt splitframesizes
+* comment:       the routine is called exactly
+*                when change to a splitwindow frame
+*                a more ellegant way would have been to make splitframe sizes relative
+*                but due to inflexible design i prefered to do it this way
+*/
+
+::routine adaptsplitwindowsize
+   use arg userData
+
+   if userData~dtype == "splitpane" then exit
+
+   if .mm.dir~isdebug == true then say "adaptsplitwindowsize"
+
+   if userdata~frame == .NIL then do
+      if .mm.dir~isdebug == true then say "userdata~frame is .NIL"
+      exit
+   end
+
+   wf = userdata~frame~getsize~width
+   hf = userdata~frame~getsize~height
+
+   if .mm.dir~isdebug == true then say "currentsize: " wf hf "mmsize: " .mm.dir~sWidth .mm.dir~sHeight
+
+   if wf \= .mm.dir~sWidth then do
+      if .mm.dir~isdebug == true then say "recompute width components of splitframe"
+      .mm.dir~splitpane3 = trunc((.mm.dir~splitpane3 * wf) / .mm.dir~sWidth)
+      Call BSF 'invoke', userdata~frame, setContentPane, userdata~contentpanel
+   end
+
+   if hf \= .mm.dir~sHeight then do
+      if .mm.dir~isdebug == true then say "recompute height components of splitframe"
+      .mm.dir~splitpane0 = trunc((.mm.dir~splitpane0 * hf) / .mm.dir~sHeight)
+      .mm.dir~splitpane1 = trunc((.mm.dir~splitpane1 * hf) / .mm.dir~sHeight)
+      .mm.dir~splitpane2 = trunc((.mm.dir~splitpane2 * hf) / .mm.dir~sHeight)
+      .mm.dir~splitpane4 = trunc((.mm.dir~splitpane4 * hf) / .mm.dir~sHeight)
+   end
+
 exit
 
 /* GLEITNER routines end */
-

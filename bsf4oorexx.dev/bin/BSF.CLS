@@ -12,6 +12,8 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2014-08-31, rgf: - added routine bsf.extendJavaClass(jClz [, [newClzName] [, [methNames2proxy]]])
+
          2014-07-16, rgf: - routine bsf.redirectTo(): default .debugInput to .input~current and
                             .traceOutput to .error~current
 
@@ -353,7 +355,7 @@
 
 
 
-   version:     4.50 (20140716)
+   version:     4.50 (20140831)
 
    authors:     (c) 2001-2014 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
@@ -442,7 +444,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="450.20140716" -- set version (date distribution got created)
+   .bsf4rexx~version="450.20140831" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3622,7 +3624,7 @@ say "javaDialogClass="pp(javaDialogClass) "message:" pp(message) "title:" pp(tit
   return .nil     -- message box returns always .nil
 
 
-
+/*
 /* rgf, 2010-04-18: allow creating Java classes that forward method invocations to RexxProxy objects.
                     The value for "defaultHandler" in the resulting class object should be set
                     by the caller using "setDefaultHandler(RexxProxy)".
@@ -3687,7 +3689,95 @@ say "javaDialogClass="pp(javaDialogClass) "message:" pp(message) "title:" pp(tit
 
 syntax:
   raise propagate
+*/
 
+/** This routine will create a new Java class on the fly, which extends the supplied Java class
+*   and implements the supplied methodNames. The returned Java class implements all constructors
+*   of the base class and for each a version which accepts as its first parameter a
+*   <code>RexxProxy</code> object which gets the Java method invocations forwarded as ooRexx
+*   messages with all supplied Java arguments plus a trailing ooRexx <code>.Directory</code>
+*   argument containing some useful invocation details.
+*
+*   <br/>
+*   If the <code>RexxProxy</code> object needs to invoke a masked
+*   method (a method the extended Java class implements and forwards to the <code>RexxProxy</code>)
+*   then it merely forwards the invocation to <code>self</code>, appending to the method name the
+*   string &quot;_forwardToSuper&quot; and supplying all parameters the method mandates.
+*
+*   <br/>The extended class possesses the static methods <code>getDefaultHandler()</code> and
+*    <code>setDefaultHandler(RexxProxy)</code>. The <em>defaultHandler</em> is a <code>RexxProxy</code>
+*    which receives ooRexx messages for every static Java method that gets invoked in the extended
+*    class.
+*
+*   <br/>The extended class possesses the instance methods <code>getTargetRexxProxy()</code> and
+*    <code>setTargetRexxProxy(RexxProxy)</code>. The <em>DefaultHandler</em> is a <code>RexxProxy</code>
+*    which receives ooRexx messages for every static Java method that gets invoked in the extended
+*    class. It is set with the extended constructors that expect a <code>RexxProxy</code> as the
+*    first argument. If the class' <em>defaultHandler</em> is not set yet, then the extended constructor's
+*    code will set it to the <em>targetRexxProxy</em> automatically.
+*
+* @param javaClzName the fully qualified Java class name to be extended
+* @param newName the optional name of the newly created Java class, if omitted, a synthetic name
+*        will be created, containing the string &quot;<em>visitorName</em>_$RexxExtendClass$_<em>someHashcode</em>&quot;
+* @param methName... optional, either a list of single Java method names or an array of Java method names
+*        the Rexx proxy needs to implement; optionally, each Java method name may be preceded by
+*        the Java class name and a blank; if <code>.nil</code>
+*        then all declared public and protected methods of the given class will be proxied; if single
+*        empty string <code>&quot;&quot;</code> is given, then an empty (size of 0) Java String array
+*        is created and supplied, causing only the public and protected constructors to be proxied
+*        <br>Warning: if you proxy the methods <code>toString</code>, <code>equals</code> and <code>hashCode</code> be aware that a wrong
+*        implementation on your side may break the program. For that reason these methods are never
+*        automatically proxied (if you leave out this argument).
+*
+* @return Java class object that is able to delegate its method invocations to a <code>RexxProxy</code> object
+*
+* @since 2010-04-18, 2014-08-31
+*/
+
+::routine bsf.createProxyClass public
+   use strict arg javaClzToProxy, newName=.nil, methName=.nil, ...
+
+   signal on syntax
+
+      -- get the Java class that controls the creation of the extended Java class
+   jPJCT=.bsf4rexx~entry("ProxiedJavaClassTool")
+   if jPJCT=.nil then
+   do
+ -- say ".... bsf.createProxyClass(): need to load and save ProxiedJavaClassTool clz"
+       clzName="org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool"
+       jPJCT=bsf.loadClass(clzName)
+       .bsf4rexx~setEntry(clzName, jPJCT)
+   end
+
+   -- jPJCT~bss=.true   -- show created Java source code of the extended class on stderr, meant for debugging only
+
+   if javaClzToProxy~isA(.string) then
+      javaClzToProxy=bsf.loadClass(javaClzToProxy)   -- load Java class
+
+   if methName="", arg()<4 then     -- if only an empty method given, turn argument to empty Java String array
+      methName=bsf.createJavaArray("java.lang.String", 0)
+
+   if methName<>.nil then
+   do
+      if \methName~isA(.bsf_array_reference) then   -- not a Java array ?
+      do
+         if arg()=3, methName~isA(.array) then workArr=methName
+                                          else workArr=arg(3,"array")
+         javaArr=bsf.createJavaArray("java.lang.String", workArr~items)
+         do i=1 to workArr~items
+            javaArr[i]=workArr[i]
+         end
+         methName=javaArr           -- replace argument(s) with Java String array of methods
+      end
+   end
+
+   newProxyClz=jPJCT~createProxiedJavaClass(javaClzToProxy, newName, methName)
+
+   -- now add ooRexx' new() and newStrict() class methods to it
+   newProxyClz=.bsf~bsf.import(newProxyClz~getName, .nil, newProxyClz)
+   return newProxyClz   -- return the new extended proxy Java class object
+
+syntax: raise propagate
 
 
 

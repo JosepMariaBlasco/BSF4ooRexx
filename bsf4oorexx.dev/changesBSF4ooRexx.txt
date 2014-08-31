@@ -1,3 +1,14 @@
+-------------------------------------- 2014-08-30 ----------------------------------
+
+- org.rexxla.bsf.engines.rexx.RexxExtendClass.java (asm)
+
+        - a subclass may invoke protected methods, cater for this
+
+- org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool.java (janino)
+
+        - a subclass may invoke protected methods, cater for this
+
+
 -------------------------------------- 2014-07-16 ----------------------------------
 
 - BSF.CLS

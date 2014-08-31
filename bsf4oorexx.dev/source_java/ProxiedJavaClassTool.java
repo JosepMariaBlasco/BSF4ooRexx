@@ -16,6 +16,8 @@ java org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool TestAbstract Caesar
     2010-11-30, rgf:   - fixed bug in createConstructorsBase() which caused illegal class files to be created
     2010-05-31, rgf:   - use the ClassLoader of the class to proxy, otherwise dynamically created Java classes cannot be extended
     2014-08-30, rgf:   - subclasses are allowed to access protected methods in superclasses, adjust for this
+    2014-08-31, rgf:   - if methods to proxy is null, then proxy all public and protected declared methods,
+                         if methods is an empty array, then just proxy the constructors
 */
 
 import java.lang.reflect.*;
@@ -147,9 +149,9 @@ public class ProxiedJavaClassTool
      *
      *  @return the class object representing the extended class
      */
-    public static Class createProxiedJavaClass(Class    javaClassToProxy,
-                                               String   newClzName,
-                                               String[] methodNames2proxy)
+    public static Class createProxiedJavaClass(final Class    javaClassToProxy,
+                                                     String   newClzName,
+                                               final String[] methodNames2proxy)
                                         throws BSFException
     {
 if (bDebug==true) System.err.println("... arrived in \"public static Class createProxiedJavaClass(...)\"");
@@ -198,8 +200,33 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
             newClzName=javaClassToProxy.getName()+"_$RexxExtendClass$_"+(new Object()).hashCode();
         }
 
-            // if no method names to proxy given, then indicate by using an empty String array instead
-        String [] methods2proxy= (methodNames2proxy==null ? new String[]{} : methodNames2proxy);
+
+        String [] methods2proxy=null;
+
+        // rgf, 20140831: if no methods given, proxy all public and protected declared methods
+        if (methodNames2proxy==null)
+        {
+            Method meths[]=javaClassToProxy.getDeclaredMethods();
+            HashSet methNames= new HashSet();
+            for (int i=0; i<meths.length; i++)
+            {
+                int mods=meths[i].getModifiers();
+                if (Modifier.isPublic(mods) || Modifier.isProtected(mods))
+                {
+// do not allow proxying methods toString(), equals(), hashCode() by default as this may break the JVM
+                    String methName=meths[i].getName();
+                    if (!methName.equals("toString") && !methName.equals("equals") && !methName.equals("hashCode") )
+                    {
+                        methNames.add(meths[i].getName());
+                    }
+                }
+            }
+            methods2proxy= (String[]) methNames.toArray(new String[0]);
+        }
+        else    // use supplied array of method names to proxy
+        {
+            methods2proxy=methodNames2proxy;
+        }
 
         boolean isAbstractClz=Modifier.isAbstract(classModifiers);
 
@@ -441,7 +468,9 @@ if (bDebug==true) System.err.println("createConstructorsBase(), begin...");
         {
             Constructor tmpConstr=javaClassToProxy.getDeclaredConstructor( new Class[] {} );
             // if constructor is private, cannot reach it, behave as if not existent
-            bDefaultConstructorExistsInSuper = Modifier.isPublic(tmpConstr.getModifiers());
+            // bDefaultConstructorExistsInSuper = Modifier.isPublic(tmpConstr.getModifiers());
+            int mods=tmpConstr.getModifiers();
+            bDefaultConstructorExistsInSuper = Modifier.isPublic(mods) || Modifier.isProtected(mods) ;
 
             if (bDefaultConstructorExistsInSuper==false)    // not reachable
             {
@@ -642,7 +671,9 @@ if (bDebug==true) System.err.println("createConstructors: constr[].length="+cons
 
 if (bDebug==true) System.err.println("---> createConstructors(): tmpConstr=["+tmpConstr.toString()+"]");
 
-            if (!Modifier.isPublic(tmpConstr.getModifiers()))   // only create public constructors
+            // if (!Modifier.isPublic(tmpConstr.getModifiers()))   // only create public constructors
+            int mods=tmpConstr.getModifiers();
+            if (!( Modifier.isPublic(mods) || Modifier.isProtected(mods)) )   // only create public constructors
             {
                 continue;
             }
@@ -848,7 +879,6 @@ if (bDebug==true) System.err.println("!!! IS_SYNTHETIC_METHOD.invoke("+meths[k]+
                 // if ((mMods & (Modifier.FINAL | Modifier.PRIVATE | Modifier.PROTECTED)) != 0)
                 if ((mMods & (Modifier.FINAL | Modifier.PRIVATE )) != 0)
                 {
-System.out.println(" ... RGF/ method ["+tmpName+", original spelling: ["+meths[k].getName()+"] - NOT processing, modifiers: ["+mMods+"]: PUBLIC=["+Modifier.PUBLIC+"], PROTECTED=["+Modifier.PROTECTED+"]");
                     continue;   // don't proxy
                 }
 
