@@ -21,6 +21,14 @@ all platforms and can be downloaded from its homepage at
     <dt><em><a href="classicRexxSamples">classicRexxSamples  &lt;directory&gt; </a></em>
     <dd>Demonstrates how to use the external BSF functions without taking advantage of ooRexx.
 
+    <dt><a href="clock.rxj">clock.rxj</a>
+    <dd>Creates and updates a graphical clock using a <code>JPanel</code>.
+        Demonstrates extending the <code>javax.swing.JPanel</code> class at runtime such that
+        the extended methods in the new class will forward their invocation as Rexx messages to
+        a Rexx proxy. This Rexx proxy must be supplied when creating an instance of the extended
+        <code>JPanel</code> class. This allows to transfer control for <code>updateComponent</code> to
+        the Rexx proxy, whenever the Java GUI infrastructure invokes the update mechanism.
+
     <dt><a href="DateRgf.rxj">DateRgf.rxj</a>
     <dd>ooRexx program to test access to the class <code>org.oorexx.datergf.DateTimeRGF</code>, which is contained
         in the <code>&quot;bsf-rexx-engine.jar&quot;</code> archive; the documentation of the BSF4ooRexx
