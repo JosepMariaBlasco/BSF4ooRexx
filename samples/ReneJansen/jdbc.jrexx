@@ -1,47 +1,90 @@
-/* original author: Rene Jansen ("rvj"), 2006-11 */
-/* BSF4ooRexx JDBC Example rvj 20061128, 20061201, 20100822, 20110322 rgf
-
-   Pre-requisites for the "derby" database: add "derby.jar" to your "CLASSPATH" environment variable
-   Pre-requisites for the "hsql" database: add "hsqldb.jar" to your "CLASSPATH" environment variable
-
-   Version: 0.5
+/*
+   author:     Rene Vincent Jansen ("rvj"), 2006-11
+   purpose:    demonstrate how to use JDBC using three different RDBMS
+   version:    0.6
+   needs:      - pre-requisites for the "derby" database: add "derby.jar" to your "CLASSPATH" environment variable
+               - pre-requisites for the "hsql" database: add "hsqldb.jar" to your "CLASSPATH" environment variable
+   changed:    - 20061128, rvj
+               - 20061201, rvj
+               - 20100822, rvj
+               - 20110322, rgf
+               - 20140915, rgf: added DataSource access to RDBMS, which works also, when BSF4ooRexx
+                                is installed in java.ext.dirs directory, which would not work with
+                                the DriverManager variant in Java 1.7/7
+   license:    Apache License 2.0
 */
-   -- specify imports, hence we can use BSF4ooRexx constructors ("new" and "newStrict")
-prop      = .bsf~bsf.importClass("java.util.Properties")
-driverMgr = .bsf~bsf.loadClass("java.sql.DriverManager")
+
+signal on syntax
+
+bUseDriverManager=.false -- .true   -- if .true: use java.sql.DriverManager, else use javax.sql.DataSource interface
+if bUseDriverManager=.true then
+do
+   driverMgr = bsf.loadClass("java.sql.DriverManager") -- load Java class
+end
 
 parse upper arg dbms +1       -- get first character in uppercase
 
 select
   when dbms = 'P' then        -- 'PostgreSQL'
   do
-       -- instantiate jdbc driver
-    bsf.loadClass('org.postgresql.Driver')~newinstance
+     if bUseDriverManager=.true then
+     do
+           -- instantiate jdbc driver, since Java 1.6/6 not really needed anymore
+        bsf.loadClass('org.postgresql.Driver')~newinstance
 
-       -- make the dbms connection and create a statement
-    statement = driverMgr~getConnection('jdbc:postgresql:rvjansen','rvjansen','')~createStatement
+           -- make the dbms connection and create a statement
+        statement = driverMgr~getConnection('jdbc:postgresql:rvjansen','rvjansen','')~createStatement
+     end
+     else -- use implemented javax.sql.DataSource interface instead
+     do
+        ds=.bsf~new('org.postgresql.ds.PGSimpleDataSource')
+        ds~user    ='rvjansen' -- same as: ds~setUser('rvjansen')
+        ds~password=''         -- same as: ds~setPassword('')
+        ds~setDatabaseName("RexxTestDB-postgresql")
+     end
   end
 
   when dbms = 'H' then        -- 'hsql',  used for OpenOffice.org since version 2.0 (fall 2005)
-    do
-         -- instantiate jdbc driver
-      bsf.loadClass('org.hsqldb.jdbcDriver')~newinstance
+  do
+     if bUseDriverManager=.true then
+     do
+           -- instantiate jdbc driver, since Java 1.6/6 not really needed anymore
+        bsf.loadClass('org.hsqldb.jdbcDriver')~newinstance
 
-         -- make the dbms connection (memory only dbms in this case) and create a statement
-      statement = driverMgr~getConnection('jdbc:hsqldb:mem:aname','sa','')~createStatement
-    end
+           -- make the dbms connection (memory only dbms in this case) and create a statement
+        statement = driverMgr~getConnection('jdbc:hsqldb:mem:aname','sa','')~createStatement
+     end
+     else -- use implemented javax.sql.DataSource interface instead
+     do
+        ds=.bsf~new('org.hsqldb.jdbc.JDBCDataSource')
+        ds~user    ='sa'       -- same as: ds~setUser('sa')
+        ds~password=''         -- same as: ds~setPassword('')
+        ds~setDatabaseName("RexxTestDB-hsql")
+     end
+  end
 
   when dbms = 'D' then        -- 'derby'
-    do
-         -- instantiate jdbc driver
-      bsf.loadClass('org.apache.derby.jdbc.EmbeddedDriver')~newinstance
+  do
+     if bUseDriverManager=.true then
+     do
+           -- instantiate jdbc driver, since Java 1.6/6 not really needed anymore
+        bsf.loadClass('org.apache.derby.jdbc.EmbeddedDriver')~newinstance
 
-         -- make the dbms connection and create a statement
-      props = prop~new
-      props~put("user", "user1")
-      props~put("password", "user1")
-      statement = driverMgr~getConnection('jdbc:derby:derbyDB;create=true',props)~createStatement
-    end -- when do
+           -- make the dbms connection and create a statement
+        props = .bsf~new("java.util.Properties")  -- create instance
+        props~put("user", "user1")
+        props~put("password", "user1")
+        statement = driverMgr~getConnection('jdbc:derby:derbyDB;create=true',props)~createStatement
+     end
+     else -- use implemented javax.sql.DataSource interface instead
+     do
+        ds=.bsf~new("org.apache.derby.jdbc.EmbeddedDataSource")
+        ds~setUser("user1")      -- alternative: ds~user    ='user1'
+        ds~setPassword("user1")  -- alternative: ds~password='user1'
+        ds~setCreateDatabase("create") -- Apache Derby: always create it, if it does not exist
+        ds~setDatabaseName("RexxTestDB-derby")
+     end
+  end
 
   otherwise
     do
@@ -49,6 +92,9 @@ select
       exit
     end
 end
+
+if bUseDriverManager=.false then
+   statement=ds~getConnection~createStatement
 
 call dropTable statement, "test" -- make sure table gets dropped, if it exists (from a previous run)
    -- create the table
@@ -79,6 +125,19 @@ do while rs~next
       pairs of typeIndicator, value for each argument: */
   say "BSF4ooRexx has at least" rs~bsf.invokeStrict("getString", "int", "1") "fans! (Using positional argument.)"
 end
+exit
+
+syntax:
+   co=condition('o')       -- get condition object
+   exc=co~additional[2]    -- get Java exception object
+   say "/////// Java-exceptions:"
+   do i=0 while exc<>.nil      -- show all Java exceptions
+      say "   "~copies(i) || "--->" pp(exc~toString)
+      exc=exc~getCause
+   end
+   say "\\\\\\\"
+   raise propagate         -- let ooRexx handle the exception as well, pointing out the error line
+
 
 ::requires bsf.cls            -- get the Java support
 
@@ -89,5 +148,4 @@ end
 
 syntax:
   return
-
 
