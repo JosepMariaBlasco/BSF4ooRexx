@@ -5,8 +5,9 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.28
+   Version: 1.29
    Changed:
+	    2014-09-15, ---rgf, - create_REXXJ_Script() now honors environment variable"BSF4Rexx_JavaStartupOptions"
             2014-05-25, ---rgf, - getRexxBitness(): use "parse version" starting with ooRexx 4.2 (encodes bitness in version string)
                                 - use elevation starting with Windows Vista (Windows version 6.0)
             2013-07-14, ---rgf, - Make output more verbose, such that logfile reflects environment at installation time
@@ -1237,14 +1238,15 @@ create_REXXJ_Script: procedure expose j. cmd. path.
 
   tmpStr2="-classpath" cmd.eQuote || iif(cmd.eIsUnix=1, "$CLASSPATH", "%CLASSPATH%") || cmd.eQuote
 
+  tmpStr3= iif(cmd.eIsUnix=1, "$BSF4Rexx_JavaStartupOptions", "%BSF4Rexx_JavaStartupOptions%")
+
   -- rgf, 2011-02-27: if a Java 64-bit then explicitly start Java in Rexx-bitness (32 or 64 bit) mode
   tmpStr0=""
   if cmd.eBitness=32, j.sun.arch.data.model=64 then
      tmpStr0="-d32"
 
 
-  call lineout fn, cmd.eJavaBinary tmpStr0 tmpStr1 tmpStr2 cmd.eRexxDispatch
-
+  call lineout fn, cmd.eJavaBinary tmpStr0 tmpStr1 tmpStr2 tmpStr3 cmd.eRexxDispatch
 
   call stream fn, "c", "close"
 
