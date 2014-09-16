@@ -1,7 +1,63 @@
 #!/usr/bin/rexx
+/** This program makes the Linux DBus infrastructure available to ooRexx in an easy to use manner. It is closely intertwined
+*   with the accompanying native ooRexx library. Therefore do not change any code unless you <em>know</em> what you are doing! :)
+*
+*   These are the core classes that are defined in this package:
+
+<ul>
+
+<li>DBus
+<br> Represents a DBus connection and among other things allows for registering ooRexx DBus signal listeners and
+ooRexx service objects.
+</li>
+
+<li>DBusProxyObject
+<br>Represents a remote DBus service object with all its defined properties, signals and messages.
+</li>
+
+<li>DBusServiceObject
+<br>Makes it easy to use a Rexx object as a DBus service object.
+</li>
+
+<li>DBusServer
+<br>Represents a private DBus server.
+</li>
+
+<li>IDBus
+<br>This class ("introspect DBus") allows to introspect a DBus service object's introspection XML data.
+</li>
+
+<li>IntrospectHelper
+<br>Allows to create introspect data programmatically, its <code>makeString</code> method will turn the definitions into a valid introspection XML-file
+</li>
+
+<li>IDBusPathMaker
+<br>Allows to create the infrastructure to serve DBus object paths for service objects.
+</li>
+
+</ul>
+*
+* The <code>.local</code> environment contains an entry named <code>DBUS.DIR</code> which contains DBus related entries. Two entries control
+whether this package outputs debug information or not, depending on the logical values of its entries named:
+<ul>
+<li><code>bDebug</code>
+</li>
+
+<ul>
+<li><code>bDebugServer</code>
+</li>
+
+*
+* @author Rony G. Flatscher
+* @since 2011-06-11
+* @version 1.00
+*
+*/
+
+
 /*
       author:     Rony G. Flatscher (C) 2011
-      date:       2011-08-07  (2011-06-11, 2011-07-19)
+      date:       2011-08-12  (2011-06-11, 2011-07-19)
       name:       dbus.cls
       purpose:    make the DBUS language binding for ooRexx available
       needs:      - dbus-message bus system installed (by default available on Linuxes)
@@ -13,7 +69,7 @@
 
       cf.:        dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
 
-      version:    100.20140807
+      version:    100.20140916
 
       changes:    - 2011-07-20, rgf; DBusProxyObject:
                     - added proxy.dispatch(methodName[,args...])-method to send messages that
@@ -91,6 +147,7 @@
                                        <http://sourceforge.net/p/oorexx/bugs/1275> gets fixed
                   - 2014-08-07, rgf: - tidied up the code
                                      - removed dependency on rgf_util2.rex
+                  - 2014-08-11 through 20140916, rgf: - add oorexxdoc comments
 
 
       license:    Apache License 2.0
@@ -113,7 +170,10 @@
 */
 
 
-.local~dbus=.dbus       -- save .DBus class in .local to allow native code to use FindClass("DBUS") successfully
+.local~dbus=.dbus -- save .DBus class in .local to allow native code to use FindClass("DBUS") successfully
+                  -- as of ooRexx 4.2.0 (Sept 2014) it may be the case that the native code finds this
+                  -- class by mistake; putting it into .local makes sure that the native code will always
+                  -- find it "legally" :)
 
 /* Defining dbus shared constants, leaving the dbus names untouched, such that
    dbus-samples employing these constants can be easily transcribed to Rexx.
@@ -124,7 +184,7 @@
 .dbus.dir~bDebug      =.false -- .true -- .false -- .true
 .dbus.dir~bDebugServer=.false -- .true -- .false -- .true
 
-.dbus.dir~version="100.20140807"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
+.dbus.dir~version="100.20140916"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
 
 .dbus.dir~DBUS_SERVICE_DBUS            ="org.freedesktop.DBus"    -- "The bus name used to talk to the bus itself."
 .dbus.dir~DBUS_PATH_DBUS               ="/org/freedesktop/DBus"   -- "The object path used to talk to the bus itself."
@@ -206,6 +266,9 @@ call dynamicRequiresBSF4ooRexx   -- requires BSF.CLS
 
 -- ::requires "rgf_util2.rex"    -- installed with the BSF4ooRexx package
 
+/** This routine requires dynamically the ooRexx package <code>BSF.CLS</code> and
+*   in the case it is not available will allow to continue gracefully.
+*/
 ::routine dynamicRequiresBSF4ooRexx -- BSF4ooRexx: needed need for UTF-8 conversion routines
   signal on any
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -216,14 +279,19 @@ any:
 
 
 
-/* =============================================================================== */
+/* ============================================================================================= */
 /* Define the DBus class, which allows connecting, getting objects to talk to,
    adding own servers on the bus.
+*/
+/** This class represents a DBus connection. It allows connecting, getting service objects
+*   to send messages to, adding own service objects and listener objects on the bus.
 */
 ::class "DBus" public inherit Worker
 
 /* --- class methods ------ */
 
+/** Class constructor method for initializing class attributes.
+*/
 ::method init        class
   expose system session tid2human
   tid2human=.directory~new    -- attribute that allows to translate TIDs into human readable form
@@ -232,6 +300,12 @@ any:
 
 
   -- will be usually called from native DbusGetTID(), which allows one optional argument indicating the desired formatting
+/** Class method that is being used by native code to turn the inconceivable thread ids into human legible values.
+*
+* @param tid the thread id number
+* @param option H[uman readable] (default) or S[system] (thread id number)
+* @return thread id according to the given option
+*/
 ::method formatTID   unguarded class   -- unguarded (access to tid2human only in here)
   expose tid2human
   use strict arg tid, option="H"
@@ -256,9 +330,17 @@ syntax: raise propagate
 
 
    /* unique id for the computer                         */
+/** Gets and returns the machine's id according to DBus.
+*
+* @return machine's id according to DBus
+*/
 ::method machineID   class external "LIBRARY dbusoorexx DbusGetUniqueMachineId"
 
 
+/** Establishes and returns a connection to the<code>system</code> on DBus, and caches that connection.
+*
+* @return returns the connection to the <code>system</code> bus on DBus
+*/
 ::method system      class    /* returns the shared system bus connection */
   expose system
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "arg(1):" pp(arg(1))
@@ -274,6 +356,10 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
   return system
 
 
+/** Establishes and returns a connection to the<code>session</code> on DBus, and caches that connection.
+*
+* @return returns the connection to the <code>session</code> bus on DBus
+*/
 ::method session     class    /* returns the shared session bus connection */
   expose session
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "arg(1):" pp(arg(1))
@@ -289,13 +375,24 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
   return session
 
 
-
+/** Creates a new connection and returns it, using the <code>NEW</code> class method.
+*
+* @see NEW class method
+*/
 ::method connect     class    /* connect to an existing dbus connection    */
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   forward message ("NEW")     -- let our version of NEW handle this
 
 
-
+/** Creates a new connection and returns it.
+*
+* @param address the address to connect to; special address names are &quot;system&quot; and &quot;session&quot;
+* @return instance of this class representing the connection
+*
+* @see session class method
+* @see system class method
+*
+*/
 ::method new         class
   expose system session
   use strict arg address
@@ -341,8 +438,13 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 
 syntax: raise propagate    -- raise in caller
 
+/** The address to which the connection is established.
+*
+*/
 ::attribute address           get
 
+/** Setter method for the native library to allow setting a pseudo address for private connections (to private servers).
+*/
 ::attribute pseudoAddress     set      -- 20140728, rgf: allows private server to set a pseudo address for each connected client
   expose address
   use strict arg address               -- just assign whatever we receive
@@ -351,6 +453,10 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 /* --- instance methods --- */
 /* much is implemented in native code, including setting attributes 'address',
   'uniqueBusName' and 'wellKnownBusName', if given
+*/
+
+/** Constructor method that initializes attributes. Note, the native code will set the values of
+* some of the attributes!
 */
 ::method init
   expose cself busType address makeSlotDir makeReplySlotDir active -
@@ -404,7 +510,9 @@ if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID(
 ::method nativeGetSystemBus   private external "LIBRARY dbusoorexx DbusNativeGetSystemBus"
 ::method nativeGetSessionBus  private external "LIBRARY dbusoorexx DbusNativeGetSessionBus"
 
-
+/** Connect to the given address and start the message loop for this connection.
+* @param address to connect to
+*/
 ::method connectToAddress -- unguarded
    expose active
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -437,16 +545,16 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
   end
   else
   do
-say "   -> self~nativeConnectPrivate(address)" pp(address) "-->"
+-- say "   -> self~nativeConnectPrivate(address)" pp(address) "-->"
         self~nativeConnectPrivate(address) -- create a private connection to the address
-say "   <- self~nativeConnectPrivate(address)"
+-- say "   <- self~nativeConnectPrivate(address)"
   end
 
   self~startMessageLoop       -- will start message loop in its own thread
 
 
 
-/* controls whether a received message call without defined return value will return an empty message reply */
+/** Controls whether a received message call without defined return value will return an empty message reply */
 ::attribute sendEmptyReply    get
 ::attribute sendEmptyReply    set       -- default: .true (append slotDir as last argument)
   expose sendEmptyReply
@@ -462,9 +570,9 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 syntax:
   raise propagate
 
-   /* attribute controls whether the arguments from a signal or a remote method call get
+   /** Attribute controls whether the arguments from a signal or a remote method call get
       appended with a slotDir-directory supplying possibly useful information about the
-      DBUS message; default: .true
+      DBus message; default: <code>.true</code>
    */
 ::attribute makeSlotDir      get
 ::attribute makeSlotDir      set       -- default: .true (append slotDir as last argument)
@@ -481,9 +589,9 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 syntax:
   raise propagate
 
-   /* attribute controls whether the arguments from a reply (result of calling a message on
-      a remote DBUS object) will get appended with a slotDir-directory supplying possibly
-      useful information about the DBUS message; default: .false
+   /** Attribute controls whether the arguments from a reply (result of calling a message on
+      a remote DBus object) will get appended with a slotDir-directory supplying possibly
+      useful information about the DBUS message; default: <code>.false</code>
    */
 ::attribute makeReplySlotDir get
 ::attribute makeReplySlotDir set       -- default: .false (do not append slotDir to result of a message call (turning result into an array object)
@@ -500,8 +608,8 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 syntax:
   raise propagate
 
-   /* attribute controls whether byte arrays (signature 'ay') should be unmarshalled as
-      Rexx string instead of a Rexx array with individual bytes
+   /** Attribute controls whether byte arrays (signature 'ay') should be unmarshalled as
+      Rexx strings instead of a Rexx array with individual bytes
    */
 ::attribute unmarshalByteArrayAsString get
 ::attribute unmarshalByteArrayAsString set       -- default: .true (append slotDir to result of a message call (turning result into an array object)
@@ -518,13 +626,23 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 syntax:
   raise propagate
 
+/** Determines whether statistics about the messages and signals should be maintained; default: <code>.true</code>.
+*/
 ::attribute collectStatistics       -- default: .true (keep slotDirs of last received messages/errors/signals and their respective counters)
+
+/** Storage for collected statistics, a Rexx directory.
+*/
 ::attribute statistics              -- a directory
+
+/** If set to <code>.true</code>, then an unexpected Rexx condition will cause all Rexx threads to be halted.
+*/
 ::attribute haltAllThreadsOnUnexpectedError  -- if set to .true, then an unexpected Rexx condition will cause all Rexx threads to be halted
 
 
 /** Method blocks until connection got closed and message loop thread stopped, turning attribute
 *   <code>active</code> to <code>.false</code>.
+*
+* @since 2014-08
 */
 ::method waitOnConnectionClosed unguarded
   expose active
@@ -534,6 +652,8 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 
 ::method nativeStartMessageLoop   private external "LIBRARY dbusoorexx DbusMessageLoop"
 
+/** Starts a connection's message loop, will be automatically invoked when a connection is established.
+*/
 ::method startMessageLoop unguarded
   expose active stopLoop address busType
 if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "arrived"
@@ -566,6 +686,28 @@ syntax: raise propagate
 
 
 -- 2014-07-23: do not allow to start message loop by third parties!
+/** Obsolete implementation, do not use anymore!
+*
+* @param action
+<ul>
+<li>&quot;<code>start</code>&quot;: automatically done at connection creation time.
+</li>
+
+<li>&quot;<code>stop</code>&quot;: automatically done in method <code>close</code>
+</li>
+
+<li>&quot;<code>wait</code>&quot;: replaced by method <code>waitOnConnectionClosed</code>
+</li>
+
+<li>&quot;<code>active</code>&quot;: replaced by the get attribute named <code>active</code>
+</li>
+
+</ul>
+*
+*
+* @deprecated
+* @since 2014-07-23 deprecated
+*/
 ::method messageLoop unguarded      -- query, start, stop messageLoop, waitUntilStopped
   expose active stopLoop bustype
   parse upper arg action .
@@ -595,6 +737,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 
 ::method nativeCloseConnection    private EXTERNAL "LIBRARY dbusoorexx DbusNativeConnectionClose"
 
+/** Close connection, which cannot be used for exchanging messages anymore. */
 ::method close -- unguarded   -- close (private) connection
   expose busType address statistics active stopLoop
 
@@ -626,6 +769,25 @@ syntax:  raise propagate
 ::method nativeIsAuthenticated   private external "LIBRARY dbusoorexx DbusConnectionIsAuthenticated"
 ::method nativeCanSendType       private external "LIBRARY dbusoorexx DbusConnectionCanSendType"
 
+/** Allows to query some state information on the connection returning either <code>.true</code> or <code>.false</code>.
+*
+* @param option can be one of:
+<ul>
+<li><code>&quot;A[uthenticated]&quot;</code> or <code>&quot;IsA[uthenticated]&quot;</code>,
+</li>
+
+<li><code>&quot;O[pen]&quot;</code> or <code>&quot;IsO[pened]&quot;</code> or
+    <code>&quot;C[onnected]&quot;</code> or <code>&quot;IsC[onnected]&quot;</code>,
+</li>
+
+<li><code>&quot;T[ypecode]&quot;</code>: this option allows for a second argument which must be one or more of the DBus type character codes; if the
+second argument is omitted, then a comma separated list of all supported type (codes) gets returned, instead of a Boolean value
+</li>
+
+</ul>
+
+*
+*/
 ::method query unguarded   -- reroute invocation through message loop thread
   expose active stopLoop address bustype
   if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -720,6 +882,11 @@ syntax: raise propagate
       supports() ... return "typeCodes={a,...,x}" ... returns string denoting available types
       supports("T[ypecode]", typecode)            ... returns .false/.true; typecode can be a string: only returns .true then, if all characters are supported type codes
 */
+
+/** Checks whether the connection supports exchanging values of the given type (codes). If omitting the typecode argument,
+*   then a comma-delimited string of supported type codes gets returned.
+*
+*/
 ::method canSendTypeCode  private  -- this name is neutral enough to allow extensions, if other connection-related tests are needed
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if arg()=0 then
@@ -745,7 +912,8 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
   return .true
 
 
-
+/** Destructor method that makes sure that the connection gets closed, if still active.
+*/
 ::method uninit            -- make sure we stop the message loop thread, if necessary
   expose busType active
 
@@ -762,6 +930,16 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
    /* add listener object, syntax:  - a[dd] | r[emove], object [,[interface] [,signalname]]
                                     - g[etListeners]
    */
+/** Allows to add, remove or get all ooRexx signal listeners.
+*
+* @param action one of <code>&quot;a[dd]&quot;</code>, <code>&quot;r[emove]&quot;</code>, <code>&quot;g[etListeners]&quot;</code>
+* @param listenerObject mandatory for adding, optional for removing (all listener objects qualify)
+* @param interface optional, the DBus interface to listen to, if omitted any interface will be monitored
+* @param signalName optional, the signal name to listen to, if omitted any signal will be handled
+* @return <ul><li>add<br><code>.true</code></li>
+              <li>remove<br>number of listener objects removed</li>
+              <li>getListeners<br>a copy of the listener objects array
+*/
 ::method listener unguarded
   expose internalSignalListeners internalRegisteredServiceObjects
 
@@ -824,6 +1002,23 @@ syntax:  raise propagate
                                         - r[emove], objectPath
                                         - g[etRegisteredServiceObjects]
    */
+/** Allows to add, remove or get all ooRexx service objects for this connection. If the service
+*   objects are subclasses of the class <code>DBusService</code> then the support for introspection
+*   utilities like DFeet is set up automatically. For all other ooRexx service objects, one may
+*   add that particular object path introspection support by using the special &quot;default&quot;
+*   in place of the object path (second argument) and supplying an instance of <code>IDBusPathMaker</code>
+*   as the third argument.
+*
+* @param action one of <code>&quot;a[dd]&quot;</code>, <code>&quot;r[emove]&quot;</code>, <code>&quot;g[etListeners]&quot;</code>
+* @param objectPathmandatory for adding, optional for removing (all object paths qualify); if
+*        the special string &quot;default&quot; is being used, then the third argument must be an
+*        instance of @see <code>IDBusPathMaker</code>
+* @param serviceObject mandatory for adding, optional for removing (all service objects qualify)
+* @return <ul><li>add<br>old service object that got replaced, <code>.nil</code> else</li>
+              <li>remove<br>number of service objects removed</li>
+              <li>getListeners<br>a copy of the service objects directory
+*/
+
 ::method serviceObject unguarded
   expose internalSignalListeners internalRegisteredServiceObjects -- a directory
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -906,15 +1101,24 @@ syntax:  raise propagate
 
 
 
-
+/** Set by native code, stores the native connection pointer, if connection is active. */
 ::attribute cself                   /* native's representation of this dbus object, set in native code */
-::attribute busType                 /* bustype for the dbus connection, if any;
-                                       DBusBusType defines types that will be named
-                                       "session", "system", "starter" and maybe "private" in Rexx*/
+
+/** One of <code>&quot;session&quot;</code>, <code>&quot;system&quot;</code>, <code>&quot;native&quot;</code>, or <code>&quot;private&quot;</code>. */
+::attribute busType                 /* bustype for the dbus connection, if any; DBusBusType defines types that will be named
+                                       "session", "system", "native" and maybe "private" in Rexx */
+
+/** If set, a (private) connection to the server.
+    @see <code>DBusServer</code>
+*/
 ::attribute server                  /* if set, connection belongs to a DBusServer (i.e. a client connection) */
 
    /* unique id for the bus                              */
 ::method    nativeUniqueBusID   private external "LIBRARY dbusoorexx DbusGetUniqueBusId"
+
+/** Returns the uniqe bus id of this connection.
+* @return unique bus id
+*/
 ::method    uniqueBusID
   expose stopLoop address bustype
   if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -951,7 +1155,32 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 ::method  nativeBusNameHasOwner private external "LIBRARY dbusoorexx DbusBusNameHasOwner"   -- deprecated!
 ::method  nativeReleaseBusName  private external "LIBRARY dbusoorexx DbusBusNameRelease"
 
+/** Allows to request and to release a bus name, query whether a bus name has an owner and query athe unique bus name.
+*
+* @param function on of <code>&quot;req[uest]&quot;</code>, <code>&quot;h[asOwner]&quot;</code>, <code>&quot;rel[ease]&quot;</code>, <code>&quot;u[niqueName]&quot;</code>
+* @param flags if <code>&quot;req[quest]&quot;</code> function, can be one of or addition of (constant names can be used against <code>.dbus.dir</code>
+<ul>
+<li>1 - DBUS_NAME_FLAG_ALLOW_REPLACEMENT</li>
+<li>2 - DBUS_NAME_FLAG_REPLACE_EXISTING</li>
+<li>4 - DBUS_NAME_FLAG_DO_NOT_QUEUE</li>
+</ul>; if this argument is omitted the default value used will be <code>7</code> (all options set), cf. <a href="http://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-names">http://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-names</a>
+*
+* @return in the case of function <code>&quot;req[uest]&quot;</code>:
+<ul>
+<li>1 - DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER</li>,
+<li>2 - DBUS_REQUEST_NAME_REPLY_IN_QUEUE</li>,
+<li>3 - DBUS_REQUEST_NAME_REPLY_EXISTS</li>,
+<li>4 - DBUS_REQUEST_NAME_REPLY_ALREADY_OWNER</li>,
+</ul>
+in the case of function  <code>&quot;rel[ease]&quot;</code>:
+<ul>
+<li>1 - DBUS_RELEASE_NAME_REPLY_RELEASED</li>,
+<li>2 - DBUS_RELEASE_NAME_REPLY_NON_EXISTENT</li>,
+<li>3 - DBUS_RELEASE_NAME_REPLY_NOT_OWNER<li>,
+</ul>
+else no return value
 
+*/
 ::method busName           -- route invocation through the message loop thread
   expose stopLoop address bustype
   if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1042,8 +1271,12 @@ syntax:
 ::method  nativeAddMatch        private external "LIBRARY dbusoorexx DbusBusAddMatch"
 ::method  nativeRemoveMatch     private external "LIBRARY dbusoorexx DbusBusRemoveMatch"
 
-/** Delegate invocation to message loop thread using the Worker's class infrastructure. This way
-    invoking DBUs-connection related invocations take place in the thread, that
+/** Allows to add or remove a DBus match rule, cf. <a href="http://dbus.freedesktop.org/doc/dbus-specification.html#bus-messages-add-match">http://dbus.freedesktop.org/doc/dbus-specification.html#bus-messages-add-match</a>
+*
+* @param action <code>&quot;A[dd]&quot;</code> or <code>&quot;r[emove]&quot;</code>a match rule
+* @param filter the match rule (a string) for matching DBus messages, cf. <a href="http://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-routing-match-rules">http://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-routing-match-rules</a>
+* @param block  optional, determines whether the call should block or not, default: <code>.false</code>
+*
 */
 ::method match -- reroute invocation through message loop thread
   expose stopLoop address bustype
@@ -1094,6 +1327,47 @@ syntax: raise propagate
 
 
    /* folding methods of the "message" group into one parametrized method */
+/** Call a message or issue a signal message. The arguments differ, depending whether a called method or an issued signal is intended.
+*
+* The parameters for a call:
+* <ul>
+* <li>C[all]</li>
+* <li>busName</li>
+* <li>targetObjectPath</li>
+* <li>interface (optional)</li>
+* <li>methodName</li>
+* <li>replySignature (optional)</li>
+* <li>argSignature (optional)</li>
+* <li></li>
+* </ul>
+*
+* The paramters for a signal:
+* <ul>
+* <li>S[ignal]</li>
+* <li>senderObjectPath</li>
+* <li>interface</li>
+* <li>signalName</li>
+* <li>signature (optional)</li>
+* </ul>
+*
+* @param function <code>&quot;C[all]&quot;</code> or <code>&quot;S[ignal]&quot;</code>
+<br>if a call, the parameters are:
+* @param busName (call) a valid (existing) bus name
+* @param targetObjectPath (call) a valid (existing) path to the target object that the message is directed to
+* @param interface (call) optional, defaults to empty string
+* @param methodName (call) the name of the method to call
+* @param replySignature (call) optional, defaults to empty string, determines the signature for the return value
+* @param argSignature (call) optional, defaults to empty string, determines the signature for the arguments
+
+<br>if a signal, the parameters are:
+* @param busName (signal)
+* @param senderObjectPath (signal) the object path of the signal sender
+* @param interface (signal)
+* @param signalName (signal) the name of the signal
+* @param signature (signal) optional, defines the types of optional arguments
+*
+* @return whatever value a called message returns
+*/
 ::method message -- send message to service object; reroute invocation through message loop thread
   expose stopLoop address bustype
   if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "/// arg(5):" pp(arg(5))
@@ -1185,7 +1459,15 @@ syntax2:
   raise propagate          -- raise any other error in caller
 
 
-
+/** Request access to a remote object to interact with, returns a <code>DBusProxyObject</code>. The resulting proxy DBus object
+*   is able to understand ooRexx messages and translates them transparently to the necessary DBus message calls &quot;behind the curtain&quot;,
+*   making it very easy to interact with remote DBus objects.
+*
+* @param busName where the remote object is located
+* @param objectPath path to the object
+* @return a <code>DBusProxyObject</code> to which one can send ooRexx messages by the name of the DBus message the
+*         remote object can understand
+*/
 ::method getObject unguarded           -- request remote object, return a Rexx proxy object to allow interaction with it
   use strict arg busName, objectPath
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1205,7 +1487,12 @@ syntax:
   raise propagate
 
 
-
+/** Queries and returns the object paths on a given bus name.
+*
+* @param busName the bus name to search for objects
+* @return an array of object paths reachable via the supplied bus name
+*
+*/
 ::method getObjectPaths unguarded   -- return an array of object paths for the supplied bus name / service name
   use strict arg busName
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1219,7 +1506,6 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
   end
 
   return objectPathList
-
 
 
 ::method workerGetObjectPaths unguarded private     -- interrogates service possessing bus/service name for object paths (if that service supports that)
@@ -1273,6 +1559,13 @@ syntax:  -- mostlikely: org.freedesktop.DBus.Error.Reply or org.freedesktop.DBus
 
    /* ---------------------------------------------------------------------------------------- */
    /* as of 2011-07-05 ooRexx from trunk does not support UTF-8, hence depending on BSF4ooRexx */
+/** Routine that encodes a string to UTF-8. If <code>BSF4ooRexx</code> (a Sourceforge package to bridge ooRexx with Java) is available, then Java is used to carry out the encoding,
+*   otherwise an algorithm from Mike F. Cowlishaw (&quot;father of Rexx&quot;) is employed instead.
+*
+* @param str string to encode
+* @return UTF-8 encoded string
+*
+*/
 ::routine stringToUtf8 public    -- needs BSF4ooRexx
   parse arg str
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1306,6 +1599,11 @@ utf8: procedure
 
 
    /* ---------------------------------------------------------------------------------------- */
+/** This routine decodes UTF-8 using Java, therefore needs <code>BSFooRexx</code> (a Sourceforge package to bridge ooRexx with Java).
+*
+* @param str UTF-encoded string
+* @return decoded string
+*/
 ::routine utf8ToString public    -- needs BSF4ooRexx
   parse arg str
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1313,6 +1611,17 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 
 
    /* ---------------------------------------------------------------------------------------- */
+/** Routine that forces encoding values according to the supplied signature. This makes it possible to force a certain signature on
+*   values that some DBus applications mandate, eg. in the context of variants, where the marshalling of the variant itself must be
+*   done according to the target application.
+*
+* @param signature a valid DBus signature
+* @param argument optional, otherwise the argument(s) to marshall; if omitted the native marshalling code will create marshal values
+*        that correspond to the 0-value or empty strings of the respective types
+* @return a two-element array, the first entry containing the string &quot;useThisSignature=&quot; followed by the signature,
+*        the second entry containing the argument(s); the native marshalling code will then marshal the arguments accordingly
+*
+*/
 ::routine dbus.box       public     -- for variant types or overruling reply signatures, allow boxing
   use strict arg signature, argument=.nil
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1333,6 +1642,14 @@ syntax: raise propagate
    /* ---------------------------------------------------------------------------------------- */
 /* allow for sending error-messages instead of a reply back to the invoker, will get honored in
    the message loop of the DBus connection that invoked the Rexx method calling this routine   */
+/** This routine is meant to be called from an ooRexx service object while processing a DBus message in the case that an error reply should be
+*   transported back to the caller.
+*
+* @param errName optional (default: <code>&quot;org.freedesktop.DBus.Error.RexxServiceRaised&quot;</code>
+* @param errMessage optional (default: .nil)
+* @condition 93.900
+*
+*/
 ::routine raiseDBusError   public   -- this condition will be turned into an error-message in native code
   use arg errName="org.freedesktop.DBus.Error.RexxServiceRaised", errMessage=.nil
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1343,16 +1660,29 @@ syntax: raise propagate
 
 
    /* ---------------------------------------------------------------------------------------- */
-/* return the version information that includes the library version and this package's version */
+/** Returns the version information that includes the library version and this package's version information.
+*
+* @return version string formatted as: <code>&quot;library dbusoorexx=[major*100+minor.yyyymmdd], compile-time dbus=[major.minor.micro], runtime dbus=[major.minor.micro], dbus.cls=[major*100+minor.yyymmdd]&quot;<code>
+*/
 ::routine DBusVersion   public
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   return DBusVersionLibrary()", package dbus.cls=[".dbus.dir~version"]"
 
 
-/* =============================================================================== */
+/* ============================================================================================= */
 /* ooRexx proxy for a DBus object, responsible for processing messages  */
+
+/** Proxy class representing a remot DBus object to interact with using ooRexx messages.
+*/
 ::class "DBusProxyObject" public
 
+/** Constructor method that initializes the attributes, introspects the remote DBus object using the result for transparent interaction with it (if avalable). An ooRexx programmer merely needs to
+*   send ooRexx messages and supply arguments without type information! The proxy will transparently reformulate the ooRexx messge into the appropriate DBus message call.
+*
+* @param proxy.connection the connection (a DBus object) to use
+* @param proxy.busname the busname to use
+* @param proxy.objectPath the object path to the remote DBus object
+*/
 ::method init
   expose proxy.busname proxy.connection proxy.objectPath proxy.methods proxy.introspectData
   use strict arg proxy.connection, proxy.busname, proxy.objectPath
@@ -1394,7 +1724,12 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 
 ::attribute proxy.methods  get            /* make introspection parse tree available */
 
-
+/** Method that processes the intrsospect data or a file that contains the XML encoded introspection data for the remote object.
+*
+* @param introData either the introspect data or a file containing the XML encoded introspect data
+* @return introData the method received as argument
+*
+*/
 ::method proxy.parseIntrospectData      -- parse introspect data, memorize introspectData and introspectFileName, if any
   expose proxy.introspectData proxy.introspectFileName
   use strict arg introData
@@ -1425,8 +1760,12 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
   raise propagate -- raise condition in caller
 
 
-
-
+/** Pass-through method for DBus messages that have ooRexx method implementations, which would therefore not be passed on. Any arguments
+*   supplied to the message will be forwarded as arguments for the DBus method call.
+*
+* @param methodName DBus method name to be called
+* @return the return value from the DBus message call, if any
+*/
 ::METHOD proxy.dispatch                -- allow sending messages that would be intercepted on the Rexx side (e.g. by .Object)
    parse arg methodName
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1436,6 +1775,10 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
    return
 
 
+/** This method turns the received ooRexx message into the appropriate DBus message call
+*   using the introspection data for the remote object. The support includes camouflaging
+*   DBus properties as ooRexx attributes.
+*/
 ::method unknown        -- implements sending message calls to remote object
   expose proxy.busname proxy.connection proxy.objectPath proxy.methods
   use arg msgName, msgArgs
@@ -1519,10 +1862,19 @@ syntax: raise propagate   -- raise condition in caller
 
 
 
-/* =============================================================================== */
+/* ============================================================================================= */
 /* Allows an ooRexx object to listen to DBus signals. Intentionally not public. Will
    be used by method 'listener' subfunction 'add' and will be retrieved by the native
    code.
+*/
+/** Class that gets used by the method <code>listener</code> in the class <code>DBus</code> to wrap an ooRexx object that should
+*   get invoked whenever a signal is received.
+*
+* @param listenerObject the ooRexx listener object
+* @param interface optional, if present restricts the listening to signals from this DBus interface
+* @param signalName optional, if present restricts the listening to this signal name
+*
+* @see method <code>listener</code> in the class <code>DBus</code>
 */
 ::class "DBUSSignalListener"
 
@@ -1536,14 +1888,22 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 ::attribute signalName
 
 
-/* =============================================================================== */
+/* ============================================================================================= */
 /* Allows an ooRexx object to serve DBus method invocations in an easy manner, by
    adding the ability to e.g. dynamically determine replySignatures from the introspect
    data or make it rather easy for a service object to emit signals, etc.
    Definition of this class allows it to be used as a mixin.
 */
+/** Base class for allowing an ooRexx class to be used for implementing a DBus service.
+*
+*/
 ::class "DbusServiceObject" mixinclass object  public
 
+/** Constructor method to initialize attributes and to process the optionally supplied introspection data that defines the services available to DBus clients.
+*
+* @param introData optional introspection data
+*
+*/
 ::method init                 -- intorData, service.connection, service.objectPath; introData may be supplied later, using the respective methods
   expose  service.connections service.introspectRootNode service.methods
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1566,6 +1926,11 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
   raise propagate -- raise condition in caller
 
 
+/** Method that analyzes and sets up introspection data for this DBus service.
+*
+* @param introData introspection data to parse, can be a file name containing the XML data
+* @return introData the received argument value
+*/
 ::method service.parseIntrospectData      -- parse introspect data, memorize introspectData and introspectFileName, if any
   expose service.introspectData service.introspectFileName
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1600,7 +1965,10 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
   raise propagate -- raise condition in caller
 
 
-
+/** Implements the DBus Introspect method to allow potential DBus service clients to learn about the published interfaces.
+*
+* @return the XML encoded introspect data
+*/
 ::method    Introspect              -- return introspection data to client
   expose    service.introspectData
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1612,6 +1980,9 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 ::attribute service.introspectData get
 ::attribute service.introspectFileName get
 
+/** Attribute setter method that allows to set the introspection root node attribute. In addition any methods in the introspection data get cached for faster lookup.
+*
+*/
 ::attribute service.introspectRootNode set   /* make introspection parse tree available */
   expose service.methods service.introspectRootNode
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1640,6 +2011,16 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
   return .nil           -- no signature/member found
 
 
+/** Utility method to make issuing a signal easy through all the connections that we currently serve. If the service object has introspection methods
+*   defined and cached, then this definition is looked up to determine the signal's interface and signature.
+*
+* @param objectPath optional, DBus object path of sender, defaults to <code>.nil</code>
+* @param interface optional, DBus interface name, defaults to empty string
+* @param member signal name
+* @param signature optional, argument signature, defaults to empty string
+* @param arg1...argN optional arguments to be sent with the signal
+*
+*/
 ::method service.sendSignal   -- utility method to ease emitting signals from the service object;
                               -- will emit the signal to all connections this service object is registered with
   expose service.methods service.connections
@@ -1716,6 +2097,9 @@ syntax:raise propagate
 
 
                /* service requests  */
+/** This method turns the received ooRexx message into the appropriate DBus message call using the
+* introspection data for the service object.
+*/
 ::method unknown
   expose service.methods
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -1833,14 +2217,37 @@ syntax_set:       -- a syntax error occurred (due to wrong number of arguments?)
 
 
 
-/* =============================================================================== */
+/* ============================================================================================= */
 /* ------------------------------------------------------------------------------------- */
 /*  DbusDataType( value [,typeName])
     typeNames: B[usName], I[nterfaceName], M[emberName], O[bjectPath], S[ignature]
 
     modelled after Rexx' DataType(...)
 */
-::routine DbusDataType public    -- check or determine whether dbus datatype
+
+/** Routine that determines which DBus datatype a value may be (or <code>.nil</code>, if not determinable) or
+*   tests whether a supplied value is of the given DBus datatype.
+*
+*  @param a string value representing a DBus value of type <code>&quot;B[usname]&quot;</code>,
+*         <code>&quot;I[nterface]&quot;</code>, <code>&quot;M[ember]&quot;</code>,
+*         <code>&quot;O[bjectPath]&quot;</code> or <code>&quot;S[ignature]&quot;</code>
+*
+*  @param optional, one of <code>&quot;B[usname]&quot;</code>, <code>&quot;I[nterface]&quot;</code>,
+*         <code>&quot;M[ember]&quot;</code>, <code>&quot;O[bjectPath]&quot;</code> or
+*         <code>&quot;S[ignature]&quot;</code>
+*
+* @return <dl>
+*         <dt>if only the first argument is supplied, then returns either
+*         <dd><code>&quot;OBJECTPATH&quot;</code>, <code>&quot;INTERFACENAME&quot;</code>,
+*             <code>&quot;BUSNAME&quot;</code>, <code>&quot;MEMBERNAME&quot;</code> or
+*             <code>.nil</code>, if neither of these types can be determined
+*
+*         <dt>if both arguments are supplied, then the first argument is tested whether it
+*             is of the DBus type expressed in the second argument, returning
+*         <dd><code>.true</code> or <code>.false</code>, respectively
+*         </dl>
+*/
+::routine DBusDataType public    -- check or determine whether dbus datatype
   parse arg value, type .
 if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
@@ -2136,10 +2543,26 @@ syntax:
 
 /* =============================== DBusServer ====================================================== */
 
--- a private ooRexx DBus server implemenation; connection to clients using .DBus
+-- ; connection to clients using .DBus
 
 /* ------------------------------ class definition ------------------------------ */
+/** This class is a private ooRexx DBus server implementation which makes it easy to use ooRexx
+*   to create a private DBus server, serving any clients via DBus, independent of their location
+*   (usually communicating via Internet) and operating system (provided the DBus infrastructure
+*   is available on the client's computer).
+*/
 ::class "DBusServer"   public
+/** Constructor method that initializes attributes. Note, the native code will set the values of
+* some of the attributes!
+*
+*   @param address a private DBus server address, this server should listen to
+*   @param defaultService optional, a DBusService ooRexx object that supplies the default services
+*          to any new connected client
+*   @param defaultListener optional, an ooRexx object that will be used as the listener for any new
+*          connected client
+*   @param allowAnonymous optional, defaults to <code>.false</code>; if set to <code>.true</code>
+*          then connections from anonymous clients are acceptable
+*/
 ::method init
   expose cself address allowAnonymous defaultService defaultListener connections  -
          watchLoopActive watchlist timeoutLoopActive watchConnections
@@ -2168,13 +2591,26 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
 ::attribute allowAnonymous             -- allow anonymous clients to connect
 ::attribute defaultService             -- default Rexx service object, used, if no matching entry found in internalRegisteredServiceObjects
 ::attribute defaultListener            -- default Rexx listener object, used, if internalSignalListeners is empty
+
+/** Getter definition for the attribute <code>connections</code>.
+* @return a copy of the connection array
+*/
 ::attribute connections get            -- list of established connections
   expose connections
 if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   return connections~copy              -- return a copy of the current connections
 
+/** Getter definition for the attribute <code>watchLoopActive</code>.
+* @return <code>.true</code>, if the server message loopo is active, <code>.false</code> else
+*/
 ::attribute watchLoopActive  get       -- indicates whether the server message loop is active or not
 
+/** Do not use ! Method gets invoked by the native code whenever a new client connects to this private DBus server, such
+*   that the connection's message loop can be started, allowing the client to use it to interact with
+*   this private DBus server.
+*
+*   @param the connection through which the client connected to this private DBus server
+*/
 ::method newConnection     -- new connection to this server received (from callback in native code)
   expose defaultService defaultListener connections watchConnections
 if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -2208,7 +2644,12 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
   return
 
 
-
+/** Method gets invoked by the native code whenever a connection gets lost. The method
+*   will close the connection and remove it from the <code>connections</code> attribute that maintains
+*   all served connections.
+*
+*   @param the connection through which the client connected to this private DBus server
+*/
 ::method disconnect                    -- invoked from native code (not reliably invoked all the time as of 1.6.4 on Ubuntu)
   expose connections
 if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -2219,8 +2660,14 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
 
 
 ::method nativeServerWatchLoop   private external "LIBRARY dbusoorexx DbusServerWatchLoop"
-::method nativeServerStartup          private external "LIBRARY dbusoorexx DbusNativeServerStartup"
-::method startup                  unguarded  -- startup server
+::method nativeServerStartup     private external "LIBRARY dbusoorexx DbusNativeServerStartup"
+
+
+/** This method will startup the private server and start the server's watch loop.
+*
+*  @conditition if server was already started a syntax 93.900 condition will be raised
+*/
+::method startup                 unguarded  -- startup server
   expose allowAnonymous cself address
 if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
@@ -2236,8 +2683,13 @@ if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusG
 if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "AFTER : self~nativeServerWatchLoop"
 
 
-
 -- as of DBus 1.4.14, the private server does not receive a "Disconnected" signal, hence testing the connections constantly
+/** This method creates a Rexx thread which constantly watches connections to make sure
+*   that any stalled connections get disconnected.
+*
+*   @param sleepTime optional argument (defaults to 0.1 second) that determines the sleeping time
+*                    between checks
+*/
 ::method watchConnections  unguarded   -- check whether client connections are available, if not disconnect the stalled connecition
   expose connections watchConnections
 if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
@@ -2290,9 +2742,14 @@ if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusG
   return
 
 
-
-
 ::method nativeStartServerTimeoutLoop   private external "LIBRARY dbusoorexx DbusServerTimeoutLoop"
+
+/** Do not use! Meant to be used from native code, if a timer callback is set or removed.
+*
+* @param &quotSTArt&quot; or &quot;STOp&quot
+* @param timeoutDataPointer if first argument has the value &quotSTArt&quot;  an
+*        opaque value from the native code (a Pointer)
+*/
 ::method timerLoop         unguarded         -- "START" or "STOP"
   expose timeoutLoopActive
 if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "line:" pp(.line)
@@ -2314,16 +2771,20 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
   use strict arg action, timeoutDataPointer
   reply                                -- create a new thread
 
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "line:" pp(.line) "after REPLY"
+if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "after REPLY"
   self~nativeStartServerTimeoutLoop(timeoutDataPointer)  -- start the timeout loop, pass (*data) via Rexx to native function
 
 
 
 
 ::method nativeServerShutdown       private external "LIBRARY dbusoorexx DbusNativeServerDisconnect"
+
+/** This method shuts down the private server by stopping the watch loop, shutting down the server and
+*   disconnecting its clients and .
+*/
 ::method shutdown                   unguarded   -- shutdown server
   expose connections cself watchLoopActive
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   if cself=.nil then
      raise syntax 93.900 array (self": shutdown not possible, as server was not started")
@@ -2342,25 +2803,38 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
 
 
 ::method nativeServerID             private external "LIBRARY dbusoorexx DbusNativeServerGetId"
+/** Returns this private server's ID from native code.
+*
+*   @return the server's ID
+*/
 ::method serverID
   expose cself
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if cself=.nil then return .nil
   return self~nativeServerID
 
 
 ::method nativeActive               private external "LIBRARY dbusoorexx DbusNativeServerIsActive"
+
+/** Tests whether this server is still active (connected).
+*
+*   @return <code>.true</code>, if the server is active (connected), <ocde>.false</code> else
+*/
 ::method active
   expose cself
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if cself=.nil then return .false
   return self~nativeActive
 
    -- for debugging:
 ::method nativeServerAddress        private external "LIBRARY dbusoorexx DbusNativeServerGetAddress"
+/** Returns this private server's address from native code.
+*
+*   @return the address this server is servicing
+*/
 ::method serverAddress
   expose cself
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if cself=.nil then return .nil
   return self~nativeServerAddress
 
@@ -2374,23 +2848,43 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
 /* cf. <http://standards.freedesktop.org/dbus/1.0/introspect.dtd> */
 
 /* ------------------------------ class definition ------------------------------ */
+/** This class parses DBus introspection data into a parse tree and makes its
+*   definitions available to clients.
+*
+*  @see <http://standards.freedesktop.org/dbus/1.0/introspect.dtd>
+*/
 ::class "IDBus"               public   -- define base class, attributes name and content
 ::attribute name           -- name: name of the element, CDATA
 ::attribute parent         -- parent: node to which this one belongs to, if any
 ::attribute content        -- content: whatever elements an element contains in document order
 
+/** Caseless comparator method used by the array <code>sort</code> method. Allows to sort caselessly by name.
+*
+*   @return <code>1</code>, <code>0</code> or <code>-1</code> if this name is lexically larger,
+            equal or smaller than the argument
+*/
 ::method compareTo         -- allow for sorting by name
   expose name
   use arg otherValue
   return (self~class~id name)~caselessCompareTo(otherValue~class~id otherValue~name)
 
-
+/** Constructor method, initializing attributes.
+*
+* @param name optional (defaults to empty string)
+*/
 ::method init              -- constructor
   expose name content node
   use strict arg name=""
   parent=.nil
   content=.array~new
 
+/** Class method for creating the instrospection tree.
+*
+*  @param data the introspection data adhering to the DBus Introspection DTD or
+*         a file name containing the Introspection data to parse
+*
+*  @return the root node of the resulting introspection tree
+*/
 ::method newIntrospection class     -- parses file/data, creates a parse tree and returns its root node
   use strict arg data               -- "data" can be a filename or the introspection data
 
@@ -2550,11 +3044,24 @@ syntax:
 
   raise propagate       -- raise condition in caller
 
+/** Tests wheter the introspection tree contains a node of the supplied type.
+*
+*  @param kind optional, or one of <code>&quot;I[nterface]&quot;</code>,
+*                     <code>&quot;M[ethod]&quot;</code>,
+*                     <code>&quot;N[ode]&quot;</code>,
+*                     <code>&quot;S[ignal]&quot;</code>,
+*                     <code>&quot;P[roperty]&quot;</code>,
+*                     <code>&quot;AR[gument]&quot;</code>,
+*                     <code>&quot;AN[nnotation]&quot;</code>
+*
+*  @return <code>.true</code> if the supplied kind (type) is contained in the introspection tree,
+*          <code>.false</code> else
+*/
 ::method contains             -- returns .true if the supplied type exists in the tree
   parse upper arg kind +1 1 kind2 +2
 
   if pos(kind,"AIMNSP")=0 then
-     raise syntax 88.916 array ('"type"', '"I[nterface]", "M[ethod]", "N[ode]", "S[ignal], "P[roperty]", "AR[gumgent]", "AN[notation]"', arg(1))
+     raise syntax 88.916 array ('"type"', '"I[nterface]", "M[ethod]", "N[ode]", "S[ignal], "P[roperty]", "AR[gument]", "AN[notation]"', arg(1))
 
   select
      when kind="A" then
@@ -2588,6 +3095,18 @@ workContains: procedure                    -- return .true if type was found, .f
   end
   return .false
 
+/** Counts the number of occurrences of the supplied type (kind) in the introspection tree.
+*
+*  @param kind optional, or one of <code>&quot;I[nterface]&quot;</code>,
+*                     <code>&quot;M[ethod]&quot;</code>,
+*                     <code>&quot;N[ode]&quot;</code>,
+*                     <code>&quot;S[ignal]&quot;</code>,
+*                     <code>&quot;P[roperty]&quot;</code>,
+*                     <code>&quot;AR[gument]&quot;</code>,
+*                     <code>&quot;AN[nnotation]&quot;</code>
+*
+*  @return number of occurrences of the supplied kind (type)
+*/
 ::method count             -- returns # of occurrences of given type
   parse upper arg kind +1 1 kind2 +2
 
@@ -2628,16 +3147,23 @@ workCount: procedure                -- return .true if type was found, .false el
 
 
 /* ------------------------------ class definition ------------------------------ */
+/** This class represents an introspection node. */
 ::class "IDBusNode"           public subclass IDBus
 
 /* ------------------------------ class definition ------------------------------ */
+/** This class represents a DBUs interface node. */
 ::class "IDBusInterface"      public subclass IDBus
 
 /* ------------------------------ class definition ------------------------------ */
+/** This class represents a DBUs method node and defines method related attributes and methods. */
 ::class "IDBusMethod"         public subclass IDBus
 ::attribute argSignature
 ::attribute replySignature
 
+/** Constructor method, initializing attributes.
+*
+* @param name optional (defaults to empty string)
+*/
 ::method init              -- constructor
   expose argSignature replySignature
   use strict arg name
@@ -2645,6 +3171,8 @@ workCount: procedure                -- return .true if type was found, .false el
   replySignature=""
   forward class (super) -- array (name) -- continue   -- invoke superclass constructor
 
+/** Worker method that creates the argument's and reply signatures from its <code>IDBusArg</code> subnodes if any.
+*/
 ::method createSignatures  -- create signatures from IDbusArg definitions
   expose argSignature replySignature
 
@@ -2658,16 +3186,26 @@ workCount: procedure                -- return .true if type was found, .false el
   end
 
 /* ------------------------------ class definition ------------------------------ */
+/** This class represents a DBus call method node. */
 ::class "IDBusCallMethod"     public subclass IDBusMethod
 
 /* ------------------------------ class definition ------------------------------ */
+/** This class represents a DBus signal method node. */
 ::class "IDBusSignalMethod"   public subclass IDBusMethod
 
 /* ------------------------------ class definition ------------------------------ */
+/** This class represents a DBus property method node. */
 ::class "IDBusPropertyMethod" public subclass IDBusMethod   -- properties are actually methods to get/set values
 ::attribute type           -- type: type code
 ::attribute access         -- access: read, readwrite, write
 
+/** Constructor method, initializing attributes.
+*
+* @param name the name of the property
+* @param type the type of the property
+* @property access one or both of <code>&quot;read&quot;</code> and <code>&quot;write&quot;</code>
+*
+*/
 ::method init              -- constructor
   expose type access
   use strict arg name, type, access
@@ -2680,10 +3218,17 @@ workCount: procedure                -- return .true if type was found, .false el
 
 
 /* ------------------------------ class definition ------------------------------ */
+/** This class represents a DBus argument node. */
 ::class "IDBusArg"            public subclass IDBus
 ::attribute type           -- type: type code
 ::attribute direction
 
+/**  Constructor method, initializing attributes.
+*
+* @param name the name of the property
+* @param type the type of the property
+* @param direction one or both of <code>&quot;in&quot;</code> and <code>&quot;out&quot;</code>
+*/
 ::method init              -- constructor
   expose type direction
   use strict arg name, type, direction
@@ -2692,9 +3237,15 @@ workCount: procedure                -- return .true if type was found, .false el
 
 
 /* ------------------------------ class definition ------------------------------ */
+/** This class represents a DBus annotation node. */
 ::class "IDBusAnnotation"     public subclass IDBus
 ::attribute value          -- value: CDATA
 
+/**  Constructor method, initializing attributes.
+*
+* @param name the name of the property
+* @param value the annotation text
+*/
 ::method init              -- constructor
   expose value
   use strict arg name, value
@@ -2704,6 +3255,15 @@ workCount: procedure                -- return .true if type was found, .false el
 /* ========================== introspection related routines =========================== */
 
 /* ------------------------------------------------------------------------------------- */
+/** A utility routine that searches the introspection tree for methods of type <em>call</em>,
+*   <em>signal</em> or <em>property</em> and returns their names and method definitions in a
+*   Rexx directory.
+*
+* @param rootNode the introspection's root node to use for the search
+*
+* @return a Rexx directory mapping the simple and fully qualified names of methods to their
+*         method definition to ease sending messages to a service object
+*/
 ::routine IDBus.getMethodsForProxy  public  -- return a directory pointing to those methods we may send to a proxy object
   use arg rootNode
 
@@ -2733,7 +3293,13 @@ workCount: procedure                -- return .true if type was found, .false el
 
 
 /* ------------------------------------------------------------------------------------- */
-::routine IDBus.analyzeIDBUSMethods    public   -- dump the tree, showing methods with their signatures
+/** Utility routine that analyzes the introspection tree and checks for duplicate definitions.
+*   Optionally dumps the visitied nodes to <code>.output</code>.
+*
+* @param rootNode the introspection's root node to use for the search
+* @param bShowProgress if <code>.true</code> then gives additional (debugging) output
+*/
+::routine IDBus.analyzeIDBUSMethods    public   -- analyze dump the tree, showing methods with their signatures
   use arg rootNode, bShowProgress=.false
 
   seenMethodNames=.directory~new
@@ -2783,6 +3349,11 @@ workCount: procedure                -- return .true if type was found, .false el
 
 
 /* ------------------------------------------------------------------------------------- */
+/** Utility routine that dumps the introspection tree to <code>.output</code>, showing methods
+*   with their signature.
+*
+* @param rootNode the introspection's root node to use for the search
+*/
 ::routine IDBus.dumpIDBus  public -- dump the tree, showing methods with their signatures
   use arg rootNode
 
@@ -2867,36 +3438,57 @@ workCount: procedure                -- return .true if type was found, .false el
 
 
 /* =============================== Introspection related classes, routines ========================= */
-/* There might be cases where Introspect data does not get supplied by the service object,
+/** There might be cases where Introspect data does not get supplied by the service object,
    although there are well defined interfaces to it. In case the Rexx programmer knows of
    them this class allows to define these and get a rendering that is suitable to submit
-   to the .IDBus class ("rootNode=.IDBus~newIntrospection(introspectData") and assign the
-   resulting rootNode to the DBusProxyObject ("proxObject~proxy.introspectRootNode(rootNode)").
+   to the <code>.IDBus</code> class (<code>rootNode=.IDBus~newIntrospection(introspectData</code>) and assign the
+   resulting rootNode to the <code>DBusProxyObject</code> (<code>proxObject~proxy.introspectRootNode(rootNode)</code>).
+   <br/>
 
    This is a simple implementation ignoring the names of arguments and dealing with
    DBus signatures only.
-*/
-/* cf. <http://standards.freedesktop.org/dbus/1.0/introspect.dtd> */
+   <br/>
 
+   @see cf. <http://standards.freedesktop.org/dbus/1.0/introspect.dtd>
+*/
 ::class IntrospectHelper   PUBLIC         -- class to allow for creating interface definitions
 
+/**  Constructor method, initializing attributes.
+*
+* @param nodeName optional (defaults to empty string), the name of the node
+*/
 ::method init
   expose nodeName list
   use strict arg nodeName=""
   list=.array~new
 
+/** The list of introspection nodes (an array). */
 ::attribute list get
+
+/** The name of the node. */
 ::attribute nodeName get
+
+/** An alias for the attribute <code>nodeName</code> to ease the <code>compareTo</code> method.
+*  @see <code>compareTo</code> method
+*/
 ::method name           -- alias for nodeName to ease compareTo code
   expose nodeName
   return nodeName
 
+/** Caseless comparator method used by the array <code>sort</code> method. Allows to sort caselessly by name.
+*
+*   @return <code>1</code>, <code>0</code> or <code>-1</code> if this name is lexically larger,
+            equal or smaller than the argument
+*/
 ::method compareTo      -- allow sorting
   expose nodeName
   use arg otherValue
   return nodeName~caselessCompareTo(otherValue~name)
 
-
+/** Creates and adds an interface node to the introspection list.
+*
+* @param interfaceName optional (defaults to the empty string)
+*/
 ::method addInterface
   expose list
   use strict arg interfaceName=""
@@ -2904,6 +3496,10 @@ workCount: procedure                -- return .true if type was found, .false el
   list~append(o)
   return o
 
+/** Creates and adds a node to the introspection list.
+*
+* @param nodeName optional (defaults to the empty string)
+*/
 ::method addNode
   expose list
   use strict arg nodeName=""
@@ -2912,6 +3508,10 @@ workCount: procedure                -- return .true if type was found, .false el
   return o
 
 
+/** Creates a string rendering of the introspection data and returns it.
+*
+* @return a string rendering representing the currently defined introspection data
+*/
 ::method makeString
   expose nodeName list
   lf  ='0a'x            -- LF
@@ -2927,6 +3527,16 @@ workCount: procedure                -- return .true if type was found, .false el
   self~workMakeString(m,self,0, lf,lf2,tab)
   return m~string
 
+/** Worker method that fills in the string renderings of the introspectin definitions.
+*
+* @param m the mutable buffer object to add string renderings to
+* @param o an introspection object to be rendered as a string
+* @param indent optional (defaults to <code>0</code>, determines the number of <code>tab</code> characters to use as indentation
+* @param lf a single line feed character
+* @param lf2 two line feed characters
+* @param tab indentation character, a string of four blanks
+*
+*/
 ::method workMakeString    -- worker method which can be recursively executed if multiple nodes
   use arg m, o, indent=0, lf, lf2, tab
 
@@ -2960,26 +3570,49 @@ workCount: procedure                -- return .true if type was found, .false el
 
 
 
+/* ============================================================================================= */
+/** Utiltiy class to ease debugging introspection data.
+*
+* @see <code>IntrospectionHelper</code>
+*/
 ::class introspectHelperInterface      -- helper class
 
+/**  Constructor method, initializing attributes.
+*
+* @param interfaceName the name of this DBus interface
+*/
 ::method init
   expose interfaceName list
   use arg interfaceName
   list=.array~new
 
 
+/** Caseless comparator method used by the array <code>sort</code> method. Allows to sort caselessly by interface name.
+*
+*   @return <code>1</code>, <code>0</code> or <code>-1</code> if this interface name is lexically larger,
+            equal or smaller than the argument
+*/
 ::method compareTo      -- allow sorting
   expose interfaceName
   use arg otherValue
   return interfaceName~caselessCompareTo(otherValue~name)
 
 
+/** The list of introspection nodes (an array). */
 ::attribute list get
+
+/** The interface name. */
 ::attribute interfaceName get
 ::method name           -- alias for interfaceName to ease compareTo code
   expose interfaceName
   return interfaceName
 
+/** Adds the method definition string to the introspection list.
+*
+* @param name the name of the method
+* @param in optional (defaults to the empty string), the signature for the arguments (parameters) for the method, if any
+* @param out optional (defaults to the empty string), the signature for the return value, if any
+*/
 ::method addMethod      -- name, signature of args, signature of return value
   expose list
   use strict arg name, in="", out=""
@@ -2993,6 +3626,12 @@ workCount: procedure                -- return .true if type was found, .false el
   return
 syntax: raise propagate    -- raise error in caller
 
+/** Adds the property definition string to the introspection list.
+*
+* @param name the name of the property
+* @param type the signature representing the property
+* @param access the access types, one of <code>read</code>, <code>write</code> or <code>readwrite</code>,
+*/
 ::method addProperty    -- name, signature of type, access
   expose list
   use strict arg name, type, access
@@ -3005,6 +3644,11 @@ syntax: raise propagate    -- raise error in caller
   return
 syntax: raise propagate    -- raise error in caller
 
+/** Adds the signal definition string to the introspection list.
+*
+* @param name the name of the method
+* @param arg optional (defaults to the empty string), the signature for the arguments (parameters) for the method, if any
+*/
 ::method addSignal      -- name, signature of arguments as one string
   expose list
   use strict arg name, arg=""
@@ -3016,6 +3660,11 @@ syntax: raise propagate    -- raise error in caller
   return
 syntax: raise propagate    -- raise error in caller
 
+
+/** Creates a string rendering of the introspection data and returns it.
+*
+* @return a string rendering representing the currently defined introspection data
+*/
 ::method makestring     -- create a string, sort ascendingly
   expose list interfaceName
   m=.MutableBuffer~new
@@ -3025,6 +3674,17 @@ syntax: raise propagate    -- raise error in caller
   self~workMakeStringInterface(m,self,0,lf,lf2,tab)
   return m~string
 
+
+/** Worker method that fills in the string renderings of the introspectin definitions.
+*
+* @param m the mutable buffer object to add string renderings to
+* @param o an introspection object to be rendered as a string
+* @param indent optional (defaults to <code>0</code>, determines the number of <code>tab</code> characters to use as indentation
+* @param lf a single line feed character
+* @param lf2 two line feed characters
+* @param tab indentation character, a string of four blanks
+*
+*/
 ::method workMakeStringInterface    -- worker method which can be recursively executed if multiple nodes
   use arg m, o, indent=0, lf, lf2, tab
 
@@ -3135,19 +3795,31 @@ parseParen: procedure
   return i              -- position of ")" char
 
 
-/* =============================================================================== */
-/* Define a class that leads an Introspect finder to the available object path(s).
+
+
+/* ============================================================================================= */
+/** Define a class that leads an Introspect finder to the available object path(s).
    An instance of this class may be registered with the connection's serviceObject-method
    using the special name "default" as a pseudo object path.
 */
 ::class IDBusPathMaker public
 
+/** Class method that creates object path introspection data to allow DBus service object clients
+*   to find the published object paths the DBus service object services on the given connection.
+*   The connection will get a <code>serviceObject</code> by the special name <code>&quot;default&quot;</code>
+*   added, which replaces any other previously defined <code>IDBusPathMaker</code> object.
+*
+* @conn the DBus connection which gets the object path fragments/segments added, such that DBus clients
+*       become able to find all object paths that get serviced by this connection
+*
+* @return the number of objects that get serviced via their object paths
+*/
 ::method publishAllServiceObjects class      -- expects a DBus (connection) object, publishes all defined object paths
   use strict arg conn
 
   .ArgUtil~validateClass("conn", conn, .DBus) -- check for correct type
   a=.array~new
-  s=conn~serviceObject("GetAll")~supplier
+  s=conn~serviceObject("GetRegisteredServiceObjects")~supplier
   do while s~available
      if DBusDataType(s~index,"ObjectPath")=.true, s~item~isA(.DBusServiceObject) then
         a~append(s~index)
@@ -3163,6 +3835,10 @@ parseParen: procedure
 syntax: raise propagate
 
 
+/**  Constructor method, initializing attributes.
+*
+* @param objectPath the object path, can also be a collection of paths, if the service object serves more than one
+*/
 ::method init
   expose paths
   use arg objectPath          -- can also be a collection of paths
@@ -3206,7 +3882,13 @@ parseObjPath: procedure expose paths   -- create paths and save in relation
 
   return
 
-
+/** Create introspect data on the fly if the supplied object path is known, supply segments of the
+*   object path as nodes, such that the client can use that to further introspect all of the service object's
+*   object paths.
+*
+*  @param slotDir a Rexx directory containing all information of the DBus message directed at the DBus service object
+*  @return introspection data containing all segments to all objects as nodes
+*/
 ::method Introspect
   expose paths
   use arg slotDir
@@ -3222,6 +3904,8 @@ parseObjPath: procedure expose paths   -- create paths and save in relation
   end
   return node~makeString   -- return introspect data
 
+
+/** Allow access to the relation with object path fragments/segments pointing to next local fragment/segment. */
 ::attribute paths get      -- allow access to the relation with object path fragments pointing to next local fragment
 
 

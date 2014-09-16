@@ -31,7 +31,7 @@
  * </ul>
  *
  *  @author Rony G. Flatscher
- *  @version 2014-08-07
+ *  @version 2014-08-11
  *
  */
 
@@ -84,6 +84,7 @@
                                    on Windows)
                                  - ooRexx 4.2.0 now required (because of using .context~name in 'dbus.cls' package
                 2014-08-07, rgf: - tidied up the source
+		2014-08-11, rgf: - adding doclet-kind documentation
 
 
     possible todos: - add globals for Nil(), True(), Flase(), .Array, .DateTime, .DBus, "1", "", as well
@@ -154,11 +155,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 #ifdef DBUSOOREXX_32
-    #define DBUS_REXXVERSION    "100.20140807 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20140811 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (DBUSOOREXX_64)
-    #define DBUS_REXXVERSION    "100.20140807 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20140811 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define DBUS_REXXVERSION    "100.20140807 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20140811 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #ifndef TID
@@ -182,6 +183,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 // #define  DEBUG_OOREXX_FIND_CLASS    // attempt to help RMG to debug FindClass() finding class that is not in .local or .environment
+// #define  DEBUG_HIT_ENTER_TO_CONTINUE // will stop and wait for a CR using fscanf()
 
 // #define DEBUG_RGF           // for temporary debug output
 // #define DEBUG_MESSAGELOOP
@@ -424,12 +426,33 @@ RgfGetTID()
 }
 
 
-/** Create a Rexx-like/formatted error message (origin: BSF4ooRexx.cc.
- *  @return errorString must be freed by receiver
+
+#ifdef DEBUG_HIT_ENTER_TO_CONTINUE      // rgf, 20140808
+// ----------------------------------------------------------------------------
+//       DEBUG_HIT_ENTER_TO_CONTINUE
+
+/** Stops execution until user hits return/enter (actually presses any key).
 */
+inline void RgfDebugHitEnterToContinue()
+{
+    fprintf(stderr, "\n[RgfDebugHitEnterToContinue(): Hit Enter to Continue...");fflush(stderr);
+    char stuff[5];
+    int a=fscanf(stdin, "%c", stuff);
+    fprintf(stderr, "\n");fflush(stderr);
+}
+#endif
+
+
+
     // from BSF4ooRexx.cc
     // allocates and creates a Rexx-like error message
     // returned *msg must be freed
+/** Create a Rexx-like/formatted error message (origin: BSF4ooRexx.cc.
+*
+*   @param condition (ooRexx condition object, an ooRexx directory)
+*   @param header (a string)
+ *  @return errorString must be freed by receiver
+*/
 inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryObject condObj, const char * header)
 {
     RexxCondition cond;
@@ -485,7 +508,7 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
 #if defined (REXX_LOADER_UNLOADER) || defined (REXX_LOADER)
     // as of ooRexx 4.0: the library gets loaded once and is available globally to all RexxInstances,
     //                   hece it runs once per process only
-/** Run when ooRexx loads this native library. Could be used e.g. for creating ooRexx constant objects to
+/** Runs when ooRexx loads this native library. Could be used e.g. for creating ooRexx constant objects to
 *   be saved in gloabal variables.
 */
 void RexxEntry dbusLoader (RexxThreadContext *rtc)
@@ -521,6 +544,9 @@ void RexxEntry dbusLoader (RexxThreadContext *rtc)
 #if defined (REXX_LOADER_UNLOADER) || defined (REXX_UNLOADER)
 // as of ooRexx 4.0: the library gets loaded once and is available globally to all RexxInstances,
 //                   hece it runs once per process only
+
+/** Runs at ooRexx shutdown time.
+*/
 void RexxEntry dbusUnloader (RexxThreadContext * rtc)
 {
     #ifdef UNIX
@@ -548,7 +574,9 @@ void RexxEntry dbusUnloader (RexxThreadContext * rtc)
 
 
 // get and return various version information as a string
-/** Returns the library version information together with the versions of runtime DBus and compile time DBus.
+/** Returns version information about this library and the DBus versions used for compilation and at runtime.
+*
+*   @return version string in the format &quot;library dbusoorexx=[major*100+minor.yyyymmdd], compile-time dbus=[major.minor.micro], runtime dbus=[major.minor.micro]&quot;&quot;
 */
 RexxRoutine0(RexxStringObject, DbusVersionLibrary)
 {
@@ -573,7 +601,7 @@ RexxRoutine0(RexxStringObject, DbusVersionLibrary)
     // ---rgf, 2003-08-06: allow Rexx to retrieve its TID (i.e. Java's "JNIEnv" object)
 /** Returns the thread identification string. Can be used for debugging thread-related activations.
 *
-* @pparam option optional, by default a 'H'uman conceivable string ('java n', where 'n' is a
+* @param option optional string, by default a 'H'uman conceivable string ('java n', where 'n' is a
 *         consecutively numbered value), otherwise 'S'ystem (numeric) value gets returned
 *
 * @return threadInfoString
@@ -606,12 +634,13 @@ RexxRoutine1(RexxStringObject, DbusGetTID, OPTIONAL_CSTRING, option)    // 20090
 }
 
 
-// external Rexx function for validating values; as DBUS 1.4.x only supports validating signatures,
-// initially only signatures get evaluated
-/** Validates a signature.
+// external Rexx function for validating values; maybe there will be a dbus_validate_bus_name(),
+// dbus_validate_object_path(); maybe check out "dbus-marshal-validate.c"
+/** Validates a a DBus value using DBus. As DBUS 1.4.x only supports validating signatures,
+ * initially only signatures get evaluated.
  *
  * @param strValue the string to be validated
- * @param option optional, currently only 'S'
+ * @param flag optional, currently only 'S[ignature]'
  *
  * @return <code>.true</code> or <code>.false</code>
  */
@@ -654,6 +683,8 @@ RexxRoutine2(RexxObjectPtr, DbusValidate, CSTRING, strValue, OPTIONAL_CSTRING, f
 
 // --------------------------------------------------------------------------------
 // allows to halt all Rexx threads of current interpreter; experimental
+/** Sends a halt signal to all ooRexx threads to allow for stopping them.
+*/
 RexxRoutine0(RexxStringObject, DbusHaltRexx)    // create Halt condition in all threads
 {
     context->threadContext->instance->Halt();   // raise the Halt condition in all threads of the current Rexx interpreter
@@ -671,6 +702,10 @@ RexxRoutine0(RexxStringObject, DbusHaltRexx)    // create Halt condition in all 
 
 
 // return a connection to the system bus
+/** Returns a connection to the system bus, if available. Remark: it may be the case that on some DBus implementation
+*   the system bus is not set up/defined in which case the underlying DBus implementation will raise an error condition
+*   which gets forwarded to the calling Rexx program.
+*/
 RexxMethod1(RexxObjectPtr, DbusNativeGetSystemBus, RexxObjectPtr, genericBusObject)
 {
 #if defined (DEBUG_METHODS)
@@ -718,6 +753,10 @@ RexxMethod1(RexxObjectPtr, DbusNativeGetSystemBus, RexxObjectPtr, genericBusObje
 
 
 // return a connection to the session bus
+/** Returns a connection to the session bus, if available. Remark: it may be the case that on some DBus implementation
+*   the session bus is not set up/defined in which case the underlying DBus implementation will raise an error condition
+*   which gets forwarded to the calling Rexx program.
+*/
 RexxMethod1(RexxObjectPtr, DbusNativeGetSessionBus, RexxObjectPtr, genericBusObject)
 {
 #if defined (DEBUG_METHODS)
@@ -764,6 +803,10 @@ RexxMethod1(RexxObjectPtr, DbusNativeGetSessionBus, RexxObjectPtr, genericBusObj
 
 
 // get and return unique bus name (.Dbus instance method)
+/** Returns the unique bus name of the connection.
+*
+* @return unique bus name of current object's connection pointer as a Rexx string
+*/
 RexxMethod1(RexxStringObject, DbusGetUniqueBusName, CSELF, connPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
@@ -791,6 +834,10 @@ RexxMethod1(RexxStringObject, DbusGetUniqueBusName, CSELF, connPtr)
 
 
 // get and return unique machine id
+/** Returns this machine's unique id as defined by DBus.
+*
+*  @return unique machine id as a Rexx string
+*/
 RexxMethod0(RexxStringObject, DbusGetUniqueMachineId)
 {
 #if defined (DEBUG_METHODS)
@@ -804,7 +851,11 @@ RexxMethod0(RexxStringObject, DbusGetUniqueMachineId)
 }
 
 
-// get and return unique bus id (.Dbus instance method)
+// get and return unique bus id (.DBus instance method)
+/** Returns this object's connection pointers unique bus id as defined by DBus.
+*
+* @return unique bus id of this connection
+*/
 RexxMethod1(RexxObjectPtr, DbusGetUniqueBusId, CSELF, connPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
@@ -835,6 +886,10 @@ RexxMethod1(RexxObjectPtr, DbusGetUniqueBusId, CSELF, connPtr)
 
 
 // if open, returns true, false else; cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusConnection.html#ga611ae94556af36fe30bfb547366ca4e1>
+/** Determines whether this connection is connected to DBus.
+*
+* @return <code>.true</code> if connected, <code>.false</code> else
+*/
 RexxMethod1(RexxObjectPtr, DbusConnectionIsConnected, CSELF, connPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
@@ -851,6 +906,12 @@ RexxMethod1(RexxObjectPtr, DbusConnectionIsConnected, CSELF, connPtr)
 
 
 // expects a single char; if that is a supported type code returns .true, otherwise .false
+/** Determines whether the given type code can be sent with this DBus implementation.
+* Hint: on Windows unix FD cannot be sent via DBus.
+*
+* @param typeCode a Rexx string denoting one of the official DBus type codes
+* @return <code>.true</code> if <em>typeCode</em> values can be sent, <code>.false</code> else
+*/
 RexxMethod2(RexxObjectPtr, DbusConnectionCanSendType, CSTRING, typeCode, CSELF, connPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
@@ -867,6 +928,10 @@ RexxMethod2(RexxObjectPtr, DbusConnectionCanSendType, CSTRING, typeCode, CSELF, 
 
 
 // if authenticated, returns true, false else
+/** Determines whether the connection is authenticated.
+*
+* @return <code>.true</code> if <em>typeCode</em> connection is authenticated, <code>.false</code> else
+*/
 RexxMethod1(RexxObjectPtr, DbusConnectionIsAuthenticated, CSELF, connPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
@@ -887,6 +952,14 @@ RexxMethod1(RexxObjectPtr, DbusConnectionIsAuthenticated, CSELF, connPtr)
 // busname related --->
 
 // request a unique bus name (.Dbus instance method)
+/** Request a (unique) bus name from DBus.
+*
+* @param busName the desired bus name DBus should reserve
+* @param flags optional flags (default: <code>1</code>=<code>DBUS_NAME_FLAG_ALLOW_REPLACEMENT</code>,
+*              <code>2</code>=<code>DBUS_NAME_FLAG_REPLACE_EXISTING</code>
+*
+* @return return code from DBus function <code>dbus_bus_request_name()</code>
+*/
 RexxMethod3(RexxObjectPtr, DbusBusNameRequest, CSTRING,       busName,
                                                OPTIONAL_RexxObjectPtr, flags,
                                                CSELF,         connPtr)
@@ -947,6 +1020,13 @@ RexxMethod3(RexxObjectPtr, DbusBusNameRequest, CSTRING,       busName,
 
 // test whether bus name has an owner (.Dbus instance method)
 // @deprecated because of race-conditions, cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusBus.html#ga5331b172dd8ed00eec130e894c5c2a0b>
+/** Test whether bus name has an owner.
+*
+* @deprecated because of race-conditions, cf. <http://dbus.freedesktop.org/doc/api/html/group__DBusBus.html#ga5331b172dd8ed00eec130e894c5c2a0b>
+*
+* @param busName to test
+* @return <code>.true</code> if <em>typeCode</em> busname has an owner, <code>.false</code> else
+*/
 RexxMethod2(RexxObjectPtr, DbusBusNameHasOwner, CSTRING, busName,
                                                 CSELF,   connPtr)
 {
@@ -979,6 +1059,11 @@ RexxMethod2(RexxObjectPtr, DbusBusNameHasOwner, CSTRING, busName,
 
 
         // release given bus name has an owner (.Dbus instance method)
+/** Release supplied bus name.
+*
+* @param busName the name to be released
+* @return return code from DBus function <code>dbus_bus_release_name()</code>
+*/
 RexxMethod2(RexxObjectPtr, DbusBusNameRelease, CSTRING, busName,
                                                CSELF,   connPtr)
 {
@@ -1014,6 +1099,11 @@ RexxMethod2(RexxObjectPtr, DbusBusNameRelease, CSTRING, busName,
 // match rule related --->
 
 // add match rule
+/** Add a DBus match rule.
+*
+* @param rule the match rule to be added to this connection
+* @param block optional, if <code>.true</code> (default), the call will be blocking, otherwise non-blocking
+*/
 RexxMethod3(RexxObjectPtr, DbusBusAddMatch, CSTRING, rule,
                                             OPTIONAL_RexxObjectPtr, block,
                                             CSELF,   connPtr)
@@ -1075,6 +1165,12 @@ RexxMethod3(RexxObjectPtr, DbusBusAddMatch, CSTRING, rule,
 
 
 // removes the most recent added rule, if found
+/** Remove a DBus match rule.
+*
+* @param rule the match rule to be removed from this connection
+* @param block optional, if <code>.true</code> (default), the call will be blocking, otherwise non-blocking
+*/
+
 RexxMethod3(RexxObjectPtr, DbusBusRemoveMatch, CSTRING, rule,
                                                OPTIONAL_RexxObjectPtr, block,
                                                CSELF,   connPtr)
@@ -1140,6 +1236,9 @@ RexxMethod3(RexxObjectPtr, DbusBusRemoveMatch, CSTRING, rule,
 // --------------------------------------------------------------------------------
 /** This function tests the string for the value "useThisSignature=" caselessly, which
 *   gets used in the pbulic 'dbus.cls' pacakge routine "DBus.box()".
+*
+*   @param fel signature string
+*   @return <code>true</code> if signature string is led in with &quot;useThisSignature=&quot;, <code>false</code> otherwise
 */
 inline bool OVERRIDE_SIGNATURE_GIVEN(CSTRING fel)
 {
@@ -1166,6 +1265,12 @@ inline bool OVERRIDE_SIGNATURE_GIVEN(CSTRING fel)
 
 // --------------------------------------------------------------------------------
     // return RexxArrayObject's content as a comma-separated CSTRING
+/** Turns a Rexx array object into a comma separated CSTRING and returns it.
+*
+* @param arrIdx Rexx array object
+* @param context the RexxThreadContext to interact with ooRexx
+* @return a CSTRING containing the array elements as comma separated values
+*/
 inline CSTRING ARR_AS_STRING( RexxArrayObject arrIdx , RexxThreadContext *context)
 {
     RexxObjectPtr arg1= context->NewString("L",1);
@@ -1185,6 +1290,13 @@ inline CSTRING ARR_AS_STRING( RexxArrayObject arrIdx , RexxThreadContext *contex
 
 // --------------------------------------------------------------------------------
     // convenience inline function to query the items in a given dimension
+/** Queries the array's dimension size and returns it.
+*
+* @param rao the Rexx array object
+* @param dimension the dimension to check
+* @param context the RexxThreadContext to interact with ooRexx
+* @return the size of the array object in the given dimension
+*/
 inline size_t GET_ARRAY_SIZE_AT_DIMENSION(RexxArrayObject rao, int32_t dimension, RexxThreadContext *context)
 {
     RexxObjectPtr ropLevel=context->Int32ToObject(dimension);
@@ -1202,6 +1314,11 @@ inline size_t GET_ARRAY_SIZE_AT_DIMENSION(RexxArrayObject rao, int32_t dimension
 
 // --------------------------------------------------------------------------------
     // return number of top-level arguments needed for given signature (needs to be syntactically correct)
+/** Return the number of top-level arguments needed for the given signature, which needs to be syntactically correct.
+*
+* @param signature the signature to analyze
+* @return number of top-level arguments this signature mandates
+*/
 inline size_t GET_NUMBER_OF_REXX_ARGS_FOR_SIGNATURE(char * signature)
 {
     char *cursor=signature;
@@ -1243,6 +1360,11 @@ inline size_t GET_NUMBER_OF_REXX_ARGS_FOR_SIGNATURE(char * signature)
 
 
 // --------------------------------------------------------------------------------
+/** Creates an returns an instance of the ooRexx <code>DateTime</code> class.
+*
+* @param context The RexxThreadContext to interact with ooRexx
+* @return a <code>DateTime</code> instance
+*/
 inline RexxStringObject GET_REXX_DATE_TIME_AS_REXX_STRING(RexxThreadContext *context)
 {
     RexxClassObject dtClz=context->FindClass("DATETIME");       // get the DateTime class
@@ -1257,6 +1379,13 @@ inline RexxStringObject GET_REXX_DATE_TIME_AS_REXX_STRING(RexxThreadContext *con
 
 // --------------------------------------------------------------------------------
     // convenience inline function to query the items in a given dimension
+/** Queries and returns the number of items in a given dimension in the Rexx array object.
+*
+* @param arrIdx the Rexx array object
+* @param index the dimension's index
+* @param context The RexxThreadContext to interact with ooRexx
+* @return the number of items in the given dimension
+*/
 inline size_t GET_UNMARSHAL_ARRAY_VALUE_AT_INDEX(RexxArrayObject arrIdx, int32_t index, RexxThreadContext *context)
 {
 
@@ -1283,17 +1412,29 @@ fprintf(stderr, "     /// GET_UNMARSHAL_ARRAY..., ArrayAt(index=[%d)=[%p]\n", in
 
 // --------------------------------------------------------------------------------
     // convenience inline function to set the index array to the desired value
+/** Sets a numerical value at the supplied index in the Rexx array object.
+*
+* @param arrIdx the Rexx array object
+* @param idx the index to store the value at
+* @param numVal the numeric value to be stored
+* @param context The RexxThreadContext to interact with ooRexx
+*/
 inline void SET_ARRAY_IDX(RexxArrayObject arrIdx, size_t idx, size_t numVal, RexxThreadContext *context)
 {
     RexxObjectPtr rop=context->StringSizeToObject(numVal);
     context->ArrayPut(arrIdx, rop, idx);
     context->ReleaseLocalReference(rop);
-
 }
 
 
 // --------------------------------------------------------------------------------
     // convenience inline function to initialize a new (sub) STRUCT_MARSHAL
+/** Initialize a <code>STRUCT_MARSHAL</code> structure with another one.
+*
+* @param pnewM pointer to a new <code>STRUCT_MARSHAL</code> structure
+* @param localSignature the new signature to use
+* @param pmarsh pointer to the existing (parent signature) <code>STRUCT_MARSHAL</code> structure
+*/
 inline void SET_NEW_STRUCT_MARSHAL (PSTRUCT_MARSHAL pnewM, char *localSignature, PSTRUCT_MARSHAL pmarsh)
 {
 
@@ -1323,6 +1464,14 @@ inline void SET_NEW_STRUCT_MARSHAL (PSTRUCT_MARSHAL pnewM, char *localSignature,
 
 // --------------------------------------------------------------------------------
 // main unmarshal() control
+/** Entry point for unmarshalling.
+*
+* @param iter the DBus iteration structure
+* @param typeCode the type code to use for unmarshalling
+* @param rxResult the Rexx result array
+* @param pmarsh the structure that controls unmarshalling
+* @return <code>true</code> if unmarshalling was carried out without errors, <code>false</code> else
+*/
 logical_t unmarshal(DBusMessageIter *iter, char typeCode, RexxArrayObject rxResult, PSTRUCT_MARSHAL pmarsh)
 {
 #ifdef DEBUG_MARSHAL
@@ -1849,6 +1998,16 @@ fprintf(stderr, ".... unmarshal() - 's', cursor now: [%lu], end-element: [%lu], 
 
 // --------------------------------------------------------------------------------
 // unmarshall an array
+/** Code to unmarshall a DBus array.
+*
+* @param iter the DBus iteration structure
+* @param level recursion level
+* @param rao the Rexx array to hold the converted values
+* @param arrIdx the Rexx array containing the index values to use
+* @param pmarsh the structure that controls unmarshalling
+* @return <code>true</code> if unmarshalling was carried out without errors, <code>false</code> else
+*
+*/
 logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject rao, RexxArrayObject arrIdx, PSTRUCT_MARSHAL pmarsh)
 {
 #ifdef DEBUG_ARRAY
@@ -2223,6 +2382,13 @@ logical_t unmarshalArray(DBusMessageIter *iter, size_t level, RexxArrayObject ra
 // -----------------------------------------------------------------------------------------------------
 // -----------------------------------------------------------------------------------------------------
 // unmarshall a dict
+/** Unmarshall a dictionary (a map).
+*
+* @param iter_array the DBus iteration structure
+* @param rxMap the Rexx directory object to hold the converted values
+* @param pmarsh the structure that controls unmarshalling
+* @return <code>true</code> if unmarshalling was carried out without errors, <code>false</code> else
+*/
 logical_t unmarshalDict(DBusMessageIter *iter_array, RexxDirectoryObject rxMap, PSTRUCT_MARSHAL pmarsh)
 {
 
@@ -2435,6 +2601,16 @@ logical_t unmarshalDict(DBusMessageIter *iter_array, RexxDirectoryObject rxMap, 
 // ---------------------------------------------------------------------------------------------------------
 // unmarshalStruct()
 // - expects: elementStart to point at one after opening '(' and elementEnd at one before closing ')' !
+/** Unmarshall a structure (elements stored in an array). Expects <code>elementStart</code> to point at one char
+*   after the structure opening char <code>'('</code> and <code>elementEnd</code> at one before the closing char
+*   <code>')'</code> in the <code>pmarsh</code> structure.
+*
+* @param iter the DBus iteration structure
+* @param rao the Rexx array object to hold the converted values
+* @param pmarsh the structure that controls unmarshalling
+* @return <code>true</code> if unmarshalling was carried out without errors, <code>false</code> else
+*/
+
 logical_t unmarshalStruct(DBusMessageIter *iter, RexxArrayObject rao, PSTRUCT_MARSHAL pmarsh)
 {
 
@@ -2493,7 +2669,13 @@ logical_t unmarshalStruct(DBusMessageIter *iter, RexxArrayObject rao, PSTRUCT_MA
 
 // -----------------------------------------------------------------------------------------------------
 // unmarshalVariant()
-// - expects: elementStart to point at one after opening '(' and elementEnd at one before closing ')' !
+/** Unmarshals a variant.
+*
+* @param iter the DBus iteration structure
+* @param rop the Rexx array object to hold the converted values
+* @param pmarsh the structure that controls unmarshalling
+* @return <code>true</code> if unmarshalling was carried out without errors, <code>false</code> else
+*/
 logical_t unmarshalVariant(DBusMessageIter *iter, RexxArrayObject rop, PSTRUCT_MARSHAL pmarsh)
 {
 
@@ -2532,6 +2714,15 @@ logical_t unmarshalVariant(DBusMessageIter *iter, RexxArrayObject rop, PSTRUCT_M
 
 
 // --------------------------------------------------------------------------------
+/** Entry point for marshalling.
+*
+* @param iter the DBus iteration structure
+* @param typeCode the type code to use for marshalling
+* @param rop the Rexx array containing the values to be marshalled
+* @param pmarsh the structure that controls marshalling
+* @return <code>true</code> if marshalling was carried out without errors, <code>false</code> else
+*/
+
 logical_t marshal(DBusMessageIter *iter, char typeCode, RexxObjectPtr rop, PSTRUCT_MARSHAL pmarsh)
 {
 #ifdef DEBUG_MARSHAL
@@ -3344,6 +3535,15 @@ fprintf(stderr, "%s: *** marshal(...): ??? switch' default: ??? typeCode=[%c], s
 
 // --------------------------------- helper function ---------------------------
 // marshal an array, can be a multidimensional array, hence recursive function
+/** Marsahll an array, can be a multidimensional array, hence a recursive function.
+*
+* @param iter the DBus iteration structure
+* @param level recursion level
+* @param anyRop a Rexx array object or a Rexx dictionary (Map) or a Rexx string
+* @param arrIdx the Rexx array index containing the values to be marshalled
+* @param pmarsh the structure that controls marshalling
+* @return <code>true</code> if marshalling was carried out without errors, <code>false</code> else
+*/
 logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop, RexxArrayObject arrIdx, PSTRUCT_MARSHAL pmarsh)
 {
 #ifdef DEBUG_ARRAY
@@ -3771,6 +3971,16 @@ fprintf(stderr, "    marshalArray(...): CLOSE container <--- <--- <---, signatur
 // -----------------------------------------------------------------------------------------------------
 // marshalDict()
 // - expects: elementStart to point at one after opening '(' and elementEnd at one before closing ')' !
+/** Marsahll a dictionary (MapCollection). Expects <code>elementStart</code> to point at one char after
+*              the opening <code>'('</code> char and <code>elementEnd</code> at one char before the
+*              closing <code>')'</code> char.
+*
+* @param iter the DBus iteration structure
+* @param rxMap a Rexx directory (MapCollection) object
+* @param pmarsh the structure that controls marshalling
+* @return <code>true</code> if marshalling was carried out without errors, <code>false</code> else
+*/
+
 logical_t marshalDict(DBusMessageIter *iter, RexxObjectPtr rxMap, PSTRUCT_MARSHAL pmarsh)
 {
 
@@ -3915,6 +4125,13 @@ logical_t marshalDict(DBusMessageIter *iter, RexxObjectPtr rxMap, PSTRUCT_MARSHA
 // ---------------------------------------------------------------------------------------------------------
 // marshalStruct()
 // - expects: elementStart to point at one after opening '(' and elementEnd at one before closing ')' !
+/** Marsahll a dictionary (MapCollection).
+*
+* @param iter the DBus iteration structure
+* @param rao a Rexx array containing the elements of the structure to be marshalled
+* @param pmarsh the structure that controls marshalling
+* @return <code>true</code> if marshalling was carried out without errors, <code>false</code> else
+*/
 logical_t marshalStruct(DBusMessageIter *iter, RexxArrayObject rao, PSTRUCT_MARSHAL pmarsh)
 {
 
@@ -4035,6 +4252,14 @@ logical_t marshalStruct(DBusMessageIter *iter, RexxArrayObject rao, PSTRUCT_MARS
 //             array -> "a*s", where "*" is dimension()
 //             OrderedCollection -> "as"
 //             MapCollection -> "a{ss}"
+/** Marsahll a variant type.
+*
+* @param iter the DBus iteration structure
+* @param rop a Rexx object to be marshalled
+* @param pmarsh the structure that controls marshalling
+* @return <code>true</code> if marshalling was carried out without errors, <code>false</code> else
+*/
+
 logical_t marshalVariant(DBusMessageIter *iter, RexxObjectPtr rop, PSTRUCT_MARSHAL pmarsh)
 {
 
@@ -4284,6 +4509,14 @@ logical_t marshalVariant(DBusMessageIter *iter, RexxObjectPtr rop, PSTRUCT_MARSH
 // --------------------------------- helper function ---------------------------
 // append arguments onto msg args
 // let the helper function do the work (and raise an error, if necessary)
+/** Append arguments onto the message arguments.
+*
+* @param dbusMsg the DBusMessage to work with
+* @param context the RexxThreadContext to interact with ooRexx
+* @param argUnmarshalAyAsString if <code>true</code> unmarshal byte arrays as Rexx strings
+* @param errorConditionText in case of an error the error text to use
+* @return Rexx array object containing the unmarshalled argument values
+*/
 RexxArrayObject helperUnmarshalMessageArgs( DBusMessage  *dbusMsg,       // DBUS message
                                        RexxThreadContext *context,       // allow callee to raise condition
                                        logical_t          argUnmarshalAyAsString,   // connection's attribute "unmarshalByteArrayAsString"
@@ -4388,6 +4621,16 @@ RexxArrayObject helperUnmarshalMessageArgs( DBusMessage  *dbusMsg,       // DBUS
 // -----------------------------------------------------------------------------------------------------
     // append arguments onto msg args
         // let the helper function do the work (and raise an error, if necessary)
+/** Append arguments onto the message arguments.
+*
+* @param dbusMsg the DBusMessage to work with
+* @param iter the DBus iteration structure
+* @param signature the signature to use for marshalling
+* @param neededNumberOfRexxArgs number of arguments (to marshal)
+* @param rexxArgs a Rexx array containing the arguments to marshal
+* @param context the RexxThreadContext to interact with ooRexx
+* @param errorConditionText in case of an error the error text to use
+*/
 void helperMarshalMessageArgs( DBusMessage      *dbusMsg,       // DBUS message
                               DBusMessageIter   *iter,          // DBUS args pointer
                               CSTRING            signature,     // signature for arguments, if any
@@ -4497,6 +4740,14 @@ void helperMarshalMessageArgs( DBusMessage      *dbusMsg,       // DBUS message
 
 // -----------------------------------------------------------------------
 // adds some information about the message
+/** Add DBus message related information to the supplied Rexx directory object which gets used as
+*   the <code>slotDir</code> argument.
+*
+* @param context the RexxThreadContext to interact with ooRexx
+* @param slotDir a Rexx directory object
+* @param dbusMsg the DBusMessage to work with
+* @param conn the DBus connection to use
+*/
 void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject slotDir, DBusMessage *dbusMsg, RexxObjectPtr conn)
 {
     const char   *str=NULL;
@@ -4659,6 +4910,12 @@ void helperCreateSlotDirEntries(RexxThreadContext *context, RexxDirectoryObject 
     //   executed in this very thread (otherwise libdbus does not work correctly, the reason for the
     //   major rewrite in July 2014)
     // - wrapped up as a Rexx method, hence easy to run it on a separate thread
+/** Set up and run a message loop for this connection instance, process received signals and received
+*   method calls to registeed Rexx server objects. The message loop will call <code>executeQueuedMessages()</code>
+*   to allow dispatching DBus messages in this message loop thread (libdbus messages must be received and
+*   sent in the same thread, otherwise runtime errors may occur). This method will be called from
+*   Rexx code which will create an own thread for it to run.
+*/
 RexxMethod2(RexxObjectPtr, DbusMessageLoop, CSELF, connPtr, OSELF, self)
 {
 #if defined (DEBUG_MESSAGELOOP) || defined (DEBUG_CONNECTION)
@@ -4724,7 +4981,6 @@ RexxMethod2(RexxObjectPtr, DbusMessageLoop, CSELF, connPtr, OSELF, self)
         // allow loop thread to be ended by Rexx, e.g. checking the status of the "active" attribute (if .false return from message loop)
     while (dbus_connection_read_write(conn,milliTimeout) )
     {
-
 #ifdef DEBUG_MESSAGELOOP
         if (++count>=limit)
         {
@@ -5825,6 +6081,14 @@ fprintf(stderr, "TICKER TICKER TICKER # 3\n");fflush(stderr);
 // -----------------------------------------------------------------------------------------------------
     // ============================================================================= //
     // send a signal message over the bus (a broadcast message)
+/** Send a signal (one-way broadcast) message over the bus.
+*
+* @param senderOjbectPath the object path of the sender DBus object
+* @param signalInterfaceName the interface name for the signal
+* @param signalName the signal's name
+* @param signature the signature for the signal's arguments
+* @param rexxArgs a Rexx array object containing the singal's arguments
+*/
 RexxMethod7(RexxObjectPtr, DbusBusSignalMessage, CSTRING,         senderObjectPath,
                                                  CSTRING,         signalInterfaceName,
                                                  CSTRING,         signalName,
@@ -5996,6 +6260,17 @@ RexxMethod7(RexxObjectPtr, DbusBusSignalMessage, CSTRING,         senderObjectPa
     // ============================================================================= //
 // call a method
 //      use strict arg nixi, busName, receiverObjectPath, interfaceName="", methodName, signature="", ...
+/** Sending a DBus message.
+*
+* @param busName the bus name to use for the message
+* @param targetObjectPath the target object path to send the message to
+* @param callInterfaceName the interface name for the message
+* @param callMemberName the member name in the interface (i.e. the message name)
+* @param replySignature the replySignature for this message
+* @param argSignature the signature for the arguments that get sent with this message
+* @param rexxArgs the Rexx array carrying the arguments for the message
+* @return a Rexx object representing the result of the message, if any
+*/
 RexxMethod9(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
                                                CSTRING,         targetObjectPath,
                                                CSTRING,         callInterfaceName,
@@ -6392,7 +6667,11 @@ RexxMethod9(RexxObjectPtr, DbusBusCallMessage, CSTRING,         busName,
     // ============================================================================= //
 // --------------------------- server & connection related ---------------------------
 // -----------------------------------------------------------------------------------
-        // close a private connection
+        // open a private connection
+/** Oben a private connection to the supplied address.
+*
+* @param address the address to connect to
+*/
 RexxMethod1(RexxObjectPtr, DbusNativeConnectionOpenPrivate, CSTRING, address)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
@@ -6428,6 +6707,8 @@ RexxMethod1(RexxObjectPtr, DbusNativeConnectionOpenPrivate, CSTRING, address)
 
 // -----------------------------------------------------------------------------------
         // close a private connection
+/** Close a connection.
+*/
 RexxMethod1(RexxObjectPtr, DbusNativeConnectionClose, CSELF, connPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_CONNECTION)
@@ -6455,6 +6736,12 @@ RexxMethod1(RexxObjectPtr, DbusNativeConnectionClose, CSELF, connPtr)
 // callbacks needed for dbus_server, which gets invoked if a new connection is attempted ...
 
 // --------------------------------------------------------------------------------
+/** Callback for a (private) DBus server, that gets invoked whenever a new connection is made to the DBus server.
+*
+* @param server the DBusServer to which a connection is attempted
+* @param conn   the connection to the client
+* @param data   the data structure for the callback function to e.g. get access to a RexxThreadContext to interact with ooRexx
+*/
 void new_connection_callback (DBusServer *server, DBusConnection *conn, void *data) // callback on new connection
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_OOREXX_FIND_CLASS) || defined (DEBUG_CONNECTION)
@@ -6486,8 +6773,17 @@ void new_connection_callback (DBusServer *server, DBusConnection *conn, void *da
     RexxStringObject rsoAddrWithDT=(RexxStringObject) rtc->SendMessage1(rsoAddr, "||", rsoDT);
 
 
+#ifdef DEBUG_HIT_ENTER_TO_CONTINUE
+    fprintf(stderr, "... connection_callback(...): about to do FindClass(\"DBUS\")...\n");fflush(stderr);
+    RgfDebugHitEnterToContinue();
+#endif
         // create an instance of DBus (a connection)
     RexxClassObject      rco=rtc->FindClass("DBUS");    // get class
+
+#ifdef DEBUG_HIT_ENTER_TO_CONTINUE
+    fprintf(stderr, "... connection_callback(...): after doing FindClass(\"DBUS\"), rco=[%p]\n",rco);fflush(stderr);
+    RgfDebugHitEnterToContinue();
+#endif
 
 
 #if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_OOREXX_FIND_CLASS)
@@ -6529,6 +6825,8 @@ void new_connection_callback (DBusServer *server, DBusConnection *conn, void *da
 
 
 // --------------------------------------------------------------------------------
+/** The add watch callback function, cf. DBus documentation.
+*/
 dbus_bool_t add_watch_callback (DBusWatch *watch, void *data) // callback on new connection
 {
 #if defined (DEBUG_METHODS)  || defined (DEBUG_PRIVATE_SERVER)
@@ -6560,6 +6858,8 @@ dbus_bool_t add_watch_callback (DBusWatch *watch, void *data) // callback on new
 
 
 // --------------------------------------------------------------------------------
+/** The remove watch callback function, cf. DBus documentation.
+*/
 void remove_watch_callback (DBusWatch *watch, void *data) // callback on new connection
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER)
@@ -6618,6 +6918,8 @@ void remove_watch_callback (DBusWatch *watch, void *data) // callback on new con
 
 
 // --------------------------------------------------------------------------------
+/** The add timeout callback function, cf. DBus documentation.
+*/
 dbus_bool_t add_timeout_callback (DBusTimeout *timeout, void *data) // callback on new connection
 {
 #if defined (DEBUG_TIMEOUTLOOP) || defined (DEBUG_METHODS)
@@ -6656,6 +6958,8 @@ dbus_bool_t add_timeout_callback (DBusTimeout *timeout, void *data) // callback 
 
 
 // --------------------------------------------------------------------------------
+/** The remove timeout callback function, cf. DBus documentation.
+*/
 void remove_timeout_callback (DBusTimeout *timeout, void *data) // callback on new connection
 {
 #if defined (DEBUG_TIMEOUTLOOP) || defined (DEBUG_METHODS)
@@ -6809,6 +7113,10 @@ RexxMethod3(RexxObjectPtr, DbusServerTimeoutLoop, RexxObjectPtr, timeoutDataPoin
 
 // --------------------------------------------------------------------------------
 // startup a DBus server instance
+/** Startup a DBus server instance, will set up watch and timeout callbacks.
+*
+* @param address to serve
+*/
 RexxMethod2(RexxObjectPtr, DbusNativeServerStartup,
                                   CSTRING,  address,
                                   OSELF,    self)
@@ -6928,6 +7236,8 @@ RexxMethod2(RexxObjectPtr, DbusNativeServerStartup,
     // set up and run a message loop for this connection instance
     // processes signals and method calls to registered ooRexx server objects
     // wrapped up as a Rexx method, hence easy to run it on a separate thread
+/** Set up and run the server watch loop.
+*/
 RexxMethod2(RexxObjectPtr, DbusServerWatchLoop, CSELF, connPtr, OSELF, self)
 {
 #if defined (DEBUG_WATCHLOOP) || defined (DEBUG_CONNECTION)
@@ -7136,6 +7446,10 @@ RexxMethod2(RexxObjectPtr, DbusServerWatchLoop, CSELF, connPtr, OSELF, self)
 
 // --------------------------------------------------------------------------------
         // test whether server instance is active
+/** Determines whether server is active.
+*
+* @return <code>true</code>, if server is active, <code>false</code> else
+*/
 RexxMethod1(logical_t, DbusNativeServerIsActive, CSELF, serverPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_CONNECTION)
@@ -7150,6 +7464,10 @@ RexxMethod1(logical_t, DbusNativeServerIsActive, CSELF, serverPtr)
 
 // --------------------------------------------------------------------------------
         // get and return the server's id
+/** Get server's id.
+*
+* @return server's id
+*/
 RexxMethod1(RexxObjectPtr, DbusNativeServerGetId, CSELF, serverPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_CONNECTION)
@@ -7177,6 +7495,10 @@ RexxMethod1(RexxObjectPtr, DbusNativeServerGetId, CSELF, serverPtr)
 
 // --------------------------------------------------------------------------------
         // get and return server's address
+/** Get server's address.
+*
+* @return server's address
+*/
 RexxMethod1(RexxObjectPtr, DbusNativeServerGetAddress, CSELF, serverPtr)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_CONNECTION)
@@ -7204,6 +7526,8 @@ RexxMethod1(RexxObjectPtr, DbusNativeServerGetAddress, CSELF, serverPtr)
 
 // --------------------------------------------------------------------------------
         // disconnect the server
+/** Disconnect the server, no clients can be served anymore.
+*/
 RexxMethod2(RexxObjectPtr, DbusNativeServerDisconnect, CSELF, serverPtr, OSELF, self)
 {
 #if defined (DEBUG_METHODS) || defined (DEBUG_PRIVATE_SERVER) || defined (DEBUG_CONNECTION)
