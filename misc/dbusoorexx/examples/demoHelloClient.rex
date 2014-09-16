@@ -61,7 +61,8 @@ call dump2 o~Hello4, "o~Hello4"
 
 if service>"RexxHelloService1" then
 do
-   originalValue=o~info
+  if (service\="RexxHelloService4") then do   --sm: changed to use a new service
+  originalValue=o~info
    say "This service has 'Info' and 'SetInfo' property methods:"
    say "   Querying 'Info' property:" originalValue
    str="*** From demoHelloClient at" pp2(.dateTime~new) "***"
@@ -81,10 +82,23 @@ do
       say "   Querying 'Info' property:" o~info
       say "---"
    end
+   end
+else do                                    --sm: demonstrates Get and Set
+      say "demonstrates how to use Get and Set"
+      say "   Querying 'Info' property with o~info:" o~info
+      say "   Setting 'Info' property with o~info='test'" 
+      o~info='test'
+      say "   Querying 'Info' property with o~info:" o~info
+      say "   Setting 'Info' property using 'Set(interface, info, anothervalue)' "
+      say "   Could also use o~Set(interface, info, dbus.box('s','another value'))"
+      o~Set("org.rexxla.oorexx.demo.Hello", "Info", dbus.box("s","another value"))
+      say "   Querying 'Info' property with Get(interface, 'Info'):" -
+      o~Get('org.rexxla.oorexx.demo.Hello', 'Info')
+      say "---"
+   end
 end
 
 conn~close           -- close, thereby terminating message loop thread
-
 
 ::requires "dbus.cls"         -- get dbus support for ooRexx
 ::requires "rgf_util2.rex"    -- installed with the BSF4ooRexx package

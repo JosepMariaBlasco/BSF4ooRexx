@@ -51,7 +51,10 @@ do
    exit -1
 end
 
-conn~serviceObject("add", objectPath, .HelloRexxServer~new)
+-- necessary for DBus debuggers else services are not visible
+ conn~serviceObject("add", objectPath, .HelloRexxServer~new)
+ -- as class HelloRexxServer is not a subclass of the class DBusService, explicitly create and store the introspect path maker
+ conn~serviceObject("Add", "default", .IDBusPathMaker~new(objectPath))
 
 say "sleeping" timeout "secs ..."
 call syssleep timeout

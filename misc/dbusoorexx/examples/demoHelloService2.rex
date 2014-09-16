@@ -54,6 +54,7 @@ end
 
 o=.HelloRexxServer~new
 conn~serviceObject("add", objectPath, o)
+.IDBusPathMaker~publishAllServiceObjects(conn)  -- necessary for DBus debuggers
 say "o="pp2(o)
 say "-- ** -- "~copies(5)
 o~service.sendSignal(objectPath, interface, "Start", "started at:" .dateTime~new~string)
@@ -105,10 +106,10 @@ halt:
         '      <arg name="result" direction="out" type="a{ss}"/>                       '  -
         '    </method>                                                                 '  -
         '    <signal name="Start">                                                     '  -
-        '      <arg name="result" type="s">                                            '  -
+        '      <arg name="result" type="s"/>                                            '  -
         '    </signal>                                                                 '  -
         '    <signal name="Exit">                                                      '  -
-        '      <arg name="result" type="s">                                            '  -
+        '      <arg name="result" type="s"/>                                            '  -
         '    </signal>                                                                 '  -
         '    <property name="ServiceName" access="read"  type="s"/>                    '  -
         '    <property name="Info" access="read"  type="s"/>                           '  -

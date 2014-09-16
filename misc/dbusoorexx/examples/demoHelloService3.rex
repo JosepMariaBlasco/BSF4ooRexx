@@ -56,7 +56,7 @@ o=.HelloRexxServer~new
 conn~serviceObject("add", objectPath, o)
 say "o="pp2(o)
 say "-- ** -- "~copies(5)
-
+.IDBusPathMaker~publishAllServiceObjects(conn)     -- necessary for DBus debuggers
 o~service.sendSignal(objectPath, interface, "Start", "started at:" .dateTime~new~string)
 say "sleeping" timeout "secs ..."
 call syssleep timeout
@@ -67,12 +67,10 @@ halt:
    say "after closing connection (stopping message loop) ..."
    exit -1
 
-
 ::requires "dbus.cls"         -- get dbus support for ooRexx
 ::requires "rgf_util2.rex"    -- installed with the BSF4ooRexx package
 
 ::class HelloRexxServer subclass DBusServiceObject
-
 ::method init           -- constructor
   expose info
   use arg objectPath
@@ -119,4 +117,3 @@ halt:
   dict~zwei="two"
   dict~drei="three"
   return dict
-

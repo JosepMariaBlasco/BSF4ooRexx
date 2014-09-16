@@ -23,10 +23,10 @@
       <arg name="result" direction="out" type="a{ss}"/>
     </method>
     <signal name="Start">
-      <arg name="result" type="s">
+      <arg name="result" type="s"/>
     </signal>
     <signal name="Exit">
-      <arg name="result" type="s">
+      <arg name="result" type="s"/>
     </signal>
      <property name="ServiceName" access="read"  type="s"/>
     <property name="Info" access="readwrite"  type="s"/>
