@@ -93,7 +93,13 @@ do entry over get_java_props()  /* get and process all available Java properties
    if length(value)>ps_length, pos(path_separator, value)>1 then  -- path-value, if so break it up to ease reading
       tmp=tmp tab break_up2(i, key, value, path_separator) crlf
    else
-      tmp=tmp tab make_tr2(i, key, value) crlf
+   do
+      select
+      when value="" then   tmp=tmp tab make_tr2(i, key, escape('"'value'" <empty string>')) crlf
+      when value=.nil then tmp=tmp tab make_tr2(i, key, escape('['.nil'] <null>')) crlf
+      otherwise            tmp=tmp tab make_tr2(i, key, escape(value)) crlf
+      end
+   end
 
    i+=1
 end
@@ -107,8 +113,7 @@ call stream fn, "C", "CLOSE"
 exit
 
 
-
-break_up2: procedure expose crlf tab
+break_up2: procedure expose crlf tab   /* break up path information to make the Java property easier comprehensible */
    parse arg idx, key, path, separator
    tmp=""
    do while path <> ""
@@ -122,14 +127,25 @@ break_up2: procedure expose crlf tab
    return "<tr><td style='text-align: right;'>" idx "</td>" "<th style='text-align:left;' width='30%'>" key "</th>" "<td>" pp(tmp) "</td> </tr>"
 
 
-make_tr2: procedure expose crlf tab
+make_tr2: procedure expose crlf tab    /* create a regular table row for the Java property   */
    parse arg idx, key, value
    return "<tr><td style='text-align: right;'>" idx "<th style='text-align:left;' width='30%'>" key "<td>" pp(value) "</td> </tr>"
 
 
-::routine pp
+::routine pp               /* emphasize the value HTML-style   */
    tag="kbd"
    return "<"tag">"arg(1)"</"tag">"
+
+
+::routine escape           /* escape chars <, >, ", ', &       */
+  parse arg val
+
+  val=changestr('&', val, '&amp;')
+  val=changestr('>', val, '&gt;')
+  val=changestr('<', val, '&lt;')
+  val=changestr('"', val, '&quot;')
+  val=changestr("'", val, '&apos;')
+  return val
 
 
 ::routine get_java_props    -- get properties, encode them in the array, sort them
@@ -156,13 +172,9 @@ decode_ctl_chars: procedure expose ctl_chars
       pos=verify(val, ctl_chars, "Match")       /* get position of ctl_char in string  */
       if pos=0 then leave
       if pos=1 then
-      do
           tmp=tmp || "[0x"||c2x(substr(val, pos, 1))||"]"
-      end
       else
-      do
           tmp=tmp || substr(val, 1, pos-1) || "[0x"||c2x(substr(val, pos, 1))||"]"
-      end
       val=substr(val, pos+1)
    end
    if tmp ="" then return val   /* no ctl_chars found, return value   */
