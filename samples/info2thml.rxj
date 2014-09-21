@@ -1,0 +1,171 @@
+#!/usr/bin/rexx
+/*
+   author:  Rony G. Flatscher
+   date:    2006-12-13
+   changed: 2014-09-21, rgf   - based on "BSF4Rexx_info2html.rxj", originally developed for BSF4Rexx
+                              - rewritten for BSF4ooRexx, camouflaging Java as ooRexx, making coding
+                                easier
+   purpose: create a HTML-rendering containing the settings in effect for BSF4ooRexx (Rexx, BSF4ooRexx, Java)
+   usage:   rexx[j] info2html.rxj
+
+   license:
+
+   ------------------------ Apache Version 2.0 license -------------------------
+      Copyright 2006-2014 Rony G. Flatscher
+
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
+
+          http://www.apache.org/licenses/LICENSE-2.0
+
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+   -----------------------------------------------------------------------------
+*/
+
+crlf="0d0a"x         /* CR-LF character      */
+tab="09"x            /* TAB character        */
+runDate=.DateTime~new~string
+tmp=    "<html>" crlf || "<head> <title>BSF4ooRexx Version Information as of" runDate "</title> </head>" crlf crlf
+tmp=tmp"<body>" crlf
+tmp=tmp "<table border cellpadding='3px' width='100%'>" crlf
+tmp=tmp "<tr><th colspan='2' width='100%'>" "BSF4ooRexx Installation Information" "(as of:" runDate  ")</th> </tr>" crlf crlf
+tmp=tmp "</table>" crlf
+tmp=tmp crlf "<br/>" crlf
+
+
+parse version version
+parse source . . thisFile
+thisFileName=filespec("Name",thisFile)
+parse var thisFileName thisFileName "." ext
+
+tmp=tmp "<table border cellpadding='3px' align='center'>" crlf
+tmp=tmp crlf crlf "<tr><th colspan='2'> Information on BSF4ooRexx </th> </tr>" crlf
+tmp=tmp tab "<tr><th style='text-align: left;'>" 'Rexx interpreter: ' "</th> <td>" pp(version)      "</td> </tr>" crlf
+
+tmp=tmp tab "<tr><th style='text-align: left;'>" 'BSF4ooRexx (DLL/so):' "</th> <td>" pp(bsfVersion()) "</td> </tr>" crlf
+tmp=tmp tab "<tr><th style='text-align: left;'>" 'Java Rexx engine: ' "</th> <td>" pp(bsf.wrap(bsf("version"))) "</td> </tr>" crlf crlf
+
+versions=bsf.wrap(bsf('version', 'all'))      -- get all version information
+if versions<>"" then
+do
+   tmp = tmp tab "<tr><th style='text-align: left;'> BSF('version', 'all'): </th> <td>" crlf
+   tmp2= tab tab "<table>" crlf
+   do while versions<>""
+      parse var versions clazz ver versions
+      tmp2=tmp2 tab tab tab "<tr>" "<td>" pp(clazz) "</td> <td>" pp(ver) "</td> </tr>" crlf
+   end
+   tmp2= tmp2 tab tab "</table>" crlf
+   tmp = tmp tmp2 tab tab "</td> </tr>" crlf crlf
+end
+
+text="by Rexx (which dynamically loaded Java)"
+if BsfInvokedBy()=1 then text="by Java (which dynamically loaded Rexx)"
+tmp=tmp tab "<tr><th style='text-align: left;'>" "Rexx script invocation:" "</th>"
+
+tmp=tmp "<td>" pp(text) crlf crlf
+
+   /* external Rexx functions registered (depends whether script was run via Java or directly via Rexx) */
+call BsfQueryRegisteredFunctions "s."
+tmp=tmp tab tab "<br/> <hr/> <em>" "The following BSF-functions are registered with Rexx:" "</em> <br/>" crlf
+tmp=tmp crlf tab tab "<ol>" crlf
+do i=1 to s.0
+   tmp=tmp tab tab tab "<li>" pp(s.i) "</li>" crlf
+end
+tmp=tmp tab tab "</ol>" "</td> </tr>"  crlf
+tmp=tmp "</table>" crlf crlf "<br/>" crlf crlf
+
+
+   /* Java infos  */
+path_separator =.java.lang.System~getProperty("path.separator")
+ps_length=length(path_separator)
+
+tmp=tmp "<table border cellpadding='3px' align='center'>" crlf
+tmp=tmp "<tr><th colspan='3'> Information on Java </th> </tr>"
+
+i=1
+do entry over get_java_props()  /* get and process all available Java properties     */
+   parse var entry . (tab) key (tab) value
+   if length(value)>ps_length, pos(path_separator, value)>1 then  -- path-value, if so break it up to ease reading
+      tmp=tmp tab break_up2(i, key, value, path_separator) crlf
+   else
+      tmp=tmp tab make_tr2(i, key, value) crlf
+
+   i+=1
+end
+
+tmp=tmp "</table>" crlf crlf"</body>"crlf"</html>"
+
+fn=thisFileName"_as_of_"runDate~translate("-",":") || ".html"
+say "Writing Java properties into file:" fn "..."
+call lineout fn, tmp
+call stream fn, "C", "CLOSE"
+exit
+
+
+
+break_up2: procedure expose crlf tab
+   parse arg idx, key, path, separator
+   tmp=""
+   do while path <> ""
+      if pos(separator, path) > 0 then trailer=separator
+                                  else trailer=""
+      parse var path junk (separator) path
+      tmp=tmp tab tab tab "["pp(junk)"]" trailer
+      if path <> "" then tmp=tmp "<br/>"
+      if path<>"" then tmp=tmp crlf
+   end
+   return "<tr><td style='text-align: right;'>" idx "</td>" "<th style='text-align:left;' width='30%'>" key "</th>" "<td>" pp(tmp) "</td> </tr>"
+
+
+make_tr2: procedure expose crlf tab
+   parse arg idx, key, value
+   return "<tr><td style='text-align: right;'>" idx "<th style='text-align:left;' width='30%'>" key "<td>" pp(value) "</td> </tr>"
+
+
+::routine pp
+   tag="kbd"
+   return "<"tag">"arg(1)"</"tag">"
+
+
+::routine get_java_props    -- get properties, encode them in the array, sort them
+   tab="09"x
+   ctl_chars=xrange("0"x, "1f"x) || "FF"x /* determine chars which should get escaped  */
+   arr=.array~new       -- array to receive the encoded/escaped Java porperties
+
+   props=.java.lang.System~getProperties  /* get all Java properties */
+   prop_names=props~propertyNames         /* get all property names  */
+   do while prop_names~hasMoreElements    /* iterate over keys       */
+      key=prop_names~nextElement          /* get next key            */
+      val=props~getProperty(key)          /* get value            */
+      arr~append(translate(key) || tab || key || tab || decode_ctl_chars(val))
+   end
+   arr~sortWith(.CaselessComparator~new)  /* sort case independent by property name    */
+   return arr
+
+
+decode_ctl_chars: procedure expose ctl_chars
+   use arg val
+
+   tmp=""
+   do forever
+      pos=verify(val, ctl_chars, "Match")       /* get position of ctl_char in string  */
+      if pos=0 then leave
+      if pos=1 then
+      do
+          tmp=tmp || "[0x"||c2x(substr(val, pos, 1))||"]"
+      end
+      else
+      do
+          tmp=tmp || substr(val, 1, pos-1) || "[0x"||c2x(substr(val, pos, 1))||"]"
+      end
+      val=substr(val, pos+1)
+   end
+   if tmp ="" then return val   /* no ctl_chars found, return value   */
+   return tmp || val
+
+::requires "BSF.CLS"    -- get Java support
