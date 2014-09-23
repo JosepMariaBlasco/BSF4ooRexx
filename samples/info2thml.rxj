@@ -5,6 +5,7 @@
    changed: 2014-09-21, rgf   - based on "BSF4Rexx_info2html.rxj", originally developed for BSF4Rexx
                               - rewritten for BSF4ooRexx, camouflaging Java as ooRexx, making coding
                                 easier
+            2014-09-23, rgf   - add version info for BSF.CLS
    purpose: create a HTML-rendering containing the settings in effect for BSF4ooRexx (Rexx, BSF4ooRexx, Java)
    usage:   rexx[j] info2html.rxj
 
@@ -50,6 +51,8 @@ tmp=tmp tab "<tr><th style='text-align: left;'>" 'Rexx interpreter: ' "</th> <td
 tmp=tmp tab "<tr><th style='text-align: left;'>" 'BSF4ooRexx (DLL/so):' "</th> <td>" pp(bsfVersion()) "</td> </tr>" crlf
 tmp=tmp tab "<tr><th style='text-align: left;'>" 'Java Rexx engine: ' "</th> <td>" pp(bsf.wrap(bsf("version"))) "</td> </tr>" crlf crlf
 
+tmp=tmp tab "<tr><th style='text-align: left;'>" 'Package BSF.CLS: ' "</th> <td>" pp(.bsf4rexx~version)   "</td> </tr>" crlf
+
 versions=bsf.wrap(bsf('version', 'all'))      -- get all version information
 if versions<>"" then
 do
@@ -63,8 +66,8 @@ do
    tmp = tmp tmp2 tab tab "</td> </tr>" crlf crlf
 end
 
-text="by Rexx (which dynamically loaded Java)"
-if BsfInvokedBy()=1 then text="by Java (which dynamically loaded Rexx)"
+text="by <em style='font-weight: bold;'>Rexx</em> (which dynamically loaded Java)"
+if BsfInvokedBy()=1 then text="by <em style='font-weight: bold;'>Java</em> (which dynamically loaded Rexx)"
 tmp=tmp tab "<tr><th style='text-align: left;'>" "Rexx script invocation:" "</th>"
 
 tmp=tmp "<td>" pp(text) crlf crlf
@@ -121,8 +124,7 @@ break_up2: procedure expose crlf tab   /* break up path information to make the 
                                   else trailer=""
       parse var path junk (separator) path
       tmp=tmp tab tab tab "["pp(junk)"]" trailer
-      if path <> "" then tmp=tmp "<br/>"
-      if path<>"" then tmp=tmp crlf
+      if path<>"" then tmp=tmp "<br/>" crlf
    end
    return "<tr><td style='text-align: right;'>" idx "</td>" "<th style='text-align:left;' width='30%'>" key "</th>" "<td>" pp(tmp) "</td> </tr>"
 
