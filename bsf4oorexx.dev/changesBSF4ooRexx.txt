@@ -1,3 +1,10 @@
+-------------------------------------- 2014-09-21 ----------------------------------
+
+- samples/info2thml.rxj
+
+        - new sample that demonstrates how to gather version information from ooRexx,
+          BSF4ooRexx and Java and rendering and saving that information in a HTML file
+
 -------------------------------------- 2014-08-30 ----------------------------------
 
 - org.rexxla.bsf.engines.rexx.RexxExtendClass.java (asm)

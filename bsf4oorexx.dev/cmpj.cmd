@@ -28,6 +28,8 @@ set path2engine=%path2root%\org\rexxla\bsf\engines\rexx
 
 set path2rexxlaBsf=%path2root%\org\rexxla\bsf
 
+rem rgf, 20140927: make sure that the extension jar is not picked up (if bsf4oorexx-jar got installed there)
+set javacDefines=-Djava.ext.dirs=""
 set target=-target 1.4
 set source=-source 1.4
 
@@ -76,29 +78,29 @@ copy %javaSrc%\RexxDispatcher.java            %path2rexxlaBsf%
 
 
 @rem 2010-04-17
-javac %source% %target% %javaSrc%\ArrayWrapper.java                 && copy %javaSrc%\ArrayWrapper*               %path2engine%
-javac %source% %target% %javaSrc%\EnumerationWrapper.java           && copy %javaSrc%\EnumerationWrapper*         %path2engine%
-javac %source% %target% %javaSrc%\Java4Rexx.java                    && copy %javaSrc%\Java4Rexx*                  %path2engine%
-javac %source% %target% %javaSrc%\RexxAndJava.java                  && copy %javaSrc%\RexxAndJava*                %path2engine%
-javac %source% %target% %javaSrc%\RexxEngine.java                   && copy %javaSrc%\RexxEngine*                 %path2engine%
-javac %source% %target% %javaSrc%\RexxException.java                && copy %javaSrc%\RexxException*              %path2engine%
-javac %source% %target% %javaSrc%\RexxProxy.java                    && copy %javaSrc%\RexxProxy*                  %path2engine%
-javac %source% %target% %javaSrc%\Supplier.java                     && copy %javaSrc%\Supplier*                   %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\ArrayWrapper.java              && copy %javaSrc%\ArrayWrapper*               %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\EnumerationWrapper.java        && copy %javaSrc%\EnumerationWrapper*         %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\Java4Rexx.java                 && copy %javaSrc%\Java4Rexx*                  %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\RexxAndJava.java               && copy %javaSrc%\RexxAndJava*                %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\RexxEngine.java                && copy %javaSrc%\RexxEngine*                 %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\RexxException.java             && copy %javaSrc%\RexxException*              %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\RexxProxy.java                 && copy %javaSrc%\RexxProxy*                  %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\Supplier.java                  && copy %javaSrc%\Supplier*                   %path2engine%
 
 @rem 2009-07-31
-javac %source% %target% %javaSrc%\RexxExtendClass.java              && copy %javaSrc%\RexxExtendClass*            %path2engine% && copy %javaSrc%\MethodForSuperData.class  %path2engine% && copy %javaSrc%\TransformationData.class  %path2engine%
-javac %source% %target% %javaSrc%\RexxExtendingClassLoader.java     && copy %javaSrc%\RexxExtendingClassLoader*   %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\RexxExtendClass.java           && copy %javaSrc%\RexxExtendClass*            %path2engine% && copy %javaSrc%\MethodForSuperData.class  %path2engine% && copy %javaSrc%\TransformationData.class  %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\RexxExtendingClassLoader.java  && copy %javaSrc%\RexxExtendingClassLoader*   %path2engine%
 
-javac %source% %target% %javaSrc%\RexxDispatcher.java               && copy %javaSrc%\RexxDispatcher*             %path2rexxlaBsf%
-
-@rem 2010-04-17
-javac %source% %target% %javaSrc%\ProxiedJavaClassTool.java         && copy %javaSrc%\ProxiedJavaClassTool*       %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\RexxDispatcher.java            && copy %javaSrc%\RexxDispatcher*             %path2rexxlaBsf%
 
 @rem 2010-04-17
-javac %source% %target% %javaSrc%\RexxHandler.java                  && copy %javaSrc%\RexxHandler*                %path2engine%
-javac %source% %target% %javaSrc%\RexxExitHandler.java              && copy %javaSrc%\RexxExitHandler*            %path2engine%
-javac %source% %target% %javaSrc%\RexxCommandHandler.java           && copy %javaSrc%\RexxCommandHandler*         %path2engine%
-javac %source% %target% %javaSrc%\RexxConfiguration.java            && copy %javaSrc%\RexxConfiguration*          %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\ProxiedJavaClassTool.java      && copy %javaSrc%\ProxiedJavaClassTool*       %path2engine%
+
+@rem 2010-04-17
+javac %javacDefines% %source% %target% %javaSrc%\RexxHandler.java               && copy %javaSrc%\RexxHandler*                %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\RexxExitHandler.java           && copy %javaSrc%\RexxExitHandler*            %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\RexxCommandHandler.java        && copy %javaSrc%\RexxCommandHandler*         %path2engine%
+javac %javacDefines% %source% %target% %javaSrc%\RexxConfiguration.java         && copy %javaSrc%\RexxConfiguration*          %path2engine%
 
 
 endlocal

@@ -109,7 +109,7 @@ import org.apache.bsf.BSFException;
  * to explicitly invoke masked methods in the super (extended) class.
  *
 * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2009, 2013 Rony G. Flatscher
+ *    Copyright (C) 2009, 2014 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -125,11 +125,14 @@ import org.apache.bsf.BSFException;
  * ----------------------------------------------------------------------------- </pre>
  *
  * @author Rony G. Flatscher (<a href="http://www.wu.ac.at">WU Vienna </a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
- * @version 1.1
+ * @version 1.2
  * @since   2009-07-29
  */
 
  /*
+    2014-08-30, rgf: - subclasses are allowed to access protected methods in superclasses,
+                       adjust for this
+
     2013-01-03, rgf: - fixed a bug when extending an abstract class that possesses unimplemented
                        interface methods like javax.swing.AbstractAction; the fix now correctly
                        implements any declared abstract methods from interfaces (including any
@@ -597,7 +600,9 @@ if (bDebugMethodVisitor) System.err.println("\tNOT PROCESSING! (not abstract)");
             return null;
         }
 
-        if ((access & ACC_PUBLIC)==0)       // don't process non-public methods
+        // rgf, 20140830: allow overriding protected methods which are accessible from subclasses
+        // if ((access & ACC_PUBLIC)==0)       // don't process non-public methods
+        if ((access & (ACC_PUBLIC | ACC_PROTECTED ))==0)       // don't process non-public/non-protected methods
         {
 
 if (bDebugMethodVisitor) System.err.println("\tNOT PROCESSING! (not public)");
@@ -619,6 +624,19 @@ if (bDebugMethodVisitor) System.err.println("\tNOT PROCESSING! (class initialize
 
         // make sure ACC_SYNCHRONIZED and ACC_STRICT ("strictfp") get removed
         tranData.newMethodAccess= (access & ~(ACC_SYNCHRONIZED|ACC_STRICT));
+
+        // rgf, 20140830: allow overriding protected methods which are accessible from subclasses
+        //                turn protected to public flag in extended class
+        if ((access & ACC_PROTECTED)!=0)
+        {
+            // tranData.newMethodAccess~=ACC_PROTECTED;    // remove protected flag
+            // tranData.newMethodAccess|=ACC_PUBLIC;       // add public flag
+
+                // remove protected flag, add public flag
+            tranData.newMethodAccess= (tranData.newMethodAccess & ~ACC_PROTECTED) | ACC_PUBLIC;
+
+        }
+
 
         tranData.isMethodStatic     =((access & ACC_STATIC)!=0);
         tranData.isMethodConstructor=name.equals("<init>");

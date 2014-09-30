@@ -543,6 +543,10 @@ cmd.eCopy cmd.eTestScriptName ".." ">" cmd.eNullDevice   /* copy rexxj.{sh|cm} t
 
 call createEnvironmentScript  /* Windows probably needs this script        */
 
+-- TODO: ---rgf: 20140921: define a switch (in .local?) that determines whether to install into extension
+--                         (java.ext.dirs)
+-- call createInstallScript4javaExtension   /* also creates the matching uninstall script      */
+-- or:
 call createInstallScript      /* new on 2008-05-17, ---rgf
                                  Windows: will add environment values to registry,
                                  Linux:   will add the execution of setEnvironment4BSF4Rexx.sh to ~/bash.rc

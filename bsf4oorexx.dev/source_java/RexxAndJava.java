@@ -5764,6 +5764,7 @@ if (bDebug)  if (cl==Character.class) {System.err.println("\tcharValue="+((Chara
 
        if (cl==String.class)
        {
+// TODO: ---rgf, 20140927 if we want to return a reference to the Java string object, we need to add code here
           return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+((String) o);
        }
 

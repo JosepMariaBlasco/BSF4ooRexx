@@ -1,3 +1,4 @@
+@echo off
 @rem 2005-01-17, start,  Rony G. Flatscher
 @rem 2009-10-20, overhauled for BSF4ooRexx
 @rem 2010-07-24, added 'information' folder to regular installation with an intro to ooRexx, plus docs for rgf_util2.rex
@@ -25,9 +26,9 @@ set CLASSPATH=%CLASSPATH%;D:\Programme\OpenOffice.org 3\program\;D:\Programme\Op
 
 
 
-set releaseDate=20140526
-set runDate=20140518
-set doc_date=2014-05-18
+set releaseDate=20140903
+set runDate=20140903
+set doc_date=2014-09-03
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
