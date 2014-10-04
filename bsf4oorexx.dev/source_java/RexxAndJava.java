@@ -3077,32 +3077,6 @@ if (bDebug)
                              return makeString4Rexx(bean.value);             // return whatever we got
                          }
 
-/*
-                         // ---rgf, 2014-10-04: return reference, if a String or Netrexx object
-                         if (  (choice==GET_FIELD_VALUE_JSO ||
-                                choice==GET_FIELD_VALUE_STRICT_JSO ||
-                                choice==GET_PROPERTY_VALUE_JSO)
-                              && bean.value != null
-                              && (bean.value instanceof String ||
-                                (nlR_class!=null && bean.value.getClass()==nlR_class)
-                               )
-                             )
-                         {
-                             // register result as a bean and return it
-                              String beanName = makeBeanName(bean.value);
-                              return registerBean(beanName, bean.value);
-                         }
-
-                         if (choice==GET_FIELD_VALUE            ||
-                             choice==GET_FIELD_VALUE_STRICT     ||
-                             choice==GET_PROPERTY_VALUE         ||
-                             choice==GET_FIELD_VALUE_JSO        ||
-                             choice==GET_FIELD_VALUE_STRICT_JSO ||
-                             choice==GET_PROPERTY_VALUE_JSO
-
-                             )
-                            return makeString4Rexx(bean.value);             // return whatever we got
-*/
 
                          // this section sets fields/properties
                          try         // now set the field/property to the new value
