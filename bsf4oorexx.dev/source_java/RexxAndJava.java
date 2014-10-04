@@ -36,11 +36,30 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.2.0, 2014-05-15
+  * @version 4.2.0, 2014-10-04
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
+/* TODO: (maybe)
+    - 20141004, rgf: - look up methods and fields: when need to search superclasses take protected into account
+                     - if reverting change 2014-05-15, then starting with Java 1.8/8 anaylze explicitly
+                       all interfaces a class implements and look for default methods, which have as
+                       their modifiers: public+non-abstract+non-static
+*/
+
  /*
+     2014-10-04, ---rgf, - add subfunctions that return a reference to a java.lang.String object or
+                           a NetRexx object, if such a value needs to be returned (rather than turning
+                           it into a Rexx string), added subfunctions:
+
+                               - getFieldValueJSO
+                               - getFieldValueStrictJSO
+                               - getPropertyValueJSO
+                               - getStaticStrictValueJSO
+                               - getStaticValueJSO
+                               - invokeJSO
+                               - invokeStrictJSO
+
      2014-05-15, ---rgf, - correct new method lookup for INVOKE (did not find fields, nor was coercing
                            the arguments, rather used the INVOKE_STRICT logic)
 
@@ -300,7 +319,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "420.20140515";
+    static final public String version = "420.20141004";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -871,58 +890,67 @@ necessary anymore
     protected native int jniInitialize4Rexx() ;
 
         // define the constants for the desired function
-private static final int           ADD_EVENT_LISTENER        =  1  ;
-private static final int           ARRAY_AT                  =  2  ;
-private static final int           ARRAY_LENGTH              =  3  ;
-private static final int           ARRAY_PUT                 =  4  ;
-private static final int           ARRAY_PUT_STRICT          =  5  ;
-private static final int           CREATE_ARRAY_OBJECT       =  6  ;
-private static final int           EXIT                      =  7  ;
-private static final int           GET_FIELD_VALUE           =  8  ;
-private static final int           GET_FIELD_VALUE_STRICT    =  9  ;    // 2005-05-06, ---rgf
-private static final int           GET_PROPERTY_VALUE        =  10 ;
-private static final int           GET_STATIC_VALUE          =  11 ;
-private static final int           GET_STATIC_VALUE_STRICT   =  12 ;
-private static final int           GET_VERSION               =  13 ;
-private static final int           INVOKE                    =  14 ;
-private static final int           INVOKE_STRICT             =  15 ;
-private static final int           LOOKUP_BEAN               =  16 ;
-private static final int           POLL_EVENT_TEXT           =  17 ;
-private static final int           POST_EVENT_TEXT           =  18 ;
-private static final int           REGISTER_BEAN             =  19 ;
-private static final int           NEW                       =  19 ;    // 2005-06-17, ---rgf: synonym for REGISTER_BEAN, hence same value
-private static final int           REGISTER_BEAN_STRICT      =  20 ;
-private static final int           NEW_STRICT                =  20 ;    // 2005-06-17, ---rgf: synonym for REGISTER_BEAN_STRICT, hence same value
-private static final int           SET_FIELD_VALUE           =  21 ;
-private static final int           SET_FIELD_VALUE_STRICT    =  22 ;
-private static final int           SET_PROPERTY_VALUE        =  23 ;
-private static final int           SET_PROPERTY_VALUE_STRICT =  24 ;
-private static final int           SET_REXX_NULL_STRING      =  25 ;
-private static final int           SLEEP                     =  26 ;
-private static final int           UNREGISTER_BEAN           =  27 ;
-private static final int           WRAP_ARRAY_OBJECT         =  28 ;
-private static final int           WRAP_ENUMERATION_OBJECT   =  29 ;
-private static final int           LOAD_CLASS                =  30 ;   // 2006-01-05, ---rgf: new subfunction to get a thread-context loaded class
+private static final int           ADD_EVENT_LISTENER          =  1  ;
+private static final int           ARRAY_AT                    =  2  ;
+private static final int           ARRAY_LENGTH                =  3  ;
+private static final int           ARRAY_PUT                   =  4  ;
+private static final int           ARRAY_PUT_STRICT            =  5  ;
+private static final int           CREATE_ARRAY_OBJECT         =  6  ;
+private static final int           EXIT                        =  7  ;
+private static final int           GET_FIELD_VALUE             =  8  ;
+private static final int           GET_FIELD_VALUE_STRICT      =  9  ;    // 2005-05-06, ---rgf
+private static final int           GET_PROPERTY_VALUE          =  10 ;
+private static final int           GET_STATIC_VALUE            =  11 ;
+private static final int           GET_STATIC_VALUE_STRICT     =  12 ;
+private static final int           GET_VERSION                 =  13 ;
+private static final int           INVOKE                      =  14 ;
+private static final int           INVOKE_STRICT               =  15 ;
+private static final int           LOOKUP_BEAN                 =  16 ;
+private static final int           POLL_EVENT_TEXT             =  17 ;
+private static final int           POST_EVENT_TEXT             =  18 ;
+private static final int           REGISTER_BEAN               =  19 ;
+private static final int           NEW                         =  19 ;    // 2005-06-17, ---rgf: synonym for REGISTER_BEAN, hence same value
+private static final int           REGISTER_BEAN_STRICT        =  20 ;
+private static final int           NEW_STRICT                  =  20 ;    // 2005-06-17, ---rgf: synonym for REGISTER_BEAN_STRICT, hence same value
+private static final int           SET_FIELD_VALUE             =  21 ;
+private static final int           SET_FIELD_VALUE_STRICT      =  22 ;
+private static final int           SET_PROPERTY_VALUE          =  23 ;
+private static final int           SET_PROPERTY_VALUE_STRICT   =  24 ;
+private static final int           SET_REXX_NULL_STRING        =  25 ;
+private static final int           SLEEP                       =  26 ;
+private static final int           UNREGISTER_BEAN             =  27 ;
+private static final int           WRAP_ARRAY_OBJECT           =  28 ;
+private static final int           WRAP_ENUMERATION_OBJECT     =  29 ;
+private static final int           LOAD_CLASS                  =  30 ;   // 2006-01-05, ---rgf: new subfunction to get a thread-context loaded class
 
 // removed: 2009-06-07: use BsfCreateRexxProxy() instead
-// private static final int           ADD_EVENT_LISTENER_2      =  31 ;   // 2006-02-24, ---rgf: allows for retrieving event objects
+// private static final int           ADD_EVENT_LISTENER_2        =  31 ;   // 2006-02-24, ---rgf: allows for retrieving event objects
 
-private static final int           GET_BSF_MANAGER           =  32 ;   // 2006-12-08, ---rgf
-private static final int           BSF_PREFIX_RETURN_VALUE   =  33 ;   // 2008-06-22, ---rgf
-private static final int           RAW_REGISTER_BEAN         =  34 ;   // 2008-08-28, ---rgf
-private static final int           REXX_HALT                 =  35 ;   // 2009-04-02, ---rgf
-private static final int           CREATE_ARRAY_OBJECT_OF    =  36 ;   // 2009-07-30, ---rgf
-private static final int           GET_REXX_AND_JAVA         =  37 ;   // 2009-10-02, ---rgf
-private static final int           GET_REXX_ENGINE           =  38 ;   // 2009-10-07, ---rgf
+private static final int           GET_BSF_MANAGER             =  32 ;   // 2006-12-08, ---rgf
+private static final int           BSF_PREFIX_RETURN_VALUE     =  33 ;   // 2008-06-22, ---rgf
+private static final int           RAW_REGISTER_BEAN           =  34 ;   // 2008-08-28, ---rgf
+private static final int           REXX_HALT                   =  35 ;   // 2009-04-02, ---rgf
+private static final int           CREATE_ARRAY_OBJECT_OF      =  36 ;   // 2009-07-30, ---rgf
+private static final int           GET_REXX_AND_JAVA           =  37 ;   // 2009-10-02, ---rgf
+private static final int           GET_REXX_ENGINE             =  38 ;   // 2009-10-07, ---rgf
 
-private static final int           KUDOS                     =  39 ;   // 2009-10-17, ---rgf
+private static final int           KUDOS                       =  39 ;   // 2009-10-17, ---rgf
 
-private static final int           IS_INSTANCE               =  40 ;   // 2010-02-20, ---rgf
+private static final int           IS_INSTANCE                 =  40 ;   // 2010-02-20, ---rgf
 
-private static final int           CARRY_OUT_SYSTEM_EXIT     =  41 ;   // 2011-02-23, ---rgf
+private static final int           CARRY_OUT_SYSTEM_EXIT       =  41 ;   // 2011-02-23, ---rgf
 
-private static final int           ENV_GET                   =  42;    // 2014-03-29, ---rgf
-private static final int           ENV_SET                   =  43;    // 2014-03-29, ---rgf
+private static final int           ENV_GET                     =  42;    // 2014-03-29, ---rgf
+private static final int           ENV_SET                     =  43;    // 2014-03-29, ---rgf
+
+private static final int           INVOKE_JSO                  =  44;    // 2014-10-02, ---rgf
+private static final int           INVOKE_STRICT_JSO           =  45;    // 2014-10-04, ---rgf
+private static final int           GET_FIELD_VALUE_JSO         =  46;    // 2014-10-04, ---rgf
+private static final int           GET_FIELD_VALUE_STRICT_JSO  =  47;    // 2014-10-04, ---rgf
+private static final int           GET_PROPERTY_VALUE_JSO      =  48;    // 2014-10-04, ---rgf
+
+private static final int           GET_STATIC_VALUE_JSO        =  49 ;   // 2014-10-04, ---rgf
+private static final int           GET_STATIC_VALUE_STRICT_JSO =  50 ;   // 2014-10-04, ---rgf
 
 
         // define the constant strings for the function names passed from Rexx
@@ -936,13 +964,20 @@ private static final String STRING_CREATE_ARRAY_OBJECT            = "createArray
 private static final String STRING_EXIT                           = "exit"                                 ;
 private static final String STRING_GET_BSF_MANAGER                = "getBSFManager"                        ; // rgf, 2006-12-08
 private static final String STRING_GET_FIELD_VALUE                = "getFieldValue"                        ;
+private static final String STRING_GET_FIELD_VALUE_JSO            = "getFieldValueJSO"                     ; // rgf, 2014-10-04
 private static final String STRING_GET_FIELD_VALUE_STRICT         = "getFieldValueStrict"                  ; // rgf, 2005-05-06
+private static final String STRING_GET_FIELD_VALUE_STRICT_JSO     = "getFieldValueStrictJSO"               ; // rgf, 2014-10-04
 private static final String STRING_GET_PROPERTY_VALUE             = "getPropertyValue"                     ;
+private static final String STRING_GET_PROPERTY_VALUE_JSO         = "getPropertyValueJSO"                  ; // rgf, 2014-10-04
 private static final String STRING_GET_STATIC_VALUE               = "getStaticValue"                       ;
+private static final String STRING_GET_STATIC_VALUE_JSO           = "getStaticValueJSO"                    ; // rgf, 2014-10-04
 private static final String STRING_GET_STATIC_VALUE_STRICT        = "getStaticValueStrict"                 ; // rgf, 2005-05-06
+private static final String STRING_GET_STATIC_VALUE_STRICT_JSO    = "getStaticValueStrictJSO"              ; // rgf, 2014-10-04
 private static final String STRING_GET_VERSION                    = "version"                              ; // rgf, 2003-03-10
 private static final String STRING_INVOKE                         = "invoke"                               ;
+private static final String STRING_INVOKE_JSO                     = "invokeJSO"                            ; // rgf, 2014-10-02
 private static final String STRING_INVOKE_STRICT                  = "invokeStrict"                         ; // rgf, 2003-05-07
+private static final String STRING_INVOKE_STRICT_JSO              = "invokeStrictJSO"                      ; // rgf, 2014-10-04
 private static final String STRING_LOOKUP_BEAN                    = "lookupBean"                           ;
 private static final String STRING_POLL_EVENT_TEXT                = "pollEventText"                        ;
 private static final String STRING_POST_EVENT_TEXT                = "postEventText"                        ;
@@ -2203,74 +2238,83 @@ private static final String STRING_ENV_SET                        =  "setEnv";  
        boolean bStrongTyping=false; // set to true, if Java types preceed the individual Rexx arguments
        int choice = 0;
 
-            if (args[0].equalsIgnoreCase( STRING_INVOKE                         )) choice = INVOKE                    ;
-       else if (args[0].equalsIgnoreCase( STRING_INVOKE_STRICT                  )) choice = INVOKE_STRICT             ;
+            if (args[0].equalsIgnoreCase( STRING_INVOKE                         )) choice = INVOKE                       ;
+       else if (args[0].equalsIgnoreCase( STRING_INVOKE_JSO                     )) choice = INVOKE_JSO                   ; // rgf, 2010-10-02
+       else if (args[0].equalsIgnoreCase( STRING_INVOKE_STRICT                  )) choice = INVOKE_STRICT                ;
+       else if (args[0].equalsIgnoreCase( STRING_INVOKE_STRICT_JSO              )) choice = INVOKE_STRICT_JSO            ; // rgf, 2014-10-04
 
-       else if (args[0].equalsIgnoreCase( STRING_REGISTER_BEAN                  )) choice = REGISTER_BEAN             ;
-       else if (args[0].equalsIgnoreCase( STRING_NEW                            )) choice = NEW                       ;
-       else if (args[0].equalsIgnoreCase( STRING_REGISTER_BEAN_STRICT           )) choice = REGISTER_BEAN_STRICT      ;
-       else if (args[0].equalsIgnoreCase( STRING_NEW_STRICT                     )) choice = NEW_STRICT                ;
+       else if (args[0].equalsIgnoreCase( STRING_REGISTER_BEAN                  )) choice = REGISTER_BEAN                ;
+       else if (args[0].equalsIgnoreCase( STRING_NEW                            )) choice = NEW                          ;
+       else if (args[0].equalsIgnoreCase( STRING_REGISTER_BEAN_STRICT           )) choice = REGISTER_BEAN_STRICT         ;
+       else if (args[0].equalsIgnoreCase( STRING_NEW_STRICT                     )) choice = NEW_STRICT                   ;
 
-       else if (args[0].equalsIgnoreCase( STRING_LOOKUP_BEAN                    )) choice = LOOKUP_BEAN               ;
-       else if (args[0].equalsIgnoreCase( STRING_UNREGISTER_BEAN                )) choice = UNREGISTER_BEAN           ;
 
-       else if (args[0].equalsIgnoreCase( STRING_ADD_EVENT_LISTENER             )) choice = ADD_EVENT_LISTENER        ;
-//       else if (args[0].equalsIgnoreCase( STRING_ADD_EVENT_LISTENER_2           )) choice = ADD_EVENT_LISTENER_2      ;
-       else if (args[0].equalsIgnoreCase( STRING_POLL_EVENT_TEXT                )) choice = POLL_EVENT_TEXT           ;
-       else if (args[0].equalsIgnoreCase( STRING_POST_EVENT_TEXT                )) choice = POST_EVENT_TEXT           ;
 
-       else if (args[0].equalsIgnoreCase( STRING_GET_FIELD_VALUE                )) choice = GET_FIELD_VALUE           ;
-       else if (args[0].equalsIgnoreCase( STRING_GET_FIELD_VALUE_STRICT         )) choice = GET_FIELD_VALUE_STRICT    ; // rgf, 2005-05-06
-       else if (args[0].equalsIgnoreCase( STRING_GET_STATIC_VALUE               )) choice = GET_STATIC_VALUE          ;
-       else if (args[0].equalsIgnoreCase( STRING_GET_STATIC_VALUE_STRICT        )) choice = GET_STATIC_VALUE_STRICT   ;
+       else if (args[0].equalsIgnoreCase( STRING_LOOKUP_BEAN                    )) choice = LOOKUP_BEAN                  ;
+       else if (args[0].equalsIgnoreCase( STRING_UNREGISTER_BEAN                )) choice = UNREGISTER_BEAN              ;
 
-       else if (args[0].equalsIgnoreCase( STRING_EXIT                           )) choice = EXIT                      ;
+       else if (args[0].equalsIgnoreCase( STRING_ADD_EVENT_LISTENER             )) choice = ADD_EVENT_LISTENER           ;
+//       else if (args[0].equalsIgnoreCase( STRING_ADD_EVENT_LISTENER_2           )) choice = ADD_EVENT_LISTENER_2         ;
+       else if (args[0].equalsIgnoreCase( STRING_POLL_EVENT_TEXT                )) choice = POLL_EVENT_TEXT              ;
+       else if (args[0].equalsIgnoreCase( STRING_POST_EVENT_TEXT                )) choice = POST_EVENT_TEXT              ;
 
-       else if (args[0].equalsIgnoreCase( STRING_SET_FIELD_VALUE                )) choice = SET_FIELD_VALUE           ;
-       else if (args[0].equalsIgnoreCase( STRING_SET_FIELD_VALUE_STRICT         )) choice = SET_FIELD_VALUE_STRICT    ;
+       else if (args[0].equalsIgnoreCase( STRING_GET_FIELD_VALUE                )) choice = GET_FIELD_VALUE              ;
+       else if (args[0].equalsIgnoreCase( STRING_GET_FIELD_VALUE_JSO            )) choice = GET_FIELD_VALUE_JSO          ; // rgf, 2014-10-04
+       else if (args[0].equalsIgnoreCase( STRING_GET_FIELD_VALUE_STRICT         )) choice = GET_FIELD_VALUE_STRICT       ; // rgf, 2005-05-06
+       else if (args[0].equalsIgnoreCase( STRING_GET_FIELD_VALUE_STRICT_JSO     )) choice = GET_FIELD_VALUE_STRICT_JSO   ; // rgf, 2014-10-04
+       else if (args[0].equalsIgnoreCase( STRING_GET_STATIC_VALUE               )) choice = GET_STATIC_VALUE             ;
+       else if (args[0].equalsIgnoreCase( STRING_GET_STATIC_VALUE_JSO           )) choice = GET_STATIC_VALUE_JSO         ; // rgf, 2014-10-04
+       else if (args[0].equalsIgnoreCase( STRING_GET_STATIC_VALUE_STRICT        )) choice = GET_STATIC_VALUE_STRICT      ;
+       else if (args[0].equalsIgnoreCase( STRING_GET_STATIC_VALUE_STRICT_JSO    )) choice = GET_STATIC_VALUE_STRICT_JSO  ; // rgf, 2014-10-04
 
-       else if (args[0].equalsIgnoreCase( STRING_ARRAY_AT                       )) choice = ARRAY_AT                  ;
-       else if (args[0].equalsIgnoreCase( STRING_ARRAY_LENGTH                   )) choice = ARRAY_LENGTH              ;
-       else if (args[0].equalsIgnoreCase( STRING_ARRAY_PUT                      )) choice = ARRAY_PUT                 ;
-       else if (args[0].equalsIgnoreCase( STRING_ARRAY_PUT_STRICT               )) choice = ARRAY_PUT_STRICT          ;
-       else if (args[0].equalsIgnoreCase( STRING_CREATE_ARRAY_OBJECT_OF         )) choice = CREATE_ARRAY_OBJECT_OF    ; // 20090730, ---rgf
-       else if (args[0].equalsIgnoreCase( STRING_CREATE_JAVA_ARRAY_OBJECT_OF    )) choice = CREATE_ARRAY_OBJECT_OF    ; // 20090910, ---rgf, a synonym
-       else if (args[0].equalsIgnoreCase( STRING_CREATE_ARRAY_OBJECT            )) choice = CREATE_ARRAY_OBJECT       ;
-       else if (args[0].equalsIgnoreCase( STRING_CREATE_JAVA_ARRAY_OBJECT       )) choice = CREATE_ARRAY_OBJECT       ; // 20090910, ---rgf, a synonym
+       else if (args[0].equalsIgnoreCase( STRING_EXIT                           )) choice = EXIT                         ;
 
-       else if (args[0].equalsIgnoreCase( STRING_GET_PROPERTY_VALUE             )) choice = GET_PROPERTY_VALUE        ;
-       else if (args[0].equalsIgnoreCase( STRING_SET_PROPERTY_VALUE             )) choice = SET_PROPERTY_VALUE_STRICT ;
-       else if (args[0].equalsIgnoreCase( STRING_SET_PROPERTY_VALUE_STRICT      )) choice = SET_PROPERTY_VALUE_STRICT ;
+       else if (args[0].equalsIgnoreCase( STRING_SET_FIELD_VALUE                )) choice = SET_FIELD_VALUE              ;
+       else if (args[0].equalsIgnoreCase( STRING_SET_FIELD_VALUE_STRICT         )) choice = SET_FIELD_VALUE_STRICT       ;
 
-       else if (args[0].equalsIgnoreCase( STRING_SET_REXX_NULL_STRING           )) choice = SET_REXX_NULL_STRING      ;
-       else if (args[0].equalsIgnoreCase( STRING_SLEEP                          )) choice = SLEEP                     ;
+       else if (args[0].equalsIgnoreCase( STRING_ARRAY_AT                       )) choice = ARRAY_AT                     ;
+       else if (args[0].equalsIgnoreCase( STRING_ARRAY_LENGTH                   )) choice = ARRAY_LENGTH                 ;
+       else if (args[0].equalsIgnoreCase( STRING_ARRAY_PUT                      )) choice = ARRAY_PUT                    ;
+       else if (args[0].equalsIgnoreCase( STRING_ARRAY_PUT_STRICT               )) choice = ARRAY_PUT_STRICT             ;
+       else if (args[0].equalsIgnoreCase( STRING_CREATE_ARRAY_OBJECT_OF         )) choice = CREATE_ARRAY_OBJECT_OF       ; // 20090730, ---rgf
+       else if (args[0].equalsIgnoreCase( STRING_CREATE_JAVA_ARRAY_OBJECT_OF    )) choice = CREATE_ARRAY_OBJECT_OF       ; // 20090910, ---rgf, a synonym
+       else if (args[0].equalsIgnoreCase( STRING_CREATE_ARRAY_OBJECT            )) choice = CREATE_ARRAY_OBJECT          ;
+       else if (args[0].equalsIgnoreCase( STRING_CREATE_JAVA_ARRAY_OBJECT       )) choice = CREATE_ARRAY_OBJECT          ; // 20090910, ---rgf, a synonym
 
-       else if (args[0].equalsIgnoreCase( STRING_WRAP_ARRAY_OBJECT              )) choice = WRAP_ARRAY_OBJECT         ;
-       else if (args[0].equalsIgnoreCase( STRING_WRAP_ENUMERATION_OBJECT        )) choice = WRAP_ENUMERATION_OBJECT   ;
+       else if (args[0].equalsIgnoreCase( STRING_GET_PROPERTY_VALUE             )) choice = GET_PROPERTY_VALUE           ;
+       else if (args[0].equalsIgnoreCase( STRING_GET_PROPERTY_VALUE_JSO         )) choice = GET_PROPERTY_VALUE_JSO       ; // 20141004, ---rgf
+       else if (args[0].equalsIgnoreCase( STRING_SET_PROPERTY_VALUE             )) choice = SET_PROPERTY_VALUE_STRICT    ;
+       else if (args[0].equalsIgnoreCase( STRING_SET_PROPERTY_VALUE_STRICT      )) choice = SET_PROPERTY_VALUE_STRICT    ;
 
-       else if (args[0].equalsIgnoreCase( STRING_GET_VERSION                    )) choice = GET_VERSION               ;
+       else if (args[0].equalsIgnoreCase( STRING_SET_REXX_NULL_STRING           )) choice = SET_REXX_NULL_STRING         ;
+       else if (args[0].equalsIgnoreCase( STRING_SLEEP                          )) choice = SLEEP                        ;
 
-       else if (args[0].equalsIgnoreCase( STRING_LOAD_CLASS                     )) choice = LOAD_CLASS                ;
-       else if (args[0].equalsIgnoreCase( STRING_GET_BSF_MANAGER                )) choice = GET_BSF_MANAGER           ;
-       else if (args[0].equalsIgnoreCase( STRING_GET_REXX_AND_JAVA              )) choice = GET_REXX_AND_JAVA         ;
-       else if (args[0].equalsIgnoreCase( STRING_GET_RAJO                       )) choice = GET_REXX_AND_JAVA         ;  // 2009-10-12, rgf
-       else if (args[0].equalsIgnoreCase( STRING_GET_REXX_ENGINE                )) choice = GET_REXX_ENGINE           ;
+       else if (args[0].equalsIgnoreCase( STRING_WRAP_ARRAY_OBJECT              )) choice = WRAP_ARRAY_OBJECT            ;
+       else if (args[0].equalsIgnoreCase( STRING_WRAP_ENUMERATION_OBJECT        )) choice = WRAP_ENUMERATION_OBJECT      ;
 
-       else if (args[0].equalsIgnoreCase( STRING_BSF_PREFIX_RETURN_VALUE        )) choice = BSF_PREFIX_RETURN_VALUE   ;
+       else if (args[0].equalsIgnoreCase( STRING_GET_VERSION                    )) choice = GET_VERSION                  ;
 
-       else if (args[0].equalsIgnoreCase( STRING_RAW_REGISTER_BEAN              )) choice = RAW_REGISTER_BEAN         ;  // 20080828, rgf
+       else if (args[0].equalsIgnoreCase( STRING_LOAD_CLASS                     )) choice = LOAD_CLASS                   ;
+       else if (args[0].equalsIgnoreCase( STRING_GET_BSF_MANAGER                )) choice = GET_BSF_MANAGER              ;
+       else if (args[0].equalsIgnoreCase( STRING_GET_REXX_AND_JAVA              )) choice = GET_REXX_AND_JAVA            ;
+       else if (args[0].equalsIgnoreCase( STRING_GET_RAJO                       )) choice = GET_REXX_AND_JAVA            ;  // 2009-10-12, rgf
+       else if (args[0].equalsIgnoreCase( STRING_GET_REXX_ENGINE                )) choice = GET_REXX_ENGINE              ;
 
-       else if (args[0].equalsIgnoreCase( STRING_REXX_HALT                      )) choice = REXX_HALT                 ;  // 20090402, rgf
+       else if (args[0].equalsIgnoreCase( STRING_BSF_PREFIX_RETURN_VALUE        )) choice = BSF_PREFIX_RETURN_VALUE      ;
 
-       else if (args[0].equalsIgnoreCase( STRING_KUDOS                          )) choice = KUDOS                     ;  // 20091017, rgf
+       else if (args[0].equalsIgnoreCase( STRING_RAW_REGISTER_BEAN              )) choice = RAW_REGISTER_BEAN            ;  // 20080828, rgf
 
-       else if (args[0].equalsIgnoreCase( STRING_IS_A                           )) choice = IS_INSTANCE               ;  // 20100220, rgf
-//       else if (args[0].equalsIgnoreCase( STRING_IS_INSTANCE                    )) choice = IS_INSTANCE               ;  // 20100220, rgf
+       else if (args[0].equalsIgnoreCase( STRING_REXX_HALT                      )) choice = REXX_HALT                    ;  // 20090402, rgf
 
-       else if (args[0].equalsIgnoreCase( STRING_CARRY_OUT_SYSTEM_EXIT          )) choice = CARRY_OUT_SYSTEM_EXIT     ;  // 20110223, rgf
+       else if (args[0].equalsIgnoreCase( STRING_KUDOS                          )) choice = KUDOS                        ;  // 20091017, rgf
 
-       else if (args[0].equalsIgnoreCase( STRING_ENV_GET                        )) choice = ENV_GET                   ;  // 20140329, rgf
-       else if (args[0].equalsIgnoreCase( STRING_ENV_SET                        )) choice = ENV_SET                   ;  // 20140329, rgf
+       else if (args[0].equalsIgnoreCase( STRING_IS_A                           )) choice = IS_INSTANCE                  ;  // 20100220, rgf
+//       else if (args[0].equalsIgnoreCase( STRING_IS_INSTANCE                    )) choice = IS_INSTANCE                  ;  // 20100220, rgf
+
+       else if (args[0].equalsIgnoreCase( STRING_CARRY_OUT_SYSTEM_EXIT          )) choice = CARRY_OUT_SYSTEM_EXIT        ;  // 20110223, rgf
+
+       else if (args[0].equalsIgnoreCase( STRING_ENV_GET                        )) choice = ENV_GET                      ;  // 20140329, rgf
+       else if (args[0].equalsIgnoreCase( STRING_ENV_SET                        )) choice = ENV_SET                      ;  // 20140329, rgf
 
 
         // ==================================================================
@@ -2799,7 +2843,9 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
          // ==================================================================
 
           case GET_FIELD_VALUE           :
+          case GET_FIELD_VALUE_JSO       : // rgf, 2014-10-04
           case GET_FIELD_VALUE_STRICT    : // rgf, 2005-05-06
+          case GET_FIELD_VALUE_STRICT_JSO: // rgf, 2014-10-04
 
           case SET_FIELD_VALUE           :
           case SET_FIELD_VALUE_STRICT    :
@@ -2845,8 +2891,10 @@ if (iDebugLevel>0)
                      String tmp = null;        // new 2001-04-25, edited: 2003-05-10
                      String fieldName=args[2];    // store received fieldName
 
-                          if (choice==GET_FIELD_VALUE           && args.length != 3) tmp=    "fieldName";
-                     else if (choice==GET_FIELD_VALUE_STRICT    && args.length != 3) tmp=    "fieldName"; // rgf, 2005-05-06
+                          if ( (choice==GET_FIELD_VALUE        || choice==GET_FIELD_VALUE_JSO ||
+                                choice==GET_FIELD_VALUE_STRICT || choice==GET_FIELD_VALUE_STRICT_JSO)
+                             && args.length != 3
+                             ) tmp=    "fieldName";
 
                      else if (choice==SET_FIELD_VALUE           && args.length != 4) tmp=    "fieldName, newValue";
                      else if (choice==SET_FIELD_VALUE_STRICT    && (args.length<4 || args.length>5))   tmp= "fieldName, [newValueType,] newValue";
@@ -2875,13 +2923,16 @@ if (iDebugLevel>0)
                          Bean    bean  = null;
                          Integer index = null;
 
-                         if (choice==GET_FIELD_VALUE        ||
-                             choice==SET_FIELD_VALUE        ||
-                             choice==GET_FIELD_VALUE_STRICT ||   // rgf, 2005-05-06
-                             choice==SET_FIELD_VALUE_STRICT )
+                         if (choice==GET_FIELD_VALUE            ||
+                             choice==GET_FIELD_VALUE_JSO        ||  // rgf, 2014-10-04
+                             choice==GET_FIELD_VALUE_STRICT     ||  // rgf, 2005-05-06
+                             choice==GET_FIELD_VALUE_STRICT_JSO ||  // rgf, 2014-10-04
+
+                             choice==SET_FIELD_VALUE            ||
+                             choice==SET_FIELD_VALUE_STRICT     )
                          {           // get a field
                                 // try to find any field matching the name (not case sensitive!)
-                             if (choice==GET_FIELD_VALUE || choice==SET_FIELD_VALUE)
+                             if (choice==GET_FIELD_VALUE || choice==GET_FIELD_VALUE_JSO || choice==SET_FIELD_VALUE)
                              {
 //????
 if (iDebugLevel>1) System.err.println("---> searching for fieldName (not case sensitively...)");
@@ -2938,7 +2989,7 @@ if (bDebug) System.err.println("--> FIELD <--(): args[0]=[" + args[0] + "] args[
                              }
                              catch (Exception e)
                              {
-                                 if (choice!=SET_FIELD_VALUE && choice!=GET_FIELD_VALUE)   //
+                                 if (choice!=SET_FIELD_VALUE && choice!=GET_FIELD_VALUE && choice!=GET_FIELD_VALUE_JSO)   // rgf,20141004
                                  {
                                     throw (e);      // strict versions, hence re-throwing the exception
                                  }
@@ -2988,9 +3039,70 @@ if (bDebug) System.err.println("Trying 'GET"+args[2]+"' ? : " + ! (args[2].toUpp
                             bean=ReflectionUtils.getProperty(o, args[2], index);
                          }
 
-                         if (choice==GET_FIELD_VALUE || choice==GET_FIELD_VALUE_STRICT || choice==GET_PROPERTY_VALUE)
-                            return makeString4Rexx(bean.value);             // return whatever we got
+if (bDebug)
+{
+    System.err.println("result of tests:");
+    System.err.println("\t\t#1:"+(choice==GET_FIELD_VALUE_JSO ||
+                                    choice==GET_FIELD_VALUE_STRICT_JSO ||
+                                    choice==GET_PROPERTY_VALUE_JSO)
+                       );
+    System.err.println("\t\t#2:"+(bean.value != null)+", bean.value.getClass():"+bean.value.getClass() );
+    System.err.println("\t\t#3:"+(bean.value instanceof String ||
+                                    (nlR_class!=null && bean.value.getClass()==nlR_class)
+                        )
+                      );
+}
 
+                         if (choice==GET_FIELD_VALUE            ||
+                             choice==GET_FIELD_VALUE_STRICT     ||
+                             choice==GET_PROPERTY_VALUE         ||
+                             choice==GET_FIELD_VALUE_JSO        ||
+                             choice==GET_FIELD_VALUE_STRICT_JSO ||
+                             choice==GET_PROPERTY_VALUE_JSO         )
+                         {
+
+// rgf, 2014-10.04: temporatily force java.lang.String
+// bean.value=bean.value.toString();
+
+                             if ( bean.value != null &&
+                                 ( bean.value instanceof String || (nlR_class!=null && bean.value.getClass()==nlR_class) )
+                                )
+                             {
+                                 // register result as a bean and return it
+                                  String beanName = makeBeanName(bean.value);
+                                  return registerBean(beanName, bean.value);
+                             }
+
+                             // not a String nor NetRexx object to be returned
+                             return makeString4Rexx(bean.value);             // return whatever we got
+                         }
+
+/*
+                         // ---rgf, 2014-10-04: return reference, if a String or Netrexx object
+                         if (  (choice==GET_FIELD_VALUE_JSO ||
+                                choice==GET_FIELD_VALUE_STRICT_JSO ||
+                                choice==GET_PROPERTY_VALUE_JSO)
+                              && bean.value != null
+                              && (bean.value instanceof String ||
+                                (nlR_class!=null && bean.value.getClass()==nlR_class)
+                               )
+                             )
+                         {
+                             // register result as a bean and return it
+                              String beanName = makeBeanName(bean.value);
+                              return registerBean(beanName, bean.value);
+                         }
+
+                         if (choice==GET_FIELD_VALUE            ||
+                             choice==GET_FIELD_VALUE_STRICT     ||
+                             choice==GET_PROPERTY_VALUE         ||
+                             choice==GET_FIELD_VALUE_JSO        ||
+                             choice==GET_FIELD_VALUE_STRICT_JSO ||
+                             choice==GET_PROPERTY_VALUE_JSO
+
+                             )
+                            return makeString4Rexx(bean.value);             // return whatever we got
+*/
 
                          // this section sets fields/properties
                          try         // now set the field/property to the new value
@@ -3072,7 +3184,7 @@ if (bDebug)
                          }
                          catch (Exception e)
                          {
-//                            e.printStackTrace(System.err);
+// e.printStackTrace(System.err);
 
                             throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": exception while setting "
@@ -3088,9 +3200,13 @@ if (bDebug)
                      {
                         throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": exception while accessing "
-                                  +( (choice==GET_FIELD_VALUE        || choice==SET_FIELD_VALUE ||
-                                      choice==GET_FIELD_VALUE_STRICT || choice==SET_FIELD_VALUE_STRICT) ?
-                                     "field" : "property" )
+                                  +( (choice==GET_FIELD_VALUE            ||
+                                      choice==GET_FIELD_VALUE_JSO        ||     // rgf, 20141004
+                                      choice==SET_FIELD_VALUE            ||
+                                      choice==GET_FIELD_VALUE_STRICT     ||
+                                      choice==GET_FIELD_VALUE_STRICT_JSO ||     // rgf, 20141004
+                                      choice==SET_FIELD_VALUE_STRICT)
+                                      ? "field" : "property" )
                                   +" ["+args[2]+"] in object ["+args[1]+"]"
                                   +"\n, exception thrown: ["+e.toString()+"]"     // rgf, 2008-07-09
                                   , e  // rgf, 2011-06-04: supply Exception object
@@ -3099,8 +3215,10 @@ if (bDebug)
                   }
         // ==================================================================
 
-          case GET_STATIC_VALUE          :
-          case GET_STATIC_VALUE_STRICT   : // rgf, 2005-05-06
+          case GET_STATIC_VALUE             :
+          case GET_STATIC_VALUE_JSO         :   // rgf, 2014-10-04
+          case GET_STATIC_VALUE_STRICT      :   // rgf, 2005-05-06
+          case GET_STATIC_VALUE_STRICT_JSO :   // rgf, 2014-10-04
                   {
                   /* ********************************************************
                    * call BSF 'getStaticValue', className, fieldName
@@ -3179,7 +3297,7 @@ if (bDebug)
                         // rgf, 2005-05-06 end
 
                           // rgf, 2005-05-06
-                      if (choice==GET_STATIC_VALUE) // try to get field from case-INsensitive name
+                      if (choice==GET_STATIC_VALUE || choice==GET_STATIC_VALUE_JSO) // try to get field from case-INsensitive name
                       {
                                 // determine correct case of method name
                           Field[] fa = cl.getFields();
@@ -3213,10 +3331,27 @@ if (bDebug)
                          }
                          else             // o.k., now what?
                          {                // get the value as an Object using the class object as object
-                            try { return makeString4Rexx( f.get( cl ) ); }
-                            catch (IllegalAccessException e) {
+
+
+                             Object result=null;
+                             try { result=f.get( cl ) ; }
+                             catch (IllegalAccessException e) {
 //                                  e.printStackTrace(System.err);
-                            }
+                             }
+
+                             // ---rgf, 2014-10-02: return reference, if a String or Netrexx object
+                             if (choice==INVOKE_JSO && result != null &&
+                                   (result instanceof String ||
+                                    (nlR_class!=null && result.getClass()==nlR_class)
+                                   )
+                                 )
+                             {
+                                 // register result as a bean and return it
+                                  String beanName = makeBeanName(result);
+                                  return registerBean(beanName, result);
+                             }
+
+                             return makeString4Rexx(result);
                          }
                       }
 
@@ -3225,8 +3360,13 @@ if (bDebug)
                   }
         // ==================================================================
 
+           case INVOKE_JSO :   // new as of 2014-10-02: allow version that returns a java.lang.String as an object-reference
+                               //                       such that Rexx coders can employ all String's methods directly (especially codepage related)
                   // ---rgf, 2014-05-14: use Class.getMethods() instead of Class.getDeclaredMethods();
                   //                     getMethods() returns all public methods (including the Java 8 default mehtods)
+
+                  // ---rgf TODO: add superclass resolution using getDelcaredMethods() seeking matching
+                  //              protected methods, cf. <http://docs.oracle.com/javase/tutorial/java/javaOO/accesscontrol.html>
 
            case INVOKE :   // new as of 2014-05-14: use Class.getMethods() which returns all public methods (in Java 8 also default methods)
                       {
@@ -3405,6 +3545,17 @@ if (bDebug) // ---rgf, 2006-07-29
     }
 
 }
+                                              // ---rgf, 2014-10-02: return reference, if a String or Netrexx object
+                                              if (choice==INVOKE_JSO && result != null &&
+                                                    (result instanceof String ||
+                                                     (nlR_class!=null && result.getClass()==nlR_class)
+                                                    )
+                                                  )
+                                              {
+                                                  // register result as a bean and return it
+                                                   String beanName = makeBeanName(result);
+                                                   return registerBean(beanName, result);
+                                              }
 
                                               return makeString4Rexx(result);
                                           }
@@ -3638,6 +3789,7 @@ if (bDebug) {System.err.println("-> -> error-loop, i=["+i+"]");}
             // ==================================================================
 
 
+       case INVOKE_STRICT_JSO  :            // 2014-10-04: ---rgf
        case INVOKE_STRICT      :
                   bStrongTyping=true;       // indicate that type information is passed in by Rexx
                   {
@@ -3776,6 +3928,18 @@ if (bDebug) System.err.println("BINGO !  BINGO !   bean=["+bean+"]");
                                               Object result = invokeMethod(m[i], bean, funcArgs);
 
 if (bDebug) System.err.println("                   result=["+result+"]");
+                                              // ---rgf, 2014-10-04: return reference, if a String or Netrexx object
+                                              if (choice==INVOKE_STRICT_JSO && result != null &&
+                                                    (result instanceof String ||
+                                                     (nlR_class!=null && result.getClass()==nlR_class)
+                                                    )
+                                                  )
+                                              {
+                                                  // register result as a bean and return it
+                                                   String beanName = makeBeanName(result);
+                                                   return registerBean(beanName, result);
+                                              }
+
                                               return makeString4Rexx(result);
                                           }
                                           catch (Exception e)
@@ -4054,6 +4218,17 @@ if (bDebug) // ---rgf, 2006-07-29
     }
 
 }
+                                              // ---rgf, 2014-10-02: return reference, if a String or Netrexx object
+                                              if (choice==INVOKE_JSO && result != null &&
+                                                    (result instanceof String ||
+                                                     (nlR_class!=null && result.getClass()==nlR_class)
+                                                    )
+                                                  )
+                                              {
+                                                  // register result as a bean and return it
+                                                   String beanName = makeBeanName(result);
+                                                   return registerBean(beanName, result);
+                                              }
 
                                               return makeString4Rexx(result);
                                           }

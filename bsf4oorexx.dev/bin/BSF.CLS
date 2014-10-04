@@ -12,6 +12,28 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2014-10-03/04, rgf: - added methods to existing BSF-methods, adding a trailing "JSO" (Java
+                               string object) to them, that will return a reference to a
+                               java.lang.String or Netrexx object instead of transparently turning
+                               it into a Rexx string; this may be helpful, if wishing to invoke
+                               the Java String methods on that (returned) Java string object.
+
+                               These are the added methods:
+
+                               - bsf.invokeJSO
+                               - bsf.invokeStrictJSO
+                               - bsf.getFieldValueJSO
+                               - bsf.getFieldValueStrictJSO
+                               - bsf.getStaticValueJSO
+                               - bsf.getStaticStrictValueJSO
+                               - bsf.getPropertyValueJSO
+
+                               These are the added routines:
+
+                               - bsf.getStaticValueJSO
+                               - bsf.getStaticStrictValueJSO
+                               - bsf.getConstantJSO
+
          2014-08-31, rgf: - added routine bsf.extendJavaClass(jClz [, [newClzName] [, [methNames2proxy]]])
 
          2014-07-16, rgf: - routine bsf.redirectTo(): default .debugInput to .input~current and
@@ -355,7 +377,7 @@
 
 
 
-   version:     4.50 (20140919)
+   version:     4.50 (20141004)
 
    authors:     (c) 2001-2014 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
@@ -444,7 +466,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="450.20140919" -- set version (date distribution got created)
+   .bsf4rexx~version="450.20141004" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1582,10 +1604,37 @@ any:
 ::METHOD bsf.exit              /* exit Rexx                    */
    FORWARD MESSAGE ("BSF.EXIT") TO (self~class)
 
+
+
 ::METHOD bsf.invoke
    parse arg methodName
    -- create UNKNOWN format (first argument is unknown method name)
    return self~unknown(methodName, arg(2, 'A'))
+
+
+::method bsf.invokeJSO  -- rgf, 20141003: return a reference to a Java or NetRexx object
+  USE ARG name          -- name of method to be invoked
+  args=arg(2, 'A')
+
+   code = 'call BSF "invokeJSO", "' || self~objectname || '", "' || name || '"'
+   do i=1 to args~items
+      a.i=choose(args[i]=.nil, .bsf~bsf.null_string, args[i])
+      code=code ", a."i
+   end
+
+  signal on syntax name any         -- trap any exceptions
+  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
+  interpret code        -- execute this dynamically created Rexx string
+  if var("RESULT") then return bsf.wrap(result)   -- check whether primitive type or Java object
+                   else return .nil                      -- nothing came back, i.e. Java returned a true "null"
+
+any:
+   /* if a Java error, then the Java error message/stack trace is stored in the
+      current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
+      this error message available to the caller it is stored in the .local environment */
+  if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
+     .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
+  raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
 ::METHOD bsf.invokeStrict
@@ -1613,6 +1662,32 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+
+::METHOD bsf.invokeStrictJSO  -- rgf, 20141004: return a reference to a Java or NetRexx object
+  USE ARG name          -- name of method to be invoked
+  args=arg(2, 'A')
+
+   code = 'call BSF "invokeStrictJSO", "' || self~objectname || '", "' || name || '"'
+   do i=1 to args~items
+      a.i=choose(args[i]=.nil, .bsf~bsf.null_string, args[i])
+      code=code ", a."i
+   end
+
+  signal on syntax name any         -- trap any exceptions
+  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
+  interpret code        -- execute this dynamically created Rexx string
+  if var("RESULT") then return bsf.wrap(result)    -- check whether primitive type or Java object
+                   else return .nil                -- nothing came back, i.e. Java returned a true "null"
+
+any:
+   /* if a Java error, then the Java error message/stack trace is stored in the
+      current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
+      this error message available to the caller it is stored in the .local environment */
+  if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
+     .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
+  raise propagate  -- raise the exception in caller/invoker on the Rexx side
+
+
 ::METHOD bsf.getFieldValue
    parse arg fieldName
    signal on syntax name any
@@ -1627,6 +1702,21 @@ any:
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
+::METHOD bsf.getFieldValueJSO -- rgf, 2014-10-04
+   parse arg fieldName
+   signal on syntax name any
+  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
+   return bsf.wrap( bsf("getFieldValueJSO", self~objectname, fieldName) )
+
+any:
+   /* if a Java error, then the Java error message/stack trace is stored in the
+      current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
+      this error message available to the caller it is stored in the .local environment */
+  if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
+     .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
+  raise propagate  -- raise the exception in caller/invoker on the Rexx side
+
+
 ::METHOD bsf.getFieldValueStrict -- case-sensitive fieldName !
    parse arg fieldName
    signal on syntax name any
@@ -1636,6 +1726,25 @@ any:
      raise syntax 40.900 array ("BSF.CLS/class BSF/method bsf.getFieldValueStrict, error 1: too many arguments (maximum: 1, found: "arg()")")
 
    return bsf.wrap( bsf("getFieldValueStrict", self~objectname, fieldName) )
+
+any:
+   /* if a Java error, then the Java error message/stack trace is stored in the
+      current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
+      this error message available to the caller it is stored in the .local environment */
+  if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
+     .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
+  raise propagate  -- raise the exception in caller/invoker on the Rexx side
+
+
+::METHOD bsf.getFieldValueStrictJSO -- rgf, 2014-10-04, case-sensitive fieldName !
+   parse arg fieldName
+   signal on syntax name any
+  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
+
+  if arg()>1 then    -- 2009-06-26, hint by Mr. Lex (author of testunits for BSF4Rexx)
+     raise syntax 40.900 array ("BSF.CLS/class BSF/method bsf.getFieldValueStrict, error 1: too many arguments (maximum: 1, found: "arg()")")
+
+   return bsf.wrap( bsf("getFieldValueStrictJSO", self~objectname, fieldName) )
 
 any:
    /* if a Java error, then the Java error message/stack trace is stored in the
@@ -1692,6 +1801,22 @@ any:
   signal on syntax name any
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
   return bsf.wrap( bsf("getPropertyValue", self~objectname, propertyName, index))
+
+any:
+   /* if a Java error, then the Java error message/stack trace is stored in the
+      current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
+      this error message available to the caller it is stored in the .local environment */
+  if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
+     .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
+  raise propagate  -- raise the exception in caller/invoker on the Rexx side
+
+
+::METHOD bsf.getPropertyValueJSO    -- rgf, 2014-10-04
+  parse arg propertyName, index
+  if arg(2, "Omitted") then index = "" -- no index given, set to empty string
+  signal on syntax name any
+  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
+  return bsf.wrap( bsf("getPropertyValueJSO", self~objectname, propertyName, index))
 
 any:
    /* if a Java error, then the Java error message/stack trace is stored in the
@@ -1886,6 +2011,22 @@ any:
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
+
+::METHOD     bsf.getStaticValueJSO         class   -- rgf, 2014-10-04
+  parse arg className, fieldName
+  signal on syntax name any
+  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
+  return bsf.wrap( bsf("getStaticValueJSO", className, fieldName))
+
+any:
+   /* if a Java error, then the Java error message/stack trace is stored in the
+      current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
+      this error message available to the caller it is stored in the .local environment */
+  if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
+     .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
+  raise propagate  -- raise the exception in caller/invoker on the Rexx side
+
+
 ::METHOD     bsf.getStaticValueStrict      class
   parse arg className, fieldName
   signal on syntax name any
@@ -1899,6 +2040,23 @@ any:
   if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
+
+
+::METHOD     bsf.getStaticValueStrictJSO   class   -- rgf, 2014-10-04
+  parse arg className, fieldName
+  signal on syntax name any
+  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
+  return bsf.wrap( bsf("getStaticValueStrictJSO", className, fieldName))
+
+any:
+   /* if a Java error, then the Java error message/stack trace is stored in the
+      current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
+      this error message available to the caller it is stored in the .local environment */
+  if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
+     .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
+  raise propagate  -- raise the exception in caller/invoker on the Rexx side
+
+
 
 ::METHOD     bsf.postEventText              class
   parse arg eventText, priority
@@ -2615,16 +2773,42 @@ syntax:
 
 ::routine bsf.getStaticValue                 public
    parse arg className, fieldName
+  signal on syntax name any
    return bsf.wrap( bsf("getStaticValue", className, fieldName))
+any: raise propagate
+
+
+::routine bsf.getStaticValueJSO              public
+   parse arg className, fieldName
+  signal on syntax name any
+   return bsf.wrap( bsf("getStaticValueJSO", className, fieldName))
+any: raise propagate
+
 
 ::routine bsf.getStaticValueStrict           public
    parse arg className, fieldName
+  signal on syntax name any
    return bsf.wrap( bsf("getStaticValueStrict", className, fieldName))
+any: raise propagate
+
+
+::routine bsf.getStaticValueStrictJSO        public
+   parse arg className, fieldName
+  signal on syntax name any
+   return bsf.wrap( bsf("getStaticValueStrictJSO", className, fieldName))
+any: raise propagate
+
 
 ::routine bsf.getConstant                    public
   parse arg className, fieldName
   signal on syntax name any
   return bsf.wrap( bsf("getStaticValueStrict", className, fieldName))
+any: raise propagate
+
+::routine bsf.getConstantJSO                public
+  parse arg className, fieldName
+  signal on syntax name any
+  return bsf.wrap( bsf("getStaticValueStrictJSO", className, fieldName))
 any: raise propagate
 
 

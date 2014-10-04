@@ -1,3 +1,35 @@
+-------------------------------------- 2014-10-04 ----------------------------------
+
+- RexxAndJava.java
+
+- BSF.CLS
+        - added methods to existing BSF-methods, adding a trailing "JSO" (Java
+          string object) to them, that will return a reference to a
+          java.lang.String or Netrexx object instead of transparently turning
+          it into a Rexx string; this may be helpful, if wishing to invoke
+          the Java String methods on that (returned) Java string object.
+
+          These are the added methods:
+
+          - bsf.invokeJSO
+          - bsf.invokeStrictJSO
+          - bsf.getFieldValueJSO
+          - bsf.getFieldValueStrictJSO
+          - bsf.getStaticValueJSO
+          - bsf.getStaticStrictValueJSO
+          - bsf.getPropertyValueJSO
+
+          These are the added routines:
+
+          - bsf.getStaticValueJSO
+          - bsf.getStaticStrictValueJSO
+          - bsf.getConstantJSO
+
+-------------------------------------- 2014-10-02 ----------------------------------
+
+- RexxAndJava.java
+
+
 -------------------------------------- 2014-09-21 ----------------------------------
 
 - samples/info2thml.rxj
