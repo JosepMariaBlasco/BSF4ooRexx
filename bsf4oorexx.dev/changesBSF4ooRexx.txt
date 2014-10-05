@@ -1,3 +1,13 @@
+-------------------------------------- 2014-10-05 ----------------------------------
+
+- BSF.CLS
+        - removed the classes .bsf4rexx and .b4r that got introduced for pre-ooRexx 4.0
+          interpreters that did share .local among different ooRexx interpreter instances;
+          BSF4ooRexx mandates at least ooRexx 4.01 which manages a .local copy per
+          ooRexx interpreter instance; therefore changing the logic back to store a
+          directory named "BSF4Rexx" in .local and adding aliases for it to the .local
+          environment named "B4R" and (new) "BSF4ooRexx"
+
 -------------------------------------- 2014-10-04 ----------------------------------
 
 - RexxAndJava.java

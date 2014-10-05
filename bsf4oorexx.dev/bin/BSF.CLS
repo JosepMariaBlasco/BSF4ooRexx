@@ -12,6 +12,14 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2014-10-05, rgf: - now that BSF4ooRexx mandates ooRexx 4 and above, we can reinstate
+                            the original directory accessible via the environment variable
+                            .bsf4rexx and .b4r, adding an additional alias named .bsf4oorexx;
+                            (ooRexx 4.0 and higher will have separate copies of .local per
+                            Rexx interpreter instance); in effect this undoes the changes done
+                            on 2004-08-28 and 2004-08-31
+                          - added the entry "file.encoding" from Java to .bsf4rexx
+
          2014-10-03/04, rgf: - added methods to existing BSF-methods, adding a trailing "JSO" (Java
                                string object) to them, that will return a reference to a
                                java.lang.String or Netrexx object instead of transparently turning
@@ -377,7 +385,7 @@
 
 
 
-   version:     4.50 (20141004)
+   version:     4.50 (20141005)
 
    authors:     (c) 2001-2014 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
@@ -466,7 +474,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="450.20141004" -- set version (date distribution got created)
+   .bsf4rexx~version="450.20141005" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -563,9 +571,15 @@ syntax:
    each interpreter instance is separated from each other w.r.t. the objects
    stored in there.
 */
+/* Starting with 2014-10-05 we again make the .bsf4rexx directory available via .local,
+   adding the aliases, "b4r" and "bsf4oorexx" for it.
+*/
 ::routine initialize.BSF.dir
---   bsf.dir=.bsf~dir        -- get .BSF's directory object
-  bsf.dir=.bsf4rexx~dir        -- get .BSF's directory object
+  -- bsf.dir=.bsf4rexx~dir        -- get .BSF's directory object
+  bsf.dir=.directory~new      -- create a directory for BSF4ooRexx programs
+  .local~bsf4rexx  =bsf.dir   -- create an entry in .local for it
+  .local~b4r       =bsf.dir   -- create an entry in .local for it
+  .local~bsf4oorexx=bsf.dir   -- create an entry in .local for it
    /*
       pre-registered classes (in the BSF-registry) to make it easier to
       indicate the most important Java class-objects from the ooRexx side;
@@ -632,7 +646,7 @@ syntax:
   end
 
 
-  do key over .list~of("line.separator", "file.separator", "path.separator")
+  do key over .list~of("line.separator", "file.separator", "path.separator", "file.encoding")
      bsf.dir~setEntry(key,bsf.dir~java.lang.System~getProperty(key))
   end
 
@@ -989,7 +1003,7 @@ any:
   return data           -- assume the string of a primitive type
 
 
-
+/* --> 20141005, ---rgf
 /* Used to be a directory entry in .local: however, since .local is shared among all
    ooRexx interpreter instances of a process in pre-4-ooRexx interpreters, we need to
    offload it into a public class (which are individually created for each interpreter
@@ -1019,6 +1033,7 @@ any:
 
 ::attribute dir   class
 
+*/
 
 
 /* *************************************************************

@@ -36,7 +36,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.2.0, 2014-10-04
+  * @version 4.2.0, 2014-10-05
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -319,7 +319,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "420.20141004";
+    static final public String version = "420.20141005";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -2851,6 +2851,8 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
           case SET_FIELD_VALUE_STRICT    :
 
           case GET_PROPERTY_VALUE        :
+           case GET_PROPERTY_VALUE_JSO    : // rgf, 2014-10-05
+
           case SET_PROPERTY_VALUE        :
           case SET_PROPERTY_VALUE_STRICT :
                   {
@@ -3042,12 +3044,12 @@ if (bDebug) System.err.println("Trying 'GET"+args[2]+"' ? : " + ! (args[2].toUpp
 if (bDebug)
 {
     System.err.println("result of tests:");
-    System.err.println("\t\t#1:"+(choice==GET_FIELD_VALUE_JSO ||
+    System.err.println("\t\tJSO?\t#1:"+(choice==GET_FIELD_VALUE_JSO ||
                                     choice==GET_FIELD_VALUE_STRICT_JSO ||
                                     choice==GET_PROPERTY_VALUE_JSO)
                        );
-    System.err.println("\t\t#2:"+(bean.value != null)+", bean.value.getClass():"+bean.value.getClass() );
-    System.err.println("\t\t#3:"+(bean.value instanceof String ||
+    System.err.println("\t\tb.v?\t#2:"+(bean.value != null)+", bean.value.getClass():"+bean.value.getClass() );
+    System.err.println("\t\tb.v?\t#3:"+(bean.value instanceof String ||
                                     (nlR_class!=null && bean.value.getClass()==nlR_class)
                         )
                       );
@@ -3064,7 +3066,11 @@ if (bDebug)
 // rgf, 2014-10.04: temporatily force java.lang.String
 // bean.value=bean.value.toString();
 
-                             if ( bean.value != null &&
+                             if ( ( choice==GET_FIELD_VALUE_JSO        ||
+                                  choice==GET_FIELD_VALUE_STRICT_JSO ||
+                                  choice==GET_PROPERTY_VALUE_JSO
+                                 ) &&
+                                 bean.value != null &&
                                  ( bean.value instanceof String || (nlR_class!=null && bean.value.getClass()==nlR_class) )
                                 )
                              {
@@ -3324,6 +3330,20 @@ if (bDebug)
                                   String beanName = makeBeanName(result);
                                   return registerBean(beanName, result);
                              }
+
+
+                             if ( ( choice==GET_STATIC_VALUE_JSO        ||
+                                  choice==GET_STATIC_VALUE_STRICT_JSO
+                                 ) &&
+                                 result != null &&
+                                 ( result instanceof String || (nlR_class!=null && result.getClass()==nlR_class) )
+                                )
+                             {
+                                 // register result as a bean and return it
+                                  String beanName = makeBeanName(result);
+                                  return registerBean(beanName, result);
+                             }
+
 
                              return makeString4Rexx(result);
                          }
