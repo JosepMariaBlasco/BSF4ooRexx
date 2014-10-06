@@ -17,7 +17,7 @@
                             .bsf4rexx and .b4r, adding an additional alias named .bsf4oorexx;
                             (ooRexx 4.0 and higher will have separate copies of .local per
                             Rexx interpreter instance); in effect this undoes the changes done
-                            on 2004-08-28 and 2004-08-31
+                            on 2008-08-28 and 2008-08-31
                           - added the entry "file.encoding" from Java to .bsf4rexx
 
          2014-10-03/04, rgf: - added methods to existing BSF-methods, adding a trailing "JSO" (Java
@@ -385,7 +385,7 @@
 
 
 
-   version:     4.50 (20141005)
+   version:     4.50 (20141006)
 
    authors:     (c) 2001-2014 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
@@ -474,7 +474,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="450.20141005" -- set version (date distribution got created)
+   .bsf4rexx~version="450.20141006" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -545,7 +545,7 @@ syntax:
   end
   if path2icon="" then return     -- no path found
 
-  path2icon=path2icon || .bsf4rexx~file.separator   -- append file separator
+  path2icon=path2icon -- file separator already appended! || .bsf4rexx~file.separator   -- append file separator
 
 	-- create entries to exisiting icon files in the given resolutions
   imageNames=.array~of("bsf4oorexx", "oorexx4ooo")

@@ -12,6 +12,15 @@
 
 - RexxAndJava.java
 
+        - added the subfunctions
+          - invokeJSO
+          - invokeStrictJSO
+          - getFieldValueJSO
+          - getFieldValueStrictJSO
+          - getStaticValueJSO
+          - getStaticStrictValueJSO
+          - getPropertyValueJSO
+
 - BSF.CLS
         - added methods to existing BSF-methods, adding a trailing "JSO" (Java
           string object) to them, that will return a reference to a

@@ -6,6 +6,8 @@
                               - rewritten for BSF4ooRexx, camouflaging Java as ooRexx, making coding
                                 easier
             2014-09-23, rgf   - add version info for BSF.CLS
+            2014-10-06, rgf   - add information tables for .bsf4rexx, .local and .environment
+                              - new code uses MutableBuffer
    purpose: create a HTML-rendering containing the settings in effect for BSF4ooRexx (Rexx, BSF4ooRexx, Java)
    usage:   rexx[j] info2html.rxj
 
@@ -106,13 +108,44 @@ do entry over get_java_props()  /* get and process all available Java properties
 
    i+=1
 end
+tmp=tmp "</table>" crlf
 
-tmp=tmp "</table>" crlf crlf"</body>"crlf"</html>"
+-- create tables for .bsf4rexx, .local, .environment
+tmp=tmp "<p><hrule width=""50%"">"
+tmp=tmp addTable(".bsf4rexx (from package ""BSF.CLS"")", .bsf4rexx)
+tmp=tmp "<p><hline width=""50%"">"
+tmp=tmp addTable(".local (from ooRexx)"                , .local)
+tmp=tmp "<p><hline width=""50%"">"
+tmp=tmp addTable(".environment (from ooRexx)"          , .environment)
+tmp=tmp "<p><hline width=""50%"">"
+
+tmp=tmp crlf"</body>"
+tmp=tmp crlf"</html>"
 
 fn=thisFileName"_as_of_"runDate~translate("-",":") || ".html"
+
+-- get directory with write permissions to write to
+do dir over .array~of('user.dir', 'user.home', 'java.io.tmpdir')
+   d=.file~new(.java.lang.System~getProperty(dir))
+   if d~canWrite then
+   do
+      fn=d~path || .bsf4rexx~file.separator || fn
+      leave
+   end
+end
+
+
 say "Writing Java properties into file:" fn "..."
 call lineout fn, tmp
 call stream fn, "C", "CLOSE"
+fn=quote(fn)         -- quote fully qualified file name (may have blanks in them)
+select
+   when .bsf4rexx~opsys1="L" then "xdg-open" fn    -- Linux: open desktop initiative
+   when .bsf4rexx~opsys1="M" then "open"     fn    -- MacOSX
+   when .bsf4rexx~opsys1="W" then            fn    -- Windows
+   otherwise nop     -- unknown operating system, do not try to open file
+end
+
 exit
 
 
@@ -137,6 +170,9 @@ make_tr2: procedure expose crlf tab    /* create a regular table row for the Jav
 ::routine pp               /* emphasize the value HTML-style   */
    tag="kbd"
    return "<"tag">"arg(1)"</"tag">"
+
+::routine quote
+  return '"' || arg(1) || '"'
 
 
 ::routine escape           /* escape chars <, >, ", ', &       */
@@ -182,4 +218,32 @@ decode_ctl_chars: procedure expose ctl_chars
    if tmp ="" then return val   /* no ctl_chars found, return value   */
    return tmp || val
 
-::requires "BSF.CLS"    -- get Java support
+::routine addTable
+  use arg title, dir
+
+  crlf="0d0a"x
+  tab ="09"x
+  tmp=.mutableBuffer~new
+
+  tmp~~append(crlf)
+  tmp~~append("<table border cellpadding='3px' align='center'>") ~~append(crlf)
+  tmp~~append(tab)~~append("<tr><th colspan='3'>") ~~append(escape(title)) ~~append("</th> </tr>")
+
+  i=1
+  idxArr=dir~allIndexes~sortWith(.caselessComparator~new)
+  do idx over idxArr
+     tmp~~append(tab)
+     tmp~~append("<tr><td style='text-align: right;'>") ~~append(i)
+     tmp~~append("<th style='text-align:left;' width='30%'>") ~~append(idx)
+     tmp~~append("<td>") ~~append( pp(escape(pp2(dir[idx]))) ) ~~append("</td> </tr>")
+     tmp~~append(crlf)
+     i+=1
+  end
+  tmp~~append("</table>") ~~append(crlf) ~~append(crlf)
+
+  return tmp~string        -- return string rendering
+
+
+
+::requires "BSF.CLS"       -- get Java support
+::requires "rgf_util2.rex" -- get support to the
