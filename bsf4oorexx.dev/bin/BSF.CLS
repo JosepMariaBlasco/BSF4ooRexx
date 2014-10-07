@@ -12,6 +12,9 @@
    needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2014-10-07, rgf: - JSOasUtf8string: render Java String as UTF-8 encoded Rexx string
+                          - utf8stringAsJSO: render UTF-8 Rexx encoded string as a Java String
+         2014-10-06, rgf: - utf8toString - handle Javs objects
          2014-10-05, rgf: - now that BSF4ooRexx mandates ooRexx 4 and above, we can reinstate
                             the original directory accessible via the environment variable
                             .bsf4rexx and .b4r, adding an additional alias named .bsf4oorexx;
@@ -385,7 +388,7 @@
 
 
 
-   version:     4.50 (20141006)
+   version:     4.50 (20141007)
 
    authors:     (c) 2001-2014 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
@@ -474,7 +477,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="450.20141006" -- set version (date distribution got created)
+   .bsf4rexx~version="450.20141007" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3984,17 +3987,75 @@ syntax: raise propagate
                     DBUS4ooRexx package which mandates UTF-8 strings (and checks them) */
    /* ---------------------------------------------------------------------------------------- */
    /* as of 2011-07-05 ooRexx from trunk does not support UTF-8, hence depending on BSF4ooRexx */
+/** The received Rexx string is rendered to a Java String object using the 'file.encoding' codepage
+*   and then translated to an UTF-8 encoded Rexx string.
+*
+* @param str the Rexx string encoded according to the 'file.encoding's codepage
+* @return the equivalent UTF-8-encoded Rexx string
+* @since 2012-02-11
+*/
 ::routine stringToUtf8 public    -- needs BSF4ooRexx
   parse arg str
   return BsfRawBytes(.java.lang.String~new(str)~getBytes("UTF-8"))
 
 
    /* ---------------------------------------------------------------------------------------- */
+/** The received Java object's string value is rendered to a Rexx string according to 'file.encoding's
+*   codepage.
+*
+* @param obj the Java String object (JSO) or a Java object which string value is retrieved and worked upon,
+*            or an UTF-8 encoded Rexx string
+* @return a Rexx string encoded according to 'file.encoding's codepage
+* @since 2012-02-11
+*/
 ::routine utf8ToString public    -- needs BSF4ooRexx
-  parse arg str
-  return BsfRawBytes(.java.lang.String~new(bsfRawBytes(str),"UTF-8")~getBytes)
+  use arg str
+
+  if str~isA(.bsf) then    -- any Java object, use its String value
+     return str~toString   -- this will do the translation from UTF-8 to file.encoding codepage
+  else   -- a Rexx string? -- turn UTF-8 encoded Rexx string into Java string, recode the Java string using 'file.encoding's codepage and return it as a Rexx string
+     return BsfRawBytes(.java.lang.String~new(bsfRawBytes(str),"UTF-8")~getBytes)
 
 
+   /* ---------------------------------------------------------------------------------------- */
+/** The received Rexx string consists of UTF-8 characters for which a Java string object gets
+*  created and returned, independent of the file.encoding codepage setting.
+*
+* @param str the Rexx string consisting of UTF-8 characters
+* @return a reference to the Java String object constructed from the Rexx string
+* @since 2014-10-07
+*/
+::routine utf8stringAsJSO public
+   parse arg str
+   return .java.lang.String~new(BSFRawBytes(str),"UTF-8")
+
+
+   /* ---------------------------------------------------------------------------------------- */
+/** The received Java String object (JSO) is rendered as an UTF-8 Rexx string, independent
+*   of the file.encoding codepage setting.
+* @param obj the Java String object reference or a Java object which String value is retrieved and worked upon
+* @return a Rexx UTF-8 encoded string constructed from the Java String object
+* @since 2014-10-07
+*/
+::routine JSOasUtf8string public
+   use arg obj
+
+   if obj~isA(.bsf) then      -- a Rexx proxy (to a Java object) in hand?
+   do
+      if obj~bsf.isA(.java.lang.String)=.false then   -- need to get String value from object?
+         obj=obj~bsf.invokeJSO('toString')            -- fetch String value as a Java String object (JSO)
+
+      return BSFRawBytes(obj~getBytes("UTF-8"))       -- render String value to a Rexx string and return it
+   end
+
+   raise syntax 40.900 array ("Wrong argument, must be a Java String object (JSO) or a Java object which String value (result of sending it the 'toString' message) will be processed upon. Instead, received an ooRexx object.")
+
+syntax:
+   raise propagate
+
+
+
+   /* ---------------------------------------------------------------------------------------- */
    -- as of ooRexx 4.1.1 the following scenario may occur: Rexx starts Java and Java calls
    -- back into ooRexx; this may take place even after the Rexx program ended and as a result the
    -- Rexx interpreter shuts down; a callback in that situation will cause a crash!

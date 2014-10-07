@@ -189,7 +189,7 @@ jLabel~text=str2a             -- this will cause encoding in the "file.encoding"
 jFrame~pack                   -- resize JLabel
 str2b=jLabel~text             -- this will cause decoding in the "file.encoding" codepage
 say "str2b: " pp(str2b)  "("currCP")"
-
+say
 say "Hit enter to continue..."
 pull x
 say
@@ -221,6 +221,31 @@ jFrame~pack                   -- resize JLabel
    -- get UTF-8 Java characters as Java byte array, turn into a Rexx string without recoding
 str3c=BSFRawBytes(jLabel~bsf.invokeJSO("getText")~getBytes("UTF-8"))
 say "str3c: " pp(str3c)  "(UTF-8)"
+say
+say "Hit enter to continue..."
+pull x
+
+
+   -- the code in this section explicitly en-/decodes the string encoded as "UTF-8" (does not
+   -- rely on the setting of the property "file.encoding")
+say "-"~copies(79)
+say
+txt="explicitly using UTF-8, *NOT* relying on 'file.encoding=UTF-8'"
+jLabel~text=" --> next round," txt "<-- "
+jFrame~pack                   -- resize JLabel
+say "Again" txt "by employing"
+say "the public routines from BSF.CLS: utf8stringAsJSO(str) and JSOasUtf8string(jso)"
+say
+say "Hit enter to continue..."
+pull x
+
+jLabel~text=utf8stringAsJSO(str3b)  -- turn UTF-8 Rexx string into a Java String object (JSO)
+jFrame~pack                   -- resize JLabel
+res=JSOasUtf8string(jLabel~bsf.invokeJSO("getText"))  -- get UTF-8 encoded Rexx string
+say "str3b=res?" pp(str3b=res)      -- show whether both UTF-8 encoded Rexx strings are the same
+say "str3b:" pp(str3b)
+say
+say "res  :" pp(res)
 
 say "Hit enter to continue..."
 pull x

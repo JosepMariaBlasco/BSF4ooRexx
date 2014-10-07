@@ -2961,6 +2961,7 @@ return
             props~setProperty("s2",.mm.dir~splitpane2) 
             props~setProperty("s3",.mm.dir~splitpane3) 
             props~setProperty("s4",.mm.dir~splitpane4) 
+            props~setProperty("bpanel94",.mm.dir~bpanel94)
             
             -- .mm.dir~wh1..wh6 
             -- .mm.dir~ww1..ww6
@@ -5719,6 +5720,12 @@ return
     .mm.dir~splitpane4 = props~getProperty("s4") 
     .mm.dir~dtype      = props~getProperty("dtype") 
 
+    if props~getProperty("bpanel94") == .nil then do 
+       if .mm.dir~isdebug == true then say "bpanel94 not found" 
+    end
+    else do 
+       .mm.dir~bpanel94 = props~getProperty("bpanel94")
+    end
     if props~getProperty("s0") == .nil then .mm.dir~splitpane0 = trunc( 400 * (.local~mm.dir~height / 1024) )
     else if props~getProperty("s0") < 1 then .mm.dir~splitpane0 = trunc( 400 * (.local~mm.dir~height / 1024) )
 

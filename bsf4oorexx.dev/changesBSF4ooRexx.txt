@@ -1,3 +1,17 @@
+-------------------------------------- 2014-10-07 ----------------------------------
+
+- BSF.CLS
+        - JSOasUtf8string: render Java String as UTF-8 encoded Rexx string
+        - utf8stringAsJSO: render UTF-8 Rexx encoded string as Java String
+
+- utilities\ooRexxTry.rxj
+        - bug fixed version by Geri Leitner
+
+-------------------------------------- 2014-10-06 ----------------------------------
+
+- BSF.CLS
+        - utf8toString - render UTF-8 handle Java objects
+
 -------------------------------------- 2014-10-05 ----------------------------------
 
 - BSF.CLS
