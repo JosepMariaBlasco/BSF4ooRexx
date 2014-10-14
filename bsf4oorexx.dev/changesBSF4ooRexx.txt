@@ -12,6 +12,17 @@
 - BSF.CLS
         - utf8toString - render UTF-8 handle Java objects
 
+- samples\demoJSO.rxj (return reference to java.lang.String or to NetRexx object)
+        - demonstrate how to retrieve a reference to the Java string object ("JSO") that method
+          invocations and read access to fields and properties might return, rather than
+          having the default and transparent translation to a Rexx string
+        - demonstrate how to handle different encodings of strings between Rexx and Java taking
+          advantage of the JSO-functionality
+        - demonstrate platform independent beeping ;)
+
+- samples\info2html.rxj (new)
+        - render ooRexx, BSF4ooRexx and Java infos as HTML, open file in browser
+
 -------------------------------------- 2014-10-05 ----------------------------------
 
 - BSF.CLS
@@ -65,10 +76,28 @@
 
 -------------------------------------- 2014-09-21 ----------------------------------
 
-- samples/info2thml.rxj
+- samples/info2thml.rxj (new)
 
         - new sample that demonstrates how to gather version information from ooRexx,
           BSF4ooRexx and Java and rendering and saving that information in a HTML file
+
+
+-------------------------------------- 2014-09-15 ----------------------------------
+
+- samples/ReneJansen/jdbc.jrexx
+
+        - added DataSource access to RDBMS, which works also, when BSF4ooRexx
+          is installed in java.ext.dirs directory, which would not work with
+          the DriverManager variant in Java 1.7/7
+
+
+-------------------------------------- 2014-09-09 ----------------------------------
+
+- samples/clock.rxj
+        - create a graphical clock that shows the current time
+        - demonstrates how to extend a Java class to allow ooRexx to overwrite specific
+          Java methods, in this example the Java method "javax.swing.JComponent paintComponent"
+
 
 -------------------------------------- 2014-08-30 ----------------------------------
 
@@ -80,6 +109,11 @@
 
         - a subclass may invoke protected methods, cater for this
 
+
+-------------------------------------- 2014-07-16 ----------------------------------
+
+- samples\EuroCalcJava.rxj
+        - added Lithuania Litas
 
 -------------------------------------- 2014-07-16 ----------------------------------
 
@@ -203,6 +237,15 @@
         - change method lookup for INVOKE to use Class.getMethods() instead of Class.getDeclaredMethods();
           getMethods() returns all public methods, which in Java 8 also includes default (interface) methods,
           if necessary
+
+-------------------------------------- 2014-05-14 ----------------------------------
+
+- samples/demo-j8-lambda.rxj (new)
+
+        - demonstrate how to use ooRexx code to be used in Java 8's lambda-related
+          functional programming patterns
+
+
 
 -------------------------------------- 2014-04-03 ----------------------------------
 
