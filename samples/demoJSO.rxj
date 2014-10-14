@@ -251,7 +251,4 @@ say "Hit enter to continue..."
 pull x
 
 
-
-
-::requires bsf.cls
-
+::requires bsf.cls      -- get Java camouflaging support
