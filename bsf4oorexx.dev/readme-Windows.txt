@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for Windows                26 May 2014
+BSF4ooRexx - Installation Directions for Windows                14 Oct 2014
 ================================================
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
@@ -20,7 +20,7 @@ Prerequisites
     Sometimes it is possible to run Java from the commandline. To check, open
     a command line window and enter: "java -version"
 
-[2] ooRexx 4.0.1 or higher, cf. <http://www.oorexx.org/download.html>
+[2] ooRexx 4.2.0 or higher, cf. <http://www.oorexx.org/download.html>
 
 [3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org>
 

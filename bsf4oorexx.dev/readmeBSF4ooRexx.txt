@@ -1,5 +1,5 @@
-BSF4ooRexx, 4.50 26 May 2014 BETA
-=================================
+BSF4ooRexx, 4.50                          14 Oct 2014 GA ('General Availability')
+=================================================================================
 
 This is a package that creates a bridge between ooRexx and Java. For that
 reason Java must be installed on your machine as well, which is easy and

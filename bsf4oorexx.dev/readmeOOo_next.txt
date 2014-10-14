@@ -1,4 +1,4 @@
-Additional information on the OpenOffice.org support that may be interesting 26 May 2014
+Additional information on the OpenOffice.org support that may be interesting 14 Oct 2014
 ========================================================================================
 
 The ooRexx OpenOffice.org (OOo) support is based on BSF4ooRexx as it uses

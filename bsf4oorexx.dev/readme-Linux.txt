@@ -1,4 +1,4 @@
-BSF4ooRexx - Installation Directions for Linux                   26 May 2014
+BSF4ooRexx - Installation Directions for Linux                   14 Oct 2014
 ==============================================
 Home: <http://sourceforge.net/projects/bsf4oorexx/>
 
@@ -23,7 +23,7 @@ Prerequisites
 
     Home: <http://www.java.com>
 
-[2] ooRexx 4.1.0 or higher from its home: <http://www.ooRexx.org>.
+[2] ooRexx 4.2.0 or higher from its home: <http://www.ooRexx.org>.
 
 [3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org>
 

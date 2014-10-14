@@ -307,6 +307,8 @@ zip -9r %releaseInstallZip% ApacheLicense2.0.txt
 zip -9r %releaseInstallZip% asm_LICENSE.TXT
 zip -9r %releaseInstallZip% janino_LICENSE.TXT
 
+zip -d  %releaseInstallZip% "*samples/deprecated*" "*samples/LeePeedin/deprecated*"
+
 @rem zip -d  BSF4ooRexx_install bsf4oorexx/samples/version4/
 
 @echo finished.

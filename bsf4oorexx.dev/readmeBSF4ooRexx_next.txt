@@ -1,4 +1,4 @@
-Additional information on BSF4ooRexx that may be interesting  26 May 2014
+Additional information on BSF4ooRexx that may be interesting  14 Oct 2014
 =========================================================================
 
 BSF4ooRexx is an extension to Rexx and ooRexx, consisting of an external Rexx
@@ -307,7 +307,7 @@ a) Installing Java, if not yet installed
 Installing ooRexx
 =================
 
-   Go and get the opensource and free "Open Object Rexx" (ooRexx) version 4.0 or
+   Go and get the opensource and free "Open Object Rexx" (ooRexx) version 4.2 or
    higher interpreter from:
 
         <http://www.ooRexx.org/download.html>
