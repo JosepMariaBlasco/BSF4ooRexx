@@ -1,3 +1,4 @@
+#!/usr/bin/rexx
 /*
    name:    demoJSO.rxj
    purpose: - demonstrate how to retrieve a reference to the Java string object ("JSO") that method
