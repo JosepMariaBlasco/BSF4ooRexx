@@ -1,3 +1,4 @@
+#!/usr/bin/rexx
 /*
    name:       RegexTestHarness.rxj
    purpose:    allow interactive experimenting with Java's regular expressions; the Java tutorial
