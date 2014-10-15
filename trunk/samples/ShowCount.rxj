@@ -1,0 +1,160 @@
+#!/usr/bin/rexx
+/*
+   Name:    "ShowCount.rxj"
+
+   Invoke:  "rexx Showcount.rxj"
+                or
+            "rexxj Showcount.rxj" (Windows)
+                or
+            "rexxj.sh Showcount.rxj" (Unix)
+
+   Purpose:  create a little resizable window with a push button to count and reveal
+             the number of times the button was pressed
+
+   Needs:    Apache's "Bean Scripting Framework" (BSF), part of the BSF4ooRexx distribution
+
+   Date:    2001-04-30 (at the 12th International Rexx Symposium), 2003-01-23, 2003-05-10, 2005-06-05
+   Changed: 2005-12-28, added Apache license
+            2008-08-23, ---rgf, if using BSF.CLS, then do not use BSF() directly (or
+                                remove the first three chars from its result string)
+            2009-07-03, ---Walter Pachl add help and improve a little bit
+            2010-05-16, rgf, - adapting example to take full advantage of BSF4ooRexx
+                             - replacing bsf.addEventListener[WithEventObject] with a Rexx event handler
+            2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2001-2012 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+If arg(1)='?' Then Do
+  Parse Source source
+  Say source
+  Say 'This program displays a window with a button at its bottom'
+  Say 'In the middle of this window you will be told'
+  Say '   how often you have pressed this very button.'
+  Exit
+End
+
+hi=BsfInvokedBy()
+Select
+  When hi=1 then say "This Rexx program was invoked by Java!"
+  When hi=2 then say "This Rexx program was invoked by Rexx, JVM loaded by Rexx!"
+  Otherwise  Do; say "No JVM present, we got troubles ..."
+                 Exit
+             End
+End
+
+
+   -- Create a userData directory
+userData=.directory~new    -- a directory which will be passed to Rexx with the event
+
+   --  create a framed Java window, set a title text
+win=.bsf~new("java.awt.Frame", "Show Count")
+   -- Create a Java RexxProxy for controlling the closing of the application
+rexxCloseEH =.RexxCloseAppEventHandler~new   -- Rexx event handler
+   -- Create Java RexxProxy for the Rexx event handler
+rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , "java.awt.event.WindowListener" )
+win~addWindowListener(rpCloseEH) -- add RexxProxy event handler
+
+   -- create a Java push button
+but=.bsf~new("java.awt.Button", "Press me!")
+   -- Create a RexxProxy for the button Rexx event handler
+rp=BsfCreateRexxProxy(.RexxShowCountEventHandler~new, userData, "java.awt.event.ActionListener")
+but~addActionListener(rp)     -- add RexxProxy event handler
+
+   -- create a Java label, set it to show the text centered
+lab=.bsf~new("java.awt.Label")
+userData~label=lab            -- save label object for later use in event handler
+lab~setAlignment(lab~center)  -- set alignment to center
+lab~setText("Button was not yet pressed")    -- assign a text to the label
+
+win ~~add("Center", lab) ~~add("South", but) -- add the label and the button to the frame
+win ~~pack                    -- now calculate all widget dimensions
+call enlargeWidth win,but,90  -- enlarge the width of the frame and the button
+
+win ~~setVisible(.true) ~~toFront   -- make frame visible and move it to the front
+
+userData~i=0            -- set counter to 0
+
+rexxCloseEH~waitForExit -- wait until we are allowed to end the program
+
+-- if Java was loaded by Rexx, then terminate Java's RexxEngine to inhibit callbacks from Java
+call BSF.terminateRexxEngine
+
+
+::requires BSF.CLS      -- get Java support
+
+   /* enlarge the width of the frame and of the button without using a layout manager  */
+::routine enlargeWidth
+  use arg win, but, addToWidth
+
+  say "---"
+  say "win_size (standard):" win~getSize~toString
+  say "but_size (standard):" but~getSize~toString
+
+  winDim=win~getSize          -- get frame's dimension
+  winDim~width+=addToWidth    -- increase width
+  win~setSize(winDim)         -- set frame's dimension
+
+  say "win_size (enlarged):" win~getSize~toString
+  say "but_size (enlarged):" but~getSize~toString
+  say "---"
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to set "close app" indicator */
+::class RexxCloseAppEventHandler
+::method init        -- constructor
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::attribute closeApp          -- indicates whether app should be closed
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method windowClosing        -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to process tab changes */
+::class RexxShowCountEventHandler
+::method actionPerformed
+  use arg eventObject, slotDir
+  call showCount slotDir~userData
+
+
+/* ------------------------------------------------------------------------ */
+::routine ShowCount           -- query and display current size
+   use arg userData
+
+   i=userData~i+1             -- get and increment counter, save in local var "i"
+   userData~i=i               -- save current value in directory object
+   Select
+     When i=1 Then text='once'
+     When i=2 Then text='twice'
+     When i=3 Then text='three times'
+     Otherwise text=i 'times'
+   End
+   userData~label~setText("Button was pressed" text)
+

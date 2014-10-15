@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<description xmlns="http://openoffice.org/extensions/update/2006"
+xmlns:xlink="http://www.w3.org/1999/xlink">
+
+    <version value="450.20140403"/>
+
+    <identifier value="org.oorexx.uno.ScriptProviderForooRexx.package"/>
+
+    <update-website>
+        <src xlink:href="http://wi.wu-wien.ac.at/rgf/rexx/OOo/ScriptProviderForooRexx.update.html" lang="en"/>
+<!--
+        <src xlink:href="http://www.rexxla.org/updates/ScriptProviderForooRexx.update.html" lang="en"/>
+        <src xlink:href="http://www.oorexx.org/updates/ScriptProviderForooRexx.update.html" lang="en"/>
+        <src xlink:href="http://www.netrexx.org/updates/ScriptProviderForooRexx.update.html" lang="en"/>
+        <src xlink:href="http://sourceforge.net/projects/bsf4oorexx/files/ScriptProviderForooRexx.update.html" lang="en"/>
+-->
+
+    </update-website>
+
+    <dependencies xmlns:dep="http://openoffice.org/extensions/description/2006">
+        <dep:OpenOffice.org-minimal-version value="2.0" dep:name="OpenOffice.org 2.0"/>
+    </dependencies>
+
+    <publisher>
+        <name xlink:href="http://wi.wu-wien.ac.at/rgf/rexx/OOo/ScriptProviderForooRexx.author.htm" lang="en">Rony G. Flatscher</name>
+    </publisher>
+
+    <release-notes>
+        <src xlink:href="http://wi.wu-wien.ac.at/rgf/rexx/OOo/ScriptProviderForooRexx.release-notes_en.txt" lang="en"/>
+    </release-notes>
+
+</description>
+
+<!--
+
+rgf, 2010-08-02:
+    http://wiki.services.openoffice.org/wiki/Documentation/DevGuide/Extensions/Description_of_the_Update_Information
+
+rgf, 2010-07-28
+
+    http://wiki.services.openoffice.org/wiki/Update_Notification_Protocol
+    http://specs.openoffice.org/appwide/packagemanager/online_update_for_extensions.odt
+-->

@@ -1,0 +1,221 @@
+#!/usr/bin/rexx
+/*
+   author:  Rony G. Flatscher
+   date:    2006-06-25
+   version: 1.0.6
+   name:    add_ooRexxPackage.rex
+   purpose: adds package "ScriptProviderForooRexx.jar" for all OOo users ("shared" context)
+   needs:   UNO.CLS
+
+   changed: 2006-08-09, ---rgf: changed logic to create a new connection each time
+                                the package manager is used (turns out that on Linux
+                                FC5 the UNO bridge breaks on OOo 2.0.2, if a package
+                                manager exception occurs, inhibiting successive actions
+                                to be successful)
+            2007-07-07, ---rgf: unfortunately, OOo 2.2.x all of a sudden mandates an
+                                XCommandEnvironment argument; hence addressing the
+                                environment to issue command-line "unopkg" commands
+                                instead; leaving the original code as an example of how
+                                to use UNO for future releases
+            2010-03-20, ---rgf: make sure that no removing messages or remove errors get displayed
+            2010-07-05, ---rgf, - renamed extension to ".rxo" to reflect its dependency on OOo
+            2010-07-25/26, ---rgf, - renamed extension to install to new package "ScriptProviderForooRexx.oxt"
+            2010-08-15, ---rgf, - Linux: now supplying full path to "unopkg" to add_ooRexxPackage.rxo
+            2010-08-17, ---rgf, do not try to remove installed ScriptProviderForooRexx packages by just guessing anymore;
+                                user needs to run previous uninstall scripts or remove a left over using "unopkg[.exe]" or
+                                the OOo extension manager
+            2010-08-24, ---rgf, fixed bug in remove (uninitialized variable got used mistakingly)
+            2014-02-10, ---rgf, if oxt cannot be installed into 'shared' context, try to install it to 'user';
+                                when removing, make sure that both contextes are tried, "shared" and
+                                "user"
+
+   remark:  one can add or remove a package via the command-line as well using the
+            executable "unopkg[.exe]" from the OOo "program" directory or the OOo extension manager (Tools -> Extension Manager)
+
+               unopkg gui
+               ... allow user to use the GUI
+
+               unopkg list --shared
+                  ... lists all deployed "shared" (=global) packages
+
+               unopkg add -v --shared ScriptProviderForooRexx.oxt
+                  ... adds the ooRexx script (macro) provider support package globally
+
+               unopkg remove -v --shared ScriptProviderForooRexx.oxt
+                  ... removes the ooRexx script (macro) provider support package globally
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2006-2014 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+
+-- parse upper arg switch +1     -- argument "REMOVE" removes, otherwise install
+parse caseless arg switch "/unopkg:" fullPath2unopkg   -- argument "REMOVE" removes, otherwise install
+
+switch=switch~left(1)~upper      -- get first char in uppercase, if any
+unopkg=fullPath2unopkg~strip     -- strip leading and trailing blanks
+if unopkg='' then unopkg="unopkg"
+             else unopkg=q(unopkg)  -- quote command to cater for untypical paths containing e.g. spaces
+
+if sysVersion()~left(1)="W" then -- Windows?
+   nullDevice="2>&1 >nul"
+else                             -- Unix
+   nullDevice="2>&1 >/dev/null"
+
+extension = "ScriptProviderForooRexx.oxt"
+
+/* 2010-08-16, rgf
+-- this loop makes sure that all variants of "ScriptProviderFor[oo]Rexx" are removed as well from both, "user" and "shared" context !
+do package over .list~of("ScriptProviderForRexx.jar", "ScriptProviderForooRexx.jar", extension)
+--   res=doit("unopkg remove" package nullDevice) -- make sure (older?) deinstalled from user
+   res=doit(unopkg "remove" package nullDevice) -- make sure (older?) deinstalled from user
+--   if res=1 then say "Package" pp(package) "successfully removed from 'user' context"
+
+   res=doit(unopkg "remove --shared" package nullDevice) -- make sure (older?) deinstalled from user
+--   if res=1  then say "Package" pp(package) "successfully removed from 'shared' context"
+end
+*/
+
+if switch="R" then   -- remove the installed package
+do
+   res1=doit(unopkg "remove --shared" extension nullDevice) -- make sure (older?) deinstalled from user
+   if res1=1  then say "Success! Package" pp(extension) "successfully removed from 'shared' context!"
+
+   res2=doit(unopkg "remove" extension nullDevice) -- make sure (older?) deinstalled from user
+   if res2=1  then say "Success! Package" pp(extension) "successfully removed from 'user' context!"
+
+   if (res1 + res2) = 0 then
+      say "Information: package" pp(extension) "could *NOT* be removed from 'shared' nor from 'user' context, maybe not installed?"
+end
+else                 -- if no remove switch given, install the package
+do
+   res=doit(unopkg "add --shared" extension)   -- now add as a shared package
+   if res=1  then say "Success! Package" pp(extension) "successfully added as a 'shared' package!"
+             else    -- try to add oxt as a user extension
+             do
+                res=doit(unopkg "add" extension)   -- now add as a package for the user only
+                if res=1 then say "Success! Package" pp(extension) "successfully added as a 'user' package!"
+                         else say "ERROR! Package" pp(extension) "could *NOT* be added as a 'shared' nor as a 'user' package!"
+             end
+end
+
+
+::routine pp      -- enclose argument in square brackets
+  parse arg s     -- get argument
+  return "["s"]"  -- return argument enclosed in square brackets
+
+::routine doit    -- try to carry out action
+  parse arg command
+  signal on any   -- intercept all conditions
+  command         -- pass command to environment
+  return rc=0     -- return .true, if return code from command was 0 (usually: success)
+
+any:              -- something went wrong
+  return .false
+
+::routine q    /* enclose string into apostrophes  */
+  return """" || arg(1) || """"
+
+
+
+/* ---------------------------------> OLD CODE (up to: 2007-07-07) - BEGIN -->>
+
+/*
+   rexx add_ooRexxPackage > {/dev/null|nul}
+
+   LInux:   "/dev/null"
+   Windows: "nul"
+
+*/
+
+bInstall=(arg()=0)      -- install, if no argument given, otherwise de-install only
+
+packageName = "ScriptProviderForooRexx.jar"
+mediaType   = "application/vnd.sun.star.uno-component;type=Java"
+
+tmpName     = stream(packageName, "C", "QUERY EXISTS")   -- get fully qualified filename
+if tmpName  = "" then
+do
+   .error~say("Cannot find" pp(packageName)", aborting...")
+   exit -1
+end
+urlName     = ConvertToUrl(tmpName) -- turn into ucp compliant URL
+
+xpmf=getNewConnectionToPackageManagerFactory()
+
+   -- make sure package is removed from "user" context
+call removePackage xpmf~getPackageManager("user"), packageName
+
+   -- work on "shared" (global) package context
+xpmShared=getNewConnectionToPackageManagerFactory()~getPackageManager("shared")
+call removePackage xpmShared, packageName             -- remove old package
+
+if bInstall then  -- install package ?
+do
+   xpmShared=getNewConnectionToPackageManagerFactory()~getPackageManager("shared")
+   xpmShared~addPackage(urlName, mediaType, .nil, .nil)  -- add package
+
+   dp=getDeployedPackage(xpmShared, packageName)         -- query package
+   if .nil<>dp then  -- package object available?
+      say "Is ["packageName"] registered?" "["dp~isRegistered(.nil,.nil)~value~value"]"
+   else
+   do
+      say "["packageName"] could not be added!"
+      say
+      say "You may want to try: 'unopkg remove/add --shared ScriptProviderForooRexx.jar'"
+      say "from the command line. 'unopkg' is located in the 'program' directory of"
+      say "OpenOffice.org/StarOffice."
+   end
+end
+
+
+
+::requires UNO.CLS    -- get UNO support for ooRexx
+
+::routine getNewConnectionToPackageManagerFactory  -- rgf, 2006-08-09
+      /* initialize connection to server, get XContext */
+   xContext    = UNO.connect()  -- connect to server and retrieve the XContext object
+   XMcf        = xContext~getServiceManager   -- retrieve XMultiComponentFactory
+
+      /* get the pre-registered package manager factory singleton object   */
+   pmName="/singletons/com.sun.star.deployment.thePackageManagerFactory"
+   xpmf=xContext~getValueByName(pmName)~XPackageManagerFactory
+
+   return xpmf
+
+
+
+::routine removePackage       -- remove a given package
+  use arg xpmf, packageName
+
+  signal on any      -- activate execption handling
+  xpmf~removePackage(packageName, .nil, .nil)
+
+  any: return        -- just return
+
+::routine getDeployedPackage  -- get and return the deployed package object
+  use arg xpm, packageName
+
+  signal on any      -- activate exception handling
+  return xpm~getDeployedPackage(packageName, .nil)
+
+  any: return .nil   -- exception occurred return .nil
+
+
+<<-------------------------------> OLD CODE (up to: 2007-07-07) - END ---- */
+

@@ -1,0 +1,144 @@
+#!/usr/bin/rexx
+/*
+    name:      Snippet108.rxj
+    purpose:   Transcribe the swt Java example 'Snippet108' to classic Rexx (Regina) using BSF4Rexx
+    author:    Rony G. Flatscher
+    date:      2006-03-25
+               2008-09-09, rgf, changed "registerBean" and "registerBeanStrict" to their synonyms
+                                "new" and "newStrict" which better describe the semantics of
+                                these subfunctions
+               2010-02-16, rgf, adapted library name to "BSF4ooRexx"
+
+    url:       ooRexx:         <http://www.ooRexx.org>
+               swt:            <http://www.eclipse.org/swt/>
+               Snippet108.java <http://dev.eclipse.org/viewcvs/index.cgi/%7Echeckout%7E/org.eclipse.swt.snippets/src/org/eclipse/swt/snippets/Snippet108.java>
+               Java source:    <http://java.sun.com>
+
+    directions:   - download Rexx and install it
+                  - make sure Java is installed on your machine
+                  - download BSF4Rexx and install it
+                  - download the standalone version of swt ("Standard Widget Toolkit"), a fast set of
+                    Java classes, replacing awt/swing, available for all major platforms (Linux, MacOS, Windows)
+
+   license(s): see end of this file
+*/
+
+If arg(1)='?' Then
+Do
+  Say 'Demonstrate snippet108 as implemented in OoRexx'
+  Exit
+End
+
+
+if rxFuncQuery("BSF") then  /* no bsf4rexx support available yet, hence load Java */
+do
+   call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx", "BsfLoadFuncs"
+   call BsfLoadFuncs    /* load all BSF-functions                    */
+   call BsfLoadJava     /* load the JVM and set up BSF4Rexx-support  */
+end
+
+display=bsf("new", , "org.eclipse.swt.widgets.Display")          /* create an instance of this Java class  */
+shell  =bsf("new", , "org.eclipse.swt.widgets.Shell", display)   /* create an instance of this Java class  */
+
+   /* get some needed constant values */
+swt_border =bsf("getStaticValue", "org.eclipse.swt.SWT", "BORDER" )
+swt_default=bsf("getStaticValue", "org.eclipse.swt.SWT", "DEFAULT")
+swt_none   =bsf("getStaticValue", "org.eclipse.swt.SWT", "NONE"   )
+swt_push   =bsf("getStaticValue", "org.eclipse.swt.SWT", "PUSH"   )
+
+label  =bsf("new", ,"org.eclipse.swt.widgets.Label", shell, swt_none)
+call bsf "invoke", label, "setText", "Enter your name:"
+
+text   =bsf("new", , "org.eclipse.swt.widgets.Text", shell, swt_border)
+rowData=bsf("new", , "org.eclipse.swt.layout.RowData", 100, swt_default)
+call bsf 'invoke', text, 'setLayoutData', rowData
+
+   /* event listener to read content of text field, if it got modified  */
+            /* define the eventText, if a character is entered into the text field  */
+call bsf 'addEventListener', text, "modify", "", 'say "So far you have entered:" pp(bsf("invoke", text, "getText"))'
+
+   /* create the OK button    */
+ok=bsf('new', , "org.eclipse.swt.widgets.Button", shell, swt_push)
+call bsf 'invoke', ok, 'setText', "OK"
+            /* define the eventText, if this button is pressed */
+call bsf 'addEventListener', ok, "selection", "widgetSelected", "say 'OK'"
+
+   /* create the Cancel button, make it the default button  */
+cancel=bsf('new', , "org.eclipse.swt.widgets.Button", shell, swt_push)
+call bsf 'invoke', cancel, 'setText', "Cancel"
+            /* define the eventText, if this button is pressed */
+call bsf 'addEventListener', cancel, "selection", "widgetSelected", "say 'Cancel'"
+call bsf 'invoke', shell, 'setDefaultButton', cancel
+
+   /* define layout to be used, pack (= layout) the GUI widgets and show the results   */
+rowLayout=bsf('new', , "org.eclipse.swt.layout.RowLayout")
+call bsf 'invoke', shell, 'setLayout', rowLayout
+call bsf 'invoke', shell, 'pack'
+call bsf 'invoke', shell, 'open'
+
+   /* event loop     */
+do while bsf('invoke', shell, 'isDisposed')=0   /* as long as the window is there      */
+   if bsf('invoke', display, 'readAndDispatch')=0 then   /* if an event is there       */
+   do
+      rexxCode=bsf('pollEventText', 1)    /* come back after 1/1000 second */
+      if ".NIL"<>rexxCode then            /* if an eventText returned      */
+         interpret rexxCode               /* execute as Rexx program       */
+      call bsf 'invoke', display, 'sleep'
+   end
+end
+
+   /* make sure that all Java objects that were created in this program are deleted
+      from the BSF registry, such that the Java garbage collector can reclaim their
+      resources (if using the ooRexx 'BSF.CLS', this is done automatically */
+call bsf 'unregisterBean', display
+call bsf 'unregisterBean', shell
+call bsf 'unregisterBean', label
+call bsf 'unregisterBean', text
+call bsf 'unregisterBean', rowData
+call bsf 'unregisterBean', ok
+call bsf 'unregisterBean', cancel
+call bsf 'unregisterBean', rowLayout
+
+exit                                      /* end program                   */
+
+pp: procedure                             /* "pretty print" routine        */
+  return "[" || arg(1) || "]"
+
+/*
+   license(s): choice of
+
+    ------------------------ Apache Version 2.0 license (AL2.0)-------------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+
+    or
+
+    ------------------------ GNU Lesser Public License 3.0 (LGPL3.0) ----------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the GNU Lesser Pubilc License, 3.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.gnu.org/licenses/lgpl.html
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+

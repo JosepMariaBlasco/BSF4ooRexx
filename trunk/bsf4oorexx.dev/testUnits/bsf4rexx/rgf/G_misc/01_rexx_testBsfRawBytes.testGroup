@@ -1,0 +1,110 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testBsfRawBytes.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2010-03-26
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4Rexx 4.0.1 new external BsfRawBytes() function
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testBsfRawBytes)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "testBsfRawBytes" subclass ooTestCase public
+
+
+::method "test_01_plain_BsfRawBytes"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+
+    str1=""
+    jbarr=BsfRawBytes(str1)            -- empty Rexx string
+    self~assertEquals(jbarr~objectName~left(2), "[B")  -- a Java byte array in hand?
+    self~assertEquals(jbarr~items,0)   -- empty Java byte array
+    str2=BsfRawBytes(jbarr)            -- emtpy Rexx string
+
+    self~assertEquals(str1, str2)      -- Rexx strings must be equal
+
+
+
+::method "test_02_plain_BsfRawBytes_individual_8bit_chars"
+
+    xrange=xrange("00"x,"ff"x)
+    do i=1 to xrange~length
+       str1=xrange~substr(i,1)         -- extract one char
+       jbarr=BsfRawBytes(str1)         -- create Java byte array
+       self~assertEquals(jbarr~items,1)-- length must be 1
+       str2=BsfRawBytes(jbarr)         -- turn into Rexx string
+       self~assertEquals(str1, str2)   -- Rexx strings must be equal
+    end
+
+
+::method "test_03_plain_BsfRawBytes_substring_xrange_from_1_to_256_bytes"
+
+    xrange=xrange("00"x,"ff"x)
+    do i=1 to xrange~length
+       str1=xrange~substr(1,i)         -- extract i chars
+       jbarr=BsfRawBytes(str1)         -- create Java byte array
+       self~assertEquals(jbarr~items,i)-- length must be i
+       str2=BsfRawBytes(jbarr)         -- turn into Rexx string
+       self~assertEquals(str1, str2)   -- Rexx strings must be equal
+    end
+
+
+::method "test_04_plain_BsfRawBytes_substring_up_to_1024_multiples_of_xrange"
+
+    xrange=xrange("00"x,"ff"x)
+    do k=1 to 1024 by 4
+       copies=xrange~copies(k)
+       len=copies~length
+       str1=copies~substr(1, len-1)
+       str2=BsfRawBytes(BsfRawBytes(str1))
+       self~assertEquals(str1, str2)   -- Rexx strings must be equal
+
+       str1=copies~substr(1, len)
+       str2=BsfRawBytes(BsfRawBytes(str1))
+       self~assertEquals(str1, str2)   -- Rexx strings must be equal
+
+       str1=copies~substr(1, len+1)
+       str2=BsfRawBytes(BsfRawBytes(str1))
+       self~assertEquals(str1, str2)   -- Rexx strings must be equal
+    end
+
+
+
+::method "test_05_error"
+    self~expectSyntax(40.900)
+    str2=BsfRawBytes(BsfRawBytes(.nil))
+
+
+::method "test_06_error"
+    self~expectSyntax(40.900)
+    str2=BsfRawBytes(BsfRawBytes(.object~new))
+
+::method "test_07_error"
+    self~expectSyntax(40.900)
+    call bsfRexxProxy(.java.lang.System)
+
+::method "test_08_error"
+    jao=bsf.createJavaArrayOf("java.lang.String", "eins", "zwei") -- create Java array object of type java.lang.String
+
+    self~expectSyntax(40.900)
+    call bsfRexxProxy(jao)
+

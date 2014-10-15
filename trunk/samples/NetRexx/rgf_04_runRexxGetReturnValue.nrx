@@ -1,0 +1,11 @@
+parse source . . src
+
+rexxCode="return value(arg(1),,'ENVIRONMENT')"
+vArgs=Vector()
+vArgs.addElement("PATH")
+
+mgr       =org.apache.bsf.BSFManager()
+result=mgr.apply("rexx",src,0,0,rexxCode,null,vArgs)
+mgr.terminate() -- let BSFManager terminate the Rexx intepreter instance
+
+say "PATH:" result

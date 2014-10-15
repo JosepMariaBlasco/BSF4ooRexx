@@ -1,0 +1,188 @@
+#!/usr/bin/rexx
+/*
+   name:             FieldValue testGroup
+   author:           Michael Lex
+   version:          1.0.0
+*/
+/*
+
+  Due to the circumstance that the error codes were change from
+  BSF4Rexx version 2.8 to version 4.0 the following local variable
+  indicates the current used version.
+
+  For version 4.0:
+	.local~ver = 4
+
+  For version 2.8:
+	.local~ver = 2 -- or any other value since the check is only if 4 is present
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.FieldValue.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "FieldValue.testGroup" subclass ooTestCase public
+
+::method "test_1"
+	.local~ver = 4
+
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	f=ftf~bsf.getFieldValue("width")
+	self~assertEquals(f, 0)
+
+::method "test_2"
+	show_msg=BsfShowErrorMessage(0)
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	f=ftf~bsf.getFieldValue("foo")
+
+::method "test_3"
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	f=ftf~bsf.setFieldValue("width", 10)
+	f=ftf~bsf.getFieldValue("width")
+	self~assertEquals(f, 10)
+
+::method "test_4"
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	f=ftf~bsf.setFieldValue("width", 10)
+	f=ftf~bsf.getFieldValue("width")
+	self~assertEquals(f, 10)
+
+::method "test_5"
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	f=ftf~bsf.setFieldValue("width", "-10")
+	f=ftf~bsf.getFieldValue("width")
+	self~assertEquals(f, "-10")
+
+::method "test_6"
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	f=ftf~bsf.setFieldValue("width", -10)
+	f=ftf~bsf.getFieldValue("width")
+	self~assertEquals(f, -10)
+
+::method "test_7"
+	show_msg=BsfShowErrorMessage(0)
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	f=ftf~bsf.setFieldValue("width", "10.3")
+
+::method "test_8"
+	show_msg=BsfShowErrorMessage(0)
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	f=ftf~bsf.setFieldValue("width", 10.3)
+
+::method "test_9"
+	show_msg=BsfShowErrorMessage(0)
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	f=ftf~bsf.setFieldValue("foo", 10)
+
+::method "test_10"
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	f=ftf~bsf.setFieldValueStrict("width", "int", "10")
+	f=ftf~bsf.getFieldValue("width")
+	self~assertEquals(f, 10)
+
+::method "test_11"
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	f=ftf~bsf.setFieldValueStrict("width", "int", 10)
+	f=ftf~bsf.getFieldValueStrict("width")
+	self~assertEquals(f, 10)
+
+::method "test_12"
+	show_msg=BsfShowErrorMessage(0)
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	f=ftf~bsf.getFieldValueStrict("width", "foo")
+
+::method "test_13"
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	f=ftf~bsf.setFieldValue("width", 10)
+	f=ftf~bsf.getFieldValueStrict("width")
+	self~assertEquals(f, 10)
+
+::method "test_14"
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	f=ftf~bsf.setFieldValueStrict("width", "int", 10)
+	f=ftf~bsf.getFieldValue("width")
+	self~assertEquals(f, 10)
+
+::method "test_15"
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	f=ftf~bsf.setFieldValueStrict("width", "int", "-10")
+	f=ftf~bsf.getFieldValue("width")
+	self~assertEquals(f, "-10")
+
+::method "test_16"
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	f=ftf~bsf.setFieldValueStrict("width", "int", -10)
+	f=ftf~bsf.getFieldValue("width")
+	self~assertEquals(f, -10)
+
+::method "test_17"
+	show_msg=BsfShowErrorMessage(0)
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	f=ftf~bsf.setFieldValueStrict("width", "int", "10.3")
+
+::method "test_18"
+	show_msg=BsfShowErrorMessage(0)
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	f=ftf~bsf.setFieldValueStrict("width", "int", 10.3)
+
+::method "test_19"
+	show_msg=BsfShowErrorMessage(0)
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	f=ftf~bsf.setFieldValueStrict("foo", "int", 10)
+
+::method "test_20"
+	show_msg=BsfShowErrorMessage(0)
+	.bsf~bsf.import("java.awt.Dimension", "jad")
+	ftf=.jad~new
+	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
+	self~expectSyntax(errorCode)
+	f=ftf~bsf.setFieldValueStrict("foo", "long", 10)
+
+return
+

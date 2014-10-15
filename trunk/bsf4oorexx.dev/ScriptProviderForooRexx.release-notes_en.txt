@@ -1,0 +1,15 @@
+----------------- 2014-04-04 ------------
+BSF4ooRexx support for AOO, release version "450.20140404"
+
+- This release includes the AOO update mechanism
+
+- Standalone AOO ooRexx scripts (extension ".rxo") can be started by double-clicking
+  on them via the graphical Explorer interfaces on MacOSX, Linux and Windows, if their
+  icons display the superimposed AOO icon as well.
+
+- Added code to allow ooRexx macros on MacOSX AOO 4.0.x and 4.1.0 to execute (via
+  the macro editor's Run button), as these versions erroneously set the process
+  environment for ooRexx macros (missing PATH environment variable)
+
+Rony G. Flatscher, Wien (Vienna), Austria, Europe
+

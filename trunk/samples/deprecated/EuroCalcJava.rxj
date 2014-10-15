@@ -1,0 +1,325 @@
+#!/usr/bin/rexx
+/*
+   Name:     "EuroCalcJava.rxj"
+
+   Invoke:   "rexx EuroCalcJava.rxj"
+                or
+             "rexxj EuroCalcJava.rxj" (Windows)
+                or
+             "rexxj.sh EuroCalcJava.rxj" (Unix)
+
+   Purpose:  a Java solution using Java's "awt" (abstract window toolkit) matching
+             the Windows OODialog-based "Euro3Calc" application, portable
+
+   Needs:    ooRexx, BSF4Rexx
+
+
+   Date:    2001-12-05 (on the way from Augsburg to Vienna)
+            2003-01-23 (on the way from Augsburg to Vienna), 2003-05-10
+            2003-09-05 creating java.awt.Color with giving strict types for arguments
+            2005-06-05 adapting to name changes in BSF's class methods
+            2005-12-28 rgf, changed license
+            2008-06-01 rgf, changed name, updated text, added the new states (Slovenia,
+                            Malta, Cyprus)
+            2008-08-23, ---rgf, if using BSF.CLS, then do not use BSF() directly (or
+                                remove the first three chars from its result string)
+            2008-09-09, rgf, changed "registerBean" and "registerBeanStrict" to their synonyms
+                             "new" and "newStrict" which better describe the semantics of
+                             these subfunctions
+            2010-05-16, rgf, heightened frame a little bit (made it parametrized in addition)
+            2011-04-16, rgf, added Estonian crown (EEK)
+            2013-01-03, rgf, added bsf.exit to make sure that no callbacks from Java occur anymore at the end
+
+   Author:   Rony G. Flatscher, University of Augsburg, WU Wien University
+
+   Changes:
+         2008-07-19, rgf, added hash-bang line at the top
+
+   last change: $Revision: 684 $ $Author: rony $ $Date: 2010-05-16 23:04:56 +0200 (Sun, 16 May 2010) $
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2001-2010 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+
+If arg(1)='?' Then Do
+  Parse Source source
+  Say source
+  Say 'This program displays a window showing the equivalent of 1 Euro'
+  Say '   in all old currencies that have so far been changed to Euro.'
+  Say 'Entering an Euro amount shows its equivalent instantaneously.'
+  Exit
+End
+
+if      BsfInvokedBy()=1 then say "This Rexx program was invoked by Java!"
+else if BsfInvokedBy()=2 then say "This Rexx program was invoked by Rexx, JVM loaded by Rexx!"
+else                          say "No JVM present, we got troubles ..."
+
+say "...arrived in Rexx!"
+call time "r"
+numeric digits 10
+
+call setup_euro_infos   /* setup Euro-currency information      */
+call setup_java_awt_gui /* setup awt-GUI        */
+
+say "...finished with setting up, time needed:" time("e")
+
+do forever      /* wait and fetch the text to be sent by Java           */
+   a = bsf.pollEventText()      /* wait for an eventText to be sent     */
+   -- say "debug: eventText from Java: ["a"]"
+   interpret a                  /* execute as a Rexx program    */
+   if result= "SHUTDOWN, REXX !" then leave     /* JVM will be shutdown in 1/10sec      */
+end
+
+call bsf.exit .01       /* make sure there are no more callbacks from Java to Rexx  */
+exit
+
+
+
+     /* action handler, if any key was typed in the input test-field */
+key_Typed : procedure expose euro.
+  parse arg input
+  call dothework input  /* now do the work ...  */
+  return
+
+
+    /* make choice and return appropriate argument      */
+choose:procedure
+  if arg(1)=1 then return arg(2)
+              else return arg(3)
+
+
+        /* set a stem-array with the rates of exchanges */
+setup_euro_infos : PROCEDURE EXPOSE euro.     /* expose stem, i.e. belongs to caller  */
+    euro.eur =     1.000000;  euro.EUR.eCountry = "EUR: Europe (Euro)"        ; euro.EUR.eSince=1999
+
+    euro.ats =    13.760300;  euro.ATS.eCountry = "ATS: Austria (Schilling)"  ; euro.ATS.eSince=2002
+    euro.bef =    40.339900;  euro.BEF.eCountry = "BEF: Belgium (Franc)"      ; euro.BEF.eSince=2002
+    euro.dem =     1.955830;  euro.DEM.eCountry = "DEM: Germany (Mark)"       ; euro.DEM.eSince=2002
+    euro.fim =     5.945730;  euro.FIM.eCountry = "FIM: Finnland (Mark)"      ; euro.FIM.eSince=2002
+    euro.frf =     6.559570;  euro.FRF.eCountry = "FRF: France (Franc)"       ; euro.FRF.eSince=2002
+    euro.iep =     0.787564;  euro.IEP.eCountry = "IEP: Ireland (Pound)"      ; euro.IEP.eSince=2002
+    euro.itl =  1936.270000;  euro.ITL.eCountry = "ITL: Italy (Lire)"         ; euro.ITL.eSince=2002
+    euro.luf =    40.339900;  euro.LUF.eCountry = "LUF: Luxembourg (Franc)"   ; euro.LUF.eSince=2002
+    euro.nlg =     2.203710;  euro.NLG.eCountry = "NLG: Netherland (Gulden)"  ; euro.NLG.eSince=2002
+    euro.pte =   200.482000;  euro.PTE.eCountry = "PTE: Portugal (Escudo)"    ; euro.PTE.eSince=2002
+    euro.esp =   166.386000;  euro.ESP.eCountry = "ESP: Spain (Peseta)"       ; euro.ESP.eSince=2002
+    euro.grd =   340.750000;  euro.GRD.eCountry = "GRD: Greece (Drachmen)"    ; euro.GRD.eSince=2002
+
+    euro.sit =   239.640000;  euro.SIT.eCountry = "SIT: Slovenia (Tolar)"     ; euro.SIT.eSince=2007
+
+    euro.mtl =     0.429300;  euro.MTL.eCountry = "MTL: Malta (Lire)"         ; euro.MTL.eSince=2008
+    euro.cyp =     0.585274;  euro.CYP.eCountry = "CYP: Cyprus (Pound)"       ; euro.CYP.eSince=2008
+
+    euro.skk =    30.126   ;  euro.SKK.eCountry = "SKK: Slovakia (Koruna)"    ; euro.SKK.eSince=2009
+
+    euro.eek =    15.6466  ;  euro.EEK.eCountry = "EEK: Estonia (Crown)"      ; euro.EEK.eSince=2011
+
+
+
+        /* determine processing order of currencies, will also be used as index
+           into "euro."-stem, hence UPPERCASE (!) spelling     */
+    euro.eOrder = "EUR ATS BEF CYP DEM ESP FIM FRF GRD IEP ITL LUF MTL NLG PTE SIT SKK EEK"
+
+    euro.eCount=words(euro.eOrder)     /* save number of currencies */
+    RETURN
+
+
+        /* whenever a keytype occurred recalc values    */
+DoTheWork : procedure expose euro.
+  parse arg input    -- this string is the index into the BSFRegistry
+
+  -- turn into a BSF proxy, make sure registered Java object does not get removed
+  -- from BSFRegistry when this ooRexx gets garbage collected
+  input=.bsf_proxy~new(input)
+
+  /* parse first three words, translate them into uppercase       */
+        /* bug in OS/2's JRE 1.1.8: value of a TextField only set after first
+           call which retrieves the value of the TextField, hence a dummy call first */
+  PARSE UPPER VALUE bsf('invoke', input, 'getText')~substr(4) WITH Amount InputCurrency .
+
+        /* RGF - clear message fields */
+  call bsf 'invoke', "label."401,  "setText", pp(date("S") time())
+  call bsf 'invoke', "label."402,  "setText", ""
+
+  IF Amount = "" | Amount = 1 THEN      /* nothing given, show exchange rates  */
+  DO
+     call display 1     /* display value for 1 Euro     */
+     call bsf 'invoke', "label."402,  "setText", "(Exchange rates)"
+     return
+  END
+
+  IF DATATYPE(Amount, "Number") = 0 THEN
+  DO
+     call bsf 'invoke', "label."402,  "setText", "Input Currency not a number!"
+     call beep 500, 10
+     RETURN
+  END
+
+  IF InputCurrency = "" THEN InputCurrency = "EUR"      /* default      */
+  ELSE IF wordpos(InputCurrency, euro.eOrder) = 0 THEN
+  DO
+     call bsf 'invoke', "label."402, "setText", "Unknown currency given!"
+     call beep 200, 10
+     RETURN
+  END
+  call display amount/euro.InputCurrency        /* display values       */
+  return
+
+
+  /* display currency values for given euro-amount      */
+display : procedure expose euro.
+  parse arg euro_betrag
+
+
+  betrag_id=201
+  do i=201 to 201+euro.eCount-1
+
+     tmpEuro = word(euro.eOrder, i-201+1)
+     IF euro_betrag = 1 THEN stellen=6  /* rate of exchange ? */
+                        ELSE stellen=2
+
+     call bsf 'invoke', "label."i, "setText", FORMAT(euro_betrag*euro.tmpEuro,,stellen)
+  END
+  return
+
+
+    /* create and setup up awt-objects (a frame window, a button, labels and
+       an input text field; add event listeners for interesting events  */
+setup_java_awt_gui : procedure expose euro.
+        /* bsf.import some Java class       */
+  .bsf~bsf.import('java.awt.Label', 'javaLabel')
+
+        /* create a color               */
+         /* 2003-09-05, changed to strict-form which allows indicating the type of the arguments;
+                        reason: there are two Color-constructors which could match, one with three
+                                float args in the range of 0.0-1.0, one with three int args in the
+                                range of 0-255 */
+  bgColour =bsf.wrap(BSF( 'newStrict', '', 'java.awt.Color', 'int', '150', 'int', '150', 'int', '250'))
+
+        /* create and size frame window */
+  frame  = .BSF~new( 'java.awt.Frame', 'EuroCalculator')
+  frame~setBackground( bgColour )
+
+        /* remove layout manager or *strange* things happen ... */
+  frame ~~setLayout(.nil)
+  frame ~~show ~~hide           -- show and hide frame, now insets are known
+  insets=  frame~getInsets      -- get and parse insets
+  parse value insets~toString with . "top=" top "," "left=" left "," "bottom=" bottom "," "right=" right "]" .
+
+  w_width =660                  -- desired inner width
+  w_col1  = 10                  -- start of first column
+  w_col2  = w_width/2+w_col1    -- start of second column
+  -- w_height=300                  -- desired inner height
+  w_height=(trunc(euro.eOrder~words/2)+9)*20    -- make height flexible
+
+  tot_width =w_width +left+right        -- total_width (insets included)
+  tot_height=w_height+top +bottom       -- total_height (insets included)
+
+  frame ~~setSize(tot_width, tot_height) ~~setResizable(.false)
+
+        /* get physical screen dimensions and center frame */
+  dim        = frame~getToolkit~getScreenSize
+  scr_height = dim~bsf.getFieldValue('height')
+  scr_width  = dim~bsf.getFieldValue('width')
+
+  frame~setLocation( (scr_width-tot_width)%2 , 0 )
+
+        /* create and set labels, then add them to the frame    */
+        /* get constant frame values                            */
+  label_left  = .bsf~bsf.getStaticValue( 'java.awt.Label', 'LEFT'  )
+  label_right = .bsf~bsf.getStaticValue( 'java.awt.Label', 'RIGHT' )
+  label_center= .bsf~bsf.getStaticValue( 'java.awt.Label', 'CENTER')
+
+  totLabels=201+euro.eCount-1          /* id of last needed label */
+  maxRows  =trunc(euro.eCount/2+.5)    /* maximum number of rows per column  */
+  secondCol=201+maxRows                /* id of first label in second column */
+
+  do id=201 to 201+euro.eCount-1       /* id of amount-label, appropriate currency-label  */
+     if id=201 | id=secondCol then y=10   /* reset y-coordinate   */
+
+     do j=0 to 100 by 100
+        name="label."||(id+j)       -- define name of this label
+                -- create Java object under specified name (a number in this case)
+        call BSF  'new', name, 'java.awt.Label'
+                -- make label objects available as BSF Rexx objects, allowing easy interaction with it
+        label=.BSF_Proxy~new(name)  -- a bsf_proxy won't remove the proxied Java object from BSFRegistry
+                -- now use the Java object as if it was a Rexx object
+        label ~setAlignment(choose(j=0, label_right, label_left))
+        label ~setSize(choose(j=0, 115, 175), 16)
+
+                -- first eight currencies on left column, rest in right column
+        x=choose(id<secondCol, w_col1, w_col2) + choose(j=0, 0, 120)  /* add offset if necessary */
+        label ~setLocation(x+left, y+top)
+
+                -- set values (exchange rates)
+        idx=word(euro.eOrder, right(id,2)) -- get appropriate index
+        label~setText(choose(j=0, euro.idx, euro.idx.eCountry))
+
+                -- add label to window
+        frame~add(label)
+     end
+
+     y=y+20
+  end
+
+        /* create and set the two message labels        */
+  do id=401 to 402
+        -- create Java object procedurally, wrap it up in an Object Rexx proxy,
+        -- can therefore be used in procedure calls as well as with messages
+     label=.bsf_proxy~new(bsf('new', "label."id, 'java.awt.Label')~substr(4))
+     label~setAlignment( label_center )
+     call bsf 'invoke', label, 'setSize',      w_width-w_col1-left-right, 16
+     -- call bsf 'invoke', label, 'setLocation',  w_col1+left, 170+choose(id=401,0,20)+top
+     call bsf 'invoke', label, 'setLocation',  w_col1+left, w_height-20-choose(id=401,3,4)*20
+     frame~add(label)
+  end
+
+
+
+        /* create and set the input field       */
+  input=.bsf~new('java.awt.TextField')
+  inp_width=200
+  input~~setSize(inp_width, 20)
+  -- input~~setLocation((w_width-inp_width)/2+left, 220+top)
+  input~~setLocation((w_width-inp_width)/2+left, w_height-60)
+  frame~add(input)
+  .local~ecj.input=input   -- save in .local, in order to prohibit the garbage collector
+                           -- to free the entry in the BSF registry
+
+        /* create the leave push-button         */
+  leave =.bsf~new('java.awt.Button', 'Leave' )
+  leave~~setSize(60, 20)
+  -- leave~~setLocation(w_col2-40+left, 260+top)
+  leave~~setLocation(w_col2-40+left, w_height-20)
+  frame~add(leave)
+
+  frame~show            -- show frame
+  input~requestFocus    -- set focus to input-field
+
+        /* define the events we are interested in and the text to be
+             sent to us by Java , retrievable via "BSFPollEvents()"       */
+  call BSF 'addEventListener', input,  'key',    'keyTyped',    'call key_typed "' || input || '"'
+        /* get all action events        */
+  call BSF 'addEventListener', leave,  'action', '',            'call BSF "exit"'
+  call BSF 'addEventListener', frame, 'window', 'windowClosing','call BSF "exit"'
+
+  return
+
+::requires BSF.CLS    -- bsf.import Object Rexx (syntax) support
+

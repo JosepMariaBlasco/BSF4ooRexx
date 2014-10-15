@@ -1,0 +1,214 @@
+
+                  ooRexxUnit 4.0.0 snapshot 04 Quick Start
+                  ========================================
+
+This is the read me file explaining how the ooTest framework is used by
+the ooRexx team to test ooRexx.
+
+The quick start notes below should allow one to quickly run the current test
+suite.  After installation, the doc subdirectory contains a quick start
+tutorial in PDF format.  This file: ooTestQuick.pdf provides additional
+useful information and is a brief tutorial on how to write a test case.
+
+NOTE: You need to match the ooRexxUnit version level with the version of
+the ooRexx interpreter you are running.  To use the ooRexxUnit 4.0.0 test
+framework you must have the 4.0.0 version of the interpreter running.
+
+Quick Start to execute tests:
+=============================
+
+    1.)  Simple command line, running the entire test suite at one time.
+    --------------------------------------------------------------------
+
+NOTE: Starting with ooRexx 4.0.0, the test suite contains tests that require
+external executables.  These are tests to exercise the ooRexx native API.
+Running these tests makes things slightly more complex.  There are 3 options
+here, simplest to hardest.
+
+1.) Skip the native API tests altogether.  The best option if you are just
+getting familiar with the test suite.
+
+2.) Download the pre-compiled external binaries for your system.  Details on
+picking and installing the proper set are in the Release.notes in the doc
+directory.
+
+3.) If you understand, somewhat, compiling C / C++ files you can compile
+your own binaries as part of running the automated test suite.  Details for
+this step have not been written, just post a question on the ooRexx
+developers list.
+
+Start in the root directory, the directory that contains this file.  The
+Rexx program that runs the tests is: testOORexx.rex
+
+That is the only file you need to use to begin with.  We will assume that
+you are using option 1 above, skipping the tests for the native API
+binaries.  The program file will run the ooRexx test suite.  Depending on
+the horse power in your system this could take 5 or 6 minutes, maybe longer
+on a real old system.
+
+Once you invoke testOORexx everything runs automatically and you will see
+the results printed on the screen when the test finishes.
+
+The argument: '-X native_api' in the following examples tells the framework
+to eXclude the native API tests.
+
+Windows
+-------
+If you have done a normal install of the interpreter so that file
+associations are set up (done automatically by the installer) you can
+simply use the following command line.
+
+E:\ooRexxUnit.4.0.0>testOORexx -X native_api
+
+of course you can always use the full invocation the interpreter like this:
+
+E:\ooRexxUnit.4.0.0>rexx testOORexx.rex -X native_api
+
+Linux
+-----
+If you have a normal install of the interpreter with the executable in the
+path then use this command line:
+
+# ./testOORexx.rex -X native_API
+
+AIX
+---
+If you have a normal install of the interpreter with the executable in the
+path then use this command line:
+
+# ./setTestEnv.sh
+# ./testOORexx.rex -X native_api
+
+After Test Completion on Your OS
+--------------------------------
+Look at the file: Expected.Results in the same directory as this file to see
+some typical console output when executing the entire test suite.  This file
+is only to give you an idea of the output.  The output on your system could
+be different.
+
+
+               2.)  Running just a subset of the test suite.
+               ---------------------------------------------
+
+The examples from here on out will be from a Windows box.  The ooTest
+framework works the same way on Linux, you just need to translate the
+slashes in directory names.
+
+Help
+----
+
+This command will print out some help:
+
+E:\ooRexxUnit.4.0.0>testOORexx.rex /?
+testOORexx version 1.0.0 ooTest Framework version 1.0.0_3.2.0
+
+usage: testOORexx [OPTIONS]
+Try 'testOORexx --help' for more information.
+
+This command will print out the syntax of testOORexx:
+
+E:\ooRexxUnit.4.0.0>testOORexx.rex --help
+
+Note that not all command line options are implemented yet.  You will get a
+polite message if you use an un-implemented option.
+
+To get started and get a feel for how a test group works, you will probably
+want to run just one or two test groups at a time.  The simplest way to do
+that is with args to testOORexx.
+
+All test groups are in the subdirectory: ooRexx
+
+This is the default root.  To run a subset of the test you use the -R option
+and name a new root.  Browse the ooRexx directory to get an idea of the
+directory structure.
+
+All test groups from the root on down are gathered together to be run for
+one invocation of testOORexx.  This command line will run only the test
+groups in the ooRexx\base\expressions subdirectory.
+
+E:\ooRexxUnit.4.0.0>testOORexx.rex -R ooRexx\base\expressions
+
+There will be 10 test groups executed.
+
+You can execute only one test group by using a combination of the -R option
+and the -f option.  The -f option takes a file name part and only executes
+test groups that match the file name part.
+
+This command line will run a single test group, the ADDITION.testGroup:
+
+E:\ooRexxUnit.4.0.0>testOORexx.rex -R ooRexx\base\expressions -f Addition
+
+and you will get output like this:
+
+E:\ooRexxUnit.4.0.0>testOORexx.rex -R ooRexx\base\expressions -f Addition
+Searching for test containers..
+Executing automated test suite...
+
+ooTest Framework - Automated Test of the ooRexx Interpreter
+
+
+Interpreter:     REXX-ooRexx_4.0.0(MT) 6.03 13 May 2009
+Addressing Mode: 64
+ooRexxUnit:      2.0.0_3.2.0    ooTest: 1.0.0_4.0.0
+
+Tests ran:           2839
+Assertions:          3576
+Failures:            0
+Errors:              0
+Skipped files:       0
+
+File search:        00:00:00.297000
+Suite construction: 00:00:00.266000
+Test execution:     00:00:01.015000
+Total time:         00:00:02.281000
+
+E:\ooRexxUnit.4.0.0>
+
+
+   3.)  Writing your first test group to contribute to the ooRexx project
+   ----------------------------------------------------------------------
+
+In the misc subdirectory there is a template file.  Simply copy it to a
+subdirectory that might be appropriate, renaming it to the name of your test
+group.  For example:
+
+E:\ooRexxUnit.4.0.0>copy misc\template.testGroup ooRexx\MyTests.testGroup
+
+Edit the file and start writing your test cases.
+
+PLEASE ask questions on one of the Rexx lists, as this Quick Start does not
+go much further.  In addition, the ooTestQuick.pdf doc will walk you through
+the process of creating test cases.
+
+You can learn a lot by examining some other test groups.
+
+The template.testGroup file will execute as is and contains all the
+boilerplate needed.  By simply copying it to a new file name, a working test
+group is created:
+
+E:\ooRexxUnit.4.0.0>copy misc\template.testGroup ooRexx\MyTests.testGroup
+        1 file(s) copied.
+
+E:\ooRexxUnit\4.0.0>testOORexx.rex ooRexx\MyTests.testGroup
+Searching for test containers..
+Executing automated test suite..
+
+ooTest Framework - Automated Test of the ooRexx Interpreter
+
+
+Interpreter:     REXX-ooRexx_4.0.0(MT) 6.03 13 May 2009
+Addressing Mode: 64
+ooRexxUnit:      2.0.0_3.2.0    ooTest: 1.0.0_4.0.0
+
+Tests ran:           4
+Assertions:          2
+Failures:            0
+Errors:              0
+Skipped files:       0
+
+File search:        00:00:00.406000
+Suite construction: 00:00:00.000000
+Test execution:     00:00:00.000000
+Total time:         00:00:01.000000
+
+E:\ooRexxUnit.4.0.0>

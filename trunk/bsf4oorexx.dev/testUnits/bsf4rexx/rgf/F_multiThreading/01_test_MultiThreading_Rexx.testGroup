@@ -1,0 +1,183 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testBsfRexxProxy1.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.1
+   date:             2009-09-10, 2009-09-11
+   changed:          2009-10-16, rgf, reduce nr of threads from 100 down to 10, some Linuxes
+                                      get otherwise in troubles, if executing all multithreading tests
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4Rexx 4.0 new external BsfRexxProxy() method
+   hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
+                     hence this test unit needs to address RexxProxy objects in a Java fashion, using
+                     the RexxProxy method "invoke(String methodName, Object[] args)"; any Rexx object
+                     that gets returned will be wrapped up as a RexxProxy as well
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testMultiThreadingUsingRexx_01)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "testMultiThreadingUsingRexx_01" subclass ooTestCase public
+
+
+-- uses a Java ArrayList for Rexx threads to interact with
+::method "test_01_plain_BsfRexxProxy_JavaArrayList"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+    collections=bsf.LoadClass("java.util.Collections")
+
+    al=.bsf~new("java.util.ArrayList")    -- create an ArrayList Java object
+    sAl=collections~synchronizedList(al)  -- get a synchronized (thread-safe) version of the ArrayList
+
+    tid=bsfGetTID()              -- get this TID
+    sAl~add(tid)                 -- save main thread's TID
+
+    counter=.counter~new         -- create a counter object
+
+    -- nrThreads=100
+    nrThreads=10
+    do i=1 to nrThreads
+       counter~increase                   -- increase the counter
+       .threadClz_using_ArrayList~new~work(self, tid, i, counter, sAl) -- thread will decrease counter before returning
+    end
+
+    call time "Reset"            -- reset timer
+    loop while counter~value>0, time("elapsed")<2  -- until no more threads, or over 10seconds
+       call sysSleep .001              -- yield
+    end
+
+    self~assertEquals(nrThreads+1, sAl~size, "total number of threads")
+    self~assertEquals(0, counter~value, "active thread counter (more a warning than an error; could be timinig related)")
+
+
+
+-- uses a Java RexxProxy for Rexx threads to interact with
+::method "test_02_plain_BsfRexxProxy_RexxProxy"
+    collections=bsf.LoadClass("java.util.Collections")
+
+    arr=.Array~new
+
+    tid=bsfGetTID()              -- get this TID
+    arr~append(tid)              -- save main thread's TID
+    rp=BsfCreateRexxProxy(arr)   -- create a Java RexxProxy for the array
+
+    counter=.counter~new         -- create a counter object
+
+    -- nrThreads=100
+    nrThreads=10
+    do i=1 to nrThreads
+       counter~increase                   -- increase the counter
+       .ThreadClz_using_RexxProxy_Array~new~work(self, tid, i, counter, rp)-- thread will decrease counter before returning
+    end
+
+    call time "Reset"            -- reset timer
+    loop while counter~value>0, time("elapsed")<3  -- until no more threads, or over 10seconds
+       call sysSleep .001              -- yield
+    end
+
+    self~assertEquals(nrThreads+1, arr~items, "total number of threads")
+    self~assertEquals(0, counter~value, "active thread counter (more a warning than an error; could be timinig related)")
+
+
+
+-- uses *SEPRATE* Java RexxProxy for Rexx threads to interact with
+::method "test_03_plain_BsfRexxProxy_RexxProxy"
+    collections=bsf.LoadClass("java.util.Collections")
+
+    arr=.Array~new
+
+    tid=bsfGetTID()              -- get this TID
+    arr~append(tid)              -- save main thread's TID
+
+    counter=.counter~new         -- create a counter object
+
+    -- nrThreads=100
+    nrThreads=10
+    do i=1 to nrThreads
+       rp=BsfCreateRexxProxy(arr)   -- create a Java RexxProxy for the array
+       counter~increase                   -- increase the counter
+       .ThreadClz_using_RexxProxy_Array~new~work(self, tid, i, counter, BsfCreateRexxProxy(arr))-- thread will decrease counter before returning
+    end
+
+    call time "Reset"            -- reset timer
+    loop while counter~value>0, time("elapsed")<2  -- until no more threads, or over 10seconds
+       call sysSleep .001              -- yield
+    end
+
+    self~assertEquals(nrThreads+1, arr~items, "total number of threads")
+    self~assertEquals(0, counter~value, "active thread counter (more a warning than an error; could be timinig related)")
+
+
+
+
+/* ==================================================================================== */
+-- implement a counter that one can increase/decrease
+::class counter
+::method init           -- constructor
+  expose value
+  value=0               -- set attribute
+  forward to (super)    -- let superclass initialize
+
+::attribute value       -- allow interfacing with the attribute
+
+::method increase       -- increase value by 1
+  expose value
+  value+=1
+  return value
+
+::method decrease       -- decrease value by 1
+  expose value
+  value-=1
+  return value
+
+
+/* ==================================================================================== */
+-- implement a class with a threaded worker method
+::class "ThreadClz_using_ArrayList"
+::method work
+  use arg testUnit, TID, nr, counter, jArrayList
+  reply                 -- return & create a new thread
+
+  thisTID=BsfGetTID()
+  testUnit~assertTrue(BsfAttachToTID(TID), "attaching to main TID:" TID", thread #" nr", thisTID="thisTID)
+
+  jArrayList~add(thisTID)        -- save this TID
+
+  testUnit~assertTrue(BsfDetach(), "detaching from main TID:" TID", thread #" nr", thisTID="thisTID)
+  counter~decrease
+  return
+
+/* ==================================================================================== */
+-- implement a class with a threaded worker method
+::class "ThreadClz_using_RexxProxy_Array"
+::method work
+  use arg testUnit, TID, nr, counter, rpArray
+  reply                 -- return & create a new thread
+
+  thisTID=BsfGetTID()
+  testUnit~assertTrue(BsfAttachToTID(TID), "attaching to main TID:" TID", thread #" nr", thisTID="thisTID)
+
+   -- have the RexxProxy send the following message to its proxied Rexx object
+  -- rpArray~sendMessage("APPEND", bsf.createArrayOf("java.lang.Object", thisTID)) -- save this TID
+  rpArray~sendMessage1("APPEND", thisTID) -- save this TID
+
+  testUnit~assertTrue(BsfDetach(), "detaching from main TID:" TID", thread #" nr", thisTID="thisTID)
+  counter~decrease
+  return
+

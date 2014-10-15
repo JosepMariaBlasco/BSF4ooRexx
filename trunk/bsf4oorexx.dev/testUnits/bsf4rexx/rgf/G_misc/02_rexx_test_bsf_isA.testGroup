@@ -1,0 +1,71 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testBsfIsA.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2010-03-26
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4Rexx 4.0.1 new external BsfRawBytes() function
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testBsfIsA)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "testBsfIsA" subclass ooTestCase public
+
+
+::method "test_01_plain_BsfIsA"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+
+    j=.bsf~new("java.lang.String", "hello, my beloved world!")
+
+    self~assertTrue(j~bsf.isA("java.lang.Object"))
+    self~assertTrue(j~bsf.isA("java.lang.String"))
+
+    self~assertTrue(j~bsf.isA(bsf.loadClass("java.lang.Object")))
+    self~assertTrue(j~bsf.isA(bsf.loadClass("java.lang.String")))
+
+    self~assertFalse(j~bsf.isA(bsf.loadClass("java.lang.Integer")))
+
+
+::method "test_02_BsfIsA_routine"
+
+    j=.bsf~new("java.lang.String", "hello, my beloved world!")
+
+    self~assertTrue(bsf.isA(j, "java.lang.Object"))
+    self~assertTrue(bsf.isA(j, "java.lang.String"))
+
+    self~assertTrue(bsf.isA(j, bsf.loadClass("java.lang.Object")))
+    self~assertTrue(bsf.isA(j, bsf.loadClass("java.lang.String")))
+
+    self~assertFalse(bsf.isA(j, bsf.loadClass("java.lang.Integer")))
+
+
+::method "test_03_error"
+    self~expectSyntax(40.900)
+    j=.bsf~new("java.lang.String", "hello, my beloved world!")
+    self~assertFalse(j~bsf.isA(.nil))  -- .nil not a Java bean
+
+::method "test_04_error_BsfIsA_routine"
+    self~expectSyntax(40.900)
+    j=.bsf~new("java.lang.String", "hello, my beloved world!")
+    self~assertFalse(bsf.isA(j,.nil))  -- .nil not a Java bean
+
+

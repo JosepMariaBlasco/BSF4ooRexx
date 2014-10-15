@@ -1,0 +1,109 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testBsfRexxProxy1.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2009-09-10, 2009-10-16
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4Rexx 4.0 new external BsfRexxProxy() method
+   hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
+                     hence this test unit needs to address RexxProxy objects in a Java fashion, using
+                     the RexxProxy method "invoke(String methodName, Object[] args)"; any Rexx object
+                     that gets returned will be wrapped up as a RexxProxy as well
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testMultiThreadingUsing_via_java_01)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "testMultiThreadingUsing_via_java_01" subclass ooTestCase public
+
+
+-- uses a Java RexxProxy for Rexx threads to interact with
+::method "test_01_plain_BsfRexxProxy_RexxProxy"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+    arr=.Array~new
+
+    tid=bsfGetTID()              -- get this TID
+    arr~append(tid)              -- save main thread's TID
+    rpArr=BsfCreateRexxProxy(arr)-- create a Java RexxProxy for the array
+
+      -- very light burden: to let Linux-based systems run all multithreading tests successfully
+      --   28 threads: nrJavaThreads=3;nrRexxThreads=7;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+    nrJavaThreads=3
+    nrRexxThreads=7
+
+
+/*
+      -- normal burden:
+      --   712 threads: nrJavaThreads=23;nrRexxThreads=29;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+    nrJavaThreads=23
+    nrRexxThreads=29
+*/
+
+/*
+      -- heavy burden:
+      -- 2,601 threads: nrJavaThreads=50;nrRexxThreads=50;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+    nrJavaThreads=50
+    nrRexxThreads=50
+*/
+
+/*
+      -- light burden:
+      --    46 threads: nrJavaThreads= 5;nrRexxThreads= 7;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+    nrJavaThreads=5
+    nrRexxThreads=7
+*/
+
+      -- get Rexx code
+    rexxCode=getRexxCode("80_test_Multithreading_via_Java_threads.rex")
+    javaClz=bsf.import("rgf.F_multiThreading.TestNestedEngines_80")
+
+    bm=bsf.wrap(bsf("getBsfManager"))     -- get this Rexx instance's BSFManager object
+    jo=javaClz~new(bm, self, nrJavaThreads, nrRexxThreads, rexxCode, rpArr)
+
+    jo~dispatchRexxScripts
+
+    expected=1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads))   -- per rexxThread two asserts
+
+    self~assertEquals(expected, arr~items, "total number of threads")
+
+
+/* ==================================================================================== */
+::routine getRexxCode
+  parse arg fn
+
+  longFn=stream(qualify(fn), "C", "Query Exists")  -- file found ?
+  if longFn="" then        -- not found
+  do                                               -- try this directory
+     parse source . . path2thisFile
+     longFn=filespec("location", path2thisFile) || fn
+     longFn=stream(qualify(LongFn), "C", "Query Exists")
+     if longFn="" then     -- file not found!
+     do
+        return "say 'Rexx program" pp(fn) "not found!';" -
+               "raise syntax 3.001 array ('"fn"')";
+     end
+  end
+
+  tmpStr=charin(longFn, 1, chars(longFn))       -- read entire file
+  call stream longFn, "C", "close"              -- make sure file is closed
+  return tmpStr
+
+

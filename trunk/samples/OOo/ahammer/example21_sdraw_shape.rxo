@@ -1,0 +1,85 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited and extended by Rony G. Flatscher, 2010-07-19/20 */
+/* Example 21: create a draw document, define two shapes, format them, group them and move the group */
+
+   /* create the Desktop object, we need its XComponentLoader interface to load a new document */
+xContext = UNO.connect()   /* connect to server and retrieve the XContext object */
+XMcf = xContext~getServiceManager   /* retrieve XMultiComponentFactory */
+xDesktop         = UNO.createDesktop(xContext)  /* get the UNO Desktop service object */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* create a new draw document */
+url = "private:factory/sdraw"
+drawComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, .UNO~noProps)
+
+   /* get the component's factory */
+xDocumentFactory = drawComponent~XMultiServiceFactory
+
+   /* get the (first) draw page by (0-based) index */
+xDrawPage = drawComponent~XDrawPagesSupplier~getDrawPages~getByIndex(0)~XDrawPage
+
+   /* ------------------------------------------------------ */
+   /* create a Rectangle shape and add it to the draw page */
+xShapeRectangle = xDocumentFactory~createInstance("com.sun.star.drawing.RectangleShape") ~XShape
+xShapeRectangle~setPosition(.bsf~new("com.sun.star.awt.Point", 3000, 3000))   /* set position: X, Y */
+xShapeRectangle~setSize(.bsf~new("com.sun.star.awt.Size", 5000, 2500))        /* set size: width, height */
+xDrawPage~add(xShapeRectangle)   /* add shape to the draw page */
+
+   /* set the properties of the rectangle shape */
+xShapeProps = xShapeRectangle~XPropertySet
+
+   /* set the CornerRadius */
+.bsf.dialog~messageBox("About to define rounded corners for the shape ...",,"info")
+xShapeProps~setPropertyValue("CornerRadius", box("int", 1000))
+
+   /* set the Shadow */
+.bsf.dialog~messageBox("About to define a shadow for the shape ...",,"info")
+xShapeProps~setPropertyValue("Shadow", box("boolean", .true))
+xShapeProps~setPropertyValue("ShadowXDistance", box("int", 250))
+xShapeProps~setPropertyValue("ShadowYDistance", box("int", 250))
+
+   /* and set the Colors */
+.bsf.dialog~messageBox("About to define a fill color and a line color for the shape ...",,"info")
+xShapeProps~setPropertyValue("FillColor", box("int", "ff 00 ff"x ~c2d))
+xShapeProps~setPropertyValue("LineColor", box("int", "00 00 ff"x ~c2d))
+
+   /* set the Shear */
+.bsf.dialog~messageBox("About to define a 'ShearAngle' for the shape ...",,"info")
+xShapeProps~setPropertyValue("ShearAngle", box("int", 1000))
+
+   /* set the Rotation */
+.bsf.dialog~messageBox("About to define a 'RotateAngle' for the shape ...",,"info")
+xShapeProps~setPropertyValue("RotateAngle", box("int", 1000))
+
+   /* ------------------------------------------------------ */
+   /* create and insert another shape */
+.bsf.dialog~messageBox("About to define an 'EllipseShape' ...",,"info")
+xShapeEllipse = xDocumentFactory~createInstance("com.sun.star.drawing.EllipseShape") ~XShape
+xShapeEllipse~setPosition(.bsf~new("com.sun.star.awt.Point", 3500, 3500))   /* set position: X, Y */
+xShapeEllipse~setSize(.bsf~new("com.sun.star.awt.Size", 2000, 2000))        /* set size: width, height */
+xDrawPage~add(xShapeEllipse)     /* add shape to the draw page */
+
+   /* ------------------------------------------------------ */
+   /* now group the 2 shapes and move the group */
+.bsf.dialog~messageBox("About to group both shapes and moving the group at once (a little bit animated) ...",,"info")
+xShapes = xMcf~createInstanceWithContext("com.sun.star.drawing.ShapeCollection", xContext) ~XShapes
+xShapes~add(xShapeRectangle)
+xShapes~add(xShapeEllipse)
+xShapeGroup = xDrawPage~xShapeGrouper~group(xShapes)  /* group the shapes */
+
+   /* now move the group in an animated fashion */
+pos = .bsf~new("com.sun.star.awt.Point", 5000, 5000)
+sleepTime = 0.075
+increment = 500
+rounds    = 18
+loop i=1 to rounds
+   call sysSleep sleepTime
+   pos~x += increment   /* increment the x-position */
+   pos~y += increment   /* increment the y-position */
+   xShapeGroup~setPosition(pos)
+end
+
+   /* set "modified" false -> UNO will not ask if you want to save the current document on close */
+drawComponent~XModifiable~setModified(.false)
+
+::requires UNO.CLS    -- get UNO support

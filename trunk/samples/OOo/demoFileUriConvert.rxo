@@ -1,0 +1,186 @@
+/* rgf: ooRexx example after Ariel Constenla-Haile's example as posted on 2008-05-13T10:05:35-03:00 on dev@api.openoffice.org
+
+   20100530: restructured code to take advantage of the ooRexx .local environment
+   20100823: be a little bit more verbose
+   20110606: before ending Rexx, make sure that Java does not callback into Rexx while
+             shutting Rexx down (needed as of ooRexx 4.1.1)
+   20120609: inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+   [The ooRexx support defined by the module UNO.CLS defines the public routines "uno.convertToUrl(fileName)" and
+   "UNO.convertFromUrl(url)" which are recommended instead.]
+*/
+
+parse source . . script
+thisName=filespec("Name", script)
+
+say thisName": connecting to OOo ..."
+xContext = UNO.connect()   -- connect to server, retrieve xContext
+
+say thisName": initializing the FileIdentifierConverter ..."
+call initializeFileIdentifierConverter xContext
+say
+
+                           -- define test filename (user home directory)
+sSystemPath=.java.lang.System~getProperty("java.home")
+
+say thisName": systemPath:     ["sSystemPath"]"
+
+uriFileName=convertToURL(sSystemPath)
+say thisName": uriFileName:    ["uriFileName"]"
+
+systemFileName=convertFromURL(uriFileName)
+say thisName": systemFileName: ["systemFileName"]"
+
+-- if Java was loaded by Rexx, then terminate Java's RexxEngine to inhibit callbacks from Java
+call BSF.terminateRexxEngine
+
+::requires UNO.CLS      -- get the UNO support
+
+   /* create and store XFileIdentifierConverter in ooRexx .local environment  */
+::routine initializeFileIdentifierConverter
+  use arg xContext
+  service="com.sun.star.ucb.FileContentProvider"
+  xMCf = xContext~getServiceManager   -- retrieve XMultiComponentFactory
+  .local~xFileConverter=xMCF~createInstanceWithContext(service,xContext) ~XFileIdentifierConverter
+
+   /* convert from URL format to file system's format    */
+::routine convertFromURL      public
+  parse arg sFileURL
+  return .xFileConverter~getSystemPathFromFileURL(sFileURL)
+
+   /* convert to URL format to file system's format      */
+::routine convertToURL       public
+  parse arg sSystemPath
+  return .xFileConverter~getFileURLFromSystemPath("",sSystemPath)
+
+
+/*
+   Date: Tue, 13 May 2008 10:05:35 -0300
+   From: Ariel Constenla-Haile <ariel.constenla.haile@googlemail.com>
+   User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.12) Gecko/20080305 Mandriva/2.0.0.12-3mdv2008.1 (2008.1) Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+   MIME-Version: 1.0
+   To: dev@api.openoffice.org
+   References: <20080513123941.248470@gmx.net>
+   In-Reply-To: <20080513123941.248470@gmx.net>
+   Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+   Content-Transfer-Encoding: 8bit
+   Subject: Re: [api-dev] how to convert %20 to " " ?
+
+   Oliver Brinzing escribió:
+   > Hi,
+   >
+   > i noticed
+   >
+   > PackageInformationProvider.get(xContext).getPackageLocation("MyExtension")
+   >
+   > returns a string url, for example:
+   > file:///c:/programs/soffice/OOo-dev%203/program/../share/uno_packages/cache/uno_packages/61.tmp_/myextension.oxt
+   >
+   > How can one convert the url to an external one (for example replace the %20 with a space) ?
+   >
+   > Is there a helper service ?
+   >
+
+   Hi Oliver
+
+   you can convert that URL to a system path:
+
+        /**
+         * Converts a (file) URL to a file path in system dependent notation.
+         * @param sFileURL
+         * @return
+         */
+        public static String convertFromURL(
+                                            XComponentContext xContext,
+                                            String sFileURL) {
+            String sSystemPath = null;
+            try {
+                com.sun.star.ucb.XFileIdentifierConverter xFileConverter =
+                        (com.sun.star.ucb.XFileIdentifierConverter)
+   UnoRuntime.queryInterface(
+                        com.sun.star.ucb.XFileIdentifierConverter.class,
+                        xContext.getServiceManager().createInstanceWithContext(
+                        "com.sun.star.ucb.FileContentProvider", xContext));
+                sSystemPath =
+   xFileConverter.getSystemPathFromFileURL(sFileURL);
+            } catch (java.lang.Exception e) {
+                e.printStackTrace();
+            } finally {
+                return sSystemPath;
+            }
+        }
+
+   // *********************************************************************
+
+        /**
+         * Converts a system path into an URL using OOo API
+         * @param sBase
+         * @param sSystemPath
+         * @return
+         */
+        public static String convertToURL(
+                                            XComponentContext xContext,
+                                            String sBase,
+                                            String sSystemPath) {
+            String sURL = null;
+            try {
+                com.sun.star.ucb.XFileIdentifierConverter xFileConverter =
+                        (com.sun.star.ucb.XFileIdentifierConverter)
+   UnoRuntime.queryInterface(
+                        com.sun.star.ucb.XFileIdentifierConverter.class,
+                        xContext.getServiceManager().createInstanceWithContext(
+                        "com.sun.star.ucb.FileContentProvider", xContext));
+                sURL = xFileConverter.getFileURLFromSystemPath(
+                        sBase, sSystemPath);
+            } catch (java.lang.Exception e) {
+                e.printStackTrace();
+            } finally {
+                return sURL;
+            }
+        }
+
+   // **************************************************************************
+
+
+   In Linux, if I try with the following path with non ASCII chars
+   /home/ariel/Música/Mozart/Die Zauberflöte, the results are
+
+
+   path	/home/ariel/Música/Mozart/Die Zauberflöte
+   to URL	file:///home/ariel/M%C3%BAsica/Mozart/Die%20Zauberfl%C3%B6te
+   from URL	/home/ariel/Música/Mozart/Die Zauberflöte
+
+
+   Of course there is a Java-API way to achieve the same (you will find it
+   in [old/most/all] SKD examples), but let's use OOo API ;-)
+
+
+
+   Regards
+   Ariel.
+
+
+   --
+   Ariel Constenla-Haile
+   La Plata, Argentina
+
+   ariel.constenla.haile@gmail.com
+   ariel@arielconstenlahaile.com.ar
+
+   http://www.ArielConstenlaHaile.com.ar/ooo/
+
+
+
+   "Aus der Kriegsschule des Lebens
+            	- Was mich nicht umbringt,
+   	macht mich härter."
+            	Nietzsche Götzendämmerung, Sprüche und Pfeile, 8.
+
+   ---------------------------------------------------------------------
+   To unsubscribe, e-mail: dev-unsubscribe@api.openoffice.org
+   For additional commands, e-mail: dev-help@api.openoffice.org
+
+
+
+*/
+

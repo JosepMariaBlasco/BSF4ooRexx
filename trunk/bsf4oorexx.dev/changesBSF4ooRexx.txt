@@ -1,0 +1,2234 @@
+-------------------------------------- 2014-10-07 ----------------------------------
+
+- BSF.CLS
+        - JSOasUtf8string: render Java String as UTF-8 encoded Rexx string
+        - utf8stringAsJSO: render UTF-8 Rexx encoded string as Java String
+
+- utilities\ooRexxTry.rxj
+        - bug fixed version by Geri Leitner
+
+-------------------------------------- 2014-10-06 ----------------------------------
+
+- BSF.CLS
+        - utf8toString - render UTF-8 handle Java objects
+
+- samples\demoJSO.rxj (return reference to java.lang.String or to NetRexx object)
+        - demonstrate how to retrieve a reference to the Java string object ("JSO") that method
+          invocations and read access to fields and properties might return, rather than
+          having the default and transparent translation to a Rexx string
+        - demonstrate how to handle different encodings of strings between Rexx and Java taking
+          advantage of the JSO-functionality
+        - demonstrate platform independent beeping ;)
+
+- samples\info2html.rxj (new)
+        - render ooRexx, BSF4ooRexx and Java infos as HTML, open file in browser
+
+-------------------------------------- 2014-10-05 ----------------------------------
+
+- BSF.CLS
+        - removed the classes .bsf4rexx and .b4r that got introduced for pre-ooRexx 4.0
+          interpreters that did share .local among different ooRexx interpreter instances;
+          BSF4ooRexx mandates at least ooRexx 4.01 which manages a .local copy per
+          ooRexx interpreter instance; therefore changing the logic back to store a
+          directory named "BSF4Rexx" in .local and adding aliases for it to the .local
+          environment named "B4R" and (new) "BSF4ooRexx"
+
+-------------------------------------- 2014-10-04 ----------------------------------
+
+- RexxAndJava.java
+
+        - added the subfunctions
+          - invokeJSO
+          - invokeStrictJSO
+          - getFieldValueJSO
+          - getFieldValueStrictJSO
+          - getStaticValueJSO
+          - getStaticStrictValueJSO
+          - getPropertyValueJSO
+
+- BSF.CLS
+        - added methods to existing BSF-methods, adding a trailing "JSO" (Java
+          string object) to them, that will return a reference to a
+          java.lang.String or Netrexx object instead of transparently turning
+          it into a Rexx string; this may be helpful, if wishing to invoke
+          the Java String methods on that (returned) Java string object.
+
+          These are the added methods:
+
+          - bsf.invokeJSO
+          - bsf.invokeStrictJSO
+          - bsf.getFieldValueJSO
+          - bsf.getFieldValueStrictJSO
+          - bsf.getStaticValueJSO
+          - bsf.getStaticStrictValueJSO
+          - bsf.getPropertyValueJSO
+
+          These are the added routines:
+
+          - bsf.getStaticValueJSO
+          - bsf.getStaticStrictValueJSO
+          - bsf.getConstantJSO
+
+-------------------------------------- 2014-10-02 ----------------------------------
+
+- RexxAndJava.java
+
+
+-------------------------------------- 2014-09-21 ----------------------------------
+
+- samples/info2thml.rxj (new)
+
+        - new sample that demonstrates how to gather version information from ooRexx,
+          BSF4ooRexx and Java and rendering and saving that information in a HTML file
+
+
+-------------------------------------- 2014-09-15 ----------------------------------
+
+- samples/ReneJansen/jdbc.jrexx
+
+        - added DataSource access to RDBMS, which works also, when BSF4ooRexx
+          is installed in java.ext.dirs directory, which would not work with
+          the DriverManager variant in Java 1.7/7
+
+
+-------------------------------------- 2014-09-09 ----------------------------------
+
+- samples/clock.rxj
+        - create a graphical clock that shows the current time
+        - demonstrates how to extend a Java class to allow ooRexx to overwrite specific
+          Java methods, in this example the Java method "javax.swing.JComponent paintComponent"
+
+
+-------------------------------------- 2014-08-30 ----------------------------------
+
+- org.rexxla.bsf.engines.rexx.RexxExtendClass.java (asm)
+
+        - a subclass may invoke protected methods, cater for this
+
+- org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool.java (janino)
+
+        - a subclass may invoke protected methods, cater for this
+
+
+-------------------------------------- 2014-07-16 ----------------------------------
+
+- samples\EuroCalcJava.rxj
+        - added Lithuania Litas
+
+-------------------------------------- 2014-07-16 ----------------------------------
+
+- BSF.CLS
+
+        - routine bsf.redirectTo(): default .debugInput to .input~current and
+          .traceOutput to .error~current
+
+-------------------------------------- 2014-07-15 ----------------------------------
+
+- BSF.CLS
+
+        - added code to BSF.InputStream to also work on java.io.Reader in addition to
+          java.io.InputStream (e.g. java.lang.System.in)
+
+        - renamed BSF.PrintStream to BSF.OutputStream, added code to also work on
+          java.io.Writer in addition to java.io.PrintStream (e.g. java.lang.System.{out|err})
+
+-------------------------------------- 2014-07-06 ----------------------------------
+
+- BSF.CLS
+
+        - added public routine BSF.redirectTo (allows to redirect the ooRexx standard
+          monitors to Java's standard System streams and reset them to the standard
+          ooRexx standard streams)
+
+        - added public class BSF.InputStream (allows ooRexx to treat Java InputStream
+          objects as Rexx input streams)
+
+        - added public class BSF.PrintStream (allows ooRexx to treat Java PrintStream
+          objects - specialisation of OutputStream - as Rexx output streams)
+
+
+
+-------------------------------------- 2014-07-04 ----------------------------------
+
+- new samples
+
+        - samples/Java/JavaRunRexx_05.java
+          samples/NetRexx/nrxRunRexx_05.nrx
+
+                - Demonstrate how to setup a .host directory in Rexx from Java, which then
+                  receives Java objects for use in Rexx programs; in addition a value is
+                  saved in .host by Rexx under the index REXX.HEY that upon return is
+                  fetched from Java.
+
+        - samples/Java/JavaRunRexx_06.java
+          samples/NetRexx/nrxRunRexx_06.nrx
+
+
+                - Demonstrate how to use the context of a Rexx routine for another Rexx
+                  routine.  The first routine requires BSF.CLS which adds public routines
+                  and public classes which then are made available to Rexx routines that get
+                  created and executed later via Java.  Then another Rexx routines gets
+                  defined to use the first package, and in addition defines a public routine
+                  named test.  Finally, the last Rexx routine demonstrates getting access to
+                  the package of the second routine which makes its public routine named
+                  test accessible.  In addition the last routine is called twice, once
+                  without Java supplied arguments, once with Java supplied arguments.
+
+
+-------------------------------------- 2014-07-03 ----------------------------------
+
+- RexxEngine.java
+
+        - make sure that RexxProxy objects are always passed as Java objects in arguments;
+          adapt apply() as well to pass through RexxProxy objects in arguments
+
+
+-------------------------------------- 2014-05-21 ----------------------------------
+
+- BSFException.java
+
+        - add getCause() method as synonym for getTargetException(), which makes it
+          orthogonal with Throwable's getCause() that got introduced since defining
+          BSFException
+
+-------------------------------------- 2014-05-17 ----------------------------------
+
+- BSF4ooRexx.cc
+
+    - simplified attaching/detaching to the JVM, a side effect will be a slight performance
+      improvement (appr. 5%)
+
+
+- BSF.CLS
+
+    - adjust public routine BSF.terminateRexxEngine() to new behaviour (will return .true,
+      if termination was carried out already, such that message isTerminated cannot be
+      carried out anymore, causing a Rexx condition)
+
+-------------------------------------- 2014-05-15 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - do not report deprecated BSFAttachToTID() and BSFDetach() anymore
+
+- BSF.CLS
+
+        - moved MacOSX initialization code to public routine "makeBSF4ooRexxLookLikeMacOSX":
+          ooRexx macros in AOO 4.x on MacOSX do not run, as this setup code uses
+          an awt class which must nor run on the main thread on MacOSX. As a result
+          ooRexx macros on AOO 4.x cause a runtime exception and do not run. Moving
+          the initialization into a routine that needs to be explicitly called
+          should solve the problem.
+
+- ooRexxTry.rxj
+
+        - make sure that on MacOSX the application looks like a Mac application by calling
+          first the new BSF.CLS routine "makeBSF4ooRexxLookLikeMacOSX"
+
+- RexxAndJava.java
+
+        - correct new method lookup for INVOKE (did not find fields, nor was coercing
+          the arguments rather used the INVOKE_STRICT logic)
+
+-------------------------------------- 2014-05-14 ----------------------------------
+
+- RexxAndJava.java
+
+        - change method lookup for INVOKE to use Class.getMethods() instead of Class.getDeclaredMethods();
+          getMethods() returns all public methods, which in Java 8 also includes default (interface) methods,
+          if necessary
+
+-------------------------------------- 2014-05-14 ----------------------------------
+
+- samples/demo-j8-lambda.rxj (new)
+
+        - demonstrate how to use ooRexx code to be used in Java 8's lambda-related
+          functional programming patterns
+
+
+
+-------------------------------------- 2014-04-03 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - make sure that BSFDetach() does not detach from the primodal thread
+
+-------------------------------------- 2014-04-02 ----------------------------------
+
+- RexxAndJava.java
+
+        - move initialization of JNI library to RexxAndJava constructor to make
+          sure that non-Rexx JNI functions are available to Java (like jniProcEnvironment())
+
+- ScriptProviderForooRexx.java
+
+        - add code in getBSFManager() to cater for a stupid error in MacOSX AOO 4.0.x and 4.1.
+          (process environment not set, so PATH missing, such that ooRexx cannot be
+          initialized at all)
+
+
+-------------------------------------- 2014-03-31 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - rewrite all "const char*" types with "char*" types as the latest Clang
+          on MacOSX creates bus errors, if forcing "char*" on "const char*" (which is fine);
+          replacing:
+              char bla[nnn]="";
+          with
+                 char *bla=new char[nnn];
+              and
+                 delete [] bla;
+
+-------------------------------------- 2014-03-30 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - major addition, hence augmenting version to 4.5
+
+        - save primodal TID as BSF.PRIMODALTID for each Rexx interpreter instance;
+          this allows to do a BSFAttachToTID() without supplying a TID, added code
+          to BSFLoadJava(...), jniCreateRexxInterpreterInstance(...)
+
+        - now possible to do an "auto-attach" to the Java interface taking advantage
+          of this new information, implemented for the RexxRoutines (sending messages
+          from Java to Rexx will always occur on an established Java connection):
+
+          - BSFAttachTo(): argument now optional, in order to remain backwardly
+                 compatible, if a programmer uses this routine for an already
+                 attached ooRexx thread, the same condition will be raised such
+                 that Rexx code expecting this behaviour keeps on working as designed
+
+          - BSFCreateRexxProxy()
+          - BSFJavaException()
+          - BSFRawBytes()
+          - BSF()
+
+- RexxEngine.java
+
+          - add undocumented pass-thru method procEnvironment(...) to allow a last resort means
+            (allow Java to set/get process environment variables via JNI using RexxAndJava)
+
+-------------------------------------- 2014-03-29 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - add jniProcEnvironment(...): this allows to get, set and unset the
+          process environment from Java; reason: AOO 4.x removes the PATH environment
+          variable (seems to be unintended, hence an error), which inhibits the
+          Rexx interpreter to initialize successfully; this jni function is intended
+          to allow as a last resort to set the missing PATH environment variable;
+          the subfunctions "getEnv" and "setEnv" will not be explicitly documented
+
+
+- RexxAndJava.java
+
+        - add jniProcEnvironment(...): this allows to get, set and unset the
+          process environment from Java; reason: AOO 4.x removes the PATH environment
+          variable (seems to be unintended, hence an error), which inhibits the
+          Rexx interpreter to initialize successfully; this jni function is intended
+          to allow as a last resort to set the missing PATH environment variable;
+          the subfunctions "getEnv" and "setEnv" will not be explicitly documented
+
+-------------------------------------- 2013-10-07 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - removing DeleteLocalReference(...) from:
+
+          - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRunProgram(...)
+          - Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSendMessageToRexxObject(...)
+
+          otherwise rtc->DetachThread() may cause an exception in native code,
+          if a Rexx exception occurs (reason for bug19 <http://sourceforge.net/p/bsf4oorexx/bugs/19/>);
+          as DetachThread() will remove local references anyway, there is no possible memory leak
+
+-------------------------------------- 2013-07-14 ----------------------------------
+
+- setupBSF.rex
+
+        - Make output more verbose, such that logfile reflects environment at installation time
+          (displays values for cmd.eSetBSF4REXX_HOME, cmd.eSetPath and cmd.eSetCP), will
+          allow to analyze Java at hand
+
+- setupOOo.rex
+
+        - Make output more verbose, such that logfile reflects what was found about OOo/LO
+          (displays values for cmd.eSetPath and cmd.eSetCP)
+
+-------------------------------------- 2013-07-08 ----------------------------------
+
+- setupAllAndRun.rex
+
+        - add logfile ability, add appropriate logfile output statements
+        - increase ooRexx minimum version to 4.1.0 as BSF4ooRexx.cc mandates it
+        - add logfile statements, make sure logfile gets closed after each log message,
+          such that redirecting commands to it works as well
+        - log environment
+
+-------------------------------------- 2013-06-29 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - applying ReleaseLocalReference() wherever a Rexx thread context may have returned
+          a RexxObjectPtr for which the thread context creates a local reference to protect
+          it to be garbage collected; a ReleaseLocalReference() therefore has to be issued to
+          inhibit memory leaks
+
+        - removed compiler warnings
+
+- BSFManager.java
+
+        - if terminating engines, make sure to remove engine as PropertyChange listener to
+          inhibit memory leaks
+
+- RexxEngine.java
+
+        - get isTerminated() back into the code; was mistakingly deleted between rev 137 and 148
+
+-------------------------------------- 2013-06-27 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - slight tidying up (removed an obsolete function)
+
+-------------------------------------- 2013-06-25 ----------------------------------
+
+- RexxAndJava.java
+
+        - add a terminate() method which nullifies the peer BSFManager and RexxEngine
+          object to allow a terminated BSFManager RexxEngine to be garbage collected
+
+-------------------------------------- 2013-06-24 ----------------------------------
+
+- RexxEngine.java
+
+        - terminate() now invokes the new RexxAndJava.terminate() in order to allow it
+          to release references to BSFManager and RexxEngine, afterwards releasing
+          the reference to its RexxAndJava peer;
+          experimental: if trying to terminate the primodal Rexx interpreter instance a
+          warning will get issued on System.err that informs the reader, that Java cannot
+          use the primodal Rexx interpreter instance anymore; in effect the primodal
+          Rexx interpreter instance does never get terminated, such that the native code
+          has it always available for its own purposes
+
+        - added bJNITerminated which is set to true, if a Rexx interpreter instance
+          got terminated via JNI; bTerminated logically terminates the usage of a
+          RexxEngine (usually changed by the peer RexxAndJava object's "exit" subfunction
+
+-------------------------------------- 2013-06-10 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - changed logic in Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
+          to really terminate Rexx interpreter instances (RII) with the exception of the
+          primodal RII, which needs to stay alive due to using it for maintaining RexxProxy
+          objects with Rexx collection objects in native code
+
+- RexxEngine.java
+
+        - added public getter method isTerminated()
+
+        - added "synchronized" keyword to terminate();
+          note: the primodal Rexx interpreter instance is never terminated, use isTerminated()
+          to check for that after terminating a Rexx engine
+
+- BSF.CLS
+
+        - make BSF.terminateRexxEngine() return .true, if RexxEngine got terminated, .false else
+
+-------------------------------------- 2013-01-07 ----------------------------------
+
+- RexxDispatcher.java
+
+        - somehow a local copy of this file was wrong, introducing an error, reordering
+          Rexx termination sequences
+
+-------------------------------------- 2013-01-06 ----------------------------------
+
+- samples\quiz1.rxj, samples\quiz2.rxj, samples\quiz3.rxj, samples\uscaps.txt
+
+        - new examples to demonstrate various GUI features available with Java
+          by creating a US capital quiz application with ooRexx
+
+-------------------------------------- 2013-01-04 ----------------------------------
+
+- RexxAndJava.java
+
+        - fix bug "Bug in Class Method resolution for interface class objects ",
+          using alternative code to fix bug, cf.
+          https://sourceforge.net/tracker/?func=detail&aid=3599351&group_id=400586&atid=1660873
+
+-------------------------------------- 2013-01-03 ----------------------------------
+
+- RexxAndJava.java
+
+        - fix bug "Bug in Class Method resolution for interface class objects ", cf.
+          https://sourceforge.net/tracker/?func=detail&aid=3599351&group_id=400586&atid=1660873
+
+-------------------------------------- 2013-01-03 ----------------------------------
+
+- RexxExtendClass.java
+
+        - fix bug "BsfCreateRexxProxy with abstract class missing abstract meth", cf.
+          https://sourceforge.net/tracker/?func=detail&aid=3599340&group_id=400586&atid=1660873
+
+                - fixed a bug when extending an abstract class that possesses unimplemented
+                  interface methods like javax.swing.AbstractAction; the fix now correctly
+                  implements any declared abstract methods from interfaces (including any
+                  of its super interfaces) that are not implemented in the abstract class
+
+                - fixed wrong setting that caused concrete methods to be created, although
+                  the documentation explained that only abstract methods get created
+
+-------------------------------------- 2012-12-30 ----------------------------------
+- BSF4ooRexx.cc
+
+        - serializing initializations of JVM-dependent structures to fix reported bug
+          <https://sourceforge.net/tracker/?func=detail&atid=1660873&aid=3591015&group_id=400586>
+
+-------------------------------------- 2012-11-17 ----------------------------------
+
+- samples\demo.BSF.dialog.rxj
+
+        - new sample to demonstrate the easy to use cross-platform .bsf.dialog class
+          for creating and using dialog windows; it seems no one is aware of this
+          helpful utility class
+
+-------------------------------------- 2012-11-02 ----------------------------------
+
+- utilities\ooRexxTry.rxj
+        - fix bug "ooRexxTry in Mac OS X, filehandling", cf.
+          https://sourceforge.net/tracker/index.php?func=detail&aid=3582365&group_id=400586&atid=1660873
+
+-------------------------------------- 2012-11-01 ----------------------------------
+
+- RexxAndJava.java
+
+        - fix bug "BSF4ooRexx returns wrong values", cf.
+          https://sourceforge.net/tracker/?func=detail&aid=3581957&group_id=400586&atid=1660873
+
+-------------------------------------- 2012-06-09 ----------------------------------
+
+- BSF.CLS
+
+        - added public routine BSF.terminateRexxEngine(): this allows a Rexx program
+          to stop callbacks from Java to Rexx; it also will inhibit the Java side
+          to use this Rexx interpreter instance to execute new Rexx programs
+
+-------------------------------------- 2012-06-05 ----------------------------------
+
+- BSF.CLS
+
+        - fix memory leak: added uninit method to BSF_ARRAY_REFERENCE class to remove
+          thearray proxy for indexing from the BSF registry, if not needed
+          anymore (i.e. when uninit runs)
+
+-------------------------------------- 2012-06-07 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - changed logic in RgfAddRexxProxy() such that if the package object is NULL to
+          not add it to the directory (it won't be removable in ooRexx 4.1.1)
+
+-------------------------------------- 2012-06-06 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - added an external Rexx function named BsfGetRegistryObjects() for debugging
+          purposes only; to compile the flag CONFIG_MAKE_OREXX_REGISTRY_ACCESSIBLE must
+          be defined
+
+-------------------------------------- 2012-05-26 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - fixed errors because of wrongly placed DeleteLocalRef() (and in one instance
+          a GlobalRef'd Java object became illegal due to excercising DeleteLocalRef()
+          on it
+
+-------------------------------------- 2012-05-24 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - changed "JNU_GetStringNativeCharsReturningRexxObjectPtr" to
+                  "JNU_GetStringNativeCharsReturningRexxStringObject"
+
+        - memory leak: fixed OOM (out of memory) error reported by Erik Dujis by explicitly
+          invoking DeleteLocalRef() on any jobject; bug report:
+          <https://sourceforge.net/tracker/?func=detail&atid=1660873&aid=3525814&group_id=400586>
+
+        - tidying up a little bit by deleting some outdated commented code
+
+-------------------------------------- 2012-04-19 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - fixed a bug in free()ing options array in BsfLoadJava()-routine, reported
+          by JLF, cf. <https://sourceforge.net/mailarchive/forum.php?thread_name=4F900B1A.8000104%40wu-wien.ac.at&forum_name=bsf4oorexx-devel>
+
+-------------------------------------- 2012-03-12 ----------------------------------
+- RexxAndJava.java
+
+        - now first trying to load 'netrexx.lang.Rexx' and then loading BSF4ooRexx DLL/so
+          such that the native library can access the static field "nlR_class" and fetch
+          the netrexx.lang.Rexx class object, if it was found
+
+        - change scope of "bsfPrefixReturnValue" from static to instance, such that
+          the Rexx interpreter instances can run with different settings in parallel
+
+- BSF4ooRexx.cc
+
+        - added support for 'netrexx.lang.Rexx' class for return values from handlers
+          (if NetRexx Rexx' value, return its string value to Rexx)
+
+-------------------------------------- 2012-02-25 ----------------------------------
+
+- new beta version, major new features
+
+        - allow to configure a Rexx interpreter instance (RexxConfiguration), before
+          creating it; cf. the ooRexx programming guide documentation in "rexxpg.pdf"
+
+        - allow to configure and implement Rexx command handlers in Java
+
+        - allow to configure and implement Rexx exit handlers in Java
+
+        - fixed: issue # 3434228, "GUI Rexxtry - install with working directory ~"
+
+        - fixed: issue # 3434226, "rpm is case sensitive - misses ooRexx installation"
+
+- install/setupBSF.rex
+
+        - Unix: changed logic to determine which target lib to copy libBSF4ooRexx.so to
+                (using location of "librexx.so")
+
+-------------------------------------- 2012-06-09 ----------------------------------
+
+- Java4Rexx.java
+
+        - need to use try-block for createRexxInterpreterInstance() as it now throws a BSFException
+
+- samples/Greetings.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/HelloWorld.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/OOo/listPathSettings-pure-ooo.rxo
+
+        - new sample to demonstrate using the URL-converter service of OOo, rather than BSF.CLS'
+
+- samples/OOo/demoFileUriConvert.rxo
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/PrintFile.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/ShootOut.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/ShootOut2.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/ShowCount.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+- samples/ShowSize.rxj
+
+        - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+
+
+-------------------------------------- 2012-04-17 ----------------------------------
+
+- Java4Rexx.java
+
+        - change logic as there is no need for creating and terminating another Rexx
+          interpreter instance anymore (there was a bug too, that caused Terminate()
+          to not be invoked at all
+
+- RexxAndJava.java
+
+        - fixed a bug in createRexxInterpreterInstance() where the new RII was
+          not assigned to the RexxEngine if that had no RII assigned to it yet
+
+        - added protected void set_rii_ID(String rii_ID) to allow Java4Rexx to
+          set the reference to the Rexx interpreter instance that invoked it
+
+        - tidying up the code a bit (removing comments and TODOs that are not actual anymore)
+
+-------------------------------------- 2012-04-05 ----------------------------------
+
+- utilities/ooRexxTry.rxj
+
+        - Jean-Louis Faucher:
+                - Convert the result to a string before displaying in returnsArea
+
+                - Support empty arguments : arg(N, "o") returns 1 if line N is empty in argsArea.
+
+                - The temporary file ooRexxTry_test was created with a path in home directory,
+                  but then only the filename part was kept. Now keeps the whole path.
+
+                - The path to ooRexxTry_test is surrounded by quotes to support whitespaces.
+
+                - The file ooRexxTry.rc is saved in the home directory.
+
+                - No longer accumulate text in say_stg and error_stg, better to use the method
+                  append of JTextArea.
+
+-------------------------------------- 2012-04-03 ----------------------------------
+
+- utilities/ooRexxTry.rxj
+
+        - fix bug ID: 3514658
+
+        - Java classes are now stored in .local by there fully qualified name;
+          this way there should be no interference with any other class (JLF
+          reported a name clash with .file, which is defined as an ooRexx class
+          and which was offset by java.io.File that was saved in .local as .file)
+
+-------------------------------------- 2012-03-29 ----------------------------------
+
+- utilities/ooRexxTry.rxj
+
+        - make sure that .input, .output and .error GUI interface can be used,
+          even if Rexx code is run on a separate thread; quick fix, experimental
+
+-------------------------------------- 2012-03-27 ----------------------------------
+
+- utilities/ooRexxTry.rxj
+
+        - Jean-Louis Faucher:  Fix bug 3512053
+
+-------------------------------------- 2012-03-12 ----------------------------------
+
+- RexxAndJava.java
+
+        - now loading BSF4ooRexx DLL/so after trying to fetch the netrexx.lang.Rexx class,
+          such that native library can access static field "nlR_class" and fetch the class object,
+          if Java found it
+
+        - change scope of "bsfPrefixReturnValue" from static to instance, such that
+          the Rexx interpreter instances can run with different settings
+
+-------------------------------------- 2012-02-06 ----------------------------------
+
+- RexxDispatcher.java
+
+        - terminate() Rexx engine to inhibit callbacks from Java to Rexx
+
+-------------------------------------- 2011-06-18 ----------------------------------
+- install/images
+
+        - added new icons created by Graham Wilson (for ooRexxTry.rxj and for the
+          installation menus)
+
+-------------------------------------- 2011-06-08 ----------------------------------
+- bin/rgf_util.rex
+
+        - new routine ppCondition2(co[,bShowPackage=.false [,indent1="09"x [,indent2="0909"x [,indent3="090909"x [,lf=.endOfLine]]]]]]):
+          returns a string rendering of the supplied condition object "co"
+
+        - new routine ppPackage2(package[,indent1=""[, indent2="09"x[, lf==.endOfLine]]):
+          returns a string rendering of the supplied package object
+
+- added bsf4oorexx.dev/ReferenceCards/rgf_util
+
+        - source odt-files for "rgf_util2.rex" article and (updated) reference card
+          which get copied to bsf4oorexx.dev/information
+
+-------------------------------------- 2011-06-04 ----------------------------------
+- RexxAndJava.java
+
+        - make sure that BSFExceptions get the Java Throwable object assigned, if this
+          intelligible from context, such that one can retrieve it by using the
+          BSFException instance method getTargetException()
+
+-------------------------------------- 2011-05-30 ----------------------------------
+- bin/rgf_util.rex
+
+        - fix error not allowing suppliers to be shown in dump2(); this
+          follows Jean-Louis fix in his ooRexx sandbox as of 2011-05-30;
+          also changed sequence of argument checking to follow sequence
+          of arguments as seen in Jean-Louis' version of rgf_util2.rex
+
+-------------------------------------- 2011-04-29 ----------------------------------
+- orx2reg.rex
+  linux/resources/menu/bsf4oorexx_home.desktop
+
+  description.xml
+  ScriptProviderForooRexx.author.htm
+  ScriptProviderForooRexx.update.html
+  ScriptProviderForooRexx.update.xml
+  ScriptProviderForooRexx.release-notes_en.txt
+
+        - changed download page URL to "http://sourceforge.net/projects/bsf4oorexx/files/"
+        - change references to BSF4ooRexx WWW site to: "http://sourceforge.net/projects/bsf4oorexx/"
+
+-------------------------------------- 2011-02-23 ----------------------------------
+- RexxAndJava.java
+
+        - as this class is not public, its public members cannot be accessed
+          by non-package code; therefore added that a new subfunction
+          "carryOutSystemExit": if no argument ("0"|.false or "1"|.true) is given,
+          then the current setting will be returned, otherwise the boolean field
+          will be set to the argument, which gets returned as well
+
+- utilities/ooRexxTry.rxj
+
+        - renamed class "CreateSocket" to "CreateServerSocket"
+        - added logic to allow new ooRexxTry.rxj instances to be
+          created, even if the port is already taken (ask user
+          for another new portnumber)
+        - use new BSF-subfunction "carryOutSystemExit"
+        - use SysTempFileName() to create unique temporary filenames
+
+-------------------------------------- 2011-02-21 ----------------------------------
+- utilities/ooRexxTry.rxj
+
+        - added new BSF4ooRexx program by Markus Moldaschl which implements
+          Lee Peedin's Windows ooRexxTry.rex in a platform independent manner,
+          plus a few new bells and whistles
+        - MacOSX: make sure to act upon the Apple application quit event
+        - MacOSX: adding icon image to JFrame
+        - make sure that a bsf.exit() is not carried out, if the RexxAndJava
+          version is capable of doing that
+
+- bin/BSF.CLS
+
+        - define new entries in .bsf4rexx
+          - "OPSYS" ... operating system name from "PARSE SOURCE opsys ." plus
+            "OPSYS1", "OPSYS2", "OPSYS3" with the first one, two, three letters in
+            uppercase
+          - MacOSX: "APPLE_APPLICATION" the Apple application object representing
+            the running Rexx program
+          - "BSF4OOREXX_{016|032|048|064|128|256}": if defined path to PNG-icon
+          - "OOREXX4OOO_{016|032|048|064|128|256}": if defined path to PNG-icon
+
+        - MacOSX: remove About and Preferences Apple menu entries
+        - MacOSX: define Dock icon
+
+- testUnits/ooRexxUnit/OOREXXUNIT.CLS
+
+        - fixed a wrong statement in Assert::fail
+
+-------------------------------------- 2011-02-20 ----------------------------------
+- utilities/ooRexxTry.rxj
+
+        - removed MacOSX-related change to name of menu "Exit"
+          to "Quit" as MacOSX has its own application "Quit" menu at all times
+
+        - also using "VK_E" instead of "VK_X" for "Exit" button
+
+- bin/BSF.CLS
+
+        - adding MacOSX related properties for the Rexx programs
+
+-------------------------------------- 2011-02-15 ----------------------------------
+- org.rexxla.bsf.RexxDispatcher.java
+
+        - MacOSX: show Rexx' filename in Apple menu bar in the application title,
+          which gets set to: "BSF4ooRexx [rexx-filename]"
+
+-------------------------------------- 2011-02-12 ----------------------------------
+- testUnits/bsf4rexx/lex/procedural/Bean.testGroup
+
+        - allow this test to run in "java.awt.headless=true"-mode
+
+- testUnits/bsf4rexx/lex/oo/Bean.testGroup
+
+        - allow this test to run in "java.awt.headless=true"-mode
+
+-------------------------------------- 2011-02-10 ----------------------------------
+- testUnits/bsf4rexx/rgf/C_interfaceClasses/Test_ITest.java
+
+        - added "bShowInfos" to control additional new debug output
+
+-------------------------------------- 2011-02-09 ----------------------------------
+- BSF4ooRexx.cc
+
+        - forcing ooRexx minimum level 4.1.0 (used to be 4.0.0, which is no good as
+          there were needed bug fixes, which materialized in 4.0.1; as more bug fixes
+          were applied to the available ooRexx 4.1.0, that version is now mandated)
+
+- infoBSF.rxj
+  infoBSF-oo.rxj
+
+        - now also querying values for "os.arch", "sun.arch.data.model" and
+          "java.ext.dirs" properties
+
+-------------------------------------- 2011-02-07 ----------------------------------
+- BSF4ooRexx.cc
+
+        - fixing error message to reflect platforms if [lib]jvm.{dll|so|dylib} not found
+
+-------------------------------------- 2011-01-24 ----------------------------------
+- setupAllAndRun.rex
+
+        - correct BSF-message popup text to not claim that no errors occurred during
+          install and reinstall
+
+- setupBSF.rex
+
+        - escape "%" with "[25x]" in path on Windows
+
+- orx2reg.rex
+
+        - cater for escaped "%" as "[25x]" on Windows
+
+-------------------------------------- 2011-01-24 ----------------------------------
+- RexxAndJava.java
+
+        - added new credits to kudos
+
+-------------------------------------- 2011-01-12 ----------------------------------
+- BSF4ooRexx.cc
+
+	- free VMArgs options (string and options array)
+	- memset malloc'ated VMArgs option memory to 0x00
+
+-------------------------------------- 2011-01-09 ----------------------------------
+- BSF4ooRexx.cc
+
+        - fixing MacOSX Java pecularity, using ["JAVA_STARTED_ON_FIRST_THREAD_%d", getpid()]
+          as per <http://lists.apple.com/archives/java-dev/2009/Oct/msg00511.html>
+
+-------------------------------------- 2011-01-08 ----------------------------------
+- org.apache.bsf.BSFManager.java
+
+        - static constructor: fixed logic error in fallback code for getResources()
+
+-------------------------------------- 2011-01-02/07 -------------------------------
+- BSF4ooRexx.cc
+
+        - fixed up code to not produce warnings on MacOSX' g++
+        - code makes it possible to successfully load JVM in first thread by rexx.exe,
+          although only with "java.awt.headless=true" in effect; rexxj*.* works like
+          on any platform
+    	- fixing MacOSX g++ warnings and errors, allow loading JVM via Rexx as well on MacOSX
+
+-------------------------------------- 2010-12-08 ----------------------------------
+- installation:
+
+        - changed mimetypes from "application/x-rexx*" to "text/x-rexx*"
+
+-------------------------------------- 2010-11-30 ----------------------------------
+- ProxiedJavaClassTool.java:
+
+        - fixed bug in createConstructorsBase(...) which caused illegal class files to be created
+
+- samples\OOo\ahammer\example01_swriter_openblank_2.rxo,
+  samples\OOo\ahammer\example03a_swriter_print.rxo
+
+        - changed "dispose()" to "close(.true)" to demonstrate the XCloseable interface, besides
+          this is the preferred method to close an OOo component
+
+-------------------------------------- 2010-08-14 ----------------------------------
+- Installation
+
+        - created new, one-click installation on Windows and Linux
+
+        - added file-associations on Windows and Linux for BSF4ooRexx scripts/programs
+
+-------------------------------------- 2010-08-14 ----------------------------------
+- BSF4ooRexx.cc:
+
+        - new stratety on Unix to load 'libjvm.so': first try '/opt/BSF4ooRexx/libjvm.so',
+          if not successful, then look for 'libjvm.so' and let the system find it
+
+-------------------------------------- 2010-07-12 ----------------------------------
+- BSF.CLS
+
+        - .bsf.dialog::inputBox: now accepting a Java Object array for options (an array of Strings)
+
+-------------------------------------- 2010-06-10 ----------------------------------
+- BSF.CLS
+
+        - changed environment variable from 'BSF4Rexx.JavaStartupOptions' to
+          'BSF4Rexx_JavaStartupOptions'; reason: bash cannot process environment variables
+          that contain a dot
+
+-------------------------------------- 2010-06-08 ----------------------------------
+- BSF.CLS
+
+        - corrected BsfLoadJava to supply Java startup arguments, if given
+          in the environment variable named 'BSF4Rexx.JavaStartupOptions'
+
+-------------------------------------- 2010-06-05 ----------------------------------
+- BSF.CLS
+
+         - added check for minimum version of ooRexx being "4.0.1"
+
+-------------------------------------- 2010-05-22 ----------------------------------
+- BSF4ooRexx.cc:
+        - added optional second "lengthToUse" argument to BsfRawBytes(); "lenghToUse"
+          determines the number of bytes to use for the conversion
+
+-------------------------------------- 2010-05-22 ----------------------------------
+- BSF4ooRexx.cc:
+
+        - fixed potential errors in assuming that a Rexx string object is indeed
+          a RexxStringObject in the native layer; could be an internal, optimized
+          Integer object!
+          Cf. <https://sourceforge.net/tracker/?func=detail&atid=684730&aid=3005462&group_id=119701>
+
+- RexxAndJava.java
+        - removed special handling of Character.class or char.class arguments because
+          of changes in BSF4ooRexx.cc
+
+-------------------------------------- 2010-05-20 ----------------------------------
+- samples/
+
+        - rewrote all samples/* samples/LeePeedin/* examples to now take advantage
+          of the RexxProxy infrastructure; all programs therefore are not using
+          bsf.addEventListener anymore
+
+- BSF4ooRexx reference card
+
+        - updating to reflect current set of functionalities
+
+- RexxAndJava.java
+
+        - fixed a bug in converting to a char or Character, if the value was "00"x
+
+        - coerceArgs(): if matching wrapper objects are passed for primitive values
+                        from Rexx, then accept them from now on
+
+- BSF4ooRexx.cc:
+
+        - added new JNU_GetStringNativeCharsReturningRexxObjectPtr(...) macro which
+          returns a RexxObjectPtr (RexxString) that may contain embedded NUL chars
+
+        - return values/arguments from the Java side now process strings that have
+          NUL chars embedded;
+
+          - hint: if in need of supplying a Rexx string with embedded NUL chars to Java use:
+                     b=BsfRawBytes(RexxString)  -- turn Rexx string into Java byte array
+                     s=.java.lang.String~new(b) -- use Java byte array to construct Java String
+
+-------------------------------------- 2010-05-11 ----------------------------------
+- BSF.CLS
+
+        - added routine bsf.getSlotDir() which returns the last (slotDir) item
+
+-------------------------------------- 2010-05-08 ----------------------------------
+- BSF.CLS
+
+        - BSF::UNKNOWN::CLASS - little optimization: forwarding directly to bsf.jco
+        - create[Java]Array[Of] - forward all arguments verbatimely (let Java side optimize)
+        - remove usage of bsf.getJavaClassObjectProxy(...)
+        - removed method bsf.class, instead send "getClass" to Java object
+        - removed class method bsf.getJavaClassObjectProxy
+        - removed class attribute bsf.JavaClassObjectProxies
+        - removed class attribute bsf.JavaClassObjects
+        - added public routine "bsf.importClass" (matching "bsf.loadClass") to supercede "bsf.import"
+        - added class method "bsf.importClass" to class "BSF" (matching "bsf.loadClass")
+          to supercede "bsf.import"
+
+-------------------------------------- 2010-04-20 ----------------------------------
+- RexxAndJava.java
+
+        - fixed a bug in INVOKE, if looking up and resolving a method in class-objects
+
+-------------------------------------- 2010-04-18 ----------------------------------
+- RexxAndJava.java
+
+        - changed logic in REGISTER_BEAN | NEW (matching changed logic in BSF.CLS'
+          ".BSF~bsf.import"): Java class object is already loaded, hence just look it up
+          in the registry; will speed up creation of Java objects a little bit
+
+- BSF.CLS
+
+        - added public routine bsf.createProxyClass(), adapted .BSF~bsf.import accordingly
+
+-------------------------------------- 2010-04-17 ----------------------------------
+- RexxAndJava.java
+
+        - fixed conversion error in setFieldValue[Strict], if assigning "1" or Boolean.TRUE
+          to a boolean field
+
+- RexxProxy.java
+
+        - added ability to switch to using the new Janino-based dynamic extension
+          of abstract Java classes on the fly
+
+- ProxiedJavaClassTool.java
+
+        - added to have an alternative (though by comparison to the default ASM
+          solution quite slow) to extending abstract Java classes on the fly
+
+-------------------------------------- 2010-03-27 ----------------------------------
+- RexxAndJava.java
+
+        - if processing an InvocationTargetException then first attempts to do a g
+          etCauseAsString(), if not successful falls back to current getCause()
+
+-------------------------------------- 2010-03-21 ----------------------------------
+- New directory structure and installation
+
+- new directory "install": this contains the
+
+        - the DLLs and shared libraries in the subdirectories "32" or "64" depending
+          on their bitnesses
+
+          - setupBSF.rex will copy the approriate DLL/shared library to the BSF4ooRexx
+            homedirectory (the directory in which the "install" directory resides)
+
+        - setup scripts and their generated installation, uninstallation, environment
+          scripts
+
+- new directory "utilities"
+
+        - contains utility classes programs which exploit and enhance BSF4ooRexx
+
+          - new "bsfScreenShot.cls" allows to take full screen shots or screen shots
+            of awt/swing container, allowing to save them as gif, jpg/jpeg or png files;
+            examples to demonstrate usage of this package: "useBsfScreenshot_01.rxj",
+            "useBsfScreenshot_02.rxj"
+
+
+- setupBSF.rex:
+
+        - changed the setup scripts to make it easier for users to install BSF4ooRexx,
+          especially on Linux:
+
+          - using /etc/profile to invoke the setEnvironment4BSF.sh
+
+            - need to logoff/logon to make changes effective, unless one would add the
+              following lines to ~/.bashrc
+
+                 source fully-qualified-path-to/setEnvironment4BSF.sh
+
+          - copying libBSF4ooRexx.so to /usr/lib, followed by running ldconfig
+
+-------------------------------------- 2010-03-14 ----------------------------------
+- BSF4ooRexx.cc:
+        - applied Jean-Louis Faucher's fixes for debug-mode (e-mail 2010-03-14):
+          "I got a crash with the debug version of bsf4oorex
+          (bsf4oorexx-20091031-beta2_sources) It's because of the memory pattern
+          stored by the heap manager when in debug version : 0xfeeefeee The next
+          node must be read before the remove (I see you fixed already the code, but
+          not everywhere).  Search for JLF in the attached file, you will see where
+          I changed the code."
+
+        - added ".rxo" (for OpenOffice scripts); if Rexx is started via Java it will now
+          look for the additional Rexx extensions: ".rxj,.rxo,.rxjo,.jrexx"
+
+
+
+-------------------------------------- 2010-02-20 ----------------------------------
+- adding new samples:
+
+         - samples/rgfScreenShot.cls
+
+           a utility package containing public classes that allow taking screenshots
+           (full, of any awtComponent, any arbitrary area) and saving the returned
+           image in a file (allowing to determine the image type to use);
+           these functionalities are available independent of operating systems
+
+         - samples/useRgfScreenshot_01.rxj ... demonstrate usage of "rgfScreenShot.cls"
+         - samples/useRgfScreenshot_02.rxj ... demonstrate usage of "rgfScreenShot.cls"
+
+
+-------------------------------------- 2010-02-19 ----------------------------------
+- RexxAndJava.java
+          - added subfunction "isA" ("isInstance")
+
+- BSF.CLS
+        - added instance method bsf.isA(javaClass) to the class .BSF, returning .true or .false
+
+        - added public routine bsf.isA(javaObject, javaClass)
+
+
+-------------------------------------- 2010-02-10 ----------------------------------
+- BSF4ooRexx.cc:
+        - added external function BsfRawBytes(rexxString|javaByteArray), which allows
+          for
+
+          - submitting the bytes of a Rexx string without any codepage translations to Java,
+            i.e. if a rexxString is given the appropriate Java byte array is returned as
+            BSF proxy and can then be used as an argument for a Java method
+
+          - turning a single-dimensioned Java byte array into a Rexx string without any
+            codepage translations
+
+-------------------------------------- 2009-10-31 ----------------------------------
+- RexxAndJava.java
+        - replaced European characters with their Unicode equivalent
+
+        - gives additional error information in the BSF()-subfunction "NEW"/"REGISTERBEAN"
+
+
+- setupBSF.rex
+        - changed occurrences of "BSF4Rexx" to "BSF4ooRexx" in informative text as well
+
+- testUnits
+        - changed the run scripts to account for the relative position of the framework
+          control script ("testOORexx.rex") in the filesystem, as that is is used as the
+          script's base directory
+
+-------------------------------------- 2009-10-20 ----------------------------------
+- general work for preparing beta 1 release:
+
+- completing nutshell examples to demonstrate new BSF4ooRexx features in "samples/version4"
+        - using interfaces, abstract methods implemented in Rexx
+
+        - using abstract classes, abstract methods implemented in Rexx
+
+        - Java examples to demonstrate how to invoke Rexx programs using the same
+          Rexx engine (the same Rexx interpreter instance) as well as interacting
+          with Rexx objects by sending them messages from Java
+
+
+-------------------------------------- 2009-10-19 ----------------------------------
+- BSF4ooRexx.cc:
+        - renaming from "BSF4Rexx" to "BSF4ooRexx"
+
+- RexxAndJava.java:
+        - renaming "BSF4Rexx" to "BSF4ooRexx"
+
+
+-------------------------------------- 2009-10-18 ----------------------------------
+- RexxAndJava.java:
+        - added private methods "lookupBean4JNI" and "registerBean4JNI"
+
+- BSF4ooRexx.cc:
+        - if Rexx is started via Java it will now look for the Rexx extensions: ".rxj,.rxjo,.jrexx"
+
+        - added "BsfJavaException(option[, arg)" to allow throwing Java exceptions (needed
+          e.g. for some OpenOffice vetoing patterns)
+
+
+-------------------------------------- 2009-10-12 ----------------------------------
+- RexxAndJava.java:
+        - allow "getRAJO" as synonym for "getRexxAndJava"
+
+- BSF4Rexx.cc:
+        - if Rexx is started via Java it will also look for the Rexx extensions ".jrexx,.jrexxo"
+
+
+-------------------------------------- 2009-10-10 ----------------------------------
+- RexxDispatcher.java:
+        - removed rexxengine.halt(), which raises the HALT condition in all Rexx threads
+
+
+-------------------------------------- 2009-10-07 ----------------------------------
+- RexxAndJava.java:
+        - allow retrieving this RexxEngine instance
+
+
+-------------------------------------- 2009-10-06 ----------------------------------
+- BSF4Rexx.cc:
+        - using and testing the new thread infrastructure functions
+
+
+-------------------------------------- 2009-10-03 ----------------------------------
+- BSF4Rexx.cc:
+        - finished creating new thread infrastructure functions;
+
+
+-------------------------------------- 2009-10-01 ----------------------------------
+- RexxAndJava.java:
+        - allow retrieving this RexxAndJava instance
+
+
+- BSF4Rexx.cc:
+        - renamed RgfGetJRST_for_new_jniRexxStart(...) to RgfGetJRST_or_create_new
+
+        - changed multithreading strategy: if a new program/routine or SendMessage, then
+          force creation of a new JRST; if for a TID a JRST exists already, then ...
+
+        - added RgfRemoveJRST_By_RIID(void *rii);
+
+
+-------------------------------------- 2009-09-25 ----------------------------------
+- BSF4Rexx.cc:
+        - added BsfGetRIID(), returning the Rexx instance pointer as a string (using %p)
+
+        - using snprintf(...) [C99-compilers] or sprintf_s(...) [MSC-compiler] instead
+          of sprintf(...) to make the program fully buffer overrun safe in those corners;
+          also replaced strcat(...) with SNPRINTF(...)
+
+
+-------------------------------------- 2009-09-22 ----------------------------------
+- RexxProxy.java:
+        - added the methods sendMessage(msgName,arg[]), sendMessage0(msgName),
+          sendMessage1(msgName,arg1), sendMessage2(msgName,arg1,arg2),
+          sendMessage3(msgName,arg1,arg2,arg3), sendMessage4(msgName,arg1,arg2,arg3,arg4),
+          sendMessage5(msgName,arg1,arg2,arg3,arg4,arg5) to ease sending messages
+          to Rexx objects a little bit
+
+
+-------------------------------------- 2009-09-12 ----------------------------------
+- BSF4Rexx.cc:
+        - list "BsfCreateRexxProxy" and "BsfRexxProxy" in "BsfQuery{All|Registered}Functions"
+
+        - made sure no buffer-overruns in sprintf()
+
+
+-------------------------------------- 2009-09-10 ----------------------------------
+- BSF4Rexx.cc:
+        - version string now contains the address mode, added as a third word in the form
+          of bits"-bit", where "bits" is "32" or "64"
+
+- Supplier.java:
+        - adjust for change in ArrayWrappter, which now throws a ClassNotFound exception
+
+- RexxAndJava.java:
+        - added a synonym "createJavaArrayOf" for "createArrayOf" to make this self-documuntary
+          clear that a Java array object is to be created and not an ooRexx one
+
+        - added a synonmym "createJavaArray" for "createArray": this allows to make
+          it clear that a Java array object is to be created and not an ooRexx one
+
+- ArrayWrapper.java:
+        - account for Thread context class loader not set
+
+
+-------------------------------------- 2009-09-06 ----------------------------------
+- RexxExtendClass.java:
+        - supply class object in static method invocations for callbacks, such that
+          invoked Rexx method can directly address the class object for "_forwardToSuper"
+          static methods
+
+- BSF4Rexx.cc:
+        - added new external function: "BsfRexxProxy(proxy [, 'ooRexxObject' | 'userData' | 'refCount'])"
+
+        - added new internal inline function:  "RgfGetProxyObjectRefCount(RexxThreadContext, RexxStringObject)"
+
+
+-------------------------------------- 2009-09-03 ----------------------------------
+- BSF4Rexx.cc:
+        - adding "RgfRemoveAllProxyObjectsByRIID[2]()" to allow freeing cached Rexx proxy
+          objects, if BSF4Rexx got invoked via Java and a terminate() is executed on the
+          RexxEngine instance
+
+        - _jniRexxTerminateInterpreterInstance(): will invoke "RgfRemvoeAllProxyObjectsByRIID(...)",
+          but only, if BSF4Rexx was invoked by Java!
+
+        - _jniRexxUnregisterRexxObject(): will not free cached Rexx objects, if BSF4Rexx
+          was invoked by Rexx; this will avoid the potential (intermittent) occurrence of
+          exceptions while running Java object finalizers, after the Rexx program has
+          terminated and the Rexx interpreter removes the infrastructure without notice
+
+
+-------------------------------------- 2009-09-01 ----------------------------------
+- RexxExtendClass.java:
+        - made sure that class version tests are not carried out against the
+          source class version, but the desired new class version
+
+
+-------------------------------------- 2009-08-27 ----------------------------------
+- RexxAndJava.java:
+        - added the argument "returnType" to rexxInterface.jniRexxSendMessageToRexxObject()
+
+- BSF4Rexx.cc:
+        - adding a j_resultType argument to  _jniRexxSendMessageToRexxObject
+
+        - _jniRexxSendMessageToRexxObject(): now marshalling return value to given (primitive) return type
+
+- RexxEngine.java:
+        - added the argument "returnType" to rexxInterface.jniRexxSendMessageToRexxObject()
+
+
+-------------------------------------- 2009-08-20 ----------------------------------
+- BSF4Rexx.cc:
+        - edit to remove gcc 64-Bit compiler warnings on Linux
+
+
+-------------------------------------- 2009-08-01 ----------------------------------
+- JPrintFile_for_v40.rex
+        - added "samples/version40/JPrintFile_for_v40.rex" (supercedes "samples/JPrintFile.rex"):
+          this sample demonstrates how can implement abstract Java methods in Rexx; there is no need
+          anymore to create concrete java implementations of abstract Java classes, before they
+          can be used from Rexx
+
+
+-------------------------------------- 2009-07-31 ----------------------------------
+- RexxProxy.java
+        - added new method 'newExtendedProxyInstance(Object [])'
+
+        - renamed private method 'newJavaProxyInstanceFromRexx' to
+          'newJavaOrExtendedProxyInstanceFromRexx', which will invoke either
+          'newJavaProxyInstance' or 'newExtendedProxyInstance"
+
+- RexxExtendClass.java
+        - added program to BSF4Rexx 4.0
+
+- RexxExtendingClassLoader.java
+        - added program to BSF4Rexx 4.0
+
+
+-------------------------------------- 2009-07-30 ----------------------------------
+- BSF.CLS
+        - class "BSF": created class method "bsf.createArrayOf"
+
+        - created public routine "bsf.createArrayOf"
+
+- RexxAndJava.java
+        - adding subfunction "createArrayOf": creates a single dimensioned
+          Java array and returns it; the first argument determines the type of the
+          array ("componentType"); all subsequent values in the array are then coerced
+          to the "componentType" and stored. If no values are given (just the single
+          "componentType") then the Java array will have a size of "0", but still being
+          of the given "componentType"
+
+
+-------------------------------------- 2009-07-14 ----------------------------------
+
+- RexxAndJava.java
+        - treat Boolean in "convFromRexx(typeIndicator,value)" string "true" as Boolean
+          (so far only "1" = Rexx truth value was regarded as "true"); because of the
+          typeIndicator it is clear that a Boolean (string) value is submitted; allowing
+          the (caseless) string "true" will make transcriptions from Java programs easier
+
+
+-------------------------------------- 2009-07-13 ----------------------------------
+- RexxAndJava.java
+        - corrected a bug in INVOKE and INVOKE_STRICT, if object was a class object
+
+        - applying System.identityHashValue() for all Java objects, as we truly need
+          uniquely identifiable peers
+
+
+-------------------------------------- 2009-07-12 ----------------------------------
+- RexxAndJava.java
+        - renamed argument "methodDescription" to "methodDescriptor" for jniRexxSendMessageToRexxObject()
+
+- RexxEngine.java
+        - renamed argument "methodDescription" to "methodDescriptor" for jniRexxSendMessageToRexxObject()
+
+-------------------------------------- 2009-07-11 ----------------------------------
+- BSF4Rexx.cc
+        - added ability to retrieve and pass on "javaObject" to _jniRexxSendMessageToRexxObject
+
+- RexxAndJava.java
+        - added arguments "javaObject" and "methodDescription" to jniRexxSendMessageToRexxObject()
+
+
+- RexxEngine.java
+        - added arguments "javaObject" and "methodDescription" to jniRexxSendMessageToRexxObject()
+
+- RexxProxy.java
+        - added additional invoke() method which is crafted for allowing callbacks for
+          extended Java classes, accepting the javaObject that is the source of the callback,
+          as well as the internal Java method description (denotes argument and return values)
+
+-------------------------------------- 2009-07-10 ----------------------------------
+- BSF4Rexx.cc
+        - added ability to retrieve and pass on "messageDescription" in
+          internal Java form to _jniRexxSendMessageToRexxObject
+
+-------------------------------------- 2009-06-27 ----------------------------------
+- BSF.CLS
+        - now raises syntax errors in case too many arguments are supplied for the
+          (class) methods or public routines:
+
+           - bsf.postEventText
+           - bsf.pollEventText
+           - bsf.import
+           - bsf.getFieldValueStrict
+           - bsf.setRexxNullString
+           - bsf.sleep
+
+- BSF4Rexx.cc
+        - to ease parsing, changed the 40.900 error message format to:
+
+          fileName '/' { 'routine' | 'class' clzName } '/' { routineName | ['class'] 'method' methodName} ',' 'error' nr ':' errorMessage
+
+        - jniRexxSendMessage: if Java method object is supplied, store it under
+          'METHODOBJECT' in the callback directory
+
+- RexxAndJava.java
+        - changed signature of jniRexxSendMessageToRexxObject() to accept the
+          beanname of an optional Java method object
+
+- RexxEngine.java
+        - added method call() expecting a method object, such that InvocationHandler usage
+          allows to process (and forward) the supplied method object as well
+
+- RexxProxy.java
+        - added additional invoke() method which accepts a java.lang.reflect.Method object
+          instead of just a method name
+
+        - class made public, such that its type can be used in Java programs; however, instantiating
+          this class is reserved for the JNI layer, due to it being intertwined with the Rexx object
+
+-------------------------------------- 2009-06-25 ----------------------------------
+- RexxAndJava.java
+        - BSF subfunction "createArray" now also accepts a string fully qualifying a
+          Java class for its component type argument (denoted: 'JavaClassObjectBeanName')
+
+- BSF.CLS
+        - added method "size" to class BSF_ARRAY_REFERENCE
+
+-------------------------------------- 2009-06-23 ----------------------------------
+- BSF4Rexx.cc
+        - .._jniSendMessageToRexxObject(): now there will be always an argument added as the
+          last argument which contains a Rexx directory  with the entry "METHODNAME"; if
+          a user_data object was given as the second argument in BsfCreateRexxProxy(), then
+          that object will be in the added callback argument under the name "USERDATA"
+
+        - removed argument "creationTID" (from RexxProxy.java, not needed anymore)
+
+        - removed external function "BsfProcessCallbackArgs()", it is not really needed and
+          just clutters the list of external BSF4Rexx-functions
+
+- RexxProxy.java
+        - removed "creationTID" (not needed anymore)
+
+- RexxEngine.java
+        - removed usage of "creationTID" (not needed anymore)
+
+- RexxAndJava.java
+        - removed argument "creationTID" in jniRexxSendMessageToRexxObject (...)
+
+-------------------------------------- 2009-06-22 ----------------------------------
+- samples\version40\SAX
+        - added a sample to demonstrate how to process an XML file and have the SAX parser
+          ignore external DTDs
+
+- samples\version40\DOM
+        - added a sample to demonstrate how to process an XML file and have the DOM parser
+          ignore external DTDs
+
+-------------------------------------- 2009-06-21 ----------------------------------
+- BSF.CLS
+        - will set BsfShowErrorMessage() to .false as default
+
+        - added XML-parsing examples using Java's SAX and DOM (needs Java 1.4.2 or higher)
+          exploiting and demonstratign the new callback features of ooRexx 4.0 with BSF4Rexx 4.0
+
+-------------------------------------- 2009-06-08 ----------------------------------
+- BSF.CLS
+        - BsfCreateRexxProxy(): removed method obsolete 'bsf.addEventListenerReturningEventInfos'
+
+        - BsfCreateRexxProxy(): removed method obsolete 'bsf.getEventInfoObject'
+
+        - BsfCreateRexxProxy(): removed obsolete private class "bsf_array_proxy.assure_BSFRegistry_Removal"
+
+        - add bsf.wrap as a class method to .BSF; this way it becomes accessible on a callback from the
+          4.0 API, if .bsf is placed in .local
+
+
+- BSF4Rexx.cc
+        - removed "Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxStart()"
+
+        - removed RXSIOSAY exit, as with the 4.0 APIs it has become possible to get at the
+          Rexx error message via the API, hence no such hack necessary anymore
+
+        - added "Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCreateInterpreterInstance"
+
+        - added "Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetRexxInterpreterInstanceRoot"
+
+        - added "Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltInterpreterInstance"
+
+        - added "Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance"
+
+        - added "Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject"
+
+        - added "Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRunProgram"
+
+        - added "Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSendMessageToRexxObject"
+
+        - added external Rexx function "BsfCreateRexxProxy()": creates a Java proxy for an
+          ooRexx object, which allows sending or forwarding messages from Java to ooRexx; syntax:
+
+                BsfCreateRexxProxy(code|object [, [userData] [, JavaInterface[name]...]), where
+
+                code|object ... Rexx code to execute each time a Java message is sent (code will
+                                be used for the UNKNOWN method); or a Rexx object to which the
+                                Java message gets sent to
+                userData ... any Rexx object (e.g. a directory); if given, then this will cause
+                             an additional directory object to be created which will contain an
+                             entry "USERDATA" referring to this user supplied object (this callback
+                             argument will always be the last argument and contains in addition
+                             the entires "METHODNAME", which preserves the exact case of the Java
+                             method name, and "CREATIONID", the TID in which the proxy got created);
+                             if userData is omitted, no such callback argument will be created
+                JavaInterfaceName ... one or more, comma-separated, optional Java interface names
+                             or Java interface class objects, or Java objects which classes implement
+                             Java interfaces (then those interfaces are used as well), which
+                             will cause an instance of java.lang.reflect.Proxy to be created;
+                             if these arguments are given, then the Java Proxy object is returned
+                             instead, which will forward all Java method invocations to the RexxProxy
+                             object;
+                             if this argument is not given, then the RexxProxy object is returned;
+                             that RexxProxy possesses a public method "newJavaProxyInstance(Object[] interfaces)"
+                             which can be invoked from Rexx as well; the Java Object[] array
+                             elements may in this case be the same as the "JavaInterfaceName" above
+
+        - added external Rexx function "BsfProcessCallbackArgs()": accepts either an argument array
+                (e.g. Arg(1,"A)) or directly the callback directory and sets its elements in the
+                caller with the stem defined by REXX_CALLBACK_ARG_STEM_NAME ("BSFARG."); at the
+                time of this writing the defined entries are: "USERDATA", "METHODNAME", "CREATIONTID";
+                returns .true, if callback directory could be found and processed, .false else
+
+- BSF_OnTheFly.cls
+        - new ooRexx module, stub ooRexx program which allows plain code to be submitted for
+          creating an ooRexx object that has the code as the "unknown" method; code can be a
+          string or a method object
+
+          - if code is omitted, then .nil is returned
+
+        - allows "setMethod" and "unsetMethod" to be used
+
+- Java4Rexx.java
+        - using the new ooRexx 4.0 APIs in the BSF4Rexx 4.0 support
+
+- RexxAndJava.java
+        - added getRexxEngine() accessor
+
+        - added jniCreateInterpreterInstance
+
+        - added jniGetRexxInterpreterInstanceRoot
+
+        - added jniRexxHaltInterpreterInstance
+
+        - added jniRexxRunProgram
+
+        - added jniRexxSendMessageToRexxObject
+
+        - added jniRexxTerminateInterpreterInstance
+
+        - added jniUnregisterRexxObject
+
+        - removed subfunction "addEventListenerReturningEventInfos", use BsfCreateRexxProxy() instead
+
+- RexxDispatcher.java
+        - using the new ooRexx 4.0 APIs in the BSF4Rexx 4.0 support
+
+        - added explicit rexxengine.terminate()
+
+        - checking, if file exists, aborting with a user friendly error message, if file does not exist
+
+- RexxEngine.java
+        - overall: adjusted to use the new BSF4Rexx 4.0 API based JNI functions
+
+        - removed ThreadedJNIRexxStart(): too complicated, can always be (easily) done from Java
+
+        - folded apply's invocations of Rexx script (depending whether args were given or not)
+          into one common invocation
+
+        - added fields "bTerminated" (indicates whether the Rexx interpreter instance
+          has been terminated and is not accessible anymore), "rii_ID" (the Rexx interpreter
+          instance pointer value as a string, as supplied by JNI)
+
+        - implementation of "call()" now allows to invoke any Rexx method with any arguments,
+          as long as a RexxProxy object is submitted; this implements the callback functionality
+          with the help of the new ooRexx 4.0 APIs
+
+- RexxException.java
+        - new class, allows storing the Rexx condition object as a RexxProxy
+
+- RexxProxy.java
+        - new class, allows defining a RexxProxy for Java, slot available for userData to be sent with
+          callback message
+
+        - implements the interface java.lang.reflect.InvocationHandler
+
+        - allows to create a java.lang.reflect.Proxy using "newJavaProxyInstance(Object[] interfaces)"
+
+====================================================================================
+- Changed BSF4Rexx.cc and the respective interfaces for the Java Rexx engine to use
+  the new ooRexx 4.0 APIs. As a result this version of BSF4Rexx can only be used
+  against ooRexx 4.0 and above!
+====================================================================================
+
+-------------------------------------- 2009-04-04 ----------------------------------
+- BSF4Rexx.cc
+        - added/changed defines such that this program can now be compiled on ooRexx 3.x
+          and ooRexx 4.x
+
+-------------------------------------- 2009-04-04 ----------------------------------
+- RexxEngine.java
+        - added methods terminate(), terminate(tid), terminateAllRexxThreads()
+
+- RexxAndJava.java:
+        - added BSF subfunction "haltThread": halts/terminates the supplied TID
+          (received by "BSFGetTID()")
+
+        - added 'jniRexxGetTID()', 'jniRexxSetHalt(tid)'
+
+- BSF.CLS:
+        - added public routine "bsf.haltThread(tid)"
+        - added class method "bsf.haltThread(tid)" to .BSF
+
+- BSF4Rexx.cc
+        - removed deregistering the RXSIO exit as this is not necessary; this
+          solves a problem, if nesting RexxStart()-invocations take place as upon
+          return the RXSIO exit was deregistered (which does it globally)
+
+        - added the implementations for 'jniRexxGetTID()', 'jniRexxSetHalt(tid)'
+
+-------------------------------------- 2008-09-11 ----------------------------------
+- BSF.CLS:
+        - bsf.wrap() now caters for unprefixed argument strings that stem from RexxEngine
+          by not raising an exception anymore, but returning the received string unaltered
+
+-------------------------------------- 2008-09-11 ----------------------------------
+- BSF.CLS:
+        - boxing a Boolean: now strictly only accepts the Rexx values .true, "1",
+          .false, "0", "true" or "false"
+
+-------------------------------------- 2008-09-09 ----------------------------------
+- BSF.CLS:
+        - replaced subfunction "bsfRegister[Strict]" with "new[Strict]" such that
+          error messages can be understood easier (it is self-evident what
+          "new[Strict]" means)
+
+
+
+-------------------------------------- 2008-09-02 ----------------------------------
+- BSF4Rexx.cc:
+        - if nested invocation (invoking a new Rexx interpreter in the same thread
+          where an instance of a Rexx interpreter is already running) of the Rexx
+          interpreter, do not wait for termination in the nested invocation (ooRexx
+          3.2.0 waits forever)
+
+-------------------------------------- 2008-09-01 ----------------------------------
+- RexxAndJava.java
+        - removed undocumented, experimental subfunction "getOrLoadClass(JavaClassName)"
+
+- BSF4Rexx.cc:
+        - removed superfluous variables in BsfUnloadJava()
+
+-------------------------------------- 2008-08-31 ----------------------------------
+- BSF.CLS:
+        - removed "dir" class attribute from class "BSF"
+
+        - new "BSF4REXX" public class now behaves as a directory by forwarding all
+          unknown messages to its directory class attribute; created "B4R" public
+          class which acts as a short-hand alias forwarding its unknown messages to
+          the "BSF4REXX" class
+
+-------------------------------------- 2008-08-28 ----------------------------------
+- BSF.CLS:
+        - moved ".bsf4rexx" directory object to the class attribute "dir" of class
+          ".BSF" and have ".bsf4rexx" and ".b4r" just point to it; the code in here
+          will be changed to use only the BSF class attribute such that multiple
+          interpreter instances running in the same process do not influence that
+          content unadvertently (.local is shared in ooRexx < 4.0!)
+
+        - added "line.separator", "file.separator", "path.separator" to .bsf4rexx
+          directory
+
+-------------------------------------- 2008-08-20 ----------------------------------
+- BSF4Rexx.cc:
+        - ooRexx: using RexxDidRexxTerminate() and RexxWaitForTermination() to make
+                  sure that threads can continue to run and shut down gracefully
+
+-------------------------------------- 2008-08-06 ----------------------------------
+- BSF4Rexx.cc:
+        - overhauled the entire JNI logic and support
+        - added a new external Rexx function, named "BSFDetach()"
+
+-------------------------------------- 2008-07-20 ----------------------------------
+- BSF.CLS:
+        - class BSF_ARRAY_REFERENCE, methods AT, PUT, PUTSTRICT: added checks for
+          asserting the correct number of subscripts (honoring dimension of the
+          Java array object) gets supplied
+
+- samples/demoJavaArrays.rex: added new sample to demonstrate how to create and use
+          Java array objects
+
+-------------------------------------- 2008-07-09 ----------------------------------
+- BSF.CLS:
+        - added public routine "bsf.version()" as pass-thru to BSF()-subfunction
+          "version"
+
+-------------------------------------- 2008-07-04 ----------------------------------
+- org.apache.bsf.util.event.generator.AdapterClassLoader:
+        - extended logic to employ a newly created inner class loader using the
+          current thread's class loader as parent class loader
+
+-------------------------------------- 2008-07-01 ----------------------------------
+- BSF4Rexx.cc:
+        - changed processing the Java exception: replaced "getMessage()" with
+          "toString()" (uses "getLocalizedMessage()")
+
+-------------------------------------- 2008-06-23 ----------------------------------
+- BSF.CLS: fixed additional errors introduced by the quite massive changes on 2008-06-22
+
+- Various examples: adopted all examples: if they use the BSF.CLS module, then no
+          BSF()-function calls should be carried out, but only the public routines,
+          classes and methods of the BSF.CLS.
+
+          Reason: BSF.CLS activates the new feature of RexxAndJava to prepend the
+                  returned strings with "<O>" (string is index into BSFRegistry to
+                  address a Java object) or "<S>" (following is a plain string).
+                  So, if BSF()-function calls are carried out, then one would need
+                  to cut out this new type indicator string which is always three
+                  characters long.
+
+- ReflectionUtils.java:
+        - addEventListener() now gives more information about available event set
+          names (including the individual events), in case a given one was not found;
+          *much* more user friendly!
+
+-------------------------------------- 2008-06-22 ----------------------------------
+- RexxAndJava.java
+        - added a new BSF subfunction 'bsfPrefixReturnValue([0|1])' (default=0=.false)
+          for controlling whether the string value returned should be prefixed with a
+          three letter type indicator ("<O>": following string is an index into the
+          BSFRegistry; "<S>": following string is a plain string);
+          invoking without an argument returns the current setting, otherwise sets the
+          behaviour accordingly and returns the new value
+
+- BSF.CLS:
+        - now forcing to prepend type information to the strings returned from
+          RexxAndJava, thereby allowing to fix a very subtle bug (took me more than
+          8 hrs of debugging and 4 hrs of fixing and testing!)
+
+          *ATTENTION*! If you use BSF.CLS then from now direct BSF()-calls will return
+                       strings that have the aforementioned "<O>" and "<S>" indicators
+                       prepended. In such a case, either use the counter-routine and/or
+                       method of BSF.CLS, or, just strip the first three bytes from the
+                       return value
+                       (classic Rexx programs are not affected by this, as they do not
+                       use BSF.CLS which explicitly turns on this behaviour)
+
+-------------------------------------- 2008-06-18 ----------------------------------
+- BSF.CLS:
+        - in case of a Java error upon calling the external function BSF() the Java
+          error message will now be saved in the local environment as ".BSF_ERROR_MESSAGE"
+          such that it is available for later inspection; this environment symbol will
+          be removed from .local immediately before a new external BSF() call is made
+          from within this module
+
+-------------------------------------- 2008-06-15 ----------------------------------
+- multiple places:
+        - supply the given path to the script to Rexx, such that "PARSE SOURCE" will
+          be able to retrieve it
+
+- org.apache.bsf.util.EngineUtils:
+        - loadClass() now raises a BSFException, if it would return null as the
+          class object
+
+- org.apache.bsf.util.BSFEventProcessor
+- org.apache.bsf.util.BSFEventProcessorReturningEventInfos
+        - processExceptionableEvent(): now checks for event name in filter in
+          a caseless fashion; events to be filtered can now be given in a space
+          or plus ('+') delimited form: if any of the words matches the event adapter
+          will be activated/run
+
+-------------------------------------- 2008-06-08 ----------------------------------
+- RexxAndJava.java:
+        -  if an InvocationTargetException()-exception, then show its contained
+           exception message to ease identifying the cause of the exception
+
+        - if EngineUtils.loadClass() in BSF 2.4 returns "null", then make sure that
+          a class-not-found exception is thrown; BSF should take care of that in the
+          future
+
+-------------------------------------- 2008-05-23 ----------------------------------
+- readmeBSF4Rexx.txt:
+        - added explicit Unix samples for invoking "rexxj.sh"
+
+-------------------------------------- 2008-05-18 ----------------------------------
+- setupBSF.rex:
+        - for Windows the created un/installBSF.cmd now also contains commands to
+          add/remove path entries to the appropriate HKCU (user) or HKLM (system)
+          environment variables PATH and CLASSPATH, depending in which hive OOo got
+          installed to; for this the new utility program 'orx2reg.rex' got created;
+          before applying the changes (adding/removing paths) a backup-file is
+          created documenting the values of the PATH and CLASSPATH environment
+          variables of both hives
+
+-------------------------------------- 2007-09-21 ----------------------------------
+- BSF-package
+        - changed the way BSF employs class loaders, such that it does not depend
+          on the Thread context class loader alone; rather it will employ also the
+          defining class loader of BSFManager itself
+
+        These changes make it possible to deploy the BSF library (and as a result
+        BSF4Rexx) on OOo 2.3.0 (released: September 2007) again, which introduced
+        a custom class loader for loading Java extensions (BSF4Rexx uses the Java
+        scripting framework of OOo)
+
+
+-------------------------------------- 2007-08-06 ----------------------------------
+- BSF.CLS: - renamed "BSF" class method "attachNewStrict" to "bsf.attachNewStrict"
+
+-------------------------------------- 2007-07-07 ----------------------------------
+- BSF.CLS: - added ability to the BSF.DIALOG class to only supply the first character
+             to determine the desired message type
+
+- Supplier.java: - added allIndexes() and allItems() using the ooRexx 3.2.0beta semantics
+
+-------------------------------------- 2007-01-09 ----------------------------------
+- BSF.CLS: - added ability to set Java startup parameters via the operating system
+             environment using the name 'BSF4Rexx.JavaStartupOptions', which needs
+             to be set before calling/requiring BSF.CLS
+
+-------------------------------------- 2006-12-17 ----------------------------------
+- setupBSF.rex: catering for Java 6 (1.6) new ability to denote a second (system-wide)
+             extension directory, which broke the setup script; the script will use
+             the JRE's "lib/ext" (the first listed) directory
+
+-------------------------------------- 2006-12-10 ----------------------------------
+- RexxEngine.java: rgf, removed a stupid bug in apply() and eval(): now checking whether
+             'source' argument is not null
+
+- RexxAndJava.java: rgf, enhanced subfunction "version" to accept an argument optionally:
+                 "AL[l]": will return a blank delimited list of org.rexxla.bsf.engines classes
+                        with their version number in the form: version.YYYYMMDD
+                 "AR[rayWrapper]"
+                 "B[SFManager]"
+                 "E[numerationWrapper]"
+                 "J[ava4Rexx]"
+                 "REXXA[ndJava]"
+                 "REXXE[ngine]"
+                 "S[upplier]"
+
+-------------------------------------- 2006-12-08 ----------------------------------
+- RexxAndJava.java: rgf, added subfunction "getBSFManager"; this allows retrieving the
+             version of BSF itself, and also to employ scripts in other bSF languages,
+             sharing the BSF registry with the running Rexx script
+
+- Apache BSF package: now using a version of Apache's BSF that does not need commons-logging
+             (org.apache.commons.logging) present anymore
+
+-------------------------------------- 2006-11-19 ----------------------------------
+- RexxAndJava.java: rgf, added behaviour to treat "netrexx.lang.Rexx" objects exactly the
+             same as "java.lang.String"
+
+- BSF4Rexx.cc: rgf, added function 'BsfShowErrorMessage(0|1)'; if set to '0' (.false), then
+             in case of a Java exception no error message is printed automatically anymore;
+             the Rexx variable 'BSF_ERROR_MESSAGE' will contain in either case the Java
+             exception message for further inspection
+
+-------------------------------------- 2006-10-17 ----------------------------------
+- BSF.CLS: - rgf, renamed the BSF method "DISPATCH" to "BSF.DISPATCH" to avoid name-clashes
+             with Java methods named "DISPATCH"
+
+-------------------------------------- 2006-08-01 ----------------------------------
+- BSF.CLS: - BSF.WRAP() adjusted to process beanNames that have two
+             hexadecimal values after '@', delimited by '_': this has
+             been added to 'RexxAndJava.java' to handle constructors
+             for which Sun's Java produces identical (!) hashCode() values!
+
+-------------------------------------- 2006-07-22 ----------------------------------
+- BSF.CLS: - cleaned program from outdated code, that was already commented out
+
+-------------------------------------- 2006-07-11 ----------------------------------
+- BSF.CLS: - added method "DISPATCH" to class "BSF" (as in OLEObject starting with ooRexx 3.1),
+             will be forwarded to method BSF.INVOKE
+
+-------------------------------------- 2006-07-04 ----------------------------------
+- BSF.CLS: - added method "ENTRY" to "JavaStaticFields.Directory"
+
+          "Easter egg":
+
+          2006-03-22, rgf: - added methods "[]", "AT", "[]=", "PUT" and making directory cache for retrieval
+                             optionally to "JavaStaticFields.Directory"
+
+          2006-03-21, rgf: - "JavaStaticFields.Directory:unknown": made sure that cached value is returned,
+                             instead of looking up the Java side constantly
+
+          2006-03-20, rgf: - removed a bug from "JavaStaticFields.Directory" reported by Lee Peedin
+                             (Java class name was stored in an ooRexx class attribute instead of an
+                             instance attribute); changed logic a bit, now that the Java calss name is
+                             handled by an instance attribute (no need for dynamically setting the
+                             unknown method)
+
+          2006-02-05, rgf: - allowing assignments to static Fields if wrapped with 'bsf.wrapStaticFields'
+
+
+-------------------------------------- 2006-05-29 ----------------------------------
+- RexxAndJava.java: fixed a bug in coercing Rexx Boolean and Character arguments; was
+             using the BSF type converters which in this case are too relaxed; now
+             one needs to strictly supply the Rexx Boolean values (0=false, 1=true),
+             and for char/Character exactly one character is allowed to be passed;
+             this fixes the sometimes wrong behaviour for "java.io.PrintBuffer" where
+             the wrong "println()" method was picked;
+
+             in general: one can always use the "bsf.invokeStrict" subfunction or
+                         BSF method to explicitly supply the type of the arguments
+                         for determining the signature of the desired method
+
+-------------------------------------- 2006-03-08 ----------------------------------
+- BSF.CLS: - .bsf~bsf.import(): now allows storing references to already created Java class object
+             proxies in .local
+
+-------------------------------------- 2006-03-03 ----------------------------------
+- BSF.CLS: - fixed BSF's class method and also the public routine named "bsf.postEventText"
+             to use the optional priority value (0=low, 1=normal=default, 2=high)
+
+-------------------------------------- 2006-03-03 ----------------------------------
+- BSF.CLS: - added routine "bsf.import(...)", a wrapper for ".bsf~bsf.import(...)"
+
+-------------------------------------- 2006-02-24 ----------------------------------
+- BSF.CLS: - added method 'bsf.addEventListenerReturningEventInfos',
+
+           - the private class "bsf_array_proxy.assure_BSFRegistry_Removal"
+             which makes sure that the eventObject gets removed from the BSFRegistry by
+             repeating "unregisterBean" until the Java object is removed from the registry
+
+           - routine bsf.getEventInfoObject, must be called exactly once on eventText
+             strings that are returned because of employing 'addEventListenerReturningEventInfos';
+             this will create a BSF proxy object for the eventObject
+
+- RexxAndJava.java: - added subfunction 'addEventListenerReturningEventInfos'
+
+- org.apache.bsf.utils.EngineUtils.java: added method 'addEventListenerReturningEventInfos'
+
+- org.apache.bsf.utils.BSFEventProcessorReturningEventInfos.java:
+           - new class to process events such that BSFEngine.apply() is invoked with the
+             event arguments and in addition gives the name of the event that gets processed
+
+-------------------------------------- 2006-02-21 ----------------------------------
+- RexxAndJava.java: fixed a bug in handling event text strings
+
+-------------------------------------- 2006-02-15 ----------------------------------
+- RexxAndJava.java: fixed a Java bug (not allowing invoking public methods of
+        objects of non-public classes via reflection; e.g. Enumeration inner classes)
+
+-------------------------------------- 2006-02-07 ----------------------------------
+- RexxAndJava.java: fixed a bug in the new method lookup code (caused an eternal loop,
+        if method not found)
+
+- "setupBSF4Rexx.rex" on Linux: created shell script "installBSF4Rexx.sh" now blindly
+        adds the invocation of 'setEnvironment4BSF4Rexx.sh' to the bash resource
+        config file (~/.bashrc), decorating the entry with a self-explanatory comment;
+        you need to remove the entry by hand from '/.bashrc' (if you have code that
+        was able to remove the entry upon running 'uninstallBSF4Rexx.sh' and want to
+        share it, please send it)
+
+-------------------------------------- 2006-02-05 ----------------------------------
+- RexxAndJava.java:
+        - now invoking methods without BSF, added logic to refer to java.lang.Class
+          methods from class objects; rigidly allows access to methods with modifier
+          'public' only (for security reasons)
+          logic: - find methods having sought for name, check whether Rexx args can
+                   be coerced to the needed parameter types
+                 - if a class object and method was not found: use Class' class object
+                   to find method, and if found use original object to invoke method for
+
+- org.oorexx.misc.RgfFilter:
+        - added 'public' keyword to class to allow access to its members/methods
+
+-------------------------------------- 2006-02-03 ----------------------------------
+- BSF.CLS:
+        - added routine 'bsf.wrapStaticFields' which returns an instance of
+          "JavaStaticFields.Directory" (a subclass of the Object Rexx
+          directory class), which allows easy access to the static fields of the
+          given Java class/interface by merely sending the name of the static
+          field as a message or using the AT method to access them
+        - added entry "VERSION" in .BSF4REXX (returns "142.20060203", ie. version 1.43
+          as of "2006-02-03"
+
+- BSF core (BSF framework itself):
+        - fixed a bug in generating event adapters dynamically;
+        - added code to deal with OpenOffice.org EventListeners (they do not carry
+          the information that java.util.EventListener is implemented, breaking standard
+          reflection BSF uses), so now OOo event listeners can be employed as well
+
+-------------------------------------- 2006-01-28 ----------------------------------
+- BSF4Rexx.cc: now creates a Java exception, if a Rexx execution error occurs; the
+        Java exception gets the Rexx error messages, which allows Java programs to
+        retrieve the full Rexx error text and parse e.g. the line number in which the
+        Rexx error occurred
+
+- BSF4Rexx.cc: Java string arguments for invocating Rexx programs are now
+        converted to native strings using the (Java's) current codepage setting
+
+- org.rexxla.bsf.RexxDispatcher.java: removed last traces of (older) IBM BSF,
+        fixed an error in argument passing, explicitly showing the Rexx error
+        text supplied with a raised Java exception by BSF4Rexx
+
+
+-------------------------------------- 2006-01-22 ----------------------------------
+- BSF4Rexx.cc: fixed conversion from Java strings to local (single-character) strings,
+        now umlauts etc. are converted using the codepage setting of the thread
+
+-------------------------------------- 2006-01-17 ----------------------------------
+- org.apache.bsf.BSFManager: added getVersion(), returning the version number of BSF
+        as a string formatted as "abb.yyyymmdd", where "a" is the major version number,
+        "bb" the minor versions number, "yyyy" the four digit year, "mm" the two digit
+        month, and "dd" the two digit day
+
+-------------------------------------- 2006-01-05 ----------------------------------
+- BSF4Rexx.cc: fixed startup behavior for JVMs, now takes all Rexx startup arguments
+  verbatimly (e.g. "-Djava.class.path=" some dirs); if no java.class.path is given
+  in the startup values, then the value of the environment variable CLASSPATH is used,
+  if available at all
+
+- BSF.CLS: fixed bsf.import
+
+-------------------------------------- 2006-01-05 ----------------------------------
+- Changed in all BSF-Java, BSF4Rexx-Java and Rexx programs invocations of "Class.forName(name)"
+  to "Thread.currentThread().getContextClassLoader().loadClass(name)"
+
+- RexxAndJava.java: added subfunction "loadClass", preregisters now "java.lang.Thread"
+  in the BSF registry
+
+- BSF.CLS: added new class method and routine "bsf.loadClass", using that instead of
+  the suboptimal "Class.forName()"
+
+-------------------------------------- 2006-01-02 - 2006-01-05 ---------------------
+- Added "setupBSF4.rex" to ease installing BSF4Rexx for users who have no working
+  knowledge about Java whatsoever. The program creates three scripts:
+
+        - bsf4rexx.sh (Linux) or bf4rexx.cmd (Windows):
+
+          allows running BSF4Rexx scripts without installing BSF4Rexx as a Java extension;
+          argument: name of Rexx file to execute and additionally, optional arguments for
+          the Rexx program
+
+        - installBSF4Rexx.sh (Linux) or installBSF4Rexx.cmd (Windows):
+
+          installs BSF4Rexx as a Java extension; this will allow its usage from anyone
+          and from any program;
+          invoking Rexx programs will be possible via "rexxj.sh" (Linux) or
+          "rexxj.cmd" (Windows)
+
+        - uninstallBSF4Rexx.sh (Linux) or uninstallBSF4Rexx.cmd (Windows):
+
+          these scripts allow removing BSF4Rexx as a Java extension from the system
+
+  "setupBSF4.rex" allows for two optional arguments to be supplied:
+
+        - fully-qualified path to the Java executable
+
+        - fully-qualified path to a directory into which the Rexx-supporting scripts
+          as well as the generated scripts should be copied to
+
+
+- Added "setupOOo.rex" to create a script which sets the environment variable CLASSPATH to
+  point to the OpenOffice.org/StarOffice Java archives. By doing so, one can fully script
+  OpenOffice.org via BSF4Rexx.
+
+- Added "setupJava.rex" to create the needed links to Java in /usr/bin and /usr/lib
+  on some Unix systems
+
+- Added additional ooRexx support modules to the distribution to ease interaction with
+  OpenOffice.org considerably.
+
+- Added the datergf-Java classes to ease date manipulation and formatting.
+
+
+-------------------------------------- 2005-07-30 ----------------------------------
+- Restructured distribution archives to make it easier on users
+
+  - Adapted "readmeBSF4Rexx.txt" to reflect new distribution archives
+
+- Re-built OS2-, Linux- and Windows-DLLs
+
+
+-------------------------------------- 2005-07-30 ----------------------------------
+- RexxAndJava.java: added pp() for formatting debug messages
+
+- BSF.CLS: fixed a bug in the creation of Java arrays: now pre-registered names (entries in
+           .bsf4rexx) and any other Java class object proxy can be used to indicate component
+           type for the Java array
+
+-------------------------------------- 2005-07-09 ----------------------------------
+- BSF.CLS: added public routines for easing access to frequently needed functionality:
+
+        - bsf.lookupBean(beanName)
+
+        - bsf.unregisterBean(beanName)
+
+        - bsf.pollEventText([timeout])
+
+        - bsf.postEventText(text)
+
+        - bsf.getStaticValue(className, fieldName)
+
+        - bsf.getStaticValueStrict(className, fieldName)
+
+           alias:
+
+          bsf.getConstant(className, fieldName)
+
+-------------------------------------- 2005-07-07 ----------------------------------
+- RexxAndJava.java: fixed a bug in converting {b|B}oolean values
+
+- BSF.CLS: renamed 'bsf.checkResult' to 'bsf.wrap'
+
+-------------------------------------- 2005-06-18 ----------------------------------
+
+- RexxAndJava.java: added "new" and "newStrict" as synonyms for "registerBean" and
+           "registerBeanStrict"; fixed a bug (not checking for interfaces in class
+           String); corrected SGML comments, such that FireFox will display or entries
+           in the table of subfunctions in the javadocs
+
+-------------------------------------- 2005-06-11 ----------------------------------
+- BSF.CLS: now class object proxies allow for BSF-instance messages like "bsf.getFieldValue"
+
+- Apache BSF: downloaded original Apache code, applied bug-fixes and changes and commited
+           those with the Jakarta-BSF distribution at svn.apache.org; double-checked and
+           had it reviewed with another Jakarta-BSF developer
+
+- RexxAndJava.java: now handles case of interface classes for accessing static field
+           values transparently (as if it was a normal Java class)
+
+-------------------------------------- 2005-06-07 ----------------------------------
+- BSF-packages: fixed 'EngineUtils.java' bug in IBM's and Apache's BSF-package
+
+- RexxAndJava.java: made error (exception) messages from invoked Java methods easier ledgible
+           to non-Java programmers (no Java stack-trace, instead exception message only shown)
+
+- BSF.CLS: renamed BSF.BOX() to BOX() and BSF.UNBOX() to UNBOX() to make coding easier
+
+
+-------------------------------------- 2005-06-05 ----------------------------------
+changes of 2005-06-05, 2005-06-06 version, --rgf
+
+- BSF.CLS: renamed all BSF-pass-through class methods to start with "BSF."; this
+           way it is always clear that the BSF4Rexx interfaces are addressed
+
+           BSF-class methods: name changes
+           -------------------------------
+
+           createArray          --> bsf.createArray
+           exit                 --> bsf.exit
+           getStaticValue       --> bsf.getStaticValue
+           getStaticValueStrict --> bsf.getStaticValueStrict
+           import               --> bsf.import
+           lookupBean           --> bsf.lookupBean
+           pollEventText        --> bsf.pollEventText
+           postEventText        --> bsf.postEventText
+           setRexxNullString    --> bsf.setRexxNullString
+           sleep                --> bsf.sleep
+           wrapArray            --> bsf.wrapArray
+           wrapEnumeration      --> bsf.wrapEnumeration
+
+
+- BSF.CLS: BSF-class method "bsf.import": change in the order of arguments!
+           ----------------------------------------------------------------
+
+           Arguments got switched, "RexxName" argument is now optional:
+
+              import(RexxName, JavaFullClassName)
+
+           was changed to:
+
+              bsf.import(JavaFullClassName [, RexxName])
+
+           If "RexxName" is not given, then the Java class name is used as the ooRexx
+           class name for storing it in .local; if "RexxName" is .nil, then no entry
+           in .local will be created
+
+- BSF.CLS: all imported Java classes can be instantiated with "newStrict()", which
+           allows indicating the datatype in front of every argument, if necessary
+
+- BSF.CLS: sending messages to the BSF Java class object proxy now behaves the same
+           as sending ooRexx messages to BSF Java object proxies: the (static) methods
+           are resolved and dispatched; hence no need to instantiate a Java class just
+           to get at its static methods (or static fields for that matter)
+
+- The "test" and "sample" Rexx programs have been updated accordingly.
+
+
+-------------------------------------- 2005-06-05 ----------------------------------
+starting with 2005-06-05, brief infos about changes are recorded in here, ---rgf
+
+

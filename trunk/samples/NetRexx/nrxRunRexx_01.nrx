@@ -1,0 +1,15 @@
+parse source . . src
+
+rexxCode= "parse arg beanName                        ;" -
+          "say 'beanName        :' beanName          ;" -
+          "javaObj=bsf.wrap('<O>' || beanName)       ;" - /* Insider-Knowhow */
+          "say 'javaObj~class   :' javaObj~class     ;" -
+          "say 'javaObj~toString:' javaObj~toString  ;" -
+          "::requires BSF.CLS                        ;"
+
+vArgs=Vector()
+vArgs.addElement( System.getProperties )
+
+mgr=org.apache.bsf.BSFManager() -- create the BSFManager
+mgr.apply("rexx",src,0,0,rexxCode,null,vArgs)   -- execute the rexx program
+mgr.terminate() -- let BSFManager terminate the Rexx intepreter instance

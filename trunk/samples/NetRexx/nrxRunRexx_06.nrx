@@ -1,0 +1,59 @@
+import org.rexxla.bsf.engines.rexx.
+
+mgr=org.apache.bsf.BSFManager()
+rexxEngine=mgr.loadScriptingEngine("rexx")
+
+    -- create a Rexx routine (not using any other context)
+createRoutine           ="return .routine~new(arg(1),arg(2))"
+    -- create a Rexx routine, using context of third argument
+createRoutineWithContext="return .routine~new(arg(1),arg(2),arg(3))"
+
+    -- require BSF.CLS, which will cause an entry in .local named BSF, controlling argument conversion between Java and Rexx
+say "--- 1 (NetRexx): require BSF.CLS and keep routine in order to be able to access its package," -
+    "\n\t\t redirect ooRexx standard streams to the standard Java streams..."
+
+rexxCode="::requires BSF.CLS -- get and activate the Java support\n";
+rexxCode="call bsf.redirectTo 'Java'     -- redirect ooRexx' standard streams to Java streams \n" -
+         "::requires BSF.CLS             -- get and activate the Java support                 \n"
+
+vArgs=Vector()
+vArgs.addElement("rexxPackage1")     -- routine/package name
+vArgs.addElement(rexxCode)           -- Rexx code
+rp1 = RexxProxy rexxEngine.apply("nrxRunRexx_06-01", 0, 0, createRoutine, null, vArgs)
+rp1.sendMessage0("call")    -- call (execute) the Rexx routine
+
+
+say "--- 2 (NetRexx): define and run Rexx package2 which defines a public method 'test()'..."
+    -- Rexx code to run
+rexxCode= "parse source fn                                               ;\n" -
+          "say pp(fn)                                                    ;\n" -
+          "say pp(fn) 'test():' pp(test()) -- pp() is defined in BSF.CLS ;\n" -
+          "::routine test public                                         ;\n" -
+          "  return 'from routine test() at' .DateTime~new               ;"
+
+vArgs1=Vector()
+vArgs1.addElement("rexxPackage2")     -- routine/package name
+vArgs1.addElement(rexxCode)           -- Rexx code
+vArgs1.addElement(rp1)                -- context to use
+rp2 = RexxProxy rexxEngine.apply("nrxRunRexx_06-02", 0, 0, createRoutineWithContext, null, vArgs1)
+rp2.sendMessage0("call")    -- call (execute) the Rexx routine
+
+
+say "--- 3a (NetRexx): run Rexx code with NO arguments that uses public method 'test()' defined for prior run..."
+    -- create a Rexx routine
+rexxCode= "parse source fn                                               ;\n" -
+          "say pp(fn) 'received' arg() 'argument(s)'                     ;\n" -
+          "say pp(fn) 'test():' pp(test()) -- pp() is defined in BSF.CLS ;\n"
+vArgs2=Vector()
+vArgs2.addElement("rexxPackage3")     -- routine/package name
+vArgs2.addElement(rexxCode)           -- Rexx code for routine object
+vArgs2.addElement(rp2)                -- context to use
+rp3 = RexxProxy rexxEngine.apply("nrxRunRexx_06-03", 0, 0, createRoutineWithContext, null, vArgs2)
+rp3.sendMessage0("call")    -- call (execute) the Rexx routine
+
+say "--- 3b (NetRexx): run Rexx code WITH arguments that uses public method 'test()' defined for prior run..."
+    -- reuse routine/package
+rp3.sendMessage2("call", "argument from Java", Object())   -- call (execute) the Rexx routine with arguments
+
+mgr.terminate()     -- make sure that the Rexx interpreter instance gets terminated!
+

@@ -1,0 +1,44 @@
+#!/usr/bin/rexx
+/*
+   name:       RegexTestHarness.rxj
+   purpose:    allow interactive experimenting with Java's regular expressions; the Java tutorial
+               on regular expressions can be found at:
+               <http://java.sun.com/docs/books/tutorial/essential/regex/index.html>
+
+   author:     Rony G. Flatscher
+   date:       2010-04-22
+
+   reference:  modelled after: <http://java.sun.com/docs/books/tutorial/essential/regex/test_harness.html>
+   remarks:    - matcher's method "start" is implemented in ooRexx' root class .Object, hence
+                 using bsf.dispatch() to explicitly redirect the message to the Java object
+   needs:      BSF4ooRexx (cf. <http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/>)
+   usage:      rexx RegexTestHarness.rxj
+*/
+
+signal on halt       -- intercept Ctl-c, end program
+PatternClz=bsf.loadClass("java.util.regex.Pattern")
+
+do forever
+   .output~charout("Enter your regex: ")
+   pattern=PatternClz~compile(linein())
+
+   .output~charout("Enter input string to search: ")
+   matcher=pattern~matcher(linein())
+
+   found=.false
+   do while matcher~find
+      say 'I found the text "'matcher~group'"'              -
+          'starting at index' matcher~bsf.dispatch("start") -  /* dispatch explicitly to Java object */
+          'and ending at index' matcher~end"."
+      found=.true
+   end
+   if found=.false then
+      say "No match found."
+   say "---"
+end
+
+halt:
+
+::requires BSF.CLS   -- get the Java support
+
+

@@ -1,0 +1,36 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited by Rony G. Flatscher, 2010-07-17/19/20 */
+/* Example 20: create a draw document, define a rectangle shape for the first draw page and add text to it */
+
+   /* create the Desktop object, we need its XComponentLoader interface to load a new document */
+xDesktop         = UNO.createDesktop()       /* get the OOo XDesktop interface to the service object  */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* create a new draw document */
+url = "private:factory/sdraw"
+drawComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, .UNO~noProps)
+
+   /* get the component's factory */
+xDocumentFactory = drawComponent~XMultiServiceFactory
+
+   /* get the (first) draw page by (0-based) index */
+xDrawPage = drawComponent~XDrawPagesSupplier~getDrawPages~getByIndex(0)~XDrawPage
+
+   /* create a Rectangle shape and determine position and size */
+xShape = xDocumentFactory~createInstance("com.sun.star.drawing.RectangleShape") ~XShape
+xShape~setPosition(.bsf~new("com.sun.star.awt.Point", 3000, 3000))   /* set position: X, Y */
+xShape~setSize(.bsf~new("com.sun.star.awt.Size", 5000, 2500))        /* set size: width, height */
+
+   /* add the shape to the draw page */
+xDrawPage~add(xShape)  -- add new shape to first draw page
+
+   /* ATTENTION: inserting text into the rectangle shape is only possible,
+                 AFTER the shape was added to the draw page ! */
+
+   /* "0d"x is the carriage-return (CR) character */
+xShape~XText~setString("Hello World!" || "0d"x || "(by ooRexx)")
+
+   /* set "modified" false -> UNO will not ask if you want to save the current document on close */
+drawComponent~XModifiable~setModified(.false)
+
+::requires UNO.CLS    -- get UNO support

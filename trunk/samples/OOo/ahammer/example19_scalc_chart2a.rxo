@@ -1,0 +1,92 @@
+#!/usr/bin/rexx
+/* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited and extended by Rony G. Flatscher, 2010-07-19/20 */
+/* Example 19: load the calc document from example 18, experiment a little bit with the embedded chart */
+
+   /* create the Desktop object, we need its XComponentLoader interface to load a new document */
+xDesktop         = UNO.createDesktop()       /* get the OOo XDesktop interface to the service object  */
+xComponentLoader = xDesktop~XComponentLoader /* get XComponentLoader interface */
+
+   /* if set to .true, then information about the UNO objects is queried and dumped interface */
+bDemoDump=.true -- .false
+
+   /* open the file that got created in example 18 */
+userHome = .java.lang.System~getProperty("user.home")    /* get user home directory from Java */
+fileName = "myAhammerExample14_with_ChartFromExample18.ods"
+url = uno.convertToUrl(userHome"/"fileName)
+
+signal on syntax  /* let us intercept the Rexx condition, if loading document fails */
+calcComponent = xComponentLoader~loadComponentFromURL(url, "_blank", 0, .UNO~noProps)
+signal off syntax /* do not intercept Rexx syntax conditions anymore */
+
+   /* get first sheet in spreadsheet */
+xSheet = calcComponent~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0) ~XSpreadSheet
+
+   /* get the Sheet's ChartsSupplier */
+xTableCharts = xSheet~XTableChartsSupplier~getCharts
+
+if bDemoDump=.true then
+do
+   say "xTableCharts:" ppd(uno.getDefinition(xTableCharts))
+   say "xTableCharts-interfaces:" ppd(uno.getInterfaceNamesViaReflection(xTableCharts, .true))
+   say "xTableCharts-XTypeProvider-interfaces:" ppd(uno.getXTypeProviderTypeNames(xTableCharts))
+   say "---"
+
+   x1=xTableCharts~getByName("FirstChart")
+   say "x1:" ppd(uno.getDefinition(x1))
+   say "x1-interfaces:" ppd(uno.getInterfaceNamesViaReflection(x1, .true))
+   say "---"
+end
+
+   /* xTableCharts is a SUBCLASS of XNameAccess ! */
+xChart = xTableCharts~getByName("FirstChart")~XTableChart
+
+   /* get the embedded Object */
+xComponent = xChart~XEmbeddedObjectSupplier~getEmbeddedObject
+
+   /* get the Diagram from the ChartDocument */
+xDiagram = xComponent~XChartDocument~getDiagram
+
+   /* set the properties */
+xPropsChart = xDiagram~XPropertySet
+
+.bsf.dialog~messageBox("About to change the 'Dim3D' property to '.true' ...",,"info")
+xPropsChart~setPropertyValue("Dim3D", box("bool", .true))
+
+.bsf.dialog~messageBox("Now 'Dim3D=.true', about to change the 'Deep' property to '.true' ...",,"info")
+xPropsChart~setPropertyValue("Deep", box("bool", .true))
+
+type = "CONE"  /* also, e.g. "RECTANGULAR_SOLID", "CYLINDER", "PYRAMID" */
+.bsf.dialog~messageBox("Now 'Dim3D=.true' and 'Deep=.true', about to change property 'SolidType' to '"type"' ...",,"info")
+xPropsChart~setPropertyValue("SolidType", box("INT", bsf.getConstant("com.sun.star.chart.ChartSolidType", type)))
+
+if bDemoDump=.true then
+do
+   say "properties of XDiagram:" ppd(uno.getProperties(XDiagram))
+   say "---"
+   name = "com.sun.star.chart.ChartSolidType"
+   say "constants" pp(name)":" ppd(uno.getDefinition(name))
+   say 'alternatively using the ooRexx .UNO_CONSTANTS class:'
+   stc = .uno_constants~new(name)   /* wrap up the UNO_CONSTANTS as an ooRexx dirlike object */
+   say pp(stc~makeString)           /* render all constant values as string as well */
+end
+
+   /* set the FloorProperties */
+.bsf.dialog~messageBox("Now 'SolidType' set to '"type"', about to set the color of the 'Floor' ...",,"info")
+xPropsFloor = xDiagram~X3DDisplay~getFloor~XPropertySet
+xPropsFloor~setPropertyValue("FillColor", box("int", "3e De De"x ~c2d)) /* cyan colour */
+xPropsFloor~setPropertyValue("FillBackground", box("boolean", .true))
+
+.bsf.dialog~messageBox("Done, about to dispose (close) the calc component ...", "Closing Dialog", "info")
+calcComponent~dispose
+exit
+
+syntax:  /* Rexx condition handler */
+   title = "File Not Found/Problem Loading File"
+   msg = "Please run 'example18_scalc_chart1.rxo' before running this example. We need the file that gets produced in example 18!" "0a"x || -
+         "File in question:" pp(uno.convertFromUrl(url))
+   .bsf.dialog~messageBox(msg, title, "error")
+   say title":" msg     /* also display in command-line window */
+
+
+::requires UNO.CLS    -- get UNO support
+

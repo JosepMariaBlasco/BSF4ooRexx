@@ -1,0 +1,353 @@
+#!/usr/bin/rexx
+/*
+   Name:     "EuroCalcJava.rxj"
+
+   Invoke:   "rexx EuroCalcJava.rxj"
+                or
+             "rexxj EuroCalcJava.rxj" (Windows)
+                or
+             "rexxj.sh EuroCalcJava.rxj" (Unix)
+
+   Purpose:  a Java solution using Java's "awt" (abstract window toolkit) matching
+             the Windows OODialog-based "Euro3Calc" application, portable
+
+   Needs:    ooRexx, BSF4Rexx
+
+   Date:    2001-12-05 (on the way from Augsburg to Vienna)
+
+   Author:   Rony G. Flatscher, University of Augsburg, WU Wien University
+
+   Changes:
+            2003-01-23 (on the way from Augsburg to Vienna), 2003-05-10
+            2003-09-05 creating java.awt.Color with giving strict types for arguments
+            2005-06-05 adapting to name changes in BSF's class methods
+            2005-12-28 rgf, changed license
+            2008-06-01 rgf, changed name, updated text, added the new states (Slovenia,
+                            Malta, Cyprus)
+            2008-07-19, rgf, added hash-bang line at the top
+            2008-08-23, ---rgf, if using BSF.CLS, then do not use BSF() directly (or
+                                remove the first three chars from its result string)
+            2008-09-09, rgf, changed "registerBean" and "registerBeanStrict" to their synonyms
+                             "new" and "newStrict" which better describe the semantics of
+                             these subfunctions
+            2010-05-16, rgf, heightened frame a little bit (made it parametrized in addition)
+            2011-04-16, rgf, added Estonian crown (EEK)
+            2013-01-03, rgf, added bsf.exit to make sure that no callbacks from Java occur anymore at the end
+            2013-01-20, rgf, removed usage of deprecated BSF4ooRexx APIs, reworked code
+            2013-01-21, rgf, tidying up a little bit, using 'keyReleased' instead of 'keyPressed'
+                             event in order to get access to the latest value in the text field
+            2013-07-09, rgf, added Latvian Lats
+            2014-07-24, rgf, added Lithuania Litas
+
+   last change: $Revision: 684 $ $Author: rony $ $Date: 2010-05-16 23:04:56 +0200 (Sun, 16 May 2010) $
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2001-2014 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+
+if arg(1)='?' then
+do
+  parse source source
+  say source
+  say 'This program displays a window showing the equivalent of 1 Euro'
+  say '   in all old currencies that have so far been changed to Euro.'
+  say 'Entering an Euro amount shows its equivalent instantaneously.'
+  exit
+end
+
+if      BsfInvokedBy()=1 then say "This Rexx program was invoked by Java!"
+else if BsfInvokedBy()=2 then say "This Rexx program was invoked by Rexx, JVM loaded by Rexx!"
+else                          say "No JVM present, we got troubles ..."
+
+call time "r"                    /* reset timer                            */
+
+call setup_euro_infos            /* setup Euro-currency information        */
+
+userDir=.directory~new           /* will be used to save Java GUI objects  */
+call setup_java_awt_gui userDir  /* setup awt-GUI        */
+
+say "...finished with setting up, time needed:" time("e")
+userDir~closeEH~waitForExit   -- get closing Rexx event handler object, block main program
+
+
+::options digits 10     /* use 10 digits for numeric arithmetics by default   */
+
+
+    /* make choice and return appropriate argument      */
+::routine choose
+  if arg(1)=1 then return arg(2)
+              else return arg(3)
+
+
+        /* set a stem-array with the rates of exchanges */
+::routine setup_euro_infos
+    euro.    =     .stem~new     -- create a stem (object)
+    .local~eurostem = euro.      -- save stem in .local environment
+    euro.eur =     1.000000;  euro.EUR.eCountry = "EUR: Europe (Euro)"        ; euro.EUR.eSince=1999
+
+    euro.ats =    13.760300;  euro.ATS.eCountry = "ATS: Austria (Schilling)"  ; euro.ATS.eSince=2002
+    euro.bef =    40.339900;  euro.BEF.eCountry = "BEF: Belgium (Franc)"      ; euro.BEF.eSince=2002
+    euro.dem =     1.955830;  euro.DEM.eCountry = "DEM: Germany (Mark)"       ; euro.DEM.eSince=2002
+    euro.fim =     5.945730;  euro.FIM.eCountry = "FIM: Finnland (Mark)"      ; euro.FIM.eSince=2002
+    euro.frf =     6.559570;  euro.FRF.eCountry = "FRF: France (Franc)"       ; euro.FRF.eSince=2002
+    euro.iep =     0.787564;  euro.IEP.eCountry = "IEP: Ireland (Pound)"      ; euro.IEP.eSince=2002
+    euro.itl =  1936.270000;  euro.ITL.eCountry = "ITL: Italy (Lire)"         ; euro.ITL.eSince=2002
+    euro.luf =    40.339900;  euro.LUF.eCountry = "LUF: Luxembourg (Franc)"   ; euro.LUF.eSince=2002
+    euro.nlg =     2.203710;  euro.NLG.eCountry = "NLG: Netherland (Gulden)"  ; euro.NLG.eSince=2002
+    euro.pte =   200.482000;  euro.PTE.eCountry = "PTE: Portugal (Escudo)"    ; euro.PTE.eSince=2002
+    euro.esp =   166.386000;  euro.ESP.eCountry = "ESP: Spain (Peseta)"       ; euro.ESP.eSince=2002
+    euro.grd =   340.750000;  euro.GRD.eCountry = "GRD: Greece (Drachmen)"    ; euro.GRD.eSince=2002
+
+    euro.sit =   239.640000;  euro.SIT.eCountry = "SIT: Slovenia (Tolar)"     ; euro.SIT.eSince=2007
+
+    euro.mtl =     0.429300;  euro.MTL.eCountry = "MTL: Malta (Lire)"         ; euro.MTL.eSince=2008
+    euro.cyp =     0.585274;  euro.CYP.eCountry = "CYP: Cyprus (Pound)"       ; euro.CYP.eSince=2008
+
+    euro.skk =    30.126   ;  euro.SKK.eCountry = "SKK: Slovakia (Koruna)"    ; euro.SKK.eSince=2009
+
+    euro.eek =    15.6466  ;  euro.EEK.eCountry = "EEK: Estonia (Crown)"      ; euro.EEK.eSince=2011
+
+    euro.lvl =    0.702804 ;  euro.LVL.eCountry = "LVL: Latvia (Lats)"        ; euro.LVL.eSince=2014
+
+    euro.ltl =    3.45280  ;  euro.LTL.eCountry = "LTL: Lithuania (Litas)"    ; euro.LTL.eSince=2015
+
+
+        /* determine processing order of currencies, will also be used as index
+           into "euro."-stem, hence UPPERCASE (!) spelling     */
+    euro.eOrder = "EUR ATS BEF CYP DEM EEK ESP FIM FRF GRD IEP ITL LTL LUF LVL MTL NLG PTE SIT SKK"
+
+    euro.eCount=words(euro.eOrder)     /* save number of currencies */
+    RETURN
+
+
+  /* display currency values for given euro-amount      */
+::routine display
+  use strict arg euro_betrag, userDir
+  euro.=.eurostem -- fetch euro. stem object from .local, assign to stem variable
+
+  if euro_betrag = 1 then stellen=6  /* rate of exchange ? */
+                     else stellen=2
+
+  betrag_id=201
+  do i=201 to 201+euro.eCount-1
+     tmpEuro = word(euro.eOrder, i-201+1)
+     userDir~entry("label."i)~setText(format(euro_betrag*euro.tmpEuro,,stellen))
+  end
+  return
+
+
+    /* create and setup up awt-objects (a frame window, a button, labels and
+       an input text field; add event listeners for interesting events  */
+::routine setup_java_awt_gui
+  use strict arg userDir
+
+  euro.=.eurostem -- fetch stem object from .local, assign to stem variable
+        /* bsf.import some Java class       */
+  javaLabelClz=.bsf~bsf.import('java.awt.Label',.nil)
+
+        /* create a color               */
+         /* 2003-09-05, changed to strict-form which allows indicating the type of the arguments;
+                        reason: there are two Color-constructors which could match, one with three
+                                float args in the range of 0.0-1.0, one with three int args in the
+                                range of 0-255
+            2013-01-20, changed scrict form (complicated) to boxed form, achieving the same effect
+         */
+  i150=box('int',150)   -- box int as Integer object (forces int-signature to be used)
+  bgColour=.bsf~new('java.awt.Color', i150, i150, box('int',250))
+
+        /* create and size frame window */
+  frame  = .BSF~new( 'java.awt.Frame', 'EuroCalculator')
+  frame~setBackground( bgColour )
+
+        /* remove layout manager or *strange* things happen ... */
+  frame ~~setLayout(.nil)
+  frame ~~show ~~hide           -- show and hide frame, now insets are known
+  insets=  frame~getInsets      -- get and parse insets
+  parse value insets~toString with . "top=" top "," "left=" left "," "bottom=" bottom "," "right=" right "]" .
+
+  -- w_width =660                  -- desired inner width
+  w_width =700                  -- desired inner width
+  w_col1  = 10                  -- start of first column
+  w_col2  = w_width/2+w_col1    -- start of second column
+  -- w_height=300                  -- desired inner height
+  w_height=(trunc(euro.eOrder~words/2)+9)*20    -- make height flexible
+
+  tot_width =w_width +left+right        -- total_width (insets included)
+  tot_height=w_height+top +bottom       -- total_height (insets included)
+
+  frame ~~setSize(tot_width, tot_height) ~~setResizable(.false)
+
+         /* get physical screen dimensions and center frame */
+  dim        = frame~getToolkit~getScreenSize
+  scr_height = dim~bsf.getFieldValue('height')
+  scr_width  = dim~bsf.getFieldValue('width')
+
+  frame~setLocation( (scr_width-tot_width)%2 , 0 )
+
+        /* create and set labels, then add them to the frame    */
+        /* get constant frame values                            */
+  label_left  = javaLabelClz~LEFT
+  label_right = javaLabelClz~RIGHT
+  label_center= javaLabelClz~CENTER
+
+  totLabels=201+euro.eCount-1          /* id of last needed label */
+  maxRows  =trunc(euro.eCount/2+.5)    /* maximum number of rows per column  */
+  secondCol=201+maxRows                /* id of first label in second column */
+
+  do id=201 to 201+euro.eCount-1       /* id of amount-label, appropriate currency-label  */
+     if id=201 | id=secondCol then y=10   /* reset y-coordinate   */
+
+     do j=0 to 100 by 100
+        name="label."||(id+j)       -- define name of this label
+                -- create Java object under specified name (a number in this case)
+        label=javaLabelClz~new         -- create label object
+        userDir~setEntry(name, label)  -- save label object using calculated name
+        label ~setAlignment(choose(j=0, label_right, label_left))
+        -- label ~setSize(choose(j=0, 115, 175), 16)
+        label ~setSize(choose(j=0, 120, 180), 16)
+
+                -- first eight currencies on left column, rest in right column
+        -- x=choose(id<secondCol, w_col1, w_col2) + choose(j=0, 0, 120)  /* add offset if necessary */
+        x=choose(id<secondCol, w_col1, w_col2) + choose(j=0, 0, 145)  /* add offset if necessary */
+        label ~setLocation(x+left, y+top)
+
+                -- set values (exchange rates)
+        idx=word(euro.eOrder, right(id,2)) -- get appropriate index
+        label~setText(choose(j=0, euro.idx, euro.idx.eCountry"," euro.idx.eSince))
+
+                -- add label to window
+        frame~add(label)
+     end
+
+     y=y+20
+  end
+
+        /* create and set the two message labels        */
+  do id=401 to 402
+     label=javaLabelClz~new         -- create label object
+     label~setAlignment( label_center )
+     label~setSize(w_width-w_col1-left-right, 16)
+     label~setLocation(w_col1+left, w_height-20-choose(id=401,3,4)*20)
+
+     userDir~setEntry("label."id, label)  -- save label in user Directory
+
+     frame~add(label)
+  end
+
+        /* create and set the input field       */
+  input=.bsf~new('java.awt.TextField')
+  inp_width=200
+  input~~setSize(inp_width, 20)
+  input~~setLocation((w_width-inp_width)/2+left, w_height-60)
+  frame~add(input)
+  userDir~input=input         -- save in userDir to allow event handlers to refer to this field
+  jeh=BSFCreateRexxProxy(.RexxKeyEventHandler~new, userDir, "java.awt.event.KeyListener")
+  input~addKeyListener(jeh)   -- add key listener
+
+        /* create the leave push-button         */
+  leave =.bsf~new('java.awt.Button', 'Leave' )
+  leave~~setSize(60, 20)
+  leave~~setLocation(w_col2-40+left, w_height-20)
+  frame~add(leave)
+
+  -- define close event handler
+  eh=.RexxCloseEventHandler~new  -- create instance
+  userDir~closeEH=eh             -- save in userDir to allow access from caller
+  jeh=BSFCreateRexxProxy(eh,userDir, "java.awt.event.ActionListener", -
+                                     "java.awt.event.WindowListener")
+  leave~addActionListener(jeh)   -- add action listener
+  frame~addWindowListener(jeh)   -- add window listener
+
+  frame~show            -- show frame
+  input~requestFocus    -- set focus to input-field
+  return
+
+::requires BSF.CLS    -- bsf.import Object Rexx (syntax) support
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to set "close app" indicator */
+::class RexxCloseEventHandler
+::method init        /* constructor */
+  expose closeApp
+  closeApp  = .false   -- if set to .true, then it is safe to close the app
+
+::attribute closeApp          -- indicates whether app should be closed
+
+::method unknown              -- intercept unhandled events, do nothing
+
+::method actionPerformed      -- event method (from Leave-Button)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method windowClosing        -- event method (from WindowListener)
+  expose closeApp
+  closeApp=.true              -- indicate that the app should close
+
+::method waitForExit          -- method blocks until attribute is set to .true
+  expose closeApp
+  guard on when closeApp=.true
+
+
+/* ------------------------------------------------------------------------ */
+/* Rexx event handler to process changes in the TextField */
+::class RexxKeyEventHandler
+::method unknown              -- ignore all other events
+  use arg methName, args
+  -- say "... unknown, methName:" pp(methName) "..." pp(args[1]~toString)
+
+::method keyReleased          -- this event is after keyPressed (TextField sets new value)
+  use arg eventObject, slotDir
+  userDir=slotDir~userData    -- fetch userDir directory
+
+  euro.=.eurostem -- fetch euro. stem object from .local, assign to stem variable
+
+  input=userDir~input         -- fetch input text field
+  parse upper value input~getText with Amount InputCurrency .
+
+        /* RGF - clear message fields */
+  label_401=userDir~entry("label."401)
+  label_401~setText(pp(date("S") time())) -- set info label
+
+  label_402=userDir~entry("label."402)
+  label_402~setText("")                   -- clear hint label
+
+  if Amount = "" then         /* nothing given, show exchange rates  */
+  do
+     call display 1, userDir  /* display value for 1 Euro      */
+     label_402~setText("(Exchange rates)")
+     return
+  end
+
+  if datatype(Amount, "Number") = 0 then
+  do
+     label_402~setText("Input Currency not a number!")
+     call beep 500, 10
+     return
+  end
+
+  if InputCurrency = "" then InputCurrency = "EUR" /* default     */
+  else if wordPos(InputCurrency, euro.eOrder) = 0 then
+  do
+     label_402~setText("Unknown currency given!")
+     call beep 200, 10
+     return
+  end
+  call display amount/euro.InputCurrency, userDir  /* display values */
+  return

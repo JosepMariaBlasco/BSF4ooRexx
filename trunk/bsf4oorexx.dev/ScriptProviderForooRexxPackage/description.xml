@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<description xmlns="http://openoffice.org/extensions/description/2006"
+xmlns:d="http://openoffice.org/extensions/description/2006"
+xmlns:xlink="http://www.w3.org/1999/xlink">
+
+  <version value="450.20140408"/>
+
+  <identifier value="org.oorexx.uno.ScriptProviderForooRexx.package"/>
+
+  <dependencies>
+    <OpenOffice.org-minimal-version value="2.0" d:name="OpenOffice.org 2.0"/>
+  </dependencies>
+
+  <update-information>
+      <src xlink:href="http://wi.wu-wien.ac.at/rgf/rexx/OOo/ScriptProviderForooRexx.update.xml" lang="en"/>
+<!--
+      <src xlink:href="http://www.rexxla.org/updates/ScriptProviderForooRexx.update.xml" lang="en"/>
+      <src xlink:href="http://www.oorexx.org/updates/ScriptProviderForooRexx.update.xml" lang="en"/>
+      <src xlink:href="http://www.netrexx.org/updates/ScriptProviderForooRexx.update.xml" lang="en"/>
+      <src xlink:href="http://sourceforge.net/projects/bsf4oorexx/files/ScriptProviderForooRexx.update.html" lang="en"/>
+-->
+  </update-information>
+
+  <publisher>
+    <name xlink:href="http://wi.wu-wien.ac.at/rgf/rexx/OOo/ScriptProviderForooRexx.author.htm" lang="en">Rony G. Flatscher</name>
+  </publisher>
+
+  <release-notes>
+      <src xlink:href="http://wi.wu-wien.ac.at/rgf/rexx/OOo/ScriptProviderForooRexx.release-notes_en.txt" lang="en"/>
+<!--
+    <src xlink:href="http://wi.wu-wien.ac.at/rgf/rexx/bsf4oorexx/current/ReleaseNotes.txt" lang="en"/>
+    <src xlink:href="information/changesOOo.txt" lang="en"/>
+-->
+  </release-notes>
+
+  <display-name>
+    <name lang="de">ooRexx - Skriptsprachenunterstuetzung</name>
+    <name lang="en">ooRexx - Scripting Language Support</name>
+  </display-name>
+
+  <icon>
+    <default xlink:href="images/oorexx4ooo-logo.png"/>
+  </icon>
+
+  <extension-description>
+    <src xlink:href="information/description_de.txt" lang="de"/>
+    <src xlink:href="information/description_en.txt" lang="en"/>
+    <src xlink:href="information/description_es.txt" lang="es"/>
+    <src xlink:href="information/description_fr.txt" lang="fr"/>
+    <src xlink:href="information/description_hi.txt" lang="hi"/>
+    <src xlink:href="information/description_jp.txt" lang="jp"/>
+    <src xlink:href="information/description_nl.txt" lang="nl"/>
+    <src xlink:href="information/description_ru.txt" lang="ru"/>
+  </extension-description>
+
+</description>
+
