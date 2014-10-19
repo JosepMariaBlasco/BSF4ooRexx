@@ -50,7 +50,7 @@ whether this package outputs debug information or not, depending on the logical 
 *
 * @author Rony G. Flatscher
 * @since 2011-06-11
-* @version 1.00
+* @version 2.00
 *
 */
 
@@ -69,7 +69,7 @@ whether this package outputs debug information or not, depending on the logical 
 
       cf.:        dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
 
-      version:    100.20140916
+      version:    200.20141020
 
       changes:    - 2011-07-20, rgf; DBusProxyObject:
                     - added proxy.dispatch(methodName[,args...])-method to send messages that
@@ -184,7 +184,7 @@ whether this package outputs debug information or not, depending on the logical 
 .dbus.dir~bDebug      =.false -- .true -- .false -- .true
 .dbus.dir~bDebugServer=.false -- .true -- .false -- .true
 
-.dbus.dir~version="100.20140916"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
+.dbus.dir~version="200.20141020"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
 
 .dbus.dir~DBUS_SERVICE_DBUS            ="org.freedesktop.DBus"    -- "The bus name used to talk to the bus itself."
 .dbus.dir~DBUS_PATH_DBUS               ="/org/freedesktop/DBus"   -- "The object path used to talk to the bus itself."

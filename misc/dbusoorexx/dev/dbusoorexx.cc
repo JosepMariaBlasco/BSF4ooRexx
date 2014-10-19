@@ -31,7 +31,7 @@
  * </ul>
  *
  *  @author Rony G. Flatscher
- *  @version 2014-08-11
+ *  @version 2014-10-20
  *
  */
 
@@ -84,7 +84,8 @@
                                    on Windows)
                                  - ooRexx 4.2.0 now required (because of using .context~name in 'dbus.cls' package
                 2014-08-07, rgf: - tidied up the source
-		2014-08-11, rgf: - adding doclet-kind documentation
+         		2014-08-11, rgf: - adding doclet-kind documentation
+                2014-10-20, rgf: - changed version to 2.00, 2014-10-20, ie. "200.20141020"
 
 
     possible todos: - add globals for Nil(), True(), Flase(), .Array, .DateTime, .DBus, "1", "", as well
@@ -92,7 +93,7 @@
                     - change attribute name CSELF (probably misleading as it is not the same as CSELF in an
                       ooRexx native method or routine argument type); if so, don't forget dbus.cls
 
-    version:    100.20140807
+    version:    200.20141020
     license:      Apache License 2.0
 
 ------------------------ Apache Version 2.0 license -------------------------
@@ -155,11 +156,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 #ifdef DBUSOOREXX_32
-    #define DBUS_REXXVERSION    "100.20140811 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20141020 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (DBUSOOREXX_64)
-    #define DBUS_REXXVERSION    "100.20140811 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20141020 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define DBUS_REXXVERSION    "100.20140811 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define DBUS_REXXVERSION    "100.20141020 n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #ifndef TID
