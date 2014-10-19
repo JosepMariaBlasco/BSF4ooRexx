@@ -1387,7 +1387,8 @@ inline RexxStringObject GET_REXX_DATE_TIME_AS_REXX_STRING(RexxThreadContext *con
 * @param context The RexxThreadContext to interact with ooRexx
 * @return the number of items in the given dimension
 */
-inline size_t GET_UNMARSHAL_ARRAY_VALUE_AT_INDEX(RexxArrayObject arrIdx, int32_t index, RexxThreadContext *context)
+// inline size_t GET_UNMARSHAL_ARRAY_VALUE_AT_INDEX(RexxArrayObject arrIdx, int32_t index, RexxThreadContext *context)
+inline size_t GET_UNMARSHAL_ARRAY_VALUE_AT_INDEX(RexxArrayObject arrIdx, size_t index, RexxThreadContext *context)
 {
 
     size_t    val=0;
@@ -3674,7 +3675,8 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
                 pmarsh->context->ReleaseLocalReference(rso);
             }
 
-            if (!dbus_message_iter_append_fixed_array(&iter_array, DBUS_TYPE_BYTE, &stringValue, stringLength ))
+            // 2014-10-19, rgf: add cast to int to remove warning on 64-bit
+            if (!dbus_message_iter_append_fixed_array(&iter_array, DBUS_TYPE_BYTE, &stringValue, (int) stringLength ))
             {
                 pmarsh->dbusError = true;
                 SNPRINTF(pmarsh->msgChunk256, 256, ": DBus-API returned 'no memory' while marshalling a byte array using the 'dbus_message_iter_append_fixed_array()'-API");
@@ -3699,7 +3701,8 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
 #endif
 
                 // process all array items
-            size_t items=GET_ARRAY_SIZE_AT_DIMENSION(rao, level, pmarsh->context);
+            // 2014-10-19, rgf: add cast (int32_t) to stop warning on 64-bit MSC
+            size_t items=GET_ARRAY_SIZE_AT_DIMENSION(rao, (int32_t) level, pmarsh->context);
 
 #ifdef DEBUG_ARRAY
        fprintf(stderr, "       ...ma(...): rao=[%s], has rao-size/items at level=[%lu]/dim|items: [%lu] | arrIdx=[%s]\n",
@@ -3776,7 +3779,9 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
                     pmarsh->context->ReleaseLocalReference(rop);
                     pmarsh->context->ReleaseLocalReference(oriRop);
 
-                    if (!dbus_message_iter_append_fixed_array(&iter_array, DBUS_TYPE_BYTE, &stringValue, stringLength ))
+
+                    // 2014-10-19, rgf: add cast (int) to stop warning on 64-bit MSC
+                    if (!dbus_message_iter_append_fixed_array(&iter_array, DBUS_TYPE_BYTE, &stringValue, (int) stringLength ))
                     {
                         pmarsh->dbusError = true;
                         SNPRINTF(pmarsh->msgChunk256, 256, ": DBus-API returned 'no memory' while marshalling a byte array using the 'dbus_message_iter_append_fixed_array()'-API");
@@ -3920,7 +3925,9 @@ logical_t marshalArray(DBusMessageIter *iter, size_t level, RexxObjectPtr anyRop
 #endif
 
         logical_t bRetValue=false;
-        size_t items=GET_ARRAY_SIZE_AT_DIMENSION(rao, level, pmarsh->context);
+
+        // 2014-10-19, rgf: add cast (int32_t) to stop warning on 64-bit MSC
+        size_t items=GET_ARRAY_SIZE_AT_DIMENSION(rao, (int32_t) level, pmarsh->context);
         if (items==0)   // e.g. if .nil was supplied; we still need to create the array containers, even if they remain empty
         {
             items=1;
