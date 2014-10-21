@@ -7700,7 +7700,7 @@ RexxRoutine0(int, RgfTestStuff)
         STANDARD_PACKAGE_HEADER
         REXX_INTERPRETER_4_2_0,             // anything including and after 4.2.0 will work
         "dbus",                             // name of the package
-        "1.00",                             // package information
+        "2.00",                             // package version information
 
 #if defined(REXX_LOADER_UNLOADER) || defined (REXX_LOADER)
         dbusLoader,
