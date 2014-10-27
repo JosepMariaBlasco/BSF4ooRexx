@@ -267,11 +267,11 @@ call dynamicRequiresBSF4ooRexx   -- requires BSF.CLS
 -- ::requires "rgf_util2.rex"    -- installed with the BSF4ooRexx package
 
 /** This routine requires dynamically the ooRexx package <code>BSF.CLS</code> and
-*   in the case it is not available will allow to continue gracefully.
+*   in the case it is not available allows to continue gracefully.
 */
 ::routine dynamicRequiresBSF4ooRexx -- BSF4ooRexx: needed need for UTF-8 conversion routines
   signal on any
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   .context~package~loadPackage("BSF.CLS") -- if not found a syntax condition is raised and
                                           -- control transferred to (immediately following) "ANY:" label
 any:
@@ -299,7 +299,7 @@ any:
   session=.nil
 
 
-  -- will be usually called from native DbusGetTID(), which allows one optional argument indicating the desired formatting
+  -- will be usually called from native DBusGetTID(), which allows one optional argument indicating the desired formatting
 /** Class method that is being used by native code to turn the inconceivable thread ids into human legible values.
 *
 * @param tid the thread id number
@@ -330,20 +330,20 @@ syntax: raise propagate
 
 
    /* unique id for the computer                         */
-/** Gets and returns the machine's id according to DBus.
+/** Gets and returns the machine's unique id according to DBus.
 *
-* @return machine's id according to DBus
+* @return machine's unique id according to DBus
 */
-::method machineID   class external "LIBRARY dbusoorexx DbusGetUniqueMachineId"
+::method machineID   class external "LIBRARY dbusoorexx DBusGetUniqueMachineId"
 
 
-/** Establishes and returns a connection to the<code>system</code> on DBus, and caches that connection.
+/** Establishes and returns a connection to the <code>system</code> on DBus, and caches that connection.
 *
-* @return returns the connection to the <code>system</code> bus on DBus
+* @return connection to the <code>system</code> bus on DBus
 */
 ::method system      class    /* returns the shared system bus connection */
   expose system
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "arg(1):" pp(arg(1))
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "arg(1):" pp(arg(1))
 
   if arg(1)="CLEAR", arg(2)=system then   -- remove cached connection to force a new one to be created
   do
@@ -356,13 +356,13 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
   return system
 
 
-/** Establishes and returns a connection to the<code>session</code> on DBus, and caches that connection.
+/** Establishes and returns a connection to the <code>session</code> on DBus, and caches that connection.
 *
-* @return returns the connection to the <code>session</code> bus on DBus
+* @return connection to the <code>session</code> bus on DBus
 */
 ::method session     class    /* returns the shared session bus connection */
   expose session
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "arg(1):" pp(arg(1))
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "arg(1):" pp(arg(1))
 
   if arg(1)="CLEAR", arg(2)=session then  -- remove cached connection to force a new one to be created
   do
@@ -380,7 +380,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 * @see NEW class method
 */
 ::method connect     class    /* connect to an existing dbus connection    */
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   forward message ("NEW")     -- let our version of NEW handle this
 
 
@@ -397,7 +397,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
   expose system session
   use strict arg address
 
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   bus=self~new:.class   -- return barely initialized
 
@@ -448,7 +448,7 @@ syntax: raise propagate    -- raise in caller
 ::attribute pseudoAddress     set      -- 20140728, rgf: allows private server to set a pseudo address for each connected client
   expose address
   use strict arg address               -- just assign whatever we receive
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
 /* --- instance methods --- */
 /* much is implemented in native code, including setting attributes 'address',
@@ -456,7 +456,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 */
 
 /** Constructor method that initializes attributes. Note, the native code will set the values of
-* some of the attributes!
+*   some of the attributes!
 */
 ::method init
   expose cself busType address makeSlotDir makeReplySlotDir active -
@@ -465,7 +465,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
          collectStatistics statistics server sendEmptyReply -
          haltAllThreadsOnUnexpectedError
 
-if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   cself=.nil                  /* will be set by a native method   */
   busType=.nil                /* will be set by native method     */
@@ -506,29 +506,29 @@ if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID(
 ::attribute active get
 
 /* Creates or gets a new bus instance. */
-::method nativeConnectPrivate private external "LIBRARY dbusoorexx DbusNativeConnectionOpenPrivate"
-::method nativeGetSystemBus   private external "LIBRARY dbusoorexx DbusNativeGetSystemBus"
-::method nativeGetSessionBus  private external "LIBRARY dbusoorexx DbusNativeGetSessionBus"
+::method nativeConnectPrivate private external "LIBRARY dbusoorexx DBusNativeConnectionOpenPrivate"
+::method nativeGetSystemBus   private external "LIBRARY dbusoorexx DBusNativeGetSystemBus"
+::method nativeGetSessionBus  private external "LIBRARY dbusoorexx DBusNativeGetSessionBus"
 
-/** Connect to the given address and start the message loop for this connection.
+/** Connects to the given address and starts the message loop for processing DBus messages over this connection.
 * @param address to connect to
 */
 ::method connectToAddress -- unguarded
    expose active
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   forward message (connectToAddress"_worker") continue
   guard on when active=.true     -- block (wait) until message queue is running, otherwise we get lock-ups
 
-/** This method will connect to DBus in an own thread which then remains active for the connection's
-*   message loop. This way the problems with libdbus (not fully multithreading safe) should be fixed.
+/** This method connects to DBus in a separate (message loop) thread which then remains active for the connection's
+*   duration. This way the problems with libdbus (not fully multithreading safe) should be fixed.
 */
 ::method connectToAddress_worker -- rgf, 20140722
   expose active address
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if active=.true then return    -- message loop already up and running
 
   reply              -- start a new thread which will start the message loop and block
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "after reply"
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "after reply"
 
   use arg address    -- get desired address
   if      address="session" then
@@ -559,7 +559,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 ::attribute sendEmptyReply    set       -- default: .true (append slotDir as last argument)
   expose sendEmptyReply
   use strict arg argSendEmptyReply=.true
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   if \datatype(argSendEmptyReply, "O") then
@@ -578,7 +578,7 @@ syntax:
 ::attribute makeSlotDir      set       -- default: .true (append slotDir as last argument)
   expose makeSlotDir
   use strict arg argMakeSlotDir=.true
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   if \datatype(argMakeSlotDir, "O") then
@@ -597,7 +597,7 @@ syntax:
 ::attribute makeReplySlotDir set       -- default: .false (do not append slotDir to result of a message call (turning result into an array object)
   expose makeReplySlotDir
   use strict arg argMakeReplySlotDir=.false  -- changed, 201407 rgf
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   if \datatype(argMakeReplySlotDir, "O") then
@@ -615,7 +615,7 @@ syntax:
 ::attribute unmarshalByteArrayAsString set       -- default: .true (append slotDir to result of a message call (turning result into an array object)
   expose unmarshalByteArrayAsString
   use strict arg argUnmarshalByteArrayAsString=.true
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   if \datatype(argUnmarshalByteArrayAsString, "O") then
@@ -646,17 +646,18 @@ syntax:
 */
 ::method waitOnConnectionClosed unguarded
   expose active
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   guard on when active=.false
 
 
-::method nativeStartMessageLoop   private external "LIBRARY dbusoorexx DbusMessageLoop"
+::method nativeStartMessageLoop   private external "LIBRARY dbusoorexx DBusMessageLoop"
 
-/** Starts a connection's message loop, will be automatically invoked when a connection is established.
+/** Do not use ! Starts a connection's message loop, will be automatically invoked when a connection is established.
+*   Never invoke this method yourself.
 */
 ::method startMessageLoop unguarded
   expose active stopLoop address busType
-if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "arrived"
+if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "arrived"
 
   signal on syntax
   if active=.true then
@@ -677,9 +678,9 @@ if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID(
 
   reply              -- start a new thread and start message loop
 
-if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "BEFORE: self~nativeStartMessageLoop"
+if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "BEFORE: self~nativeStartMessageLoop"
   self~nativeStartMessageLoop -- start message loop
-if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "AFTER : self~nativeStartMessageLoop"
+if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "AFTER : self~nativeStartMessageLoop"
   return
 
 syntax: raise propagate
@@ -690,20 +691,11 @@ syntax: raise propagate
 *
 * @param action
 <ul>
-<li>&quot;<code>start</code>&quot;: automatically done at connection creation time.
-</li>
-
-<li>&quot;<code>stop</code>&quot;: automatically done in method <code>close</code>
-</li>
-
-<li>&quot;<code>wait</code>&quot;: replaced by method <code>waitOnConnectionClosed</code>
-</li>
-
-<li>&quot;<code>active</code>&quot;: replaced by the get attribute named <code>active</code>
-</li>
-
+<li>&quot;<code>start</code>&quot;: automatically done at connection creation time</li>
+<li>&quot;<code>stop</code>&quot;: automatically done in method <code>close</code></li>
+<li>&quot;<code>wait</code>&quot;: replaced by method <code>waitOnConnectionClosed</code></li>
+<li>&quot;<code>active</code>&quot;: replaced by the get attribute named <code>active</code></li>
 </ul>
-*
 *
 * @deprecated
 * @since 2014-07-23 deprecated
@@ -712,7 +704,7 @@ syntax: raise propagate
   expose active stopLoop bustype
   parse upper arg action .
 
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "action:" pp(action)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "action:" pp(action)
 
   msg="Method [messageLoop] not available anymore! 'start' is done at connection creation time,"
   msg=msg"'stop' is done in new method 'close', 'active' is replaced by the get attribute named 'active',"
@@ -730,18 +722,18 @@ syntax: raise propagate
 /** Block until connection (message loop) gets closed (attribute <code>active</code> turns <code>.false</code>. */
 ::method waitUntilClosed unguarded
   expose active
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   guard on when active=.false
 
 
 
-::method nativeCloseConnection    private EXTERNAL "LIBRARY dbusoorexx DbusNativeConnectionClose"
+::method nativeCloseConnection    private EXTERNAL "LIBRARY dbusoorexx DBusNativeConnectionClose"
 
-/** Close connection, which cannot be used for exchanging messages anymore. */
+/** Closes the connection (also shuts down connection's message loop thread) which cannot be used for exchanging DBus messages anymore. */
 ::method close -- unguarded   -- close (private) connection
   expose busType address statistics active stopLoop
 
-if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   if active=.false then return  -- nothing to close anymore, do not raise an error
 
@@ -754,7 +746,7 @@ if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID(
 
   if busType="private" then   -- if a private connection, then truly close it
   do
-if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line)  "==> busType="pp(busType) "address="pp(address) "about to close connection!"
+if .dbus.dir~bDebug=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line)  "==> busType="pp(busType) "address="pp(address) "about to close connection!"
      self~nativeCloseConnection        -- close the connection for good, will set CSELF to .nil
   end
   return
@@ -765,32 +757,25 @@ syntax:  raise propagate
 
 
 -- keep these private so to not blow up the amount of methods one needs to be aware of
-::method nativeIsConnected       private external "LIBRARY dbusoorexx DbusConnectionIsConnected"
-::method nativeIsAuthenticated   private external "LIBRARY dbusoorexx DbusConnectionIsAuthenticated"
-::method nativeCanSendType       private external "LIBRARY dbusoorexx DbusConnectionCanSendType"
+::method nativeIsConnected       private external "LIBRARY dbusoorexx DBusConnectionIsConnected"
+::method nativeIsAuthenticated   private external "LIBRARY dbusoorexx DBusConnectionIsAuthenticated"
+::method nativeCanSendType       private external "LIBRARY dbusoorexx DBusConnectionCanSendType"
 
 /** Allows to query some state information on the connection returning either <code>.true</code> or <code>.false</code>.
 *
 * @param option can be one of:
 <ul>
-<li><code>&quot;A[uthenticated]&quot;</code> or <code>&quot;IsA[uthenticated]&quot;</code>,
-</li>
-
+<li><code>&quot;A[uthenticated]&quot;</code> or <code>&quot;IsA[uthenticated]&quot;</code>,</li>
 <li><code>&quot;O[pen]&quot;</code> or <code>&quot;IsO[pened]&quot;</code> or
-    <code>&quot;C[onnected]&quot;</code> or <code>&quot;IsC[onnected]&quot;</code>,
-</li>
-
+    <code>&quot;C[onnected]&quot;</code> or <code>&quot;IsC[onnected]&quot;</code>,</li>
 <li><code>&quot;T[ypecode]&quot;</code>: this option allows for a second argument which must be one or more of the DBus type character codes; if the
-second argument is omitted, then a comma separated list of all supported type (codes) gets returned, instead of a Boolean value
-</li>
-
+second argument is omitted, then a comma separated list of all supported type (codes) gets returned, instead of a Boolean value</li>
 </ul>
-
 *
 */
 ::method query unguarded   -- reroute invocation through message loop thread
   expose active stopLoop address bustype
-  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   parse upper arg option +1 1 option3 +3 .      -- get first char and first three chars in uppercase
@@ -843,7 +828,7 @@ syntax: raise propagate
 */
 ::method query_worker
   parse upper arg option +1 1 option3 +3 .      -- get first char and first three chars in uppercase
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   optionPos=pos(option, "ACOT")
@@ -888,7 +873,7 @@ syntax: raise propagate
 *
 */
 ::method canSendTypeCode  private  -- this name is neutral enough to allow extensions, if other connection-related tests are needed
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if arg()=0 then
   do
      str=""
@@ -917,7 +902,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 ::method uninit            -- make sure we stop the message loop thread, if necessary
   expose busType active
 
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "#1 (kick off loop)"
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "#1 (kick off loop)"
 
   -- if cself<>.nil then      -- a DBUS connection pointer in hand ?
   if active=.true then     -- is the message loop still active for this connection ?
@@ -938,12 +923,13 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 * @param signalName optional, the signal name to listen to, if omitted any signal will be handled
 * @return <ul><li>add<br><code>.true</code></li>
               <li>remove<br>number of listener objects removed</li>
-              <li>getListeners<br>a copy of the listener objects array
+              <li>getListeners<br>a copy of the listener objects array</li>
+          </ul>
 */
 ::method listener unguarded
   expose internalSignalListeners internalRegisteredServiceObjects
 
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg action, ...
   .ArgUtil~validateClass("action", action, .string)
 
@@ -1010,7 +996,7 @@ syntax:  raise propagate
 *   as the third argument.
 *
 * @param action one of <code>&quot;a[dd]&quot;</code>, <code>&quot;r[emove]&quot;</code>, <code>&quot;g[etListeners]&quot;</code>
-* @param objectPathmandatory for adding, optional for removing (all object paths qualify); if
+* @param objectPath mandatory for adding, optional for removing (all object paths qualify); if
 *        the special string &quot;default&quot; is being used, then the third argument must be an
 *        instance of @see <code>IDBusPathMaker</code>
 * @param serviceObject mandatory for adding, optional for removing (all service objects qualify)
@@ -1021,7 +1007,7 @@ syntax:  raise propagate
 
 ::method serviceObject unguarded
   expose internalSignalListeners internalRegisteredServiceObjects -- a directory
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   use strict arg action, objectPath=.nil, rexxObject=.nil
 
@@ -1114,14 +1100,14 @@ syntax:  raise propagate
 ::attribute server                  /* if set, connection belongs to a DBusServer (i.e. a client connection) */
 
    /* unique id for the bus                              */
-::method    nativeUniqueBusID   private external "LIBRARY dbusoorexx DbusGetUniqueBusId"
+::method    nativeUniqueBusID   private external "LIBRARY dbusoorexx DBusGetUniqueBusId"
 
 /** Returns the uniqe bus id of this connection.
 * @return unique bus id
 */
 ::method    uniqueBusID
   expose stopLoop address bustype
-  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   if stopLoop=.true then   -- message loop got already stopped, we do not allow to restart it, a new conncection needs to be established
   do
@@ -1141,7 +1127,7 @@ syntax: raise propagate
 
 ::method    uniqueBusID_worker unguarded
    expose bustype
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
    if bustype="private" then return "private:rexx:"self~identityHash
    return self~nativeUniqueBusID
 
@@ -1150,40 +1136,41 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 
    -- folding into a method busName( "request" | {"release"| "yield"} | "hasOwner" | "uniqueName", name [, flags] )
    /* unique bus name for the dbus connection            */
-::method  nativeUniqueBusName   private external "LIBRARY dbusoorexx DbusGetUniqueBusName"
-::method  nativeRequestBusName  private external "LIBRARY dbusoorexx DbusBusNameRequest"
-::method  nativeBusNameHasOwner private external "LIBRARY dbusoorexx DbusBusNameHasOwner"   -- deprecated!
-::method  nativeReleaseBusName  private external "LIBRARY dbusoorexx DbusBusNameRelease"
+::method  nativeUniqueBusName   private external "LIBRARY dbusoorexx DBusGetUniqueBusName"
+::method  nativeRequestBusName  private external "LIBRARY dbusoorexx DBusBusNameRequest"
+::method  nativeBusNameHasOwner private external "LIBRARY dbusoorexx DBusBusNameHasOwner"   -- deprecated!
+::method  nativeReleaseBusName  private external "LIBRARY dbusoorexx DBusBusNameRelease"
 
-/** Allows to request and to release a bus name, query whether a bus name has an owner and query athe unique bus name.
+/** Allows to request and to release a bus name, query whether a bus name has an owner and query the unique bus name.
 *
-* @param function on of <code>&quot;req[uest]&quot;</code>, <code>&quot;h[asOwner]&quot;</code>, <code>&quot;rel[ease]&quot;</code>, <code>&quot;u[niqueName]&quot;</code>
-* @param flags if <code>&quot;req[quest]&quot;</code> function, can be one of or addition of (constant names can be used against <code>.dbus.dir</code>
-<ul>
-<li>1 - DBUS_NAME_FLAG_ALLOW_REPLACEMENT</li>
-<li>2 - DBUS_NAME_FLAG_REPLACE_EXISTING</li>
-<li>4 - DBUS_NAME_FLAG_DO_NOT_QUEUE</li>
-</ul>; if this argument is omitted the default value used will be <code>7</code> (all options set), cf. <a href="http://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-names">http://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-names</a>
+* @param function one of <code>&quot;req[uest]&quot;</code>, <code>&quot;h[asOwner]&quot;</code>, <code>&quot;rel[ease]&quot;</code>, <code>&quot;u[niqueName]&quot;</code>
+* @param flags if <code>&quot;req[quest]&quot;</code> function, can be one or a combination of constant names (can be used against <code>.dbus.dir</code>)
+* <ul>
+* <li>1 - DBUS_NAME_FLAG_ALLOW_REPLACEMENT</li>
+* <li>2 - DBUS_NAME_FLAG_REPLACE_EXISTING</li>
+* <li>4 - DBUS_NAME_FLAG_DO_NOT_QUEUE</li>
+* </ul>
+* If these flags are omitted the default value used will be <code>7</code> (all options set), cf. <a href="http://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-names">http://dbus.freedesktop.org/doc/dbus-specification.html#message-bus-names</a>
 *
 * @return in the case of function <code>&quot;req[uest]&quot;</code>:
-<ul>
-<li>1 - DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER</li>,
-<li>2 - DBUS_REQUEST_NAME_REPLY_IN_QUEUE</li>,
-<li>3 - DBUS_REQUEST_NAME_REPLY_EXISTS</li>,
-<li>4 - DBUS_REQUEST_NAME_REPLY_ALREADY_OWNER</li>,
-</ul>
-in the case of function  <code>&quot;rel[ease]&quot;</code>:
-<ul>
-<li>1 - DBUS_RELEASE_NAME_REPLY_RELEASED</li>,
-<li>2 - DBUS_RELEASE_NAME_REPLY_NON_EXISTENT</li>,
-<li>3 - DBUS_RELEASE_NAME_REPLY_NOT_OWNER<li>,
-</ul>
-else no return value
-
+* <ul>
+* <li>1 - DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER</li>
+* <li>2 - DBUS_REQUEST_NAME_REPLY_IN_QUEUE</li>
+* <li>3 - DBUS_REQUEST_NAME_REPLY_EXISTS</li>
+* <li>4 - DBUS_REQUEST_NAME_REPLY_ALREADY_OWNER</li>
+* </ul>
+* In the case of flag  <code>&quot;rel[ease]&quot;</code>:
+* <ul>
+* <li>1 - DBUS_RELEASE_NAME_REPLY_RELEASED</li>
+* <li>2 - DBUS_RELEASE_NAME_REPLY_NON_EXISTENT</li>
+* <li>3 - DBUS_RELEASE_NAME_REPLY_NOT_OWNER<li>
+* </ul>
+* else no value is returned
+*
 */
 ::method busName           -- route invocation through the message loop thread
   expose stopLoop address bustype
-  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   if stopLoop=.true then   -- message loop got already stopped, we do not allow to restart it, a new conncection needs to be established
   do
@@ -1221,7 +1208,7 @@ syntax: raise propagate
    */
 ::method busName_worker unguarded
   parse upper arg function .
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   firstLetter=function~left(1)
@@ -1268,8 +1255,8 @@ syntax:
 
 
 
-::method  nativeAddMatch        private external "LIBRARY dbusoorexx DbusBusAddMatch"
-::method  nativeRemoveMatch     private external "LIBRARY dbusoorexx DbusBusRemoveMatch"
+::method  nativeAddMatch        private external "LIBRARY dbusoorexx DBusBusAddMatch"
+::method  nativeRemoveMatch     private external "LIBRARY dbusoorexx DBusBusRemoveMatch"
 
 /** Allows to add or remove a DBus match rule, cf. <a href="http://dbus.freedesktop.org/doc/dbus-specification.html#bus-messages-add-match">http://dbus.freedesktop.org/doc/dbus-specification.html#bus-messages-add-match</a>
 *
@@ -1280,7 +1267,7 @@ syntax:
 */
 ::method match -- reroute invocation through message loop thread
   expose stopLoop address bustype
-  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "/// arg(5):" pp(arg(5))
+  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "/// arg(5):" pp(arg(5))
 
   if stopLoop=.true then   -- message loop got already stopped, we do not allow to restart it, a new conncection needs to be established
   do
@@ -1300,7 +1287,7 @@ syntax: raise propagate
    /* folding methods of the "match" group into one parametrized method */
 ::method match_worker
   use strict arg action, filter, block=.false
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   firstLetter=action~strip~left(1)~upper
@@ -1322,55 +1309,35 @@ syntax: raise propagate
 
 
 -- o.k. the following two native messages will be invoked in the message loop, cf. method "message"
-::method  nativeSignalMessage    private external "LIBRARY dbusoorexx DbusBusSignalMessage"
-::method  nativeCallMessage      private external "LIBRARY dbusoorexx DbusBusCallMessage"
+::method  nativeSignalMessage    private external "LIBRARY dbusoorexx DBusBusSignalMessage"
+::method  nativeCallMessage      private external "LIBRARY dbusoorexx DBusBusCallMessage"
 
 
    /* folding methods of the "message" group into one parametrized method */
 /** Call a message or issue a signal message. The arguments differ, depending whether a called method or an issued signal is intended.
 *
-* The parameters for a call:
-* <ul>
-* <li>C[all]</li>
-* <li>busName</li>
-* <li>targetObjectPath</li>
-* <li>interface (optional)</li>
-* <li>methodName</li>
-* <li>replySignature (optional)</li>
-* <li>argSignature (optional)</li>
-* <li></li>
-* </ul>
-*
-* The paramters for a signal:
-* <ul>
-* <li>S[ignal]</li>
-* <li>senderObjectPath</li>
-* <li>interface</li>
-* <li>signalName</li>
-* <li>signature (optional)</li>
-* </ul>
 *
 * @param function <code>&quot;C[all]&quot;</code> or <code>&quot;S[ignal]&quot;</code>
-<br>if a call, the parameters are:
-* @param busName (call) a valid (existing) bus name
-* @param targetObjectPath (call) a valid (existing) path to the target object that the message is directed to
-* @param interface (call) optional, defaults to empty string
-* @param methodName (call) the name of the method to call
-* @param replySignature (call) optional, defaults to empty string, determines the signature for the return value
-* @param argSignature (call) optional, defaults to empty string, determines the signature for the arguments
+<br>For a DBus call message, the parameters are:
+* @param busName a valid (existing) bus name
+* @param targetObjectPath a valid (existing) path to the target object that the message is directed to
+* @param interface optional, defaults to empty string
+* @param methodName the name of the method to call
+* @param replySignature optional, defaults to empty string, determines the signature for the return value
+* @param argSignature optional, defaults to empty string, determines the signature for the arguments
 
-<br>if a signal, the parameters are:
-* @param busName (signal)
-* @param senderObjectPath (signal) the object path of the signal sender
-* @param interface (signal)
-* @param signalName (signal) the name of the signal
-* @param signature (signal) optional, defines the types of optional arguments
+<br>For a DBus signal message, the parameters are:
+* @param busName
+* @param senderObjectPath the object path of the signal sender
+* @param interface
+* @param signalName the name of the signal
+* @param signature optional, defines the types of optional arguments
 *
 * @return whatever value a called message returns
 */
 ::method message -- send message to service object; reroute invocation through message loop thread
   expose stopLoop address bustype
-  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "/// arg(5):" pp(arg(5))
+  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "/// arg(5):" pp(arg(5))
 
   if stopLoop=.true then   -- message loop got already stopped, we do not allow to restart it, a new conncection needs to be established
   do
@@ -1393,7 +1360,7 @@ syntax: raise propagate
   expose cself active
   use strict arg function, ...
 
-  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
 
@@ -1470,7 +1437,7 @@ syntax2:
 */
 ::method getObject unguarded           -- request remote object, return a Rexx proxy object to allow interaction with it
   use strict arg busName, objectPath
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   res=DBusDatatype(busName,"Busname")
@@ -1481,7 +1448,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
   if res<>.true then                   -- erroneous busname?
      raise syntax 93.900 array("'objectPath':" res)
 
-  return .DbusProxyObject~new(self, busName, objectPath)
+  return .DBusProxyObject~new(self, busName, objectPath)
 
 syntax:
   raise propagate
@@ -1495,7 +1462,7 @@ syntax:
 */
 ::method getObjectPaths unguarded   -- return an array of object paths for the supplied bus name / service name
   use strict arg busName
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   objectPathList=.array~new
   self~workerGetObjectPaths("/",busName,objectPathList)
@@ -1510,7 +1477,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 
 ::method workerGetObjectPaths unguarded private     -- interrogates service possessing bus/service name for object paths (if that service supports that)
    use arg objPath, busName, objectPathList
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
    signal on syntax
    o=self~getObject(busName, objPath)  -- try to get the DBus object
@@ -1568,7 +1535,7 @@ syntax:  -- mostlikely: org.freedesktop.DBus.Error.Reply or org.freedesktop.DBus
 */
 ::routine stringToUtf8 public    -- needs BSF4ooRexx
   parse arg str
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   if .bsf=".BSF" then   -- no BSF available (need to uncomment the ::requires BSF.CLS statement above), hence using the Rexx conversion procedure
      return utf8(str)
@@ -1606,7 +1573,7 @@ utf8: procedure
 */
 ::routine utf8ToString public    -- needs BSF4ooRexx
   parse arg str
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   return BsfRawBytes(.java.lang.String~new(bsfRawBytes(str),"UTF-8")~getBytes)
 
 
@@ -1624,7 +1591,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 */
 ::routine dbus.box       public     -- for variant types or overruling reply signatures, allow boxing
   use strict arg signature, argument=.nil
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
 
@@ -1642,17 +1609,18 @@ syntax: raise propagate
    /* ---------------------------------------------------------------------------------------- */
 /* allow for sending error-messages instead of a reply back to the invoker, will get honored in
    the message loop of the DBus connection that invoked the Rexx method calling this routine   */
+
 /** This routine is meant to be called from an ooRexx service object while processing a DBus message in the case that an error reply should be
 *   transported back to the caller.
 *
-* @param errName optional (default: <code>&quot;org.freedesktop.DBus.Error.RexxServiceRaised&quot;</code>
+* @param errName optional (default: <code>&quot;org.freedesktop.DBus.Error.RexxServiceRaised&quot;</code>)
 * @param errMessage optional (default: .nil)
 * @condition 93.900
 *
 */
 ::routine raiseDBusError   public   -- this condition will be turned into an error-message in native code
   use arg errName="org.freedesktop.DBus.Error.RexxServiceRaised", errMessage=.nil
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   signal on syntax
   raise syntax 93.900 array (errName, errMessage, "ERRORREPLY")
 
@@ -1665,19 +1633,19 @@ syntax: raise propagate
 * @return version string formatted as: <code>&quot;library dbusoorexx=[major*100+minor.yyyymmdd], compile-time dbus=[major.minor.micro], runtime dbus=[major.minor.micro], dbus.cls=[major*100+minor.yyymmdd]&quot;<code>
 */
 ::routine DBusVersion   public
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   return DBusVersionLibrary()", package dbus.cls=[".dbus.dir~version"]"
 
 
 /* ============================================================================================= */
 /* ooRexx proxy for a DBus object, responsible for processing messages  */
 
-/** Proxy class representing a remot DBus object to interact with using ooRexx messages.
+/** Proxy class representing a remote DBus object to interact with using ooRexx messages.
 */
 ::class "DBusProxyObject" public
 
 /** Constructor method that initializes the attributes, introspects the remote DBus object using the result for transparent interaction with it (if avalable). An ooRexx programmer merely needs to
-*   send ooRexx messages and supply arguments without type information! The proxy will transparently reformulate the ooRexx messge into the appropriate DBus message call.
+*   send ooRexx messages and supply arguments without type information! The proxy will transparently reformulate the ooRexx message into the appropriate DBus message call.
 *
 * @param proxy.connection the connection (a DBus object) to use
 * @param proxy.busname the busname to use
@@ -1687,13 +1655,13 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
   expose proxy.busname proxy.connection proxy.objectPath proxy.methods proxy.introspectData
   use strict arg proxy.connection, proxy.busname, proxy.objectPath
 
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   proxy.introspectRootNode=.nil
   proxy.introspectData    =""
 
   signal on syntax                  -- query object for its introspection data, if any
 
-  proxy.introspectData=proxy.connection~message("call", proxy.busName,        - -- .dbus.dir~serviceDbus,      - -- busName
+  proxy.introspectData=proxy.connection~message("call", proxy.busName,        - -- .dbus.dir~serviceDBus,      - -- busName
                                           proxy.objectPath,             - -- .dbus.dir~pathDBus,         - -- path to DBus object
                                           .dbus.dir~Introspectable,     - -- Introspect's standard interface name
                                           "Introspect",                 - -- message name
@@ -1718,13 +1686,13 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
 ::attribute proxy.introspectRootNode set  /* make introspection parse tree available */
   expose proxy.methods proxy.introspectRootNode
   use arg proxy.introspectRootNode
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
      -- create directory with those names that we should proxy for the proxy object
   proxy.methods=IDBus.getMethodsForProxy(proxy.introspectRootNode)
 
 ::attribute proxy.methods  get            /* make introspection parse tree available */
 
-/** Method that processes the intrsospect data or a file that contains the XML encoded introspection data for the remote object.
+/** Method that processes the introspect data or a file that contains the XML encoded introspection data for the remote object.
 *
 * @param introData either the introspect data or a file containing the XML encoded introspect data
 * @return introData the method received as argument
@@ -1733,7 +1701,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 ::method proxy.parseIntrospectData      -- parse introspect data, memorize introspectData and introspectFileName, if any
   expose proxy.introspectData proxy.introspectFileName
   use strict arg introData
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   .ArgUtil~validateClass("introspectData", introData, .string) -- check for correct type
@@ -1768,7 +1736,7 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
 */
 ::METHOD proxy.dispatch                -- allow sending messages that would be intercepted on the Rexx side (e.g. by .Object)
    parse arg methodName
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
    -- create UNKNOWN format (first argument is unknown method name)
    self~unknown(methodName, arg(2, 'A'))
    if var('RESULT') then return result -- if a return value given, return it
@@ -1782,7 +1750,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 ::method unknown        -- implements sending message calls to remote object
   expose proxy.busname proxy.connection proxy.objectPath proxy.methods
   use arg msgName, msgArgs
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
   interface=""
@@ -1880,7 +1848,7 @@ syntax: raise propagate   -- raise condition in caller
 
 ::method init
   expose listenerObject interface signalName
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg listenerObject, interface=.nil, signalName=.nil
 
 ::attribute listenerObject
@@ -1897,7 +1865,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 /** Base class for allowing an ooRexx class to be used for implementing a DBus service.
 *
 */
-::class "DbusServiceObject" mixinclass object  public
+::class "DBusServiceObject" mixinclass object  public
 
 /** Constructor method to initialize attributes and to process the optionally supplied introspection data that defines the services available to DBus clients.
 *
@@ -1906,7 +1874,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 */
 ::method init                 -- intorData, service.connection, service.objectPath; introData may be supplied later, using the respective methods
   expose  service.connections service.introspectRootNode service.methods
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg introData=.nil
 
   service.methods=.nil
@@ -1933,7 +1901,7 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
 */
 ::method service.parseIntrospectData      -- parse introspect data, memorize introspectData and introspectFileName, if any
   expose service.introspectData service.introspectFileName
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg introData
 
   signal on syntax
@@ -1957,7 +1925,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 
 /*
 say self"::service.parseIntrospectData:"
-call idbus.dumpIDbus self~service.introspectRootNode
+call idbus.dumpIDBus self~service.introspectRootNode
 */
   return introData
 
@@ -1971,7 +1939,7 @@ syntax:  -- make sure a parse tree is available, as caller may intercept conditi
 */
 ::method    Introspect              -- return introspection data to client
   expose    service.introspectData
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   return dbus.box("s", service.introspectData)
 
 ::attribute service.connections              /* object's connection to use  */
@@ -1985,7 +1953,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 */
 ::attribute service.introspectRootNode set   /* make introspection parse tree available */
   expose service.methods service.introspectRootNode
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use arg service.introspectRootNode
      -- create directory with those names that we should proxy for the proxy object
   service.methods=IDBus.getMethodsForProxy(service.introspectRootNode)
@@ -1995,7 +1963,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 
 ::attribute service.replySignature get       /* returns the reply signature for the given member or .nil */
   expose service.methods service.objectPath
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use arg member, interface=""
 
   if service.methods<>.nil then
@@ -2011,7 +1979,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
   return .nil           -- no signature/member found
 
 
-/** Utility method to make issuing a signal easy through all the connections that we currently serve. If the service object has introspection methods
+/** Utility method to make issuing a signal easy through all the connections that are currently served. If the service object has introspection methods
 *   defined and cached, then this definition is looked up to determine the signal's interface and signature.
 *
 * @param objectPath optional, DBus object path of sender, defaults to <code>.nil</code>
@@ -2024,7 +1992,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 ::method service.sendSignal   -- utility method to ease emitting signals from the service object;
                               -- will emit the signal to all connections this service object is registered with
   expose service.methods service.connections
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg objectPath=.nil, interface="", member, ...
 
   signature=""                            -- default to no arguments
@@ -2102,7 +2070,7 @@ syntax:raise propagate
 */
 ::method unknown
   expose service.methods
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use arg msgName, msgArgs
 -- call dump2 msgArgs, pp2(self)"::UNKNOWN" pp(msgName)
 
@@ -2219,7 +2187,7 @@ syntax_set:       -- a syntax error occurred (due to wrong number of arguments?)
 
 /* ============================================================================================= */
 /* ------------------------------------------------------------------------------------- */
-/*  DbusDataType( value [,typeName])
+/*  DBusDataType( value [,typeName])
     typeNames: B[usName], I[nterfaceName], M[emberName], O[bjectPath], S[ignature]
 
     modelled after Rexx' DataType(...)
@@ -2249,7 +2217,7 @@ syntax_set:       -- a syntax error occurred (due to wrong number of arguments?)
 */
 ::routine DBusDataType public    -- check or determine whether dbus datatype
   parse arg value, type .
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   signal on syntax
 
@@ -2533,7 +2501,7 @@ check_signature: procedure      -- according to <dbus-specification.html>
   end
 
    -- so far, so good, signature looks good, now let us validate the signature through dbus:
-  return DbusValidate(value,"s")
+  return DBusValidate(value,"s")
 
 
 syntax:
@@ -2546,10 +2514,10 @@ syntax:
 -- ; connection to clients using .DBus
 
 /* ------------------------------ class definition ------------------------------ */
-/** This class is a private ooRexx DBus server implementation which makes it easy to use ooRexx
-*   to create a private DBus server, serving any clients via DBus, independent of their location
-*   (usually communicating via Internet) and operating system (provided the DBus infrastructure
-*   is available on the client's computer).
+/** This class implements the functionality of a private ooRexx DBus server which makes
+*   it easy to use ooRexx to create private DBus servers, serving any clients via DBus,
+*   independent of their location (usually communicating via the Internet) and
+*   operating system (provided the DBus infrastructure is available on the client's computer).
 */
 ::class "DBusServer"   public
 /** Constructor method that initializes attributes. Note, the native code will set the values of
@@ -2566,7 +2534,7 @@ syntax:
 ::method init
   expose cself address allowAnonymous defaultService defaultListener connections  -
          watchLoopActive watchlist timeoutLoopActive watchConnections
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   use strict arg address, defaultService=.nil, defaultListener=.nil, allowAnonymous=.false
 
@@ -2597,7 +2565,7 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
 */
 ::attribute connections get            -- list of established connections
   expose connections
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   return connections~copy              -- return a copy of the current connections
 
 /** Getter definition for the attribute <code>watchLoopActive</code>.
@@ -2613,7 +2581,7 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
 */
 ::method newConnection     -- new connection to this server received (from callback in native code)
   expose defaultService defaultListener connections watchConnections
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg conn
 
   conn~startMessageLoop    -- start message loop for this new connection
@@ -2648,39 +2616,39 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
 *   will close the connection and remove it from the <code>connections</code> attribute that maintains
 *   all served connections.
 *
-*   @param the connection through which the client connected to this private DBus server
+*   @param connection through which the client is connected to this private DBus server
 */
 ::method disconnect                    -- invoked from native code (not reliably invoked all the time as of 1.6.4 on Ubuntu)
   expose connections
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg conn
 
   conn~close                           -- make sure we cannot use it anymore (it wouldn't work)
   res=connections~removeItem(conn)     -- remove the disconnected connection from the client
 
 
-::method nativeServerWatchLoop   private external "LIBRARY dbusoorexx DbusServerWatchLoop"
-::method nativeServerStartup     private external "LIBRARY dbusoorexx DbusNativeServerStartup"
+::method nativeServerWatchLoop   private external "LIBRARY dbusoorexx DBusServerWatchLoop"
+::method nativeServerStartup     private external "LIBRARY dbusoorexx DBusNativeServerStartup"
 
 
-/** This method will startup the private server and start the server's watch loop.
+/** This method starts up the private server and the server's watch loop thread.
 *
 *  @conditition if server was already started a syntax 93.900 condition will be raised
 */
 ::method startup                 unguarded  -- startup server
   expose allowAnonymous cself address
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   if cself<>.nil then
      raise syntax 93.900 array (self": server was already started")
 
-if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "about to: self~nativeServerStartup"
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "about to: self~nativeServerStartup"
   self~nativeServerStartup(address) -- create server listening on given address
 
   reply                             -- create a new thread
-if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "BEFORE: self~nativeServerWatchLoop"
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "BEFORE: self~nativeServerWatchLoop"
   self~nativeServerWatchLoop   -- start the server message loop on the new thread
-if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "AFTER : self~nativeServerWatchLoop"
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "AFTER : self~nativeServerWatchLoop"
 
 
 -- as of DBus 1.4.14, the private server does not receive a "Disconnected" signal, hence testing the connections constantly
@@ -2692,7 +2660,7 @@ if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusG
 */
 ::method watchConnections  unguarded   -- check whether client connections are available, if not disconnect the stalled connecition
   expose connections watchConnections
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   use strict arg sleepTime=.1 -- check every 1/10 second
 
   if arg()=0, .dbus.Dir~bDebugServer=.true then  -- if no args and in server debug mode, enlarge sleepTime to not have too much debug output
@@ -2701,58 +2669,57 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
   guard on
   watchConnections=.true      -- indicate that the watch Connections thread is started
   guard off
-if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "before reply"
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "before reply"
   reply
 
-if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "after reply, BEFORE: entering the loop"
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "after reply, BEFORE: entering the loop"
 
   signal on halt
   do forever while connections~items>0 -- as long as client connections, probe them
-if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "about to sleep" pp(sleepTime) "secs ..."
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "about to sleep" pp(sleepTime) "secs ..."
 
      call sysSleep sleepTime  -- sleep
 
-if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "awoke, connections~items="pp(connections~items)
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "awoke, connections~items="pp(connections~items)
      guard on
      arr=connections~copy     -- get a copy of all connections
      guard off
      do conn over arr         -- iterate over all client connections and probe them
-if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "conn~query('open': --> before, conn="pp(conn) conn~query('open')
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "conn~query('open': --> before, conn="pp(conn) conn~query('open')
         if conn~query("open")=.false then
         do
-if .dbus.dir~bDebugServer=.true then say "!!!" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "conn~query('open': --> DISCONNECTING conn="pp(conn)
+if .dbus.dir~bDebugServer=.true then say "!!!" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "conn~query('open': --> DISCONNECTING conn="pp(conn)
            self~disconnect(conn)             -- disconnect will remove closed conn from connections !
         end
      end
   end
-if .dbus.dir~bDebugServer=.true then say "\\\" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "about to GUARD ON, to prepare to leave ..."
+if .dbus.dir~bDebugServer=.true then say "\\\" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "about to GUARD ON, to prepare to leave ..."
   guard on
   watchConnections=.false
   guard off
 
-if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "AFTER, about to return from method"
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "AFTER, about to return from method"
   return
 
 halt:       -- a HALT condition, make sure all known connections get closed
   guard off -- make sure guard is off
-if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DbusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "HALT signal: closing all connections..."
+if .dbus.dir~bDebugServer=.true then say "///" pp(.dateTime~new)", tid="pp(DBusGetTID()) "->" pp(self)":" pp(.context~executable) pp(.context~name) "line:" pp(.line) "HALT signal: closing all connections..."
   do conn over connections
      conn~close
   end
   return
 
 
-::method nativeStartServerTimeoutLoop   private external "LIBRARY dbusoorexx DbusServerTimeoutLoop"
+::method nativeStartServerTimeoutLoop   private external "LIBRARY dbusoorexx DBusServerTimeoutLoop"
 
 /** Do not use! Meant to be used from native code, if a timer callback is set or removed.
 *
 * @param &quotSTArt&quot; or &quot;STOp&quot
-* @param timeoutDataPointer if first argument has the value &quotSTArt&quot;  an
-*        opaque value from the native code (a Pointer)
+* @param timeoutDataPointer if first argument has the value &quotSTArt&quot; an opaque value from the native code (a Pointer)
 */
 ::method timerLoop         unguarded         -- "START" or "STOP"
   expose timeoutLoopActive
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "line:" pp(.line)
   parse upper arg action +3
 
   if action="STO" then
@@ -2771,20 +2738,20 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
   use strict arg action, timeoutDataPointer
   reply                                -- create a new thread
 
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "after REPLY"
+if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "after REPLY"
   self~nativeStartServerTimeoutLoop(timeoutDataPointer)  -- start the timeout loop, pass (*data) via Rexx to native function
 
 
 
 
-::method nativeServerShutdown       private external "LIBRARY dbusoorexx DbusNativeServerDisconnect"
+::method nativeServerShutdown       private external "LIBRARY dbusoorexx DBusNativeServerDisconnect"
 
 /** This method shuts down the private server by stopping the watch loop, shutting down the server and
-*   disconnecting its clients and .
+*   disconnecting its clients.
 */
 ::method shutdown                   unguarded   -- shutdown server
   expose connections cself watchLoopActive
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   if cself=.nil then
      raise syntax 93.900 array (self": shutdown not possible, as server was not started")
@@ -2802,19 +2769,19 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
 
 
 
-::method nativeServerID             private external "LIBRARY dbusoorexx DbusNativeServerGetId"
+::method nativeServerID             private external "LIBRARY dbusoorexx DBusNativeServerGetId"
 /** Returns this private server's ID from native code.
 *
 *   @return the server's ID
 */
 ::method serverID
   expose cself
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if cself=.nil then return .nil
   return self~nativeServerID
 
 
-::method nativeActive               private external "LIBRARY dbusoorexx DbusNativeServerIsActive"
+::method nativeActive               private external "LIBRARY dbusoorexx DBusNativeServerIsActive"
 
 /** Tests whether this server is still active (connected).
 *
@@ -2822,19 +2789,19 @@ if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(s
 */
 ::method active
   expose cself
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if cself=.nil then return .false
   return self~nativeActive
 
    -- for debugging:
-::method nativeServerAddress        private external "LIBRARY dbusoorexx DbusNativeServerGetAddress"
+::method nativeServerAddress        private external "LIBRARY dbusoorexx DBusNativeServerGetAddress"
 /** Returns this private server's address from native code.
 *
 *   @return the address this server is servicing
 */
 ::method serverAddress
   expose cself
-if .dbus.dir~bDebugServer=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
   if cself=.nil then return .nil
   return self~nativeServerAddress
 
@@ -3151,11 +3118,11 @@ workCount: procedure                -- return .true if type was found, .false el
 ::class "IDBusNode"           public subclass IDBus
 
 /* ------------------------------ class definition ------------------------------ */
-/** This class represents a DBUs interface node. */
+/** This class represents a DBus interface node. */
 ::class "IDBusInterface"      public subclass IDBus
 
 /* ------------------------------ class definition ------------------------------ */
-/** This class represents a DBUs method node and defines method related attributes and methods. */
+/** This class represents a DBus method node and defines method related attributes and methods. */
 ::class "IDBusMethod"         public subclass IDBus
 ::attribute argSignature
 ::attribute replySignature
@@ -3173,7 +3140,7 @@ workCount: procedure                -- return .true if type was found, .false el
 
 /** Worker method that creates the argument's and reply signatures from its <code>IDBusArg</code> subnodes if any.
 */
-::method createSignatures  -- create signatures from IDbusArg definitions
+::method createSignatures  -- create signatures from IDBusArg definitions
   expose argSignature replySignature
 
   do c over self~content
@@ -3395,7 +3362,7 @@ workCount: procedure                -- return .true if type was found, .false el
               tmpStr=""
               if kind<>.nil then
               do a over m~content   -- iterate over
-                 if a~isA(.IDbusArg) & a~direction="in" then
+                 if a~isA(.IDBusArg) & a~direction="in" then
                  do
                     if tmpStr<>"" then tmpStr=tmpStr", "
 
@@ -3444,10 +3411,8 @@ workCount: procedure                -- return .true if type was found, .false el
    to the <code>.IDBus</code> class (<code>rootNode=.IDBus~newIntrospection(introspectData</code>) and assign the
    resulting rootNode to the <code>DBusProxyObject</code> (<code>proxObject~proxy.introspectRootNode(rootNode)</code>).
    <br/>
-
    This is a simple implementation ignoring the names of arguments and dealing with
    DBus signatures only.
-   <br/>
 
    @see cf. <http://standards.freedesktop.org/dbus/1.0/introspect.dtd>
 */
@@ -3571,7 +3536,7 @@ workCount: procedure                -- return .true if type was found, .false el
 
 
 /* ============================================================================================= */
-/** Utiltiy class to ease debugging introspection data.
+/** Utility class to ease debugging introspection data.
 *
 * @see <code>IntrospectionHelper</code>
 */
@@ -3675,7 +3640,7 @@ syntax: raise propagate    -- raise error in caller
   return m~string
 
 
-/** Worker method that fills in the string renderings of the introspectin definitions.
+/** Worker method that fills in the string renderings of the introspection definitions.
 *
 * @param m the mutable buffer object to add string renderings to
 * @param o an introspection object to be rendered as a string
@@ -3809,7 +3774,7 @@ parseParen: procedure
 *   The connection will get a <code>serviceObject</code> by the special name <code>&quot;default&quot;</code>
 *   added, which replaces any other previously defined <code>IDBusPathMaker</code> object.
 *
-* @conn the DBus connection which gets the object path fragments/segments added, such that DBus clients
+* @param conn the DBus connection which gets the object path fragments/segments added, such that DBus clients
 *       become able to find all object paths that get serviced by this connection
 *
 * @return the number of objects that get serviced via their object paths
@@ -3928,7 +3893,7 @@ parseObjPath: procedure expose paths   -- create paths and save in relation
 ::method init
   expose queuedMessages
   queuedMessages=.queue~new
-  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "WORKER"
+  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "WORKER"
   forward class (super)
 
 
@@ -3939,7 +3904,7 @@ parseObjPath: procedure expose paths   -- create paths and save in relation
 ::method executeQueuedMessages
   expose queuedMessages
 -- Uncommented as this method gets constantly invoked by the native message loop yielding too many debug outputs
---  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "queuedMessages:" pp(queuedMessages~items)
+--  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "queuedMessages:" pp(queuedMessages~items)
 
   signal on any   -- trap any error condition to allow us to re-raise any of the trappable conditions in the blocked thread later
 
@@ -3957,7 +3922,7 @@ parseObjPath: procedure expose paths   -- create paths and save in relation
 any:
 -- say "... executeQueuedMessages, ANY condition:" condition("C")
   workerMessage~hasError=.true         -- indicate an error, unblock waitForDone
-if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "queuedMessages:" pp(queuedMessages~items) "SIGNAL ANY received, flagging workerMessage as error in execution..."
+if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "queuedMessages:" pp(queuedMessages~items) "SIGNAL ANY received, flagging workerMessage as error in execution..."
 
 
 /** This method aborts all queued messages, setting the attribute <code>isAborted</code>
@@ -3965,7 +3930,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 */
 ::method abortQueuedMessages
   expose queuedMessages
-  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   do while queuedMessages~items>0
      workerMessage=queuedMessages~pull    -- pull workerMessage object
@@ -3999,7 +3964,7 @@ if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) p
 ::method postMessage unguarded
   expose queuedMessages
   use strict arg message
-  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
+  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line)
 
   .ArgUtil~validateClass("message", message, .Message)  -- check for correct type
   workMsg=.WorkerMessage~new(message)
@@ -4093,7 +4058,7 @@ any:
 ::method init
   expose cancel hasResult isAborted isDone message hasError
   use strict arg message
-  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "WORKERMESSAGE"
+  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "WORKERMESSAGE"
   .ArgUtil~validateClass("message", message, .Message) -- check for correct type
   cancel=.false            -- allow to cancel sending/processing message
   isAborted=.false         -- message was aborted
@@ -4132,10 +4097,10 @@ any:
 */
 ::method waitForDone unguarded
   expose cancel isAborted isDone hasError message
-  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "before blocking" pp(self~identityHash)
+  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "before blocking" pp(self~identityHash)
 
   guard on when isDone=.true | cancel=.true | isAborted=.true | hasError=.true
-  if .dbus.dir~bDebug=.true then say pp(DbusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "after blocking " pp(self~identityHash)
+  if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) pp(.context~executable) pp(.context~name) "line:" pp(.line) "after blocking " pp(self~identityHash)
 
   signal on syntax
   if isAborted=.true then
@@ -4145,7 +4110,10 @@ syntax:
   raise propagate
 
 
-/* Poor man's pretty pring, used in many code snippets. */
+/** Poor man's pretty pring, used in many code snippets.
+*   @param o object
+*   @param returns  <code>o</code>'s string value enclosed in square brackets without interleaving blanks
+*/
 ::routine pp public
-  parse arg a
-  return "["a"]"
+  parse arg o
+  return "["o"]"
