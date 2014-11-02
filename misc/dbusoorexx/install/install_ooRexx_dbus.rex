@@ -4,8 +4,8 @@
    Purpose: link the necessary files to their target locations, such that liboorexx.dbus is operational
    Author:  Rony G. Flatscher (c) 2011
    Date:    2011-07-19, 2011-12-01
-   Version: 1.0
-   Changed: --
+   Version: 1.1
+   Changed: 2014-10-28, rgf: cater for new directory "installation"
 
    Usage:   rexx install_ooRexx_dbus.rex [-u]
             ... no switch   -> install
@@ -14,7 +14,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2011 Rony G. Flatscher
+       Copyright (C) 2011-2014 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -61,6 +61,8 @@ end
 cmd.eDelete="rm -fv"
 cmd.eCopy="cp -pfv"            /* force, verbose: source target(dir) [works on FAT32/NTFS systems from Linux as well] */
 cmd.eLink="ln -fsv"            /* force, verbose: source target(dir); (source link-to-target) */
+cmd.eSourceInstallDir="."
+cmd.eSourceBinDir=".."
 
    -- defining dirs to work for ldconfig
 cmd.eLdConfig="ldconfig -n /usr/lib"
@@ -75,7 +77,7 @@ width=34
          -- link Rexx package
 if switch="" then    -- install
 do
-   fn="dbus.cls"
+   fn=cmd.eSourceBinDir"/dbus.cls"
    tgt="/usr/bin"
    cmd=cmd.eCopy fn tgt
    say "copying DBUS Rexx package:"~left(width) cmd
@@ -93,9 +95,9 @@ tgtLibName="libdbusoorexx.so"
 if switch="" then    --install
 do
    if cmd.eBitness=32 then
-      cmd=cmd.eCopy "libdbusoorexx32.so" cmd.eTgtLib32"/"tgtLibName
+      cmd=cmd.eCopy cmd.eSourceInstallDir"/libdbusoorexx32.so" cmd.eTgtLib32"/"tgtLibName
    else if cmd.eBitness=64 then
-      cmd=cmd.eCopy "libdbusoorexx64.so" cmd.eTgtLib64"/"tgtLibName
+      cmd=cmd.eCopy cmd.eSourceInstallDir"/libdbusoorexx64.so" cmd.eTgtLib64"/"tgtLibName
 
    say "copying DBUS Rexx shared library:"~left(width) cmd
 end

@@ -3,13 +3,15 @@
       author:     Rony G. Flatscher (c)
       date:       2011-07-29/31, 2011-08-01/05, 2011-08-14
       changed:    2014-08-07, rgf - make sure that connection gets closed, otherwise message loop thread lingers
-      version:    1.1
+                  2014-11-02, rgf - made debug output parametrized, added option to open generated html fiel
+      version:    1.2
       name:       dbusdoc.rex
-      purpose:    documents given bus name in HTML form to allow the creation of API listings
-      usage:      rexx dbusdoc.rex [session|system] [service.bus.name]
+      purpose:    documents given bus name in HTML form to allow the creation of API listings,
+                  if no argument is given the available session bus names get listed on stdout
+      usage:      rexx dbusdoc.rex [ [session|system] [service.bus.name] [-a|r] [/open] ]
       license:    AL 2.0
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011 Rony G. Flatscher
+               Copyright 2011-2014 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -25,7 +27,25 @@
             -----------------------------------------------------------------------------
 */
 
-parse arg connection needle "-"switch .
+.local~dbus.doc.debug   = .true
+
+parse arg val           -- get argument string
+switch=""               -- make sure empty string
+open  =""               -- make sure empty string
+if pos("-",val)>0 then     -- extract "-" switch ?
+do
+   parse var val before "-" switch after
+   val=before after
+end
+
+if pos("/",val)>0 then     -- extract "/" switch?
+do
+   parse var val before "/" open after
+   val=before after
+end
+
+-- parse arg connection needle . 1 "-" switch . 1 "/" open .
+parse var val connection needle .
 
 bAllBuses=.false         -- by default do not inspect all buses, but those that have explicit service (bus) names
 bAllReservedBuses=.false -- by default do not process reserved buses only
@@ -34,6 +54,21 @@ do
     sw=switch~left(1)~translate
     bAllBuses=(sw='A')    -- allow for all buses
     bAllReservedBuses=(sw='R')
+end
+
+bOpen=.false             -- by default do not open generated html-file with default app (browser)
+if open<>"" then
+   bOpen=(open~left(1)~upper = 'O')
+
+if .dbus.doc.debug=.true then
+do
+   say "settings in effect:"
+   say "   connection:                " pp(connection)
+   say "   needle:                    " pp(needle)
+   say "   process all buses:         " pp(bAllBuses)
+   say "   process all reserved buses:" pp(bAllReservedBuses)
+   say "   open generated html-file:  " pp(bOpen)
+   say
 end
 
 if needle="" then
@@ -48,10 +83,15 @@ do
        if connection<>"" then
           conn=.dbus~connect(connection)
        else
+       do
+          connection="session"
           conn=.dbus~session     -- default to "session" connection
+       end
 
        o=conn~getObject(.dbus.dir~ServiceDBus, .dbus.dir~PathDBus) -- get the DBus object
        allBusNames=.set~new ~union(o~listNames) ~union(o~listActivatableNames) -- get all bus names on this connection
+
+       say pp(connection)"-connection, the following bus names are currently available:"
 
        do busName over allBusNames~allIndexes~sort
           if bAllReservedBuses=.true then       -- skip all non reserved bus names
@@ -71,7 +111,7 @@ do
 
           say "   " busName
        end
-       say allBusNames~items "available bus names at the moment."
+       say pp(connection)"-connection:" pp(allBusNames~items) "bus name(s) currently available."
        say
 
        conn~close
@@ -145,13 +185,27 @@ call stream newFileName, "C", "close"
 call dumpStatistics conn
 conn~close
 
+if bOpen=.true then                 -- if "/o[pen]" given then open generated html-file with default pp
+do
+say "Openen ljl fjdl fjlds j!"
+      -- open generated HTML file
+   parse upper source s +1
+   say "attempt to open" pp(newFileName) "in browser..."
+   select
+      when s="W" then newFileName            -- Windows
+      when s="M" then "open" newFileName     -- MacOSX
+      otherwise
+         "xdg-open" newFileName              -- freedesktop.org-utility (e.g. Linux)
+   end
+end
+
 exit
 
 usage:
 
    parse source . . fullName
    thisName=filespec("name",fullName)
-   say "usage:" thisName "[session|system] [service.bus.name]"
+   say "usage:" thisName "[ [session|system] [service.bus.name] ]"
    say
    say "    ... session|system - optional, defaults to 'session' message bus "
    say "    ... service.bus.name - optional, if omitted lists all known service.bus.names on the message bus"
@@ -169,7 +223,7 @@ syntax:
 
 
 ::requires "dbus.cls"         -- get support for DBus
-::requires "rgf_util2.rex"    -- utility package from BSF4ooRexx
+::requires "rgf_util2.rex"    -- utility package (e.g. from BSF4ooRexx)
 
 
 ::class analyzedService
@@ -422,7 +476,7 @@ stdIntroData: procedure    -- create and return a canonized version of the Intro
         m~~append(crlf)~~append(crlf)
 
          -- create the object path headers
-say "servicename:" pp2(servicename)
+say tab1 "servicename:" pp2(servicename)
         call createObjectPathDocs m, o
 say
      end
@@ -474,11 +528,12 @@ createInterfaceDocs: procedure expose (exposeVars)
 
   dt=.dbus.dir~dataTypes         -- get datatype dir, "r" -> struct, "e" -> dict(entry)
 
-  say "node:" pp2(rootNode~name)
+say tab2 "   node:" pp2(rootNode~name)
   do n over rootNode~content~sort     -- sortWith(comparator)
      if n~isA(.IDBusNode) then
      do
-say "**debug node:" pp2(n~name) -- "content~items:" pp2(n~content~items)
+if .dbus.doc.debug=.true then say tab4 "**debug node:" pp2(n~name) -- "content~items:" pp2(n~content~items)
+
         if n~contains("interfaces")=.false then -- a fragment node attached to introspect data?
            iterate
 
@@ -495,7 +550,7 @@ say "**debug node:" pp2(n~name) -- "content~items:" pp2(n~content~items)
            m~~append(tab4) ~~append('<table class="interface">')~~append(crlf)
            bEven=.false
 
-say "   *** debug interface:" pp2(i~name)
+if .dbus.doc.debug=.true then say tab4 "*** debug interface:" pp2(i~name)
 
            oldType=""
            nr=0
@@ -819,5 +874,4 @@ findMatchingEnd: procedure       -- returns pos of matching end parenthesis; sta
   say "started: " pp2(started)
   say "now:     " pp2(now)
   say "duration:" pp2(now-started)
-
 
