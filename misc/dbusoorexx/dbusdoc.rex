@@ -27,7 +27,7 @@
             -----------------------------------------------------------------------------
 */
 
-.local~dbus.doc.debug   = .true
+.local~dbus.doc.debug   = .false
 
 parse arg val           -- get argument string
 switch=""               -- make sure empty string
@@ -187,7 +187,6 @@ conn~close
 
 if bOpen=.true then                 -- if "/o[pen]" given then open generated html-file with default pp
 do
-say "Openen ljl fjdl fjlds j!"
       -- open generated HTML file
    parse upper source s +1
    say "attempt to open" pp(newFileName) "in browser..."
