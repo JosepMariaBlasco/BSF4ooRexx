@@ -264,8 +264,6 @@ call dynamicRequiresBSF4ooRexx   -- requires BSF.CLS
 
 ::requires "dbusoorexx" LIBRARY  -- get access to the native routines and methods
 
-::requires "rgf_util2.rex"    -- utility package, e.g. installed with BSF4ooRexx
-
 /** This routine requires dynamically the ooRexx package <code>BSF.CLS</code> and
 *   in the case it is not available allows to continue gracefully.
 */

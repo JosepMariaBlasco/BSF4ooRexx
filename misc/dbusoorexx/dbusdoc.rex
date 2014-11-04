@@ -4,6 +4,7 @@
       date:       2011-07-29/31, 2011-08-01/05, 2011-08-14
       changed:    2014-08-07, rgf - make sure that connection gets closed, otherwise message loop thread lingers
                   2014-11-02, rgf - made debug output parametrized, added option to open generated html fiel
+                  2014-11-04, rgf - removed dependency on "rgf_util2.rex"
       version:    1.2
       name:       dbusdoc.rex
       purpose:    documents given bus name in HTML form to allow the creation of API listings,
@@ -26,6 +27,7 @@
                limitations under the License.
             -----------------------------------------------------------------------------
 */
+
 
 .local~dbus.doc.debug   = .false
 
@@ -177,7 +179,7 @@ call htmlEpilog m
 
 
 newFileName=conn~busType"_"needle"_".DateTime~new~string~translate("_-",":.")".html"
-say "creating HTML output, writing to" pp2(newFileName) "..."
+say "creating HTML output, writing to" pp(newFileName) "..."
 call stream newFileName, "C", "open replace"
 call charout newFileName, m~string
 call stream newFileName, "C", "close"
@@ -215,14 +217,14 @@ usage:
 
 syntax:
   co=condition('o')
-  say ppCondition2(co)        -- "pretty prints" the condition object's information
+  say ppCondition(co)        -- "pretty prints" the condition object's information
   say
   conn~close
   raise propagate
 
 
 ::requires "dbus.cls"         -- get support for DBus
-::requires "rgf_util2.rex"    -- utility package (e.g. from BSF4ooRexx)
+-- ::requires "rgf_util2.rex"    -- utility package (e.g. from BSF4ooRexx)
 
 
 ::class analyzedService
@@ -251,7 +253,7 @@ syntax:
   if objectPathList~items=0, pos(":",busname)=0 then  -- no object paths found and not a system bus name
   do
       testObjPath="/" || busname~changeStr('.','/')   -- create object path from busname
-      say self":getObjectPathList: no object path(s) found, testing busname-derived object path" pp2(testObjPath)
+      say self":getObjectPathList: no object path(s) found, testing busname-derived object path" pp(testObjPath)
       self~getAllObjectPaths(testObjPath)
   end
 
@@ -402,7 +404,7 @@ stdIntroData: procedure    -- create and return a canonized version of the Intro
   tab3=tab1~copies(3)
 
   -- m~~append('<h1>Overview of Analyzed Service/Bus Name(s)</h1>') ~~append(crlf)
-  m~~append('<h1>Overview of Analyzed Service/Bus Name(s) on the ')~~append(pp2(conn~busType))~~append('-Bus </h1>') ~~append(crlf)
+  m~~append('<h1>Overview of Analyzed Service/Bus Name(s) on the ')~~append(pp(conn~busType))~~append('-Bus </h1>') ~~append(crlf)
 
   m~~append('<ol class="jumplist">')~~append(crlf)
 
@@ -450,7 +452,7 @@ stdIntroData: procedure    -- create and return a canonized version of the Intro
   exposeVars='crlf tab1 tab2 tab3 tab4 tab5 tab6 tab7 comparator complexSignatures exposeVars'   -- list of variables to be exposed to procedures
 
   -- m~~append('<h1>Details of Analyzed Service/Bus Name(s)</h1>') ~~append(crlf)
-  m~~append('<h1>Details of Analyzed Service/Bus Name(s) on the ')~~append(pp2(conn~busType))~~append('-Bus </h1>') ~~append(crlf)
+  m~~append('<h1>Details of Analyzed Service/Bus Name(s) on the ')~~append(pp(conn~busType))~~append('-Bus </h1>') ~~append(crlf)
 
 
   m~~append('<ol class="servicename">')~~append(crlf)
@@ -459,23 +461,23 @@ stdIntroData: procedure    -- create and return a canonized version of the Intro
 
       -- create the service name header
      m~~append(tab1)
-     m~~append('<li class="servicename">') ~~append("Bus Type: ") ~~append('<em class="bustype">')~~append(pp2(conn~busType)) ~~append("</em>")
+     m~~append('<li class="servicename">') ~~append("Bus Type: ") ~~append('<em class="bustype">')~~append(pp(conn~busType)) ~~append("</em>")
      m~~append(", Service (Bus) Name: ")
      if o~objectPathDefs~items = 0 then
      do
-        m~~append('<em class="servicename">')~~append(pp2(serviceName)) ~~append("</em>")
+        m~~append('<em class="servicename">')~~append(pp(serviceName)) ~~append("</em>")
         m~~append("<br/> (no interface definitions found)")
      end
      else
      do
         -- define anchor name
         m~~append('<a name="') ~~append(.hrefmgr~getId(serviceName,'serviceName')) ~~append('">')
-        m~~append('<em class="servicename">')~~append(pp2(serviceName))
+        m~~append('<em class="servicename">')~~append(pp(serviceName))
         m~~append('</a>') ~~append("</em><br/>")
         m~~append(crlf)~~append(crlf)
 
          -- create the object path headers
-say tab1 "servicename:" pp2(servicename)
+say tab1 "servicename:" pp(servicename)
         call createObjectPathDocs m, o
 say
      end
@@ -509,7 +511,7 @@ createObjectPathDocs: procedure expose (exposeVars)  -- create a list of object 
 
       -- list all object paths that share the identical (canonized) introspect data (they returned the same introspect data upon "Introspect()")
       do tmpPath over rel~allAt(introData)~sortWith(comparator)
-         m~~append(tab3)~~append('<li>') ~~append(pp2(tmpPath)) ~~append('</li>') ~~append(crlf)
+         m~~append(tab3)~~append('<li>') ~~append(pp(tmpPath)) ~~append('</li>') ~~append(crlf)
          allPaths~remove(tmpPath)      -- remove object path from set
       end
       m~~append(tab2)~~append('</ul><br/>') ~~append(crlf)
@@ -527,16 +529,16 @@ createInterfaceDocs: procedure expose (exposeVars)
 
   dt=.dbus.dir~dataTypes         -- get datatype dir, "r" -> struct, "e" -> dict(entry)
 
-say tab2 "   node:" pp2(rootNode~name)
+say tab2 "   node:" pp(rootNode~name)
   do n over rootNode~content~sort     -- sortWith(comparator)
      if n~isA(.IDBusNode) then
      do
-if .dbus.doc.debug=.true then say tab4 "**debug node:" pp2(n~name) -- "content~items:" pp2(n~content~items)
+if .dbus.doc.debug=.true then say tab4 "**debug node:" pp(n~name) -- "content~items:" pp(n~content~items)
 
         if n~contains("interfaces")=.false then -- a fragment node attached to introspect data?
            iterate
 
-        m~~append(tab2) ~~append("Node name: ")~~append('<em class="node">')~~append(pp2(n~name)) ~~append("</em><br/>") ~~append(crlf)
+        m~~append(tab2) ~~append("Node name: ")~~append('<em class="node">')~~append(pp(n~name)) ~~append("</em><br/>") ~~append(crlf)
         m~~append(tab2) ~~append('<ul class="node">') ~~append(crlf)
      end
 
@@ -544,12 +546,12 @@ if .dbus.doc.debug=.true then say tab4 "**debug node:" pp2(n~name) -- "content~i
         if i~isA(.IDBusInterface) then
         do
            m~~append(tab3) ~~append('<br/><li>') ~~append('Interface: ') ~~append('<em class="interface">')
-           m~~append(pp2(i~name))~~append('</em>')  ~~append(crlf)
+           m~~append(pp(i~name))~~append('</em>')  ~~append(crlf)
 
            m~~append(tab4) ~~append('<table class="interface">')~~append(crlf)
            bEven=.false
 
-if .dbus.doc.debug=.true then say tab4 "*** debug interface:" pp2(i~name)
+if .dbus.doc.debug=.true then say tab4 "*** debug interface:" pp(i~name)
 
            oldType=""
            nr=0
@@ -614,7 +616,7 @@ if .dbus.doc.debug=.true then say tab4 "*** debug interface:" pp2(i~name)
                  m~~append('</span>') ~~append(crlf)   -- TD # 6 - kind
                  m~~append(tab6)
                  m~~append('<span class="arrow">') ~~append(' &rarr;&nbsp;') ~~append("</span>")
-                 m~~append('<span class="signature">') ~~append(pp2(t)) ~~append("</span>")
+                 m~~append('<span class="signature">') ~~append(pp(t)) ~~append("</span>")
                  m~~append('</td>') ~~append(crlf)   -- TD # 7 - show untranslated argSignature
               end
 
@@ -677,7 +679,7 @@ if .dbus.doc.debug=.true then say tab4 "*** debug interface:" pp2(i~name)
                  if meth~argSignature<>"" then
                  do
                     m~~append(tab6) ~~append('<span class="arrow">') ~~append(' &rarr;&nbsp;') ~~append("</span>")
-                    m~~append('<span class="signature">')~~append(pp2(meth~argSignature))
+                    m~~append('<span class="signature">')~~append(pp(meth~argSignature))
                     m~~append('</span>') -- ~~append(crlf)   -- TD # 4 - name
                  end
                  m~~append(tab6)~~append('</td>') ~~append(crlf)   -- TD # 7 - show untranslated argSignature
@@ -722,15 +724,15 @@ htmlShowDatatypes: procedure expose (exposeVars)
      else
         m~~append(tab1) ~~append('<tr class="odd">') ~~append(crlf)
 
-     m~~append(tab2) ~~append('<td class="argtype">') ~~append(pp2(char)) ~~append('</td>') ~~append(crlf)
-     m~~append(tab2) ~~append('<td class="datatype">') ~~append(" &hellip; ") ~~append(pp2(dt[char])) ~~append('</span></td>') ~~append(crlf)
+     m~~append(tab2) ~~append('<td class="argtype">') ~~append(pp(char)) ~~append('</td>') ~~append(crlf)
+     m~~append(tab2) ~~append('<td class="datatype">') ~~append(" &hellip; ") ~~append(pp(dt[char])) ~~append('</span></td>') ~~append(crlf)
 
      m~~append(tab2) ~~append('<td class="emptycell">&nbsp;</td>') ~~append(crlf)
 
      datatype=sortedItems[i]
      char    =dt~index(datatype)
-     m~~append(tab2) ~~append('<td class="datatype">') ~~append(pp2(datatype)) ~~append('</td>') ~~append(crlf)
-     m~~append(tab2) ~~append('<td class="argtype">') ~~append(" &hellip; ") ~~append(pp2(char)) ~~append('<td>') ~~append(crlf)
+     m~~append(tab2) ~~append('<td class="datatype">') ~~append(pp(datatype)) ~~append('</td>') ~~append(crlf)
+     m~~append(tab2) ~~append('<td class="argtype">') ~~append(" &hellip; ") ~~append(pp(char)) ~~append('<td>') ~~append(crlf)
 
      m~~append(tab1) ~~append('</tr>')~~append(crlf)
      bEven=\bEven    -- toggle
@@ -859,18 +861,172 @@ findMatchingEnd: procedure       -- returns pos of matching end parenthesis; sta
 ::routine dumpStatistics      -- dump connection's statistics
   use arg conn
   statistics=conn~statistics
-  say "conn~collectStatistics:" pp2(conn~collectStatistics)
-  call dump2 statistics, "statistics"
+  say "conn~collectStatistics:" pp(conn~collectStatistics)
+  call dump statistics, "statistics"
   do e over .array~of("lastSentError","lastSentMessage", "lastSentSignal", "lastReceivedError", "lastReceivedMessage", "lastReceivedSignal")
       d=statistics~entry(e)
       if d=.nil then iterate
-      say "   " pp2(e)":"
-      call dump2 d, e"'s slotDir:"
+      say "   " pp(e)":"
+      call dump d, e"'s slotDir:"
   end
 
   started=statistics~started
   now=.dateTime~new
-  say "started: " pp2(started)
-  say "now:     " pp2(now)
-  say "duration:" pp2(now-started)
+  say "started: " pp(started)
+  say "now:     " pp(now)
+  say "duration:" pp(now-started)
+
+
+/* from "rgf_util2.rex", using pp() instead of pp2():
+   create and return a string rendering of the supplied condition object rgf, 2011-06-08
+*/
+::routine ppCondition
+  use strict arg co, bShowPackageInfo=.false, indent1="09"x, lf=.endOfLine
+
+  indent2=indent1~copies(2)
+  indent3=indent1~copies(3)
+
+  maxWidth=0            -- determine length of widest index
+  do idx over co
+     if idx~isA(.string) then maxWidth=max(maxWidth,idx~length)
+  end
+  maxWidth+=2           -- add square brackets
+
+  mb=.MutableBuffer~new
+
+  do idx over co~allindexes~sort
+     entry=co[idx]
+     mb~~append(indent1) ~~append(pp(idx)~left(maxWidth)) ~~append("=") ~~append(pp(entry)) ~~append(lf)
+     if entry~isA(.collection) then
+     do val over entry
+        mb ~~append(indent2) ~~append(pp(val)) ~~append(lf)
+     end
+  end
+
+  return mb~string
+
+
+/* ======================================================================= */
+/* copied from "rgf_util2.rex", removed non-available features, hence simplified version, ---rgf, 20141104
+*/
+::routine dump
+  use arg coll, title=("type: The" coll~class~id "class"), comparator=.nil
+
+  if .nil=comparator, title~isA(.comparator) then
+  do
+     comparator=title
+     title=("type: The" coll~class~id "class")
+  end
+
+
+  if coll~isA(.supplier) then
+  do
+     s=coll
+     len=5  -- define an arbitrary high width
+     say title
+  end
+  else if \coll~isA(.Collection) then   -- make sure we have a Collection else
+  do
+     if arg(2,"E") then    -- title omitted !
+        say title
+
+     say "DUMP(): ---> argument to dump is *NOT* a *COLLECTION/SUPPLIER* ! <--- "
+     say "                       type:" pp(coll~class)
+     say "       default string value:" pp(coll)
+     -- .ArgUtil~validateClass("collection", coll, .Collection) -- must be of type Collection
+     return
+  end
+  else      -- a collection in hand
+  do
+     say title": ("coll~items "items)"
+     len=length(coll~items)
+  end
+
+  say
+  count=0
+
+
+  if coll~isA(.Collection) then
+  do
+     s=makeSortedSupplier(coll, comparator)
+  end
+
+   -- determine maximum length of "pretty printed" index-value
+  maxWidth=0
+  s2=s~copy
+  do while s2~available
+     maxWidth=max(maxWidth,length(s2~index)+2)
+     s2~next
+  end
+
+  count=0
+  do while s~available
+     count=count+1
+     say "   " "#" right(count,len)":" "index="pp(s~index)~left(maxWidth) "-> item="pp(s~item)
+     s~next
+  end
+  say "-"~copies(50)
+  return
+
+
+/* Sort a collection considering its type and return a sorted supplier object. */
+makeSortedSupplier: procedure
+  use arg coll, comparator=.nil
+
+  if coll~isA(.OrderedCollection) then    -- don't sort, just return the supplier
+     return coll~supplier
+
+  if coll~isA(.SetCollection) then        -- use items part, sort it and return it as a supplier
+  do
+     arr=coll~allItems                    -- get array representation
+     call sortArray arr, comparator       -- sort elements
+     return .supplier~new(arr, arr)       -- return supplier with sorted elements
+  end
+
+  if coll~hasMethod('allAt') then         -- handle collections with idx -> coll
+  do
+     arr=.set~new~union(coll~allIndexes)~makeArray -- remove duplicate indexes, if any
+     call sortArray arr, comparator       -- sort elements
+
+     arr2=.array~new
+
+     do i=1 to arr~items                  -- iterate over all indexes
+        tmp=coll~allAt(arr[i])            -- get all items associated with index
+        if tmp~items=1 then
+           arr2[i]=tmp~at(1)              -- save single item to show
+        else
+           arr2[i]=coll~allAt(arr[i])     -- save collection of associated items
+
+     end
+
+     return .supplier~new(arr2, arr)
+  end
+
+   -- o.k. only MapCollection/Collection left, assuming 1:1 mapping between index and item
+  arr=coll~allIndexes                  -- remove duplicate indexes, if any
+  call sortArray arr, comparator       -- sort elements
+
+  arr2=.array~new
+  do i=1 to arr~items                  -- iterate over all indexes
+     arr2[i]=coll[arr[i]]              -- retrieve item part
+  end
+  return .supplier~new(arr2, arr)
+
+
+   -- just sort the passed in array, depending on whether a comparator is needed or not
+sortArray: procedure
+  use arg arr, comparator=.nil
+
+  if comparator<>.nil then
+     arr~sortWith(comparator)
+  else
+  do
+     comparator=.CaselessComparator~new
+     do i=1 to arr~items
+        arr[i]=arr[i]~string
+     end
+     arr~sortWith(.CaselessComparator~new)
+  end
+
+  return
 
