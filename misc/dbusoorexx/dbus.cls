@@ -69,7 +69,7 @@ whether this package outputs debug information or not, depending on the logical 
 
       cf.:        dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
 
-      version:    200.20141020
+      version:    200.20150331
 
       changes:    - 2011-07-20, rgf; DBusProxyObject:
                     - added proxy.dispatch(methodName[,args...])-method to send messages that
@@ -148,12 +148,14 @@ whether this package outputs debug information or not, depending on the logical 
                   - 2014-08-07, rgf: - tidied up the code
                                      - removed dependency on rgf_util2.rex
                   - 2014-08-11 through 20140916, rgf: - add oorexxdoc comments
+                  - 2015-01-11, rgf: - updating ooRexxDoc text
+                  - 2015-04-07, rgf: - update version date (date of D-Bus presentations at the International Rexx Symposium 2015 in Vienna, Austria)
 
 
       license:    Apache License 2.0
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2011-2014 Rony G. Flatscher
+   Copyright 2011-2015 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -184,7 +186,7 @@ whether this package outputs debug information or not, depending on the logical 
 .dbus.dir~bDebug      =.false -- .true -- .false -- .true
 .dbus.dir~bDebugServer=.false -- .true -- .false -- .true
 
-.dbus.dir~version="200.20141020"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
+.dbus.dir~version="200.20150331"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
 
 .dbus.dir~DBUS_SERVICE_DBUS            ="org.freedesktop.DBus"    -- "The bus name used to talk to the bus itself."
 .dbus.dir~DBUS_PATH_DBUS               ="/org/freedesktop/DBus"   -- "The object path used to talk to the bus itself."
@@ -1836,13 +1838,15 @@ syntax: raise propagate   -- raise condition in caller
 /** Class that gets used by the method <code>listener</code> in the class <code>DBus</code> to wrap an ooRexx object that should
 *   get invoked whenever a signal is received.
 *
-* @param listenerObject the ooRexx listener object
-* @param interface optional, if present restricts the listening to signals from this DBus interface
-* @param signalName optional, if present restricts the listening to this signal name
-*
 * @see method <code>listener</code> in the class <code>DBus</code>
 */
 ::class "DBUSSignalListener"
+
+/**
+* @param listenerObject the ooRexx listener object
+* @param interface optional, if present restricts the listening to signals from this DBus interface
+* @param signalName optional, if present restricts the listening to this signal name
+*/
 
 ::method init
   expose listenerObject interface signalName
@@ -1850,7 +1854,9 @@ if .dbus.dir~bDebug=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(self) p
   use strict arg listenerObject, interface=.nil, signalName=.nil
 
 ::attribute listenerObject
+
 ::attribute interface
+
 ::attribute signalName
 
 
@@ -2194,11 +2200,11 @@ syntax_set:       -- a syntax error occurred (due to wrong number of arguments?)
 /** Routine that determines which DBus datatype a value may be (or <code>.nil</code>, if not determinable) or
 *   tests whether a supplied value is of the given DBus datatype.
 *
-*  @param a string value representing a DBus value of type <code>&quot;B[usname]&quot;</code>,
+*  @param value a string value representing a DBus value of type <code>&quot;B[usname]&quot;</code>,
 *         <code>&quot;I[nterface]&quot;</code>, <code>&quot;M[ember]&quot;</code>,
 *         <code>&quot;O[bjectPath]&quot;</code> or <code>&quot;S[ignature]&quot;</code>
 *
-*  @param optional, one of <code>&quot;B[usname]&quot;</code>, <code>&quot;I[nterface]&quot;</code>,
+*  @param type optional, one of <code>&quot;B[usname]&quot;</code>, <code>&quot;I[nterface]&quot;</code>,
 *         <code>&quot;M[ember]&quot;</code>, <code>&quot;O[bjectPath]&quot;</code> or
 *         <code>&quot;S[ignature]&quot;</code>
 *
@@ -2631,7 +2637,7 @@ if .dbus.dir~bDebugServer=.true then say pp(DBusGetTID()) pp(.dateTime~new) pp(s
 
 /** This method starts up the private server and the server's watch loop thread.
 *
-*  @conditition if server was already started a syntax 93.900 condition will be raised
+*  @condition if server was already started a syntax 93.900 condition will be raised
 */
 ::method startup                 unguarded  -- startup server
   expose allowAnonymous cself address
@@ -3168,7 +3174,7 @@ workCount: procedure                -- return .true if type was found, .false el
 *
 * @param name the name of the property
 * @param type the type of the property
-* @property access one or both of <code>&quot;read&quot;</code> and <code>&quot;write&quot;</code>
+* @param access one or both of <code>&quot;read&quot;</code> and <code>&quot;write&quot;</code>
 *
 */
 ::method init              -- constructor
