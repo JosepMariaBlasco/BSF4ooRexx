@@ -7,7 +7,8 @@
 # DBUS_HOME       = e:\programme\dbus
 
 # rgf, 2014-08-07
-DBUS_HOME       = e:\programme\dbus-20140807-64bit
+# DBUS_HOME       = e:\programme\dbus-20140807-64bit
+DBUS_HOME       = e:\programme\dbus-20150418-64bit
 DBUS_INCLUDE    = $(DBUS_HOME)\include
 DBUS_LIB_HOME   = $(DBUS_HOME)\lib
 

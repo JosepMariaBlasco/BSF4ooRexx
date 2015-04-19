@@ -1,3 +1,5 @@
+# usage: make -f linuxMakeFile64 all
+
 # sudo cc -g -Wall `pkg-config --libs --cflags dbus-1` -o dbus-example-02 dbus-example-02.c
 
 # rgf, 20210602 from <http://maemo.org/development/training/maemo_platform_development_content/plain_html/node10/>
@@ -17,7 +19,9 @@ PKG_LDFLAGS := $(shell pkg-config --libs $(pkg_packages))
 #    -g : Add debugging symbols
 # -Wall : Enable most gcc warnings
 # ADD_CFLAGS := -g -Wall
-ADD_CFLAGS := -Wall -DUNIX  -D__cplusplus
+# ADD_CFLAGS := -Wall -DUNIX  -D__cplusplus
+ADD_CFLAGS := -Wall -DUNIX
+
 
 # Combine user supplied, additional, and pkg-config flags
 CFLAGS  := $(PKG_CFLAGS) $(ADD_CFLAGS) $(CFLAGS)
