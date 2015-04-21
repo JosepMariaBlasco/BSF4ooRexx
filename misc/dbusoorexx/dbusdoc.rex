@@ -5,14 +5,26 @@
       changed:    2014-08-07, rgf - make sure that connection gets closed, otherwise message loop thread lingers
                   2014-11-02, rgf - made debug output parametrized, added option to open generated html fiel
                   2014-11-04, rgf - removed dependency on "rgf_util2.rex"
-      version:    1.2
+                  2015-04-21, rgf - adjusting to version 2.00, renamed dbusrexx.css to dbusdoc.css, which is more intuitive
+                                  - added routine makeSureCssFileExists() which copies css file into
+                                    current directory, if not there already
+
+      needs:      ooRexx ("open object Rexx") 4.2.0 or higher, cf. <http://www.ooRexx.org>
+                  ooRexx language bindings for ooRexx, cf. <https://sourceforge.net/projects/bsf4oorexx/files/GA/sandbox/dbusoorexx/>
+                  ---
+                  DBus for MacOSX: e.g. install via <https://www.macports.org/>
+                  DBus for Windows: e.g. <http://wi.wu.ac.at/rgf/rexx/orx22/work/>
+                  ---
+                  DBus home/source: <http://www.freedesktop.org/wiki/Software/dbus/#index5h1>
+
+      version:    103.20150421
       name:       dbusdoc.rex
       purpose:    documents given bus name in HTML form to allow the creation of API listings,
                   if no argument is given the available session bus names get listed on stdout
       usage:      rexx dbusdoc.rex [ [session|system] [service.bus.name] [-a|r] [/open] ]
       license:    AL 2.0
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011-2014 Rony G. Flatscher
+               Copyright 2011-2015 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -30,6 +42,7 @@
 
 
 .local~dbus.doc.debug   = .false
+.local~dbus.doc.css     = "dbusdoc.css"   -- file name of css-file
 
 parse arg val           -- get argument string
 switch=""               -- make sure empty string
@@ -184,6 +197,8 @@ call stream newFileName, "C", "open replace"
 call charout newFileName, m~string
 call stream newFileName, "C", "close"
 
+call makeSureCssFileExists -- make sure css exists in current directory
+
 call dumpStatistics conn
 conn~close
 
@@ -224,7 +239,6 @@ syntax:
 
 
 ::requires "dbus.cls"         -- get support for DBus
--- ::requires "rgf_util2.rex"    -- utility package (e.g. from BSF4ooRexx)
 
 
 ::class analyzedService
@@ -374,7 +388,7 @@ stdIntroData: procedure    -- create and return a canonized version of the Intro
   m~~append('<html>                                                                  ') ~~append(crlf)
   m~~append('<head>                                                                  ') ~~append(crlf)
   m~~append('   <title>D-Bus Interface On-the-Fly Documentation for' esc('"'needle'"') '</title>') ~~append(crlf)
-  m~~append('   <link href="dbusrexx.css" rel="stylesheet" type="text/css"/>'         ) ~~append(crlf)
+  m~~append('   <link href="'.dbus.doc.css'" rel="stylesheet" type="text/css"/>'      ) ~~append(crlf)
   m~~append('</head>                                                                 ') ~~append(crlf)
   m~~append('<body>                                                                  ') ~~append(crlf)
 
@@ -881,7 +895,7 @@ findMatchingEnd: procedure       -- returns pos of matching end parenthesis; sta
    create and return a string rendering of the supplied condition object rgf, 2011-06-08
 */
 ::routine ppCondition
-  use strict arg co, bShowPackageInfo=.false, indent1="09"x, lf=.endOfLine
+  use strict arg co, indent1="09"x, lf=.endOfLine
 
   indent2=indent1~copies(2)
   indent3=indent1~copies(3)
@@ -1029,4 +1043,45 @@ sortArray: procedure
   end
 
   return
+
+
+/* Make sure that the css file is available in current directory, if not, copy it from dbusdoc.rex' directory. */
+::routine makeSureCssFileExists
+  if \sysFileExists(.dbus.doc.css) then   -- does not exist, copy it into current directory!
+  do
+     parse source 1 opsys +1 . . s     -- get path to dbusdoc.rex
+     sourceCSS=get_css(opsys,s)        -- get fully qualified path to css fle
+
+     if sysFileExists(sourceCSS)=0 then      -- source CSS does not exist!
+     do
+        .error~say("error:" pp(sourceCSS) "is not available" )
+        return
+     end
+
+     if sysFileCopy(sourceCSS,.dbus.doc.css)<>0 then  -- copy css file to current directory
+        .error~say("error: could not copy" pp(sourceCSS) "to current directory" )
+  end
+  return
+
+get_css: procedure
+  parse arg opsys, s
+  src=filespec("Location",s) || .dbus.doc.css
+  if sysFileExists(src) then return src   -- already found, return fully qualified path to css file
+
+  src="/opt/".dbus.doc.css          -- default for Unix (Linux, MacOSX)
+  if opsys='W' then  -- in windows look for "%programfiles[(86)]%\dbusoorexx"
+  do
+         -- %ProgramFiles%, %ProgramFiles(x86)%, %ProgramW6432%
+      homedir=value("programfiles",,"environment") -- ok for 32-on-32 or 64-on-64 (ooRexx-on-Windows)
+      parse version ")_" bitness "-bit"
+      if bitness=32 then   -- 32-bit ooRexx: on 32-bit or 64-bit Windows ?
+      do
+         tmp=value("ProgramFiles(x86)",,"environment")   -- 32-bit ooRexx on 64-bit Windows?
+         if tmp<>"" then
+            homedir=tmp
+      end
+      src=homedir || .file~separator || .dbus.doc.css -- build fully qualified css-file-name
+  end
+  if sysFileExists(src) then return src   -- found, return fully qualified path to css file
+  return ""
 
