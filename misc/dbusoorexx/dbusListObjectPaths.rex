@@ -4,12 +4,18 @@
       date:       2011-08-14
       changed:    2014-08-07, rgf, - explicitly close connection, otherwise thread remains lingering
                                    - remove duplicate service names
-      version:    1.1
-      name:       listObjectPaths.rex
-      purpose:    interrogate given bus name for the object paths it publishes and list them
+                  2015-04-21, rgf, - renamed to dbusListObjectPaths.rex, such that the name indicates the dbus connection
+                                   - changed logic to list the object paths of a given service name on the given bus;
+                                     if the service name is omitted, then all service names on the given bus gets listed
+      version:    102.20150421
+      name:       dbusListObjectPaths.rex
+      purpose:    interrogate and list all object paths on the given busname and on the
+                  given service name; if the service name is omitted then all service names
+                  published on the bus will be listed instead
+
       license:    AL 2.0
             ------------------------ Apache Version 2.0 license -------------------------
-               Copyright 2011 Rony G. Flatscher
+               Copyright 2011-2015 Rony G. Flatscher
 
                Licensed under the Apache License, Version 2.0 (the "License");
                you may not use this file except in compliance with the License.
@@ -25,36 +31,44 @@
             -----------------------------------------------------------------------------
 */
 
-parse arg bustype serviceName .  -- command line argument
-if servicename='' then
-do
-   serviceName=busType
-   bustype="session"       -- default to 'session'
-end
+parse source . . fn     -- get fully qualified name to this program
+fname=filespec('n',fn)  -- get name of this program
 
-if wordpos(bustype,"session system")=0, pos(':',bustype)=0 then
+parse arg a
+if a="" | pos("?",a)>0 | a~caselessPos('help',a)>0 then  -- show usage
 do
-   say "Error: bustype" pp2(bustype) "is not 'system', 'session', nor an address, aborting..."
+   say "usage:" fname "session|system|busaddress [serviceName]"
+   say "        ... lists all obejct paths for the given serviceName on the given bus"
+   say "        ... if no serviceName is given, all service names on the given bus get listed"
    exit -1
 end
-conn=.Dbus~connect(bustype)
+
+parse arg busType serviceName .  -- parse command line argument
+
+if wordpos(busType,"session system")=0, pos(':',busType)=0 then
+do
+   say "Error: busType" pp2(busType) "is not 'system', 'session', nor a bus address, aborting..."
+   exit -2
+end
+conn=.Dbus~connect(busType)
 
 if serviceName="" then     -- no service name given, list all known service names
 do
    o=conn~getObject(.dbus.dir~ServiceDBus, .dbus.dir~PathDBus) -- get the DBus object
-   say "available service/bus names:"
+   say "available service names on bus ["||busType"]:"
    allServiceNames=.set~new ~union(o~listNames) ~union(o~listActivatableNames)
    w=allServiceNames~items~length
    i=1
    tab="09"x
    do sn over allServiceNames~allIndexes~sort
-      say "service name #" i~right(w)":"tab || sn
+      say tab"service name #" i~right(w)":"tab || sn
       i+=1
    end
    say
-   say "there are" allServiceNames~items "unique service names (including activatable names) available"
+   say "there are a total of" allServiceNames~items "unique service names (including activatable names) available on the ["||busType"] bus"
    say
-   say "usage:  testGetObjectPaths serviceName"
+   say "usage:" fname busname "serviceName"
+   say "        ... to list all object paths of a particular listed service name"
 end
 else                       -- get an array of published object paths
 do
@@ -66,6 +80,5 @@ do
    end
 end
 conn~close
-
 
 ::requires 'dbus.cls'      -- load DBUS support for ooRexx

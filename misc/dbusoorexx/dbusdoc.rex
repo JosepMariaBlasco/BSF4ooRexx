@@ -1061,12 +1061,20 @@ sortArray: procedure
      if sysFileCopy(sourceCSS,.dbus.doc.css)<>0 then  -- copy css file to current directory
         .error~say("error: could not copy" pp(sourceCSS) "to current directory" )
   end
+if .dbus.doc.debug=.true then say "makeSureCssFileExists(): 1, returning" pp(s)
+
   return
 
 get_css: procedure
   parse arg opsys, s
   src=filespec("Location",s) || .dbus.doc.css
-  if sysFileExists(src) then return src   -- already found, return fully qualified path to css file
+
+
+  if sysFileExists(src) then
+  do
+if .dbus.doc.debug=.true then say "   get_css(): 1, returning existing" pp(src)
+     return src   -- already found, return fully qualified path to css file
+  end
 
   src="/opt/".dbus.doc.css          -- default for Unix (Linux, MacOSX)
   if opsys='W' then  -- in windows look for "%programfiles[(86)]%\dbusoorexx"
@@ -1082,6 +1090,11 @@ get_css: procedure
       end
       src=homedir || .file~separator || .dbus.doc.css -- build fully qualified css-file-name
   end
-  if sysFileExists(src) then return src   -- found, return fully qualified path to css file
+  if sysFileExists(src) then
+  do
+if .dbus.doc.debug=.true then say "   get_css(): 2, returning existing" pp(src)
+     return src   -- found, return fully qualified path to css file
+  end
+if .dbus.doc.debug=.true then say "   get_css(): 3," pp(.dbus.doc.css) "not found, returning empty string"
   return ""
 

@@ -50,26 +50,36 @@ whether this package outputs debug information or not, depending on the logical 
 *
 * @author Rony G. Flatscher
 * @since 2011-06-11
-* @version 2.00
+* @version 200.20150421
 *
 */
 
 
 /*
-      author:     Rony G. Flatscher (C) 2011
-      date:       2011-08-12  (2011-06-11, 2011-07-19)
+      author:     Rony G. Flatscher (C) 2011-2015
+      date:       2015-04-21 (2011-06-11, 2011-07-19, 2011-08-12)
       name:       dbus.cls
       purpose:    make the DBUS language binding for ooRexx available
       needs:      - dbus-message bus system installed (by default available on Linuxes)
-                  - ooRexx 4.1.0 or higher, download from <http://www.oorexx.org>
+                  - ooRexx ("open object Rexx") 4.2.0 or higher, cf. <http://www.ooRexx.org>
+                  - ooRexx language bindings for ooRexx, cf. <https://sourceforge.net/projects/bsf4oorexx/files/GA/sandbox/dbusoorexx/>
                   - BSF4ooRexx, if using the utf8-conversion routines, download from
                     <https://sourceforge.net/projects/bsf4oorexx/>
+
+                   ---
+                     DBus for MacOSX: e.g. install via <https://www.macports.org/>
+                     DBus for Windows: e.g. <http://wi.wu.ac.at/rgf/rexx/orx22/work/>
+                   ---
+                     DBus home/source: <http://www.freedesktop.org/wiki/Software/dbus/#index5h1>
+
+
+
 
       credits:    Mike F. Cowlishaw: for making his "utf8"-Rexx procedure available (cf. routine "stringToutf8")
 
       cf.:        dbus-specifications: <http://dbus.freedesktop.org/doc/dbus-specification.html> (as of 2011-07-14)
 
-      version:    200.20150331
+      version:    200.20150421
 
       changes:    - 2011-07-20, rgf; DBusProxyObject:
                     - added proxy.dispatch(methodName[,args...])-method to send messages that
@@ -150,6 +160,7 @@ whether this package outputs debug information or not, depending on the logical 
                   - 2014-08-11 through 20140916, rgf: - add oorexxdoc comments
                   - 2015-01-11, rgf: - updating ooRexxDoc text
                   - 2015-04-07, rgf: - update version date (date of D-Bus presentations at the International Rexx Symposium 2015 in Vienna, Austria)
+                  - 2015-04-21, rgf: - corrected minimum required ooRexx version to 4.2.0, added DBus-related links
 
 
       license:    Apache License 2.0
@@ -186,7 +197,7 @@ whether this package outputs debug information or not, depending on the logical 
 .dbus.dir~bDebug      =.false -- .true -- .false -- .true
 .dbus.dir~bDebugServer=.false -- .true -- .false -- .true
 
-.dbus.dir~version="200.20150418"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
+.dbus.dir~version="200.20150421"    -- current version of DBUS.CLS, released will start with: '100.yyyymmdd'
 
 .dbus.dir~DBUS_SERVICE_DBUS            ="org.freedesktop.DBus"    -- "The bus name used to talk to the bus itself."
 .dbus.dir~DBUS_PATH_DBUS               ="/org/freedesktop/DBus"   -- "The object path used to talk to the bus itself."
