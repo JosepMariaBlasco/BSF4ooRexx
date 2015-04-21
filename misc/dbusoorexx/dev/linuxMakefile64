@@ -46,6 +46,7 @@ all: $(targets)
 dbusoorexx64: dbusoorexx.cc
 	$(CC) $(CFLAGS) $(RGF_CFLAGS64) $< -o lib$@.so $(LINK_FLAGS) $(LDFLAGS)
 	cp -p lib$@.so $(RGF_OUTPUTLIBNAME)
+	cp -p lib$@.so ../install/libs
 
 clean:
 	$(RM) libdbusoorexx64.so $(RGF_OUTPUTLIBNAME)

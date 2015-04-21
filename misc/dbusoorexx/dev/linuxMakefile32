@@ -23,7 +23,7 @@ PKG_LDFLAGS := $(shell pkg-config --libs $(pkg_packages))
 # -Wall : Enable most gcc warnings
 # ADD_CFLAGS := -g -Wall
 # ADD_CFLAGS := -Wall -DUNIX  -D__cplusplus
-ADD_CFLAGS := -Wall -DUNIX 
+ADD_CFLAGS := -Wall -DUNIX
 
 
 # Combine user supplied, additional, and pkg-config flags
@@ -47,6 +47,7 @@ all: $(targets)
 dbusoorexx32: dbusoorexx.cc
 	$(CC) $(CFLAGS) $(RGF_CFLAGS) $< -o lib$@.so $(LINK_FLAGS) $(LDFLAGS)
 	cp -p lib$@.so $(RGF_OUTPUTLIBNAME)
+	cp -p lib$@.so ../install/libs
 
 clean:
 	$(RM) libdbusoorexx32.so $(RGF_OUTPUTLIBNAME)

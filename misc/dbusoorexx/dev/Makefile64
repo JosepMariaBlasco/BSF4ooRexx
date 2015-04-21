@@ -66,7 +66,7 @@ dbusoorexx-64.dll: dbusoorexx-64.obj
     @echo end---
     copy $(@B).dll ..
     copy $(@B).dll dbusoorexx.dll
-#    copy $(@B).dll 64\dbusoorexx.dll
+    copy $(@B).dll ..\install\libs
     @if exist $(@B).exp copy $(@B).exp dbusoorexx.exp > nul
     @if exist $(@B).ilk copy $(@B).ilk dbusoorexx.ilk > nul
     @if exist $(@B).lib copy $(@B).lib dbusoorexx.lib > nul
