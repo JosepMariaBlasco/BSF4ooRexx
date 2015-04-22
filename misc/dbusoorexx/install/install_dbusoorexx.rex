@@ -41,7 +41,7 @@ cmd.=""     -- define stem variable, set default value to empty string
 
 -- for debugging only (sort of "dry-run"):
 cmd.bDebug=.true              -- debug mode (shows commands as well)
-cmd.bRunCommands=.false   -- do not execute commands
+cmd.bRunCommands=.true -- .false   -- do not execute commands
 
 --------------------------------------------
 
@@ -124,8 +124,8 @@ do
    cmd.eLink  =cmd.eCopy
 
    cmd.eDll   ="dbusoorexx.dll"
-   cmd.eDll.32="libs\dbusoorexx-32.dll"
-   cmd.eDll.64="libs\dbusoorexx-64.dll"
+   cmd.eDll.32="install\libs\dbusoorexx-32.dll"
+   cmd.eDll.64="install\libs\dbusoorexx-64.dll"
 
 
    cmd.eLinkDir=value("REXX_HOME",,"environment")  -- home directory of ooRexx to which PATH always points
@@ -144,16 +144,17 @@ do
    cmd.eChmod755= "chmod -v 755"
 
    cmd.eLink="ln -fsv"     /* force, verbose: source target(dir); (source link-to-target) */
+
    cmd.eTargetDirPath="/opt/"cmd.eTargetDirName
 
    cmd.eCopy="cp -pfv"    /* preserve, force, verbose */
-   cmd.eXCopy="cp -pfvR" enquote(cmd.eSourceBinDir||cmd.eSep)  enquote(cmd.eTargetDirPath)  /* force, verbose, recurse; "R" */
+   cmd.eXCopy="cp -pfvR" enquote(cmd.eSourceBinDir||cmd.eSep)  enquote("/opt/")  /* force, verbose, recurse; "R" */
 
    if opsys1="M" then       -- MacOSX
    do
       cmd.eDll="libdbusoorexx.dylib"
-      cmd.eDll.32="libs/libdbusoorexx.dylib"
-      cmd.eDll.64="libs/libdbusoorexx.dylib"
+      cmd.eDll.32="install/libs/libdbusoorexx.dylib"
+      cmd.eDll.64="install/libs/libdbusoorexx.dylib"
       cmd.eLS="ls -alT"
       cmd.eLS.ignoreCols=9    -- then "fully_qualified_path_canBeSymbolicLink [-> path-2-original]
       cmd.eLinkDir.Dll="/usr/lib"
@@ -166,8 +167,8 @@ do
 --         oorexxtry.rex and liboorexx.so and use those directories
       -- determine LinkDirs
       cmd.eDll="libdbusoorexx.so"
-      cmd.eDll.32="libs/libdbusoorexx32.so"
-      cmd.eDll.64="libs/libdbusoorexx64.so"
+      cmd.eDll.32="install/libs/libdbusoorexx32.so"
+      cmd.eDll.64="install/libs/libdbusoorexx64.so"
       cmd.eLS="ls --full-time -al"
          -- on Ubuntu same for 32- and 64-bit ! what about RH and the like?
       cmd.eLinkDir.Dll="/usr/lib"
@@ -241,10 +242,7 @@ do
       do fname over cmd.eFilesToLink
          sourceFname=enquote(cmd.eTargetDirPath||cmd.eSep||fname) -- source-file-name
          targetFname=enquote(cmd.eLinkDir.Bin  ||cmd.eSep||fname) -- target-file-name
-         if cmd.eOpSys1="W" then    -- Windows
-            cmd=(cmd.ePrefix cmd.eLink sourceFname targetFname)~strip
-         else     -- Unix (Linux, MacOSX)
-            cmd=(cmd.ePrefix cmd.eLink targetFname sourceFname)~strip
+         cmd=(cmd.ePrefix cmd.eLink sourceFname targetFname)~strip
 
          if cmd.bDebug=.true then .error~say("cmd:" pp(cmd))
          if cmd.bRunCommands=.true then cmd         -- run command?
@@ -254,10 +252,7 @@ do
       srcDll=cmd.eDll.bitness
       sourceFname=enquote(cmd.eTargetDirPath||cmd.eSep||srcDLL) -- source-DLL/so-name
       targetFname=enquote(cmd.eLinkDir.Dll ||cmd.eSep||cmd.eDll)      -- target-DLL/so-name
-      if cmd.eOpSys1="W" then    -- Windows
-         cmd=(cmd.ePrefix cmd.eLink sourceFname targetFname)~strip
-      else     -- Unix (Linux, MacOSX)
-         cmd=(cmd.ePrefix cmd.eLink targetFname sourceFname)~strip
+      cmd=(cmd.ePrefix cmd.eLink sourceFname targetFname)~strip
 
       if cmd.bDebug=.true then .error~say("cmd:" pp(cmd))
       if cmd.bRunCommands=.true then cmd         -- run command?
@@ -292,7 +287,6 @@ do
    if cmd.bAddPathToRegistry=.true then   -- if we are on Windows, this might be set to true
    do
       if cmd.bDebug=.true then .error~say("Windows: about to remove the 'dbusoorexx' target directory from Windows registry's PATH")
-      -- if cmd.bRunCommands=.true then
       call windowsRemoveFromRegistry cmd.
 
    end

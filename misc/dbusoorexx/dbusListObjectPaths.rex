@@ -7,7 +7,8 @@
                   2015-04-21, rgf, - renamed to dbusListObjectPaths.rex, such that the name indicates the dbus connection
                                    - changed logic to list the object paths of a given service name on the given bus;
                                      if the service name is omitted, then all service names on the given bus gets listed
-      version:    102.20150421
+                  2015-04-22, rgf, - fixed wrong usage of caselessPos()
+      version:    102.20150422
       name:       dbusListObjectPaths.rex
       purpose:    interrogate and list all object paths on the given busname and on the
                   given service name; if the service name is omitted then all service names
@@ -35,7 +36,7 @@ parse source . . fn     -- get fully qualified name to this program
 fname=filespec('n',fn)  -- get name of this program
 
 parse arg a
-if a="" | pos("?",a)>0 | a~caselessPos('help',a)>0 then  -- show usage
+if a="" | pos("?",a)>0 | a~caselessPos('help')>0 then  -- show usage
 do
    say "usage:" fname "session|system|busaddress [serviceName]"
    say "        ... lists all obejct paths for the given serviceName on the given bus"
