@@ -12,6 +12,7 @@
    Changes: - 2014-04-26, rgf: use "elevate{32|64}.exe" on Windows Vista and higher
                          to run the [re|un]install elevated
             - 2015-04-22, rgf: adapted for dbusoorexx installation (from BSF4ooRexx installation)
+            - 2015-04-23, rgf: make sure on WinXP that the installation script runs once only
 
    Info-URLs:  <http://technet.microsoft.com/en-us/magazine/2007.06.utilityspotlight.aspx>
                <http://technet.microsoft.com/en-us/magazine/2008.06.elevation.aspx>
@@ -84,13 +85,16 @@ signal on any        -- if something goes wrong with wscript, then address the p
 if winVersion<6 then    -- up to and including XP, Server 2003
 do
    mode="sh~ShellExecute(...)"
-   args ="..\install_dbusoorexx.rex" args  -- build argument to be passed to Rexx
+   -- args ="..\install_dbusoorexx.rex" args  -- build argument to be passed to Rexx
+
+   args = '"'qualify("..\install_dbusoorexx.rex")'"' args -- fully qualify script
 say "---> using 'Shell.Application'"
    if .kickoff.bDebug<>.true then
    do
       sh=.OleObject~new("Shell.Application")
+-- say "---> using 'Shell.Application', BEFORE runas, pgm2exec="pp(pgm2exec) "args="pp(args) "workDir="pp(workDir)
       sh~ShellExecute(pgm2exec, args, workDir, "runas")
-say "---> using 'Shell.Application', after runas, pgm2exec="pp(pgm2exec) "args="pp(args) "workDir="pp(workDir)
+-- say "---> using 'Shell.Application', after  runas, pgm2exec="pp(pgm2exec) "args="pp(args) "workDir="pp(workDir)
    end
    else  -- debug mode
    do
@@ -99,7 +103,6 @@ say "---> using 'Shell.Application', after runas, pgm2exec="pp(pgm2exec) "args="
       signal 99.901
       parse pull answer
    end
-   exit 0
 end
 else  -- Vista and up
 do
@@ -107,7 +110,8 @@ say "===>"
 --   rexxExe     = quote( qualify( value("REXX_HOME",,"ENVIRONMENT")"\rexx.exe" ) )
    rexxExe     = "rexx.exe"   -- will be found along the path
 --   setupScript = quote( qualify(workDir"\..\setupAllAndRun.rex") )   -- fully qualify script
-   setupScript = "..\install_dbusoorexx.rex"  -- fully qualify script
+--   setupScript = "..\install_dbusoorexx.rex"  -- fully qualify script
+   setupScript = '"'qualify("..\install_dbusoorexx.rex")'"'  -- fully qualify script
    rexxBits=getRexxBitness()
    elevateExe = "Elevate"rexxBits".exe"
    mode="Elevate"rexxBits".exe"
@@ -126,10 +130,20 @@ say "===>"
       signal 99.901
       parse pull answer
    end
-   exit 0
 end
+exit 0
 
 any:                 -- something went wrong, try to invoke without elevation
+
+   co=condition(o)
+   say "kickoff.rex: condition occurred:"
+   do idx over co~allindexes~sort
+      say "   "idx":" pp(co[idx])
+   end
+   say
+   say "Hit enter to end (in syntax condition handler) ..."
+   parse pull .
+
 
    say quote(mode) "did NOT work, trying to invoke without elevation at all: ["pgm2exec args"]..."
    if .kickoff.bDebug=.true then
@@ -168,3 +182,5 @@ any:                 -- something went wrong, try to invoke without elevation
 ::routine quote
   return '"' || arg(1) || '"'
 
+::routine pp               -- "pretty-print"
+  return "["arg(1)"]"

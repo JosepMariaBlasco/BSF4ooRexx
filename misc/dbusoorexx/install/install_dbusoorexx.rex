@@ -7,6 +7,10 @@
    Date:    2015-04-22
    Version: 102.20150422
    Changed: - 2015-04-22, ---rgf: all new, replaces old installation program
+            - 2015-04-23, ---rgf: - on Windows: if PATH is changed in registry, then broadcast setting
+                                    change to all toplevel windows
+                                  - intercept show and pause if a condition occurred
+                                  - Windows: now install into %REXX_HOME% (no need to manipulate registry)
    Remark:  one needs to run this script as super user (sudo on Linux) or in an Administrator
             shell (Windows);
             alternatively, use the dbusoorexx/install/{linux|macosx}/{*install.sh} resp.
@@ -44,6 +48,8 @@ cmd.bDebug=.true              -- debug mode (shows commands as well)
 cmd.bRunCommands=.true -- .false   -- do not execute commands
 
 --------------------------------------------
+
+signal on any name syntax
 
       -- get source information about this script
 parse source opsys . fpath
@@ -114,7 +120,7 @@ if opsys1="W" then
 do
    -- if .false: *rex, *cls, *dll gets copied to/removed from REXX_HOME which should be on PATH, no registry manipulation needed
    -- if .true:  PATH gets set to/unset from cmd.eTargetDirPath (interacting with registry)
-   cmd.bAddPathToRegistry=.true
+   cmd.bAddPathToRegistry=.false -- .true
 
    cmd.eSep   ="\"
    cmd.eDelete="del"
@@ -235,6 +241,8 @@ do
       if cmd.bDebug=.true then .error~say("Windows: about to add the 'dbusoorexx' target directory to Windows registry's PATH")
 
       call windowsAdd2Registry cmd.
+      call winSystm.cls       -- get access to .WindowManagerClass
+      .WindowsManager~new~broadcastSettingChanged  -- inform top-level windows to reread settings
    end
    else
    do
@@ -272,23 +280,13 @@ do
          exit -50
    end
 
-   cmd=(cmd.ePrefix cmd.eRmDir enquote(fileTargetDir))~strip  -- delete directory recursively
-   if cmd.bDebug=.true then .error~say("cmd:" pp(cmd))
-
-   if cmd.bRunCommands=.true then cmd         -- run command?
-
-   if fileTargetDir~exists=.true then
-   do
-      say thisName": could not delete target directory" pp(fileTargetDir)", aborting..."
-      exit -51
-   end
-
-   -- now create appropriate DLL/so link
+   -- remove from Windows PATH
    if cmd.bAddPathToRegistry=.true then   -- if we are on Windows, this might be set to true
    do
       if cmd.bDebug=.true then .error~say("Windows: about to remove the 'dbusoorexx' target directory from Windows registry's PATH")
       call windowsRemoveFromRegistry cmd.
-
+      call winSystm.cls       -- get access to .WindowManagerClass
+      .WindowsManager~new~broadcastSettingChanged  -- inform top-level windows to reread settings
    end
    else
    do
@@ -308,6 +306,18 @@ do
       if cmd.bDebug=.true then .error~say("cmd:" pp(cmd))
       if cmd.bRunCommands=.true then cmd         -- run command?
    end
+
+      -- let the removal be the last action as on WinXP the start of uninstall.cmd will inhibit
+      -- the successful removal, which may cause the program to stop
+   cmd=(cmd.ePrefix cmd.eRmDir enquote(fileTargetDir))~strip  -- delete directory recursively
+   if cmd.bDebug=.true then .error~say("cmd:" pp(cmd))
+   if cmd.bRunCommands=.true then cmd         -- run command?
+
+   if fileTargetDir~exists=.true then
+   do
+      say thisName": could not delete target directory" pp(fileTargetDir)", aborting..."
+      exit -51
+   end
 end
 
 if cmd.bDebug=.true then
@@ -315,6 +325,20 @@ do
    say "Hit enter to end ..."
    parse pull .
 end
+
+exit
+
+syntax:
+   co=condition('o')
+   say "install_dbusoorexx.rex: condition occurred:"
+   do idx over co~allindexes~sort
+      say "   "idx":" pp(co[idx])
+   end
+   say
+   say "Hit enter to end (in syntax condition handler) ..."
+   parse pull .
+
+
 
 ::routine pp
   return "["arg(1)"]"
@@ -392,7 +416,12 @@ if cmd.bDebug=.true then .error~say("determineHomeOnTarget() :" pp(homedir))
    newVal=""                        -- new value
 
    val=getVal(wsh, key)      /* get current value */
-if cmd.bDebug=.true then .error~say("windowsRemoveFromRegistry():    getVal="pp(val))
+if cmd.bDebug=.true then
+do
+   .error~say("windowsRemoveFromRegistry():    getVal="pp(val))
+   .error~say("windowsRemoveFromRegistry():    needle="pp(needle))
+end
+
    if val=.nil then                 -- key does not exist, nothing to do
       return
 
@@ -408,16 +437,29 @@ if cmd.bDebug=.true then .error~say("windowsRemoveFromRegistry():    getVal="pp(
    vals=val~makearray(pathDeli)
    do v over vals                   -- create new value, remove duplicates
       uv=v~strip~upper
-      if valSet~hasIndex(uv) then iterate -- duplicate or needle, skip
+      if valSet~hasIndex(uv) then
+      do
+if cmd.bDebug=.true then .error~say("windowsRemoveFromRegistry():    chunk ignored (needle|dupe)="pp(v) pp(uv))
+         iterate -- duplicate or needle, skip
+      end
       valSet~put(uv)                -- add to set
       if newVal="" then newVal=v
                    else newVal=newVal||pathDeli||v
    end
 
+if cmd.bDebug=.true then
+do
+   .error~say("windowsRemoveFromRegistry():      val="pp(val))
+   .error~say("windowsRemoveFromRegistry():   newVal="pp(newVal))
+end
 
    if newVal<>val then              -- path changed, update key
    do
-if cmd.bDebug=.true then .error~say("windowsRemoveFromRegistry(): newValue="pp(newVal))
+if cmd.bDebug=.true then
+do
+   .error~say("windowsRemoveFromRegistry():   cmd.bRunCommands="pp(cmd.bRunCommands))
+end
+
       if newVal="" then             -- remove key
          NOP -- never delete PATH! wsh~regDelete(key)
       else
@@ -426,6 +468,9 @@ if cmd.bDebug=.true then .error~say("windowsRemoveFromRegistry(): newValue="pp(n
             wsh~regWrite(key, newVal, "REG_EXPAND_SZ")
       end
    end
+
+if cmd.bDebug then .error~say("windowsRemoveFromRegistry():    getVal="pp(getVal(wsh,key)))
+   return
 
 
 
@@ -486,10 +531,14 @@ if cmd.bDebug=.true then .error~say("windowsRemoveFromRegistry(): newValue="pp(n
      end
   end
 
-  if cmd.bDebug=.true then .error~say("windowsAdd2Registry(): newValue="pp(newVal))
+if cmd.bDebug=.true then .error~say("windowsAdd2Registry(): bAddNeedle="pp(bAddNeedle)", cmd.bRunCommands="pp(cmd.bRunCommands))
   if bAddNeedle=.true, cmd.bRunCommands=.true  then   -- we need to write the new value
   do
+if cmd.bDebug=.true then .error~say("windowsAdd2Registry(): newValue="pp(newVal))
+
      wsh~regWrite(key, newVal, "REG_EXPAND_SZ")
+
+if cmd.bDebug=.true then .error~say("windowsAdd2Registry():   getVal="pp(getVal(wsh,key)))
   end
 
 
@@ -505,3 +554,4 @@ syntax: return .nil
 ::routine enquote
   parse arg val
   return '"' || val~changeStr('"','""') || '"'
+

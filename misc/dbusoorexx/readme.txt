@@ -6,7 +6,8 @@ clients, but also as servers (providing DBus services to any DBus client). It
 needs at ooRexx version 4.2.0 or higher.
 
 For an introduction to DBus and "dbusoorexx" scripts see the supplied PDF
-article "dbusoorexx-introduction.pdf".
+article "dbusoorexx-introduction.pdf". Also look for the keywords "DBus" or
+"D-Bus" on <http://wi.wu.ac.at/rgf/diplomarbeiten/>.
 
 files in the "dbusoorexx" package:
 
