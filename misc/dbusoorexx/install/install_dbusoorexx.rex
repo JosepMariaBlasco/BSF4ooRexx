@@ -154,10 +154,11 @@ do
    cmd.eTargetDirPath="/opt/"cmd.eTargetDirName
 
    cmd.eCopy="cp -pfv"    /* preserve, force, verbose */
-   cmd.eXCopy="cp -pfvR" enquote(cmd.eSourceBinDir||cmd.eSep)  enquote("/opt/")  /* force, verbose, recurse; "R" */
 
    if opsys1="M" then       -- MacOSX
    do
+       -- on MacOSX make sure that target includes the target directory name ("dbusoorexx")
+      cmd.eXCopy="cp -pfvR" enquote(cmd.eSourceBinDir||cmd.eSep)  enquote(cmd.eTargetDirPath)  /* force, verbose, recurse; "R" */
       cmd.eDll="libdbusoorexx.dylib"
       cmd.eDll.32="install/libs/libdbusoorexx.dylib"
       cmd.eDll.64="install/libs/libdbusoorexx.dylib"
@@ -168,6 +169,9 @@ do
    end
    else -- Linux
    do
+       -- on Ubuntu make sure that target does NOT include the target directory name ("dbusoorexx")
+     cmd.eXCopy="cp -pfvR" enquote(cmd.eSourceBinDir||cmd.eSep)  enquote("/opt/")  /* force, verbose, recurse; "R" */
+
 --   TODO: Assuming that even on 64 bit Linux a 32 bit .so gets installed into /usr/lib.
 --         If not true for all Linux distribution, one could look where ooRexx installs
 --         oorexxtry.rex and liboorexx.so and use those directories
