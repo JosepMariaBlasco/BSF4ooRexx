@@ -8,7 +8,8 @@
                                    - changed logic to list the object paths of a given service name on the given bus;
                                      if the service name is omitted, then all service names on the given bus gets listed
                   2015-04-22, rgf, - fixed wrong usage of caselessPos()
-      version:    102.20150422
+                  2015-04-26, rgf, - renamed pp2() to pp() which is defined in 'dbus.cls'
+      version:    102.20150426
       name:       dbusListObjectPaths.rex
       purpose:    interrogate and list all object paths on the given busname and on the
                   given service name; if the service name is omitted then all service names
@@ -48,7 +49,7 @@ parse arg busType serviceName .  -- parse command line argument
 
 if wordpos(busType,"session system")=0, pos(':',busType)=0 then
 do
-   say "Error: busType" pp2(busType) "is not 'system', 'session', nor a bus address, aborting..."
+   say "Error: busType" pp(busType) "is not 'system', 'session', nor a bus address, aborting..."
    exit -2
 end
 conn=.Dbus~connect(busType)

@@ -85,7 +85,7 @@ Rony G. Flatscher (author), Vienna, Austria, April 2015
     this will copy the "dbusoorexx" package to "/opt/dbusoorexx" and link the
     executables to "/usr/bin" and the appropriate library to "/usr/lib"
 
-  - to deinstall run "uninstall.sh"
+  - to deinstall run "/opt/dbusoorexx/install/linux/uninstall.sh"
 
 - MacOSX installation
 =====================
@@ -94,7 +94,7 @@ Rony G. Flatscher (author), Vienna, Austria, April 2015
     this will copy the "dbusoorexx" package to "/opt/dbusoorexx" and link the
     executables to "/usr/bin" and the appropriate library to "/usr/lib"
 
-  - to deinstall run "uninstall.sh"
+  - to deinstall run "/opt/dbusoorexx/install/macosx/uninstall.sh"
 
   - Please note: on MacOSX DBus is not installed by default; you can get and
     install DBus for MacOSX e.g. from the macport project at
@@ -108,15 +108,13 @@ Rony G. Flatscher (author), Vienna, Austria, April 2015
   - change into the directory "dbusoorexx\install\windows" and run
     "install.cmd"; this will copy the "dbusoorexx" package to the Windows
     %ProgramFile% or %ProgramFile(x86)", depending on the bitness of the
-    installed ooRexx interpreter;
-    after installation open a new command line window to reflect the newly
-    set Windows PATH environment variable which from now on will point to
-    the appropriate "dbusoorexx" directory
+    installed ooRexx interpreter; the executable DLL and Rexx scripts are
+    copied to %REXX_HOME% such that you can use immediately "dbbusoorexx"
 
-  - to deinstall find "dbusoorexx" on %ProgramFile% or %ProgramFile(x86)" and
-    run "uninstall.cmd"
+  - to deinstall find "dbusoorexx" on "%ProgramFile%" or "%ProgramFile(x86)" and
+    run "dbusoorexx\install\windows\uninstall.cmd"
 
-  - Please note: on Windows DBus is not installed by default; you can download
+  - Please note! On Windows DBus is not installed by default; you can download
     an experimental and untested version built from the original sources from
     freedesktop.org from <http://wi.wu.ac.at/rgf/rexx/orx22/work/>; please
     study the "readme.txt" file there
