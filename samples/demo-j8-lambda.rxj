@@ -5,6 +5,7 @@
               functional programming patterns
    author:    Rony G. Flatscher
    date:      2014-05-18
+   changed:   2015-05-01, ---rgf - remove superfluous word "String" from the beginning of the string assigned to "wordstring"
 
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
 
@@ -13,7 +14,7 @@
 
    license:   Apache Version 2.0 license
     ------------------------ Apache Version 2.0 license (AL2.0)-------------------------
-       Copyright (C) 2014 Rony G. Flatscher
+       Copyright (C) 2014-2015 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -37,7 +38,7 @@ do
 end
 
 -- make a string of words with a couple containing the letter 'k'
-wordstring=String "Just a bunch of words to test for killer items containing a k"
+wordstring="Just a bunch of words to test for killer items containing a k"
    -- turn Rexx-string into a Java-string: this allows us to use Java's String methods
 refWordString=.bsf~new("java.lang.String", wordstring)
 
