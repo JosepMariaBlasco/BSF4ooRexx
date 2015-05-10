@@ -21,7 +21,7 @@ import org.apache.bsf.util.type.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2014 Rony G. Flatscher
+ *    Copyright (C) 2001-2015 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -36,7 +36,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.2.0, 2014-10-05
+  * @version 4.2.1, 2015-05-09
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -48,6 +48,13 @@ import org.apache.bsf.util.type.*;
 */
 
  /*
+     2015-05-09, ---rgf, - added access to important Rexx objects and interpreter related information
+                           - protected native Object jniGetLocalEnvironment0
+                           - protected native Object jniGetGlobalEnvironment0
+                           - protected native Object jniNil0
+                           - protected native long   jniInterpreterVersion0
+                           - protected native long   jniLanguageLevel0
+
      2014-10-04, ---rgf, - add subfunctions that return a reference to a java.lang.String object or
                            a NetRexx object, if such a value needs to be returned (rather than turning
                            it into a Rexx string), added subfunctions:
@@ -319,7 +326,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "420.20141005";
+    static final public String version = "421.20150509";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -841,10 +848,12 @@ necessary anymore
     protected native int    jniRexxTerminateInterpreterInstance (String rii_ID); // use Terminate(), but *must* be issued from the original thread context
 
 
+     // ------------------ JNI functions meant to be accessed by Java exit handlers only!
+    //                     (these jni functions need a properly set up opaque slot argument!)
+
      //  rgf, 2012-02-08, used for allowing exit and command handlers to interact with their RexxExitContext
      //                   for raising conditions and querying/setting variables.
      //
-
      protected native void    jniRaiseCondition    (Object[] slot, String conditionName, String description, Object[] additional, Object result);
      protected native void    jniRaiseException    (Object[] slot, long definedErrorNumber, Object[] substitutions);
      protected native void    jniRaiseException0   (Object[] slot, long definedErrorNumber);
@@ -853,7 +862,7 @@ necessary anymore
      protected native Object  jniGetContextVariable(Object[] slot, String variableName);
      protected native void    jniSetContextVariable(Object[] slot, String variableName, Object variableValue);
 
-     // rgf, 2012-02-11
+     // rgf, 2012-02-11: for RexxHandler access only (these jni functions need a properly set up opaque slot argument!)
      protected native boolean jniCheckCondition    (Object[] slot);
      protected native void    jniClearCondition    (Object[] slot);
      protected native Object  jniGetConditionInfo  (Object[] slot);
@@ -861,28 +870,38 @@ necessary anymore
      protected native void    jniSetThreadTrace    (Object[] slot, boolean state);
      protected native void    jniHaltThread        (Object[] slot);
 
-     // rgf, 2012-02-12
+     // rgf, 2012-02-12: for RexxHandler access only (these jni functions need a properly set up opaque slot argument!)
      protected native void    jniDropContextVariable(Object[] slot, String variableName);
 
-     // rgf, 2012-02-18
+     // rgf, 2012-02-18: for RexxHandler access only (these jni functions need a properly set up opaque slot argument!)
      protected native void    jniSetContextVariableToNil(Object[] slot, String variableName);
 
-     // rgf, 2012-02-19
+     // rgf, 2012-02-19: for RexxHandler access only (these jni functions need a properly set up opaque slot argument!)
      protected native Object  jniGetCallerContext   (Object[] slot);
      protected native Object  jniGetAllContextVariables(Object[] slot);
 
-     // rgf, 2012-02-24
+     // rgf, 2012-02-24: for RexxHandler access only (these jni functions need a properly set up opaque slot argument!)
      protected native Object  jniGetLocalEnvironment(Object[] slot);
      protected native Object  jniGetGlobalEnvironment(Object[] slot);
-
-     // rgf, 2012-02-25
+     // rgf, 2012-02-25: for RexxHandler access only (these jni functions need a properly set up opaque slot argument!)
      protected native Object  jniNil(Object[] slot);
      protected native long    jniInterpreterVersion(Object[] slot);
      protected native long    jniLanguageLevel     (Object[] slot);
 
-
      // rgf, 2014-03-29
      protected native String  jniProcEnvironment(int function, String envName, String envValue);
+
+
+     // ------------------ allow fetching a few important Rexx objects resp. Rexx interpreter related information
+     // rgf, 2015-05-09
+     protected native Object  jniGetLocalEnvironment0 (String rii_ID);
+     protected native Object  jniGetGlobalEnvironment0(String rii_ID);
+     protected native Object  jniNil0                 (String rii_ID);
+     protected native long    jniInterpreterVersion0  (String rii_ID);
+     protected native long    jniLanguageLevel0       (String rii_ID);
+
+
+
 
 
     /**  rgf, 2003-01-15, used for allowing the BSF4ooRexx-DLL to get at *env, *obj and then to mid etc.

@@ -1,3 +1,26 @@
+2014, ---rgf:
+
+        - Re-change method resolution (but make sure that default interface methods of Java 8 get resolved)
+
+          - make sure that protected methods in superclasses get resolved, when method
+            is not available in current class
+
+        - Make sure that protected fields in superclasses get resolved, when field is not
+          available in current class
+
+        - Supplier.java / also in ArrayWrapper.java?
+
+          - work on all Java collection patterns!
+
+          - allow any collection to be wrapped as an array ?
+
+            - allow at least to supply a "makearray", resp. create an own MakeArray.java ?
+              maybe different something like EnumerationWrapper.java for all enumeration
+              patterns in Java collections ?
+
+-----------------------------
+
+
 - Eventually use Apache Maven to create the binaries (http://maven.apache.org/)
 
 - Once ooRexx debugging and profiling is available in the kernel

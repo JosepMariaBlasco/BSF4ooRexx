@@ -24,6 +24,14 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.5.1   2015-05-09, - rgf: added JNI methods that allow a RexxEngine.java instance to get information aobut it
+                               - _RexxAndJava_jniGetGlobalEnvironment0 ... .environment
+                               - _RexxAndJava_jniGetLocalEnvironment0  ... .local
+                               - _RexxAndJava_jniNil0                  ... .nil
+                               - _RexxAndJava_jniInterpreterVersion0   ...  least signifant three bytes encode this information
+                               - _RexxAndJava_jniLanguageVersion0      ...  least signifant two bytes encode this information
+
+    4.5.0   2014-10-20, - rgf: updated package information in RexxPackageEntry structure
     4.5.0   2014-05-17, - simplified attaching/detaching to the JVM, a side effect will be a slight performance
                           improvement (appr. 5%)
                         - replace deprecated BSFAttachToTID() and BSFDetach() with body that always returns true
@@ -588,6 +596,10 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // #define DEBUG_SEND_MESSAGE_TO_REXX_OBJECT    // 2009-09-06
 // #define DEBUG_RGF_PROCESS_J_ARGS     // 2009-09-06
+// #define DEBUG_RGF_PROCESS_J_ARG1    // rgf, 2012-02-07; renamed to RgfJavaObject2RexxObject, 2012-02-18
+// #define DEBUG_ARRAY_ARGS
+
+//    #define DEBUG_ARRAY_ARGS            // rgf, 2012-02-21
 
 // #define DEBUG_SHOW_STRUCTURES    // ---rgf, 2009-10-06
 // #define DEBUG_JAVA_ATTACH_DETACH    // ---rgf, 2009-10-07
@@ -852,11 +864,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "450.20140518 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "451.20150509 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "450.20140518 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "451.20150509 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "450.20140518 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "451.20150509 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -10974,7 +10986,7 @@ fprintf(stderr, "///  marker (5b), res=[%d]...\n", ret);fflush(stderr);
         STANDARD_PACKAGE_HEADER
         REXX_INTERPRETER_4_1_0,              // anything including and after 4.1.0 will work
         "bsf",                               // name of the package
-        "4.1",                               // package information
+        "4.5",                               // package version information
         bsfLoader,                           // no load function
         bsfUnloader,                         // no unload function
         bsf_external_functions,              // the exported functions
@@ -12293,12 +12305,16 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     fflush(stderr);
 #endif
 
-// fprintf(stderr, "...jniRexxSendMessageToRexxObject(): BEFORE SendMessage(), ro=[%p], c_msg=[%.256s], ra=[%p], size=[%u]...\n",ro, c_msg, ra, rtc->ArraySize(ra));fflush(stderr);
+#if defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
+   fprintf(stderr, "...jniRexxSendMessageToRexxObject(): BEFORE SendMessage(), ro=[%p], c_msg=[%.256s], ra=[%p], size=[%u]...\n",ro, c_msg, ra, rtc->ArraySize(ra));fflush(stderr);
+#endif
 
             result_obj=rtc->SendMessage(ro, c_msg, ra); // with arguments
             // rgf, 201310 rtc->ReleaseLocalReference(ra);
 
-// fprintf(stderr, "...jniRexxSendMessageToRexxObject(): AFTER SendMessage(),...\n");fflush(stderr);
+#if defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
+   fprintf(stderr, "...jniRexxSendMessageToRexxObject(): AFTER SendMessage(),...\n");fflush(stderr);
+#endif
 
 #if defined (RGF_TRUE) || defined (DEBUG_40) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
     fprintf(stderr, "...jniRexxSendMessageToRexxObject(): thisTid=[%lu]... SendMessage: c_msg=[%.256s], ra=[%p], size=[%u]; result_obj=[%p] ...\n",
@@ -15348,6 +15364,675 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniProcEn
     return ( envBuffer==NULL || envBuffer[0]==NULL ? NULL : env->NewStringUTF( envBuffer ) );
 #endif
 }
+
+
+// ------ 2015-05-09, rgf
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetLocalEnvironment0
+ * Signature: (Ljava/lang/String;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetLocalEnvironment0
+  // (JNIEnv *, jobject, jstring);
+  (JNIEnv *env, jobject raj, jstring  j_rii_ID)
+{
+#ifdef UNIX
+    pthread_t
+#else   // WIN32
+    TID
+#endif
+        tid=RgfGetTID();   // get current TID
+
+#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_JNI_ENTRY)
+    fprintf(stderr, "--> arrived: ..._jniGetLocalEnvironment(), tid=[%lu], currentJVM=[%p], defaultJVM->jvm=[%p], defaultJVM->clz_Object=[%p]\n",
+                    (unsigned long) tid, currentJVM, defaultJVM->jvm, defaultJVM->clz_Object);
+    fprintf(stderr, "\t\tenv=[%p], raj=[%p], j_rii_ID=[%p]\n", env, raj, j_rii_ID);
+    fflush(stderr);
+#endif
+
+        // get interpreter instance from argument
+    char         *c_rii_ID=NULL;
+    RexxInstance *instance=NULL;
+    c_rii_ID=(char *) JNU_GetStringNativeChars(env, j_rii_ID);  // convert to native string
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "                                        using c_rii_ID=[%.256s]\n", c_rii_ID);
+    fflush(stderr);
+#endif
+
+    RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
+    RexxFreeMemory(c_rii_ID);
+
+    RexxThreadContext   *rtc=NULL;
+    RexxObjectPtr result_obj;           // Rexx object returned from Rexx, NULL[OBJECT], if none
+
+    RexxInstance *tmpInstance=NULL;
+    tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
+
+    if (instance != tmpInstance)    // error (do not halt another Rexx Interpreter instance!)
+    {
+        char *msg=new char[1024];
+        SNPRINTF( msg, 1024, "%.16s/routine/jniGetLocalEnvironment(), error 1: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             NULL, // rtc,
+                                                             NULL, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_INVALID_ARGUMENT,   // reason
+                                                             msg   // message
+                                                        );
+        delete[] msg;
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ..._jniGetLocalEnvironment(): tid=[%lu], error, cannot retrieve c_rii_ID=p=[%p], received=tmpInstance=[%p] instead\n",
+                    (unsigned long) tid, instance, tmpInstance);
+    fflush(stderr);
+#endif
+
+        return NULL;
+    }
+
+    // no need to do a rtc->ReleaseLocalReference(ro) as these references get released upon rtc->DetachThread() !
+    if (!instance->AttachThread(&rtc))          // get a ThreadContext
+    {
+        char *msg=new char[1024];
+        SNPRINTF( msg, 1024, "%.16s/routine/jniGetLocalEnvironment(), error 2: could not AttachThread() to Rexx interpreter instance with the ID '%p'", DLLNAME, instance);
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             NULL, // rtc,
+                                                             NULL, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_EXECUTION_ERROR,   // reason
+                                                             msg   // message
+                                                        );
+        delete[] msg;
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ..._jniGetLocalEnvironment(): tid=[%lu], error, cannot do an instance->AttachThread()!\n",
+                          (unsigned long) tid);
+    fflush(stderr);
+#endif
+
+        return NULL;
+    }
+
+    result_obj=rtc->GetLocalEnvironment();      // get local environment
+
+    // check for exception; if so, create RexxException, supply condition object as a RexxProxy; clear exception in thread
+    if (rtc->CheckCondition())      // a Rexx condition raised?
+    {
+        RexxDirectoryObject condObj=rtc->GetConditionInfo();
+        char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/routine/jniRexxRunProgram(), error 9");
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             rtc, // rtc,
+                                                             condObj, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_EXECUTION_ERROR,   // reason
+                                                             msg   // message
+                                                        );
+        rtc->DetachThread();
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ..._jniGetLocalEnvironment(): tid=[%lu], Rexx runtime error occurred, throwing Java exception!\n\tmsg=[%.256s]\n",
+                       (unsigned long) tid, msg);
+    fflush(stderr);
+#endif
+
+        RexxFreeMemory(msg);
+        return NULL;
+    }
+
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning from: .._jniRexxRunProgram(...), tid=[%lu], normal execution\n", (unsigned long) tid);
+    fflush(stderr);
+#endif
+
+    jobject jresult=RgfProcessReturnValue4Java(env, raj, rtc, result_obj, NULL);
+
+    rtc->DetachThread();
+
+    return jresult;
+}
+
+// ------ > neu!
+
+// ---------- neuer
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetGlobalEnvironment0
+ * Signature: (Ljava/lang/String;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlobalEnvironment0
+  // (JNIEnv *, jobject, jstring);
+  (JNIEnv *env, jobject raj, jstring  j_rii_ID)
+{
+#ifdef UNIX
+    pthread_t
+#else   // WIN32
+    TID
+#endif
+        tid=RgfGetTID();   // get current TID
+
+#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_JNI_ENTRY)
+    fprintf(stderr, "--> arrived: ..._jniGetGlobalEnvironment0(), tid=[%lu], currentJVM=[%p], defaultJVM->jvm=[%p], defaultJVM->clz_Object=[%p]\n",
+                    (unsigned long) tid, currentJVM, defaultJVM->jvm, defaultJVM->clz_Object);
+    fprintf(stderr, "\t\tenv=[%p], raj=[%p], j_rii_ID=[%p]\n", env, raj, j_rii_ID);
+    fflush(stderr);
+#endif
+
+        // get interpreter instance from argument
+    char         *c_rii_ID=NULL;
+    RexxInstance *instance=NULL;
+    c_rii_ID=(char *) JNU_GetStringNativeChars(env, j_rii_ID);  // convert to native string
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "                                        using c_rii_ID=[%.256s]\n", c_rii_ID);
+    fflush(stderr);
+#endif
+
+    RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
+    RexxFreeMemory(c_rii_ID);
+
+    RexxThreadContext   *rtc=NULL;
+    RexxObjectPtr result_obj;           // Rexx object returned from Rexx, NULL[OBJECT], if none
+
+    RexxInstance *tmpInstance=NULL;
+    tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
+
+    if (instance != tmpInstance)    // error (do not halt another Rexx Interpreter instance!)
+    {
+        char *msg=new char[1024];
+        SNPRINTF( msg, 1024, "%.16s/routine/jniGetGlobalEnvironment0(), error 1: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             NULL, // rtc,
+                                                             NULL, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_INVALID_ARGUMENT,   // reason
+                                                             msg   // message
+                                                        );
+        delete[] msg;
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ..._jniGetGlobalEnvironment0(): tid=[%lu], error, cannot retrieve c_rii_ID=p=[%p], received=tmpInstance=[%p] instead\n",
+                    (unsigned long) tid, instance, tmpInstance);
+    fflush(stderr);
+#endif
+
+        return NULL;
+    }
+
+    // no need to do a rtc->ReleaseGlobalReference(ro) as these references get released upon rtc->DetachThread() !
+    if (!instance->AttachThread(&rtc))          // get a ThreadContext
+    {
+        char *msg=new char[1024];
+        SNPRINTF( msg, 1024, "%.16s/routine/jniGetGlobalEnvironment0(), error 2: could not AttachThread() to Rexx interpreter instance with the ID '%p'", DLLNAME, instance);
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             NULL, // rtc,
+                                                             NULL, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_EXECUTION_ERROR,   // reason
+                                                             msg   // message
+                                                        );
+        delete[] msg;
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ..._jniGetGlobalEnvironment0(): tid=[%lu], error, cannot do an instance->AttachThread()!\n",
+                          (unsigned long) tid);
+    fflush(stderr);
+#endif
+
+        return NULL;
+    }
+
+    result_obj=rtc->GetGlobalEnvironment();      // get Global environment
+
+    // check for exception; if so, create RexxException, supply condition object as a RexxProxy; clear exception in thread
+    if (rtc->CheckCondition())      // a Rexx condition raised?
+    {
+        RexxDirectoryObject condObj=rtc->GetConditionInfo();
+        char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/routine/jniRexxRunProgram(), error 9");
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             rtc, // rtc,
+                                                             condObj, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_EXECUTION_ERROR,   // reason
+                                                             msg   // message
+                                                        );
+        rtc->DetachThread();
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ..._jniGetGlobalEnvironment0(): tid=[%lu], Rexx runtime error occurred, throwing Java exception!\n\tmsg=[%.256s]\n",
+                       (unsigned long) tid, msg);
+    fflush(stderr);
+#endif
+
+        RexxFreeMemory(msg);
+        return NULL;
+    }
+
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning from: .._jniRexxRunProgram(...), tid=[%lu], normal execution\n", (unsigned long) tid);
+    fflush(stderr);
+#endif
+
+    jobject jresult=RgfProcessReturnValue4Java(env, raj, rtc, result_obj, NULL);
+
+    rtc->DetachThread();
+
+    return jresult;
+
+}
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniNil0
+ * Signature: (Ljava/lang/String;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniNil0
+  // (JNIEnv *, jobject, jstring);
+  (JNIEnv *env, jobject raj, jstring  j_rii_ID)
+{
+#ifdef UNIX
+    pthread_t
+#else   // WIN32
+    TID
+#endif
+        tid=RgfGetTID();   // get current TID
+
+#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_JNI_ENTRY)
+    fprintf(stderr, "--> arrived: ..._jniNil0(), tid=[%lu], currentJVM=[%p], defaultJVM->jvm=[%p], defaultJVM->clz_Object=[%p]\n",
+                    (unsigned long) tid, currentJVM, defaultJVM->jvm, defaultJVM->clz_Object);
+    fprintf(stderr, "\t\tenv=[%p], raj=[%p], j_rii_ID=[%p]\n", env, raj, j_rii_ID);
+    fflush(stderr);
+#endif
+
+        // get interpreter instance from argument
+    char         *c_rii_ID=NULL;
+    RexxInstance *instance=NULL;
+    c_rii_ID=(char *) JNU_GetStringNativeChars(env, j_rii_ID);  // convert to native string
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "                                        using c_rii_ID=[%.256s]\n", c_rii_ID);
+    fflush(stderr);
+#endif
+
+    RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
+    RexxFreeMemory(c_rii_ID);
+
+    RexxThreadContext   *rtc=NULL;
+    RexxObjectPtr result_obj;           // Rexx object returned from Rexx, NULL[OBJECT], if none
+
+    RexxInstance *tmpInstance=NULL;
+    tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
+
+    if (instance != tmpInstance)    // error (do not halt another Rexx Interpreter instance!)
+    {
+        char *msg=new char[1024];
+        SNPRINTF( msg, 1024, "%.16s/routine/jniNil0(), error 1: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             NULL, // rtc,
+                                                             NULL, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_INVALID_ARGUMENT,   // reason
+                                                             msg   // message
+                                                        );
+        delete[] msg;
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ..._jniNil0(): tid=[%lu], error, cannot retrieve c_rii_ID=p=[%p], received=tmpInstance=[%p] instead\n",
+                    (unsigned long) tid, instance, tmpInstance);
+    fflush(stderr);
+#endif
+
+        return NULL;
+    }
+
+    // no need to do a rtc->ReleaseGlobalReference(ro) as these references get released upon rtc->DetachThread() !
+    if (!instance->AttachThread(&rtc))          // get a ThreadContext
+    {
+        char *msg=new char[1024];
+        SNPRINTF( msg, 1024, "%.16s/routine/jniNil0(), error 2: could not AttachThread() to Rexx interpreter instance with the ID '%p'", DLLNAME, instance);
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             NULL, // rtc,
+                                                             NULL, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_EXECUTION_ERROR,   // reason
+                                                             msg   // message
+                                                        );
+        delete[] msg;
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ..._jniNil0(): tid=[%lu], error, cannot do an instance->AttachThread()!\n",
+                          (unsigned long) tid);
+    fflush(stderr);
+#endif
+
+        return NULL;
+    }
+
+    result_obj=rtc->Nil();      // get .nil
+
+    // check for exception; if so, create RexxException, supply condition object as a RexxProxy; clear exception in thread
+    if (rtc->CheckCondition())      // a Rexx condition raised?
+    {
+        RexxDirectoryObject condObj=rtc->GetConditionInfo();
+        char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/routine/jniRexxRunProgram(), error 9");
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             rtc, // rtc,
+                                                             condObj, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_EXECUTION_ERROR,   // reason
+                                                             msg   // message
+                                                        );
+        rtc->DetachThread();
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ..._jniNil0(): tid=[%lu], Rexx runtime error occurred, throwing Java exception!\n\tmsg=[%.256s]\n",
+                       (unsigned long) tid, msg);
+    fflush(stderr);
+#endif
+
+        RexxFreeMemory(msg);
+        return NULL;
+    }
+
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning from: .._jniRexxRunProgram(...), tid=[%lu], normal execution\n", (unsigned long) tid);
+    fflush(stderr);
+#endif
+
+        // make sure that we explicitly return a RexxProxy with .nil embedded!
+    jobject jresult=RgfCreateRexxProxy(env, raj, rtc, result_obj, NULL, NULL);
+
+    rtc->DetachThread();
+
+    return jresult;
+}
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniInterpreterVersion0
+ * Signature: (Ljava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpreterVersion0
+  // (JNIEnv *, jobject, jstring);
+  (JNIEnv *env, jobject raj, jstring  j_rii_ID)
+{
+#ifdef UNIX
+    pthread_t
+#else   // WIN32
+    TID
+#endif
+        tid=RgfGetTID();   // get current TID
+
+#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_JNI_ENTRY)
+    fprintf(stderr, "--> arrived: ...__jniInterpreterVersion0(), tid=[%lu], currentJVM=[%p], defaultJVM->jvm=[%p], defaultJVM->clz_Object=[%p]\n",
+                    (unsigned long) tid, currentJVM, defaultJVM->jvm, defaultJVM->clz_Object);
+    fprintf(stderr, "\t\tenv=[%p], raj=[%p], j_rii_ID=[%p]\n", env, raj, j_rii_ID);
+    fflush(stderr);
+#endif
+
+        // get interpreter instance from argument
+    char         *c_rii_ID=NULL;
+    RexxInstance *instance=NULL;
+    c_rii_ID=(char *) JNU_GetStringNativeChars(env, j_rii_ID);  // convert to native string
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "                                        using c_rii_ID=[%.256s]\n", c_rii_ID);
+    fflush(stderr);
+#endif
+
+    RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
+    RexxFreeMemory(c_rii_ID);
+
+    RexxThreadContext   *rtc=NULL;
+
+    RexxInstance *tmpInstance=NULL;
+    tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
+
+    if (instance != tmpInstance)    // error (do not halt another Rexx Interpreter instance!)
+    {
+        char *msg=new char[1024];
+        SNPRINTF( msg, 1024, "%.16s/routine/_jniInterpreterVersion0(), error 1: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             NULL, // rtc,
+                                                             NULL, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_INVALID_ARGUMENT,   // reason
+                                                             msg   // message
+                                                        );
+        delete[] msg;
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ...__jniInterpreterVersion0(): tid=[%lu], error, cannot retrieve c_rii_ID=p=[%p], received=tmpInstance=[%p] instead\n",
+                    (unsigned long) tid, instance, tmpInstance);
+    fflush(stderr);
+#endif
+
+        return NULL;
+    }
+
+    // no need to do a rtc->ReleaseGlobalReference(ro) as these references get released upon rtc->DetachThread() !
+    if (!instance->AttachThread(&rtc))          // get a ThreadContext
+    {
+        char *msg=new char[1024];
+        SNPRINTF( msg, 1024, "%.16s/routine/_jniInterpreterVersion0(), error 2: could not AttachThread() to Rexx interpreter instance with the ID '%p'", DLLNAME, instance);
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             NULL, // rtc,
+                                                             NULL, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_EXECUTION_ERROR,   // reason
+                                                             msg   // message
+                                                        );
+        delete[] msg;
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ...__jniInterpreterVersion0(): tid=[%lu], error, cannot do an instance->AttachThread()!\n",
+                          (unsigned long) tid);
+    fflush(stderr);
+#endif
+
+        return NULL;
+    }
+
+    size_t res=rtc->InterpreterVersion();
+
+    // check for exception; if so, create RexxException, supply condition object as a RexxProxy; clear exception in thread
+    if (rtc->CheckCondition())      // a Rexx condition raised?
+    {
+        RexxDirectoryObject condObj=rtc->GetConditionInfo();
+        char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/routine/jniRexxRunProgram(), error 9");
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             rtc, // rtc,
+                                                             condObj, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_EXECUTION_ERROR,   // reason
+                                                             msg   // message
+                                                        );
+        rtc->DetachThread();
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ...__jniInterpreterVersion0(): tid=[%lu], Rexx runtime error occurred, throwing Java exception!\n\tmsg=[%.256s]\n",
+                       (unsigned long) tid, msg);
+    fflush(stderr);
+#endif
+
+        RexxFreeMemory(msg);
+        return NULL;
+    }
+
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning from: ..__jniInterpreterVersion0(), tid=[%lu], normal execution\n", (unsigned long) tid);
+    fflush(stderr);
+#endif
+
+        // make sure that we explicitly return a RexxProxy with .nil embedded!
+
+    rtc->DetachThread();
+
+    return res;
+}
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniLanguageLevel0
+ * Signature: (Ljava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguageLevel0
+  // (JNIEnv *, jobject, jstring);
+  (JNIEnv *env, jobject raj, jstring  j_rii_ID)
+{
+
+#ifdef UNIX
+    pthread_t
+#else   // WIN32
+    TID
+#endif
+        tid=RgfGetTID();   // get current TID
+
+#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_JNI_ENTRY)
+    fprintf(stderr, "--> arrived: ...__jniLanguageVersion0(), tid=[%lu], currentJVM=[%p], defaultJVM->jvm=[%p], defaultJVM->clz_Object=[%p]\n",
+                    (unsigned long) tid, currentJVM, defaultJVM->jvm, defaultJVM->clz_Object);
+    fprintf(stderr, "\t\tenv=[%p], raj=[%p], j_rii_ID=[%p]\n", env, raj, j_rii_ID);
+    fflush(stderr);
+#endif
+
+        // get interpreter instance from argument
+    char         *c_rii_ID=NULL;
+    RexxInstance *instance=NULL;
+    c_rii_ID=(char *) JNU_GetStringNativeChars(env, j_rii_ID);  // convert to native string
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "                                        using c_rii_ID=[%.256s]\n", c_rii_ID);
+    fflush(stderr);
+#endif
+
+    RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
+    RexxFreeMemory(c_rii_ID);
+
+    RexxThreadContext   *rtc=NULL;
+
+    RexxInstance *tmpInstance=NULL;
+    tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
+
+    if (instance != tmpInstance)    // error (do not halt another Rexx Interpreter instance!)
+    {
+        char *msg=new char[1024];
+        SNPRINTF( msg, 1024, "%.16s/routine/_jniLanguageVersion0(), error 1: Rexx interpreter instance with the ID '%p' could not be found", DLLNAME, instance);
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             NULL, // rtc,
+                                                             NULL, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_INVALID_ARGUMENT,   // reason
+                                                             msg   // message
+                                                        );
+        delete[] msg;
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ...__jniLanguageVersion0(): tid=[%lu], error, cannot retrieve c_rii_ID=p=[%p], received=tmpInstance=[%p] instead\n",
+                    (unsigned long) tid, instance, tmpInstance);
+    fflush(stderr);
+#endif
+
+        return NULL;
+    }
+
+    // no need to do a rtc->ReleaseGlobalReference(ro) as these references get released upon rtc->DetachThread() !
+    if (!instance->AttachThread(&rtc))          // get a ThreadContext
+    {
+        char *msg=new char[1024];
+        SNPRINTF( msg, 1024, "%.16s/routine/_jniLanguageVersion0(), error 2: could not AttachThread() to Rexx interpreter instance with the ID '%p'", DLLNAME, instance);
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             NULL, // rtc,
+                                                             NULL, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_EXECUTION_ERROR,   // reason
+                                                             msg   // message
+                                                        );
+        delete[] msg;
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ...__jniLanguageVersion0(): tid=[%lu], error, cannot do an instance->AttachThread()!\n",
+                          (unsigned long) tid);
+    fflush(stderr);
+#endif
+
+        return NULL;
+    }
+
+    size_t res=rtc->LanguageLevel();
+
+    // check for exception; if so, create RexxException, supply condition object as a RexxProxy; clear exception in thread
+    if (rtc->CheckCondition())      // a Rexx condition raised?
+    {
+        RexxDirectoryObject condObj=rtc->GetConditionInfo();
+        char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/routine/jniRexxRunProgram(), error 9");
+
+        jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
+                                                             rtc, // rtc,
+                                                             condObj, // conditionObject
+                                                             // NULL, // packageObject
+                                                             REASON_EXECUTION_ERROR,   // reason
+                                                             msg   // message
+                                                        );
+        rtc->DetachThread();
+        env->Throw(j_rexxException);  // throw the exception in the JVM
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning: ...__jniLanguageVersion0(): tid=[%lu], Rexx runtime error occurred, throwing Java exception!\n\tmsg=[%.256s]\n",
+                       (unsigned long) tid, msg);
+    fflush(stderr);
+#endif
+
+        RexxFreeMemory(msg);
+        return NULL;
+    }
+
+
+#if defined(DEBUG_JNI) || defined (DEBUG40)
+    fprintf(stderr, "<-- returning from: .._jniLanguageVersion0(), tid=[%lu], normal execution\n", (unsigned long) tid);
+    fflush(stderr);
+#endif
+
+    rtc->DetachThread();
+
+    return res;
+}
+
+
+
 
 
 

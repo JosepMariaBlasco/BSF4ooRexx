@@ -1,3 +1,9 @@
+-------------------------------------- 2014-12-12 ----------------------------------
+
+- install\windows\kickoff.rex
+        - use fully qualified path to "install" directory as some versions of
+          Windows will change the current directory after elevation
+
 -------------------------------------- 2014-10-07 ----------------------------------
 
 - BSF.CLS

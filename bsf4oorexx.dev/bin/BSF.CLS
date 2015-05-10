@@ -9,9 +9,14 @@
 
    last change: $Revision: 927 $ $Author: Administrator $ $Date: 2010-12-26 18:34:19 +0100 (Sun, 26 Dec 2010) $
 
-   needs: ooRexx 4.0.1 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
+   needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2015-05-10, rgf: - changed BSF_ARRAY_REFERENCE's MAKEARRAY and AT method such that RexxProxy
+                            entries in the Java array get replaced by their contained Rexx object
+         2015-05-04, rgf: - corrected minimum ooRexx version to 4.1.0 (determined by BSF4ooRexx.cc)
+         2015-05-02, rgf: - make sure in bsf.OutputStream that flush() is used to force the buffered
+                            chars to be displayed for Writers and PrintStreams
          2014-10-07, rgf: - JSOasUtf8string: render Java String as UTF-8 encoded Rexx string
                           - utf8stringAsJSO: render UTF-8 Rexx encoded string as a Java String
          2014-10-06, rgf: - utf8toString - handle Javs objects
@@ -388,7 +393,7 @@
 
 
 
-   version:     4.50 (20141014)
+   version:     4.51 (20150510)
 
    authors:     (c) 2001-2014 Rony G. Flatscher, University of Augsburg, University of Essen,
                     WU (pronounced: "vey-uh") Vienna;
@@ -440,7 +445,7 @@
 
    signal on syntax
    parse version v .
-   minimumVersion="4.0.1"     -- minimum ooRexx version
+   minimumVersion="4.2.0"     -- minimum ooRexx version (same as BSF4ooRexx.cc)
    if v < "REXX-ooRexx_"||minimumVersion then
    do
        parse source s . name  -- extract name of this module
@@ -477,7 +482,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="450.20141014" -- set version (date distribution got created)
+   .bsf4rexx~version="451.20150510" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -2507,8 +2512,14 @@ any:
       call bsf "arrayPut", indexArray, tmpArr[i]-1, i-1
    end
 
-
-   return bsf.wrap( bsf('arrayAt', self~objectName, indexArray))
+   -- 2015-05-10: special AT processing: if an element is a RexxProxy then replace it
+   --             with its contained Rexx object; needed for JSR223-eval() implementation
+   entry=bsf('arrayAt', self~objectName, indexArray)   -- get entry from Java array
+   res=bsf.wrap(entry)
+   if pos("<O>org.rexxla.bsf.engines.rexx.RexxProxy@",entry)>0 then   -- a RexxProxy in hand?
+      res=BsfRexxProxy(res,"o")  -- special AT processing: replace RexxProxy with its contained Rexx object
+   return res
+   -- return bsf.wrap( bsf('arrayAt', self~objectName, indexArray))
 
 any:
    /* if a Java error, then the Java error message/stack trace is stored in the
@@ -2683,8 +2694,14 @@ any:
 
   rexxArr=.array~new
   do i=1 to bsf('arrayLength', arr)~substr(4)         -- get length of 'dimensions' array
-     -- rexxArr[i]=bsf('arrayAt', arr, i-1)  -- use Java indexing (starting with '0')
-     rexxArr[i]=bsf.wrap(bsf('arrayAt', arr, i-1))  -- use Java indexing (starting with '0')
+     -- rexxArr[i]=bsf.wrap(bsf('arrayAt', arr, i-1))  -- use Java indexing (starting with '0')
+     -- 2015-05-10: special MAKEARRAY processing: if an element is a RexxProxy then replace it
+     --             with its contained Rexx object; needed for JSR223-eval() implementation
+     entry=bsf('arrayAt', arr, i-1)
+     rexxArr[i]=bsf.wrap(entry)  -- use Java indexing (starting with '0')
+     if pos("<O>org.rexxla.bsf.engines.rexx.RexxProxy@",entry)>0 then   -- a RexxProxy in hand?
+        rexxArr[i]=BsfRexxProxy(rexxArr[i],"o") -- special MAKEARRAY processing: replace RexxProxy with its contained Rexx object
+
   end
   return rexxArr
 
@@ -4196,11 +4213,10 @@ syntax:
         iterate
 
      if char="0a"x then          -- received LF, return chars gathered so far
-        return mb~string
+        return mb~string         -- return collected characters
 
      mb~append(char)
   end
-  return mb~string
 
 
 /* Allows to use a java.io.PrintStream or a java.io.Writer object as an ooRexx output stream. */
@@ -4232,6 +4248,7 @@ syntax:
      else
         javaOutputObject~print(chars~subStr(start))
   end
+  javaOutputObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
 
 ::method lineOut
   expose javaOutputObject isWriter
@@ -4246,7 +4263,8 @@ syntax:
   do
      javaOutputObject~println(chars)
   end
+  javaOutputObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
 
-::method say                        -- in ooRexx file streams a synonym for lineOut
+::method say                     -- in ooRexx file streams a synonym for lineOut
   forward message "lineout"
 

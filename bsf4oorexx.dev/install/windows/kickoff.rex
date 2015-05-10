@@ -8,9 +8,12 @@
                 an error, just runs it without; this way starting with Windows2000/XP
                 elevation is attempted, the fallback is to run re/un/installation as is
 
-   Version: 1.01
+   Version: 1.02
    Changes: - 2014-04-26 rgf: use "elevate{32|64}.exe" on Windows Vista and higher
                          to run the [re|un]install elevated
+
+            - 2014-12-12 rgf: use fully qualified path to setupAllAndRun.rex as elevation
+                         may change the current directory to the Windows home directory
 
    Info-URLs:  <http://technet.microsoft.com/en-us/magazine/2007.06.utilityspotlight.aspx>
                <http://technet.microsoft.com/en-us/magazine/2008.06.elevation.aspx>
@@ -98,8 +101,8 @@ do
 say "===>"
 --   rexxExe     = quote( qualify( value("REXX_HOME",,"ENVIRONMENT")"\rexx.exe" ) )
    rexxExe     = "rexx.exe"   -- will be found along the path
---   setupScript = quote( qualify(workDir"\..\setupAllAndRun.rex") )   -- fully qualify script
-   setupScript = "..\setupAllAndRun.rex"  -- fully qualify script
+   setupScript = quote( qualify(workDir"\..\setupAllAndRun.rex") )   -- fully qualify script
+--   setupScript = "..\setupAllAndRun.rex"  -- unqualify script
    rexxBits=getRexxBitness()
    elevateExe = "Elevate"rexxBits".exe"
    mode="Elevate"rexxBits".exe"

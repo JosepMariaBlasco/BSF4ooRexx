@@ -14,7 +14,7 @@ import java.lang.reflect.Method;
   * using the RexxSAA interface.
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2014 Rony G. Flatscher
+ *    Copyright (C) 2001-2015 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 4.5.0, 20140703
+  * @version 4.5.1, 20150509
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,13 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+    2015-05-09, ---rgf, - added public methods
+                            - getLocalEnvironment()   ... returns .local
+                            - getPublicEnvironment()  ... returns .environment
+                            - getNil()                ... returns .nil
+                            - getInterpreterVersion() ... returns long, where the least significant three bytes contain the version encoded
+                            - getLanguageVersion()    ... returns long, where the least significant two bytes contain the version encoded
+
     2014-07-03, ---rgf, - make sure that RexxProxy objects are always passed as Java objects in arguments;
                           adapt apply() as well to pass through RexxProxy objects in arguments
 
@@ -131,7 +138,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "450.20140703";
+    static final public String version = "451.20150909";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -251,6 +258,93 @@ if (bDebug) System.err.println("===> RexxEngine().initialize(): before ===> rii_
 if (bDebug) System.err.println("===> RexxEngine().initialize(): after  ===> rii_ID=["+rii_ID+"]");
 */
     }
+
+
+
+    /** Get the ooRexx <code>.local</code> directory.
+     *
+     *  @return a <code>RexxProxy</code> allowing access to the ooRexx <code>.local</code> directory
+     *  @since 2015-05-09
+     */
+    public Object getLocalEnvironment()
+    {
+System.err.println(this+".getLocalEnvrionment(), before doing a \"return rexxInterface.jniGetLocalEnvironment(rii_ID);\" ...");
+        if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
+        {
+            throw new NullPointerException("\"rii_ID\" (Rexx interpereter instance ID) null, Rexx interpreter instance not yet created (just eval() or apply() a script))");
+        }
+
+        return rexxInterface.jniGetLocalEnvironment0(rii_ID);
+    }
+
+    /** Get the ooRexx <code>.environment</code> directory.
+     *
+     *  @return a <code>RexxProxy</code> allowing access to the ooRexx <code>.environment</code> directory
+     *  @since 2015-05-09
+     */
+    public Object getGlobalEnvironment()
+    {
+        if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
+        {
+            throw new NullPointerException("\"rii_ID\" (Rexx interpereter instance ID) null, Rexx interpreter instance not yet created (just eval() or apply() a script))");
+        }
+        return rexxInterface.jniGetGlobalEnvironment0(rii_ID);
+    }
+
+    /** Get the ooRexx <code>.nil</code> object.
+     *
+     *  @return a <code>RexxProxy</code> representint the ooRexx <code>.nil</code> sentinel object
+     *  @since 2015-05-09
+     */
+    public Object getNil()
+    {
+        if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
+        {
+            throw new NullPointerException("\"rii_ID\" (Rexx interpereter instance ID) null, Rexx interpreter instance not yet created (just eval() or apply() a script))");
+        }
+        return rexxInterface.jniNil0(rii_ID);
+    }
+
+
+   /** (Copied from the ooRexx <code>rexxpg.pdf</code> documentation) &quot;Returns
+    *  the version of the interpreter. The returned version is
+    * encoded in the 3 least significant bytes of the returned value,
+    * using 1 byte each for the interpreter version, release, and revision
+    * values. For example, on a 32-bit platform, this value would be
+    * <code>0x00040000</code> for version 4.0.0.&quot;
+    *
+    * @return the ooRexx interpreter version
+     *  @since 2015-05-09
+    */
+    public long getInterpreterVersion()
+    {
+        if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
+        {
+            throw new NullPointerException("\"rii_ID\" (Rexx interpereter instance ID) null, Rexx interpreter instance not yet created (just eval() or apply() a script))");
+        }
+        return rexxInterface.jniInterpreterVersion0(rii_ID);
+    }
+
+
+   /** (Copied from the ooRexx <code>rexxpg.pdf</code> documentation) &quot;Returns the language level of
+    *  the interpreter. The returned language level is encoded in the 2 least
+    *  significant bytes of the returned value, using 1 byte each for the
+    *  interpreter version, release, and revision values. For example, on a 32-bit
+    *  platform, this value would be <code>0x00000603</code> for language level 6.03.&quot;
+    *
+    * @return the ooRexx language level
+     *  @since 2015-05-09
+    */
+    public long getLanguageLevel()
+    {
+        if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
+        {
+            throw new NullPointerException("\"rii_ID\" (Rexx interpereter instance ID) null, Rexx interpreter instance not yet created (just eval() or apply() a script))");
+        }
+        return rexxInterface.jniLanguageLevel0(rii_ID);
+    }
+
+
 
 
 

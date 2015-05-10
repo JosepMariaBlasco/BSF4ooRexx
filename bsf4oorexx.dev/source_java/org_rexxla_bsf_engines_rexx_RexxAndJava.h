@@ -95,6 +95,20 @@ extern "C" {
 #define org_rexxla_bsf_engines_rexx_RexxAndJava_ENV_GET 42L
 #undef org_rexxla_bsf_engines_rexx_RexxAndJava_ENV_SET
 #define org_rexxla_bsf_engines_rexx_RexxAndJava_ENV_SET 43L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_INVOKE_JSO
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_INVOKE_JSO 44L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_INVOKE_STRICT_JSO
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_INVOKE_STRICT_JSO 45L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_GET_FIELD_VALUE_JSO
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_GET_FIELD_VALUE_JSO 46L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_GET_FIELD_VALUE_STRICT_JSO
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_GET_FIELD_VALUE_STRICT_JSO 47L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_GET_PROPERTY_VALUE_JSO
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_GET_PROPERTY_VALUE_JSO 48L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_GET_STATIC_VALUE_JSO
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_GET_STATIC_VALUE_JSO 49L
+#undef org_rexxla_bsf_engines_rexx_RexxAndJava_GET_STATIC_VALUE_STRICT_JSO
+#define org_rexxla_bsf_engines_rexx_RexxAndJava_GET_STATIC_VALUE_STRICT_JSO 50L
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniSetupNativeJVMPointer
@@ -366,6 +380,46 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
  */
 JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniProcEnvironment
   (JNIEnv *, jobject, jint, jstring, jstring);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetLocalEnvironment0
+ * Signature: (Ljava/lang/String;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetLocalEnvironment0
+  (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniGetGlobalEnvironment0
+ * Signature: (Ljava/lang/String;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlobalEnvironment0
+  (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniNil0
+ * Signature: (Ljava/lang/String;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniNil0
+  (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniInterpreterVersion0
+ * Signature: (Ljava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpreterVersion0
+  (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniLanguageLevel0
+ * Signature: (Ljava/lang/String;)J
+ */
+JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguageLevel0
+  (JNIEnv *, jobject, jstring);
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
