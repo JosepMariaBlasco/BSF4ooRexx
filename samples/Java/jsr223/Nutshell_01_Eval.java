@@ -1,0 +1,42 @@
+import javax.script.*;
+import java.io.FileReader;
+
+import org.rexxla.bsf.engines.rexx.RexxEngine;
+import org.rexxla.bsf.engines.rexx.RexxProxy;
+import org.rexxla.bsf.engines.rexx.jsr223.*;
+
+
+/** Demonstrate using public Rexx routines to serve Interface method invocations
+ */
+public class Nutshell_01_Eval
+{
+    public static void main (String args[])
+    {
+        // TODO: change to use ScriptManager to fetch Rexx script enginge
+        RexxScriptEngine rse= new RexxScriptEngine();
+
+        try
+        {
+            String filename="nutshell_01.rex";
+            Bindings b=rse.createBindings();
+            b.put(ScriptEngine.FILENAME,filename);
+
+            System.err.println("(Java) executing ["+filename+"] without arguments:");
+            rse.eval(new FileReader(filename), b);  // now let us execute the Rexx script
+
+            System.err.println("-------------------------");
+            System.err.println("(Java) executing ["+filename+"], now with four arguments, the third one being 'null':");
+                // add arguments for the script
+            b.put(ScriptEngine.ARGV, new Object[] {"one", "zwei", null, "quatre"});
+                // the RexxScriptEngine always compiles the last script and makes it available with the getCurrentScript() method
+            rse.getCurrentScript().eval(b);         // now let us re-execute the Rexx script
+        }
+        catch (Exception exc)
+        {
+            // exc.printStackTrace();
+            System.err.println(exc);
+            System.exit(-1);
+        }
+    }
+}
+
