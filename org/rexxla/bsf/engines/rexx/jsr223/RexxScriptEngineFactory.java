@@ -1,0 +1,196 @@
+package org.rexxla.bsf.engines.rexx.jsr223;
+import javax.script.*;
+
+import java.util.Arrays;
+import java.util.List;
+
+import java.util.Date;
+import java.text.SimpleDateFormat;
+import java.util.TimeZone;
+
+
+import org.apache.bsf.*;   // BSF support
+
+/** Class that implements the <code>javax.script.ScriptEngineFactory</code> interface.
+ *
+ * @author Rony G. Flatscher
+ * @since  2015-05-11
+ *
+ */
+public class RexxScriptEngineFactory implements ScriptEngineFactory
+{
+    final private static boolean bDebug=false; // true;
+
+    /** If a RexxScriptEngine gets created directly, allow it to fetch an instance of the RexxScriptEngineFactory. */
+    final public static RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY=new RexxScriptEngineFactory();
+
+    final private static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
+    final private static String       ENGINE_VERSION   ="001.20150504";
+    final private static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
+                                                                "rxj", "rexxj", "jrexx",
+                                                                "rxo" );
+    final private static String       LANGUAGE_NAME    ="ooRexx";
+    final private static String       LANGUAGE_VERSION ="4.1.0";
+    final private static List<String> MIME_TYPES       = Arrays.asList("text/x-rexx",
+                                                                       "text/x-rexx-java",
+                                                                       "text/x-rexx-java-ooo" );
+    final private static List<String> SCRIPT_ENGINE_SHORT_NAMES = Arrays.asList("rexx", "Rexx",
+                                                                       "oorexx", "ooRexx", "orexx", "oRexx");
+    final private static String       THREADING        = "MULTITHREADED"; // "THREAD-ISOLATED";
+
+
+    /** Returns the full name of the ScriptEngine. */
+    public String getEngineName()
+    {
+        return ENGINE_NAME;
+    }
+
+    /** Returns the version of the ScriptEngine. */
+    public String getEngineVersion()
+    {
+        return ENGINE_VERSION;
+    }
+
+    /** Returns an immutable list of filename extensions, which generally identify scripts written
+        in the language supported by this ScriptEngine. */
+    public List<String> getExtensions()
+    {
+        return EXTENSIONS;
+    }
+
+    /** Returns the name of the scripting langauge supported by this ScriptEngine. */
+    public String getLanguageName()
+    {
+        return LANGUAGE_NAME;
+    }
+
+    /** Returns the version of the scripting language supported by this ScriptEngine. */
+    public String getLanguageVersion()
+    {
+        return LANGUAGE_VERSION;
+    }
+
+    /** Returns a String which can be used to invoke a method of a Java object using the
+        syntax of the supported scripting language. */
+    public String getMethodCallSyntax(String obj, String m, String... args)
+    {
+        StringBuilder sb=new StringBuilder();
+            // append object name, message operator and message name
+        sb.append(obj).append('~').append(m);
+
+        if (args!=null && args.length>0)    // if we have arguments supply round brackets
+        {
+            sb.append('(');
+            for (int i=0;i<args.length;i++) // append the argument
+            {
+                if (i>0)
+                {
+                    sb.append(',');         // append comma
+                }
+                String arg=args[i];
+                if (arg==null)              // null (could be missing argument, but we do not know, hence pass value to ooRexx)
+                {
+                    sb.append(".nil");
+                }
+                else                        // append argument
+                {
+                    sb.append(arg);
+                }
+            }
+            sb.append(')');
+        }
+        return sb.toString();
+    }
+
+    /** Returns an immutable list of mimetypes, associated with scripts that can be executed by the engine. */
+    public List<String> getMimeTypes()
+    {
+        return MIME_TYPES;
+    }
+
+    /** Returns an immutable list of short names for the ScriptEngine, which may be used to identify
+        the ScriptEngine by the ScriptEngineManager. */
+    public List<String> getNames()
+    {
+        return SCRIPT_ENGINE_SHORT_NAMES;
+    }
+
+    /** Returns a String that can be used as a statement to display the specified String using
+        the syntax of the supported scripting language. */
+    public String getOutputStatement(String toDisplay)
+    {
+        if (toDisplay==null)
+        {
+            return "say";
+        }
+        return "say \""+toDisplay.replace("\"","\"\"")+"\"";
+    }
+
+
+    /** Returns the value of an attribute whose meaning may be implementation-specific. */
+    public Object getParameter(String key)
+    {
+        if (key.equals("THREADING"))
+        {
+            return THREADING;
+        }
+        return null;
+    }
+
+    /** Returns a valid scripting language executable program with given statements. */
+    public String getProgram(String... statements)
+    {
+        StringBuilder sb=new StringBuilder();
+        String strThis=this.toString();
+
+        sb.append("-- begin of "+strThis+".getProgram() --> "+getGMTFormattedDateAsISO()+" -->\n");
+
+        if (statements==null)
+        {
+            sb.append("\t-- no statements supplied (received \"null\")\n");
+        }
+        else if (statements.length==0)
+        {
+            sb.append("\t-- no statements supplied (received an empty array)\n");
+        }
+        else
+        {
+            for (int i=0;i<statements.length;i++)
+            {
+                if (statements[i]==null)
+                {
+                    sb.append("\t-- 'null' received! \n");
+                }
+                else
+                {
+                    sb.append("\t"+statements[i]+"\n");
+                }
+            }
+        }
+
+        sb.append("-- end of   "+strThis+".getProgram() <-- "+getGMTFormattedDateAsISO()+" <--\n");
+        return sb.toString();
+    }
+
+
+    /** Creates and returns an instance of the ScriptEngine associated with this ScriptEngineFactory. */
+    public ScriptEngine getScriptEngine()
+    {
+        if (bDebug) { System.err.println("... arrived in "+this+".getScriptEngine()");}
+
+        RexxScriptEngine rse=new RexxScriptEngine();
+
+        if (bDebug) {System.out.println("RexxScriptEngineFactory.getScriptEngine(): "+this+", RSE="+rse);}
+
+        return rse;
+    }
+
+
+    static public String getGMTFormattedDateAsISO()
+    {
+        SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'");
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        return sdf.format(new Date());
+    }
+
+}

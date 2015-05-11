@@ -25,6 +25,7 @@ set path2root=%cd%\..
 
 rem set default path to org.rexxla.bsf, 2005-06-02, ---rgf
 set path2engine=%path2root%\org\rexxla\bsf\engines\rexx
+set path2jsr223=%path2root%\org\rexxla\bsf\engines\rexx\jsr223
 
 set path2rexxlaBsf=%path2root%\org\rexxla\bsf
 
@@ -102,5 +103,13 @@ javac %javacDefines% %source% %target% %javaSrc%\RexxExitHandler.java           
 javac %javacDefines% %source% %target% %javaSrc%\RexxCommandHandler.java        && copy %javaSrc%\RexxCommandHandler*         %path2engine%
 javac %javacDefines% %source% %target% %javaSrc%\RexxConfiguration.java         && copy %javaSrc%\RexxConfiguration*          %path2engine%
 
+
+@rem 2015-05-11
+set target=-target 1.6
+set source=-source 1.6
+
+javac %javacDefines% %source% %target% %javaSrc%\RexxScriptEngine.java          && copy %javaSrc%\RexxScriptEngine.*          %path2jsr223%
+javac %javacDefines% %source% %target% %javaSrc%\RexxScriptEngineFactory.java   && copy %javaSrc%\RexxScriptEngineFactory*    %path2jsr223%
+javac %javacDefines% %source% %target% %javaSrc%\RexxCompiledScript.java        && copy %javaSrc%\RexxCompiledScript*         %path2jsr223%
 
 endlocal
