@@ -52,7 +52,6 @@ public class Nutshell_02_Invoke
             System.err.println("(Java) invokeFunction('routine_zwei'): "+rcs.invokeFunction("routine_zwei", "eins", "zwei", "drei"));
             System.err.println("---\n");
 
-
 /*
                 // this should cause an exception, because the method 'three' does not exist
             System.err.println("(Java) using invokeMethod() using the <RexxScriptEngine>:\n");

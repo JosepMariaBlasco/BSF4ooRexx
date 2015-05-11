@@ -24,7 +24,7 @@ import org.rexxla.bsf.engines.rexx.RexxProxy;
  * @since  2015-05-11
  *
  */
-class RexxCompiledScript extends CompiledScript implements Invocable
+public class RexxCompiledScript extends CompiledScript implements Invocable
 {
 
     private static final boolean bDebug=false; // true; // false; // true;
