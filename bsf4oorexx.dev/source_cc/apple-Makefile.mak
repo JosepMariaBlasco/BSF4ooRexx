@@ -18,6 +18,7 @@ INC_PATH = -I/System/Library/Frameworks/JavaVM.framework/Versions/Current/Header
 INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers
 
 LIB_2_REXX = /System/Library/Frameworks/ooRexx.framework/Libraries
+LIB_2_REXX_32 = /opt/oldrexx/ooRexx-i386/lib
 
 # INC_PATH_ORX = -I/opt/ooRexx/include $(INC_PATH)
 
@@ -35,7 +36,9 @@ i386: BSF4ooRexx.cc
 	g++ -c $(CFLAGS) $(INC_PATH_ALL) -m32 -arch i386 -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -oBSF4ooRexx-mac-i386.o BSF4ooRexx.cc
 
 
-	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-i386.dylib BSF4ooRexx-mac-i386.o $(LIB_2_REXX)/librexx.dylib $(LIB_2_REXX)/librexxapi.dylib -framework JavaVM -arch i386
+	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-i386.dylib BSF4ooRexx-mac-i386.o $(LIB_2_REXX_32)/librexx.dylib $(LIB_2_REXX_32)/librexxapi.dylib -framework JavaVM -arch i386
+
+#	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-i386.dylib BSF4ooRexx-mac-i386.o $(LIB_2_REXX)/librexx.dylib $(LIB_2_REXX)/librexxapi.dylib -framework JavaVM -arch i386
 #	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-i386.dylib BSF4ooRexx-mac-i386.o /usr/lib/librexx.dylib /usr/lib/librexxapi.dylib -framework JavaVM -arch i386
 #	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-i386.dylib BSF4ooRexx-mac-i386.o -L/usr/lib -llibrexx.dylib -llibrexxapi.dylib -framework JavaVM -arch i386
 
