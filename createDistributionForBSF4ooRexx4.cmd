@@ -5,6 +5,7 @@
 @rem 2010-12-30/31, updated to new locations
 @rem 2011-03-20, add MacOSX support
 @rem 2014-05-25, create one jar only, containing both, bsf package et.al. and rexx engine
+@rem 2015-05-12, adding JSR-223 support
 
 @rem @echo createDistribution.cmd (for BSF4ooRexx)
 @echo %0 (for BSF4ooRexx)
@@ -26,9 +27,9 @@ set CLASSPATH=%CLASSPATH%;D:\Programme\OpenOffice.org 3\program\;D:\Programme\Op
 
 
 
-set releaseDate=20141014
-set runDate=20141014
-set doc_date=2014-10-14
+set releaseDate=20150512
+set runDate=20150512
+set doc_date=20150512
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -58,6 +59,9 @@ del BSF4ooRexx-apache-bsf.jar BSF4ooRexx-apache-bsf-source.jar bsf-*.jar
 @rem jar cvMf %bsfJarNameBin% org/apache/bsf/
 @rem rgf, 20090815 jar cvMf %bsfJarNameBin% org/apache/bsf org/apache/taglibs
 jar cvMf %bsfJarNameBin% org/apache/bsf org/apache/taglibs org/objectweb/ org/codehaus/ org/rexxla/ org/oorexx/
+jar uf   %bsfJarNameBin% META-INF/
+pause
+
 zip -d %bsfJarNameBin% "*.svn*" "*bkp*" "*tmp*"
 
 rem rgf, 20070917, not needed, we have BSF4ooRexx-apache-bsf-source.jar instead
@@ -79,6 +83,8 @@ call createScriptProviderForooRexx.cmd
 
 @echo creating BSF Rexx engine jar file, containing the OOo support and datergf...
 jar cvMf bsf-rexx-engine.jar org/rexxla/ org/oorexx/
+jar uf   bsf-rexx-engine.jar META-INF/
+pause
 rem zip -d bsf-rexx-engine.jar "*.svn*" "*.html" "*.css" "*.txt"
 zip -d bsf-rexx-engine.jar "*.svn*"
 zip -d bsf-rexx-engine.jar "*.css"
@@ -101,6 +107,8 @@ zip -9r bsf-rexx-engine.jar janino_LICENSE.TXT
 
 @echo creating main-jar file...
 jar cvMf BSF4ooRexx-apache-bsf.jar org/
+@rem jar uf   BSF4ooRexx-apache-bsf.jar META-INF/
+@rem pause
 
 @echo removing unneeded entries
 zip -d BSF4ooRexx-apache-bsf.jar org/apache/commons

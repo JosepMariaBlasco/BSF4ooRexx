@@ -33,8 +33,12 @@ public class Nutshell_03_Interface
 {
     public static void main (String args[])
     {
-        // TODO: change to use ScriptManager to fetch Rexx script enginge
-        RexxScriptEngine rse= new RexxScriptEngine();
+        // direct creation of a RexxScriptEngine
+        // RexxScriptEngine rse= new RexxScriptEngine();
+
+        // Using a ScriptManager to fetch the Rexx script enginge
+        ScriptEngineManager manager = new ScriptEngineManager();
+        RexxScriptEngine rse=(RexxScriptEngine) manager.getEngineByName("Rexx");
 
         try
         {

@@ -5,9 +5,17 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.29
+   Version: 1.30
    Changed:
-	    2014-09-15, ---rgf, - create_REXXJ_Script() now honors environment variable"BSF4Rexx_JavaStartupOptions"
+            2015-05-12, ---rgf, - trying to find a 32-bit "java.exe", if ooRexx is 32-bit but runs on a
+                                  64-bit Windows and Java cannot be found by the usual means (via PATH,
+                                  nor via registry); now looks in the 32- and/or 64-bit "ProgramFiles"\Java
+                                  directory or subdirectories for "java.exe" using SysFileTree(); if multiple
+                                  found then return the one with the highest index, assuming that that is
+                                  the latest Java (i.e. Java subdirectories get listed ascendingly by their
+                                  contained version number)
+                                - make sure that we check for the minium ooRexx version 4.1.0
+            2014-09-15, ---rgf, - create_REXXJ_Script() now honors environment variable"BSF4Rexx_JavaStartupOptions"
             2014-05-25, ---rgf, - getRexxBitness(): use "parse version" starting with ooRexx 4.2 (encodes bitness in version string)
                                 - use elevation starting with Windows Vista (Windows version 6.0)
             2013-07-14, ---rgf, - Make output more verbose, such that logfile reflects environment at installation time
@@ -159,9 +167,9 @@
 
 parse version '-' name '_' val '(' . level .
 
-minVersion="4.0.1"
+minVersion="4.1.0"
 
-if val<minVersion | level<6.03 then    -- make sure we use ooRexx 4.0.1 or higher !
+if val<minVersion | level<6.03 then    -- make sure we use ooRexx 4.1.0 or higher !
 do
    say "PANIC: need ooRexx ["minVersion"] or higher, found only version ["val"]!"
    exit -1
@@ -1839,6 +1847,27 @@ determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: det
 
          if sysFileExists(binJava) then   -- o.k. finally found !
             cmd.eJavaBinary=qw(binJava)
+         else   -- not yet found try looking in the file system, ---rgf, 20150512
+         do
+            pf=value("ProgramFiles",,"environment")
+            if cmd.eBitness=32 then    -- Rexx is 32-bit
+            do
+                pf=value("ProgramFiles(x86)",,"environment")   -- on 64-bit Windows?
+
+                if pf="" then -- on 32-bit Windows
+                   pf=value("ProgramFiles",,"environment")
+            end
+            searchPattern=pf"\Java\java.exe"
+say "java.exe not found yet, looking in ["searchPattern"] and its subdirectories ..."
+              -- try to locate java.exe, use the last one (assuming it is the newest)
+            call SysFileTree searchPattern, "files.", "FSO"
+            count=files.0
+            if count>0 then
+            do
+                cmd.eJavaBinary=qw(files.count)
+say "java.exe found in" count " places using ["searchPattern"], returning ["files.count"]."
+            end
+         end
       end
       else  -- found on path, use it
       do
