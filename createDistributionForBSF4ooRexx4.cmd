@@ -34,7 +34,7 @@ set doc_date=20150512
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
 @rem set bsfVersion=v400
-set releaseVersion=v450
+set releaseVersion=v451
 set releaseName=bsf4ooRexx-%releaseVersion%-%releaseDate%
 set bsfJarNameBin=%releaseName%-bin.jar
 set bsfJarNameSource=%releaseName%-source.jar
