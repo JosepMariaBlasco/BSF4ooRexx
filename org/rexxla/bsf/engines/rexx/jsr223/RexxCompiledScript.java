@@ -27,13 +27,15 @@ import org.rexxla.bsf.engines.rexx.RexxProxy;
 public class RexxCompiledScript extends CompiledScript implements Invocable
 {
 
-    private static final boolean bDebug=false; // true; // false; // true;
+    private static final boolean bDebug=false; // true; // false;
 
     /** Field that refers to the RexxScriptEngine instance which created this RexxCompiledScript. */
     RexxScriptEngine rse;
 
 
-    /** If set to <code>true</code> the <code>BSFException</code> (may contain a
+    /** The value of this field controls whether {@link createScriptException(Exception exc)} supplies
+     *  the <code>BSFException</code> object or not.
+     *  If set to <code>true</code> the <code>BSFException</code> (may contain a
      *  <code>RexxException</code> as cause) will be used to create and throw the <code>ScriptException</code>.
      * If set to <code>false</code> the (Rexx formatted) message and the line number, if available, are used
      * to create and throw the <code>ScriptException</code>.
@@ -41,7 +43,8 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
     boolean bSupplyBSFExceptionObject=false;
 
     /** Getter for the Rexx script which got compiled (tokenized).
-     *  @return the string representing of the compiled Rexx script
+     *
+     *  @return the current value of {@link bSupplyBSFExceptionObject}
     */
     public boolean getSupplyBSFExceptionObject()
     {
@@ -49,7 +52,8 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
     }
 
     /** Setter for the Rexx script which got compiled (tokenized).
-     *  @return the string representing of the compiled Rexx script
+     *
+     *  @param the value to be used for the field {@link bSupplyBSFExceptionObject}
     */
     public void setSupplyBSFExceptionObject(boolean newValue)
     {
@@ -61,19 +65,21 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
     /** The filename used for evaluating (executing) the script or invoking functions or methods from the script */
     String filename;
 
+    /** Getter method to return the current value of {@link filename}.
+     *
+     *  @return the current value of {@link filename}
+     */
     public String getFilename()
     {
         return filename;
     }
 
-    /** Getter for the Rexx script which got compiled (tokenized).
-     *  @return the string representing of the compiled Rexx script
-    */
 
-    /** The script that was compiled (tokenized). */
+    /** The source code of the Rexx script that was compiled (tokenized). */
     String scriptSource;
 
-    /** Getter for the Rexx script which got compiled (tokenized).
+    /** Getter for the Rexx script source code which got compiled (tokenized).
+
      *  @return the string representing of the compiled Rexx script
     */
     public String getScriptSource()
@@ -81,11 +87,12 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
         return scriptSource;
     }
 
-    /** The RexxProxy representing the compiled (tokenized) script (a Rexx routine object). */
+    /** The <code>RexxProxy</code> representing the compiled (tokenized) script (a Rexx routine object). */
     RexxProxy rexxScriptObject;
 
-    /** Getter for the RexxProxy representing the Rexx routine object the script got compiled (tokenized) into.
-     * @return a RexxProxy representing the Rexx routine object
+    /** Getter for the code>RexxProxy</code> representing the Rexx routine object the script got compiled (tokenized) to.
+     *
+     * @return a <code>RexxProxy</code> representing the Rexx routine object
      */
     public RexxProxy getScriptObject()
     {
@@ -93,11 +100,12 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
     }
 
 
-    /** A RexxProxy representing the script's package (a Rexx package object). */
+    /** A <code>RexxProxy</code> representing the script's package (a Rexx package object). */
     RexxProxy rexxPackageObject;
 
-    /** Getter for the RexxProxy representing the Rexx routine object the script got compiled (tokenized) into.
-     * @return a RexxProxy representing the Rexx package object of this compiled script
+    /** Getter for the <code>RexxProxy</code> representing the Rexx routine object the script got compiled (tokenized) into.
+
+     * @return a <code>RexxProxy</code> representing the Rexx package object of this compiled script
      */
     public RexxProxy getPackageObject()
     {
@@ -105,7 +113,16 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
     }
 
 
-
+    /** Constructor for a compiled (tokenized) Rexx script.
+     *
+     * @param scriptSource - The string representing the Rexx source code.
+     * @@param filename - The filename to use when creating and executing the Rexx script.
+     * @param bSupplyBSFExceptionObject - The value that controls whether a <BSFException> should be supplied
+     *                    as a cause of a <code>ScriptException</code>.
+     * @param scriptRexxProxy - The <code>RexxProxy</code>  representing the Rexx routine object.
+     * @param scriptRexxPackage - The <code>RexxProxy</code> representing the Rexx package object from
+     *                            the <code>scriptRexxProxy</code>.
+     */
     RexxCompiledScript(RexxScriptEngine scriptEngine,
                        String    scriptSource,
                        String    filename,
@@ -122,7 +139,38 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
         this.rexxPackageObject        =scriptRexxPackage;
     }
 
-    /** Executes the program stored in this RexxCompiledScript object.
+    /** Evaluates (executes, runs) the Rexx program stored in this <code>RexxCompiledScript</code> object. The <code>sc</code>
+     *  parameter will always be passed on to the Rexx routine by storing it in a <code>RexxDirectory</code> under
+     *  the index <code>&quot;SCRIPTCONTEXT&quot;</code> and appending it as the last argument to the Rexx script.
+     *  This way any Rexx routine is able to access and manipulate the <code>ScriptContext</code>.
+     *
+     *  @param sc - A <code>ScriptContext</code> object, which will be supplied to the Rexx routine in a
+     *              <code>RexxDirectory</code> under the index <code>&quot;SCRIPTCONTEXT&quot;</code>, by appending
+     *              it to the Rexx argument list. (Hint: one can always access this object from Rexx code
+     *              with the statement <code>scriptcontext=arg('A')~lastItem~scriptContext</code>).)
+     *
+     *              <p>If this parameter contains a <code>ScriptEngine.ARGV</code> (the String
+     *              <code>&quot;javax.script.argv&quot;</code>) entry (a Java <code>Object</code> array),
+     *              then these objects are used as arguments for the Rexx routine in the supplied order.
+     *              Java <code>null</code> values will be represented as ooRexx <code>.nil</code> values.
+     *
+     *              <br>Note: If any argument is of type <code>RexxProxy</code>, then the Rexx routine will
+     *              receive the contained Rexx object instead.
+     *
+     * <p>Note # 2: This method will append an additional Rexx directory object argument with an entry named
+     *
+     *              <p>If this parameter contains a <code>ScriptEngine.FILENAME</code> (the String
+     *              <code>&quot;javax.script.filename&quot;</code>) entry (a string), then this is used
+     *              as the filename for the Rexx routine to execute and can be fetched from Rexx with
+     *              the statement <code>parse source . . thisFilename</code>.
+     *
+     * @return the object the Rexx routine returns. In the case that a Rexx object gets returned it will
+     *         be wrapped (boxed) in a <code>RexxProxy</code>. Supplying a <code>RexxProxy</code> as an
+     *         argument to a Rexx routine will cause the contained Rexx object to be used in Rexx instead.
+     *
+     *         <br>Hint: one can interact with the contained Rexx object of a <code>RexxProxy</code> by sending
+     *         it messages from Java using its <code>sendMessage</code> methods.
+     *
      */
     public Object eval(ScriptContext sc) throws ScriptException
     {
@@ -142,35 +190,15 @@ if (bDebug==true) { System.err.println("---> RCS ---> eval(), sc=["+sc+"]");}
             throw createScriptException(exc);
         }
 
-if (bDebug==true)
-{
-    System.err.println("\t eval(), double check, arrArgV.length=["+arrArgV.length+"]");
-    for (int i=0;i<arrArgV.length;i++)
-    {
-        System.err.println("\t\tarrArgV["+i+"]=["+arrArgV[i]+"]");
-    }
-}
-
         String filename=(String) sc.getAttribute(ScriptEngine.FILENAME);
         if (filename==null)     // no filename given
         {
             filename="filename_created_by_"+this.toString().replace('.','_').replace('@','-')+"_at_"+RexxScriptEngine.getGMTFormattedDate4Filename();
         }
-if (bDebug==true) { System.err.println("---> RCS ---> filename=["+filename+"]");}
 
-        try {
-if (bDebug==true) { System.err.println("... eval(): before rse.updateRexxEngine(sc)");}
-
+        try
+        {
             rse.updateRexxEngine(sc);   // make sure BSF.CLS support in JNI available; .input, .output, .error set accordingly
-if (bDebug==true)
-{
-    System.err.println("... eval(): after rse.updateRexxEngine(sc)");
-    for (int i=0;i<arrArgV.length;i++)
-    {
-        System.err.println("... ... RexxCompiledScript.eval(), arrArgV["+i+"]=["+arrArgV[i]+"]");
-    }
-    System.err.println("... eval(): rexxScriptObject=["+rexxScriptObject+"]");
-}
             return rexxScriptObject.sendMessage1("CALLWITH", arrArgV);  // execute routine object
         }
         catch (BSFException exc)
@@ -181,9 +209,9 @@ if (bDebug==true)
 
 
 
-    /** Returns the ScriptEngine whose compile method created this CompiledScript.
+    /** Returns the <code>ScriptEngine</code> whose compile method created this CompiledScript.
      */
-    public ScriptEngine getEngine()
+    public RexxScriptEngine getEngine()
     {
         return rse;
     }
@@ -191,7 +219,22 @@ if (bDebug==true)
 
 // -----------------------------------------------------------------------------------------------------
 // Invocable methods
-    /** Returns an implementation of an interface using functions compiled in the interpreter.
+    /** Returns an implementation of a Java interface where the Java method invocations will be carried
+     *  out by the public Rexx routines in the script. Therefore there must be a public Rexx routine defined
+     *  for each Java interface method.
+     *
+     *
+     *  <p>Hint: when an interface method gets invoked, the Rexx routine gets all its arguments in the
+     *           same order supplied to, plus an appended <code>RexxDirectory</code> &quot;slot directory</code>
+     *           object, which contains information about this particular method invocation. This slot directory
+     *           will also contain an entry, named <code>&quot;SCRIPTCONTEXT&quot;</code>, which allows the
+     *           Rexx routine to fully interact with the <code>ScriptContext</code> used for its invocation.
+     *           <br>(Hint: one can always access this object from Rexx code with the statement
+     *           <code>scriptcontext=arg('A')~lastItem~scriptContext</code>).)
+     *
+     *  @param clasz - The Java interface class object <code>&lt;T&gt;</code>, whose methods are implemented as public Rexx routines.
+     *
+     *  @return a Java object of type <code>&lt;T&gt;</code>
      */
     public <T> T getInterface(Class<T> clasz)
     {
@@ -206,57 +249,13 @@ if (bDebug==true)
         }
 
         ScriptContext sc=rse.getContext();  // get default ScriptContext
-/*
-        // define a Rexx class that gets the routine object and its package object
-        // to dispatch Interface methods iva publich Rexx routines in its unknown method
-        String code=
-            "use arg rexxScript, rexxPackage, scriptContext                                                             \n" +
-            "    -- create and return dispatcher object                                                                 \n" +
-            "return .jsr223.DispatchInterfaceMethodsToPublicRexxRoutines~new(rexxScript, rexxPackage, scriptContext)    \n" +
-            "                                                                                                           \n" +
-            "::requires BSF.CLS                              -- get Java camouflaging support                           \n" +
-            "                                                                                                           \n" +
-            "    -- dispatcher class for Invocable' <T> T getInterface(Class<T> clasz)                                  \n" +
-            "::class 'jsr223.DispatchInterfaceMethodsToPublicRexxRoutines'                                              \n" +
-            "                                                                                                           \n" +
-            "::method init              -- constructor                                                                  \n" +
-            "  expose rexxScriptObject rexxScriptPackage jsr223ScriptContext                                            \n" +
-            "  use strict arg rexxScriptObject, rexxScriptPackage, jsr223ScriptContext                                  \n" +
-            "                                                                                                           \n" +
-            "::method unknown           -- dispatch public routines instead                                             \n" +
-            "  expose rexxScriptObject rexxScriptPackage jsr223ScriptContext                                            \n" +
-            "  use strict arg methName, methArrArgv          -- unknown message name and its arguments                  \n" +
-            "                                                                                                           \n" +
-            "  pubRoutines=rexxScriptPackage~publicRoutines  -- get the public routines directory                       \n" +
-            "  if pubRoutines~hasentry(methName)=.false then -- if public routine not available raise error             \n" +
-            "     raise syntax 93.1 array (methName)         -- routine not found!                                      \n" +
-            "                                                                                                           \n" +
-            "  -- add ScriptContext to BSF4ooRexx' slot argument (a Rexx directory added as last argument on callbacks) \n" +
-            "  methArrArgv~lastItem~setentry('SCRIPTCONTEXT', jsr223ScriptContext) -- add ScriptContext                 \n" +
-            "                                                                                                           \n" +
-            "  pubRoutines~callWith(methName, methArrArgv)   -- invoke routine                                          \n" +
-            "  if var('RESULT') then return result           -- if a result object got returned, return it              \n" ;
-
-        Vector argVec=new Vector();     // define and set the arguments
-        argVec.add(rexxScriptObject);
-        argVec.add(rexxPackageObject);
-            // get and supply the default ScriptContext
-        argVec.add(sc);                     // supply it as last argument
-*/
-
         RexxProxy rp;
         try {
                 // make sure BSF.CLS support in JNI available; .input, .output, .error set accordingly
             rse.updateRexxEngine(sc);
 
                 // create and get the ooRexx dispatching object, working on the available public routines
-            // rp=(RexxProxy) rse.getBsfRexxEngine().apply(this.toString()+"_create_interface_to_public_routine_dispatching_object", 0, 0, code, null, argVec); // new Vector(), new Vector());
-
-if (bDebug==true) { System.err.println("---> ---> RexxCompiledScript() BEVOR trying to get access to object."); }
-
             rp=(RexxProxy) rse.getRoutineWrapper().sendMessage3("CALL", getScriptObject(), getPackageObject(), sc);
-
-if (bDebug==true) { System.err.println("<--- <--- RexxCompiledScript() AFTER trying to get access to object."); }
         }
         catch (Exception exc)        // if a BSFException, return null
         {
@@ -278,21 +277,60 @@ if (bDebug==true) { System.err.println("<--- <--- RexxCompiledScript() AFTER try
     }
 
 
-    /** Returns an implementation of an interface using member functions of a scripting object compiled in the interpreter.
-     *  Uses the implementation in {@link RexxScriptEngine} to not duplicate code (and thereby making maintenance safer).
-    */
+    /** Returns an implementation of a Java interface where the Java method invocations will be implemented
+     *  by the methods of the supplied Rexx object (a <code>RexxProxy</code>.
+     *
+     *  <p>Note: Uses the implementation in {@link RexxScriptEngine.getInterface(Object thiz, Class<T> clasz)}.
+     *
+     *  <p>Hint #1: the external <code>BSF4ooRexx</code> external Rexx function <code>BSFCreateRexxProxy(...)</code>
+     *           is much more versatile and among other things allows for implementing multiple Java interface
+     *           classes in a single Rexx class.
+     *
+     *  <p>Hint #2: when an interface method gets invoked, the Rexx method routine gets all its arguments in the
+     *           same order supplied to, plus an appended <code>RexxDirectory</code> &quot;slot directory</code>
+     *           object, which contains information about this particular method invocation. This slot directory
+     *           will also contain an entry, named <code>&quot;SCRIPTCONTEXT&quot;</code>, which allows the
+     *           Rexx routine to fully interact with the <code>ScriptContext</code> used for its invocation.
+     *           <br>(Hint: one can always access this object from Rexx code with the statement
+     *           <code>scriptcontext=arg('A')~lastItem~scriptContext</code>).)
+     *
+     *  @param thiz - The Java object (must be a <ocde>RexxProxy</code>) that implements the Java interface methods
+     *
+     *  @param clasz - The Java interface class object <code>&lt;T&gt;</code>, whose methods are implemented in the
+     *                 <code>thiz</code> object
+     *
+     *  @return a Java object of type <code>&lt;T&gt;</code>
+     */
     public <T> T getInterface(Object thiz, Class<T> clasz)
     {
-
-// TODO: - use a special class to embed thiz, which then adds the default SC as (second to?) last argument, such that
-//         the methods can get access to the defualt SC?
-//       - add an attribute jsr223ScriptContext, such that it can be changed later on?
-
             // use the implementation in RexxScriptEngine as this method is not CompiledScript related
         return rse.getInterface(thiz,clasz);
     }
 
-    /** Used to call top-level procedures and functions (accessible public Rexx routines) defined in scripts. */
+    /** Invokes (calls) a public Rexx routine defined in this compiled script.
+     *
+     * @param name - The name of the public routine to invoke.
+     *
+     * @param args - The arguments (a Java array of type <code>Object</code>) for the routine.
+     *
+     *<p>Note # 1: If any argument is of type <code>RexxProxy</code>, then the Rexx routine will
+     *              receive the contained Rexx object instead.
+     *
+     * <p>Note # 2: This method will append an additional Rexx directory object argument with an entry named
+     *          <code>&quot;SCRIPTCONTEXT&quot;</code>, which allows the Rexx routine to fully interact
+     *          with the <code>ScriptContext</code> used for its invocation.
+     *           <br>(Hint: one can always access this object from Rexx code with the statement
+     *           <code>scriptcontext=arg('A')~lastItem~scriptContext</code>).)
+     *
+     * @return the object the Rexx routine returns. In the case that a Rexx object gets returned it will
+     *         be wrapped (boxed) in a <code>RexxProxy</code>. Supplying a <code>RexxProxy</code> as an
+     *         argument to a Rexx routine will cause the contained Rexx object to be used in Rexx instead.
+     *
+     *         <br>Hint: one can interact with the contained Rexx object of a <code>RexxProxy</code> by sending
+     *         it messages from Java using its <code>sendMessage</code> methods or the
+     *         {@link invokeMethod(Object thiz, String name, Object... args} method.
+     *
+    */
     public Object invokeFunction(String name, Object... args) throws ScriptException, NoSuchMethodException
     {
         if (name==null)
@@ -303,8 +341,6 @@ if (bDebug==true) { System.err.println("<--- <--- RexxCompiledScript() AFTER try
         try {
             RexxProxy publicRoutines=(RexxProxy) rexxPackageObject.sendMessage0("PUBLICROUTINES");
             String result=(String) publicRoutines.sendMessage1("HASENTRY", name);
-
-if (bDebug==true) { System.err.println("... ["+this+"]: checking for public routine \""+name+"\": result=["+result+"], result.getClass()="+result.getClass());}
 
             if ( result.equals("0")==true)    // returned .false ?
             {
@@ -318,14 +354,38 @@ if (bDebug==true) { System.err.println("... ["+this+"]: checking for public rout
         }
         catch (Exception exc)
         {
-        //    throw new ScriptException(exc);
             throw createScriptException(exc);       // create ScriptException and throw it
         }
     }
 
 
-    /** Calls a method on a script object compiled during a previous script execution, which is retained in the state of the ScriptEngine.
-     *  Uses the implementation in {@link RexxScriptEngine} to not duplicate code (and thereby making maintenance safer).
+    /** Sends a Rexx message to the Rexx object contained in the addressed <code>RexxProxy</code> object.
+     *
+     *  <p>Note: Uses the implementation in {@link RexxScriptEngine.invokeMethod(Object thiz, String name, Object... args)}
+     *           where this method belongs to.
+     *
+     *  @param thiz - The wrapped (as a <ocde>RexxProxy</code>) Rexx object to receive the message
+     *
+     *  @param name - The Rexx message (method) name.
+     *
+     *  @param args - The arguments (a Java array of type <code>Object</code>) for the Rexx method.
+     *
+     * <p>Note # 1: If any argument is of type <code>RexxProxy</code>, then the Rexx routine will
+     *              receive the contained Rexx object instead.
+     *
+     * <p>Note # 2: This method will append an additional Rexx directory object argument with an entry named
+     *          <code>&quot;SCRIPTCONTEXT&quot;</code>, which allows the Rexx routine to fully interact
+     *          with the <code>ScriptContext</code> used for its invocation.
+     *           <br>(Hint: one can always access this object from Rexx code with the statement
+     *           <code>scriptcontext=arg('A')~lastItem~scriptContext</code>).)
+     *
+     * @return the object the Rexx routine returns. In the case that a Rexx object gets returned it will
+     *         be wrapped (boxed) in a <code>RexxProxy</code>. Supplying a <code>RexxProxy</code> as an
+     *         argument to a Rexx routine will cause the contained Rexx object to be used in Rexx instead.
+     *
+     *         <br>Hint: one can interact with the contained Rexx object of a <code>RexxProxy</code> by sending
+     *         it messages from Java using its <code>sendMessage</code> methods or the
+     *         {@link invokeMethod(Object thiz, String name, Object... args} method.
      *
     */
     public Object invokeMethod(Object thiz, String name, Object... args) throws ScriptException, NoSuchMethodException
@@ -337,6 +397,16 @@ if (bDebug==true) { System.err.println("... ["+this+"]: checking for public rout
 
     // --------------- utility methods
 
+    /** Utility method that creates a <code>ScriptException</code> from the supplied <code>Exception</code>
+     *  object.
+     *
+     * @param exc - The <code>Exception</code> object to process.
+     *
+     * @return a <code>ScriptException</code> object that either contains the supplied <code>Exception</code>
+     *         object as its cause. If however {@link bSupplyBSFExceptionObject} is set to <code>false</code>
+     *         then a Rexx like message with a line number, if available, gets created and used for the
+     *         <code>ScriptException</code> object to be returned.
+     */
     ScriptException createScriptException(Exception exc)
     {
         if (bSupplyBSFExceptionObject==true )    // return a plain ScriptException supplying the causing exception
@@ -374,9 +444,13 @@ if (bDebug==true) { System.err.println("... ["+this+"]: checking for public rout
 
 
 
-    /** Utility method which should (after debugging) be moved to RexxException to serve all Java clients.
-     *  Modelled after <code>BSF4ooRexx.cc</code>'s  <code>RgfCreateRexxlikeErrorInfo</code> function.
-     *  @param rco a Rexx proxy allowing access to the Rexx condtion object (a Rexx directory)
+    /** Utility method that creates the Rexx like condition message from the ooRexx condition object.
+     *
+     * ( Modelled after <code>BSF4ooRexx.cc</code>'s  <code>RgfCreateRexxlikeErrorInfo</code> function.)
+     *
+     *  @param rco a Rexx proxy allowing access to the Rexx condition object (a Rexx directory)
+     *
+     *  @return a Rexx like formatted error condition <code>String</code>
      */
     String createRexxLikeConditionMessage(RexxProxy rco)
     {
@@ -441,9 +515,11 @@ if (bDebug==true) { System.err.println("... ["+this+"]: checking for public rout
 
 
     /** Creates and returns the argument array, append ScriptContext sc as last argument
-     *  for the Rexx script to be able to fetch it. As of ooRexx 4.2.0 the routine's <code>CALLWITH</code>
+     *  for the Rexx script to be able to fetch it.
+     *  <p>Note: As of ooRexx 4.2.0 the routine's <code>CALLWITH</code>
      *  method sends a <code>MAKEARRAY</code> message which will compact the Java array by removing <code>null</code>
      *  values (behaviour of {@link ArrayWrapper} to mimickry the ooRexx <code>Array MAKEARRAY</code> behaviour
+     *  as close as possible
      *  (ooRexx arrays are capapble of distinguishing whether an entry is empty or is explicitly set
      *  to <code>.nil</code>). To keep the argument array intact when there are Java array entries with the
      *  value <code>null</code> a {@link RexxProxy} for the ooRexx <code>.nil</code> object is used for replacement.
@@ -466,28 +542,21 @@ if (bDebug==true) { System.err.println("... ["+this+"]: checking for public rout
             for (i=0; i<args.length; i++)            // loop over arguments
             {
 
-if (bDebug) { System.err.println("===> createArgV(), args["+i+"]=["+args[i]+"]"); }
+if (bDebug)
+{
+    System.err.println("===> createArgV(), args["+i+"]=["+args[i]+"]"); }
+    Object o=args[i];
+    arrArgV[i]=( o==null ? rexxNil : o );
+}
 
-                Object o=args[i];
-                arrArgV[i]=( o==null ? rexxNil : o );
-            }
         }
 
             // add as last argument, so scripts can always fetch the current ScriptContext;
             // make sure last argument is a Rexx directory, with an entry "SCRIPTCONTEXT" storing the ScriptContext object
             // (this way Rexx routines - even those invoked from JavaProxy invocations - can rely that
             // the last argument is a directory containing an entry "SCRIPTCONTEXT")
-
-if (bDebug)
-{
-   System.err.println("===> createArgV(), about to add ScriptContext argument!");
-   RexxProxy gcd=rse.getCreateDirectory();
-   System.err.println("                   gcd=["+gcd+"]");
-}
-
         arrArgV[i]=rse.getCreateDirectory().sendMessage2("CALL","SCRIPTCONTEXT",sc);
         return arrArgV;
     }
-
 
 }

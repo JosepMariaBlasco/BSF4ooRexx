@@ -11,7 +11,26 @@ import java.util.TimeZone;
 
 import org.apache.bsf.*;   // BSF support
 
-/** Class that implements the <code>javax.script.ScriptEngineFactory</code> interface.
+/*
+------------------------ Apache Version 2.0 license -------------------------
+   Copyright 2015 Rony G. Flatscher
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-----------------------------------------------------------------------------
+*/
+
+
+/** Class that implements the <code>javax.script.ScriptEngineFactory</code> interface for the ooRexx support.
  *
  * @author Rony G. Flatscher
  * @since  2015-05-11
@@ -25,7 +44,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     final public static RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY=new RexxScriptEngineFactory();
 
     final private static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
-    final private static String       ENGINE_VERSION   ="001.20150504";
+    final private static String       ENGINE_VERSION   ="100.20150511";
     final private static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
                                                                 "rxj", "rexxj", "jrexx",
                                                                 "rxo" );
@@ -71,7 +90,15 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     }
 
     /** Returns a String which can be used to invoke a method of a Java object using the
-        syntax of the supported scripting language. */
+     *   syntax of the supported scripting language.
+     *
+     *    @param obj - The name representing the object whose method is to be invoked.
+     *
+     *    @param m - The name of the method to invoke.
+     *
+     *    @param args - names of the arguments in the method call.
+     *
+     */
     public String getMethodCallSyntax(String obj, String m, String... args)
     {
         StringBuilder sb=new StringBuilder();
@@ -123,7 +150,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
         {
             return "say";
         }
-        return "say \""+toDisplay.replace("\"","\"\"")+"\"";
+        return "say \""+toDisplay.replace("\"","\"\"")+"\"";    // escape quote in the Rexx language style
     }
 
 
@@ -176,16 +203,18 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     /** Creates and returns an instance of the ScriptEngine associated with this ScriptEngineFactory. */
     public ScriptEngine getScriptEngine()
     {
-        if (bDebug) { System.err.println("... arrived in "+this+".getScriptEngine()");}
+if (bDebug) { System.err.println("... arrived in "+this+".getScriptEngine()");}
 
         RexxScriptEngine rse=new RexxScriptEngine();
-
-        if (bDebug) {System.out.println("RexxScriptEngineFactory.getScriptEngine(): "+this+", RSE="+rse);}
-
         return rse;
     }
 
 
+    // -------------- utility
+    /** Utility method that creates a valid filename for the current ISO date (GMT).
+     *
+     *  @return the current ISO date, edited to be usable as a filename
+     */
     static public String getGMTFormattedDateAsISO()
     {
         SimpleDateFormat sdf= new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.S'Z'");

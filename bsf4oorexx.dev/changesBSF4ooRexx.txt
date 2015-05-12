@@ -1,3 +1,92 @@
+-------------------------------------- 2015-05-12 ----------------------------------
+
+- major addition: full implementation of JSR-223 (javax.script) support, package
+  "org.rexxla.bsf.engines.rexx.jsr223", files:
+
+        - RexxScriptEngineFactory.java
+
+        - RexxScriptEngine.java
+
+        - RexxCompiledScript.java
+
+- new samples for demonstrating the JSR-223 support in "samples/Java/jsr223", files:
+
+        - Nutshell_01_Eval.java
+
+        - nutshell_01.rex
+
+        - Nutshell_02_Invoke.java
+
+        - nutshell_02.rex
+
+        - Nutshell_03_Interface.java
+
+        - nutshell_03.rex
+
+- added "META_INF/services/javax.script.ScriptEngineFactory" to point to the ooRexx
+  JSR-223 script engine factory
+
+-------------------------------------- 2015-05-09 ----------------------------------
+
+- BSF4ooRexx.cc, added JNI methods for RexxEngine.java
+
+        - _RexxAndJava_jniGetGlobalEnvironment0 ... return .environment
+
+        - _RexxAndJava_jniGetLocalEnvironment0  ... return .local
+
+        - _RexxAndJava_jniNil0                  ... return .nil
+
+        - _RexxAndJava_jniInterpreterVersion0   ... return  long, least signifant
+                                                    three bytes encode this information
+
+        - _RexxAndJava_jniLanguageVersion0      ... return  long, least signifant two
+                                                    bytes encode this information
+
+- RexxAndJava.java, added access to important Rexx objects and interpreter related information
+
+        - protected native Object jniGetLocalEnvironment0
+
+        - protected native Object jniGetGlobalEnvironment0
+
+        - protected native Object jniNil0
+
+        - protected native long   jniInterpreterVersion0
+
+        - protected native long   jniLanguageLevel0
+
+- RexxEngine.java, added public methods
+
+        - getLocalEnvironment()   ... returns .local
+
+        - getPublicEnvironment()  ... returns .environment
+
+        - getNil()                ... returns .nil
+
+        - getInterpreterVersion() ... returns long, where the least significant three bytes contain the version encoded
+
+        - getLanguageVersion()    ... returns long, where the least significant two bytes contain the version encoded
+
+-------------------------------------- 2015-05-10 ----------------------------------
+
+- BSF.CLS
+
+        - changed BSF_ARRAY_REFERENCE's MAKEARRAY and AT method such that RexxProxy
+          entries in the Java array get replaced by their contained Rexx object
+
+-------------------------------------- 2015-05-04 ----------------------------------
+
+- BSF.CLS
+
+        - corrected minimum ooRexx version to 4.1.0 (determined by BSF4ooRexx.cc)
+
+-------------------------------------- 2015-05-02 ----------------------------------
+
+- BSF.CLS
+
+        - make sure in bsf.OutputStream that flush() is used to force the buffered
+          chars to be displayed for Writers and PrintStreams
+
+
 -------------------------------------- 2014-12-12 ----------------------------------
 
 - install\windows\kickoff.rex

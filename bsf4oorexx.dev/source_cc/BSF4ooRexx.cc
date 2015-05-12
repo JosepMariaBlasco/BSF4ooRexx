@@ -521,7 +521,7 @@ remarks:
   *  LICENSE:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright 2001-2014 Rony G. Flatscher
+       Copyright 2001-2015 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.

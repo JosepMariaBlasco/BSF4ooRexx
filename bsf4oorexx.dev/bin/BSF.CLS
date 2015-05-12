@@ -406,7 +406,7 @@
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2001-2014 Rony G. Flatscher
+   Copyright 2001-2015 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -424,7 +424,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2001-2014 Rony G. Flatscher
+   Copyright 2001-2015 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -445,7 +445,7 @@
 
    signal on syntax
    parse version v .
-   minimumVersion="4.2.0"     -- minimum ooRexx version (same as BSF4ooRexx.cc)
+   minimumVersion="4.1.0"     -- minimum ooRexx version (same as BSF4ooRexx.cc)
    if v < "REXX-ooRexx_"||minimumVersion then
    do
        parse source s . name  -- extract name of this module
