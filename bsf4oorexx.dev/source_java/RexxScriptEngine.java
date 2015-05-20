@@ -38,6 +38,10 @@ import org.rexxla.bsf.engines.rexx.RexxException;
    See the License for the specific language governing permissions and
    limitations under the License.
 -----------------------------------------------------------------------------
+
+   Changes:
+        - 2015-05-19, ---rgf: fill-in the engine related information into the ENGINE_SCOPE bindings
+
 */
 
 
@@ -512,6 +516,15 @@ if (bDebug==true) { System.out.println("--> RexxScriptEngine() -->: "+this+" (CO
         try
         {
            bsfRexxEngine = (RexxEngine) bsfMgr.loadScriptingEngine("rexx");  // load the Rexx engine
+
+            // get the default ScriptContext, fill-in engine related information using the official names
+           ScriptContext sc=getContext(); // get default ScriptContext
+           RexxScriptEngineFactory ref=RexxScriptEngineFactory.DEFAULT_REXX_SCRIPT_ENGINE_FACTORY;
+           sc.setAttribute(ENGINE          , ref.getEngineName(),      ScriptContext.ENGINE_SCOPE);
+           sc.setAttribute(ENGINE_VERSION  , ref.getEngineVersion(),   ScriptContext.ENGINE_SCOPE);
+           sc.setAttribute(LANGUAGE        , ref.getLanguageName(),    ScriptContext.ENGINE_SCOPE);
+           sc.setAttribute(LANGUAGE_VERSION, ref.getLanguageVersion(), ScriptContext.ENGINE_SCOPE);
+           sc.setAttribute(NAME            , ref.getName(),            ScriptContext.ENGINE_SCOPE);
         }
         catch (Exception exc)
         {

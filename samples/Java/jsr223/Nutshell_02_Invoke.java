@@ -43,7 +43,11 @@ public class Nutshell_02_Invoke
         try
         {
             String filename="nutshell_02.rex";
-            Bindings b=rse.createBindings();
+            Bindings b=rse.getContext().getBindings(ScriptContext.ENGINE_SCOPE);
+            if (b==null)        // if no ENGINE_SCOPE bindings available, create a Bindings
+            {
+                b=rse.createBindings();
+            }
             b.put(ScriptEngine.FILENAME,filename);
 
             System.err.println("(Java) executing ["+filename+"] fetching resulting ooRexx object:");

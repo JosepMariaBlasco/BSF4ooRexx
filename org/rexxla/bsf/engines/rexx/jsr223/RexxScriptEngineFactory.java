@@ -11,6 +11,29 @@ import java.util.TimeZone;
 
 import org.apache.bsf.*;   // BSF support
 
+/*
+------------------------ Apache Version 2.0 license -------------------------
+   Copyright 2015 Rony G. Flatscher
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-----------------------------------------------------------------------------
+
+    Changes:
+        - 2015-05-19, ---rgf: added a getName() method to return the explicit short name "Rexx"
+                              (used for the ScriptEngine.NAME entry in the ENGINE_SCOPE)
+*/
+
+
 /** Class that implements the <code>javax.script.ScriptEngineFactory</code> interface for the ooRexx support.
  *
  * @author Rony G. Flatscher
@@ -31,6 +54,9 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
                                                                 "rxo" );
     final private static String       LANGUAGE_NAME    ="ooRexx";
     final private static String       LANGUAGE_VERSION ="4.1.0";
+
+    final private static String       SHORT_NAME       ="Rexx";
+
     final private static List<String> MIME_TYPES       = Arrays.asList("text/x-rexx",
                                                                        "text/x-rexx-java",
                                                                        "text/x-rexx-java-ooo" );
@@ -68,6 +94,12 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     public String getLanguageVersion()
     {
         return LANGUAGE_VERSION;
+    }
+
+    /** Returns the short name of the scripting language supported by this ScriptEngine. */
+    public String getName()
+    {
+        return SHORT_NAME;
     }
 
     /** Returns a String which can be used to invoke a method of a Java object using the
@@ -127,11 +159,22 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
         the syntax of the supported scripting language. */
     public String getOutputStatement(String toDisplay)
     {
+// TODO: decide whether using SAY instead (which appends a \n)
+
         if (toDisplay==null)
         {
             return "say";
         }
         return "say \""+toDisplay.replace("\"","\"\"")+"\"";    // escape quote in the Rexx language style
+
+/*
+        if (toDisplay==null)
+        {
+            return "";
+        }
+        return ".output~charout(\""+toDisplay.replace("\"","\"\"")+"\")";    // escape quote in the Rexx language style
+*/
+
     }
 
 

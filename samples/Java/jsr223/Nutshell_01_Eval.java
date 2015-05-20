@@ -24,7 +24,7 @@ import org.rexxla.bsf.engines.rexx.jsr223.*;
 */
 
 /** Demonstrate evaluating a Rexx script, once without supplying arguements and once supplying
- *  arguments.
+ *  arguments using the scripting language's default <code>ScriptContext</code>.
  *
  *  @author Rony G. Flatscher
  *  @since 2015-05-12
@@ -42,19 +42,20 @@ public class Nutshell_01_Eval
 
         try
         {
+            ScriptContext sc=rse.getContext();  // get the default ScriptContext
+                // add the fileName to the ENGINE_SCOPE bindings
             String filename="nutshell_01.rex";
-            Bindings b=rse.createBindings();
-            b.put(ScriptEngine.FILENAME,filename);
+            sc.setAttribute(ScriptEngine.FILENAME,filename,ScriptContext.ENGINE_SCOPE);
 
             System.err.println("(Java) executing ["+filename+"] without arguments:");
-            rse.eval(new FileReader(filename), b);  // now let us execute the Rexx script
+            rse.eval(new FileReader(filename), sc);  // now let us execute the Rexx script
 
             System.err.println("-------------------------");
             System.err.println("(Java) executing ["+filename+"], now with four arguments, the third one being 'null':");
-                // add arguments for the script
-            b.put(ScriptEngine.ARGV, new Object[] {"one", "zwei", null, "quatre"});
+                // add arguments for the script to the ENGINE_SCOPE bindings
+            sc.setAttribute(ScriptEngine.ARGV, new Object[] {"one", "zwei", null, "quatre"}, ScriptContext.ENGINE_SCOPE);
                 // the RexxScriptEngine always compiles the last script and makes it available with the getCurrentScript() method
-            rse.getCurrentScript().eval(b);         // now let us re-execute the Rexx script
+            rse.getCurrentScript().eval();         // now let us re-execute the Rexx script
         }
         catch (Exception exc)
         {
