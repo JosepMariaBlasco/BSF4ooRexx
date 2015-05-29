@@ -272,7 +272,7 @@ public class RunScript
     }
 
 
-    // create an output statement 'timings' time and give timings at end & give timing, execute output statement 'timings' time & give timing at end
+    // create an output statement and execute output statement for each available script engine
     static void testEngine(String name, ScriptEngineFactory sef, ScriptEngine se)
     {
         String text="hello world, this is \""+name+"\" speaking! ";
@@ -289,7 +289,7 @@ public class RunScript
         }
         catch (ScriptException sexc)
         {
-            System.err.println(sexc+" while eval() the code: "+code+"!");
+            System.err.println(sexc+" while eval() the code: "+code);
         }
     }
 }

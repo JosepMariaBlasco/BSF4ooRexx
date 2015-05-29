@@ -5,8 +5,12 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.30
+   Version: 1.31
    Changed:
+            2015-05-27, ---rgf, - fixed (unexplainable, probably change mistake) mix-up in the code
+                                  section that tries to determine the 32-bit java.exe on a 64-bit Windows;
+                                  added further code to test that 32-bit java.exe path on a 64-bit Windows
+                                  indeed is pointing to %ProgramFiles(x86)%
             2015-05-12, ---rgf, - trying to find a 32-bit "java.exe", if ooRexx is 32-bit but runs on a
                                   64-bit Windows and Java cannot be found by the usual means (via PATH,
                                   nor via registry); now looks in the 32- and/or 64-bit "ProgramFiles"\Java
@@ -164,6 +168,12 @@
 -- TODO: for Linux change "chmod" logics: set all files to 644, directories and executables to 755
 
 -- parse version "exx_" val "(" . level .
+
+   -- 20150527: make sure we get the full version and the full source information logged
+parse version v
+say "parse version v: v="pp(v)
+parse source  s
+say "parse source  s: s="pp(s)
 
 parse version '-' name '_' val '(' . level .
 
@@ -1811,19 +1821,24 @@ determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: det
       return
    end
 
-   /* check whether running 32-bit on a 64-bit Windows; if so adapt accordingly */
-   if value("processor_architeW6432",,"environment")<>"" then
-   do
-      say "determinePath2javaBinary(), 'processor_architeW6432': ["value("processor_architeW6432",,"environment")"]"
+   wProgramFiles  =value("ProgramFiles",,"environment")
+   wProgramFiles86=value("ProgramFiles(x86)",,"environment")   -- 32-bit folder, available on 64-bit Windows only
+   wProgramW6432  =value("ProgramW6432",,"environment")        -- WOW (Windows-on-Windows), available on 64-bit Windows only
 
-      windir=value("windir",,"environment")
+   /* check whether running 32-bit on a 64-bit Windows; if so adapt accordingly */
+   if wProgramW6432<>"", cmd.eBitness=32 then
+   do
+
+      windir=value("windir",,"environment")  -- get Windows home installation directory
       wow64 =windir"\SysWOW64\java.exe"
       win32 =windir"\system32\java.exe"
 
-      if sysfileexists(wow64) then
+      if sysfileexists(wow64) then           -- this should be seen by 32-bit
           cmd.eJavaBinary=qw(wow64)
       else if sysfileexists(win32) then
           cmd.eJavaBinary=qw(win32)
+
+      say "determinePath2javaBinary(), 'ProgramW6432':" pp(wProgramW6432)", cmd.eJavaBinary="pp(cmd.eJavaBinary)
    end
 
    if cmd.eJavaBinary="" then       -- not yet determined
@@ -1832,7 +1847,14 @@ determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: det
       tmpJavaBinary=getFromPath(javaExe) -- on path ?
       say "determinePath2javaBinary(), getFromPath() returned: ["tmpJavaBinary"]"
 
-      if tmpJavaBinary=javaExe then      -- not found on path, try JRE registry entry
+         -- 32-bit Rexx on 64-bit Windows, but java.exe not in "ProgramFiles(x86)", then we point to 64-bit Java, reset
+      if cmd.eBitness=32, wProgramW6432<>"", tmpJavaBinary~caselessAbbrev(wProgramFiles86)=.false then
+      do
+          say "determinePath2javaBinary(), 32-bit Rexx on 64-bit Windows, but java.exe seems to be in a 64-bit directory, reset & continue search"
+          tmpJavaBinary=javaExe        --  reset, make sure search continues
+      end
+
+      if tmpJavaBinary=javaExe then    -- not found on path, try JRE registry entry
       do
          say "determinePath2javaBinary(), Java binary not found, consulting registry ..."
          wsh  = .OleObject~new("WScript.Shell")
@@ -1845,27 +1867,34 @@ determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: det
          say "... ["||basekey"\"version"\JavaHome}: ["javaHome"]"
          binJava=javaHome"\bin\java.exe"
 
+            -- 32-bit Rexx on 64-bit Windows, but java.exe not in "ProgramFiles(x86)", then we point to 64-bit Java, reset
+         if cmd.eBitness=32, wProgramW6432<>"", javaHome~caselessAbbrev(wProgramFiles86)=.false then
+         do
+             say "determinePath2javaBinary(), 32-bit Rexx on 64-bit Windows, but java.exe seems to be in a 64-bit directory, reset & continue search"
+             binJava=""                   --  reset, make sure search continues
+         end
+
          if sysFileExists(binJava) then   -- o.k. finally found !
             cmd.eJavaBinary=qw(binJava)
          else   -- not yet found try looking in the file system, ---rgf, 20150512
          do
-            pf=value("ProgramFiles",,"environment")
+            pf=wProgramFiles           -- value("ProgramFiles",,"environment")
             if cmd.eBitness=32 then    -- Rexx is 32-bit
             do
-                pf=value("ProgramFiles(x86)",,"environment")   -- on 64-bit Windows?
+                pf=wProgramFiles86     -- value("ProgramFiles(x86)",,"environment")   -- on 64-bit Windows?
 
                 if pf="" then -- on 32-bit Windows
-                   pf=value("ProgramFiles",,"environment")
+                   pf=wProgramFiles    -- value("ProgramFiles",,"environment")
             end
             searchPattern=pf"\Java\java.exe"
-say "java.exe not found yet, looking in ["searchPattern"] and its subdirectories ..."
+            say "determinePath2javaBinary(), java.exe not found yet, looking in ["searchPattern"] and its subdirectories ..."
               -- try to locate java.exe, use the last one (assuming it is the newest)
             call SysFileTree searchPattern, "files.", "FSO"
             count=files.0
             if count>0 then
             do
                 cmd.eJavaBinary=qw(files.count)
-say "java.exe found in" count " places using ["searchPattern"], returning ["files.count"]."
+                say "determinePath2javaBinary(), java.exe found in" count " places using ["searchPattern"], returning ["files.count"]."
             end
          end
       end
