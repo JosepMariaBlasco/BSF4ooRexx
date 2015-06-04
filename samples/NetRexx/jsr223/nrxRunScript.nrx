@@ -1,0 +1,290 @@
+import java.io.File
+import java.io.FileReader
+
+import java.util.ArrayList
+import java.util.Arrays
+import java.util.List
+import java.util.HashMap
+import java.util.SortedSet
+import java.util.TreeSet
+
+
+import javax.script.Bindings
+import javax.script.ScriptContext
+import javax.script.ScriptEngine
+import javax.script.ScriptEngineFactory
+import javax.script.ScriptEngineManager
+import javax.script.ScriptException
+import javax.script.SimpleScriptContext
+
+/*
+------------------------ Apache Version 2.0 license -------------------------
+   Copyright 2015 Rony G. Flatscher
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-----------------------------------------------------------------------------
+*/
+
+
+
+/** A command line Java utility to query, test and evaluate {@link javax.script} scripting engines.
+ *  <p>Usage: <code>java RunScript [{-i | -t | -e enginename filename [args...] | filename [args...]}]</code>
+ * <br>
+ * <ul>
+ * <li> ... no arguments: lists the currently available <code>javax.script</code> engines
+ *
+ * <li> <code>-h</code> ... 'help', lists and briefly explains the command line options
+ *
+ * <li> <code>-i</code> ... lists the available <code>javax.script</code> engines and informs about their properties
+ *
+ * <li> <code>-t</code> ... lists the available <code>javax.script</code> engines and tests evaluating their factory's <code>&quot;getOutputStatement(String)&quot;</code> method
+ *
+ * <li> <code>-e enginename filename [args...]</code> ... uses <code>&quot;enginename&quot;</code> to evaluate <code>&quot;filename&quot;</code> supplying the arguments <code>&quot;args...&quot;</code>
+ *
+ * <li> <code>filename [args...]</code> ... the <code>&quot;filename&quot;</code> extension determines the script engine to evaluate it, supplying the arguments <code>&quot;args...&quot;</code>
+ * </ul>
+ *
+ *
+ *  @author Rony G. Flatscher
+ *  @since 2015-05-22
+ */
+
+-- class runScript
+method main(args=String[]) static
+   manager = ScriptEngineManager()
+   factories = manager.getEngineFactories()
+   n2sef=HashMap()
+   n2se =HashMap();
+
+       -- create the Maps
+   it=factories.iterator()
+   loop while it.hasNext()
+       factory=ScriptEngineFactory it.next()
+       name=factory.getLanguageName()
+       n2sef.put(name, factory)
+       se=factory.getScriptEngine()
+       n2se.put(name, se)
+   end
+
+       -- create a sorted set of key names
+   keys = TreeSet(n2sef.keySet())
+
+   -- say "keys:" keys
+   say "args.length:" args.length
+
+   it=keys.iterator()
+
+   if args.length=0 then        -- list available script engines
+   do
+      loop while it.hasNext()
+         say it.next()
+      end
+      return
+   end
+   else
+   do
+      firstWord=args[0]         -- get first argument
+      if firstWord.startsWith(String "-") then
+      do
+         say "branch ""-"""
+         if firstWord.length()<>2 then
+            signal IllegalArgumentException("switch '-' must be followed by one of the letters 'i', 't', or 'e'");
+
+         nrxFirstWord=Rexx firstWord   -- create a Rexx string as that will compare caselessly
+         if nrxFirstWord="-I" then     -- "i"nformation: list all engines, list all their standard properties
+         do
+            loop while it.hasNext()
+               key=it.next()
+               showEngineProperties(String key, ScriptEngineFactory n2sef.get(key))
+            end
+            return
+         end
+
+         else if nrxFirstWord="-T" then   -- "t"est: list all engines, test them
+         do
+            loop while it.hasNext()
+               key=it.next()
+               testEngine(String key, ScriptEngineFactory n2sef.get(key),  ScriptEngine n2se.get(key))
+            end
+            return
+         end
+
+         else if nrxFirstWord="-H" then   -- "h"elp: show how to invoke
+         do
+           say "usage: java nrxRunScript [{-i | -t | -e enginename filename [args...] | filename [args...]}]\n"
+           say "          ... no arguments lists the available javax.script engines"
+           say "       -h ... 'help', gives this usage text"
+           say "       -i ... lists the available javax.script engines and informs about their properties"
+           say "       -t ... lists the availabel javax.script engines and tests evaluating their \"getOutputStatement(String)\" method"
+           say "       -e  enginename filename [args...] ... uses \"enginename\" to evaluate \"filename\" supplying the arguments \"args...\""
+           say "       filename [args...] ... the \"filename\" extension determines the script engine to evaluate it, supplying the arguments \"args...\""
+           return
+         end
+
+         else if nrxFirstWord="-E" then   -- "e"xecute: execute script with given script engine, supply optional arguments
+         do
+           if args.length<3 then
+               signal IllegalArgumentException("too few command line arguments ("+args.length+"), minimum needed is 3: \"-e enginename filename\"");
+
+           -- check whether engine is available, if so, then load it
+           filename=args[2]            -- assign filename
+           errMsg="no """args[1]""" javax.script engine available"
+           do
+               scriptEngineToUse=manager.getEngineByName(args[1])      -- fetch script engine
+           catch RuntimeException
+               signal IllegalArgumentException(errMsg)
+           end
+           if scriptEngineToUse=null then
+               signal IllegalArgumentException(errMsg)
+           argsStartAt=3       -- fourth argument!
+         end
+
+         else    -- unknown switch
+             signal IllegalArgumentException("unknown switch '"firstWord"', must be followed by one of '-h', '-i', '-t', or '-e'");
+
+      end
+      else      -- assuming a filename in hand
+      do
+         filename=firstWord          -- assign filename
+         lastIdx=filename.lastIndexOf('.')
+         if (lastIdx=0) then
+             signal IllegalArgumentException("filename """filename""" does not have an extension, cannot determine scripting engine")
+
+         errMsg="cannot determine scripting engine from the filename extension in """filename""""
+
+         do
+             extension=filename.substring(lastIdx+1)    -- get extension
+             scriptEngineToUse=manager.getEngineByExtension(extension)  -- fetch script engine
+         catch RuntimeException -- if substring() causes an exception
+             signal IllegalArgumentException(errMsg)
+         end
+
+         if (scriptEngineToUse=null) then    -- no scripting engine found
+            signal IllegalArgumentException(errMsg)
+
+         argsStartAt=1      -- second argument!
+      end
+
+      -- now setup the remainder and eval() the "filename" with the script engine
+      --        - check whether file exists, if not raise an exception
+      f=File null
+      do
+          f=File(filename)
+      catch exc=RuntimeException
+          signal IllegalArgumentException(exc)
+      end
+
+      if f.exists()=0 then
+          signal IllegalArgumentException("filename """filename""" does not exist")
+
+      --        - supply filename to script
+      sc=ScriptContext scriptEngineToUse.getContext()     -- get the default context
+      sc.setAttribute(ScriptEngine.FILENAME, filename, ScriptContext.ENGINE_SCOPE)
+
+      --        - if arguments, setup ARGV and supply it in the ENGINE_SCOPE
+      if args.length>argsStartAt then  -- do we have command line arguments to supply?
+      do
+          argArr=String[args.length-argsStartAt]   -- determine array size
+          k=0
+          loop i=argsStartAt to args.length-1
+              argArr[k]=args[i]
+              k=k+1
+          end
+          sc.setAttribute(ScriptEngine.ARGV, argArr, ScriptContext.ENGINE_SCOPE)
+      end
+
+      do    -- eval the script
+          scriptEngineToUse.eval(FileReader(f))
+      catch exc=RuntimeException
+          signal IllegalArgumentException(exc)
+      end
+   end
+
+
+-- show information about the script engine
+method showEngineProperties(name=String, sef=ScriptEngineFactory) static
+   say name
+
+   System.out.print("\tgetEngineName()          : ")
+   do
+      say sef.getEngineName()
+   catch RuntimeException
+      say "--> FAILED!"
+   end
+
+   System.out.print("\tgetEngineVersion()       : ")
+   do
+      say sef.getEngineVersion()
+   catch RuntimeException
+      say "--> FAILED!"
+   end
+
+   System.out.print("\tgetExtensions()          : ")
+   do
+      say sef.getExtensions()
+   catch RuntimeException
+      say "--> FAILED!"
+   end
+
+   System.out.print("\tgetLanguageName()        : ");
+   do
+      say sef.getLanguageName()
+   catch RuntimeException
+      say "--> FAILED!"
+   end
+
+   System.out.print("\tgetLanguageVersion()     : ")
+   do
+      say sef.getLanguageVersion()
+   catch RuntimeException
+      say "--> FAILED!"
+   end
+
+   System.out.print("\tgetMimeTypes()           : ")
+   do
+      say sef.getMimeTypes()
+   catch RuntimeException
+      say "--> FAILED!"
+   end
+
+   System.out.print("\tgetNames()               : ")
+   do
+      say sef.getNames()
+   catch RuntimeException
+      say "--> FAILED!"
+   end
+
+   System.out.print("\tgetParameter(\"THREADING\"): ")
+   do
+     say sef.getParameter("THREADING")
+   catch RuntimeException
+     say "--> FAILED!"
+   end
+
+
+
+-- create an output statement and execute output statement for each available script engine
+method testEngine(name=String, sef=ScriptEngineFactory, se=ScriptEngine) static
+   text="hello world, this is """name""" speaking! "
+   code=sef.getOutputStatement(text)
+   say "---> language: "name"\n"
+   say "\toutput statement to process: \n\n\t\t"text"\n"
+   say "\tgetOutputStatement(text) returned: \n\n\t\t"code"\n"
+   say "\tnow running ""eval(code)"" using the scripting engine: \n"
+   do
+      se.eval(code)
+      say
+   catch sexc=ScriptException
+      say sexc "while eval() the code:" code
+   end
+

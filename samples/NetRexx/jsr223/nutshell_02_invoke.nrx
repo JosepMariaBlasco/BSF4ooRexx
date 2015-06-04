@@ -1,0 +1,78 @@
+import javax.script;
+import java.io.FileReader;
+
+import org.rexxla.bsf.engines.rexx.RexxEngine;
+import org.rexxla.bsf.engines.rexx.RexxProxy;
+import org.rexxla.bsf.engines.rexx.jsr223;
+
+/*
+------------------------ Apache Version 2.0 license -------------------------
+   Copyright 2015 Rony G. Flatscher
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-----------------------------------------------------------------------------
+*/
+
+
+/** Demonstrate the usage of the <code>Invocable</code> methods, namely <code>invokeMethod(...)</code>
+ *  and <code>invokeFunction(...)</code>.
+ *
+ *  @author Rony G. Flatscher
+ *  @since 2015-05-22
+ */
+
+-- Using a ScriptManager to fetch the Rexx script enginge
+manager = ScriptEngineManager()
+rse=RexxScriptEngine manager.getEngineByName("Rexx")
+do
+   filename="nutshell_02.rex"
+   b=rse.getContext().getBindings(ScriptContext.ENGINE_SCOPE)
+   if b=null then b=rse.createBindings()-- if no ENGINE_SCOPE bindings available, create a Bindings
+   b.put(ScriptEngine.FILENAME,String filename)
+
+   say "(NetRexx) executing ["filename"] fetching resulting ooRexx object:"
+   rp=RexxProxy rse.eval(FileReader(String filename), b) -- now let us execute the Rexx script
+
+        -- use invokeMethod(...)
+   say "(NetRexx) using invokeMethod() using the <RexxScriptEngine>:\n"
+   say "(NetRexx) invokeMethod('one'):" rse.invokeMethod(rp, "ONE", null)
+   say "(NetRexx) invokeMethod('two'):" rse.invokeMethod(rp, "two", ["un", "deux", "trois"])
+   say "(NetRexx) invokeMethod('now'):" rse.invokeMethod(rp, "now", null)
+   say "---\n"
+
+       -- use invokeFunction(...)
+   say "(NetRexx) using invokeFunction() using the <RexxScriptEngine>:\n"
+   say "(NetRexx) invokeFunction('routine_eins'):" rse.invokeFunction("ROUTINE_EINS", null)
+   say "(NetRexx) invokeFunction('routine_zwei'):" rse.invokeFunction("routine_zwei", ["eins", "zwei", "drei"])
+   say "---\n"
+
+   rcs=rse.getCurrentScript()   -- get current script
+
+       -- use invokeMethod(...)
+   say "(NetRexx) using invokeMethod() using the the <RexxCompiledScript> directly:\n"
+   say "(NetRexx) invokeMethod('one'): "rcs.invokeMethod(rp, "ONE", null)
+   say "(NetRexx) invokeMethod('two'): "rcs.invokeMethod(rp, "two", ["un", "deux", "trois"])
+   say "(NetRexx) invokeMethod('now'): "rcs.invokeMethod(rp, "now", null)
+   say "---\n"
+
+       -- use invokeFunction(...)
+   say "(NetRexx) using invokeFunction() using the the <RexxCompiledScript> Rexx script> directly:\n"
+   say "(NetRexx) invokeFunction('routine_eins'):" rcs.invokeFunction("ROUTINE_EINS", null)
+   say "(NetRexx) invokeFunction('routine_zwei'):" rcs.invokeFunction("routine_zwei", ["eins", "zwei", "drei"])
+   say "---\n"
+
+catch exc=Exception
+   say exc
+   System.exit(-1)
+end
+

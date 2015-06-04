@@ -1,0 +1,86 @@
+import javax.script;
+import java.io.FileReader;
+
+import org.rexxla.bsf.engines.rexx.RexxEngine;
+import org.rexxla.bsf.engines.rexx.RexxProxy;
+import org.rexxla.bsf.engines.rexx.jsr223;
+
+/*
+------------------------ Apache Version 2.0 license -------------------------
+   Copyright 2015 Rony G. Flatscher
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-----------------------------------------------------------------------------
+*/
+
+
+/** Demonstrate the usage of the <code>Invocable</code> methods, this time using Java proxies
+ *  for executing Java interface methods either with Rexx routines or with Rexx objects.
+ *
+ *  @author Rony G. Flatscher
+ *  @since 2015-05-22
+ */
+
+-- Using a ScriptManager to fetch the Rexx script enginge
+manager = ScriptEngineManager()
+rse=RexxScriptEngine manager.getEngineByName("Rexx")
+do
+   filename="nutshell_03.rex"
+   b=rse.getContext().getBindings(ScriptContext.ENGINE_SCOPE)
+   b=rse.createBindings()-- if no ENGINE_SCOPE bindings available, create a Bindings
+   b.put(ScriptEngine.FILENAME,String filename)
+
+   say "(NetRexx) executing ["filename"] fetching resulting ooRexx object:"
+   rp=RexxProxy rse.eval(FileReader(String filename), b) -- now let us execute the Rexx script
+
+       -- use public <T> T getInterface(Class<T> clasz)
+   say "(Java) using \"<T> T getInterface(Class<T> clasz)\" using the <RexxScriptEngine>:"
+   say "(Java) executing ["filename"] fetching resulting ooRexx object:"
+   rp=RexxProxy rse.eval(FileReader(String filename), b)  -- now let us execute the Rexx script
+   say "---"
+
+   r=Runnable rse.getInterface(Runnable.class)     -- get an interface implementation
+   say "(Java) creating new Thread supplying ["r"]:"
+   th = Thread(r)
+   th.start()
+   th.sleep(100)   -- should be enough time for the thread to end (after running the Rexx code)
+   say "---"
+
+   say "--- now using the RexxCompiledScript methods instead ---"
+   say "---"
+   rcs=rse.getCurrentScript()   -- get current script
+
+       -- use public <T> T getInterface(Class<T> clasz)
+   say "(Java) using \"<T> T getInterface(Class<T> clasz)\" using the <RexxCompiledScript>:"
+   r=Runnable rcs.getInterface(Runnable.class)     -- get an interface implementation
+   say "(Java) creating new Thread supplying ["r"]:"
+   th = Thread(r)
+   th.start()
+   th.sleep(100)   -- should be enough time for the thread to end (after running the Rexx code)
+   say "---"
+
+       -- use public <T> T getInterface(Object thiz, Class<T> clasz)
+   say "(Java) using \"<T> T getInterface(Object thiz, Class<T> clasz)\" using the <RexxCompiledScript>:"
+   r=Runnable rcs.getInterface(rp, Runnable.class)     -- get an interface implementation
+   say "(Java) creating new Thread supplying ["r"]:"
+   r=Runnable rcs.getInterface(rp, Runnable.class)     -- get an interface implementation
+   th = Thread(r)
+   th.start()
+   th.sleep(100)  -- should be enough time for the thread to end (after running the Rexx code)
+
+catch exc=Exception
+   say exc
+   exc.printStackTrace()
+   System.exit(-1)
+end
+
