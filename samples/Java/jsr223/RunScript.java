@@ -36,7 +36,6 @@ import javax.script.SimpleScriptContext;
 */
 
 
-
 /** A command line Java utility to query, test and evaluate {@link javax.script} scripting engines.
  *  <p>Usage: <code>java RunScript [{-i | -t | -e enginename filename [args...] | filename [args...]}]</code>
  * <br>
@@ -161,7 +160,7 @@ public class RunScript
 
                 else    // unknown switch
                 {
-                    throw new IllegalArgumentException("unknown switch '"+firstWord+"', must be followed by one of '-i', '-t', or '-e'");
+                    throw new IllegalArgumentException("unknown switch '"+firstWord+"', must be followed by one of '-h', '-i', '-t', or '-e'");
                 }
             }
             else    // a filename in hand, check whether we have a suitable engine available
@@ -218,6 +217,7 @@ public class RunScript
         sc.setAttribute(ScriptEngine.FILENAME, filename, ScriptContext.ENGINE_SCOPE);
 
         //        - if arguments, setup ARGV in ENGINE_SCOPE
+System.err.println("args.length="+args.length+", argsStartAt="+argsStartAt+", > ? "+ (args.length>argsStartAt));
         if (args.length>argsStartAt)    // do we have command line arguments to supply?
         {
             String argArr []=new String [args.length-argsStartAt];    // determine array size
@@ -228,6 +228,7 @@ public class RunScript
             }
             sc.setAttribute(ScriptEngine.ARGV, argArr, ScriptContext.ENGINE_SCOPE);
         }
+System.err.println("sc.getAttribute(ScriptEngine.ARGV)="+sc.getAttribute(ScriptEngine.ARGV));
 
         //        - eval the script
         try

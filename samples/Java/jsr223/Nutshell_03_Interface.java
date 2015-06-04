@@ -63,7 +63,7 @@ public class Nutshell_03_Interface
             System.err.println("(Java) using \"<T> T getInterface(Object thiz, Class<T> clasz)\" using the <RexxScriptEngine>:");
             r=rse.getInterface(rp, Runnable.class);         // get an interface implementation
             System.err.println("(Java) creating new Thread supplying ["+r+"]:");
-            r=rse.getInterface(rp, Runnable.class);    // get an interface implementation
+            // r=rse.getInterface(rp, Runnable.class);    // get an interface implementation
             th = new Thread(r);
             th.start();
             th.sleep(100);  // should be enough time for the thread to end (after running the Rexx code)

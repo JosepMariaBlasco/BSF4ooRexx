@@ -1,0 +1,126 @@
+<head>
+    <title>Brief Overview of the BSF4ooRexx Samples in this Directory</title>
+
+</head>
+
+<body>
+<h1>
+      Java Examples (Running ooRexx Scripts from Java)
+</h1>
+
+<em>Hint:</em> if you wish to look at the ooRexx code with syntax highlighting, then you can
+use the free and open-source editor <code>&quot;[g]vim&quot;</code>, which is available for practically
+all platforms and can be downloaded from its homepage at
+<a href="http://www.vim.org/">http://www.vim.org/</a>.
+
+<dl>
+    <dt><em><a href=".">.  &lt;directory&gt; (List of this directory)</a></em>
+    <dd>Display all of this directory's files and directories.
+
+    <dt><em><a href="../index.html">..  &lt;directory&gt; (List of parent directory)</a></em>
+    <dd>Display all of the parent directory's files and directories.
+
+    <dt><a href="Nutshell_01_Eval.java">Nutshell_01_Eval.java</a>
+    <dd>A Java demonstration program to show, how to setup and evaluate (invoke, cf.
+        <a href="https://docs.oracle.com/javase/8/docs/api/javax/script/ScriptEngine.html"><code>ScriptEngine.eval()</code></a>)
+        the Rexx program
+        <a href="nutshell_01.rex">nutshell_01.rex</a>, initially without an argument, then
+        retrieving the compiled (tokenized) Rexx script and re-evaluate it, this time supplying
+        arguments from Java to it.
+
+        <br>To run the Java program enter the following command into a command line window:<br>
+        <code>java Nutshell_01_Eval</code>
+
+    <dt><a href="Nutshell_02_Invoke.java">Nutshell_02_Invoke.java</a>
+    <dd>A Java demonstration program to show, how to setup and evaluate (invoke) the Rexx program
+        <a href="nutshell_02.rex">nutshell_02.rex</a>, fetching the ooRexx object it returns on
+        the Java side and then use the
+        <a href="https://docs.oracle.com/javase/8/docs/api/javax/script/Invocable.html"><code>javax.script.Invocable</code></a>
+        methods to send the Rexx object
+        messages from Java (using <code>Invocable.invokeMethod(...)</code>), including arguments. In
+        addition invoking ooRexx public routines from Java (using <code>Invocable.invokeFunction(...)</code>)
+        gets demonstrated.
+
+        <br>For demonstration purposes the same method <code>javax.script.Invocable</code> methods get
+        excercised that the ooRexx jsr223-implementation implemented into the compiled (tokenized) Rexx
+        script support.
+
+        <br>To run the Java program enter the following command into a command line window:<br>
+        <code>java Nutshell_02_Invoke</code>
+
+    <dt><a href="Nutshell_03_Interface.java">Nutshell_03_Interface.java</a>
+    <dd>A Java demonstration program to show, how to setup and evaluate (invoke) the Rexx program
+        <a href="nutshell_03.rex">nutshell_03.rex</a>, fetching the ooRexx object it returns on
+        the Java side and then use the
+        <a href="https://docs.oracle.com/javase/8/docs/api/javax/script/Invocable.html"><code>javax.script.Invocable</code></a>
+        methods to use the public
+        routines or the methods of the returned Rexx object to implement Java interfaces. This Java
+        program uses for that purposes the <code>Invocable.getInterface(...)</code> method.
+
+        <br>For demonstration purposes the same method <code>javax.script.Invocable</code> methods get
+        excercised that the ooRexx jsr223-implementation implemented into the compiled (tokenized) Rexx
+        script support.
+
+        To run the Java program enter the following command into a command line window:<br>
+        <code>java Nutshell_03_Interface</code>
+
+        <p><em>Hint</em>: the external BSF function <code>BSFCreateRexxProxy(rexxObject, [slot], javaInterface...)</code> allows an easier and much
+           more powerful creation of Java proxy objects, where the ooRexx methods implement the Java
+           interface methods. In this case one can declare to Java that multiple Java interfaces are
+           implemented and it is possible to define a Rexx slot-argument, that will get supplied
+           each time a Rexx method gets invoked as a result of the Java interface method being run on
+           the Java side.
+
+    <dt><a href="RunScript.java">RunScript.java</a>
+    <dd>A simple Java utility to learn about the available script engines, their properties, test
+        them, but also to allow running any script using the appropriate Java script engine.
+
+        <br>To run the Java program enter the following command into a command line window:<br>
+        <dl>
+            <dt><code>java RunScript</code>
+            <dd>lists all available Java script engines
+
+            <dt><code>java RunScript -h</code>
+            <dd>help: lists how this utility can be invoked
+
+            <dt><code>java RunScript -i</code>
+            <dd>information: lists all available Java script engines and shows their properties
+
+            <dt><code>java RunScript -t</code>
+            <dd>test: lists all available Java script engines and creates with the help of their factories
+                &quot;hello&quot;-statements that get executed by the engines
+
+            <dt><code>java RunScript filename [argument...]</code>
+            <dd>executes the script stored in <code>filename</code> loading the Java script engine
+                with the help of the
+                <a href="https://docs.oracle.com/javase/8/docs/api/javax/script/ScriptEngineManager.html">
+                <code>javax.script.ScriptEngineManager</code></a>, using the extension in the
+                <code>filename</code>. If one or more blank delimited
+                <code>argument...</code> were supplied, they will be submitted to the script via the
+                <a href="https://docs.oracle.com/javase/8/docs/api/javax/script/ScriptEngine.html#field.summary"><code>ARGV</code></a>
+                entry in the <code>ScriptContext</code>. The ooRexx <code>RexxScriptEngine</code> will
+                use this array object to create the appropriate arguments for the Rexx script.
+
+            <dt><code>java RunScript -e engine filename [argument...]</code>
+            <dd>executes the script stored in <code>filename</code> using the Java script engine
+                supplied after the <code>-e</code> switch named <code>engine</code>
+                with the help of the
+                <a href="https://docs.oracle.com/javase/8/docs/api/javax/script/ScriptEngineManager.html">
+                <code>javax.script.ScriptEngineManager</code></a>. If one or more blank delimited
+                <code>argument...</code> were supplied, they will be submitted to the script via the
+                <a href="https://docs.oracle.com/javase/8/docs/api/javax/script/ScriptEngine.html#field.summary"><code>ARGV</code></a>
+                entry in the <code>ScriptContext</code>. The ooRexx <code>RexxScriptEngine</code> will
+                use this array object to create the appropriate arguments for the Rexx script.
+        </dl>
+
+
+        <br>
+
+</dl>
+
+<p>
+<hr>
+<p style="font-size: 80%;">
+Rony G. Flatscher, 2010-08-23, 2014-07-11, 2015-06-04, Wien/Vienna, Austria, Europe
+</body>
+

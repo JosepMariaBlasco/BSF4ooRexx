@@ -35,10 +35,11 @@ do i=1 to arg()
    do
       say "(Rexx) the last argument is a Rexx directory containing the ScriptContext of this invocation:"
       sc=arg(i)~scriptContext      -- fetch script context
-      jclz=bsf.importClass("javax.script.ScriptEngine")
-      fn=jclz~FILENAME
+         -- get the constant field values for FILENAME, ARGV from class javax.script.ScriptEngine
+      jclz=bsf.importClass("javax.script.ScriptEngine")  -- import the Java class
+      fn=jclz~FILENAME     -- get FILENAME constant value
+      argv=jclz~ARGV       -- get ARGV constant value
       say "(Rexx)           FILENAME ->" pp(sc~getAttributesScope(fn))  pp(fn)    pp(sc~getAttribute(fn))
-      argv=jclz~ARGV
       say "(Rexx)           ARGV     ->" pp(sc~getAttributesScope(argv)) pp(argv) pp(sc~getAttribute(argv))
    end
 end
