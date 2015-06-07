@@ -618,16 +618,23 @@ if (bDebug)
             throw new NullPointerException("Received \"(ScriptContext) sc\" argument null");
         }
 
-            // try to fetch supplied filename, if necessary, create artificial filename (for Rexx' parse source s)
-        String filename=(String) sc.getAttribute(ScriptEngine.FILENAME);
-        if (filename==null)     // no filename given
+        // same script as currentScript, if so, use that to eval()uate it
+        if (currentScript!=null && script.equals(currentScript.scriptSource)==true)
         {
-            filename="filename_created_by_"+this.toString().replace('.','_').replace('@','-')+"_at_"+getGMTFormattedDate4Filename()+".rex";
+            return currentScript.eval(sc);      // evaluate the code with the given ScriptContext
         }
+        else    // the script has to be processed/tokenized/compiled
+        {
+                // try to fetch supplied filename, if necessary, create artificial filename (for Rexx' parse source s)
+            String filename=(String) sc.getAttribute(ScriptEngine.FILENAME);
+            if (filename==null)     // no filename given
+            {
+                filename="filename_created_by_"+this.toString().replace('.','_').replace('@','-')+"_at_"+getGMTFormattedDate4Filename()+".rex";
+            }
 
-        CompiledScript rcs=compile(script, filename);   // create and get the compiled (tokenized) form
-        return rcs.eval(sc);        // now evaluate the code with the given ScriptContext
-
+            CompiledScript rcs=compile(script, filename);   // create and get the compiled (tokenized) form
+            return rcs.eval(sc);        // now evaluate the code with the given ScriptContext
+        }
     }
 
 

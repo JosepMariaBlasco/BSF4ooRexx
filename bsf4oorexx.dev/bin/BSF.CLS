@@ -12,6 +12,11 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2015-06-07, rgf: - added public routine BSF.ScriptContext2Rexx(ScriptContext[,scopes]) which
+                            returns a Rexx directory that contains all ScriptContext values of the
+                            given scopes; meant to be used in conjunction with the new external Rexx
+                            function BSFContextVariables()
+
          2015-05-10, rgf: - changed BSF_ARRAY_REFERENCE's MAKEARRAY and AT method such that RexxProxy
                             entries in the Java array get replaced by their contained Rexx object
          2015-05-04, rgf: - corrected minimum ooRexx version to 4.1.0 (determined by BSF4ooRexx.cc)
@@ -391,13 +396,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-
-
-   version:     4.51 (20150510)
-
-   authors:     (c) 2001-2014 Rony G. Flatscher, University of Augsburg, University of Essen,
-                    WU (pronounced: "vey-uh") Vienna;
-                    Peter Kalender (October 2000 - February 2001), University of Essen, feasibility study
+   version:     4.52 (20150607)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -482,7 +481,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="451.20150510" -- set version (date distribution got created)
+   .bsf4rexx~version="452.20150607" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4267,4 +4266,84 @@ syntax:
 
 ::method say                     -- in ooRexx file streams a synonym for lineOut
   forward message "lineout"
+
+
+
+/** Routine that creates and returns a Rexx directory object off the supplied <code>ScriptContext</code>
+*   which is meant to be used with the external Rexx function <code>BSFContextVariables()</code> to set
+*   and drop context variables. Dots in the Java supplied variable names get replaced by underscores
+*   to inhibit the creation of Rexx stem objects.
+*
+*  @param scriptContext    the Java <code>ScriptContext</code> object containing entries in different
+*                          bindings
+*  @param scope...         optional, defaults to option <code>&quot;A[ll]&quot;</code> (all scopes from highest to lowest),
+*                          <code>&quot;G[lobal]&quot;</code> (global scope, i.e. scope value <code>200</code>),
+*                          <code>&quot;G[lobal]&quot;</code> (engine scope, i.e. scope value <code>100</code>),
+*                          the scope number to process, optionally followed by additional scope numbers;
+*                          the explicit given sequence of scope numbers determines the order in which the
+*                          bindings get added to the directory (entries in bindings of latter scopes override
+*                          entries in bindings of previous scopes)
+*
+*  @return                 a Rexx directory object containing the name/value mappings
+*/
+::routine bsf.ScriptContext2rexx public
+  use strict arg scriptContext, scope="A", ...
+
+  dir=.directory~new       -- contains the entries from the bindings of the processed scopes
+
+  if arg(2, 'omitted') then arr=.array~of(200,100)   -- process global and engine scope only
+  else
+  do
+     arr=.array~new
+     if scope~caselessAbbrev("A") then    -- all scopes from top to bottom value (lower scopes mask override higher scopes)
+     do
+        scopes=scriptContext~getScopes    -- returns a list of defined scopes
+        it=scopes~iterator
+        do while it~hasNext
+           arr~append(it~next)
+        end
+        -- sort descendingly
+        arr=arr~sortWith(.InvertingComparator~new(.NumericComparator~new))
+     end
+     else if scope~caselessAbbrev("G") then     -- global scope
+        arr~append(200)
+     else if scope~caselessAbbrev("E") then     -- engine scope
+        arr~append(100)
+     else   -- a list of scopes is given, process it in the given (argument) order
+     do
+         do i=2 to arg()      -- process argument list
+            val=arg(i)
+            if val~caselessAbbrev("G") then arr~append(200)
+            else if val~caselessAbbrev("E") then arr~append(100)
+            else  -- a scope number!
+            do
+               if \datatype(val, "W") then
+                  raise syntax 40.900 array("BSF.CLS/routine/bsf.ScriptContext2Rexx, error 1: argument #" i "has value" pp(val)", which is not a whole number, nor starts with the letters 'G'(lobal) or 'E'(ngine)")
+               arr~append(val)
+            end
+         end
+     end
+  end
+
+  do sc over arr
+      -- bin=scriptContext~getBindings(sc)   -- get binding with given scope, process it
+      bin=getBindings(scriptContext,sc)
+      if bin=.nil then iterate   -- inexistent scope
+      keys=bin~keySet         -- get kay values
+      it=keys~iterator
+      do while it~hasNext
+         key=it~next          -- fetch key
+         val=bin~get(key)     -- fetch its value
+         dir~setEntry(key~changeStr(".","_"), val)  -- save into Rexx directory
+      end
+  end
+  return dir      -- return directory that contains the selected key-value pairs
+
+::routine getBindings      -- utility routine
+  use arg scriptContext, sc
+  signal on syntax         -- if a scope does not exist, then an IllegalArgumentException gets thrown
+  return scriptContext~getBindings(sc)
+syntax:
+  return .nil
+
 

@@ -24,8 +24,8 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
-    4.5.2   2015-06-07, - rgf: added external Rexx function "BsfContextVariables()":
-                          allows to get and set context variables in caller, usage
+    4.5.2.  2015-06-04 - 2015-06-07 -rgf: added external Rexx function BsfContextVariables() which
+                           allows to get, set and drop context variables in caller, usage
 
                            BsfContextVariables( [get [, name]] | set, nameOrDir[, value]] | drop, nameOrDir[, value]])
                                  ... optional, return directory of all context variables
@@ -9396,8 +9396,10 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
 
 
 
-    // ---rgf, 2015-06-04: allow to get and set context variables, usage
-    //                     BsfContextVariables( [get [, name] | set, name, value])
+    // ---rgf, 2015-06-04 - 2015-06-07: allow to get, set and drop context variables, usage
+    //                    allows to get, set and drop context variables in caller, usage
+    //
+    //                     BsfContextVariables( [get [, name]] | set, nameOrDir[, value]] | drop, nameOrDir[, value]])
     //                           ... optional, return directory of all context variables
     //
     //                     "g"   ... "get", return value of context variable "name";
@@ -9405,15 +9407,17 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
     //
     //                     "s"   ... "set", set context variable
     //                                      "nameOrDir" ... if string, then "newValue" must be given
-    //                                                      else must be a RexxDirectory of name-value pairs
+    //                                                      else must be a .Directory or .StringTable (anticipating ooRexx 5.0)
+    //
+    //                     "d"   ... "drop", drop context variable
+    //                                      "nameOrDir" ... if string, then drop that variable
+    //                                                      else must be a .Directory or .StringTable (anticipating ooRexx 5.0)
 
-RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, OPTIONAL_RexxObjectPtr, nameOrDir, OPTIONAL_RexxObjectPtr, value)    // 20090505, ---rgf, only a stub for backward compatibility
+RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, OPTIONAL_RexxObjectPtr, nameOrDir, OPTIONAL_RexxObjectPtr, value)    // 2015-06-07
 {
 
 #ifdef RGF_INFO
     fprintf(stderr, "*** RGF_INFO: BsfContextVariables() 1 ...\n");
-    fflush(stderr);
-    fprintf(stderr, "*** RGF_INFO: BsfContextVariables() 1 ..., argSwitch=[%s], nameOrDir=[%p], value=[%p]\n", argSwitch, nameOrDir, value);
     fflush(stderr);
 #endif
 
@@ -9434,7 +9438,7 @@ RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, O
     if (flag==0)    // no valid flag supplied, raise condition
     {
         char *msg=new char[1024];
-        SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 1: first argument ('flag'), illegal argument value '%.512s' (valid: 'G[et]', 'S[et]', 'D[rop]')", DLLNAME, argSwitch);
+        SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 1: first argument ('flag'), illegal argument value '%.256s' (valid: 'G[et]', 'S[et]', 'D[rop]')", DLLNAME, argSwitch);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         delete[] msg;
         return context->Nil();
@@ -9447,7 +9451,7 @@ RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, O
         if ( flag!='S' )    // third argument only exists for SET operation
         {
             char *msg=new char[1024];
-            SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 2: third argument only allowed for flag 'S[et]', supplied flag='[%s]'", DLLNAME, argSwitch);
+            SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 2: third argument only allowed for flag 'S[et]', supplied flag='[%.256s]'", DLLNAME, argSwitch);
             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
             delete[] msg;
             return context->Nil();
@@ -9473,7 +9477,7 @@ RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, O
         if (flag != 'G')
         {
             char *msg=new char[1024];
-            SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 4: [%s] usage, second argument missing", argSwitch, DLLNAME);
+            SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 4: [%.256s] usage, second argument missing", DLLNAME, argSwitch);
             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
             delete[] msg;
             return context->Nil();
@@ -9498,7 +9502,7 @@ RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, O
         if (rop==NULL)  // variable name not found, create error hinting at VAR()-, VALLUE()-BIFs
         {
             char *msg=new char[1024];
-            SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 6: 'G[et]' usage, variable [%s] not defined, use VAR()-BIF (built-in-function) to test existence of variable beforehand", nameOrDir, DLLNAME);
+            SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 6: 'G[et]' usage, variable [%.256s] not defined, use VAR()-BIF (built-in-function) to test existence of variable beforehand", DLLNAME, context->ObjectToStringValue(nameOrDir));
             context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
             delete[] msg;
             return context->Nil();
@@ -9518,7 +9522,7 @@ RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, O
     {
         char *msg=new char[1024];
 
-        SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 7: [5s] usage, argument # 2 is not of type 'Directory', neither of type 'StringTable'", argSwitch, DLLNAME);
+        SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 7: [%.256s] usage, argument # 2 is not of type 'Directory', neither of type 'StringTable'", DLLNAME, argSwitch);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         delete[] msg;
         return context->Nil();

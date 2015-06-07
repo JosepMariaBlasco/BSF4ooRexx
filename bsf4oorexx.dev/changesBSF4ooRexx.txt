@@ -1,3 +1,18 @@
+
+-------------------------------------- 2015-06-07 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - adding new external Rexx function "BSFContextVariables()" to allow getting,
+          setting and dropping the variables in the context of the caller
+
+- BSF.CLS
+
+        - added public routine BSF.ScriptContext2Rexx(ScriptContext[,scopes]) which
+          returns a Rexx directory that contains all ScriptContext values of the
+          given scopes; meant to be used in conjunction with the new external Rexx
+          function BSFContextVariables()
+
 -------------------------------------- 2015-05-12 ----------------------------------
 
 - major addition: full implementation of JSR-223 (javax.script) support, package
