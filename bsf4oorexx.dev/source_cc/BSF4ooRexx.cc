@@ -24,6 +24,23 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.5.2   2015-06-07, - rgf: added external Rexx function "BsfContextVariables()":
+                          allows to get and set context variables in caller, usage
+
+                           BsfContextVariables( [get [, name]] | set, nameOrDir[, value]] | drop, nameOrDir[, value]])
+                                 ... optional, return directory of all context variables
+
+                           "g"   ... "get", return value of context variable "name";
+                                     if optional "name" is omitted, return directory of all context variables
+
+                           "s"   ... "set", set context variable
+                                            "nameOrDir" ... if string, then "newValue" must be given
+                                                            else must be a .Directory or .StringTable (anticipating ooRexx 5.0)
+
+                           "d"   ... "drop", drop context variable
+                                            "nameOrDir" ... if string, then drop that variable
+                                                            else must be a .Directory or .StringTable (anticipating ooRexx 5.0)
+
     4.5.1   2015-05-09, - rgf: added JNI methods that allow a RexxEngine.java instance to get information aobut it
                                - _RexxAndJava_jniGetGlobalEnvironment0 ... .environment
                                - _RexxAndJava_jniGetLocalEnvironment0  ... .local
@@ -864,11 +881,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "451.20150509 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150607 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "451.20150509 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150607 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "451.20150509 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150607 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -9379,6 +9396,159 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
 
 
 
+    // ---rgf, 2015-06-04: allow to get and set context variables, usage
+    //                     BsfContextVariables( [get [, name] | set, name, value])
+    //                           ... optional, return directory of all context variables
+    //
+    //                     "g"   ... "get", return value of context variable "name";
+    //                               if optional "name" is omitted, return directory of all context variables
+    //
+    //                     "s"   ... "set", set context variable
+    //                                      "nameOrDir" ... if string, then "newValue" must be given
+    //                                                      else must be a RexxDirectory of name-value pairs
+
+RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, OPTIONAL_RexxObjectPtr, nameOrDir, OPTIONAL_RexxObjectPtr, value)    // 20090505, ---rgf, only a stub for backward compatibility
+{
+
+#ifdef RGF_INFO
+    fprintf(stderr, "*** RGF_INFO: BsfContextVariables() 1 ...\n");
+    fflush(stderr);
+    fprintf(stderr, "*** RGF_INFO: BsfContextVariables() 1 ..., argSwitch=[%s], nameOrDir=[%p], value=[%p]\n", argSwitch, nameOrDir, value);
+    fflush(stderr);
+#endif
+
+    char flag=0;
+    if (argSwitch==NULL || argSwitch[0]=='g' || argSwitch[0]=='G')  // G[ET]
+    {
+        flag='G';
+    }
+    else if (argSwitch[0]=='s' || argSwitch[0]=='S')
+    {
+        flag='S';
+    }
+    else if (argSwitch[0]=='d' || argSwitch[0]=='D')
+    {
+        flag='D';
+    }
+
+    if (flag==0)    // no valid flag supplied, raise condition
+    {
+        char *msg=new char[1024];
+        SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 1: first argument ('flag'), illegal argument value '%.512s' (valid: 'G[et]', 'S[et]', 'D[rop]')", DLLNAME, argSwitch);
+        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+        delete[] msg;
+        return context->Nil();
+    }
+
+    boolean isArg2aString= ( nameOrDir==NULL ? false : context->IsString(nameOrDir) );
+
+    if (argumentExists(3))  // single SET variable
+    {
+        if ( flag!='S' )    // third argument only exists for SET operation
+        {
+            char *msg=new char[1024];
+            SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 2: third argument only allowed for flag 'S[et]', supplied flag='[%s]'", DLLNAME, argSwitch);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            delete[] msg;
+            return context->Nil();
+        }
+
+        if (!isArg2aString) // second argument must be a string for the variable name
+        {
+           char *msg=new char[1024];
+           SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 3: 'S[et]' usage, third argument only allowed, if second argument (variable's name) is a string denoting the variable name", DLLNAME);
+           context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+           delete[] msg;
+           return context->Nil();
+        }
+
+        // set single variable
+        context->SetContextVariable(context->CString((RexxStringObject) nameOrDir), value);
+        return NULL; // NULLOBJECT
+    }
+
+    // only a maximum of two arguments left
+    if (argumentOmitted(2))     // only possible for 'G[ETall]'
+    {
+        if (flag != 'G')
+        {
+            char *msg=new char[1024];
+            SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 4: [%s] usage, second argument missing", argSwitch, DLLNAME);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            delete[] msg;
+            return context->Nil();
+        }
+
+        return context->GetAllContextVariables();   // return all currently defined variables
+    }
+
+    //
+    if (flag=='G')           // get single variable name
+    {
+        if (!isArg2aString)
+        {
+            char *msg=new char[1024];
+            SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 5: 'G[et]' usage, second argument must be a string", DLLNAME);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            delete[] msg;
+            return context->Nil();
+        }
+            // fetch variable value
+        RexxObjectPtr rop=context->GetContextVariable(context->CString((RexxStringObject) nameOrDir));
+        if (rop==NULL)  // variable name not found, create error hinting at VAR()-, VALLUE()-BIFs
+        {
+            char *msg=new char[1024];
+            SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 6: 'G[et]' usage, variable [%s] not defined, use VAR()-BIF (built-in-function) to test existence of variable beforehand", nameOrDir, DLLNAME);
+            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+            delete[] msg;
+            return context->Nil();
+        }
+        return rop;
+
+    }
+
+    if (flag=='D' && isArg2aString) // drop variable by name
+    {
+        context->DropContextVariable(context->CString((RexxStringObject) nameOrDir));   // drop variable
+        return NULL; // NULLOBJECT
+    }
+
+        // if not a string, it must be either a .Directory, or starting with ooRexx 5.0 a .StringTable
+    if (! (context->IsOfType(nameOrDir, "Directory") || context->IsOfType(nameOrDir, "StringTable")) )
+    {
+        char *msg=new char[1024];
+
+        SNPRINTF( msg, 1024, "%.16s/routine/BsfContextVariables(), error 7: [5s] usage, argument # 2 is not of type 'Directory', neither of type 'StringTable'", argSwitch, DLLNAME);
+        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+        delete[] msg;
+        return context->Nil();
+    }
+
+    // use a supplier to {Set|Drop}ContextVariable(...)
+    RexxSupplierObject rxSupplier=(RexxSupplierObject) context->SendMessage0(nameOrDir,"SUPPLIER");
+    while (context->SupplierAvailable(rxSupplier))
+    {
+        if (flag=='S')
+        {
+            context->SetContextVariable(
+                context->CString((RexxStringObject) context->SupplierIndex(rxSupplier)),    // always a string
+                context->SupplierItem(rxSupplier)
+                );
+        }
+        else    // dropping mode
+        {
+            context->DropContextVariable(context->CString((RexxStringObject) context->SupplierIndex(rxSupplier)));
+        }
+
+        context->SupplierNext(rxSupplier);
+    }
+
+    return NULL; // NULLOBJECT
+}
+
+
+
+
 
 // <---------------------------------
 
@@ -10973,6 +11143,8 @@ fprintf(stderr, "///  marker (5b), res=[%d]...\n", ret);fflush(stderr);
         REXX_TYPED_ROUTINE( BsfUnloadJava               , BsfUnloadJava               ),
         REXX_TYPED_ROUTINE( BsfVersion                  , BsfVersion                  ),
         REXX_TYPED_ROUTINE( BsfRawBytes                 , BsfRawBytes                 ),    // rgf, 2010-02-09
+
+        REXX_TYPED_ROUTINE( BsfContextVariables         , BsfContextVariables         ),    // rgf, 2015-06-04
 
 #if defined (CONFIG_MAKE_OREXX_REGISTRY_ACCESSIBLE)
         REXX_TYPED_ROUTINE( BsfGetRegistryObjects       , BsfGetRegistryObjects       ),    // rgf, 2010-06-06
