@@ -71,6 +71,39 @@ all platforms and can be downloaded from its homepage at
            each time a Rexx method gets invoked as a result of the Java interface method being run on
            the Java side.
 
+    <dt><a href="nutshell_04_eval.nrx">nutshell_04_eval.nrx</a>
+    <dd>A NetRexx demonstration program to show, how to setup and evaluate (invoke) the Rexx programs,
+        use the <code>ScriptContext</code> to define the values the Rexx programs should use and
+        executes three Rexx programs demonstrating the different possibilities to fetch the
+        values:
+        <br>
+        <ul>
+            <li><a href="nutshell_04a.rex">nutshell_04a.rex</a>: fetches the <code>java.awt.Dimension</code>
+                objects named
+                <code>d1</code>, <code>d2</code>, <code>d3</code>, <code>d4</code>,
+                <code>d5</code>, <code>d6</code>, <code>d7</code>, <code>d8</code>
+                from the supplied <code>ScriptContext</code> which is always supplied as an entry
+                named <code>&quot;ScriptContext&quot;</code> in the <code>slotDir</code> argument
+                (a Rexx directory that the <code>RexxScriptEngine</code> appends as the last argument).
+
+            <li><a href="nutshell_04b.rex">nutshell_04a.rex</a>: uses the Rexx external function
+                <code>BSFContextVariables()</code> and the <code>BSF.CLS</code> public routine
+                named <code>bsf.ScriptContext2Rexx()</code> to create Rexx context variables for
+                all the values available in the supplied <code>ScriptContext</code> which is always
+                supplied as an entry named <code>&quot;ScriptContext&quot;</code> in the <code>slotDir</code>
+                argument (a Rexx directory that the <code>RexxScriptEngine</code> appends as the last argument).
+
+            <li><a href="nutshell_04c.rex">nutshell_04c.rex</a>: simply fetches the values (Java objects)
+                directly as Rexx arguments and uses them directly. In addition fetches the
+                supplied <code>ScriptContext</code> which is always supplied as an entry
+                named <code>&quot;ScriptContext&quot;</code> in the <code>slotDir</code> argument
+                (a Rexx directory that the <code>RexxScriptEngine</code> appends as the last argument).
+        </ul>
+
+        To run the NetRexx program enter the following command into a command line window:<br>
+        <code>java nutshell_04_eval</code>
+
+
     <dt><a href="nrxRunScript.nrx">nrxRunScript.nrx</a>
     <dd>A simple Java utility to learn about the available script engines, their properties, test
         them, but also to allow running any script using the appropriate Java script engine.
@@ -121,6 +154,6 @@ all platforms and can be downloaded from its homepage at
 <p>
 <hr>
 <p style="font-size: 80%;">
-Rony G. Flatscher, 2015-06-04, Wien/Vienna, Austria, Europe
+Rony G. Flatscher, 2015-06-08, Wien/Vienna, Austria, Europe
 </body>
 
