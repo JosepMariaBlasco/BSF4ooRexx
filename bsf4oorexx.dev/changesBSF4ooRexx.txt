@@ -1,4 +1,22 @@
 
+-------------------------------------- 2015-06-08 ----------------------------------
+
+- new samples for demonstrating the JSR-223 support in "samples/Java/jsr223", files:
+
+        - nutshell_04c.rex      ... uses Java objects directly via arguments (easiest
+                                    for Rexx programmers)
+
+- new samples for demonstrating the JSR-223 support in "samples/NetRexx/jsr223", files:
+
+        - nutshell_04_eval.nrx  ... defines values to work whith in ScriptContext
+
+        - nutshell_04a.rex      ... fetches entries from ScriptContext individually
+
+        - nutshell_04b.rex      ... creates Rexx context variables from ScriptContext at once
+
+        - nutshell_04c.rex      ... uses Java objects directly via arguments (easiest
+                                    for Rexx programmers)
+
 -------------------------------------- 2015-06-07 ----------------------------------
 
 - BSF4ooRexx.cc
@@ -12,6 +30,53 @@
           returns a Rexx directory that contains all ScriptContext values of the
           given scopes; meant to be used in conjunction with the new external Rexx
           function BSFContextVariables()
+
+- new samples for demonstrating the JSR-223 support in "samples/Java/jsr223", files:
+
+        - Nutshell_04_Eval.java ... defines values to work whith in ScriptContext
+
+        - nutshell_04a.rex      ... fetches entries from ScriptContext individually
+
+        - nutshell_04b.rex      ... creates Rexx context variables from ScriptContext at once
+
+-------------------------------------- 2015-05-22 ----------------------------------
+
+- utility for demonstrating the JSR-223 support in "samples/NetRexx/jsr223", files:
+
+        - nrxRunScript.nrx ... a command line Java utility to query, test and evaluate javax.script
+                               scripting engines and run any script in any installed script engine
+
+         - nutshell_02_invoke.nrx
+
+         - nutshell_02.rex
+
+         - nutshell_03_interface.nrx
+
+         - nutshell_03.rex
+
+         - nutshell_04_eval.nrx
+
+         - nutshell_04a.rex
+
+         - nutshell_04b.rex
+
+         - nutshell_04c.rex
+
+-------------------------------------- 2015-05-22 ----------------------------------
+
+- new samples for demonstrating the JSR-223 support in "samples/NetRexx/jsr223", files:
+
+         - nutshell_01_eval.nrx
+
+         - nutshell_01.rex
+
+-------------------------------------- 2015-05-20 ----------------------------------
+
+- utility for demonstrating the JSR-223 support in "samples/Java/jsr223", files:
+
+        - RunScript.java ... a command line Java utility to query, test and evaluate javax.script
+                               scripting engines and run any script in any installed script engine
+
 
 -------------------------------------- 2015-05-12 ----------------------------------
 

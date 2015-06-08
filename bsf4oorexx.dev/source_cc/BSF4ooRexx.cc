@@ -9444,7 +9444,8 @@ RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, O
         return context->Nil();
     }
 
-    boolean isArg2aString= ( nameOrDir==NULL ? false : context->IsString(nameOrDir) );
+    // boolean isArg2aString= ( nameOrDir==NULL ? false : context->IsString(nameOrDir) );
+    logical_t isArg2aString= ( nameOrDir==NULL ? false : context->IsString(nameOrDir) );
 
     if (argumentExists(3))  // single SET variable
     {
