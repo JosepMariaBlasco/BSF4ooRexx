@@ -24,6 +24,8 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.5.2.  2015-06-08 - report new external Rexx function BsfContextVariables() in BsfQueryRegisteredFunctions()
+
     4.5.2.  2015-06-04 - 2015-06-07 -rgf: added external Rexx function BsfContextVariables() which
                            allows to get, set and drop context variables in caller, usage
 
@@ -881,11 +883,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "452.20150607 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150608 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "452.20150607 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150608 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "452.20150607 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150608 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -5486,6 +5488,7 @@ PSZ ApiFncTable[]=      // if invoked via Rexx, these are the functions we repor
 {
     "BSF"                         ,
 //    "BsfAttachToTID"              , // ---rgf, 2003-08-06, 2014-05-15: do not report anymore (auto-attach implemented)
+    "BsfContextVariables"         ,  // rgf, 2015-06-07
     "BsfCreateRexxProxy"          , // ---rgf, 2009-09-12
 //    "BsfDetach"                   , // ---rgf, 2008-07-26, 2014-05-15: do not report anymore (auto-attach implemented)
     "BsfDropFuncs"                ,
@@ -5512,6 +5515,7 @@ PSZ ApiFncTable4Java[]=      // if invoked via Java, these are the functions we 
 {
     "BSF"                         ,
 //    "BsfAttachToTID"              , // ---rgf, 2003-08-06, 2014-05-15: do not report anymore (auto-attach implemented)
+    "BsfContextVariables"         ,  // rgf, 2015-06-07
     "BsfCreateRexxProxy"          , // ---rgf, 2009-09-12
 //    "BsfDetach"                   , // ---rgf, 2008-07-26, 2014-05-15: do not report anymore (auto-attach implemented)
     "BsfDropFuncs"                ,
