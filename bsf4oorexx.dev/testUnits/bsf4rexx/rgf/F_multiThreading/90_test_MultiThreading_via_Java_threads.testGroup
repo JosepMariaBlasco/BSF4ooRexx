@@ -75,7 +75,8 @@ return testResult
     javaClz=bsf.import("rgf.F_multiThreading.TestNestedEngines")
 
     bm=bsf.wrap(bsf("getBsfManager"))     -- get this Rexx instance's BSFManager object
-    jo=javaClz~new(bm, self, nrJavaThreads, nrRexxThreads, rexxCode, rpArr)
+    -- jo=javaClz~new(bm, self, nrJavaThreads, nrRexxThreads, rexxCode, rpArr)
+    jo=javaClz~new(bm, self, nrJavaThreads, nrRexxThreads, rexxCode, arr)
 
     jo~dispatchRexxScripts
 

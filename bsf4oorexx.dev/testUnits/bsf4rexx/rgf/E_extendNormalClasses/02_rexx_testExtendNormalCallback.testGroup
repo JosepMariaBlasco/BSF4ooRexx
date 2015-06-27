@@ -4,6 +4,9 @@
    author:           Rony G. Flatscher
    version:          1.0.0
    date:             2009-08-30
+   changed:          2015-06-27, rgf: - changed to adapt to new semantics when creating an extended class (array
+                                        of method names must not be null now, but have a capacity of 0 instead)
+
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF4Rexx 4.0 new callback from Java to ooRexx
    hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
@@ -41,7 +44,10 @@ return testResult
     extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
     newName="test_02_01_ExtendedNormal"
       -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
-    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+--    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+
+    jarray=bsf.createJavaArray("java.lang.String",0)  -- capacity of 0
+    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, jarray)
 
       -- find constructor with single RexxProxy argument
     argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
@@ -88,7 +94,10 @@ return testResult
     extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
     newName="test_02_01_ExtendedNormal"
       -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
-    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+--    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+
+    jarray=bsf.createJavaArray("java.lang.String",0)  -- capacity of 0
+    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, jarray)
 
       -- find constructor with single RexxProxy argument
     argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
@@ -136,7 +145,10 @@ return testResult
     extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
     newName="test_02_01_ExtendedNormal"
       -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
-    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+--    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+
+    jarray=bsf.createJavaArray("java.lang.String",0)  -- capacity of 0
+    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, jarray)
 
       -- find constructor with single RexxProxy argument
     argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
@@ -184,7 +196,10 @@ return testResult
     extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
     newName="test_02_01_ExtendedNormal"
       -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
-    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+--    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+
+    jarray=bsf.createJavaArray("java.lang.String",0)  -- capacity of 0
+    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, jarray)
 
       -- find constructor with single RexxProxy argument
     argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
@@ -231,7 +246,10 @@ return testResult
     extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
     newName="test_02_01_ExtendedNormal"
       -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
-    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+--    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+
+    jarray=bsf.createJavaArray("java.lang.String",0)  -- capacity of 0
+    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, jarray)
 
       -- find constructor with single RexxProxy argument
     argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
@@ -279,7 +297,10 @@ return testResult
     extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
     newName="test_02_01_ExtendedNormal"
       -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
-    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+--    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
+
+    jarray=bsf.createJavaArray("java.lang.String",0)  -- capacity of 0
+    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, jarray)
 
       -- find constructor with single RexxProxy argument
     argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))

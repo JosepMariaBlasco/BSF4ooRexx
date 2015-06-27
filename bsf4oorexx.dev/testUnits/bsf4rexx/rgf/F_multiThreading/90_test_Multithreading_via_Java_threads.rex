@@ -1,5 +1,9 @@
 /* author:     Rony G. Flatscher
    date:       2009-09-10, 2009-10-11
+   changed:    2015-06-26, rgf:
+               - adjust code to new BsfRexxProxy() behaviour: if Java supplies a BSFRexxProxy() object
+                 BSF4ooRexx automatically unwraps it and submits it as an argument
+
    license:    ASF 2.0 (Apache) or CPL 1.0
 
    purpose:    controller of the multithreaded execution of Rexx threads
@@ -8,11 +12,13 @@
 use arg rpTestUnit, rpArray, nrThreads, javaThreadName
 
     tid=bsfGetTID()              -- get this TID
-    testUnit=BsfRexxProxy(rpTestUnit, "ooRexxObject") -- get ooRexx object that gets proxied
+--    testUnit=BsfRexxProxy(rpTestUnit, "ooRexxObject") -- get ooRexx object that gets proxied
+    testUnit=rpTestUnit
 
           -- save this thread's TID
     argArray=bsf.createJavaArrayOf("java.lang.Object", tid)
-    rpArray~sendMessage("APPEND", argArray)
+    -- rpArray~sendMessage("APPEND", argArray)
+    rpArray~"APPEND"(argArray)
 
     rexxArray=.array~new         -- create a new rexxArray for this controller's threads
 
@@ -73,7 +79,7 @@ use arg rpTestUnit, rpArray, nrThreads, javaThreadName
 
    -- have the RexxProxy send the following message to its proxied Rexx object
   argArray=bsf.createJavaArrayOf("java.lang.Object", thisTID)
-  rpArray~sendMessage("APPEND", argArray) -- save this TID
+  rpArray~"APPEND"(argArray) -- save this TID
   rexxArray~append(thisTID)
 
   testUnit~assertTrue(BsfDetach(), "detaching from main TID:" TID", thread #" nr", thisTID="thisTID "running in Java thread named:" javaThreadName)

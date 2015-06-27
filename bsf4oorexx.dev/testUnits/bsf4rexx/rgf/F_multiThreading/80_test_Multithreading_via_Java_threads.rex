@@ -7,12 +7,14 @@
 
 use arg rpTestUnit, rpArray, nrThreads, javaThreadName
 
+signal on syntax
+
     tid=bsfGetTID()              -- get this TID
-    testUnit=BsfRexxProxy(rpTestUnit, "ooRexxObject") -- get ooRexx object that gets proxied
 
           -- save this thread's TID
     argArray=bsf.createJavaArrayOf("java.lang.Object", tid)
-    rpArray~sendMessage("APPEND", argArray)
+    -- rpArray~sendMessage("APPEND", argArray)
+    rpArray~"APPEND"(argArray)
 
     rexxArray=.array~new         -- create a new rexxArray for this controller's threads
 
@@ -21,7 +23,7 @@ use arg rpTestUnit, rpArray, nrThreads, javaThreadName
     do i=1 to nrThreads
        counter~increase                   -- increase the counter
           -- thread will decrease counter before returning
-       .ThreadClz_using_RexxProxy_Array~new~work(testUnit, tid, i, counter, rpArray, rexxArray, javaThreadName)
+       .ThreadClz_using_RexxProxy_Array~new~work(rpTestUnit, tid, i, counter, rpArray, rexxArray, javaThreadName)
     end
 
     maxTimeToWait=1+nrThreads*1.5/10
@@ -30,10 +32,10 @@ use arg rpTestUnit, rpArray, nrThreads, javaThreadName
        call sysSleep .001              -- yield
     end
 
-    testUnit~assertEquals(0, counter~value, "active thread counter in Java thread:" javaThreadName)
+    rpTestUnit~assertEquals(0, counter~value, "active thread counter in Java thread:" javaThreadName)
 
       -- this controller created 'nrThreads' threads, check it
-    testUnit~assertEquals(nrThreads, rexxArray~items, "total number of threads:" javaThreadName)
+    rpTestUnit~assertEquals(nrThreads, rexxArray~items, "total number of threads:" javaThreadName)
 
 
 ::requires BSF.CLS
@@ -64,6 +66,7 @@ use arg rpTestUnit, rpArray, nrThreads, javaThreadName
 /* ==================================================================================== */
 -- implement a class with a threaded worker method
 ::class "ThreadClz_using_RexxProxy_Array"
+
 ::method work
   use arg testUnit, TID, nr, counter, rpArray, rexxArray, javaThreadName
   reply                 -- return & create a new thread
@@ -72,11 +75,9 @@ use arg rpTestUnit, rpArray, nrThreads, javaThreadName
   testUnit~assertTrue(BsfAttachToTID(TID), "attaching to main TID:" TID", thread #" nr", thisTID="thisTID "running in Java thread named:" javaThreadName)
 
    -- have the RexxProxy send the following message to its proxied Rexx object
-  rpArray~sendMessage1("APPEND", thisTID)
+  rpArray  ~append(thisTID)
   rexxArray~append(thisTID)
 
   testUnit~assertTrue(BsfDetach(), "detaching from main TID:" TID", thread #" nr", thisTID="thisTID "running in Java thread named:" javaThreadName)
   counter~decrease
   return
-
-

@@ -179,6 +179,17 @@ public class RexxExtendingClassLoader extends ClassLoader {
         }
         catch (Exception e)
         {
+
+if (RexxExtendClass.bDebugMethodVisitor)
+{
+    System.err.println("\\\\\\ ==> "+this+": generateAndLoadExtendedClass  (String clzName, final String clzNewName, final int classVersion, final String [] methodNamesToAdd");
+    System.err.println("\\\\\\ ==> "+"MethodForSuperData.createMethod(): name="+RexxExtendClass.pp(clzName));
+    System.err.println("\\\\\\ ==> Before reporting ClassNotFoundException(): e=["+e+"], clzName=["+clzName+"], stackTrace:");
+    e.printStackTrace();
+
+}
+
+
             throw new ClassNotFoundException(clzName, e);
         }
 

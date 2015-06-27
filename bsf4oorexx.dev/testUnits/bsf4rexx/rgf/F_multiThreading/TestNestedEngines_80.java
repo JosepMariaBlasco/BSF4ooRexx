@@ -62,12 +62,14 @@ public class TestNestedEngines_80 {
           // System.out.println("--> Java: just started thread ["+r[i].getThreadName()+"]...");System.out.flush();
       }
       // all got started
-
+// System.err.println("Java: nrJavaThreads=["+nrJavaThreads+"] started, now joining...");
       for (int i=0;i<nrJavaThreads; i++)        // join all threads
       {
+// System.err.println("Java: joining, i=["+i+"] of ["+nrJavaThreads+"]");
           t[i].join();
       }
       // all are finished
+// System.err.println("Java: all threads finished!");
   }
 
 
@@ -86,12 +88,14 @@ public class TestNestedEngines_80 {
 
             String threadName=Thread.currentThread().getName();
             setThreadName(threadName);                        // save thread name
+// System.err.println("Java -> run(): RexxStart, threadName=["+threadName+"]");
             try {
                 rpArray.sendMessage1("APPEND", threadName);  // save this thread name in supplied RexxProxy array
 
                 // define arguments for Rexx script
                 Vector args = new Vector(4);
                 args.add(TestNestedEngines_80.testUnit);
+// System.err.println("Java -> run(): RexxStart, ...testUnit=["+TestNestedEngines_80.testUnit+"], threadName=["+threadName+"]");
                 args.add(rpArray);
                 args.add(new Integer(nrRexxThreads));
                 args.add(threadName);
@@ -103,16 +107,29 @@ public class TestNestedEngines_80 {
                 BSFEngine  rexx = bmNew.loadScriptingEngine("rexx");
 
                 // execute the Rexx script
+// System.err.println("Java -> run():  RexxStart, #1 making sure BSF.CLS is required, using apply(), threadName=["+threadName+"]");
                 Object result=rexx.apply ("rexx", 0, 0,
                                           "::requires BSF.CLS",  // make sure BSF.CLS is loaded for processing arguments in next invocation
                                           null,
                                           null);
+
+// System.err.println("Java -> run():  RexxStart, #2 making sure BSF.CLS is required, using apply(), threadName=["+threadName+"]");
+                       result=rexx.apply ("rexx", 0, 0,
+                                          "::requires BSF.CLS",  // make sure BSF.CLS is loaded for processing arguments in next invocation
+                                          null,
+                                          null);
+
+// System.err.println("Java -> run():  RexxStart, running Rexx code via apply() for threadName["+threadName+"]");
+
+// System.out.println("Java -> run():  Rexxcode for threadName["+threadName+"]:\n"+"/-->/"+(rexxCode.replaceAll("@threadName", (""+threadName))+"\\<--\\").substring(0,100));
+
 
                 result=rexx.apply ("rexx", 0, 0,
                                    rexxCode.replaceAll("@threadName", (""+threadName)),
                                    null,
                                    args);
 
+// System.err.println("Java -> run(): end, result=["+result+"], threadName=["+threadName+"]");
                 tlResult.set(result);   // save result
             }
             catch (Throwable th) {

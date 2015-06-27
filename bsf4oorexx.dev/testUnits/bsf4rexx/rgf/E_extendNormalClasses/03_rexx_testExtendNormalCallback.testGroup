@@ -4,6 +4,9 @@
    author:           Rony G. Flatscher
    version:          1.0.0
    date:             2009-08-31, 2009-09-05, 2009-09-07
+   changed:          2015-06-27, rgf: - changed to adapt to new semantics when creating an extended class (array
+                                        of method names must not be null now, but have a capacity of 0 instead)
+
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF4Rexx 4.0 new callback from Java to ooRexx
    hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
@@ -743,7 +746,8 @@ return testResult
     do classVersion=48 to 50
        if javaClzVersion<classVersion then leave   -- oops current Java class version cannnot handle target class version anymore, skip
        newName="NormalTest_03_"classVersion"_Java_1_4" || testFamily
-       argArray=.nil
+--       argArray=.nil
+       argArray=bsf.createJavaArray("java.lang.String",0)   -- 20150627, rgf
        clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest_03", newName, classVersion, argArray)
        self~assertTrue(abbrev(clz~getName, newName), "clz: test new class name for java.class.version="classVersion)
 
@@ -811,7 +815,9 @@ return testResult
 
     newName="NixiNoxi_49"
     -- create all methods
-    clz2=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest_03", newName, 49, .nil)
+    -- clz2=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest_03", newName, 49, .nil)
+    jArr=bsf.createJavaArray("java.lang.String",0) -- 2015-06-27, rgf
+    clz2=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest_03", newName, 49, jArr)
 
 -- call dump2 getBagOfNames(clz2~getDeclaredMethods)~allIndexes~sortWith(.CaselessComparator~new)
 
@@ -874,9 +880,16 @@ return testResult
        --    "Object_Method", "void_Method", "instance_String_Method", "static_String_Method",
        --    "all_args_Method"
        newName="test_14_NormalTest_03_A_"classVersion || testFamily
-       clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest_03", newName, classVersion, .nil)
+       -- clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest_03", newName, classVersion, .nil)
+
+       jArr=bsf.createJavaArray("java.lang.String",0) -- 2015-06-27, rgf
+       clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest_03", newName, classVersion, jarr)
+
        clz~setDefaultHandler(rp) -- *MUST* be set for static methods to work, also for constructors
                                  -- that are supposed to callback to a RexxProxy
+
+
+
 
        self~assertTrue(abbrev(clz~getName, newName), "clz: test new class name for java.class.version="classVersion)
        self~assertEquals(3, clz~getDeclaredConstructors~items, "exactly three constructors for java.class.version="classVersion)
@@ -952,7 +965,11 @@ return testResult
        --    "Object_Method", "void_Method", "instance_String_Method", "static_String_Method",
        --    "all_args_Method"
        newName="test_15_NormalTest_03_B_"classVersion || testFamily
-       clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest_03", newName, classVersion, .nil)
+       -- clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest_03", newName, classVersion, .nil)
+
+       jArr=bsf.createJavaArray("java.lang.String",0) -- 2015-06-27, rgf
+       clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest_03", newName, classVersion, jArr)
+
        clz~setDefaultHandler(rp) -- *MUST* be set for static methods to work, also for constructors
                                  -- that are supposed to callback to a RexxProxy
 

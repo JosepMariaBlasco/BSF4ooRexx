@@ -1,15 +1,25 @@
 #!/usr/bin/rexx
 /*
-   name:             rexx_testBsfRexxProxy1.testGroup
-   author:           Rony G. Flatscher
-   version:          1.0.0
-   date:             2009-09-10, 2009-10-16
-   license:          ASF 2.0 (Apache Software License)
-   purpose:          test BSF4Rexx 4.0 new external BsfRexxProxy() method
-   hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
-                     hence this test unit needs to address RexxProxy objects in a Java fashion, using
-                     the RexxProxy method "invoke(String methodName, Object[] args)"; any Rexx object
-                     that gets returned will be wrapped up as a RexxProxy as well
+   name:       rexx_testBsfRexxProxy1.testGroup
+   author:     Rony G. Flatscher
+   version:    1.0.0
+   date:       2009-09-10, 2009-10-16
+   changed:    2015-06-26, rgf
+                  - adjust code for new (more versatile) support for BSFRexxProxy(), where supplying
+                    Rexx objects to Java will be automagically wrapped as BSFRexxProxy() and getting
+                    a BSFRexxProxy() from Java will automagically be unwrapped
+                  - added class RGF_WORKER to serve as a proxy for the assertable instance of the
+                    test method; otherwise leads to deadlocks if that object gets messages sent from
+                    different threads
+   license:    ASF 2.0 (Apache Software License)
+   purpose:    test BSF4Rexx 4.0 new external BsfRexxProxy() method
+   hint:       RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
+               hence this test unit needs to address RexxProxy objects in a Java fashion, using
+               the RexxProxy method "invoke(String methodName, Object[] args)"; any Rexx object
+               that gets returned will be wrapped up as a RexxProxy as well;
+
+               2015-06-26, rgf: the Rexx object support has been enhanced such that BSFRexxProxy()
+                                will transparently be unwrapped if passed from Java to ooRexx
 */
 
   parse source . . fileSpec;
@@ -48,11 +58,13 @@ return testResult
       --   28 threads: nrJavaThreads=3;nrRexxThreads=7;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
     nrJavaThreads=3
     nrRexxThreads=7
-
-
 /*
+*/
+
+
       -- normal burden:
       --   712 threads: nrJavaThreads=23;nrRexxThreads=29;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+/*
     nrJavaThreads=23
     nrRexxThreads=29
 */
@@ -76,12 +88,16 @@ return testResult
     javaClz=bsf.import("rgf.F_multiThreading.TestNestedEngines_80")
 
     bm=bsf.wrap(bsf("getBsfManager"))     -- get this Rexx instance's BSFManager object
-    jo=javaClz~new(bm, self, nrJavaThreads, nrRexxThreads, rexxCode, rpArr)
 
+      -- 20150626, rgf: use this instance to carry out the assertions: in ooRexx 4.* this will cause
+      -- deadlocks (no time to reseach and analyze whether this behaviour is to be expected), if
+      -- any thread and Rexx code sends it a message; using an intermediate class to serve as a
+      -- proxy solves the problem, hence introducing and using class RGF_WORKER
+    -- jo=javaClz~new(bm, .rgf_worker~new(self), nrJavaThreads, nrRexxThreads, rexxCode, arr)
+    jo=javaClz~new(bm, .rgf_worker~new(self), nrJavaThreads, nrRexxThreads, rexxCode, arr)
     jo~dispatchRexxScripts
 
     expected=1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads))   -- per rexxThread two asserts
-
     self~assertEquals(expected, arr~items, "total number of threads")
 
 
@@ -106,4 +122,16 @@ return testResult
   call stream longFn, "C", "close"              -- make sure file is closed
   return tmpStr
 
+-- 20150625: use a proxy to embed the testunit object and pass the proxy to Java which
+--           supplies it as an argument in each thread; otherwise there will be a deadlock
+--           in the multithreaded interaction with the testunit object (which is used to
+--           carry out and gather all assertions from the Rexx code in any thread
+::class rgf_worker
+::method init
+  expose proxy
+  use strict arg proxy
 
+::method unknown
+  expose proxy
+  use arg msgName, msgArgs
+  forward message (msgName) arguments (msgArgs) to (proxy) continue

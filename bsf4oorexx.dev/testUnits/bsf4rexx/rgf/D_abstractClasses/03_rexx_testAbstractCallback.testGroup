@@ -4,6 +4,8 @@
    author:           Rony G. Flatscher
    version:          1.0.0
    date:             2009-08-31, 2009-09-05, 2009-09-07
+   changed:          2015-06-27, rgf - adapted the test to what is deocumented for supplying an array of
+                                       method names to be proxied
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF4Rexx 4.0 new callback from Java to ooRexx
    hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
@@ -379,7 +381,6 @@ return testResult
 
        declaredMethods=getSetOfNames(clz~getDeclaredMethods)
        expectedMethods=abstractPublicMethods~union(defaultSyntheticMethods)
-
 -- call compareAndDump "declared<-->expected for version:" classVersion"/"testFamily, declaredMethods, expectedMethods
 
        self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods) for java.class.version="classVersion)
@@ -408,6 +409,8 @@ return testResult
     end
 
 
+/* =====>
+<========== */
     -------------------------------------------------------------------------------------------------
     --> just create explicitly method for concrete method 'instance_String_Method'
     testFamily="_family_03"
@@ -415,7 +418,10 @@ return testResult
        if javaClzVersion<classVersion then leave   -- oops current Java class version cannnot handle target class version anymore, skip
        newName="AbstractTest_03_"classVersion"_Java_1_4" || testFamily
        argArray=bsf.createArrayOf("java.lang.String", "instance_String_Method")
+
+       -- clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03", newName, classVersion, argArray)
        clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03", newName, classVersion, argArray)
+
        self~assertTrue(abbrev(clz~getName, newName), "clz: test new class name for java.class.version="classVersion)
 
        self~assertEquals(3, clz~getDeclaredConstructors~items, "exactly three constructors for java.class.version="classVersion)
@@ -513,6 +519,7 @@ return testResult
 
     end
 
+
     -------------------------------------------------------------------------------------------------
     --> just create explicitly methods for *all* methods; empty list of methods or .nil for this argument causes this
     testFamily="_family_05"
@@ -539,7 +546,7 @@ return testResult
 
 
     -------------------------------------------------------------------------------------------------
-    --> just create explicitly methods for *all* methods; empty list of methods or .nil for this argument causes this
+    --> rgf, 20150627: just create explicitly methods for 'all' abstract methods, if array of methods is .nil
     testFamily="_family_06"
     do classVersion=48 to 50
        if javaClzVersion<classVersion then leave   -- oops current Java class version cannnot handle target class version anymore, skip
@@ -552,9 +559,13 @@ return testResult
 
        declaredMethods=getSetOfNames(clz~getDeclaredMethods)
        expectedMethods=abstractPublicMethods~union(defaultSyntheticMethods)
+/* rgf, 20150627: .nil means no concrete methods to proxy, hence there are no class methods, hence no synthetic class$ needed in Java <1.5
+
        expectedMethods ~~putAll(forwardToSuperMethods) ~~putAll(forwardToSuperStaticMethods)
-       if classVersion=48 then  -- if Java 1.4 or earlier, then we have the static synthetic method "class$" as well
-          expectedMethods~put("class$")
+
+       -- if Java 1.4 or earlier, then we have the static synthetic method "class$" as well
+       if classVersion=48 then expectedMethods~put("class$")
+*/
 
 -- call compareAndDump "declared<-->expected for version:" classVersion"/"testFamily, declaredMethods, expectedMethods
 

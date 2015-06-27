@@ -52,6 +52,7 @@ public class TestNestedEngines {
           r[i]=new ThreadedJNIRexxStart();
           t[i]=new Thread(r[i]);             // create thread
           r[i].setThreadName(t[i].getName());
+// System.err.println("--> nrJavaThreads=["+nrJavaThreads+"], i=["+i+"], t[i].getName()=["+t[i].getName()+"] == r[i].getThreadName=["+r[i].getThreadName()+"]");
           t[i].start();               // start execution on own thread
           // System.out.println("--> Java: just started thread ["+r[i].getThreadName()+"]...");System.out.flush();
       }
