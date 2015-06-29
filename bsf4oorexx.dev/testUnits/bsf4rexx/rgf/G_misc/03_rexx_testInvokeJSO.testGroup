@@ -1,0 +1,280 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testBsfIsA.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2015-06-29
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4ooRexxÄ  new external BsfRawBytes() function
+*/
+
+  parse source . . fileSpec
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testInvokeJSO)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "testInvokeJSO" subclass ooTestCase public
+
+
+::method "test_01_get_static_string_field"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+    jclz=bsf.import("rgf.G_misc.Test_JSO")
+    jo  =jclz~new             -- create a Java instance
+
+    fieldname="staticString"
+
+    val_01   =jclz~bsf.getStaticValue(jclz,fieldName)    -- Rexx string
+    val_02   =jclz~send(fieldName)                       -- Rexx string
+    val_03   =jo~send(fieldName)                         -- Rexx string
+    valJSO_01=jclz~bsf.getStaticValueJSO(jclz,fieldName) -- a reference to a Java String object
+    valJSO_02=bsf.getStaticValueJSO(jclz,fieldName)      -- a reference to a Java String object
+    valJSO_03=bsf.getConstantJSO(jclz,fieldName)         -- a reference to a Java String object
+
+    self~assertTrue(jo~bsf.isA("java.lang.Object"))
+    self~assertTrue(jo~bsf.isA("rgf.G_misc.Test_JSO"))
+    self~assertFalse(jo~bsf.isA("java.lang.String"))
+
+    self~assertEquals(val_01, "This is a static Java string.")
+    self~assertEquals(val_02, "This is a static Java string.")
+    self~assertEquals(val_03, "This is a static Java string.")
+
+    self~assertTrue(val_01=val_02)
+    self~assertTrue(val_01==val_02)
+    self~assertTrue(val_01==val_03)
+
+    self~assertTrue(valJSO_01~bsf.isA("java.lang.String"))
+    self~assertTrue(valJSO_02~bsf.isA("java.lang.String"))
+    self~assertTrue(valJSO_03~bsf.isA("java.lang.String"))
+
+    self~assertTrue(valJSO_01~objectName~pos("java.lang.String@")>0)
+    self~assertTrue(valJSO_02~objectName~pos("java.lang.String@")>0)
+    self~assertTrue(valJSO_03~objectName~pos("java.lang.String@")>0)
+
+    self~assertTrue(valJSO_01~toString=val_01)
+    self~assertTrue(valJSO_01~toString=val_02)
+
+    self~assertTrue(valJSO_01~toString=valJSO_02~toString)
+    self~assertTrue(valJSO_01~toString=valJSO_03~toString)
+    self~assertTrue(valJSO_01~toString==valJSO_02~toString)
+    self~assertTrue(valJSO_01~toString==valJSO_03~toString)
+
+
+::method "test_01_get_static_string_field_via_messages"
+    jclz=bsf.import("rgf.G_misc.Test_JSO")
+    jo  =jclz~new             -- create a Java instance
+
+    fieldname="staticString"
+
+    val_01   =jclz~getStaticString                       -- Rexx string
+    val_02   =jclz~send(fieldName)                       -- Rexx string
+    val_03   =jo~getStaticString                         -- Rexx string
+    valJSO_01=jclz~bsf.getStaticValueJSO(jclz,fieldName) -- a reference to a Java String object
+    valJSO_02=jclz~bsf.invokeJSO(fieldName)              -- a reference to a Java String object
+    valJSO_03=jo  ~bsf.invokeJSO(fieldName)              -- a reference to a Java String object
+
+    self~assertTrue(jo~bsf.isA("java.lang.Object"))
+    self~assertTrue(jo~bsf.isA("rgf.G_misc.Test_JSO"))
+    self~assertFalse(jo~bsf.isA("java.lang.String"))
+
+    self~assertEquals(val_01, "This is a static Java string.")
+    self~assertEquals(val_02, "This is a static Java string.")
+    self~assertEquals(val_03, "This is a static Java string.")
+
+    self~assertTrue(val_01=val_02)
+    self~assertTrue(val_01==val_02)
+    self~assertTrue(val_01==val_03)
+
+    self~assertTrue(valJSO_01~bsf.isA("java.lang.String"))
+    self~assertTrue(valJSO_02~bsf.isA("java.lang.String"))
+    self~assertTrue(valJSO_03~bsf.isA("java.lang.String"))
+
+    self~assertTrue(valJSO_01~objectName~pos("java.lang.String@")>0)
+    self~assertTrue(valJSO_02~objectName~pos("java.lang.String@")>0)
+    self~assertTrue(valJSO_03~objectName~pos("java.lang.String@")>0)
+
+    self~assertTrue(valJSO_01~toString=val_01)
+    self~assertTrue(valJSO_01~toString=val_02)
+
+    self~assertTrue(valJSO_01~toString=valJSO_02~toString)
+    self~assertTrue(valJSO_01~toString=valJSO_03~toString)
+    self~assertTrue(valJSO_01~toString==valJSO_02~toString)
+    self~assertTrue(valJSO_01~toString==valJSO_03~toString)
+
+
+::method "test_03_get_instance_string_field"
+
+    jclz=bsf.import("rgf.G_misc.Test_JSO")
+    jo  =jclz~new             -- create a Java instance
+
+    fieldname="instanceString"
+
+    val_01   =jo~bsf.getFieldValue(fieldName)
+    val_02   =jo~bsf.getFieldValueStrict(fieldName)
+    val_03   =jo~send(fieldName)                         -- Rexx string
+
+    valJSO_01=jo~bsf.getFieldValueJSO(fieldName)         -- a reference to a Java String object
+    valJSO_02=jo~bsf.getPropertyValueJSO(fieldName)                -- a reference to a Java String object
+    valJSO_03=jo~bsf.getFieldValueStrictJSO(fieldName)   -- a reference to a Java String object
+
+    self~assertTrue(jo~bsf.isA("java.lang.Object"))
+    self~assertTrue(jo~bsf.isA("rgf.G_misc.Test_JSO"))
+    self~assertFalse(jo~bsf.isA("java.lang.String"))
+
+    self~assertEquals(val_01, "This is an instance Java string.")
+    self~assertEquals(val_02, "This is an instance Java string.")
+    self~assertEquals(val_03, "This is an instance Java string.")
+
+    self~assertTrue(val_01=val_02)
+    self~assertTrue(val_01==val_02)
+    self~assertTrue(val_01==val_03)
+
+    self~assertTrue(valJSO_01~bsf.isA("java.lang.String"))
+    self~assertTrue(valJSO_02~bsf.isA("java.lang.String"))
+    self~assertTrue(valJSO_03~bsf.isA("java.lang.String"))
+
+    self~assertTrue(valJSO_01~objectName~pos("java.lang.String@")>0)
+    self~assertTrue(valJSO_02~objectName~pos("java.lang.String@")>0)
+    self~assertTrue(valJSO_03~objectName~pos("java.lang.String@")>0)
+
+    self~assertTrue(valJSO_01~toString=val_01)
+    self~assertTrue(valJSO_01~toString=val_02)
+
+    self~assertTrue(valJSO_01~toString=valJSO_02~toString)
+    self~assertTrue(valJSO_01~toString=valJSO_03~toString)
+    self~assertTrue(valJSO_01~toString==valJSO_02~toString)
+    self~assertTrue(valJSO_01~toString==valJSO_03~toString)
+
+::method "test_04_get_instance_string_field_via_messages"
+    jclz=bsf.import("rgf.G_misc.Test_JSO")
+    jo  =jclz~new             -- create a Java instance
+
+    fieldname="instanceString"
+
+    val_01   =jo~bsf.getFieldValue(fieldName)
+    val_02   =jo~bsf.getFieldValueStrict(fieldName)
+    val_03   =jo~send(fieldName)                         -- Rexx string
+
+    valJSO_01=jo~bsf.getFieldValueJSO(fieldName)         -- a reference to a Java String object
+    valJSO_02=jo~bsf.invokeJSO(fieldName)                -- a reference to a Java String object
+    valJSO_03=jo~bsf.getFieldValueStrictJSO(fieldName)   -- a reference to a Java String object
+
+    self~assertTrue(jo~bsf.isA("java.lang.Object"))
+    self~assertTrue(jo~bsf.isA("rgf.G_misc.Test_JSO"))
+    self~assertFalse(jo~bsf.isA("java.lang.String"))
+
+    self~assertEquals(val_01, "This is an instance Java string.")
+    self~assertEquals(val_02, "This is an instance Java string.")
+    self~assertEquals(val_03, "This is an instance Java string.")
+
+    self~assertTrue(val_01=val_02)
+    self~assertTrue(val_01==val_02)
+    self~assertTrue(val_01==val_03)
+
+    self~assertTrue(valJSO_01~bsf.isA("java.lang.String"))
+    self~assertTrue(valJSO_02~bsf.isA("java.lang.String"))
+    self~assertTrue(valJSO_03~bsf.isA("java.lang.String"))
+
+    self~assertTrue(valJSO_01~objectName~pos("java.lang.String@")>0)
+    self~assertTrue(valJSO_02~objectName~pos("java.lang.String@")>0)
+    self~assertTrue(valJSO_03~objectName~pos("java.lang.String@")>0)
+
+    self~assertTrue(valJSO_01~toString=val_01)
+    self~assertTrue(valJSO_01~toString=val_02)
+
+    self~assertTrue(valJSO_01~toString=valJSO_02~toString)
+    self~assertTrue(valJSO_01~toString=valJSO_03~toString)
+    self~assertTrue(valJSO_01~toString==valJSO_02~toString)
+    self~assertTrue(valJSO_01~toString==valJSO_03~toString)
+
+
+::method "test_03_utf8_string"
+      -- the following string contains chars > "7F"x for which Unicode chars will be needed
+    str="-aäoOuÜ-szß-AÄOÖUÜ-"
+    bDebug= .false -- .true
+
+      -- will use the current codepage setting
+    str_01a=.java.lang.String~new(str)
+    str_02a=.bsf~new("java.lang.String",str)
+
+if bDebug=.true then
+do
+   say "str_01a:" pp(str_01a) pp(str_01a~toString)
+   say "str_02a:" pp(str_02a) pp(str_02a~toString)
+end
+
+    self~assertTrue(str_01a~bsf.isA("java.lang.String"))
+    self~assertTrue(str_02a~bsf.isA("java.lang.String"))
+    self~assertEquals(str_01a~toString, str_02a~toString)
+
+
+      -- returns a UTF-8 string using the local codepage for encoding
+   str_01b=stringToUtf8(str_01a)
+   str_02b=stringToUtf8(str_02a)
+
+if bDebug=.true then
+do
+   say "str_01b:" pp(str_01b)
+   say "str_02b:" pp(str_02b)
+end
+
+    self~assertEquals(str_01b, str_02b)
+
+
+      -- returns a string encoded to the local codepage
+   str_01c=utf8ToString(str_01b)
+   str_02c=utf8ToString(str_02b)
+
+if bDebug=.true then
+do
+   say "str_01c:" pp(str_01c)
+   say "str_02c:" pp(str_02c)
+end
+
+      -- return the Java (UTF-8) string as a JSO (a reference to java.lang.String)
+   str_01d=utf8stringAsJSO(str_01b)
+   str_02d=utf8stringAsJSO(str_02b)
+
+if bDebug=.true then
+do
+   say "str_01d:" pp(str_01d) pp(str_01d~toString)
+   say "str_02d:" pp(str_02d) pp(str_02d~toString)
+end
+
+    self~assertTrue(str_01d~bsf.isA("java.lang.String"))
+    self~assertTrue(str_02d~bsf.isA("java.lang.String"))
+
+    self~assertEquals(str_01a~toString, str_01d~toString)
+    self~assertEquals(str_02a~toString, str_02d~toString)
+    self~assertEquals(str_01a~toString, str_02d~toString)
+
+      -- turn JSO into a UTF-8 string
+   str_01e=JSOasUTF8string(str_01d)
+   str_02e=JSOasUTF8string(str_02d)
+
+if bDebug=.true then
+do
+   say "str_01e:" pp(str_01e)
+   say "str_02e:" pp(str_02e)
+end
+
+    self~assertEquals(str_01e, str_02e)
+    self~assertEquals(str_01b, str_01e)
+    self~assertEquals(str_02b, str_02e)
+
+
+
