@@ -36,7 +36,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.5.2, 2015-05-09
+  * @version 4.5.2, 2015-06-29
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -326,7 +326,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "452.20150509";
+    static final public String version = "452.20150629";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -3565,6 +3565,7 @@ if (bDebug) // ---rgf, 2006-07-29
                                                     )
                                                   )
                                               {
+// System.err.println("RAJ: TSK # 1");
                                                   // register result as a bean and return it
                                                    String beanName = makeBeanName(result);
                                                    return registerBean(beanName, result);
@@ -3748,12 +3749,17 @@ System.err.println("\t\t\ti="+i+", pCl=["+pCl+"], fCl=["+fCl+"]");
                               {
                                   try
                                   {
+
                                       String tmpArg[]={
-                                          STRING_GET_FIELD_VALUE ,
+                                          choice==INVOKE_JSO ?
+                                                  STRING_GET_FIELD_VALUE_JSO :
+                                                  STRING_GET_FIELD_VALUE ,
                                           args[1],        // beanName
                                           args[2]         // methName ==> fieldName ?
                                           } ;
 if (bDebug) System.err.println("'invoke': trying '"+STRING_GET_FIELD_VALUE+"'...");
+
+// System.err.println("RAJ: INVOKE_JSO? args[0]=["+args[0]+"], but not found, now trying to find field using ["+tmpArg[0]+","+tmpArg[1]+","+tmpArg[2]);
 
                                       return javaCallBSF( tmpArg ); // rgf, 2008-06-23
                                   }
