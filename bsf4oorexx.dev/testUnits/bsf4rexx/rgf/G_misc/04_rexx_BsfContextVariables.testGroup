@@ -1,0 +1,145 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testBsfIsA.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2015-06-29
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4ooRexxÄ  new external BsfRawBytes() function
+*/
+
+  parse source . . fileSpec
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testBsfContextVariables)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "testBsfContextVariables" subclass ooTestCase public
+
+
+::method "test_01_bsf_Context_Variables"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+
+    dir=BsfContextVariables()
+    self~assertEquals(2,dir~items)     -- runtime sets the variables "self" and "super" in methods!
+
+call rgf_util2
+call dump2 BsfContextVariables()
+    dir=BsfContextVariables()
+    self~assertEquals(3,dir~items)     -- variable "DIR" got added in the meantime
+
+    anton="-a-n-t-o-n-"
+    self~assertEquals("-a-n-t-o-n-",anton)
+    self~assertEquals("-a-n-t-o-n-",bsfContextVariables("get", "anton"))
+    self~assertEquals("-a-n-t-o-n-",bsfContextVariables("get", "aNtOn"))
+    self~assertEquals(anton,bsfContextVariables("get", "anton"))
+
+    call bsfContextVariables "set", "anton", "-new-"
+    self~assertEquals("-new-", anton)
+    self~assertEquals("-new-", bsfContextVariables("get", "anton"))
+    self~assertEquals("-new-", bsfContextVariables("get", "ANTON"))
+    self~assertEquals(4, bsfContextVariables()~items)
+    self~assertEquals(4, bsfContextVariables("get")~items)
+    call bsfContextVariables "drop", "anton"
+    self~assertEquals(3, bsfContextVariables("get")~items)
+
+
+
+      -- now test variants
+    self~assertEquals(0,localVars_00a()~items)
+    self~assertEquals(0,localVars_00b()~items)
+
+    self~assertEquals(1,localVars_01a()~items)
+    self~assertEquals(1,localVars_01b()~items)
+    self~assertEquals(1,localVars_01c()~items)
+    self~assertEquals(1,localVars_01d()~items)
+
+    self~assertEquals(2,localVars_02a()~items)
+
+    self~assertEquals(4,localVars_04a()~items)
+    self~assertEquals(0,localVars_04b()~items)
+
+    dir=localVars_05()   -- get local variables of internal routine
+    self~assertEquals(5,dir~items)
+    self~assertEquals(1,dir~anton)
+    self~assertEquals(2,dir~berta)
+    self~assertEquals(.directory,dir~caesar~class)
+    self~assertEquals(0,dir~caesar~items)
+    self~assertEquals(4,dir~dora)
+    self~assertEquals(5,dir~emil)
+
+    return
+
+localVars_00a: procedure                -- no local variables
+    return BsfContextVariables()
+
+localVars_00b: procedure                -- no local variables
+    return BsfContextVariables("get")
+
+localVars_01a: procedure                -- 1 local variable
+    oneVariable=1
+    return BsfContextVariables()
+
+localVars_01b: procedure                -- 1 local variable
+    oneVariable=1
+    twoVariable=2
+    drop twoVariable
+    return BsfContextVariables()
+
+localVars_01c: procedure                -- 1 local variable
+    oneVariable=1
+    twoVariable=2
+    call bsfContextVariables "drop", "twoVariable"
+    return BsfContextVariables()
+
+localVars_01d: procedure                -- 1 local variable
+    call BsfContextVariables "set", "newVar", "newValue"
+    return BsfContextVariables()
+
+
+localVars_02a: procedure                -- 2 local variables
+    oneVariable=1
+    twoVariable=2
+    return BsfContextVariables()
+
+localVars_04a: procedure                -- 3 local variables
+    dir=.directory~new
+    dir~a="-a-"
+    dir~b="-b-"
+    dir~c="-c-"
+    call BsfContextVariables "set", dir
+    return BsfContextVariables()
+
+localVars_04b: procedure                -- 0 local variables
+    dir=.directory~new
+    dir~a="-a-"
+    dir~b="-b-"
+    dir~c="-c-"
+    call BsfContextVariables "set", dir
+    call BsfContextVariables "drop", dir
+    drop dir
+    return BsfContextVariables()
+
+localVars_05: procedure                -- define five local variables
+    anton=1
+    berta=2
+    caesar=.directory~new
+    dora=4
+    emil=5
+    return BsfContextVariables()
+
+
