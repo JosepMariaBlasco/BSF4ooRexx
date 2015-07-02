@@ -1,0 +1,451 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testBsfIsA.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2015-07-01
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF.CLS' public classes BSF.InputStream, BSF.OutputStream
+
+   remarks:          this testgroup uses BSF4ooRexx itself to create Rexx proxy classes of abstract
+                     and concrete Java classes in order to test the BSF.InputStream and BSF.OutputStream
+                     classes
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testBsfInputOutputStream)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "testBsfInputOutputStream" subclass ooTestCase public
+
+
+::method "test_01_BSF_Output_Writer"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+      -- create Rexx proxy classes: make sure this test uses the java.io.Writer methods
+
+      -- create a Rexx class for handling all methods of the abstract class java.io.OutputStream
+    jclz_os=bsf.createProxyClass("java.io.OutputStream")
+
+      -- create a Rexx class for handling all methods of the class java.io.PrintWriter
+    jclz_pw=bsf.createProxyClass("java.io.PrintWriter")
+
+-- say jclz_os~toString":"; do m over jclz_os~declaredMethods; say "method:" pp(m~toString); end;say "---"
+-- say jclz_pw~toString":"; do m over jclz_pw~declaredMethods; say "method:" pp(m~toString); end;say "---"
+
+    rxo=.outputStreamLogger~new  -- the Rexx object that finally gets the message(s) to process
+    os=jclz_os~new(rxo)       -- create instance, supply Rexx handler object
+    pw=jclz_pw~new(rxo,os)    -- create instance, supply Rexx handler object and output writer proxy
+
+    bos=.bsf.outputStream~new(pw)   -- create an instance of BSF.outputStream
+
+    self~assertTrue(bos~isWriter)
+
+    msg    =.array~of("say", "lineout", "charout")
+    strings=.array~of("", "a", "ab", "abc")
+    do m over msg
+       do s over strings
+          bos~send(m,s)
+          if m="charout" then self~assertSame(s,rxo~writeBuffer)
+                         else self~assertSame(s||.endofline, rxo~writeBuffer)
+          rxo~clearBuffers
+       end
+    end
+
+    do s over strings
+       do i=1 to 5
+          bos~charout(s,i)
+          self~assertSame(s~substr(i),rxo~writeBuffer)
+          rxo~clearBuffers
+       end
+    end
+
+
+
+::method "test_02_BSF_Output_Printer"
+      -- create Rexx proxy classes: make sure this test uses the java.io.PrintWriter methods
+
+      -- create a Rexx class for handling all methods of the abstract class java.io.OutputStream
+    jclz_os=bsf.createProxyClass("java.io.OutputStream")
+
+      -- create a Rexx class for handling all methods of the class java.io.PrintStream (includes the "print"* methods)
+    jclz_ps=bsf.createProxyClass("java.io.PrintStream")
+
+-- say jclz_os~toString":"; do m over jclz_os~declaredMethods; say "method:" pp(m~toString); end;say "---"
+-- say jclz_ps~toString":"; do m over jclz_ps~declaredMethods; say "method:" pp(m~toString); end;say "---"
+
+    rxo=.outputStreamLogger~new
+
+    rxo=.outputStreamLogger~new  -- the Rexx object that finally gets the message(s) to process
+    os=jclz_os~new(rxo)       -- create instance, supply Rexx handler object
+    ps=jclz_ps~new(rxo,os)    -- create instance, supply Rexx handler object and output stream proxy
+
+    bos=.bsf.outputStream~new(ps)
+
+    self~assertFalse(bos~isWriter)
+
+    msg    =.array~of("say", "lineout", "charout")
+    strings=.array~of("", "a", "ab", "abc")
+    do m over msg
+       do s over strings
+          bos~send(m,s)
+          if m="charout" then self~assertSame(s,rxo~printBuffer)
+                         else self~assertSame(s||.endofline, rxo~printBuffer)
+          rxo~clearBuffers
+       end
+    end
+
+    do s over strings
+       do i=1 to 5
+          bos~charout(s,i)
+          self~assertSame(s~substr(i),rxo~printBuffer)
+          rxo~clearBuffers
+       end
+    end
+
+
+
+::method "test_03_BSF_Input_Reader"             -- uses char
+
+      -- create Rexx proxy classes: make sure this test uses the java.io.Writer methods
+
+      -- create a Rexx class for handling all methods of the abstract class java.io.OutputStream
+    jclz_is=bsf.createProxyClass("java.io.InputStream")
+
+      -- create a Rexx class for handling all methods of the class java.io.PrintWriter
+    jclz_sr=bsf.createProxyClass("java.io.InputStreamReader")
+
+-- say jclz_is~toString":"; do m over jclz_is~declaredMethods; say "method:" pp(m~toString); end;say "---"
+-- say jclz_sr~toString":"; do m over jclz_sr~declaredMethods; say "method:" pp(m~toString); end;say "---"
+
+    rxo=.inputStreamLogger~new   -- the Rexx object that finally gets the message(s) to process
+    is=jclz_is~new(rxo)       -- create instance, supply Rexx handler object
+    sr=jclz_sr~new(rxo,is)    -- create instance, supply Rexx handler object and output writer proxy
+
+    bis=.bsf.inputStream~new(sr)   -- create an instance of BSF.outputStream
+
+    self~assertTrue(bis~isReader)
+
+    self~assertFalse(bis~chars)
+
+    val="1234+6789!abcd+fghi!"
+    rxo~readBuffer=val
+    say "bis~read(1,3):" pp(bis~charin(1,3))
+    say "bis~read(3,3):" pp(bis~charin(3,3))
+    say "bis~read(   ):" pp(bis~charin)
+    say "bis~read(   ):" pp(bis~charin)
+    say "bis~read(1,7):" pp(bis~charin(1,7))
+    say "bis~read(4,5):" pp(bis~charin(4,5))
+    say "bis~read(1,5):" pp(bis~charin(1,5))
+    say "bis~read(1,1):" pp(bis~charin(1,1))
+    say "bis~read(   ):" pp(bis~charin     )
+
+say
+say "--- now asserting ---"
+    rxo~readBuffer=val
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       rxo~readBuffer)
+
+    self~assertSame("123",     bis~charin(1,3))
+    self~assertSame("678",     bis~charin(3,3))
+    self~assertSame("9",       bis~charin     )
+    self~assertSame("!",       bis~charin     )
+    self~assertSame("abcd+fg", bis~charin(1,7))
+
+    self~assertSame("",        bis~charin(4,5))
+    self~assertSame("",        bis~charin(1,5))
+    self~assertSame("",        bis~charin(1,1))
+
+
+    -- linein
+    rxo~readBuffer=""
+    self~assertFalse(bis~chars>0)
+    self~assertSame("",       rxo~readBuffer)
+
+    rxo~readBuffer=" "
+    self~assertTrue(bis~chars>0)
+    self~assertSame(" ",       rxo~readBuffer)  -- consume single char
+    self~assertTrue(bis~chars>0)
+    self~assertSame(" ",       bis~linein)
+
+    rxo~readBuffer=" "
+    self~assertTrue(bis~chars>0)
+    self~assertSame(" ",       bis~linein)
+
+    rxo~readBuffer=val
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       rxo~readBuffer)
+    self~assertSame(val,       bis~linein)
+
+    self~assertFalse(bis~chars>0)
+    self~assertSame("",       bis~linein)
+
+    rxo~readBuffer=val || .endofline || val || .endofline
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertFalse(bis~chars>0)
+    self~assertSame("",       bis~linein)
+
+    rxo~readBuffer=val || .endofline || val
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertFalse(bis~chars>0)
+    self~assertSame("",       bis~linein)
+
+    rxo~readBuffer=val || .endofline || val || .endofline || .endofline
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertTrue(bis~chars>0)
+    self~assertSame("",        bis~linein)
+    self~assertFalse(bis~chars>0)
+    self~assertSame("",       bis~linein)
+
+    rxo~readBuffer=val || .endofline || val || .endofline || " " || .endofline
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertTrue(bis~chars>0)
+    self~assertSame(" ",       bis~linein)
+    self~assertFalse(bis~chars>0)
+    self~assertSame("",       bis~linein)
+
+
+
+::method "test_04_BSF_Input_Stream"   -- uses bytes
+
+      -- create Rexx proxy classes: make sure this test uses the java.io.Writer methods
+
+      -- create a Rexx class for handling all methods of the abstract class java.io.OutputStream
+    jclz_is=bsf.createProxyClass("java.io.InputStream")
+
+      -- create a Rexx class for handling all methods of the class java.io.PrintWriter
+--    jclz_sr=bsf.createProxyClass("java.io.InputStream")
+
+-- say jclz_is~toString":"; do m over jclz_is~declaredMethods; say "method:" pp(m~toString); end;say "---"
+-- say jclz_sr~toString":"; do m over jclz_sr~declaredMethods; say "method:" pp(m~toString); end;say "---"
+
+    rxo=.inputStreamLogger~new   -- the Rexx object that finally gets the message(s) to process
+    is=jclz_is~new(rxo)       -- create instance, supply Rexx handler object
+--    sr=jclz_sr~new(rxo,is)    -- create instance, supply Rexx handler object and output writer proxy
+
+--    bis=.bsf.inputStream~new(sr)   -- create an instance of BSF.outputStream
+
+    bis=.bsf.inputStream~new(is)   -- create an instance of BSF.outputStream
+
+    self~assertFalse(bis~isReader)
+
+    self~assertFalse(bis~chars)
+
+    val="1234+6789!abcd+fghi!"
+    rxo~readBuffer=val
+    say "bis~read(1,3):" pp(bis~charin(1,3))
+    say "bis~read(3,3):" pp(bis~charin(3,3))
+    say "bis~read(   ):" pp(bis~charin)
+    say "bis~read(   ):" pp(bis~charin)
+    say "bis~read(1,7):" pp(bis~charin(1,7))
+    say "bis~read(4,5):" pp(bis~charin(4,5))
+    say "bis~read(1,5):" pp(bis~charin(1,5))
+    say "bis~read(1,1):" pp(bis~charin(1,1))
+    say "bis~read(   ):" pp(bis~charin     )
+
+say
+say "--- now asserting ---"
+    rxo~readBuffer=val
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       rxo~readBuffer)
+
+    self~assertSame("123",     bis~charin(1,3))
+    self~assertSame("678",     bis~charin(3,3))
+    self~assertSame("9",       bis~charin     )
+    self~assertSame("!",       bis~charin     )
+    self~assertSame("abcd+fg", bis~charin(1,7))
+
+    self~assertSame("",        bis~charin(4,5))
+    self~assertSame("",        bis~charin(1,5))
+    self~assertSame("",        bis~charin(1,1))
+
+
+    -- linein
+    rxo~readBuffer=""
+    self~assertFalse(bis~chars>0)
+    self~assertSame("",       rxo~readBuffer)
+
+    rxo~readBuffer=" "
+    self~assertTrue(bis~chars>0)
+    self~assertSame(" ",       rxo~readBuffer)  -- consume single char
+    self~assertTrue(bis~chars>0)
+    self~assertSame(" ",       bis~linein)
+
+    rxo~readBuffer=" "
+    self~assertTrue(bis~chars>0)
+    self~assertSame(" ",       bis~linein)
+
+    rxo~readBuffer=val
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       rxo~readBuffer)
+    self~assertSame(val,       bis~linein)
+
+    self~assertFalse(bis~chars>0)
+    self~assertSame("",       bis~linein)
+
+    rxo~readBuffer=val || .endofline || val || .endofline
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertFalse(bis~chars>0)
+    self~assertSame("",       bis~linein)
+
+    rxo~readBuffer=val || .endofline || val
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertFalse(bis~chars>0)
+    self~assertSame("",       bis~linein)
+
+    rxo~readBuffer=val || .endofline || val || .endofline || .endofline
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertTrue(bis~chars>0)
+    self~assertSame("",        bis~linein)
+    self~assertFalse(bis~chars>0)
+    self~assertSame("",       bis~linein)
+
+    rxo~readBuffer=val || .endofline || val || .endofline || " " || .endofline
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertTrue(bis~chars>0)
+    self~assertSame(val,       bis~linein)
+    self~assertTrue(bis~chars>0)
+    self~assertSame(" ",       bis~linein)
+    self~assertFalse(bis~chars>0)
+    self~assertSame("",       bis~linein)
+
+
+
+
+/* Class that distinguishes between "print", "println" and "write" invocations and buffers received data. */
+::class outputStreamLogger
+
+::attribute printBuffer
+::attribute writeBuffer
+
+::method init
+  self~clearBuffers                 -- initialize (make sure buffers are empty)
+
+::method clearBuffers
+  expose printBuffer writeBuffer
+  printBuffer=""
+  writeBuffer=""
+
+::method print                      -- process print messages
+  expose printBuffer
+  use arg val
+  printBuffer||=val                 -- append received value
+
+::method println                    -- process print messages
+  expose printBuffer
+  use arg val
+  printBuffer||=val || .endofline   -- append received value
+
+::method write                      -- process print messages
+  expose writeBuffer
+  use arg val
+  writeBuffer||=val         -- append character representing received decimal code
+
+
+::method close                      -- do nothing
+::method flush                      -- do nothing
+
+
+
+
+/* Class that is used as a source for input reader/stream functions, implemented in Rexx. */
+::class inputStreamLogger
+
+::attribute readBuffer
+
+::method init
+  expose readBuffer
+  readBuffer=""
+
+::method ready
+  expose readBuffer
+-- say "---ready: readBuffer="pp(readBuffer) 'readBuffer\==""'pp(readBuffer\=="")
+  return readBuffer\==""
+
+::method available
+  expose readBuffer
+  return readBuffer~length
+
+::method skip
+  expose readBuffer
+  use arg n
+-- say "***skip: n="n "arg():" pp(arg()) "arg(2):" pp(arg(2))
+  if n>=readBuffer~length then
+  do
+     len=readBuffer~length
+     readBuffer=""
+     return len
+  end
+  readBuffer=readBuffer~substr(n+1)
+  return n
+
+-- as this class is only used by this Rexx code we can safely assume byte=char (no two byte chars)
+-- hint: the Java StreamReader does read's when skipping, sometimes supplies an array with a capacity higher, than the number of chars to read
+::method read
+  expose readBuffer
+  use arg arr, start, len
+
+  isByteArray=(arr~objectName~left(2)~caselessEquals("[B"))
+/*
+  if arg()=2 then    -- only no start, no len supplied (arg(1): array, arg(2): slotDir)
+  do
+      start=1
+      len=1
+  end
+*/
+
+-- say "-->read: arr="pp(arg(1)) "start="pp(start)":"pp(arg(2)) "len="pp(len)":"pp(arg(3)) "slotDir="pp(arg(4)) "/ arg():" arg() " / isByteArray="pp(isByteArray)
+
+  do i=1 to len while i<=readBuffer~length
+-- say "------i="pp(i) "readBuffer~substr(i,1)="pp(readBuffer~substr(i,1))
+
+     if IsByteArray then
+        arr[i]=c2d(readBuffer~substr(i,1))
+     else
+        arr[i]=readBuffer~substr(i,1)
+  end
+
+  readBuffer=readBuffer~substr(i)
+-- say "<--2--i="pp(i) "readBuffer~substr(i,1)="pp(readBuffer~substr(i,1)) "readBuffer="pp(readBuffer)
+
+-- say "<-----returning i-1="pp(i-1) "readBuffer now:" pp(readBuffer) "/ result:" pp(.java.lang.String~new(arr)~toString)
+  return i-1
+
+::method close                      -- do nothing
