@@ -1,0 +1,99 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testBsfIsA.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2015-07-02
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF.CLS' routine BSF.RedirectTo
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testBsfRedirectoTo)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "testBsfRedirectoTo" subclass ooTestCase public
+
+
+::method "test_01_plain_BsfRedirectTo"
+   /* due to the naming in this testgroup, this method will be the first that gets
+      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
+      that it is set as BSF.CLS routines and methods depend on that */
+    if bsf("bsfPrefixReturnValue")=0 then
+       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+
+      -- checkout settings
+    self~assertSame(.input~current, .stdin)
+    self~assertSame(.output~current, .stdout)
+    self~assertSame(.error~current, .stderr)
+    -- as of 4.2.0
+    if .local~hasentry("DEBUGINPUT") then
+    do
+       self~assertSame(.debuginput~current, .input)
+       self~assertSame(.traceoutput~current, .error)
+    end
+
+      -- now set to java.lang.System
+    javaStdIn =.java.lang.System~in
+    javaStdOut=.java.lang.System~out
+    javaStdErr=.java.lang.System~err
+
+    call Bsf.RedirectTo "Java"       -- redirect to Java
+
+    self~assertSame(.input~current ~javaInputObject ~objectName, javaStdIn ~objectName)
+    self~assertSame(.output~current~javaOutputObject~objectName, javaStdOut~objectName)
+    self~assertSame(.error~current ~javaOutputObject~objectName, javaStdErr~objectName)
+    -- as of 4.2.0
+    if .local~hasentry("DEBUGINPUT") then
+    do
+       self~assertSame(.debuginput~current~javaInputObject ~objectName, .input~current~javaInputObject ~objectName)
+       self~assertSame(.traceoutput~current~javaOutputObject ~objectName, .error~javaOutputObject ~objectName)
+    end
+
+      -- now set back to standard ooRexx
+    call Bsf.RedirectTo "Rexx"       -- redirect to Rexx
+
+    self~assertSame(.input~current, .stdin)
+    self~assertSame(.output~current, .stdout)
+    self~assertSame(.error~current, .stderr)
+    -- as of 4.2.0
+    if .local~hasentry("DEBUGINPUT") then
+    do
+       self~assertSame(.debuginput~current, .input)
+       self~assertSame(.traceoutput~current, .error)
+    end
+
+
+      -- now set single standard file, check, reset & check
+    is=.bsf.inputStream~new(javaStdIn )      -- input stream
+    os=.bsf.outputStream~new(javaStdOut)     -- output stream
+    es=.bsf.outputStream~new(javaStdErr)     -- error stream
+
+--  use strict arg redirectTo="J", input=.nil, output=.nil, error=.nil, debugInput=.nil, traceOutput=.nil
+    call bsf.redirectTo "Java", is, os, es
+
+    self~assertSame(.input~current ~javaInputObject ~objectName, javaStdIn ~objectName)
+    self~assertSame(.output~current~javaOutputObject~objectName, javaStdOut~objectName)
+    self~assertSame(.error~current ~javaOutputObject~objectName, javaStdErr~objectName)
+    -- as of 4.2.0
+    if .local~hasentry("DEBUGINPUT") then
+    do
+       self~assertSame(.debuginput~current~javaInputObject ~objectName, .input~current~javaInputObject ~objectName)
+       self~assertSame(.traceoutput~current~javaOutputObject ~objectName, .error~javaOutputObject ~objectName)
+    end
+
+      -- now set back to standard ooRexx
+    call Bsf.RedirectTo "Rexx"       -- redirect to Rexx
+
