@@ -17,6 +17,9 @@
                           - fix logic in BSF.InputStream, adjust to the fact that a stream uses a byte-array
                             and a reader a char-array for reading
                           - fix bugs uncovered by developing a testgroup for this class
+                          - fix bug in "bsf.redirectTo" uncovered by the new testunits, simplify assigning
+                            monitors for .debugInput and .traceOutput
+
          2015-06-07, rgf: - added public routine BSF.ScriptContext2Rexx(ScriptContext[,scopes]) which
                             returns a Rexx directory that contains all ScriptContext values of the
                             given scopes; meant to be used in conjunction with the new external Rexx
@@ -4146,25 +4149,13 @@ syntax:
   if .local~hasEntry("DebugInput") then   -- ooRexx<4.2 does not have this
   do
      If DebugInput <>.nil then .DebugInput~destination(DebugInput)
-     else
-     do
-          if bRedirectToJava=.true then
-             .DebugInput~destination(.input~current)
-          else
-             .DebugInput~destination(.stdin)
-     end
+                          else .DebugInput~destination(.input)
   end
 
   if .local~hasEntry("TraceOutput") then   -- ooRexx<4.2 does not have this
   do
      if TraceOutput <>.nil then .TraceOutput~destination(TraceOutput)
-     else
-     do
-          if bRedirectToJava=.true then
-             .TraceOutput~destination(.error~current)
-          else
-             .TraceOutput~destination(.stderr)
-     end
+                           else .TraceOutput~destination(.error)
   end
 
 /* Allows to use a java.io.InputStream or a java.io.Reader object as an ooRexx input stream. */
