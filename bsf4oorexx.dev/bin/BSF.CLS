@@ -12,6 +12,11 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2015-07-01/02, rgf: - added attribute 'isReader' to .BSF.InputStream and 'isWriter' to .BSF.OutputStream
+                            to allow testing this attribute in testunits
+                          - fix logic in BSF.InputStream, adjust to the fact that a stream uses a byte-array
+                            and a reader a char-array for reading
+                          - fix bugs uncovered by developing a testgroup for this class
          2015-06-07, rgf: - added public routine BSF.ScriptContext2Rexx(ScriptContext[,scopes]) which
                             returns a Rexx directory that contains all ScriptContext values of the
                             given scopes; meant to be used in conjunction with the new external Rexx
@@ -396,7 +401,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     4.52 (20150607)
+   version:     4.52 (20150702)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -481,7 +486,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="452.20150607" -- set version (date distribution got created)
+   .bsf4rexx~version="452.20150702" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4165,18 +4170,20 @@ syntax:
 /* Allows to use a java.io.InputStream or a java.io.Reader object as an ooRexx input stream. */
 ::class "BSF.InputStream"  subclass inputStream  public
 ::attribute javaInputObject         -- allow direct access to input stream object
+::attribute isReader                -- allow direct access
 
 ::method init                       -- constructor that takes the Java InputStream object
-  expose javaInputObject byteArray1 isReader
+  expose javaInputObject byteArray1 charArray1 isReader
   use strict arg javaInputObject
   byteArray1=bsf.createJavaArray("byte.class",1)   -- Java byte array with capacity of one
+  charArray1=bsf.createJavaArray("char.class",1)   -- Java char array with capacity of one
 
   if \.local~hasEntry("java.io.Reader") then
      call bsf.import "java.io.Reader"  -- load Java class and store it as "JAVA.IO.READER" in .local
   isReader=.java.io.Reader~isInstance(javaInputObject)
 
 ::method charIn
-  expose javaInputObject byteArray1
+  expose javaInputObject byteArray1 charArray1 isReader
   use strict arg start=1, length=1
 
   if start>1 then
@@ -4185,14 +4192,27 @@ syntax:
      javaInputObject~skip(start-1)
   end
 
-  if length=1 then
-     barr=byteArray1
-  else
-     barr=bsf.createJavaArray("byte.class", length)
+  if isReader=.false then
+  do
+     if length=1 then
+        barr=byteArray1
+     else
+        barr=bsf.createJavaArray("byte.class", length)
 
-  n=javaInputObject~read(barr)
+     n=javaInputObject~read(barr,0,length)
+     if n=0 then return ""
+     return BSFRawBytes(barr,n)
+  end
+
+  if length=1 then
+     charr=charArray1
+  else
+     charr=bsf.createJavaArray("char.class", length)
+
+  n=javaInputObject~read(charr, 0, length)
   if n=0 then return ""
-  return BSFRawBytes(barr,n)
+  return .java.lang.String~new(charr, 0, n)~toString
+
 syntax:
    return ""
 
@@ -4211,7 +4231,7 @@ syntax:
      if char="0d"x then          -- skip CR
         iterate
 
-     if char="0a"x then          -- received LF, return chars gathered so far
+     if char="0a"x | char=="" then   -- received LF or nothing (end of input), return chars gathered so far
         return mb~string         -- return collected characters
 
      mb~append(char)
@@ -4221,6 +4241,8 @@ syntax:
 /* Allows to use a java.io.PrintStream or a java.io.Writer object as an ooRexx output stream. */
 ::class "BSF.OutputStream" subclass outputStream public
 ::attribute javaOutputObject        -- allow direct access to output stream object
+::attribute isWriter                -- allow direct access
+
 ::method init
   expose javaOutputObject isWriter
   use strict arg javaOutputObject
@@ -4251,7 +4273,8 @@ syntax:
 
 ::method lineOut
   expose javaOutputObject isWriter
-  use strict arg chars
+  -- use strict arg chars
+  use arg chars=""
 
   if isWriter then
   do
