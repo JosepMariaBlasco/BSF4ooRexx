@@ -23,17 +23,16 @@ return testResult
 ::requires "ooTest.frm"     -- load the ooRexxUnit classes
 ::requires BSF.CLS
 
+
 ::class "testBsfIsA" subclass ooTestCase public
+
+::method setup
+   /* Unit tests for the older interface may have turned off the prefixing of the return values, if so, restore it. */
+  if bsf("bsfPrefixReturnValue")=0 then
+     call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
 
 
 ::method "test_01_plain_BsfIsA"
-   /* due to the naming in this testgroup, this method will be the first that gets
-      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
-      that it is set as BSF.CLS routines and methods depend on that */
-    if bsf("bsfPrefixReturnValue")=0 then
-       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
-
-
     j=.bsf~new("java.lang.String", "hello, my beloved world!")
 
     self~assertTrue(j~bsf.isA("java.lang.Object"))

@@ -2,7 +2,7 @@
 
 package rgf.G_misc;
 
-public class Test_JSO
+public class o3_Test_JSO     // "03_Test_JSO" not allowed before Java 1.7
 {
     public static String staticString="This is a static Java string.";
     public String instanceString="This is an instance Java string.";

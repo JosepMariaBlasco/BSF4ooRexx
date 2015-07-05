@@ -3,7 +3,7 @@
    name:             rexx_testBsfIsA.testGroup
    author:           Rony G. Flatscher
    version:          1.0.0
-   date:             2015-07-02
+   date:             2015-07-02, 2015-07-05
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF.CLS' routine BSF.RedirectTo
 */
@@ -25,15 +25,42 @@ return testResult
 
 ::class "testBsfRedirectoTo" subclass ooTestCase public
 
+::method setup
+  expose backupDir bThreeFiles         -- save monitored objects before start of the tests
+
+   /* Unit tests for the older interface may have turned off the prefixing of the return values, if so, restore it. */
+  if bsf("bsfPrefixReturnValue")=0 then
+     call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+  backupDir=.directory~new
+  backupDir~input =.input~current
+  backupDir~output=.output~current
+  backupDir~error =.error~current
+  bThreeFiles=.true
+  if .local~hasentry("DebugInput") then
+  do
+     backupDir~debugInput =.debugInput~current
+     backupDir~traceOutput=.traceOutput~current
+     bThreeFiles=.false
+  end
+
+
+::method tearDown                      -- restore monitored objects before returning from tests
+  expose backupDir bThreeFiles         -- save monitor objects before start of the tests
+
+  .input ~destination(backupDir~input)
+  .output~destination(backupDir~output)
+  .error ~destination(backupDir~error)
+
+  if bThreeFiles=.true then      -- make sure we leave as we started out
+  do
+     .local~remove("DEBUGINPUT")
+     .local~remove("TRACEOUTPUT")
+  end
+
 
 ::method "test_01_plain_BsfRedirectTo"
-   /* due to the naming in this testgroup, this method will be the first that gets
-      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
-      that it is set as BSF.CLS routines and methods depend on that */
-    if bsf("bsfPrefixReturnValue")=0 then
-       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
-
-
+    expose bThreeFiles
       -- checkout settings
     self~assertSame(.input~current, .stdin)
     self~assertSame(.output~current, .stdout)
@@ -43,6 +70,7 @@ return testResult
     do
        self~assertSame(.debuginput~current, .input)
        self~assertSame(.traceoutput~current, .error)
+       bThreeFiles=.false
     end
 
       -- now set to java.lang.System
@@ -56,7 +84,7 @@ return testResult
     self~assertSame(.output~current~javaOutputObject~objectName, javaStdOut~objectName)
     self~assertSame(.error~current ~javaOutputObject~objectName, javaStdErr~objectName)
     -- as of 4.2.0
-    if .local~hasentry("DEBUGINPUT") then
+    if bThreeFiles=.false then
     do
        self~assertSame(.debuginput~current~javaInputObject ~objectName, .input~current~javaInputObject ~objectName)
        self~assertSame(.traceoutput~current~javaOutputObject ~objectName, .error~javaOutputObject ~objectName)
@@ -88,7 +116,7 @@ return testResult
     self~assertSame(.output~current~javaOutputObject~objectName, javaStdOut~objectName)
     self~assertSame(.error~current ~javaOutputObject~objectName, javaStdErr~objectName)
     -- as of 4.2.0
-    if .local~hasentry("DEBUGINPUT") then
+    if bThreeFiles=.false then
     do
        self~assertSame(.debuginput~current~javaInputObject ~objectName, .input~current~javaInputObject ~objectName)
        self~assertSame(.traceoutput~current~javaOutputObject ~objectName, .error~javaOutputObject ~objectName)
@@ -96,4 +124,77 @@ return testResult
 
       -- now set back to standard ooRexx
     call Bsf.RedirectTo "Rexx"       -- redirect to Rexx
+
+    -- now individually setting each standard file to some object to test whether assignments work
+    someObj=.stream~new("06_rexx_BSF_Redirect_To_stream.tmp")     -- any object suffices, we use a Rexx stream object
+    call bsf.redirectTo "Java", someObj
+    self~assertSame(   .input      ~current, someObj)
+    self~assertNotSame(.output     ~current, someObj)
+    self~assertNotSame(.error      ~current, someObj)
+    self~assertNotSame(.debugInput ~current, someObj)
+    self~assertNotSame(.traceOutput~current, someObj)
+
+    call bsf.redirectTo "Java", , someObj
+    self~assertNotSame(.input      ~current, someObj)
+    self~assertSame(   .output     ~current, someObj)
+    self~assertNotSame(.error      ~current, someObj)
+    self~assertNotSame(.debugInput ~current, someObj)
+    self~assertNotSame(.traceOutput~current, someObj)
+
+    call bsf.redirectTo "Java", , , someObj
+    self~assertNotSame(.input      ~current, someObj)
+    self~assertNotSame(.output     ~current, someObj)
+    self~assertSame(   .error      ~current, someObj)
+    self~assertNotSame(.debugInput ~current, someObj)
+    self~assertNotSame(.traceOutput~current, someObj)
+
+    call bsf.redirectTo "Java", , , , someObj
+    self~assertNotSame(.input      ~current, someObj)
+    self~assertNotSame(.output     ~current, someObj)
+    self~assertNotSame(.error      ~current, someObj)
+    self~assertSame(   .debugInput ~current, someObj)
+    self~assertNotSame(.traceOutput~current, someObj)
+
+    call bsf.redirectTo "Java", , , , , someObj
+    self~assertNotSame(.input      ~current, someObj)
+    self~assertNotSame(.output     ~current, someObj)
+    self~assertNotSame(.error      ~current, someObj)
+    self~assertNotSame(.debugInput ~current, someObj)
+    self~assertSame(   .traceOutput~current, someObj)
+
+    --- now with setting to Rexx standard streams
+    call bsf.redirectTo "Rexx", someObj
+    self~assertSame(   .input      ~current, someObj)
+    self~assertNotSame(.output     ~current, someObj)
+    self~assertNotSame(.error      ~current, someObj)
+    self~assertNotSame(.debugInput ~current, someObj)
+    self~assertNotSame(.traceOutput~current, someObj)
+
+    call bsf.redirectTo "Rexx", , someObj
+    self~assertNotSame(.input      ~current, someObj)
+    self~assertSame(   .output     ~current, someObj)
+    self~assertNotSame(.error      ~current, someObj)
+    self~assertNotSame(.debugInput ~current, someObj)
+    self~assertNotSame(.traceOutput~current, someObj)
+
+    call bsf.redirectTo "Rexx", , , someObj
+    self~assertNotSame(.input      ~current, someObj)
+    self~assertNotSame(.output     ~current, someObj)
+    self~assertSame(   .error      ~current, someObj)
+    self~assertNotSame(.debugInput ~current, someObj)
+    self~assertNotSame(.traceOutput~current, someObj)
+
+    call bsf.redirectTo "Rexx", , , , someObj
+    self~assertNotSame(.input      ~current, someObj)
+    self~assertNotSame(.output     ~current, someObj)
+    self~assertNotSame(.error      ~current, someObj)
+    self~assertSame(   .debugInput ~current, someObj)
+    self~assertNotSame(.traceOutput~current, someObj)
+
+    call bsf.redirectTo "Rexx", , , , , someObj
+    self~assertNotSame(.input      ~current, someObj)
+    self~assertNotSame(.output     ~current, someObj)
+    self~assertNotSame(.error      ~current, someObj)
+    self~assertNotSame(.debugInput ~current, someObj)
+    self~assertSame(   .traceOutput~current, someObj)
 

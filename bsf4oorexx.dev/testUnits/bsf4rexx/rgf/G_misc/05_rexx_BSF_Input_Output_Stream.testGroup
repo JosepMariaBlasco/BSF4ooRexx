@@ -27,16 +27,16 @@ return testResult
 ::requires "ooTest.frm"     -- load the ooRexxUnit classes
 ::requires BSF.CLS
 
+
+
 ::class "testBsfInputOutputStream" subclass ooTestCase public
 
+::method setup
+   /* Unit tests for the older interface may have turned off the prefixing of the return values, if so, restore it. */
+  if bsf("bsfPrefixReturnValue")=0 then
+     call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
 
 ::method "test_01_BSF_Output_Writer"
-   /* due to the naming in this testgroup, this method will be the first that gets
-      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
-      that it is set as BSF.CLS routines and methods depend on that */
-    if bsf("bsfPrefixReturnValue")=0 then
-       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
-
       -- create Rexx proxy classes: make sure this test uses the java.io.Writer methods
 
       -- create a Rexx class for handling all methods of the abstract class java.io.OutputStream
@@ -145,18 +145,18 @@ return testResult
 
     val="1234+6789!abcd+fghi!"
     rxo~readBuffer=val
-    say "bis~read(1,3):" pp(bis~charin(1,3))
-    say "bis~read(3,3):" pp(bis~charin(3,3))
-    say "bis~read(   ):" pp(bis~charin)
-    say "bis~read(   ):" pp(bis~charin)
-    say "bis~read(1,7):" pp(bis~charin(1,7))
-    say "bis~read(4,5):" pp(bis~charin(4,5))
-    say "bis~read(1,5):" pp(bis~charin(1,5))
-    say "bis~read(1,1):" pp(bis~charin(1,1))
-    say "bis~read(   ):" pp(bis~charin     )
+--    say "bis~read(1,3):" pp(bis~charin(1,3))
+--     say "bis~read(3,3):" pp(bis~charin(3,3))
+--     say "bis~read(   ):" pp(bis~charin)
+--     say "bis~read(   ):" pp(bis~charin)
+--     say "bis~read(1,7):" pp(bis~charin(1,7))
+--     say "bis~read(4,5):" pp(bis~charin(4,5))
+--     say "bis~read(1,5):" pp(bis~charin(1,5))
+--     say "bis~read(1,1):" pp(bis~charin(1,1))
+--     say "bis~read(   ):" pp(bis~charin     )
 
-say
-say "--- now asserting ---"
+-- say
+-- say "--- now asserting ---"
     rxo~readBuffer=val
     self~assertTrue(bis~chars>0)
     self~assertSame(val,       rxo~readBuffer)
@@ -260,18 +260,18 @@ say "--- now asserting ---"
 
     val="1234+6789!abcd+fghi!"
     rxo~readBuffer=val
-    say "bis~read(1,3):" pp(bis~charin(1,3))
-    say "bis~read(3,3):" pp(bis~charin(3,3))
-    say "bis~read(   ):" pp(bis~charin)
-    say "bis~read(   ):" pp(bis~charin)
-    say "bis~read(1,7):" pp(bis~charin(1,7))
-    say "bis~read(4,5):" pp(bis~charin(4,5))
-    say "bis~read(1,5):" pp(bis~charin(1,5))
-    say "bis~read(1,1):" pp(bis~charin(1,1))
-    say "bis~read(   ):" pp(bis~charin     )
+--     say "bis~read(1,3):" pp(bis~charin(1,3))
+--     say "bis~read(3,3):" pp(bis~charin(3,3))
+--     say "bis~read(   ):" pp(bis~charin)
+--     say "bis~read(   ):" pp(bis~charin)
+--     say "bis~read(1,7):" pp(bis~charin(1,7))
+--     say "bis~read(4,5):" pp(bis~charin(4,5))
+--     say "bis~read(1,5):" pp(bis~charin(1,5))
+--     say "bis~read(1,1):" pp(bis~charin(1,1))
+--     say "bis~read(   ):" pp(bis~charin     )
 
-say
-say "--- now asserting ---"
+-- say
+-- say "--- now asserting ---"
     rxo~readBuffer=val
     self~assertTrue(bis~chars>0)
     self~assertSame(val,       rxo~readBuffer)
@@ -423,13 +423,6 @@ say "--- now asserting ---"
   use arg arr, start, len
 
   isByteArray=(arr~objectName~left(2)~caselessEquals("[B"))
-/*
-  if arg()=2 then    -- only no start, no len supplied (arg(1): array, arg(2): slotDir)
-  do
-      start=1
-      len=1
-  end
-*/
 
 -- say "-->read: arr="pp(arg(1)) "start="pp(start)":"pp(arg(2)) "len="pp(len)":"pp(arg(3)) "slotDir="pp(arg(4)) "/ arg():" arg() " / isByteArray="pp(isByteArray)
 

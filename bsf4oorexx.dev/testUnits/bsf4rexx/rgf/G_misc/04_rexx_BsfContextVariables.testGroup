@@ -23,22 +23,19 @@ return testResult
 ::requires "ooTest.frm"     -- load the ooRexxUnit classes
 ::requires BSF.CLS
 
+
+
 ::class "testBsfContextVariables" subclass ooTestCase public
 
+::method setup
+   /* Unit tests for the older interface may have turned off the prefixing of the return values, if so, restore it. */
+  if bsf("bsfPrefixReturnValue")=0 then
+     call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
 
 ::method "test_01_bsf_Context_Variables"
-   /* due to the naming in this testgroup, this method will be the first that gets
-      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
-      that it is set as BSF.CLS routines and methods depend on that */
-    if bsf("bsfPrefixReturnValue")=0 then
-       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
-
-
     dir=BsfContextVariables()
     self~assertEquals(2,dir~items)     -- runtime sets the variables "self" and "super" in methods!
 
-call rgf_util2
-call dump2 BsfContextVariables()
     dir=BsfContextVariables()
     self~assertEquals(3,dir~items)     -- variable "DIR" got added in the meantime
 

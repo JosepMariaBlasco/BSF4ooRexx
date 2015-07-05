@@ -23,17 +23,15 @@ return testResult
 ::requires "ooTest.frm"     -- load the ooRexxUnit classes
 ::requires BSF.CLS
 
+
 ::class "testBsfRawBytes" subclass ooTestCase public
 
+::method setup
+   /* Unit tests for the older interface may have turned off the prefixing of the return values, if so, restore it. */
+  if bsf("bsfPrefixReturnValue")=0 then
+     call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
 
 ::method "test_01_plain_BsfRawBytes"
-   /* due to the naming in this testgroup, this method will be the first that gets
-      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
-      that it is set as BSF.CLS routines and methods depend on that */
-    if bsf("bsfPrefixReturnValue")=0 then
-       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
-
-
     str1=""
     jbarr=BsfRawBytes(str1)            -- empty Rexx string
     self~assertEquals(jbarr~objectName~left(2), "[B")  -- a Java byte array in hand?

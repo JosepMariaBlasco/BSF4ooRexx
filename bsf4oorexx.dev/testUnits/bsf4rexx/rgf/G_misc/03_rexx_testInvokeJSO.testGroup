@@ -23,17 +23,16 @@ return testResult
 ::requires "ooTest.frm"     -- load the ooRexxUnit classes
 ::requires BSF.CLS
 
+
 ::class "testInvokeJSO" subclass ooTestCase public
 
+::method setup
+   /* Unit tests for the older interface may have turned off the prefixing of the return values, if so, restore it. */
+  if bsf("bsfPrefixReturnValue")=0 then
+     call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
 
 ::method "test_01_get_static_string_field"
-   /* due to the naming in this testgroup, this method will be the first that gets
-      run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
-      that it is set as BSF.CLS routines and methods depend on that */
-    if bsf("bsfPrefixReturnValue")=0 then
-       call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
-
-    jclz=bsf.import("rgf.G_misc.Test_JSO")
+    jclz=bsf.import("rgf.G_misc.o3_Test_JSO")
     jo  =jclz~new             -- create a Java instance
 
     fieldname="staticString"
@@ -46,7 +45,7 @@ return testResult
     valJSO_03=bsf.getConstantJSO(jclz,fieldName)         -- a reference to a Java String object
 
     self~assertTrue(jo~bsf.isA("java.lang.Object"))
-    self~assertTrue(jo~bsf.isA("rgf.G_misc.Test_JSO"))
+    self~assertTrue(jo~bsf.isA("rgf.G_misc.o3_Test_JSO"))
     self~assertFalse(jo~bsf.isA("java.lang.String"))
 
     self~assertEquals(val_01, "This is a static Java string.")
@@ -75,7 +74,7 @@ return testResult
 
 
 ::method "test_01_get_static_string_field_via_messages"
-    jclz=bsf.import("rgf.G_misc.Test_JSO")
+    jclz=bsf.import("rgf.G_misc.o3_Test_JSO")
     jo  =jclz~new             -- create a Java instance
 
     fieldname="staticString"
@@ -88,7 +87,7 @@ return testResult
     valJSO_03=jo  ~bsf.invokeJSO(fieldName)              -- a reference to a Java String object
 
     self~assertTrue(jo~bsf.isA("java.lang.Object"))
-    self~assertTrue(jo~bsf.isA("rgf.G_misc.Test_JSO"))
+    self~assertTrue(jo~bsf.isA("rgf.G_misc.o3_Test_JSO"))
     self~assertFalse(jo~bsf.isA("java.lang.String"))
 
     self~assertEquals(val_01, "This is a static Java string.")
@@ -118,7 +117,7 @@ return testResult
 
 ::method "test_03_get_instance_string_field"
 
-    jclz=bsf.import("rgf.G_misc.Test_JSO")
+    jclz=bsf.import("rgf.G_misc.o3_Test_JSO")
     jo  =jclz~new             -- create a Java instance
 
     fieldname="instanceString"
@@ -132,7 +131,7 @@ return testResult
     valJSO_03=jo~bsf.getFieldValueStrictJSO(fieldName)   -- a reference to a Java String object
 
     self~assertTrue(jo~bsf.isA("java.lang.Object"))
-    self~assertTrue(jo~bsf.isA("rgf.G_misc.Test_JSO"))
+    self~assertTrue(jo~bsf.isA("rgf.G_misc.o3_Test_JSO"))
     self~assertFalse(jo~bsf.isA("java.lang.String"))
 
     self~assertEquals(val_01, "This is an instance Java string.")
@@ -160,7 +159,7 @@ return testResult
     self~assertTrue(valJSO_01~toString==valJSO_03~toString)
 
 ::method "test_04_get_instance_string_field_via_messages"
-    jclz=bsf.import("rgf.G_misc.Test_JSO")
+    jclz=bsf.import("rgf.G_misc.o3_Test_JSO")
     jo  =jclz~new             -- create a Java instance
 
     fieldname="instanceString"
@@ -174,7 +173,7 @@ return testResult
     valJSO_03=jo~bsf.getFieldValueStrictJSO(fieldName)   -- a reference to a Java String object
 
     self~assertTrue(jo~bsf.isA("java.lang.Object"))
-    self~assertTrue(jo~bsf.isA("rgf.G_misc.Test_JSO"))
+    self~assertTrue(jo~bsf.isA("rgf.G_misc.o3_Test_JSO"))
     self~assertFalse(jo~bsf.isA("java.lang.String"))
 
     self~assertEquals(val_01, "This is an instance Java string.")
