@@ -9,6 +9,8 @@
             - demonstrate platform independent beeping ;)
    author:  Rony G. Flatscher
    date:    2014-10-06
+   changed: 2015-07-05 , rgf, - adjust program to renaming the public BSF.CLS routines to
+                                "bsf.utf8stringAsJSO" and "bsf.JSOasUtf8string"
    nneds:   environment variable "BSF4Rexx_JavaStartupOptions" set to "Dfile.encoding=UTF-8",
             either globally or in the (command line window) in which this programs gets executed,
             e.g.:
@@ -28,7 +30,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2014 Rony G. Flatscher
+       Copyright (C) 2014-2015 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -240,9 +242,9 @@ say
 say "Hit enter to continue..."
 pull x
 
-jLabel~text=utf8stringAsJSO(str3b)  -- turn UTF-8 Rexx string into a Java String object (JSO)
+jLabel~text=bsf.utf8stringAsJSO(str3b)  -- turn UTF-8 Rexx string into a Java String object (JSO)
 jFrame~pack                   -- resize JLabel
-res=JSOasUtf8string(jLabel~bsf.invokeJSO("getText"))  -- get UTF-8 encoded Rexx string
+res=bsf.JSOasUtf8string(jLabel~bsf.invokeJSO("getText"))  -- get UTF-8 encoded Rexx string
 say "str3b=res?" pp(str3b=res)      -- show whether both UTF-8 encoded Rexx strings are the same
 say "str3b:" pp(str3b)
 say

@@ -12,6 +12,15 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2015-07-05, rgf: - routine "stringToUtf8" deprecated,    created "bsf.stringToUtf8" instead
+                          - routine "utf8toString" deprecated,    created "bsf.utf8toString" instead
+                          - routine "utf8stringAsJSO" deprecated, created "bsf.utf8stringAsJSO" instead
+                          - routine "JSOasUtf8string" deprecated, created "bsf.JSOasUtf8string" instead
+
+::routine bsf.JSOasUtf8string public
+
+
+
          2015-07-01/02, rgf: - added attribute 'isReader' to .BSF.InputStream and 'isWriter' to .BSF.OutputStream
                             to allow testing this attribute in testunits
                           - fix logic in BSF.InputStream, adjust to the fact that a stream uses a byte-array
@@ -404,7 +413,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     4.52 (20150702)
+   version:     4.52 (20150705)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -489,7 +498,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="452.20150702" -- set version (date distribution got created)
+   .bsf4rexx~version="452.20150705" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4018,6 +4027,11 @@ syntax: raise propagate
 * @return the equivalent UTF-8-encoded Rexx string
 * @since 2012-02-11
 */
+::routine bsf.stringToUtf8 public    -- needs BSF4ooRexx
+  parse arg str
+  return BsfRawBytes(.java.lang.String~new(str)~getBytes("UTF-8"))
+
+/* DEPRECATED, 2015-07-05, ---rgf */
 ::routine stringToUtf8 public    -- needs BSF4ooRexx
   parse arg str
   return BsfRawBytes(.java.lang.String~new(str)~getBytes("UTF-8"))
@@ -4032,6 +4046,15 @@ syntax: raise propagate
 * @return a Rexx string encoded according to 'file.encoding's codepage
 * @since 2012-02-11
 */
+::routine bsf.utf8ToString public    -- needs BSF4ooRexx
+  use arg str
+
+  if str~isA(.bsf) then    -- any Java object, use its String value
+     return str~toString   -- this will do the translation from UTF-8 to file.encoding codepage
+  else   -- a Rexx string? -- turn UTF-8 encoded Rexx string into Java string, recode the Java string using 'file.encoding's codepage and return it as a Rexx string
+     return BsfRawBytes(.java.lang.String~new(bsfRawBytes(str),"UTF-8")~getBytes)
+
+/* DEPRECATED, 2015-07-05, ---rgf */
 ::routine utf8ToString public    -- needs BSF4ooRexx
   use arg str
 
@@ -4049,6 +4072,11 @@ syntax: raise propagate
 * @return a reference to the Java String object constructed from the Rexx string
 * @since 2014-10-07
 */
+::routine bsf.utf8stringAsJSO public
+   parse arg str
+   return .java.lang.String~new(BSFRawBytes(str),"UTF-8")
+
+/* DEPRECATED, 2015-07-05, ---rgf */
 ::routine utf8stringAsJSO public
    parse arg str
    return .java.lang.String~new(BSFRawBytes(str),"UTF-8")
@@ -4061,6 +4089,24 @@ syntax: raise propagate
 * @return a Rexx UTF-8 encoded string constructed from the Java String object
 * @since 2014-10-07
 */
+::routine bsf.JSOasUtf8string public
+   use arg obj
+
+   if obj~isA(.bsf) then      -- a Rexx proxy (to a Java object) in hand?
+   do
+      if obj~bsf.isA(.java.lang.String)=.false then   -- need to get String value from object?
+         obj=obj~bsf.invokeJSO('toString')            -- fetch String value as a Java String object (JSO)
+
+      return BSFRawBytes(obj~getBytes("UTF-8"))       -- render String value to a Rexx string and return it
+   end
+
+   raise syntax 40.900 array ("Wrong argument, must be a Java String object (JSO) or a Java object which String value (result of sending it the 'toString' message) will be processed upon. Instead, received an ooRexx object.")
+
+syntax:
+   raise propagate
+
+
+/* DEPRECATED, 2015-07-05, ---rgf */
 ::routine JSOasUtf8string public
    use arg obj
 
