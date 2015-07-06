@@ -32,6 +32,10 @@ return testResult
      call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
 
 
+::method tearDown
+  call bsf.redirectTo "Rexx"     -- make sure that redirection is to the plain ooRexx objects again
+
+
 ::method "test_01_Rexx_Script_Engine_Factory"
   sem=.bsf~new("javax.script.ScriptEngineManager")
   re =sem~getEngineByName("ooRexx")
@@ -183,9 +187,6 @@ check: procedure      -- routine to carry out program creation and checking corr
   re =sem~getEngineByName("ooRexx")
   self~assertNotNull(re)
 
-  ref=re~getFactory
-  self~assertNotNull(ref)
-
   rexxCode="return 1+1"
   self~assertEquals(2, re~eval(rexxCode))
   cs=re~getCurrentScript
@@ -239,7 +240,6 @@ check: procedure      -- routine to carry out program creation and checking corr
   self~assertEquals("3", re~invokeMethod(obj, "adder", jarr))
 
   iclz=bsf.loadClass("rgf.G_misc.o7_Test_JSR223")
-  say "iclz:" pp(iclz)
 
       -- use 'obj' methods to carry out the method invocations
   jobj=re~getInterface(obj, iclz)
@@ -255,5 +255,67 @@ check: procedure      -- routine to carry out program creation and checking corr
   jobj2=re~getInterface(iclz)    -- this uses the public routines
   self~assertEquals("routine: getString", jobj2~getString)
   self~assertEquals(10, jobj2~multiply(6,5))    -- public routine intentionally returns 1/3 of the value
+
+
+::method "test_03_Rexx__Script_Context"
+  sem=.bsf~new("javax.script.ScriptEngineManager")
+  re =sem~getEngineByName("ooRexx")
+  self~assertNotNull(re)
+
+  sc=re~getContext
+--  say "sc:" pp(sc)
+
+  self~assertTrue(sc~objectname~abbrev("javax.script.SimpleScriptContext@"))
+  engineScope=sc~engine_scope       -- "100"
+  globalScope=sc~global_scope       -- "200"
+
+  self~assertEquals(2, sc~getScopes~size) -- only two scopes available
+
+  gb=sc~getBindings(globalScope)
+  self~assertTrue(gb~objectname~abbrev("javax.script.SimpleBindings@"))
+  self~assertEquals(0,gb~size)
+
+  eb=sc~getBindings(engineScope)
+  self~assertTrue(eb~objectname~abbrev("javax.script.SimpleBindings@"))
+  self~assertEquals(5,eb~size)
+
+
+   -- initially (201507) the following mimetypes got defined
+  soen=.set~of("javax.script.engine_version", "javax.script.language", "javax.script.name", -
+               "javax.script.language_version", "javax.script.engine")
+  ks=eb~keySet    -- get all keys
+
+  jsoen=ks~iterator
+  do while jsoen~hasNext
+     soen~remove(jsoen~next)
+  end
+  self~assertTrue(soen~items=0)
+
+  nl=.endOfLine
+  jargs=bsf.createJavaArrayOf("java.lang.Object", BsfCreateRexxProxy(self)) -- supply this object for assertions in the Rexx program
+  eb~put(re~argv,jargs)    -- add to engine scope's bindings
+
+  rexxCode="call BsfContextVariables 'set', bsf.scriptContext2Rexx(arg(arg())~scriptContext)                       ;" nl -
+           "cdir=BsfContextVariables()  -- get context variables should be all from scriptContext!                 ;" nl -
+           "sdir=bsf.scriptContext2Rexx(arg(arg())~scriptContext) -- a Rexx directory of the scriptContext entries ;" nl -
+           "                                                                                                       ;" nl -
+           "use arg jobj                                                                                           ;" nl -
+           "                                                                                                       ;" nl -
+           "jobj~assertEquals(2,arg())                                                                             ;" nl -
+           "jobj~assertEquals(6,sdir~items)                                                                        ;" nl -
+           "jobj~assertEquals(6,cdir~items,'context variables')                                                    ;" nl -
+           "jobj~assertEquals(cdir~allindexes~sort~toString,sdir~allindexes~sort~toString)                         ;" nl -
+           "                                                                                                       ;" nl -
+           "/* ---                                                                                                 ;" nl -
+           "call 'rgf_util2.rex'                                                                                   ;" nl -
+           "call dump2 cdir, 'context-vars'                                                                        ;" nl -
+           "call dump2 sdir, 'scriptContext'                                                                       ;" nl -
+           "--- */                                                                                                 ;" nl -
+           "                                                                                                       ;" nl -
+           "::requires BSF.CLS                                                                                     ;" nl -
+           "                                                                                                       ;" nl -
+           "                                                                                                       ;"
+
+  re~eval(rexxCode)
 
 
