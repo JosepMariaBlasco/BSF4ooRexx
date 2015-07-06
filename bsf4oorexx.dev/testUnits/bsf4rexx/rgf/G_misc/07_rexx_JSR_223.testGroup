@@ -1,0 +1,259 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testBsfIsA.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2015-07-05
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test JSR-223 (javax.script introduced with Java 6) support
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testJSR223)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+
+::class "testJSR223" subclass ooTestCase public
+
+::method setup
+   /* Unit tests for the older interface may have turned off the prefixing of the return values, if so, restore it. */
+  if bsf("bsfPrefixReturnValue")=0 then
+     call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+
+::method "test_01_Rexx_Script_Engine_Factory"
+  sem=.bsf~new("javax.script.ScriptEngineManager")
+  re =sem~getEngineByName("ooRexx")
+  self~assertNotNull(re)
+
+  ref=re~getFactory
+  self~assertNotNull(ref)
+
+
+  self~assertSame("Open Object Rexx (ooRexx)", ref~getEngineName)
+  self~assertTrue(ref~getEngineVersion>100)
+
+   -- initially (201507) the following extensions got defined
+  soen=.set~of("rex", "rexx", "orx", "cls", "rxj", "rexxj", "jrexx", "rxo" )
+  jsoen=ref~getExtensions~iterator
+  do while jsoen~hasNext
+     soen~remove(jsoen~next)
+  end
+  self~assertTrue(soen~items=0)
+
+  self~assertSame("ooRexx", ref~getLanguageName )
+
+  self~assertTrue(ref~getLanguageVersion>"4.1")
+
+  self~assertSame("Rexx", ref~getName)
+
+  jArrStr=bsf.createJavaArray(.java.lang.String,0)
+  self~assertEquals("m~hi", ref~getMethodCallSyntax("m","hi", jArrStr))
+
+  jArrStr=bsf.createJavaArrayOf(.java.lang.String,".nil")
+  self~assertEquals("m~hi(.nil)", ref~getMethodCallSyntax("m","hi", jArrStr))
+
+  jArrStr=bsf.createJavaArray(.java.lang.String,1)
+  self~assertEquals("m~hi(.nil)", ref~getMethodCallSyntax("m","hi", jArrStr))
+
+  jArrStr=bsf.createJavaArrayOf(.java.lang.String,"arg1")
+  self~assertEquals("m~hi(arg1)", ref~getMethodCallSyntax("m","hi", jArrStr))
+
+  jArrStr=bsf.createJavaArrayOf(.java.lang.String,"arg1","arg2")
+  self~assertEquals("m~hi(arg1,arg2)", ref~getMethodCallSyntax("m","hi", jArrStr))
+
+
+  jArrStr=bsf.createJavaArray(.java.lang.String,2)
+  jArrStr[1]="arg1"
+  self~assertEquals("m~hi(arg1,.nil)", ref~getMethodCallSyntax("m","hi", jArrStr))
+
+  jArrStr=bsf.createJavaArray(.java.lang.String,2)
+  jArrStr[2]="arg2"
+  self~assertEquals("m~hi(.nil,arg2)", ref~getMethodCallSyntax("m","hi", jArrStr))
+
+  jArrStr[2]=.nil
+  self~assertEquals("m~hi(.nil,.nil)", ref~getMethodCallSyntax("m","hi", jArrStr))
+
+
+   -- initially (201507) the following mimetypes got defined
+  soen=.set~of("text/x-rexx", "text/x-rexx-java", "text/x-rexx-java-ooo")
+  jsoen=ref~getMimeTypes~iterator
+  do while jsoen~hasNext
+     soen~remove(jsoen~next)
+  end
+  self~assertTrue(soen~items=0)
+
+
+   -- initially (201507) the following engine names got defined
+  soen=.set~of("rexx", "Rexx", "oorexx", "ooRexx", "orexx", "oRexx")
+  jsoen=ref~getNames~iterator
+  do while jsoen~hasNext
+     soen~remove(jsoen~next)
+  end
+  self~assertTrue(soen~items=0)
+
+  self~assertEquals('say "hi"', ref~getOutputStatement('hi'))
+  self~assertEquals('say """hi"""', ref~getOutputStatement('"hi"'))
+  self~assertEquals('say "''hi''"', ref~getOutputStatement("'hi'"))
+
+  self~assertEquals("MULTITHREADED", ref~getParameter("THREADING"))
+
+  call check self, ref, .nil
+  call check self, ref, .array~new
+  call check self, ref, .array~of(.nil)
+  call check self, ref, .array~of("say 'hi'")
+  call check self, ref, .array~of('say "hi"')
+  call check self, ref, .array~of('say "hi"', .nil, "say 'holla'")
+  call check self, ref, .array~of('say "hi"', .nil, "", "say 'holla'")
+  call check self, ref, .array~of('say "hi"', .nil, "", " ", "say 'holla'")
+
+  reName="org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine@"
+  self~assertTrue(ref~getScriptEngine~objectName~abbrev(reName))    -- get a new RexxScriptEngine
+  return
+
+
+
+check: procedure      -- routine to carry out program creation and checking correctness
+  use arg self, ref, strArr=.nil
+
+  refName="org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngineFactory@"
+  leadin ="-- begin of" refName
+  leadout="-- end of  " refName
+
+  bThreeLiner=(strArr=.nil)
+  if strArr<>.nil, strArr~items=0 then
+  do
+     bThreeLiner=.true
+     jStrArr=bsf.createJavaArray(.java.lang.String,0) -- create Java array of capacity 0
+  end
+
+  if bThreeLiner=.true then -- strArr=.nil || strArr~items=0 then      -- .nil, no code at all!
+  do
+      if strArr=.nil then
+         strPgmArr=ref~getProgram(strArr)~makeArray
+      else
+         strPgmArr=ref~getProgram(jStrArr)~makeArray
+
+      self~assertTrue(strPgmArr~items=3)
+      self~assertTrue(strPgmArr[1]~abbrev(leadIn))
+
+      if strArr=.nil then
+         self~assertEquals('-- no statements supplied (received "null")', strPgmArr[2])
+      else
+      do
+         self~assertEquals('-- no statements supplied (received an empty array)', strPgmArr[2])
+      end
+
+      self~assertTrue(strPgmArr[3]~abbrev(leadOut))
+      return
+  end
+
+  items=strArr~items
+  jStrArr=bsf.createJavaArray(.java.lang.String,items) -- create Java array
+  do i=1 to items
+     jStrArr[i]=strArr[i]
+  end
+
+  strPgmArr=ref~getProgram(jStrArr)~makeArray
+  self~assertTrue(strPgmArr[1]~abbrev(leadIn))
+  do i=2 to items+1
+     if strArr[i-1]=.nil then
+        self~assertEquals("-- 'null' received!", strPgmArr[i])
+     else
+        self~assertEquals(strArr[i-1], strPgmArr[i])
+  end
+  self~assertTrue(strPgmArr[i]~abbrev(leadOut))
+  return
+
+
+
+::method "test_02_Rexx_Script_Engine"
+  sem=.bsf~new("javax.script.ScriptEngineManager")
+  re =sem~getEngineByName("ooRexx")
+  self~assertNotNull(re)
+
+  ref=re~getFactory
+  self~assertNotNull(ref)
+
+  rexxCode="return 1+1"
+  self~assertEquals(2, re~eval(rexxCode))
+  cs=re~getCurrentScript
+  self~assertEquals(rexxCode, cs~getScriptSource)
+  self~assertEquals(2, re~eval(rexxCode))
+  cs2=re~getCurrentScript
+  self~assertEquals(cs~objectname,cs2~objectname)
+
+  self~assertEquals("!ih", re~eval("return reverse('hi!')"))
+  cs2=re~getCurrentScript
+  self~assertNotEquals(cs~objectname,cs3~objectname)
+
+  -- test Invocable
+  nl=.endofline
+  rexxCode="return .test~new     -- return Rexx-object           ;" nl -
+           "                                                     ;" nl -
+           "::requires BSF.CLS   -- get Java camouflaging support;" nl -
+           "                                                     ;" nl -
+           "::class test                                         ;" nl -
+           "::method oneString                                   ;" nl -
+           "  return 'ONESTRING'                                 ;" nl -
+           "::method two                                         ;" nl -
+           "  return 2                                           ;" nl -
+           "::method adder                                       ;" nl -
+           "  parse arg a1, a2                                   ;" nl -
+           "  return a1+a2                                       ;" nl -
+           "::method run                                         ;" nl -
+           "  say 'run...'                                       ;" nl -
+           "                                                     ;" nl -
+           "::method getString                                   ;" nl -
+           "  return 'getString'                                 ;" nl -
+           "::method multiply                                    ;" nl -
+           "  parse arg a1, a2                                   ;" nl -
+           "  return a1*a2                                       ;" nl -
+           "                                                     ;" nl -
+           "::routine getString public                           ;" nl -
+           "  return 'routine: getString'                        ;" nl -
+           "::routine multiply  public                           ;" nl -
+           "  return arg(1)*arg(2)/3 -- to distinguish from meth ;"
+
+  obj=re~eval(rexxCode)    -- fetch Rexx object as a RexxProxy
+  self~assertEquals("ONESTRING", obj~sendMessage0("oneString"))
+  self~assertEquals("2", obj~sendMessage0("two"))
+  self~assertEquals("3", obj~sendMessage2("adder", 1, 2))
+
+  jarr=bsf.createJavaArray("java.lang.Object",0)
+  self~assertEquals("ONESTRING", re~invokeMethod(obj, "onestring", jarr))
+  self~assertEquals("2", re~invokeMethod(obj, "two", jarr))
+
+  jarr=bsf.createJavaArrayOf("java.lang.Object",1,2)
+  self~assertEquals("3", re~invokeMethod(obj, "adder", jarr))
+
+  iclz=bsf.loadClass("rgf.G_misc.o7_Test_JSR223")
+  say "iclz:" pp(iclz)
+
+      -- use 'obj' methods to carry out the method invocations
+  jobj=re~getInterface(obj, iclz)
+  self~assertEquals("getString", jobj~getString)
+  self~assertEquals(12, jobj~multiply(3,4))
+
+      -- execute public routines
+  jarr=bsf.createJavaArrayOf("java.lang.Object", 9, 5)
+  self~assertEquals(15, re~invokeFunction("multiply", jarr))   -- public routine intentionally returns 1/3 of the value
+  self~assertEquals("routine: getString", re~invokeFunction("getString", .nil))  -- no args
+
+      -- use public routines to carry out the method invocations
+  jobj2=re~getInterface(iclz)    -- this uses the public routines
+  self~assertEquals("routine: getString", jobj2~getString)
+  self~assertEquals(10, jobj2~multiply(6,5))    -- public routine intentionally returns 1/3 of the value
+
+

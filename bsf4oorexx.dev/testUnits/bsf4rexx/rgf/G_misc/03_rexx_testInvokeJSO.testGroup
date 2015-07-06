@@ -222,8 +222,8 @@ end
 
 
       -- returns a UTF-8 string using the local codepage for encoding
-   str_01b=stringToUtf8(str_01a)
-   str_02b=stringToUtf8(str_02a)
+   str_01b=bsf.stringToUtf8(str_01a)
+   str_02b=bsf.stringToUtf8(str_02a)
 
 if bDebug=.true then
 do
@@ -235,8 +235,8 @@ end
 
 
       -- returns a string encoded to the local codepage
-   str_01c=utf8ToString(str_01b)
-   str_02c=utf8ToString(str_02b)
+   str_01c=bsf.utf8ToString(str_01b)
+   str_02c=bsf.utf8ToString(str_02b)
 
 if bDebug=.true then
 do
@@ -245,8 +245,8 @@ do
 end
 
       -- return the Java (UTF-8) string as a JSO (a reference to java.lang.String)
-   str_01d=utf8stringAsJSO(str_01b)
-   str_02d=utf8stringAsJSO(str_02b)
+   str_01d=bsf.utf8stringAsJSO(str_01b)
+   str_02d=bsf.utf8stringAsJSO(str_02b)
 
 if bDebug=.true then
 do
@@ -262,8 +262,8 @@ end
     self~assertEquals(str_01a~toString, str_02d~toString)
 
       -- turn JSO into a UTF-8 string
-   str_01e=JSOasUTF8string(str_01d)
-   str_02e=JSOasUTF8string(str_02d)
+   str_01e=bsf.JSOasUTF8string(str_01d)
+   str_02e=bsf.JSOasUTF8string(str_02d)
 
 if bDebug=.true then
 do
@@ -276,4 +276,76 @@ end
     self~assertEquals(str_02b, str_02e)
 
 
+
+::method "test_04_static_utf8-umlauts_field"
+    jclz=bsf.import("rgf.G_misc.o3_Test_JSO")
+    jo  =jclz~new             -- create a Java instance
+
+    fieldname="staticStringWithUTF8umlauts"
+
+    val_01   =jclz~bsf.getStaticValue(jclz,fieldName)    -- Rexx string
+    val_02   =jclz~send(fieldName)                       -- Rexx string
+    val_03   =jo~send(fieldName)                         -- Rexx string
+    valJSO_01=jclz~bsf.getStaticValueJSO(jclz,fieldName) -- a reference to a Java String object
+    valJSO_02=bsf.getStaticValueJSO(jclz,fieldName)      -- a reference to a Java String object
+    valJSO_03=bsf.getConstantJSO(jclz,fieldName)         -- a reference to a Java String object
+
+    self~assertTrue(jo~bsf.isA("java.lang.Object"))
+    self~assertTrue(jo~bsf.isA("rgf.G_misc.o3_Test_JSO"))
+    self~assertFalse(jo~bsf.isA("java.lang.String"))
+
+    self~assertTrue(valJSO_01~bsf.isA("java.lang.String"))
+    self~assertTrue(valJSO_02~bsf.isA("java.lang.String"))
+    self~assertTrue(valJSO_03~bsf.isA("java.lang.String"))
+
+    self~assertTrue(valJSO_01~equals(valJSO_02))
+    self~assertTrue(valJSO_01~equals(valJSO_03))
+    self~assertTrue(valJSO_02~equals(valJSO_03))
+
+    self~assertSame(val_01, valJSO_01~toString)
+    self~assertSame(val_02, valJSO_02~toString)
+    self~assertSame(val_03, valJSO_03~toString)
+
+
+    --- now test encodings (explicit/implicit)
+      -- define test string value in Windows (Austrian/German Windows XP): "Cp1252"
+    encoding="Cp1252"      -- Windows encoding, Western Europe
+    strVal="auml-ä-ouml-ö-uuml-ü-szlig-ß-Auml-Ä-Ouml-Ö-Uuml-Ü-"   -- glyphs only show correctly, if "Cp1252" is used
+
+    strValJSO=BsfRawBytes(valJSO_01~getBytes(encoding))  -- turn "UTF-8" into "Cp1252"
+    self~assertSame(strVal, strValJSO)                   -- now compare "Cp1252" chars
+
+    strValAsUtf8=.java.lang.String~new(BSFRawBytes(strVal),encoding) -- turn "Cp1252" into "UTF-8"
+    self~assertTrue(strValAsUtf8~equals(valJSO_01))      -- now compare "UTF-8" chars
+
+
+
+::method "test_05_static_utf8-icons_field"
+    jclz=bsf.import("rgf.G_misc.o3_Test_JSO")
+    jo  =jclz~new             -- create a Java instance
+
+    fieldname="staticStringWithUTF8icons"
+
+    val_01   =jclz~bsf.getStaticValue(jclz,fieldName)    -- Rexx string
+    val_02   =jclz~send(fieldName)                       -- Rexx string
+    val_03   =jo~send(fieldName)                         -- Rexx string
+    valJSO_01=jclz~bsf.getStaticValueJSO(jclz,fieldName) -- a reference to a Java String object
+    valJSO_02=bsf.getStaticValueJSO(jclz,fieldName)      -- a reference to a Java String object
+    valJSO_03=bsf.getConstantJSO(jclz,fieldName)         -- a reference to a Java String object
+
+    self~assertTrue(jo~bsf.isA("java.lang.Object"))
+    self~assertTrue(jo~bsf.isA("rgf.G_misc.o3_Test_JSO"))
+    self~assertFalse(jo~bsf.isA("java.lang.String"))
+
+    self~assertTrue(valJSO_01~bsf.isA("java.lang.String"))
+    self~assertTrue(valJSO_02~bsf.isA("java.lang.String"))
+    self~assertTrue(valJSO_03~bsf.isA("java.lang.String"))
+
+    self~assertTrue(valJSO_01~equals(valJSO_02))
+    self~assertTrue(valJSO_01~equals(valJSO_03))
+    self~assertTrue(valJSO_02~equals(valJSO_03))
+
+    self~assertSame(val_01, valJSO_01~toString)
+    self~assertSame(val_02, valJSO_02~toString)
+    self~assertSame(val_03, valJSO_03~toString)
 
