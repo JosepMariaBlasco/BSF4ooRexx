@@ -12,14 +12,15 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+
+
+
+         2015-07-07, rgf: - routine "bsf.ScriptContext2rexx": fix bug uncovered by new test cases
+
          2015-07-05, rgf: - routine "stringToUtf8" deprecated,    created "bsf.stringToUtf8" instead
                           - routine "utf8toString" deprecated,    created "bsf.utf8toString" instead
                           - routine "utf8stringAsJSO" deprecated, created "bsf.utf8stringAsJSO" instead
                           - routine "JSOasUtf8string" deprecated, created "bsf.JSOasUtf8string" instead
-
-::routine bsf.JSOasUtf8string public
-
-
 
          2015-07-01/02, rgf: - added attribute 'isReader' to .BSF.InputStream and 'isWriter' to .BSF.OutputStream
                             to allow testing this attribute in testunits
@@ -413,7 +414,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     4.52 (20150705)
+   version:     4.52 (20150707)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -498,7 +499,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="452.20150705" -- set version (date distribution got created)
+   .bsf4rexx~version="452.20150707" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4355,6 +4356,7 @@ syntax:
   else
   do
      arr=.array~new
+-- say "bsf.ScriptContext2rexx: scope="pp(arg(2, "array")~toString(,","))
      if scope~caselessAbbrev("A") then    -- all scopes from top to bottom value (lower scopes mask override higher scopes)
      do
         scopes=scriptContext~getScopes    -- returns a list of defined scopes
@@ -4365,9 +4367,9 @@ syntax:
         -- sort descendingly
         arr=arr~sortWith(.InvertingComparator~new(.NumericComparator~new))
      end
-     else if scope~caselessAbbrev("G") then     -- global scope
+     else if scope~caselessAbbrev("G"), arg()=2 then     -- global scope
         arr~append(200)
-     else if scope~caselessAbbrev("E") then     -- engine scope
+     else if scope~caselessAbbrev("E"), arg()=2 then     -- engine scope
         arr~append(100)
      else   -- a list of scopes is given, process it in the given (argument) order
      do

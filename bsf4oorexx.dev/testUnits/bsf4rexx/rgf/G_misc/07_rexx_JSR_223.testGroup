@@ -6,6 +6,23 @@
    date:             2015-07-05
    license:          ASF 2.0 (Apache Software License)
    purpose:          test JSR-223 (javax.script introduced with Java 6) support
+
+   comment:          2015-07-07, rgf:
+
+                     - in "::method "test_03_Rexx__Script_Context" when changing the value of
+                       the variable "bDummyStuff" to any other value than ".true", then all of
+                       a sudden ooRexx 4.2.0 treats the BSF-Rexx-Proxy as a String, as if its
+                       value gets changed to 'objectName' mysteriously
+
+                     - if in rexxCode an 'assertEquals()' yields '.false', then the ooRexxUnit
+                       (using the 4.2.0 version) in its method 'doTheTest' (line # 1549) will
+                       not be able to notice the condition and process it correctly
+
+                     - if in rexxCode the passed Rexx object of 'self' is queried for its
+                       string value, than the code hangs
+
+                     - TODO: - report these errors against the ooRexx project
+                             - retest with next version of ooRexx
 */
 
   parse source . . fileSpec;
@@ -295,6 +312,14 @@ check: procedure      -- routine to carry out program creation and checking corr
   jargs=bsf.createJavaArrayOf("java.lang.Object", BsfCreateRexxProxy(self)) -- supply this object for assertions in the Rexx program
   eb~put(re~argv,jargs)    -- add to engine scope's bindings
 
+bDummyStuff=.true
+if bDummyStuff=.true then
+do
+   say= "1) eb="pp(eb) "eb~class="pp(eb~class) "eb~getClass="pp(eb~getClass) "eb~getClass~toString="pp(eb~getClass~toString)
+   say= "1) gb="pp(gb) "gb~class="pp(gb~class) "gb~getClass="pp(gb~getClass) "gb~getClass~toString="pp(gb~getClass~toString)
+end
+
+
   rexxCode="call BsfContextVariables 'set', bsf.scriptContext2Rexx(arg(arg())~scriptContext)                       ;" nl -
            "cdir=BsfContextVariables()  -- get context variables should be all from scriptContext!                 ;" nl -
            "sdir=bsf.scriptContext2Rexx(arg(arg())~scriptContext) -- a Rexx directory of the scriptContext entries ;" nl -
@@ -315,7 +340,196 @@ check: procedure      -- routine to carry out program creation and checking corr
            "::requires BSF.CLS                                                                                     ;" nl -
            "                                                                                                       ;" nl -
            "                                                                                                       ;"
-
   re~eval(rexxCode)
+
+-- the following must be executed, otherwise ooRexx 4.2.0 will later use objectname as value :( ! (rgf, 20150707)
+if bDummyStuff=.true then
+do
+   say= "2) eb="pp(eb) "eb~class="pp(eb~class) "eb~getClass="pp(eb~getClass) "eb~getClass~toString="pp(eb~getClass~toString)
+   say= "2) gb="pp(gb) "gb~class="pp(gb~class) "gb~getClass="pp(gb~getClass) "gb~getClass~toString="pp(gb~getClass~toString)
+end
+
+
+  --------------------------------------------------------
+  --- now test global and engine scope together, separately, list of numbered scopes intermixed with symbolic named scopes ('g', 'e')
+
+   -- 3 entries in global:
+  gb~put("RGF_GLOBAL_TIME", .datetime~new~string)
+  gb~put("RGF_GLOBAL"     , "global")
+  gb~put("RGF"            , "global")     -- entry in global as well as in engine scope
+
+   -- 6+2=8 entries in engine:
+  eb~put("RGF_ENGINE",      "engine")
+  eb~put("RGF"            , "engine")     -- entry in global as well as in engine scope
+
+
+  rexxCode="call BsfContextVariables 'set', bsf.scriptContext2Rexx(arg(arg())~scriptContext)                               ;" nl -
+           "cdir=BsfContextVariables()  -- get context variables should be all from scriptContext!                         ;" nl -
+           "sdir=bsf.scriptContext2Rexx(arg(arg())~scriptContext) -- a Rexx directory of the scriptContext entries         ;" nl -
+           "                                                                                                               ;" nl -
+           "use arg jobj, nrEntries                                                                                        ;" nl -
+           "                                                                                                               ;" nl -
+           "/*                                                                                                             ;" nl -
+           "say 'jobj='pp(jobj~objectName) 'nrEntries='pp(nrEntries)                                                       ;" nl -
+           "say 'cdir='pp(cdir) 'sdir='pp(sdir)                                                                            ;" nl -
+           "say 'cdir~items='pp(cdir~items) 'sdir~items='pp(sdir~items)                                                    ;" nl -
+           "*/                                                                                                             ;" nl -
+           "                                                                                                               ;" nl -
+           "jobj~assertEquals(nrEntries, cdir~items, 'context variables')                                               ;" nl -
+           "jobj~assertEquals(nrEntries, sdir~items)                                                                    ;" nl -
+           "jobj~assertEquals(cdir~allindexes~sort~toString,sdir~allindexes~sort~toString)                              ;" nl -
+           "                                                                                                               ;" nl -
+           "/*                                                                                                             ;" nl -
+           "---                                                                                                            ;" nl -
+           "call 'rgf_util2.rex'                                                                                           ;" nl -
+           "call dump2 cdir, 'context-vars'                                                                                ;" nl -
+           "call dump2 sdir, 'scriptContext'                                                                               ;" nl -
+           "---                                                                                                            ;" nl -
+           "*/                                                                                                             ;" nl -
+           "                                                                                                               ;" nl -
+           "::requires BSF.CLS                                                                                             ;" nl -
+           "                                                                                                               ;" nl -
+           "                                                                                                               ;"
+
+  jargs=bsf.createJavaArrayOf("java.lang.Object", BsfCreateRexxProxy(self), 10     ) -- "RGF" in context vars will be present only once
+
+
+
+-- the following must be executed, otherwise ooRexx 4.2.0 will later use objectname as value :( ! (rgf, 20150707)
+if bDummyStuff=.true then
+do
+   say= "3) eb="pp(eb) "eb~class="pp(eb~class) "eb~getClass="pp(eb~getClass) "eb~getClass~toString="pp(eb~getClass~toString)
+   say= "3) gb="pp(gb) "gb~class="pp(gb~class) "gb~getClass="pp(gb~getClass) "gb~getClass~toString="pp(gb~getClass~toString)
+end
+
+
+  eb~put(re~argv,jargs)    -- add to engine scope's bindings
+  re~eval(rexxCode)
+
+
+  rexxCode="call BsfContextVariables 'set', bsf.scriptContext2Rexx(arg(arg())~scriptContext, arg(3))                       ;" nl -
+           "cdir=BsfContextVariables()  -- get context variables should be all from scriptContext!                         ;" nl -
+           "sdir=bsf.scriptContext2Rexx(arg(arg())~scriptContext, arg(3)) -- a Rexx directory of the scriptContext entries ;" nl -
+           "                                                                                                               ;" nl -
+           "use arg jobj, nrEntries                                                                                        ;" nl -
+           "                                                                                                               ;" nl -
+           "/*                                                                                                             ;" nl -
+           "say 'jobj='pp(jobj~objectName) 'nrEntries='pp(nrEntries)                                                       ;" nl -
+           "say 'cdir='pp(cdir) 'sdir='pp(sdir)                                                                            ;" nl -
+           "say 'cdir~items='pp(cdir~items) 'sdir~items='pp(sdir~items)                                                    ;" nl -
+           "*/                                                                                                             ;" nl -
+           "                                                                                                               ;" nl -
+           "jobj~assertEquals(nrEntries, cdir~items, 'context variables')                                               ;" nl -
+           "jobj~assertEquals(nrEntries, sdir~items)                                                                    ;" nl -
+           "jobj~assertEquals(cdir~allindexes~sort~toString,sdir~allindexes~sort~toString)                              ;" nl -
+           "                                                                                                               ;" nl -
+           "/*                                                                                                             ;" nl -
+           "---                                                                                                            ;" nl -
+           "call 'rgf_util2.rex'                                                                                           ;" nl -
+           "call dump2 cdir, 'context-vars'                                                                                ;" nl -
+           "call dump2 sdir, 'scriptContext'                                                                               ;" nl -
+           "---                                                                                                            ;" nl -
+           "*/                                                                                                             ;" nl -
+           "                                                                                                               ;" nl -
+           "::requires BSF.CLS                                                                                             ;" nl -
+           "                                                                                                               ;" nl -
+           "                                                                                                               ;"
+
+
+  jargs=bsf.createJavaArrayOf("java.lang.Object", BsfCreateRexxProxy(self), 10, "A") -- "RGF" in context vars will be present only once
+  eb~put(re~argv,jargs)    -- add to engine scope's bindings
+  re~eval(rexxCode)
+
+  jargs=bsf.createJavaArrayOf("java.lang.Object", BsfCreateRexxProxy(self), 3, "g")
+  eb~put(re~argv,jargs)    -- add to engine scope's bindings
+  re~eval(rexxCode)
+
+  jargs=bsf.createJavaArrayOf("java.lang.Object", BsfCreateRexxProxy(self), 8, "e")
+  eb~put(re~argv,jargs)    -- add to engine scope's bindings
+  re~eval(rexxCode)
+
+
+
+--- own code (with four args):
+  rexxCode="call BsfContextVariables 'set', bsf.scriptContext2Rexx(arg(arg())~scriptContext, arg(3), arg(4))               ;" nl -
+           "cdir=BsfContextVariables()  -- get context variables should be all from scriptContext!                         ;" nl -
+           "sdir=bsf.scriptContext2Rexx(arg(arg())~scriptContext, arg(3), arg(4))                                          ;" nl -
+           "                                                                                                               ;" nl -
+           "use arg jobj, nrEntries                                                                                        ;" nl -
+           "                                                                                                               ;" nl -
+           "/*                                                                                                             ;" nl -
+           "say 'l# 451: jobj='pp(jobj~objectName) 'nrEntries='pp(nrEntries)                                                       ;" nl -
+           "say 'cdir='pp(cdir) 'sdir='pp(sdir)                                                                            ;" nl -
+           "say 'cdir~items='pp(cdir~items) 'sdir~items='pp(sdir~items)                                                    ;" nl -
+           "*/                                                                                                             ;" nl -
+           "                                                                                                               ;" nl -
+           "jobj~assertEquals(nrEntries, cdir~items, 'context variables')                                               ;" nl -
+           "jobj~assertEquals(nrEntries, sdir~items)                                                                    ;" nl -
+           "jobj~assertEquals(cdir~allindexes~sort~toString,sdir~allindexes~sort~toString)                              ;" nl -
+           "                                                                                                               ;" nl -
+           "/*                                                                                                             ;" nl -
+           "---                                                                                                            ;" nl -
+           "call 'rgf_util2.rex'                                                                                           ;" nl -
+           "call dump2 cdir, 'context-vars'                                                                                ;" nl -
+           "call dump2 sdir, 'scriptContext'                                                                               ;" nl -
+           "---                                                                                                            ;" nl -
+           "*/                                                                                                             ;" nl -
+           "                                                                                                               ;" nl -
+           "                                                                                                               ;" nl -
+           "::requires BSF.CLS                                                                                             ;" nl -
+           "                                                                                                               ;" nl -
+           "                                                                                                               ;"
+
+  jargs=bsf.createJavaArrayOf("java.lang.Object", BsfCreateRexxProxy(self), 10, "g", "e") -- sequence: global, engine (last prevails)
+  eb~put(re~argv,jargs)    -- add to engine scope's bindings
+  re~eval(rexxCode)
+
+  jargs=bsf.createJavaArrayOf("java.lang.Object", BsfCreateRexxProxy(self), 10, "e", "g") -- sequence: engine, global (last prevails)
+  eb~put(re~argv,jargs)    -- add to engine scope's bindings
+  re~eval(rexxCode)
+
+  jargs=bsf.createJavaArrayOf("java.lang.Object", BsfCreateRexxProxy(self), 10, 100, 200) -- sequence: global, engine (last prevails)
+  eb~put(re~argv,jargs)    -- add to engine scope's bindings
+  re~eval(rexxCode)
+
+  jargs=bsf.createJavaArrayOf("java.lang.Object", BsfCreateRexxProxy(self), 10, 200, 100) -- sequence: engine, global (last prevails)
+  eb~put(re~argv,jargs)    -- add to engine scope's bindings
+  re~eval(rexxCode)
+
+
+--- maybe own code (e.g. with eight args):
+  rexxCode="call BsfContextVariables 'set', bsf.scriptContext2Rexx(arg(arg())~scriptContext, arg(3), arg(4), arg(5), arg(6), arg(7), arg(8)) ;" nl -
+           "cdir=BsfContextVariables()  -- get context variables should be all from scriptContext!                         ;" nl -
+           "sdir=bsf.scriptContext2Rexx(arg(arg())~scriptContext, arg(3), arg(4), arg(5), arg(6), arg(7), arg(8))          ;" nl -
+           "                                                                                                               ;" nl -
+           "use arg jobj, nrEntries                                                                                        ;" nl -
+           "                                                                                                               ;" nl -
+           "/*                                                                                                             ;" nl -
+           "say 'l# 500: jobj='pp(jobj~objectName) 'nrEntries='pp(nrEntries)                                               ;" nl -
+           "say 'cdir='pp(cdir) 'sdir='pp(sdir)                                                                            ;" nl -
+           "say 'cdir~items='pp(cdir~items) 'sdir~items='pp(sdir~items)                                                    ;" nl -
+           "*/                                                                                                             ;" nl -
+           "                                                                                                               ;" nl -
+           "jobj~assertEquals(nrEntries, cdir~items, 'context variables')                                                  ;" nl -
+           "jobj~assertEquals(nrEntries, sdir~items)                                                                       ;" nl -
+           "jobj~assertEquals(cdir~allindexes~sort~toString,sdir~allindexes~sort~toString)                                 ;" nl -
+           "                                                                                                               ;" nl -
+           "/*                                                                                                             ;" nl -
+           "---                                                                                                            ;" nl -
+           "call 'rgf_util2.rex'                                                                                           ;" nl -
+           "call dump2 cdir, 'context-vars'                                                                                ;" nl -
+           "call dump2 sdir, 'scriptContext'                                                                               ;" nl -
+           "---                                                                                                            ;" nl -
+           "*/                                                                                                             ;" nl -
+           "                                                                                                               ;" nl -
+           "                                                                                                               ;" nl -
+           "::requires BSF.CLS                                                                                             ;" nl -
+           "                                                                                                               ;" nl -
+           "                                                                                                               ;"
+
+  jargs=bsf.createJavaArrayOf("java.lang.Object", BsfCreateRexxProxy(self), 10, 999, "g", 150, "e", 100, 50) -- sequence: engine, global (last prevails)
+  eb~put(re~argv,jargs)    -- add to engine scope's bindings
+  re~eval(rexxCode)
+
 
 
