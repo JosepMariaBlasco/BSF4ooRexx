@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   name:             rexx_testBsfIsA.testGroup
+   name:             rexx_BSF_Redirect_To.testGroup 
    author:           Rony G. Flatscher
    version:          1.0.0
    date:             2015-07-02, 2015-07-05

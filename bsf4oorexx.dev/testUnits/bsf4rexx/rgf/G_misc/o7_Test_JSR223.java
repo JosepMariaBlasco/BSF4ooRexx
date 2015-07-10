@@ -1,4 +1,4 @@
-// ---rgf, 2015-06-29: Java class to allow testing the JSO functionality
+// ---rgf, 2015-06-29: Java class to allow testing the JSR-223 functionality (implementing a Java interface with routines and with methods
 
 package rgf.G_misc;
 

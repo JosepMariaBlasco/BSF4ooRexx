@@ -1,15 +1,11 @@
 #!/usr/bin/rexx
 /*
-   name:             rexx_testBsfIsA.testGroup
+   name:             05_rexx_BSF_Input_Output_Stream.testGroup
    author:           Rony G. Flatscher
    version:          1.0.0
    date:             2015-07-01
    license:          ASF 2.0 (Apache Software License)
-   purpose:          test BSF.CLS' public classes BSF.InputStream, BSF.OutputStream
-
-   remarks:          this testgroup uses BSF4ooRexx itself to create Rexx proxy classes of abstract
-                     and concrete Java classes in order to test the BSF.InputStream and BSF.OutputStream
-                     classes
+   remarks:          test BSF.CLS public classes "BSF.InputStream" and "BSF.OutputStream"
 */
 
   parse source . . fileSpec;

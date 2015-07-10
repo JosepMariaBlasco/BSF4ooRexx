@@ -1,9 +1,9 @@
 #!/usr/bin/rexx
 /*
-   name:             rexx_testBsfIsA.testGroup
+   name:             07_rexx_JSR_223.testGroup
    author:           Rony G. Flatscher
    version:          1.0.0
-   date:             2015-07-05
+   date:             2015-07-05, 2015-07-07
    license:          ASF 2.0 (Apache Software License)
    purpose:          test JSR-223 (javax.script introduced with Java 6) support
 

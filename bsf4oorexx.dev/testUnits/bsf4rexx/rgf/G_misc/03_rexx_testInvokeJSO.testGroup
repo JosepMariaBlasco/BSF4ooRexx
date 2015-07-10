@@ -1,11 +1,12 @@
 #!/usr/bin/rexx
 /*
-   name:             rexx_testBsfIsA.testGroup
+   name:             03_rexx_testInvokeJSO.testGroup
    author:           Rony G. Flatscher
    version:          1.0.0
    date:             2015-06-29
    license:          ASF 2.0 (Apache Software License)
-   purpose:          test BSF4ooRexxÄ  new external BsfRawBytes() function
+   purpose:          test BSF4ooRexx functions and methods that return a reference to a Java String object ("JSO")
+                     instead of transparently turning them into a Rexx string 
 */
 
   parse source . . fileSpec

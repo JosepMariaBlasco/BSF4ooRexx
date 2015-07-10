@@ -1,5 +1,88 @@
+-------------------------------------- 2015-07-07 ----------------------------------
+
+- testUnits\bsf4rexx\rgf\G_misc\07_rexx_JSR_223.testGroup
+
+        - new: test the JSR-223 (javax.script) implementation for ooRexx
+
+- testUnits\bsf4rexx\rgf\G_misc\o7_Test_JSR223.java
+
+        - new: companion for 07_rexx_JSR_223.testGroup (starts with a little 'o',
+          because older versions of Java do not accept a literal (number) as the first
+          character of a Java class name);
+
+        - allows testing the Invocable JSR-223 functionality (implementing a Java
+          interface with routines and with methods)
+
+-------------------------------------- 2015-07-05 ----------------------------------
+
+- testUnits\bsf4rexx\rgf\G_misc\06_rexx_BSF_Redirect_To.testGroup
+
+        - new: test BSF.CLS' routine BSF.RedirectTo
+
+-------------------------------------- 2015-06-29 ----------------------------------
+
+- testUnits\bsf4rexx\rgf\G_misc
+
+- testUnits\bsf4rexx\rgf\G_misc\03_rexx_testInvokeJSO.testGroup
+
+        - new: test BSF4ooRexx functions and methods that return a reference to a Java
+          String object ("JSO") instead of transparently turning them into a Rexx string
+
+- testUnits\bsf4rexx\rgf\G_misc\o3_Test_JSO.java
+
+        - new: companion for 03_rexx_testInvokeJSO.testGroup (starts with a little 'o',
+          because older versions of Java do not accept a literal (number) as the first
+          character of a Java class name
+
+- testUnits\bsf4rexx\rgf\G_misc\04_rexx_BsfContextVariables.testGroup
+
+        - new: test BSF4ooRexx new external BsfContextVariablesõ() function
+
+- testUnits\bsf4rexx\rgf\G_misc\05_rexx_BSF_Input_Output_Stream.testGroup
+
+        - new: test BSF.CLS public classes "BSF.InputStream" and "BSF.OutputStream"
+
+
+-------------------------------------- 2015-06-27 ----------------------------------
+
+- RexxExtendClass.java
+
+        - adjust behaviour to match documentation when array of method names is given:
+          in this case also all concrete methods of that name should be proxied
+
+
+- testUnits\bsf4rexx\rgf\D_abstractClasses\03_rexx_testAbstractCallback.testGroup
+
+        - adapted the test to what is deocumented for supplying an array of
+          method names to be proxied
+
+- testUnits\bsf4rexx\rgf\E_extendNormalClasses\03_rexx_testExtendNormalCallbacck.testGroup
+
+        - changed to adapt to new semantics when creating an extended class (array
+          of method names must not be null now, but have a capacity of 0 instead)
+
+-------------------------------------- 2015-06-26 ----------------------------------
+
+- testUnits\bsf4rexx\rgf\F_multiThreading\80_test_MultiThreading_via_Java_threads.testGroup
+
+        - adjust code for new (more versatile) support for BSFRexxProxy(), where supplying
+          Rexx objects to Java will be automagically wrapped as BSFRexxProxy() and getting
+          a BSFRexxProxy() from Java will automagically be unwrapped
+
+        - added class RGF_WORKER to serve as a proxy for the assertable instance of the
+          test method; otherwise leads to deadlocks if that object gets messages sent from
+          different threads
+
+- testUnits\bsf4rexx\rgf\F_multiThreading\90_test_Multithreading_via_Java_threads.rex
+
+        - adjust code to new BsfRexxProxy() behaviour: if Java supplies a BSFRexxProxy() object
+          BSF4ooRexx automatically unwraps it and submits it as an argument
 
 -------------------------------------- 2015-06-08 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - report new external Rexx function BsfContextVariables() with BsfQueryRegisteredFunctions()
 
 - new samples for demonstrating the JSR-223 support in "samples/Java/jsr223", files:
 
