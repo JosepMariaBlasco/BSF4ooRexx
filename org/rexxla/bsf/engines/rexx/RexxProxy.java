@@ -76,7 +76,7 @@ import org.apache.bsf.BSFException;
 
 public class RexxProxy implements InvocationHandler
 {
-    /** Version information on this class. */
+     /** Version information on this class. */
     static final public String version="101.20100416";
 
 
@@ -417,7 +417,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(m,arg1,arg2):
      */
     public Object sendMessage3 (String messageName, Object arg1, Object arg2, Object arg3) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(m,arg1,arg2,arg3): m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"]...");
+if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage3(m,arg1,arg2,arg3): m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"]...");
 
         return this.rexxEngine.call(this, messageName, new Object[]{arg1,arg2,arg3} );
     }
@@ -435,7 +435,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(m,arg1,arg2,a
      */
     public Object sendMessage4 (String messageName, Object arg1, Object arg2, Object arg3, Object arg4) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(m,arg1,arg2,arg3,arg4): m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"]...");
+if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage4(m,arg1,arg2,arg3,arg4): m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"]...");
 
         return this.rexxEngine.call(this, messageName, new Object[]{arg1,arg2,arg3,arg4} );
     }
@@ -454,7 +454,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(m,arg1,arg2,a
      */
     public Object sendMessage5 (String messageName, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(m,arg1,arg2,arg3,arg4,arg5): m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"], arg5=["+arg5+"]...");
+if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(m,arg1,arg2,arg3,arg4,arg5): m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"], arg5=["+arg5+"]...");
 
         return this.rexxEngine.call(this, messageName, new Object[]{arg1,arg2,arg3,arg4,arg5} );
     }
@@ -538,7 +538,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(re,m,arg1,arg
      */
     public Object sendMessage3 (RexxEngine re, String messageName, Object arg1, Object arg2, Object arg3) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(re,m,arg1,arg2,arg3): re=["+re+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"]...");
+if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage3(re,m,arg1,arg2,arg3): re=["+re+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"]...");
 
         return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1,arg2,arg3} );
     }
@@ -557,7 +557,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(re,m,arg1,arg
      */
     public Object sendMessage4 (RexxEngine re, String messageName, Object arg1, Object arg2, Object arg3, Object arg4) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(re,m,arg1,arg2,arg3,arg4): re=["+re+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"]...");
+if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage4(re,m,arg1,arg2,arg3,arg4): re=["+re+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"]...");
 
         return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1,arg2,arg3,arg4} );
     }
@@ -577,7 +577,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(re,m,arg1,arg
      */
     public Object sendMessage5 (RexxEngine re, String messageName, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(re,m,arg1,arg2,arg3,arg4,arg5): re=["+re+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"], arg5=["+arg5+"]...");
+if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(re,m,arg1,arg2,arg3,arg4,arg5): re=["+re+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"], arg5=["+arg5+"]...");
 
         return (re==null ? this.rexxEngine : re).call(this, messageName, new Object[]{arg1,arg2,arg3,arg4,arg5} );
     }
@@ -664,7 +664,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(raj,m,arg1,ar
      */
     public Object sendMessage3 (RexxAndJava raj, String messageName, Object arg1, Object arg2, Object arg3) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(raj,m,arg1,arg2,arg3): raj=["+raj+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"]...");
+if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage3(raj,m,arg1,arg2,arg3): raj=["+raj+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"]...");
 
         return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1,arg2,arg3} );
     }
@@ -683,7 +683,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(raj,m,arg1,ar
      */
     public Object sendMessage4 (RexxAndJava raj, String messageName, Object arg1, Object arg2, Object arg3, Object arg4) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(raj,m,arg1,arg2,arg3,arg4): raj=["+raj+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"]...");
+if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage4(raj,m,arg1,arg2,arg3,arg4): raj=["+raj+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"]...");
 
         return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1,arg2,arg3,arg4} );
     }
@@ -703,7 +703,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(raj,m,arg1,ar
      */
     public Object sendMessage5 (RexxAndJava raj, String messageName, Object arg1, Object arg2, Object arg3, Object arg4, Object arg5) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage2(raj,m,arg1,arg2,arg3,arg4,arg5): raj=["+raj+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"], arg5=["+arg5+"]...");
+if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(raj,m,arg1,arg2,arg3,arg4,arg5): raj=["+raj+"], m=["+messageName+"], arg1=["+arg1+"], arg2=["+arg2+"], arg3=["+arg3+"], arg4=["+arg4+"], arg5=["+arg5+"]...");
 
         return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, new Object[]{arg1,arg2,arg3,arg4,arg5} );
     }
@@ -762,8 +762,11 @@ if (bDebug) System.err.println("////// ---> RexxProxy.invoke(jO, mN, mD, args): 
      */
     public void finalize ()
     {
+        if (bDebug)
+        {
+            System.err.println(this+": in finalize(), rexxObjectID=["+rexxObjectID+"]...");
+        }
 
-if (bDebug) System.err.println("*** "+this+": in finalize()...");
         // remove ooRexx entry in JNI registry
         int nr=this.rexxEngine.getRexxInterface().jniUnregisterRexxObject(rexxObjectID);
         if (bDebug)

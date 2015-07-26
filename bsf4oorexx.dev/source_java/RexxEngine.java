@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 4.5.2, 20150509
+  * @version 4.5.2, 20150717
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,10 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2015-07-17, ---rgf, - fixed bug in call() where a dynamically created bean name containing the
+                          object prefix was not removed for unregisterBean()
+
     2015-05-09, ---rgf, - added public methods
                             - getLocalEnvironment()   ... returns .local
                             - getPublicEnvironment()  ... returns .environment
@@ -138,7 +142,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "452.20150509";
+    static final public String version = "452.20150717";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -373,7 +377,7 @@ System.err.println(this+".getLocalEnvrionment(), before doing a \"return rexxInt
     public Object eval (String source, int lineNo, int columnNo, Object oscript)
                                         throws BSFException
    {
-if (bDebug) System.err.println("RexxEngine.eval() - begin...");
+if (bDebug) System.err.println(this+" ===> ===> ===> RexxEngine.eval() - begin...");
 
         if (bTerminated==true)       // engine got terminated, cannot use it anymore
         {
@@ -415,7 +419,7 @@ if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii
 
            Object obj=null;
 
-if (bDebug) System.err.println("===> RexxEngine.call()-1 - before: rexxInterface.jniRexxRunProgram (...)");
+if (bDebug) System.err.println("===> RexxEngine.eval()-1 - before: rexxInterface.jniRexxRunProgram (...)");
            obj=rexxInterface.jniRexxRunProgram(
                    rii_ID,                 // RexxInstance instance ID
                    2,                      // invocationType,         // determines whether "CallProgram", "LoadPackage" or "LoadPackageFromData" is to be used
@@ -423,7 +427,7 @@ if (bDebug) System.err.println("===> RexxEngine.call()-1 - before: rexxInterface
                    script,                 // String  programData,            // Rexx code to execute; if given "fileName" denotes a (symbolic) name for this code
                    null                    // Object[]args                    // arguments
                    );
-if (bDebug) System.err.println("<=== RexxEngine.call()-1 - AFTER: rexxInterface.jniRexxRunProgram (...)");
+if (bDebug) System.err.println(this+" <=== <=== <=== RexxEngine.eval()-1 - AFTER: rexxInterface.jniRexxRunProgram (...), obj=["+obj+"]");
 
            return obj;
         }
@@ -459,7 +463,7 @@ if (bDebug) System.err.println("<=== RexxEngine.call()-1 - AFTER: rexxInterface.
                         throws BSFException
     {
 
-if (bDebug) System.err.println("RexxEngine.call(Object object, String name, Object[] args) - begin...");
+if (bDebug) System.err.println(this+" ===> ===> ===> RexxEngine.call(Object object, String name, Object[] args) - begin...");
 
         if (bTerminated==true)       // engine got terminated, cannot use it anymore
         {
@@ -469,9 +473,9 @@ if (bDebug) System.err.println("RexxEngine.call(Object object, String name, Obje
         // rgf, 2012-02-04
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
-if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
             this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
-if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
+if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 
         // String editedArgs[] = new String [ (args!= null ? args.length : 0) ];
@@ -507,6 +511,7 @@ if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii
                    res = args2RexxString( argVal );         // get String or Bean for this argument
                    if (((Boolean) res[0]).booleanValue())    // a Bean had to be created
                    {
+if (bDebug) System.err.println(this+".call(): args2RexxString() created bean: ["+res[1]+"] ...");
                        beanVector.addElement(res[1]);        // remember beanName for later deregistering
                    }
                    editedArgs[i]=(String) res[1];             // String value for Rexx
@@ -521,7 +526,7 @@ if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii
             // if (object instanceof RexxProxy)    // new 4.0 API behaviour
         if (bIs40Callback)                  // new 4.0 API behaviour
         {
-if (bDebug) System.err.println("RexxEngine.call(): jniRexxSendMessageToRexxObject() ...");
+if (bDebug) System.err.println(this+" RexxEngine.call(): jniRexxSendMessageToRexxObject() ...");
 // System.err.println("RE.call(...) v# 1, name=["+name+"]");
             o=rexxInterface.jniRexxSendMessageToRexxObject (
                 ((RexxProxy) object).rexxInterpreterID,   // RexxInstance instance ID
@@ -538,7 +543,7 @@ if (bDebug) System.err.println("RexxEngine.call(): jniRexxSendMessageToRexxObjec
         }
         else    // old, pre-4.0 behaviour
         {
-if (bDebug) System.err.println("RexxEngine.call(): jniRexxRunProgram() ...");
+if (bDebug) System.err.println(this+" RexxEngine.call(): jniRexxRunProgram() ...");
             o=rexxInterface.jniRexxRunProgram (
                             rii_ID,             // RexxInstance instance ID
                             2,                  // invocationType: call program from buffer
@@ -552,10 +557,23 @@ if (bDebug) System.err.println("RexxEngine.call(): jniRexxRunProgram() ...");
         Enumeration e=beanVector.elements();    // get elements for Enumeration
         while ( e.hasMoreElements() )
         {
-            rexxInterface.unregisterBean( (String) e.nextElement());
+            String el=(String) e.nextElement();
+
+if (bDebug) System.err.println(this+".call(o,n,a): unregistering: ["+el+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+
+            if (rexxInterface.bsfPrefixReturnValue==true)
+            {
+if (bDebug) System.err.println(this+".call(): unregistering: ["+el.substring(3)+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+                rexxInterface.unregisterBean( el.substring(3));  // remove "<O>" or "<S>"
+            }
+            else
+            {
+if (bDebug) System.err.println(this+".call(): unregistering: ["+el+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+                rexxInterface.unregisterBean( el);
+            }
         }
 
-if (bDebug) System.err.println("RexxEngine.call(Object object, String name, Object[] args) - end, returning ["+o+"]...");
+if (bDebug) System.err.println(this+" <=== <=== <=== RexxEngine.call(Object object, String name, Object[] args) - end, returning ["+o+"]...");
         return o;
     }
 
@@ -581,7 +599,7 @@ if (bDebug) System.err.println("RexxEngine.call(Object object, String name, Obje
     public Object call (RexxProxy proxy, Method methodObject, Object[] args)
                         throws BSFException
     {
-if (bDebug) System.err.println("RexxEngine.call(RexxProxy proxy, Method methodObject, Object[] args) - begin...");
+if (bDebug) System.err.println(this+" ===> ===> ===> RexxEngine.call(RexxProxy proxy, Method methodObject, Object[] args) - begin...");
 
         if (proxy==null)
         {
@@ -601,9 +619,9 @@ if (bDebug) System.err.println("RexxEngine.call(RexxProxy proxy, Method methodOb
         // rgf, 2012-02-04
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
-if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
             this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
-if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
+if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 
         String name=methodObject.getName();
@@ -689,7 +707,7 @@ if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii
         Object o=null;      // returned object
 
         // if (object instanceof RexxProxy)    // new 4.0 API behaviour
-if (bDebug) System.err.println("RexxEngine.call(): jniRexxSendMessageToRexxObject() ...");
+if (bDebug) System.err.println(this+" RexxEngine.call(p,m,a): jniRexxSendMessageToRexxObject() ...");
 // System.err.println("RE.call(...) v# 2, proxy=["+proxy+"], name=["+name+"]");
         o=rexxInterface.jniRexxSendMessageToRexxObject (
             proxy.rexxInterpreterID,   // RexxInstance instance ID
@@ -708,11 +726,33 @@ if (bDebug) System.err.println("RexxEngine.call(): jniRexxSendMessageToRexxObjec
         Enumeration e=beanVector.elements();    // get elements for Enumeration
         while ( e.hasMoreElements() )
         {
-            rexxInterface.unregisterBean( (String) e.nextElement());
-        }
-        rexxInterface.unregisterBean(methodObjectBean);
+            // rexxInterface.unregisterBean( (String) e.nextElement());
+            String el=(String) e.nextElement();
 
-if (bDebug) System.err.println("RexxEngine.call(RexxProxy proxy, Method methodObject, Object[] args) - end, returning ["+o+"]...");
+if (bDebug) System.err.println(this+".call(): unregistering: ["+el+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+
+            if (rexxInterface.bsfPrefixReturnValue==true)
+            {
+if (bDebug) System.err.println(this+".call(): unregistering: ["+el.substring(3)+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+                rexxInterface.unregisterBean( el.substring(3));  // remove "<O>" or "<S>"
+            }
+            else
+            {
+if (bDebug) System.err.println(this+".call(): unregistering: ["+el+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+                rexxInterface.unregisterBean( el);
+            }
+        }
+
+        if (rexxInterface.bsfPrefixReturnValue==true)
+        {
+            rexxInterface.unregisterBean(methodObjectBean.substring(3));    // remove "<O>" prefix
+        }
+        else
+        {
+            rexxInterface.unregisterBean(methodObjectBean);
+        }
+
+if (bDebug) System.err.println(this+" <=== <=== <=== RexxEngine.call(RexxProxy proxy, Method methodObject, Object[] args) - end, returning ["+o+"]...");
        return o;
     }
 
@@ -735,7 +775,7 @@ if (bDebug) System.err.println("RexxEngine.call(RexxProxy proxy, Method methodOb
     public Object call (RexxProxy proxy, Object javaObject, String methodName, String methodDescriptor, Object[] args)
                         throws BSFException
     {
-if (bDebug) System.err.println("RexxEngine.call() - begin...");
+if (bDebug) System.err.println(this+" ===> ===> ===> RexxEngine.call(RexxProxy proxy, Object javaObject, String methodName, String methodDescriptor, Object[] args) - begin...");
 
         if (proxy==null)
         {
@@ -760,9 +800,9 @@ if (bDebug) System.err.println("RexxEngine.call() - begin...");
         // rgf, 2012-02-04
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
-if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
             this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
-if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
+if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 
 
@@ -877,7 +917,7 @@ if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii
         Object o=null;      // returned object
 
         // if (object instanceof RexxProxy)    // new 4.0 API behaviour
-if (bDebug) System.err.println("RexxEngine.call(): jniRexxSendMessageToRexxObject() ...");
+if (bDebug) System.err.println(this+" RexxEngine.call(): jniRexxSendMessageToRexxObject() ...");
 // System.err.println("RE.call(...) v# 3, proxy=["+proxy+"], methodName=["+methodName+"]");
         o=rexxInterface.jniRexxSendMessageToRexxObject (
             proxy.rexxInterpreterID,   // RexxInstance instance ID
@@ -896,11 +936,33 @@ if (bDebug) System.err.println("RexxEngine.call(): jniRexxSendMessageToRexxObjec
         Enumeration e=beanVector.elements();    // get elements for Enumeration
         while ( e.hasMoreElements() )
         {
-            rexxInterface.unregisterBean( (String) e.nextElement());
-        }
-        rexxInterface.unregisterBean(javaObjectBean);
+            // rexxInterface.unregisterBean( (String) e.nextElement());
+            String el=(String) e.nextElement();
 
-if (bDebug) System.err.println("RexxEngine.call() - end, returning ["+o+"]...");
+if (bDebug) System.err.println(this+".call(p,j,m,m,a): unregistering: ["+el+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+
+            if (rexxInterface.bsfPrefixReturnValue==true)
+            {
+if (bDebug) System.err.println(this+".call(): unregistering: ["+el.substring(3)+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+                rexxInterface.unregisterBean( el.substring(3));  // remove "<O>" or "<S>"
+            }
+            else
+            {
+if (bDebug) System.err.println(this+".call(): unregistering: ["+el+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+                rexxInterface.unregisterBean( el);
+            }
+        }
+
+        if (rexxInterface.bsfPrefixReturnValue==true)
+        {
+            rexxInterface.unregisterBean(javaObjectBean.substring(3));  // remove "<O>" prefix
+        }
+        else
+        {
+            rexxInterface.unregisterBean(javaObjectBean);
+        }
+
+if (bDebug) System.err.println(this+" <=== <=== <=== RexxEngine.call(RexxProxy proxy, Object javaObject, String methodName, String methodDescriptor, Object[] args) - end, returning ["+o+"]...");
        return o;
     }
 
@@ -933,7 +995,7 @@ if (bDebug) System.err.println("RexxEngine.call() - end, returning ["+o+"]...");
                         throws BSFException
     {
 
-if (bDebug) System.err.println("RexxEngine.apply() - just entered (...)");
+if (bDebug) System.err.println(this+" ===> ===> ===> RexxEngine.apply() - just entered (...)");
 
         if (bTerminated==true)       // engine got terminated, cannot use it anymore
         {
@@ -943,9 +1005,9 @@ if (bDebug) System.err.println("RexxEngine.apply() - just entered (...)");
         // rgf, 2012-02-04
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
-if (bDebug) System.err.println("===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
+if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: before ===> rii_ID=["+rii_ID+"]");
             this.rii_ID=rexxInterface.createRexxInterpreterInstance(rexxConfig);
-if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
+if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 
     // ---rgf, 2006-02-24
@@ -1036,7 +1098,7 @@ if (bDebug) System.err.println("===> RexxEngine(), creating RII: after  ===> rii
 
         Object obj=null;
 
-if (bDebug) System.err.println("===> RexxEngine.apply() - before: rexxInterface.jniRexxRunProgram (...)");
+if (bDebug) System.err.println(this+" ===> RexxEngine.apply() - before: rexxInterface.jniRexxRunProgram (...)");
 
         obj=rexxInterface.jniRexxRunProgram(
                 rii_ID,                 // RexxInstance instance ID
@@ -1046,7 +1108,7 @@ if (bDebug) System.err.println("===> RexxEngine.apply() - before: rexxInterface.
                 objArg               // Object[]args                    // arguments
                 );
 
-if (bDebug) System.err.println("<=== RexxEngine.apply() - AFTER: rexxInterface.jniRexxRunProgram (...)");
+if (bDebug) System.err.println(this+" <=== RexxEngine.apply() - AFTER: rexxInterface.jniRexxRunProgram (...)");
 
         if (beanVector!=null)
         {
@@ -1055,11 +1117,25 @@ if (bDebug) System.err.println("<=== RexxEngine.apply() - AFTER: rexxInterface.j
 
             while ( e.hasMoreElements() )
             {
-                rexxInterface.unregisterBean( (String) e.nextElement());
+                // rexxInterface.unregisterBean( (String) e.nextElement());
+                String el=(String) e.nextElement();
+
+    if (bDebug) System.err.println(this+".apply(): unregistering: ["+el+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+
+                if (rexxInterface.bsfPrefixReturnValue==true)
+                {
+    if (bDebug) System.err.println(this+".apply(): unregistering: ["+el.substring(3)+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+                    rexxInterface.unregisterBean( el.substring(3));  // remove "<O>" or "<S>"
+                }
+                else
+                {
+    if (bDebug) System.err.println(this+".apply(): unregistering: ["+el+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+                    rexxInterface.unregisterBean( el);
+                }
             }
         }
 
-if (bDebug)  System.err.println("RexxEngine.apply() - before returning ["+obj+"] (...)");
+if (bDebug) System.err.println(this+" <=== <=== <=== RexxEngine.apply() - before returning ["+obj+"] (...)");
         return obj;
     }
 

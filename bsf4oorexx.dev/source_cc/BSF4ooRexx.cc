@@ -24,6 +24,18 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.5.2.  2015-07-21 - RgfProcessJArgs(): now expects a new (trailing) argument that determines, whether
+                         Java object references in the BSF registry should be increased when wrapped as a
+                         BSF reference object;
+
+                         reason: jniRexxRunProgram() and jniRexxSendMessageToRexxObject() in RexxEngine.java
+                         will register the Java objects before invoking these functions via RexxAndJava.java,
+                         and unregister them upon return; if a BSF reference object survives the invocation it
+                         will not represent the Java object thereafter anymore, hence the need to increase
+                         the BSF registry reference counter in these use cases
+
+    4.5.2.  2015-07-20 - BsfRexxProxy(): give more detailed condition information to ease debuggin
+
     4.5.2.  2015-06-08 - report new external Rexx function BsfContextVariables() in BsfQueryRegisteredFunctions()
 
     4.5.2.  2015-06-04 - 2015-06-07 -rgf: added external Rexx function BsfContextVariables() which
@@ -649,6 +661,12 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // #define RGF_JNI_RII     // rgf, 2012-12-29, debugging crash documented by TestConcurrencyCrash.java
 
+
+// #define DEBUG_REXX_PROXY        // 2009-06-10
+// #define DEBUG_BSF_FUNCTION          // 2009-06-21
+
+
+
 // #if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
 #if defined (WINDOWS) && defined (NIXI_NOXI) // comment before && to activate all of the flags below
     #define DEBUG
@@ -883,11 +901,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "452.20150608 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150721 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "452.20150608 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150721 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "452.20150608 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150721 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -2752,7 +2770,6 @@ inline jboolean RgfUnregisterBean(JNIEnv *env, jobject rajo, jobject beanName)
     jboolean bRes=env->CallBooleanMethod(rajo,
                                   defaultJVM->mid_RexxAndJava_unregisterBean,
                                   beanName);
-
     return bRes;
 }
 
@@ -3212,10 +3229,15 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
     // process args for Rexx, return RexxArray for further processing
     // "j_args" contains either Strings (values or beanNames) or RexxProxy objects
     // "bLoadBSF" will only be TRUE, if this routine is invoked from ...JniRexxSendMessageToRexxObject(...)
+    // 20150721, rgf: added "bIncr": if 1 then let BSF.WRAP run "rawRegister" to increase reference
+    //                counter in BSF registry in use cases where jniRexxRunProgram() or
+    //                jniRexxSendMessageToRexx() is employed (they register and unregister the Java objects;
+    //                BSF_PROXY will by default not register, but unregister)
 inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
                                                      jobjectArray j_args,           // args from Java
                                                      RexxDirectoryObject slotDir,    // slotDir with userData & methodName in original case
-                                                     int bLoadBSF       // if no .BSF class is found, should we load it?
+                                                     int bLoadBSF,      // if no .BSF class is found, should we load it?
+                                                     int bIncr          // let BSF.WRAP increase the BSF registry ref counter?
                                                      )
 {
     jint len          = (j_args==NULL ? 0 : env->GetArrayLength(j_args));
@@ -3457,8 +3479,14 @@ if (rtc->CheckCondition())
 
             if (bClzBsf)    // .local~bsf available, use its bsf.wrap class method
             {
+                    // try to wrap it up as a Rexx proxy;
                     // blocked; unguarded class method; probably rtc->SetGuardOff() would have worked as well
-                RexxStringObject rso=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", robj); // try to wrap it up as a Rexx proxy;
+                RexxStringObject rso=(RexxStringObject) rtc->SendMessage2(clzBSF,
+                                      "BSF.WRAP",
+                                      robj,
+                                      (bIncr==1 ? rtc->True() : rtc->False())
+                                     );
+
                 rtc->ReleaseLocalReference(robj);
                 robj=(RexxStringObject) rso;
                 // robj=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", robj); // try to wrap it up as a Rexx proxy
@@ -8094,33 +8122,54 @@ RexxRoutine2(RexxObjectPtr, BsfRexxProxy, RexxObjectPtr, proxy, OPTIONAL_CSTRING
     if (flag==0 || rexxObjectID==NULL || context->CheckCondition())    // not a RexxProxy object that points to a valid (cached) Rexx object!
     {
 
-        if (context->CheckCondition())  // clear a pending condition
+// get and supply condition message
+        logical_t bCondition= context->CheckCondition();
+        char *cond_msg=new char[2048];
+
+        // if (context->CheckCondition())  // clear a pending condition
+        if (bCondition)  // clear a pending condition
         {
 
-#if defined (DEBUG_REXX_PROXY)
-if (context->CheckCondition())
-{
-   RexxDirectoryObject condObj=context->GetConditionInfo();
-   char * msg=RgfCreateRexxlikeErrorInfo (context->threadContext, condObj, "/routine/BsfRexxProxy(), error XYZ");
-   fprintf(stderr, "... BsfRexxProxy(...): riid=[%p], condition()=[%s].\n", context->threadContext->instance, msg);fflush(stderr);
-   RexxFreeMemory(msg);
+// #if defined (DEBUG_REXX_PROXY)
+// if (context->CheckCondition())
+//        {
+           RexxDirectoryObject condObj=context->GetConditionInfo();
+           char * msg=RgfCreateRexxlikeErrorInfo (context->threadContext, condObj, "");
+        //   fprintf(stderr, "... BsfRexxProxy(...): riid=[%p], condition()=[%s].\n", context->threadContext->instance, msg);fflush(stderr);
+           SNPRINTF( cond_msg, 2048, " [underlying Rexx condition: '%.1536s']", msg);
 
-}
-#endif
+           RexxFreeMemory(msg);
+
+//        }
+// #endif
 
             context->ClearCondition();
         }
 
         // context->InvalidRoutine();
         // char msg[2048]="";
-        char *msg=new char[2048];
-        // sprintf(msg, "%.16s/routine/BsfRexxProxy(), error 1: argument 1 must be RexxProxy object, received '%.1024s' of type '%.512s'.",
-        SNPRINTF( msg, 2048, "%.16s/routine/BsfRexxProxy(), error 1: argument 1 must be RexxProxy object, received '%.1536s' of type '%s'.",
-                     DLLNAME,
-                     context->ObjectToStringValue(proxy),
-                     context->ObjectToStringValue( context->SendMessage0(proxy, "CLASS") )
-                     );
+        char *msg=new char[4096];
+        if (flag==0 || bCondition==TRUE)
+        {
+            // sprintf(msg, "%.16s/routine/BsfRexxProxy(), error 1: argument 1 must be RexxProxy object, received '%.1024s' of type '%.512s'.",
+            SNPRINTF( msg, 4096, "%.16s/routine/BsfRexxProxy(), error 1: argument 1 must be RexxProxy object, received '%.1536s' of type '%s' '%.2048s'",
+                         DLLNAME,
+                         context->ObjectToStringValue(proxy),
+                         context->ObjectToStringValue( context->SendMessage0(proxy, "CLASS") ),
+                         cond_msg
+                         );
+        }
+        else    // rexxObjectId == NULL
+        {
+            SNPRINTF( msg, 4096, "%.16s/routine/BsfRexxProxy(), error 2: argument 1 does not embed a Rexx object (returns \"NULL\"), supplied RexxProxy object: '%.1536s' of type '%s' ",
+                         DLLNAME,
+                         context->ObjectToStringValue(proxy),
+                         context->ObjectToStringValue( context->SendMessage0(proxy, "CLASS") )
+                         );
+        }
+
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+        delete [] cond_msg;
         delete [] msg;
         return context->Nil();
     }
@@ -8150,7 +8199,7 @@ if (context->CheckCondition())
         // char msg[4096]="";
         char *msg=new char[4096];
         // sprintf(msg, "%.16s/routine/BsfRexxProxy(), error 2: illegal argument 2 value '%.3900s' (valid: 'ooRexxObject', 'userData', 'refCount').", DLLNAME, arg2val);
-        SNPRINTF( msg, 4096, "%.16s/routine/BsfRexxProxy(), error 2: illegal argument 2 value '%.3900s' (valid: 'ooRexxObject', 'userData', 'refCount').", DLLNAME, arg2val);
+        SNPRINTF( msg, 4096, "%.16s/routine/BsfRexxProxy(), error 3: illegal argument 2 value '%.3900s' (valid: 'ooRexxObject', 'userData', 'refCount').", DLLNAME, arg2val);
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
         delete [] msg;
         return context->Nil();
@@ -11931,8 +11980,9 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
     char *c_programData=NULL;
 
-        // process Java argument array, get matching RexxArrayObject
-    RexxArrayObject ra=RgfProcessJArgs(env, rtc, j_args, NULL, FALSE);
+        // process Java argument array, get matching RexxArrayObject;
+        // 20150721, have BSF registry reference counter increased
+    RexxArrayObject ra=RgfProcessJArgs(env, rtc, j_args, NULL, FALSE, 1);
 
     // invocationType:
     //   1: execute Rexx program from file, use the 4.0 API <code>CallProgram</code>
@@ -12471,7 +12521,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 // fprintf(stderr, "...jniRexxSendMessageToRexxObject(): ARGS-branch...\n"); fflush(stderr);
 
                 // process Java argument array, get matching RexxArrayObject
-            RexxArrayObject ra=RgfProcessJArgs(env, rtc, j_args, slotDir, TRUE);
+                // 20150721, have BSF registry reference counter increased
+            RexxArrayObject ra=RgfProcessJArgs(env, rtc, j_args, slotDir, TRUE, 1);
         #if defined (RGF_TRUE) /// <============
             // if (env->ExceptionCheck())
             fprintf(stderr, "\\\\\\\\ 09 - tid=[%lu], env->ExceptionCheck()=[%d] //// \n", (unsigned long) thisTid, env->ExceptionCheck()); fflush(stderr);
@@ -14861,7 +14912,8 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseCond
     RexxArrayObject rao_additional=RgfProcessJArgs (env, context->threadContext,
                                                      j_additional, // jobjectArray
                                                      NULL,         // no slotDir
-                                                     FALSE            // if FALSE, do not load .BSF, if not found
+                                                     FALSE,           // if FALSE, do not load .BSF, if not found
+                                                     0             // 20150721: do not increase BSF registry reference counter
                                                      );
 
     RexxObjectPtr rop_result = ( j_result == NULL ? NULL :
@@ -14901,7 +14953,8 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseExce
     RexxArrayObject rao_substitutions=RgfProcessJArgs (env, context->threadContext,
                                                      j_substitutions, // jobjectArray
                                                      NULL,            // no slotDir
-                                                     FALSE            // if FALSE, do not load .BSF, if not found
+                                                     FALSE,           // if FALSE, do not load .BSF, if not found
+                                                     0                // 20150721: do not increase BSF registry reference counter
                                                      );
 
     context->RaiseException((size_t)j_definedErrorNumber,rao_substitutions);

@@ -36,7 +36,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.2.1, 2015-05-09
+  * @version 4.5.2, 2015-06-29
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -326,7 +326,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "421.20150509";
+    static final public String version = "452.20150629";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -2230,10 +2230,10 @@ private static final String STRING_ENV_SET                        =  "setEnv";  
 
         {
             final boolean bDebug=    // if true, show debug infos
-                  false;
+                  true; // false;
             if (bDebug)
             {
-                System.err.println(this+".javaCallBSF(...)"
+                System.err.print(this+".javaCallBSF(...)"
                                    +", mgr=["+mgr+"]"
                                    +                 ", args[0]=["+args[0]+"]"
                                    +(args.length>1 ? ", args[1]=["+args[1]+"]" : "")
@@ -2243,7 +2243,7 @@ private static final String STRING_ENV_SET                        =  "setEnv";  
                                    +(args.length>5 ? ", args[5]=["+args[5]+"]" : "")
                                    +(args.length>6 ? ", args[6]=["+args[6]+"]" : "")
                                    );
-                System.err.print("\n---> RexxAndJava.javaCallBSF(), args[0]=["+args[0]+"], nr args=["+args.length+"]: ");
+                System.err.print("\n\t---> RexxAndJava.javaCallBSF(), args[0]=["+args[0]+"], nr args=["+args.length+"]: ");
                 for (int i=1; i<args.length;i++)
                 {
                     System.err.print(" "+i+"=["+args[i]+"]");
@@ -3565,6 +3565,7 @@ if (bDebug) // ---rgf, 2006-07-29
                                                     )
                                                   )
                                               {
+// System.err.println("RAJ: TSK # 1");
                                                   // register result as a bean and return it
                                                    String beanName = makeBeanName(result);
                                                    return registerBean(beanName, result);
@@ -3748,12 +3749,17 @@ System.err.println("\t\t\ti="+i+", pCl=["+pCl+"], fCl=["+fCl+"]");
                               {
                                   try
                                   {
+
                                       String tmpArg[]={
-                                          STRING_GET_FIELD_VALUE ,
+                                          choice==INVOKE_JSO ?
+                                                  STRING_GET_FIELD_VALUE_JSO :
+                                                  STRING_GET_FIELD_VALUE ,
                                           args[1],        // beanName
                                           args[2]         // methName ==> fieldName ?
                                           } ;
 if (bDebug) System.err.println("'invoke': trying '"+STRING_GET_FIELD_VALUE+"'...");
+
+// System.err.println("RAJ: INVOKE_JSO? args[0]=["+args[0]+"], but not found, now trying to find field using ["+tmpArg[0]+","+tmpArg[1]+","+tmpArg[2]);
 
                                       return javaCallBSF( tmpArg ); // rgf, 2008-06-23
                                   }
@@ -4644,6 +4650,10 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
                        // register it with our reference count mechanism and return it
 
                        Object oJava=convFromRexx(args[2]);  // get Java null or Java object from BSF registry, String else
+
+System.err.println("---RexxAndJava, subfunction: args[0]=["+args[0]+"]: args[1]=["+args[1]+"]"+
+                   ", args[2]=["+args[2]+"]<==>oJava=["+oJava+"]/oJava.getClass()=["+oJava.getClass()+"]");
+
                        mgr.registerBean(args[1], oJava);    // register (replace) in BSF registry
 
                        return registerBean(args[1], oJava); // increase ref counter, will always return "<O>" prefixed beanName
@@ -4977,7 +4987,7 @@ if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr
                    * - beanName: the bean to unregister
                    *********************************************************/
                       final boolean bDebug=    // if true, show debug infos
-                            false;
+                            true; // false;
 
                       if(args.length!=2)
                       {
@@ -5799,6 +5809,7 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
                 o=mgr.lookupBean(beanName);
             }
         }
+System.err.println(this+": lookupBean("+beanName+"): o=["+o+"], o.getClass()=["+o.getClass()+"]");
         return o;
     }
 
@@ -5816,6 +5827,8 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
             // return null;
             return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
         }
+// rgf, 201507
+System.err.println(this+": lookupBean4JNI("+beanName+") -> mgr.lookupBean(beanName)=["+mgr.lookupBean(beanName)+"]");
         return mgr.lookupBean(beanName);
     }
 
@@ -5833,6 +5846,8 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
             // return null;
             return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
         }
+// rgf, 201507
+System.err.println(this+":  registerBean4JNI("+object+"], object.getClass()=["+(object==null? null : object.getClass())+"]");
         return registerBean(makeBeanName(object), object);
     }
 
@@ -5863,6 +5878,7 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
         Integer i1 = (Integer) orxReferences.get( beanName );   // is object already registered?
         if (i1 != null)                             // increase its reference counter
         {
+// System.err.println(this+": registerBean(beanName=["+beanName+"]) already exists, has currently ["+i1.intValue()+"] refCount(s)");
            refCount = i1.intValue()+1;
         }
         orxReferences.put(beanName, new Integer(refCount)); // remember refCount
@@ -5871,6 +5887,8 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
         {
             mgr.registerBean( beanName, object ); // register the object under this new beanName
         }
+
+System.err.println(this+": registerBean(beanName=["+beanName+"], object=["+object+"] / new refCount: "+refCount);
 
         return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+beanName;   // if so, return beanName
     }
@@ -5887,6 +5905,15 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
       */
     protected boolean unregisterBean(String beanName )
     {
+
+        final boolean bDebug = // true;
+                               false;
+
+// if (bDebug==true)
+{
+    System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"): bTerminated=["+bTerminated+"] ...");
+}
+
         if (bTerminated==true)
         {
             return false;
@@ -5895,9 +5922,17 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
         // take care of ref-counters
         Integer i1 = (Integer) orxReferences.get(beanName);    // get refCount-value
 
-        final boolean bDebug = // true;
-                               false;
-if (bDebug) System.err.print("===> RexxAndJava.unregisterBean("+beanName+")");
+if (bDebug==true)
+{
+    if (i1==null)
+    {
+        System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"): BEAN NOT REGISTERED! BEAN NOT REGISTERED! BEAN NOT REGISTERED! BEAN NOT REGISTERED!");
+    }
+    else
+    {
+        System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"), currently ["+i1+"] refCount(s)");
+    }
+}
 
         if (i1 != null)                                     // decrease its reference counter
         {
@@ -5906,18 +5941,32 @@ if (bDebug) System.err.print("===> RexxAndJava.unregisterBean("+beanName+")");
            if (refCount > 0)                // still references on the (Object) Rexx side
            {
                orxReferences.put(beanName, new Integer(refCount));
-if (bDebug) System.err.println("===> reducing reference count to: ["+refCount+"]");
+if (bDebug) System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] reducing refCount to: ["+refCount+"]");
            }
            else                             // no more references on the (Object) Rexx side
            {                                // safe to remove Java object
                orxReferences.remove(beanName);
                mgr.unregisterBean(beanName);
-if (bDebug) System.err.println("===> reducing reference count to: ["+refCount+"], REMOVED from REGISTRY! <== <==");
+// if (bDebug) System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] refCount: ["+refCount+"], REMOVED from REGISTRY! <==\n\t<== mgr.lookupBean("+beanName+")=["+mgr.lookupBean(beanName)+"], reference count orxReferences.get("+beanName+")=["+orxReferences.get(beanName)+"]");
+System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] refCount: ["+refCount+"], REMOVED from BSF registry! <==");
            }
            return true;
         }
 
-if (bDebug) System.err.println("===> does NOT exist in registry!");
+if (bDebug) System.err.println(this+":   ===> RexxAndJava.unregisterBean: ["+beanName+"]: PROBLEM! PROBLEM! PROBLEM! does NOT exist in refcounter Hashtable!");
+
+if (bDebug && beanName.startsWith("<O>"))
+{
+    System.err.println(this+":   ===> RexxAndJava.unregisterBean: about to throw a RuntimeException (illegal beanName) .....");
+    StackTraceElement st[]=Thread.currentThread().getStackTrace();
+    for (int i=0; i<st.length; i++)
+    {
+        System.err.println((i+1)+" ---> ["+st[i]+"] <---");
+    }
+
+    throw new RuntimeException("beanName=["+beanName+"] illegal, where does it come from ??");
+}
+
         return false;
     }
 

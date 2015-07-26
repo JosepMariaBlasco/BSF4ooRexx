@@ -109,7 +109,7 @@ import org.apache.bsf.BSFException;
  * to explicitly invoke masked methods in the super (extended) class.
  *
 * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2009, 2014 Rony G. Flatscher
+ *    Copyright (C) 2009-2015 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -130,6 +130,9 @@ import org.apache.bsf.BSFException;
  */
 
  /*
+    2015-06-27, rgf: - adjust behaviour to match documentation when array of method names is given: in this
+                       case also all concrete methods of that name should be proxied
+
     2014-08-30, rgf: - subclasses are allowed to access protected methods in superclasses,
                        adjust for this
 
@@ -342,7 +345,7 @@ if (bDebugClassVisitor) System.out.println("--> ---> RexxExtendClass(cv, newClas
      * extended with the string "_forwardToSuper", which allows one to reach those concrete methods
      * from ooRexx. If so, then the ooRexx handler needs to fetch the entry
      * <code>&quot;JAVAOBJECT&quot;</code> from the <code>slotDir</code> argument
-     * (an ooRexx directory), which gets added as the last argument for ooRexx when callinb back
+     * (an ooRexx directory), which gets added as the last argument for ooRexx when calling back
      *  from Java to ooRexx.
      *
      * @param cv the class visitor to which this adapter must delegate calls.
@@ -353,7 +356,7 @@ if (bDebugClassVisitor) System.out.println("--> ---> RexxExtendClass(cv, newClas
      * @param methodNamesToAdd a String array containing (caseless) method names for
      *        which proxy methods should be created; if callbacks to the RexxProxy are desired
      *        from constructors, then they need to be added to this String array under the name
-     *        &quot;<init>&quot; (the Java internal name of constructors).
+     *        &quot;<init>&quot; (the Java internal name for constructors).
      *
      *        <p>If all methods should be proxied without explicitly denoting them, then supply
      *           a String array of size <code>0</code>.
@@ -374,6 +377,7 @@ if (bDebugClassVisitor) System.out.println("--> ---> RexxExtendClass(cv, newClas
 
         if (methodNamesToAdd!=null) // (methodNamesToAdd==null || methodNamesToAdd.length==0)
         {
+
             if (methodNamesToAdd.length==0)    // create proxies for all methods!
             {
                 tranData.bProcessAllMethods=true;   // create proxies for all methods!
@@ -381,12 +385,17 @@ if (bDebugClassVisitor) System.out.println("--> ---> RexxExtendClass(cv, newClas
 
             else    // add methods to proxy to appropriate HashSet, turn into uppercase
             {
+                tranData.bProcessConcreteMethods=true;  // also process concrete methods from the supplied list
                 for (int i=0; i<methodNamesToAdd.length; i++)
                 {
                     tranData.simpleMethodNamesToAdd.add(methodNamesToAdd[i].toUpperCase());
                 }
             }
         }
+if (bDebugClassVisitor) System.out.println("--> ---> RexxExtendClass(cv, newClassName, cClassVersion, methodNamesToAdd: tranData.bProcessAllMethods="+tranData.bProcessAllMethods+
+                                                     ", tranData.bProcessConcreteMethods="+tranData.bProcessConcreteMethods);
+
+
     }
 
 
@@ -429,7 +438,8 @@ if (bDebugClassVisitor && interfaces!=null)
 
 
         // if only abstract methods to proxy, then make sure class is marked as abstract
-        if (  !tranData.bProcessAllMethods &&
+        if (  tranData.bProcessConcreteMethods==false && // 20150627: rgf, set, if String of array to proxy was supplied
+              !tranData.bProcessAllMethods &&
               (tranData.simpleMethodNamesToAdd.size()==0) &&
              ((access & ACC_ABSTRACT)==0)
             )
@@ -590,13 +600,15 @@ if (bDebugClassVisitor) System.err.println("--> "+"visitMethod(access="+access+"
 if (bDebugMethodVisitor) System.err.println("\t---> desc=["+getMethodAccessAsString(access)+"]");
 
             // don't process concrete methods, except for constructors
-        if ( tranData.bProcessAllMethods==false &&
+
+        if ( tranData.bProcessConcreteMethods==false && // 20150627: rgf, set, if String of array to proxy was supplied
+             tranData.bProcessAllMethods==false      &&
              (access & ACC_ABSTRACT)==0         &&
              !name.equals("<init>")
             )
         {
 
-if (bDebugMethodVisitor) System.err.println("\tNOT PROCESSING! (not abstract)");
+if (bDebugMethodVisitor) System.err.println("\tNOT PROCESSING! (not abstract, nor a constructor, nor processing all supplied methods)");
             return null;
         }
 
@@ -2612,6 +2624,8 @@ class TransformationData
 
     boolean  hasConstructorDefined=false;   // indicates whether a constructor got created
     boolean  bProcessAllMethods=false;  // indicates whether proxy methods should be created for all methods
+    boolean  bProcessConcreteMethods=false; // by default process abstract methods only, unless a list of methods to proxy is supplied
+
     boolean  bCallbackFromConstructor=false;    // determines whether RexxProxy should be called from constructor too
 
     /* desc related information */

@@ -13,7 +13,12 @@
 
    date:
 
-
+         2015-07-21, rgf: - bsf.wrap: honor new argument "bIncr", if set to .true, then the reference counter
+                            in the BSF registry is increased (needed, if Java object is an argument
+                            to RexxEngine.call() [native code: ...jniRexxRunProgram(),
+                            ...jniRexxSendMessageToRexxObject(), both will supply .true as a new second arg]
+                          - methods and routines "*ArrayOf": changed to automatically create RexxProxy objects
+                            for Rexx objects that are neither .String, .BSF nor .nil
 
          2015-07-07, rgf: - routine "bsf.ScriptContext2rexx": fix bug uncovered by new test cases
 
@@ -414,7 +419,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     4.52 (20150707)
+   version:     4.52 (20150721)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -499,7 +504,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="452.20150707" -- set version (date distribution got created)
+   .bsf4rexx~version="452.20150721" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -669,7 +674,6 @@ syntax:
       jClassName=arr[i]
      bsf.dir~setEntry(jClassName, .bsf~bsf.import(jClassName)) -- will also place in .local
   end
-
 
   do key over .list~of("line.separator", "file.separator", "path.separator", "file.encoding")
      bsf.dir~setEntry(key,bsf.dir~java.lang.System~getProperty(key))
@@ -952,8 +956,12 @@ any:
    --                  object identifier "<O>", then that string will be prefixed with the
    --                  string identifier "<S>", which gets processed by bsf.wrap() as
    --                  expected)
+   -- 2015-07-21, rgf: honor new argument "bIncr", if set to .true, then the reference counter
+   --                  in the BSF registry is increased (needed, if Java object is an argument
+   --                  to RexxEngine.call() [native code: ...jniRexxRunProgram(),
+   --                  ...jniRexxSendMessageToRexxObject()]
 ::ROUTINE bsf.wrap public
-   parse arg indicator +3 data
+   parse arg indicator +3 data, bIncr
 
 -- .error~say( "bsf.wrap: arg(1)="pp(arg(1)) "indicator="pp(indicator) "data="pp(data) )
 
@@ -971,9 +979,15 @@ any:
 
       dimension = verify(data, "[")-1  -- is it a Java array?
       if dimension>0 then   -- rgf, 2003-02-09, no upper limit anymore
+      do
+         -- TODO:
          return .bsf_array_reference~new(data, dimension) -- return a BSF_ARRAY proxy
+      end
 
-      return .bsf_reference~new(data)  -- return a BSF_REFERENCE
+      if bIncr<>"" then
+         return .bsf_reference~new(data,bIncr)  -- return a BSF_REFERENCE, increase reference counter
+      else
+         return .bsf_reference~new(data)  -- return a BSF_REFERENCE
    end
 
 -- .error~say( "in bsf.wrap(): no prefix:" pp(arg(1))) "(returning as is)"
@@ -1434,6 +1448,8 @@ any:
         -- assign beanName to object, use the Java supplied name
   self~ObjectName=beanName
 
+-- .stderr~say( "*** BSF.CLS::BSF::INIT:" pp(self~objectname)"@"pp(self~identityHash~d2x)  "TID:" pp(BsfGetTid()))
+
   return self
 
 any:
@@ -1450,10 +1466,10 @@ any:
    then allows the JVM to garbage collect that Java object as well
    ------------------------------------------------------------- */
 ::METHOD uninit
--- .error~say( "*** BSF.CLS::BSF::UNINIT:" pp(self~objectname)"@"pp(self~identityHash) )
   signal on syntax name any         -- trap any exceptions
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
+-- .stderr~say( "*** BSF.CLS::BSF::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x)  "TID:" pp(BsfGetTid()))
   return BSF("unregisterBean", self~objectname)~substr(4)
 
 any:
@@ -2170,7 +2186,9 @@ any:
 
 /* Create single dimensioned Java array, taking the first argument as componentType
    (either a Java class object or as a fully qualified Java class name). All (optional)
-   following arguments are being taking
+   following arguments are being taking as is.
+   20150721: make sure we wrap non-String and non-BSF Rexx objects as RexxProxy objects,
+             reliefing the programmers to do so
 */
 ::METHOD     bsf.createArrayOf              class  -- rgf, 2009-07-30
   signal on syntax name any
@@ -2178,23 +2196,15 @@ any:
 
   tmp="return bsf.wrap(bsf('createArrayOf'"
 
-/* 2010-05-08, rgf
-  if arg()>0 then
-  do
-     co=arg(1)      -- default to first argument
-     if co~hasmethod("BSF.FULLJAVACLASSNAME") then
-     do
-        co=.bsf~bsf.getJavaClassObjectProxy(co~bsf.FullJavaClassName)
-     end
-     tmp=tmp || ", '"co"'"
-  end
-
-  do i=2 to arg()
-     tmp=tmp ", """ || arg(i) || """"
-  end
-*/
   do i=1 to arg()
-     tmp=tmp ", """ || arg(i) || """"
+     a=arg(i)
+     if i>1, \a~isA(.string), \a~isA(.bsf), a<>.nil then
+     do
+        tmp=tmp ", """ || BsfCreateRexxProxy(a) || """"
+-- .stderr~say("method bsf.createArrayOf(): BINGO, BINGO, BINGO: arg("i")="pp(a) "clz="pp(a~class) "wrapped as a RexxProxy!")
+     end
+     else
+        tmp=tmp ", """ || a || """"
   end
   tmp=tmp"))"
 
@@ -2253,23 +2263,21 @@ any:
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
   tmp="return bsf.wrap(bsf('createJavaArrayOf'"
-/* 2010-05-08, rgf
-  if arg()>0 then
-  do
-     co=arg(1)      -- default to first argument
-     if co~hasmethod("BSF.FULLJAVACLASSNAME") then
-     do
-        co=.bsf~bsf.getJavaClassObjectProxy(co~bsf.FullJavaClassName)
-     end
-     tmp=tmp || ", '"co"'"
-  end
-
-  do i=2 to arg()
+/*
+  do i=1 to arg()
      tmp=tmp ", """ || arg(i) || """"
   end
 */
+
   do i=1 to arg()
-     tmp=tmp ", """ || arg(i) || """"
+     a=arg(i)
+     if i>1, \a~isA(.string), \a~isA(.bsf), a<>.nil then
+     do
+        tmp=tmp ", """ || BsfCreateRexxProxy(a) || """"
+-- .stderr~say("method bsf.createJavaArrayOf(): BINGO, BINGO, BINGO: arg("i")="pp(a) "clz="pp(a~class) "wrapped as a RexxProxy!")
+     end
+     else
+        tmp=tmp ", """ || a || """"
   end
   tmp=tmp"))"
 
@@ -2338,9 +2346,15 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* This class method will be used by native code (BSF4ooRexx.cc).
+*/
+   -- 2015-07-21, rgf: honor new argument "bIncr", if set to .true, then the reference counter
+   --                  in the BSF registry is increased (needed, if Java object is an argument
+   --                  to RexxEngine.call() [native code: ...jniRexxRunProgram(),
+   --                  ...jniRexxSendMessageToRexxObject(), both will supply .true as a new second arg]
 ::METHOD    bsf.wrap          unguarded class    -- 20090515: make routine BSF.WRAP() indirectly availabe (possible 4.0 API Problem)
-  use arg obj
-  return bsf.wrap(obj)
+  use arg obj, bIncr=.false
+  return bsf.wrap(obj,bIncr)
 
 
 
@@ -2362,11 +2376,30 @@ any:
    to the Java object as well. If it goes out of scope, it will be garbage
    collected by Object Rexx which in turn deregisters the object from the
    Java side, decrementing the reference counter there
+
+   - bsf.wrap: honor new argument "bIncr", if set to .true, then the reference counter
+     in the BSF registry is increased (needed, if Java object is an argument
+     to RexxEngine.call() [native code: ...jniRexxRunProgram(),
+     ...jniRexxSendMessageToRexxObject(), both will supply .true as a new second arg]
    ------------------------------------------------------------- */
 ::METHOD init
-   use arg beanName
+   use arg beanName, bIncr=.false   -- should be .false by default, only when Java-args get proxied should ".true" be given
    self~ObjectName=beanName
--- .error~say( "BSF.CLS: BSF_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash) )
+-- .stderr~say( "BSF.CLS: BSF_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x)  "bIncr="pp(bIncr) "TID:" pp(BsfGetTid()) )
+
+
+   -- rgf, 2015-07-20: increment BSF registry counter for this Java object, such that running UNINIT does not remove Java object from BSF registry
+   --                  (only done, if RexxEngine.call() or .apply() was used)
+  if bIncr=.true then
+      call bsf 'rawRegisterBean', beanName, beanName   -- increment BSF registry reference counter
+
+
+-- rgf, 2015-07-17: just for debug statements, remove after testing JSR223 related problems
+::METHOD uninit
+-- .stderr~say( "BSF.CLS: BSF_REFERENCE::UNINIT():" pp(self~objectName)"@"pp(self~identityHash~d2x) "- about: self~uninit:super"  "TID:" pp(BsfGetTid()))
+self~uninit:super
+
+
 
 /*
 ::method copy
@@ -2397,12 +2430,13 @@ forward class (super)
 ::METHOD init
    use arg beanName
    self~ObjectName=beanName
+-- .stderr~say( "*** BSF.CLS::BSF_PROXY::INIT:" pp(beanname)"@"pp(self~identityHash~d2x) "TID:" pp(BsfGetTid()))
 
    -- make sure that BSF's UNINIT method does not run (it'll deregister
    -- the bean from the BSF registry
 ::METHOD uninit
 
--- .error~say( "*** BSF.CLS::BSF_PROXY::UNINIT: NOP !" pp(self~objectname)"@"pp(self~identityHash))
+-- .stderr~say( "*** BSF.CLS::BSF_PROXY::UNINIT: NOP !" pp(self~objectname)"@"pp(self~identityHash~d2x) "TID:" pp(BsfGetTid()))
 
   NOP
 
@@ -2422,12 +2456,17 @@ forward class (super)
    to the Java object as well. If it goes out of scope, it will be garbage
    collected by Object Rexx which in turn unregisters the object from the
    Java side, decrementing the reference counter there
+
+   - bsf.wrap: honor new argument "bIncr", if set to .true, then the reference counter
+     in the BSF registry is increased (needed, if Java object is an argument
+     to RexxEngine.call() [native code: ...jniRexxRunProgram(),
+     ...jniRexxSendMessageToRexxObject(), both will supply .true as a new second arg]
    ------------------------------------------------------------- */
 ::METHOD init
   expose items dimension indexArray   -- set access to object variable
-  use arg beanName, dimension  -- assign "dimension" directly to exposed object variable
+  use arg beanName, dimension, bIncr=.false  -- assign "dimension" directly to exposed object variable
 
--- .error~say( "BSF.CLS: BSF_ARRAY_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash) )
+-- .stderr~say( "BSF.CLS: BSF_ARRAY_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x) "bIncr="pp(bIncr)" - begin"  "TID:" pp(BsfGetTid()))
 
   self~ObjectName=beanName
   items=-1                     -- set and indicate, that not calculated as of yet
@@ -2444,6 +2483,12 @@ forward class (super)
                                  "newInstance", "o",    -
                                  .bsf4rexx~int, "int", dimension)~substr(4)
   indexArray=.bsf_array_proxy~new(indexArray, 1, dimension)
+
+   -- rgf, 2015-07-21: increment BSF registry counter for this Java object, such that running UNINIT does not remove Java object from BSF registry
+  if bIncr=.true then
+     call bsf 'rawRegisterBean', beanName, beanName   -- increment BSF registry reference counter
+
+-- .stderr~say( "BSF.CLS: BSF_ARRAY_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x) "TID:" pp(BsfGetTid()) "- done, returning.")
   return
 
 any:
@@ -2457,7 +2502,9 @@ any:
 
 ::method uninit      -- rgf, 20120604: make sure we also unregister the index array to avoid a memory leak
   expose indexArray
+-- .stderr~say( "*** BSF.CLS::BSF_ARRAY_REFERENCE::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x)  "indexArray="pp(indexArray) "indexArray~class="pp(indexArray~class)  "TID:" pp(BsfGetTid()))
   call bsf 'unregisterBean', indexArray
+-- .stderr~say( "<-- BSF.CLS::BSF_ARRAY_REFERENCE::UNINIT:" pp(self~objectname) 'call bsf, ''unregisterBean'', indexArray='pp(indexArray)", now doing 'self~uninit:super'..."  "TID:" pp(BsfGetTid()))
   self~uninit:super  -- now let superclass clean up
 
 
@@ -2745,11 +2792,14 @@ any:
   self~dimension =dimension
   self~items     =items
 
+-- .stderr~say( "*** BSF.CLS::BSF_ARRAY_PROXY::INIT:" pp(beanname)"@"pp(self~identityHash~d2x) "TID:" pp(BsfGetTid()))
+
+
 ::method dimension attribute
 ::method items     attribute
 
 ::METHOD uninit            -- intercept destructor message, don't remove BSF registry entry
--- .error~say( "*** BSF.CLS::BSF_ARRAY_PROXY::UNINIT: NOP !" pp(self~objectname)"@"pp(self~identityHash) )
+-- .stderr~say( "*** BSF.CLS::BSF_ARRAY_PROXY::UNINIT: NOP !" pp(self~objectname)"@"pp(self~identityHash)  "TID:" pp(BsfGetTid()))
 
   NOP
 
@@ -2794,6 +2844,8 @@ syntax:
 
 ::routine bsf.unregisterBean                 public
   parse arg beanName
+-- .stderr~say( "*** BSF.CLS::ROUTINE::BSF.UNREGISTERBEAN():" pp(bean~objectname)"@"pp(bean~identityHash~d2x)  "TID:" pp(BsfGetTid()))
+
   return bsf("unregisterBean", beanName)~substr(4)
 
 ::routine bsf.pollEventText                  public
@@ -2913,24 +2965,23 @@ any:
 
   tmp="return bsf.wrap(bsf('createArrayOf'"
 
-/* 2010-05-08, rgf
-  if arg()>0 then
-  do
-     co=arg(1)      -- default to first argument
-     if co~hasmethod("BSF.FULLJAVACLASSNAME") then
-     do
-        co=.bsf~bsf.getJavaClassObjectProxy(co~bsf.FullJavaClassName)
-     end
-     tmp=tmp || ", '"co"'"
-  end
-
-  do i=2 to arg()
-     tmp=tmp ", """ || arg(i) || """"
-  end
-*/
+/*
   do i=1 to arg()
      tmp=tmp ", """ || arg(i) || """"
   end
+*/
+
+  do i=1 to arg()
+     a=arg(i)
+     if i>1, \a~isA(.string), \a~isA(.bsf), a<>.nil then
+     do
+        tmp=tmp ", """ || BsfCreateRexxProxy(a) || """"
+-- .stderr~say("routine bsf.createArrayOf(): BINGO, BINGO, BINGO: arg("i")="pp(a) "clz="pp(a~class) "wrapped as a RexxProxy!")
+     end
+     else
+        tmp=tmp ", """ || a || """"
+  end
+
   tmp=tmp"))"
 
   interpret tmp     -- now carry out the Rexx statement
@@ -2988,23 +3039,21 @@ any:
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
   tmp="return bsf.wrap(bsf('createJavaArrayOf'"
-/* 2010-05-08, rgf
-  if arg()>0 then
-  do
-     co=arg(1)      -- default to first argument
-     if co~hasmethod("BSF.FULLJAVACLASSNAME") then
-     do
-        co=.bsf~bsf.getJavaClassObjectProxy(co~bsf.FullJavaClassName)
-     end
-     tmp=tmp || ", '"co"'"
-  end
-
-  do i=2 to arg()
+/*
+  do i=1 to arg()
      tmp=tmp ", """ || arg(i) || """"
   end
 */
+
   do i=1 to arg()
-     tmp=tmp ", """ || arg(i) || """"
+     a=arg(i)
+     if i>1, \a~isA(.string), \a~isA(.bsf), a<>.nil then
+     do
+        tmp=tmp ", """ || BsfCreateRexxProxy(a) || """"
+-- .stderr~say("routine bsf.createJavaArrayOf(): BINGO, BINGO, BINGO: arg("i")="pp(a) "clz="pp(a~class) "wrapped as a RexxProxy!")
+     end
+     else
+        tmp=tmp ", """ || a || """"
   end
   tmp=tmp"))"
 

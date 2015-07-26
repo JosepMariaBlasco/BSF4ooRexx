@@ -40,6 +40,8 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+        - 2015-07-21, ---rgf: no need to do a BsfCreateRexxProxy(), this will now be done
+                              by bsf.createArrayOf() (in BSF.CLS)
         - 2015-05-19, ---rgf: fill-in the engine related information into the ENGINE_SCOPE bindings
 
 */
@@ -461,8 +463,8 @@ if (bDebug==true) {exc.printStackTrace();}
            "                                                                          \n" +
            "   -- return Rexx objects in a Java array to ease access in the Java code \n" +
            "return bsf.createJavaArrayOf('java.lang.Object', -                        \n" +
-           "            BsfCreateRexxProxy(r),  -     -- box it into a Java object    \n" +
-           "            BsfCreateRexxProxy(p))        -- box it into a Java object    \n" +
+           "                               r ,  -     -- Rexx routine object          \n" +
+           "                               p )        -- Rexx package object          \n" +
            "                                                                          \n" +
            "::requires BSF.CLS                                                        \n" ;
 

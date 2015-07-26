@@ -313,6 +313,7 @@ check: procedure      -- routine to carry out program creation and checking corr
   eb~put(re~argv,jargs)    -- add to engine scope's bindings
 
 bDummyStuff=.true
+bDummyStuff=.false
 if bDummyStuff=.true then
 do
    say= "1) eb="pp(eb) "eb~class="pp(eb~class) "eb~getClass="pp(eb~getClass) "eb~getClass~toString="pp(eb~getClass~toString)

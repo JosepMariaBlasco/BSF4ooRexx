@@ -193,7 +193,8 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
      */
     public Object eval(ScriptContext sc) throws ScriptException
     {
-if (bDebug==true) { System.err.println("---> RCS ---> eval(), sc=["+sc+"]");}
+// if (bDebug==true)
+{ System.err.println("---> RexxCompiledScript ---> eval(), sc=["+sc+"]");}
         if (sc==null)
         {
             throw new NullPointerException("Received \"ScriptContext sc\" argument null");
@@ -218,6 +219,7 @@ if (bDebug==true) { System.err.println("---> RCS ---> eval(), sc=["+sc+"]");}
         try
         {
             rse.updateRexxEngine(sc);   // make sure BSF.CLS support in JNI available; .input, .output, .error set accordingly
+
             return rexxScriptObject.sendMessage1("CALLWITH", arrArgV);  // execute routine object
         }
         catch (BSFException exc)
@@ -560,14 +562,14 @@ if (bDebug==true) { System.err.println("---> RCS ---> eval(), sc=["+sc+"]");}
             Object rexxNil=rse.getNil();
             for (i=0; i<args.length; i++)            // loop over arguments
             {
-
 if (bDebug)
 {
-    System.err.println("===> createArgV(), args["+i+"]=["+args[i]+"]"); }
-    Object o=args[i];
-    arrArgV[i]=( o==null ? rexxNil : o );
+    System.err.println("===> createArgV(), args["+i+"]=["+args[i]+"]");
 }
 
+                Object o=args[i];
+                arrArgV[i]=( o==null ? rexxNil : o );
+            }
         }
 
             // add as last argument, so scripts can always fetch the current ScriptContext;
