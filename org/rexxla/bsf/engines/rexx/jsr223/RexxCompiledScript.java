@@ -193,8 +193,10 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
      */
     public Object eval(ScriptContext sc) throws ScriptException
     {
-// if (bDebug==true)
-{ System.err.println("---> RexxCompiledScript ---> eval(), sc=["+sc+"]");}
+if (bDebug==true)
+{
+    System.err.println("---> RexxCompiledScript ---> eval(), sc=["+sc+"]");
+}
         if (sc==null)
         {
             throw new NullPointerException("Received \"ScriptContext sc\" argument null");

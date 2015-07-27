@@ -769,6 +769,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.invoke(jO, mN, mD, args): 
 
         // remove ooRexx entry in JNI registry
         int nr=this.rexxEngine.getRexxInterface().jniUnregisterRexxObject(rexxObjectID);
+
         if (bDebug)
         {
             System.err.println(this+": finalize(), nr="+nr+" of references left...");

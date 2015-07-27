@@ -197,7 +197,7 @@ public class RexxEngine extends BSFEngineImpl {
     }
 
 
-    private boolean bDebug=false ; // 20040404, ---rgf
+    private final boolean bDebug=false ; // 20040404, ---rgf
     // private boolean bDebug=true;   // 20040404, ---rgf
 
     /** Allows using the Rexx interpreter from Java. */
@@ -272,7 +272,9 @@ if (bDebug) System.err.println("===> RexxEngine().initialize(): after  ===> rii_
      */
     public Object getLocalEnvironment()
     {
-System.err.println(this+".getLocalEnvrionment(), before doing a \"return rexxInterface.jniGetLocalEnvironment(rii_ID);\" ...");
+
+if (bDebug==true) System.err.println(this+".getLocalEnvrionment(), before doing a \"return rexxInterface.jniGetLocalEnvironment(rii_ID);\" ...");
+
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {
             throw new NullPointerException("\"rii_ID\" (Rexx interpereter instance ID) null, Rexx interpreter instance not yet created (just eval() or apply() a script))");

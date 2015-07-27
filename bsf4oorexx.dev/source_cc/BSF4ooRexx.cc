@@ -901,11 +901,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "452.20150721 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150727 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "452.20150721 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150727 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "452.20150721 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150727 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -2432,7 +2432,7 @@ typedef struct _STRUCT_JVM {
     jmethodID                   mid_RexxProxy_init;             // constructor
     jmethodID                   mid_RexxProxy_getRexxObjectID;  // RexxProxy.getRexxObjectID()
     jmethodID                   mid_RexxProxy_newJavaOrExtendedProxyInstanceFromRexx;
-    jmethodID                   mid_RexxProxy_setBsfRegistry;   // RexxProxy.setBsfRegistry()
+    jmethodID                   mid_RexxProxy_setBsfRegistryKey;   // RexxProxy.setBsfRegistry()
 
     jclass                      clz_Throwable;      // java.lang.Throwable class object
 
@@ -2538,7 +2538,7 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
     struct_JVM->mid_RexxProxy_init           =env->GetMethodID(tmpClz, "<init>", "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Lorg/rexxla/bsf/engines/rexx/RexxEngine;)V");
     struct_JVM->mid_RexxProxy_getRexxObjectID=env->GetMethodID(tmpClz, "getRexxObjectID", "()Ljava/lang/String;");
     struct_JVM->mid_RexxProxy_newJavaOrExtendedProxyInstanceFromRexx=env->GetMethodID(tmpClz, "newJavaOrExtendedProxyInstanceFromRexx", "([Ljava/lang/Object;)Ljava/lang/Object;");
-    struct_JVM->mid_RexxProxy_setBsfRegistry =env->GetMethodID(tmpClz, "setBsfRegistryKey", "(Ljava/lang/String;)V");
+    struct_JVM->mid_RexxProxy_setBsfRegistryKey =env->GetMethodID(tmpClz, "setBsfRegistryKey", "(Ljava/lang/String;)V");
 
         // create Throwable class object reference
     struct_JVM->clz_Throwable=env->FindClass("java/lang/Throwable");    // get class object
@@ -2627,7 +2627,7 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxProxy_init           =[%p]\n",                        struct_JVM->mid_RexxProxy_init);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxProxy_getRexxObjectID=[%p]\n",                        struct_JVM->mid_RexxProxy_getRexxObjectID);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxProxy_newJavaOrExtendedProxyInstanceFromRexx=[%p]\n", struct_JVM->mid_RexxProxy_newJavaOrExtendedProxyInstanceFromRexx);
-   fprintf(stderr, "\t\tstruct_JVM->mid_RexxProxy_setBsfRegistry =[%p]\n",                        struct_JVM->mid_RexxProxy_setBsfRegistry );
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxProxy_setBsfRegistry =[%p]\n",                        struct_JVM->mid_RexxProxy_setBsfRegistryKey );
 
    fprintf(stderr, "\tclz_String       =[%p]\n", struct_JVM->clz_String);
    fprintf(stderr, "\t\tstruct_JVM->mid_String_initFromByteArray=[%p]\n", struct_JVM->mid_String_initFromByteArray);
@@ -2729,6 +2729,7 @@ inline void uninit_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM)
         // if 'bReturnWithPrefix'==1, then return optional "<O>", if present
 inline jstring RgfStoreRexxProxyInBsfRegistry(JNIEnv *env, jobject rajo, jobject proxy, int bReturnWithPrefix)
 {
+        // create beanname and register bean with BSF registry
     jstring j_keyValue=(jstring) env->CallObjectMethod(rajo,
                                                        defaultJVM->mid_RexxAndJava_makeString4Rexx,
                                                        proxy);
@@ -2748,9 +2749,9 @@ inline jstring RgfStoreRexxProxyInBsfRegistry(JNIEnv *env, jobject rajo, jobject
         }
         RexxFreeMemory(c_keyValue);     // free memory
 
-            // now register Bean
+            // save generated beanname with RexxProxy
         env->CallObjectMethod(proxy,
-                              defaultJVM->mid_RexxProxy_setBsfRegistry,
+                              defaultJVM->mid_RexxProxy_setBsfRegistryKey,
                               j_keyValueWithoutPrefix);
     }
 
