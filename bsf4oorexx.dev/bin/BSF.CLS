@@ -4453,7 +4453,7 @@ syntax:
 */
 ::routine bsf.ScriptContext2rexx public
   use strict arg scriptContext, scope="A", ...
-.stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line " - arrived at:" .dateTime~new, "scriptContext="pp(scriptContext) "scope="pp(scope))
+-- .stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line " - arrived at:" .dateTime~new, "scriptContext="pp(scriptContext) "scope="pp(scope))
 
   dir=.directory~new       -- contains the entries from the bindings of the processed scopes
 
@@ -4503,7 +4503,7 @@ syntax:
          dir~setEntry(key~changeStr(".","_"), val)  -- save into Rexx directory
       end
   end
-.stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line "- the End, returning "pp(dir) "with" pp(dir~items)" items:" .dateTime~new)
+-- .stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line "- the End, returning "pp(dir) "with" pp(dir~items)" items:" .dateTime~new)
   return dir      -- return directory that contains the selected key-value pairs
 
 ::routine getBindings      -- utility routine
