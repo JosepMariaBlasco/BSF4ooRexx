@@ -134,8 +134,7 @@ public class RexxProxy implements InvocationHandler
 
 
     /** If set, then output for debugging is created. */
-    static boolean bDebug=
-                            // true;
+    static boolean bDebug=  // true;
                             false;
 
     // cf. <http://java.sun.com/j2se/1.4.2/docs/guide/reflection/proxy.html>
@@ -306,7 +305,13 @@ public class RexxProxy implements InvocationHandler
         this.rexxUserDataID   =userDataId;
         this.rexxEngine   =engine;
 //        this.creationTID      =engine.getRexxInterface().jniRexxGetTID();
-    }
+
+if (bDebug==true)
+{
+      System.err.println("RexxProxy-constructor --> ["+this+"]: riid=["+rexxInterpreterId+
+                   "], objectId=["+objectId+"/"+Long.toHexString(Long.parseLong(objectId))+
+                   "], userDataId=["+userDataId+"], engine=["+engine+"]"); }
+}
 
 
 

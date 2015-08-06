@@ -197,8 +197,8 @@ public class RexxEngine extends BSFEngineImpl {
     }
 
 
-    private final boolean bDebug=false ; // 20040404, ---rgf
-    // private boolean bDebug=true;   // 20040404, ---rgf
+    private final boolean bDebug= false ; // 20040404, ---rgf
+                                  // true;
 
     /** Allows using the Rexx interpreter from Java. */
     // private RexxAndJava   rexxInterface;
@@ -513,7 +513,7 @@ if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ==
                    res = args2RexxString( argVal );         // get String or Bean for this argument
                    if (((Boolean) res[0]).booleanValue())    // a Bean had to be created
                    {
-if (bDebug) System.err.println(this+".call(): args2RexxString() created bean: ["+res[1]+"] ...");
+if (bDebug) System.err.println(this+".call(): args2RexxString() created bean: ["+res[1]+"], have to unregister later ...");
                        beanVector.addElement(res[1]);        // remember beanName for later deregistering
                    }
                    editedArgs[i]=(String) res[1];             // String value for Rexx
@@ -561,16 +561,16 @@ if (bDebug) System.err.println(this+" RexxEngine.call(): jniRexxRunProgram() ...
         {
             String el=(String) e.nextElement();
 
-if (bDebug) System.err.println(this+".call(o,n,a): unregistering: ["+el+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+if (bDebug) System.err.println(this+".call(o,n,a): unregisterBean 1: ["+el+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
 
             if (rexxInterface.bsfPrefixReturnValue==true)
             {
-if (bDebug) System.err.println(this+".call(): unregistering: ["+el.substring(3)+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+if (bDebug) System.err.println(this+".call(): unregisterBean 2a: ["+el.substring(3)+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
                 rexxInterface.unregisterBean( el.substring(3));  // remove "<O>" or "<S>"
             }
             else
             {
-if (bDebug) System.err.println(this+".call(): unregistering: ["+el+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
+if (bDebug) System.err.println(this+".call(): unregisterBean 2b: ["+el+"] ----> "+"rexxInterface.bsfPrefixReturnValue=["+rexxInterface.bsfPrefixReturnValue+"]");
                 rexxInterface.unregisterBean( el);
             }
         }
@@ -1202,13 +1202,7 @@ if (bDebug) System.err.println(this+" <=== <=== <=== RexxEngine.apply() - before
 
 if (bDebug)
 {
-    System.err.println("RexxEngine.args2RexxString(o), 1a. o=["+o+"], rexxInterface=["+rexxInterface+"], .mgr=["+rexxInterface.mgr+"]");
-
-    try
-    {
-       System.err.println("RexxEngine.args2RexxString(o), 1b. o=["+o+"], lookup=["+rexxInterface.javaCallBSF(new String[]{"lookupBean",o.toString()})+"]");
-    }
-    catch (Exception e) {}
+    System.err.println("RexxEngine.args2RexxString(o), 1. o=["+o+"], rexxInterface=["+rexxInterface+"], .mgr=["+rexxInterface.mgr+"]");
 }
 
         res[0] = Boolean.TRUE;          // a bean will be created for this
@@ -1216,13 +1210,7 @@ if (bDebug)
 
 if (bDebug)
 {
-    System.err.println("RexxEngine.args2RexxString(o), 2a. o=["+o+"], rexxInterface=["+rexxInterface+"], .mgr=["+rexxInterface.mgr+"]");
-
-    try
-    {
-       System.err.println("RexxEngine.args2RexxString(o), 2b. o=["+o+"], lookup=["+rexxInterface.javaCallBSF(new String[]{"lookupBean",o.toString()})+"]");
-    }
-    catch (Exception e) {}
+    System.err.println("RexxEngine.args2RexxString(o), 2. o=["+o+"], rexxInterface=["+rexxInterface+"], .mgr=["+rexxInterface.mgr+"]");
 }
 
         return res;

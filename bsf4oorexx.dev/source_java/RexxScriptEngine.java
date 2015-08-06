@@ -40,8 +40,19 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+        - 2015-08-04, ---rgf: adjust to info that starting with ooRexx 5.0.0 the string
+                              argument to .routine~new must not contain CR/LF chars; prepare
+                              all Rexx ocde herein to allow replacing CR-LF with semi-colons
+                              by changing line comments to block comments; make sure
+                              that the Rexx code that creates .routine objects carries out
+                              a makearray for the code-part (allowing CR-LF as stored on
+                              file or in databases, but also giving much more meaningful
+                              line-based error information; Rexx, after all is meant to be
+                              an easy to use and to debug language!)
+
         - 2015-07-21, ---rgf: no need to do a BsfCreateRexxProxy(), this will now be done
                               by bsf.createArrayOf() (in BSF.CLS)
+
         - 2015-05-19, ---rgf: fill-in the engine related information into the ENGINE_SCOPE bindings
 
 */
@@ -177,11 +188,18 @@ public class RexxScriptEngine extends AbstractScriptEngine implements Compilable
     }
 
 
+    // 2015-08-04, rgf: in upcoming ooRexx 4.0.0 no CR- or LF- chars are allowed!
     /** Rexx code to create and return a Rexx routine object from Rexx code. */
     String rexxCreateRoutineCode=
-           "use strict arg name, code                   \n" +
-           "return .routine~new(name,code)              \n" +
-           "::requires 'BSF.CLS'                        \n" ;
+           "use strict arg name, code                      ;" +
+               // make sure that we turn the string into a Rexx array,
+               // because .routine will accept that in any case in all versions of ooRexx:
+               // because .routine will accept that in any case in all versions of ooRexx:
+           "if code~isA(.array) then                       ;" +
+           "   return .routine~new(name,code)              ;" +
+           "else                                           ;" +
+           "   return .routine~new(name,code~makeArray)    ;" +
+           "::requires 'BSF.CLS'                           ;" ;
 
     /** <code>RexxProxy</code> for the Rexx routine created by the Rexx code stored in {@link rexxCreateRoutineCodeCode}. */
     private RexxProxy rexxCreateRoutine=null;
@@ -220,30 +238,30 @@ if (bDebug==true) {exc.printStackTrace(); }
 
     /** Rexx code to create and return a Rexx routine object from Rexx code. */
     String rexxMonitorWrapperCode=
-        " use arg rexxObject, scriptContext                                                                          \n" +
-        " -- say 'in rexxMonitorWrapperCode prolog...'                                                               \n" +
-        "                                                                                                            \n" +
-        "     -- create and return dispatcher object                                                                 \n" +
-        " return .DispatchWrapper~new(rexxObject, scriptContext)                                                     \n" +
-        "                                                                                                            \n" +
-        " ::requires BSF.CLS                              -- get Java camouflaging support                           \n" +
-        "                                                                                                            \n" +
-        "     -- dispatcher class for Invocable' <T> T getInterface(Object thiz, Class<T> clasz)                     \n" +
-        " ::class 'DispatchWrapper'                                                                                  \n" +
-        "                                                                                                            \n" +
-        " ::method init              -- constructor                                                                  \n" +
-        "   expose rexxScriptObject jsr223ScriptContext                                                              \n" +
-        "   use strict arg rexxScriptObject, jsr223ScriptContext                                                     \n" +
-        "                                                                                                            \n" +
-        "    -- add ScriptContext to slotDir (last) argument, forward method invocation                              \n" +
-        " ::method unknown           -- dispatch public routines instead                                             \n" +
-        "   expose rexxScriptObject jsr223ScriptContext                                                              \n" +
-        "   use strict arg methName, methArrArgv          -- unknown message name and its arguments                  \n" +
-        "                                                                                                            \n" +
-        "   -- add ScriptContext to BSF4ooRexx' slot argument (a Rexx directory added as last argument on callbacks) \n" +
-        "   methArrArgv~lastItem~setentry('SCRIPTCONTEXT', jsr223ScriptContext) -- add ScriptContext                 \n" +
-        "                                                                                                            \n" +
-        "   forward message (methName) to (rexxScriptObject) arguments (methArrArgv) -- forward message              \n" ;
+        " use arg rexxObject, scriptContext                                                                             \n" +
+        " /* say 'in rexxMonitorWrapperCode prolog...'                                                      */          \n" +
+        "                                                                                                               \n" +
+        "     /* create and return dispatcher object                                                        */          \n" +
+        " return .DispatchWrapper~new(rexxObject, scriptContext)                                                        \n" +
+        "                                                                                                               \n" +
+        " ::requires BSF.CLS                              /* get Java camouflaging support                  */          \n" +
+        "                                                                                                               \n" +
+        "     /* dispatcher class for Invocable' <T> T getInterface(Object thiz, Class<T> clasz)            */          \n" +
+        " ::class 'DispatchWrapper'                                                                                     \n" +
+        "                                                                                                               \n" +
+        " ::method init              /* constructor                                                         */          \n" +
+        "   expose rexxScriptObject jsr223ScriptContext                                                                 \n" +
+        "   use strict arg rexxScriptObject, jsr223ScriptContext                                                        \n" +
+        "                                                                                                               \n" +
+        "    /* add ScriptContext to slotDir (last) argument, forward method invocation                     */          \n" +
+        " ::method unknown           /* dispatch public routines instead                                    */          \n" +
+        "   expose rexxScriptObject jsr223ScriptContext                                                                 \n" +
+        "   use strict arg methName, methArrArgv          /* unknown message name and its arguments         */          \n" +
+        "                                                                                                               \n" +
+        "   /* add ScriptContext to BSF4ooRexx' slot argument (a Rexx directory added as last argument on callbacks) */ \n" +
+        "   methArrArgv~lastItem~setentry('SCRIPTCONTEXT', jsr223ScriptContext)      /* add ScriptContext   */          \n" +
+        "                                                                                                               \n" +
+        "   forward message (methName) to (rexxScriptObject) arguments (methArrArgv) /* forward message     */          \n" ;
 
     /** <code>RexxProxy</code> for using an in-between (monitor) class for adding the <code>ScriptContext</code>
      *  to the slotDir directory added by BSF4ooRexx in Java call-back scenarios.
@@ -277,38 +295,39 @@ if (bDebug==true) {exc.printStackTrace(); }
 
     /** Rexx code to create and return a Rexx routine object from Rexx code. */
     String rexxRoutineWrapperCode=
-        "use arg rexxScript, rexxPackage, scriptContext                                                             \n" +
-        "                                                                                                           \n" +
-        "-- say '/// --> /// in rexxRoutineWrapperCode - prolog... arg()='arg()                                     \n" +
-        "                                                                                                           \n" +
-        "    -- create and return dispatcher object                                                                 \n" +
-        "return .DispatchToToPublicRoutines~new(rexxScript, rexxPackage, scriptContext)                             \n" +
-        "                                                                                                           \n" +
-        "::requires BSF.CLS                              -- get Java camouflaging support                           \n" +
-        "                                                                                                           \n" +
-        "    -- dispatcher class for Invocable' <T> T getInterface(Class<T> clasz)                                  \n" +
-        "::class 'DispatchToToPublicRoutines'                                                                       \n" +
-        "                                                                                                           \n" +
-        "::method init              -- constructor                                                                  \n" +
-        "  expose rexxScriptObject rexxScriptPackage jsr223ScriptContext                                            \n" +
-        "  use strict arg rexxScriptObject, rexxScriptPackage, jsr223ScriptContext                                  \n" +
-        "                                                                                                           \n" +
-        "::method unknown           -- dispatch public routines instead                                             \n" +
-        "  expose rexxScriptObject rexxScriptPackage jsr223ScriptContext                                            \n" +
-        "  use strict arg methName, methArrArgv          -- unknown message name and its arguments                  \n" +
-        "                                                                                                           \n" +
-        "  pubRoutines=rexxScriptPackage~publicRoutines  -- get the public routines directory                       \n" +
-        "  routine=pubRoutines~entry(methName)                                                                      \n" +
-        "                                                                                                           \n" +
-        "  -- if pubRoutines~hasentry(methName)=.false then -- if public routine not available raise error          \n" +
-        "  if routine=.nil then -- if public routine not available raise error                                      \n" +
-        "     raise syntax 93.1 array (methName)         -- routine not found!                                      \n" +
-        "                                                                                                           \n" +
-        "  -- add ScriptContext to BSF4ooRexx' slot argument (a Rexx directory added as last argument on callbacks) \n" +
-        "  methArrArgv~lastItem~setentry('SCRIPTCONTEXT', jsr223ScriptContext) -- add ScriptContext                 \n" +
-        "                                                                                                           \n" +
-        "  routine~callWith(methArrArgv)                 -- invoke routine                                          \n" +
-        "  if var('RESULT') then return result           -- if a result object got returned, return it              \n" ;
+        "use arg rexxScript, rexxPackage, scriptContext                                                                 \n" +
+        "                                                                                                               \n" +
+        "/* say '/// --> /// in rexxRoutineWrapperCode - prolog... arg()='arg()                             */          \n" +
+        "                                                                                                               \n" +
+        "    /* create and return dispatcher object                                                         */          \n" +
+        "return .DispatchToToPublicRoutines~new(rexxScript, rexxPackage, scriptContext)                                 \n" +
+        "                                                                                                               \n" +
+        "::requires BSF.CLS                              /* get Java camouflaging support                   */          \n" +
+        "                                                                                                               \n" +
+        "    /* dispatcher class for Invocable' <T> T getInterface(Class<T> clasz)                          */          \n" +
+        "::class 'DispatchToToPublicRoutines'                                                                           \n" +
+        "                                                                                                               \n" +
+        "::method init              /* constructor                                                          */          \n" +
+        "  expose rexxScriptObject rexxScriptPackage jsr223ScriptContext                                                \n" +
+        "  use strict arg rexxScriptObject, rexxScriptPackage, jsr223ScriptContext                                      \n" +
+        "                                                                                                               \n" +
+        "::method unknown           /* dispatch public routines instead                                     */          \n" +
+        "  expose rexxScriptObject rexxScriptPackage jsr223ScriptContext                                                \n" +
+        "  use strict arg methName, methArrArgv          /* unknown message name and its arguments          */          \n" +
+        "                                                                                                               \n" +
+        "  pubRoutines=rexxScriptPackage~publicRoutines  /* get the public routines directory               */          \n" +
+        "  routine=pubRoutines~entry(methName)                                                                          \n" +
+        "  /*                                                                                                           \n" +
+        "  -- if pubRoutines~hasentry(methName)=.false then -- if public routine not available raise error              \n" +
+        "  */                                                                                                           \n" +
+        "  if routine=.nil then /* if public routine not available raise error                              */          \n" +
+        "     raise syntax 93.1 array (methName)         /* routine not found!                              */          \n" +
+        "                                                                                                               \n" +
+        "  /* add ScriptContext to BSF4ooRexx' slot argument (a Rexx directory added as last argument on callbacks) */  \n" +
+        "  methArrArgv~lastItem~setentry('SCRIPTCONTEXT', jsr223ScriptContext) /* add ScriptContext         */          \n" +
+        "                                                                                                               \n" +
+        "  routine~callWith(methArrArgv)                 /* invoke routine                                  */          \n" +
+        "  if var('RESULT') then return result           /* if a result object got returned, return it      */          \n" ;
 
     /** <code>RexxProxy</code> for using an in-between (monitor) class for adding the <code>ScriptContext</code>
      *  to the slotDir directory added by BSF4ooRexx in Java call-back scenarios.
@@ -352,13 +371,13 @@ if (bDebug==true) {exc.printStackTrace(); }
 
     String rexxRedirectStandardFilesCode=   // redirect ooRexx standard streams to the ScriptContext supplied ones
            "use arg in, out, err                          \n" +
-           "-- redirect .input, .output, .error           \n" +
+           "/* redirect .input, .output, .error       */  \n" +
            "call bsf.RedirectTo 'Java'                , - \n" +
            "     .bsf.inputStream~new(in)             , - \n" +
            "     .bsf.outputStream~new(out)           , - \n" +
            "     .bsf.outputStream~new(err)               \n" +
            "                                              \n" +
-           "::requires BSF.CLS    -- get Java support     \n" ;
+           "::requires BSF.CLS    /* get Java support */  \n" ;
 
     /** <code>RexxProxy</code> for the Rexx routine created by the Rexx code stored in {@link rexxRedirectStandardFilesCode}. */
     private RexxProxy rexxRedirectStandardFiles=null;
@@ -405,9 +424,9 @@ if (bDebug==true) {exc.printStackTrace();}
            "dir=.directory~new                                              \n" +
            "if entryName<>.nil then                                         \n" +
            "   dir~setEntry(entryName,entryValue)                           \n" +
-           "return dir          -- return Rexx directory object             \n" +
+           "return dir          /* return Rexx directory object */          \n" +
            "                                                                \n" +
-           "::requires 'BSF.CLS'    -- add Java support                     \n" ;
+           "::requires 'BSF.CLS'    /* add Java support         */          \n" ;
 
     /** <code>RexxProxy</code> for the Rexx routine created by the Rexx code stored in {@link rexxCreateDirectoryCode}. */
     private RexxProxy rexxCreateDirectory=null;
@@ -457,16 +476,22 @@ if (bDebug==true) {exc.printStackTrace();}
      *         <code>entryValue</code>
      */
     String rexxCreateRoutineAndPackageCode=
-           "parse arg name, script         -- fetch script code                       \n" +
-           "r=.routine~new(name, script)   -- create routine object                   \n" +
-           "p=r~package                    -- get its package                         \n" +
-           "                                                                          \n" +
-           "   -- return Rexx objects in a Java array to ease access in the Java code \n" +
-           "return bsf.createJavaArrayOf('java.lang.Object', -                        \n" +
-           "                               r ,  -     -- Rexx routine object          \n" +
-           "                               p )        -- Rexx package object          \n" +
-           "                                                                          \n" +
-           "::requires BSF.CLS                                                        \n" ;
+           "parse arg name, script                      /* fetch script code            */    ;" +
+           "                                                                                  ;" +
+           "if script~isA(.array) then                  /* argument already an array    */    ;" +
+           "   r=.routine~new(name, script)             /* create routine object        */    ;" +
+           "else                                                                              ;" +
+           "   r=.routine~new(name, script~makeArray)   /* create routine object        */    ;" +
+           "                                                                                  ;" +
+           "p=r~package                                 /* get its package              */    ;" +
+           "                                                                                  ;" +
+           "   /* return Rexx objects in a Java array to ease access in the Java code   */    ;" +
+             // note, no continuation char as everything is in the same single line
+           "return bsf.createJavaArrayOf('java.lang.Object',                                   " +
+           "                               r ,          /* Rexx routine object          */     " +
+           "                               p )          /* Rexx package object          */    ;" +
+           "                                                                                  ;" +
+           "::requires BSF.CLS                                                                ;" ;
 
     /** <code>RexxProxy</code> for the Rexx routine created by the Rexx code stored in {@link rexxCreateRoutineAndPackageCode}. */
     private RexxProxy rexxCreateRoutineAndPackage=null;

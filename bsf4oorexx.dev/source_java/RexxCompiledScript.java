@@ -559,6 +559,9 @@ if (bDebug==true)
         Object arrArgV[]=new Object[argsLength+1];
         int i=0;
 
+        final boolean bDebug= false;
+                              // true;
+
         if (args!=null && args.length>0)    // if ARGV array is given and has entries, then create argument vector
         {
             Object rexxNil=rse.getNil();

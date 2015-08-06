@@ -12,6 +12,9 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2015-08-04, rgf: - adjust for storing RII_ID in BSF instance to be able to indicate RII_ID to
+                            unregisterBean from when uninit runs (important, as BSF registry is always
+                            RII dependent)
 
          2015-07-21, rgf: - bsf.wrap: honor new argument "bIncr", if set to .true, then the reference counter
                             in the BSF registry is increased (needed, if Java object is an argument
@@ -419,7 +422,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     4.52 (20150721)
+   version:     4.52 (20150806)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -465,6 +468,8 @@
    .local~revision.id    ="$Id: BSF.CLS 927 2010-12-26 17:34:19Z Administrator $"
 */
 
+-- .stderr~say("BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ... ")
+
    signal on syntax
    parse version v .
    minimumVersion="4.1.0"     -- minimum ooRexx version (same as BSF4ooRexx.cc)
@@ -494,17 +499,29 @@
          say "BSF.CLS: ... using environment variable 'BSF4Rexx_JavaStartupOptions' to configure Java:" pp(jso) "..."
 */
       interpret stmt       -- carry out the statement in the string
+
    end
+
+   -- since 2008-06-22 (rgf) this forces RexxAndJava to prepend type indicators!
+   call bsf "bsfPrefixReturnValue", .true    -- now "<O>" (object) or "<S>" (string) get prepended to the returned value
+
+   -------------------------------------------------------------------------------------------------
+
+      -- rgf, 2015-08-02: experimental: save this Rexx RII_ID in .local (usable from any Rexx object);
+      --                  make sure that this function is called after Java got loaded (if Rexx had to load Java)
+   if \.local~hasEntry("BSF.RII_ID") then
+   do
+      .local~bsf.rii_id=bsf('get_rii_id') ~substr(4)
+-- .stderr~say("BSF::prolog - after setting BSF.RII_ID in .local:" .bsf.rii_id)
+   end
+
 
    parse version "_" v "("          -- get ooRexx version, 2008-08-31, rgf
    .local~ooRexx.version=v          -- get and save ooRexx's version
 
-   -- since 2008-06-22 (rgf) this forces RexxAndJava to prepend type indicators!
-   call bsf "bsfPrefixReturnValue", .true
-
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="452.20150727" -- set version (date distribution got created)
+   .bsf4rexx~version="452.20150806" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -516,8 +533,9 @@
 
    call getAndSetPathToIcons
 
-
    call BSfShowErrorMessage .false  -- turn off displaying the Java exception message (leftover from the very early BSF4Rexx days)
+
+-- .stderr~say("BSF.CLS - about to leave the PROLOG code, tid="pp(bsfGetTID()) ".bsf.rii_ID="pp(.bsf.rii_ID) ".bsf.primodalTID="pp(.bsf.primodalTID)  ".local~identityHash~d2x="pp(.local~identityHash~d2x) ".bsf~identityhash~d2x="pp(.bsf~identityhash~d2x) "<=== "~copies(5))
 
    return
 
@@ -1418,6 +1436,7 @@ any:
 ::ATTRIBUTE bsf.null_string set CLASS
 
 
+::attribute rii_id  private      -- stores the RII (Rexx interpreter instance) id that created the instance
 
 /* -------------------------------------------------------------
    method to construct an instance (a "bean"); arguments are
@@ -1425,7 +1444,10 @@ any:
    from the given Java class
    ------------------------------------------------------------- */
 ::METHOD init
+  expose rii_id      -- RII (Rexx interpreter nstance) where the bean gets stored in the BSF registry
   USE ARG javaClass, args
+
+  rii_id=.bsf.rii_id -- save the RII that created this bean as its BSFManager's BSF registry is used to store its peer
 
         -- create an instance of javaClass and register it with BSF,
         -- leave beanName empty, this way we get a unique name from Java
@@ -1465,19 +1487,45 @@ any:
    destroyed) to unregister the bean from the BSF registry; this
    then allows the JVM to garbage collect that Java object as well
    ------------------------------------------------------------- */
+-- 2015-08-04, rgf: NOTE: according to RMG in his late answer it may be the case that a RII gets only created
+--                        for the purpose to handle pending uninits on the Rexx side (having its own .local!);
+--                        if so, it may be the case that BSF uninits run at a time in a thread that has no
+--                        means to attach to Java; will leave it that way (a Rexx condition gets raised that
+--                        does not bring down the garbage collector), as this condition means that Rexx is
+--                        shutting down!
 ::METHOD uninit
+  expose rii_id      -- Rexx interpreter instance that created this ooRexx instance
   signal on syntax name any         -- trap any exceptions
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
--- .stderr~say( "*** BSF.CLS::BSF::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x)  "TID:" pp(BsfGetTid()))
-  return BSF("unregisterBean", self~objectname)~substr(4)
+-- .stderr~say( "*** BSF.CLS::BSF::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x)  ".bsf.rii_ID:" pp(.bsf.rii_ID)  ".bsf.primodalTID="pp(.bsf.primodalTID)  "TID:" pp(BsfGetTid()) "created in RII:" pp(rii_id))
 
+--  return BSF("unregisterBean", self~objectname)~substr(4)
+   -- 2015-08-03, ---rgf: supply RII_ID of this object to help the Java side decide whether really doing it in the
+   --                     context of the current RII (uninits may be carried out by any RII)
+  return BSF("unregisterBean", self~objectname, rii_id)~substr(4)
+
+
+   /* 2015-08-04, rgf:
+      one likely condition is that ooRexx' garbage collector upon shutting down may
+      create a RII for running pending ooRexx uninits; such a RII will have its own .local
+      and it is not possible to interact with Java anymore, hence the native code will
+      raise an appropriate condition (not being able to attach to Java)
+    */
 any:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
   if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
+
+/* for debugging
+co=condition('o')
+call rgf_util2
+.stderr~say( "*** BSF.CLS::BSF::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x) "CONDITION RAISED!" ppCondition2(co))
+*/
+
+
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
@@ -2198,7 +2246,7 @@ any:
 
   do i=1 to arg()
      a=arg(i)
-     if i>1, \a~isA(.string), \a~isA(.bsf), a<>.nil then
+     if i>1, \a~isA(.string), \a~isA(.bsf), \a~isA(.uno_proxy), a<>.nil then
      do
         tmp=tmp ", """ || BsfCreateRexxProxy(a) || """"
 -- .stderr~say("method bsf.createArrayOf(): BINGO, BINGO, BINGO: arg("i")="pp(a) "clz="pp(a~class) "wrapped as a RexxProxy!")
@@ -2385,20 +2433,22 @@ any:
 ::METHOD init
    use arg beanName, bIncr=.false   -- should be .false by default, only when Java-args get proxied should ".true" be given
    self~ObjectName=beanName
+   self~rii_id=.bsf.rii_id    -- remember RII that created this instance
 -- .stderr~say( "BSF.CLS: BSF_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x)  "bIncr="pp(bIncr) "TID:" pp(BsfGetTid()) )
 
 
-   -- rgf, 2015-07-20: increment BSF registry counter for this Java object, such that running UNINIT does not remove Java object from BSF registry
+   -- rgf, 2015-07-20: increment BSF registry counter for this Java object, such that only running its UNINIT removes Java object from BSF registry
    --                  (only done, if RexxEngine.call() or .apply() was used)
   if bIncr=.true then
-      call bsf 'rawRegisterBean', beanName, beanName   -- increment BSF registry reference counter
+      call bsf 'increaseRefCounter', beanName   -- increment BSF registry reference counter
+--      call bsf 'rawRegisterBean', beanName, beanName   -- increment BSF registry reference counter
 
-
+/*
 -- rgf, 2015-07-17: just for debug statements, remove after testing JSR223 related problems
 ::METHOD uninit
 -- .stderr~say( "BSF.CLS: BSF_REFERENCE::UNINIT():" pp(self~objectName)"@"pp(self~identityHash~d2x) "- about: self~uninit:super"  "TID:" pp(BsfGetTid()))
 self~uninit:super
-
+*/
 
 
 /*
@@ -2412,7 +2462,7 @@ forward class (super)
 /* *************************************************************
    Class:       BSF_PROXY
    Purpose:     allows to wrap up Java objects as Object Rexx objects;
-                if instances are destroyed, then no derigistration from
+                if instances are destroyed, then no deregistration from
                 the BSF registry takes place
    restriction: no check is done, whether the given beanName is really
                 in the BSF-registry
@@ -2430,6 +2480,7 @@ forward class (super)
 ::METHOD init
    use arg beanName
    self~ObjectName=beanName
+   self~rii_id=.bsf.rii_id    -- remember RII that created this instance
 -- .stderr~say( "*** BSF.CLS::BSF_PROXY::INIT:" pp(beanname)"@"pp(self~identityHash~d2x) "TID:" pp(BsfGetTid()))
 
    -- make sure that BSF's UNINIT method does not run (it'll deregister
@@ -2466,6 +2517,7 @@ forward class (super)
   expose items dimension indexArray   -- set access to object variable
   use arg beanName, dimension, bIncr=.false  -- assign "dimension" directly to exposed object variable
 
+   self~rii_id=.bsf.rii_id    -- remember RII that created this instance
 -- .stderr~say( "BSF.CLS: BSF_ARRAY_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x) "bIncr="pp(bIncr)" - begin"  "TID:" pp(BsfGetTid()))
 
   self~ObjectName=beanName
@@ -2486,7 +2538,8 @@ forward class (super)
 
    -- rgf, 2015-07-21: increment BSF registry counter for this Java object, such that running UNINIT does not remove Java object from BSF registry
   if bIncr=.true then
-     call bsf 'rawRegisterBean', beanName, beanName   -- increment BSF registry reference counter
+     call bsf 'increaseRefCounter', beanName   -- increment BSF registry reference counter
+--     call bsf 'rawRegisterBean', beanName, beanName   -- increment BSF registry reference counter
 
 -- .stderr~say( "BSF.CLS: BSF_ARRAY_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x) "TID:" pp(BsfGetTid()) "- done, returning.")
   return
@@ -2502,8 +2555,9 @@ any:
 
 ::method uninit      -- rgf, 20120604: make sure we also unregister the index array to avoid a memory leak
   expose indexArray
--- .stderr~say( "*** BSF.CLS::BSF_ARRAY_REFERENCE::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x)  "indexArray="pp(indexArray) "indexArray~class="pp(indexArray~class)  "TID:" pp(BsfGetTid()))
-  call bsf 'unregisterBean', indexArray
+-- .stderr~say( "*** BSF.CLS::BSF_ARRAY_REFERENCE::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x)  "indexArray="pp(indexArray) "indexArray~class="pp(indexArray~class) "self~rii_ID:" pp(self~rii_ID) "TID:" pp(BsfGetTid()))
+
+  call bsf 'unregisterBean', indexArray, self~rii_id
 -- .stderr~say( "<-- BSF.CLS::BSF_ARRAY_REFERENCE::UNINIT:" pp(self~objectname) 'call bsf, ''unregisterBean'', indexArray='pp(indexArray)", now doing 'self~uninit:super'..."  "TID:" pp(BsfGetTid()))
   self~uninit:super  -- now let superclass clean up
 
@@ -2787,6 +2841,7 @@ any:
 ::CLASS BSF_ARRAY_PROXY SUBCLASS BSF_ARRAY_REFERENCE
 ::METHOD init
   use arg beanName, dimension, items         -- name of Java object as registered in the BSF registry
+  self~rii_id=.bsf.rii_id    -- remember RII that created this instance
 
   self~objectName=beanName
   self~dimension =dimension
@@ -2844,9 +2899,9 @@ syntax:
 
 ::routine bsf.unregisterBean                 public
   parse arg beanName
--- .stderr~say( "*** BSF.CLS::ROUTINE::BSF.UNREGISTERBEAN():" pp(bean~objectname)"@"pp(bean~identityHash~d2x)  "TID:" pp(BsfGetTid()))
-
+-- .stderr~say( "*** BSF.CLS::ROUTINE::BSF.UNREGISTERBEAN():" pp(bean~objectname)"@"pp(bean~identityHash~d2x)  ".bsf~bsf.rii_ID:" pp(.bsf.rii_ID) "TID:" pp(BsfGetTid()))
   return bsf("unregisterBean", beanName)~substr(4)
+
 
 ::routine bsf.pollEventText                  public
    parse arg timeOut
@@ -4398,6 +4453,7 @@ syntax:
 */
 ::routine bsf.ScriptContext2rexx public
   use strict arg scriptContext, scope="A", ...
+.stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line " - arrived at:" .dateTime~new, "scriptContext="pp(scriptContext) "scope="pp(scope))
 
   dir=.directory~new       -- contains the entries from the bindings of the processed scopes
 
@@ -4437,7 +4493,6 @@ syntax:
   end
 
   do sc over arr
-      -- bin=scriptContext~getBindings(sc)   -- get binding with given scope, process it
       bin=getBindings(scriptContext,sc)
       if bin=.nil then iterate   -- inexistent scope
       keys=bin~keySet         -- get kay values
@@ -4448,6 +4503,7 @@ syntax:
          dir~setEntry(key~changeStr(".","_"), val)  -- save into Rexx directory
       end
   end
+.stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line "- the End, returning "pp(dir) "with" pp(dir~items)" items:" .dateTime~new)
   return dir      -- return directory that contains the selected key-value pairs
 
 ::routine getBindings      -- utility routine

@@ -665,6 +665,10 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 // #define DEBUG_REXX_PROXY        // 2009-06-10
 // #define DEBUG_BSF_FUNCTION          // 2009-06-21
 
+// #define DEBUG_REXX_PROXY_BSF // 2015-07/8
+// #define DEBUG_SEND_MESSAGE_TO_REXX_OBJECT
+// #define DEBUG_RGF_PROCESS_J_ARGS
+// #define DEBUG_REXX_PROXY
 
 
 // #if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
@@ -901,11 +905,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "452.20150727 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150806 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "452.20150727 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150806 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "452.20150727 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150806 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -2000,7 +2004,7 @@ inline int32_t RgfRemoveProxyObject(char * c_obj_id)
 #endif
 
 
-    if (!rc)                // if successful, go ahead
+    if (!rc)                // if not successful, return, indicate error
     {
         return -101;        // indicate that we could not attach thread to RexxInstance successfully
     }
@@ -2214,6 +2218,11 @@ inline RexxObjectPtr RgfGetProxyObject(RexxThreadContext *rtc, RexxStringObject 
 
 
     if (obj==NULL) {                    // no entry as nothing returned !
+fprintf(stderr, "*** PANIC! PANIC! PANIC! RgfGetProxyObject(...), proxy object with obj_id=[%s] NOT FOUND !!!\n",
+                rtc->CString(rtc->SendMessage0(obj_id        , "STRING")) );
+fflush(stderr);
+
+// TODO: rgf, 2015-08-06: create an exception/condition ?
         return rtc->Nil();              // return the .nil object
     }
     return obj;
@@ -3241,6 +3250,12 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
                                                      int bIncr          // let BSF.WRAP increase the BSF registry ref counter?
                                                      )
 {
+#if defined(DEBUG_RGF_PROCESS_J_ARGS)
+    fprintf(stderr, "\n---- just arrived in RgfProcessJArgs(...): env=[%p], rtc=[%p], j_args=[%p], slotDir=[%p], bLoadBSF=[%d], bIncr=[%d]\n",
+                                                                  env,      rtc,      j_args,      slotDir,      bLoadBSF,      bIncr);
+    fflush(stderr);
+#endif
+
     jint len          = (j_args==NULL ? 0 : env->GetArrayLength(j_args));
 
     RexxInstance *riid=rtc->instance;
@@ -3252,6 +3267,10 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
 
     if (j_args==NULL && slotDir==NULL)  // return empty arg, if no args, nor slotDir given
     {
+#if defined(DEBUG_RGF_PROCESS_J_ARGS)
+    fprintf(stderr, "RgfProcessJArgs(...): no j_args nor slotDir given, return empty array!\n");
+#endif
+
         return ra;      // for jniRexxRunProgram; TODO: really necessary or returning NULL/OBJECT sufficient already?
     }
 
@@ -6926,7 +6945,8 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 //    RgfAddRexxInterpreterInstanceToList(context->threadContext, NULL, NULL);
 
     // call the static method, which in turn will initialize BSF4Rexx by creating
-    // a BSFManager and having it load the "Rexx" (support)
+    // a BSFManager and having it load the "Rexx" (support);
+    // it will also invoke jniInitialize4Rexx() which will set the defaultJVM->primodal_rajo
     jniEnv->CallStaticVoidMethod(j_clz, mid, NULL);      // invoke static method
 
     if ( jniEnv->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
@@ -6964,10 +6984,68 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 
     // rgf, 2014-05-17: "createInterface4Rexx() will save the primodal_rajo and run "init_STRUCT_JVM()";
     //                  this type of invocation cannot have a Java RII configuration object, hence NULL
+    // rgf, 2015-08-04: the following statement will allow jniGetRexxRootInterpreterInstanceRoot() to work
     RgfAddRexxInterpreterInstanceToList(context->threadContext, defaultJVM->primodal_rajo, NULL);
 
 // TODO: already done? rgf, 20140517
 //    init_STRUCT_JVM(jniEnv, defaultJVM, currentJVM);    // 20091003, initialize default structure
+
+
+    /* get static Method "set_rii_ids()", which uses jniGetRexxRootInterpreterInstanceRoot() to get the rii_IDs to assign */
+    mid = jniEnv->GetStaticMethodID(j_clz, "set_rii_ids", "()V");
+    if (mid == 0) {
+        SNPRINTF( msg, 1024, "%.16s/routine/BsfLoadJava(), error 6.994: initialization error, cannot find method 'Java4Rexx.set_rii_ids()", DLLNAME);
+        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(msg));
+        jniEnv->DeleteLocalRef(j_clz);
+        delete[] msg;
+        return "-994";
+    }
+
+    // rgf, 20090523: get and save interpreter pointer, such that later invocations will be able to find it
+    //                (this function gets only invoked, if Rexx had to load Java, hence only a RexxStart() is
+    //                executing
+    // rgf, 2012-02-07: add NULL for rajo and rexxconf as this call path does not
+    //                  define exit and command handlers for the RII this is safe
+//    RgfAddRexxInterpreterInstanceToList(context->threadContext, NULL, NULL);
+
+    // call the static method, which in turn will initialize BSF4Rexx by creating
+    // a BSFManager and having it load the "Rexx" (support);
+    // it will also invoke jniInitialize4Rexx() which will set the defaultJVM->primodal_rajo
+    jniEnv->CallStaticVoidMethod(j_clz, mid, NULL);      // invoke static method
+
+    if ( jniEnv->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+    {
+            // get Java Throwable toString() as a RexxString; will clear the pending Java exception
+        RexxStringObject rso=RgfGetJavaThrowableAsString (jniEnv, context->threadContext);
+
+        // create error message for Rexx
+        // char msg[4096];
+        char *msg2=new char[4096];  // use "msg2" to not cover "msg" from outside
+        size_t sz=context->StringLength(rso);   // get needed string length, default msg2 buffer is 4 KB
+        if (sz>4000)
+        {
+            char * tmp=(char *) RexxAllocateMemory(sz+256);
+            SNPRINTF( tmp, sz+256, "%.16s/routine/BsfLoadJava(), error 7.992: running static method 'Java4Rexx.set_rii_ids()' caused Java exception: [%s]", DLLNAME, context->StringData(rso));
+            rso=context->String(tmp);           // turn into a RexxString
+            RexxFreeMemory(tmp);
+        }
+        else
+        {
+            SNPRINTF( msg2, 4096, "%.16s/routine/BsfLoadJava(), error 7.992: running static method 'Java4Rexx.set_rii_ids()' caused Java exception: [%s]", DLLNAME, context->StringData(rso));
+            rso=context->String(msg2);           // turn into a RexxString
+        }
+
+        context->SetContextVariable(BSF_ERROR_STRING, rso);
+        context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, rso);
+
+        jniEnv->DeleteLocalRef(j_clz);
+        delete[] msg2;
+
+        delete[] msg;   // do not forget to free this buffer as well!
+        return "-990";  // return prematurely
+    }
+
+
 
 
 #ifdef DEBUG        // ---rgf, 2003-04-30
@@ -9498,7 +9576,6 @@ RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, O
         return context->Nil();
     }
 
-    // boolean isArg2aString= ( nameOrDir==NULL ? false : context->IsString(nameOrDir) );
     logical_t isArg2aString= ( nameOrDir==NULL ? false : context->IsString(nameOrDir) );
 
     if (argumentExists(3))  // single SET variable
@@ -13032,7 +13109,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregiste
 
     int32_t result=0;
 
-    if (obj_ID==NULL)   // TODO: create Java exception !
+    if (obj_ID==NULL)   // create Java exception !
     {
         // char msg[1024]="";
         char *msg=new char[1024];
@@ -13068,6 +13145,13 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregiste
         env->ReleaseStringUTFChars(obj_ID, str);    // release str
 
         result=RgfRemoveProxyObject(c_obj_ID);      // not found: -1; else remaining refs: >=0
+if (result==-1)
+{
+    fprintf(stderr, "*** PANIC, PANIC, PANIC: while removing obj_ID=[%s], Rexx object could not be fournd PANIC, PANIC, PANIC ***\n",
+                     c_obj_ID);
+    fflush(stderr);
+}
+
         RexxFreeMemory(c_obj_ID) ;                  // free the memory again
     }
 

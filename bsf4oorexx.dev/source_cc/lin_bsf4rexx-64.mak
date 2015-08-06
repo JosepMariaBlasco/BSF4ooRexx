@@ -36,10 +36,13 @@ BLD_PATH = .
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk-amd64
 
 # 2016-06-21, rgf: for very old 64-Bit Ubuntu VM
-JDK_BASE = /usr/lib/jvm/java-6-openjdk
+# JDK_BASE = /usr/lib/jvm/java-6-openjdk
 
 # JDK_BASE = /usr/lib/jvm/java-6-sun-1.6.0.16
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk-amd64
+
+# 2015-07-27
+JDK_BASE = /usr/lib/jvm/java-6-oracle
 
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 

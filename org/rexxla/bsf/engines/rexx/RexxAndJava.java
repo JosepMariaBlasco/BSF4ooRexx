@@ -36,7 +36,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.5.2, 2015-07-27
+  * @version 4.5.2, 2015-08-05
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -48,6 +48,21 @@ import org.apache.bsf.util.type.*;
 */
 
  /*
+     2015-08-03, ---rgf, - change code to only deregister bean, if running in the context of the same RII
+                           in which registering took place!
+
+                           - defining a class field "pendingUninits": a HashMap<String,HashSet> (RII_ID,Vector of beanNames to unregister)
+
+                           - case "UNREGISTER_BEAN" adopted accordingly
+
+                           - terminate: make sure all registered beans get deregistered (BSFManager may
+                                        initiate a new Rexx interpreter instance which should be able to
+                                        access any other registered Java object)
+
+     2015-08-01, ---rgf, - change error message "method not found or error (exception) executing method!" to
+                           unambiguous message: "(exception) executing method!"
+                         - add subfunction "get_RII_ID", which returns the "Rexx interpreter instance ID" (a string)
+
      2015-07-27, ---rgf, - make sure that no (added) debug statements are carried out
 
      2015-05-09, ---rgf, - added access to important Rexx objects and interpreter related information
@@ -328,7 +343,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "452.20150727";
+    static final public String version = "452.20150805";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -339,6 +354,17 @@ class RexxAndJava {
      * @since 2011-02-09
     */
     static public boolean carryOutSystemExit = true;
+
+    /** This field allows storing those beans that need to be registered in the context of
+     *  the Rexx interpreter instance (RII), that created the beans. If the
+     *  <quote><code>unregisterBean</code></quote> subfunction gets invoked with the
+     *  <code>RII_ID</code> argument and it does not match the instance field {@link rii_ID},
+     *  then it gets stored in a <code>HashSet</code> indexed by the supplied <code>RII_ID</code>
+     *  index value.
+     *
+     * @since 2015-08-03
+     */
+    static HashMap pendingUninits=new HashMap();
 
     /** Defines the version string. */
     static final private String RAJ_VERSION = version + " " + pkgName + " (org.apache.bsf)";
@@ -421,7 +447,7 @@ class RexxAndJava {
       * from Java method invocations and to transparently unregister them, when
       * the Object Rexx proxy objects are garbage collected.
       */
-    Hashtable orxReferences = new Hashtable();
+    Hashtable orxReferences = new Hashtable();  // Hashtable is synchronized unlike the Collections after 1.2
 
 
     /** Field used, if System.identityHashCode() returns duplicate values in method
@@ -456,27 +482,64 @@ class RexxAndJava {
      */
     private String rii_ID=null;
 
+
+
+// TODO: RexxEngine has a "rii_ID" as well (set by Java4Rexx.java); clarify dependencies!
+
     /** Getter method.
      *  @return the RexxInterpreter instance ID
      */
-    // protected String get_rii_ID()
+    // protected String get_rii_ID(); the BSF.CLS prolog code makes sure that this gets invoked
     public String get_rii_ID()
     {
+/*
+         // 2015-08-03, rgf: if not set yet, get the primodal Rexx interpreter instance:
+         // if Java was loaded by Rexx, then Java4Rexx.java will set the rii_ID in a raj-instance
+         // that will not be stored; if a Rexx program calls into this RexxAndJava instance, then
+         // it must come from the primodal Rexx interpreter instance, which serves as the root
+         // of the RII in JNI; therefore get its ID and save its RII_ID in this RexxAndJava instance
+        if (rii_ID==null)    // if not yet set, get and set it
+        {
+            rii_ID=jniGetRexxInterpreterInstanceRoot ();    // this is the instance for the primodal Rexx interpreter instance (that loaded Java)
+            synchronized (pendingUninits)
+            {
+                pendingUninits.put(rii_ID, new ArrayList(64));
+            }
+System.err.println(this+": get_rii_ID(), just set this instance to rii_ID=["+rii_ID+"]");
+        }
+*/
         return rii_ID;
     }
 
-    /** Setter method. Only meant to be used by Java4Rexx.java.
+    /** Setter method. Only meant to be used by Java4Rexx.java and RexxAndJava instance that has noe
+     *  peer Rexx interpreter instance yet. If already set an exception gets raised.
+     *
      */
-    protected void set_rii_ID(String rii_ID)
+    protected void set_rii_ID(String new_rii_ID) throws BSFException
     {
-        this.rii_ID=rii_ID;
-    }
+        if (rii_ID!=null)   // already created for this RAJO!
+        {
+            throw new BSFException("A Rexx interpreter instance has been created already having the ID ["+rii_ID+"]");
+        }
 
+        pendingUninits.put(new_rii_ID, new ArrayList(64));
+        this.rii_ID=new_rii_ID;
+    }
 
 
     /** If terminate() was invoked, then this instance's BSFManager and BSFEngine must not be used anymore.
      */
     protected boolean bTerminated=false;
+
+
+    /** This HashSet stores the bean names of those Java objects that got created by this instance. When
+     *  this instance gets terminated all those beans get removed from the BSF registry. If a bean should
+     *  survive this instance (and its Rexx interpreter instance companion), one needs to fetch the BSF
+     *  manager and directly register the Java object under a unique name.
+     *
+     * @since 2015-08-03
+     */
+    protected HashSet beansCreated=new HashSet(64);     // initial capacity
 
 
     /** Load the DLL, which allows interfacing Java with Rexx or Object Rexx, determines
@@ -569,7 +632,6 @@ necessary anymore
     {
         this.mgr        = mgr;     //the current BSFManager
         this.rexxEngine = rengine; //the current RexxEngine
-
         // 2003-01-26, ---rgf, pre-register important class objects for easier reference from Rexx
         mgr.registerBean("Class.class",     Class.class);
         mgr.registerBean("Object.class",    Object.class);
@@ -620,7 +682,41 @@ necessary anymore
         }
 
         jniSetupNativeJVMPointer();     // make sure the JNI library can initialize the Java related datastructures
+
+
+        // make sure we have an ArrayList defined for this RII with an initial capacity of 16 pending uninits
+        if (rii_ID!=null)
+        {
+            synchronized (pendingUninits)
+            {
+                // pendingUninits.put(get_rii_ID(), new ArrayList(16));
+                pendingUninits.put(rii_ID, new ArrayList(64));
+            }
+System.err.println(this+": constructor(), this instance has already rii_ID=["+rii_ID+"] !!!");
+        }
     }
+
+
+
+    /** Finalize method that makes sure that terminate() gets invoked.
+     *
+     *  @since 2015-08-03
+     */
+    public void finalize ()
+    {
+        final boolean bDebug= false;
+                              // true;
+        if (bDebug)
+        {
+            System.err.println(this+": in finalize(), this=["+this+"], rii_ID=["+rii_ID+"]...");
+System.err.println("*** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** ");
+        }
+        terminate();        // make sure we terminate and carry out any clean-up
+    }
+
+
+
+
 
 
     /** This native method makes sure that the C++ library gets a hold to
@@ -973,6 +1069,9 @@ private static final int           GET_PROPERTY_VALUE_JSO      =  48;    // 2014
 private static final int           GET_STATIC_VALUE_JSO        =  49 ;   // 2014-10-04, ---rgf
 private static final int           GET_STATIC_VALUE_STRICT_JSO =  50 ;   // 2014-10-04, ---rgf
 
+private static final int           GET_RII_ID                  =  51 ;   // 2015-08-01, ---rgf
+private static final int           INCREASE_REF_COUNTER        =  52 ;   // 2015-08-04, ---rgf
+
 
         // define the constant strings for the function names passed from Rexx
 private static final String STRING_ADD_EVENT_LISTENER             = "addEventListener"                     ;
@@ -1036,6 +1135,9 @@ private static final String STRING_CARRY_OUT_SYSTEM_EXIT          =  "carryOutSy
 
 private static final String STRING_ENV_GET                        =  "getEnv";               // 2014-03-29, ---rgf
 private static final String STRING_ENV_SET                        =  "setEnv";               // 2014-03-29, ---rgf
+
+private static final String STRING_GET_RII_ID                     =  "get_RII_id";           // 2015-08-01, ---rgf
+private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRefCounter";   // 2015-08-04, ---rgf
 
 
     /** Entry point for Rexx calls into Java. This method carries out
@@ -1545,7 +1647,13 @@ private static final String STRING_ENV_SET                        =  "setEnv";  
         <td colspan="2">Returns the RexxEngine object, that is used to run the
      *                  Rexx program.
 
+     *
 
+        <!-- -------------------------------------------------------- -->
+        <tr class="TableHeadingColor"><!-- table row -->
+        <td> <code>&quot;get_RII_ID&quot; </code>
+        <td colspan="2">Returns the &quot;Rexx Interpreter Instance (RII) ID&quot; used to attach
+     *                  to the corresponding Rexx interpreter instance
 
 
         <!-- -------------------------------------------------------- -->
@@ -2231,11 +2339,12 @@ private static final String STRING_ENV_SET                        =  "setEnv";  
         }
 
         {
-            final boolean bDebug=    // if true, show debug infos
+            final boolean bDebug= // true;  // if true, show debug infos
                                   false;
             if (bDebug)
             {
                 System.err.print(this+".javaCallBSF(...)"
+                                   +"/rii_ID=["+this.rii_ID+"]"
                                    +", mgr=["+mgr+"]"
                                    +                 ", args[0]=["+args[0]+"]"
                                    +(args.length>1 ? ", args[1]=["+args[1]+"]" : "")
@@ -2337,6 +2446,9 @@ private static final String STRING_ENV_SET                        =  "setEnv";  
        else if (args[0].equalsIgnoreCase( STRING_ENV_GET                        )) choice = ENV_GET                      ;  // 20140329, rgf
        else if (args[0].equalsIgnoreCase( STRING_ENV_SET                        )) choice = ENV_SET                      ;  // 20140329, rgf
 
+       else if (args[0].equalsIgnoreCase( STRING_GET_RII_ID                     )) choice = GET_RII_ID                   ;  // 20150801, rgf
+       else if (args[0].equalsIgnoreCase( STRING_INCREASE_REF_COUNTER           )) choice = INCREASE_REF_COUNTER         ;  // 20150804, rgf
+
 
         // ==================================================================
         // ==================================================================
@@ -2404,6 +2516,8 @@ private static final String STRING_ENV_SET                        =  "setEnv";  
                    throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": too few arguments, you must supply at least the \"componentType\" argument!");
                }
+
+               runPendingUninits();     // run pending uninits for this RII, if any
 
                Object o_componentType=null;
                try
@@ -3606,7 +3720,8 @@ if (bDebug)
                                               throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
                                                                       "/// Java-exception (RexxAndJava) occurred: ["+e.toString()+"]" +
                                                                       getCauseAsString(", getCause(): ", e)+" \\\\\\\n" +
-                                                          "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"], method not found or error (exception) executing method!"
+//                                                          "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"], method not found or error (exception) executing method!"
+                                                                      "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"]: error (exception) while executing Java method!"
                                                           , e  // rgf, 2011-06-04: supply Exception object
                                                           );
                                           }
@@ -3997,7 +4112,8 @@ if (bDebug) System.err.println("==> ==> ==> RexxAndJava(), throwing # 1...");
                                                           // "/// Java-exception (RexxAndJava) occurred: ["+eMsg+"] \\\\\\\n" +
                                                                       "/// Java-exception (RexxAndJava) occurred: ["+e.toString()+"]" +
                                                                       getCauseAsString(", getCause(): ", e)+" \\\\\\\n" +
-                                                          "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"], method not found or error (exception) executing method!"
+//                                                          "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"], method not found or error (exception) executing method!"
+                                                                      "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": object '"+args[1]+"' - method ["+args[2]+"]: error (exception) while executing Java method!"
                                                           , e  // rgf, 2011-06-04: supply Exception object
                                                           );
                                           }
@@ -4820,6 +4936,8 @@ if (bDebug)
                                   "'"+args[0]+"', [beanName], beanType [, argType, arg]... )");
                       }
 
+
+                      runPendingUninits();  // unregister beans that got created with this rii_ID
                       // Class cl=EngineUtils.loadClass(mgr, args[2]);
 
                       // 2010-04-18, rgf
@@ -4890,6 +5008,7 @@ if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr
                       }
 
                       boolean bFound=false;
+
                         // find matching constructor
                       int i=0;
                       for (i=0; i<constr.length; i++)
@@ -4912,6 +5031,7 @@ if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr
 
                       if (!bFound)  // no matching constructor found
                       {
+
                             // one error could be: using a value which is a key into the BSF registry, hence give
                           String dump="";       // programmer as much information as possible to find out about this
                           for (i=0; i<funcArgs.length; i++)
@@ -4921,6 +5041,7 @@ if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr
                                         (funcArgs[i]==null ? "(null)]" : funcArgs[i].getClass()+"]")
                                         ;
                           }
+
                           throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": no public constructor matching given arguments found for Java class ["+
                                    args[2]+"], cannot create an instance...\n"+
@@ -4928,6 +5049,7 @@ if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr
                                                      : "\n\n\tcheck method name or arguments (number and types):\n"+dump)
                                    );
                       }
+
 
                       Object bean=null;
                       // create and register the object
@@ -4975,6 +5097,7 @@ if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr
                         // creating went well, now registering new Java object
                       String beanName = ( convFromRexx(args[1])==null? null : args[1]);
 
+
                       if (beanName==null || beanName.equals(""))
                       {  // need to create a unique beanName
                          // beanName=""+ bean.getClass().getName() + '@' + Integer.toHexString( bean.hashCode() );
@@ -4991,25 +5114,67 @@ if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr
                    * call BSF 'unregisterBean', beanName
                    *
                    * - beanName: the bean to unregister
+                   *
+                   * - RII_ID: optional, the RII_ID in which to unregister (since 2015-08-03)
                    *********************************************************/
-                      final boolean bDebug=    // if true, show debug infos
-                                           false;
-
-                      if(args.length!=2)
                       {
-                          throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                                   "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: call BSF " +
-                              "'"+args[0]+"', beanName");
-                      }
+                          final boolean bDebug=    // if true, show debug infos
+                                               // true;
+                                               false;
+
+/*
+                          if(args.length!=2)
+                          {
+                              throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: call BSF " +
+                                  "'"+args[0]+"', beanName");
+                          }
+*/
+
+                            // 2015-08-03, rgf
+                          if (args.length<2 || args.length>3)
+                          {
+                              throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: call BSF " +
+                                  "'"+args[0]+"', beanName[, RII_ID]");
+                          }
+
+                          runPendingUninits();  // unregister beans that got created with this rii_ID
+
+                          if (args.length==3)       // RII_ID given, honor it
+                          {
+                              if (args[2].equals(rii_ID)==false)    // uninit not run in RII that created object, defer
+                              {
+                                      // get pending uninits ArrayList for this instance
+                                  ArrayList al=null;
+                                  synchronized (pendingUninits)
+                                  {
+                                      al=(ArrayList) pendingUninits.get(args[2]);
+                                  }
+
+                                  if (al!=null)     // could be, that RII that created bean does not exist anymore!
+                                  {
+                                      synchronized (al)     // store beanName
+                                      {
+                                          al.add(args[1]);
+                                      }
+if (bDebug) System.err.println(this+": subfunction \"unregisterBean\" - this rii_ID=["+rii_ID+"] != bean's rii_ID=["+args[2]+"], putting bean ["+args[1]+"] into pendingUninits, now ["+al.size()+"] beans in ArrayList !!!");
+                                  }
+                                  return makeString4Rexx(null);
+                              }
+                          }
+
+
 
 if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): about to unregister=["+args[1]+"]");
-                      if (unregisterBean(args[1]))  // bean got unregistered (removed)!
-                      {
+                          if (unregisterBean(args[1]))  // bean got unregistered (removed)!
+                          {
 if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM REGISTRY! ["+args[1]+"]");
-                            // return beanName (index value), indicate that this is now a mere string
-                          return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+args[1];
+                                // return beanName (index value), indicate that this is now a mere string
+                              return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+args[1];
+                          }
+                          return makeString4Rexx(null);     // return .NIL
                       }
-                      return makeString4Rexx(null);     // return .NIL
                   }
         // ==================================================================
 
@@ -5337,6 +5502,74 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                         // now halt given thread
                        return makeString4Rexx(""+kudos);
                    }
+
+      // ==================================================================
+
+       case GET_RII_ID  :
+               {
+               /* ********************************************************
+                * call BSF 'get_rii_id'
+                * returns the this RII_ID value ("Rexx Interpreter Instance", a string)
+                * rgf, 2015-08-03
+                *********************************************************/
+
+                   if (args.length > 1)
+                   {
+                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" does not expect any argument!");
+                   }
+
+                   return makeString4Rexx(get_rii_ID());    // return this instance
+               }
+
+
+      // ==================================================================
+
+       case INCREASE_REF_COUNTER :
+               {
+               /* ********************************************************
+                * call BSF 'increaseRefCounter'*, 'beanName'
+                *
+                *- beanName: the bean's name, mandatory, must exist
+                * returns the new refcount
+                * rgf, 2015-08-04
+                *********************************************************/
+
+                   final boolean bDebug=    // if true, show debug infos
+                         false;
+
+                   if (args.length<2)
+                   {
+                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: newRefCount=BSF( " +
+                               "'"+args[0]+"', beanName");
+                   }
+
+                   String beanName=args[1];
+
+                   // take care of ref-counters
+                   int refCount    = 0;
+                   Integer newRefCount=null;
+
+                   synchronized (orxReferences)
+                   {
+                       Integer i1 = (Integer) orxReferences.get( beanName );   // is object already registered?
+
+                       if (i1==null)       // no bean stored by that name
+                       {
+                           throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": beanName ["+beanName+"] not in registry, cannot increase refCounter!");
+                       }
+
+if (bDebug) System.err.println(this+": increaseRefCounter beanName=["+beanName+"]), has currently ["+i1.intValue()+"] refCount(s)");
+                       refCount = i1.intValue()+1;
+                       newRefCount=new Integer(refCount);
+                       orxReferences.put(beanName, newRefCount); // remember refCount
+                   }
+
+                   return makeString4Rexx(newRefCount);     // return new refcount for the bean
+               }
+
 
 
 
@@ -5883,7 +6116,8 @@ System.err.println(this+":  registerBean4JNI("+object+"], object.getClass()=["+(
       */
     protected String registerBean(String beanName, Object object)
     {
-        final boolean bDebug=false;
+        final boolean bDebug= false;
+                              // true;
 
         if (bTerminated==true)
         {
@@ -5895,17 +6129,25 @@ System.err.println(this+":  registerBean4JNI("+object+"], object.getClass()=["+(
         // take care of ref-counters
         int refCount    = 1;                        // ref-Counter
 
-        Integer i1 = (Integer) orxReferences.get( beanName );   // is object already registered?
-        if (i1 != null)                             // increase its reference counter
+        synchronized (orxReferences)
         {
-// System.err.println(this+": registerBean(beanName=["+beanName+"]) already exists, has currently ["+i1.intValue()+"] refCount(s)");
-           refCount = i1.intValue()+1;
-        }
-        orxReferences.put(beanName, new Integer(refCount)); // remember refCount
+            Integer i1 = (Integer) orxReferences.get( beanName );   // is object already registered?
+            if (i1 != null)                             // increase its reference counter
+            {
+if (bDebug) System.err.println(this+": registerBean(beanName=["+beanName+"]) already exists, has currently ["+i1.intValue()+"] refCount(s)");
+               refCount = i1.intValue()+1;
+            }
+            orxReferences.put(beanName, new Integer(refCount)); // remember refCount
 
-        if (tmp==null)      // need to newly register
-        {
-            mgr.registerBean( beanName, object ); // register the object under this new beanName
+            if (tmp==null)      // need to newly register
+            {
+                synchronized (beansCreated)     // save the beanName, we deregister it upon terminat()/finalize()
+                {
+                    beansCreated.add(beanName);
+                }
+
+                mgr.registerBean( beanName, object ); // register the object under this new beanName
+            }
         }
 
 if (bDebug==true)
@@ -5913,6 +6155,7 @@ System.err.println(this+": registerBean(beanName=["+beanName+"], object=["+objec
 
         return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+beanName;   // if so, return beanName
     }
+
 
 
 
@@ -5927,8 +6170,8 @@ System.err.println(this+": registerBean(beanName=["+beanName+"], object=["+objec
     protected boolean unregisterBean(String beanName )
     {
 
-        final boolean bDebug= // true;
-                               false;
+        final boolean bDebug=  // true;
+                              false;
 
 if (bDebug==true)
 System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"): bTerminated=["+bTerminated+"] ...");
@@ -5938,8 +6181,10 @@ System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"): bTer
             return false;
         }
 
-        // take care of ref-counters
-        Integer i1 = (Integer) orxReferences.get(beanName);    // get refCount-value
+        synchronized (orxReferences)
+        {
+            // take care of ref-counters
+            Integer i1 = (Integer) orxReferences.get(beanName);    // get refCount-value
 
 if (bDebug==true)
 {
@@ -5953,23 +6198,39 @@ if (bDebug==true)
     }
 }
 
-        if (i1 != null)                                     // decrease its reference counter
-        {
-           int refCount = i1.intValue()-1;  // get and decrease refCount
+            if (i1 != null)                                     // decrease its reference counter
+            {
+               int refCount = i1.intValue()-1;  // get and decrease refCount
 
-           if (refCount > 0)                // still references on the (Object) Rexx side
-           {
-               orxReferences.put(beanName, new Integer(refCount));
+               if (refCount > 0)                // still references on the (Object) Rexx side
+               {
+if (bDebug)  System.err.println(this+".unregisterBean("+beanName+") - reduce count to ["+refCount+"]");
+
+                   orxReferences.put(beanName, new Integer(refCount));
+
 if (bDebug) System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] reducing refCount to: ["+refCount+"]");
-           }
-           else                             // no more references on the (Object) Rexx side
-           {                                // safe to remove Java object
-               orxReferences.remove(beanName);
-               mgr.unregisterBean(beanName);
-// if (bDebug) System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] refCount: ["+refCount+"], REMOVED from REGISTRY! <==\n\t<== mgr.lookupBean("+beanName+")=["+mgr.lookupBean(beanName)+"], reference count orxReferences.get("+beanName+")=["+orxReferences.get(beanName)+"]");
+               }
+               else                             // no more references on the (Object) Rexx side
+               {                                // safe to remove Java object
+
+if (bDebug==true) System.err.println(this+".unregisterBean("+beanName+") - remove!");
+
+    /* 2015-07-30, ---rgf: temporarily do not unregister for testing UNINIT-problems
+    */
+                   orxReferences.remove(beanName);
+                   mgr.unregisterBean(beanName);
+
+                   // not really necessary, however from a life-time view this is the counter action to registerBean()
+                   synchronized (beansCreated)     // save the beanName
+                   {
+                       beansCreated.remove(beanName);
+                   }
+
+    // if (bDebug) System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] refCount: ["+refCount+"], REMOVED from REGISTRY! <==\n\t<== mgr.lookupBean("+beanName+")=["+mgr.lookupBean(beanName)+"], reference count orxReferences.get("+beanName+")=["+orxReferences.get(beanName)+"]");
 if (bDebug) System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] refCount: ["+refCount+"], REMOVED from BSF registry! <==");
-           }
-           return true;
+               }
+               return true;
+            }
         }
 
 if (bDebug) System.err.println(this+":   ===> RexxAndJava.unregisterBean: ["+beanName+"]: PROBLEM! PROBLEM! PROBLEM! does NOT exist in refcounter Hashtable!");
@@ -6108,9 +6369,30 @@ if (bDebug)  System.err.println("makeBeanName(): duplicate identityHashCode, spi
     */
     synchronized protected void terminate()
     {
-        bTerminated=true;       // from now on do not use BSFManager and RexxEngine related methods
-        rexxEngine=null;        // nullify, release reference
-        mgr       =null;        // nullify, release reference
+System.err.println("*** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE ***");
+        if (bTerminated==false) // if we did not run yet (eg. invoked by finalize() )
+        {
+            bTerminated=true;       // from now on do not use BSFManager and RexxEngine related methods
+
+            // deregister all beans that got created via this RII
+
+            Iterator it=beansCreated.iterator();
+            while (it.hasNext())    // iterate over beansCreated and unregister them from the BSF registry
+            {
+                mgr.unregisterBean((String) it.next());  // fetch beanname and remove bean from registry
+            }
+            // reset beansCreated
+            beansCreated.clear();
+            orxReferences.clear();
+            synchronized (pendingUninits)
+            {
+System.err.println(this+": temrinate(), removed ArrayList for rii_ID=["+rii_ID+"]");
+                pendingUninits.remove(rii_ID);      // remove entry for this rii_ID
+            }
+
+            rexxEngine=null;        // nullify, release reference
+            mgr       =null;        // nullify, release reference
+        }
     }
 
     /** Getter method for field <code>bTerminated</code>.
@@ -6390,6 +6672,9 @@ if (bDebug) System.err.println("***debug RexxAndJava.getCauseAsString(): Invocat
     */
     protected String createRexxInterpreterInstance(RexxConfiguration rc) throws BSFException
     {
+final boolean bDebug= false;
+                      // true;
+
         if (rii_ID!=null)   // already created for this RAJO!
         {
             throw new BSFException("A Rexx interpreter instance has been created already having the ID ["+rii_ID+"]");
@@ -6406,13 +6691,55 @@ if (bDebug) System.err.println("***debug RexxAndJava.getCauseAsString(): Invocat
         }
 
         String tmp_rii_ID=jniRexxCreateInterpreterInstance(options);  // create interpreter instance
+        set_rii_ID(tmp_rii_ID);             // set the returned rii_ID
 
-        if (this.rii_ID==null)  // no RII as of yet for this RAJO, set it!
-        {
-            this.rii_ID=tmp_rii_ID;
-        }
+
+if (bDebug) {System.err.println(this+".createRexxInterpreterInstance(...), returning rii_ID=["+tmp_rii_ID+"]"); }
 
         return tmp_rii_ID;
+    }
+
+    /** Unregister beans from Rexx uninit methods having indicated that {@link rii_ID} must be employed.
+     *
+     * @return count of beans unregistered from the BSF registry
+     * @since 2015-08-04
+     */
+    protected int runPendingUninits()
+    {
+        final boolean bDebug=false;
+                             // true;
+
+        ArrayList al=null;
+        int i=0;
+
+        synchronized (pendingUninits)
+        {
+            al=(ArrayList) pendingUninits.get(rii_ID);
+        }
+
+if (bDebug) System.err.println(this+": runPendingUninits(): this rii_ID=["+rii_ID+"] pendingUninits, al=["+al+"] ->al.size()=["+(al==null? -99 : al.size())+"] beans in ArrayList !!!");
+
+        if (al!=null)
+        {
+            synchronized (al)
+            {
+                String entries[]=new String[al.size()]; // define size appropriate for toArray()
+                entries=(String[]) al.toArray(entries);
+
+if (bDebug) System.err.println(this+": runPendingUninits(): this rii_ID=["+rii_ID+"] processing ["+(entries==null ? -99 : entries.length)+"] pendingUninits ... !!!");
+
+                if (entries!=null && entries.length>0)
+                {
+                    for (i=0; i<entries.length; i++)
+                    {
+                        unregisterBean(entries[i]);   // unregister this bean
+                    }
+                    al.clear();
+                }
+            }
+        }
+
+        return i;       // return number of unregisterBean carried out
     }
 
 

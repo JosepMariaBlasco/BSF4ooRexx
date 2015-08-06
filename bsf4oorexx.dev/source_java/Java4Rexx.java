@@ -38,7 +38,7 @@ import java.io.*;       // exception handling
  *
  *
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
-  * @version 4.1
+  * @version 4.5.2
  */
 
 /* changes:
@@ -48,13 +48,18 @@ import java.io.*;       // exception handling
     - 2012-04-17, rgf: change logic as there is no need for creating and terminating another Rexx
                        interpreter instance anymore (there was a bug too, that caused Terminate()
                        to not be invoked at all)
+    - 2015-08-04, rgf: split logic to allow Java4Rexx to sucessfully set the Rexx interpreter ids (rii_IDs) in
+                       RexxEngine and its companion RexxAndJava instance
 */
 
 class Java4Rexx {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "410.20120417";
+    static public String version = "452.20150804";
+
+    final static boolean bDebug= false;
+                                 // true;
 
 
   /**  BSF-manager to be used to get (instantiate) the Rexx engine. */
@@ -83,7 +88,9 @@ class Java4Rexx {
     catch (BSFException e)
     {
       e.printStackTrace();
+      // throw new RuntimeError("Java4Rexx.createInterface4Rexx(): cannot load the scripting engine \"rexx\"");
     }
+
 
     // for BSF4ooRexx using the 4.0 APIs it is important to save the Rexx interpreter instance ID which
     // loaded Java and thereby invoking this method (which initializeds the BSF4ooRexx infrastructure on
@@ -93,9 +100,42 @@ class Java4Rexx {
     RexxAndJava raj=rxEngine.getRexxInterface();    // get the RexxAndJava (i.e. interface) instance
     raj.jniInitialize4Rexx();           // initialize BSF4ooRexx (will cache interface instance)
 
+
+/*
     String root_rii_ID=raj.jniGetRexxInterpreterInstanceRoot(); // get reference to Rexx interpreter instance
     raj.set_rii_ID(root_rii_ID);        // now tell engine instance which Rexx interpreter instance to use
     rxEngine.set_rii_ID(root_rii_ID);   // now tell engine instance which Rexx interpreter instance to use
+*/
+
+if (bDebug) System.err.println("///\\\\\\ Java4Rexx.createInterface4Rexx() ///\\\\\\  raj=["+raj+"], rxEngine=["+rxEngine+"], bsfMgr=["+bsfMgr+"] ///\\\\\\ ");
+
   }
+
+  /** After {@link createInterfaceRexx} runs, the root Rexx interpreter instance (RII) will be
+   *  saved in the native code. This static method allows the native code to initialize the rii_ID fields
+   *  in RexxEngine and its RexxAndJava peer instance to be set.
+   *
+   * @since 2015-08-04
+   */
+  private static void set_rii_ids ()
+  {
+          // now call into the DLL ("BSF4ooRexx.dll") in order to initialize; will set JVM in BSF4ooRexx.cc
+      RexxAndJava raj=null;
+      String root_rii_ID=null;
+      try {
+          raj=rxEngine.getRexxInterface();    // get the RexxAndJava (i.e. interface) instance
+          root_rii_ID=raj.jniGetRexxInterpreterInstanceRoot(); // get reference to Rexx interpreter instance
+          raj.set_rii_ID(root_rii_ID);        // now tell engine instance which Rexx interpreter instance to use
+          rxEngine.set_rii_ID(root_rii_ID);   // now tell engine instance which Rexx interpreter instance to use
+      }
+      catch (BSFException e)
+      {
+        e.printStackTrace();
+        // throw new RuntimeError("Java4Rexx.set_rii_ids(): exception while trying to set the RII IDs");
+      }
+
+if (bDebug)   System.err.println("///\\\\\\ Java4Rexx.set_rii_ids()  ///\\\\\\  raj=["+raj+"], rxEngine=["+rxEngine+"], bsfMgr=["+bsfMgr+"] root_rii_ID=["+root_rii_ID+"] ///\\\\\\ ");
+  }
+
 }
 
