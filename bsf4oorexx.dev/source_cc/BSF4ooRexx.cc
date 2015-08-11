@@ -24,6 +24,10 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.5.2.  2015-08-11  rgf: javaObjectBean and javaMethodObjectBean will get deregistered in RexxAndJava.call(), hence
+                         increase refcounter in bsf.wrap, as the uninit-method of the BSF Rexx proxy will decrease it;
+
+
     4.5.2.  2015-07-21 - RgfProcessJArgs(): now expects a new (trailing) argument that determines, whether
                          Java object references in the BSF registry should be increased when wrapped as a
                          BSF reference object;
@@ -905,11 +909,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "452.20150806 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150811 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "452.20150806 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150811 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "452.20150806 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150811 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -12222,6 +12226,8 @@ fflush(stderr);
                          to become able to interact with it directly (e.g. for forwarding methods to its
                          superclass implementations).
  */
+ // 2015-08-11, rgf: javaObjectBean and javaMethodObjectBean will get deregistered in RexxAndJava.call(), hence
+//                   increase refcounter in bsf.wrap, as the uninit-method of the BSF Rexx proxy will decrease it
 JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSendMessageToRexxObject
   (JNIEnv *env, jobject jobj,
                   jstring j_rii_ID,
@@ -12493,7 +12499,9 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             if (clzBSF != rtc->Nil() ) // BSF.CLS got loaded ?
             {
                 RexxObjectPtr rop=ro_methodObject;
-                ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
+//                ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
+                // increase ref counter, such that Rexx BSF proxy uninit method can safely decrease it
+                ro_methodObject=(RexxStringObject) rtc->SendMessage2(clzBSF, "BSF.WRAP", rop, rtc->True());
                 // rgf, 201310 rtc->ReleaseLocalReference(rop);
             }
 
@@ -12519,7 +12527,9 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
                 {
                     RexxObjectPtr rop=ro_methodObject;
                     // ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", ro_methodObject);
-                    ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
+//                    ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
+                    // increase ref counter, such that Rexx BSF proxy uninit method can safely decrease it
+                    ro_methodObject=(RexxStringObject) rtc->SendMessage2(clzBSF, "BSF.WRAP", rop, rtc->True());
                     // rgf, 201310 rtc->ReleaseLocalReference(rop);
                 }
 
