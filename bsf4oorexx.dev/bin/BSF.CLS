@@ -12,6 +12,9 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2015-08-11, rgf: - BSF.WRAP: also honor argument "increase reference counter" for Java array
+                            objects (was overlooked!)
+
          2015-08-04, rgf: - adjust for storing RII_ID in BSF instance to be able to indicate RII_ID to
                             unregisterBean from when uninit runs (important, as BSF registry is always
                             RII dependent)
@@ -422,7 +425,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     4.52 (20150806)
+   version:     4.52 (20150811)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -521,7 +524,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="452.20150806" -- set version (date distribution got created)
+   .bsf4rexx~version="452.20150811" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -998,8 +1001,11 @@ any:
       dimension = verify(data, "[")-1  -- is it a Java array?
       if dimension>0 then   -- rgf, 2003-02-09, no upper limit anymore
       do
-         -- TODO:
-         return .bsf_array_reference~new(data, dimension) -- return a BSF_ARRAY proxy
+-- 2015-08-11, rgf: overlooked changing this accordingly! :(
+         if bIncr<>"" then
+            return .bsf_array_reference~new(data, dimension, bIncr) -- return a BSF_ARRAY proxy
+         else
+            return .bsf_array_reference~new(data, dimension) -- return a BSF_ARRAY proxy
       end
 
       if bIncr<>"" then
@@ -4324,9 +4330,14 @@ syntax:
      call bsf.import "java.io.Reader"  -- load Java class and store it as "JAVA.IO.READER" in .local
   isReader=.java.io.Reader~isInstance(javaInputObject)
 
+-- .stderr~say(self"::INIT byteArray1="pp(byteArray1) "charArray1="pp(charArray1) "javaInputObject="pp(javaInputObject) "isReader="pp(isReader) "line #" pp(.line))
+
+
 ::method charIn
   expose javaInputObject byteArray1 charArray1 isReader
   use strict arg start=1, length=1
+
+-- .stderr~say(self"::CHARIN byteArray1="pp(byteArray1) "charArray1="pp(charArray1) "javaInputObject="pp(javaInputObject) "isReader="pp(isReader) "line #" pp(.line))
 
   if start>1 then
   do
@@ -4340,6 +4351,7 @@ syntax:
         barr=byteArray1
      else
         barr=bsf.createJavaArray("byte.class", length)
+
 
      n=javaInputObject~read(barr,0,length)
      if n=0 then return ""
@@ -4361,12 +4373,17 @@ syntax:
 ::method chars
   expose javaInputObject isReader
 
+-- .stderr~say(self"::CHARS javaInputObject="pp(javaInputObject) "isReader="pp(isReader) "line #" pp(.line))
+
   if isReader then
      return javaInputObject~ready
   else   -- assume an InputStream (e.g. java.lang.System.in)
      return javaInputObject~available
 
 ::method lineIn
+
+-- .stderr~say(self"::lineIn line #" pp(.line))
+
   mb=.mutableBuffer~new
   do forever
      char=self~charin            -- read a byte
