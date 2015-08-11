@@ -6380,7 +6380,10 @@ if (bDebug)  System.err.println("makeBeanName(): duplicate identityHashCode, spi
     */
     synchronized protected void terminate()
     {
-System.err.println("*** TERMINATE *** rii_ID=["+rii_ID+"] *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE ***");
+        final boolean bDebug = // true;
+                               false;
+
+if (bDebug) System.err.println("*** TERMINATE *** rii_ID=["+rii_ID+"] *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE ***");
         if (bTerminated==false) // if we did not run yet (eg. invoked by finalize() )
         {
             bTerminated=true;       // from now on do not use BSFManager and RexxEngine related methods
@@ -6398,8 +6401,11 @@ System.err.println("*** TERMINATE *** rii_ID=["+rii_ID+"] *** TERMINATE *** *** 
             synchronized (pendingUninits)
             {
 
-ArrayList al=(ArrayList) pendingUninits.get(rii_ID);
-System.err.println(this+": ***TERMINATE*** terminate(), dropping entire ArrayList entry ("+(al==null?-1:al.size())+" entries) for rii_ID=["+rii_ID+"], pendingUninits.size()=["+pendingUninits.size()+"]");
+if (bDebug)
+{
+    ArrayList al=(ArrayList) pendingUninits.get(rii_ID);
+    System.err.println(this+": ***TERMINATE*** terminate(), dropping entire ArrayList entry ("+(al==null?-1:al.size())+" entries) for rii_ID=["+rii_ID+"], pendingUninits.size()=["+pendingUninits.size()+"]");
+}
 
                 pendingUninits.remove(rii_ID);      // remove entry for this rii_ID
                 check4pendingUninits();             // do we have to check for other pending uninits?
