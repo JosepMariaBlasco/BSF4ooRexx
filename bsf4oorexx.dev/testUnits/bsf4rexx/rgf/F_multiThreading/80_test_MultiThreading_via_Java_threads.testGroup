@@ -62,9 +62,9 @@ return testResult
 */
 
 
+/*
       -- normal burden:
       --   712 threads: nrJavaThreads=23;nrRexxThreads=29;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
-/*
     nrJavaThreads=23
     nrRexxThreads=29
 */
@@ -93,6 +93,9 @@ return testResult
       -- deadlocks (no time to reseach and analyze whether this behaviour is to be expected), if
       -- any thread and Rexx code sends it a message; using an intermediate class to serve as a
       -- proxy solves the problem, hence introducing and using class RGF_WORKER
+      --20150812, rgf: in the meantime in OOREXXUNIT.CLS the TestCase methods STRING and GETNAME
+      --               got defined to be unguarded in order to not block in a multithreading environment
+
     -- jo=javaClz~new(bm, .rgf_worker~new(self), nrJavaThreads, nrRexxThreads, rexxCode, arr)
     jo=javaClz~new(bm, .rgf_worker~new(self), nrJavaThreads, nrRexxThreads, rexxCode, arr)
     jo~dispatchRexxScripts

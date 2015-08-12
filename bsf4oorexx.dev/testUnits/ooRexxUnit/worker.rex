@@ -77,6 +77,7 @@ arguments = arg(1)
    select
      when .testOpts~singleFile \== .nil then finder~useFileName(.testOpts~singleFile)
      when .testOpts~fileList \== .nil then finder~useFiles(.testOpts~fileList)
+     when .testOpts~excludeFileList \== .nil then finder~excludeFiles(.testOpts~excludeFileList)
      when .testOpts~filesWithPattern \== .nil then finder~usePatterns(.testOpts~filesWithPattern)
      otherwise nop
    end
@@ -125,6 +126,20 @@ return finishTestRun(cl, testResult, overAllPhase, containers)
 
   overallPhase~done
   testResult~addEvent(overallPhase)
+
+  if .testOpts~logFile <> .nil then do
+    if .testOpts~logFileAppend then mode = 'append'
+    else mode = 'replace'
+
+    currenMonitor = .output~destination(.stream~new("ooTest.log")~~command("open write" mode))
+
+    testResult~print("ooTest Framework - Automated Test of the ooRexx Interpreter")
+
+    if .testOpts~debug then j = printDebug(containers, testResult, cl)
+    else if .testOpts~printOptions then j = printOptions(.true)
+
+    .output~destination
+  end
 
   testResult~print("ooTest Framework - Automated Test of the ooRexx Interpreter")
 
@@ -187,6 +202,8 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
 ::attribute buildFirst set private
 ::attribute forceBuild get                     -- B
 ::attribute forceBuild set private
+::attribute logFile get                        -- l
+::attribute logFile set private
 ::attribute noTests get                        -- n
 ::attribute noTests set private
 ::attribute waitAtCompletion get               -- w
@@ -390,7 +407,7 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
   return .true
 
 ::method parse private
-  expose cmdLine tokenCount errMsg originalCommandLine
+  expose cmdLine testOpts tokenCount errMsg originalCommandLine
 
   cmdLine = cmdLine~space(1)
   tokenCount = cmdLine~words
@@ -429,6 +446,15 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
     i = j
   end
   -- End do
+
+  if testOpts~logFileAppend, testOpts~logFile == .nil then do
+    self~needsHelp = .true
+
+    msgs = .list~of("Bad command line", "  CommandLine:" originalCommandLine, -
+                    "  The -L option can not be used without the -l option")
+    self~addErrorMsgAtTop(msgs)
+    return
+  end
 
 ::method lastToken private
   expose tokenCount
@@ -517,6 +543,13 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
       j = self~addOption(i)
     end
 
+    when word == '-e' then do
+      value = self~getValueSegment(i)
+
+      if \ self~validateAndSetOpt(testContainerExt, value, "-e") then j = -1
+      else j+=1
+    end
+
     when word == '-f' then do
       value = self~getValueSegment(i)
 
@@ -530,6 +563,17 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
 
     when word == '-I' then do
       j = self~addMultiWordOpt(i, '-I')
+    end
+
+    when word == '-l' then do
+      value = self~getValueSegment(i)
+
+      if \ self~validateAndSetOpt(logFile, value, "-l") then j = -1
+      else j+=1
+    end
+
+    when word == '-L' then do
+      testOpts~logFileAppend = .true
     end
 
     when word == '-n' then do
@@ -581,6 +625,10 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
 
     when word == '-w' then do
       testOpts~waitAtCompletion = .true
+    end
+
+    when word == '-x' then do
+      j = self~addMultiWordOpt(i, '-x')
     end
 
     when word == '-X' then do
@@ -667,6 +715,7 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
     when opt == '-I' then optName = 'TESTTYPEINCLUDES'
     when opt == '-p' then optName = 'FILESWITHPATTERN'
     when opt == '-t' then optName = 'TESTCASES'
+    when opt == '-x' then optName = 'EXCLUDEFILELIST'
     when opt == '-X' then optName = 'TESTTYPEEXCLUDES'
   end
   -- End select
@@ -794,6 +843,26 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
       return .true
     end
 
+    when name == 'EXCLUDEFILELIST' then do
+      if value = "" then do
+        self~addErrorMsg("The" displayName "option must be followed by at least 1 file name.")
+        return .false
+      end
+
+      -- Don't uppercase words in set.
+      files = makeSetOfWords(value, .false)
+      if testOpts~excludeFileList == .nil then testOpts~excludeFileList = .set~new
+      do f over files
+        if \ self~checkFileName(f) then do
+          self~addErrorMsgAtTop("The" displayName "option only accepts valid file names that do not require quoting.")
+          return .false
+        end
+        testOpts~excludeFileList~put(f)
+      end
+
+      return .true
+    end
+
     when name == 'FILESWITHPATTERN' then do
       if value = "" then do
         self~addErrorMsg("The" displayName "option must be followed by at least 1 file pattern.")
@@ -810,6 +879,26 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
         testOpts~filesWithPattern~put(p)
       end
 
+      return .true
+    end
+
+    when name == 'LOGFILE' then do
+      if value = "" then do
+        self~addErrorMsg("The" displayName "option must be followed by a file name.")
+        return .false
+      end
+
+      if value~words > 1 then do
+        self~addErrorMsg("The" displayName "option must be followed by a single file name.")
+        return .false
+      end
+
+      if \ self~checkFileName(lFile) then do
+        self~addErrorMsgAtTop("The" displayName "option must be followed by a valid file name.")
+        return .false
+      end
+
+      testOpts~logFile = .File~new(value)~absolutePath
       return .true
     end
 
@@ -882,7 +971,7 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
           leave
         end
 
-        testType = .ooTestTypes~testForName(t)
+        testType = .ooTestTypes~getTestForName(t)
         if testType == .nil then do
           self~addErrorMsg("The" displayName "option must be followed by valid test types")
           self~addErrorMsg(" " t "is not a valid test type.")
@@ -1042,9 +1131,12 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
   testOpts~buildFirst = .false
   testOpts~debug = .false
   testOpts~defaultTestTypes = .ooTestTypes~defaultTestSet
+  testOpts~excludeFileList = .nil
   testOpts~fileList = .nil
   testOpts~filesWithPattern = .nil
   testOpts~forceBuild = .false
+  testOpts~logFile = .nil
+  testOpts~logFileAppend = .false
   testOpts~noOptionsFile = .false
   testOpts~noTests = .false
   testOpts~optionsFile = .nil
@@ -1067,9 +1159,12 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
   optsTable[buildFirst           ] = "boolean"
   optsTable[debug                ] = "boolean"
   optsTable[defaultTestTypes     ] = "testtypes"
+  optsTable[excludeFileList      ] = "filelist"
   optsTable[fileList             ] = "filelist"
   optsTable[filesWithPattern     ] = "fileswithpattern"
   optsTable[forceBuild           ] = "boolean"
+  optsTable[logFile              ] = "string"
+  optsTable[logFileAppend        ] = "boolean"
   optsTable[noOptionsFile        ] = "invalid"
   optsTable[noTests              ] = "boolean"
   optsTable[optionsFile          ] = "invalid"
@@ -1169,10 +1264,13 @@ return .ooTestConstants~FAILED_PACKAGE_LOAD_RC
   say '  -O  -DnoOptonsFile=bool           Do not use any options file'
   say '  -p  -DfilesWithPattern=PA         Execute test groups matching PA'
   say '  -R, -DtestCaseRoot=DIR            DIR is root of search tree'
+  say '  -x  -DexcludeFileList=N1 N2 ...   Exclude the N1 N2 ... test groups'
   say '  -X  -DtestTypeExcludes=X1 X1 ...  Exclude test types X1 X2 ... keyword "all"'
   say '                                    indicates all test types'
   say
   say ' Output control:'
+  say '  -l  -DlogFile=FILE                Put test results in log file FILE'
+  say '  -L  -DlogFileAppend=bool          Append test results to log file'
   say '  -s  -DshowProgress=bool           Show test group progress'
   say '  -S  -DshowTestcases=bool          Show test case progress'
   say '  -u  -DsuppressTestcaseTicks=bool  Do not show ticks during test execution'

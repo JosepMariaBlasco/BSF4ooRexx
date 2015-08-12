@@ -48,6 +48,8 @@ return testResult
       --   28 threads: nrJavaThreads=3;nrRexxThreads=7;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
     nrJavaThreads=3
     nrRexxThreads=7
+/*
+*/
 
 /*
       -- normal burden:
@@ -63,9 +65,9 @@ return testResult
     nrRexxThreads=50
 */
 
-/*
       -- light burden:
       --    46 threads: nrJavaThreads= 5;nrRexxThreads= 7;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+/*
     nrJavaThreads=5
     nrRexxThreads=7
 */

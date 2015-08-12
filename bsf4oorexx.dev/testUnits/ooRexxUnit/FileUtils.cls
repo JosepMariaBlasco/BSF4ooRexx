@@ -1,7 +1,7 @@
 #!/usr/bin/rexx
 /*
-  SVN Revision: $Rev: 546 $
-  Change Date:  $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+  SVN Revision: $Rev: 3047 $
+  Change Date:  $Date: 2008-08-22 19:56:58 -0700 (Fri, 22 Aug 2008) $
 */
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
@@ -603,6 +603,10 @@ return fileName
       ret = RC
     end
     when .ooRexxUnit.OSName == "AIX" then do
+      'rm -f' .TestUtil~enQuote(fileName) '>/dev/null 2>&1'
+      ret = RC
+    end
+    when .ooRexxUnit.OSName == "MACOSX" then do
       'rm -f' .TestUtil~enQuote(fileName) '>/dev/null 2>&1'
       ret = RC
     end

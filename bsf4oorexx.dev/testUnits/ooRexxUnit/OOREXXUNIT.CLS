@@ -88,8 +88,10 @@
                                            creation time (and also collections of test cases)
                      2008-01-07  ---mm,  - Major re-work of the framework, bumping level to 2.0.0
 
-                     2011-02-21, ---rgf, - fixed a wrong statement in Assert::fail
-
+                     2015-07-30, ---rgf,  - added code to support assertions in BSF4ooRexx Rexx code
+                                          - added unguarded to class TestCase, methods getName and string
+                                            (otherwise string values requested from BSF4ooRexx Rexx code
+                                            gets blocked)
 
    language-level:   6.0.2
    needs:            ooRexx 3.2 or later
@@ -126,7 +128,7 @@
 
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
-/* Copyright (c) 2005-2011 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2005-2007 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -676,8 +678,8 @@ return mode
   TestCaseTable[aTestCase]~queue(dateTime": endTest")
   dir=.directory~new~~setentry("OOREXXUNIT.CONDITION", dateTime":" pp("endTest") aTestCase~string)
 
-  -- save class' 'testCaseInfo' with test case for later analysis
-  dir~setentry("OOREXXUNIT.class_testCaseInfo", aTestCase~class~testCaseInfo)
+  -- save class' 'caseInfo' with test case for later analysis
+  dir~setentry("OOREXXUNIT.class_testCaseInfo", aTestCase~class~caseInfo)
 
   logQueue~queue(dir)
   fAssertions=fAssertions+aTestCase~assertCount
@@ -726,7 +728,7 @@ return mode
   dir=.directory~new~~setentry("OOREXXUNIT.CONDITION", dateTime":" pp("startTest") aTestCase~string)
 
   -- save class' 'testCaseInfo' with test case for later analysis
-  dir~setentry("OOREXXUNIT.class_testCaseInfo", aTestCase~class~testCaseInfo)
+  dir~setentry("OOREXXUNIT.class_testCaseInfo", aTestCase~class~caseInfo)
 
   logQueue~queue(dir)
 
@@ -1306,6 +1308,14 @@ return str
   -- Assertion holds.
   self~fAssertions += 1
 
+/** assertFail()
+ * Assert a failure explicitly.  Useful for situations where control is not expected
+ * to reach a particular point.
+ */
+::method assertFail
+  use strict arg msg = ""
+  self~assertTrue(.false, msg) -- just do this as a true assertion
+
 
 /** fail()
  * Raise an application definable syntax condition with code 93.964.  The
@@ -1332,8 +1342,7 @@ return str
 
   msg = "ooRexxUnit.cls - source of syntax exception 'FAIL' method invocation in class 'ASSERT'."
 
---  RAISE syntax 93.964 array (msg, data)
-  RAISE syntax 93.964 array (msg pp(data~msg)) -- add application's msg to failure
+  RAISE syntax 93.964 array (msg, data)
 
 
 ::attribute conditionExpected private
@@ -1400,7 +1409,7 @@ return str
 
   if self~conditionExpected then do
      expected = self~conditionName
-     type = 'expectCondtion'
+     type = 'expectCondition'
 
      if expected == "SYNTAX", self~conditionCode <> .nil then do
         expected = expected self~conditionCode
@@ -1469,32 +1478,35 @@ return str
 ::class "TestCase" public inherit "Assert"
 
 ::attribute defaultTestResultClass class
-::attribute TestCaseInfo class
+::attribute caseInfo class
 
 ::method init class
   self~defaultTestResultClass=.TestResult -- set default: use TestResult class
-  self~TestCaseInfo=.directory~new
+  self~caseInfo=.directory~new
   forward class (super)
 
 
 ::method init        -- constructor
-  expose fName fCountTestCases -- definedInFile    -- name of Testcase (method) to carry out
+  expose fName fCountTestCases    -- name of Testcase (method) to carry out
   parse arg fName
+  if fname == "" & self~class~id == "text.testgroup" then do
+    say 1/0
+  end
 
   fCountTestCases=1  -- default: individual test
-  self~TestCaseInfo=.directory~new -- directory to contain information on test
+  self~caseInfo=.directory~new -- directory to contain information on test
 
-  clzTCI=self~class~testCaseInfo    -- get access to clz' 'testCaseInfo' dir
+  clzTCI=self~class~caseInfo    -- get access to clz' 'caseInfo' dir
   s=clzTCI~entry("test_Case-source")
   if .nil<>s then                   -- if source available, memorize fully qualified file name
      self~definedInFile=s
   else
-     self~definedInFile="n/a_"self~identityHash -- indicate that no file name available
+    self~definedInFile="n/a_"self~identityHash -- indicate that no file name available
 
   self~init:super    -- let superclass initialize
 
 
-::method TestCaseInfo attribute                 -- ooRexxUnit only
+::method caseInfo attribute                 -- ooRexxUnit only
 
 
 ::method createResult      -- creates a default TestResult object
@@ -1563,6 +1575,7 @@ exceptionHandler:
   -- expected condition, then the test passed so just return.
   if self~conditionExpected, self~checkCondition(cObj) then return aTestResult
 
+
   -- If the condition code is 93.964 then this condition was raised by the
   -- framework to signal a test case failure.  The assert failue object is at
   -- index 2 of the additional array.
@@ -1581,6 +1594,25 @@ exceptionHandler:
     data~additionalObject = self
     aTestResult~addFailure(self, data)
   end
+
+  -- rgf, 2015-07-24
+  -- The following condition may occur, if an assertion is carried out in a Rexx program
+  -- that gets executed via BSF4ooRexx; in such a case Java will raise a condition 40.900
+  -- and embed the original condition message including the Rexx condition in its generated
+  -- message returned in a new Rexx condition returned to ooRexx
+  else if cObj~code= 40.900, cObj~additional[1]~pos("Error 93.964:  Application error:")>0 then
+  do
+     jrco=cobj~additional[2]~getRexxConditionObject  -- get RexxProxy (Rexx condition object) wrapped by Java
+     robj=BsfRexxProxy(jrco, 'ooRexxObject')         -- get ooRexx object from Java RexxProxy
+     data = rObj~additional[2]      -- AssertFailure object
+     data~className = self~class~id
+     data~testName = self~getName
+     data~testString = self~string
+     data~conditionObject = cObj    -- important: must be the condition object for the Rexx program originally invoking this method
+     data~additionalObject = self
+     aTestResult~addFailure(self, data)
+  end
+
   else do
     -- This is an unexpected, unanticipated error.
     type = cObj~condition
@@ -1597,7 +1629,8 @@ exceptionHandler:
   return aTestResult
 
 
-::method getName     -- returns the name for this TestCase
+-- ::method getName     -- returns the name for this TestCase
+   ::method getName unguarded     -- returns the name for this TestCase
   expose fName
   return fName
 
@@ -1608,7 +1641,8 @@ exceptionHandler:
 /** Create a string representation of this test case, a counterpart to Java's
  *  toString()
  */
-::method string
+-- ::method string            -- original
+::method string unguarded  -- rgf, 20150725, does not change behaviour reported with "PROBLEM_BLOCK_JSR_223_rexx.testGroup
   className=self~class~id   -- get class name
   return "testCase:" pp(self~getName) "(a" || addN(className) className || "@" || -
           self~definedInFile")"
@@ -1635,7 +1669,27 @@ exceptionHandler:
 ::method tearDown
   NOP
 
+/** dataItem
+ * dataItem extracts an embedded set of data from the test classes.  The data
+ * is in the form of a method that embeds the data as comment in the method code.
+ * The first line of the method must be the line "return /*".  The last line must
+ * be the line "*/ return".  All lines between the two delimiters are returned as
+ * an array of data.
+ *
+ * The target method must begin with the characters "data" and is requested using
+ * the name without the modifier.  For example, a dataitem named "xml1" would be
+ * contained in an instance method named "dataxml1" and would be requested using
+ * lines = self~dataitem("xml1")
+ */
+::method dataItem
+  use strict arg name
 
+  method = self~instanceMethod("DATA"||name~upper)
+  self~assertNotNull(method, "Method DATA"||name~upper "not found")
+  source = method~source
+  self~assertTrue(source~size > 2, "Data item method does not contain correct data")
+  -- extract the middle section of the data and return as an array
+  return source~section(2, source~size - 2)
 
 /* *********************************************************************************** */
 /* *********************************************************************************** */
@@ -1693,18 +1747,21 @@ exceptionHandler:
     raise syntax 88.914 array ("1 'classObj'", 'Class')
 
   -- Get the test methods names.  By convention this is all methods starting
-  -- with "TEST"
-  testMethodNames = .array~new
+  -- with "TEST".  We use a set because there may be duplicates in the
+  -- class hierarchy
+  testMethodNames = .set~new
 
- -- Only get methods of the receiver class (= testClass)
-  methSupplier = classObj~methods(.nil)
+ -- Get all methods that start with "TEST", even ones from the superclasses
+ -- Some tests might have method overrides that test different variants of
+ -- the base test methods
+  methSupplier = classObj~methods
   do while methSupplier~available -- iterate over supplied methods
      name = methSupplier~index
-     if name~left(4)="TEST" then testMethodNames~append(name)
+     if name~left(4)="TEST" then testMethodNames~put(name)
      methSupplier~next
   end
 
-  return testMethodNames~sort
+  return testMethodNames~makearray~sort
 
 
 ::method addTest
@@ -1823,7 +1880,7 @@ exceptionHandler:
 ::routine makeDirTestInfo public
    use arg aTestCaseClass, arrLines
 
-   tmpDir=aTestCaseClass~TestCaseInfo   -- get directory object to add infos to
+   tmpDir=aTestCaseClass~caseInfo   -- get directory object to add infos to
 
    keyWord=""
    tOut=xrange("A","Z")||xrange("a","z")

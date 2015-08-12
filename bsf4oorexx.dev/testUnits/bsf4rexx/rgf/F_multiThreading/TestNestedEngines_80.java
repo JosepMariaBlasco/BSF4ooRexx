@@ -113,11 +113,13 @@ public class TestNestedEngines_80 {
                                           null,
                                           null);
 
+/* 20150812, ---rgf: not needed (anymore?)
 // System.err.println("Java -> run():  RexxStart, #2 making sure BSF.CLS is required, using apply(), threadName=["+threadName+"]");
                        result=rexx.apply ("rexx", 0, 0,
                                           "::requires BSF.CLS",  // make sure BSF.CLS is loaded for processing arguments in next invocation
                                           null,
                                           null);
+*/
 
 // System.err.println("Java -> run():  RexxStart, running Rexx code via apply() for threadName["+threadName+"]");
 
@@ -130,6 +132,11 @@ public class TestNestedEngines_80 {
                                    args);
 
 // System.err.println("Java -> run(): end, result=["+result+"], threadName=["+threadName+"]");
+
+/* 20150812, ---rgf: tests to see whether terminating the Rexx engine (inhibiting callbacks from Java to Rexx) would change ooRexx 4.2.0 crashes in "heavy thread load" scenario
+((org.rexxla.bsf.engines.rexx.RexxEngine) rexx).terminate();
+System.err.println("Java -> run(): after rexx.terminate() ! end, result=["+result+"], threadName=["+threadName+"]");
+*/
                 tlResult.set(result);   // save result
             }
             catch (Throwable th) {

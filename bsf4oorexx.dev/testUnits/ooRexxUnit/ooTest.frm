@@ -1,7 +1,7 @@
 #!/usr/bin/rexx
 /*
-  SVN Revision: $Rev: 546 $
-  Change Date:  $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+  SVN Revision: $Rev: 9920 $
+  Change Date:  $Date: 2014-02-15 13:19:42 -0800 (Sat, 15 Feb 2014) $
 */
 /*----------------------------------------------------------------------------*/
 /*                                                                            */
@@ -286,7 +286,10 @@ return 0
   -- need some special set up.  Like a ftp server, mail server, etc..
   ::constant TCPIP_TEST                  11
 
-  ::constant MAX_TEST_TYPE               11
+  -- A test type that can only work with an English language version of Windows.
+  ::constant ENGLISH_ONLY_TEST           12
+
+  ::constant MAX_TEST_TYPE               12
 
   -- The default test type is the unit test (see above for value.)
   ::constant DEFAULT_TEST_TYPE            1
@@ -310,7 +313,7 @@ return 0
     use strict arg format = 'C'
 
     tests = .set~of(self~UNIT_TEST, self~UNIT_LONG_TEST, self~SAMPLE_TEST, self~GUI_TEST, self~GUI_SAMPLE_TEST, -
-                    self~OLE_TEST, self~DOC_EXAMPLE_TEST, self~NATIVE_API_TEST)
+                    self~OLE_TEST, self~DOC_EXAMPLE_TEST, self~NATIVE_API_TEST, self~ENGLISH_ONLY_TEST)
 
     select
       when format~left(1)~upper == 'C' then return tests
@@ -348,18 +351,18 @@ return 0
   ::method allNames
     return self~class~allNames
 
-  /** testForName()
+  /** getTestForName()
    * Returns the numeric test type constant for the specified name, or .nil if
    * there is no such test type.
    */
-  ::method testForName class
+  ::method getTestForName class
     expose names
     use strict arg name
 
     if names~UNIT == .nil then self~populate
     return names~entry(name~upper)
 
-  ::method testForName
+  ::method getTestForName
     use strict arg name
     return self~class(name)
 
@@ -445,6 +448,9 @@ return 0
 
     Each method of an ooTestCase class that starts with 'test' is considered
     an individual test case.
+
+    Each method of an ooTestCase class that starts with 'data' is considered
+    a data collection that can be retrieved as an array inside any test case
 
     Each ooTestCase has a class attribute defining the test type of the
     individual test cases the class contains.  (This list is still being
@@ -802,7 +808,7 @@ return 0
     use strict arg problem
 
     if problem~additionalObject~isA(.ooTestCase) then do
-      info = problem~additionalObject~class~testCaseInfo
+      info = problem~additionalObject~class~caseInfo
       if info~hasEntry("test_Case-revsion") then do
         parse value info~entry("test_Case-date") with date time offset junk
         say "  svn:    r" || info~entry("test_Case-revsion") "  Change date:" date time offset
@@ -1138,7 +1144,7 @@ return 0
   ::attribute isAutomatedTest get
   ::attribute isAutomatedTest set private
 
-  -- A directory object that is used to set the TestCaseInfo class attribute of
+  -- A directory object that is used to set the caseInfo class attribute of
   -- each Test class this test group contains.
   ::attribute testInfo get
     expose testInfo
@@ -1364,7 +1370,7 @@ return 0
     if \ isSubClassOf(test, "ooTestCase") then
       raise syntax 88.917 array ("1 'test'", "must be a subclass of the ooTestCase class. Found:" test)
 
-    test~testCaseInfo = self~testInfo
+    test~caseInfo = self~testInfo
     tests[test~ooTestType] = test
     self~currentTypes~put(test~ooTestType)
     self~testCount += 1
@@ -1396,7 +1402,7 @@ return 0
     if \ isSubClassOf(suite, "ooTestSuite") then
       raise syntax 88.917 array ("2 'suite'", "must be a subclass of the ooTestSuite class. Found:" suite)
 
-    test~testCaseInfo = self~testInfo
+    test~caseInfo = self~testInfo
     testsWithSuite[test~ooTestType] = .TestWithSuite~new(test, suite)
     self~currentTypes~put(test~ooTestType)
     self~testCount += 1
@@ -1447,7 +1453,7 @@ return 0
     if \ isSubClassOf(suite, "ooTestSuite") then
       raise syntax 88.917 array ("3 'suite'", "if used, must be a subclass of the ooTestSuite class. Found:" suite)
 
-    test~testCaseInfo = self~testInfo
+    test~caseInfo = self~testInfo
     testCollections[test~ooTestType] = .TestWithSuiteAndNames~new(test, methods, suite)
     self~currentTypes~put(test~ooTestType)
     self~testCount += 1
@@ -1805,6 +1811,7 @@ return 0
   ::attribute file private
   ::attribute filePatterns private
   ::attribute fileNames private
+  ::attribute excludeFileNames private
 
   ::attribute totalFound get
   ::attribute totalFound set private
@@ -1834,13 +1841,14 @@ return 0
     self~totalFound = 0
     self~filePatterns = .nil
     self~fileNames = .nil
+    self~excludeFileNames = .array~new
     self~file = .nil
     self~searchType = self~ALL
 
   -- End init()
 
   /** useFileName()
-   * Sets this test finder to locat a single file specified by fileName.
+   * Sets this test finder to locate a single file specified by fileName.
    *
    */
   ::method useFileName
@@ -1850,6 +1858,10 @@ return 0
 
   -- End useFileName()
 
+  /** useFiles()
+   *
+   * Sets this test finder to searches only for the files listed in names.
+   */
   ::method useFiles
     expose fileNames
     use strict arg names
@@ -1872,6 +1884,33 @@ return 0
     self~searchType = self~FILES
 
   -- End useFiles()
+
+  /** excludeFiles()
+   *
+   * Sets this test finder to exclude any files listed in names from the found
+   * files list.
+   */
+  ::method excludeFiles
+    expose excludeFileNames
+    use strict arg names
+
+    if \ names~isA(.string), \ names~isA(.collection) then
+      raise syntax 88.916 array ("1 'names'", "a string or a collection" names)
+
+    if excludeFileNames == .nil then excludeFileNames = .array~new
+    if names~isA(.string) then do
+      name = self~getCorrectFileName(names)
+      excludeFileNames~append(name)
+    end
+    else do n over names
+      if \ n~isA(.string) then
+        raise syntax 88.900 array("The file name must be a string object; found" n)
+
+      name = self~getCorrectFileName(n)
+      excludeFileNames~append(name)
+    end
+
+  -- End excludeFiles()
 
   ::method getCorrectFileName private
     expose extension sl
@@ -2087,39 +2126,60 @@ return 0
    *
    */
   ::method findFiles private
-    expose simpleFileSpec searchType fileNames
+    expose simpleFileSpec searchType fileNames excludeFileNames
 
     f = .array~new
 
     if searchType == self~SINGLEFILE then do
       j = SysFileTree(self~file, files., "FO")
-      if j = 0, files.0 == 1 then f[1] = files.1
+      -- if we found exactly 1 file and it is not excluded, then use it.
+      if j = 0, files.0 == 1, \ self~isExcludedFile(files.1) then f[1] = files.1
     end
     else do
       j = SysFileTree(simpleFileSpec, files., "FOS")
+
       select
         when searchType == self~ALL then do i = 1 to files.0
-          f[i] = files.i
+          -- If the file is not excluded then use it.
+          if \ self~isExcludedFile(files.i) then f[i] = files.i
         end
 
         when searchType == self~PATTERN then do i = 1 to files.0
-          if self~matchFile(files.i) then f~append(files.i)
+          -- If the file natches our pattern, and not in the excluded file name list, use it
+          if self~matchFile(files.i), \ self~isExcludedFile(files.i) then f~append(files.i)
         end
 
         otherwise do i = 1 to files.0
           n = filespec("NAME", files.i)
           do fn over fileNames
-            if fn~caselessCompare(n) == 0 then f~append(files.i)
+            -- If the file is in our file name list, and not in the excluded file name list, use it
+            if fn~caselessCompare(n) == 0, \ self~isExcludedFile(files.i) then f~append(files.i)
           end
         end
       end
       -- End select
     end
 
-    self~totalFound = files.0
+    self~totalFound = f~items
 
   return f
   -- End findFiles()
+
+  /** isExcludedFile()
+   *
+   * Checks if the specified file is in our excluded file list.
+   */
+  ::method isExcludedFile private
+    expose excludeFileNames
+    use strict arg fileName
+
+    n = filespec("NAME", fileName)
+    do fn over excludeFileNames
+      if fn~caselessCompare(n) == 0 then return .true
+    end
+    return .false
+  -- End isExcludedFile()
+
 
   ::method matchFile
     expose filePatterns
