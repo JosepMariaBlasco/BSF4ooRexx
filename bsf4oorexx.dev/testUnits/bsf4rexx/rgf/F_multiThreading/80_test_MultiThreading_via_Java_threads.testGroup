@@ -54,19 +54,19 @@ return testResult
     arr~append(tid)              -- save main thread's TID
     rpArr=BsfCreateRexxProxy(arr)-- create a Java RexxProxy for the array
 
+/*
       -- very light burden: to let Linux-based systems run all multithreading tests successfully
       --   28 threads: nrJavaThreads=3;nrRexxThreads=7;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
     nrJavaThreads=3
     nrRexxThreads=7
-/*
 */
 
 
-/*
       -- normal burden:
       --   712 threads: nrJavaThreads=23;nrRexxThreads=29;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
     nrJavaThreads=23
     nrRexxThreads=29
+/*
 */
 
 /*

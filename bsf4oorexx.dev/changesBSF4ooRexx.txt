@@ -1,3 +1,130 @@
+-------------------------------------- 2015-08-14 ----------------------------------
+
+- install\windows\elevate.rex
+
+        - new Rexx script to employ elevation for all versions of Windows, kudos
+          to Gil Barmwater
+
+- install\windows\kickoff.rex
+
+        - replacing dependency on an external package by 'elevate.rex'
+
+- testUnits\
+
+        - in general updated all test units to the 4.2.0 ooTest framework
+
+          - files in ooRexxUnit\
+
+                - OOREXXUNIT.CLS changed
+
+                  - add logic to correctly identify a failure if carried out in
+                    a separate Rexx interpreter instance via BSF4ooRexx
+
+                  - added UNGUARDED to STRING and GETNAME methods to allow using
+                    the string method concurrently in another activity (eg in another
+                    Rexx interpreter instance)
+
+
+-------------------------------------- 2015-08-11 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - javaObjectBean and javaMethodObjectBean will get deregistered in
+          RexxAndJava.call(), hence increase refcounter in bsf.wrap, as the uninit-method
+          of the BSF Rexx proxy will decrease it
+
+- BSF.CLS
+
+        - BSF.WRAP: also honor argument "increase reference counter" for Java array
+          objects (was overlooked!)
+
+
+-------------------------------------- 2015-08-04 ----------------------------------
+
+- BSF.CLS
+
+        - adjust for storing RII_ID in BSF instance to be able to indicate RII_ID to
+          unregisterBean from when uninit runs (important, as BSF registry is always
+          RII dependent)
+
+- RexxScriptEngine.java
+
+        - adjust to info that starting with ooRexx 5.0.0 the string argument to
+          .routine~new must not contain CR/LF chars; prepare all Rexx ocde herein to
+          allow replacing CR-LF with semi-colons by changing line comments to block
+          comments; make sure that the Rexx code that creates .routine objects
+          carries out a makearray for the code-part (allowing CR-LF as stored on
+          file or in databases, but also giving much more meaningful line-based error
+          information; Rexx, after all is meant to be an easy to use and to debug
+          language!)
+
+- Java4Rexx.java
+
+        - split logic to allow Java4Rexx to sucessfully set the Rexx interpreter ids
+          (rii_IDs) in RexxEngine and its companion RexxAndJava instance
+
+
+-------------------------------------- 2015-08-03 ----------------------------------
+
+- RexxAndJava.java
+
+     - change code to only deregister bean, if running in the context of the same RII
+       in which registering took place!
+
+       - defining a class field "pendingUninits": a
+         HashMap<String,HashSet> (RII_ID,Vector of beanNames to unregister)
+
+       - case "UNREGISTER_BEAN" adopted accordingly
+
+       - terminate: make sure all registered beans get deregistered (BSFManager may
+                    initiate a new Rexx interpreter instance which should be able to
+                    access any other registered Java object)
+
+
+-------------------------------------- 2015-08-01 ----------------------------------
+
+- RexxAndJava.java
+
+        - change error message "method not found or error (exception) executing
+          method!" to unambiguous message: "(exception) executing method!" to ease
+          debugging for Rexx programmers
+
+        - add subfunction "get_RII_ID", which returns the "Rexx interpreter instance
+          ID" (a string)
+
+-------------------------------------- 2015-07-21 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - RgfProcessJArgs(): now expects a new (trailing) argument that determines, whether
+          Java object references in the BSF registry should be increased when wrapped as a
+          BSF reference object;
+
+- BSF.CLS
+
+        - bsf.wrap: honor new argument "bIncr", if set to .true, then the reference counter
+          in the BSF registry is increased (needed, if Java object is an argument
+          to RexxEngine.call() [native code: ...jniRexxRunProgram(),
+          ...jniRexxSendMessageToRexxObject(), both will supply .true as a new second arg]
+
+        - methods and routines "*ArrayOf": changed to automatically create RexxProxy objects
+          for Rexx objects that are neither .String, .BSF nor .nil
+
+
+- RexxScriptEngine.java
+
+        - no need to do a BsfCreateRexxProxy(), this will now be done by bsf.createArrayOf()
+          (in BSF.CLS)
+
+
+
+-------------------------------------- 2015-07-20 ----------------------------------
+
+- BSF4ooRexx.cc
+
+        - BsfRexxProxy(): give more detailed condition information to ease debugging
+
+
 -------------------------------------- 2015-07-07 ----------------------------------
 
 - testUnits\bsf4rexx\rgf\G_misc\07_rexx_JSR_223.testGroup

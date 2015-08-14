@@ -674,6 +674,9 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 // #define DEBUG_RGF_PROCESS_J_ARGS
 // #define DEBUG_REXX_PROXY
 
+// #define DEBUG_RII_ID            // 2015-08-13
+
+// #define DEBUG_RGF_PROBES        // 2015-08-14, debug messages to find location where crash in rexx.exe occurs
 
 // #if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
 #if defined (WINDOWS) && defined (NIXI_NOXI) // comment before && to activate all of the flags below
@@ -720,6 +723,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
     #define DEBUG_ARRAY_ARGS            // rgf, 2012-02-21
     #define DEBUG_RGF_ATTACH_NEW        // debug new attach/detach strategy
+
+    #define DEBUG_RII_ID                // 2015-08-13
 #endif
 
 #if defined (__APPLE__) && NIXI      // only define, if rexx is started on the main thread and established a CFRunLoop (then awt's event dispatch thread needs to run on a separate thread)
@@ -11826,9 +11831,16 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 #endif
         tid=RgfGetTID();   // get current TID
 
-#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_JNI_ENTRY)
+#if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_JNI_ENTRY) || defined (DEBUG_RII_ID)
     fprintf(stderr, "--> arrived: .._jniRexxRunProgram(...), tid=[%lu], currentJVM=[%p], defaultJVM->jvm=[%p], defaultJVM->clz_Object=[%p]\n",
                     (unsigned long) tid, currentJVM, defaultJVM->jvm, defaultJVM->clz_Object);
+    if (j_rii_ID==NULL)     // rgf, 20150813
+    {
+        fprintf(stderr, "             .._jniRexxRunProgram(...), PANIC, PANIC, tid=[%lu], j_rii_ID==NULL [%p]!!!\n",
+                                        (unsigned long) tid,
+                                        j_rii_ID);
+    }
+
     fflush(stderr);
 #endif
 
@@ -11844,6 +11856,16 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 #endif
 
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
+
+#if defined (DEBUG_RII_ID)
+    fprintf(stderr, "             .._jniRexxRunProgram(...), tid=[%lu], j_rii_ID=[%p], c_rii_ID=[%p], instance=[%p]\n",
+                                    (unsigned long) tid,
+                                    j_rii_ID, c_rii_ID,
+                                    instance);
+    fflush(stderr);
+#endif
+
+
     RexxFreeMemory(c_rii_ID);
 
 /* ---> rgf, 2014-05-17: no need for attaching/detaching to JVM as we are invoked in that context!
@@ -11979,6 +12001,18 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     RexxInstance *tmpInstance=NULL;
     tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
 
+#if defined (DEBUG_RII_ID)
+    fprintf(stderr, "             .._jniRexxRunProgram(...), tid=[%lu], instance=[%p], tmpInstance=[%p] (after RgfGetRexxInterpreterInstanceFromList(instance)\n",
+                                    (unsigned long) tid,
+                                    instance,
+                                    tmpInstance);
+    fflush(stderr);
+#endif
+
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], instance=[%p], tmpInstance=[%p]\n", (unsigned long) tid, instance, tmpInstance);fflush(stderr);
+#endif
+
     if (instance != tmpInstance)    // error (do not halt another Rexx Interpreter instance!)
     {
         // char msg[1024]="";
@@ -12013,6 +12047,11 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
 #if defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "--------------> ooRexx->AttachThread() - jniRexxRunProgram tid=[%lu] ... ", (unsigned long) tid); fflush(stderr);
+#endif
+
+
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], before AttachThread() \n", (unsigned long) tid);fflush(stderr);
 #endif
 
     // rgf, 2013-10-07: no need to do a rtc->ReleaseLocalReference(ro) as these references get released upon rtc->DetachThread() !
@@ -12062,9 +12101,21 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
     char *c_programData=NULL;
 
+
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], before RgfProcessJArgs()\n", (unsigned long) tid);
+    fflush(stderr);
+#endif
+
         // process Java argument array, get matching RexxArrayObject;
         // 20150721, have BSF registry reference counter increased
     RexxArrayObject ra=RgfProcessJArgs(env, rtc, j_args, NULL, FALSE, 1);
+
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], AFTER  RgfProcessJArgs()\n", (unsigned long) tid);
+    fflush(stderr);
+#endif
+
 
     // invocationType:
     //   1: execute Rexx program from file, use the 4.0 API <code>CallProgram</code>
@@ -12076,10 +12127,20 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     switch (invocationType)
     {
     case 1:     // CallProgram()
+
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], before invocationType=[%d] - CallProgram(...)\n",(unsigned long) tid,  invocationType);
+    fflush(stderr);
+#endif
         result_obj=rtc->CallProgram(c_fileName, ra);    // run the program from file
         break;
 
     case 3:     // LoadPackage()
+
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], before invocationType=[%d] - LoadPackage(...)\n",(unsigned long) tid,  invocationType);
+    fflush(stderr);
+#endif
         result_obj=rtc->LoadPackage(c_fileName);        // load & run the program
         break;
 
@@ -12096,7 +12157,17 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
             if (invocationType==2)
             {
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], before invocationType=[%d] - NewRoutine(...)\n",(unsigned long) tid,  invocationType);
+    fflush(stderr);
+#endif
                 RexxRoutineObject rro=rtc->NewRoutine(c_fileName, c_programData, len);
+
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], AFTER NewRoutine(), rro=[%p] \n", (unsigned long) tid, rro);
+    fflush(stderr);
+#endif
+
                 if (rro==NULL)          // something went wrong, condition will be set
                 {
                     break;
@@ -12109,18 +12180,45 @@ fprintf(stderr, "..._jniRexxRunProgram(...): riid=[%p], tid=[%lu], rtc->NewRouti
 fflush(stderr);
 #endif
 
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], before CallRoutine(rro=[%p],ra=[%p] \n",(unsigned long) tid, rro, ra);
+    fflush(stderr);
+#endif
+
                 result_obj=rtc->CallRoutine(rro, ra);   // call the program
                 // rgf, 201310 rtc->ReleaseLocalReference(rro);
+
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], AFTER  CallRoutine(rro=[%p],ra=[%p] \n",(unsigned long) tid, rro, ra);
+    fflush(stderr);
+#endif
+
             }
             else
             {
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], before LoadPackageFromData=[%d] - NewRoutine(...)\n", (unsigned long) tid, invocationType);
+    fflush(stderr);
+#endif
                 result_obj=rtc->LoadPackageFromData(c_fileName, c_programData, len);    // load & run the program
             }
     }
+
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], AFTER switch-statement \n", (unsigned long) tid );
+    fflush(stderr);
+#endif
+
+
     // rgf, 201310 rtc->ReleaseLocalReference(ra);
 
     RexxFreeMemory(c_fileName);      // make sure we free the allocated memory
     RexxFreeMemory(c_programData);      // make sure we free the allocated memory
+
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], RexxFreeMemory() \n", (unsigned long) tid );
+    fflush(stderr);
+#endif
 
 #if defined (DEBUG40)
     fprintf(stderr, "..._jniRexxRunProgram(...): rtc->CheckCondition()=[%d] /////  tid=[%lu] \n",
@@ -12149,6 +12247,12 @@ fflush(stderr);
 #if defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxRunProgram tid=[%lu]... ", (unsigned long) tid); fflush(stderr);
 #endif
+
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], before DetachThread() \n", (unsigned long) tid );
+    fflush(stderr);
+#endif
+
         // rgf, 201310 rtc->ReleaseLocalReference(result_obj);
         // rgf, 201310 rtc->ReleaseLocalReference(condObj);
         rtc->DetachThread();
@@ -12199,6 +12303,11 @@ fflush(stderr);
     RgfReleaseLock();
 <--- */
 
+#if defined (DEBUG_RGF_PROBES)
+    fprintf(stderr, "jniRexxRunProgram(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: before returning jresult0[%p] \n",(unsigned long) tid, jresult);
+    fflush(stderr);
+#endif
+
     return jresult;
 }
 
@@ -12243,7 +12352,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
                   )
 {
 
-#if defined (RGF_TRUE) || defined(DEBUG_JNI) || defined (DEBUG_40) || defined (RGF_JNI) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT) || defined (DEBUG_JNI_ENTRY)
+#if defined (RGF_TRUE) || defined(DEBUG_JNI) || defined (DEBUG_40) || defined (RGF_JNI) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT) || defined (DEBUG_JNI_ENTRY) || defined (DEBUG_RII_ID)
 
     #ifdef UNIX
         pthread_t
@@ -12302,6 +12411,17 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
 
+#if defined(DEBUG_RII_ID)
+    fprintf(stderr, "-->          .._jniRexxSendMessageToRexxObject(...), thisTid=[%lu], j_rii_ID=[%p], c_rii_ID=[%s/%p], instance=[%p]\n",
+                                       (unsigned long) thisTid,
+                                       j_rii_ID,
+                                       c_rii_ID,
+                                       c_rii_ID,
+                                       instance);
+    fflush(stderr);
+#endif
+
+
 
 /* ---> , rgf, 2014-05-17, no need
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
@@ -12347,8 +12467,27 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
     // RgfReleaseLock2(RII_lock);      // lock access to list of RexxInstance instances
 
+
+#if defined(DEBUG_RII_ID)
+    fprintf(stderr, "-->          .._jniRexxSendMessageToRexxObject(...), thisTid=[%lu], instance=[%p], tmpInstance=[%p]\n",
+                                    (unsigned long) thisTid,
+                                    instance,
+                                    tmpInstance);
+    fflush(stderr);
+#endif
+
+#if defined (DEBUG_RGF_PROBES)
+   fprintf(stderr, "jniRexxSendMessageToRexxObject(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], instance=[%p], tmpInstance=[%p]\n", (unsigned long) tid, instance, tmpInstance);fflush(stderr);
+#endif
+
     if (instance != tmpInstance)    // error (do not use a different Rexx Interpreter instance!)
     {
+
+#if defined (DEBUG_RGF_PROBES)
+   fprintf(stderr, "jniRexxSendMessageToRexxObject(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], ERROR! instance=[%p] != tmpInstance=[%p]\n", (unsigned long) tid, instance, tmpInstance);fflush(stderr);
+#endif
+
+
        // char msg[1024]="";
        char *msg=new char[1024];
        // sprintf(msg, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 1: Rexx interpreter instance with the ID '%.256s' could not be found", DLLNAME, c_rii_ID);
@@ -12377,6 +12516,10 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         environmentDetachFrom(&param, FALSE);
         RgfReleaseLock();
 <-- */
+#if defined (DEBUG_RGF_PROBES)
+   fprintf(stderr, "jniRexxSendMessageToRexxObject(): TSK, TSK - BSF4ooRexx.cc - TSK, TSK: tid=[%lu], ERROR! instance=[%p] != tmpInstance=[%p] - Java Exception thrown, before returning NULL\n", (unsigned long) tid, instance, tmpInstance);fflush(stderr);
+#endif
+
 
         return NULL;
     }

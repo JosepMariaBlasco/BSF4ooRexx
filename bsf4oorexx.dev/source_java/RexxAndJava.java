@@ -524,6 +524,11 @@ System.err.println(this+": get_rii_ID(), just set this instance to rii_ID=["+rii
      */
     protected void set_rii_ID(String new_rii_ID) throws BSFException
     {
+        final boolean bDebug= // true;
+                              false;
+
+if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
+
         if (rii_ID!=null)   // already created for this RAJO!
         {
             throw new BSFException("A Rexx interpreter instance has been created already having the ID ["+rii_ID+"]");
@@ -6383,7 +6388,7 @@ if (bDebug)  System.err.println("makeBeanName(): duplicate identityHashCode, spi
         final boolean bDebug = // true;
                                false;
 
-if (bDebug) System.err.println("*** TERMINATE *** rii_ID=["+rii_ID+"] *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE ***");
+if (bDebug) System.err.println("*** TERMINATE *** bTerminated=["+bTerminated+"] *** rii_ID=["+rii_ID+"] *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE ***");
         if (bTerminated==false) // if we did not run yet (eg. invoked by finalize() )
         {
             bTerminated=true;       // from now on do not use BSFManager and RexxEngine related methods
@@ -6693,8 +6698,8 @@ if (bDebug) System.err.println("***debug RexxAndJava.getCauseAsString(): Invocat
     */
     protected String createRexxInterpreterInstance(RexxConfiguration rc) throws BSFException
     {
-final boolean bDebug= false;
-                      // true;
+final boolean bDebug= // true;
+                      false;
 
         if (rii_ID!=null)   // already created for this RAJO!
         {

@@ -36,7 +36,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.5.2, 2015-08-05
+  * @version 4.5.2, 2015-08-11
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -343,7 +343,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "452.20150805";
+    static final public String version = "452.20150811";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -365,6 +365,13 @@ class RexxAndJava {
      * @since 2015-08-03
      */
     static HashMap pendingUninits=new HashMap();
+
+    /** This field will indicate, whether there are any entries in any of the ArrayLists in
+     *  in {@link pendingUninits} to be processed.
+     *
+     * @sicne 2015-08-11
+     */
+    static boolean bCheck4pendingUninits=false;
 
     /** Defines the version string. */
     static final private String RAJ_VERSION = version + " " + pkgName + " (org.apache.bsf)";
@@ -517,6 +524,11 @@ System.err.println(this+": get_rii_ID(), just set this instance to rii_ID=["+rii
      */
     protected void set_rii_ID(String new_rii_ID) throws BSFException
     {
+        final boolean bDebug= // true;
+                              false;
+
+if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
+
         if (rii_ID!=null)   // already created for this RAJO!
         {
             throw new BSFException("A Rexx interpreter instance has been created already having the ID ["+rii_ID+"]");
@@ -2517,7 +2529,10 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": too few arguments, you must supply at least the \"componentType\" argument!");
                }
 
-               runPendingUninits();     // run pending uninits for this RII, if any
+               if (bCheck4pendingUninits)
+               {
+                   runPendingUninits();     // run pending uninits for this RII, if any
+               }
 
                Object o_componentType=null;
                try
@@ -2716,8 +2731,8 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
             *********************************************************/
 
            {
-               final boolean bDebug=    // if true, show debug infos
-                     false;
+               final boolean bDebug= // true;    // if true, show debug infos
+                                     false;
 
                if (args[1].charAt(0) != '[')    // not an array object!
                {
@@ -2992,9 +3007,8 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
           case SET_PROPERTY_VALUE_STRICT :
                   {
 
-                      final boolean bDebug=    // if true, show debug infos
-                                  false;
-                                  // true;
+                      final boolean bDebug= // true;   // if true, show debug infos
+                                            false;
                       final int iDebugLevel=0; // 9; // 0;
 
 if (iDebugLevel>0)
@@ -3509,9 +3523,8 @@ if (bDebug)
 
 
 
-                          final boolean bDebug=
-                                          false;
-                                          // true;
+                          final boolean bDebug= false;
+                                                // true;
 
     if (bDebug)
     {
@@ -4926,8 +4939,8 @@ if (bDebug)
                    * - arg: the argument's value
                    *********************************************************/
 
-                      final boolean bDebug=    // if true, show debug infos
-                            false;
+                      final boolean bDebug=  // true;  // if true, show debug infos
+                                            false;
 
                       if (args.length<3)
                       {
@@ -4937,7 +4950,10 @@ if (bDebug)
                       }
 
 
-                      runPendingUninits();  // unregister beans that got created with this rii_ID
+                      if (bCheck4pendingUninits)
+                      {
+                          runPendingUninits();  // unregister beans that got created with this rii_ID
+                      }
                       // Class cl=EngineUtils.loadClass(mgr, args[2]);
 
                       // 2010-04-18, rgf
@@ -5118,9 +5134,8 @@ if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr
                    * - RII_ID: optional, the RII_ID in which to unregister (since 2015-08-03)
                    *********************************************************/
                       {
-                          final boolean bDebug=    // if true, show debug infos
-                                               // true;
-                                               false;
+                          final boolean bDebug= // true;    // if true, show debug infos
+                                                 false;
 
 /*
                           if(args.length!=2)
@@ -5139,7 +5154,10 @@ if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr
                                   "'"+args[0]+"', beanName[, RII_ID]");
                           }
 
-                          runPendingUninits();  // unregister beans that got created with this rii_ID
+                          if (bCheck4pendingUninits)
+                          {
+                              runPendingUninits();  // unregister beans that got created with this rii_ID
+                          }
 
                           if (args.length==3)       // RII_ID given, honor it
                           {
@@ -5150,16 +5168,14 @@ if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr
                                   synchronized (pendingUninits)
                                   {
                                       al=(ArrayList) pendingUninits.get(args[2]);
-                                  }
-
-                                  if (al!=null)     // could be, that RII that created bean does not exist anymore!
-                                  {
-                                      synchronized (al)     // store beanName
+                                      if (al!=null)     // could be, that RII that created bean does not exist anymore!
                                       {
                                           al.add(args[1]);
-                                      }
+                                          bCheck4pendingUninits=true;   // from now on need for checking for pending uninits
 if (bDebug) System.err.println(this+": subfunction \"unregisterBean\" - this rii_ID=["+rii_ID+"] != bean's rii_ID=["+args[2]+"], putting bean ["+args[1]+"] into pendingUninits, now ["+al.size()+"] beans in ArrayList !!!");
+                                      }
                                   }
+
                                   return makeString4Rexx(null);
                               }
                           }
@@ -5438,7 +5454,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                        String kudos=
                            "Ahammer, Andreas"                       + "\n" +
                            "Augustin, Walter"                       + "\n" +
-                           "Barwater, Gil"                          + "\n" +
+                           "Barmwater, Gil"                         + "\n" +
                            "Beck, Andreas"                          + "\n" +
                            "Burger, Martin"                         + "\n" +
                            "Cowlishaw, Mike F."                     + "\n" +
@@ -5535,8 +5551,8 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                 * rgf, 2015-08-04
                 *********************************************************/
 
-                   final boolean bDebug=    // if true, show debug infos
-                         false;
+                   final boolean bDebug= // true;    // if true, show debug infos
+                                         false;
 
                    if (args.length<2)
                    {
@@ -5654,8 +5670,8 @@ if (bDebug) System.err.println(this+": increaseRefCounter beanName=["+beanName+"
       */
     private Object convFromRexx(String type, String value) throws BSFException
     {
-        final boolean bDebug=    // if true, show debug infos
-              false;
+        final boolean bDebug=  // true;   // if true, show debug infos
+                               false;
 
 if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], value=["+value+"] value==null: ["+(value==null)+"] null4Rexx=["+null4Rexx+"]");
         if (value==null) return null;
@@ -5830,9 +5846,8 @@ if (bDebug)
         int k,
             nrArgs=funcArgs.length;
 
-        final boolean bDebug=
-             false;
-             // true;
+        final boolean bDebug=  // true;
+                              false;
 
 if (bDebug) System.err.println("\n---   ---   ---   ---   ---");
 
@@ -6086,7 +6101,8 @@ System.err.println(this+": lookupBean4JNI("+beanName+") -> mgr.lookupBean(beanNa
      */
     private String registerBean4JNI(Object object)
     {
-        final boolean bDebug=false;
+        final boolean bDebug=  // true;
+                               false;
 // rgf, 201507
 if (bDebug==true)
 System.err.println(this+":  registerBean4JNI("+object+"], object.getClass()=["+(object==null? null : object.getClass())+"]");
@@ -6170,7 +6186,7 @@ System.err.println(this+": registerBean(beanName=["+beanName+"], object=["+objec
     protected boolean unregisterBean(String beanName )
     {
 
-        final boolean bDebug=  // true;
+        final boolean bDebug= // true;
                               false;
 
 if (bDebug==true)
@@ -6190,7 +6206,7 @@ if (bDebug==true)
 {
     if (i1==null)
     {
-        System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"): BEAN NOT REGISTERED! BEAN NOT REGISTERED! BEAN NOT REGISTERED! BEAN NOT REGISTERED!");
+        System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"): BEAN NOT REGISTERED (no entry in orxReferences)! mgr.lookupBean(beanName)=["+mgr.lookupBean(beanName)+"] BEAN NOT REGISTERED?");
     }
     else
     {
@@ -6265,8 +6281,8 @@ if (bDebug && beanName.startsWith("<O>"))
       */
     protected String makeString4Rexx(Object o)  // changed 2003-01-06 from "makeResultString()" to "makeString4Rexx()"
     {
-        final boolean bDebug=    // if true, show debug infos
-              false;
+        final boolean bDebug=  // true;     // if true, show debug infos
+                               false;
 
 if (bDebug)
 {
@@ -6330,8 +6346,8 @@ if (bDebug) System.err.println("makeString4Rexx(): TSK # 1");
       */
     public String makeBeanName(Object o)
     {
-        final boolean bDebug=    // if true, show debug infos
-              false;
+        final boolean bDebug=  // true;   // if true, show debug infos
+                              false;
 
         if (o==null)
         {
@@ -6369,7 +6385,10 @@ if (bDebug)  System.err.println("makeBeanName(): duplicate identityHashCode, spi
     */
     synchronized protected void terminate()
     {
-System.err.println("*** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE ***");
+        final boolean bDebug = // true;
+                               false;
+
+if (bDebug) System.err.println("*** TERMINATE *** bTerminated=["+bTerminated+"] *** rii_ID=["+rii_ID+"] *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TERMINATE ***");
         if (bTerminated==false) // if we did not run yet (eg. invoked by finalize() )
         {
             bTerminated=true;       // from now on do not use BSFManager and RexxEngine related methods
@@ -6386,8 +6405,15 @@ System.err.println("*** TERMINATE *** *** TERMINATE *** *** TERMINATE *** *** TE
             orxReferences.clear();
             synchronized (pendingUninits)
             {
-System.err.println(this+": temrinate(), removed ArrayList for rii_ID=["+rii_ID+"]");
+
+if (bDebug)
+{
+    ArrayList al=(ArrayList) pendingUninits.get(rii_ID);
+    System.err.println(this+": ***TERMINATE*** terminate(), dropping entire ArrayList entry ("+(al==null?-1:al.size())+" entries) for rii_ID=["+rii_ID+"], pendingUninits.size()=["+pendingUninits.size()+"]");
+}
+
                 pendingUninits.remove(rii_ID);      // remove entry for this rii_ID
+                check4pendingUninits();             // do we have to check for other pending uninits?
             }
 
             rexxEngine=null;        // nullify, release reference
@@ -6601,8 +6627,8 @@ System.err.println(this+": temrinate(), removed ArrayList for rii_ID=["+rii_ID+"
 
     static private String getCauseAsString (String title, Exception e)
     {
-        final boolean bDebug=    // if true, show debug infos
-              false;
+        final boolean bDebug= // true;    // if true, show debug infos
+                              false;
 
         Throwable c=null;
 
@@ -6672,8 +6698,8 @@ if (bDebug) System.err.println("***debug RexxAndJava.getCauseAsString(): Invocat
     */
     protected String createRexxInterpreterInstance(RexxConfiguration rc) throws BSFException
     {
-final boolean bDebug= false;
-                      // true;
+final boolean bDebug= // true;
+                      false;
 
         if (rii_ID!=null)   // already created for this RAJO!
         {
@@ -6706,7 +6732,7 @@ if (bDebug) {System.err.println(this+".createRexxInterpreterInstance(...), retur
      */
     protected int runPendingUninits()
     {
-        final boolean bDebug=false;
+        final boolean bDebug= false;
                              // true;
 
         ArrayList al=null;
@@ -6739,7 +6765,28 @@ if (bDebug) System.err.println(this+": runPendingUninits(): this rii_ID=["+rii_I
             }
         }
 
+        check4pendingUninits();             // do we have to check for other pending uninits?
+
         return i;       // return number of unregisterBean carried out
+    }
+
+
+    /** Check whether there are any pending uninits, set {@link bCheck4pendingUninits} accordingly.
+     *
+     * @since 2015-08-11
+     */
+    static protected void check4pendingUninits()
+    {
+        synchronized (pendingUninits)
+        {
+            bCheck4pendingUninits=false;    // do not check for pendingUninits
+            Iterator it=pendingUninits.keySet().iterator();
+            while (it.hasNext() && bCheck4pendingUninits==false)
+            {
+                bCheck4pendingUninits=  ((ArrayList) (pendingUninits.get(it.next()))).size()>0;
+            }
+        }
+        return;
     }
 
 

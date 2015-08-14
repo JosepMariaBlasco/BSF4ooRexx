@@ -58,8 +58,8 @@ class Java4Rexx {
      */
     static public String version = "452.20150804";
 
-    final static boolean bDebug= false;
-                                 // true;
+    final static boolean bDebug= // true;
+                                 false;
 
 
   /**  BSF-manager to be used to get (instantiate) the Rexx engine. */

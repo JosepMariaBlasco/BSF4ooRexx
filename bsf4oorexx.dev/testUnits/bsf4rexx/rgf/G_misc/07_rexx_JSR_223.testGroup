@@ -7,22 +7,6 @@
    license:          ASF 2.0 (Apache Software License)
    purpose:          test JSR-223 (javax.script introduced with Java 6) support
 
-   comment:          2015-07-07, rgf:
-
-                     - in "::method "test_03_Rexx__Script_Context" when changing the value of
-                       the variable "bDummyStuff" to any other value than ".true", then all of
-                       a sudden ooRexx 4.2.0 treats the BSF-Rexx-Proxy as a String, as if its
-                       value gets changed to 'objectName' mysteriously
-
-                     - if in rexxCode an 'assertEquals()' yields '.false', then the ooRexxUnit
-                       (using the 4.2.0 version) in its method 'doTheTest' (line # 1549) will
-                       not be able to notice the condition and process it correctly
-
-                     - if in rexxCode the passed Rexx object of 'self' is queried for its
-                       string value, than the code hangs
-
-                     - TODO: - report these errors against the ooRexx project
-                             - retest with next version of ooRexx
 */
 
   parse source . . fileSpec;

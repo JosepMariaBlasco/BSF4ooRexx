@@ -1257,6 +1257,8 @@ if (bDebug)
      *
     */
     synchronized public void terminate() {
+final boolean bDebug= // true;
+                      false;
 
         if (bJNITerminated==true)  // already terminated, return
         {
@@ -1268,7 +1270,7 @@ if (bDebug)
         if (rii_ID!=null)   // if RII got created
         {
             // this waits until all threads of the instance have finished
-if (bDebug) System.err.println("RexxEngine().terminate(): before jniRexxTerminateInterpreterInstance("+rii_ID+")...");
+if (bDebug) System.err.println(this+".terminate(): before jniRexxTerminateInterpreterInstance("+rii_ID+")...");
 
             int res=rexxInterface.jniRexxTerminateInterpreterInstance(rii_ID);  // wait for termination of all Rexx threads of this interpreter instance
 
@@ -1278,15 +1280,16 @@ if (bDebug) System.err.println("RexxEngine().terminate(): before jniRexxTerminat
                 return;
             }
 
-if (bDebug) System.err.println("RexxEngine().terminate(): AFTER jniRexxTerminateInterpreterInstance("+rii_ID+")");
+if (bDebug) System.err.println(this+".terminate(): AFTER jniRexxTerminateInterpreterInstance("+rii_ID+")");
 
         }
 
         bJNITerminated=true;    // indicate that JNI successfully carried out Terminate() on the RII
 
-        super.terminate();          // now let the superclass do its work
+        // super.terminate();          // now let the superclass do its work
         rexxInterface.terminate();  // let RexxAndJava peer terminate as well
         rexxInterface=null;         // remove reference to RexxAndJava peer
+        super.terminate();          // now let the superclass do its work
     }
 
 
