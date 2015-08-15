@@ -31,17 +31,33 @@
         say "       before terminating."
         exit
     end
+
     bWait=.false     -- default to .false
     if theArgs~word(1)~left(2)~upper = "-W" then do
         bWait = .true
-        theArgs = theArgs~subword(2)
+
+        time2wait=1200           -- default wait 1200 tenth of a second (120 seconds, 2 minutes)
+        firstArg=theArgs~word(1) -- check whether flag has trailing time to wait in seconds
+        numbers="0123456789"
+        firstNumber=verify(firstArg, numbers, "Match")
+        if firstNumber>0 then
+        do
+            tmpTime2wait=substr(firstArg,firstNumber)
+            if datatype(tmpTime2wait, "Whole") then
+               time2wait=tmpTime2wait*10  -- tickers are in 1/10 of a second, hence multiply by 10
+        end
+
+        theArgs = theArgs~subword(2)   -- remove wait flag
     end
 
-    cmdArgs = "/c cd /d" '"'directory()'"' "&&" theArgs
+         -- Windows: double "&&" - the following command will only be executed, if the first one was successful (rc=0)
+    cmdArgs = "/c cd /d" quote(directory()) "&&" theArgs
     dummyFile="cmd.running"
     if bWait then do
         call lineout dummyFile -- create zero-length file
-        cmdArgs ||= " && del" dummyFile
+
+         -- Windows: single '&' - the following command will always be executed after the previous
+        cmdArgs ||= " & del" quote(qualify(dummyFile))
     end
 /*  -- check for override to not use elevated prompt
     noUAC = (value("rexx_noUAC", , "ENVIRONMENT") = 1)
@@ -49,9 +65,10 @@
 */  verb = "runas"
     ShellObj = .OLEObject~New("Shell.Application")
     ShellObj~ShellExecute("cmd.exe", cmdArgs, , verb)
+
     if bWait=.true then
     do
-       time2wait=1200      -- wait 1200 tenth of a second (120 seconds, 2 minutes)
+       say "waiting" time2wait/10 "second(s)..."
        loop i=time2wait to 1 by -1
                 if i//10=0 then .output~charout("/"i/10) -- show seconds left
            else if i// 5=0 then .output~charout("+")     -- tick half a second
@@ -68,3 +85,9 @@
        end
        say "done."
     end
+
+::routine quote
+  return '"' || arg(1) || '"'
+
+::routine pp
+  return "["arg(1)"]"

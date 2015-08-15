@@ -59,5 +59,5 @@ do
    exit -1
 end
 
-args ="..\setupAllAndRun.rex" args  -- build argument to be passed to Rexx
+args ="-wait180 ..\setupAllAndRun.rex" args  -- build argument to be passed to Rexx
 call elevate.rex args
