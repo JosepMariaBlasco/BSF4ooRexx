@@ -63,13 +63,15 @@
             2014-05-26, rgf   - if interactive install, allow removing "bsf4oorexx" target directory, if no BSF.CLS
                                 can be found there, assuming that a prior uninstall could not remove the tree because
                                 the uninstall program itself could not be removed (e.g. on Windows)
+            2015-08-19, rgf   - include .DateTime of run in logfile name; this makes it possible to easily
+                                distinguish separate, successive runs in case of re/un/installation erros
 
    remark:  ---
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010-2014 Rony G. Flatscher
+       Copyright (C) 2010-2015 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -995,7 +997,8 @@ any:                 -- something went wrong while executing the program
   expose fileName stream cmd.
   use strict arg cmd.
 
-  filename="BSF4ooRexx.log"      -- logfile name
+--  filename="BSF4ooRexx.log"      -- logfile name
+  filename="BSF4ooRexx_" || .dateTime~new~string~changeStr(":","-") || ".log"      -- logfile name
 
   if cmd.eOpSys="W" then
      fileName=value("USERPROFILE",,"ENVIRONMENT")"\"fileName
