@@ -24,6 +24,9 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.5.2.  2015-08-20  rgf: added debug information to a Java runtime error, if the Java Throwable is not
+                        able to create a String rendering of itself
+
     4.5.2.  2015-08-11  rgf: javaObjectBean and javaMethodObjectBean will get deregistered in RexxAndJava.call(), hence
                          increase refcounter in bsf.wrap, as the uninit-method of the BSF Rexx proxy will decrease it;
 
@@ -914,11 +917,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "452.20150811 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150820 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "452.20150811 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150820 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "452.20150811 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150820 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -5651,9 +5654,54 @@ inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (
 
     if ( param->env->ExceptionCheck() )     // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
     {
+        jobject jo2=param->env->ExceptionOccurred();   // get the Exception object
+
         param->env->ExceptionDescribe();
         param->env->ExceptionClear();
-        rso=rtc->String("<Unfortunately, Java was not able to create a string from the Throwable, because it threw another exception while attempting to do so! :( >");
+
+        char *error_line1=new char[1024];
+
+        SNPRINTF( error_line1, 1024,
+                              "<Unfortunately, Java was not able to create a string from the Throwable, because it threw another exception while attempting to do so! \njo=[%p]=Throwable, joc=[%p] Throwable's class, jmidName=[%p] method id for \"toString()\", jobj=[%p] (string result). :( >",
+                               jo, joc, jmidName, jobj);
+
+
+        // now try to fetch infos on the second Throwable
+        char *error_line2=new char[1024];
+
+        jclass joc2=param->env->GetObjectClass(jo);    // get Throwable's class object
+        jmethodID jmidName2=param->env->GetMethodID(joc2, "toString", "()Ljava/lang/String;");    // get method ID
+        jobject   jobj2    =param->env->CallObjectMethod(jo2, jmidName, NULL);  // invoke toString()
+
+        if ( param->env->ExceptionCheck() )     // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
+        {
+            param->env->ExceptionDescribe();
+            param->env->ExceptionClear();
+
+            SNPRINTF( error_line2, 1024,
+                                  "<Unfortunately, Java was not able to create a string from the second Throwable, because it threw another exception while attempting to do so! \njo2=[%p]=Throwable, joc2=[%p] Throwables's class, jmidName2=[%p] method id for \"toString()\", jobj2=[%p] (string result). :( :( >",
+                                   jo2, joc2, jmidName2, jobj2);
+        }
+        else    // get the Throwable's error message
+        {
+            const char *aha=param->env->GetStringUTFChars( (jstring) jobj2, JNI_FALSE);
+
+            SNPRINTF( error_line2, 1024,
+                                  "<While trying to get the String value of the original Throwable this new exception (Throwable) got raised by Java: [%.896s] :( >", aha);
+
+            param->env->ReleaseStringUTFChars( (jstring) jobj2, aha);
+        }
+
+        char *error_info=new char[2560];
+
+        SNPRINTF( error_info, 2560,"%s\n%s\0", error_line1, error_line2);
+        rso=rtc->String(error_info);
+
+        delete [] error_line1;
+        delete [] error_line2;
+        delete [] error_info;
+
+        // rso=rtc->String("<Unfortunately, Java was not able to create a string from the Throwable, because it threw another exception while attempting to do so! jo=[%p], joc=[%p], jmidName=[%p], jobj=[%p]. :( >", jo, joc, jmidName, jobj);
     }
     else   // copy Java string to RexxString
     {

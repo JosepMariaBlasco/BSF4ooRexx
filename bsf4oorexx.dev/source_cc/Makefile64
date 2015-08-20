@@ -124,5 +124,6 @@ mostlyclean:
 
 clean:
   attrib -h *.suo 1>nul 2>&1
-	del *.exe *.dll *.obj *.ilk *.pdb *.lib *.exp *.suo *.cod *.res *.sln *.map 1>nul 2>&1
+#       del *.exe *.dll *.obj *.ilk *.pdb *.lib *.exp *.suo *.cod *.res *.sln *.map 1>nul 2>&1
+	del       *.dll *.obj *.ilk *.pdb *.lib *.exp *.suo *.cod *.res *.sln *.map 1>nul 2>&1
 
