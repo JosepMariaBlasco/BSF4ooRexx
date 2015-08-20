@@ -3504,9 +3504,9 @@ if (bDebug)
         // ==================================================================
 
            case INVOKE_JSO :   // new as of 2014-10-02: allow version that returns a java.lang.String as an object-reference
-                               //                       such that Rexx coders can employ all String's methods directly (especially codepage related)
+                               //                       such that Rexx coders can employ all Java String methods directly (especially codepage related)
                   // ---rgf, 2014-05-14: use Class.getMethods() instead of Class.getDeclaredMethods();
-                  //                     getMethods() returns all public methods (including the Java 8 default mehtods)
+                  //                     getMethods() returns all public methods (including the Java 8 default methods)
 
                   // ---rgf TODO: add superclass resolution using getDelcaredMethods() seeking matching
                   //              protected methods, cf. <http://docs.oracle.com/javase/tutorial/java/javaOO/accesscontrol.html>

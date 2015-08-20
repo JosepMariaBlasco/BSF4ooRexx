@@ -1,4 +1,12 @@
 -------------------------------------- 2015-08-14 ----------------------------------
+- install\windows\elevate.rex
+
+        - now allows an optional trailing time in the "-w[ait][seconds2wait]" flag
+
+        - makes sure that deleting the file serving as a semaphore for the waiting
+          tickers even in the case that any of the previous commands failed (rc<>0)
+
+-------------------------------------- 2015-08-14 ----------------------------------
 
 - install\windows\elevate.rex
 

@@ -18,6 +18,8 @@
             - 2015-08-14, rgf: replace the external elevation package with a scripting
                          solution that has become possible again, thanks to Gil Barmwater
 
+            - 2015-08-20, rgf: do not show wait-countdown on uninstall
+
    Info-URLs:  <http://technet.microsoft.com/en-us/magazine/2007.06.utilityspotlight.aspx>
                <http://technet.microsoft.com/en-us/magazine/2008.06.elevation.aspx>
                <http://forums.techarena.in/vista-administration/977482.htm>
@@ -59,5 +61,8 @@ do
    exit -1
 end
 
-args ="-wait180 ..\setupAllAndRun.rex" args  -- build argument to be passed to Rexx
+if args~upper="UNINSTALL" then     -- do not show wait-count-down
+   args ="..\setupAllAndRun.rex" args  -- build argument to be passed to Rexx
+else
+   args ="-wait180 ..\setupAllAndRun.rex" args  -- build argument to be passed to Rexx
 call elevate.rex args
