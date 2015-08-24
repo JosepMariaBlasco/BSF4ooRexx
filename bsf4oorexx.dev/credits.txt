@@ -6,7 +6,7 @@ codepage):
 
         Ahammer, Andreas
         Augustin, Walter
-        Barwater, Gil
+        Barmwater, Gil
         Beck, Andreas
         Burger, Martin
         Cowlishaw, Mike F.

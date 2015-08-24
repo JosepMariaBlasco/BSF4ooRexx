@@ -1,8 +1,11 @@
-/*  author:    Gil Barmwater
-    name:      elevate.rex
-    purpose:   allow a command to be run elevated under Windows XP or higher
-    date:      2015-08-06
-    usage:     elevate [-Wait] command
+/*  author:     Gil Barmwater
+    name:       elevate.rex
+    purpose:    allow a command to be run elevated under Windows XP or higher
+    date:       2015-08-24
+    usage:      elevate [-Wait] command
+    return:     0 if the Wait option is specified and the command completes
+                within the time out period or if Wait option is not specified;
+                -1 if the Wait time expires before the command completes
 
     license:
 
@@ -28,66 +31,79 @@
         say "       as the arguments to this script.  An optional -w may"
         say "       be specified prior to the command line data to cause"
         say "       the script to wait for the elevated prompt to end"
-        say "       before terminating."
+        say "       before terminating. The default wait time is 2 min. but"
+        say "       can be overriden by specifying the number of sec."
+        say "       immediately following the -w.  E.g. -w5 waits 5 seconds."
         exit
     end
 
-    bWait=.false     -- default to .false
+    wait? = .false  -- default to .false
     if theArgs~word(1)~left(2)~upper = "-W" then do
-        bWait = .true
+        wait? = .true
 
-        time2wait=1200           -- default wait 1200 tenth of a second (120 seconds, 2 minutes)
-        firstArg=theArgs~word(1) -- check whether flag has trailing time to wait in seconds
-        numbers="0123456789"
-        firstNumber=verify(firstArg, numbers, "Match")
-        if firstNumber>0 then
-        do
-            tmpTime2wait=substr(firstArg,firstNumber)
-            if datatype(tmpTime2wait, "Whole") then
-               time2wait=tmpTime2wait*10  -- tickers are in 1/10 of a second, hence multiply by 10
+        time2wait = 1200    -- default wait: 1200 tenths of a second (2 minutes)
+        -- check for trailing time to wait (seconds)
+        firstArg = theArgs~word(1)
+        firstNumber = firstArg~verify("0123456789", "Match")
+        if firstNumber > 0 then do
+            tmpTime2wait = firstArg~substr(firstNumber)
+            if tmpTime2wait~datatype("Whole") then
+               time2wait = tmpTime2wait * 10    -- convert seconds to tenths
         end
 
         theArgs = theArgs~subword(2)   -- remove wait flag
     end
+    done? = \wait?  -- if waiting, then not done, and vice versa
 
-         -- Windows: double "&&" - the following command will only be executed, if the first one was successful (rc=0)
-    cmdArgs = "/c cd /d" quote(directory()) "&&" theArgs
-    dummyFile="cmd.running"
-    if bWait then do
-        call lineout dummyFile -- create zero-length file
-
-         -- Windows: single '&' - the following command will always be executed after the previous
-        cmdArgs ||= " & del" quote(qualify(dummyFile))
+    -- build argument string for cmd.exe: first change directory to the current
+    --  one, and then, if that was successful, run the specified target command
+    cmdArgs = "/c cd /d" directory() "&&" theArgs
+    if wait? then do
+        -- create an external data queue for communication
+        q_name = "cmd_running"
+        call rxqueue C, q_name
+        --  and make it active
+        curr_q = rxqueue(S, q_name)
+        -- add a command to the argument string which is executed regardless of
+        --  the return code from the command that adds an entry to the queue
+        cmdArgs ||= ' & rexx -e "call rxqueue s,'q_name';push ok"'
     end
+
+    -- If elevation might not be required, the following comments show how to
+    --  easily allow it to be overridden by setting an environment variable
 /*  -- check for override to not use elevated prompt
     noUAC = (value("rexx_noUAC", , "ENVIRONMENT") = 1)
-    verb = "runas open"~word(1 + noUAC)
-*/  verb = "runas"
+    verb = "runas open"~word(1 + noUAC) */
+
+    verb = "runas"
     ShellObj = .OLEObject~New("Shell.Application")
     ShellObj~ShellExecute("cmd.exe", cmdArgs, , verb)
 
-    if bWait=.true then
-    do
-       say "waiting" time2wait/10 "second(s)..."
-       loop i=time2wait to 1 by -1
-                if i//10=0 then .output~charout("/"i/10) -- show seconds left
-           else if i// 5=0 then .output~charout("+")     -- tick half a second
-           else                 .output~charout(".")     -- tick one tenth of a second
+    if wait? then do
+        say "waiting" time2wait/10 "second(s)..."
+        -- loop until entry added to queue by elevated prompt or timeout
+        loop i = time2wait to 1 by -1
+            select
+                when i // 10 = 0 then
+                    .output~charout("/"i/10)    -- show seconds left
+                when i // 5 = 0 then
+                    .output~charout("+")        -- tick half a second
+                otherwise
+                    .output~charout(".")        -- tick 0.1 of a second
+            end
 
-           call sysSleep .1      -- sleep 1/10 of a second
-           if \SysFileExists(dummyFile) then
-              leave
-       end
-       if SysFileExists(dummyFile) then
-       do
-          say " waiting time ("time2wait/10" seconds) exceeded, prematurely ending wait!"
-          exit -1       -- return non-zero return code to indicate this condition
-       end
-       say "done."
+            call sysSleep .1      -- sleep 1/10 of a second
+            if queued() > 0 then do
+                done? = .true
+                pull .                  -- remove entry
+                call rxqueue S, curr_q  -- reset active queue
+                call rxqueue D, q_name  --  and delete communication queue
+                leave
+            end
+        end
+        if done? then
+            say "done."
+        else
+            say " wait time ("time2wait/10" seconds) exceeded; wait terminated!"
     end
-
-::routine quote
-  return '"' || arg(1) || '"'
-
-::routine pp
-  return "["arg(1)"]"
+    return done? - 1

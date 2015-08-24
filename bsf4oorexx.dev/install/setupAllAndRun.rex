@@ -64,7 +64,9 @@
                                 can be found there, assuming that a prior uninstall could not remove the tree because
                                 the uninstall program itself could not be removed (e.g. on Windows)
             2015-08-19, rgf   - include .DateTime of run in logfile name; this makes it possible to easily
-                                distinguish separate, successive runs in case of re/un/installation erros
+                                distinguish separate, successive runs in case of re/un/installation errors
+            2015-08-24, gab   - replace the Windows command "rd" with an "echo" since the directory tree cannot be
+                                removed while the script is still running
 
    remark:  ---
 
@@ -592,7 +594,7 @@ do
          end
       end
 
-      if SysFileExists(cmd.eUninstallScriptNameBSF)=.true then -- uninstall OOo support, if present
+      if SysFileExists(cmd.eUninstallScriptNameBSF)=.true then -- uninstall BSF support
       do
          if cmd.eBDebug=.true then
             say cmd.eThisName': debug mode, would run ['cmd.eUninstallScriptNameBSF'] ...'
@@ -889,7 +891,10 @@ exit 0
 
    upperDir=directory("..")   -- go up one more level, then remove
    if cmd.eOpSys='W' then     -- Windows ?
+   /*  gab,2015-08-24: The following does not work since the cmd.exe running
+        this script still has the windows sub-folder open:
        cmd="rd /s /q" enQQ(cmd.eDefaultTargetDir)  -- delete subdirectory recursively
+   */  cmd="echo removeInstallationDir deferred; will be done after this script terminates"
    else
        cmd="rm -rfv" cmd.eDefaultTargetDir   -- delete subdirectory recursively
 
@@ -897,7 +902,7 @@ exit 0
    if cmd.eBDebug<>.true then
    do
       cmd cmd.eRedirect2LogFile                     -- let the shell execute
-      if rc<>0 then exit rc
+      if rc<>0 then exit rc                         -- NB Windows "rd" always returns 0!
    end
    return 0
 

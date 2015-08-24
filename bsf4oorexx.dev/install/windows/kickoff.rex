@@ -20,6 +20,10 @@
 
             - 2015-08-20, rgf: do not show wait-countdown on uninstall
 
+            - 2015-08-24, gab: for uninstall, add commands to delete the directory tree
+                          after this script ends as the script cannot do it; remove
+                          wait option as it is not needed
+
    Info-URLs:  <http://technet.microsoft.com/en-us/magazine/2007.06.utilityspotlight.aspx>
                <http://technet.microsoft.com/en-us/magazine/2008.06.elevation.aspx>
                <http://forums.techarena.in/vista-administration/977482.htm>
@@ -61,8 +65,9 @@ do
    exit -1
 end
 
-if args~upper="UNINSTALL" then     -- do not show wait-count-down
-   args ="..\setupAllAndRun.rex" args  -- build argument to be passed to Rexx
+-- build argument to be passed to Rexx
+if args~upper="UNINSTALL" then     -- add commands to delete directory tree
+   args ="..\setupAllAndRun.rex" args "&& cd ..\..\.. && rd /s /q bsf4oorexx"
 else
-   args ="-wait180 ..\setupAllAndRun.rex" args  -- build argument to be passed to Rexx
+   args ="..\setupAllAndRun.rex" args
 call elevate.rex args
