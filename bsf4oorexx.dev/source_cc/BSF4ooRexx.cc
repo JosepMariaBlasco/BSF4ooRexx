@@ -24,6 +24,10 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    4.5.2.  2015-09-24  rgf: applying fix as described in <https://sourceforge.net/p/bsf4oorexx/bugs/25/>,
+                             making sure that lineends are not a mixture of LF and CR-LF as reported in the
+                             above bug report, using CR-LF
+
     4.5.2.  2015-08-20  rgf: added debug information to a Java runtime error, if the Java Throwable is not
                         able to create a String rendering of itself
 
@@ -917,11 +921,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "452.20150820 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150924 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "452.20150820 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150924 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "452.20150820 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "452.20150924 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -11206,7 +11210,7 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
         tid=RgfGetTID();
 
 #if defined(DEBUG1) || defined (DEBUG40) || defined (DEBUG_LOADER_UNLOADER ) || defined (DEBUG_JNI)
-    fprintf(stderr, "\\\\\\  <=== <=== <=== in bsfUnloader() tid=[%lu], c_rii_ID=[%p] ...\n", (unsigned long) tid, rtc->instance);
+    fprintf(stderr, "\\\\\\  <=== <=== <=== in bsfUnloader() tid=[%lu], c_rii_ID=[%p], defaultJVM->jvm=[%p] ...\n", (unsigned long) tid, rtc->instance, defaultJVM->jvm);
     fflush(stderr);
 #endif
 
@@ -11221,6 +11225,8 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
     STRUCT_PARAM param={tid, 0, 0, NULL, 0, 0, 0, 0};
 #endif
     // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
+
+    if (defaultJVM->jvm == NULL) return;    // 20150924, fix suggested by Jean-Louis Faucher (jlf)
 
     RgfAcquireLock();
 
