@@ -1,0 +1,32 @@
+#!/usr/bin/rexx
+/* File:        03-systemevents-clr.rexp
+ * Description: Reacts to a Windows system event, namely a change of the systems clock.
+ * Shows:       - Import of static classes
+ *              - Instantiation of classes (without parameters)
+ *              - Creation and registration of event handlers
+ */
+
+systemEvents = clr.import("Microsoft.Win32.SystemEvents")  -- get reference to static class "Microsoft.Win32.SystemEvents"
+
+systemEventHandler = clr.createEventHandler(.SystemEventHandler~new)  -- create new event handler from ooRexx class "SystemEventHandler"
+systemEvents~TimeChanged += systemEventHandler  -- register event handler to "TimeChanged" event
+
+SAY "Waiting for ""TimeChanged"" event..."
+PARSE PULL  -- wait for user input to prevent program from closing
+
+::REQUIRES CLR.CLS  -- get ooRexx.NET support
+
+/* Class:       SystemEventHandler
+ * Description: Implements the .NET event handler invoked by the "TimeChanged" event.
+ */
+::CLASS SystemEventHandler  
+
+  /* Method:      invoke
+   * Description: Called by .NET when the registered event is triggered.
+   * Arguments:   - caller: the object the event handler was registered to
+   *              - eventArgs: the event arguments passed by the caller
+   */
+  ::METHOD invoke
+    USE ARG caller, eventArgs
+    
+    SAY "Windows clock has been changed!"

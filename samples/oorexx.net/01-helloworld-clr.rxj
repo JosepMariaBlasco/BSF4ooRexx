@@ -1,0 +1,11 @@
+#!/usr/bin/rexx
+/* File:        01-helloworld-clr.rexp
+ * Description: Simple output of "Hello World" via .NET classes.
+ * Shows:       - Import of static classes
+ *              - Invokation of methods (with parameters)
+ */
+
+console = clr.import("System.Console")  -- get reference to static class "System.Console"
+console~WriteLine("Hello World from ooRexx.NET (via BSF4ooRexx and jni4net)")  -- invoke method "WriteLine" with parameter "Test"
+
+::REQUIRES CLR.CLS  -- get ooRexx.NET support

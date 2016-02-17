@@ -1,0 +1,22 @@
+#!/usr/bin/rexx
+/* File:        02-eventlog-clr.rexp
+ * Description: Reads the "Application" log of the current machine and outputs every entry. Uses the 
+ *              "System.Media.SystemSounds" class to emit a beep for every written message.
+ * Shows:       - Import of static classes
+ *              - Instantiation of classes (with parameters)
+ *              - Retrieval of properties
+ *              - Invokation of methods (without parameters)
+ */
+
+systemSounds = clr.import("System.Media.SystemSounds")  -- get reference to static class "System.Media.SystemSounds"
+
+eventLog = .clr~new("System.Diagnostics.EventLog", "Application")  -- create instance of class "System.Diagnostics.EventLog" with parameter "Application"
+logEvents = eventLog~Entries~GetEnumerator  -- retrieve log entry collection, create enumerator
+
+DO WHILE logEvents~MoveNext <> .false  -- iterate over log entries
+  eventEntry = logEvents~Current
+  systemSounds~Beep~Play  -- play system sound "beep"
+  SAY eventEntry~TimeGenerated "::" eventEntry~Message  -- output time and message of event
+END
+
+::REQUIRES CLR.CLS  -- get ooRexx.NET support

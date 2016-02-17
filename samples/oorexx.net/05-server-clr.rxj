@@ -1,0 +1,30 @@
+#!/usr/bin/rexx
+/* File:        05-server-clr.rexp
+ * Description: Creates a networking server which waits for connections on address 127.0.0.1 
+ *              (localhost) and port 2015. Any received data is written to standard output.
+ *              Note: Any other program listening on this port will prevent the server from starting.
+ * Shows:       - Import of static classes
+ *              - Invokation of methods (with/without parameters)
+ *              - Instantiation of classes (with parameters)
+ *              - Retrieval of properties
+ */
+
+ipAddress = clr.import("System.Net.IPAddress")~Parse("127.0.0.1")  -- create "System.Net.IPAddress" object representing the localhost IP
+tcpListener = .clr~new("System.Net.Sockets.TcpListener", ipAddress, 2015)  -- create instance of class "System.Net.Sockets.TcpListener"
+
+SAY "Starting server..."
+tcpListener~clr.dispatch("Start")  -- start the TCP listener
+SAY "Waiting for connections..."
+tcpSocket = tcpListener~AcceptSocket  -- wait for connections
+SAY "Client connected."
+
+buffer = clr.createArray("System.Byte", 1024)  -- create array of "System.Byte" with a size of 1MB)
+tcpSocket~Receive(buffer)  -- write received data into "buffer"
+ 
+SAY "Message received:"
+decodedMessage = clr.import("System.Text.Encoding")~ASCII~GetString(buffer)  -- convert message from byte array to string
+SAY decodedMessage
+
+tcpListener~Stop  -- stop TCP listener
+
+::REQUIRES CLR.CLS  -- get ooRexx.NET support

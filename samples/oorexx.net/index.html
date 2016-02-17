@@ -1,0 +1,52 @@
+<head>
+    <title>Brief Overview of the ooRexx.NET Samples in this Directory</title>
+</head>
+
+<body>
+<h1>
+      ooRexx.NET Examples (Running C# Classes from Rexx)
+</h1>
+
+<em>Hint:</em> if you wish to look at the ooRexx code with syntax highlighting, then you can
+use the free and open-source editor <code>&quot;[g]vim&quot;</code>, which is available for practically
+all platforms and can be downloaded from its homepage at
+<a href="http://www.vim.org/">http://www.vim.org/</a>.
+
+<dl>
+    <dt><em><a href=".">.  &lt;directory&gt; (List of this directory)</a></em>
+    <dd>Simple output of "Hello World" via .NET classes.
+
+    <dt><em><a href="../index.html">..  &lt;directory&gt; (List of parent directory)</a></em>
+    <dd>
+
+    <dt><a href="01-helloworld-clr.rxj">01-helloworld-clr.rxj</a>
+    <dd>Simple output of "Hello World" via .NET classes.
+	
+	<dt><a href="02-eventlog-clr.rxj">02-eventlog-clr.rxj</a>
+    <dd>Reads the "Application" log of the current machine and outputs every entry. Uses the 
+		"System.Media.SystemSounds" class to emit a beep for every written message.
+		
+    <dt><a href="03-systemevents-clr.rxj">03-systemevents-clr.rxj</a>
+    <dd>Reacts to a Windows system event, namely a change of the systems clock.
+
+    <dt><a href="04-forms-clr.rxj">04-forms-clr.rxj</a>
+    <dd>Creates a windows form with a progress bar and a start button which, when clicked, 
+		starts a new thread to increase the progress bar.
+
+    <dt><a href="05-client-clr.rxj">05-client-clr.rxj</a>
+    <dd>Creates a networking client which connects to a server listening on address 127.0.0.1 
+		(localhost) and port 2015. User input is sent to the server.
+		<br/><em>Note:</em> Sending a message to any other program than "05-server-clr.rexp" listening on 
+		this port by chance might cause unpredictable behavior.
+
+    <dt><a href="05-server-clr.rxj">05-server-clr.rxj</a>
+    <dd>Creates a networking server which waits for connections on address 127.0.0.1 
+		(localhost) and port 2015. Any received data is written to standard output.
+		<br/><em>Note:</em> Any other program listening on this port will prevent the server from starting.
+</dl>
+<p>
+<hr>
+<p style="font-size: 80%;">
+Manuel Raffel, 2016-02-17, Traismauer, Austria, Europe
+</body>
+

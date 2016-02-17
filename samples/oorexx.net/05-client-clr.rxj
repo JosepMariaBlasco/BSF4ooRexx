@@ -1,0 +1,29 @@
+#!/usr/bin/rexx
+/* File:        05-client-clr.rexp
+ * Description: Creates a networking client which connects to a server listening on address 127.0.0.1 
+ *              (localhost) and port 2015. User input is sent to the server.
+ *              Note: Sending a message to any other program than "05-server-clr.rexp" listening on 
+ *              this port by chance might cause unpredictable behavior.
+ * Shows:       - Instantiation of classes (without parameters)
+ *              - Invokation of methods (with/without parameters)
+ *              - Retrieval of properties
+ */
+
+tcpClient = .clr~new("System.Net.Sockets.TcpClient")  -- create instance of class "System.Net.Sockets.TcpClient"
+
+SAY "Connecting to 127.0.0.1:2015..."
+tcpClient~Connect("127.0.0.1", 2015)  -- connect "TcpClient" to specified address and port
+SAY "Connected."
+
+SAY "Input message to server:"
+PARSE PULL message  -- wait for user input on console and store it in "message"
+encodedMessage = clr.import("System.Text.Encoding")~ASCII~GetBytes(message)  -- convert input into byte array
+
+SAY "Sending message..."
+tcpClient~GetStream~Write(encodedMessage, 0, encodedMessage~Length)  -- send encoded message to server 
+
+SAY "Message was sent to server."
+
+tcpClient~Close  -- close TCP connection
+
+::REQUIRES CLR.CLS  -- get ooRexx.NET support
