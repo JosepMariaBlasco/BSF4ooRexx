@@ -138,7 +138,8 @@ remarks:
 
     4.1.1   2013-06-27 - slight tidying up (removed an obsolete function)
 
-    4.1.1   2013-06-10 - changed logic in Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
+    4.1.1   2013-06-10 - changed logic in Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
+
                          to really terminate Rexx interpreter instances (RII) with the exception of the
                          primodal RII, which needs to stay alive due to using it for maintaining RexxProxy
                          objects with Rexx collection objects in native code
@@ -179,7 +180,8 @@ remarks:
 
     4.1.-11 2012-02-24 - added native functions jniGetLocalEnvironment(), jniGetGlobalEnvironment()
 
-    4.1.-10 2012-02-19 - added native function _jniGetCallerContext()
+    4.1.-10 2012-02-19 - added native function _jniGetCallerContext()
+
                        - RgfCreateRexxlikeErrorInfo(): set informative Java message, if no traceback line
                          available (because a result of a Java call into Rexx)
 
@@ -942,9 +944,6 @@ RgfGetTID();
 JavaVM    *currentJVM=NULL;     // JVM to use
 int       bsfInvokedBy = 0;     // 0=noJVM, 1=byJava, 2=byRexx
 
-    // calculate the needed bytes for representing a pointer as hex-string with trailing \0
-const int CONST_LENGTH_OF_POINTER_0 = sizeof( PVOID )*2+1;
-
     // ---rgf, 2006-11-19: define boolean and maximum length for Java's event trace
 int       bShowErrorString = 1;         // default to showing (dumping) Java traceback in case of an error
 #define BSF_ERROR_STRING  "BSF_ERROR_MESSAGE"    // variable name to use to save Java error message in Rexx variable
@@ -1117,14 +1116,17 @@ long size_STRUCT_RII =sizeof(STRUCT_RII);   // get and memorize size of structur
 PSTRUCT_RII pRoot_RII=NULL;                 // root of RII list
 
 
-    // calculate the needed bytes for representing a pointer as hex-string with trailing \0, make it an even number of chars
-const size_t RGF_POINTER_STRING_WIDTH=sizeof( PVOID )*2+2;
+    // calculate the needed bytes for representing a pointer as hex-string with prefix "0x" (+2) and trailing \0 (+1), make it an even number of chars (+1)
+const size_t RGF_POINTER_STRING_WIDTH=sizeof( PVOID )*2+2+1+1;
 const size_t RGF_TID_STRING_WIDTH    = 80;  // allows for hex representation of 2**128 plus two bytes (one for \0, the other for evening)
 
 // #define RgfPointer2String(ptr, str)     sprintf((char *)str, "%p", (void *) ptr);   // macro
 
 // 2009-10-11, rgf, adding "+1", such that Linux gcc 32-bit does not truncate the pointer value
-#define RgfPointer2String(ptr, str)     SNPRINTF((char *)str, RGF_POINTER_STRING_WIDTH+1, "%p", (void *) ptr);   // macro
+// 2016-03-27, jlf bug 28, removing "+1" because
+// a) "+1" added directly to the definition of RGF_POINTER_STRING_WIDTH to get a buffer with correct size
+// b) the difference of size with buffer's size raised a compile-time warning and a runtime abort "overflow" under Ubuntu 14.04 with gcc 4.8.4.
+#define RgfPointer2String(ptr, str)     SNPRINTF((char *)str, RGF_POINTER_STRING_WIDTH, "%p", (void *) ptr);   // macro
 
 /*
 inline void RgfPointer2String (void * ptr, char * str)
@@ -9908,14 +9910,20 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxDidRe
 
 
 // -----------> Anfang
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniRexxGetTID
- * Signature: ()Ljava/lang/String;
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniRexxGetTID
+
+ * Signature: ()Ljava/lang/String;
+
 
    Purpose:   return BsfGetTID()-value as a string to Java
- */
-JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxGetTID
+ */
+
+JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxGetTID
+
   (JNIEnv *env, jobject obj)
 {
 #ifdef UNIX
@@ -9949,16 +9957,23 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxGe
    return jstr;
 }
 
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniRexxSetHalt
- * Signature: (Ljava/lang/String;)I
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniRexxSetHalt
+
+ * Signature: (Ljava/lang/String;)I
+
 
    Purpose:   allow halting/terminating an ooRexx thread or an ooRexx interpreter instance
               with all its threads; return whatever we get from ooRexx
- */
-JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSetHalt
+ */
+
+JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSetHalt
+
   (JNIEnv *env, jobject obj, jstring jstrTid)
 {
 
@@ -11380,14 +11395,20 @@ fprintf(stderr, "///  marker (5b), res=[%d]...\n", ret);fflush(stderr);
 
 
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniRexxCreateInterpreterInstance
- * Signature: ([Ljava/lang/Object)Ljava/lang/String;
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniRexxCreateInterpreterInstance
+
+ * Signature: ([Ljava/lang/Object)Ljava/lang/String;
+
 
     returns:  the rii_ID (RexxInterpreter instance ID) or NULL, if RexxInterpreter instance could not be created
- */
-// JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCreateInterpreterInstance
+ */
+
+// JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCreateInterpreterInstance
+
 //   (JNIEnv *env, jobject jobj)
 
 
@@ -11865,12 +11886,18 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetRex
 
 
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniRexxRunProgram
- * Signature: (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRunProgram
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniRexxRunProgram
+
+ * Signature: (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;
+
+ */
+
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRunProgram
+
   (JNIEnv *env, jobject raj, jstring j_rii_ID,
                              jint invocationType,   // 1=CallProgram, 2=CallProgramFromData, 3=LoadPackage, 4=LoadPackageFromData
                              jstring j_fileName,
@@ -12366,11 +12393,16 @@ fflush(stderr);
 }
 
 
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniRexxSendMessageToRexxObject
- * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniRexxSendMessageToRexxObject
+
+ * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;
+
 
    Note (rgf, 20090828): this function will create a slot argument and pass it as an additional (last)
                          argument to the Rexx method, if one of j_userData_ID, j_methodObjectBean or
@@ -12388,10 +12420,12 @@ fflush(stderr);
                          in the case of an extended Java class may even get a handle to the peer Java object
                          to become able to interact with it directly (e.g. for forwarding methods to its
                          superclass implementations).
- */
+ */
+
  // 2015-08-11, rgf: javaObjectBean and javaMethodObjectBean will get deregistered in RexxAndJava.call(), hence
 //                   increase refcounter in bsf.wrap, as the uninit-method of the BSF Rexx proxy will decrease it
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSendMessageToRexxObject
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSendMessageToRexxObject
+
   (JNIEnv *env, jobject jobj,
                   jstring j_rii_ID,
                   jstring j_obj_ID,
@@ -12934,19 +12968,27 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
     return jresult;
 }
-
 
 
 
 
 
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniRexxHaltInterpreterInstance
- * Signature: (Ljava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltInterpreterInstance
+
+
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniRexxHaltInterpreterInstance
+
+ * Signature: (Ljava/lang/String;)I
+
+ */
+
+JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltInterpreterInstance
+
   (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 {
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY)
@@ -13032,13 +13074,20 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltI
 
     return (jint) 0;
 }
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniRexxTerminateInterpreterInstance
- * Signature: (Ljava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniRexxTerminateInterpreterInstance
+
+ * Signature: (Ljava/lang/String;)I
+
+ */
+
+JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
+
   (JNIEnv *env, jobject jobj, jstring j_rii_ID)
 {
 
@@ -13252,15 +13301,20 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
 
     return (jint) 0;
 }
-
 
 
 
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniUnregisterRexxObject
- * Signature: (Ljava/lang/String;)I
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniUnregisterRexxObject
+
+ * Signature: (Ljava/lang/String;)I
+
 
     returns value received from RgfRemoveProxyObject():
 
@@ -13271,8 +13325,10 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
         -100  No RexxInterpreter instance could be found
         -101  thread could not be attached to RexxInterpreter instance
 
- */
-JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject
+ */
+
+JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject
+
   (JNIEnv *env, jobject jobj, jstring obj_ID)
 {
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_UNREGISTER_REXX_OBJECT) || defined (DEBUG_JNI_ENTRY)
@@ -15176,12 +15232,18 @@ inline void * rgfUnwrapPointer (JNIEnv *env, jstring j_encoded_pointer)
 }
 
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    raiseCondition
- * Signature: ([Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/Object;)V
- */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseCondition
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    raiseCondition
+
+ * Signature: ([Ljava/lang/Object;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;Ljava/lang/Object;)V
+
+ */
+
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseCondition
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot, jstring j_conditionName, jstring j_description, jobjectArray j_additional, jobject j_result)
 {
 #if defined (DEBUG_JNI)
@@ -15224,15 +15286,22 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseCond
     fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseCondition <== <==\n");
 #endif
 }
-
 
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    raiseException
- * Signature: ([Ljava/lang/Object;J[Ljava/lang/Object;)V
- */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    raiseException
+
+ * Signature: ([Ljava/lang/Object;J[Ljava/lang/Object;)V
+
+ */
+
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot, jlong j_definedErrorNumber, jobjectArray j_substitutions)
 {
 #if defined (DEBUG_JNI)
@@ -15255,14 +15324,21 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseExce
     fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException <== <==\n");
 #endif
 }
-
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    raiseException0
- * Signature: ([Ljava/lang/Object;J)V
- */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException0
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    raiseException0
+
+ * Signature: ([Ljava/lang/Object;J)V
+
+ */
+
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException0
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot, jlong j_definedErrorNumber)
 {
 #if defined (DEBUG_JNI)
@@ -15276,14 +15352,21 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseExce
     fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException0 <== <==\n");
 #endif
 }
-
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    raiseException1
- * Signature: ([Ljava/lang/Object;JLjava/lang/String;)V
- */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException1
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    raiseException1
+
+ * Signature: ([Ljava/lang/Object;JLjava/lang/String;)V
+
+ */
+
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException1
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot, jlong j_definedErrorNumber, jstring j_substitution1)
 {
 #if defined (DEBUG_JNI)
@@ -15302,13 +15385,20 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseExce
     fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException1 <== <==\n");
 #endif
 }
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    raiseException2
- * Signature: ([Ljava/lang/Object;JLjava/lang/String;Ljava/lang/String;)V
- */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException2
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    raiseException2
+
+ * Signature: ([Ljava/lang/Object;JLjava/lang/String;Ljava/lang/String;)V
+
+ */
+
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException2
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot, jlong j_definedErrorNumber, jstring j_substitution1, jstring j_substitution2)
 {
 #if defined (DEBUG_JNI)
@@ -15330,14 +15420,21 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseExce
     fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRaiseException2 <== <==\n");
 #endif
 }
-
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    getContextVariable
- * Signature: ([Ljava/lang/Object;Ljava/lang/String;)V
- */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetContextVariable
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    getContextVariable
+
+ * Signature: ([Ljava/lang/Object;Ljava/lang/String;)V
+
+ */
+
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetContextVariable
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot, jstring j_variableName)
 {
 #if defined (DEBUG_JNI)
@@ -15375,14 +15472,21 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCon
     return jresult;        // return jobject
 
 }
-
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    setContextVariable
- * Signature: ([Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;)V
- */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContextVariable
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    setContextVariable
+
+ * Signature: ([Ljava/lang/Object;Ljava/lang/String;Ljava/lang/Object;)V
+
+ */
+
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContextVariable
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot, jstring j_variableName, jobject j_variableValue)
 {
 #if defined (DEBUG_JNI)
@@ -15418,12 +15522,17 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContex
 
 
 // 2012-02-11, rgf
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniCheckCondition
- * Signature: ([Ljava/lang/Object;)Z
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniCheckCondition
+
+ * Signature: ([Ljava/lang/Object;)Z
+
  */
-JNIEXPORT jboolean JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniCheckCondition
+JNIEXPORT jboolean JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniCheckCondition
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot)
 {
 #if defined (DEBUG_JNI)
@@ -15440,13 +15549,19 @@ JNIEXPORT jboolean JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniCheck
     return true;
 }
 
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniClearCondition
- * Signature: ([Ljava/lang/Object;)V
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniClearCondition
+
+ * Signature: ([Ljava/lang/Object;)V
+
  */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniClearCondition
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniClearCondition
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot)
 {
 #if defined (DEBUG_JNI)
@@ -15463,13 +15578,19 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniClearCond
 
 }
 
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniGetConditionInfo
- * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniGetConditionInfo
+
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+
  */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetConditionInfo
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetConditionInfo
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot)
 {
 #if defined (DEBUG_JNI)
@@ -15504,13 +15625,20 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCon
 }
 
 
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniSetThreadTrace
- * Signature: ([Ljava/lang/Object;Z)V
- */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetThreadTrace
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniSetThreadTrace
+
+ * Signature: ([Ljava/lang/Object;Z)V
+
+ */
+
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetThreadTrace
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot, jboolean j_state)
 {
 #if defined (DEBUG_JNI)
@@ -15525,13 +15653,20 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetThread
     fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetThreadTrace <== <==\n");
 #endif
 }
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniHaltThread
- * Signature: ([Ljava/lang/Object;)V
- */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniHaltThread
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniHaltThread
+
+ * Signature: ([Ljava/lang/Object;)V
+
+ */
+
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniHaltThread
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot)
 {
 #if defined (DEBUG_JNI)
@@ -15548,13 +15683,20 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniHaltThrea
 }
 
 
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniDropContextVariable
- * Signature: ([Ljava/lang/Object;Ljava/lang/String;)V
- */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniDropContextVariable
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniDropContextVariable
+
+ * Signature: ([Ljava/lang/Object;Ljava/lang/String;)V
+
+ */
+
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniDropContextVariable
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot, jstring j_variableName)
 {
 #if defined (DEBUG_JNI)
@@ -15577,12 +15719,18 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniDropConte
 
 }
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniSetContextVariableToNil
- * Signature: ([Ljava/lang/Object;Ljava/lang/String;)V
- */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContextVariableToNil
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniSetContextVariableToNil
+
+ * Signature: ([Ljava/lang/Object;Ljava/lang/String;)V
+
+ */
+
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContextVariableToNil
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot, jstring j_variableName)
 {
 #if defined (DEBUG_JNI)
@@ -15605,12 +15753,18 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContex
 
 }
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniGetCallerContext
- * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCallerContext
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniGetCallerContext
+
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+
+ */
+
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCallerContext
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot)
 {
 #if defined (DEBUG_JNI)
@@ -15637,12 +15791,18 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCal
 }
 
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniGetAllContextVariables
- * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetAllContextVariables
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniGetAllContextVariables
+
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+
+ */
+
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetAllContextVariables
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot)
 {
 #if defined (DEBUG_JNI)
@@ -15668,12 +15828,18 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetAll
     return jobj;
 }
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniGetLocalEnvironment
- * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetLocalEnvironment
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniGetLocalEnvironment
+
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+
+ */
+
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetLocalEnvironment
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot)
 {
 #if defined (DEBUG_JNI)
@@ -15698,13 +15864,20 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetLoc
 #endif
     return jobj;
 }
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniGetGlobalEnvironment
- * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlobalEnvironment
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniGetGlobalEnvironment
+
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+
+ */
+
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlobalEnvironment
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot)
 {
 #if defined (DEBUG_JNI)
@@ -15731,12 +15904,18 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlo
 }
 
 
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniNil
- * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniNil
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniNil
+
+ * Signature: ([Ljava/lang/Object;)Ljava/lang/Object;
+
+ */
+
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniNil
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot)
 {
 #if defined (DEBUG_JNI)
@@ -15761,13 +15940,20 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniNil
 #endif
     return jobj;
 }
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniInterpreterVersion
- * Signature: ([Ljava/lang/Object;)J
- */
-JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpreterVersion
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniInterpreterVersion
+
+ * Signature: ([Ljava/lang/Object;)J
+
+ */
+
+JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpreterVersion
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot)
 {
 #if defined (DEBUG_JNI)
@@ -15783,13 +15969,20 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpre
 #endif
     return res;
 }
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniLanguageLevel
- * Signature: ([Ljava/lang/Object;)J
- */
-JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguageLevel
+
+
+/*
+
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+
+ * Method:    jniLanguageLevel
+
+ * Signature: ([Ljava/lang/Object;)J
+
+ */
+
+JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguageLevel
+
   (JNIEnv *env, jobject rajo, jobjectArray j_slot)
 {
 #if defined (DEBUG_JNI)
