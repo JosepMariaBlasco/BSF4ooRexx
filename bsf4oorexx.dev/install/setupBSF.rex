@@ -5,8 +5,11 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.31
+   Version: 1.32
    Changed:
+            2016-04-17, ---rgf, - fixed a bug uncovered by Paul Dunkley: getJavaProps() does not work
+                                  on Linux on z (s390x) as the character sequence indicating an escaped
+                                  hexadecimal value ("0x") may occur in paths on ("s390x")
             2015-05-27, ---rgf, - fixed (unexplainable, probably change mistake) mix-up in the code
                                   section that tries to determine the 32-bit java.exe on a 64-bit Windows;
                                   added further code to test that 32-bit java.exe path on a 64-bit Windows
@@ -149,7 +152,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2014 Rony G. Flatscher
+       Copyright (C) 2006-2016 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -1427,14 +1430,16 @@ getJavaProps: procedure expose j. cmd. path.
    end
    else
    do i=1 to 99999 while queued()<>0
-      parse pull pName "=[" pVal "]"
+      parse pull pName "=" "[" >1 pVal "]" <1   -- remove leading "[" and trailing "]"
       if pname="" then iterate      /* blank line (the last line?)   */
+
       max=max(max, length(pName))   /* memorize longest name         */
 
-      parse var pVal v1 "0x" v2     /* hex-encoded string ?          */
       j.i.eName=pName               /* use a number based index      */
-      j.i.eValue=v1||x2c(v2)
+      if pVal~abbrev("0x") then     -- an escaped (hex-encoded) string?
+         pVal=substr(pVal,3)~x2c    -- recreate original value as supplied by Java
 
+      j.i.eValue=pVal               -- assign Java value
       j.pName=j.i.eValue            /* save in mixed case            */
 
       uName=translate(pName)        /* save in mixed case            */
