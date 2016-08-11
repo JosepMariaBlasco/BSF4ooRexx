@@ -461,7 +461,7 @@ syntax: raise propagate   -- propagate to caller
 /**
  * Processes received parameter "value" depending on its type. Always returns a CLR.
  * If a CLR object which is a <ocde>system.Enum</code>, but not an instance of the
- * {@link CLR_Enum} class, then an instance of {@link CLR_Enum} will be created and
+ * <code>CLR_Enum</code> class, then an instance of <code>CLR_Enum</code> will be created and
  * returned using the CLR object's <code>clr.object</code> and <code>clr.type</code>
  * attributes.
  *
@@ -471,7 +471,7 @@ syntax: raise propagate   -- propagate to caller
  * gets returned
  *
  * <p>If a BSF (Java proxy) object is supplied it will be wrapped either as a
- * {@link CLR_Enum} or as a {@link CLR_Proxy} object.
+ * <code>CLR_Enum</code> or as a <code>CLR_Proxy</code> object.
  *
  * @param       value  a CLR, a BSF or a Rexx string object
  *
