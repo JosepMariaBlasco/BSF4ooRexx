@@ -1,0 +1,3450 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>ooRexxDoc CLR.CLS 100.20160811</title>
+
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+<link rel="stylesheet" href="lib/css/no-theme/jquery-ui.css" type="text/css"/>
+<link rel="stylesheet" href="lib/css/oorexxdoc.css" type="text/css"/>
+<script src="lib/js/jquery.js" type="text/javascript"></script>
+<script src="lib/js/jquery-ui.js" type="text/javascript"></script>
+<script src="lib/js/oorexxdoc.js" type="text/javascript"></script>
+
+
+<script type="text/javascript">
+$( window ).resize(function() {
+	var contentHeight = $(window).height() - $(".footer").height() - $(".header").height() - 18;
+	
+	$(".nav").css({ "min-height": contentHeight + 'px' });
+	$(".nav").css({ "max-height": contentHeight + 'px' });
+	$(".linkList").css({ "height": contentHeight - 70 + 'px' });
+	$("input[name='content']").css({ "max-height": contentHeight + 'px' });
+	$("#contentDiv").css({ "height": contentHeight + 'px' });
+});
+$( document ).ready(function() {
+	var contentHeight = $(window).height() - $(".footer").height() - $(".header").height() - 18;
+
+	$(".nav").css({ "min-height": contentHeight + 'px' });
+	$(".nav").css({ "max-height": contentHeight + 'px' });
+	$(".linkList").css({ "height": contentHeight - 70 + 'px' });
+	$("input[name='content']").css({ "max-height": contentHeight + 'px' });
+	$("#contentDiv").css({ "height": contentHeight + 'px' });
+	
+
+		
+		new DocListFilter('#classNameFilter','#classList','li').init();
+		new DocListFilter('#routineNameFilter','#routineList','li').init();
+		new DocListFilter('#packageNameFilter','#packageList','li').init();
+		new DocListFilter('#indexAllFilter','#indexAll', 'a').init();
+	
+});
+
+function toggle(a){
+	$("#classes").hide();
+	$("#routines").hide();
+	$("#packages").hide();
+	$("#"+a).show();
+}
+
+</script>
+
+
+</head>
+<body>
+<div class="allIndexTable">
+
+<table>
+	<tr class="header">
+		<td colspan="2" class="header"><img src="lib/img/logo.png" /><span class="title">CLR.CLS 100.20160811</span>
+			<span class="headerData">
+				<input type="hidden" name="index" value="index.html" />
+															Date: 2016-08-11<br />
+																				Author: Manuel Raffel, Rony G. Flatscher<br />
+													<br />
+				<span id="quicklinks">
+								<a href="#overview">Overview</a>
+								<a href="#index">Index</a>
+				</span>
+			</span>
+		</td>
+	</tr>
+	<tr>
+		<td class="sidebar">
+		<div class="nav">
+		<div class="menu">
+		<a href="javascript: void(0);" onclick="toggle('classes')" >classes</a> | 
+		<a href="javascript: void(0);" onclick="toggle('routines')" >routines</a> | 
+		<a href="javascript: void(0);" onclick="toggle('packages')" >packages</a>
+		</div>
+								
+					
+				<div id="classes">
+							
+					<br />
+					<span style="padding-left: 15px; font-size: 12px;"><i>Name filter:</i> <input type="text" value="" id="classNameFilter" style="width: 120px;"/></span>
+				<div class="linkList">
+					<ul id="classList">
+					   						<li id="CLR_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">CLR</a></li>
+					   						<li id="CLR_Class_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Class" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">CLR_Class</a></li>
+					   						<li id="CLR_Enum_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Enum" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">CLR_Enum</a></li>
+					   						<li id="CLR_Event_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Event" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">CLR_Event</a></li>
+					   						<li id="CLR_Proxy_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Proxy" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">CLR_Proxy</a></li>
+					   						<li id="CLRLogger_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">CLRLogger</a></li>
+					   						<li id="CLRThread_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRThread" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">CLRThread</a></li>
+										</ul>
+				</div>
+				
+				</div>
+				
+													
+				<div id="routines" style="display: none;">
+				
+					<br />
+					<span style="padding-left: 15px; font-size: 12px;"><i>Name filter:</i> <input type="text" value="" id="routineNameFilter" style="width: 120px;"/></span>
+					<div class="linkList">
+					<ul id="routineList">
+					   						<li id="clr.addAssembly_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.addAssembly" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.addAssembly</a></li>
+					   						<li id="clr.box_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.box" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.box</a></li>
+					   						<li id="clr.createArray_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.createArray" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.createArray</a></li>
+					   						<li id="clr.createEventHandler_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.createEventHandler" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.createEventHandler</a></li>
+					   						<li id="clr.FieldName_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.FieldName" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.FieldName</a></li>
+					   						<li id="clr.findAssemblyName_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.findAssemblyName" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.findAssemblyName</a></li>
+					   						<li id="clr.findMatchingEvent_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.findMatchingEvent" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.findMatchingEvent</a></li>
+					   						<li id="clr.import_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.import" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.import</a></li>
+					   						<li id="clr.initAssemblies_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.initAssemblies" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.initAssemblies</a></li>
+					   						<li id="clr.MethodName_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.MethodName" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.MethodName</a></li>
+					   						<li id="clr.PropertyName_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.PropertyName" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.PropertyName</a></li>
+					   						<li id="clr.unbox_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.unbox" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.unbox</a></li>
+					   						<li id="clr.wrap_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.wrap" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">clr.wrap</a></li>
+					   						<li id="pp.line_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-pp.line" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">pp.line</a></li>
+										</ul>
+				</div>
+				</div>
+													
+				<div id="packages" style="display: none;">
+				
+					<br />
+					<span style="padding-left: 15px; font-size: 12px;"><i>Name filter:</i> <input type="text" value="" id="packageNameFilter" style="width: 120px;"/></span>
+					<div class="linkList">
+					<ul id="packageList">
+					   						<li id="CLR.CLS_indexListItem"><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls">CLR.CLS</a></li>
+										</ul>
+					</div>
+				</div>
+							
+		
+			</div>
+		</td>
+		<td class="main">
+			<div id="contentDiv">
+				<div id="overview" class="directiveDiv">Overview of CLR.CLS, Version 100.20160811</div>
+<br />
+<div class="directiveDiv">
+	
+	<ul style="list-style-type: none;" class="packagelist">
+		<li><h3>Packagelist</h3></li>
+			<li><a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a></li>
+		</ul>
+</div>
+<br /><div id="index" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			 Index
+		</h1>
+		
+<span style="padding-left: 15px; font-size: 12px;"><i>Name filter:</i> <input type="text" value="" id="indexAllFilter" style="width: 120px;"/></span>
+<br />
+<br />
+	<table id="indexAll">
+			<tr class="directive">
+			<td><b>C</b></td>
+		</tr>	
+		<tr id="index_C" class="directive">
+			<td>
+															<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR" >CLR</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.addAssembly" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.addAssembly" >clr.addAssembly</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Class" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR_Class" >
+							clr.assembly (GET/SET)
+						</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.box" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.box" >clr.box</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/package-overview">CLR.CLS</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Class" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR_Class" >
+							clr.clzProxy (GET/SET)
+						</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.createArray" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.createArray" >clr.createArray</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.createEventHandler" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.createEventHandler" >clr.createEventHandler</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR" >clr.dispatch</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.FieldName" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.FieldName" >clr.FieldName</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.findAssemblyName" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.findAssemblyName" >clr.findAssemblyName</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.findMatchingEvent" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.findMatchingEvent" >clr.findMatchingEvent</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.import" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.import" >clr.import</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR" >clr.import</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.initAssemblies" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.initAssemblies" >clr.initAssemblies</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.MethodName" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.MethodName" >clr.MethodName</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR" >
+							clr.object (GET)
+						</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR" >
+							clr.object (SET)
+						</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Class" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR_Class" >
+							clr.object (GET/SET)
+						</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.PropertyName" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.PropertyName" >clr.PropertyName</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Class" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR_Class" >
+							clr.proxy (GET/SET)
+						</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR" >clr.setPropertyValue</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR" >
+							clr.type (GET)
+						</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR" >
+							clr.type (SET)
+						</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Class" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR_Class" >
+							clr.type (GET/SET)
+						</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Class" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR_Class" >
+							clr.typeName (GET/SET)
+						</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.unbox" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.unbox" >clr.unbox</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.wrap" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-clr.wrap" >clr.wrap</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Class" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR_Class" >CLR_Class</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Enum" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR_Enum" >CLR_Enum</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Event" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR_Event" >CLR_Event</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Proxy" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR_Proxy" >CLR_Proxy</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLRLogger" >CLRLogger</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRThread" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLRThread" >CLRThread</a>
+												</td>
+		</tr>
+			<tr class="directive">
+			<td><b>D</b></td>
+		</tr>	
+		<tr id="index_D" class="directive">
+			<td>
+															<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLRLogger" >
+							doLogging (GET)
+						</a>
+												</td>
+		</tr>
+			<tr class="directive">
+			<td><b>E</b></td>
+		</tr>	
+		<tr id="index_E" class="directive">
+			<td>
+															<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Event" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR_Event" >
+							eventName (GET)
+						</a>
+												</td>
+		</tr>
+			<tr class="directive">
+			<td><b>L</b></td>
+		</tr>	
+		<tr id="index_L" class="directive">
+			<td>
+															<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLRLogger" >
+							logLevel (GET)
+						</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLRLogger" >
+							logLevel (SET)
+						</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLRLogger" >
+							logLevels (GET)
+						</a>
+												</td>
+		</tr>
+			<tr class="directive">
+			<td><b>P</b></td>
+		</tr>	
+		<tr id="index_P" class="directive">
+			<td>
+															<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-pp.line" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/routine-pp.line" >pp.line</a>
+												</td>
+		</tr>
+			<tr class="directive">
+			<td><b>R</b></td>
+		</tr>	
+		<tr id="index_R" class="directive">
+			<td>
+															<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRThread" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLRThread" >run</a>
+												</td>
+		</tr>
+			<tr class="directive">
+			<td><b>S</b></td>
+		</tr>	
+		<tr id="index_S" class="directive">
+			<td>
+															<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRThread" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLRThread" >start</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR" >string</a>
+												</td>
+		</tr>
+			<tr class="directive">
+			<td><b>U</b></td>
+		</tr>	
+		<tr id="index_U" class="directive">
+			<td>
+															<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR" >unknown</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Class" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLR_Class" >unknown</a>
+																				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger" title="work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls/class-CLRLogger" >unknown</a>
+												</td>
+		</tr>
+		</table>
+	<br />
+
+		</div>
+		<br />
+</div>
+<br />
+<div  id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS" class="packageheading">
+		<h1>
+			 Package: CLR.CLS
+		</h1>
+</div>
+<div class="directiveDiv">
+	<div class="infoTable">
+
+
+
+
+		<h3>Classes</h3>
+		
+					<table>
+				<tr class="directive">
+					<td colspan="2">
+												PUBLIC
+													<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR">CLR</a>
+						</td>
+				</tr>
+								<tr class="directive">
+					<td class="key">Description:</td>
+					<td class="value">
+						The class that represents CLR objects and which is responsible for interacting with the peer CLR object on behalf of the ooRexx programmer. An instance of this class holds a reference to the peer CLR object and a reference to that object's type to ease reflective interactions. 
+					
+										</td>
+				</tr>
+												<tr class="directive">
+					<td class="key">Attributes:</td>
+					<td class="value">
+											<u>clr.object
+													(GET)
+												</u>
+											<u>clr.object
+													(SET)
+												</u>
+											<u>clr.type
+													(GET)
+												</u>
+											<u>clr.type
+													(SET)
+												</u>
+										</td>
+				</tr>
+																<tr class="directive">
+					<td class="key">Methods:</td>
+					<td class="value">
+											<u>clr.dispatch</u>
+											<u>clr.import</u>
+											<u>clr.setPropertyValue</u>
+											<u>string</u>
+											<u>unknown</u>
+										</td>
+				</tr>
+						</table>
+		<br />
+					<table>
+				<tr class="directive">
+					<td colspan="2">
+												PRIVATE
+													<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Class">CLR_Class</a>
+						</td>
+				</tr>
+								<tr class="directive">
+					<td class="key">Description:</td>
+					<td class="value">
+						The proxy class representing an imported CLR type. When sending messages to the class proxy object, then resolution starts with the static scope first, followed by the instance scope, if the static scope could not be resolved. The proxy class can be used to instantiate CLR objects in the ooRexx style by merely sending the proxy class the message "NEW", supplying the arguments, if any. 
+					
+										</td>
+				</tr>
+												<tr class="directive">
+					<td class="key">Attributes:</td>
+					<td class="value">
+											<u>clr.assembly
+												</u>
+											<u>clr.clzProxy
+												</u>
+											<u>clr.object
+												</u>
+											<u>clr.proxy
+												</u>
+											<u>clr.type
+												</u>
+											<u>clr.typeName
+												</u>
+										</td>
+				</tr>
+																<tr class="directive">
+					<td class="key">Methods:</td>
+					<td class="value">
+											<u>unknown</u>
+										</td>
+				</tr>
+						</table>
+		<br />
+					<table>
+				<tr class="directive">
+					<td colspan="2">
+												PRIVATE
+													<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Enum">CLR_Enum</a>
+						</td>
+				</tr>
+								<tr class="directive">
+					<td class="key">Description:</td>
+					<td class="value">
+						Class to allow to wrap Enum values in order to ease comparing with Rexx strings. It implements the Rexx comparison methods "=", "\=", "<>", and "><" which in turn accept as the "other" object either another CLR Enumeration object (a proxy for an instance of a "System.Enum" type) or a Rexx string representing the Enum string value. 
+					
+										</td>
+				</tr>
+																				<tr class="directive">
+					<td class="key">Methods:</td>
+					<td class="value">
+											<u><></u>
+											<u>=</u>
+											<u>><</u>
+											<u>\=</u>
+										</td>
+				</tr>
+						</table>
+		<br />
+					<table>
+				<tr class="directive">
+					<td colspan="2">
+												PRIVATE
+													<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Event">CLR_Event</a>
+						</td>
+				</tr>
+								<tr class="directive">
+					<td class="key">Description:</td>
+					<td class="value">
+						A proxy class to ease adding and removing event handler to/from CLR objects. 
+					
+										</td>
+				</tr>
+												<tr class="directive">
+					<td class="key">Attributes:</td>
+					<td class="value">
+											<u>eventName
+													(GET)
+												</u>
+										</td>
+				</tr>
+																<tr class="directive">
+					<td class="key">Methods:</td>
+					<td class="value">
+											<u>+</u>
+											<u>-</u>
+										</td>
+				</tr>
+						</table>
+		<br />
+					<table>
+				<tr class="directive">
+					<td colspan="2">
+												<i>PRIVATE</i>
+													<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Proxy">CLR_Proxy</a>
+						</td>
+				</tr>
+								<tr class="directive">
+					<td class="key">Description:</td>
+					<td class="value">
+						This class serves as a proxy for CLR/.Net objects of any type, returned from CLR/.Net. The routine <code>clr.wrap()</code> will use this class, if a pure BSF (Java) object is supplied, assuming it is from CLR/.Net. <br/><b>author</b> Rony G. Flatscher <br/><b>since</b> 2016-06-18 
+					
+										</td>
+				</tr>
+																		</table>
+		<br />
+					<table>
+				<tr class="directive">
+					<td colspan="2">
+												PUBLIC
+													<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger">CLRLogger</a>
+						</td>
+				</tr>
+								<tr class="directive">
+					<td class="key">Description:</td>
+					<td class="value">
+						Utility class to allow logging merely by sending the messages "FATAL", "ERROR", "WARN", "INFO", "DEBUG" or "TRACE" with the log text as argument to the class object <code>.CLRLogger</code>. All interaction is with the class object directly, there is no instance one is allowed to create. 
+					
+										</td>
+				</tr>
+												<tr class="directive">
+					<td class="key">Attributes:</td>
+					<td class="value">
+											<u>doLogging
+													(GET)
+												</u>
+											<u>logLevel
+													(GET)
+												</u>
+											<u>logLevel
+													(SET)
+												</u>
+											<u>logLevels
+													(GET)
+												</u>
+										</td>
+				</tr>
+																<tr class="directive">
+					<td class="key">Methods:</td>
+					<td class="value">
+											<u>unknown</u>
+										</td>
+				</tr>
+						</table>
+		<br />
+					<table>
+				<tr class="directive">
+					<td colspan="2">
+												PUBLIC
+													<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRThread">CLRThread</a>
+						</td>
+				</tr>
+								<tr class="directive">
+					<td class="key">Description:</td>
+					<td class="value">
+						A class that uses "java.lang.Thread" to create a thread for executing Rexx code in the context of CLR/.Net concurrently. To take advantage of this ooRexx class it is necessary to subclass it, and to implement the abstract method "run". 
+					
+										</td>
+				</tr>
+																				<tr class="directive">
+					<td class="key">Methods:</td>
+					<td class="value">
+											<u>run</u>
+											<u>start</u>
+										</td>
+				</tr>
+						</table>
+		<br />
+					
+		<br />
+
+
+
+
+	<h3>Routines</h3>
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.addAssembly">clr.addAssembly</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">PARSE ARG:</td>
+				<td class="value">
+																								assemblyName
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Routine that queries all exported types defined in the supplied assembly and caches their full names and assembly names in <code>.clr.dir~assemblyName</code>. <br/><b>param</b> <u><i>assemblyName</i></u> the assembly name to work on 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.box">clr.box</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE strict ARG:</td>
+				<td class="value">
+																								typeIndicator,
+																											strValue
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Boxes (wraps) a Rexx string representing a primitive type into a CLR object using a CLR wrapper class. Rexx strings are turned into CLR string objects (type: <code>System.String</code>). <br/><b>param</b> <u><i>typeIndicator</i></u> one of the following strings: <ul> <li>"System.String", "STring" </li> <li>"System.Boolean", "BOolean" </li> <li>"System.Byte", "BYte" </li> <li>"System.SByte", "SByte" </li> <li>"System.Char", "CHAR" </li> <li>"System.Decimal", "DEcimal" </li> <li>"System.Double", "DOuble" </li> <li>"System.Int16", "INT16" </li> <li>"System.UInt16", "UINT16" </li> <li>"System.Int32", "INT32" </li> <li>"System.UInt32", "UINT32" </li> <li>"System.Int64", "INT64" </li> <li>"System.UInt64", "UINT64" </li> <li>"System.Single", "SIngle" </li> </ul> <br/><b>param</b> <u><i>strValue</i></u> the Rexx string containing the primitive value or plain string to box/wrap/convert <br/><b>return</b> the boxed CLR value, the CLR string value or <code>.nil</code> if <code>.nil</code> was supplied 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.createArray">clr.createArray</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">use strict ARG:</td>
+				<td class="value">
+																								typeName,
+																											capacity
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Utility routine that allows creating a single dimensioned CLR array with the supplied type and capacity. <br/><b>param</b> <u><i>typeName</i></u> the fully qualified CLR type name <br/><b>param</b> <u><i>capacity</i></u> the capacity (a non-negative whole number) <br/><b>return</b> a System.Array instance (a CLR array object) of the specified type and capacity 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.createEventHandler">clr.createEventHandler</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE strict ARG:</td>
+				<td class="value">
+																								rexxEventHandler,
+																											rexxData=.nil
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Creates an instance of "system.EventHandler" with the Rexx event handler object to handle any events. <br/><b>param</b> <u><i>rexxEventHandler</i></u> a Rexx object that handles the events <br/><b>param</b> <u><i>rexxData</i></u> an optional Rexx object that will be supplied with each event (last event argument, appended by BSF4ooRexx, which is a Rexx directory object; the "rexxData" object can be retrieved from it using as index the value "USERDATA"; cf. BSF4ooRexx) <br/><b>return</b> an instance of "System.EventHandler", where the rexxEventHandler object will process the events 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.FieldName">clr.FieldName</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								clrType,
+																											fieldName
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Returns the mixed case property name matching caselessly the supplied field name in the supplied CLR type. <br/><b>param</b> <u><i>clrType</i></u> the CLR type to look for the supplied field name <br/><b>param</b> <u><i>fieldName</i></u> the name of the field to look for in the supplied <code>clrType</code> <br/><b>return</b> .nil if no field found in the type by the given name (comparisons are caseless) or the correctly spelled field name 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.findAssemblyName">clr.findAssemblyName</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE strict ARG:</td>
+				<td class="value">
+																								typeName
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Determine and return the assembly name from a fully qualified type name. <br/><b>param</b> <u><i>typeName</i></u> fully qualified type name <br/><b>return</b> assembly name where the type gets exported 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.findMatchingEvent">clr.findMatchingEvent</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								clrType,
+																											eventName
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Returns the mixed case event name matching caselessly the supplied event name in the supplied CLR type. <br/><b>param</b> <u><i>clrType</i></u> the CLR type to look for the supplied event name <br/><b>param</b> <u><i>fieldName</i></u> the name of the event to look for in the supplied <code>clrType</code> <br/><b>return</b> .nil if no event found in the type by the given name (comparisons are caseless) or the correctly spelled event name 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.import">clr.import</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE strict ARG:</td>
+				<td class="value">
+																								typeName,
+																											rexxName4local=.nil
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Routine to import a CLR/.Net class, the imported class understands the NEW-message. <br/><b>param</b> <u><i>typeName</i></u> the fully qualified CLR/.net type name <br/><b>param</b> <u><i>rexxName4local</i></u> the name to store in .local, defaults to <code>.nil</code>, which inhibits the default entry of the CLR::CLR_IMPORT <br/><b>return</b> a Rexx class object, subclassing CLR_Class, proxying the CLR/.Net type object 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.initAssemblies">clr.initAssemblies</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									No
+								</td>
+			</tr>
+												<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Routine that makes sure that the fully qualified names of the exported types defined in the assemblies "mscorlib" and "System" get cached with their assembly names in <code>.clr.dir~assemblyName</code>. 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.MethodName">clr.MethodName</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								clrType,
+																											methodName
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Returns the mixed case method name matching caselessly the supplied method name in the supplied CLR type. <br/><b>param</b> <u><i>clrType</i></u> the CLR type to look for the supplied method name <br/><b>param</b> <u><i>methodName</i></u> the name of the method to look for in the supplied <code>clrType</code> <br/><b>return</b> .nil if no method found in the type by the given name (comparisons are caseless) or the correctly spelled method name 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.PropertyName">clr.PropertyName</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								clrType,
+																											propertyName
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Returns the mixed case property name matching caselessly the supplied property name in the supplied CLR type. <br/><b>param</b> <u><i>clrType</i></u> the CLR type to look for the supplied method name <br/><b>param</b> <u><i>propertyName</i></u> the name of the property to look for in the supplied <code>clrType</code> <br/><b>return</b> .nil if no property found in the type by the given name (comparisons are caseless) or the correctly spelled property name 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.unbox">clr.unbox</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								clrObject
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Routine to turn values of boxed/wrapped <code>CLR</code> primitive types or System.String values to Rexx strings, otherwise returns argument unchanged. <br/><b>param</b> <u><i>clrObject</i></u> the CLR object to unbox or to turn into a Rexx string <br/><b>return</b> a Rexx string or the argument unchanged, if <code>clrObject</code> does not represent a boxed CLR value or a CLR string 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.wrap">clr.wrap</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								value
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					 Processes received parameter "value" depending on its type. Always returns a CLR. If a CLR object which is a <ocde>system.Enum</code>, but not an instance of the <code>CLR_Enum</code> class, then an instance of <code>CLR_Enum</code> will be created and returned using the CLR object's <code>clr.object</code> and <code>clr.type</code> attributes. <p>If a Rexx string is supplied which can be represented as a number, then a CLR object representing a wrapped system.Int32, system.Int64 or system.Decimal gets returned, depending on the value range. Otherwise a system.String object gets returned <p>If a BSF (Java proxy) object is supplied it will be wrapped either as a <code>CLR_Enum</code> or as a <code>CLR_Proxy</code> object. <br/><b>param</b> <u><i>value</i></u> a CLR, a BSF or a Rexx string object <br/><b>return</b> a CLR object wrapping up the supplied <code>value</code> 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Routine:</td>
+				<td class="value">
+				<a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-pp.line">pp.line</a>
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier</td>
+				<td>
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">use strict arg:</td>
+				<td class="value">
+																								lineNr
+																</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Private utility method to "pretty-print" ooRexx line numbers in debug statements. Intended for taking advantage of the ooRexx class <code>CLRLogger</code> in this Rexx package. 
+				
+								</td>
+			</tr>
+					</table>
+		<br />
+	
+
+
+
+
+		<h3>Requires</h3>
+	<table>
+	
+			<table>
+				<tr class="directive">
+									<td class="key">Package:</td>
+					<td class="value">BSF.CLS</td>
+								</tr>
+
+							</table>
+		<br/>
+	
+		<div>
+		Source: work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls
+		</div>
+
+		</div>
+		<br />
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PUBLIC
+									 Class: CLR 
+		</h1>
+<span class="classProperty">Metaclass: Class</span> <br />
+		<br />
+		<div class="comment">
+			<b>Description:</b><br /> <span class="classDescription">
+				The class that represents CLR objects and which is responsible for interacting with the peer CLR object on behalf of the ooRexx programmer. An instance of this class holds a reference to the peer CLR object and a reference to that object's type to ease reflective interactions.  
+				</span>
+		</div>
+		<br />
+		<div>
+					<h3>Init</h3>
+		<table>
+				<tr>
+					<td  colspan="2">init
+						PUBLIC
+						
+						</td>
+					
+				</tr>
+								<tr class="directive">
+					<td class="key">Expose:</td>
+					<td class="value">
+													clr.object
+													clr.type
+											</td>
+				</tr>
+												<tr class="directive">
+					<td class="key">USE ARG:</td>
+					<td class="value">
+																									typeName,
+																											param=.nil,
+																											...
+																	</td>
+				</tr>
+												<tr class="directive">
+					<td class="key">Description:</td>
+					<td class="value">
+						Constructor method. <br/><b>param</b> <u><i>typeName</i></u> the fully qualified name of a CLR type to instantiate <br/><b>param</b> <u><i>param</i></u> optionally one or more paramaters to pass on to the CLR constructor 
+					</td>
+				</tr>
+						</table>
+		<br >
+		<h3>Methods Summary</h3>
+		<table>
+							<tr class="directive">
+					<td>
+												PUBLIC
+											clr.dispatch
+											</td>
+				</tr>
+							<tr class="directive">
+					<td>
+												<i>PUBLIC</i>
+											clr.import
+											<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+												</span>
+											</td>
+				</tr>
+							<tr class="directive">
+					<td>
+												PRIVATE
+											clr.setPropertyValue
+											<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+												</span>
+											</td>
+				</tr>
+							<tr class="directive">
+					<td>
+												PUBLIC
+											string
+											</td>
+				</tr>
+							<tr class="directive">
+					<td>
+												PUBLIC
+											unknown
+											<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+												</span>
+											</td>
+				</tr>
+					</table>
+		<br />
+
+		<h3>Attributes</h3>
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										clr.object 
+									<span class="special">GET</span>
+												</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Getter attribute method to get the peer <code>clr.object</code>. <br/><b>return</b> the CLR object (a BSF object) that is a peer of the CLR object it represents 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											PRIVATE
+										clr.object 
+									<span class="special">SET</span>
+												</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Private setter attribute method to set the peer <code>clr.object</code>. <br/><b>param</b> <u><i>the</i></u> BSF (sic!) object that is the peer of the CLR object it represents 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										clr.type 
+									<span class="special">GET</span>
+												</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Getter attribute method to get the <code>clr.type</code> of the <code>clr.object</code>. <br/><b>return</b> the CLR type object (a BSF object) that is the type of the <code>clr.object</code> 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											PRIVATE
+										clr.type 
+									<span class="special">SET</span>
+												</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Private setter attribute method to set the peer <code>clr.type</code>. <br/><b>param</b> <u><i>the</i></u> BSF (sic!) object that is the CLR type of <code>clr.object</code> 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+				<h3>Methods</h3>
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>clr.dispatch</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						
+												<tr class="directive">
+				<td class="key">PARSE ARG:</td>
+				<td class="value">
+																								messageName
+																</td>
+			</tr>
+												<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Directly forwards a message to the "unknown" method of this CLR. This is needed if a method on .NET side is to be called which is named like a method on the ooRexx side. Examples are the ooRexx methods "class", "start" or "init" (inherited from the ooRexx root class <code>.Object</code>). <br/><b>param</b> <u><i>messageName</i></u> the name of the .NET message 
+				</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>clr.import</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											<i>PUBLIC</i>
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						<tr>
+				<td>Option(s):</td>
+				<td>
+											CLASS		
+								</td>
+			</tr>
+						
+												<tr class="directive">
+				<td class="key">USE strict ARG:</td>
+				<td class="value">
+																								typeName,
+																											rexxName4Local=(typeName)
+																</td>
+			</tr>
+												<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Class method to import a CLR type into ooRexx and allow that type to be treated as an ooRexx class that possesses the <code>new</code> class method to create instances of the CLR type it represents. <br/><b>param</b> <u><i>typeName</i></u> the fully qualified type name which should be imported into ooRexx as an ooRexx class proxy <br/><b>param</b> <u><i>rexxName4Local</i></u> optional string which gets used to store the imported class proxy in the <code>.local</code> directory. Prepending a dot to that name (using it as an environment symbol) will cause ooRexx to automatically search for this entry in <code>.nil</code>. If this argument is given and set to <code>.nil</code>, then no entry will be created in the ooRexx <code>.local</code> directory. <br/><b>return</b> the ooRexx class object representing the CLR type, i.e. an instance of class <code>&quot;CLR_Class&quot;</code> 
+				</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>clr.setPropertyValue</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						<tr>
+				<td>Option(s):</td>
+				<td>
+											CLASS		
+								</td>
+			</tr>
+						
+									<tr class="directive">
+				<td class="key">Expose:</td>
+				<td class="value">
+											clr.object
+											clr.type
+									</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								propertyName,
+																											propertyValue
+																</td>
+			</tr>
+												<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Private method that sets the specified property to the supplied value in the .NET object proxied via this CLR proxy object. <br/><b>param</b> <u><i>propertyName</i></u> the name of the property to be set <br/><b>param</b> <u><i>propertyValue</i></u> the value the property is to be set to eturn self 
+				</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>string</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						
+									<tr class="directive">
+				<td class="key">Expose:</td>
+				<td class="value">
+											clr.object
+									</td>
+			</tr>
+															<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					The method that renders the CLR proxy object in a format that indicates its type by including the CLR type name. <br/><b>return</b> a string representing the CLR proxy object 
+				</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>unknown</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						<tr>
+				<td>Option(s):</td>
+				<td>
+											CLASS		
+								</td>
+			</tr>
+						
+									<tr class="directive">
+				<td class="key">Expose:</td>
+				<td class="value">
+											clr.object
+											clr.type
+									</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								msgName,
+																											msgArgs
+																</td>
+			</tr>
+												<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					The unknown method tries to find methods, properties, fields or events (in that order) that match the unknown message name. It will carry out the appropriate operation. The implementation allows also to assign new values to CLR properties, if the ooRexx programmer employs them like an ooRexx attribute. In addition it allows for adding an event handler to an event object by the name of the message. <br/><b>param</b> <u><i>msgName</i></u> the name of the message that was not understood (no method by that name was found) <br/><b>param</b> <u><i>msgArgs</i></u> an array containing the arguments supplied with the message, if any <br/><b>return</b> returns the appropriate object or .nil, if appropriate 
+				</td>
+			</tr>
+					</table>
+		<br />
+		<h3>Instantiated Classes</h3>
+	<table>
+		<tr class="directive">
+			<td class="key">
+				 <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Class">CLR_Class</a>
+				 <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Event">CLR_Event</a>
+				 <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Proxy">CLR_Proxy</a>
+				 <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger">CLRLogger</a>
+				</td>
+		</tr>
+	</table>
+	<br />
+<h3>Requires</h3>
+
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+		<div>
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+	</div>
+<div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Class" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PRIVATE
+									 Class: CLR_Class 
+		</h1>
+<span class="classProperty">Subclass: clr</span> <br />
+<span class="classProperty">Metaclass: Class</span> <br />
+		<br />
+		<div class="comment">
+			<b>Description:</b><br /> <span class="classDescription">
+				The proxy class representing an imported CLR type. When sending messages to the class proxy object, then resolution starts with the static scope first, followed by the instance scope, if the static scope could not be resolved. The proxy class can be used to instantiate CLR objects in the ooRexx style by merely sending the proxy class the message "NEW", supplying the arguments, if any.  
+				</span>
+		</div>
+		<br />
+		<div>
+					<h3>Init</h3>
+		<table>
+				<tr>
+					<td  colspan="2">init
+						PUBLIC
+						
+						</td>
+					
+				</tr>
+																<tr class="directive">
+					<td class="key">Description:</td>
+					<td class="value">
+						Constructor that creates a CLR proxy object by means of reflection. Any supplied arguments will be relayed to CLR. 
+					</td>
+				</tr>
+						</table>
+		<br >
+		<h3>Methods Summary</h3>
+		<table>
+							<tr class="directive">
+					<td>
+												<i>PUBLIC</i>
+											unknown
+											<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+												</span>
+											</td>
+				</tr>
+					</table>
+		<br />
+
+		<h3>Attributes</h3>
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										clr.assembly 
+													<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+											</span>
+								</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Class attribute that stores the CLR assembly object that was used to load this type. 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										clr.clzProxy 
+													<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+											</span>
+								</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Class attribute that stores the CLR instance that represents this CLR type. Its <code>clr.object</code> and <code>clr.type</code> attributes refer the <code>clr.object</code> Java proxy, thereby allowing the resolution of messages that are aimed at <em>static</em> members (methods, properties, fields, events) of the proxied CLR type. 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										clr.object 
+													<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+											</span>
+								</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Class attribute that stores the proxy Java type object (an instance of BSF) that represents the CLR type. 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										clr.proxy 
+													<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+											</span>
+								</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Class attribute that stores the CLR instance that represents this CLR type. Its <code>clr.object</code> and <code>clr.type</code> attributes refer the <code>clr.object</code> and <code>clr.type</code>, respectively. This allows the resolution of messages that are aimed at <em>instance</em> members (methods, properties, fields, events) of the proxied CLR type. 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										clr.type 
+													<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+											</span>
+								</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Class attribute that stores the proxy Java type object (an instance of BSF) that represents the type/class object of <code>clr.object</code>. 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										clr.typeName 
+													<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+											</span>
+								</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Class attribute that stores the CLR type name for which this class object is a peer. 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+				<h3>Methods</h3>
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>unknown</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											<i>PUBLIC</i>
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						<tr>
+				<td>Option(s):</td>
+				<td>
+											CLASS		
+								</td>
+			</tr>
+						
+									<tr class="directive">
+				<td class="key">Expose:</td>
+				<td class="value">
+											clr.object
+											clr.type
+											clr.proxy
+											clr.clzProxy
+									</td>
+			</tr>
+															<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Class unknown method that first forwards a message to <code>clr.clzProxy</code> which in effect tries to resolve the static context. If this is not successful (the CLR unknown method raises a condition), then another attempt is made by forwarding the message to <code>clr.proxy</code> which resolves the instance context. 
+				</td>
+			</tr>
+					</table>
+		<br />
+		<h3>Instantiated Classes</h3>
+	<table>
+		<tr class="directive">
+			<td class="key">
+				 <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger">CLRLogger</a>
+				</td>
+		</tr>
+	</table>
+	<br />
+<h3>Requires</h3>
+
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+		<div>
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+	</div>
+<div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Enum" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PRIVATE
+									 Class: CLR_Enum 
+		</h1>
+<span class="classProperty">Subclass: CLR_PROXY</span> <br />
+<span class="classProperty">Metaclass: Class</span> <br />
+		<br />
+		<div class="comment">
+			<b>Description:</b><br /> <span class="classDescription">
+				Class to allow to wrap Enum values in order to ease comparing with Rexx strings. It implements the Rexx comparison methods "=", "\=", "<>", and "><" which in turn accept as the "other" object either another CLR Enumeration object (a proxy for an instance of a "System.Enum" type) or a Rexx string representing the Enum string value.  
+				</span>
+		</div>
+		<br />
+		<div>
+					<h3>Methods Summary</h3>
+		<table>
+							<tr class="directive">
+					<td>
+												<i>PUBLIC</i>
+											<>
+											</td>
+				</tr>
+							<tr class="directive">
+					<td>
+												<i>PUBLIC</i>
+											=
+											</td>
+				</tr>
+							<tr class="directive">
+					<td>
+												<i>PUBLIC</i>
+											><
+											<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+												</span>
+											</td>
+				</tr>
+							<tr class="directive">
+					<td>
+												<i>PUBLIC</i>
+											\=
+											</td>
+				</tr>
+					</table>
+		<br />
+
+	<h3>Methods</h3>
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b><></b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											<i>PUBLIC</i>
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									No
+								</td>
+			</tr>
+						
+																		<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					A synonym for method "\=", to which the invocation gets forwarded to. 
+				</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>=</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											<i>PUBLIC</i>
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						
+												<tr class="directive">
+				<td class="key">use strict arg:</td>
+				<td class="value">
+																								otherValue
+																</td>
+			</tr>
+												<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					The equal comparison method. If "other" is a Rexx string then the comparison is carried out caselessly. <br/><b>param</b> <u><i>other</i></u> mandatory value, either a CLR proxy for a "System.Enum" instance or a Rexx string <br/><b>return</b> .true if the this value and "other" value are the same, .false else 
+				</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>><</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											<i>PUBLIC</i>
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									No
+								</td>
+			</tr>
+						<tr>
+				<td>Option(s):</td>
+				<td>
+											CLASS		
+								</td>
+			</tr>
+						
+																		<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					A synonym for method "\=", to which the invocation gets forwarded to. 
+				</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>\=</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											<i>PUBLIC</i>
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						
+												<tr class="directive">
+				<td class="key">use strict arg:</td>
+				<td class="value">
+																								otherValue
+																</td>
+			</tr>
+												<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					The unequal comparison method. If "other" is a Rexx string then the comparison is carried out caselessly. <br/><b>param</b> <u><i>other</i></u> mandatory value, either a CLR proxy for a "System.Enum" instance or a Rexx string <br/><b>return</b> .true if the this value and "other" value are not the same, .false else 
+				</td>
+			</tr>
+					</table>
+		<br />
+		<h3>Instantiated Classes</h3>
+	<table>
+		<tr class="directive">
+			<td class="key">
+				 <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger">CLRLogger</a>
+				</td>
+		</tr>
+	</table>
+	<br />
+<h3>Requires</h3>
+
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+		<div>
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+	</div>
+<div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Event" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PRIVATE
+									 Class: CLR_Event 
+		</h1>
+<span class="classProperty">Subclass: CLR_Proxy</span> <br />
+<span class="classProperty">Metaclass: Class</span> <br />
+		<br />
+		<div class="comment">
+			<b>Description:</b><br /> <span class="classDescription">
+				A proxy class to ease adding and removing event handler to/from CLR objects.  
+				</span>
+		</div>
+		<br />
+		<div>
+					<h3>Init</h3>
+		<table>
+				<tr>
+					<td  colspan="2">init
+						
+						
+						</td>
+					
+				</tr>
+								<tr class="directive">
+					<td class="key">Expose:</td>
+					<td class="value">
+													eventName
+											</td>
+				</tr>
+												<tr class="directive">
+					<td class="key">use strict arg:</td>
+					<td class="value">
+																									o,
+																											eventName
+																	</td>
+				</tr>
+												<tr class="directive">
+					<td class="key">Description:</td>
+					<td class="value">
+						Constructor. <br/><b>param</b> <u><i>o</i></u> the CLR object for which event handling should become possible <br/><b>param</b> <u><i>eventName</i></u> the event name for which adding and removing event handler should become possible 
+					</td>
+				</tr>
+						</table>
+		<br >
+		<h3>Methods Summary</h3>
+		<table>
+							<tr class="directive">
+					<td>
+												PUBLIC
+											+
+											</td>
+				</tr>
+							<tr class="directive">
+					<td>
+												PUBLIC
+											-
+											<span style="font-size: 10px;font-weight: bold;">
+													ABSTRACT
+													CLASS
+												</span>
+											</td>
+				</tr>
+					</table>
+		<br />
+
+		<h3>Attributes</h3>
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										eventName 
+									<span class="special">GET</span>
+												</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Attribute getter method to allow querying the event name for which this object allows to add or remove event handlers. 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+				<h3>Methods</h3>
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>+</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						
+									<tr class="directive">
+				<td class="key">Expose:</td>
+				<td class="value">
+											eventName
+									</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								eventHandler
+																</td>
+			</tr>
+												<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Method to add an event handler for the named event <code>eventName</code> of the CLR object. <br/><b>param</b> <u><i>eventHandler</i></u> a Java Rexx proxy to be added as an event handler <br/><b>return</b> self 
+				</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>-</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						<tr>
+				<td>Option(s):</td>
+				<td>
+											ABSTRACT		
+											CLASS		
+								</td>
+			</tr>
+						
+									<tr class="directive">
+				<td class="key">Expose:</td>
+				<td class="value">
+											eventName
+									</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								eventHandler
+																</td>
+			</tr>
+												<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Method to remove an event handler for the named event <code>eventName</code> from the CLR object. <br/><b>param</b> <u><i>eventHandler</i></u> a Java Rexx proxy serving as an event handler that should be removed <br/><b>return</b> self 
+				</td>
+			</tr>
+					</table>
+		<br />
+		<h3>Instantiated Classes</h3>
+	<table>
+		<tr class="directive">
+			<td class="key">
+				 <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger">CLRLogger</a>
+				</td>
+		</tr>
+	</table>
+	<br />
+<h3>Requires</h3>
+
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+		<div>
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+	</div>
+<div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR_Proxy" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										
+									 Class: CLR_Proxy 
+		</h1>
+<span class="classProperty">Subclass: clr</span> <br />
+<span class="classProperty">Metaclass: Class</span> <br />
+		<br />
+		<div class="comment">
+			<b>Description:</b><br /> <span class="classDescription">
+				This class serves as a proxy for CLR/.Net objects of any type, returned from CLR/.Net. The routine <code>clr.wrap()</code> will use this class, if a pure BSF (Java) object is supplied, assuming it is from CLR/.Net. <br/><b>author</b> Rony G. Flatscher <br/><b>since</b> 2016-06-18  
+				</span>
+		</div>
+		<br />
+		<div>
+					<h3>Init</h3>
+		<table>
+				<tr>
+					<td  colspan="2">init
+						
+						
+						</td>
+					
+				</tr>
+												<tr class="directive">
+					<td class="key">use strict arg:</td>
+					<td class="value">
+																									argObj,
+																											argType=.nil
+																	</td>
+				</tr>
+												<tr class="directive">
+					<td class="key">Description:</td>
+					<td class="value">
+						Constructor. <br/><b>param</b> <u><i>argObj</i></u> mandatory object, can be a CLR or BSF object <br/><b>param</b> <u><i>argType</i></u> optional object, if supplied, must be a BSF object 
+					</td>
+				</tr>
+						</table>
+		<br >
+
+<h3>Requires</h3>
+
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+		<div>
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+	</div>
+<div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PUBLIC
+									 Class: CLRLogger 
+		</h1>
+<span class="classProperty">Metaclass: Class</span> <br />
+		<br />
+		<div class="comment">
+			<b>Description:</b><br /> <span class="classDescription">
+				Utility class to allow logging merely by sending the messages "FATAL", "ERROR", "WARN", "INFO", "DEBUG" or "TRACE" with the log text as argument to the class object <code>.CLRLogger</code>. All interaction is with the class object directly, there is no instance one is allowed to create.  
+				</span>
+		</div>
+		<br />
+		<div>
+					<h3>Init</h3>
+		<table>
+				<tr>
+					<td  colspan="2">init
+						PUBLIC
+						
+						</td>
+					
+				</tr>
+								<tr class="directive">
+					<td class="key">Expose:</td>
+					<td class="value">
+													logLevels
+													logLevel
+													doLogging
+													logStream
+											</td>
+				</tr>
+																<tr class="directive">
+					<td class="key">Description:</td>
+					<td class="value">
+						Constructor, defining the log levels "OFF", "FATAL", "ERROR", * "WARN", "INFO", "DEBUG" and "TRACE", setting the attribute <code>logLevel</code> to "OFF". Determines whether the ooRexx version in use has the <code>.traceOutput</code> stream, if not the <code>.error</code> stream is used for log output instead. 
+					</td>
+				</tr>
+						</table>
+		<br >
+		<h3>Methods Summary</h3>
+		<table>
+							<tr class="directive">
+					<td>
+												PUBLIC
+											unknown
+											<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+												</span>
+											</td>
+				</tr>
+					</table>
+		<br />
+
+		<h3>Attributes</h3>
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										doLogging 
+									<span class="special">GET</span>
+													<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+											</span>
+								</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Getter attribute method that indicates whether log messages get processed. <br/><b>return</b> <code>.true</code> if logging is active, <code>.false</code> if not 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										logLevel 
+									<span class="special">GET</span>
+													<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+											</span>
+								</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Getter attribute method that returns the current <code>logLevel</code> setting. <br/><b>return</b> one of the strings: "OFF", "FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE" 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										logLevel 
+									<span class="special">SET</span>
+													<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+											</span>
+								</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Setter attribute method that returns a copy of the log levels directory. If set to "OFF", then the attribute <code>doLogging</code> is set to <code>.false</code>, otherwise to <code>.true</code>. <br/><b>param</b> <u><i>desiredLevel,</i></u> one of "OFF", "FATAL", "ERROR", "WARN", "INFO", "DEBUG" and "TRACE". 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+					<table>
+			<tr class="directive">
+				<td class="key">Attribute:</td>
+				<td class="value">
+											<i>PUBLIC</i>
+										logLevels 
+									<span class="special">GET</span>
+													<span style="font-size: 10px;font-weight: bold;">
+													CLASS
+											</span>
+								</td>
+			</tr>
+			
+						<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">Getter attribute method that returns a copy of the log levels directory. <br/><b>return</b> copy of <code>logLevels</code> directory object 
+				</td>
+			</tr>
+			
+		</table>
+		<br />
+
+
+				<h3>Methods</h3>
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>unknown</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						<tr>
+				<td>Option(s):</td>
+				<td>
+											CLASS		
+								</td>
+			</tr>
+						
+									<tr class="directive">
+				<td class="key">Expose:</td>
+				<td class="value">
+											logLevel
+											logLevels
+											logStream
+									</td>
+			</tr>
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								levelName,
+																											args
+																</td>
+			</tr>
+												<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Unknown method that handles the messages "OFF", "FATAL", "ERROR", "WARN", "INFO", "DEBUG", "TRACE", depending on the value of the attribute <code>logLevel</code>. The handling is determined by the following relation: <code>"OFF" &lt; "FATAL" &lt; "ERROR" &lt; "WARN" &lt; "INFO" &lt; "DEBUG" &lt; "TRACE"<code>. Hence, if the attribute <code>logLevel</code> is set to <code>&quot;OFF&quot;<code> no log messages get displayed. By contrast, if <code>logLevel</code> is set to <code>&quot;TRACE&quot;<code> all log messages get displayed. <br/><b>param</b> <u><i>levelName</i></u> the unknown message name <br/><b>param</b> <u><i>args</i></u> an array object containing the arguments supplied with the unknown message 
+				</td>
+			</tr>
+					</table>
+		<br />
+	<h3>Requires</h3>
+
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+		<div>
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+	</div>
+<div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRThread" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PUBLIC
+									 Class: CLRThread 
+		</h1>
+<span class="classProperty">Metaclass: Class</span> <br />
+		<br />
+		<div class="comment">
+			<b>Description:</b><br /> <span class="classDescription">
+				A class that uses "java.lang.Thread" to create a thread for executing Rexx code in the context of CLR/.Net concurrently. To take advantage of this ooRexx class it is necessary to subclass it, and to implement the abstract method "run".  
+				</span>
+		</div>
+		<br />
+		<div>
+					<h3>Methods Summary</h3>
+		<table>
+							<tr class="directive">
+					<td>
+												<i>PUBLIC</i>
+											run
+											<span style="font-size: 10px;font-weight: bold;">
+													ABSTRACT
+													CLASS
+												</span>
+											</td>
+				</tr>
+							<tr class="directive">
+					<td>
+												PUBLIC
+											start
+											<span style="font-size: 10px;font-weight: bold;">
+													ABSTRACT
+												</span>
+											</td>
+				</tr>
+					</table>
+		<br />
+
+	<h3>Methods</h3>
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>run</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											<i>PUBLIC</i>
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									No
+								</td>
+			</tr>
+						<tr>
+				<td>Option(s):</td>
+				<td>
+											ABSTRACT		
+											CLASS		
+								</td>
+			</tr>
+						
+																		<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Abstract method that needs to be implemented in the subclassed Rexx class. 
+				</td>
+			</tr>
+					</table>
+		<br />
+			<table>
+			<tr class="directive">
+				<td class="key">Method:</td>
+				<td class="value">
+				
+				<b>start</b>
+				
+				
+				</td>
+			</tr>
+			<tr>
+				<td>Accessmodifier:</td>
+				<td>
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value:</td>
+				<td>
+									No
+								</td>
+			</tr>
+						<tr>
+				<td>Option(s):</td>
+				<td>
+											ABSTRACT		
+								</td>
+			</tr>
+						
+												<tr class="directive">
+				<td class="key">USE strict ARG:</td>
+				<td class="value">
+																								rexxData=.nil
+																</td>
+			</tr>
+												<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					This method creates a new thread. <br/><b>param</b> <u><i>rexxData</i></u> optional, if supplied this Rexx object gets supplied, if a Java method invocation causes any Rexx method of the subclassed Rexx class to be executed. In that case BSF4ooRexx will append a "slotDir" Rexx directory argument to the Java arguments, that will have an entry "USERDATA" returning this Rexx object "rexxData" 
+				</td>
+			</tr>
+					</table>
+		<br />
+		<h3>Instantiated Classes</h3>
+	<table>
+		<tr class="directive">
+			<td class="key">
+				 <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLRLogger">CLRLogger</a>
+				</td>
+		</tr>
+	</table>
+	<br />
+<h3>Requires</h3>
+
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+		<div>
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+	</div>
+<div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.addAssembly" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PUBLIC
+									 Routine: clr.addAssembly 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">PARSE ARG:</td>
+				<td class="value">
+																								assemblyName
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Routine that queries all exported types defined in the supplied assembly and caches their full names and assembly names in <code>.clr.dir~assemblyName</code>. <br/><b>param</b> <u><i>assemblyName</i></u> the assembly name to work on 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.box" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PUBLIC
+									 Routine: clr.box 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">USE strict ARG:</td>
+				<td class="value">
+																								typeIndicator,
+																											strValue
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Boxes (wraps) a Rexx string representing a primitive type into a CLR object using a CLR wrapper class. Rexx strings are turned into CLR string objects (type: <code>System.String</code>). <br/><b>param</b> <u><i>typeIndicator</i></u> one of the following strings: <ul> <li>"System.String", "STring" </li> <li>"System.Boolean", "BOolean" </li> <li>"System.Byte", "BYte" </li> <li>"System.SByte", "SByte" </li> <li>"System.Char", "CHAR" </li> <li>"System.Decimal", "DEcimal" </li> <li>"System.Double", "DOuble" </li> <li>"System.Int16", "INT16" </li> <li>"System.UInt16", "UINT16" </li> <li>"System.Int32", "INT32" </li> <li>"System.UInt32", "UINT32" </li> <li>"System.Int64", "INT64" </li> <li>"System.UInt64", "UINT64" </li> <li>"System.Single", "SIngle" </li> </ul> <br/><b>param</b> <u><i>strValue</i></u> the Rexx string containing the primitive value or plain string to box/wrap/convert <br/><b>return</b> the boxed CLR value, the CLR string value or <code>.nil</code> if <code>.nil</code> was supplied 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.createArray" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PUBLIC
+									 Routine: clr.createArray 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">use strict ARG:</td>
+				<td class="value">
+																								typeName,
+																											capacity
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Utility routine that allows creating a single dimensioned CLR array with the supplied type and capacity. <br/><b>param</b> <u><i>typeName</i></u> the fully qualified CLR type name <br/><b>param</b> <u><i>capacity</i></u> the capacity (a non-negative whole number) <br/><b>return</b> a System.Array instance (a CLR array object) of the specified type and capacity 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.createEventHandler" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PUBLIC
+									 Routine: clr.createEventHandler 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">USE strict ARG:</td>
+				<td class="value">
+																								rexxEventHandler,
+																											rexxData=.nil
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Creates an instance of "system.EventHandler" with the Rexx event handler object to handle any events. <br/><b>param</b> <u><i>rexxEventHandler</i></u> a Rexx object that handles the events <br/><b>param</b> <u><i>rexxData</i></u> an optional Rexx object that will be supplied with each event (last event argument, appended by BSF4ooRexx, which is a Rexx directory object; the "rexxData" object can be retrieved from it using as index the value "USERDATA"; cf. BSF4ooRexx) <br/><b>return</b> an instance of "System.EventHandler", where the rexxEventHandler object will process the events 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.FieldName" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PRIVATE
+									 Routine: clr.FieldName 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								clrType,
+																											fieldName
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Returns the mixed case property name matching caselessly the supplied field name in the supplied CLR type. <br/><b>param</b> <u><i>clrType</i></u> the CLR type to look for the supplied field name <br/><b>param</b> <u><i>fieldName</i></u> the name of the field to look for in the supplied <code>clrType</code> <br/><b>return</b> .nil if no field found in the type by the given name (comparisons are caseless) or the correctly spelled field name 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.findAssemblyName" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PRIVATE
+									 Routine: clr.findAssemblyName 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						<tr>
+				<td>Options</td>
+				<td>
+											CLASS		
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">USE strict ARG:</td>
+				<td class="value">
+																								typeName
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Determine and return the assembly name from a fully qualified type name. <br/><b>param</b> <u><i>typeName</i></u> fully qualified type name <br/><b>return</b> assembly name where the type gets exported 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.findMatchingEvent" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PRIVATE
+									 Routine: clr.findMatchingEvent 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								clrType,
+																											eventName
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Returns the mixed case event name matching caselessly the supplied event name in the supplied CLR type. <br/><b>param</b> <u><i>clrType</i></u> the CLR type to look for the supplied event name <br/><b>param</b> <u><i>fieldName</i></u> the name of the event to look for in the supplied <code>clrType</code> <br/><b>return</b> .nil if no event found in the type by the given name (comparisons are caseless) or the correctly spelled event name 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.import" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PUBLIC
+									 Routine: clr.import 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">USE strict ARG:</td>
+				<td class="value">
+																								typeName,
+																											rexxName4local=.nil
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Routine to import a CLR/.Net class, the imported class understands the NEW-message. <br/><b>param</b> <u><i>typeName</i></u> the fully qualified CLR/.net type name <br/><b>param</b> <u><i>rexxName4local</i></u> the name to store in .local, defaults to <code>.nil</code>, which inhibits the default entry of the CLR::CLR_IMPORT <br/><b>return</b> a Rexx class object, subclassing CLR_Class, proxying the CLR/.Net type object 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.initAssemblies" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PRIVATE
+									 Routine: clr.initAssemblies 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									No
+								</td>
+			</tr>
+									
+													<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Routine that makes sure that the fully qualified names of the exported types defined in the assemblies "mscorlib" and "System" get cached with their assembly names in <code>.clr.dir~assemblyName</code>. 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.MethodName" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PRIVATE
+									 Routine: clr.MethodName 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								clrType,
+																											methodName
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Returns the mixed case method name matching caselessly the supplied method name in the supplied CLR type. <br/><b>param</b> <u><i>clrType</i></u> the CLR type to look for the supplied method name <br/><b>param</b> <u><i>methodName</i></u> the name of the method to look for in the supplied <code>clrType</code> <br/><b>return</b> .nil if no method found in the type by the given name (comparisons are caseless) or the correctly spelled method name 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.PropertyName" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PRIVATE
+									 Routine: clr.PropertyName 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								clrType,
+																											propertyName
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Returns the mixed case property name matching caselessly the supplied property name in the supplied CLR type. <br/><b>param</b> <u><i>clrType</i></u> the CLR type to look for the supplied method name <br/><b>param</b> <u><i>propertyName</i></u> the name of the property to look for in the supplied <code>clrType</code> <br/><b>return</b> .nil if no property found in the type by the given name (comparisons are caseless) or the correctly spelled property name 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.unbox" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PUBLIC
+									 Routine: clr.unbox 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+						<tr>
+				<td>Options</td>
+				<td>
+											CLASS		
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								clrObject
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Routine to turn values of boxed/wrapped <code>CLR</code> primitive types or System.String values to Rexx strings, otherwise returns argument unchanged. <br/><b>param</b> <u><i>clrObject</i></u> the CLR object to unbox or to turn into a Rexx string <br/><b>return</b> a Rexx string or the argument unchanged, if <code>clrObject</code> does not represent a boxed CLR value or a CLR string 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-clr.wrap" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PUBLIC
+									 Routine: clr.wrap 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PUBLIC
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">USE ARG:</td>
+				<td class="value">
+																								value
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					 Processes received parameter "value" depending on its type. Always returns a CLR. If a CLR object which is a <ocde>system.Enum</code>, but not an instance of the <code>CLR_Enum</code> class, then an instance of <code>CLR_Enum</code> will be created and returned using the CLR object's <code>clr.object</code> and <code>clr.type</code> attributes. <p>If a Rexx string is supplied which can be represented as a number, then a CLR object representing a wrapped system.Int32, system.Int64 or system.Decimal gets returned, depending on the value range. Otherwise a system.String object gets returned <p>If a BSF (Java proxy) object is supplied it will be wrapped either as a <code>CLR_Enum</code> or as a <code>CLR_Proxy</code> object. <br/><b>param</b> <u><i>value</i></u> a CLR, a BSF or a Rexx string object <br/><b>return</b> a CLR object wrapping up the supplied <code>value</code> 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br /><div id="work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-pp.line" class="directiveDiv">
+	<div class="infoTable">
+		<h1>
+			
+										PRIVATE
+									 Routine: pp.line 
+		</h1>
+
+<table>
+			<tr class="directive">
+				<td class="key">Accessmodifier</td>
+				<td class="value">
+											PRIVATE
+										</td>
+			</tr>
+			<tr>
+				<td>Returns Value</td>
+				<td>
+									Yes
+								</td>
+			</tr>
+									
+									<tr class="directive">
+				<td class="key">use strict arg:</td>
+				<td class="value">
+																								lineNr
+																</td>
+			</tr>
+										<tr class="directive">
+				<td class="key">Description:</td>
+				<td class="value">
+					Private utility method to "pretty-print" ooRexx line numbers in debug statements. Intended for taking advantage of the ooRexx class <code>CLRLogger</code> in this Rexx package. 
+				</td>
+			</tr>
+					</table>
+		<div>
+
+<h3>Requires</h3>
+<table>
+	
+	<table>
+		<tr class="directive">
+						<td class="key">Package:</td>
+			<td class="value">BSF.CLS</td>
+					</tr>
+
+			</table>
+	<br/>
+	
+	
+
+		</div>
+			<div>
+		<br />
+		Package: <a href="#work_svn_bsf4oorexx_trunk_bsf4oorexx.dev_oorexx.net_src_clr.cls-CLR.CLS">work/svn/bsf4oorexx/trunk/bsf4oorexx.dev/oorexx.net/src/clr.cls</a>
+		</div>
+		<br />
+	</div>
+</div>
+<br />
+			</div>
+		</td>
+	</tr>
+	<tr class="footer">
+		<td colspan="2" style="border-top: 1px black solid; font-size: 10px;">
+		<span>
+			ooRexxDoc 3.1b,	Homepage: <a href="https://sourceforge.net/projects/oorexxdoc/" target="_blank">ooRexxDoc at sourceforge</a>
+		</span>
+		</td>
+	</tr>
+</table>
+</div>	
+</body>
+
+</html>

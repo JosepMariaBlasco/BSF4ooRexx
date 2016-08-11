@@ -1,0 +1,273 @@
+body{
+	font-family: Verdana, sans-serif;
+	color: #000000;
+	padding: 0;
+	margin: 0;
+	height:100%;
+}
+
+h1{
+	font-size: 20px;
+	font-weight: lighter;
+}
+
+h2{
+	font-size: 12px;
+	font-weight: lighter;
+	text-align: left;
+}
+
+@media print{
+    .sidebar, .footer, #quicklinks { display: none; }
+
+    #contentDiv { 
+		overflow-y: visible;
+		display: inline;
+	}
+}
+
+#overview{
+	word-wrap: break-word;
+}
+
+.header {
+	background-color: #FAFAFA;
+}
+.packagelist a{
+	font-size: 13px;
+}
+.packageheading{
+	page-break-before: always;
+	background-color: #e9e9e9;
+	border: 1px solid black;
+	width: 800px;
+	margin: 0 auto;
+}
+
+.packageheading h1{
+	font-size: 25px;
+	margin-left: 10px;
+}
+
+.menu{
+	background-color: #4A8CF6;
+	text-align: center;
+	font-size: 20px;
+	font-weight: lighter;
+	color: #FAFAFA;;
+	
+	text-decoration: none;
+}
+.menu a{
+		font-size: 20px;
+	font-weight: lighter;
+	color: #FAFAFA;;
+	text-decoration: none;
+}
+.menu a:ACTIVE{
+	color: black;
+	
+}
+.menu a:HOVER{
+	color: black;
+
+}
+
+.linkList{
+	overflow: auto;
+	width: 300px;
+}
+
+#contentDiv{
+	overflow-y: scroll;
+	background-color: #C4C4C4;
+}
+
+.directiveDiv{
+	background-color: #FAFAFA;
+	border: 1px solid black;
+	width: 800px;
+	margin: 0 auto;
+}
+
+.title{
+	font-size: 35px;
+	font-weight: bold;
+}
+
+.headerData{
+	font-size: 10px;
+	float: right;
+}
+.allIndexTable{
+	width: 100%;
+	height: 100%;
+	border-collapse: collapse;
+  	border-spacing: 0;
+}
+
+.allIndexTable table{
+	width: 100%;
+	height: 100%;
+	background-color: #c4c4c4;
+}
+
+.allIndexTable .header{
+	border-bottom: 1px black solid;
+	height: 50px;
+}
+
+.allIndexTable .sidebar{
+	min-width: 300px;
+	vertical-align: top;
+}
+
+.allIndexTable .main{
+	width: 100%;
+	vertical-align: top;
+	overflow: auto;
+}
+
+.allIndexTable .footer{
+	width: 100%;
+	height: 20px;
+	vertical-align: top;
+	border-top: 1px solid black;
+	background-color: #FAFAFA;
+}
+.nav{
+	vertical-align: top;
+	background-color: #FAFAFA;
+	border-right: 1px black solid;
+	border-bottom: 1px black solid;
+	width: 100%;
+	
+}
+.accordion_menu_item{
+	overflow: auto !important;
+}
+.nav h3{
+	margin: 0;
+	border-bottom: 1px #337BEE solid;
+	border-top: 1px black solid;
+	background: #4A8CF6;
+	color: #FFFFFF;
+	font-weight: lighter;
+	font-size: 12px;
+	height: 25px;
+	text-transform: uppercase;
+}
+
+.nav ul{
+	list-style-type: none;
+	display:inline;
+}
+
+.nav li{
+	height: 20px;
+	padding-left: 20px;
+}
+
+.linkList a{
+	font-size: 12px;
+	color: black;
+	
+}
+
+.linkList a:active{
+	font-size: 12px;
+	color: #FF1111;
+}
+
+.linkList a:hover{
+	font-size: 12px;
+	color: #FF1111;
+}
+
+#content{
+	
+	overflow: auto;
+}
+
+.classDescription{
+	font-size: 12px;
+}
+
+.classDescription table{
+	width: 530px; background: #FFFFFF;
+}
+
+.classDescription .key{
+	border: 0px; vertical-align: top; width:50px; font-weight: 500; text-align: left; background: #FFFFFF;
+}
+
+.classDescription .value{
+	border: 0px; vertical-align: top; background: #FFFFFF;
+}
+
+.classProperty{
+	font-size: 12px;
+}
+
+.infoTable{
+	text-align: left; 
+	padding-left: 50px;
+}
+.infoTable table{
+	background: #FAFAFA;
+	margin: 0px;
+	width: 700px;
+	text-align: left;
+	border-collapse: collapse;
+	
+	
+}
+
+.infoTable .comment{
+	border: 1px black solid;
+	width: 700px;
+}
+
+.directive{
+	padding: 5px 5px 5px 5px;
+	vertical-align: top;
+}
+
+.directive ul{
+	margin-left: 5px;
+}
+
+.directive .key{
+	
+}
+
+.directive .value{
+	width: 530px;
+}
+
+.directive table{
+	width: 530px;
+}
+
+.directive table .key{
+	border: 0px; vertical-align: top; width:50px; font-weight: 500; text-align: left;
+}
+
+.directive table .value{
+	border: 0px; vertical-align: top;
+}
+
+.directive .special{
+	color: #4A8CF6;
+}
+
+.infoTable table td{
+	
+	
+	font-size: 14px;
+	border: 1px black solid;
+}
+
+.commentTag table td{
+	border: 0px;
+}
