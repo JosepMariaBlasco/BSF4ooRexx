@@ -83,7 +83,7 @@
 *  @author Manfred Raffel, original design and implementation, fall 2015
 *  @author Rony G. Flatscher, updates, summer 2016
 *  @since fall 2015
-*  @version 100.20160713
+*  @version 100.20160811
 */
 
 
@@ -99,7 +99,7 @@ if .bShowRgf=.true then call "rgf_util2.rex"
 
 
 .local~clr.dir=.directory~new    -- directory for oorexx4net (CLR, common language runtime)
-.clr.dir~version="100.20160713"
+.clr.dir~version="100.20160811"
 
 
 .clr.dir~bridge = BSF.import("net.sf.jni4net.Bridge")  -- get jni4net support
@@ -120,7 +120,7 @@ CALL clr.initAssemblies
 .clr.dir~system.type   = BSF.import("system.Type")
 
    -- rgf, 20160613, TODO: adjust once the package gets changed for this Java class
-.clr.dir~helper4rexx = bsf.loadClass("Helper4ooRexx4Net") -- rgf, GA-version: org.oorexx.clr.Helper4ooRexx4Net
+.clr.dir~helper4rexx = bsf.loadClass("org.oorexx.clrHelper4ooRexx4Net") -- rgf, GA-version: org.oorexx.clr.Helper4ooRexx4Net
 .clr.dir~helper4rexx~setVerbose(.false)
 .clr.dir~helper4rexx~setDebug(.false)
 
