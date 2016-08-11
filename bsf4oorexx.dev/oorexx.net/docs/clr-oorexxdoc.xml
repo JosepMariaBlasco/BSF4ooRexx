@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- rgf, 2016-08-11: this configuration file may need its input and output pahts adopted, if you use different locations;
+       to use enter the command:
+           java -jar path-to\oorexxdoc.jar clr-oorexxdoc.xml
+-->
+<oorexxdoc>
+    <parser>
+        <input>..\src\CLR.CLS</input>
+        <output>.\oorexxdoc</output>
+    </parser>
+
+    <title>CLR.CLS 100.20160811</title>
+    <overview><![CDATA[Overview of CLR.CLS, Version 100.20160811]]></overview>
+
+    <header>
+        <property>
+            <key>Date</key>
+            <value>2016-08-11</value>
+        </property>
+        <property>
+            <key>Author</key>
+            <value>Manuel Raffel, Rony G. Flatscher</value>
+        </property>
+    </header>
+</oorexxdoc>
