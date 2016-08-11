@@ -1,0 +1,55 @@
+/* File:        01-systemsounds.rxj
+ * Description: This application demonstrates all available SystemSounds
+ * Shows:
+ *              - calling the Rexx Method "SysSleep" to do nothing for a specific amount
+ *                of seconds
+ *              - Access to static .NET classes
+ *              - Console Output via .NET
+ *              - Using SystemSounds class to play specific system sounds
+ *              - Including ooRexx.NET with the REQUIRES directive
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+sounds = clr.import("System.Media.SystemSounds")
+console = clr.import("System.Console")
+
+console~WriteLine("SystemSounds demonstration starting") -- the method "WriteLine" is basically identical to ooRexx' SAY command. If no line feed is needed after the output, you should use "Write" instead of "WriteLine".
+CALL SysSleep .5 -- wait for 500 ms
+
+console~WriteLine("playing 'Beep'")
+sounds~Beep~Play
+CALL SysSleep 1
+
+SAY "playing 'Asterisk'"
+sounds~Asterisk~Play
+CALL SysSleep 1
+
+SAY "playing 'Exclamation'"
+sounds~Exclamation~Play
+CALL SysSleep 1
+
+SAY "playing 'Hand'"
+sounds~Hand~Play
+CALL SysSleep 1
+
+SAY "the last one is called 'Question'"
+sounds~Question~Play
+CALL SysSleep 1
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support

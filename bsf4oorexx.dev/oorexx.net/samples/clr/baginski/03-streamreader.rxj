@@ -1,0 +1,72 @@
+/* File:        03-streamreader.rxj
+ * Description: This application opens a file and outputs it using different techniques
+ * Shows:
+ *              - Using a linefeed and pretty print routine
+ *              - Difference between ReadToEnd, ReadLine and Read
+ *              - Using the class "System.Convert" to convert a number representing a char into a real char
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+SIGNAL ON SYNTAX  -- in case an error occurs, go to Syntax jumping point in Line 54
+
+returnPointAfterSyntax: -- define a returning point
+   lf = "0a"x              -- define the linefeed character
+      -- import CLR classes/types to get access to their static members
+   console = clr.import("System.Console")
+   converter = clr.import("System.Convert")
+   directory = clr.import("System.IO.Directory")
+
+   filedirectory = directory~GetCurrentDirectory
+   filename = "02-textfile.txt"
+   filepath = filedirectory || .file~separator  || filename
+   fileStream = .clr~new("System.IO.StreamReader", filepath)   -- open a file stream with the file created in 02-streamwriter.rxj
+
+   SAY "Output generated with [ReadToEnd]:" lf
+      -- the pp()-routine is defined in BSF.CLS (required by CLR.CLS) and enquotes
+   prettyOutput = pp(fileStream~ReadToEnd)
+   console~Write(prettyOutput)
+   fileStream~Close -- close the filestream to free resources
+   SAY lf "------------------" lf
+
+   fileStream = .clr~new("System.IO.StreamReader", filepath)   -- open the filestream again
+   SAY "Output generated with [ReadLine]:" lf
+
+   DO UNTIL fileStream~Peek = -1       -- -1 means, that there is no further line to output
+     prettyOutput = pp(fileStream~ReadLine)
+     console~WriteLine(prettyOutput)   -- WriteLine is used adds a line feed/break after outputting the text
+   END
+   fileStream~Close
+   SAY lf "------------------" lf
+
+   fileStream = .clr~new("System.IO.StreamReader", filepath)   -- open the filestream again
+   SAY "Output generated with [Read]:" lf
+   DO WHILE fileStream~Peek <> -1   -- while there is a character available
+     char = converter~ToChar(fileStream~Read)
+     prettyOutput = char
+     console~Write(prettyOutput)
+   END
+   fileStream~Close
+   exit
+
+Syntax:     -- assuming the syntax error was caused because of the missing file "02-textfile.txt"
+  "rexx ""02-streamwriter.rex""" -- call the streamwriter application to create 02-textfile.txt
+  SIGNAL returnPointAfterSyntax  -- proceed with execution at the label at the top of the program (a jump)
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support

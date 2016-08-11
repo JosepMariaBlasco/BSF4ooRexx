@@ -1,0 +1,75 @@
+/* File:        05-messagebox.advanced.rxj
+ * Description: Shows multiple Message Boxes with different button setups
+ * Shows:       - MessageBox with Yes, No and Cancel options
+ *              - MessageBox with OK and Cancel options
+ *              - MessageBox with Abort, Retry and Ignore options
+ *              - Reacting on user interaction
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+title = "Title of MessageBox" -- define title
+   -- get access to the static class "MessageBox" of namespace "System.Windows.Forms", a "Dialog" window
+MessageBox = clr.import("System.Windows.Forms.MessageBox")
+
+
+   -- get access to MessageBoxButtons enumerations
+MessageBoxButtons = clr.import("System.Windows.Forms.MessageBoxButtons")
+
+   -- display first message box and save result in Rexx variable "res"
+title = 'Message Box # 1'
+res = MessageBox~show('This is a YesNoCancel Messagebox. Press the "Yes" button to continue', title, MessageBoxButtons~YesNoCancel)
+
+IF res = "Yes"  THEN DO -- compare message box result with the enumeration value defined in DialogResult
+  SAY title 'returned "OK"'
+  DO LABEL outer FOREVER         -- define a DO block with a name (as a possible target for LEAVE in the inner DO block)
+     title='Message Box # 2 ("outer")'
+     res = MessageBox~show('This is another Messagebox (you pressed the "'res~toString'" button). Press the "OK" button to see the next one', title, MessageBoxButtons~OKCancel)
+     IF res = "OK" THEN -- compare message box result with the enumeration value defined in DialogResult
+     DO
+        SAY title 'returned "OK"'
+        DO LABEL inner FOREVER
+          title = 'Message Box # 3 ("inner")'
+          res = MessageBox~show('Messagebox # 3 (you pressed the "'res~toString'" button). Click whatever you want.' , title, MessageBoxButtons~AbortRetryIgnore)
+          IF res = "Abort" THEN  -- compare with a string
+          DO
+             SAY title 'returned "Abort"'
+             LEAVE outer         -- leave do-block named "outer"
+          END
+
+          IF res = "Retry" THEN  -- leave do-block named "inner"
+          DO
+             SAY title 'returned "Retry"'
+             LEAVE inner         -- leave do-block named "inner"
+          END
+          SAY title 'returned "Ignore"'
+        END
+     END
+     ELSE
+     DO
+        SAY title 'returned "Cancel"'
+        LEAVE outer
+     END
+
+  END
+END
+ELSE
+  SAY title 'returned "'res~toString'"'
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support

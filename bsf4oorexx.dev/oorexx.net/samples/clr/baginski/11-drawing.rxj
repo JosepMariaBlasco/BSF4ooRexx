@@ -1,0 +1,81 @@
+/* File:        11-drawing.rxj
+ * Description: This application loads an image from the "images" subfolder, outputs a few interesting properties and then crops the image by 50% and saves it under a different file name.
+ * Shows:
+ *              - Loading a Bitmap from the image path
+ *              - Accessing various Bitmap properties
+ *              - Retrieving image file size with FileInfo Class
+ *              - Adding thousand points to an integer for better overview
+ *              - Applying a new image size to an image
+ *              - Displaying an image in a form
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+
+imagePath = "images/html5.jpg"
+bitmap = .clr~new("System.Drawing.Bitmap", imagePath) -- load the image as a Bitmap
+width = bitmap~width
+height = bitmap~height
+dpi = bitmap~VerticalResolution
+pxFormat = bitmap~PixelFormat
+
+SAY "Get properties of the loaded Image"
+
+   -- the pp()-routine is defined in BSF.CLS (required by CLR.CLS) and enquotes
+   -- the argument's string value in square brackets
+SAY "Width              :" pp(width"px")
+SAY "Height             :" pp(height"px")
+SAY "Dots per Inch (DPI):" pp(dpi"dpi")
+SAY "Pixel format       :" pp(pxformat)
+   -- now let's retrieve the file size of this image
+filesize = .clr~new("System.IO.FileInfo", imagepath)~length -- returns filesize in Bytes
+SAY "File size:" pp(filesize "Bytes")
+SAY "----------------------------------------"
+
+SAY "now, let's resize and display that image"
+size = .clr~new("System.Drawing.Size", 960, 540)         -- half size
+bitmap = .clr~new("System.Drawing.Bitmap", bitmap, size) -- load a new bitmap from the old bitmap but use the new size
+form = .clr~new("System.Windows.Forms.Form")             -- a Form represents a window as a user interface
+form~size = size  -- set the width and height of the form to the width and height of the (new) bitmap
+
+pictureBox = .clr~new("System.Windows.Forms.PictureBox") -- create a new PictureBox, which is used to display images in a form
+pictureBox~image = bitmap  -- insert our bitmap into the PictureBox
+pictureBox~size = size     -- also set the the width and height of the PictureBox to the size of our bitmap
+
+SAY "new Width:" pp(bitmap~width)   -- output width and height of the bitmap to see, if resizing was successfull
+SAY "new Height:" pp(bitmap~height)
+
+form~controls~add(pictureBox)       -- add the PictureBox to the form
+SAY "close the dialog to proceed..."
+form~showDialog            -- show the form
+
+SAY "save new image? (Y/N)"
+PULL save   -- retrieve user input (in uppercase) from the keyboard and save it in the variable "save"
+IF save = "Y" THEN DO         -- will yield .true even if the user typed in a small "y"
+  newImagePath = "11-newImage.jpg"
+  bitmap~save(newImagePath)   -- save the bitmap as filename supplied as argument
+  SAY "0A"x"Image successfully saved"  -- insert line feed before actual Output
+
+  newfilesize = .clr~new("System.IO.FileInfo", newImagePath)~length  -- returns new filesize in Bytes
+  SAY "new File size:" pp(newfilesize "Bytes")
+END
+ELSE EXIT 0
+
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support

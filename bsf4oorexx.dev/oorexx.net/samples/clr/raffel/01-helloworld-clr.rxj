@@ -1,0 +1,29 @@
+#!/usr/bin/rexx
+/* File:          01-helloworld-clr.rxj
+ * Description:   Simple output of "Hello World" via .NET/CLR classes.
+ * Shows:         - Import of a .Net/CLR class
+ *                - Invoking the static method "WriteLine" with an argument
+ *
+ * License:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2015 Manuel Raffel
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+console = clr.import("System.Console")  -- import .Net/CLR class/type "System.Console" to access its static members
+console~WriteLine("Hello World from ooRexx.NET (via BSF4ooRexx and jni4net)") -- invoke static method "WriteLine"
+
+::REQUIRES CLR.CLS  -- get ooRexx.NET support

@@ -1,0 +1,53 @@
+/* File:        02-streamwriter.rxj
+ * Description: This application creates a new textfile in the same directory and writes some text into it
+ * Shows:
+ *              - Usage of static System.IO.Directory class to get the path to the
+                  present working directory using .NET support
+ *              - Instantiating a .NET class
+ *              - Creating a new textfile
+ *              - Writing into that textfile
+ *              - Getting the current encoding which can be changed if needed
+ *              - Closing a filestream
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+   -- import "System.IO.Directory" class/type to get access to its static members
+directory = clr.import("System.IO.Directory")
+   /* GetCurrentDirectory returns the path of the current directory (you could use
+      the ooRexx built-in-function directory() as well)                            */
+filedirectory = directory~GetCurrentDirectory
+
+filename = "02-textfile.txt"
+filepath = filedirectory || .file~separator || filename  -- .file~separator: on Windows "\", on Unix "/"
+
+
+file = .clr~new("System.IO.StreamWriter", filepath)   -- create an instance of "System.IO.StreamWriter"
+
+file~WriteLine("~~First Heading~~")
+file~WriteLine
+file~WriteLine("This ooRexx.NET application will create a new textfile in given file path if it does not exist already.")
+
+encoding = file~Encoding   -- get access to enconding of the file, which will be most likely UTF8
+SAY "used encoding:" encoding~toString
+file~Close                 -- close the opened file to free some memory
+SAY "The textfile was successfully created."
+
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support

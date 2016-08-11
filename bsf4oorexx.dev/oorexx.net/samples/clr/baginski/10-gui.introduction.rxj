@@ -1,0 +1,63 @@
+/* File:        10-gui.introduction.rxj
+ * Description: This application opens a Windows Form including a label with text.
+ * Shows:
+ *              - A Graphical User Interface (GUI) in ooRexx.NET
+ *              - Setting the title of a Form
+ *              - Disallowing maximization and minimization of the Form
+ *              - Attaching an Icon to a Form
+ *              - Setting a Startposition for the Form to the center of the screen
+ *              - Creating a simple label with a text
+ *              - Setting the Location of the Label
+ *              - Changing font family, font size and font style of a Label
+ *              - Adding the label to the controls of the Form
+ *              - Starting the Form, therefore displaying it.
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+
+form = .clr~new("System.Windows.Forms.Form") -- get an instance of the Form class of namespace "System.Windows.Forms"
+form~Text = "Hello World"  -- set the Caption of the Titlebar
+form~maximizeBox = .false  -- do not allow to maximize the form - therefore, do not even display the buttons for maximization/minimization
+form~minimizeBox = .false  -- do not allow to minimize the form
+form~Width = 400           -- set the width of the form to 400px
+form~Height = 300          -- set the height of the form to 300px
+
+SystemIcons = clr.import("System.Drawing.SystemIcons")
+icon = .clr~new("System.Drawing.Icon", SystemIcons~Shield, 48, 48) -- load the enumeration "Shield" from the set of system icons in 48x48px size as an icon
+form~Icon = icon           -- attach that icon to the form
+
+FormStartPosition = clr.import("System.Windows.Forms.FormStartPosition") -- import "FormStartPosition" enumeration class/type
+form~startPosition = FormStartPosition~CenterScreen   -- set the starting position of the form to the center of the screen
+
+label = .clr~new("System.Windows.Forms.Label")              -- get an instance of the Label class
+label~Text = "Hello, my beloved World - from ooRexx.NET"    -- set the text to "Hello World"
+label~Location = .clr~new("System.Drawing.Point", 25, 40)   -- set the location to 40px from top and 25px from left corner of the form
+label~AutoSize = .true     -- resize this label from default label size to real label size
+
+FontStyle = clr.import("System.Drawing.FontStyle")    -- get access to enumation FontStyle
+font = .clr~new("System.Drawing.Font", "Verdana", 10, FontStyle~Italic)
+label~Font = font -- set the Font of the label to font family "Verdana" with font size 10px and font style "Italic"
+
+
+form~Controls~Add(label)   -- add the label to the Controls of the form
+SAY "close the dialog to end program"
+form~showDialog            -- show the form
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support

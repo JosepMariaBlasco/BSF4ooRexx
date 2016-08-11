@@ -1,0 +1,55 @@
+/* File:        07-MAC.rxj
+ * Description: This application generates a hash string of a message based on a secret key. Then, it stores both message and hash into a textfile and opens it afterwards as a process with the default text editor program.
+ * Shows:
+ *              - Encode a string into an array of Bytes
+ *              - Generate a hash of a message based on a specific key
+ *              - Convert an array of Bytes into a string
+ *              - Usage of PROCESS.CLS to start a process
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+message = "This message needs a Message Authentication Code"   -- some message
+key = "my123secret321key"                 -- this is a secret key, which only the sender and recipient should have access to
+encoding = .clr~new("System.Text.ASCIIEncoding")
+keyByte = encoding~GetBytes(key)          -- use ASCII encoding to code the key into several bytes ( a byte array )
+
+hashkey = .clr~new("System.Security.Cryptography.HMACMD5", keyByte)  -- get access to a MAC md5 hash function class
+
+messageBytes = encoding~GetBytes(message)          -- returns the message as an array of Bytes
+hashmessage = hashkey~ComputeHash(messageBytes)    -- generates the hash in an array of Bytes
+
+BitConverter = clr.import("System.BitConverter")   -- get access to static class System.BitConverter
+MAC = BitConverter~toString(hashmessage)           -- convert System.Byte[] to System.String
+
+filedirectory = directory()               -- get current directory
+filename = "07-MAC.txt"
+filepath = filedirectory || .file~separator || filename
+file = .clr~new("System.IO.StreamWriter", filepath) -- get access to class System.IO.StreamWriter
+file~WriteLine(message)                   -- write message
+file~~WriteLine~~WriteLine~~WriteLine~~WriteLine    -- add four line breaks
+file~Write("MAC for this message:" MAC)   -- write MAC
+file~Close
+
+openResult = .Process~new        -- get an instance of the Process Class
+openResult~Filepath = filename   -- set the filepath to our new filename. You could also use variable "filepath" there - which is a reference to the absolute path + filename of this file. But since it's in the same directory filename is sufficient.
+openResult~Start                 -- start the process based on the given information (filepath)
+
+
+::REQUIRES PROCESS.CLS -- get access to the Process class which requires CLR.CLS (ooRexx.Net support)

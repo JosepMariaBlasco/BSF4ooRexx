@@ -1,0 +1,54 @@
+#!/usr/bin/rexx
+/* File:          03-systemevents-clr.rxj
+ * Description:   Reacts to a Windows system event, namely the change of the systems clock value.
+ * Shows:         - Import of static classes
+ *                - Creation and registration of event handlers
+ *
+ *  changed: ---rgf, 2016-06-25
+ *              - added hint to user when the event gets triggered and how to end the program
+ *              - added ooRexx .DateTime values to output
+ *
+ * License:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2015 Manuel Raffel
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+systemEvents = clr.import("Microsoft.Win32.SystemEvents")  -- import "Microsoft.Win32.SystemEvents" class/type
+
+   -- create new event handler from ooRexx class "SystemEventHandler"
+systemEventHandler = clr.createEventHandler(.SystemEventHandler~new)
+systemEvents~TimeChanged += systemEventHandler              -- register event handler to "TimeChanged" event
+SAY pp(.dateTime~new) "Waiting for ""TimeChanged"" event (user needs to change the clock) ..."
+SAY "Hit the return (exit) key on the keyboard to end this program ..."
+PARSE PULL  -- wait for user input to prevent program from closing
+
+::REQUIRES CLR.CLS  -- get ooRexx.NET support
+
+/* Class:       SystemEventHandler
+ * Description: Implements the .NET event handler invoked by the "TimeChanged" event.
+ */
+::CLASS SystemEventHandler
+
+  /* Method:      invoke
+   * Description: Called by .NET when the registered event is triggered.
+   * Arguments:   - caller: the object the event handler was registered to
+   *              - eventArgs: the event arguments passed by the caller
+   */
+  ::METHOD invoke
+    USE ARG caller, eventArgs
+
+    SAY .dateTime~new": Windows clock has been changed!"

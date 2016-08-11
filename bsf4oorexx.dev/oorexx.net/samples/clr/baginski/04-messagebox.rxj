@@ -1,0 +1,29 @@
+/* File:        04-messagebox.rxj
+ * Description: Shows a Message Box in ooRexx.NET with a title and a text
+ * Shows:       - MessageBox.Show method with title and a text
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+text = "This is my Text"      -- define some text
+title = "Title of MessageBox" -- define some title
+MessageBox = clr.import("System.Windows.Forms.MessageBox")  -- get access to static class "MessageBox" of namespace "System.Windows.Forms"
+MessageBox~Show(text, title)  -- start method "show" with two arguments: text and optional title
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support

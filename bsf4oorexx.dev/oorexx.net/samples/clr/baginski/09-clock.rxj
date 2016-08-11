@@ -1,0 +1,67 @@
+/* File:        09-clock.rxj
+ * Description: Continous output of the current time via .NET classes.
+ * Shows:       - DateTime class: getting the current time.
+ *              - Starting a CLRThread, which is a Thread and runs simultaneously to the main code
+ *              - Reading input keys from console
+ *               - Exiting an application manually with the "Environment" class
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+
+
+SAY "Press any key to close this application."
+SAY "----------------------------------------"
+
+DateTime = .clr~new("System.DateTime")
+.KeyPressThread~new~~start -- create an instance of KeyPressThread class, which is a Thread and start it.
+
+DO FOREVER    -- starts an infinite loop
+    CALL SysSleep 1              -- wait 1 second for the time to change
+    currentTime = DateTime~Now   -- DateTime~Now usually contains a timeString with that format: "dd.mm.yyyy HH:mm:ss"
+
+       -- convert the timeString to only show the time, ooRexx~counterpart: .dateTime~new~normalTime
+    SAY "The current time is" pp(currentTime~toString("HH:mm:ss"))
+END
+
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support
+
+/* Class:       KeyPressThread
+ * Description: Checks continuously user input in the console. This class will then exit the application using the "Environment" class.
+ */
+::CLASS KeyPressThread SUBCLASS CLRThread
+  ::ATTRIBUTE Console -- define attributes used in the class.
+  ::ATTRIBUTE Environment
+
+  ::METHOD init
+    EXPOSE Console Environment
+    Console = clr.import("System.Console") -- initialise console to use for the whole class
+    Environment = clr.import("System.Environment") -- get access to static class "Environment"
+
+  ::METHOD run -- by starting the CLRThread, this method will be run automatically
+    EXPOSE Console Environment -- get Access to Console and Environment
+
+    DO FOREVER -- starts an infinite loop
+      IF Console~ReadKey <> .nil THEN -- Method "ReadKey" saves user input. If nothing was pressed, it will return the NIL Object
+      DO
+        Environment~Exit(0)  -- leave application
+        EXIT                 -- leave method
+      END
+    END

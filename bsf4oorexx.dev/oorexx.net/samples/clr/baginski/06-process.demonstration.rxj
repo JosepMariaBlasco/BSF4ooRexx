@@ -1,0 +1,90 @@
+/* File:        04-process.demonstration.rxj
+ * Description: This application demonstrates object-oriented process handling in ooRexx.NET
+ * Shows:
+ *              - Usage of basic message boxes with a specified title
+ *              - Starting a process by dispatching "Start"
+ *              - Sending keys to manipulate running applications
+ *              - Starting a process with maximized window style and additional information
+ *              - Retrieving the absolute path to temporary folder
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+
+
+directory = clr.import("System.IO.Directory")   -- import "System.IO.Directory" class/type to get access to static members
+filedirectory = directory~GetCurrentDirectory   -- get path to present working directory
+filename = "02-textfile.txt"
+filepath = filedirectory || .file~separator || filename     -- absolute path to the textfile from sample 02-streamwriter.rex
+myProcess = .Process~new                                    -- get a reference to class "Process"
+
+messageBox = clr.import("System.Windows.Forms.MessageBox")  -- import "System.Windows.Forms.MessageBox" class/type
+messageBox~show("Let's open our new textfile", "Information")  -- open a messageBox with the first argument as text and second argument as title
+
+myProcess~Application = "notepad"   -- set "application" attribute to "notepad" (no file extensions needed)
+myProcess~Filepath = filepath       -- set "filepath" attribute to our textfile
+myProcess~Start                     -- start process "notepad" and open the file given in variable filepath
+CALL SysSleep 2                     -- wait for 2 seconds
+
+messageBox~show("Now I will open a Website in your favorite Webbrowser", "Information")
+myProcess~Reset                     -- reset the attributes
+myProcess~Filepath = "https://google.com"
+   -- open this website with the standard application for the "https" protocol, e.g. standard web browser:
+myProcess~Start(.true)
+CALL SysSleep 2
+
+messageBox~show("Of course I can force you to use Internet Explorer", "Information")
+myProcess~Application = "IExplore"  -- set "application" attribute to Internet Explorer
+myProcess~Filepath = "https://google.com" -- start Internet Explorer and open the link specified in Filepath
+myProcess~Start
+CALL SysSleep 2
+
+messageBox~show("I can even toggle Fullscreen by emulating keyboard presses", "Information")
+sendKeys = clr.import("System.Windows.Forms.SendKeys") -- import "System.Windows.Forms.SendKeys"
+   -- invoke the static "SendWait" method and have it press the F11 function key, wait until key got processed
+   -- (F11 toggles fullscreen mode in Internet Explorer)
+sendKeys~SendWait("{F11}")
+CALL SysSleep 1
+sendKeys~SendWait("{F11}") -- toggle to normal mode
+CALL SysSleep 2
+
+
+path = clr.import("System.IO.Path") -- import "System.IO.Path" class/type to get access to its static members
+   -- get the path to the temporary directory, eg. "C:\Users\[UserName]\AppData\Local\Temp\" (usually the same
+   -- as the environment variable TEMP)
+tempPath = path~GetTempPath
+tmpfilepath = tempPath || .file~separator || "temporary.txt"
+file = .clr~new("System.IO.StreamWriter", tmpfilepath)   -- open a file stream
+file~Write("It's also possible to specify additional information, like WindowStyle to maximize or minimize the window.")
+file~Write("(Program has ended, leaving this window open.)")
+file~Close
+
+   -- use a ProcessStartInfo instance to define the "Notepad" application and the argument for it
+ProcessStartInfo = .clr~new("System.Diagnostics.ProcessStartInfo", "Notepad")
+ProcessStartInfo~Arguments = tmpfilepath  -- supply the path to our file as an argument
+ProcessWindowStyle = clr.import("System.Diagnostics.ProcessWindowStyle")   -- load the Enumeration class/type
+   -- now the application "Notepad" will start with window style maximized.
+ProcessStartInfo~WindowStyle = ProcessWindowStyle~Maximized
+
+myNewProcess = .Process~new   -- create an instance of the ooRexx class defined in "PROCESS.CLS"
+myNewProcess~ProcessStartInfo = ProcessStartInfo   -- supply the CLR object
+myNewProcess~Start            -- start a new process based on the information provided in ProcessStartInfo
+
+
+::REQUIRES PROCESS.CLS -- get access to the Process class which requires CLR.CLS (ooRexx.Net support)

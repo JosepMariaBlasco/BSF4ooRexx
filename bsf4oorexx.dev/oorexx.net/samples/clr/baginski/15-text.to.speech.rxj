@@ -1,0 +1,75 @@
+/* File:        15-text.to.speech.rxj
+ * Description: This application first reads a default text, then reads the content of "02-textfile.txt" word by word ignoring the first line.
+ * Shows:
+ *              - Adding an Assembly
+ *              - Regulating volume and rate of the audio output
+ *              - Reading a string
+ *              - Extracting words of a textfile
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+CALL clr.addAssembly "System.Speech" -- load System.Speech Assembly to use all System.Speech.* classes
+
+Console = clr.import("System.Console")
+SpeechSynthesizer = .clr~new("System.Speech.Synthesis.SpeechSynthesizer") -- get an instance of the SpeechSynthesizer class to use all text-to-speech (TTS) functions
+SpeechSynthesizer~SetOutputToDefaultAudioDevice
+SpeechSynthesizer~Volume = 100   -- regulate the volume of the voice
+SpeechSynthesizer~Rate = -1      -- regulate the speed between -10 and 10.
+
+TextToRead = "This is the default text. If you want me to read something else, just open this application with the text as argument. You will not regret it."
+IF arg(1)~length > 0 THEN TextToRead = arg(1)
+
+Console~WriteLine(TextToRead)
+SpeechSynthesizer~Speak(TextToRead)
+
+CALL SysSleep 1                  -- sleep for a second
+
+filepath = "02-textfile.txt"
+mystream = .stream~new(filepath) -- load a new filestream using ooRexx STREAM Class
+mystream~~linein -               -- ignore first line, which is the heading with a lot of tildes
+SpeechSynthesizer~Rate = 1       -- speed the rate of the speaker up a little bit
+
+word = "" -- set the variable "word" to a 0 length string
+
+SAY "------------------------------------"
+Console~WriteLine("Reading" filepath || ":")
+SpeechSynthesizer~Speak("Reading")
+SpeechSynthesizer~Rate = -6 /*  change the rate to -6 because the filepath consists of a lot of points and slashes.
+    Still, sounds weird because she says "zero two to textfile" instead of "zero two textfile".
+    therefore, we will now remove the slash:
+    */
+posOfSlash = filepath~pos("-")   -- get the position of the slash inside the filepath
+subStrBeforeSlash = filepath~left(posOfSlash - 1) -- retrieve text from position 0 to just before the slash
+subStrAfterSlash = filepath~substr(posOfSlash + 1) -- retrieve the text starting at position of slash + 1 (so we do not include the slash in this string) until the end of the variable "filepath"
+newSpeakableFilePath = subStrBeforeSlash subStrAfterSlash -- merge both variables
+
+SpeechSynthesizer~Speak(newSpeakableFilePath) -- speak the new file path
+SpeechSynthesizer~Rate = 1          -- get the rate back up to 1
+
+DO WHILE mystream~chars > 0         -- read the file until it has reached its end
+  line = myStream~linein            -- read an entire line from file
+  DO i = 1 to words(line)           -- iterate over words
+     word = word(line,i)            -- extract word
+     Console~Write(word || " ")     -- display the word
+     SpeechSynthesizer~Speak(word)  -- speak the word
+  END
+END
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support

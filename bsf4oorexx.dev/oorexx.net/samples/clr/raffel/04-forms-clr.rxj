@@ -1,0 +1,115 @@
+#!/usr/bin/rexx
+/* File:          04-forms-clr.rxj
+ * Description:   Creates a windows form with a progress bar and a start button which, when clicked,
+ *                starts a new thread to increase the progress bar.
+ * Shows:         - Instantiation of classes (without parameters)
+ *                - Manipulation of properties (can be regarded as ooRexx attributes)
+ *                - Invocation of methods (with parameters)
+ *                - Creation and registration of event handlers
+ *                - Import of .Net/CLR classes/types
+ *
+ * License:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2015 Manuel Raffel
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+winForm = .clr~new("System.Windows.Forms.Form") -- create instance of class "System.Windows.Forms.Form"
+winForm~Text = "Processor"    -- set property "Text" to string "Processor"
+winForm~AutoSize = .true      -- set property "AutoSize" to boolean true
+winForm~AutoSizeMode = GrowAndShrink   -- set property "AutoSizeMode" to enumeration value "GrowAndShrink"
+
+contentPane = .clr~new("System.Windows.Forms.FlowLayoutPanel")
+contentPane~AutoSize = .true              -- set property "AutoSize" to boolean true
+contentPane~AutoSizeMode = GrowAndShrink  -- set property "AutoSizeMode" to enumeration value "GrowAndShrink"
+winForm~Controls~Add(contentPane)         -- add "FlowLayoutPanel" to "Form"
+
+progressBar = .clr~new("System.Windows.Forms.ProgressBar")
+progressBar~Minimum = 0    -- set property "Minimum" to integer 0
+progressBar~Maximum = 100  -- set property "Maximum" to integer 100
+progressBar~Value = 0      -- set property "Value" to integer 0
+contentPane~Controls~Add(progressBar)  -- add "ProgressBar" to "FlowLayoutPanel"
+
+startButton = .clr~new("System.Windows.Forms.Button")
+startButton~Text = "Start" -- set property "Text" to string "Start"
+contentPane~Controls~Add(startButton)  -- add "Button" to "FlowLayoutPanel"
+
+   -- create new event handler from the ooRexx class "MouseEventHandler" below
+mouseEventHandler = clr.createEventHandler(.MouseEventHandler~new(progressBar, startButton))
+startButton~Click += mouseEventHandler -- register event handler to "Click" event
+
+application = clr.import("System.Windows.Forms.Application")  -- import "System.Windows.Forms.Application" class/type
+application~Run(winForm)   -- invoke method "Run", which starts an application message loop
+
+::REQUIRES CLR.CLS  -- get ooRexx.NET support
+
+/* Class:       MouseEventHandler
+ * Description: Implements the .NET event handler invoked by the "Click" event.
+ */
+::CLASS MouseEventHandler
+
+  /* Method:      init
+   * Description: Constructor which saves the passed arguments in the class.
+   * Arguments:   - progressBar: the progress bar which is to be modified
+   *              - startButton: the start button which is to be modified
+   */
+  ::METHOD init
+    EXPOSE progressBar startButton
+    USE ARG progressBar, startButton
+
+  /* Method:      invoke
+   * Description: Called by .NET when the registered event is triggered.
+   * Arguments:   - caller: the object the event handler was registered to
+   *              - mouseEventArgs: the event arguments passed by the caller
+   */
+  ::METHOD invoke
+    EXPOSE progressBar startButton
+    USE ARG caller, mouseEventArgs
+
+    .Processor~new(progressBar, startButton)~start  -- creates a new instance of ooRexx class "Processor", which is a thread, and starts it
+
+/* Class:       Processor
+ * Description: Inherits from CLRThread defined in CLR.CLS, which enables this class to run in its own
+ *              thread. The "run" method has to be implemented, as it is the method executed upon
+ *              start of the thread. The thread must be started by invoking "start", which is a method
+ *              implemented in CLRThread. Invoking "run" will not start a concurrent execution of the
+ *              method!
+ */
+::CLASS Processor SUBCLASS CLRThread
+
+  /* Method:      init
+   * Description: Constructor which saves the passed arguments in the class.
+   * Arguments:   - progressBar: the progress bar which is to be modified
+   *              - startButton: the start button which is to be modified
+   */
+  ::METHOD init
+    EXPOSE progressBar startButton
+    USE ARG progressBar, startButton
+
+  /* Method:      run
+   * Description: Executed upon start of the thread (by invoking "start").
+   */
+  ::METHOD run
+    EXPOSE progressBar startButton
+
+    startButton~Enabled = .false  -- disable start button to prevent multiple clicks
+
+    DO i = 1 TO 100
+      progressBar~Value = i  -- set value of the progress bar (from 1 to 100)
+      CALL syssleep .1  -- sleep 100 milliseconds to prevent reaching 100 immediately
+    END
+
+    startButton~Text = "Finished"  -- set text on button to "Finished"

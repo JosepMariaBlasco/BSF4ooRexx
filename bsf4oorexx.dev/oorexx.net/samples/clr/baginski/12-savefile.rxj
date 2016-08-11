@@ -1,0 +1,125 @@
+/* File:        12-savefile.rxj
+ * Description: This application opens a form with a textarea and a save button to save the text as a text file.
+ * Shows:
+ *              - Customizing a textbox
+ *              - Using Threads
+ *              - A dialog to save files
+ *              - Filtering file names and file types based on regular expressions
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+
+form = .clr~new("System.Windows.Forms.Form") -- get an instance of the Form class
+   -- set the attribute "AutoSizeMode" to enumeration "GrowAndShrink". This allows the form
+   -- to automatically adjust to the elements:
+form~AutoSizeMode = GrowAndShrink
+form~text = "Save Text"
+form~width = 610
+form~height = 545
+
+textbox = .clr~new("System.Windows.Forms.TextBox") -- get an instance of the TextBox class
+textbox~Multiline = .true     -- allows for multiple lines
+textbox~AcceptsReturn = .true -- this attribute allows line breaks
+textbox~AcceptsTab = .true    -- this attribute allows tabs
+
+textbox~size = .clr~new("System.Drawing.Size", 500, 500) -- set the size of the textbox to 500x500px with
+
+font = .clr~new("System.Drawing.Font", "Consolas", 14)   -- get an instance of the Font class and set it to font family "Consolas" with font size 14pt
+   -- apply our font instance to the textbox, therefore setting the text of the textbox to Consolas/14
+textbox~font = font
+
+startButton = .clr~new("System.Windows.Forms.Button")
+startButton~Text = "Save"     -- set property "Text" to string "Save"
+
+contentPane = .clr~new("System.Windows.Forms.FlowLayoutPanel") -- represent a FlowLayoutPanel to lay out the content horizontally
+contentPane~AutoSize = .true  -- set property "AutoSize" to boolean true
+contentPane~AutoSizeMode = GrowAndShrink  -- set property "AutoSizeMode" to enumeration value "GrowAndShrink"
+form~Controls~Add(contentPane)      -- add the contentPane to the form
+
+contentPane~Controls~Add(textbox)      -- add textbox to the contentPane (therefore adding it to the form too)
+contentPane~Controls~Add(startButton)  -- add the button to the contentPane (therefore adding it to the form too)
+
+userData = .directory~new           -- create a new Rexx Directory for objects to interact with in the handler
+userData~TextBox = textbox          -- add the textbox to the directory
+userData~startButton = startButton  -- add the button to the directory
+
+   -- create new event handler from ooRexx class "MouseEventHandler" with the directory
+   -- "userData" as parameter
+mouseEventHandler = clr.createEventHandler(.MouseEventHandler~new(userData))
+startButton~Click += mouseEventHandler  -- register event handler to "Click" event
+
+application = clr.import("System.Windows.Forms.Application")  -- imports "System.Windows.Forms.Application" class/type
+application~Run(form)   -- invoke method "Run" to start the form
+
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support
+
+/* Class:         MouseEventHandler
+ * Description:   Instantiates the ooRexx "Save" class with the passed userData as parameter, which is a thread, therefore starting it with the "Start" method.
+ */
+::CLASS MouseEventHandler
+
+  /* Method:      init
+   * Description: This constructor saves the passed arguments in the class.
+   * Arguments:   - userData: an ooRexx directive, which can reference several form elements
+   */
+  ::METHOD init
+    EXPOSE userData
+    USE ARG userData
+
+  /* Method:      invoke
+   * Description: Called by .NET when the registered event is triggered.
+   * Arguments:   - caller: the object the event handler was registered to
+   *              - mouseEventArgs: the event arguments passed by the caller
+   */
+
+  ::METHOD invoke
+    EXPOSE userData
+    USE ARG caller, mouseEventArgs
+	  .Save~new(userData)~start -- start the "Save" class, which is a Thread
+
+
+
+::CLASS Save SUBCLASS CLRThread
+  ::METHOD init
+    EXPOSE userData
+    USE ARG userData
+
+  /* Method:      run
+   * Description: This method will get executed upon start of the thread by invoking "start" method of the CLRThread class, which is a superclass of this class.
+   */
+  ::METHOD run
+    EXPOSE userData	-- expose must be the first command after invocation of a method
+
+    textbox = userData~TextBox -- get a (shorter) reference to the textbox instance
+    SaveFileDialog = .clr~new("System.Windows.Forms.SaveFileDialog") -- get an instance of the SaveFileDialog class
+    SaveFileDialog~Filter = "all files|*.*" -- Syntax: [Label]|[Regular Expression]
+    SaveFileDialog~FileName = "12-savefile.txt" -- this provides a default value as the file name, which can be overwritten in runtime
+
+    DialogResult = clr.import("System.Windows.Forms.DialogResult") -- import static DialogResult class in order to check where the user clicked later on
+    SaveFileDialog.Result = SaveFileDialog~ShowDialog -- show the dialog and save where the user clicked in the variable "SaveFileDialog.Result"
+
+    IF SaveFileDialog.Result~equals(DialogResult~OK) THEN DO
+      FileStream = .clr~new("System.IO.StreamWriter", SaveFileDialog~OpenFile) -- open a filestream based on the filename/filepath+filename from the Save Dialog
+      FileStream~Write(textbox~Text) -- write the text from the textbox into that filestream file
+      FileStream~Close
+      MessageBox = clr.import("System.Windows.Forms.MessageBox")
+      MessageBox~Show("finished saving process", "success") -- show the user that saving the file was successfull
+    END

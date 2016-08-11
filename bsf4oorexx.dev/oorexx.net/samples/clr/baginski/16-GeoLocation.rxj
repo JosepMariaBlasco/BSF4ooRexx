@@ -1,0 +1,68 @@
+/* File:        16-GeoLocation.rxj
+ * Description: This application tries to access location data on the device and then computes the location to an adress.
+ * Shows:
+ *              - Setting up a "GeoCoordinateWatcher" based on a high accuracy level
+ *              - Accessing permission and status of the GeoCoordinateWatcher class
+ *              - Converting ("Resolving") a GeoCoordinate to the exact civic adress
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+CALL clr.addAssembly("System.Device") -- add "System.Device" assembly to use all of its classes
+
+lf = "0A"x
+GeoPositionAccuracy = clr.import("System.Device.Location.GeoPositionAccuracy")
+GeoCoordinateWatcher = .clr~new("System.Device.Location.GeoCoordinateWatcher", GeoPositionAccuracy~High) -- use the most accurate position possible
+GeoCoordinateWatcher~clr.dispatch("Start") -- start tracking the location
+
+jumpcounter = 0 -- set jumpcounter to 0
+jumpspot:
+   SAY "Accessing Location Provider Information with ooRexx.NET"
+   SAY "-------------------------------------------------------"
+   SAY "Permission:" GeoCoordinateWatcher~Permission~toString
+   SAY "Status:" GeoCoordinateWatcher~Status~toString lf
+   GeoPositionStatus = clr.import("System.Device.Location.GeoPositionStatus") -- get access to GeoPositionStatus Enumeration
+
+   IF GeoCoordinateWatcher~Status~equals(GeoPositionStatus~Ready) THEN DO
+     GeoPosition = GeoCoordinateWatcher~Position -- everything is set, retrieve location data
+     AdressResolver = .clr~new("System.Device.Location.CivicAddressResolver")
+     GeoCoordinate = GeoPosition~Location
+
+     Adress = AdressResolver~ResolveAdress(GeoCoordinate) -- get the adress based on the information in GeoCoordinate
+     SAY lf"Your adress:" Adress~AdressLine1~toString
+     SAY "Your building:" Adress~Building~toString
+     SAY "Your postal code:" Adress~PostalCode~toString
+     SAY "Your state or province:" Adress~StateProvince~toString
+   END
+   ELSE IF GeoCoordinateWatcher~Status~equals(GeoPositionStatus~NoData) THEN DO
+     SAY "Sorry, we could not retrieve any location data from your Location Provider."
+   END
+   ELSE IF GeoCoordinateWatcher~Status~equals(GeoPositionStatus~Disabled) THEN DO
+     SAY "Sorry, the Location Provider is disabled. Unfortunately, your device does not support Location Services."
+   END
+   ELSE IF GeoCoordinateWatcher~Status~equals(GeoPositionStatus~Initializing) THEN DO
+     SAY "Your Location Provider is still initializing."
+     SAY "Trying again ..."
+     CALL SysSleep 3
+     jumpcounter += 1   -- count jumpcounter up
+     IF jumpcounter = 5 THEN EXIT -- if jumpcounter has reached 5 (e.g. after 4 jumps) exit the application to prevent unnecessary infinity loops
+     CALL jumpspot      -- retry after 3 seconds
+   END
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support

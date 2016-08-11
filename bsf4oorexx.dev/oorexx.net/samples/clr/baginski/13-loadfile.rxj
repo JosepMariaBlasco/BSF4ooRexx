@@ -1,0 +1,141 @@
+/* File:        13-loadfile.rxj
+ * Description: This application opens a form with a textarea and a "load" button to load a text file and display it in the textarea.
+ * Shows:
+ *              - Using a RichTextBox in contrast to the standard TextBox
+ *              - Enabling shortcuts in a (rich)textbox
+ *              - The Form.Load Event in ooRexx.NET used for executing commands after loading the form
+ *              - Filtering file names and file types based on regular expressions
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+
+form = .clr~new("System.Windows.Forms.Form")
+form~AutoSizeMode = GrowAndShrink
+defaultFormText = "Load file demonstration"
+form~text = defaultFormText
+form~width = 610
+form~height = 545
+textbox = .clr~new("System.Windows.Forms.RichTextBox")
+textbox~Multiline = .true
+textbox~AcceptsTab = .true
+textbox~ShortcutsEnabled = .true -- this attribute allows amongst other things ctrl+a to select everything
+textbox~size = .clr~new("System.Drawing.Size", 500, 500)
+font = .clr~new("System.Drawing.Font", "Consolas", 14)
+textbox~font = font
+
+startButton = .clr~new("System.Windows.Forms.Button")
+startButton~Text = "Load again"  -- set property "Text" to string "Load again"
+
+contentPane = .clr~new("System.Windows.Forms.FlowLayoutPanel")
+contentPane~AutoSize = .true     -- set property "AutoSize" to boolean true
+contentPane~AutoSizeMode = GrowAndShrink  -- set property "AutoSizeMode" to enumeration value "GrowAndShrink"
+form~Controls~Add(contentPane)
+
+contentPane~Controls~Add(textbox)
+contentPane~Controls~Add(startButton)
+
+userData = .directory~new           -- Rexx directory to contain objects to interact with in the handler
+userData~form = form                -- add the form to the directory
+userData~TextBox = textbox          -- add the textbox
+userData~startButton = startButton  -- add the button
+   -- also include the default form text of this application to prevent redundancy:
+userData~defaultFormText = defaultFormText
+   -- create new event handler from ooRexx class "MouseEventHandler"
+mouseEventHandler = clr.createEventHandler(.MouseEventHandler~new(userData))
+startButton~Click += mouseEventHandler  -- register event handler to "Click" event
+
+   -- The "Load" event occurs before a form is displayed for the first time. This will
+   -- open the "load file" dialog when starting the application.
+form~Load += mouseEventHandler
+
+application = clr.import("System.Windows.Forms.Application")  -- load the "System.Windows.Forms.Application" class/type
+application~Run(form)   -- invoke method "Run", which starts an application message loop
+
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support
+
+
+::CLASS MouseEventHandler
+
+  /* Method:      init
+   * Description: Constructor which saves the passed arguments in the class.
+   * Arguments:   - progressBar: the progress bar which is to be modified
+   *              - startButton: the start button which is to be modified
+   */
+  ::METHOD init
+    EXPOSE userData
+    USE ARG userData
+
+  /* Method:      invoke
+   * Description: Called by .NET when the registered event is triggered.
+   * Arguments:   - caller: the object the event handler was registered to
+   *              - mouseEventArgs: the event arguments passed by the caller
+   */
+  ::METHOD invoke
+    EXPOSE userData
+    USE ARG caller, mouseEventArgs
+  .Save~new(userData)~start
+
+
+
+::CLASS Save SUBCLASS CLRThread
+  ::METHOD init
+    EXPOSE userData
+    USE ARG userData
+
+  /* Method:      run
+   * Description: Executed upon start of the thread (by invoking "start").
+   */
+  ::METHOD run
+    EXPOSE userData
+    fileContent = loadFile()
+    IF fileContent <> .false THEN DO
+      userData~textbox~Text = fileContent[1] -- insert the file content to the textarea
+      userData~form~Text = userData~defaultFormText || ":" fileContent[2] -- add the file name (including file extension) to the title of the form
+    END
+
+/*
+ * ROUTINE:       loadFile
+ * Description:   opens a "open file" dialog to select a text or rexx file
+ * Returns:       either an array with file content and file name or the ooRexx value ".false" / 0
+ */
+
+::ROUTINE loadFile
+  OpenFileDialog = .clr~new("System.Windows.Forms.OpenFileDialog")
+  DialogResult = clr.import("System.Windows.Forms.DialogResult")
+  OpenFileDialog~Filter = "text files|*.txt|rexx files|*.rex" -- Syntax: Label|Regular Expression
+  OpenFileDialog~Title = "Open a file" -- set the  title of the OpenFileDialog
+
+  OpenFileDialog.Result = OpenFileDialog~ShowDialog
+  IF OpenFileDialog.Result~equals(DialogResult~OK) THEN DO
+    FileStream = .clr~new("System.IO.StreamReader", OpenFileDialog~OpenFile)
+    FileContent = FileStream~ReadToEnd
+
+    IF FileContent <> .nil THEN DO
+      FileStream~Close -- only close the filestream if the content is OK
+      FileName = OpenFileDialog~SafeFileName -- retrieve only the file name without file path
+      returnArray = .array~of(FileContent, FileName)
+      RETURN returnArray
+    END
+    ELSE
+      SAY "FileContent is empty :-( Try again!"
+  END
+  ELSE
+    RETURN .false

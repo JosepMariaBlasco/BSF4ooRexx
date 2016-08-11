@@ -1,0 +1,79 @@
+/* File:        08-WebClient.rxj
+ * Description: This application downloads the frontend source code of an html page via HTTP and analyses it based on the amount of html5 vs. html4.1 commands.
+ * Arguments:   - URL including "http://" or "https://"
+ * Shows:
+ *              - Setting up a WebClient to send or receive data through a URI
+ *              - Defining a Rexx array with elements
+ *              - Using Rexx arguments
+ *              - Private Routine CountSubStrings to count substrings in a string
+ *              - Using PROCESS.CLS to start a process
+ *              - Comparing two integer values
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+
+WebClient = .clr~new("System.Net.WebClient")    -- create a WebClient
+   -- if an argument was supplied while starting this app AND this argument is a valid URL (starts with http at least)
+IF arg(1)~length > 0 & ABBREV(arg(1), "http")
+  THEN URL = arg(1)              -- then set URL to that argument
+  ELSE URL = "https://wu.ac.at"  -- else set it to the WU Homepage
+
+SAY "analyzing web page at:" pp(url) "..."
+
+htmlPage = WebClient~DownloadString(URL)  -- download source code from given URL
+htmlStructureElement = "<div"
+html5StructureElements = .array~of("<article", "<header", "<nav", "<section", "<figure", "<aside", "<footer")
+
+htmlcount = CountSubStrings(htmlPage, htmlStructureElement) -- use private routine from this file to count total amount of substrings
+html5count = 0
+
+DO oneElement OVER html5StructureElements
+  oneElementCount = CountSubStrings(htmlPage, oneElement) -- count all substrings for each element of the html5StructureElements array
+  html5count += oneElementCount
+  SAY LEFT("amount of" oneElement, 18) ":" oneElementCount
+END
+
+s1 = "total amount of html5 Structure elements found:"
+s2 = "pre html5 Structure elements found:"
+maxLen = max(length(s1),length(s2)) -- get length of longer string
+SAY s1~right(maxLen) html5count     -- right adjust
+SAY s2~right(maxLen) htmlcount      -- right adjust
+SAY
+
+IF htmlcount > html5count THEN      -- compare those values
+   SAY "The website" pp(url) "should get an html5 update!"
+ELSE IF html5count>0 THEN           -- html5 elements available?
+   SAY pp(url)": Great!"
+ELSE
+   SAY pp(url)": ? Neither old HTML nor any HTML5 tags found, tsk!"
+
+
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support
+
+::ROUTINE CountSubStrings PRIVATE
+  USE ARG haystack, needle
+  RegEx = .clr~new("System.Text.RegularExpressions.Regex", needle)
+  /* Although System Class "System.Text.RegularExpressions.Regex" has a constructor with no Arguments, you cannot use it because it is PROTECTED.
+  Instead, 3 Constructors can be used: only needle, needle and RegexOptions or needle, RegexOptions and Timespan. */
+
+  /* This example will count all non-overlapping occurences of the string defined in "needle" in the string defined in "haystack" */
+  Matches = RegEx~Matches(haystack)
+  RETURN Matches~Count

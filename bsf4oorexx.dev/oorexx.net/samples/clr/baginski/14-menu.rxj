@@ -1,0 +1,192 @@
+/* File:        14-menu.rxj
+ * Description: This application opens a form with a menu bar, a menu inside a menu and a button at the bottom of the form.
+ * Shows:
+ *              - Using a FlowLayoutPanel to group together Control Elements.
+ *              - The "Dock" attribute to change the position of Control Elements dynamically.
+ *              - Using the "caller" attribute when invoking event handlers to determine the clicked element
+ *              - Creating a border, background color and background image for form elements
+ *              - Creating a Menu
+ *              - Creating a SubMenu
+ *              - How to assign a shortcut to a menu item.
+ *
+ *  license:
+ *
+ *  ------------------------ Apache Version 2.0 license -------------------------
+ *     Copyright (C) 2016 Adrian Baginski
+ *
+ *     Licensed under the Apache License, Version 2.0 (the "License");
+ *     you may not use this file except in compliance with the License.
+ *     You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
+ *  -----------------------------------------------------------------------------
+ */
+
+form = .clr~new("System.Windows.Forms.Form")
+form~text = "Menu Class"
+form~AutoSizeMode = GrowOnly
+FormStartPosition = clr.import("System.Windows.Forms.FormStartPosition")
+form~StartPosition = FormStartPosition~CenterScreen -- start the form in the center of the screen
+
+endButton = .clr~new("System.Windows.Forms.Button")
+endButton~Text = "Exit Application" -- set property "Text" to string "Exit Application"
+endButton~Width = 275
+
+contentPane = .clr~new("System.Windows.Forms.FlowLayoutPanel") -- represent a FlowLayoutPanel to lay out the content horizontally
+contentPane~width = form~width   -- set the width of the contentPane to the width of the form
+contentPane~height = 30          -- default height of a button is 24px, so set the contentPane to a little more than that: 30px
+
+BorderStyle = clr.import("System.Windows.Forms.BorderStyle")
+contentPane~BorderStyle = BorderStyle~FixedSingle -- add a single dimensional border to the contentPane
+
+DockStyle = clr.import("System.Windows.Forms.DockStyle")
+contentPane~Dock = DockStyle~Bottom -- move the contentPane including all its components (the button) to the bottom of the form by docking it
+
+
+Color = clr.import("System.Drawing.Color")-- load "System.Drawing.Color" class/type to address static members
+contentPane~BackColor = Color~LightGray   -- set the background color of the contentpane to a predefined light gray color
+form~BackColor = Color~White
+endButton~BackColor = Color~Lavender      -- Lavender seems to be an even lighter gray
+
+
+bgImage = .clr~new("System.Drawing.Bitmap", "images/oorexx_logo.gif") -- import the oorexx_logo image as a bitmap
+form~backgroundImage = bgImage      -- apply the imported background image to the form
+bgImageLayout = clr.import("System.Windows.Forms.ImageLayout") -- get a reference to the static System.Windows.Forms.ImageLayout class
+form~backgroundImageLayout = bgImageLayout~Center -- set the background image to the center of the form
+
+contentPane~Controls~Add(endButton) -- add the button to the contentPane
+form~Controls~Add(contentPane)      -- add the contentPane to the form
+
+application = clr.import("System.Windows.Forms.Application")  -- get reference to static class "System.Windows.Forms.Application"
+
+userData = .directory~new
+userData~form = form
+userData~application = application
+
+mouseEventHandler = clr.createEventHandler(.MouseEventHandler~new(userData))  -- create new event handler from ooRexx class "mouseEventHandler"
+endButton~Click += mouseEventHandler   -- register event handler to "Click" event
+
+menu = .clr~new("System.Windows.Forms.MainMenu")   -- get an instance of the MainMenu class
+menuItemFile = .clr~new("System.Windows.Forms.MenuItem", "File")  -- create a new MenuItem with the title "File"
+menuItemHelp = .clr~new("System.Windows.Forms.MenuItem", "Help")  -- create a new MenuItem with the title "Help"
+shortcut = clr.import("System.Windows.Forms.Shortcut")            -- get "System.Windows.Forms.Shortcut" class/type
+menuItemHelp~Shortcut = shortcut~F1    -- give menu item "Help" the shortcut "f1"
+menuItemHelp~Click += clr.createEventHandler(.showHelp~new) -- if this menu item gets activated, create an event handler and get an instance of the showHelp class
+
+menuItemClose = .clr~new("System.Windows.Forms.MenuItem", "Close")
+menuItemClose~Shortcut = shortcut~AltF4
+   -- register event handler to "Click" event. This menu item does the same as the endButton:
+menuItemClose~Click += clr.createEventHandler(.MouseEventHandler~new(userData))
+
+   -- a menu item to demonstrate menus for menus, e.g. submenus
+openFile = .clr~new("System.Windows.Forms.MenuItem", "Open File")
+saveFile = .clr~new("System.Windows.Forms.MenuItem", "Save File")
+menuItemFile~MenuItems~~Add(openFile)~~Add(saveFile)
+
+possibilities = .directory~new
+possibilities~open = openFile
+possibilities~save = saveFile
+
+openFile~Click += clr.createEventHandler(.WhoAmI?~new(possibilities))
+saveFile~Click += clr.createEventHandler(.WhoAmI?~new(possibilities))
+
+menu~MenuItems~Add(menuItemFile)
+menu~MenuItems~Add(menuItemHelp)
+menu~MenuItems~Add(menuItemClose)
+form~Menu = menu        -- set our menu as the Menu of the form
+
+
+application~Run(form)   -- invoke method "Run", which starts an application message loop
+
+
+
+::REQUIRES CLR.CLS   -- get ooRexx.NET (CLR, common language runtime) support
+
+/* Class:         MouseEventHandler
+ * Description:   Creates an instance of the ooRexxx "ExitApplication" class and starts it
+ * Argument:      A directory with the form, which has to be closed.
+ */
+
+::CLASS MouseEventHandler
+  ::METHOD init
+    EXPOSE userData
+    USE ARG userData
+
+  ::METHOD invoke
+    EXPOSE userData
+    USE ARG caller, mouseEventArgs
+    .ExitApplication~new(userData)~~start
+
+
+/* Class:         ExitApplication
+ * Description:   This class closes a form.
+ * Argument:      A directory with the form, which has to be closed.
+ */
+
+::CLASS ExitApplication SUBCLASS CLRThread
+  ::METHOD init
+    EXPOSE userData
+    USE ARG userData
+
+  ::METHOD run
+    EXPOSE userData
+
+    MessageBox = clr.import("System.Windows.Forms.MessageBox") -- get access to static class "MessageBox" of namespace "System.Windows.Forms"
+    MessageBoxButtons = clr.import("System.Windows.Forms.MessageBoxButtons") -- get access to a set of enumerations
+
+    MessageBox.Result = MessageBox~show("Do you really want to close this applicaton?", "Exit application", MessageBoxButtons~YesNo) -- display MessageBox and save result in Rexx variable "MessageBox.Result"
+    DialogResult = clr.import("System.Windows.Forms.DialogResult") -- get a reference to DialogResult enumerations
+
+    IF MessageBox.Result~equals(DialogResult~Yes) THEN DO
+      form = userData~form
+      form~Close
+    END
+
+/* Class:         showHelp
+ * Description:   Creates an instance of the ooRexxx "runHelp" class, which is a Thread, and starts it
+ */
+
+::CLASS showHelp
+  ::METHOD invoke
+    USE ARG caller, mouseEventArgs
+    .runHelp~new~start
+
+
+/* Class:         runHelp
+ * Description:   This class opens a MessageBox with a hint
+ */
+
+::CLASS runHelp SUBCLASS CLRThread
+  ::METHOD run
+    MessageBox = clr.import("System.Windows.Forms.MessageBox")
+    MessageBox~show('hint: press "f1" to access this help box or "alt + f4" to close the application', "Help")
+
+
+/* Class:         WhoAmI?
+ * Description:   This class validates the clicked element based on the parameter and outputs a MessageBox with the name of the clicked element.
+ * Argument:      A directory with all available menu items whose click event handler target is the "WhoAmI?" class.
+ */
+
+::CLASS WhoAmI?
+  ::METHOD init
+    EXPOSE bothItems MessageBoxTitle
+    USE ARG bothItems
+    MessageBoxTitle = "WhoAmI: Result" -- set the title to be used later on
+
+  ::METHOD invoke
+    EXPOSE bothItems MessageBoxTitle
+    USE ARG caller, mouseEventArgs
+    saveItem = bothItems~save -- retrieve the reference to the menu item "save"
+    openItem = bothItems~open
+
+    MessageBox = clr.import("System.Windows.Forms.MessageBox")
+    IF caller~toString = saveItem~toString THEN -- convert both objects into a string representation and check for equality
+      MessageBox~show("You clicked on the ""save"" menu item!", MessageBoxTitle)
+    ELSE IF caller~toString = openItem~toString THEN
+      MessageBox~show("You clicked on the ""open"" menu item!", MessageBoxTitle)
