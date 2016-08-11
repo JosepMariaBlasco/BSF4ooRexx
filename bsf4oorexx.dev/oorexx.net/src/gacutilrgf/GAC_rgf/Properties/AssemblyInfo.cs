@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("RgfGCUtil_like")]
+[assembly: AssemblyTitle("gacutilrgf-tool")]
 [assembly: AssemblyDescription("Simple, gacutil.exe like executable to un/install assemblises from/into GAC")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("WU")]
