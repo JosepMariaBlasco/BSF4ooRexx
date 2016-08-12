@@ -72,6 +72,9 @@
   <PropertyGroup>
     <TargetZone>LocalIntranet</TargetZone>
   </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>GacUtilRgf.GAC</StartupObject>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="jni4net.n-0.8.8.0, Version=0.8.8.0, Culture=neutral, PublicKeyToken=134a23405600bab4, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

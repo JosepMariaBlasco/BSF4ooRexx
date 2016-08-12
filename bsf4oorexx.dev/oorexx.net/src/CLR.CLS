@@ -83,7 +83,7 @@
 *  @author Manfred Raffel, original design and implementation, fall 2015
 *  @author Rony G. Flatscher, updates, summer 2016
 *  @since fall 2015
-*  @version 100.20160811
+*  @version 100.20160812
 */
 
 
@@ -93,16 +93,18 @@
 -- .CLRLogger~logLevel="debug"      -- rgf, ooRexx-style: turn off logging by default ("OFF")
 
 -- TODO: remove after debugging
+/*
 say ".CLRLogger~logLevel=".CLRLogger~logLevel
 .local~bShowRgf=.false
 if .bShowRgf=.true then call "rgf_util2.rex"
-
+*/
 
 .local~clr.dir=.directory~new    -- directory for oorexx4net (CLR, common language runtime)
-.clr.dir~version="100.20160811"
+.clr.dir~version="100.20160812"
 
 
 .clr.dir~bridge = BSF.import("net.sf.jni4net.Bridge")  -- get jni4net support
+-- .clr.dir~bridge~setDebug(.true)    -- .true for debug output
 .clr.dir~bridge~setVerbose(.false)    -- .true for debug output
 .clr.dir~bridge~bsf.dispatch("init")  -- initialize jni4net support
 
@@ -120,7 +122,7 @@ CALL clr.initAssemblies
 .clr.dir~system.type   = BSF.import("system.Type")
 
    -- rgf, 20160613, TODO: adjust once the package gets changed for this Java class
-.clr.dir~helper4rexx = bsf.loadClass("org.oorexx.clrHelper4ooRexx4Net") -- rgf, GA-version: org.oorexx.clr.Helper4ooRexx4Net
+.clr.dir~helper4rexx = bsf.loadClass("org.oorexx.clr.Helper4ooRexx4Net") -- rgf, GA-version: org.oorexx.clr.Helper4ooRexx4Net
 .clr.dir~helper4rexx~setVerbose(.false)
 .clr.dir~helper4rexx~setDebug(.false)
 
