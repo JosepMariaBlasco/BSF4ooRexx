@@ -2,9 +2,9 @@
 rem rgf, 2016-08-11 - compile Java classes, create jar file which should replace the one in ..\bin
 rem rgf, 2016-08-12 - compile the csharp dll and exe, files should replace the ones in ..\bin
 
-rem adjust path to your MS Visual Projecte's "msbuild.exe"
-set msbuild_cmd="c:\Program Files (x86)\MSBuild\14.0\bin\msbuild.exe"
-
+rem adjust path "msbuild_bindir" to your configuration (look for "msbuild.exe")
+set msbuild_bindir=c:\Program Files (x86)\MSBuild\14.0\bin
+set msbuild_cmd="%msbuild_bindir%\msbuild.exe"
 
 echo ----------------------------------------------------------------
 rem general: bin directory location

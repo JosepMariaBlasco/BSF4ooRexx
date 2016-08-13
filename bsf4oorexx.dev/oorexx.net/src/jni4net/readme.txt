@@ -1,22 +1,17 @@
-The sdk of jni4net comes with a tool named "proxygen.exe" which is used to process
-the custom defined xml-file "oorexx.net.proxygen.xml". It will create Java and
-matching Csharp files, which need to be compiled.
+The xml-file "oorexx.net.proxygen.xml" contains the definition of CLR (Common
+Language Runtime) classes for which Java proxies should be created with the
+help of the jni4net tool "proxygen.exe". According to the xml-definitions the
+created Java source files will be placed in the subdirectory named "java" and
+the created Csharp source files will be placed in the subdirectory named "csharp".
 
-- The resulting Java files in the subdirectory "java" need be compiled and put into a 
-  jar named "oorexx.net.jar" made available to Java (e.g. by adding it to the CLASSPATH).
+All Java files need to be compiled and made available via CLASSPATH (this will be
+done in the script "..\create_oorexx_net.cmd").
 
-  This will be done by "...\create.cmd" script (in ..).
+All Csharp files need to be compiled into a dll which needs to be signed, such
+that a "strong-named" assembly gets created which can therefore be installed
+into the global assembly cache (GAC). The script "..\create_oorexx_net.cmd"
+will do that taking advantage of an installed MS Visual Studio, so you may
+want to adapt that script to your configuration. MS Visual studio can be used
+to load the project by loading the file "csharp\oorexx.net.sln".
 
-
-- The Csharp file should be compiled into a "oorexx.net.dll" assembly which needs to
-  be registered in the GAC (global assembly cache) using "gacutilrgf.exe" or the
-  like. 
-
-  There is a MS Visual Studio 2015 solution file "csharp\oorexx.net.sln" defined. Just
-  load it and do a build. Copy the resulting "csharp\bin\Release\oorexx.net.dll" to
-  "..\..\bin", like
-
-     copy csharp\bin\Release\oorexx.net.dll ..\..\bin
- 
-
----rgf, 2016-08-11
+---rgf, 2016-08-13
