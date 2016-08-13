@@ -1,0 +1,118 @@
+<head>
+    <title>Brief Overview of the CLR (Common Language Runtime)/.Net Samples in this Directory</title>
+</head>
+
+<body>
+<h1>
+      Adrian Baginski's CLR/.Net Examples
+</h1>
+
+<em>Hint:</em> if you wish to look at the ooRexx code with syntax highlighting, then you can
+use the free and open-source editor <code>&quot;[g]vim&quot;</code>, which is available for practically
+all platforms and can be downloaded from its homepage at
+<a href="http://www.vim.org/">http://www.vim.org/</a>.
+
+
+
+<dl>
+    <dt><em><a href=".">.  &lt;directory&gt; (List of this directory)</a></em>
+    <dd>Display all of this directory's files and directories.
+
+    <dt><em><a href="../index.html">..  &lt;directory&gt; (List of parent directory)</a></em>
+    <dd>Display all of the parent directory's files and directories.
+
+    <dt><a href="viewAll.rxj">viewAll.rxj</a>
+    <dd> This application runs all Rexx examples one by one using "rexxpaws.exe" which
+         will stop at the end of each Rexx example such that the user can see the output
+         of the Rexx example in the console (command line) window. After running the
+         Rexx examples all files produced by them get deleted.
+
+    <dt><a href="01-systemsounds.rxj">01-systemsounds.rxj</a>
+    <dd> This application demonstrates all available &quot;SystemSounds&quot;.
+
+    <dt><a href="02-streamwriter.rxj">02-streamwriter.rxj</a>
+    <dd> This application creates a new textfile (&quot;02-textfile.txt&quot;) in
+         the same directory and writes some text into it.
+
+    <dt><a href="03-streamreader.rxj">03-streamreader.rxj</a>
+    <dd> This application opens a file (&quot;02-textfile.txt&quot;) and reads from it using different techniques.
+
+         <br><em>Hint:</em> You need to run &quot;02-streamwriter.rxj&quot; first as it creates the
+                 text file &quot;02-textfile.txt&quot;.
+
+    <dt><a href="04-messagebox.rxj">04-messagebox.rxj</a>
+    <dd> Shows a Message Box with a title and a text.
+
+    <dt><a href="05-messagebox.advanced.rxj">05-messagebox.advanced.rxj</a>
+    <dd> Shows multiple Message Boxes with different button setups.
+
+    <dt><a href="06-process.demonstration.rxj">06-process.demonstration.rxj</a>
+    <dd> This application demonstrates object-oriented process handling. This program
+         takes advantage of the ooRexx package <a href="PROCESS.CLS">PROCESS.CLS</a>,
+         which it requires.
+
+    <dt><a href="07-MAC.rxj">07-MAC.rxj</a>
+    <dd> This program creates a MAC (a message authentication code) for a message
+         and writes the message (some text) and the MAC into the same file.
+
+    <dt><a href="08-WebClient.rxj">08-WebClient.rxj</a>
+    <dd> This application downloads the index html file the supplied URL via http
+         and analyzes it with regards to the html5 and pre-html5 elements.
+
+    <dt><a href="09-clock.rxj">09-clock.rxj</a>
+    <dd> Continuous output of the current time using an instance of the &quot;System.DateTime&quot; class.
+         Also demonstrates closing the application using the &quot;System.Environment&quot; class.
+
+    <dt><a href="10-gui.introduction.rxj">10-gui.introduction.rxj</a>
+    <dd>  This application opens a Windows Form including a label with text and
+          determining its system menu icon.
+
+    <dt><a href="11-drawing.rxj">11-drawing.rxj</a>
+    <dd> This application loads an image from the "images" subfolder,
+         outputs a few of its properties and then resizes the image to 50%
+         and saves it under a different file name (&quot;11-newImage.jpg&quot;),
+         if the user so wishes.
+
+    <dt><a href="12-savefile.rxj">12-savefile.rxj</a>
+    <dd> This application opens a form with a textarea and a save button to
+         save the text as a text file (using a dialog).
+
+    <dt><a href="13-loadfile.rxj">13-loadfile.rxj</a>
+    <dd> This application opens a Windows form with a textarea and a
+         &quot;load&quot; button to load a text file via a dialog and display its
+         content in the textarea.
+
+    <dt><a href="14-menu.rxj">14-menu.rxj</a>
+    <dd> This application opens a form with a menu bar, a menu inside a menu and
+         a button at the bottom of the form.
+
+    <dt><a href="15-text.to.speech.rxj">15-text.to.speech.rxj</a>
+    <dd> This application explicitly loads an assembly (&quot;System.Speech&quot;)
+         to become able to use all of its classes.
+
+         It first reads a default text, then reads the content of the text file
+         &quot;02-textfile.txt&quot; word by word ignoring the first line.
+
+         <br><em>Hint:</em> You need to run &quot;02-streamwriter.rxj&quot; first as it creates the
+                 text file &quot;02-textfile.txt&quot;.
+
+    <dt><a href="16-GeoLocation.rxj">16-GeoLocation.rxj</a>
+    <dd> This application explicitly loads an assembly (&quot;System.Device&quot;) to become able
+         to use all of its classes. It then accesses the location data of the
+         device and if available, tries to infer from the location an address.
+
+    <dt><a href="images">images &lt;directory&gt; (List of images)</a>
+    <dd>Display all of the images used in some of these examples.
+
+    <dt><a href="PROCESS.CLS">PROCESS.CLS</a>
+    <dd> An ooRexx package with a Rexx class named &quot;Process&quot; to wrap the functionality
+         of the CLR/.Net class &quot;System.Diagnostics.Process&quot;. It can be used to
+         configure and start Windows processes based on information about application,
+         file or using an instance of &quot;System.Diagnostics.ProcessStartInfo&quot;.
+</dl>
+
+<p>
+<hr>
+<p style="font-size: 80%;">
+Rony G. Flatscher, 2016-08-13, Wien/Vienna, Austria, Europe
+</body>

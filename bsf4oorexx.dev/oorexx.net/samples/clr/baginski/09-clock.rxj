@@ -1,5 +1,5 @@
 /* File:        09-clock.rxj
- * Description: Continous output of the current time via .NET classes.
+ * Description: Continuous output of the current time using an instance of the System.DateTime class.
  * Shows:       - DateTime class: getting the current time.
  *              - Starting a CLRThread, which is a Thread and runs simultaneously to the main code
  *              - Reading input keys from console

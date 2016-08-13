@@ -1,5 +1,7 @@
 /* File:        07-MAC.rxj
- * Description: This application generates a hash string of a message based on a secret key. Then, it stores both message and hash into a textfile and opens it afterwards as a process with the default text editor program.
+ * Description: This application generates a hash string of a message based on a secret key.
+                Then, it stores both message and hash into a textfile and opens it afterwards
+                as a process with the default text editor program.
  * Shows:
  *              - Encode a string into an array of Bytes
  *              - Generate a hash of a message based on a specific key

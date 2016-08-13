@@ -1,5 +1,7 @@
 /* File:        15-text.to.speech.rxj
- * Description: This application first reads a default text, then reads the content of "02-textfile.txt" word by word ignoring the first line.
+ * Description: This application explicitly loads an assembly ("System.Speech") to become able to use all of its
+                classes. It first reads a default text, then reads the content of
+                "02-textfile.txt" word by word ignoring the first line.
  * Shows:
  *              - Adding an Assembly
  *              - Regulating volume and rate of the audio output

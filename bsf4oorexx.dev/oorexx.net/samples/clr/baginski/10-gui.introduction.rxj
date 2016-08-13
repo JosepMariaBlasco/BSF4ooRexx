@@ -1,5 +1,6 @@
 /* File:        10-gui.introduction.rxj
- * Description: This application opens a Windows Form including a label with text.
+ * Description: This application opens a Windows Form including a label with text and
+                determining its system menu icon.
  * Shows:
  *              - A Graphical User Interface (GUI) in ooRexx.NET
  *              - Setting the title of a Form

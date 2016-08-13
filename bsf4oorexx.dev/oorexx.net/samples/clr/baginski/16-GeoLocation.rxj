@@ -1,5 +1,7 @@
 /* File:        16-GeoLocation.rxj
- * Description: This application tries to access location data on the device and then computes the location to an adress.
+ * Description: This application explicitly loads an assembly ("System.Device") to become able
+                to use all of its classes. It then accesses the location data of the
+                device and if available, tries to infer from the location an address.
  * Shows:
  *              - Setting up a "GeoCoordinateWatcher" based on a high accuracy level
  *              - Accessing permission and status of the GeoCoordinateWatcher class

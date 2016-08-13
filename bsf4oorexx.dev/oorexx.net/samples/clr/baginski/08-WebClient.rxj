@@ -1,5 +1,6 @@
 /* File:        08-WebClient.rxj
- * Description: This application downloads the frontend source code of an html page via HTTP and analyses it based on the amount of html5 vs. html4.1 commands.
+ * Description: This application downloads the frontend source code of an html page via HTTP and
+                analyses it based on the amount of html5 vs. html4.1 commands.
  * Arguments:   - URL including "http://" or "https://"
  * Shows:
  *              - Setting up a WebClient to send or receive data through a URI

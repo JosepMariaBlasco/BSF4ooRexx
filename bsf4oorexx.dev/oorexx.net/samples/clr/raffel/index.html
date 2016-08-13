@@ -1,0 +1,56 @@
+<head>
+    <title>Brief Overview of the CLR (Common Language Runtime)/.Net Samples in this Directory</title>
+</head>
+
+<body>
+<h1>
+      Manuel Raffel's CLR/.Net Examples
+</h1>
+
+<em>Hint:</em> if you wish to look at the ooRexx code with syntax highlighting, then you can
+use the free and open-source editor <code>&quot;[g]vim&quot;</code>, which is available for practically
+all platforms and can be downloaded from its homepage at
+<a href="http://www.vim.org/">http://www.vim.org/</a>.
+
+<dl>
+    <dt><em><a href=".">.  &lt;directory&gt; (List of this directory)</a></em>
+    <dd>Display all of this directory's files and directories.
+
+    <dt><em><a href="../index.html">..  &lt;directory&gt; (List of parent directory)</a></em>
+    <dd>Display all of the parent directory's files and directories.
+
+    <dt><a href="00-helloworld-bsf.rxj">00-helloworld-bsf.rxj</a>
+    <dd> Simple output of &quot;Hello World&quot; via the Java &quot;java.lang.System&quot; class.
+         (No CLR/.Net involved.)
+
+    <dt><a href="01-helloworld-clr.rxj">01-helloworld-clr.rxj</a>
+    <dd> Simple output of &quot;Hello World&quot; via the CLR/.Net &quot;System.Console&quot; class.
+
+    <dt><a href="02-eventlog-clr.rxj">02-eventlog-clr.rxj</a>
+    <dd> Reads the &quot;Application&quot; log of the current machine and outputs every entry. Uses the
+         &quot;System.Media.SystemSounds&quot; class to emit a beep for every written message.
+
+    <dt><a href="03-systemevents-clr.rxj">03-systemevents-clr.rxj</a>
+    <dd> Listens to a Windows system event, namely the change of the systems clock value.
+
+    <dt><a href="04-forms-clr.rxj">04-forms-clr.rxj</a>
+    <dd> Creates a Windows form with a progress bar and a start button which, when clicked,
+         starts a new thread to increase the progress bar and animates the button.
+
+    <dt><a href="05-client-clr.rxj">05-client-clr.rxj</a>
+    <dd>  Creates a networking client which connects to a server listening on address 127.0.0.1
+          (localhost) and port 2015. User input is sent to the server.
+          <br><em>Hint:</em> You need to start &quot;05-server-clr.rxj&quot; (see next item)
+          in another window, before you can run this application successfuly.
+
+    <dt><a href="05-server-clr.rxj">05-server-clr.rxj</a>
+    <dd>  Creates a networking server which waits for connections on address 127.0.0.1
+          (localhost) and port 2015. Any received data is written to standard output.
+
+</dl>
+
+<p>
+<hr>
+<p style="font-size: 80%;">
+Rony G. Flatscher, 2016-08-13, Wien/Vienna, Austria, Europe
+</body>

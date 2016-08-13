@@ -1,5 +1,9 @@
 /* File:        viewAll.rex
- * Description: This application starts all indexed demonstration files with rexxpaws.exe. Then, it will delete all indexed temporary files.
+ * Description: This application runs all Rexx examples one by one using "rexxpaws.exe" which
+ *              will stop at the end of each Rexx example such that the user can see the output
+ *              of the Rexx example in the console (command line) window. After running the
+ *              Rexx examples all files produced by them get deleted.
+ *
  * Arguments:   - If this application gets supplied with an argument the file deletion process will be skipped.
  *
  *  license:

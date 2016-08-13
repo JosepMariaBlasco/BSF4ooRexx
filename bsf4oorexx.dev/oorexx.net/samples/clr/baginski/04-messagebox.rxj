@@ -1,5 +1,5 @@
 /* File:        04-messagebox.rxj
- * Description: Shows a Message Box in ooRexx.NET with a title and a text
+ * Description: Shows a Message Box with a title and a text
  * Shows:       - MessageBox.Show method with title and a text
  *
  *  license:

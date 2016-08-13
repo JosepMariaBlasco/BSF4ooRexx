@@ -1,5 +1,8 @@
 /* File:        11-drawing.rxj
- * Description: This application loads an image from the "images" subfolder, outputs a few interesting properties and then crops the image by 50% and saves it under a different file name.
+ * Description: This application loads an image from the "images" subfolder,
+                outputs a few of its properties and then resizes the image to 50%
+                and saves it under a different file name ("11-newImage.jpg"),
+                if the user so wishes.
  * Shows:
  *              - Loading a Bitmap from the image path
  *              - Accessing various Bitmap properties

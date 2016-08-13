@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /* File:          03-systemevents-clr.rxj
- * Description:   Reacts to a Windows system event, namely the change of the systems clock value.
+ * Description:   Listens to a Windows system event, namely the change of the systems clock value.
  * Shows:         - Import of static classes
  *                - Creation and registration of event handlers
  *
@@ -12,6 +12,7 @@
  *
  *  ------------------------ Apache Version 2.0 license -------------------------
  *     Copyright (C) 2015 Manuel Raffel
+ *     Copyright (C) 2016 Rony G. Flatscher
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.

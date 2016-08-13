@@ -1,17 +1,20 @@
 #!/usr/bin/rexx
 /* File:          04-forms-clr.rxj
- * Description:   Creates a windows form with a progress bar and a start button which, when clicked,
- *                starts a new thread to increase the progress bar.
+ * Description:   Creates a Windows form with a progress bar and a start button which, when clicked,
+ *                starts a new thread to increase the progress bar and animates the button.
  * Shows:         - Instantiation of classes (without parameters)
  *                - Manipulation of properties (can be regarded as ooRexx attributes)
  *                - Invocation of methods (with parameters)
  *                - Creation and registration of event handlers
  *                - Import of .Net/CLR classes/types
  *
+ * Changed:       - rgf, 2016-08-13: animate button-text with percentage displayed by ProgressBar
+ *
  * License:
  *
  *  ------------------------ Apache Version 2.0 license -------------------------
  *     Copyright (C) 2015 Manuel Raffel
+ *     Copyright (C) 2016 Rony G. Flatscher
  *
  *     Licensed under the Apache License, Version 2.0 (the "License");
  *     you may not use this file except in compliance with the License.
@@ -109,6 +112,7 @@ application~Run(winForm)   -- invoke method "Run", which starts an application m
 
     DO i = 1 TO 100
       progressBar~Value = i  -- set value of the progress bar (from 1 to 100)
+      startButton~Text=i"%"
       CALL syssleep .1  -- sleep 100 milliseconds to prevent reaching 100 immediately
     END
 

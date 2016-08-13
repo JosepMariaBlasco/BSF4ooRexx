@@ -1,5 +1,7 @@
 /* File:        13-loadfile.rxj
- * Description: This application opens a form with a textarea and a "load" button to load a text file and display it in the textarea.
+ * Description: This application opens a Windows form with a textarea and a
+ *              "load" button to load a text file via a dialog and display its
+ *              content in the textarea.
  * Shows:
  *              - Using a RichTextBox in contrast to the standard TextBox
  *              - Enabling shortcuts in a (rich)textbox

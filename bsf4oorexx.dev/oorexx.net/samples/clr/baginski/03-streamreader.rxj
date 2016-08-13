@@ -1,5 +1,5 @@
 /* File:        03-streamreader.rxj
- * Description: This application opens a file and outputs it using different techniques
+ * Description: This application opens a file and reads from it using different techniques
  * Shows:
  *              - Using a linefeed and pretty print routine
  *              - Difference between ReadToEnd, ReadLine and Read

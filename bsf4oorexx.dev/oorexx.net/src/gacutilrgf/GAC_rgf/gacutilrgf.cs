@@ -130,8 +130,8 @@ namespace GacUtilRgf
             {
                 Console.WriteLine("AssemblyName:     [{0}]", args[1]);
                 Console.WriteLine("Display/FullName: [{0}]", ass.FullName);
-                Console.WriteLine("Location:         [{0}]", ass.Location);
-//                Console.WriteLine("CodeBase:              [{0}]", ass.CodeBase);
+                Console.WriteLine("Location:         [{0}]", ass.Location);     
+                Console.WriteLine("CodeBase:         [{0}]", ass.CodeBase);     // could be different, e.g. a URL into the web
 //                Console.WriteLine("CodeBase as LocalPath: [{0}]", new Uri(ass.CodeBase).LocalPath);
             }
 
@@ -213,7 +213,7 @@ namespace GacUtilRgf
         {
             Console.Error.WriteLine("{0}: installs, checks and uninstalls assemblies to/in/from the GAC (global assembly cache)\n", pgmName);
             Console.Error.WriteLine("usage: {0} -v                       ... displays current version", pgmName);
-            Console.Error.WriteLine("       {0} -l assemblyDisplayName   ... list information for assembly display name (Name, FullName, Location)", pgmName);
+            Console.Error.WriteLine("       {0} -l assemblyDisplayName   ... list information for assembly display name (Name, FullName, Location, CodeBase)", pgmName);
             Console.Error.WriteLine("       {0} -i assemblyPath2File     ... install assembly in GAC (using assembly file name)", pgmName);
             Console.Error.WriteLine("       {0} -u assemblyPath2File     ... uninstall assembly from GAC (using any existing assembly file name)", pgmName);
             Console.Error.WriteLine("       {0} -r assemblyDisplayName   ... remove assembly from GAC (using assembly display name)", pgmName);

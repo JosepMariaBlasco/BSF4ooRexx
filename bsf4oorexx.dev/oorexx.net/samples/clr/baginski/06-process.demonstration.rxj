@@ -1,5 +1,5 @@
 /* File:        04-process.demonstration.rxj
- * Description: This application demonstrates object-oriented process handling in ooRexx.NET
+ * Description: This application demonstrates object-oriented process handling.
  * Shows:
  *              - Usage of basic message boxes with a specified title
  *              - Starting a process by dispatching "Start"
@@ -71,7 +71,7 @@ path = clr.import("System.IO.Path") -- import "System.IO.Path" class/type to get
 tempPath = path~GetTempPath
 tmpfilepath = tempPath || .file~separator || "temporary.txt"
 file = .clr~new("System.IO.StreamWriter", tmpfilepath)   -- open a file stream
-file~Write("It's also possible to specify additional information, like WindowStyle to maximize or minimize the window.")
+file~WriteLine("It's also possible to specify additional information, like WindowStyle to maximize or minimize the window.")
 file~Write("(Program has ended, leaving this window open.)")
 file~Close
 

@@ -1,6 +1,9 @@
 /* File:        PROCESS.CLS
  * Class:       Process
- * Description: Starts Windows Processes based on information about application or file
+ * Description: An ooRexx package with a Rexx class named "Process" to wrap the functionality
+                of the CLR/.Net class "System.Diagnostics.Process". It can be used to
+                configure and start Windows processes based on information about application,
+                file or using an instance of "System.Diagnostics.ProcessStartInfo".
  *
  *  license:
  *

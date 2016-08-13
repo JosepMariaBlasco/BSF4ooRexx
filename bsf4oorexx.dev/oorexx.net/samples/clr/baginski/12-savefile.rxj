@@ -1,5 +1,6 @@
 /* File:        12-savefile.rxj
- * Description: This application opens a form with a textarea and a save button to save the text as a text file.
+ * Description: This application opens a form with a textarea and a save button to
+                save the text as a text file (using a dialog).
  * Shows:
  *              - Customizing a textbox
  *              - Using Threads
