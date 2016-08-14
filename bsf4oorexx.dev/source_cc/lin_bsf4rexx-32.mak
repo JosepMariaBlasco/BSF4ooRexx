@@ -35,8 +35,11 @@ BLD_PATH = .
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk
 # JDK_BASE = /usr/lib/jvm/java-6-sun
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk
-JDK_BASE = /usr/lib/jvm/java-6-sun-1.6.0.16
+# JDK_BASE = /usr/lib/jvm/java-6-sun-1.6.0.16
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk-amd64
+
+# Mac-Virtualbox Ubutnut 11.04 desktop i386
+JDK_BASE = /home/wu/jdk_rpm_bin/tmp/jdk1.6.0_10
 
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 

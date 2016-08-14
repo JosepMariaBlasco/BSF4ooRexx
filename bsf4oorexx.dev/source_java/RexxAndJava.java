@@ -36,7 +36,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.5.2, 2015-08-11
+  * @version 4.5.2, 2016-08-14
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -48,6 +48,7 @@ import org.apache.bsf.util.type.*;
 */
 
  /*
+     2016-08-14, ---rgf, - updated kudos-entries
      2015-08-03, ---rgf, - change code to only deregister bean, if running in the context of the same RII
                            in which registering took place!
 
@@ -343,7 +344,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "452.20150811";
+    static final public String version = "452.20160814";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -5454,11 +5455,13 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                        String kudos=
                            "Ahammer, Andreas"                       + "\n" +
                            "Augustin, Walter"                       + "\n" +
+                           "Baginski, Adrian"                       + "\n" +    // 2016-08-14, rgf: .NET/CLR nutshell examples
                            "Barmwater, Gil"                         + "\n" +
                            "Beck, Andreas"                          + "\n" +
                            "Burger, Martin"                         + "\n" +
                            "Cowlishaw, Mike F."                     + "\n" +
                            "Davis, Chip"                            + "\n" +
+                           "Dunkley, Paul"                          + "\n" +    // 2016-08-14, rgf: created s390x version of BSF4ooRexx.cc
                            "Dujis, Erik"                            + "\n" +
                            "Egli, R\u00e4tus"                       + "\n" +
                            "Faucher, Jean-Louis"                    + "\n" +
@@ -5467,6 +5470,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                            "Flatscher, Michael B."                  + "\n" +
                            "Fosdick, Howard"                        + "\n" +
                            "Frysak, Josef"                          + "\n" +
+                           "Gerger, Eva"                            + "\n" +    // 2016-08-24, rgf: tester (samples)
                            "Gmeiner, Michael"                       + "\n" +
                            "Gundacker, Dominik"                     + "\n" +
                            "G\u00f6rlich, Gerhard"                  + "\n" +
@@ -5495,8 +5499,10 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                            "Peedin, Lee"                            + "\n" +
                            "Pezerovic, Edin"                        + "\n" +
                            "Prem, Matthias"                         + "\n" +
+                           "Raffel, Manuel"                         + "\n" +    // 2016-08-24, rgf: original author of .NET-support with CLR.CLS, oorexx.net.*
                            "Ratliff, Matt"                          + "\n" +
                            "Realfsen, \u00c5smund"                  + "\n" +
+                           "Reindorf, Julian"                       + "\n" +    // 2016-08-24, rgf: testers (samples)
                            "Richard, Pierre G."                     + "\n" +
                            "Ruggles, David"                         + "\n" +
                            "Sauer, Ralph"                           + "\n" +

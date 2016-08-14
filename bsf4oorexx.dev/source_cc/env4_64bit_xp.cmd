@@ -24,7 +24,10 @@ rem  ---------------------------------------------------------------------------
 
 echo Setting variables for MS VS (VC98) ...
 rem 2009-09-07 call "E:\Programme\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat"
-call "E:\Programme\Microsoft Visual Studio 9.0\VC\vcvarsall.bat" x86_amd64
+rem call "E:\Programme\Microsoft Visual Studio 9.0\VC\vcvarsall.bat" x86_amd64
+
+@rem 2016-08-14, try latest MS VS 14 (2016):
+call "E:\Programme\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
 
 rem SDK
 rem call "E:\Programme\Microsoft Platform SDK for Windows Server 2003 R2\SetEnv.Cmd" /XP64 /DEBUG

@@ -27,7 +27,10 @@ echo Setting variables for MS VS (VC98) ...
 rem call "e:\Programme\Microsoft Visual Studio\VC98\Bin\VCVARS32.BAT"
 rem 2006-11; all of a sudden XP does not resolve FAT8.3 names anymore? The following works:
 rem 2008-10-21 rem call "e:\Programme\Microsoft Visual Studio\VC98\Bin\VCVARS32rgf20061006.BAT"
-call "E:\Programme\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat"
+rem call "E:\Programme\Microsoft Visual Studio 9.0\Common7\Tools\vsvars32.bat"
+
+@rem 2016-08-14, try latest MS VS 14 (2016):
+call "E:\Programme\Microsoft Visual Studio 14.0\Common7\Tools\vsvars32.bat"
 
 rem 2008-08-25: for ooRexx-4.0 (according to Mark Miesfeld's posting on 2008-08-25, 17:38)
 rem             not needed anymore (cf. MM's e-mail as of 2008-08-27)
