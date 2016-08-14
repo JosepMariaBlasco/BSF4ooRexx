@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   name:       RegexTestHarness.rxj
+   name:       2-070_RegexTestHarness.rxj
    purpose:    allow interactive experimenting with Java's regular expressions; the Java tutorial
                on regular expressions can be found at:
                <http://java.sun.com/docs/books/tutorial/essential/regex/index.html>

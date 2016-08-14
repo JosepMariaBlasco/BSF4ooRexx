@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   Name:    "Greetings.rxj"
+   Name:    "3-020_Greetings.rxj"
 
    Invoke:  "rexx Greetings.rxj"
                 or
@@ -38,6 +38,8 @@
                              - make sure that awt-thread is not blocked on second GUI popup
             2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
             2014-05-15, rgf, - remove BSFAttachToTID()-logic, not needed anymore
+            2016-07-26, Eva Gerger, Julian Reindorf - added syssleep .25 for better timing between Java and Rexx,
+                                                    - window2 is now packed after the text is set
 
    last change: $Revision: 684 $ $Author: rony $ $Date: 2010-05-16 23:04:56 +0200 (Sun, 16 May 2010) $
 
@@ -144,6 +146,8 @@ drop label3
 rexxCloseEH~waitForExit -- wait until we are allowed to end the program
 window~dispose          -- dispose of the Window
 
+call syssleep .25
+
 -- if Java was loaded by Rexx, then terminate Java's RexxEngine to inhibit callbacks from Java
 call BSF.terminateRexxEngine
 
@@ -161,7 +165,6 @@ call BSF.terminateRexxEngine
 
                 /* add label and button to the window           */
     window2~~add('North', greet)~~add('South', Bye)
-    window2~~pack~~setVisible(.true)~~toFront
 
                 /* now prepare to put something into that window        */
     gender  = userData~DropDown~getSelectedItem    /* get chosen Item      */
@@ -170,6 +173,8 @@ call BSF.terminateRexxEngine
 
     if Gender = "male" then Greet~setText('Hello Mr.'  N1 N2)
                        else Greet~setText('Hello Mrs.' N1 N2)
+
+    window2~~pack~~setVisible(.true)~~toFront
 
     rexxCloseEH=.RexxClosePopupEventHandler~new -- create Rexx event handler
          -- create a RexxProxy for our Rexx event handler

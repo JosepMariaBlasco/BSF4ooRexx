@@ -1,5 +1,6 @@
 #!/usr/bin/rexx
 /*
+   Name:       1-020_demo.BSF.dialog.rxj
    author:     Rony G. Flatscher
    date:       2012-11-17
    purpose:    demonstrate the power of the public class BSF.DIALOG from the BSF.CLS package,
@@ -7,6 +8,9 @@
                manner
    changes:    ---
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
+
+   changed:
+               2016-07-26, Eva Gerger, Julian Reindorf - added comments
 
    license:
 
@@ -28,6 +32,7 @@
 */
 
 say "Demonstrating .bsf.dialog~messageBox(...):"
+/* arguments: message, title, messageType */
 .bsf.dialog~messageBox("This is an informal message")
 .bsf.dialog~messageBox("This is an informal message", "A title text")
 .bsf.dialog~messageBox("This is an informal message", "A title text", "info")
@@ -35,6 +40,7 @@ say "Demonstrating .bsf.dialog~messageBox(...):"
 say "---"
 
 say "Demonstrating .bsf.dialog~dialogBox(...):"
+/* arguments: message, title, messageType, optionType, icon, textOfButtons, defaultButton */
 res=.bsf.dialog~dialogBox("Shall we delete?", , "question",  "YesNoCancel")
 say "dialogBox: you picked button #" res
 
@@ -46,6 +52,7 @@ say "---"
 
 
 say "Demonstrating .bsf.dialog~inputBox(...):"
+/* arguments: message, title, messageType, icon, textOfOptions, defaultValue */
 res=.bsf.dialog~inputBox("Enter something!")
 say "inputBox: you entered" pp(res)
 

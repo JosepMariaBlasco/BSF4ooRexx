@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   name:      DateRgfSample.rxj
+   name:      1-060_DateRgfSample.rxj
    author:    Rony G. Flatscher
    date:      2006-02-15
    purpose:   show usage of the BSF.CLS-routine "bsf.wrapStaticFields" for accessing Java constants;
@@ -12,6 +12,9 @@
          2008-07-19, rgf, added hash-bang line at the top
 
    last change: $Revision: 491 $ $Author: rony $ $Date: 2009-10-17 19:50:02 +0200 (Sat, 17 Oct 2009) $
+
+   changed:
+               2016-07-26, Eva Gerger, Julian Reindorf - added comments
 
    license:
 
@@ -36,6 +39,8 @@
 
 
 /*
+      // Java Code:
+
       DateRGF firstDate=new DateRGF(   1, 1, 1), // yields: '0001-01-01'
               lastDate =new DateRGF(9999,12,31); // yields: '9999-12-31'
 

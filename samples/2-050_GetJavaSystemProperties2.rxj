@@ -1,7 +1,9 @@
 #!/usr/bin/rexx
 /*
+   name:      2-050_GetJavaSystemProperties2.rxj
+
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
-   05 July 2009 Walter Pachl add help and display line.separator in hex
+   05 July 2009 Walter Pachl add help and display line separator in hex
 
    license:
 
@@ -26,17 +28,28 @@ If arg(1)='?' Then Do
   Parse Source source
   Say source
   Say 'Get the Java System Properties from java.lang.System'
-  Say 'using the ooRexx directory ".bsf4rexx"'
+  Say 'using the "BSF" proxy class object, employing its class method "bsf.loadClass(...)"'
   Say 'and show them on the console'
   Exit
   End
 
-   -- access the preregistered "java.lang.System" class in the ooRexx directory ".bsf4rexx"
-properties=.bsf4rexx ~System.class ~getProperties  -- get the System properties
-enum=properties~propertyNames    -- get an enumeration of the property names
+   -- use the "BSF" proxy class object, employing its class method "bsf.loadClass(...)"
+system=.bsf ~bsf.loadClass("java.lang.System")
 
-do while enum~hasMoreElements    -- loop over enumeration
-   key=enum~nextElement          -- get next element
+properties=system~getProperties  -- get the System properties
+
+   -- create a TreeSet (an ordered set)
+treeSet=.bsf~new("java.util.TreeSet")
+      -- add properties names to tree set
+enum=properties~propertyNames    -- get an enumeration of the property names
+do while enum~hasMoreElements    -- loop over enumeration of property names
+   treeSet~add(enum~nextElement) -- add next name
+end
+
+   -- iterate over names in treeSet order, show property name and its value
+iter=treeSet~iterator            -- get an Iterator (order by treeSet)
+do while iter~hasNext            -- iterate over names
+   key=iter~next                 -- get next element
    If key='line.separator' Then
      say "key:" left("["key"]",30) "value: ['"c2x(properties~getProperty(key))"'x]"
    Else

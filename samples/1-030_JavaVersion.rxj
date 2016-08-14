@@ -1,6 +1,7 @@
 #!/usr/bin/rexx
 /*
 
+   name:    1-030_JavaVersion.rxj
    Invoke:  rexx JavaVersion
 
              "rexx JavaVersion.rxj"
@@ -14,7 +15,10 @@
 
    Purpose: This program displays the java version as stored in system.class
 
-    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
+   last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
+
+   changed:
+              2016-07-26, Eva Gerger, Julian Reindorf - added Exit to Help
 
    license(s): see end of this file
 */
@@ -23,6 +27,7 @@ Do
   Parse Source source
   Say source
   Say 'This program displays the java version as stored in system.class'
+  Exit
 End
 
 -- say "java.version:" bsf('invoke', 'System.class', 'getProperty', 'java.version')~substr(4)

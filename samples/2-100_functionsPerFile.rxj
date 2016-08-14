@@ -1,0 +1,129 @@
+#!/usr/bin/rexx
+/*
+   Name:    "2-100_functionsPerFile.rxj"
+
+   Authors:   Eva Gerger, Julian Reindorf, WU Wien University,
+
+   Purpose:  Shows which bsf functions are used in the scripts in the provided directory
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2016 Eva Gerger, Julian Reindorf
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+
+If arg(1)<>'' Then Do
+	directory = arg(1)
+End
+Else Do
+	directory = directory()	    /* get current Directory */
+End
+
+crlf="0d0a"x         			/* CR-LF character */
+
+keywords = .set~new
+
+/* first, gather keywords (function names, routines) */
+routines = .context~package~importedRoutines()
+do r over routines
+	keywords~PUT(r)
+end
+
+bsfMethods = .bsf~methods(.nil)       	/* get methods defined in .bsf class */
+do while bsfMethods~available          	/* loop over all methods */
+	keywords~PUT(bsfMethods~index)
+	bsfMethods~next
+end
+
+/* generate some HTML markup */
+tmp=    "<html>" crlf || "<head> <title>Functions in Scripts</title> </head>" crlf crlf
+tmp=tmp"<body>" crlf
+tmp=tmp "<table border='1'>" crlf
+
+
+directory = .bsf~new("java.io.File", directory) 	-- create new java.io.File object
+files = directory~listFiles()
+
+do file over files
+	/* check if the current file is of interest */
+	if(file~isHidden | file~isDirectory) then iterate
+	ext = getExtension(file~getName())
+	if(ext <> "rxj" & ext <> "rex") then iterate
+	
+	/* use java.util.Scanner to read file contents */
+	scanner = .bsf~new("java.util.Scanner", file)
+	functions = .set~new	/* use a set, so each function appears only once */
+	/* check file line by line */
+	do while scanner~hasNextLine()
+		line = scanner~nextLine()
+		/* look for keywords */
+		do keyword over keywords
+			if(POS(keyword~translate, line~translate) <> 0) then do
+				functions~PUT(keyword) /* keyword found */
+			end
+		end
+	end
+
+	/* generate some HTML markup */
+	tmp=tmp "<tr><td>" || file~getName() || "</td><td></td></tr>" crlf
+	do function over functions
+		tmp=tmp "<tr><td></td><td>" || function || "</td></tr>" crlf
+	end
+end
+
+tmp=tmp "</table>" crlf
+tmp=tmp "</body>"  crlf
+tmp=tmp "</html>"
+
+
+/* get directory with write permissions */
+fn = "functionsPerFile.html"
+do dir over .array~of('user.dir', 'user.home', 'java.io.tmpdir')
+   d=.file~new(.java.lang.System~getProperty(dir))
+   if d~canWrite then
+   do
+      fn=d~path || .bsf4rexx~file.separator || fn
+      leave
+   end
+end
+
+/* Use java to delete (maybe already existing) file */
+targetFile = .bsf~new("java.io.File", fn) 	-- constructor call
+targetFile~delete()
+
+/* write content to file */
+call lineout fn, tmp
+call stream fn, "C", "CLOSE"
+fn=quote(fn)         -- quote fully qualified file name (may have blanks in them)
+select
+   when .bsf4rexx~opsys1="L" then "xdg-open" fn    -- Linux: open desktop initiative
+   when .bsf4rexx~opsys1="M" then "open"     fn    -- MacOSX
+   when .bsf4rexx~opsys1="W" then            fn    -- Windows
+   otherwise nop     -- unknown operating system, do not try to open file
+end
+
+exit
+
+::routine getExtension
+  arg = arg(1)
+  parse var arg . "." ext
+  return ext
+
+::routine quote
+  return '"' || arg(1) || '"'
+
+::requires BSF.CLS      -- get Java support

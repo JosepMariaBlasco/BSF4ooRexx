@@ -1,28 +1,29 @@
 #!/usr/bin/rexx
 /*
-    name:      PrintTest.rxj
+    name:      4-050_JPrintFile.rxj
     purpose:   show viewing and printing Java and Rexx files
     author:    Rony G. Flatscher
-    date:      2006-01-17
-    changed:   2006-01-20, ---rgf, now using a filter (this does not work under Windows!)
-               2008-07-13, ---rgf, if using BSF.CLS, then do not use BSF() directly (or
-                                   remove the first three chars from its result string)
-               2008-07-19, rgf, added hash-bang line at the top
-               2010-05-18, rgf, - adapting example to take full advantage of BSF4ooRexx
-                                - replacing bsf.addEventListener with a Rexx event handlers
-                                - employ the Java interface "java.io.FilenameFilter"
-               2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+    date:      2006-01-20
 
     remarks:   adapted from an adapted Java program named "TestPrint.java" from
                Zukowski, J.: "Java AWT Reference", O'Reilly & Associates, 1997 and
                spotted by Lee Pedin
 
-    last change: $Revision: 690 $ $Author: rony $ $Date: 2010-05-18 15:53:21 +0200 (Tue, 18 May 2010) $
+   Changes:
+         2008-07-19, rgf, added hash-bang line at the top
+
+    last change: $Revision: 790 $ $Author: Administrator $ $Date: 2010-07-22 18:28:09 +0200 (Thu, 22 Jul 2010) $
+               2008-08-23, ---rgf, if using BSF.CLS, then do not use BSF() directly (or
+                                   remove the first three chars from its result string)
+               2009-07-05 Walter Pachl  add a little help
+               2010-05-18, rgf, - adapting example to take full advantage of BSF4ooRexx
+                                - replacing bsf.addEventListener with a Rexx event handlers
+                                - employ the abstract Java class "javax.swing.filechooser.FileFilter"
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2012 Rony G. Flatscher
+       Copyright (C) 2001-2010 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -41,11 +42,12 @@
 If arg(1)='?' Then Do
   Parse Source source
   Say source
-  Say 'show viewing and printing Java and Rexx files using awt'
+  Say 'show viewing and printing Java and Rexx files using swing'
   Say 'A window is displayed into which a file can be loaded (load button)'
   Say 'Subsequent use of the print button sends this loaded text to the printer'
   Exit
   End
+
 
      -- import the Java java.awt.FileDialog class, make it available as .FileDialog in Rexx
         -- use public routine defined in BSF.CLS
@@ -56,7 +58,7 @@ If arg(1)='?' Then Do
   .bsf~bsf.importClass("java.awt.Button", "javaButton")
 
 -- Create a userData directory
-   userData=.directory~new    -- a directory which will be passed to Rexx with the event
+  userData=.directory~new     -- a directory which will be passed to Rexx with the event
 
 -- Create a Java RexxProxy for controlling the closing of the application
   rexxCloseEH =.RexxCloseAppEventHandler~new   -- Rexx event handler
@@ -64,17 +66,16 @@ If arg(1)='?' Then Do
   rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , "java.awt.event.ActionListener", -
                                               "java.awt.event.WindowListener" )
 
-   -- create frame window
-  frame = .bsf~new("java.awt.Frame", "File Loader")    -- create instance of Frame
+  frame = .bsf~new("javax.swing.JFrame", "File Loader")  -- create instance of Frame
   frame~addWindowListener(rpCloseEH)               -- add RexxProxy event handler
-  userData~frame=frame                             -- save frame window for use in event handlers
+  userData~frame=frame                             -- make Java object available to Rexx event handlers
 
-  statusInfo=.bsf~new("java.awt.Label")            -- create instance of Label
-  frame~add(statusInfo, "North");                  -- add label to frame
-  userData~statusInfo=statusInfo                   -- save label for use in event handlers
+  statusInfo=.bsf~new("javax.swing.JLabel")        -- create instance of Label
+  userData~statusInfo=statusInfo                   -- make Java object available to Rexx event handlers
+  frame~getContentPane~add(statusInfo, "North");                      -- add label to frame
 
-  p = .bsf~new("java.awt.Panel");                  -- create a panel
-  loadButton=.javaButton~new("Load File")          -- create a button
+  p = .bsf~new("javax.swing.JPanel");              -- create a panel
+  loadButton=.javaButton~new("Load")               -- create a button
                                                    -- if button is pressed, load a file to textArea
   rp=BsfCreateRexxProxy(.RexxLoadFileEventHandler~new, userData, "java.awt.event.ActionListener")
   loadButton~addActionListener(rp)                 -- add RexxProxy event handler
@@ -89,64 +90,52 @@ If arg(1)='?' Then Do
   closeButton~addActionListener(rpCloseEH)         -- add RexxProxy event handler
   p~add(closeButton)                               -- add button to panel
 
-  frame~add(p, "South")                            -- add panel to south (bottom) of frame
+  frame~getContentPane~add(p, "South")             -- add panel to south (bottom) of frame
 
-  textArea=.bsf~new("java.awt.TextArea", 30, 100)  -- create a textArea
-  frame~add(textArea, "Center")                        -- add text area to center (middle) of frame
-  userData~textArea=textArea                       -- save text area for use in event handlers
+  textArea=.bsf~new("javax.swing.JTextArea", 30, 100)  -- create a textArea
+  userData~textArea=textArea                       -- make Java object available to Rexx event handlers
+  frame~getContentPane~add(textArea, "Center")     -- add text area to center (middle) of frame
                                                    -- set specific font for textArea
   textArea~setFont(.bsf~new("java.awt.Font", "Courier", bsf.getStaticValue("java.awt.Font", "PLAIN"), 12))
 
   frame~~pack~~setVisible(.true)                   -- calc layout, show frame
 
-  rexxCloseEH~waitForExit  -- wait until we are allowed to end the program
-
-  -- if Java was loaded by Rexx, then terminate Java's RexxEngine to inhibit callbacks from Java
-  call BSF.terminateRexxEngine
+  rexxCloseEH~waitForExit
+  exit
 
 
-::requires bsf.cls         -- get BSF4ooRexx (Java) support
+::requires bsf.cls      -- get BSF4ooRexx (Java) support
 
 
   /* a procedure to be invoked if the appropriate button is pressed  */
-::routine  loadFileCommand
-  use arg frame, statusInfo, textArea           -- retrieve Java object proxies
-
-  file=.FileDialog~new(frame, "Load File", .FileDialog~LOAD)
+::routine loadFileCommand
+   use arg frame, statusInfo, textArea           -- retrieve Java object proxies
+   file=.bsf~new("javax.swing.JFileChooser", ".")~~setDialogTitle("Load File")
 
    -- create an instance of the Rexx FileFilter implementation
-  newFilter=.RexxFileFilter~new('*.rex;*.rxj;*.rxo;*.jrexx;*.java', .set~of('rex', 'rxj', 'rxo', 'jrexx', 'java'))
+   newFilter=.RexxFileFilter~new('*.rex;*.rxj;*.rxo;*.jrexx;*.java', .set~of('rex', 'rxj', 'rxo', 'jrexx', 'java'))
 
    /* create a RexxProxy, supply the Rexx FileFilter object and demand it to be used as
       an implemenation of the abstract Java class "javax.swing.filechooser.FileFilter" */
-  rexxProxy=BsfCreateRexxProxy(newFilter, , "java.io.FilenameFilter")
-  file~setFilenameFilter(rexxProxy)            -- set the filter to fileDialog
+   rexxProxy=BsfCreateRexxProxy(newFilter, , "javax.swing.filechooser.FileFilter")
+   file~setFileFilter(rexxProxy)              -- set the filter to fileDialog
 
-  if sysVersion()~left(3)~upper="WIN", .java.lang.System~getProperty('java.vm.vendor')~left(3)~upper="SUN" then
-  do
-      say "*** Sun documents that FileDialog's filename filters are not operational under Windows ! ***"
-      say "*** On Windows use 'JPrintFile.rxj' instead, which uses an operational swing class.      ***"
-  end
+   curFile=file~showOpenDialog(frame)
+   if curFile=0 then                         -- if a file was given, process it
+   do
+      filename=file~getSelectedFile~getPath  -- create a fully qualified file name
+      statusInfo~setText("Load:" filename)       -- show filename to be loaded
 
-  file~setDirectory(directory())                -- set the directory to current directory
-  file~show                                     -- show dialog, blocks until user entered something
-  curFile=file~getFile                          -- get chosen file
-  if curFile<>.nil then                         -- if a file was given, process it
-  do
-     filename=file~getDirectory || curFile      -- create a fully qualified file name
-     statusInfo~setText("Load:" filename)       -- show filename to be loaded
-
-     filesize=stream(filename, "C", "query size")  -- get file-size (returns empty string, if file does not exist)
-     if filesize<>"" then
-     do
-        textArea~setText(charin(filename, 1, filesize))  -- read file and place it into textArea
-        call stream filename, "c", "close"      -- close file
-     end
-     else
-        textArea~setText("File Not Found:" filename)
-  end
-  return
-
+      filesize=stream(filename, "C", "query size")  -- get file-size (returns empty string, if file does not exist)
+      if filesize<>"" then
+      do
+         textArea~setText(charin(filename, 1, filesize))  -- read file and place it into textArea
+         call stream filename, "c", "close"      -- close file
+      end
+      else
+         textArea~setText("File Not Found:" filename)
+   end
+   return
 
 
   /* a routine to be invoked if the appropriate button is pressed    */
@@ -155,7 +144,7 @@ If arg(1)='?' Then Do
 
    props=.bsf~new("java.util.Properties")           -- create an instance of Properties
    pjob=frame~getToolkit~getPrintJob(frame, "Cool Stuff", props)  -- get printer from user
-   if pjob<>.nil then               -- if printer got chosen, proceed
+   if pjob<>.nil then
    do
       pg=pjob~getGraphics
       if pg<>.nil then
@@ -177,7 +166,6 @@ printLongString: procedure          /* this procedure carries out the printing  
 
      pageHeight = pjob~getPageDimension~height - margin
      helv = .font~new("Courier", .font~PLAIN, 8)   -- get a plain 8pt Courier font
-
      pg~setFont(helv)                              -- set the font to the print graphic context
      fm = pg~getFontMetrics(helv)                  -- now font metrics reflect the printer ones
      fontHeight  = fm~getHeight                    -- get fontHeight
@@ -220,7 +208,7 @@ printLongString: procedure          /* this procedure carries out the printing  
            linesForThisJob =linesForThisJob+1
         end
         else
-           say "**error**, pg=.nil !"
+           say "pg .nil"
      end
 
      say linesForThisPage~right(3) "lines printed for page" pageNum~right(3)
@@ -276,11 +264,10 @@ printLongString: procedure          /* this procedure carries out the printing  
 
 
 
-
 /* ------------------------------------------------------------------------ */
 /* ------------------------------------------------------------------------ */
-/* This Rexx class implements the abstract method "accept" of
-   the interface Java class "java.io.FilenameFilter". Creating of an instance
+/* This Rexx class implements the abstract methods "getDescription" and "accept" of
+   the abstract Java class "javax.swing.filechooser.FileFilter". Creating of an instance
    of this Rexx class and passing it as the first argument
 */
 ::class RexxFileFilter
@@ -299,16 +286,14 @@ printLongString: procedure          /* this procedure carries out the printing  
   return description
 
 
--- implementation of the abstract Java method
 ::method accept            -- implementation for the abstract Java method
   expose  filter bIgnoreCase
-  use arg dir, fileName    -- directory
+  use arg file
 
-say "accept: dir="pp(dir) "fileName="pp(fileName)
-  -- if file~isDirectory then return .true   -- accept (include) directories in any case!
+  if file~isDirectory then return .true   -- accept (include) directories in any case!
 
    -- create explicitly a Java String object (makes the Java String methods available to us)
-  strRef=.bsf~new("java.lang.String", fileName)
+  strRef=.bsf~new("java.lang.String", file~getName)
   if bIgnoreCase then strRef=strRef~upper
 
   do elem over filter        -- iterate over all file types

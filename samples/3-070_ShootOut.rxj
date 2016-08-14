@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   Name:    "ShootOut.rxj"
+   Name:    "3-070_ShootOut.rxj"
 
    Invoke:  "rexx ShootOut.rxj"
                 or
@@ -8,8 +8,8 @@
                 or
             "rexxj.sh ShootOut.rxj" (Unix)
 
-   Purpose:  create a window with a choice-object and two text-fields and buttons;
-             if the ok-button is pressed then popup another window and display what
+   Purpose:  create a window with two text-fields and buttons;
+             if the ok-button is pressed then it is displayed what
              was chosen and entered.
 
    Needs:    ooRexx, BSF4Rexx
@@ -28,6 +28,7 @@
             2010-05-16, rgf, - replacing bsf.addEventListener with Rexx event handlers
             2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
             2013-12-19, rgf, - resolve path to file "ShootAnswers.txt"
+            2016-07-26, Eva Gerger, Julian Reindorf - corrected purpose comment
 
    license:
 
@@ -53,7 +54,7 @@ If arg(1)='?' Then Do
   Parse Source source
   Say source
   Say 'Create a window with an input area and an output area'
-  Say 'Enter a question (any string with a question mark at the end'
+  Say 'Enter a question (any string with a question mark at the end)'
   Say 'Some sentence from a file (ShootAnswers.txt) will then be displayed in the output area'
   Exit
   End

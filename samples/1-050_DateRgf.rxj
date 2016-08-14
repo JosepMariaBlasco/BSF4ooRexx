@@ -1,5 +1,8 @@
 #!/usr/bin/rexx
-/* ooRexx program to test access to the class 'datergf.DateTimeRGF', which is contained
+/* 
+   name:      1-050_DateRgf.rxj
+   
+   ooRexx program to test access to the class 'datergf.DateTimeRGF', which is contained
    in the "bsf-rexx-engine.jar" archive; the documentation of the bsf4rexx
    Date/Time classes can be found in the archive "docs_bsf4rexx.zip"
 

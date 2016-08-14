@@ -1,24 +1,23 @@
 #!/usr/bin/rexx
 /*
-   name:       quiz2.rxj
+   name:       3-040_quiz1.rxj
    author:     Rony G. Flatscher
-   date:       2012-12-16, 2012-12-17, 2013-01-06, 2013-01-07
+   date:       2012-12-16, 2013-01-06, 2013-01-07
    version:    1.00
    purpose:    demo how to create a Java GUI version of Walter Pachl's quiz program,
                such that his daughter can use it on Apple, but also to demo Walter
                how one could solve this too (he marvelously created a BSF4ooRexx
                version all on his own, which is just great!!)
 
-               This version makes sure that the cells do not change in size, once
-               a button text gets changed, also inserts space before the buttons
-               using insets.
-
                Employing in this case the GridBagLayout, cf. the tutorial at
                <http://docs.oracle.com/javase/tutorial/uiswing/layout/gridbag.html>
                (as of 2012-12-16).
 
+   Changes:
+               2016-07-26, Eva Gerger, Julian Reindorf - added syssleep .25 for better timing between Java and Rexx
+
    License:    Apache License 2.0, copyright 2012-2013 Rony G. Flatscher
-   Usage:      rexx quiz2.rxj
+   Usage:      rexx quiz1.rxj
 */
 
 q=.quiz~new    -- create an instance, will create a GUI
@@ -29,6 +28,7 @@ userDir=q~userDir       -- get userDir
 dlg=.bsf.dialog~new(userDir~jframe) -- make this dialog modal
 dlg~messageBox('Displayed:' userDir~count.displayed', correct:' userDir~count.guessed, "Quiz Results")
 
+call syssleep .25
 
 ::requires BSF.CLS      -- get Java support
 ::requires "rgf_util2.rex"
@@ -100,7 +100,6 @@ dlg~messageBox('Displayed:' userDir~count.displayed', correct:' userDir~count.gu
    gbcClz=bsf.importClass("java.awt.GridBagConstraints", .nil)
    c=gbcClz~new                     -- create an instance
    c~fill=gbcClz~HORIZONTAL         -- fill components horizontally
-   c~insets=.bsf~new("java.awt.Insets", 1,10,1,10) -- define insets
 
       -- add first row
    c~gridx=0; c~gridy=0             -- cell 0,0
@@ -128,56 +127,26 @@ dlg~messageBox('Displayed:' userDir~count.displayed', correct:' userDir~count.gu
    c~gridwidth=1                    -- reset to 1 cell
 
       -- add third row (buttons)
-   c~insets=.bsf~new("java.awt.Insets", 10,10,1,1) -- define insets
    c~gridx=0; c~gridy=2             -- cell 0,2
-   b1=.bsf~new("javax.swing.JButton", userDir~txt.show)
-   userDir~btn.start=b1             -- save this button in userDir
-   b1~addActionListener(eh)         -- add event handler
-   b1~setDefaultCapable(.true)      -- make it the default button
-   jframe~add(b1, c)                -- add Java component to frame
+   b=.bsf~new("javax.swing.JButton", userDir~txt.show)
+   userDir~btn.start=b              -- save this button in userDir
+   b~addActionListener(eh)          -- add event handler
+   b~setDefaultCapable(.true)       -- make it the default button
+   jframe~add(b, c)                 -- add Java component to frame
 
-   c~insets=.bsf~new("java.awt.Insets", 10,1,1,1)  -- define insets
    c~gridx=1; c~gridy=2             -- cell 1,2
-   b2=.bsf~new("javax.swing.JButton", userDir~txt.repeat)
-   userDir~btn.repeat=b2            -- save this button in userDir
-   b2~addActionListener(eh)         -- add event handler
-   b2~setEnabled(.false)            -- disable button
-   jframe~add(b2, c)                -- add Java component to frame
+   b=.bsf~new("javax.swing.JButton", userDir~txt.repeat)
+   userDir~btn.repeat=b             -- save this button in userDir
+   b~addActionListener(eh)          -- add event handler
+   b~setEnabled(.false)             -- disable button
+   jframe~add(b, c)                 -- add Java component to frame
 
-   c~insets=.bsf~new("java.awt.Insets", 10,1,1,10) -- define insets
    c~gridx=2; c~gridy=2             -- cell 2,2
-   b3=.bsf~new("javax.swing.JButton", userDir~txt.end)
-   b3~addActionListener(eh)         -- add event handler
-   jframe~add(b3, c)                -- add Java component to frame
+   b=.bsf~new("javax.swing.JButton", userDir~txt.end)
+   b~addActionListener(eh)          -- add event handler
+   jframe~add(b, c)                 -- add Java component to frame
 
-   lbt=getLongestButtonText(userDir)-- get longest button text
-   b1~setText(lbt)                  -- set button 1 to longest text
-   jFrame~~pack                     -- let layout manager realize sizes
-
-   dim=b1~getSize                   -- get effective size
-   b1~setPreferredSize(dim)         -- set as preferred size for button 1
-   b1~text=userDir~txt.show         -- set to initial text
-   b2~setPreferredSize(dim)         -- set as preferred size for button 2
-   b3~setPreferredSize(dim)         -- set as preferred size for button 3
-
-   jFrame~~setSize(jFrame~getPreferredSize)~~show
-   return
-
-getLongestButtonText: procedure  -- get max chars, return string of "N" num chars
-   use arg userDir
-
-   str=""
-   len=0
-   do text over .array~of(userDir~txt.show, userDir~txt.knew, -
-                          userDir~txt.repeat, userDir~txt.end)
-      if length(text)>len then
-      do
-         str=text
-         len=length(text)
-      end
-   end
-   return "N"~copies(len)  -- use "N" which is an average width in most fonts
-
+   jFrame~~pack~~setSize(jFrame~getPreferredSize)~~show
 
    /* ----------------------------------------------- */
 ::method unknown  -- intercept all WindowsListener events we are not interested in

@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   Name:     "HelloWorld.rxj"
+   Name:     "1-010_HelloWorld.rxj"
 
    Invoke:   "rexx HelloWorld.rxj"
                 or
@@ -34,6 +34,7 @@
             2009-07-05, Walter Pachl add help and correct description
             2010-05-16, rgf, - replacing bsf.addEventListener[WithEventObject] with a Rexx event handler
             2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+            2016-07-26, Eva Gerger, Julian Reindorf - minor changes of comments
 
    license:
 
@@ -105,7 +106,7 @@ call BSF.terminateRexxEngine
 
 ::method unknown              -- intercept unhandled events, do nothing
 
-::method actionPerformed      -- event method (from WindowListener)
+::method actionPerformed      -- event method (from ActionListener)
   expose closeApp
   closeApp=.true              -- indicate that the app should close
 

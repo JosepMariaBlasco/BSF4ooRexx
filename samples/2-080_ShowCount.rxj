@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   Name:    "ShowCount.rxj"
+   Name:    "2-080_ShowCount.rxj"
 
    Invoke:  "rexx Showcount.rxj"
                 or
@@ -21,6 +21,7 @@
             2010-05-16, rgf, - adapting example to take full advantage of BSF4ooRexx
                              - replacing bsf.addEventListener[WithEventObject] with a Rexx event handler
             2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+            2016-07-26, Eva Gerger, Julian Reindorf - adepted enlargeWidth
 
    license:
 
@@ -85,7 +86,7 @@ lab~setText("Button was not yet pressed")    -- assign a text to the label
 
 win ~~add("Center", lab) ~~add("South", but) -- add the label and the button to the frame
 win ~~pack                    -- now calculate all widget dimensions
-call enlargeWidth win,but,90  -- enlarge the width of the frame and the button
+call enlargeWidth win,90  -- enlarge the width of the frame
 
 win ~~setVisible(.true) ~~toFront   -- make frame visible and move it to the front
 
@@ -99,20 +100,18 @@ call BSF.terminateRexxEngine
 
 ::requires BSF.CLS      -- get Java support
 
-   /* enlarge the width of the frame and of the button without using a layout manager  */
+   /* enlarge the width of the frame without using a layout manager  */
 ::routine enlargeWidth
-  use arg win, but, addToWidth
+  use arg win, addToWidth
 
   say "---"
   say "win_size (standard):" win~getSize~toString
-  say "but_size (standard):" but~getSize~toString
 
   winDim=win~getSize          -- get frame's dimension
   winDim~width+=addToWidth    -- increase width
   win~setSize(winDim)         -- set frame's dimension
 
   say "win_size (enlarged):" win~getSize~toString
-  say "but_size (enlarged):" but~getSize~toString
   say "---"
 
 

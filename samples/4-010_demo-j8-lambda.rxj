@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   name:      demo-j8-lambda.rxj
+   name:      4-010_demo-j8-lambda.rxj
    purpose:   demonstrate how to use ooRexx code to be used in Java 8's lambda-related
               functional programming patterns
    author:    Rony G. Flatscher

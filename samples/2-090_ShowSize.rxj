@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   Name:     "ShowSize.rxj"
+   Name:     "2-090_ShowSize.rxj"
 
    Invoke:   "rexx ShowSize.rxj"
                 or
@@ -27,6 +27,7 @@
             2010-05-16, rgf, - adapting example to take full advantage of BSF4ooRexx
                              - replacing bsf.addEventListener[WithEventObject] with a Rexx event handler
             2012-06-09, rgf, - inhibit callbacks from Java after Rexx ends (if Rexx loaded Java)
+            2016-07-26, Eva Gerger, Julian Reindorf - minor changes of comments
 
 
    Author:   Rony G. Flatscher, University of Essen, WU Wien University,
@@ -104,7 +105,7 @@ label~setText(info)
 call SysSleep secs      -- sleep given seconds
 
 do i=100 to 300 by 10   -- animate the window a little bit
-   call bsf 'sleep', .1         /* sleep i seconds using bsf4rexx       */
+   call bsf 'sleep', .1         /* sleep 0.1 seconds using bsf4rexx       */
    window  ~setLocation(i, (i/3)%1)
    window ~~setSize((i*.9)%1, 100+i%3 ) ~~show
    call showSize userData
@@ -140,7 +141,7 @@ call BSF.terminateRexxEngine
 
 
 /* ------------------------------------------------------------------------ */
-/* Rexx event handler to process tab changes */
+/* Rexx event handler to process button clicks */
 ::class RexxShowSizeEventHandler
 ::method actionPerformed
   use arg eventObject, slotDir

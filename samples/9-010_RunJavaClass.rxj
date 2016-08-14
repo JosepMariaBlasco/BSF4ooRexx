@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   name:    RunJavaClass.rxj
+   name:    9-010_RunJavaClass.rxj
    author:  Jack Woehr, <http://www.well.com/%7Ejax/rcfb/rexx.html>
    purpose: Calls the static void main() method of a class, supplying optionally
             arguments given on the command line

@@ -1,7 +1,9 @@
 #!/usr/bin/rexx
 /*
+   name:      2-030_GetJavaSystemProperties.rxj
+
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
-   05 July 2009 Walter Pachl add help
+   05 July 2009 Walter Pachl add help and display line.separator in hex
 
    license:
 
@@ -26,22 +28,22 @@ If arg(1)='?' Then Do
   Parse Source source
   Say source
   Say 'Get the Java System Properties from java.lang.System'
+  Say 'using the services set up by "BSF.CLS"'
   Say 'and show them on the console'
-  Say '  (1) using store'
-  Say '  (2) using storeToXML'
-  Say 'This is the only one showing user.timezone correctly'
   Exit
   End
 
-system=.bsf~bsf.loadClass("java.lang.System")   -- get the class object
-outStream=system~out    -- get the standard output stream
+   -- get the "System" class object using the services set up by "BSF.CLS", e.g. ".bsf4rexx"
+system=bsf.loadClass('java.lang.System')  -- use routine "bsf.loadClass(...)"
+properties=system~getProperties  -- get the System properties
+enum=properties~propertyNames    -- get an Enumeration of the property names
 
-      -- store all properties in the property file format to standard out (the console)
-system~getProperties~store(outStream, "this is from ooRexx on:" date("S") time())
-
-say copies("=",70)
-      -- store all properties in the XML property file format to standard out (the console)
-      -- needs Java >= 1.5
-system~getProperties~storeToXML(outStream, "this is from ooRexx on:" date("S") time())
+do while enum~hasMoreElements    -- loop over enumeration
+   key=enum~nextElement          -- get next element
+   If key='line.separator' Then
+     say "key:" left("["key"]",30) "value: ['"c2x(properties~getProperty(key))"'x]"
+   Else
+     say "key:" left("["key"]",30) "value: ["properties~getProperty(key)"]"
+end
 
 ::requires BSF.CLS      -- get the BSF4Rexx support for ooRexx

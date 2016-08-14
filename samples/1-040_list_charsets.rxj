@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   name:      list_charsets.rxj
+   name:      1-040_list_charsets.rxj
    purpose:   list available character set names with their aliases
    author:    Rony G. Flatscher
    date:      2014-04-06

@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   name:    demoJSO.rxj
+   name:    4-030_demoJSO.rxj
    purpose: - demonstrate how to retrieve a reference to the Java string object ("JSO") that method
               invocations and read access to fields and properties might return, rather than
               having the default and transparent translation to a Rexx string

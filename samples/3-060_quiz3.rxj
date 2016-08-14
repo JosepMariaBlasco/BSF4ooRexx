@@ -1,6 +1,6 @@
 #!/usr/bin/rexx
 /*
-   name:       quiz3.rxj
+   name:       3-060_quiz3.rxj
    author:     Rony G. Flatscher
    date:       2013-01-06, 2013-01-07
    version:    1.00
@@ -23,6 +23,9 @@
                <http://docs.oracle.com/javase/tutorial/uiswing/misc/keybinding.html>
                <http://docs.oracle.com/javase/tutorial/2d/text/fonts.html>
 
+   Changes:
+               2016-07-26, Eva Gerger, Julian Reindorf - added syssleep .25 for better timing between Java and Rexx
+
    License:    Apache License 2.0, copyright 2012-2013 Rony G. Flatscher
    Usage:      rexx quiz3.rxj
 */
@@ -37,6 +40,7 @@ userDir=q~userDir       -- get userDir
 dlg=.bsf.dialog~new(userDir~jframe) -- make this dialog modal
 dlg~messageBox('Displayed:' userDir~count.displayed', correct:' userDir~count.guessed, "Quiz Results")
 
+call syssleep .25
 
 ::requires BSF.CLS      -- get Java support
 ::requires "rgf_util2.rex"
