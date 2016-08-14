@@ -19,4 +19,17 @@ From the 21st International Rexx Symposiuim (2012):
 
         201202-CreatingOoRexxInterpreterInstances-article.pdf (new features for Java programmers)
 
-Rony G. Flatscher, as of 2012-05-26
+Adding (2016-08-14, rgf) the documentation (Javadocs) for the datergf-package which is
+distributed with BSF4ooRexx and used by "samples/1-050_DateRgf.rxj" and
+"samples/1-060_DateRgfSample.rxj", just point your browser to
+
+        datergf.doc/index.html
+
+Starting with 2016-08-14, the following two Bachelor thesis explain and demonstrate
+the support for .NET/CLR (Common Language Runtime) on the Windows version of BSF4ooRexx:
+
+        20150810_Raffel-Manuel-ooRexx-Net-architecture.pdf
+        20160723_Baginski-Adrian-ooRexx-Net-Cookbook.pdf
+
+
+Rony G. Flatscher, as of 2012-05-26, 2016-08-14
