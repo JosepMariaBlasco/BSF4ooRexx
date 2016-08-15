@@ -316,7 +316,6 @@ do i=1 to cmd.eJarBaseNames.0    /* iterate over all found jar-files    */
                             j.file.separator || filespec("Name", cmd.eJarBaseNames.i)
 end
 
--- TODO: inject CLR jars in a new loop!
 -- 2016-08-15, rgf: define .NET/CLR
 if cmd.eIsUnix<>1 then
 do
