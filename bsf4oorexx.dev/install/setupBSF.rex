@@ -316,6 +316,23 @@ do i=1 to cmd.eJarBaseNames.0    /* iterate over all found jar-files    */
                             j.file.separator || filespec("Name", cmd.eJarBaseNames.i)
 end
 
+-- TODO: inject CLR jars in a new loop!
+-- 2016-08-15, rgf: define .NET/CLR
+if cmd.eIsUnix<>1 then
+do
+   cmd.eCLRDir="..\clr" -- should .NET/CLR (common language runtime) support be put into bsf4oorexx-bin-dir?
+   cmd.eCLR.GacUtilRgf="gacutilrgf.exe"   -- install/uninstall assemblies into/from GAC (global assembly cache)
+   cmd.eCLR.eAssemblies=.array~of("jni4net.n-0.8.8.0.dll", "oorexx.net.dll")  -- assemblies to put into/remove from GAC
+   cmd.eCLR.eJars      =.array~of("jni4net.j-0.8.8.0.jar", "oorexx.net.jar")  -- assemblies to put into/remove from GAC
+
+   do jar over cmd.eCLR.eJars -- cmd.eSetCP will be used for setting environment variables in scripts
+      cmd.eSetCP=cmd.eSetCP || iif(i=1, "", j.path.separator) || -
+                               iif(cmd.eIsUnix=1, "$BSF4REXX_HOME", "%BSF4REXX_HOME%") || -
+                               j.file.separator || jar
+   end
+end
+
+
 /* 2006-08-02, ---rgf */
      /* get and set the commons-logging jar-file name: */
    cmd.eCommonsLoggingJarName=""    /* default to empty  */
@@ -331,6 +348,7 @@ end
          cmd.eSetCP=cmd.eSetCP || j.path.separator || cmd.eCommonsLoggingJarName
 
          /* add to jar-stem   */
+      i=cmd.eJarBaseNames.0+1
       cmd.eJarBaseNames.0=i         /* i got already increased by 1, so no need to do it again */
       cmd.eJarBaseNames.i=cmd.eCommonsLoggingJarName
    end
@@ -529,10 +547,6 @@ do
    if cmd.eBinDir="" then
       cmd.eBinDir=getRexxDir()   /* directory where executables reside     */
 
-   cmd.eCLRDir="..\clr" -- should .NET/CLR (common language runtime) support be put into eBinDir?
-   cmd.eCLR.GacUtilRgf="gacutilrgf.exe"   -- install/uninstall assemblies into/from GAC (global assembly cache)
-   cmd.eCLR.eAssemblies=.array~of("jni4net.n-0.8.8.0.dll", "oorexx.net.dll")  -- assemblies to put into/remove from GAC
-   cmd.eCLR.eJars      =.array~of("jni4net.n-0.8.8.0.jar", "oorexx.net.jar")  -- assemblies to put into/remove from GAC
 
    cmd.eLibDir=cmd.eBinDir
    cmd.eQuote='"'                /* always quote file names for Windows    */
