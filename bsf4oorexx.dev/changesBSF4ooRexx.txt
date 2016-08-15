@@ -1,3 +1,11 @@
+-------------------------------------- 2016-08-15 ----------------------------------
+
+- information/installation
+
+  - added Eva Gerger's and Julian Reindorf's installation documentation, which
+    nicely explains 32-bit and 64-bit installation combinations of ooRexx and
+    Java for Linux, Windows and MacOSX
+
 -------------------------------------- 2016-08-14 ----------------------------------
 
 - recreated and added javadoc for the datergf package (org.oorexx.datergf) to the

@@ -81,6 +81,7 @@
             2014-05-26, ---rgf, removing hint about LibreOffice as oxt-package cannot
                                 be installed there anymore, there are no more tests
                                 conducted on that platform
+            2016-08-15, ---rgf, - Windows: change elevation to use Gil Barmwater's "elevate.rex" script instead (bitness agnostic)
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
@@ -146,7 +147,8 @@ do
                            W8.1 & Server 2012 R2= 6.3
    */
    parse value sysVersion() with . cmd.eWinVersion
-   cmd.eElevation.exe="windows\Elevate"cmd.eBitness".exe"   -- define elevate exe to use
+   -- cmd.eElevation.exe="windows\Elevate"cmd.eBitness".exe"   -- define elevate exe to use
+   cmd.eElevation.exe="windows\elevate.rex"  -- 2015-08-24: Gil Barmwater's elevate.rex, works on all Windows versions so far
 end
 else
 do
@@ -1443,7 +1445,8 @@ syntax2:                   -- no OOo-entry
 
    if cmd.eWinVersion>= 6 then
    do
-      return cmd.eElevation.Exe "-wait -k"
+      -- return cmd.eElevation.Exe "-wait -k"
+      return cmd.eElevation.Exe  -- 2016-08-15, rgf: adjust argument for elevate.rex
    end
    else     -- use runas
    do

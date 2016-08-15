@@ -6,6 +6,7 @@
 @rem 2011-03-20, add MacOSX support
 @rem 2014-05-25, create one jar only, containing both, bsf package et.al. and rexx engine
 @rem 2015-05-12, adding JSR-223 support
+@rem 2016-08-15, addig .NET/CLR support
 
 @rem @echo createDistribution.cmd (for BSF4ooRexx)
 @echo %0 (for BSF4ooRexx)
@@ -26,10 +27,9 @@ set CLASSPATH=.;%CLASSPATH%;%cd%\jars\Xalan\junit.jar;%cd%\jars\Xalan\xalan.jar
 set CLASSPATH=%CLASSPATH%;D:\Programme\OpenOffice.org 3\program\;D:\Programme\OpenOffice.org 3\Basis\program\classes\unoil.jar;D:\Programme\OpenOffice.org 3\URE\java\ridl.jar;D:\Programme\OpenOffice.org 3\URE\java\jurt.jar;D:\Programme\OpenOffice.org 3\URE\java\juh.jar;D:\Programme\OpenOffice.org 3\Basis\program\classes\ScriptFramework.jar
 
 
-
-set releaseDate=20150825
-set runDate=20150825
-set doc_date=20150825
+set releaseDate=20160815
+set runDate=20160815
+set doc_date=20160815
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -52,6 +52,13 @@ pause
 
 
 @rem -----------------------------------------------------------------------------------
+@echo removing all Windows (security) attributes from the files; English Windows versions should use: cacls * /t /g everyone:f
+goto continue
+rem cacls *   /t /g everyone:f
+cacls * /t /g jeder:f
+
+@rem -----------------------------------------------------------------------------------
+:continue
 @echo deleting old jar-files...
 del BSF4ooRexx-apache-bsf.jar BSF4ooRexx-apache-bsf-source.jar bsf-*.jar
 
@@ -73,6 +80,8 @@ zip -d %bsfJarNameBin% "*.java" "*.txt" "*.cmd" "*~" "*bkp*" "*tmp*"
 zip -9  %bsfJarNameBin% ApacheLicense2.0.txt
 zip -9  %bsfJarNameBin% asm_LICENSE.TXT
 zip -9  %bsfJarNameBin% janino_LICENSE.TXT
+zip -9  %bsfJarNameBin% xdg-utils_freedesktop_org_LICENSE.txt
+zip -9  %bsfJarNameBin% jni4net-MIT-LICENSE.txt
 
 @rem remove compiled classes from source
 rem zip -d %bsfJarNameSource% "*.class"  "*~"
@@ -168,7 +177,8 @@ zip -9r docs_bsf4oorexx ApacheLicense2.0.txt
 
 @rem -----------------------------------------------------------------------------------
 @echo deleting install directory
-rm -rf bsf4oorexx
+@rem rm -rf bsf4oorexx
+rd /s /q bsf4oorexx
 
 @echo creating install directory and populating it ...
 md bsf4oorexx
@@ -191,12 +201,19 @@ md bsf4oorexx\install\images\linux\nuvola
 md bsf4oorexx\install\images\linux\oxygen
 md bsf4oorexx\install\images\linux\Tango
 
+
 md bsf4oorexx\information
 md bsf4oorexx\Templates
 
+@rem --------- rgf, 20160815, .NET/CLR support
+md bsf4oorexx\clr
+copy %path2dev%\oorexx.net\bin                     bsf4oorexx\clr
+xcopy %path2dev%\oorexx.net\samples                bsf4oorexx\samples\ /s
+xcopy %path2dev%\oorexx.net\docs                   bsf4oorexx\information\ /s
+@echo pause just for debugging .NET/CLR support so far
 
 copy *licens*.txt                                  bsf4oorexx\
-@rem copy bsf-*.jar                                     bsf4oorexx\
+@rem copy bsf-*.jar                                bsf4oorexx\
 copy %bsfJarNameBin%                               bsf4oorexx\
 copy ScriptProviderForooRexx.oxt                   bsf4oorexx\install\
 @rem copy ScriptProviderForooRexx.jar                   bsf4oorexx\install\
@@ -306,7 +323,6 @@ del samples\OOo\*.jpg
 del samples\OOo\*.pdf
 xcopy samples\*                         bsf4oorexx\samples\   /s/e/i/r/k/y
 @rem 2009-02-11, rgf
-rm -rf bsf4oorexx\samples\OOo\tmp
 
 del %releaseInstallZip%.zip
 zip -9r %releaseInstallZip% bsf4oorexx/*

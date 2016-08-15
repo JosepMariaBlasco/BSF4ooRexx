@@ -7,6 +7,10 @@
    Date:    2006-01-07
    Version: 1.32
    Changed:
+            2016-08-15, ---rgf, - MacOSX: adjust for El Capitan, target dirs now "/usr/local/bin" and "/usr/local/lib"
+                                - Windows: change elevation to use Gil Barmwater's "elevate.rex" script instead (bitness agnostic)
+                                - Windows: add .NET/CLR (common language runtime) support
+                                - added routine "enquote" to enquote paths in double-quotes
             2016-04-17, ---rgf, - fixed a bug uncovered by Paul Dunkley: getJavaProps() does not work
                                   on Linux on z (s390x) as the character sequence indicating an escaped
                                   hexadecimal value ("0x") may occur in paths on ("s390x")
@@ -207,14 +211,15 @@ do
                            XP                   = 5.1 (ooRexx returns 5.01)
                            Server 2003          = 5.2
 
-         from here on use Elevate32.exe/Elevate64.exe:
+         from here on use Elevate32.exe/Elevate64.exe, since 2016-08-24, use Gil Barmwater's elevate.rex:
                            Vista & Server 2008  = 6.0
                            W7 & Server 2008 R2  = 6.1
                            W8 & RT & Server 2012= 6.2
                            W8.1 & Server 2012 R2= 6.3
    */
    parse value sysVersion() with . cmd.eWinVersion
-   cmd.eElevation.exe="windows\Elevate"cmd.eBitness".exe"   -- define elevate exe to use
+   -- cmd.eElevation.exe="windows\Elevate"cmd.eBitness".exe"   -- define elevate exe to use
+   cmd.eElevation.exe="windows\elevate.rex"  -- 2015-08-24: Gil Barmwater's elevate.rex, works on all Windows versions so far
 end
 else
 do
@@ -474,9 +479,19 @@ do
       cmd.eDLLAllBaseNames="libBSF4ooRexx*.so"
 
    if cmd.eBinDir="" then
-      cmd.eBinDir="/usr/bin"     /* directory where executables reside     */
+   do
+      if cmd.eIsMacOSX then   -- starting with ElCapitan (in 2015), MacOSX does not allow installing to "/usr/bin" anymore!
+         cmd.eBinDir="/usr/local/bin"  /* directory where executables reside     */
+      else
+         cmd.eBinDir="/usr/bin"        /* directory where executables reside     */
+   end
 
-   cmd.eLibDir="/usr/lib"
+   if cmd.eIsMacOSX then   -- starting with ElCapitan (in 2015), MacOSX does not allow installing to "/usr/bin" anymore!
+      cmd.eLibDir="/usr/local/lib"
+   else
+      cmd.eLibDir="/usr/lib"
+
+
    /*  cmd.eQuote=''                 /* no quoting of file names for Unix      */ */
    cmd.eQuote='"'                /* ---rgf, 2007-01-28: quoting of file names for Unix too! */
    cmd.eAllArguments='$*'
@@ -514,6 +529,11 @@ do
    if cmd.eBinDir="" then
       cmd.eBinDir=getRexxDir()   /* directory where executables reside     */
 
+   cmd.eCLRDir="..\clr" -- should .NET/CLR (common language runtime) support be put into eBinDir?
+   cmd.eCLR.GacUtilRgf="gacutilrgf.exe"   -- install/uninstall assemblies into/from GAC (global assembly cache)
+   cmd.eCLR.eAssemblies=.array~of("jni4net.n-0.8.8.0.dll", "oorexx.net.dll")  -- assemblies to put into/remove from GAC
+   cmd.eCLR.eJars      =.array~of("jni4net.n-0.8.8.0.jar", "oorexx.net.jar")  -- assemblies to put into/remove from GAC
+
    cmd.eLibDir=cmd.eBinDir
    cmd.eQuote='"'                /* always quote file names for Windows    */
    cmd.eAllArguments='%*'
@@ -549,6 +569,29 @@ cmd.eRexxDispatch= "org.rexxla.bsf.RexxDispatcher" cmd.eAllArguments
 
 if cmd.eBitness>0 then  -- copy the appropriate DLL/shared library into super directory
    cmd.eCopy cmd.eBitness || j.file.separator || cmd.eDLL ".." ">" cmd.eNullDevice
+
+if cmd.eCLRDir<>"" then -- .NET/CLR (common language runtime) support be put into eBinDir?
+do
+say   cmd.eCopy cmd.eCLRDir ".." ">" cmd.eNullDevice -- copy clr files
+   cmd.eCopy cmd.eCLRDir ".." ">" cmd.eNullDevice  -- copy clr files
+
+   -- now determine CLR-related jars
+   oldMax=cmd.eJarBaseNames.0
+   do jarFname over cmd.eClr.eJars
+      fullPath=qualify(".." || j.file.separator || jarFname)
+      oldMax+=1
+      cmd.eJarBaseNames.oldMax=fullPath   -- add jar file
+      cmd.eJarBaseNames.0=oldMax          -- adjust number of elements
+   end
+end
+
+/*
+say "... debugging CLR additions, check whether copying took place correctly, here the list of jars to set:"
+do i=1 to cmd.eJarBaseNames.0
+say "    ... cmd.eJarBaseNames."i"=["cmd.eJarBaseNames.i"]"
+end
+exit
+*/
 
 
    /* create the scripts   */
@@ -731,6 +774,7 @@ createInstallScript: procedure expose j. cmd. path.
            call lineout ui, tmpCmd
            call lineout ui, ""
 
+/* 2016-08-15, rgf: not available & not needed anymore
          -- on MacOSX also copy/link to "/usr/lib/java"
            tmpJavaLibDir="/usr/lib/java"
            tmpCmd=cmd.eCopy path2lib || cmd.eDLL tmpJavaLibDir
@@ -743,6 +787,7 @@ createInstallScript: procedure expose j. cmd. path.
            call lineout ui, cmd.eEcho qc(tmpCmd)
            call lineout ui, tmpCmd
            call lineout ui, ""
+*/
 
      end
      else   -- plain Unix/Linux
@@ -821,7 +866,7 @@ createInstallScript: procedure expose j. cmd. path.
 
          -- tmpCmd="ldconfig"
          -- tmpCmd="ldconfig -n /usr/lib /usr/lib32 /usr/lib64 /opt/BSF4ooRexx"   -- rgf, 2010-08-14
-         tmpCmd="ldconfig /usr/lib /usr/lib32 /usr/lib64 /opt/BSF4ooRexx"   -- rgf, 2012-02-25
+         tmpCmd="ldconfig /usr/local/lib /usr/local/lib32 /usr/local/lib64 /opt/BSF4ooRexx /usr/lib /usr/lib32 /usr/lib64 "   -- rgf, 2012-02-25, 2016-08-15
          call lineout fn, cmd.eEcho qc(tmpCmd)
          call lineout fn, tmpCmd
          call lineout fn, ""
@@ -854,8 +899,30 @@ createInstallScript: procedure expose j. cmd. path.
      end
 
   end
-  else      -- add statements to incorporate paths into registry
+  else      -- non-Unix (Windows) branch: add statements to incorporate paths into registry
   do
+
+      if cmd.eClrDir<>"" then    -- 2016-08-15, adding .NET/CLR support
+      do
+          call lineout fn, cmd.eEcho qc("Installing .Net/CLR assemblies into GAC (global assembly cache) ...")
+          call lineout ui, cmd.eEcho qc("Uninstalling .Net/CLR assemblies from GAC (global assembly cache) ...")
+
+          tmpSuper=".." || j.file.separator
+          tmpGacUtil=enquote(qualify(tmpSuper || cmd.eCLR.GacUtilRgf))
+
+          do assembly over cmd.eCLR.eAssemblies
+             parse var assembly displayName ".dll"
+             call lineout fn, tmpGacUtil "-i" enquote(qualify(tmpSuper || assembly))
+             call lineout fn, tmpGacUtil "-l" displayName
+
+             call lineout ui, tmpGacUtil "-u" enquote(qualify(tmpSuper || assembly))
+             call lineout ui, tmpGacUtil "-l" displayName
+          end
+
+          call lineout ui, ""
+          call lineout fn, ""
+      end
+
       -- j.user.dir == %BSF4REXX_HOME%
       cmd="call rexx orx2reg.rex"      -- invoke utility to interact with Windows registry
 
@@ -936,6 +1003,7 @@ createInstallScript: procedure expose j. cmd. path.
          call lineout ui, "regedit /s fileAssociations_for_RXJ_remove.reg"
          call lineout ui, "associationChanged.exe"
       end
+
   end
 
 /* rgf, 2010-03-19: always copied while running setupBSF.rex, no need to delete it
@@ -1932,6 +2000,14 @@ syntax:
   return .false            -- HKCU-PATH does not exist at all !
 
 
+/* 2016-08-15, ---rgf
+   enquote in double quotes (for paths containing non-standard characters or white space)
+*/
+::routine enquote
+  return '"' || arg(1) || '"'
+
+
+
 -- return bitness of Rexx interpreter (e.g. 32, 64, etc.)
 ::routine getRexxBitness
    -- starting with ooRexx 4.2.0 we can get the bitness information out of the version string
@@ -1960,7 +2036,8 @@ syntax:
 
    if cmd.eWinVersion>= 6 then
    do
-      return cmd.eElevation.Exe "-wait -k"
+      -- return cmd.eElevation.Exe "-wait -k"
+      return cmd.eElevation.Exe  -- 2016-08-15, rgf: adjust argument for elevate.rex
    end
    else     -- use runas
    do
