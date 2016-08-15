@@ -12,6 +12,9 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2016-08-15, rgf: - BSF.Dialog class: when fetching constants (static fields) use the
+                            imported javax.swing.JOptionsPane class
+
          2015-08-11, rgf: - BSF.WRAP: also honor argument "increase reference counter" for Java array
                             objects (was overlooked!)
 
@@ -3713,7 +3716,10 @@ Button Return Values    -1  Dialog CLOSE
   do
        /* initialisation needed for this module */
           -- get easy access to dlgConstants
-     o =  bsf.wrapStaticFields('javax.swing.JOptionPane')
+ -- 2016-08-15: TODO (check): with Java 1.8 "bsf.wrapStiticFields" seems to not work w.r.t. fetching integer return values
+ --             like "error_message" and the like; using the imported class works though!
+ --    o =  bsf.wrapStaticFields('javax.swing.JOptionPane')
+     o =  self~javaDialogClass   -- get imported Java class
           -- message types
      dlgConstants = .directory~new
      dlgConstants~error                  = o~error_message

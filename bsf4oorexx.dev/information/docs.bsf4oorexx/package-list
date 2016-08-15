@@ -1,0 +1,7 @@
+com.sun.star.script.framework.provider.oorexx
+org.oorexx.datergf
+org.oorexx.misc
+org.oorexx.uno
+org.rexxla.bsf
+org.rexxla.bsf.engines.rexx
+org.rexxla.bsf.engines.rexx.jsr223
