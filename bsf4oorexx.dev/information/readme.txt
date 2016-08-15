@@ -36,4 +36,10 @@ view the following file in your browser:
 
         installation/0_startHere.html
 
+Starting with 2016-08-15, the Javadocs for Apache's BSF and BSF4ooRexx can be found:
+
+        docs.apache.bsf/index.html
+        docs.bsf4oorexx/index.html
+
+
 Rony G. Flatscher, as of 2012-05-26, 2016-08-15

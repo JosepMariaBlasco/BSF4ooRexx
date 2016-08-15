@@ -238,7 +238,7 @@ copy %path2dev%\images\linux\Tango                 bsf4oorexx\install\images\lin
 
 copy %path2dev%\Templates\*                        bsf4oorexx\Templates
 
-copy %path2dev%\information\*                      bsf4oorexx\information
+xcopy %path2dev%\information\*                      bsf4oorexx\information\ /s
 
 copy %path2dev%\install\*                          bsf4oorexx\install\
 copy %path2dev%\install\linux\*                    bsf4oorexx\install\linux\
