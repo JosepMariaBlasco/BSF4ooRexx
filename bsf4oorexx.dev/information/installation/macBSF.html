@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Install BSF4ooRexx</title>
+</head>
+<body>
+<h1>Install BSF4ooRexx on macOS</h1>
+
+<h2>BSF4ooRexx</h2>
+<p>Install BSF4ooRexx</p>
+<ol>
+	<li>Visit (<a target="_blank" href="https://sourceforge.net/projects/bsf4oorexx/files/">https://sourceforge.net/projects/bsf4oorexx/files/</a>)</li>
+	<li>
+		Download BSF4ooRexx</br>
+		If you run Java 32-bit:
+		<ol>
+			<li>Choose newest version of BSF4ooRexx (as of July 2016: choose folder GA (<u>g</u>eneral <u>a</u>vailable version), then folder BSF4ooRexx-450.20140914-GA)</li>
+			<li>Download the 32-bit macOS version of BSF4ooRexx (as of July 2016: ooRexx420_WithBSF4ooRexx450.20141014-i386-MacOSX-GA.dmg)</li>
+		</ol>
+		If you run Java 64-bit:
+		<ol>
+			<li>Choose newest version of BSF4ooRexx (as of July 2016: choose folder beta, then folder 20150608)</li>
+			<li>Download the 64-bit macOS version of BSF4ooRexx (as of July 2016: ooRexx420_WithBSF4ooRexx452.20160315-x86_64-MacOSX-beta.pkg.dmg)</li>
+		</ol>
+	</li>
+	
+	<li>Double click the dmg file</li>
+	<li>Right click the the package in the dmg file and select Open with -> Installer.app (default)</li>
+	<li>Go through the screens; confirm any popups. There might be a warning that the package is incompatible (it is not!)</li>
+</ol>
+<p>Now, ooRexx and BSF4ooRexx are installed.</p>
+
+<h2>Executing scripts</h2>
+<ol>
+	<li>
+		Open a terminal window (<a target="_blank" href="http://www.google.com/search?q=how to open terminal mac">how?</a>)
+	</li>
+	<li>
+		Navigate to the scripts location (the steps below navigate to the preinstalled samples).
+		<ol>
+			<li>Enter "cd /Applications/ooRexx.app/Contents/samples/BSF4ooRexx" in the terminal and confirm by pressing enter</li>
+			<li>Enter "ls" in the terminal and confirm by pressing enter to see the content of this folder</li>
+		</ol>
+	</li>
+	<li>
+		Run the script.
+		<ol>
+			<li>Enter "rexxj.sh &lt;filename&gt;.&lt;extension&gt;" (e.g. "rexxj.sh HelloWorld.rxj") and confirm by pressing enter</li>
+		</ol>
+	</li>
+</ol>
+
+<p><b>Great! You have everything installed and ran your first script!</b></p>
+
+</body>
+</html>

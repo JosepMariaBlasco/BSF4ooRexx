@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Install BSF4ooRexx</title>
+</head>
+<body>
+<h1>Install BSF4ooRexx on Linux 64-bit</h1>
+
+<p>Java is a prerequisite for installing BSF4ooRexx. Java's and ooRexx's bitness must match (i.e. both must be 32 bit or both must be 64 bit)</p>
+
+<p>First, check if you have either Java, ooRexx or both installed already.</p>
+Java
+<ul>
+	<li>Open a terminal window (<a target="_blank" href="http://www.google.com/search?q=how to open terminal linux">how?</a>)</li>
+	<li>Enter "java -version"</li>
+	<li>If the output contains information about your java version, java is installed. If the information contains "64-Bit", you have java 64-bit installed. If it does not, you have java 32-bit installed. </br>
+	If the output does not contain information about your java version, java is not installed</li>
+</ul>
+
+ooRexx
+<ul>
+	<li>Open a terminal window (<a target="_blank" href="http://www.google.com/search?q=how to open terminal linux">how?</a>)</li>
+	<li>Enter "rexx -v". If ooRexx is installed, some information about the installed version will be displayed (you will also see if you have the 32 or 64 bit version installed). Otherwise it is not installed</li>
+</ul>
+
+<p>Check the following table to see what to do next</p>
+<table border="1">
+	<tr>
+		<th colspan="2"></th><th colspan="3">Java</th>
+	</tr>
+	<tr>
+		<th colspan="2"></th><th>32-bit installed</th><th>64-bit installed</th><th>Not installed</th>
+	</tr>
+	<tr>
+		<th rowspan="3">ooRexx</th>
+		<th>32-bit installed</th>
+		<td>Go to section BSF4ooRexx</td>
+		<td>
+			<ol>
+				<li>Go to section Java, install 32-bit version</li>
+				<li>Go to section BSF4ooRexx</li>
+			</ol>
+		</td>
+		<td>
+			<ol>
+				<li>Go to section Java, install 32-bit version</li>
+				<li>Go to section BSF4ooRexx</li>
+			</ol>
+		</td>
+	</tr>
+	<tr>
+		<th>64-bit installed</th>
+		<td>
+			<ol>
+				<li>Go to section Java, install 64-bit version</li>
+				<li>Go to section BSF4ooRexx</li>
+			</ol>
+		</td>
+		<td>Go to section BSF4ooRexx</td>
+		<td>
+			<ol>
+				<li>Go to section Java, install 64-bit version</li>
+				<li>Go to section BSF4ooRexx</li>
+			</ol>
+		</td>
+	</tr>
+	<tr>
+		<th>Not installed</th>
+		<td>
+			<ol>
+				<li>Go to section ooRexx, install 32-bit version</li>
+				<li>Go to section BSF4ooRexx</li>
+			</ol>
+			</td>
+		<td>
+			<ol>
+				<li>Go to section ooRexx, install 64-bit version</li>
+				<li>Go to section BSF4ooRexx</li>
+			</ol>
+		<td>
+			<ol>
+				<li>Go to section Java, install 64-bit version</li>
+				<li>Go to section ooRexx, install 64-bit version</li>
+				<li>Go to section BSF4ooRexx</li>
+			</ol>
+			
+		</td>
+	</tr>
+	
+</table>
+
+<h2>Java</h2>
+<p>
+	<b>Install Java</b>
+</p>
+<ol>
+	<li>Download Java (check the table above to see if you need 32 or 64 bit)</br>
+		32-bit: <a target="_blank" href="http://www.google.com/search?q=download java 32 bit linux">http://www.google.com/search?q=download java 32 bit linux</a></br>
+		64-bit: <a target="_blank" href="http://www.google.com/search?q=download java 64 bit linux">http://www.google.com/search?q=download java 64 bit linux</a>
+	</li>
+	<li>Install Java</li>
+</ol>
+
+<h2>ooRexx</h2>
+	<b>Install ooRexx</b>
+</p>
+<ol>
+	<li>Visit <a target="_blank" href="https://sourceforge.net/projects/oorexx/files/oorexx/">https://sourceforge.net/projects/oorexx/files/oorexx/</a></li>
+	<li>Choose the newest ooRexx version (as of July 2016: 4.2.0)</li>
+	<li>Download the newest version for your operating system (check the table above to see if you need 32 or 64 bit)</br>
+		32-bit (having "i386" in its name): as of July 2016, running Ubuntu: ooRexx-4.2.0-1.ubuntu1310.i386.deb</br>
+		64-bit (having "x86" in its name): as of July 2016, running Ubuntu: ooRexx-4.2.0-1.ubuntu1310.x86_64.deb
+	</li>
+	<li>Execute the downloaded file</li>
+	<li>Go through the screens</li>
+</ol>
+
+<h2>BSF4ooRexx</h2>
+<p>Java and ooRexx should be installed now. <a href="linBSF.html">Continue here</a></p>
+
+</body>
+</html>

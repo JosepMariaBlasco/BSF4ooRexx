@@ -31,5 +31,9 @@ the support for .NET/CLR (Common Language Runtime) on the Windows version of BSF
         20150810_Raffel-Manuel-ooRexx-Net-architecture.pdf
         20160723_Baginski-Adrian-ooRexx-Net-Cookbook.pdf
 
+To learn about the installation possibilities (32-bit vs. 64-bit on Windows, Linux and MacOSX),
+view the following file in your browser:
+
+        installation/0_startHere.html
 
 Rony G. Flatscher, as of 2012-05-26, 2016-08-14
