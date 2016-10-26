@@ -24,7 +24,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015 Rony G. Flatscher
+   Copyright 2015-2016 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -40,6 +40,22 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+        - 2016-10-26, ---rgf: adjust to observed usage by JavaFX
+                        - added protected field "latestRexxPackage": stores latest created Rexx package
+                          (from last compile()) to be added to the package of the next to be compiled
+                          Rexx script
+                        - added protected field "bAddLatestPackageDynamically" and public
+                          methods setAddLatestPackageDynamically() and getAddLatestPackageDynamically():
+                          if set to true will add dynamically the last package to a new compiled Rexx
+                          script thereby allowing later Rexx scripts to access any public routines and
+                          public classes of any prior compiled Rexx scripts (includes access to package
+                          BSF.CLS)
+                        - change: public static field "bPrependDynamicRequiresStatement" (to inject a dynamic
+                          requires to package 'BSF.CLS') now honored only, if field "bAddLatestPackageDynamically" is false
+                        - changed method updateRexxEngine(): the very first time 'BSF.CLS' is dynamically
+                          required, the package of that Rexx code is stored in the protected field
+                          "latestRexxPackage", such that it can be added to new compiled Rexx scripts
+
         - 2015-08-04, ---rgf: adjust to info that starting with ooRexx 5.0.0 the string
                               argument to .routine~new must not contain CR/LF chars; prepare
                               all Rexx ocde herein to allow replacing CR-LF with semi-colons
@@ -72,6 +88,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
+ * @version 100.20161026
  * @since  2015-05-11
  *
  */
@@ -79,7 +96,7 @@ public class RexxScriptEngine extends AbstractScriptEngine implements Compilable
 {
 
     /* if set to false the Java compiler will remove all bDebug-controlled statements */
-    static private final boolean bDebug=false; // true; // false; // true;
+    static private final boolean bDebug=false; // true;
 
     /** This controls whether ScriptExceptions should supply the <code>RexxException</code> object (extends <code>BSFException</code>) or fill in the ScriptException
      *  fields (message, line and column number, if present). Using <code>BSFException.getCause()</code> will return
@@ -137,17 +154,55 @@ public class RexxScriptEngine extends AbstractScriptEngine implements Compilable
 
     //  - define a public static flag that determines whether we should add a prolog statement to make sure that BSF.CLS gets required (dynamically in this case)
     /** This controls whether the supplied Rexx scripts should get a dynamic requires statement prepended that
-     *  makes sure that the Java support is present. This may cause runtime errors, if the first statement in the
-     *  Rexx script is a hash-bang line (if present it must be the very first line, because the ooRexx interpreter
-     *  removes it for execution).
+     *  makes sure that the Java support is present. Only honored, if the instance field {@link bAddLatestPackageDynamically}
+     *  is set to <code>false</code>.
      */
     public static boolean bPrependDynamicRequiresStatement=true;
+
+
+    /** This controls per RexxScriptEngine instance whether the Rexx package of a run script gets added
+     *  to the Rexx package of the next compiled script. This makes all public routines and public
+     *  classes of previous Rexx packages available for a new Rexx package.
+     */
+    boolean bAddLatestPackageDynamically=true;
+
+    /** Allows to change the behaviour from adding the {@link latestRexxPackage} to new Rexx routines.
+     *  Default is <code>true</code>, which makes sure that any new Rexx routine will get the latest
+     *  Rexx package added to it, thereby gaining access to the package <code>BSF.CLS</code>.
+     *
+     *  @param newValue <code>true</code> or <code>false</code>
+     */
+    public void setAddLatestPackageDynamically (boolean newValue)
+    {
+        if (bAddLatestPackageDynamically==newValue)
+        {
+            bAddLatestPackageDynamically=newValue;
+        }
+    }
+
+    /** Returns the current setting of {@link bAddLatestPackageDynamically}.
+     *
+     *  @return current setting of {@link bAddLatestPackageDynamically}.
+     */
+    public boolean getAddLatestPackageDynamically ()
+    {
+        return bAddLatestPackageDynamically;
+    }
+
 
 
     /** This controls whether the initial requires for 'BSF.CLS' has been carried out or not, which is necessary
      *  to allow the very first Rexx script to pass Java objects as arguments already.
      */
     boolean bInitialBSFRequiresDone=false;
+
+    /** This field stores the Rexx package of the last Rexx script that got compiled and added the
+     *  previous Rexx package stored in this field prior to it.
+     *  This way each Rexx script that gets compiled will gain access to
+     *  all previously defined public routines and public classes. This is the model e.g. JavaFX expects,
+     *  each ScriptEngine acquires public members of previously executed code.
+     */
+    RexxProxy latestRexxPackage=null;
 
 
     /** Stores the BSF Rexx engine which gets used to invoke the scripts */
@@ -193,7 +248,6 @@ public class RexxScriptEngine extends AbstractScriptEngine implements Compilable
     String rexxCreateRoutineCode=
            "use strict arg name, code                      ;" +
                // make sure that we turn the string into a Rexx array,
-               // because .routine will accept that in any case in all versions of ooRexx:
                // because .routine will accept that in any case in all versions of ooRexx:
            "if code~isA(.array) then                       ;" +
            "   return .routine~new(name,code)              ;" +
@@ -721,14 +775,15 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
     {
 if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---script---], String=["+filename+"])...");}
 
-
         if (script==null)
         {
             throw new ScriptException( new NullPointerException("Received \"String script\" argument null"));
         }
 
         String scriptSource;
-        if (bPrependDynamicRequiresStatement==true)     // inject dynamic requires for BSF.CLS
+
+          // only necessary, if BSF-support is needed and no dynamic package additions take place (which would include the package BSF.CLS)
+        if (bAddLatestPackageDynamically==false && bPrependDynamicRequiresStatement==true)     // inject dynamic requires for BSF.CLS
         {
             // check for hash bang line [#!/usr/bin/rexx] to inject code appropriately!
             if (script.charAt(0)=='#' && script.charAt(1)=='!')     // if hash-bang line, inject after \n!
@@ -781,6 +836,22 @@ if (bDebug==true)
         {
 if (bDebug==true) {exc.printStackTrace();}
             throw new ScriptException(exc);     // re-throw, wrap cause in script
+        }
+
+        // rgf, 2016-10-26: add dynamically the latestRexxPackage to gain access to all its public routines and public classes
+        if (bAddLatestPackageDynamically)  // add the latest package (from last compile)
+        {
+            try
+            {
+                RexxProxy rexxPackage=(RexxProxy) rexxObjects[1];
+                rexxPackage.sendMessage1("ADDPACKAGE", latestRexxPackage);   // add the current latest RexxPackage to it
+                latestRexxPackage = rexxPackage;    // this is from now on the latestRexxPackage to be used for the next script
+            }
+            catch (Exception exc)
+            {
+if (bDebug==true) {exc.printStackTrace();}
+                throw new ScriptException(exc);     // re-throw, wrap cause in script
+            }
         }
 
         currentScript=new RexxCompiledScript(this,
@@ -1086,7 +1157,11 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().updateRexxEngine(), sc=[
         {
 if (bDebug) {System.err.println("--> RexxScriptEngine().updateRexxEngine(), bInitialBSFRequiresDone==false !");}
             // the following statement makes sure, that the BSF infrastructure gets set up and is available
-            bsfRexxEngine.apply(this.toString()+"_require_bsf", 0, 0, dynamicallyRequireBSF, null, null); // new Vector(), new Vector());
+            // the package object will be returned by the Rexx code and can be used for adding it to
+            // the next Rexx script that gets compiled
+            latestRexxPackage=(RexxProxy) bsfRexxEngine.apply(this.toString()+"_require_bsf", 0, 0,
+                                          dynamicallyRequireBSF +";return .context~package",
+                                          null, null); // new Vector(), new Vector());
             bInitialBSFRequiresDone=true;
         }
 

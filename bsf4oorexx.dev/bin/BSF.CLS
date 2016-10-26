@@ -12,6 +12,15 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2016-10-26, rgf: - JSR223-support:
+                            - bsf.ScriptContext2rexx():
+                              - allow .context argument instead of ScriptContext to ease using this routine
+                              - make sure that the names (keys of SimpleBindings) are mapped to valid Rexx symbol names for using BSFContextVariables(...)
+                            - new public utility class "JSR223" for easying interfacing with "javax.script" invocations
+                              - defines constants "ENGINE_SCOPE", "GLOBAL_SCOPE"
+                              - defines class methods getBindings(), normalizedName(), ScriptContext2RexxDir();
+                                getAttribute(), getAttributes(), setAttribute()
+
          2016-08-15, rgf: - BSF.Dialog class: when fetching constants (static fields) use the
                             imported javax.swing.JOptionsPane class
 
@@ -428,7 +437,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     4.52 (20150811)
+   version:     4.52 (20161026)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -527,7 +536,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="452.20150811" -- set version (date distribution got created)
+   .bsf4rexx~version="452.20161026" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4457,6 +4466,10 @@ syntax:
 
 
 
+-- TODO: 20161026, rgf: do not replace dots; make sure we have valid Rexx variable names (plus: make sure names do not start with a dot, use _ instead), use TRANSLATE()-BIF
+--                      allow .context to be passed (using its args value, get last argument and fetch ScriptContext from there), makes it easier for the Rexx programmer to use this routine
+-- TODO: DEPRECATE routine, use JSR223 class method ScriptContext2RexxDir instead
+
 /** Routine that creates and returns a Rexx directory object off the supplied <code>ScriptContext</code>
 *   which is meant to be used with the external Rexx function <code>BSFContextVariables()</code> to set
 *   and drop context variables. Dots in the Java supplied variable names get replaced by underscores
@@ -4474,7 +4487,18 @@ syntax:
 *
 *  @return                 a Rexx directory object containing the name/value mappings
 */
+
+-- TODO: deprecate in favor of JSR223::ScriptContext2rexx and forward to .JSR223::scriptContext2RexxDir
 ::routine bsf.ScriptContext2rexx public
+/* TODO: rgf, 2016-10-26: replace with
+
+   argArr=arg('Array')     -- get all arguments as an array
+   argArr~index(.true,1)   -- insert bMangle=.true as the second entry
+   return .JSR223~ScriptContext2RexxDir(argArr) -- now let the class method do its work
+*/
+
+
+
   use strict arg scriptContext, scope="A", ...
 -- .stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line " - arrived at:" .dateTime~new, "scriptContext="pp(scriptContext) "scope="pp(scope))
 
@@ -4516,19 +4540,22 @@ syntax:
   end
 
   do sc over arr
-      bin=getBindings(scriptContext,sc)
+      -- bin=getBindings(scriptContext,sc)
+      bin=.JSR223~getBindings(scriptContext,sc)
       if bin=.nil then iterate   -- inexistent scope
       keys=bin~keySet         -- get kay values
       it=keys~iterator
       do while it~hasNext
          key=it~next          -- fetch key
          val=bin~get(key)     -- fetch its value
-         dir~setEntry(key~changeStr(".","_"), val)  -- save into Rexx directory
+         -- dir~setEntry(key~changeStr(".","_"), val)  -- save into Rexx directory
+         dir~setEntry(.JSR223~normalizeName(key), val)  -- save into Rexx directory
       end
   end
 -- .stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line "- the End, returning "pp(dir) "with" pp(dir~items)" items:" .dateTime~new)
   return dir      -- return directory that contains the selected key-value pairs
 
+/*
 ::routine getBindings      -- utility routine
   use arg scriptContext, sc
   signal on syntax         -- if a scope does not exist, then an IllegalArgumentException gets thrown
@@ -4536,4 +4563,264 @@ syntax:
 syntax:
   return .nil
 
+-- rgf, 2016-10-26: make sure the entry names can be used as Rexx variable names; if name starts with a dot, replace it with an underscore, otherwise it would be an environment symbol in ooRexx
+::routine normalizeKeyName
+  use arg key, inTable, outTable
+  newKey=TRANSLATE(key, outTable, inTable, '?') -- translate all invalid chars into a question mark
+
+   -- make sure that the Rexx symbol can be used as a Rexx variable for BSFContextVariable(...)
+  if pos(newKey~left(1), ".0123456789")>0 then
+     return "_"newKey   -- prepend an underscore
+
+  return newKey
+*/
+
+/** A utility class to ease JSR-223 (javax.script) related functionality.
+*/
+::class JSR223 public
+::constant ENGINE_SCOPE 100   -- numeric value for javax.script.ScriptContext.ENGINE_SCOPE
+::constant GLOBAL_SCOPE 200   -- numeric value for javax.script.ScriptContext.GLOBAL_SCOPE
+::method init class
+  expose tableOut tableIn
+   -- define input and output table for TRANSLATE()-BIF
+  tableOut   =".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?_" -- valid (Rexx symbol) characters
+  tableIn    =tableOut || xrange("00"x,"ff"x)
+
+
+/** Class method that returns the requested Binding from the ScriptContext.
+*
+* @param scriptContext the javax.script.ScriptContext
+* @param sc the scope number for the javax.script.Binding to be retrieved from scriptContext
+* @return the javax.script.Binding or <code>.nil</code> if not found
+*/
+::method getBindings class    -- return bindings from ScriptContext, if not found, .nil
+  use strict arg scriptContext, sc
+  signal on syntax         -- if a scope does not exist, then an IllegalArgumentException gets thrown
+  return scriptContext~getBindings(sc)
+syntax:
+  return .nil
+
+
+
+/* rgf, 2016-10-26: make sure the entry names can be used as Rexx variable names; if name starts with a dot,
+   replace it with an underscore, otherwise it would be an environment symbol in ooRexx */
+/** Returns the normalized (mangled) named for the supplied name. The returned name consists of
+*   characters that are valid for Rexx symbols only and prepends an underscore of the new name would start
+*   with a dot or a digit (Rexx variables must not start with a dot or a digit).
+*
+* @param name the name to be normalized such that it can be used as a Rexx variable name
+* @return either the unchanged name, if it can be used as a Rexx variable name already, otherwise the
+*         normalized (mangled) form
+*/
+::method normalizeName class
+  expose tableOut tableIn
+  use arg name
+  newName=TRANSLATE(name, tableOut, tableIn, '?') -- translate all invalid chars into a question mark
+
+   -- make sure that the Rexx symbol can be used as a Rexx variable for BSFContextVariable(...)
+  if pos(newName~left(1), ".0123456789")>0 then
+     return "_"newName   -- prepend an underscore
+
+  return newName
+
+
+/** Class method that creates and returns a Rexx directory object off the supplied <code>ScriptContext</code>
+*   which is meant to be used with the external Rexx function <code>BSFContextVariables()</code> to set
+*   and drop context variables. Dots in the Java supplied variable names get replaced by underscores
+*   to inhibit the creation of Rexx stem objects.
+*
+*  @param scriptContext    the Java <code>ScriptContext</code> object containing entries in different
+*                          bindings or the caller's .context object which is expected to have
+                           slotDir as its last argument that contains the ScriptContext to work with
+                           (which is the case, if the caller was invoked by Java via the javax.script framework)
+
+*  @param bMangleName      defaults to .true, which makes sure that each key in the Binding is a
+                           a valid Rexx variable name, and if not will mangle it accordingly; if .false
+                           no mangling will take place
+
+*  @param scope...         optional, defaults to option <code>&quot;A[ll]&quot;</code> (all bindings from highest to lowest),
+*                          <code>&quot;G[lobal]&quot;</code> (global scope, i.e. scope value <code>200</code>),
+*                          <code>&quot;E[ngine]&quot;</code> (engine scope, i.e. scope value <code>100</code>),
+*                          the scope number to process, optionally followed by additional scope numbers;
+*                          the explicit given sequence of scope numbers determines the order in which the
+*                          bindings get added to the directory (entries in bindings of latter scopes override
+*                          entries in bindings of previous scopes)
+*
+*  @return                 a Rexx directory object containing the name/value mappings matching the ScriptContext; the
+*                          name are mangled to valid Rexx variable names if bMangleName was .true
+*/
+::method ScriptContext2RexxDir class
+
+  use strict arg scriptContext, bMangleName=.true, scope="AllBindings", ...
+
+   /* if a RexxContext supplied instead, then extract the ScriptContext from its last
+      argument (expected: the slotDir Rexx directory supplied by the Java side) */
+  signal on syntax
+  if scriptContext~isA(.RexxContext) then
+     scriptContext=scriptContext~args~lastItem~scriptContext
+-- .stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line " - arrived at:" .dateTime~new, "scriptContext="pp(scriptContext) "scope="pp(scope))
+
+  dir=.directory~new       -- contains the entries from the bindings of the processed scopes
+
+  if arg(2, 'omitted') then arr=.array~of(200,100)   -- process global and engine scope only
+  else
+  do
+     arr=.array~new
+-- say "bsf.ScriptContext2rexx: scope="pp(arg(2, "array")~toString(,","))
+     if scope~caselessAbbrev("A") then    -- all scopes from top to bottom value (lower scopes mask override higher scopes)
+     do
+        scopes=scriptContext~getScopes    -- returns a list of defined scopes
+        it=scopes~iterator
+        do while it~hasNext
+           arr~append(it~next)
+        end
+        -- sort descendingly
+        arr=arr~sortWith(.InvertingComparator~new(.NumericComparator~new))
+     end
+     else if scope~caselessAbbrev("G"), arg()=3 then     -- global scope
+        arr~append(200)
+     else if scope~caselessAbbrev("E"), arg()=3 then     -- engine scope
+        arr~append(100)
+     else   -- a list of scopes is given, process it in the given (argument) order
+     do
+         do i=3 to arg()      -- process argument list
+            val=arg(i)
+            if val~caselessAbbrev("G") then arr~append(200)
+            else if val~caselessAbbrev("E") then arr~append(100)
+            else  -- a scope number!
+            do
+               if \datatype(val, "W") then
+                  raise syntax 40.900 array("BSF.CLS/routine/bsf.ScriptContext2Rexx, error 1: argument #" i "has value" pp(val)", which is not a whole number, nor starts with the letters 'G'(lobal) or 'E'(ngine)")
+               arr~append(val)
+            end
+         end
+     end
+  end
+
+  do sc over arr
+      -- bin=getBindings(scriptContext,sc)
+      bin=self~getBindings(scriptContext,sc)
+      if bin=.nil then iterate   -- inexistent scope
+      keys=bin~keySet         -- get kay values
+      it=keys~iterator
+      do while it~hasNext
+         key=it~next          -- fetch key
+         val=bin~get(key)     -- fetch its value
+         -- dir~setEntry(key~changeStr(".","_"), val)  -- save into Rexx directory
+         if bMangleName=.true then  -- mangle Java supplied key names to Rexx symbols for Rexx variables
+            dir~setEntry(self~normalizeName(key), val)  -- save into Rexx directory
+         else
+            dir[key]=val
+      end
+  end
+-- .stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line "- the End, returning "pp(dir) "with" pp(dir~items)" items:" .dateTime~new)
+  return dir      -- return directory that contains the selected key-value pairs
+
+syntax:           -- propagate the syntax condition to caller
+  raise propagate
+
+
+
+/** Class method that returns the requested Binding from the ScriptContext.
+*
+* @param scriptContext the javax.script.ScriptContext
+* @param sc the scope number for the javax.script.Binding to be retrieved from scriptContext
+* @return the javax.script.Binding or <code>.nil</code> if not found
+*/
+::method getAttribute class
+  use strict arg scriptContext, name
+  signal on syntax
+
+   /* if a RexxContext supplied instead, then extract the ScriptContext from its last
+      argument (expected: the slotDir Rexx directory supplied by the Java side) */
+  signal on syntax name syntax1
+  if scriptContext~isA(.RexxContext) then
+     scriptContext=scriptContext~args~lastItem~scriptContext
+
+  signal on syntax name syntax2
+  return scriptContext~getAttribute(name)
+
+syntax1: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
+
+syntax2:       -- no entry by that name in ScriptContext
+  return .nil
+
+
+/** Fetches the supplied names from the ScriptContext Bindings and returns them as a Rexx directory where the
+*   index names are mangled to allow it to be used as a Rexx variable (hence suitable for <code>BSFContextVariables()</code>).
+*
+*  @param scriptContext    the Java <code>ScriptContext</code> object containing entries in different
+*                          bindings or the caller's .context object which is expected to have
+*                          slotDir as its last argument that contains the ScriptContext to work with
+*                          (which is the case, if the caller was invoked by Java via the javax.script framework)
+*
+*  @param name, ...        optional list of case-sensitive names serving as entries into the ScriptContext's Bindings. If omitted
+*                          all found attributes will be queried (searching from lowest to highest Bindings) and
+*                          returned with their mangled names; optionally the second argument may be an ordered
+*                          Rexx collection of case-sensitive names to be looked up in the ScriptContext's Bindings.
+*
+* @return a Rexx directory where the index is the mangled name of the Bindings entry and its item that Bindings entry's value
+*/
+
+::method getAttributes class
+  use strict arg scriptContext, ...
+
+  if arg()=1 then    -- if only ScriptContext or .context is given, then return all available attributes
+     return self~scriptContext2RexxDir(scriptContext) -- return all entries from all Bindings with mangled names
+
+   /* if a RexxContext supplied instead, then extract the ScriptContext from its last
+      argument (expected: the slotDir Rexx directory supplied by the Java side) */
+  signal on syntax
+  if scriptContext~isA(.RexxContext) then
+     scriptContext=scriptContext~args~lastItem~scriptContext
+-- .stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line " - arrived at:" .dateTime~new, "scriptContext="pp(scriptContext) "scope="pp(scope))
+
+  dir=.directory~new       -- contains the entries from the bindings of the processed scopes
+
+  if arg()=2, arg(2)~is(.orderedCollection) then  -- two arguments only, second one an ordered collection?
+     args=arg(2)           -- use
+  else
+     args=arg(2, "Array")   -- collect all remaining arguments as an array
+
+  do name over args
+     dir~setEntry(self~normalizeName(name), self~getAttribute(scriptContext,name))
+  end
+  return dir
+
+syntax: raise propagate    -- raise in caller
+
+
+
+
+/** Class method that returns the requested Binding from the ScriptContext.
+*
+* @param scriptContext the javax.script.ScriptContext
+* @param sc the scope number for the javax.script.Binding to be retrieved from scriptContext
+* @return the javax.script.Binding or <code>.nil</code> if not found
+*/
+::method setAttribute class
+  use strict arg scriptContext, name, value, scope=100   -- "100" is "ENGINE_SCOPE", 200="GLOBAL_SCOPE"
+  signal on syntax
+
+   /* if a RexxContext supplied instead, then extract the ScriptContext from its last
+      argument (expected: the slotDir Rexx directory supplied by the Java side) */
+  signal on syntax
+  if scriptContext~isA(.RexxContext) then
+     scriptContext=scriptContext~args~lastItem~scriptContext
+
+  if \datatype(scope,"whole") then
+  do
+      pos=pos(scope~left(1)~upper, "EG")
+      if pos<>0 then
+      do
+         if pos=1 then scope=100    -- "E" ... engine scope
+                  else scope=200    -- "G" ... global scope
+      end
+  end
+
+  scriptContext~setAttribute(name, value, scope)
+-- say self":setAttribute(name="pp(name)", value="pp(value)", scope="pp(scope)")"
+  return
+
+syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
 
