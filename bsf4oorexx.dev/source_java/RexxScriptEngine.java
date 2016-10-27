@@ -274,7 +274,7 @@ if (bDebug==true){ System.err.println("arrived: getCreateRoutine(), rexxCreateRo
         String filename="RexxScriptEngine_rexxCreateRoutineCode.rex";
         try
         {
-            updateRexxEngine(null);
+            if (bInitialBSFRequiresDone==false) updateRexxEngine(null);
             Vector args=new Vector();
             args.add("CreateRoutineCode");
             args.add(rexxCreateRoutineCode);
@@ -336,7 +336,7 @@ if (bDebug==true){ System.err.println("arrived: getMonitorWrapper(), rexxMonitor
 
         try
         {
-            updateRexxEngine(null);
+            if (bInitialBSFRequiresDone==false) updateRexxEngine(null);
             rexxMonitorWrapper=(RexxProxy) getCreateRoutine().sendMessage2("CALL", "MonitorWrapperCode", rexxMonitorWrapperCode);
         }
         catch (Exception exc)
@@ -402,7 +402,7 @@ if (bDebug==true){ System.err.println("arrived: getRoutineWrapper(), rexxRoutine
 
         try
         {
-            updateRexxEngine(null);
+            if (bInitialBSFRequiresDone==false) updateRexxEngine(null);
             rexxRoutineWrapper=(RexxProxy) getCreateRoutine().sendMessage2("CALL", "RoutineWrapperCode", rexxRoutineWrapperCode);
         }
         catch (Exception exc)
@@ -452,7 +452,7 @@ if (bDebug==true){ System.err.println("arrived: getRedirectStandardFiles(), rexx
         String filename="RexxScriptEngine_rexxRedirectStandardFilesCode.rex";
         try
         {
-            updateRexxEngine(null);
+            if (bInitialBSFRequiresDone==false) updateRexxEngine(null);
             rexxRedirectStandardFiles=(RexxProxy) getCreateRoutine().sendMessage2("CALL", "RedirectStandardFiles", rexxRedirectStandardFilesCode);
         }
         catch (Exception exc)
@@ -501,7 +501,7 @@ if (bDebug==true){ System.err.println("arrived: getCreateDirectory(), rexxCreate
         String filename="RexxScriptEngine_rexxCreateDirectoryCode.rex";
         try
         {
-            updateRexxEngine(null);
+            if (bInitialBSFRequiresDone==false) updateRexxEngine(null);
 /*
             Vector args=new Vector();
             args.add("createDirectory");
@@ -567,7 +567,7 @@ if (bDebug==true){ System.err.println("arrived: getCreateRoutineAndPackage(), re
         String filename="RexxScriptEngine_rexxCreateRoutineAndPackageCode.rex";
         try
         {
-            updateRexxEngine(null);
+            if (bInitialBSFRequiresDone==false) updateRexxEngine(null);
 /*
             Vector args=new Vector();
             args.add("createRoutineAndPackage");
@@ -826,7 +826,7 @@ if (bDebug==true)
         Object[] rexxObjects;
         try {
             // make sure JNI is using BSF.CLS to fetch Java object arguments as Rexx proxies in Rexx programs
-            updateRexxEngine(null);
+            if (bInitialBSFRequiresDone==false) updateRexxEngine(null);
 
             // now create the routine object, fetch it and its package object
             rexxObjects= (Object[]) getCreateRoutineAndPackage().sendMessage2("CALL", filename,scriptSource);
