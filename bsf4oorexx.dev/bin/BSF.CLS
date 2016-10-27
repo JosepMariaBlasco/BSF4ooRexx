@@ -12,6 +12,8 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2016-10-27, rgf: - public routine bsf.ScriptContext2rexx now uses .JSR223~ScriptContext2RexxDir(...)
+
          2016-10-26, rgf: - JSR223-support:
                             - bsf.ScriptContext2rexx():
                               - allow .context argument instead of ScriptContext to ease using this routine
@@ -4488,92 +4490,16 @@ syntax:
 *  @return                 a Rexx directory object containing the name/value mappings
 */
 
--- TODO: deprecate in favor of JSR223::ScriptContext2rexx and forward to .JSR223::scriptContext2RexxDir
+-- deprecate in favor of JSR223::ScriptContext2rexx and forward to .JSR223::scriptContext2RexxDir
 ::routine bsf.ScriptContext2rexx public
-/* TODO: rgf, 2016-10-26: replace with
+signal on syntax
+   use strict arg a, ...   -- make sure we have the mandatory argument, now can be a Java ScriptContext or a Rexx .context with a slotDir arg
+   argArr=arg(1,'A')     -- get all arguments as an array
+   argArr~insert(.true,1)   -- insert bMangle=.true as the second entry
+   return .JSR223~sendWith("ScriptContext2RexxDir", argArr) -- now let the class method do its work
 
-   argArr=arg('Array')     -- get all arguments as an array
-   argArr~index(.true,1)   -- insert bMangle=.true as the second entry
-   return .JSR223~ScriptContext2RexxDir(argArr) -- now let the class method do its work
-*/
+syntax: raise propagate
 
-
-
-  use strict arg scriptContext, scope="A", ...
--- .stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line " - arrived at:" .dateTime~new, "scriptContext="pp(scriptContext) "scope="pp(scope))
-
-  dir=.directory~new       -- contains the entries from the bindings of the processed scopes
-
-  if arg(2, 'omitted') then arr=.array~of(200,100)   -- process global and engine scope only
-  else
-  do
-     arr=.array~new
--- say "bsf.ScriptContext2rexx: scope="pp(arg(2, "array")~toString(,","))
-     if scope~caselessAbbrev("A") then    -- all scopes from top to bottom value (lower scopes mask override higher scopes)
-     do
-        scopes=scriptContext~getScopes    -- returns a list of defined scopes
-        it=scopes~iterator
-        do while it~hasNext
-           arr~append(it~next)
-        end
-        -- sort descendingly
-        arr=arr~sortWith(.InvertingComparator~new(.NumericComparator~new))
-     end
-     else if scope~caselessAbbrev("G"), arg()=2 then     -- global scope
-        arr~append(200)
-     else if scope~caselessAbbrev("E"), arg()=2 then     -- engine scope
-        arr~append(100)
-     else   -- a list of scopes is given, process it in the given (argument) order
-     do
-         do i=2 to arg()      -- process argument list
-            val=arg(i)
-            if val~caselessAbbrev("G") then arr~append(200)
-            else if val~caselessAbbrev("E") then arr~append(100)
-            else  -- a scope number!
-            do
-               if \datatype(val, "W") then
-                  raise syntax 40.900 array("BSF.CLS/routine/bsf.ScriptContext2Rexx, error 1: argument #" i "has value" pp(val)", which is not a whole number, nor starts with the letters 'G'(lobal) or 'E'(ngine)")
-               arr~append(val)
-            end
-         end
-     end
-  end
-
-  do sc over arr
-      -- bin=getBindings(scriptContext,sc)
-      bin=.JSR223~getBindings(scriptContext,sc)
-      if bin=.nil then iterate   -- inexistent scope
-      keys=bin~keySet         -- get kay values
-      it=keys~iterator
-      do while it~hasNext
-         key=it~next          -- fetch key
-         val=bin~get(key)     -- fetch its value
-         -- dir~setEntry(key~changeStr(".","_"), val)  -- save into Rexx directory
-         dir~setEntry(.JSR223~normalizeName(key), val)  -- save into Rexx directory
-      end
-  end
--- .stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line "- the End, returning "pp(dir) "with" pp(dir~items)" items:" .dateTime~new)
-  return dir      -- return directory that contains the selected key-value pairs
-
-/*
-::routine getBindings      -- utility routine
-  use arg scriptContext, sc
-  signal on syntax         -- if a scope does not exist, then an IllegalArgumentException gets thrown
-  return scriptContext~getBindings(sc)
-syntax:
-  return .nil
-
--- rgf, 2016-10-26: make sure the entry names can be used as Rexx variable names; if name starts with a dot, replace it with an underscore, otherwise it would be an environment symbol in ooRexx
-::routine normalizeKeyName
-  use arg key, inTable, outTable
-  newKey=TRANSLATE(key, outTable, inTable, '?') -- translate all invalid chars into a question mark
-
-   -- make sure that the Rexx symbol can be used as a Rexx variable for BSFContextVariable(...)
-  if pos(newKey~left(1), ".0123456789")>0 then
-     return "_"newKey   -- prepend an underscore
-
-  return newKey
-*/
 
 /** A utility class to ease JSR-223 (javax.script) related functionality.
 */
@@ -4662,7 +4588,7 @@ syntax:
 
   dir=.directory~new       -- contains the entries from the bindings of the processed scopes
 
-  if arg(2, 'omitted') then arr=.array~of(200,100)   -- process global and engine scope only
+  if arg(3, 'omitted') then arr=.array~of(200,100)   -- process global and engine scope only
   else
   do
      arr=.array~new
@@ -4690,7 +4616,7 @@ syntax:
             else  -- a scope number!
             do
                if \datatype(val, "W") then
-                  raise syntax 40.900 array("BSF.CLS/routine/bsf.ScriptContext2Rexx, error 1: argument #" i "has value" pp(val)", which is not a whole number, nor starts with the letters 'G'(lobal) or 'E'(ngine)")
+                  raise syntax 40.900 array("BSF.CLS/class JSR223/class method ScriptContext2RexxDir, error 1: argument #" i "has value" pp(val)", which is not a whole number, nor starts with the letters 'G'(lobal) or 'E'(ngine)")
                arr~append(val)
             end
          end
