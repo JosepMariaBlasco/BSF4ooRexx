@@ -7,7 +7,13 @@
     *  @author Rony G. Flatscher
     *  @since 2015-06-07
     */
+
+    changed: 2016-10-27, ---rgf: use .jsr223~scriptContext2rexxDir instead of the deprecated
+                         public routine bsf.scriptContext2rexx(); dots in attribute names
+                         remain intact, however names get mangled, if necessary to get at
+                         valid Rexx variable names
 */
+
 
 parse source s
 say "(Rexx) parse source:" pp(s)
@@ -16,8 +22,7 @@ use arg slotDir
 scriptContext=slotDir~scriptContext    -- get ScriptContext entry from slot directory
 say "(Rexx) creating Rexx context variables from the 'ScriptContext' entries" pp(scriptContext) "..."
    -- all the ScriptContext entries will be made directly available as Rexx variables; note:
-   -- Java key names containing dots "." get replaced in Rexx by underscores "_"
-call bsfContextVariables "set", bsf.scriptContext2rexx(scriptContext)
+call bsfContextVariables "set", .jsr223~scriptContext2rexxDir(scriptContext)
 say "(Rexx) Java host started set-up at:" pp(started_at)
 
 say "(Rexx) calculating aggregate width and height, returning it to Java"
@@ -30,7 +35,7 @@ return .bsf~new("java.awt.Dimension", aggWidth, aggHeight)
 
 /*
    ------------------------ Apache Version 2.0 license -------------------------
-      Copyright 2015 Rony G. Flatscher
+      Copyright 2015-2016 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.
