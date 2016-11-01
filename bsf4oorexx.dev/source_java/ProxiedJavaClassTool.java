@@ -18,6 +18,8 @@ java org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool TestAbstract Caesar
     2014-08-30, rgf:   - subclasses are allowed to access protected methods in superclasses, adjust for this
     2014-08-31, rgf:   - if methods to proxy is null, then proxy all public and protected declared methods,
                          if methods is an empty array, then just proxy the constructors
+    2016-11-01, rgf:   - do not use the ClassLoader from the target's class (e.g. javafx.* classes in Java 1.8/8
+                         use their own class loaders which may confine them to see only javafx.*)
 */
 
 import java.lang.reflect.*;
@@ -38,7 +40,7 @@ import org.codehaus.janino.SimpleCompiler;
  *  proxied Java method invocations to their original target on the Java side.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2010-2014 Rony G. Flatscher
+ *    Copyright (C) 2010-2016 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -53,7 +55,8 @@ import org.codehaus.janino.SimpleCompiler;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 0.7.0, 2010-03-27, 2010-04-14, 2010-04-17, 2010-04-18, 2010-11-30, 2011-05-31, 2014-08-30
+  * @version 0.7.1, 2010-03-27, 2010-04-14, 2010-04-17, 2010-04-18, 2010-11-30, 2011-05-31, 2014-08-30, 2016-11-01
+  * @since 2010
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu.ac.at">http://www.wu.ac.at</a>)
   */
 
@@ -327,7 +330,16 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
         if (bss) System.err.println("/// ProxiedJavaClassTool.createProxiedJavaClass(...), created Java source code: \n"+sb);
 
         SimpleCompiler sc=new SimpleCompiler();
-        sc.setParentClassLoader(javaClassToProxy.getClassLoader());     // rgf, 2011-05-31: make sure also dynamically created classes can be found
+
+// rgf, 2016-11-01: the following statement does not work, if the javaClassToProxy has a "limiting" class loader like javafx.application.Application
+//        seems that removing the setParentClassLoader resolves the problem with Janino 3.0.6 (maybe older Janinos had a problem)
+//
+//        sc.setParentClassLoader(javaClassToProxy.getClassLoader());     // rgf, 2011-05-31: make sure also dynamically created classes can be found
+//
+// 2016-11-01: with or without the following statement it workds for javafx.application.Application (Janino 3.0.6
+//        sc.setParentClassLoader(ProxiedJavaClassTool.class.getClassLoader());
+
+
         Class clz=null;
 
         long startTime=0l, endTime=0l, endOfLoadTime=0l;
