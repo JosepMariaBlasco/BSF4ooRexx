@@ -46,6 +46,9 @@ import org.apache.bsf.BSFException;
   */
 
 /*
+    2016-11-05, rgf, - oops, overlooked that the test program did it from Rexx, now we make sure we
+                       use Janino instead of ASM by setting to Janino in the static block
+
     2016-11-04, rgf, - Use Janino instead of ASM for extending abstract classes (would need to add
                        a default constructor in the case of an abstract class; however, Janino has
                        been maintained nicely and has become fast enought to replace ASM, so
@@ -111,13 +114,13 @@ import org.apache.bsf.BSFException;
                        instead of just a method name
 */
 
-// TODO: 2016-11-04, rgf: review for Java 1.6/6 as new base; use Janino by default instead of ASM;
-//                        tidy up code that uses reflection to see whether running on Java = 1.4
+// TODO: 2016-11-04, rgf: tidy up code that uses reflection to see whether running on Java = 1.4
 
 public class RexxProxy implements InvocationHandler
 {
+
      /** Version information on this class. */
-    static final public String version="102.20161104";
+    static final public String version="102.20161105";
 
 
     // rgf, 2010-04-16 --->
@@ -182,6 +185,8 @@ public class RexxProxy implements InvocationHandler
     private static Method hashCodeMethod;
     private static Method equalsMethod;
     private static Method toStringMethod;
+
+    // -------------- static initializer ----------------------------------------------------------------
     static {
 	try
         {
@@ -194,7 +199,15 @@ public class RexxProxy implements InvocationHandler
         {
 	    throw new NoSuchMethodError(e.getMessage());
 	}
+
+        try // ---rgf, 2016-11-05: make sure we use Janino ("ProxiedJavaClassTool.java") instead of ASM ("RexxExtend*.java"), which still is a fallback
+        {
+            setExtendUsingJanino(true);
+        }
+        catch (Exception e) {}
     }
+
+    // ------------------------- instance stuff ------------------------------
 
     protected Integer proxyHashCode(Object proxy)
     {
