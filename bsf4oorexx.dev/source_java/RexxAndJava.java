@@ -21,7 +21,7 @@ import org.apache.bsf.util.type.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2015 Rony G. Flatscher
+ *    Copyright (C) 2001-2016 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -36,18 +36,66 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.5.2, 2016-08-14
+  * @version 4.5.3, 2016-11-05
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
 /* TODO: (maybe)
-    - 20141004, rgf: - look up methods and fields: when need to search superclasses take protected into account
+    - 20141004/5, rgf: - look up methods and fields: when need to search superclasses take protected into account
                      - if reverting change 2014-05-15, then starting with Java 1.8/8 anaylze explicitly
                        all interfaces a class implements and look for default methods, which have as
                        their modifiers: public+non-abstract+non-static
 */
 
  /*
+     2016-11-04, ---rgf, - basing on 1.6/6.0, get rid of generic warnings
+                    source_java>javac -Xlint:unchecked RexxAndJava.java
+                    RexxAndJava.java:543: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.HashMap
+                            pendingUninits.put(new_rii_ID, new ArrayList(64));
+                                              ^
+                    RexxAndJava.java:711: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.HashMap
+                                    pendingUninits.put(rii_ID, new ArrayList(64));
+                                                      ^
+                    RexxAndJava.java:4070: warning: [unchecked] unchecked call to isAssignableFrom(java.lang.Class<?>) as a member of the raw type java.lang.Class
+                                                                  bFound=(paramTypes[j].isAssignableFrom(funcArgs[j].getClass()));
+                                                                                                        ^
+                    RexxAndJava.java:5179: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
+                                                              al.add(args[1]);
+                                                                    ^
+                    RexxAndJava.java:5594: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.Hashtable
+                                           orxReferences.put(beanName, newRefCount); // remember refCount
+                                                            ^
+                    RexxAndJava.java:5911: warning: [unchecked] unchecked call to isAssignableFrom(java.lang.Class<?>) as a member of the raw type java.lang.Class
+                                    if (!(paramTypes[k].isAssignableFrom (funcArgs[k].getClass()))) // not compatible, break
+                                                                         ^
+                    RexxAndJava.java:5957: warning: [unchecked] unchecked call to getConstructor(java.lang.Class<?>...) as a member of the raw type java.lang.Class
+                                            Constructor constr=paramTypes[k].getConstructor( argClass );
+                                                                                           ^
+                    RexxAndJava.java:6167: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.Hashtable
+                                orxReferences.put(beanName, new Integer(refCount)); // remember refCount
+                                                 ^
+                    RexxAndJava.java:6173: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.HashSet
+                                        beansCreated.add(beanName);
+                                                        ^
+                    RexxAndJava.java:6236: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.Hashtable
+                                       orxReferences.put(beanName, new Integer(refCount));
+                                                        ^
+                    RexxAndJava.java:6597: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                               eventTextVectorHigh.addElement(o);   // changed to addElement() for JRE 1.1.8, ---rgf
+                                                                             ^
+                    RexxAndJava.java:6601: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                               eventTextVectorLow.addElement(o);    // changed to addElement() for JRE 1.1.8, ---rgf
+                                                                            ^
+                    RexxAndJava.java:6606: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                               eventTextVector.addElement(o);       // changed to addElement() for JRE 1.1.8, ---rgf
+                                                                         ^
+                    RexxAndJava.java:6764: warning: [unchecked] unchecked call to <T>toArray(T[]) as a member of the raw type java.util.ArrayList
+                                    entries=(String[]) al.toArray(entries);
+                                                                 ^
+                    14 warnings
+
+
+
      2016-08-14, ---rgf, - updated kudos-entries
      2015-08-03, ---rgf, - change code to only deregister bean, if running in the context of the same RII
                            in which registering took place!
@@ -344,7 +392,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "452.20160814";
+    static final public String version = "453.20161105";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -365,7 +413,7 @@ class RexxAndJava {
      *
      * @since 2015-08-03
      */
-    static HashMap pendingUninits=new HashMap();
+    static HashMap<String,ArrayList<String>> pendingUninits=new HashMap<String,ArrayList<String>>();
 
     /** This field will indicate, whether there are any entries in any of the ArrayLists in
      *  in {@link pendingUninits} to be processed.
@@ -455,7 +503,7 @@ class RexxAndJava {
       * from Java method invocations and to transparently unregister them, when
       * the Object Rexx proxy objects are garbage collected.
       */
-    Hashtable orxReferences = new Hashtable();  // Hashtable is synchronized unlike the Collections after 1.2
+    Hashtable<String,Integer> orxReferences = new Hashtable<String,Integer>();  // Hashtable is synchronized unlike the Collections after 1.2
 
 
     /** Field used, if System.identityHashCode() returns duplicate values in method
@@ -535,7 +583,7 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
             throw new BSFException("A Rexx interpreter instance has been created already having the ID ["+rii_ID+"]");
         }
 
-        pendingUninits.put(new_rii_ID, new ArrayList(64));
+        pendingUninits.put(new_rii_ID, new ArrayList<String>(64));
         this.rii_ID=new_rii_ID;
     }
 
@@ -552,7 +600,7 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
      *
      * @since 2015-08-03
      */
-    protected HashSet beansCreated=new HashSet(64);     // initial capacity
+    protected HashSet<String> beansCreated=new HashSet<String>(64);     // initial capacity
 
 
     /** Load the DLL, which allows interfacing Java with Rexx or Object Rexx, determines
@@ -703,7 +751,7 @@ necessary anymore
             synchronized (pendingUninits)
             {
                 // pendingUninits.put(get_rii_ID(), new ArrayList(16));
-                pendingUninits.put(rii_ID, new ArrayList(64));
+                pendingUninits.put(rii_ID, new ArrayList<String>(64));
             }
 System.err.println(this+": constructor(), this instance has already rii_ID=["+rii_ID+"] !!!");
         }
@@ -4062,7 +4110,7 @@ if (bDebug) System.err.println("paramTypes[j].isPrimitive()=["+paramTypes[j].isP
                                           }
                                           else
                                           {
-                                              bFound=(paramTypes[j].isAssignableFrom(funcArgs[j].getClass()));
+                                              bFound=(((Class<?>)paramTypes[j]).isAssignableFrom(funcArgs[j].getClass()));
                                           }
 
                                       }
@@ -5165,12 +5213,13 @@ if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr
                               if (args[2].equals(rii_ID)==false)    // uninit not run in RII that created object, defer
                               {
                                       // get pending uninits ArrayList for this instance
-                                  ArrayList al=null;
+                                  ArrayList<String> al=null;
                                   synchronized (pendingUninits)
                                   {
-                                      al=(ArrayList) pendingUninits.get(args[2]);
+                                      al=(ArrayList<String>) pendingUninits.get(args[2]);
                                       if (al!=null)     // could be, that RII that created bean does not exist anymore!
                                       {
+                                          // 2016-11-04, rgf: generic warnings, can be ignored
                                           al.add(args[1]);
                                           bCheck4pendingUninits=true;   // from now on need for checking for pending uninits
 if (bDebug) System.err.println(this+": subfunction \"unregisterBean\" - this rii_ID=["+rii_ID+"] != bean's rii_ID=["+args[2]+"], putting bean ["+args[1]+"] into pendingUninits, now ["+al.size()+"] beans in ArrayList !!!");
@@ -5903,7 +5952,7 @@ catch (Exception e)
     }
 }
 
-                if (!(paramTypes[k].isAssignableFrom (funcArgs[k].getClass()))) // not compatible, break
+                if (!( ( (Class<?>)paramTypes[k]).isAssignableFrom (funcArgs[k].getClass()))) // not compatible, break
                 {
                     // if (paramTypes[k].isPrimitive())
                     // rgf, 20100519 all primitive->wrappers get intercepted here: this allows to interchange primitive with matching wrapper types
@@ -5949,7 +5998,7 @@ if (bDebug) System.err.println("\t           ) ---> k="+k+": successful coercion
                     // try to create an instance of netrexx.lang.Rexx
                     try {
                         Class argClass[]={funcArgs[k].getClass()};  // determine class of argument
-                        Constructor constr=paramTypes[k].getConstructor( argClass );
+                        Constructor constr=((Class<?>)paramTypes[k]).getConstructor( argClass );
 
                         Object argRgf[]={funcArgs[k]};              // create argument array
                         coercedArgs[k]=constr.newInstance(argRgf);  // assign coerced object
@@ -6513,9 +6562,9 @@ if (bDebug)
     protected class SyncPutGet
     {
         /** Vector to store the text sent by the eventListeners. */
-        private Vector eventTextVector     = new Vector();      // normal priority
-        private Vector eventTextVectorLow  = new Vector();      // low ("batch") priority
-        private Vector eventTextVectorHigh = new Vector();      // high ("alarm") priority
+        private Vector<Object> eventTextVector     = new Vector<Object>();      // normal priority
+        private Vector<Object> eventTextVectorLow  = new Vector<Object>();      // low ("batch") priority
+        private Vector<Object> eventTextVectorHigh = new Vector<Object>();      // high ("alarm") priority
 
 
         /** Get an object from the vector. If empty, block for the
@@ -6741,22 +6790,23 @@ if (bDebug) {System.err.println(this+".createRexxInterpreterInstance(...), retur
         final boolean bDebug= false;
                              // true;
 
-        ArrayList al=null;
+        ArrayList<String> al=null;
         int i=0;
 
         synchronized (pendingUninits)
         {
-            al=(ArrayList) pendingUninits.get(rii_ID);
+            al=(ArrayList<String>) pendingUninits.get(rii_ID);
         }
 
 if (bDebug) System.err.println(this+": runPendingUninits(): this rii_ID=["+rii_ID+"] pendingUninits, al=["+al+"] ->al.size()=["+(al==null? -99 : al.size())+"] beans in ArrayList !!!");
 
         if (al!=null)
         {
-            synchronized (al)
+           synchronized (al)
             {
                 String entries[]=new String[al.size()]; // define size appropriate for toArray()
-                entries=(String[]) al.toArray(entries);
+
+                entries=(String[]) al.toArray(entries); // <-- warning in Java 1.6/6.0, hence annotation@SuppressWarnings("unchecked") for this method
 
 if (bDebug) System.err.println(this+": runPendingUninits(): this rii_ID=["+rii_ID+"] processing ["+(entries==null ? -99 : entries.length)+"] pendingUninits ... !!!");
 

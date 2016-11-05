@@ -26,8 +26,10 @@ import org.rexxla.bsf.engines.rexx.RexxProxy;
 -----------------------------------------------------------------------------
 
 Changes:
-    - 2016-10-26: ---rgf, added a few additional debug statements (debugging instrumentation by JavaFX),
+    2016-10-26: ---rgf, added a few additional debug statements (debugging instrumentation by JavaFX),
                           in additon also conditionally allowing to display the Rexx source
+    2016-11-04: ---rgf, rebasing on Java 1.6/6.0; generics related warning cannot be circumvented
+                          (cf. comments in getInterface(Class<T> clasz) method)
 
 */
 
@@ -45,7 +47,7 @@ Changes:
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20161026
+ * @version 100.20161104
  * @since  2015-05-11
  *
  */
@@ -333,6 +335,9 @@ if (bDebug==true)
         Object[] interfaces = new Object[1];
         interfaces[0]=clasz;
 
+        // rgf, 2016-11-04:
+        //          implements <T>getInterface(java.lang.Class<T>) in javax.script.Invocable; return type requires unchecked conversion
+        // if doing an unchecked cast, "-Xlint:checked" will warn about this; still the following cast is o.k.
         return (T) rp.newJavaProxyInstance(interfaces);     // create and return the Java proxy for the interface
     }
 

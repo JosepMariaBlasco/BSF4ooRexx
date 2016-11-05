@@ -1,5 +1,6 @@
 package org.rexxla.bsf.engines.rexx;
 
+// TODO: ---rgf, 2016-11-05: remove code for Java <1.6/6, update to latest ASM, add default constructor to abstract class extensions
 // DONE: ---rgf, 2009-09-06
 //         - change logic for allowing access to masked methods in super, by creating
 //           individual methods that invoke the masked method in super; these methods
@@ -109,7 +110,7 @@ import org.apache.bsf.BSFException;
  * to explicitly invoke masked methods in the super (extended) class.
  *
 * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2009-2015 Rony G. Flatscher
+ *    Copyright (C) 2009-2016 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -125,11 +126,13 @@ import org.apache.bsf.BSFException;
  * ----------------------------------------------------------------------------- </pre>
  *
  * @author Rony G. Flatscher (<a href="http://www.wu.ac.at">WU Vienna </a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
- * @version 1.2
+ * @version 1.03
  * @since   2009-07-29
  */
 
  /*
+    2016-11-05, rgf:   - basing on 1.6/6.0, get rid of generic warnings
+
     2015-06-27, rgf: - adjust behaviour to match documentation when array of method names is given: in this
                        case also all concrete methods of that name should be proxied
 
@@ -175,22 +178,22 @@ public class RexxExtendClass extends ClassAdapter implements ClassVisitor, Opcod
 //    final static HashMap access2string= new HashMap();
 
     // map primitive types to corresponding wrapper classes
-    final static HashMap type2wrapperClass= new HashMap();
+    final static HashMap<Type,String> type2wrapperClass= new HashMap<Type,String>();
 
     // map primitive types to corresponding method description of static method valueOf
-    final static HashMap type2valueOfDesc= new HashMap();
+    final static HashMap<Type,String> type2valueOfDesc= new HashMap<Type,String>();
 
     // map primitive types to corresponding method description for the constructor ("<init>")
-    final static HashMap type2initDesc= new HashMap();
+    final static HashMap<Type,String> type2initDesc= new HashMap<Type,String>();
 
     // map primitive types to corresponeding method and method desc which returns the primitive value
-    final static HashMap type2getPrimitiveValue= new HashMap();
+    final static HashMap<Type,Object> type2getPrimitiveValue= new HashMap<Type,Object>();
 
     // map primitive types to corresponding static synthetic wrapper class fields
-    final static HashMap type2syntheticWrapperFields= new HashMap();
+    final static HashMap<Type,String> type2syntheticWrapperFields= new HashMap<Type,String>();
 
     // set of primitive types
-    final static HashSet primitiveTypes=new HashSet();
+    final static HashSet<Type> primitiveTypes=new HashSet<Type>();
 
     // array of ICONST_ opcodes used for denoting index positions in arrays
     final static int []arr_ICONST={ICONST_0, ICONST_1, ICONST_2, ICONST_3, ICONST_4, ICONST_5};
@@ -471,7 +474,7 @@ if (bDebugClassVisitor) System.err.println("---> ... tranData.newClassVersion==0
 
 
                 // we may need the following fields (for forwardToSuper[Strict])
-            tranData.syntheticStaticFieldsToAdd=new HashSet();
+            tranData.syntheticStaticFieldsToAdd=new HashSet<String>();
             tranData.syntheticStaticFieldsToAdd.add("class$java$lang$Boolean"  );
             tranData.syntheticStaticFieldsToAdd.add("class$java$lang$Byte"     );
             tranData.syntheticStaticFieldsToAdd.add("class$java$lang$Character");
@@ -855,7 +858,7 @@ if (bDebugClassVisitor) System.err.println("--> "+"visitEnd().");
         // check whether given list of method names to proxy was fulfilled, if not throw an appropriate exception
         if (!tranData.bProcessAllMethods && !tranData.simpleMethodNamesAdded.containsAll(tranData.simpleMethodNamesToAdd))
         {
-            HashSet diff=new HashSet();
+            HashSet<String> diff=new HashSet<String>();
             diff.addAll(tranData.simpleMethodNamesToAdd);       // add all method names
             diff.removeAll(tranData.simpleMethodNamesAdded);    // remove the added method names
 
@@ -2280,7 +2283,7 @@ if (bDebugMethodVisitor) System.err.println("\t\t"+"--- nothing to process (no i
      *  nor proxy methods got created so far, then add that method to the extended class.
      *  Recursively process super interfaces, if any.
      */
-    private void processInterface(Class clzInt, Class wrkClz)
+    private void processInterface(Class clzInt, Class<?> wrkClz)
     {
 if (bDebugMethodVisitor) System.err.println("\t\t"+"--- processing interface ["+clzInt.getName()+"] ...");
         // do the work
@@ -2578,15 +2581,15 @@ if (bDebugMethodVisitor) System.err.println("\t\t\t\t method already implemented
 class TransformationData
 {
     /* transformation related maintenance fields    */
-    HashSet syntheticStaticFieldsToAdd=null;  // in < V1_5: there is a need for synthetic static fields that
+    HashSet<String> syntheticStaticFieldsToAdd=null;  // in < V1_5: there is a need for synthetic static fields that
                                         // are used to store the class object retrieved via the synthetic
                                         // static method "class$"
 
-    HashSet simpleMethodNamesToAdd=new HashSet();   // set of methods to add, if extending a regular class
-    HashSet simpleMethodNamesAdded=new HashSet();   // methodNames added so far
-    HashSet fullMethodNamesAdded  =new HashSet();   // methodName+internalMethodDesc added so far
+    HashSet<String> simpleMethodNamesToAdd=new HashSet<String>();   // set of methods to add, if extending a regular class
+    HashSet<String> simpleMethodNamesAdded=new HashSet<String>();   // methodNames added so far
+    HashSet<String> fullMethodNamesAdded  =new HashSet<String>();   // methodName+internalMethodDesc added so far
 
-    ArrayList listOfMethodsForwardToSuper=new ArrayList();  // rgf, 20090905: collects masked methods for which we create accessor methods ("_forwardToSuper")
+    ArrayList<MethodForSuperData> listOfMethodsForwardToSuper=new ArrayList<MethodForSuperData>();  // rgf, 20090905: collects masked methods for which we create accessor methods ("_forwardToSuper")
 
     String   workPrintLnTarget    = "java/lang/StringBuilder";    // >= V1_5 (was "java/lang/StringBuffer" in earlier versions)
     String   workPrintLnTargetDesc= "Ljava/lang/StringBuilder;";  // >= V1_5 (was "java/lang/StringBuffer" in earlier versions)

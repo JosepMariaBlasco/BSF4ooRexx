@@ -40,36 +40,38 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
-        - 2016-10-26, ---rgf: adjust to observed usage by JavaFX
-                        - added protected field "latestRexxPackage": stores latest created Rexx package
-                          (from last compile()) to be added to the package of the next to be compiled
-                          Rexx script
-                        - added protected field "bAddLatestPackageDynamically" and public
-                          methods setAddLatestPackageDynamically() and getAddLatestPackageDynamically():
-                          if set to true will add dynamically the last package to a new compiled Rexx
-                          script thereby allowing later Rexx scripts to access any public routines and
-                          public classes of any prior compiled Rexx scripts (includes access to package
-                          BSF.CLS)
-                        - change: public static field "bPrependDynamicRequiresStatement" (to inject a dynamic
-                          requires to package 'BSF.CLS') now honored only, if field "bAddLatestPackageDynamically" is false
-                        - changed method updateRexxEngine(): the very first time 'BSF.CLS' is dynamically
-                          required, the package of that Rexx code is stored in the protected field
-                          "latestRexxPackage", such that it can be added to new compiled Rexx scripts
+        2016-11-05, rgf:   - basing on 1.6/6.0, get rid of generic warnings
 
-        - 2015-08-04, ---rgf: adjust to info that starting with ooRexx 5.0.0 the string
-                              argument to .routine~new must not contain CR/LF chars; prepare
-                              all Rexx ocde herein to allow replacing CR-LF with semi-colons
-                              by changing line comments to block comments; make sure
-                              that the Rexx code that creates .routine objects carries out
-                              a makearray for the code-part (allowing CR-LF as stored on
-                              file or in databases, but also giving much more meaningful
-                              line-based error information; Rexx, after all is meant to be
-                              an easy to use and to debug language!)
+        2016-10-26, ---rgf: adjust to observed usage by JavaFX
+                      - added protected field "latestRexxPackage": stores latest created Rexx package
+                        (from last compile()) to be added to the package of the next to be compiled
+                        Rexx script
+                      - added protected field "bAddLatestPackageDynamically" and public
+                        methods setAddLatestPackageDynamically() and getAddLatestPackageDynamically():
+                        if set to true will add dynamically the last package to a new compiled Rexx
+                        script thereby allowing later Rexx scripts to access any public routines and
+                        public classes of any prior compiled Rexx scripts (includes access to package
+                        BSF.CLS)
+                      - change: public static field "bPrependDynamicRequiresStatement" (to inject a dynamic
+                        requires to package 'BSF.CLS') now honored only, if field "bAddLatestPackageDynamically" is false
+                      - changed method updateRexxEngine(): the very first time 'BSF.CLS' is dynamically
+                        required, the package of that Rexx code is stored in the protected field
+                        "latestRexxPackage", such that it can be added to new compiled Rexx scripts
 
-        - 2015-07-21, ---rgf: no need to do a BsfCreateRexxProxy(), this will now be done
-                              by bsf.createArrayOf() (in BSF.CLS)
+        2015-08-04, ---rgf: adjust to info that starting with ooRexx 5.0.0 the string
+                            argument to .routine~new must not contain CR/LF chars; prepare
+                            all Rexx ocde herein to allow replacing CR-LF with semi-colons
+                            by changing line comments to block comments; make sure
+                            that the Rexx code that creates .routine objects carries out
+                            a makearray for the code-part (allowing CR-LF as stored on
+                            file or in databases, but also giving much more meaningful
+                            line-based error information; Rexx, after all is meant to be
+                            an easy to use and to debug language!)
 
-        - 2015-05-19, ---rgf: fill-in the engine related information into the ENGINE_SCOPE bindings
+        2015-07-21, ---rgf: no need to do a BsfCreateRexxProxy(), this will now be done
+                            by bsf.createArrayOf() (in BSF.CLS)
+
+        2015-05-19, ---rgf: fill-in the engine related information into the ENGINE_SCOPE bindings
 
 */
 
@@ -88,7 +90,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20161026
+ * @version 100.20161105
  * @since  2015-05-11
  *
  */
@@ -275,7 +277,7 @@ if (bDebug==true){ System.err.println("arrived: getCreateRoutine(), rexxCreateRo
         try
         {
             if (bInitialBSFRequiresDone==false) updateRexxEngine(null);
-            Vector args=new Vector();
+            Vector<String> args=new Vector<String>();
             args.add("CreateRoutineCode");
             args.add(rexxCreateRoutineCode);
 
@@ -930,7 +932,7 @@ if (bDebug==true) {exc.printStackTrace();}
         }
 
         ScriptContext sc=getContext();  // get default ScriptContext
-        RexxProxy rp;
+        RexxProxy rp=null;
         try {
                 // make sure BSF.CLS support in JNI available; .input, .output, .error set accordingly
             updateRexxEngine(sc);

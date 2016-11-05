@@ -20,7 +20,13 @@ java org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool TestAbstract Caesar
                          if methods is an empty array, then just proxy the constructors
     2016-11-01, rgf:   - do not use the ClassLoader from the target's class (e.g. javafx.* classes in Java 1.8/8
                          use their own class loaders which may confine them to see only javafx.*)
+    2016-11-04, rgf:   - fixed bug that did not extend an abstract class, if not methods to proxy were supplied
+                         (which will be the case when invoked by RexxProxy.newExtendedProxyInstance(...))
+
+    2016-11-05, rgf:   - basing on 1.6/6.0, get rid of generic warnings
+
 */
+// TODO: rgf, 20161104,   new base 1.6/6: tidy up code that uses reflection to see whether running on Java = 1.4
 
 import java.lang.reflect.*;
 import java.util.ArrayList;
@@ -55,7 +61,7 @@ import org.codehaus.janino.SimpleCompiler;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 0.7.1, 2010-03-27, 2010-04-14, 2010-04-17, 2010-04-18, 2010-11-30, 2011-05-31, 2014-08-30, 2016-11-01
+  * @version 1.02, 2010-03-27, 2010-04-14, 2010-04-17, 2010-04-18, 2010-11-30, 2011-05-31, 2014-08-30, 2016-11-01, 2016-11-04/5
   * @since 2010
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu.ac.at">http://www.wu.ac.at</a>)
   */
@@ -85,6 +91,9 @@ public class ProxiedJavaClassTool
         { }
     }
 
+
+     /** Version information on this class. */
+    static final public String version="102.20161105";
 
 
     public static void main (String args[])
@@ -206,11 +215,12 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
 
         String [] methods2proxy=null;
 
+// TODO: 2016-11-03, rgf: if no methods given, but an abstract class, then proxy all abstract methods only
         // rgf, 20140831: if no methods given, proxy all public and protected declared methods
         if (methodNames2proxy==null)
         {
             Method meths[]=javaClassToProxy.getDeclaredMethods();
-            HashSet methNames= new HashSet();
+            HashSet<String> methNames= new HashSet<String>();
             for (int i=0; i<meths.length; i++)
             {
                 int mods=meths[i].getModifiers();
@@ -220,7 +230,19 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
                     String methName=meths[i].getName();
                     if (!methName.equals("toString") && !methName.equals("equals") && !methName.equals("hashCode") )
                     {
-                        methNames.add(meths[i].getName());
+                        if (Modifier.isAbstract(classModifiers))    // rgf, 2016-11-03, if an abstract class
+                        {
+                            if (Modifier.isAbstract(mods))          // if an abstract method, create a proxy
+                            {
+                                methNames.add(meths[i].getName());
+System.err.println("/--/ proxying abstract method: ["+meths[i].getName()+"]");
+                            }
+
+                        }
+                        else    // not an abstract class, take any method
+                        {
+                            methNames.add(meths[i].getName());
+                        }
                     }
                 }
             }
@@ -327,6 +349,7 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
         createEpilog(sb);                               // create epilog code (supply closing curly bracket)
 
         if (bTiming==true) crtSrcEndTime=System.currentTimeMillis();
+
         if (bss) System.err.println("/// ProxiedJavaClassTool.createProxiedJavaClass(...), created Java source code: \n"+sb);
 
         SimpleCompiler sc=new SimpleCompiler();
@@ -335,8 +358,9 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
 //        seems that removing the setParentClassLoader resolves the problem with Janino 3.0.6 (maybe older Janinos had a problem)
 //
 //        sc.setParentClassLoader(javaClassToProxy.getClassLoader());     // rgf, 2011-05-31: make sure also dynamically created classes can be found
+//        sc.setParentClassLoader(RexxProxy.getClassLoader());     // does not work either
 //
-// 2016-11-01: with or without the following statement it workds for javafx.application.Application (Janino 3.0.6
+// 2016-11-01: with or without the following statement it works for javafx.application.Application (Janino 3.0.6):
 //        sc.setParentClassLoader(ProxiedJavaClassTool.class.getClassLoader());
 
 
@@ -348,6 +372,7 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
             if (bTiming==true)  startTime=System.currentTimeMillis();
 
             sc.cook(sb.toString());                         // compile program
+
             if (bTiming==true) endTime=System.currentTimeMillis();
 
             clz=sc.getClassLoader().loadClass(fullNewClzName);
@@ -406,7 +431,7 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
         sb.append("\t\treturn defaultHandler; \n");
         sb.append("\t}\n\n");
 
-        HashSet hs=new HashSet();   // memorize that we created a method with this signature
+        HashSet<String> hs=new HashSet<String>();   // memorize that we created a method with this signature
         hs.add("()");
         ri.uMN2setOfSignatures.put("getDefaultHandler", hs);
 
@@ -420,7 +445,7 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
         sb.append("\t\t}                           \n");
         sb.append("\t}\n\n");
 
-        hs=new HashSet();           // memorize that we created a method with this signature
+        hs=new HashSet<String>();           // memorize that we created a method with this signature
         hs.add("(org.rexxla.bsf.engines.rexx.RexxProxy)");
         ri.uMN2setOfSignatures.put("setDefaultHandler", hs);
 
@@ -431,7 +456,7 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
         sb.append("\t\treturn target; \n");
         sb.append("\t}\n\n");
 
-        hs=new HashSet();           // memorize that we created a method with this signature
+        hs=new HashSet<String>();           // memorize that we created a method with this signature
         hs.add("()");
         ri.uMN2setOfSignatures.put("getTargetRexxProxy", hs);
 
@@ -442,7 +467,7 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
         sb.append("\t\ttarget=newTarget; \n");
         sb.append("\t}\n\n");
 
-        hs=new HashSet();           // memorize that we created a method with this signature
+        hs=new HashSet<String>();           // memorize that we created a method with this signature
         hs.add("(org.rexxla.bsf.engines.rexx.RexxProxy)");
         ri.uMN2setOfSignatures.put("setTargetRexxProxy", hs);
     }
@@ -468,7 +493,7 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
      * @param bProxyConstructors determines whether constructor invocations get proxied to the RexxProxy (<code>true</code>)
      * @param ri RunInfos runtime infos for managing the process
      */
-    static void createConstructorsBase(StringBuffer sb, String newClzName, Class javaClassToProxy,
+    static void createConstructorsBase(StringBuffer sb, String newClzName, Class<?> javaClassToProxy,
                               boolean bProxyConstructors, RunInfos ri)
     {
 if (bDebug==true) System.err.println("createConstructorsBase(), begin...");
@@ -502,11 +527,11 @@ if (bDebug==true) System.err.println("createConstructorsBase(), no default const
 
 
         String strMethName="<INIT>";
-        HashSet hs=(HashSet) ri.uMN2setOfSignatures.get(strMethName);
+        HashSet<String> hs=(HashSet<String>) ri.uMN2setOfSignatures.get(strMethName);
         if (hs==null)
         {
 if (bDebug==true) System.err.println("createConstructorsBase(), no HashSet for logging created methods/constructors, had to CREATE one here <--- !");
-            hs=new HashSet();
+            hs=new HashSet<String>();
             ri.uMN2setOfSignatures.put(strMethName, hs);
         }
 
@@ -646,10 +671,10 @@ else if (bDebug==true) System.err.println("createConstructorsBase(), creating: [
     {
 if (bDebug==true) System.err.println("createConstructors(), begin...");
             // fetch set of methods created
-        HashSet hs=(HashSet) ri.uMN2setOfSignatures.get("<INIT>");
+        HashSet<String> hs=(HashSet<String>) ri.uMN2setOfSignatures.get("<INIT>");
         if (hs==null)
         {
-            hs=new HashSet();
+            hs=new HashSet<String>();
             ri.uMN2setOfSignatures.put("<INIT>", hs);
         }
 
@@ -789,7 +814,7 @@ if (bDebug==true) System.err.println("createMethods(), begin...");
 
         for (int i=0; i<methods2proxy.length; i++)
         {
-if (bDebug==true) System.err.println("createMethods(), i=["+i+"] methods2proxy[i]=["+methods2proxy[i]+"]");
+if (bDebug==true) System.err.println("///---> next, i=["+i+"]\ncreateMethods(), i=["+i+"] methods2proxy[i]=["+methods2proxy[i]+"]");
             if (methods2proxy[i]==null || methods2proxy[i].compareTo("")==0)    // ignore null and empty strings
             {
                 continue;
@@ -869,9 +894,9 @@ if (bDebug==true) System.err.println("createMethods(), k=["+k+"] meths[k]=["+met
                     try {
                         Object obj=IS_SYNTHETIC_METHOD.invoke(meths[k], new Object []{} );
 
-if (bDebug==true) System.err.println("!!! IS_SYNTHETIC_METHOD.invoke("+meths[k]+") --> "+obj);
                         if ( ((Boolean) obj).booleanValue()==true)
                         {
+if (bDebug==true) System.err.println("!!! IS_SYNTHETIC_METHOD.invoke("+meths[k]+") --> "+obj);
                             continue;
                         }
                     }
@@ -895,6 +920,21 @@ if (bDebug==true) System.err.println("!!! IS_SYNTHETIC_METHOD.invoke("+meths[k]+
                 }
 
                 bMethodFound=true;
+/*
+if (bDebug==true)
+{
+    System.err.println("\nmethod to proxy found! meths["+k+"].getName()=["+meths[k].getName()+"]");
+    System.err.println("\t"+((mMods & Modifier.FINAL)==Modifier.FINAL? "FINAL ": "")+((mMods & Modifier.PRIVATE)==Modifier.PRIVATE ? "PRIVATE ":""));
+    System.err.println("\tmodifiers: ["+Integer.toBinaryString(mMods)+"]");
+    System.err.println("\ttest with: ["+Integer.toBinaryString(Modifier.FINAL | Modifier.PRIVATE )+"]");
+    System.err.println("\ttest res > ["+Integer.toBinaryString(mMods & (Modifier.FINAL | Modifier.PRIVATE ))+"]");
+    System.err.println("\tModifier.F:["+Integer.toBinaryString(Modifier.FINAL )+"]");
+    System.err.println("\tModifier.P:["+Integer.toBinaryString(Modifier.PRIVATE)+"]");
+}
+*/
+
+if (bDebug==true) System.err.println("createMethods(), k="+k+", about to call createMethod, methName ["+meths[k].getName()+"] BINGO!!!");
+
                 createMethod(sb, meths[k], newClzName, ri);
             }
 
@@ -941,10 +981,10 @@ if (bDebug==true) System.err.println("---> createMethod() | 1 - method: "+m);
         String methName   =m.getName();
         String strMethName=methName.toUpperCase();
 
-        HashSet hs=(HashSet) ri.uMN2setOfSignatures.get(methName);
+        HashSet<String> hs=(HashSet<String>) ri.uMN2setOfSignatures.get(methName);
         if (hs==null)
         {
-            hs=new HashSet();
+            hs=new HashSet<String>();
             ri.uMN2setOfSignatures.put(methName, hs);
         }
         else if (hs.contains(methSignature2))    // method with this signature already created?
@@ -1449,9 +1489,9 @@ if (bDebug==true) System.err.println("---> createMethod() |     created 'forward
     */
     static class RunInfos
     {
-        HashMap   uMN2setOfSignatures=new HashMap();    // maps uppercased method name
-        HashMap   clz2declMethods    =new HashMap();    // maps class object to declared methods
-        HashMap   uCN2clz            =new HashMap();    // maps uppercase class name to class object
+        HashMap<String,HashSet<String>>   uMN2setOfSignatures=new HashMap<String,HashSet<String>>();    // maps uppercased method name
+        HashMap<Class<?>,Method[]>        clz2declMethods    =new HashMap<Class<?>,Method[]>();    // maps class object to declared methods
+        HashMap<String,Class<?>>          uCN2clz            =new HashMap<String,Class<?>>();    // maps uppercase class name to class object
     }
 
 }

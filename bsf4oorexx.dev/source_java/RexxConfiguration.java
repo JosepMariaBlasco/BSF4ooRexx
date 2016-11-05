@@ -14,7 +14,7 @@ import java.util.*;         // BitSet
  *
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2012 Rony G. Flatscher
+ *    Copyright (C) 2012-2016 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -31,21 +31,42 @@ import java.util.*;         // BitSet
  *
  *
  * @author Rony G. Flatscher
- * @version 0.01
+ * @version 1.01
  * @since 2012-02-04
  */
 
-/* 2012-02-09, rgf: - ArrayList needs to be initialized, such that size() matches the number of exits
+/*
+   2012-02-09, rgf: - ArrayList needs to be initialized, such that size() matches the number of exits
    2012-02-25, rgf: - fix problem with turning ArrayList into String[] for required libraries,
                       renamed getRequiredLibrary[4JNI]() to getRequiredLibraries[4JNI] to reflect the
                       fact, that multiple libraries can be required
    2012-02-26, rgf: - fix wrong documentation for getExitHandlers4JNI()
+   2016-11-04, rgf: - re-basing on Java 1.6/6.0, fix generics related warnings:
+                    RexxConfiguration.java:126: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
+                            load_required_library.add(libraryName);
+                                                     ^
+                    RexxConfiguration.java:195: warning: [unchecked] unchecked call to add(int,E) as a member of the raw type java.util.ArrayList
+                                exitHandlers.add(i,null);
+                                                ^
+                    RexxConfiguration.java:402: warning: [unchecked] unchecked call to add(int,E) as a member of the raw type java.util.ArrayList
+                            exitHandlers.add(function,exitHandler); // save exit handler wit
+                                            ^
+                    RexxConfiguration.java:428: warning: [unchecked] unchecked call to set(int,E) as a member of the raw type java.util.ArrayList
+                                exitHandlers.set(function,exitHandler); // save exit handler wit
+                                                ^
+                    RexxConfiguration.java:478: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.HashMap
+                            commandHandlers.put(name,commandHandler); // save exit handler wit
+                                               ^
+                    RexxConfiguration.java:506: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.HashMap
+                                commandHandlers.put(name,commandHandler); // save exit handler with
+                                                   ^
+
  */
 
 public class RexxConfiguration {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change. */
-    final static public String version = "1.20120225";
+    final static public String version = "101.20161104";
 
 
     // ------------------------------------------------------------------------------------
@@ -103,7 +124,7 @@ public class RexxConfiguration {
 
     // ------------------------------------------------------------------------------------
     /** Holds native library names that should get required when the Rexx interpreter instance gets created. */
-    private ArrayList load_required_library = new ArrayList();
+    private ArrayList<String> load_required_library = new ArrayList<String>();
 
     /** Allows to add a required native (implemented in C++) library that should be loaded when the Rexx interpreter instance
      *  gets created.
@@ -183,7 +204,7 @@ public class RexxConfiguration {
 
 
     /** Stores RexxExitHandler objects, if any defined. Index is the Rexx exit number. */
-    private ArrayList exitHandlers       =new ArrayList(RexxExitHandler.RXNOOFEXITS);
+    private ArrayList<RexxExitHandler> exitHandlers       =new ArrayList<RexxExitHandler>(RexxExitHandler.RXNOOFEXITS);
 
 
     public RexxConfiguration()
@@ -263,7 +284,7 @@ public class RexxConfiguration {
 
     // ------------------------------------------------------------------------------------
     /** Stores RexxCommandHandler objects, index is address name, value is RexxCommandHandler object. */
-    private HashMap commandHandlers=new HashMap();
+    private HashMap<String,RexxCommandHandler> commandHandlers=new HashMap<String,RexxCommandHandler>();
 
     /** Returns an array with two elements, where the first element
      *  is a String array denoting the environment name and the second element is an array of type
