@@ -910,6 +910,7 @@ if (bDebug==true) {exc.printStackTrace();}
      *
      *  @return a Java object of type <code>&lt;T&gt;</code>
      */
+    @SuppressWarnings("unchecked") // RexxProxy.newJavaProxyInstance(interfaces) returns a java.lang.reflect.Proxy that gets cast to T
     public <T> T getInterface(Object thiz, Class<T> clasz)
     {
         if (thiz==null)
