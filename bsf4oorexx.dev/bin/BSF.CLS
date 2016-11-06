@@ -12,6 +12,14 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+
+         2016-11-06, ---rgf, if a BSF (Java) object gets a MAKEARRAY or SUPPLIER message sent to it which
+                        cannot be resolved, then RexxAndJava.java checks whether it is a collection type
+                        object (having one of the interfaces java.lang.Iterable, java.util.Collection,
+                        java.util.Enumeration, java.util.Iterator or java.util.Map implemented; or being
+                        a class object of type java.lang.Enum such that its values are regarded to be
+                        meant and returned);
+
          2016-10-27, rgf: - public routine bsf.ScriptContext2rexx now uses .JSR223~ScriptContext2RexxDir(...)
 
          2016-10-26, rgf: - JSR223-support:
@@ -439,7 +447,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     4.52 (20161026)
+   version:     4.53 (20161106)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -538,7 +546,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="452.20161026" -- set version (date distribution got created)
+   .bsf4rexx~version="453.20161106" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1562,6 +1570,63 @@ call rgf_util2
 -- .error~say( "BSF.DISPATCH: methodName="pp(methodName) )
   forward message ("BSF.INVOKE")
 
+/* 2016-11-06, ---rgf
+   On ooRexx 5.0.0 beta the DO...OVER only works if the receiving object has a MAKEARRAY method and does
+   not relay on the UNKNOWN method at all. For this reason we need to have a MAKEARRAY method present in
+   the BSF class: starting with basing BSF4ooRexx on Java 1.6/6.0 in November 2016, all Java objects
+   implementing java.lang.Iterable, java.util.Enumeration, java.util.Collection, java.util.Iterator or java.util.Map
+   will get a "virtual ooRexx" MAKEARRAY and SUPPLIER method, returning an ooRexx array or an ooRexx supplier.
+
+   The new Java code will create a Rexx array in Java and populate it, returning the RexxProxy object. The contained
+   Rexx object can be extracted with the external Rexx function BsfRexxProxy(proxy,"object")
+
+   It is expected that this particular message gets only invoked by DO...OVER, which expects (as of ooRexx 5.0.0beta)
+   a genuine Rexx array object to be returned
+*/
+::method makearray   -- testing, 2016-11-06, rgf
+-- .error~say("BSF.CLS - BSF::MAKEARRAY()" "self="pp(self~objectname) "arg()="pp(arg()))
+
+   if arg()=0 then
+   do
+       res=self~bsf.dispatch("MAKEARRAY")    -- send the message directly to the Java object
+
+       if res~objectName~abbrev("org.rexxla.bsf.engines.rexx.RexxProxy@") then -- if a proxied Rexx object, return Rexx object
+          return BsfRexxProxy(res,"o") -- get the proxied Rexx object, should be the Rexx array object
+       else
+          return res
+   end
+
+   -- arguments going with the message, let UNKNOWN forward this
+-- .error~say("BSF.CLS - BSF::MAKEARRAY()" "self="pp(self~objectname) "arg()="pp(arg()) "FORWARD message('unknown')")
+   forward message ("unknown") array("MAKEARRAY", arg(1,"array"))
+
+/* 2016-11-06, ---rgf
+   Intercept supplier message as returned value might be a RexxProxy which we need to extract the
+   Rexx object from.
+*/
+::method supplier    -- testing, 2016-11-06, rgf
+.error~say("BSF.CLS - BSF::SUPPLIER()" "self="pp(self~objectname) "arg()="pp(arg()))
+
+   if arg()=0 then
+   do
+       res=self~bsf.dispatch("SUPPLIER")     -- send the message directly to the Java object
+.error~say("BSF.CLS - BSF::SUPPLIER()" "res="pp(res))
+       if res~objectName~abbrev("org.rexxla.bsf.engines.rexx.RexxProxy@") then -- if a proxied Rexx object, return Rexx object
+       do
+          supplier=BsfRexxProxy(res,"o")
+say "supplier="pp(supplier) "supplier~class="pp(supplier~class)
+          return BsfRexxProxy(res,"o") -- get the proxied Rexx object, should be the Rexx supplier object
+       end
+       else
+          return res
+   end
+
+   -- arguments going with the message, let UNKNOWN forward this
+.error~say("BSF.CLS - BSF::SUPPLIER()" "self="pp(self~objectname) "arg()="pp(arg()) "FORWARD message('unknown')")
+   forward message ("unknown") array("SUPPLIER", arg(1,"array"))
+
+
+
 
 /* -------------------------------------------------------------
    unknown method (gets called by Object Rexx whenever an unknown
@@ -1588,6 +1653,9 @@ call rgf_util2
            return self~bsf.setFieldValueStrict(tmpName, args[1], args[2])
      end
   end
+
+
+
 
 /* 2004-02-22: can be longer than 250 chars which causes Object Rexx to bomb!
    2006-08   : ooRexx 3.1 resolved this issue, but leaving tested code unchanged */
@@ -2819,7 +2887,7 @@ any:
 
 
 
--- this method is needed by "DO ... OVER"
+-- this method is needed by "DO ... OVER" ad it requires a native Rexx array object!
 ::METHOD MAKEARRAY
 
 -- .error~say( "BSF.CLS: BSF_ARRAY_REFERENCE::MAKEARRAY():" pp(self~objectName)"@"pp(self~identityHash))

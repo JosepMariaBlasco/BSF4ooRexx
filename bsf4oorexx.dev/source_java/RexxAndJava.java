@@ -36,7 +36,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.5.3, 2016-11-05
+  * @version 4.5.3, 2016-11-06
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -48,6 +48,17 @@ import org.apache.bsf.util.type.*;
 */
 
  /*
+     2016-11-06, ---rgf, if non-existing MAKEARRAY or SUPPLIER methods should be invoked, then check, whether
+                    we have a Java collection in hand that has one of the follwoing interfaces implemented:
+                    java.lang.Iterable, java.util.Collection, java.util.Enumeration, java.util.Iterator or
+                    java.util.Map. If so, then create and return a genuine Rexx object of type .Array or
+                    .Supplier wrapped as a RexxProxy which can be unwrapped on the ooRexx side using BsfRexxProxy(rp,"o")
+                    as will be done in BSF.CLS' class BSF.
+
+                    In addition treat a Java class object of type java.lang.Enum as a collection of enum values
+                    and return them for MAKEARRAY; in the case of SUPPLIER use the ordinal enum values for the index
+                    array and the enum values for the item array
+
      2016-11-04, ---rgf, - basing on 1.6/6.0, get rid of generic warnings
                     source_java>javac -Xlint:unchecked RexxAndJava.java
                     RexxAndJava.java:543: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.HashMap
@@ -392,7 +403,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "453.20161105";
+    static final public String version = "453.20161106";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -3571,7 +3582,6 @@ if (bDebug)
                        *********************************************************/
 
 
-
                           final boolean bDebug= false;
                                                 // true;
 
@@ -3920,6 +3930,7 @@ System.err.println("\t\t\ti="+i+", pCl=["+pCl+"], fCl=["+fCl+"]");
 
                           }
 
+
                           if (args.length==3)    // rgf, 2005-05-06, no argument given, maybe a getField intended?
                           {
 // ??????
@@ -3945,6 +3956,183 @@ if (bDebug) System.err.println("'invoke': trying '"+STRING_GET_FIELD_VALUE+"'...
                                   catch (Exception e) { };
 
                               }
+
+/* */
+
+if (bDebug) System.err.println("'invoke': AFTER, AFTER, trying '"+STRING_GET_FIELD_VALUE+"', args[2]=["+args[2]+"]...");
+
+
+                              // 2016-11-06, rgf: add MAKEARRAY and SUPPLIER support; if bean has one of the
+                              //             interfaces java.util.Enumeration, java.lang.Iterable, java.util.Iterator,
+                              //             java.util.Collection, java.util.Map implemented, then create objects
+                              //             that ooRexx expects; hint: MAKEARRAY may be implicitly requested
+                              //             when ooRexx is about to execute a DO...OVER statement
+                              //
+                              //             use RexxProxy to create genuine ooRexx .Array and .Supplier objects to return
+                              if (args[2].equalsIgnoreCase("MAKEARRAY") || args[2].equalsIgnoreCase("SUPPLIER"))
+                              {
+                                  boolean bMakeArray=args[2].equalsIgnoreCase("MAKEARRAY"); // MAKEARRAY or SUPPLIER ?
+// System.err.println("in ... #1 bean=["+bean+"], bean.toString()=["+bean.toString()+"]");
+                                  bean = mgr.lookupBean(args[1]);   // reload bean
+// System.err.println("in ... #2 bean=["+bean+"], bean.toString()=["+bean.toString()+"]");
+                                  Object result=null;
+                                  String rexxCreateArray   ="return .array~new                          \n" +
+                                                            "::requires BSF.CLS                           ";
+
+                                  String rexxCreateSupplier="use arg itemArray, indexArray              \n" +
+                                                            "return .supplier~new(itemArray,indexArray) \n" +
+                                                            "::requires BSF.CLS                           ";
+
+
+                                  if (bean instanceof Class)    // if a java.lang.Enum class in hand, iterate over all enum values
+                                  {
+                                      Class beanClz=(Class) bean;
+                                      if (beanClz.isEnum())     // iterate over all values()
+                                      {
+                                          Enum values[]=(Enum[])beanClz.getEnumConstants(); // get all Enum values, they come as an array already
+                                          if (bMakeArray)   // MAKEARRAY message
+                                          {
+                                                // create an ooRexx array object, return it
+                                              RexxProxy rpArr1=(RexxProxy) rexxEngine.apply("InvokeFrom_RexxAndJava_Enum_01.rex", 0, 0, rexxCreateArray, null, null);
+                                                // populate Rexx array
+                                              for (int i=0; i<values.length;i++)
+                                              {
+                                                  rpArr1.sendMessage1("APPEND",values[i]);
+                                              }
+                                              result=rpArr1;
+                                          }
+                                          else  // SUPPLIER message: create index array using the Enum ordinal values
+                                          {     // do as if a Map ordinal->value was in hand, i.e. use the ordinal values as index values for the Rexx supplier
+                                              RexxProxy rpItemArray =(RexxProxy) rexxEngine.apply("InvokeFrom_RexxAndJava_Enum_02.rex", 0, 0, rexxCreateArray, null, null);
+                                              RexxProxy rpIndexArray=(RexxProxy) rexxEngine.apply("InvokeFrom_RexxAndJava_Enum_03.rex", 0, 0, rexxCreateArray, null, null);
+
+                                              for (int i=0; i<values.length; i++)
+                                              {
+                                                  rpItemArray .sendMessage1("APPEND",values[i]);
+                                                  rpIndexArray.sendMessage1("APPEND",values[i].ordinal());
+                                              }
+                                              Vector<RexxProxy> vArgs=new Vector<RexxProxy>();
+                                              vArgs.add(rpItemArray);
+                                              vArgs.add(rpIndexArray);
+                                              result=rexxEngine.apply("InvokeFrom_RexxAndJava_Enum_04.rex", 0, 0, rexxCreateSupplier, null, vArgs);
+                                          }
+                                      }
+                                  }
+                                  else  // ? instance of java.lang.Iterable, java.util.Enumeration, java.util.Collection, java.util.Iterator, java.util.Map ?
+                                  {
+                                      Class<?> beanClz=bean.getClass();    // get class object
+
+                                      boolean isMap=Map.class.isAssignableFrom(beanClz);
+
+                                      if ( isMap                                       ||
+                                           Iterable.class   .isAssignableFrom(beanClz) ||
+                                           Iterator.class   .isAssignableFrom(beanClz) ||
+                                           Collection.class .isAssignableFrom(beanClz) ||
+                                           Enumeration.class.isAssignableFrom(beanClz) )
+                                      {
+                                          Iterator it=null;
+                                            // try to create iterators
+                                          if (isMap)    // get the keyset and create an iterator for it
+                                          {
+                                              it= ((Map) bean).keySet().iterator();
+
+if (bDebug) System.err.println("in ... -- /// isMap, setting \"it\"...");
+                                          }
+
+                                          else if (Iterable.class.isAssignableFrom(beanClz))
+                                          {
+                                              it= ((Iterable) bean).iterator();
+if (bDebug) System.err.println("in ... -- /// isIterable, setting \"it\"...");
+                                          }
+
+                                          else if (Collection.class.isAssignableFrom(beanClz) )
+                                          {
+                                              it= ((Collection) bean).iterator();
+if (bDebug) System.err.println("in ... -- /// isCollection, setting \"it\"...");
+                                          }
+
+                                          else if (Iterator.class.isAssignableFrom(beanClz) )
+                                          {
+                                              it= (Iterator) bean;
+if (bDebug) System.err.println("in ... -- /// isIterator, setting \"it\"...");
+                                          }
+
+
+                                            // create an ooRexx array object, return it
+                                          RexxProxy rpArr1=(RexxProxy) rexxEngine.apply("InvokeFrom_RexxAndJava_Other_01.rex", 0, 0, rexxCreateArray, null, null);
+
+                                            // create the Rexx array with the iterator, usable for MAKEARRAY and SUPPLIER
+                                            // do not use the Map iterator as for SUPPLIER it needs to fetch the value
+                                          if ( (bMakeArray && it!=null) || (it!=null && !isMap) )
+                                          {
+                                                // populate Rexx array
+                                              while (it.hasNext())
+                                              {
+                                                  rpArr1.sendMessage1("APPEND",it.next());
+                                              }
+                                          }
+                                            // Java 9 will have an "asIterator()", but not available in 1.6/6.0
+                                            // is an Enumeration.class
+                                          else if (Enumeration.class.isAssignableFrom(beanClz) )
+                                          {
+if (bDebug) System.err.println("in ... --> isEnumeration, MAKEARRAY \"it\"...");
+                                              Enumeration en=(Enumeration) bean;
+                                              while (en.hasMoreElements())
+                                              {
+                                                  rpArr1.sendMessage1("APPEND",en.nextElement());
+                                              }
+                                          }
+
+                                          if (bMakeArray)   // MAKEARRAY message
+                                          {
+                                              result=rpArr1;
+                                          }
+                                          else      // SUPPLIER message: all but Map get a Rexx like integer array
+                                          {
+if (bDebug)  System.err.println("in ... # i: SUPPLIER branch...");
+                                              if (isMap)    // it has the keys already
+                                              {
+                                                  Map mBean=(Map) bean;
+                                                    // create an ooRexx array object, return it
+                                                  RexxProxy rpArr2=(RexxProxy) rexxEngine.apply("InvokeFrom_RexxAndJava_Other_02.rex", 0, 0, rexxCreateArray, null, null);
+                                                    // populate Rexx array
+                                                  while (it.hasNext())
+                                                  {
+                                                      Object key=it.next();
+                                                      rpArr1.sendMessage1("APPEND", key);
+                                                      rpArr2.sendMessage1("APPEND", mBean.get(key));
+                                                  }
+                                                  Vector<RexxProxy> vArgs=new Vector<RexxProxy>();
+                                                  vArgs.add(rpArr2);    // value/item array
+                                                  vArgs.add(rpArr1);    // key/index array
+                                                  result=rexxEngine.apply("InvokeFrom_RexxAndJava_Other_03.rex", 0, 0, rexxCreateSupplier, null, vArgs);
+                                              }
+                                              else
+                                              {
+                                                    // return a supplier as if from a bag, i.e. item and index array are the same
+                                                  Vector<RexxProxy> vArgs=new Vector<RexxProxy>();
+                                                  vArgs.add(rpArr1);
+                                                  vArgs.add(rpArr1);
+                                                  result=rexxEngine.apply("InvokeFrom_RexxAndJava_Other_04.rex", 0, 0, rexxCreateSupplier, null, vArgs);
+                                              }
+
+                                          }
+                                      }
+
+// System.err.println("in ... # i: isMap="+isMap+" - beanClz="+beanClz+" ["+beanClz.toString()+"], Map.class.isAssignableFrom(beanClz)="+Map.class.isAssignableFrom(beanClz)+"], beanClz.isAssignableFrom(Map.class)="+beanClz.isAssignableFrom(Map.class));
+
+                                  }
+
+// System.err.println("in ... #3 result=["+result+"]");
+                                  if (result!=null)     // bingo, register and return
+                                  {
+                                      // register result as a bean and return it
+                                       String beanName = makeBeanName(result);
+// System.err.println("in ... #4 beanName=["+beanName+"], returning freshly registered bean.");
+                                       return registerBean(beanName, result);
+                                  }
+                              }
+/* */
 // ??????
                           }
 

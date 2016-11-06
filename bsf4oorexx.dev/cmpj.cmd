@@ -1,6 +1,6 @@
 @echo off
 rem  ------------------------ Apache Version 2.0 license -------------------------
-rem     Copyright (C) 2001-2010 Rony G. Flatscher
+rem     Copyright (C) 2001-2016 Rony G. Flatscher
 rem
 rem     Licensed under the Apache License, Version 2.0 (the "License")rem
 rem     you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ rem     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 rem     See the License for the specific language governing permissions and
 rem     limitations under the License.
 rem  -----------------------------------------------------------------------------
-
+rem 2016-11-04, rgf: now basing BSF4ooRexx on Java 1.6/6.0
 
 @echo on
 @echo off
@@ -31,8 +31,8 @@ set path2rexxlaBsf=%path2root%\org\rexxla\bsf
 
 rem rgf, 20140927: make sure that the extension jar is not picked up (if bsf4oorexx-jar got installed there)
 set javacDefines=-Djava.ext.dirs=""
-set target=-target 1.4
-set source=-source 1.4
+set target=-target 1.6
+set source=-source 1.6
 
 rem default to Apache's BSF
 set javaSrc=%cd%\source_java
@@ -105,8 +105,9 @@ javac %javacDefines% %source% %target% %javaSrc%\RexxConfiguration.java         
 
 
 @rem 2015-05-11
-set target=-target 1.6
-set source=-source 1.6
+rem 2016-11-04, rgf: changed Java baseline from 1.4 to 1.6
+rem set target=-target 1.6
+rem set source=-source 1.6
 
 javac %javacDefines% %source% %target% %javaSrc%\RexxScriptEngine.java          && copy %javaSrc%\RexxScriptEngine.*          %path2jsr223%
 javac %javacDefines% %source% %target% %javaSrc%\RexxScriptEngineFactory.java   && copy %javaSrc%\RexxScriptEngineFactory*    %path2jsr223%
