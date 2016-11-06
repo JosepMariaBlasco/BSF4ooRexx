@@ -1591,7 +1591,11 @@ call rgf_util2
        res=self~bsf.dispatch("MAKEARRAY")    -- send the message directly to the Java object
 
        if res~objectName~abbrev("org.rexxla.bsf.engines.rexx.RexxProxy@") then -- if a proxied Rexx object, return Rexx object
+       do
+-- tmpRes=BsfRexxProxy(res,"o")
+-- .error~say("BSF.CLS - BSF::MAKEARRAY()" "tmpres="pp(tmpres) "tmpres~class:" pp(tmpres~class) "tmpres~items:" pp(tmpres~items))
           return BsfRexxProxy(res,"o") -- get the proxied Rexx object, should be the Rexx array object
+       end
        else
           return res
    end
@@ -1605,16 +1609,16 @@ call rgf_util2
    Rexx object from.
 */
 ::method supplier    -- testing, 2016-11-06, rgf
-.error~say("BSF.CLS - BSF::SUPPLIER()" "self="pp(self~objectname) "arg()="pp(arg()))
+-- .error~say("BSF.CLS - BSF::SUPPLIER()" "self="pp(self~objectname) "arg()="pp(arg()))
 
    if arg()=0 then
    do
        res=self~bsf.dispatch("SUPPLIER")     -- send the message directly to the Java object
-.error~say("BSF.CLS - BSF::SUPPLIER()" "res="pp(res))
+-- .error~say("BSF.CLS - BSF::SUPPLIER()" "res="pp(res))
        if res~objectName~abbrev("org.rexxla.bsf.engines.rexx.RexxProxy@") then -- if a proxied Rexx object, return Rexx object
        do
-          supplier=BsfRexxProxy(res,"o")
-say "supplier="pp(supplier) "supplier~class="pp(supplier~class)
+--          supplier=BsfRexxProxy(res,"o")
+-- say "supplier="pp(supplier) "supplier~class="pp(supplier~class)
           return BsfRexxProxy(res,"o") -- get the proxied Rexx object, should be the Rexx supplier object
        end
        else
@@ -1622,7 +1626,7 @@ say "supplier="pp(supplier) "supplier~class="pp(supplier~class)
    end
 
    -- arguments going with the message, let UNKNOWN forward this
-.error~say("BSF.CLS - BSF::SUPPLIER()" "self="pp(self~objectname) "arg()="pp(arg()) "FORWARD message('unknown')")
+-- .error~say("BSF.CLS - BSF::SUPPLIER()" "self="pp(self~objectname) "arg()="pp(arg()) "FORWARD message('unknown')")
    forward message ("unknown") array("SUPPLIER", arg(1,"array"))
 
 
