@@ -1,0 +1,247 @@
+/*
+    Author:     Rony G. Flatscher
+    Date:       2016-11-07
+    Purpose:    Demonstrate how to use DO...OVER and (starting with ooRexx 5) DO WITH...OVER
+                with
+
+                - java.lang.Enum class objects
+                     - MAKEARRAY will supply all enum Java objects
+                     - SUPPLIER will supply as index the ordinal value and as itme the enum Java object
+
+                  or with Java objects implementing one of the following interfaces:
+
+                - java.lang.Iterable
+                - java.util.Collection
+                - java.util.Enumeration
+                - java.util.Iterator
+                     - MAKEARRAY will supply the collected values
+                     - SUPPLIER will supply as index and item the collected value (as if they were ooRexx Bags)
+
+                - java.util.Map
+                     - MAKEARRAY will supply the key values
+                     - SUPPLIER will supply as index the key and as item the value stored with the key
+
+    Changed:    -
+
+    Needs:      BSF4ooRexx
+
+    License:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2016 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+tab="09"x                  -- define the TAB character for indentation
+line="-"~copies(79)        -- define line
+
+call demo_Enum        tab, line  -- run the java.lang.Enum demo
+call demo_Map         tab, line  -- run the java.Util.Map demo
+call demo_Iterable    tab, line  -- run the java.Util.Map demo
+call demo_Iterator    tab, line  -- run the java.Util.Map demo
+call demo_Enumeration tab, line  -- run the java.Util.Map demo
+
+::requires "BSF.CLS" -- get Java support
+
+
+-- demonstrates iterating over a java.lang.Enum class'es defined enum values
+::routine demo_Enum
+   use arg tab, line
+   say
+   say "Demo DO..OVER a java.lang.Enum class object's enum values"
+   say
+   javaClz="org.oorexx.misc.OldGreekAlphabetEnum"
+   say tab "loading the Java enum class" pp(javaClz) "..."
+   clz=bsf.loadClass(javaClz)
+   say
+
+   say tab "iterating over all keys after explicitly sending MAKEARRAY to the Java object:"
+   say
+   do e over clz
+      say tab tab "ordinal value:" pp(e~ordinal~right(2)) "string value:" pp(e~name)
+   end
+   say
+
+   say tab "iterating over all enum values using DO...OVER (sends MAKEARRAY message implicitly):"
+   say
+   do e over clz
+         -- on enum value: instead of "name" one could use "toString" as well to get at its string representation
+      say tab tab "ordinal value:" pp(e~ordinal~right(2)) "string value:" pp(e~name)
+   end
+   say
+
+   say tab "iterating over all enum values using DO WITH...OVER (sends SUPPLIER message implicitly):"
+   say
+   do with index i item e over clz
+      say tab tab "index (ordinal value):" pp(i~right(2)) "item:" pp(e~name)
+   end
+   say line
+
+-- demonstrates iterating over a java.util.Map
+::routine demo_Map
+   use arg tab, line
+   say
+   say "Demo DO..OVER a java.util.Map object"
+   say
+
+   hm=.BSF~new("java.util.HashMap")       -- create a HashMap object and add values to it
+   hm~put("key1", "Rexx is great!")
+   hm~put("key2", "ooRexx is great!")
+   hm~put("key3", "BSF4ooRexx is great!")
+
+   say tab "iterating over all keys after explicitly sending MAKEARRAY to the Java object:"
+   say
+   do k over hm~makearray
+      say tab tab "key:" pp(k)
+   end
+   say
+
+   say tab "iterating over all keys using DO...OVER (sends MAKEARRAY message implicitly):"
+   say
+   do k over hm
+      say tab tab "key:" pp(k)
+   end
+   say
+
+   say tab "iterating over all key/value pairs using DO WITH...OVER (sends SUPPLIER message implicitly):"
+   say
+   do with index i item v over hm
+      say tab tab "index:" pp(i) "item:" pp(v)
+   end
+   say line
+
+
+-- demonstrates iterating over a java.util.Iterable
+::routine demo_Iterable
+   use arg tab, line
+   say
+   say "Demo DO..OVER a java.util.Iterable object"
+   say
+
+   arrList=.BSF~new("java.util.ArrayList")   -- create an ArrayList add values to it
+   arrList~add("Rexx is great!")
+   arrList~add("ooRexx is great!")
+   arrList~add("BSF4ooRexx is great!")
+
+   say tab "iterating over all values after explicitly sending MAKEARRAY to the Java object:"
+   say
+   do k over arrList
+      say tab tab "value:" pp(k)
+   end
+   say
+
+   say tab "iterating over all values using DO...OVER (sends MAKEARRAY message implicitly):"
+   say
+   do k over arrList
+      say tab tab "value:" pp(k)
+   end
+   say
+
+   say tab "iterating over all values using DO WITH...OVER (sends SUPPLIER message implicitly):"
+   say
+   do with index i item v over arrList
+      say tab tab "index:" pp(i)~left(22) "item:" pp(v)
+   end
+   say line
+   return
+
+
+-- demonstrates iterating over a java.util.Iterator
+::routine demo_Iterator
+   use arg tab, line
+   say
+   say "Demo DO..OVER a java.util.Iterator object"
+   say
+
+   arrList=.BSF~new("java.util.ArrayList")   -- create an ArrayList add values to it
+   arrList~add("Rexx is great!")
+   arrList~add("ooRexx is great!")
+   arrList~add("BSF4ooRexx is great!")
+
+   say tab "now getting an Iterator from the ArrayList..."
+   it=arrList~iterator
+   say
+   say tab "iterating over all values after explicitly sending MAKEARRAY to the Java object:"
+   say
+   do k over it                     -- using the Iterator object
+      say tab tab "value:" pp(k)
+   end
+   say
+
+   say tab "now getting another Iterator from the ArrayList... (previous one got exhausted)"
+   it=arrList~iterator
+   say
+   say tab "iterating over all values using DO...OVER (sends MAKEARRAY message implicitly):"
+   say
+   do k over it                     -- using the Iterator object
+      say tab tab "value:" pp(k)
+   end
+   say
+
+   say tab "now getting another Iterator from the ArrayList... (previous one got exhausted)"
+   it=arrList~iterator
+   say
+   say tab "iterating over all values using DO WITH...OVER (sends SUPPLIER message implicitly):"
+   say
+   do with index i item v over it   -- using the Iterator object
+      say tab tab "index:" pp(i)~left(22) "item:" pp(v)
+   end
+   say line
+
+
+
+
+-- demonstrates iterating over a java.util.Enumeration
+::routine demo_Enumeration
+   use arg tab, line
+   say
+   say "Demo DO..OVER a java.util.Enumeration object"
+   say
+
+   string="Rexx, ooRexx and BSF4ooRexx are great!"
+   say tab "creating a StringTokenizer instance..."
+   tokenized=.BSF~new("java.util.StringTokenizer", string)
+   say
+   say tab "iterating over all values after explicitly sending MAKEARRAY to the Java object:"
+   say
+   do word over tokenized           -- using the Iterator object
+      say tab tab "value:" pp(word)
+   end
+   say
+
+   say tab "creating a StringTokenizer instance... (previous one got exhausted)"
+   tokenized=.BSF~new("java.util.StringTokenizer", string)
+   say
+   say tab "iterating over all values using DO...OVER (sends MAKEARRAY message implicitly):"
+   say
+   do word over tokenized           -- using the Iterator object
+      say tab tab "value:" pp(word)
+   end
+   say
+
+   say tab "creating a StringTokenizer instance... (previous one got exhausted)"
+   tokenized=.BSF~new("java.util.StringTokenizer", string)
+   say
+   say tab "iterating over all values using DO WITH...OVER (sends SUPPLIER message implicitly):"
+   say
+   do with index i item v over tokenized  -- using the Iterator object
+      say tab tab "index:" pp(i)~left(12) "item:" pp(v)
+   end
+   say line
+
+
+
+::requires bsf.cls
+

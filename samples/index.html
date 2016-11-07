@@ -118,6 +118,13 @@ example is to be expected:
     <dd>Demonstrates the usage of the routine <code>BSF.wrapStaticFields</code> for accessing
         Java constants. This public routine gets defined by the ooRexx package <code>BSF.CLS</code>.
 
+    <dt><a href="1-070_demoDoOver.rxj">1-070_demoDoOver.rxj</a>
+    <dd>Demonstrates the usage of <code>MAKEARRAY</code> and <code>SUPPLIER</code> on the
+    Java class <code>java.lang.Enum</code> (defines <code>enum</code> values; this sample uses the Enum
+    class <code>org.oorexx.misc.OldGreekAlphabetEnum</code>) and the Java objects
+    of type <code>java.lang.Iterable</code>, <code>java.util.Collection</code>,
+    <code>java.util.Enumeration</code>, <code>java.util.Iterator</code> and <code>java.util.Map</code>.
+
     <dt><a href="2-010_demoJavaArrays.rxj">2-010_demoJavaArrays.rxj</a>
     <dd>Demonstrate how to create and use Java array objects.
 
@@ -244,9 +251,11 @@ example is to be expected:
     <dd>Allows to pick a file that then gets printed (user is allowed to pick the printer as well).
         Java <em>&quot;swing&quot;</em> version.
 
-    <dt><a href="9-010_RunJavaClass.rxj">9-010_RunJavaClass.rxj</a>
-    <dd>Calls the static void main() method of the given Java class, supplying optionally
+    <dt><a href="9-010_ExecuteMainMethodInJavaClass.rxj">9-010_ExecuteMainMethodInJavaClass.rxj</a>
+    <dd>Demonstrates how to invoke the static main() method of the given Java class, supplying optionally
         arguments given on the command line to Rexx (by <a href="http://www.well.com/%7Ejax/rcfb/rexx.html">Jack Woehr</a>).
+        If the Java class does not contain a public static main()-method, then an appropriate runtime
+        error will be generated.
 
     <dt><a href="9-020_swt_snippet108.rxj">9-020_swt_snippet108.rxj</a>
     <dd>Transcription of the Eclipse GUI class library
