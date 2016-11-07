@@ -105,7 +105,7 @@ package org.oorexx.datergf; // "DateTime_RGF"-package
  * <hr>
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2006 Rony G. Flatscher
+ *    Copyright (C) 2001-2016 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -138,6 +138,7 @@ package org.oorexx.datergf; // "DateTime_RGF"-package
   *             2001-04-05      - included update() here
   *
   *             2005-12-28      - added Apache license 2.0, put sources with BSF4Rexx
+ *              2016-11-07      - added main method to give a brief overview
   * </pre>
   *
   * <hr>
@@ -146,6 +147,8 @@ package org.oorexx.datergf; // "DateTime_RGF"-package
   * @version 0.92,  date: 2001-02-08 through 2001-04-05, 2006-01-01
   *
   */
+
+// rgf, 2016-11-07: this package could be overhauled by employing java.lang.Enum
 
 
 public  class   DateRGF
@@ -157,7 +160,7 @@ public  class   DateRGF
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "92.20060101";
+    static public String version = "100.20161107";
 
 
 
@@ -402,6 +405,108 @@ public  class   DateRGF
     {
         this.set(year, month, day);
      }
+
+    /** Main method to give a few hints on the command line.
+     *
+     * @author Rony G. Flatscher
+     * @since 2016-11-07
+     */
+    public static void main (String args[])
+    {
+        System.out.println(
+             "The class \"org.oorexx.datergf.DateRGF\" is an implementation of Date which allows     \n" +
+             "for date manipulations and date arithmetics.                                           \n" +
+             "                                                                                       \n" +
+             "The philosophy of this class follows the Rexx date arithmetic and manipulation         \n" +
+             "package \"datergf.cmd|rex\" of the autho, (originally written on OS/2).                \n" +
+             "                                                                                       \n" +
+             "                                                                                       \n" +
+             "\"org.oorexx.datergf.DateRGF\" allows dates in the range of \"0001-01-01\"             \n" +
+             "and \"9999-12-31\". By default (can be changed with the method                         \n" +
+             "\"setGregorianChange(int year, int month, int day)\") it switches from                 \n" +
+             "the Julian calendar to the Gregorian calendar in October of 1582 (October 4th of       \n" +
+             "1582 is followed by October 15th of 1582).                                             \n" +
+             "                                                                                       \n" +
+             "It uses the ISO-values for indicating the days and the ISO-rules to determine          \n" +
+             "which week is the first week for a year.                                               \n" +
+             "                                                                                       \n" +
+             "Some of the available operations are:                                                  \n" +
+             "                                                                                       \n" +
+             "-   Calculating the difference in days between two DateRGFs,                           \n" +
+             "                                                                                       \n" +
+             "-   adding days to a DateRGF (using negative days one subtracts                        \n" +
+             "    them from a DateRGF),                                                              \n" +
+             "                                                                                       \n" +
+             "-   creating various DateRGF-values, like beginning (end) of a week                    \n" +
+             "    (month, quarter, half-year = semester, year) a DateRGF falls into,                 \n" +
+             "    optionally adding (subtracting) days from it,                                      \n" +
+             "                                                                                       \n" +
+             "-   getting information about DateRGFs like year, month, day,                          \n" +
+             "    day-of-week, number of days in a month etc.                                        \n" +
+             "                                                                                       \n" +
+             "This Java-version was originally created for the Waba family                           \n" +
+             "(link used to be \"http://www.SuperWaba.org\")family of Java-compatible                \n" +
+             "mobile systems (PDAs, Handies, etc.) (e.g.: not employing threading,                   \n" +
+             "exceptions, and the datatypes long and double).                                        \n" +
+             "                                                                                       \n" +
+             "This class attempts to use as few resources as possible, yet                           \n" +
+             "allow for comprehensive and fast date manipulations and can run                        \n" +
+             "on any current Java platform.                                                          \n" +
+             "                                                                                       \n" +
+             "\"org.oorexx.datergf.DateRGF } is *not* modelled after Java's classes                  \n" +
+             "Date or Calendar! Therefore, in order for getting fast to the point                    \n" +
+             "of this class, most method descriptions contain short examples.                        \n" +
+             "                                                                                       \n" +
+             "Examples:                                                                              \n" +
+             "                                                                                       \n" +
+             "     DateRGF firstDate=new DateRGF(   1, 1, 1), // yields: '0001-01-01'                \n" +
+             "             lastDate =new DateRGF(9999,12,31); // yields: '9999-12-31'                \n" +
+             "                                                                                       \n" +
+             "     int     days=lastDate.subtract(firstDate); // yields: 3652060                     \n" +
+             "                                                                                       \n" +
+             "     DateRGF tmpDate=(DateRGF)firstDate.clone();// yields: '0001-01-01'                \n" +
+             "     tmpDate.add(days);                         // yields: '9999-12-31'                \n" +
+             "                                                                                       \n" +
+             "                    // get Labor Monday in 2001                                        \n" +
+             "     tmpDate=new DateRGF(2001,8,31);            // yields: '2001-08-31', a Friday      \n" +
+             "     tmpDate.set(WEEKDAY, 1);                   // yields: '2001-09-03'                \n" +
+             "                                                                                       \n" +
+             "                    // get Labor Monday in 2001 in <em>one</em> line                   \n" +
+             "     tmpDate=(new DateRGF(2001,8,31)).set(WEEKDAY,1); // yields: '2001-08-31', a Friday\n" +
+             "                                                                                       \n" +
+             "     DateRGF d=valueOf(ENCODED_AS_INTEGER, 20190521);       // yields: '2019-05-21'    \n" +
+             "                                                                                       \n" +
+             "     d.set(WB, 0);              // yields: '2019-05-19', if weekStart=7 (Sunday)       \n" +
+             "     int iso_day=d.get(DOW);    // yields: 7 (ISO-number for Sunday)                   \n" +
+             "                                                                                       \n" +
+             "     d.set(WB, 3);              // yields: '2019-05-22', if weekStart=7 (Sunday)       \n" +
+             "     d.set(WE, 0);              // yields: '2019-05-25', if weekStart=7 (Sunday)       \n" +
+             "                                                                                       \n" +
+             "     DateRGF easter=DateRGF.easter(d);          // yields: '2019-04-21'                \n" +
+             "                                                                                       \n" +
+             "     int palm_days=d.get(EPOCH_PALM);           // yields: 35430                       \n" +
+             "     int java_days=d.get(EPOCH_JAVA);           // yields: 18041                       \n" +
+             "                                                                                       \n" +
+             "                                                                                       \n" +
+             "          // if run on \"2010-09-22 17:49:01\",  then                                  \n" +
+             "     d.update();                // yields: '2010-09-22'                                \n" +
+             "                                                                                       \n" +
+             "     String day_name  =getString(DN, d.get(DOW));           // yields: 'Saturday'      \n" +
+             "     String month_name=getString(MN, d.get(MONTH_FIELD));   // yields: 'May'           \n" +
+             "                                                                                       \n" +
+             "                                                                                       \n" +
+             "See the Javadoc-documentation in the BSF4ooRexx \"information\" folder (menu           \n" +
+             "\"BSF4ooRexx -> Information\") for the full documentation of this package consisting   \n" +
+             "of the classes \"org.oorexx.datergf.DateRGF\", \"org.oorexx.datergf.TimeRGF\",         \n" +
+             "\"org.oorexx.datergf.DateTimeRGF\", \"org.oorexx.datergf.DateFormatRGF\", and          \n" +
+             "\"org.oorexx.datergf.DTC\" (date time constants).                                      \n" +
+             "                                                                                       \n" +
+             "It is very easy to take advantage of this class from Rexx. Just check out the          \n" +
+             "Rexx samples \"samples/1-050_DateRgf.rxj\" and \"samples/1-060_DateRgfSample.rxj\"     \n" +
+             "in the BSF4ooRexx \"samples\" folder (menu \"BSF4ooRexx -> Samples\") as of 2016-11-07.\n"
+            );
+
+    }
 
 
 
