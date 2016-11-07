@@ -24,6 +24,7 @@ java org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool TestAbstract Caesar
                          (which will be the case when invoked by RexxProxy.newExtendedProxyInstance(...))
 
     2016-11-05, rgf:   - basing on 1.6/6.0, get rid of generic warnings
+    2016-11-07, rgf:   - remove reflective usage of Method.isSynthetic() as we can now rely it to be available
 
 */
 // TODO: rgf, 20161104,   new base 1.6/6: tidy up code that uses reflection to see whether running on Java = 1.4
@@ -78,6 +79,7 @@ public class ProxiedJavaClassTool
     public static boolean bTiming=false;            // true;
     public static boolean bss= false;                // if set to .true, the generated source is printed to stderr
 
+/* rgf, 2016-11-07: new base is Java 1.6/6 where Method.isSynthetic() is available
     // using Janino 1.5.2 and Java 6: bug in Janino which wrongly demands a synthetic bridge method to be implemented
     public  static boolean bDoNotProxySyntheticMethods=true; // this should be the correct mode (once Janino is fixed it should work with Janino as well)
     // try to get the isSynthetic method object, if available (starting with Java 1.5)
@@ -90,10 +92,11 @@ public class ProxiedJavaClassTool
         catch (Exception e)
         { }
     }
+*/
 
 
      /** Version information on this class. */
-    static final public String version="102.20161105";
+    static final public String version="102.20161107";
 
 
     public static void main (String args[])
@@ -886,8 +889,9 @@ if (bDebug==true) System.err.println("---> BINGO !    <INIT>   BINGO! <---, newC
             boolean bMethodFound=false;
             for (int k=0; k<meths.length; k++)
             {
-if (bDebug==true) System.err.println("createMethods(), k=["+k+"] meths[k]=["+meths[k]+"]; bDoNotProxySyntheticMethods=["+bDoNotProxySyntheticMethods+"]");
 
+/*
+if (bDebug==true) System.err.println("createMethods(), k=["+k+"] meths[k]=["+meths[k]+"]; bDoNotProxySyntheticMethods=["+bDoNotProxySyntheticMethods+"]");
                 // if running on Java 1.5 or higher, skip synthetic (bridged) methods?
                 if (bDoNotProxySyntheticMethods==true && IS_SYNTHETIC_METHOD!=null)
                 {
@@ -903,7 +907,12 @@ if (bDebug==true) System.err.println("!!! IS_SYNTHETIC_METHOD.invoke("+meths[k]+
                     catch (Exception e)
                     { }
                 }
+*/
 
+                if (meths[k].isSynthetic())     // skip synthetic (bridge) methods
+                {
+                    continue;
+                }
 
                 String tmpName=meths[k].getName().toUpperCase();
                 if (tmpName.compareTo(arrM2P[3])!=0)        // not found?
