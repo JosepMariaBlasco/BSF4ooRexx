@@ -3972,9 +3972,7 @@ if (bDebug) System.err.println("'invoke': AFTER, AFTER, trying '"+STRING_GET_FIE
                               if (args[2].equalsIgnoreCase("MAKEARRAY") || args[2].equalsIgnoreCase("SUPPLIER"))
                               {
                                   boolean bMakeArray=args[2].equalsIgnoreCase("MAKEARRAY"); // MAKEARRAY or SUPPLIER ?
-// System.err.println("in ... #1 bean=["+bean+"], bean.toString()=["+bean.toString()+"]");
                                   bean = mgr.lookupBean(args[1]);   // reload bean
-// System.err.println("in ... #2 bean=["+bean+"], bean.toString()=["+bean.toString()+"]");
                                   Object result=null;
                                   String rexxCreateArray   ="return .array~new                          \n" +
                                                             "::requires BSF.CLS                           ";
@@ -4045,16 +4043,15 @@ if (bDebug) System.err.println("in ... -- /// isMap, setting \"it\"...");
 if (bDebug) System.err.println("in ... -- /// isIterable, setting \"it\"...");
                                           }
 
-                                          else if (Collection.class.isAssignableFrom(beanClz) )
-                                          {
-                                              it= ((Collection) bean).iterator();
-if (bDebug) System.err.println("in ... -- /// isCollection, setting \"it\"...");
-                                          }
-
                                           else if (Iterator.class.isAssignableFrom(beanClz) )
                                           {
                                               it= (Iterator) bean;
 if (bDebug) System.err.println("in ... -- /// isIterator, setting \"it\"...");
+                                          }
+                                          else if (Collection.class.isAssignableFrom(beanClz) )
+                                          {
+                                              it= ((Collection) bean).iterator();
+if (bDebug) System.err.println("in ... -- /// isCollection, setting \"it\"...");
                                           }
 
 
@@ -4118,17 +4115,12 @@ if (bDebug)  System.err.println("in ... # i: SUPPLIER branch...");
 
                                           }
                                       }
-
-// System.err.println("in ... # i: isMap="+isMap+" - beanClz="+beanClz+" ["+beanClz.toString()+"], Map.class.isAssignableFrom(beanClz)="+Map.class.isAssignableFrom(beanClz)+"], beanClz.isAssignableFrom(Map.class)="+beanClz.isAssignableFrom(Map.class));
-
                                   }
 
-// System.err.println("in ... #3 result=["+result+"]");
                                   if (result!=null)     // bingo, register and return
                                   {
                                       // register result as a bean and return it
                                        String beanName = makeBeanName(result);
-// System.err.println("in ... #4 beanName=["+beanName+"], returning freshly registered bean.");
                                        return registerBean(beanName, result);
                                   }
                               }
