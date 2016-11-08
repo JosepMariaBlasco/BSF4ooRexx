@@ -13,27 +13,27 @@ we return a Rexx object when this Rexx script runs.
 */
 
 parse source . . thisFile
-say "(from Rexx) source:" pp(thisFile)", prolog code, tid="pp(BsfGetTid())
+say "source:" pp(thisFile)", prolog code, tid="pp(BsfGetTid())
 return .test~new     -- return Rexx object
 
 ::requires BSF.CLS
 
 ::routine run public -- a public routine to be used for the java.lang.Runnable implementation
   use arg slotDir
-  say "(from Rexx) public routine 'RUN', tid="pp(BsfGetTid()) || -
-                   ", slotDir~scriptContext:" pp(slotDir~scriptContext)
+  say "public routine 'RUN', tid="pp(BsfGetTid()) || -
+      ", slotDir~scriptContext:" pp(slotDir~scriptContext)
 
 
 ::class test         -- a Rexx class implementing the method of the Java interface class
 ::method run         -- a method routine to be used for the java.lang.Runnable implementation
   use arg slotDir
-  say "(from Rexx)" pp(self) "method 'RUN', tid="pp(BsfGetTid()) || -
-                    ", slotDir~scriptContext:" pp(slotDir~scriptContext)
+  say pp(self) "method 'RUN', tid="pp(BsfGetTid()) || -
+      ", slotDir~scriptContext:" pp(slotDir~scriptContext)
 
 
 /*
    ------------------------ Apache Version 2.0 license -------------------------
-      Copyright 2015 Rony G. Flatscher
+      Copyright 2015-2016 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.
@@ -47,4 +47,7 @@ return .test~new     -- return Rexx object
       See the License for the specific language governing permissions and
       limitations under the License.
    -----------------------------------------------------------------------------
+
+   2016-11-08, ---rgf: removed "(Rexx)" from SAY statements as a proper Rexx-identifying prefix gets
+                       now supplied automatically
 */

@@ -21,27 +21,27 @@ return .test~new        -- return a Rexx object
 
 ::method two            -- a Rexx method
   use arg a, b, c, d       -- get (Java) arguments
-  say "(from Rexx) 'd~scriptContext' is the ScriptContext of this invocation:" pp(d~scriptContext)
+  say "'d~scriptContext' is the ScriptContext of this invocation:" pp(d~scriptContext)
 
-  return "(from Rexx)" '->' a '->' b '->' c '!' -- return the concatenated values
+  return '->' a '->' b '->' c '!'  "(from Rexx)"   -- return the concatenated values
 
 ::method now            -- a Rexx method
-  return "(from Rexx)" .DateTime~new~string -- return the string value
+  return  .DateTime~new~string "(from Rexx)"       -- return the string value
 
 ::routine routine_eins public -- a public routine
-  return "(from Rexx) return value from the public 'routine_eins'"
+  return "return value from the public Rexx 'routine_eins'"
 
 ::routine routine_zwei public -- a public routine
   use arg a, b, c
-  say "(from Rexx) 'arg(4)~scriptContext' is the ScriptContext of this invocation:" pp(arg(4)~scriptContext)
-  return "(from Rexx)" '->' a '->' b '->' c '!' -- return the concatenated values
+  say "'arg(4)~scriptContext' is the ScriptContext of this invocation:" pp(arg(4)~scriptContext)
+  return '->' a '->' b '->' c '!'  "(from Rexx)"   -- return the concatenated values
 
 ::routine routine_drei private   -- a private routine
-  return "(from Rexx) return value from the public 'routine_drei'"
+  return "return value from the public Rexx 'routine_drei'"
 
 /*
    ------------------------ Apache Version 2.0 license -------------------------
-      Copyright 2015 Rony G. Flatscher
+      Copyright 2015-2016 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.
@@ -55,4 +55,7 @@ return .test~new        -- return a Rexx object
       See the License for the specific language governing permissions and
       limitations under the License.
    -----------------------------------------------------------------------------
+
+   2016-11-08, ---rgf: removed "(Rexx)" from SAY statements as a proper Rexx-identifying prefix gets
+                       now supplied automatically
 */

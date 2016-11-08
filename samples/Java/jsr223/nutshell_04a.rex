@@ -10,13 +10,13 @@
 */
 
 parse source s
-say "(Rexx) parse source:" pp(s)
+say "parse source:" pp(s)
    -- slotDir (a Rexx directory) is always appended and contains the invocation's ScriptContext
 use arg slotDir
 scriptContext=slotDir~scriptContext    -- get ScriptContext entry from slot directory
-say "(Rexx) fetching entries from 'ScriptContext'" pp(scriptContext)
+say "fetching entries from 'ScriptContext'" pp(scriptContext)
 started_at=scriptContext~getAttribute("started_at")
-say "(Rexx) Java host started set-up at:" pp(started_at)
+say "Java host started set-up at:" pp(started_at)
 
 d1=scriptContext~getAttribute("d1")
 d2=scriptContext~getAttribute("d2")
@@ -27,17 +27,17 @@ d6=scriptContext~getAttribute("d6")
 d7=scriptContext~getAttribute("d7")
 d8=scriptContext~getAttribute("d8")
 
-say "(Rexx) calculating aggregate width and height, returning it to Java"
+say "calculating aggregate width and height, returning it to Java"
 aggWidth  =d1~width +d2~width +d3~width +d4~width +d5~width +d6~width +d7~width +d8~width
 aggHeight =d1~height+d2~height+d3~height+d4~height+d5~height+d6~height+d7~height+d8~height
-say "(Rexx) aggWidth="pp(aggWidth) "aggHeight="pp(aggHeight)
+say "aggWidth="pp(aggWidth) "aggHeight="pp(aggHeight)
 return .bsf~new("java.awt.Dimension", aggWidth, aggHeight)
 
 ::requires bsf.cls   -- get Java support
 
 /*
    ------------------------ Apache Version 2.0 license -------------------------
-      Copyright 2015 Rony G. Flatscher
+      Copyright 2015-2016 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.
@@ -51,4 +51,7 @@ return .bsf~new("java.awt.Dimension", aggWidth, aggHeight)
       See the License for the specific language governing permissions and
       limitations under the License.
    -----------------------------------------------------------------------------
+
+   2016-11-08, ---rgf: removed "(Rexx)" from SAY statements as a proper Rexx-identifying prefix gets
+                       now supplied automatically
 */

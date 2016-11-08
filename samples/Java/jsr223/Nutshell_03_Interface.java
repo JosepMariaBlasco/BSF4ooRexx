@@ -52,7 +52,7 @@ public class Nutshell_03_Interface
             RexxProxy rp=(RexxProxy) rse.eval(new FileReader(filename), b);  // now let us execute the Rexx script
             System.err.println("---");
 
-            Runnable r=rse.getInterface(Runnable.class);    // get an interface implementation
+            Runnable r=rse.getInterface(Runnable.class);    // get an interface implementation, will use the latest CompiledRexxScript object
             System.err.println("(Java) creating new Thread supplying ["+r+"]:");
             Thread th = new Thread(r);
             th.start();
