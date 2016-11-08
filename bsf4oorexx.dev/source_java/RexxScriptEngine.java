@@ -40,6 +40,14 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+
+        2016-11-08: ---rgf, supply null as new fourth argument to RexxCompiledScript.createArgV(...)
+                            as we have no RexxCompiledScript available in the case of invokeMethod()
+
+        2016-11-07, rgf:   - updateRexxEngine() method should be synchronized to make sure that
+                             re-assigning standard files does not get interrupted, if multithreaded
+                             usages
+
         2016-11-05, rgf:   - basing on 1.6/6.0, get rid of generic warnings
 
         2016-10-26, ---rgf: adjust to observed usage by JavaFX
@@ -1045,7 +1053,7 @@ if (bDebug==true) {exc.printStackTrace();}
         Object arrArgV[];
         try
         {
-            arrArgV=RexxCompiledScript.createArgV(args, sc, this);  // supply default context
+            arrArgV=RexxCompiledScript.createArgV(args, sc, this, null);  // supply default context; no access to RexxCompiledScript
         }
         catch (BSFException exc)
         {
@@ -1151,7 +1159,10 @@ if (bDebug==true) {exc.printStackTrace();}
      *             script's standard monitors <code>.input</code>, <code>.output</code> and
      *             <code>.error</code>.
      */
-    void updateRexxEngine(ScriptContext sc) throws ScriptException, BSFException
+
+// TODO: 2016-11-07, rgf: synchronized method?
+//          check whether current re-assignments are in place already or not
+    synchronized void updateRexxEngine(ScriptContext sc) throws ScriptException, BSFException
     {
 if (bDebug) {System.err.println("--> RexxScriptEngine().updateRexxEngine(), sc=["+sc+"] ...");}
 

@@ -30,7 +30,8 @@ Changes:
                           in additon also conditionally allowing to display the Rexx source
     2016-11-04: ---rgf, rebasing on Java 1.6/6.0; generics related warning cannot be circumvented
                           (cf. comments in getInterface(Class<T> clasz) method)
-
+    2016-11-08: ---rgf, add RexxCompiledScript object to slotDir, if available; supplied as new
+                        fourth argument to static method createArgV(...).
 */
 
 
@@ -47,7 +48,7 @@ Changes:
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20161104
+ * @version 100.20161108
  * @since  2015-05-11
  *
  */
@@ -228,7 +229,7 @@ if (bDebug==true)
         Object arrArgV[];
         try
         {
-            arrArgV=createArgV((Object[])sc.getAttribute(ScriptEngine.ARGV), sc, rse);
+            arrArgV=createArgV((Object[])sc.getAttribute(ScriptEngine.ARGV), sc, rse, this);
         }
         catch (BSFException exc)
         {
@@ -430,7 +431,7 @@ if (bDebug==true)
             }
 
                 // get the public routine, prepare arguments, invoke it
-            Object arrArgV[]=createArgV(args, rse.getContext(), rse);    // supply default context
+            Object arrArgV[]=createArgV(args, rse.getContext(), rse, this);    // supply default context
             RexxProxy routine=(RexxProxy) publicRoutines.sendMessage1("ENTRY",name);    // get routine
             return routine.sendMessage1("CALLWITH",arrArgV);
         }
@@ -628,7 +629,7 @@ if (bDebug==true)
      *  @param sc ScriptContext to be appended to the arguments for the Rexx script
      *  @return an Object array containing all arguments to be passed on to the Rexx script
     */
-    static Object[] createArgV(Object[] args, ScriptContext sc, RexxScriptEngine rse) throws ScriptException, BSFException
+    static Object[] createArgV(Object[] args, ScriptContext sc, RexxScriptEngine rse, RexxCompiledScript rcs) throws ScriptException, BSFException
     {
         int argsLength= (args!=null ? args.length : 0);
         Object arrArgV[]=new Object[argsLength+1];
@@ -638,7 +639,7 @@ if (bDebug==true)
                               // true;
 if (bDebug)
 {
-    System.err.println("/// in RexxCompiledScript.createArgV(): args["+args+"], sc=["+sc+"], rse=["+rse+"]");
+    System.err.println("/// in RexxCompiledScript.createArgV(): args["+args+"], sc=["+sc+"], rse=["+rse+"], rcs=["+rcs+"]");
 }
 
         if (args!=null && args.length>0)    // if ARGV array is given and has entries, then create argument vector
@@ -660,8 +661,13 @@ if (bDebug)
             // make sure last argument is a Rexx directory, with an entry "SCRIPTCONTEXT" storing the ScriptContext object
             // (this way Rexx routines - even those invoked from JavaProxy invocations - can rely that
             // the last argument is a directory containing an entry "SCRIPTCONTEXT")
-        arrArgV[i]=rse.getCreateDirectory().sendMessage2("CALL","SCRIPTCONTEXT",sc);
-// TODO: add rse also to slotDir?
+        // arrArgV[i]=rse.getCreateDirectory().sendMessage2("CALL","SCRIPTCONTEXT",sc);
+        RexxProxy rpDir=(RexxProxy) rse.getCreateDirectory().sendMessage2("CALL","SCRIPTCONTEXT",sc); // create .directory supply a first entry
+        if (rcs!=null)
+        {
+            rpDir.sendMessage2("SETENTRY","REXXCOMPILEDSCRIPT",rcs);    // supply this RexxCompiledScript for reflective usage by Rexx program (e.g. for debugging)
+        }
+        arrArgV[i]=rpDir;
 if (bDebug)
 {
     System.err.println("\t===> createArgV(), after adding scriptcontext, returning arrArgV["+arrArgV+"].length=["+arrArgV.length+"]");
