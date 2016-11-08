@@ -13,6 +13,11 @@
 
    date:
 
+         2018-11-08, ---rgf, - bsf.OutputStream: now also inserts the prefix after LF chars if the string to
+                               output contains contains any
+                             - bsf.OutputStream::charout() now has an optional third argument, if set to .true,
+                               the prefix gets skipped (used by bsf.InputStream::linein)
+
          2017-11-07, ---rgf, - added ability to output a prefix-string for BSF.InputStream and BSF.OutputStream objects
                              - routine bsf.redirectTo now sets that prefix for  the redirectred standard Rexx files
                                monitored by .input, .output, .error, .debugInput, .traceOutput to
@@ -553,7 +558,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="453.20161107" -- set version (date distribution got created)
+   .bsf4rexx~version="453.20161108" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4487,9 +4492,9 @@ syntax:
 
 ::method charIn
   expose javaInputObject byteArray1 charArray1 isReader
+  signal on syntax name wrong_args
   use strict arg start=1, length=1
--- .traceOutput~say("charIn(): start="start", length="length "...")
--- .stderr~say(self"::CHARIN byteArray1="pp(byteArray1) "charArray1="pp(charArray1) "javaInputObject="pp(javaInputObject) "isReader="pp(isReader) "line #" pp(.line))
+  signal off syntax
 
   if start>1 then
   do
@@ -4504,7 +4509,6 @@ syntax:
      else
         barr=bsf.createJavaArray("byte.class", length)
 
-
      n=javaInputObject~read(barr,0,length)
      if n=0 then return ""
      return BSFRawBytes(barr,n)
@@ -4516,11 +4520,15 @@ syntax:
      charr=bsf.createJavaArray("char.class", length)
 
   n=javaInputObject~read(charr, 0, length)
+
   if n=0 then return ""
   return .java.lang.String~new(charr, 0, n)~toString
 
 syntax:
    return ""
+
+wrong_args:
+   raise propagate
 
 ::method chars
   expose javaInputObject isReader
@@ -4532,12 +4540,12 @@ syntax:
   else   -- assume an InputStream (e.g. java.lang.System.in)
      return javaInputObject~available
 
+
 ::method lineIn
    expose prefix
-   if prefix<>.nil then       -- write a prefix string to inform the user ?
-      .output~charout(prefix)
 
--- .stderr~say(self"::lineIn line #" pp(.line))
+   if prefix<>.nil then       -- write a prefix string to inform the user ?
+      .output~charout(prefix,,.true)   -- third argument: if .true, then prefix will not be inserted in .output
 
   mb=.mutableBuffer~new
   do forever
@@ -4559,49 +4567,91 @@ syntax:
 ::attribute prefix                  -- prefix string to be output before executing a LINEOUT
 
 ::method init
-  expose javaOutputObject isWriter prefix
+  expose javaOutputObject isWriter prefix bPrefixPrinted
+  signal on syntax
   use strict arg javaOutputObject, prefix=.nil
 
   if \.local~hasEntry("java.io.Writer") then
      call bsf.import "java.io.Writer"  -- load Java class and store it as "JAVA.IO.Writer" in .local
   isWriter=.java.io.Writer~isInstance(javaOutputObject)
+  bPrefixPrinted=.false             -- indicates whether the prefix was printed already (in charout-scenarios)
+  return
+syntax:
+  raise propagate
 
 
 ::method charOut
-  expose javaOutputObject isWriter
-  use strict arg chars, start=1
+  expose javaOutputObject isWriter prefix bPrefixPrinted
+  signal on syntax
+  use strict arg chars, start=1, bSkipPrefix=.false
 
   if start=1 then
-  do
-     if isWriter then
-        javaOutputObject~write(chars)
-     else
-        javaOutputObject~print(chars)
-  end
+     mb=.MutableBuffer~new(chars)   -- get the string as a MutableBuffer
   else
+     mb=.MutableBuffer~new(chars~subStr(start))
+
+  if prefix<>.nil then              -- if a prefix present
   do
-     if isWriter then
-        javaOutputObject~write(chars~subStr(start))
-     else
-        javaOutputObject~print(chars~subStr(start))
+     if bPrefixPrinted=.false, bSkipPrefix=.false then  -- if not yet output
+     do
+        if isWriter then
+           javaOutputObject~write(prefix)
+        else
+           javaOutputObject~print(prefix)
+
+        bPrefixPrinted=.true              -- on subsequent charOuts do not write prefix anymore
+     end
+
+     mb~changeStr("0A"x, "0A"x||prefix)   -- add the prefix after the LF char
   end
+
+   -- output string
+  if isWriter then
+     javaOutputObject~write(mb~string)
+  else
+     javaOutputObject~print(mb~string)
+
   javaOutputObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
+  return
+syntax:
+  raise propagate
+
 
 ::method lineOut
-  expose javaOutputObject isWriter prefix
-  use arg chars=""
+  expose javaOutputObject isWriter prefix bPrefixPrinted
+  use strict arg chars=""
 
-  if prefix<>.nil then chars=prefix || chars -- add prefix to string to output
+-- .stdout~say("---> lineOut, chars~c2x="pp(chars~c2x) "prefix:" pp(prefix) "<---")
+-- .stdout~say("---> lineOut, chars    ="pp(chars) "<---")
+
+  mb=.MutableBuffer~new(chars)
+-- .stdout~say("---> lineOut, chars    ="pp(chars) "mb~string:" pp(mb~string) "<---")
+
+  if prefix<>.nil then
+  do
+     if bPrefixPrinted=.false then
+     do
+        mb~insert(prefix)     -- insert prefix at the beginning of the string
+-- .stdout~say("---> lineOut, AFTER insert(prefix): mb~string:" pp(mb~string) "<---")
+     end
+
+      -- add prefix after LF char
+     mb~changeStr("0A"x, "0A"x||prefix)   -- add the prefix after the LF char
+-- .stdout~say("---> lineOut, AFTER changeStr(...): mb~string:" pp(mb~string) "<---")
+  end
+
   if isWriter then
   do
-     javaOutputObject~write(chars)
+     javaOutputObject~write(mb~string)
      javaOutputObject~write(.endofline)
   end
   else
   do
-     javaOutputObject~println(chars)
+     javaOutputObject~println(mb~string)
   end
   javaOutputObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
+  bPrefixPrinted=.false          -- a new line for which the prefix was not printed yet
+
 
 ::method say                     -- in ooRexx file streams a synonym for lineOut
   forward message "lineout"
