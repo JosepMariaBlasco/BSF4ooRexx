@@ -36,7 +36,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.5.3, 2016-11-06
+  * @version 4.5.3, 2016-11-12
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -48,6 +48,9 @@ import org.apache.bsf.util.type.*;
 */
 
  /*
+     2016-11-12, ---rgf, change from .isAssignableFrom() to .isInstance() when checking whether MAKEARRAY/SUPPLIER
+                    could be honored
+
      2016-11-06, ---rgf, if non-existing MAKEARRAY or SUPPLIER methods should be invoked, then check, whether
                     we have a Java collection in hand that has one of the follwoing interfaces implemented:
                     java.lang.Iterable, java.util.Collection, java.util.Enumeration, java.util.Iterator or
@@ -403,7 +406,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "453.20161106";
+    static final public String version = "453.20161112";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -3961,7 +3964,6 @@ if (bDebug) System.err.println("'invoke': trying '"+STRING_GET_FIELD_VALUE+"'...
 
 if (bDebug) System.err.println("'invoke': AFTER, AFTER, trying '"+STRING_GET_FIELD_VALUE+"', args[2]=["+args[2]+"]...");
 
-
                               // 2016-11-06, rgf: add MAKEARRAY and SUPPLIER support; if bean has one of the
                               //             interfaces java.util.Enumeration, java.lang.Iterable, java.util.Iterator,
                               //             java.util.Collection, java.util.Map implemented, then create objects
@@ -3973,6 +3975,8 @@ if (bDebug) System.err.println("'invoke': AFTER, AFTER, trying '"+STRING_GET_FIE
                               {
                                   boolean bMakeArray=args[2].equalsIgnoreCase("MAKEARRAY"); // MAKEARRAY or SUPPLIER ?
                                   bean = mgr.lookupBean(args[1]);   // reload bean
+
+
                                   Object result=null;
                                   String rexxCreateArray   ="return .array~new                          \n" +
                                                             "::requires BSF.CLS                           ";
@@ -4018,15 +4022,14 @@ if (bDebug) System.err.println("'invoke': AFTER, AFTER, trying '"+STRING_GET_FIE
                                   }
                                   else  // ? instance of java.lang.Iterable, java.util.Enumeration, java.util.Collection, java.util.Iterator, java.util.Map ?
                                   {
-                                      Class<?> beanClz=bean.getClass();    // get class object
+                                      boolean isMap=Map.class.isInstance(bean);
 
-                                      boolean isMap=Map.class.isAssignableFrom(beanClz);
-
-                                      if ( isMap                                       ||
-                                           Iterable.class   .isAssignableFrom(beanClz) ||
-                                           Iterator.class   .isAssignableFrom(beanClz) ||
-                                           Collection.class .isAssignableFrom(beanClz) ||
-                                           Enumeration.class.isAssignableFrom(beanClz) )
+                                      if ( isMap                              ||
+                                           Iterable.class   .isInstance(bean) ||
+                                           Iterator.class   .isInstance(bean) ||
+                                           Collection.class .isInstance(bean) ||
+                                           Enumeration.class.isInstance(bean)
+                                         )
                                       {
                                           Iterator it=null;
                                             // try to create iterators
@@ -4037,18 +4040,18 @@ if (bDebug) System.err.println("'invoke': AFTER, AFTER, trying '"+STRING_GET_FIE
 if (bDebug) System.err.println("in ... -- /// isMap, setting \"it\"...");
                                           }
 
-                                          else if (Iterable.class.isAssignableFrom(beanClz))
+                                          else if (Iterable.class.isInstance(bean))
                                           {
                                               it= ((Iterable) bean).iterator();
 if (bDebug) System.err.println("in ... -- /// isIterable, setting \"it\"...");
                                           }
 
-                                          else if (Iterator.class.isAssignableFrom(beanClz) )
+                                          else if (Iterator.class.isInstance(bean) )
                                           {
                                               it= (Iterator) bean;
 if (bDebug) System.err.println("in ... -- /// isIterator, setting \"it\"...");
                                           }
-                                          else if (Collection.class.isAssignableFrom(beanClz) )
+                                          else if (Collection.class.isInstance(bean) )
                                           {
                                               it= ((Collection) bean).iterator();
 if (bDebug) System.err.println("in ... -- /// isCollection, setting \"it\"...");
@@ -4069,8 +4072,7 @@ if (bDebug) System.err.println("in ... -- /// isCollection, setting \"it\"...");
                                               }
                                           }
                                             // Java 9 will have an "asIterator()", but not available in 1.6/6.0
-                                            // is an Enumeration.class
-                                          else if (Enumeration.class.isAssignableFrom(beanClz) )
+                                          else if (Enumeration.class.isInstance(bean) )
                                           {
 if (bDebug) System.err.println("in ... --> isEnumeration, MAKEARRAY \"it\"...");
                                               Enumeration en=(Enumeration) bean;
