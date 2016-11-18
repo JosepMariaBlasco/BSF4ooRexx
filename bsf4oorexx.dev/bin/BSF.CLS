@@ -12,6 +12,12 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-11-10, ---rgf, - .jsr223: added class methods get and set to process the Rexx script
+                               annotations
+
+         2018-11-09, ---rgf, - bsf.redirectTo(): if no monitored objects are supplied the current one
+                               gets removed (unless there would be no previous monitored object left),
+                               before a default one gets created and assigned
 
          2018-11-08, ---rgf, - bsf.OutputStream: now also inserts the prefix after LF chars if the string to
                                output contains contains any
@@ -4389,14 +4395,23 @@ syntax:
 
   bRedirectToJava=redirectTo~strip~left(1)~caselessEquals("J")
 
+-- TODO: 2016-11-09: if removing a monitored object (because .nil was supplied), then make sure to
+--                   remove monitored object, but make also sure that one monitored object (the
+--                   Rexx default ones) remains in place, otherwise Rexx can't read and write
+--                   from/to the console!
+
    ---------------------- .input ----------------------
   if Input <>.nil then .input~destination(input)
   else
-  do
-       if bRedirectToJava=.true then
-          .input~destination(.bsf.InputStream~new(.java.lang.System~in))
-       else
-          .input~destination(.stdin)
+  do   -- no object supplied
+     prev=.input~current    -- get current monitored object
+     if .input~destination=.nil then    -- remove current montitored object, if none left, add it back
+        .input~destination(prev)
+
+     if bRedirectToJava=.true then
+        .input~destination(.bsf.InputStream~new(.java.lang.System~in))
+     else
+        .input~destination(.stdin)
   end
 
   inp=.input~current          -- fetch current monitored object
@@ -4407,10 +4422,14 @@ syntax:
   if Output <>.nil then .Output~destination(Output)
   else
   do
-       if bRedirectToJava=.true then
-          .Output~destination(.bsf.outputStream~new(.java.lang.System~out))
-       else
-          .Output~destination(.stdout)
+     prev=.output~current    -- get current monitored object
+     if .output~destination=.nil then    -- remove current montitored object, if none left, add it back
+        .output~destination(prev)
+
+     if bRedirectToJava=.true then
+        .Output~destination(.bsf.outputStream~new(.java.lang.System~out))
+     else
+        .Output~destination(.stdout)
   end
   outp=.output~current        -- fetch current monitored object
   if outp~isA(.bsf.OutputStream), outp~prefix=.nil then -- only set the prefix string, if not yet set
@@ -4420,10 +4439,14 @@ syntax:
   if Error <>.nil then .Error~destination(Error)
   else
   do
-       if bRedirectToJava=.true then
-          .Error~destination(.bsf.outputStream~new(.java.lang.System~err))
-       else
-          .Error~destination(.stderr)
+    prev=.error~current    -- get current monitored object
+    if .error~destination=.nil then    -- remove current montitored object, if none left, add it back
+       .error~destination(prev)
+
+    if bRedirectToJava=.true then
+       .Error~destination(.bsf.outputStream~new(.java.lang.System~err))
+    else
+       .Error~destination(.stderr)
   end
   err=.error~current          -- fetch current monitored object
   if err~isA(.bsf.OutputStream), err~prefix=.nil then    -- only set the prefix string, if not yet set
@@ -4437,6 +4460,10 @@ syntax:
         .DebugInput~destination(DebugInput)
      else
      do
+        prev=.debugInput~current    -- get current monitored object
+        if .debugInput~destination=.nil then    -- remove current montitored object, if none left, add it back
+           .debugInput~destination(prev)
+
         if bRedirectToJava, input<>.nil then  -- create a new BSF.InputStream instance in order to distinguish both streams (e.g. for prefixing correctly)
         do
             -- create a new .BSF.InputStream working with the same Java stream object
@@ -4453,6 +4480,10 @@ syntax:
    ---------------------- .traceOutput ----------------------
   if .local~hasEntry("TraceOutput") then   -- ooRexx<4.2 does not have this
   do
+     prev=.traceOutput~current    -- get current monitored object
+     if .traceOutput~destination=.nil then    -- remove current montitored object, if none left, add it back
+        .traceOutput~destination(prev)
+
      if TraceOutput <>.nil then
         .TraceOutput~destination(TraceOutput)
      else
@@ -4691,16 +4722,24 @@ signal on syntax
 syntax: raise propagate
 
 
+/* ================================================================================================= */
+
 /** A utility class to ease JSR-223 (javax.script) related functionality.
 */
 ::class JSR223 public
+
 ::constant ENGINE_SCOPE 100   -- numeric value for javax.script.ScriptContext.ENGINE_SCOPE
 ::constant GLOBAL_SCOPE 200   -- numeric value for javax.script.ScriptContext.GLOBAL_SCOPE
+
+::attribute does.not.exist class get -- sentinel indicating that attribute or scope is not defined
+
 ::method init class
-  expose tableOut tableIn
+  expose tableOut tableIn does.not.exist
    -- define input and output table for TRANSLATE()-BIF
   tableOut   =".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?_" -- valid (Rexx symbol) characters
   tableIn    =tableOut || xrange("00"x,"ff"x)
+  does.not.exist =.object~new  -- a sentinel value
+
 
 
 /** Class method that returns the requested Binding from the ScriptContext.
@@ -4710,11 +4749,12 @@ syntax: raise propagate
 * @return the javax.script.Binding or <code>.nil</code> if not found
 */
 ::method getBindings class    -- return bindings from ScriptContext, if not found, .nil
+  expose does.not.exist
   use strict arg scriptContext, sc
   signal on syntax         -- if a scope does not exist, then an IllegalArgumentException gets thrown
   return scriptContext~getBindings(sc)
 syntax:
-  return .nil
+  return does.not.exist
 
 
 
@@ -4772,9 +4812,9 @@ syntax:
    /* if a RexxContext supplied instead, then extract the ScriptContext from its last
       argument (expected: the slotDir Rexx directory supplied by the Java side) */
   signal on syntax
+
   if scriptContext~isA(.RexxContext) then
      scriptContext=scriptContext~args~lastItem~scriptContext
--- .stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line " - arrived at:" .dateTime~new, "scriptContext="pp(scriptContext) "scope="pp(scope))
 
   dir=.directory~new       -- contains the entries from the bindings of the processed scopes
 
@@ -4782,14 +4822,9 @@ syntax:
   else
   do
      arr=.array~new
--- say "bsf.ScriptContext2rexx: scope="pp(arg(2, "array")~toString(,","))
      if scope~caselessAbbrev("A") then    -- all scopes from top to bottom value (lower scopes mask override higher scopes)
      do
-        scopes=scriptContext~getScopes    -- returns a list of defined scopes
-        it=scopes~iterator
-        do while it~hasNext
-           arr~append(it~next)
-        end
+        arr=scriptContext~getScopes~makearray   -- returns a list of defined scopes as a Rexx array
         -- sort descendingly
         arr=arr~sortWith(.InvertingComparator~new(.NumericComparator~new))
      end
@@ -4829,7 +4864,6 @@ syntax:
             dir[key]=val
       end
   end
--- .stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line "- the End, returning "pp(dir) "with" pp(dir~items)" items:" .dateTime~new)
   return dir      -- return directory that contains the selected key-value pairs
 
 syntax:           -- propagate the syntax condition to caller
@@ -4840,11 +4874,13 @@ syntax:           -- propagate the syntax condition to caller
 /** Class method that returns the requested Binding from the ScriptContext.
 *
 * @param scriptContext the javax.script.ScriptContext
-* @param sc the scope number for the javax.script.Binding to be retrieved from scriptContext
+* @param name the attribute's name
+* @param scope the scope number for the javax.script.Binding to be retrieved from scriptContext
 * @return the javax.script.Binding or <code>.nil</code> if not found
 */
 ::method getAttribute class
-  use strict arg scriptContext, name
+  expose does.not.exist
+  use strict arg scriptContext, name, scope=.nil
   signal on syntax
 
    /* if a RexxContext supplied instead, then extract the ScriptContext from its last
@@ -4854,12 +4890,15 @@ syntax:           -- propagate the syntax condition to caller
      scriptContext=scriptContext~args~lastItem~scriptContext
 
   signal on syntax name syntax2
-  return scriptContext~getAttribute(name)
+  if scope=.nil then
+     return scriptContext~getAttribute(name)       -- search through all Bindings
+  else
+     return scriptContext~getAttribute(name, scope)-- search in specified Bindings
 
 syntax1: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
 
 syntax2:       -- no entry by that name in ScriptContext
-  return .nil
+  return does.not.exist
 
 
 /** Fetches the supplied names from the ScriptContext Bindings and returns them as a Rexx directory where the
@@ -4881,15 +4920,15 @@ syntax2:       -- no entry by that name in ScriptContext
 ::method getAttributes class
   use strict arg scriptContext, ...
 
+  signal on syntax
+  if scriptContext~isA(.RexxContext) then    -- extract scriptContext
+     scriptContext=scriptContext~args~lastItem~scriptContext
+
   if arg()=1 then    -- if only ScriptContext or .context is given, then return all available attributes
      return self~scriptContext2RexxDir(scriptContext) -- return all entries from all Bindings with mangled names
 
    /* if a RexxContext supplied instead, then extract the ScriptContext from its last
       argument (expected: the slotDir Rexx directory supplied by the Java side) */
-  signal on syntax
-  if scriptContext~isA(.RexxContext) then
-     scriptContext=scriptContext~args~lastItem~scriptContext
--- .stderr~say("*** -MARKER- BSF.CLS - bsf.ScriptContext2rexx, line # " .line " - arrived at:" .dateTime~new, "scriptContext="pp(scriptContext) "scope="pp(scope))
 
   dir=.directory~new       -- contains the entries from the bindings of the processed scopes
 
@@ -4935,8 +4974,223 @@ syntax: raise propagate    -- raise in caller
   end
 
   scriptContext~setAttribute(name, value, scope)
--- say self":setAttribute(name="pp(name)", value="pp(value)", scope="pp(scope)")"
   return
 
 syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
+
+
+/** This routine will be used by the Rexx injection code in Rexx scripts if the Rexx script annotation
+*   <code>@GET<code> or <code>@GET(quoted list of blank delimited attribute names)<code> is contained
+*   in Rexx block comments.
+*
+*   @param attributeNames optional quoted Rexx string of blank delimited case-sensitive attribute names
+*                 in the ScriptContext's Bindings that should be incorporated as local variables in the
+*                 invoked Rexx script code. Listed but non-existing attributes will not cause a Rexx
+*                 variable of that name be created.
+*
+*                 <br>If no attributeNames string is supplied, then all attributes from all Bindings
+*                 currently stored with the ScriptContext will be fetched.
+*
+*  @return a Rexx directory object where the index is a valid Rexx variable name derived from the attribute,
+*              cf. class method {@link normalizeName}
+*/
+::method get class
+   signal on syntax
+   use strict arg scriptContext, attributeNames=""
+
+   if scriptContext~isA(.RexxContext) then   -- fetch the scriptContext entry
+      scriptContext=scriptContext~args~lastItem~scriptContext
+
+   if attributeNames="" then      -- get all attributes from all Bindings of the current script context
+      return self~scriptContext2RexxDir(scriptContext)
+
+      -- get all scopes and their Bindings
+   arrScopes =scriptContext~getScopes~makearray~sort  -- sort ascendingly: solve attributes from lowest to highest
+   dirBindings=.directory~new
+   do scope over arrScopes
+      dirBindings[scope]=scriptContext~getBindings(scope)   -- fetch and store Bindings
+   end
+
+   -- process each word in the attributeNames string
+   resDir=.directory~new      -- directory that will hold the Rexx variable name and its value
+   scopeNr=.nil               -- Bindings number in the ScriptContext
+
+   do label outer while attributeNames<>""
+      parse var attributeNames attrName attributeNames
+
+      if pos(':',attrName)>0 then
+      do
+          parse var attrName before ":" after
+          if after="" then       -- "before" should be a scope number, which can be used to fetch the respective Bindings from the ScriptContext
+          do
+             if datatype(before,"W") then
+             do
+                if dirBindings~hasIndex(before) then -- does scope number exist?
+                   scopeNr=before      -- from now on look only in this scope!
+                else -- scope does not exist, warn and ignore
+                do
+                   .error~say("Warning: Rexx script annotation /* @get("arg(2)") */ contains a non-existing scope" pp(before) "in" pp(attrName)", hence cannot honor it")
+                   iterate
+                end
+             end
+          end
+
+            -- assuming "abc:100", but theretically could also be the name of an attribute
+          if datatype(after,"W") then     -- try to fetch the Bindings and get the attribute
+          do
+             if dirBindings~hasIndex(after) then -- does scope number exist, look for attribute in there
+             do
+                tmpBindings=dirBindings~at(after)        -- fetch Bindings
+                if tmpBindings<>.nil, tmpBindings~containsKey(before) then  -- check whether attribute is contained
+                do
+                     -- fetch the attribute's value, make sure attrName is a valid Rexx variable name
+                   resDir~put(tmpBindings~get(before),self~normalizeName(before))
+                   iterate
+                end
+             end
+          end
+      end
+
+      -- now process
+      if scopeNr=.nil then    -- no scope explicitly given, go through all available scopes
+         arr=arrScopes
+      else                    -- process explicitly defined scope only
+         arr=.array~of(scopeNr)
+
+      do scope over arr       -- iterate over bindings
+         tmpBindings=dirBindings~at(scope)   -- fetch Bindings
+         if tmpBindings<>.nil, tmpBindings~containsKey(attrName) then   -- check whether attribute is contained
+         do
+              -- fetch the attribute's value, make sure attrName is a valid Rexx variable name
+            resDir~put(tmpBindings~get(attrName),self~normalizeName(attrName))
+            iterate outer
+         end
+      end
+      .error~say("Warning: Rexx script annotation /* @get("arg(2)") */: cannot find attribute" pp(attrName) "in any of the ScriptContext's scopes")
+   end
+   return resDir
+
+syntax:
+/*
+co=condition("obj")
+.traceOutput~say( ".jsr223~get(...): SYNTAX raised!")
+call "rgf_util2.rex"
+say ppCondition2(co)
+*/
+   raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
+
+
+
+/** This routine will be used by the Rexx injection code in Rexx scripts if the Rexx script annotation
+*   <code>@SET(quoted list of blank delimited attribute names)<code> is contained in Rexx block comments.
+*   <p>
+*   If an attribute in the attribute list cannot be found in the ScriptContext's scope, a warning will
+*   be given. The attribute name will be normalized and that value will be used to look up the current
+*   Rexx value in the Rexx variable Rexx directory passed in as the second argument. If there is no
+*   Rexx variable with the normalized name a warning will be issued.
+*
+*   @param attributeNames quoted Rexx string of blank delimited case-sensitive attribute names
+*                 in the ScriptContext's scopes (Bindings) that should be updated according to the Rexx variable;
+*                 the attribute must exist in the scope (Bindings) in order to get updated. If it does not exist
+*                 Rexx gives a warning and proceeds. The attribute name will be normalized (cf. class method
+*                 normalizeName()) and looked up in the param RxVarDir in order to fetch the current
+*                 Rexx value. If no Rexx variable by that name is defined, a warning will be issued.
+*
+*   @param rxVarDir Rexx directory containing the currently defined Rexx variables with their values
+*/
+::method set class
+   signal on syntax
+   use strict arg scriptContext, attributeNames, rxVarDir
+
+   if scriptContext~isA(.RexxContext) then   -- fetch the scriptContext entry from the slotDir (last) argument
+      scriptContext=scriptContext~args~lastItem~scriptContext
+
+   if attributeNames="" then      -- get all attributes from all Bindings of the current script context
+      return self~scriptContext2RexxDir(scriptContext)
+
+      -- get all scopes and their Bindings
+   arrScopes =scriptContext~getScopes~makearray~sort  -- sort ascendingly: solve attributes from lowest to highest
+   dirBindings=.directory~new
+   do scope over arrScopes
+      dirBindings[scope]=scriptContext~getBindings(scope)   -- fetch and store Bindings
+   end
+
+   -- process each word in the attributeNames string
+   scopeNr=.nil               -- Bindings number in the ScriptContext
+
+   do label outer while attributeNames<>""
+      parse var attributeNames attrName attributeNames
+
+      if pos(':',attrName)>0 then
+      do
+          parse var attrName before ":" after
+          if after="" then       -- "before" should be a scope number, which can be used to fetch the respective Bindings from the ScriptContext
+          do
+             if datatype(before,"W") then
+             do
+                if dirBindings~hasIndex(before) then -- does scope number exist?
+                   scopeNr=before      -- from now on look only in this scope!
+                else -- scope does not exist, warn and ignore
+                do
+                   .error~say("Warning: Rexx script annotation /* @set("arg(2)") */ contains a non-existing scope" pp(before) "in" pp(attrName)", hence cannot honor it")
+                   iterate
+                end
+             end
+          end
+
+            -- assuming "abc:100", but theretically could also be the name of an attribute
+          if datatype(after,"W") then     -- try to fetch the Bindings and get the attribute
+          do
+             if dirBindings~hasIndex(after) then -- does scope number exist, look for attribute in there
+             do
+                tmpBindings=dirBindings~at(after)        -- fetch Bindings
+                if tmpBindings<>.nil, tmpBindings~containsKey(before) then  -- check whether attribute is contained
+                do
+                   rxVarName=self~normalizeName(before)
+                   if rxVarDir~hasEntry(rxVarName) then
+                   do
+                        -- set the attribute's value using a Rexx variable with the normalized attribute name
+                      tmpBindings~put(before,rxVarName~entry(rxVarName))
+                      iterate
+                   end
+                   .error~say("Warning: Rexx script annotation /* @set("arg(2)") */ there is no Rexx variable named" pp(rxVarName) "to set the attribute named" pp(before)", skipping")
+                   iterate
+                end
+             end
+          end
+      end
+
+      -- now process
+      if scopeNr=.nil then    -- no scope explicitly given, go through all available scopes
+         arr=arrScopes
+      else                    -- process explicitly defined scope only
+         arr=.array~of(scopeNr)
+
+      do scope over arr       -- iterate over bindings
+
+         tmpBindings=dirBindings~at(scope)   -- fetch Bindings
+         if tmpBindings<>.nil, tmpBindings~containsKey(attrName) then   -- check whether attribute is contained
+         do
+            rxVarName=self~normalizeName(attrName)
+            if rxVarDir~hasEntry(rxVarName) then
+            do
+                 -- set the attribute's value using a Rexx variable with the normalized attribute name
+               tmpBindings~put(attrName,rxVarDir~entry(rxVarName))
+               iterate outer
+            end
+         end
+      end
+      .error~say("Warning: Rexx script annotation /* @set("arg(2)") */ there is no Rexx variable named" pp(rxVarName) "to set the attribute named" pp(before)", skipping")
+   end
+   return
+
+syntax:
+/*
+co=condition("obj")
+.traceOutput~say( ".jsr223~SET(...): SYNTAX raised!")
+call "rgf_util2.rex"
+say ppCondition2(co)
+*/
+   raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
+
 

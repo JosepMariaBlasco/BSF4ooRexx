@@ -107,13 +107,31 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
     /** The source code of the Rexx script that was compiled (tokenized). */
     String scriptSource;
 
-    /** Getter for the Rexx script source code which got compiled (tokenized).
+    /** Getter for the Rexx script source code. If there are no Rexx script annotations present,
+     *  then this code got compiled (tokenized), else the edited code stored in the field
+     *  {@link editedScriptSource}.
+     .
 
-     *  @return the string representing of the compiled Rexx script
+     *  @return the string representing the Rexx script program
     */
     public String getScriptSource()
     {
         return scriptSource;
+    }
+
+    /** The source code of the Rexx script that was compiled (tokenized). */
+    String editedScriptSource=null;
+
+    /** Getter for the Rexx edited script source code which got compiled (tokenized), it will have
+     *  injected code, if any of the Rexx script annotations @GET, @GET("attribute list") or
+     *  @SET("attribute list") was found in {@link scriptSource}. If this version exists, it got
+     *  compiled instead of {@link scriptSource}.
+
+     *  @return the string representing of the edited Rexx script program
+    */
+    public String getEditedScriptSource()
+    {
+        return editedScriptSource;
     }
 
     /** The <code>RexxProxy</code> representing the compiled (tokenized) script (a Rexx routine object). */
@@ -614,7 +632,11 @@ if (bDebug==true)
 
 
     /** Creates and returns the argument array, append ScriptContext sc as last argument
-     *  for the Rexx script to be able to fetch it.
+     *  for the Rexx script to be able to fetch it. The arguments for Rexx will get a slotDir argument
+     *  appended that contains an entry &quot;SCRIPTCONTEXT&quot; and either &quot;REXXCOMPILEDSCRIPT&quot;
+     *  (if invoked by a <code>RexxCompiledScript</code>)
+     *  or &quot;REXXSCRIPTENGINE&quot; (if invoked by a <code>RexxScriptEngine</code>).
+     *
      *  <p>Note: As of ooRexx 4.2.0 the routine's <code>CALLWITH</code>
      *  method sends a <code>MAKEARRAY</code> message which will compact the Java array by removing <code>null</code>
      *  values (behaviour of {@link ArrayWrapper} to mimickry the ooRexx <code>Array MAKEARRAY</code> behaviour
@@ -666,6 +688,10 @@ if (bDebug)
         if (rcs!=null)
         {
             rpDir.sendMessage2("SETENTRY","REXXCOMPILEDSCRIPT",rcs);    // supply this RexxCompiledScript for reflective usage by Rexx program (e.g. for debugging)
+        }
+        else    // give the Rexx script the possibility to interact at leasat with the RexxScriptEngine (and get the currentScript from it
+        {
+            rpDir.sendMessage2("SETENTRY","REXXSCRIPTENGINE",rse);      // supply this RexxCompiledScript for reflective usage by Rexx program (e.g. for debugging)
         }
         arrArgV[i]=rpDir;
 if (bDebug)

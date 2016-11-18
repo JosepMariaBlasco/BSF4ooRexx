@@ -109,7 +109,7 @@ rem 2016-11-04, rgf: changed Java baseline from 1.4 to 1.6
 rem set target=-target 1.6
 rem set source=-source 1.6
 
-javac %javacDefines% %source% %target% %javaSrc%\RexxScriptEngine.java          && copy %javaSrc%\RexxScriptEngine.*          %path2jsr223%
+javac %javacDefines% %source% %target% %javaSrc%\RexxScriptEngine*.java         && copy %javaSrc%\RexxScriptEngine*.*         %path2jsr223%
 javac %javacDefines% %source% %target% %javaSrc%\RexxScriptEngineFactory.java   && copy %javaSrc%\RexxScriptEngineFactory*    %path2jsr223%
 javac %javacDefines% %source% %target% %javaSrc%\RexxCompiledScript.java        && copy %javaSrc%\RexxCompiledScript*         %path2jsr223%
 
