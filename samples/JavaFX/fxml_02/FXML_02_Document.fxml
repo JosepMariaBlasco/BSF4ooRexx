@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- comment: the following process instruction (PI) defines the Java script engine named 'rexx'
+              to be used for the code in event attributes like 'onAction' -->
+<?language rexx?>
+
+<AnchorPane id="AnchorPane" prefHeight="200" prefWidth="400" xmlns:fx="http://javafx.com/fxml">
+
+    <!-- comment: defines the attribute in GLOBAL_SCOPE named 'rexxStarted' to be used for labelStart -->
+    <fx:script source="fxml_02_controller.rex" />
+
+    <!-- comment: define the JavaFx controls that make up the GUI, all controls that possess a fx:id
+                  attribute are stored by their id in the ScriptContext's GLOBAL_SCOPE -->
+
+    <children>
+        <!-- comment: "$rexxStarted" will cause fetching the value of the attribute "rexxStarted"
+                      from the ScriptContext's Bindings, when initially setting up the Label -->
+        <Label layoutX="60" layoutY="20"  minHeight="16" minWidth="69" fx:id="labelRexxStarted" text="$rexxStarted" />
+
+        <!-- comment: the Rexx code in the 'onAction' attribute will be invoked by JavaFX via a
+                      Rexx call; note that JavaFX will remove any newline characters between the
+                      double-quotes ("), hence each Rexx statement is explicitly ended with the
+                      semi-colon character; note the text attribute which gets localized -->
+        <Button  layoutX="140" layoutY="90" text="%clickMe" onAction="
+                        /*@showsource*/  ;
+                        /*@get('label')*/;
+                        use arg slotDir  ;
+                        say 'from button''s onAction-code'         ;
+                        say '... label~getText='pp(label~getText)  ;
+                        say '... changing text in label to current date and time ...' ;
+                        label~text=.dateTime~new~string            ;
+                        say '... label~getText='pp(label~getText)  ;
+                        call klickButtonAction slotDir /* now process the event */;
+                " fx:id="button" />
+
+        <!-- comment: "%year" will be replaced by the value in the ResourceBundle's properties files -->
+        <Label layoutX="40" layoutY="120" minHeight="16" minWidth="20" fx:id="year" text="%year" />
+
+        <Label layoutX="80" layoutY="120" minHeight="16" minWidth="49" fx:id="label" />
+
+        <!-- comment: "${rexxInfo}" will cause continuous fetching of the value of the attribute
+                      "rexxInfo" from the ScriptContext's Bindings -->
+        <Label layoutX="60" layoutY="140" minHeight="16" minWidth="69" fx:id="labelRexxInfo" text="${rexxInfo}"/>
+    </children>
+
+</AnchorPane>
+

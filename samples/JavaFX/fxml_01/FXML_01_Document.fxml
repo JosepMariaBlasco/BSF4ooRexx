@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<!-- comment: the following process instruction (PI) defines the Java script engine named 'rexx'
+              to be used for the code in event attributes like 'onAction' -->
+<?language rexx?>
+
+<AnchorPane id="AnchorPane" prefHeight="200" prefWidth="400" xmlns:fx="http://javafx.com/fxml">
+
+    <!-- comment: defines the attribute in GLOBAL_SCOPE named 'rexxStarted' to be used for labelStart -->
+    <fx:script source="fxml_01_controller.rex" />
+
+    <!-- comment: define the JavaFx controls that make up the GUI, all controls that possess a fx:id
+                  attribute are stored by their id in the ScriptContext's GLOBAL_SCOPE -->
+
+    <children>
+        <!-- comment: the Rexx code in the 'onAction' attribute will be invoked by JavaFX via a
+                      Rexx call; note that JavaFX will remove any newline characters between the
+                      double-quotes ("), hence each Rexx statement is explicitly ended with the
+                      semi-colon character -->
+        <Button  layoutX="140" layoutY="90" text="Click Me!" onAction="
+                        /*@showsource*/  ;
+                        say .dateTime~new': arrived in code defined in Button''s onAction-attribute'         ;
+                        /*@get('label')*/; /* makes the attribute 'label' immediately available as a Rexx variable by the same name */;
+                        say '... current value of 'pp(label)': label~getText='pp(label~text)  ;
+                        use arg slotDir /* supplied by BSF4ooRexx */;
+                        call klickButtonAction slotDir /* now process the event */;
+                        say .dateTime~new': returning from event handler (cf. onAction attribute)';say;
+                " fx:id="button" />
+
+        <!-- comment: the following Label will get its value from the above Rexx code, note the
+                      attribute's fx:id value which is passed via the ScriptContext Bindings and
+                      fetched by the above Rexx script annotation /*@get('label')*/
+             -->
+        <Label layoutX="80" layoutY="120" minHeight="16" minWidth="49" fx:id="label" />
+
+    </children>
+
+</AnchorPane>
+

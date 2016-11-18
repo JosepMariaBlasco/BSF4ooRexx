@@ -1,0 +1,59 @@
+<head>
+    <title>Brief Overview of the BSF4ooRexx Samples in this Directory</title>
+</head>
+
+<body>
+<h1>
+      &quot;fxml_01&quot; Rexx Application
+</h1>
+
+<p>
+
+<em>Hint:</em> if you wish to look at the ooRexx code with syntax highlighting, then you can
+use the free and open-source editor <code>&quot;[g]vim&quot;</code>, which is available for practically
+all platforms and can be downloaded from its homepage at
+<a href="http://www.vim.org/">http://www.vim.org/</a>.
+
+<dl>
+    <dt><em><a href=".">.  &lt;directory&gt; (List of this directory)</a></em>
+    <dd>Display all of this directory's files and directories.
+
+    <dt><em><a href="../index.html">..  &lt;directory&gt; (List of parent directory)</a></em>
+    <dd>Display all of the parent directory's files and directories.
+
+    <dt> <a href="fxml_02.rex">fxml_02.rex</a>
+    <dd> The main Rexx program that sets up and starts the JavaFX application. This program
+         will cause JavaFX to load and process the GUI defined in the XML text file of
+         &quot;<code>FXML_02_Document.fxml</code>&quot; and for translation of some text
+         in the GUI it creates and supplies a ResourceBundle for either &quot;<code>FXML_02_de.properties</code>&quot;
+         (if invoked with the argument &quot;de&quot;) or &quot;<code>FXML_02_en.properties</code>&quot;.
+
+    <dt> <a href="FXML_02_Document.fxml">FXML_02_Document.fxml</a>
+    <dd> The XML text file that defines the GUI, runs the Rexx program  &quot;<code>fxml_02_controller.rex</code>&quot;
+         and defines an event handler, programmed in Rexx. In addition it demonstrates the effects of
+         using attributes for substitution to different languages (led in by &quot;%&quot;), and attributes
+         that take a value once or update constantly to entries in the ScriptContext's Bindings. Cf.
+         <a href="http://docs.oracle.com/javafx/2/api/javafx/fxml/doc-files/introduction_to_fxml.html">
+         <code>introduction_to_fxml.html</code> </a>.
+
+    <dt> <a href="fxml_02_controller.rex">fxml_02_controller.rex</a>
+    <dd> A Rexx package defining a public routine that gets invoked by the Rexx event handler
+         defined in &quot;<code>FXML_02_Document.fxml</code>&quot;. It defines attributes in the
+         prolog code (the Rexx code before any directives) that will get used in the GUI. In addition
+         it demonstrates how to incorporate attributes as Rexx variables and updating attributes from
+         the value of a Rexx variable using Rexx script annotations.
+
+    <dt> <a href="FXML_02_en.properties">FXML_02_en.properties</a>
+    <dd> A properties (text) file defining translations for some text values in the GUI to English.
+
+    <dt> <a href="FXML_02_de.properties">FXML_02_de.properties</a>
+    <dd> A properties (text) file defining translations for some text values in the GUI to German.
+
+</dl>
+
+<p>
+<hr>
+<p style="font-size: 80%;">
+Rony G. Flatscher, 2016-11-18, Wien/Vienna, Austria, Europe
+</body>
+
