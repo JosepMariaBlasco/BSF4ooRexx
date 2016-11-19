@@ -12,19 +12,21 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
-         2018-11-10, ---rgf, - .jsr223: added class methods get and set to process the Rexx script
+         2016-11-19, ---rgf, - updated major version number to 6 to indicate new base level Java 1.6/6
+
+         2016-11-10, ---rgf, - .jsr223: added class methods get and set to process the Rexx script
                                annotations
 
-         2018-11-09, ---rgf, - bsf.redirectTo(): if no monitored objects are supplied the current one
+         2016-11-09, ---rgf, - bsf.redirectTo(): if no monitored objects are supplied the current one
                                gets removed (unless there would be no previous monitored object left),
                                before a default one gets created and assigned
 
-         2018-11-08, ---rgf, - bsf.OutputStream: now also inserts the prefix after LF chars if the string to
+         2016-11-08, ---rgf, - bsf.OutputStream: now also inserts the prefix after LF chars if the string to
                                output contains contains any
                              - bsf.OutputStream::charout() now has an optional third argument, if set to .true,
                                the prefix gets skipped (used by bsf.InputStream::linein)
 
-         2017-11-07, ---rgf, - added ability to output a prefix-string for BSF.InputStream and BSF.OutputStream objects
+         2016-11-07, ---rgf, - added ability to output a prefix-string for BSF.InputStream and BSF.OutputStream objects
                              - routine bsf.redirectTo now sets that prefix for  the redirectred standard Rexx files
                                monitored by .input, .output, .error, .debugInput, .traceOutput to
                                "REXXin?>", "REXXout>", "REXXerr>", "REXXdbgIn?>", "REXXtrc>" respectively;
@@ -465,7 +467,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     4.53 (20161106)
+   version:     6.00 (20161119)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -564,7 +566,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="453.20161108" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20161119" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase

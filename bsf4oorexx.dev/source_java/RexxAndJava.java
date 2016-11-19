@@ -36,7 +36,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 4.5.3, 2016-11-12
+  * @version 6.0.0, 2016-11-19
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -48,6 +48,9 @@ import org.apache.bsf.util.type.*;
 */
 
  /*
+
+     2016-11-19, ---rgf, - updated major version number to 6 to indicate new base level Java 1.6/6
+
      2016-11-12, ---rgf, change from .isAssignableFrom() to .isInstance() when checking whether MAKEARRAY/SUPPLIER
                     could be honored
 
@@ -406,7 +409,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "453.20161112";
+    static final public String version = "600.20161119";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 

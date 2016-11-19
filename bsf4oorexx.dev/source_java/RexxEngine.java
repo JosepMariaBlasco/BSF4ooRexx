@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 4.5.3, 20161104
+  * @version 6.0.0, 20161119
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,8 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2016-11-19, ---rgf, - updated major version number to 6 to indicate new base level Java 1.6/6
 
     2016-11-04, ---rgf, - basing on Java 1.6/6.0, getting rid of "-Xlint:unchecked" warnings:
                             RexxEngine.java:517: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
@@ -155,7 +157,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "453.20161104";
+    static final public String version = "600.20161119";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */

@@ -24,6 +24,10 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    6.0.0   2016-11-19, ---rgf: updated major version number to 6 to indicate new base level Java 1.6/6;
+                            JNI_VERSION_1_6 should only be used, if we need to use the new 1.6/6 JNI function
+                            "jobjectRefType GetObjectRefType(env,refObj)"
+
     4.5.2.  2016-03-28  jlf (Jean-Louis Faucher): "Fix bug 28 overflow under Ubuntu 14.04";
                             cf. bug 28: <https://sourceforge.net/p/bsf4oorexx/bugs/28/>
 
@@ -926,11 +930,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "452.20160328 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20160328 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "452.20160328 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20160328 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "452.20160328 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20160328 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class

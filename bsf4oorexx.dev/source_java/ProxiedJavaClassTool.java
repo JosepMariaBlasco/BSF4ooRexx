@@ -23,6 +23,7 @@ java org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool TestAbstract Caesar
     2016-11-04, rgf:   - fixed bug that did not extend an abstract class, if not methods to proxy were supplied
                          (which will be the case when invoked by RexxProxy.newExtendedProxyInstance(...))
 
+    2016-11-03, rgf:   - if no methods given, but an abstract class, then proxy all abstract (public or protected) methods only
     2016-11-05, rgf:   - basing on 1.6/6.0, get rid of generic warnings
     2016-11-07, rgf:   - remove reflective usage of Method.isSynthetic() as we can now rely it to be available
 
@@ -238,7 +239,7 @@ if (bDebug==true) System.err.println("... arrived in \"public static Class creat
                             if (Modifier.isAbstract(mods))          // if an abstract method, create a proxy
                             {
                                 methNames.add(meths[i].getName());
-System.err.println("/--/ proxying abstract method: ["+meths[i].getName()+"]");
+// System.err.println("/--/ proxying abstract method: ["+meths[i].getName()+"]");
                             }
 
                         }
