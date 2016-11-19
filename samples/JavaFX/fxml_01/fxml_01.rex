@@ -23,6 +23,8 @@ rxApp~launch(rxApp~getClass, .nil)     -- need to use this version of launch in 
 ::method start    -- will be invoked by the "launch" method
   use arg stage   -- we get the stage to use for our UI
 
+  stage~setTitle("Hello JavaFX from ooRexx!")   -- we could use stage~title="..." instead!
+
    -- create an URL for the FMXLDocument.fxml file (hence the protocol "file:")
   rootDocUrl=.bsf~new("java.net.URL", "file:FXML_01_Document.fxml")
   root=bsf.loadClass("javafx.fxml.FXMLLoader")~load( rootDocUrl  )   -- load the fxml document

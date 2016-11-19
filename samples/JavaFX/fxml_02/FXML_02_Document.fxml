@@ -28,14 +28,15 @@
                       double-quotes ("), hence each Rexx statement is explicitly ended with the
                       semi-colon character; note the text attribute which gets localized -->
         <Button  layoutX="140" layoutY="90" text="%clickMe" onAction="
-                        /*@showsource*/  ;
-                        /*@get('label')*/;
+                        say ' ==> ---> arrived in button''s onAction-code ...'  ;
+                        /*@showsource*/ /* the previous Rexx script annotation will cause this code to be shown in original and edited state */ ;
+                        /*@get('label')*/ /* the previous Rexx script annotation will incorporate the attribute 'label' as a local Rexx variable */ ;
                         use arg slotDir  ;
-                        say 'from button''s onAction-code'         ;
-                        say '... label~getText='pp(label~getText)  ;
-                        say '... changing text in label to current date and time ...' ;
+                        say ' ... label~getText='pp(label~getText)  ;
+                        say ' ... changing text in label to current date and time ...' ;
                         label~text=.dateTime~new~string            ;
-                        say '... label~getText='pp(label~getText)  ;
+                        say ' ... label~getText='pp(label~getText)  ;
+                        say ' ... now invoking the public Rexx routine ''klickButtonAction''' ;
                         call klickButtonAction slotDir /* now process the event */;
                 " fx:id="button" />
 

@@ -1,5 +1,3 @@
-/*@showsource*/   /* the previous Rexx script annotation will cause this script's source code to be shown */
-
 /* *************************************************************************************************** */
 /* --------------------------------------------------------------------------------------------------- */
 /* This routine will be called from the Rexx code defined with the "onAction" attribute in Button's definition */

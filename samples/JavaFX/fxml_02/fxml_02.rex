@@ -6,6 +6,13 @@
             items with the "%"-notation; in addtion also making GUI elements draw their values from
             the ScriptContext' Bindings using the $notation and the ${notation} (constantly
             updating a GUI element); cf. comments in "FXML_02_Document.fxml"
+
+   invoke:
+            rexx fxml_02
+            rexx fxml_02 en
+               ... use English properties file
+            rexx fxml_02 de
+               ... use German properties file
 */
 
    /* only "de" has an effect and will use the German translation for the */
@@ -44,7 +51,6 @@ say center(" after rxApp~launch ", 70, "-")
   jLocale=.bsf~new("java.util.Locale", locale)  -- if no file available, will use the default "fxml_01.properties"
   jRB=bsf.importClass("java.util.ResourceBundle")~getBundle("FXML_02", jLocale)
 
-  -- root=bsf.loadClass("javafx.fxml.FXMLLoader")~load( rootDocUrl  )   -- load the fxml document
   root=bsf.loadClass("javafx.fxml.FXMLLoader")~load( rootDocUrl, jRB)   -- load the fxml document
 
   scene=.bsf~new("javafx.scene.Scene", root)    -- create a scene for our document
