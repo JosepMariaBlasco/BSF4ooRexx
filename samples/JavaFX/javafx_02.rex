@@ -1,0 +1,213 @@
+/* rgf, 2016-11-19
+   "stand-alone" (fxml-less) version of the fxml_02 application
+
+*/
+
+.local~my.fx=.directory~new   -- to contain objects for easying the coupling of the different parts of this application
+.my.fx~rexxStarted=.dateTime~new~string   -- save the date and time this program started
+
+resources="fxml_02"    -- location of our resources (css, properties files, images)
+   -- forward slashes ("WWW convention") suffice for both, Unix and Windows systems
+.my.fx~properties=resources || "/FXML_02"         -- Properties base file name
+.my.fx~appIcon   =resources || "/oorexx_032.png"  -- application icon
+.my.fx~bkgPicture=resources || "/bsf4oorexx_032.png" -- background picture for AnchorPane
+.my.fx~styleSheet=resources || "/fxml_02.css"     -- stylesheet to use
+
+parse arg locale                 -- parse command line arguments, if any
+if locale="" then locale="en"    -- default to English
+jLocale=.bsf~new("java.util.Locale", locale) -- get Locale object
+   -- let ResourceBundle choose which properties file to load and use:
+.my.fx~resourceBundle=bsf.importClass("java.util.ResourceBundle")~getBundle(resources"/FXML_02", jLocale)
+
+   -- create Rexx object that will control the FXML set up
+rexxHandler=.RexxAppHandler~new
+
+   -- instantiate the abstract JavaFX class, the abstract "start" method will be served by rexxHandler
+rxApp=BSFCreateRexxProxy(rexxHandler, ,"javafx.application.Application")
+
+   -- launch the application, invoke "start" and then stay up until the application closes
+rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and-groovy-exception/> or <http://stackoverflow.com/questions/16636883/javafx-anonymous-application-class>, etc.
+
+
+::requires "BSF.CLS"    -- get Java support
+
+::class RexxAppHandler  -- the Rexx handler for javafx.application.Application
+
+::method start          -- will be called by JavaFX, allows to setup everything
+  use arg primaryStage
+
+  primaryStage~setTitle("Hello JavaFX from ooRexx!")  -- we could use primaryStage~title="..." instead!
+
+  colorClz=bsf.loadClass("javafx.scene.paint.Color")           -- get access to the JavaFX colors
+  cdClz=bsf.loadClass("javafx.scene.control.ContentDisplay")   -- get access to ContentDisplay constants (an Enum class)
+  alClz=bsf.loadClass("javafx.geometry.Pos")                   -- get access to alignment constants (an Enum class)
+  lblBuilderClz=bsf.loadClass("javafx.scene.control.LabelBuilder")   -- get the LabelBuilder class object
+
+   -- a Rexx directory which contains all data needed in our event handler (cf. RexxButtonHandler Rexx class below)
+  userData=.directory~new
+  userData~count=1            -- each Button click will show and then increase this value
+  userData~title="--> -> >"   -- a free form hint string
+
+/* AnchorPane definition in FXML, cf. "fxml_2/FXML_02_Document.fxml":
+
+    <AnchorPane id="AnchorPane" fx:id="root"
+         prefHeight="240.0" prefWidth="480.0"
+         styleClass="root"
+         stylesheets="@fxml_02.css"
+         xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1">
+*/
+  root=.bsf~new("javafx.scene.layout.AnchorPane")   -- create the root node
+  root~id="root"        -- treat Java field/property as if an ooRexx attribute
+  root~prefHeight=240   -- treat Java field/property as if an ooRexx attribute
+  root~prefWidth=480    -- treat Java field/property as if an ooRexx attribute
+  root~getStyleSheets~add(.my.fx~styleSheet)
+  rootChildren=root~getChildren  -- collection of javafx controls to manage
+
+-------------------------------------------------------------------
+/* Label definition in FXML, cf. "fxml_2/FXML_02_Document.fxml":
+
+   <Label fx:id="labelRexxStarted" alignment="CENTER" layoutX="50.0" layoutY="26.0"
+        minHeight="16" minWidth="69" prefHeight="16.0" prefWidth="380.0"
+        styleClass="rexxInfo" stylesheets="@fxml_02.css"
+        text="$rexxStarted" />
+*/
+      -- define the first Label
+  lbl=.bsf~new("javafx.scene.control.Label")
+  lbl~setId("rexxStarted")
+  lbl~setAlignment(alClz~valueOf("CENTER"))  -- center align, alternatively: "alClz~CENTER"
+  lbl~setLayoutX(50)
+  lbl~setLayoutY(26)
+  lbl~setMinHeight(16)
+  lbl~setMinWidth(69)
+  lbl~setPrefHeight(16)
+  lbl~setPrefWidth(380)
+  lbl~getStyleClass~add("rexxStarted") -- add the CSS style named ".rexxStarted" to this node
+  lbl~setText(.my.fx~rexxStarted)
+  rootChildren~add(lbl)       -- add this Label control
+
+-------------------------------------------------------------------
+/* Label definition in FXML, cf. "fxml_2/FXML_02_Document.fxml", code goes to RexxButtonHandler's 'handle':
+
+        <Button fx:id="button" layoutX="210.0" layoutY="137.0" onAction=
+           "
+                   say ' ==&gt; ---&gt; arrived in button''s onAction-code ...'  ;
+                   /*@showsource*/ /* the previous Rexx script annotation will cause this code to be shown in original and edited state */ ;
+                   use arg slotDir /* this argument is always sent by BSF4ooRexx */ ;
+                   /*@get('label')*/ /* the previous Rexx script annotation will incorporate the attribute 'label' as a local Rexx variable */ ;
+                   say ' ... label~getText='pp(label~getText)  ;
+                   say ' ... changing text in label to current date and time ...' ;
+                   label~text=.dateTime~new~string             ;
+                   say ' ... label~getText='pp(label~getText)  ;
+                   say ' ... now invoking the public Rexx routine ''klickButtonAction''' ;
+                   call klickButtonAction slotDir /* now process the event */;
+           "
+           text="%clickMe"
+        />
+*/
+      -- define and add the Button
+  btn=.bsf~new("javafx.scene.control.Button")
+  btn~id="button"
+  btn~layoutX=210       -- assign as if it was a Rexx attribute
+  btn~layoutY=137       -- assign as if it was a Rexx attribute
+  btn~text=.my.fx~resourceBundle~getString("clickMe") -- assign as if it was a Rexx attribute
+      -- create a RexxButtonHandler, wrap it up as a Java RexxProxy implementing all methods of "javafx.event.EventHandler";
+      -- supply the RexxDirectory "userData" as second argument, such that it gets returned via the appended slotDir argument
+  bh=BSFCreateRexxProxy(.RexxButtonHandler~new, userData,"javafx.event.EventHandler")
+  btn~setOnAction(bh)   -- let this instance's Java RexxProxy handle the event
+  rootChildren~add(btn) -- add this Button control
+
+-------------------------------------------------------------------
+/* Label definition in FXML, cf. "fxml_2/FXML_02_Document.fxml":
+
+        <Label fx:id="year" layoutX="50.0" layoutY="175.0" minHeight="16" minWidth="20" style="-fx-background-color: palegoldenrod;" text="%year" />
+*/
+   -- now using a LabelBuilder instead; NOTE: no "set" prefix, just use the property/field names;
+   -- cf. <http://blog.netopyr.com/2012/01/24/advantages-of-javafx-builders/>
+  lblBuilder=lblBuilderClz~create
+  lblBuilder   ~id("year") -
+               ~textFill(colorClz~BLUE) -
+               ~layoutX(50) -
+               ~layoutY(175) -
+               ~minHeight(16) -
+               ~minWidth(20) -
+               ~style("-fx-background-color: palegoldenrod;") -
+               ~text(.my.fx~resourceBundle~getString("year"))
+  lbl=lblBuilder~build  -- now create the new Label from this data
+  rootChildren~add(lbl) -- add this Label control
+
+-------------------------------------------------------------------
+/* Label definition in FXML, cf. "fxml_2/FXML_02_Document.fxml":
+
+        <Label fx:id="label" layoutX="95.0" layoutY="175.0" minHeight="16" minWidth="49" prefHeight="16.0" prefWidth="335.0" style="-fx-background-color: honeydew;" />
+*/
+   lblBuilder  ~id("label") ,    /* skipping ~textFill(colorClz~BLUE) as already set */
+               ~layoutX(95) ,
+               ~layoutY(175) ,   /* skipping ~minHeight(16) as already set */
+               ~minWidth(49) ,
+               ~prefHeight(16) ,
+               ~prefWidth(335),
+               ~style("-fx-background-color: honeydew;") ,  --
+               ~text("")
+
+  lbl=lblBuilder~build  -- now create the new Label from this data
+  rootChildren~add(lbl) -- add this Label control
+  userData~label=lbl    -- put it into our userData Rexx directory
+
+-------------------------------------------------------------------
+/* Label definition in FXML, cf. "fxml_2/FXML_02_Document.fxml":
+
+        <Label fx:id="labelRexxInfo" alignment="CENTER" layoutX="50.0" layoutY="200.0" minHeight="16.0" minWidth="49.0" prefHeight="16.0" prefWidth="380.0" style="-fx-background-color: skyblue; -fx-cursor: wait; -fx-font-family: serif; -fx-font-weight: lighter;" text="${rexxInfo}" />
+*/
+   lblBuilder  ~id("labelRexxInfo") ,  /* skipping ~textFill(colorClz~BLUE) as already set */
+               ~alignment(alClz~CENTER) -
+               ~layoutX(50) ,
+               ~layoutY(200) -   /* skipping ~minHeight(16) as already set */
+               ~minWidth(49) ,   /* skipping ~prefHeight(16) as already set */
+               ~prefWidth(380) - /* skipping ~text("") as already set      */
+               ~style("-fx-background-color: skyblue; -fx-cursor: wait; -fx-font-family: serif; -fx-font-weight: lighter;")
+
+  lbl=lblBuilder~build  -- now create the new Label from this data
+  rootChildren~add(lbl) -- add this Label control
+  userData~rexxInfo=lbl -- put it into our userData Rexx directory
+
+-------------------------------------------------------------------
+      -- put the scene on the stage (using AnchorPane's preferred height and width)
+  primaryStage~setScene(.bsf~new("javafx.scene.Scene", root))
+  img=.bsf~new("javafx.scene.image.Image", .my.fx~appIcon)
+  primaryStage~getIcons~add(img)                       -- set application icon
+  primaryStage~show
+
+
+   -- Rexx class which handles the button presses
+::class RexxButtonHandler
+
+::method handle      -- will be invoked by the Java side
+  use arg event, slotDir   -- the last argument will always be added by BSF4ooRexx
+  say " ==> ---> arrived in button's RexxButtonHandler's 'handle' method ..."
+  slotDir=arg(arg())          -- get last argument, will always be added by BSF4ooRexx
+  userData=slotDir~userData   -- fetch the Rexx directory we supplied at button event handler creation time
+   -- get values we want to work with
+  rexxInfo=userData~rexxInfo  -- get the rexxInfo Label    ^
+  count   =userData~count     -- get the current value of 'count'
+  title   =userData~title     -- get the value of 'title'
+  label   =userData~label     -- get the Label with the id "label"
+
+  say ' ... label~getText='pp(label~getText)
+  say ' ... changing text in label to current date and time ...'
+  label~text=.dateTime~new~string
+  say ' ... label~getText='pp(label~getText)
+
+   -- as this version does not use the javax.script infrastructure there is
+   -- no "ScriptContext" from javax.script available to us; "fxml_02" by
+   -- contrast will access it and display its content on each invocation
+
+   -- using the FXMLLoader we could have it update this Label
+  rexxInfo~text="Updated from RexxButtonHandler's 'handle' method."
+  if count//2=0 then rexxInfo~text=rexxInfo~text~reverse -- if even, reverse the current text
+  userData~count+=1           -- increment value of 'count'
+
+    -- access the "label" JavaFX Label, change its text
+  label~setText(title .dateTime~new~string "(count #" count")")
+
+  say " <== <--- returning from RexxButtonHandler's 'handle' method."
+  say

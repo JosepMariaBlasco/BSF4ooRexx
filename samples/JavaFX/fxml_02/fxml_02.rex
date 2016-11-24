@@ -48,11 +48,15 @@ say center(" after rxApp~launch ", 70, "-")
 
    -- create an URL for the FMXLDocument.fxml file (hence the protocol "file:")
   rootDocUrl=.bsf~new("java.net.URL", "file:FXML_02_Document.fxml")
-  jLocale=.bsf~new("java.util.Locale", locale)  -- if no file available, will use the default "fxml_01.properties"
+  jLocale=.bsf~new("java.util.Locale", locale)
   jRB=bsf.importClass("java.util.ResourceBundle")~getBundle("FXML_02", jLocale)
 
-  root=bsf.loadClass("javafx.fxml.FXMLLoader")~load( rootDocUrl, jRB)   -- load the fxml document
+  root=bsf.loadClass("javafx.fxml.FXMLLoader")~load(rootDocUrl, jRB) -- load the fxml document
 
   scene=.bsf~new("javafx.scene.Scene", root)    -- create a scene for our document
   stage~setScene(scene)                         -- set the stage to our scene
+  scene~getStyleSheets~add("fxml_02.css")       -- use this CSS to style the UI
+
+  img=.bsf~new("javafx.scene.image.Image", "oorexx_032.png")
+  stage~getIcons~add(img)                       -- set application icon
   stage~show                                    -- show the stage (and thereby our scene)

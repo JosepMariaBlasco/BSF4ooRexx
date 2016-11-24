@@ -22,21 +22,11 @@
                       Rexx call; note that JavaFX will remove any newline characters between the
                       double-quotes ("), hence each Rexx statement is explicitly ended with the
                       semi-colon character -->
-        <Button fx:id="button" layoutX="170.0" layoutY="89.0" onAction="
-                                say .dateTime~new': arrived in code defined in Button''s onAction-attribute' ;
-                                /*@get('label')*/; /* makes the attribute 'label' immediately available as a Rexx variable by the same name */ ;
-                                say '... current value of 'pp(label)': label~getText='pp(label~text)  ;
-                                use arg slotDir /* supplied by BSF4ooRexx */ ;
-                                call klickButtonAction slotDir /* now process the event */ ;
-                                say .dateTime~new': returning from event handler (cf. onAction attribute)' ;
-                                say ;
-                        " text="Click Me!" textFill="GREEN"
+        <Button fx:id="button" layoutX="170.0" layoutY="89.0" onAction=
+                      "use arg slotDir /* always supplied by BSF4ooRexx as the last argument */ ;
+                       call klickButtonAction slotDir /* now process the event, pass on slotDir */ ;"
+                      text="Click Me!" textFill="GREEN"
         />
-
-        <!-- comment: the following Label will get its value from the above Rexx code, note the
-                      attribute's fx:id value which is passed via the ScriptContext Bindings and
-                      fetched by the above Rexx script annotation /*@get('label')*/
-             -->
 
         <Label fx:id="label" alignment="CENTER" contentDisplay="CENTER"
                              layoutX="76.0" layoutY="138.0"

@@ -33,8 +33,8 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
       -- define the Label
   lbl=.bsf~new("javafx.scene.control.Label")
   lbl~textFill=colorClz~BLUE
-  lbl~layoutX=76
-  lbl~layoutY=138
+  lbl~setLayoutX(76)
+  lbl~setLayoutY(138)
   lbl~prefHeight="16.0"
   lbl~prefWidth="248.0"
   lbl~contentDisplay=cdClz~CENTER         -- center ContentDisplay
@@ -43,9 +43,9 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
       -- define and add the Button
   btn=.bsf~new("javafx.scene.control.Button")
   btn~textFill=colorClz~BLUE
-  btn~layoutX=170
-  btn~layoutY=89
-  btn~text="Click Me!"
+  btn~layoutX=170       -- assign as if it was a Rexx attribute
+  btn~layoutY=89        -- assign as if it was a Rexx attribute
+  btn~text="Click Me!"  -- assign as if it was a Rexx attribute
       -- create a RexxButtonHandler, wrap it up as a Java RexxProxy implementing all methods of "javafx.event.EventHandler":
   bh=BSFCreateRexxProxy(.RexxButtonHandler~new(lbl), ,"javafx.event.EventHandler")
   btn~setOnAction(bh)  -- let this instance's Java RexxProxy handle the event
@@ -65,10 +65,9 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
 
 ::method handle      -- will be invoked by the Java side
   expose label
-
   say .dateTime~new": arrived in code defined for Button's setOnAction method, i.e. the 'handle' method"
-  say '... current value of 'pp(label)': label~getText='pp(label~text)  ;
 
+  say '... current value of 'pp(label)': label~getText='pp(label~text)  ;
   label~text="Clicked at:" .dateTime~new  -- set the label
 
   say .dateTime~new': returning from the event handler' ;

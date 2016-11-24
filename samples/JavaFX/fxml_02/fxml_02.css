@@ -1,0 +1,46 @@
+/* Some Java-FX CSS definitions, cf. <http://docs.oracle.com/javafx/2/get_started/css.htm>,
+   especially: <https://docs.oracle.com/javafx/2/api/javafx/scene/doc-files/cssref.html>.
+
+   The following style definitions only have the purpose to demonstrate the power available.
+   These definitions are only meant for fun and starting point for experiments, not for
+   professional use! :)
+
+   2016-11-22, rgf
+*/
+
+/* define the background of the scene, will be applied to AnchorPane: */
+.root {
+     -fx-background-image: url("bsf4oorexx_032.png");
+     -fx-background-color: LightGoldenRodYellow;
+}
+
+/* this is the basic formatting for all Label:s */
+.label {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #333333;
+    -fx-effect: dropshadow( gaussian , rgba(255,255,255,0.5) , 0,0,0,1 );
+    -fx-border-color: red;
+    -fx-border-radius: 3px;
+    -fx-border-style: dashed;
+    -fx-border-width: 1px;
+}
+
+/* this will change the appearence of Button a little bit: */
+.button {
+    -fx-text-fill: royalblue;
+    -fx-font-weight: 900;
+}
+
+/* this will apply alpha (fourth value) to get the background to shine thru the
+   label with the class "rexxInfo"; to be able to apply the alpha, one
+   needs to turn the hexadecimal values into their decimal representations like:
+
+   hence: oldlace = #fdf5e6 -> fd~x2d f5~x2d e5~x2d -> rgb(253, 245, 230)
+*/
+.rexxStarted {
+     -fx-background-color: rgb(253, 245, 230, 0.75) ;
+     -fx-text-fill: royalblue;
+}
+
+
