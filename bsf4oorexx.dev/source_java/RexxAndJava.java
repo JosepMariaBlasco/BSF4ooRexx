@@ -4,6 +4,7 @@ import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.concurrent.ConcurrentHashMap;
 
 import java.util.*;
 import java.io.*;
@@ -40,7 +41,20 @@ import org.apache.bsf.util.type.*;
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
-/* TODO: (maybe)
+
+// TODO: ---rgf, 2016-11-27: - make glob_tcr static ?
+//                           - remove outdated EVENT_*, SyncPutGet (old eventListener support via BSF), can be done directly (easier, real-time)
+//                           - change Java registry to a single one serving all Rexx interpreter instances
+//                             - depend on ooRexx UNINIT to remove (reduce reference counter)
+//                             - on lookup: if not found, defer to BSFManager's registry (to still allow interacting with non-Rexx BSFEngine; will ask)
+//                               -- maybe: add declareBean, undeclareBean: these versions will register with BSFManager's registry
+//                             - allows to reduce memory and maintenance overhead (e.g. pending uninits and the like)
+//                           - check: is checking for object prefix in *registerBean() still necessary?
+
+/*
+
+
+TODO: (maybe)
     - 20141004/5, rgf: - look up methods and fields: when need to search superclasses take protected into account
                      - if reverting change 2014-05-15, then starting with Java 1.8/8 anaylze explicitly
                        all interfaces a class implements and look for default methods, which have as
@@ -48,6 +62,10 @@ import org.apache.bsf.util.type.*;
 */
 
  /*
+
+     2016-11-27, ---rgf, - new central RAJRegistry with RAJBeans, global to all Rexx interpreter instances
+                         - turning bsfPrefixReturnValue into static to become available in static methods
+            if (bean==null && bsfPrefixReturnValue)    // bean not found, maybe still has prefix ?
 
      2016-11-19, ---rgf, - updated major version number to 6 to indicate new base level Java 1.6/6
 
@@ -409,7 +427,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20161119";
+    static final public String version = "600.20161127";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -421,6 +439,12 @@ class RexxAndJava {
     */
     static public boolean carryOutSystemExit = true;
 
+
+// TODO: remove, if new RAJReg is tested
+    static private final boolean bUseRAJReg=
+         true;
+         // false;
+
     /** This field allows storing those beans that need to be registered in the context of
      *  the Rexx interpreter instance (RII), that created the beans. If the
      *  <quote><code>unregisterBean</code></quote> subfunction gets invoked with the
@@ -430,6 +454,7 @@ class RexxAndJava {
      *
      * @since 2015-08-03
      */
+// TODO: remove, if new RAJReg is tested
     static HashMap<String,ArrayList<String>> pendingUninits=new HashMap<String,ArrayList<String>>();
 
     /** This field will indicate, whether there are any entries in any of the ArrayLists in
@@ -437,6 +462,7 @@ class RexxAndJava {
      *
      * @sicne 2015-08-11
      */
+// TODO: remove, if new RAJReg is tested
     static boolean bCheck4pendingUninits=false;
 
     /** Defines the version string. */
@@ -548,7 +574,8 @@ class RexxAndJava {
     /**
       * To store the default TypeConvertorRegistry, if needed.
       */
-    TypeConvertorRegistry glob_tcr = new TypeConvertorRegistry();;  // will include default set of type convertors
+// rgf, 2016-11-27: moved to static
+    static TypeConvertorRegistry glob_tcr = new TypeConvertorRegistry();  // will include default set of type convertors
 
 
     /** Contains the RexxInterpreter instance ID this engine is associated with.
@@ -665,6 +692,32 @@ necessary anymore
 // 2012-03-12, rgf: move loading the BSF4ooRexx library *after* loading the NetRexx class, this
 //                  way it is clear whehter netrexx.lang.Rexx is available for BSF4ooRexx
         System.loadLibrary( DLL_NAME );
+
+
+// 2016-11-27, rgf: use new, single (global) rajRegistry, move initialisation into static constructor
+//        RAJReg.registerBean("Class.class",     Class.class    , true, "0"  ); // testing
+
+        // for conversions of java.lang.String -> java.lang.Object, RexxAndJava.java needs an explicit
+        // type convertor; rgf, 2005-11-06
+        {
+// rgf, 2016-11-27: moved to static
+                // register conversion of java.lang.String->java.lang.Object here, no need seen
+                // to enclose it into the standard type convertors in class TypeConvertorRegistry.java
+             TypeConvertor tc = new TypeConvertor () {
+              public Object convert (Class from, Class to, Object obj) {
+                  return obj;
+              }
+
+              public String getCodeGenString() {
+                    return "(Class from, Class to, Object obj) {\n" +
+                               "return obj;\n" +
+                               "}";
+              }
+            };
+                 // register this type-convertor
+            glob_tcr.register (String.class, Object.class, tc); // rgf, 2005-07-30
+        }
+
     }
 
 
@@ -710,53 +763,57 @@ necessary anymore
     {
         this.mgr        = mgr;     //the current BSFManager
         this.rexxEngine = rengine; //the current RexxEngine
-        // 2003-01-26, ---rgf, pre-register important class objects for easier reference from Rexx
-        mgr.registerBean("Class.class",     Class.class);
-        mgr.registerBean("Object.class",    Object.class);
-        mgr.registerBean("Method.class",    Method.class);
 
-        mgr.registerBean("Array.class",     Array.class);
-        mgr.registerBean("String.class",    String.class);
-        mgr.registerBean("System.class",    System.class);
-        mgr.registerBean("Thread.class",    Thread.class);
-
-        mgr.registerBean("Boolean.class",   Boolean.class);
-        mgr.registerBean("boolean.class",   boolean.class);
-        mgr.registerBean("Byte.class",      Byte.class);
-        mgr.registerBean("byte.class",      byte.class);
-        mgr.registerBean("char.class",      char.class);
-        mgr.registerBean("Character.class", Character.class);
-        mgr.registerBean("Double.class",    Double.class);
-        mgr.registerBean("double.class",    double.class);
-        mgr.registerBean("Float.class",     Float.class);
-        mgr.registerBean("float.class",     float.class);
-        mgr.registerBean("int.class",       int.class);
-        mgr.registerBean("Integer.class",   Integer.class);
-        mgr.registerBean("Long.class",      Long.class);
-        mgr.registerBean("long.class",      long.class);
-        mgr.registerBean("Short.class",     Short.class);
-        mgr.registerBean("short.class",     short.class);
-        mgr.registerBean("Void.class",      Void.class);
-        mgr.registerBean("void.class",      void.class);
-
-        // for conversions of java.lang.String -> java.lang.Object, RexxAndJava.java needs an explicit
-        // type convertor; rgf, 2005-11-06
+        if (bUseRAJReg==false)
         {
-                // register conversion of java.lang.String->java.lang.Object here, no need seen
-                // to enclose it into the standard type convertors in class TypeConvertorRegistry.java
-             TypeConvertor tc = new TypeConvertor () {
-              public Object convert (Class from, Class to, Object obj) {
-                  return obj;
-              }
+            // 2003-01-26, ---rgf, pre-register important class objects for easier reference from Rexx
+            mgr.registerBean("Class.class",     Class.class);
+            mgr.registerBean("Object.class",    Object.class);
+            mgr.registerBean("Method.class",    Method.class);
 
-              public String getCodeGenString() {
-                    return "(Class from, Class to, Object obj) {\n" +
-                               "return obj;\n" +
-                               "}";
-              }
-            };
-                 // register this type-convertor
-            glob_tcr.register (String.class, Object.class, tc); // rgf, 2005-07-30
+            mgr.registerBean("Array.class",     Array.class);
+            mgr.registerBean("String.class",    String.class);
+            mgr.registerBean("System.class",    System.class);
+            mgr.registerBean("Thread.class",    Thread.class);
+
+            mgr.registerBean("Boolean.class",   Boolean.class);
+            mgr.registerBean("boolean.class",   boolean.class);
+            mgr.registerBean("Byte.class",      Byte.class);
+            mgr.registerBean("byte.class",      byte.class);
+            mgr.registerBean("char.class",      char.class);
+            mgr.registerBean("Character.class", Character.class);
+            mgr.registerBean("Double.class",    Double.class);
+            mgr.registerBean("double.class",    double.class);
+            mgr.registerBean("Float.class",     Float.class);
+            mgr.registerBean("float.class",     float.class);
+            mgr.registerBean("int.class",       int.class);
+            mgr.registerBean("Integer.class",   Integer.class);
+            mgr.registerBean("Long.class",      Long.class);
+            mgr.registerBean("long.class",      long.class);
+            mgr.registerBean("Short.class",     Short.class);
+            mgr.registerBean("short.class",     short.class);
+            mgr.registerBean("Void.class",      Void.class);
+            mgr.registerBean("void.class",      void.class);
+// rgf, 2016-11-27: done in static block
+            // for conversions of java.lang.String -> java.lang.Object, RexxAndJava.java needs an explicit
+            // type convertor; rgf, 2005-11-06
+            {
+                    // register conversion of java.lang.String->java.lang.Object here, no need seen
+                    // to enclose it into the standard type convertors in class TypeConvertorRegistry.java
+                 TypeConvertor tc = new TypeConvertor () {
+                  public Object convert (Class from, Class to, Object obj) {
+                      return obj;
+                  }
+
+                  public String getCodeGenString() {
+                        return "(Class from, Class to, Object obj) {\n" +
+                                   "return obj;\n" +
+                                   "}";
+                  }
+                };
+                     // register this type-convertor
+                glob_tcr.register (String.class, Object.class, tc); // rgf, 2005-07-30
+            }
         }
 
         jniSetupNativeJVMPointer();     // make sure the JNI library can initialize the Java related datastructures
@@ -2550,7 +2607,15 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
                               "'"+args[0]+"', beanName, eventSetName, filter, script)");
                       }
 
-                      Object bean = mgr.lookupBean(args[1]);
+                      Object bean = null;
+                      if (bUseRAJReg==true)
+                      {
+                          bean=RAJReg.lookupBean(args[1], bsfPrefixReturnValue);
+                      }
+                      else
+                      {
+                          bean = mgr.lookupBean(args[1]);
+                      }
 
                       if(bean==null)
                       {
@@ -2595,9 +2660,12 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": too few arguments, you must supply at least the \"componentType\" argument!");
                }
 
-               if (bCheck4pendingUninits)
+               if (bUseRAJReg==false)
                {
-                   runPendingUninits();     // run pending uninits for this RII, if any
+                   if (bCheck4pendingUninits)
+                   {
+                       runPendingUninits();     // run pending uninits for this RII, if any
+                   }
                }
 
                Object o_componentType=null;
@@ -2807,7 +2875,17 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
                }
 
 
-               Object arrayObj = mgr.lookupBean( args[1] );        // a registered array object?
+               Object arrayObj = null;
+
+               if (bUseRAJReg==true)
+               {
+                   arrayObj=RAJReg.lookupBean(args[1], bsfPrefixReturnValue);
+               }
+               else
+               {
+                   arrayObj=mgr.lookupBean( args[1] );        // a registered array object?
+               }
+
                if (arrayObj == null)
                {
                    throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -2966,7 +3044,17 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" invalid # of args; usage: value = BSF( " +
                                   "'"+args[0]+"', arrayObject )");
                       }
-                      Object arrayObj = mgr.lookupBean( args[1] );        // a registered array object ?
+                      Object arrayObj = null;
+
+                      if (bUseRAJReg==true)
+                      {
+                          arrayObj=RAJReg.lookupBean(args[1], bsfPrefixReturnValue);
+                      }
+                      else
+                      {
+                          arrayObj=mgr.lookupBean( args[1] );        // a registered array object ?
+                      }
+
                       int    num      = Array.getLength( arrayObj ) ;
                       return makeString4Rexx ( new Integer(num) );
                   }
@@ -3127,7 +3215,16 @@ if (iDebugLevel>0)
                                      +" usage: value=BSF("+args[0]+", beanName, " +tmp+" ).");
                      }
 
-                     Object o = mgr.lookupBean(args[1]);
+                     Object o = null;
+
+                     if (bUseRAJReg==true)
+                     {
+                         o=RAJReg.lookupBean(args[1], bsfPrefixReturnValue);
+                     }
+                     else
+                     {
+                         o=mgr.lookupBean(args[1]);
+                     }
 
                      if (o==null)
                      {
@@ -3154,7 +3251,17 @@ if (iDebugLevel>0)
 //????
 if (iDebugLevel>1) System.err.println("---> searching for fieldName (not case sensitively...)");
 
-                                 Object tmpBean = mgr.lookupBean(args[1]);
+                                 Object tmpBean = null;
+
+                                 if (bUseRAJReg==true)
+                                 {
+                                     tmpBean=RAJReg.lookupBean(args[1], bsfPrefixReturnValue);
+                                 }
+                                 else
+                                 {
+                                     tmpBean=mgr.lookupBean(args[1]);
+                                 }
+
                                  if(tmpBean==null)
                                  {
                                      // 2003-06-11, ---rgf
@@ -3447,7 +3554,17 @@ if (bDebug)
                       //    errTxt="class '"+args[1]+"' not found";
                       // }
                         // rgf, 2005-05-06 begin
-                      Object tmpBean = mgr.lookupBean(args[1]);
+                      Object tmpBean = null;
+
+                      if (bUseRAJReg==true)
+                      {
+                          tmpBean=RAJReg.lookupBean(args[1], bsfPrefixReturnValue);
+                      }
+                      else
+                      {
+                          tmpBean=mgr.lookupBean(args[1]);
+                      }
+
                       if(tmpBean==null)
                       {
 
@@ -3609,7 +3726,17 @@ if (bDebug)
                                       "'"+args[0]+"', beanName, function [, arg]... )");
                           }
 
-                          Object bean = mgr.lookupBean(args[1]);
+                          Object bean = null;
+
+                          if (bUseRAJReg==true)
+                          {
+                              bean=RAJReg.lookupBean(args[1], bsfPrefixReturnValue);
+                          }
+                          else
+                          {
+                              bean=mgr.lookupBean(args[1]);
+                          }
+
                           if(bean==null)
                           {
                               // 2003-06-11, ---rgf
@@ -3977,7 +4104,15 @@ if (bDebug) System.err.println("'invoke': AFTER, AFTER, trying '"+STRING_GET_FIE
                               if (args[2].equalsIgnoreCase("MAKEARRAY") || args[2].equalsIgnoreCase("SUPPLIER"))
                               {
                                   boolean bMakeArray=args[2].equalsIgnoreCase("MAKEARRAY"); // MAKEARRAY or SUPPLIER ?
-                                  bean = mgr.lookupBean(args[1]);   // reload bean
+
+                                  if (bUseRAJReg==true)
+                                  {
+                                      bean=RAJReg.lookupBean(args[1], bsfPrefixReturnValue);
+                                  }
+                                  else
+                                  {
+                                      bean = mgr.lookupBean(args[1]);   // reload bean
+                                  }
 
 
                                   Object result=null;
@@ -4195,7 +4330,17 @@ if (bDebug) System.err.println("invokeStrict: beanName=["+args[1]+"], function: 
                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" invalid # of args; usage: value = BSF( " +
                                   "'"+args[0]+"', beanName, function [, argType, arg]... )");
                       }
-                      Object bean = mgr.lookupBean(args[1]);
+                      Object bean = null;
+
+                      if (bUseRAJReg==true)
+                      {
+                          bean=RAJReg.lookupBean(args[1], bsfPrefixReturnValue);
+                      }
+                      else
+                      {
+                          bean=mgr.lookupBean(args[1]);
+                      }
+
                       if(bean==null)
                       {
                           // 2003-06-11, ---rgf
@@ -4793,7 +4938,17 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
                               "'"+args[0]+"', javaObject, javaClass)");
                       }
 
-                      Object javaObject=mgr.lookupBean(args[1]);  // fetch javaObject from BSFRegistry, if there
+                      Object javaObject=null;
+
+                      if (bUseRAJReg==true)
+                      {
+                          javaObject=RAJReg.lookupBean(args[1], bsfPrefixReturnValue);
+                      }
+                      else
+                      {
+                          javaObject=mgr.lookupBean(args[1]);  // fetch javaObject from BSFRegistry, if there
+                      }
+
                       if (javaObject==null)     // not in BSFRegistry, use string object directly
                       {
                           throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -4802,7 +4957,16 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
                              );
                       }
 
-                      Object javaClass =mgr.lookupBean(args[2]);  // fetch javaClass from BSFRegistry, if there
+                      Object javaClass = null;
+
+                      if (bUseRAJReg==true)
+                      {
+                          javaClass=RAJReg.lookupBean(args[2], bsfPrefixReturnValue);
+                      }
+                      else
+                      {
+                          javaClass=mgr.lookupBean(args[2]);  // fetch javaClass from BSFRegistry, if there
+                      }
 
                       if(javaClass==null)       // not in BSFRegistry, try to laod class
                       {
@@ -4922,7 +5086,16 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
                                 "'"+args[0]+"', beanName )");
                    }
 
-                   Object tmp = mgr.lookupBean(args[1]);
+                   Object tmp = null;
+                   if (bUseRAJReg==true)
+                   {
+                      tmp=RAJReg.lookupBean(args[1], bsfPrefixReturnValue);
+                   }
+                   else
+                   {
+                       tmp=mgr.lookupBean(args[1]);
+                   }
+
                    if (tmp!=null)
                    {
                       return makeString4Rexx(tmp);
@@ -5023,9 +5196,17 @@ if (bDebug)
                        ", args[2]=["+args[2]+"]<==>oJava=["+oJava+"]/oJava.getClass()=["+(oJava==null ? null : oJava.getClass())+"]");
 }
 
-                       mgr.registerBean(args[1], oJava);    // register (replace) in BSF registry
+                       if (bUseRAJReg==true)
+                       {
+                           return RAJReg.rawRegisterBean(args[1], oJava, bsfPrefixReturnValue, rii_ID);
+                       }
+                       else
+                       {
+                           mgr.registerBean(args[1], oJava);    // register (replace) in BSF registry
+                           return registerBean(args[1], oJava); // increase ref counter, will always return "<O>" prefixed beanName
+                       }
 
-                       return registerBean(args[1], oJava); // increase ref counter, will always return "<O>" prefixed beanName
+
                    }
 
          // ==================================================================
@@ -5184,14 +5365,28 @@ if (bDebug)
                       }
 
 
-                      if (bCheck4pendingUninits)
+                      if (bUseRAJReg==true)
                       {
-                          runPendingUninits();  // unregister beans that got created with this rii_ID
+                          if (bCheck4pendingUninits)
+                          {
+                              runPendingUninits();  // unregister beans that got created with this rii_ID
+                          }
                       }
                       // Class cl=EngineUtils.loadClass(mgr, args[2]);
 
                       // 2010-04-18, rgf
-if (bDebug) System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr.lookupBean(args[2])+"], cFR=["+convFromRexx(args[2])+"]");
+
+if (bDebug)
+{
+    if (bUseRAJReg==true)
+    {
+System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], r.lB["+RAJReg.lookupBean(args[2], bsfPrefixReturnValue)+"], cFR=["+convFromRexx(args[2])+"]");
+    }
+    else
+    {
+System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], m.lB["+mgr.lookupBean(args[2])+"], cFR=["+convFromRexx(args[2])+"]");
+    }
+}
 
                       Class cl=null;
 
@@ -5583,7 +5778,16 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                 *********************************************************/
                {
 
-                   Object enumObj = mgr.lookupBean( args[1] );        // a registered object?
+                   Object enumObj = null;
+                   if (bUseRAJReg==true)
+                   {
+                      enumObj=RAJReg.lookupBean(args[1], bsfPrefixReturnValue);
+                   }
+                   else
+                   {
+                      enumObj=mgr.lookupBean( args[1] );        // a registered object?
+                   }
+
                    if (enumObj == null)
                    {
                        throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -5803,27 +6007,41 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
 
                    String beanName=args[1];
 
-                   // take care of ref-counters
-                   int refCount    = 0;
-                   Integer newRefCount=null;
-
-                   synchronized (orxReferences)
+                   if (bUseRAJReg==true)
                    {
-                       Integer i1 = (Integer) orxReferences.get( beanName );   // is object already registered?
-
-                       if (i1==null)       // no bean stored by that name
+                       RAJBean bean=RAJReg.rajRegistry.get(beanName);   // get bean
+                       if (bean==null)       // no bean stored by that name
                        {
                            throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                     "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": beanName ["+beanName+"] not in registry, cannot increase refCounter!");
                        }
+                       bean.refCount+=1;                        // increase refcount
+                       return makeString4Rexx(bean.refCount);   // return new refcount for the bean
+                   }
+                   else
+                   {
+                       // take care of ref-counters
+                       int refCount    = 0;
+                       Integer newRefCount=null;
 
-if (bDebug) System.err.println(this+": increaseRefCounter beanName=["+beanName+"]), has currently ["+i1.intValue()+"] refCount(s)");
-                       refCount = i1.intValue()+1;
-                       newRefCount=new Integer(refCount);
-                       orxReferences.put(beanName, newRefCount); // remember refCount
+                       synchronized (orxReferences)
+                       {
+                           Integer i1 = (Integer) orxReferences.get( beanName );   // is object already registered?
+
+                           if (i1==null)       // no bean stored by that name
+                           {
+                               throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                        "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": beanName ["+beanName+"] not in registry, cannot increase refCounter!");
+                           }
+
+    if (bDebug) System.err.println(this+": increaseRefCounter beanName=["+beanName+"]), has currently ["+i1.intValue()+"] refCount(s)");
+                           refCount = i1.intValue()+1;
+                           newRefCount=new Integer(refCount);
+                           orxReferences.put(beanName, newRefCount); // remember refCount
+                       }
+                       return makeString4Rexx(newRefCount);     // return new refcount for the bean
                    }
 
-                   return makeString4Rexx(newRefCount);     // return new refcount for the bean
                }
 
 
@@ -5940,7 +6158,14 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], val
                         if (value.equals("")) return null;
 
                         Object tmp;
-                        tmp = mgr.lookupBean(value);
+                        if (bUseRAJReg==true)
+                        {
+                            tmp=RAJReg.lookupBean(value, bsfPrefixReturnValue);
+                        }
+                        else
+                        {
+                            tmp = mgr.lookupBean(value);
+                        }
 
                         if (tmp==null){
                             throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -6066,7 +6291,17 @@ if (bDebug)
 
          // Is this a reference to a Java object in the BSF registry?
          // If so, return Java object
-         Object tmp=mgr.lookupBean(value);
+         Object tmp=null;
+
+         if (bUseRAJReg==true)
+         {
+             tmp=RAJReg.lookupBean(value, bsfPrefixReturnValue);
+         }
+         else
+         {
+             tmp=mgr.lookupBean(value);
+         }
+
          if (tmp==null) return value;
 
          return tmp;
@@ -6296,18 +6531,26 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
     {
         final boolean bDebug=false;
 
-        Object o=mgr.lookupBean(beanName);
-        if (o==null && bsfPrefixReturnValue)    // bean not found, maybe still has prefix ?
+        if (bUseRAJReg==true)
         {
-            if (beanName.startsWith(OBJECT_INDICATOR_PREFIX))
-            {
-                String name=beanName.substring(3);  // remove prefix from bean
-                o=mgr.lookupBean(beanName);
-            }
+            return RAJReg.lookupBean(beanName,bsfPrefixReturnValue);
         }
-if (bDebug==true)
-System.err.println(this+": lookupBean("+beanName+"): o=["+o+"], o.getClass()=["+(o==null ? null : o.getClass()) +"]");
-        return o;
+        else
+        {
+            Object o=mgr.lookupBean(beanName);
+            if (o==null && bsfPrefixReturnValue)    // bean not found, maybe still has prefix ?
+            {
+                if (beanName.startsWith(OBJECT_INDICATOR_PREFIX))
+                {
+                    String name=beanName.substring(3);  // remove prefix from bean
+                    o=mgr.lookupBean(beanName);
+                }
+            }
+    if (bDebug==true)
+    System.err.println(this+": lookupBean("+beanName+"): o=["+o+"], o.getClass()=["+(o==null ? null : o.getClass()) +"]");
+            return o;
+
+        }
     }
 
 
@@ -6326,10 +6569,19 @@ System.err.println(this+": lookupBean("+beanName+"): o=["+o+"], o.getClass()=["+
             // return null;
             return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
         }
+
+        if (bUseRAJReg==true)
+        {
+            return RAJReg.lookupBean(beanName, bsfPrefixReturnValue);
+        }
+        else
+        {
 // rgf, 201507
 if (bDebug==true)
 System.err.println(this+": lookupBean4JNI("+beanName+") -> mgr.lookupBean(beanName)=["+mgr.lookupBean(beanName)+"]");
         return mgr.lookupBean(beanName);
+        }
+
     }
 
 
@@ -6381,35 +6633,43 @@ System.err.println(this+":  registerBean4JNI("+object+"], object.getClass()=["+(
             return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
         }
 
-        Object tmp = mgr.lookupBean( beanName );    // already defined?
-        // take care of ref-counters
-        int refCount    = 1;                        // ref-Counter
-
-        synchronized (orxReferences)
+        if (bUseRAJReg==true)
         {
-            Integer i1 = (Integer) orxReferences.get( beanName );   // is object already registered?
-            if (i1 != null)                             // increase its reference counter
-            {
-if (bDebug) System.err.println(this+": registerBean(beanName=["+beanName+"]) already exists, has currently ["+i1.intValue()+"] refCount(s)");
-               refCount = i1.intValue()+1;
-            }
-            orxReferences.put(beanName, new Integer(refCount)); // remember refCount
+            return RAJReg.registerBean(beanName, object, bsfPrefixReturnValue, rii_ID);
+        }
+        else
+        {
+            Object tmp = mgr.lookupBean( beanName );    // already defined?
+            // take care of ref-counters
+            int refCount    = 1;                        // ref-Counter
 
-            if (tmp==null)      // need to newly register
+            synchronized (orxReferences)
             {
-                synchronized (beansCreated)     // save the beanName, we deregister it upon terminat()/finalize()
+                Integer i1 = (Integer) orxReferences.get( beanName );   // is object already registered?
+                if (i1 != null)                             // increase its reference counter
                 {
-                    beansCreated.add(beanName);
+    if (bDebug) System.err.println(this+": registerBean(beanName=["+beanName+"]) already exists, has currently ["+i1.intValue()+"] refCount(s)");
+                   refCount = i1.intValue()+1;
                 }
+                orxReferences.put(beanName, new Integer(refCount)); // remember refCount
 
-                mgr.registerBean( beanName, object ); // register the object under this new beanName
+                if (tmp==null)      // need to newly register
+                {
+                    synchronized (beansCreated)     // save the beanName, we deregister it upon terminat()/finalize()
+                    {
+                        beansCreated.add(beanName);
+                    }
+
+                    mgr.registerBean( beanName, object ); // register the object under this new beanName
+                }
             }
+
+    if (bDebug==true)
+    System.err.println(this+": registerBean(beanName=["+beanName+"], object=["+object+"] / new refCount: "+refCount);
+
+            return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+beanName;   // if so, return beanName
         }
 
-if (bDebug==true)
-System.err.println(this+": registerBean(beanName=["+beanName+"], object=["+object+"] / new refCount: "+refCount);
-
-        return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+beanName;   // if so, return beanName
     }
 
 
@@ -6437,57 +6697,66 @@ System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"): bTer
             return false;
         }
 
-        synchronized (orxReferences)
+
+        if (bUseRAJReg==true)
         {
-            // take care of ref-counters
-            Integer i1 = (Integer) orxReferences.get(beanName);    // get refCount-value
-
-if (bDebug==true)
-{
-    if (i1==null)
-    {
-        System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"): BEAN NOT REGISTERED (no entry in orxReferences)! mgr.lookupBean(beanName)=["+mgr.lookupBean(beanName)+"] BEAN NOT REGISTERED?");
-    }
-    else
-    {
-        System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"), currently ["+i1+"] refCount(s)");
-    }
-}
-
-            if (i1 != null)                                     // decrease its reference counter
+            return RAJReg.unregisterBean(beanName, bsfPrefixReturnValue);
+        }
+        else
+        {
+            synchronized (orxReferences)
             {
-               int refCount = i1.intValue()-1;  // get and decrease refCount
+                // take care of ref-counters
+                Integer i1 = (Integer) orxReferences.get(beanName);    // get refCount-value
 
-               if (refCount > 0)                // still references on the (Object) Rexx side
-               {
-if (bDebug)  System.err.println(this+".unregisterBean("+beanName+") - reduce count to ["+refCount+"]");
+    if (bDebug==true)
+    {
+        if (i1==null)
+        {
+            System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"): BEAN NOT REGISTERED (no entry in orxReferences)! mgr.lookupBean(beanName)=["+mgr.lookupBean(beanName)+"] BEAN NOT REGISTERED?");
+        }
+        else
+        {
+            System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"), currently ["+i1+"] refCount(s)");
+        }
+    }
 
-                   orxReferences.put(beanName, new Integer(refCount));
+                if (i1 != null)                                     // decrease its reference counter
+                {
+                   int refCount = i1.intValue()-1;  // get and decrease refCount
 
-if (bDebug) System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] reducing refCount to: ["+refCount+"]");
-               }
-               else                             // no more references on the (Object) Rexx side
-               {                                // safe to remove Java object
-
-if (bDebug==true) System.err.println(this+".unregisterBean("+beanName+") - remove!");
-
-    /* 2015-07-30, ---rgf: temporarily do not unregister for testing UNINIT-problems
-    */
-                   orxReferences.remove(beanName);
-                   mgr.unregisterBean(beanName);
-
-                   // not really necessary, however from a life-time view this is the counter action to registerBean()
-                   synchronized (beansCreated)     // save the beanName
+                   if (refCount > 0)                // still references on the (Object) Rexx side
                    {
-                       beansCreated.remove(beanName);
-                   }
+    if (bDebug)  System.err.println(this+".unregisterBean("+beanName+") - reduce count to ["+refCount+"]");
 
-    // if (bDebug) System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] refCount: ["+refCount+"], REMOVED from REGISTRY! <==\n\t<== mgr.lookupBean("+beanName+")=["+mgr.lookupBean(beanName)+"], reference count orxReferences.get("+beanName+")=["+orxReferences.get(beanName)+"]");
-if (bDebug) System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] refCount: ["+refCount+"], REMOVED from BSF registry! <==");
-               }
-               return true;
+                       orxReferences.put(beanName, new Integer(refCount));
+
+    if (bDebug) System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] reducing refCount to: ["+refCount+"]");
+                   }
+                   else                             // no more references on the (Object) Rexx side
+                   {                                // safe to remove Java object
+
+    if (bDebug==true) System.err.println(this+".unregisterBean("+beanName+") - remove!");
+
+        /* 2015-07-30, ---rgf: temporarily do not unregister for testing UNINIT-problems
+        */
+                       orxReferences.remove(beanName);
+                       mgr.unregisterBean(beanName);
+
+                       // not really necessary, however from a life-time view this is the counter action to registerBean()
+                       synchronized (beansCreated)     // save the beanName
+                       {
+                           beansCreated.remove(beanName);
+                       }
+
+        // if (bDebug) System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] refCount: ["+refCount+"], REMOVED from REGISTRY! <==\n\t<== mgr.lookupBean("+beanName+")=["+mgr.lookupBean(beanName)+"], reference count orxReferences.get("+beanName+")=["+orxReferences.get(beanName)+"]");
+    if (bDebug) System.err.println(this+":  ===> RexxAndJava.unregisterBean: ["+beanName+"] refCount: ["+refCount+"], REMOVED from BSF registry! <==");
+                   }
+                   return true;
+                }
             }
         }
+
 
 if (bDebug) System.err.println(this+":   ===> RexxAndJava.unregisterBean: ["+beanName+"]: PROBLEM! PROBLEM! PROBLEM! does NOT exist in refcounter Hashtable!");
 
@@ -6601,7 +6870,16 @@ if (bDebug) System.err.println("makeString4Rexx(): TSK # 1");
         String beanName="" + o.getClass().getName() + '@' + Integer.toHexString( System.identityHashCode(o) );
 
             // rgf, 2012-11-01: handle case where System.identityHashCode() returns duplicates
-        Object olb=mgr.lookupBean(beanName);    // check whether an existing object is identical to the one we got
+        Object olb=null;
+        if (bUseRAJReg==true)
+        {
+            olb=RAJReg.lookupBean(beanName, bsfPrefixReturnValue);
+        }
+        else
+        {
+            olb=mgr.lookupBean(beanName);    // check whether an existing object is identical to the one we got
+        }
+
 
         if (olb!=null && o!=olb)   // oops, we got a duplicate identityHashCode for the same class!
         {   // make it into an identifier (unique) string
@@ -6633,27 +6911,29 @@ if (bDebug) System.err.println("*** TERMINATE *** bTerminated=["+bTerminated+"] 
         {
             bTerminated=true;       // from now on do not use BSFManager and RexxEngine related methods
 
-            // deregister all beans that got created via this RII
-
-            Iterator it=beansCreated.iterator();
-            while (it.hasNext())    // iterate over beansCreated and unregister them from the BSF registry
+            if (bUseRAJReg==false)
             {
-                mgr.unregisterBean((String) it.next());  // fetch beanname and remove bean from registry
-            }
-            // reset beansCreated
-            beansCreated.clear();
-            orxReferences.clear();
-            synchronized (pendingUninits)
-            {
+                // deregister all beans that got created via this RII
+                Iterator it=beansCreated.iterator();
+                while (it.hasNext())    // iterate over beansCreated and unregister them from the BSF registry
+                {
+                    mgr.unregisterBean((String) it.next());  // fetch beanname and remove bean from registry
+                }
+                // reset beansCreated
+                beansCreated.clear();
+                orxReferences.clear();
+                synchronized (pendingUninits)
+                {
 
-if (bDebug)
-{
-    ArrayList al=(ArrayList) pendingUninits.get(rii_ID);
-    System.err.println(this+": ***TERMINATE*** terminate(), dropping entire ArrayList entry ("+(al==null?-1:al.size())+" entries) for rii_ID=["+rii_ID+"], pendingUninits.size()=["+pendingUninits.size()+"]");
-}
+    if (bDebug)
+    {
+        ArrayList al=(ArrayList) pendingUninits.get(rii_ID);
+        System.err.println(this+": ***TERMINATE*** terminate(), dropping entire ArrayList entry ("+(al==null?-1:al.size())+" entries) for rii_ID=["+rii_ID+"], pendingUninits.size()=["+pendingUninits.size()+"]");
+    }
 
-                pendingUninits.remove(rii_ID);      // remove entry for this rii_ID
-                check4pendingUninits();             // do we have to check for other pending uninits?
+                    pendingUninits.remove(rii_ID);      // remove entry for this rii_ID
+                    check4pendingUninits();             // do we have to check for other pending uninits?
+                }
             }
 
             rexxEngine=null;        // nullify, release reference
@@ -7028,6 +7308,286 @@ if (bDebug) System.err.println(this+": runPendingUninits(): this rii_ID=["+rii_I
             }
         }
         return;
+    }
+
+
+    /** This class maintains the name, the Java object denoted by it and the reference count of the Java object.
+     *  The name will be used as the key.
+     *
+     * @since 2016-11-27
+      */
+    public static class RAJBean    // "RexxAndJava"-Bean
+    {
+            // package private
+        /** The name of the {@link javaObject}, which is used as a key into {@link rajRegistry}.
+         */
+        String name=null;       // bean name to serve as the key
+        /** The Java ojbect {@link name} refers to.
+         */
+        Object javaObject=null; // the Java object
+        /** Serves as the reference count field for maintenance purposes of the {@link rajRegistry}.
+         */
+        int refCount=1;         // allows to maintain the reference count value for this particular bean
+        /** The Rexx interpreter instance ID that created this instance.
+         */
+        String rii_id=null;     // the Rexx interpreter instance id that created the original RAJBean
+
+
+        /* No default constructor for this class. */
+        private RAJBean()
+        {}
+
+        /** Constructor.
+         *
+         * @param name the name used for the Java object
+         * @param javaObject the Java object
+         * @param rii_id the Rexx interpreter instance ID that creates this instance
+         */
+        public RAJBean(String name, Object javaObject, String rii_id)
+        {
+            this.name      =name;
+            this.javaObject=javaObject;
+            this.rii_id    =rii_id;
+        }
+
+        public String getName()
+        {
+            return name;
+        }
+        public Object getJavaObject()
+        {
+            return javaObject;
+        }
+        public int getRefCount()
+        {
+            return refCount;
+        }
+        public String getRII_ID()
+        {
+            return rii_id;
+        }
+        public String toString()
+        {
+            return "RAJBean@"+Integer.toHexString( System.identityHashCode(this) )+"[name="+name+",javaObject="+javaObject+",refCount="+refCount+",rii_id="+rii_id+"]";
+        }
+    }
+
+
+    /** This class serves as the single, global Registry for Java objects that are maintained on behalf of Rexx,
+     *  independent of the Rexx interpreter instance.
+     *
+     * @since 2016-11-27
+      */
+// TODO: 2016-11-27, rgf: in the case that anyone is using and co-operating with BSF engines
+//
+    static class RAJReg    // "RexxAndJava"-Bean
+    {
+        /** This fields serves as a central registry for all Rexx interpreter instances.
+         */
+        static private ConcurrentHashMap<String,RAJBean> rajRegistry=new ConcurrentHashMap<String,RAJBean>();
+
+           // class constructor
+        static {
+
+            String rii_id="0";
+            RAJReg.registerBean("Class.class",     Class.class    , true, rii_id  );
+            RAJReg.registerBean("Object.class",    Object.class   , true, rii_id  );
+            RAJReg.registerBean("Method.class",    Method.class   , true, rii_id  );
+
+            RAJReg.registerBean("Array.class",     Array.class    , true, rii_id  );
+            RAJReg.registerBean("String.class",    String.class   , true, rii_id  );
+            RAJReg.registerBean("System.class",    System.class   , true, rii_id  );
+            RAJReg.registerBean("Thread.class",    Thread.class   , true, rii_id  );
+
+            RAJReg.registerBean("Boolean.class",   Boolean.class  , true, rii_id  );
+            RAJReg.registerBean("boolean.class",   boolean.class  , true, rii_id  );
+            RAJReg.registerBean("Byte.class",      Byte.class     , true, rii_id  );
+            RAJReg.registerBean("byte.class",      byte.class     , true, rii_id  );
+            RAJReg.registerBean("char.class",      char.class     , true, rii_id  );
+            RAJReg.registerBean("Character.class", Character.class, true, rii_id  );
+            RAJReg.registerBean("Double.class",    Double.class   , true, rii_id  );
+            RAJReg.registerBean("double.class",    double.class   , true, rii_id  );
+            RAJReg.registerBean("Float.class",     Float.class    , true, rii_id  );
+            RAJReg.registerBean("float.class",     float.class    , true, rii_id  );
+            RAJReg.registerBean("int.class",       int.class      , true, rii_id  );
+            RAJReg.registerBean("Integer.class",   Integer.class  , true, rii_id  );
+            RAJReg.registerBean("Long.class",      Long.class     , true, rii_id  );
+            RAJReg.registerBean("long.class",      long.class     , true, rii_id  );
+            RAJReg.registerBean("Short.class",     Short.class    , true, rii_id  );
+            RAJReg.registerBean("short.class",     short.class    , true, rii_id  );
+            RAJReg.registerBean("Void.class",      Void.class     , true, rii_id  );
+            RAJReg.registerBean("void.class",      void.class     , true, rii_id  );
+        }
+
+        /** Returns an unmodifiable version of the {@link rajRegistry} Map (for debugging purposes).
+        */
+        public static Map getRajRegistry()
+        {
+            return Collections.unmodifiableMap(rajRegistry);
+        }
+
+        /* No default constructor for this class. */
+        private RAJReg()
+        {}
+
+// rgf, 2016-11-27: let bsfPrefixReturnValue be different for each Rexx interpreter instance (RII); this
+//                  allows veery old BSF4ooRexx programs to execute in one RII, and have the prefix for
+//                  BSF.CLS BSF4ooRexx programs
+        /** Allow lookup of BSFRegistry entries.
+         *
+         * @param beanName string denoting the index into the BSFRegistry
+         * @param bsfPrefixReturnValue indicates whether Rexx engine expcets the prefix return value (set automatically by BSF.CLS)
+         * @return the Java object matching <code>beanName</code>, if not found <code>null</code>
+         *
+         * @since 2016-11-27
+         */
+        static Object lookupBean(String beanName, boolean bsfPrefixReturnValue)
+        {
+            final boolean bDebug=false;
+
+            RAJBean bean=rajRegistry.get(beanName);
+
+                // bean not found, maybe still has prefix ?
+            if (bean==null && bsfPrefixReturnValue && beanName.startsWith(OBJECT_INDICATOR_PREFIX))
+            {
+                String name=beanName.substring(3);  // remove prefix from bean
+                bean=rajRegistry.get(name);         // try to get now
+            }
+
+    if (bDebug==true)
+    System.err.println(RAJReg.class+": lookupBean("+beanName+"): bean=["+bean+"], bean.javaObject.getClass()=["+
+                       (bean.javaObject==null ? null : bean.javaObject.getClass()) +"]");
+            return (bean==null ? null : bean.javaObject);
+        }
+
+
+
+// rgf, 2016-11-27: let bsfPrefixReturnValue be different for each Rexx interpreter instance (RII); this
+//                  allows veery old BSF4ooRexx programs to execute in one RII, and have the prefix for
+//                  BSF.CLS BSF4ooRexx programs
+// TODO: - forgo "rii_id" after testing works out ok ?
+        /** This method registers an <em>object</em> with the given <em>beanName</em> with
+         *  the BSF registry, if not registered yet. In addition a reference counting is
+         *  carried out.
+         *
+          *  @param beanName name of the object to be registered
+          *  @param object to be registered
+         *   @param bsfPrefixReturnValue if true, then "<O>" or "<S>" will be prepended
+          *
+          *  @return returns the beanName
+         * @since 2016-11-27
+          */
+        static String registerBean(String beanName, Object object, boolean bsfPrefixReturnValue, String rii_id)
+        {
+            final boolean bDebug= false;
+                                  // true;
+
+            RAJBean tmp = rajRegistry.get( beanName );  // already registered?
+            if (tmp==null)                  // we need to create the bean
+            {
+                tmp=new RAJBean(beanName, object, rii_id);
+                rajRegistry.put(beanName, tmp);
+            }
+            else    // exists already, increase refCounter
+            {
+                tmp.refCount+=1;
+            }
+
+
+    if (bDebug==true)
+    System.err.println(RAJReg.class+": registerBean(beanName=["+beanName+"], object=["+object+"], RAJBean: "+tmp);
+
+            return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+beanName;   // if so, return beanName
+        }
+
+
+// rgf, 2016-11-27: let bsfPrefixReturnValue be different for each Rexx interpreter instance (RII); this
+//                  allows veery old BSF4ooRexx programs to execute in one RII, and have the prefix for
+//                  BSF.CLS BSF4ooRexx programs
+// TODO: - forgo "rii_id" after testing works out ok ?
+        /** This method replaces an already registered Java <em>object</em> with the one supplied as the argument.
+         *
+          *  @param beanName name of the object to be replaced
+          *  @param object that replaces the current
+         *   @param bsfPrefixReturnValue if true, then "<O>" or "<S>" will be prepended
+          *
+          *  @return returns the beanName
+         * @since 2016-11-27
+          */
+        static String rawRegisterBean(String beanName, Object object, boolean bsfPrefixReturnValue, String rii_id)
+        {
+            final boolean bDebug= false;
+                                  // true;
+
+            RAJBean tmp = rajRegistry.get( beanName );  // already registered?
+            if (tmp==null)                  // we need to create the bean
+            {
+                tmp=new RAJBean(beanName, object, rii_id);
+                rajRegistry.put(beanName, tmp);
+            }
+            else    // exists already, replace Java object in bean with the supplied one, increase refCounter
+            {
+                tmp.javaObject=object;
+                tmp.refCount+=1;
+            }
+
+
+    if (bDebug==true)
+    System.err.println(RAJReg.class+": registerBean(beanName=["+beanName+"], object=["+object+"], RAJBean: "+tmp);
+
+            return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+beanName;   // if so, return beanName
+        }
+
+
+// rgf, 2016-11-27: let bsfPrefixReturnValue be different for each Rexx interpreter instance (RII); this
+//                  allows veery old BSF4ooRexx programs to execute in one RII, and have the prefix for
+//                  BSF.CLS BSF4ooRexx programs
+        /** This method allows for unregistering Beans, taking into account reference counters.
+          * Only if the reference counter is 0, will the given Bean be unregistered. (2003-01-06, ---rgf)
+          *
+          *  @param beanName name of the Bean to be unregistered
+         * @param bsfPrefixReturnValue indicates whether Rexx engine expcets the prefix return value (set automatically by BSF.CLS)
+          *
+          *  @return returns <code>true</code>, if the Bean exists, <code>false</code> else.
+         * @since 2016-11-27
+          */
+        protected static boolean unregisterBean(String beanName, boolean bsfPrefixReturnValue )
+        {
+            final boolean bDebug= // true;
+                                  false;
+
+if (bDebug && bUseRAJReg) // testing; TODO: remove
+{
+    System.err.println(RAJReg.class+".unregisterBean(beanName="+beanName+"), bsfPrefixReturnValue="+bsfPrefixReturnValue);
+}
+
+    if (bDebug==true)
+    System.err.println(RAJReg.class+":   ===> RexxAndJava.unregisterBean("+beanName+") ...");
+
+            RAJBean bean=rajRegistry.get(beanName);
+
+            // bean not found, maybe still has prefix ?
+            if (bean==null && bsfPrefixReturnValue && beanName.startsWith(OBJECT_INDICATOR_PREFIX))
+            {
+                beanName=beanName.substring(3);  // remove prefix from bean
+                bean=rajRegistry.get(beanName);
+            }
+
+            if (bean==null)
+            {
+                return false;
+            }
+            bean.refCount-=1;       // reduce counter
+            if (bean.refCount==0)   // dropped to 0, remove bean
+            {
+                rajRegistry.remove(beanName);
+            }
+            return true;
+
+        }
+
+
+
     }
 
 

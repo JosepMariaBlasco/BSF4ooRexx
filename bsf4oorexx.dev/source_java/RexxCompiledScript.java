@@ -32,6 +32,7 @@ Changes:
                           (cf. comments in getInterface(Class<T> clasz) method)
     2016-11-08: ---rgf, add RexxCompiledScript object to slotDir, if available; supplied as new
                         fourth argument to static method createArgV(...).
+    2016-11-27: ---rgf, created public getter method getRexxScriptEngine()
 */
 
 
@@ -48,7 +49,7 @@ Changes:
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20161108
+ * @version 100.20161127
  * @since  2015-05-11
  *
  */
@@ -60,6 +61,14 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
 
     /** Field that refers to the RexxScriptEngine instance which created this RexxCompiledScript. */
     RexxScriptEngine rse;
+
+    /** Getter to retrieve the RexxScriptEngine used to create this compiled script.
+     *  @return the RexxScriptEngine that created this RexxCompiledScript object
+     */
+    public RexxScriptEngine getRexxScriptEngine()
+    {
+        return this.rse;
+    }
 
 
     /** The value of this field controls whether {@link createScriptException(Exception exc)} supplies
