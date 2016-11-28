@@ -62,6 +62,15 @@ TODO: (maybe)
 */
 
  /*
+     2016-11-28, ---rgf, - convFromRexx(): check that type string is not the empty string, change error message
+                           to be more meaningful
+                         - fixing a subtle bug where even invokestrict() may be fooled in method chosing: e.g.
+                           java.lang.List possesses two remove methods with the signature "Object remove(int)"
+                           and "boolean remove(Object)". The current algorithm in INVOKE_STRICT can be misled
+                           to choose the wrong method if checking the "remove(Object)" first (because an Integer
+                           object, to which the primitive int value was converted to already, could be used as
+                           an argument). Now checking if argument must be primitive, so not to accept a parameter
+                           of type Object.
 
      2016-11-27, ---rgf, - new central RAJRegistry with RAJBeans, global to all Rexx interpreter instances
                          - turning bsfPrefixReturnValue into static to become available in static methods
@@ -427,7 +436,7 @@ class RexxAndJava {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20161127";
+    static final public String version = "600.20161128";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -4357,14 +4366,25 @@ if (bDebug) { System.err.println("invoke_strict(): bean not found, assuming a St
 
                       //convert function-arguments to the correct type
                       Object funcArgs[] = new Object[(args.length-3)/2];
+                      boolean funcArgsIsPrimitive[] = new boolean [(args.length-3)/2];
                       int nrArgs=funcArgs.length;
 
-                      if(args.length>3)
+                      if (args.length>3)
                       {
                           for(int i=3, j=0; i<args.length; i+=2, j++)
                           {
                                   // convert arguments to Java type
-                              funcArgs[j] = convFromRexx( args[i], args[i+1]);
+                              String args_i=args[i];
+                              funcArgs[j] = convFromRexx( args_i, args[i+1]);
+                                // remember whether we have a primitive datatype
+                              funcArgsIsPrimitive[j] = false;
+
+                              if (args_i != null && args_i.length()>0)  // only use if at least one character is there
+                              {
+                                    // is it the "Object" argument?
+                                  funcArgsIsPrimitive[j]=(Character.toUpperCase(args_i.charAt(0)) != 'O');
+                              }
+
                           }
                       }
 
@@ -4396,8 +4416,9 @@ if (bDebug) { System.err.println("invoke_strict(): bean not found, assuming a St
                               // rgf, 2005-05-06: do an exact match
                               if(args[2].equals(m[i].getName()))
                               {
+     if (bDebug) System.err.println("\t\t->\t methName=["+m[i].toString()+"]");
                                   Class paramTypes[]=m[i].getParameterTypes();
-    if (bDebug) System.err.println("\t\t\tmethName=["+m[i].getName()+"] paramTypes.length="+paramTypes.length);
+     if (bDebug) System.err.println("\t\t\tmethName=["+m[i].getName()+"] paramTypes.length="+paramTypes.length);
                                   if (paramTypes.length != nrArgs)  // wrong nr of arguments
                                       continue;
 
@@ -4411,7 +4432,7 @@ if (bDebug) { System.err.println("invoke_strict(): bean not found, assuming a St
                                       // FOUND !
                                       bFound=true;   // don't look any further
 
-    if (bDebug) System.err.println("---> NO ARGS! Hence, FOUND !                                   ");
+     if (bDebug) System.err.println("---> NO ARGS! Hence, FOUND !                                   ");
                                   }
                                   else
                                   {
@@ -4423,23 +4444,35 @@ if (bDebug) { System.err.println("invoke_strict(): bean not found, assuming a St
                                           // bFound=(funcArgs[j]==paramTypes[j]);
                                           if  (funcArgs[j]==null) continue;
 
-if (bDebug) System.err.println("paramTypes[j].isPrimitive()=["+paramTypes[j].isPrimitive()+"], paramTypes[j]=["+paramTypes[j]+"], funcArgs[j].getClass()=["+funcArgs[j].getClass()+"]");
-                                          if (paramTypes[j].isPrimitive())
+if (bDebug) System.err.println("\t\t\t\ta) paramTypes["+j+"].isPrimitive()=["+paramTypes[j].isPrimitive()+"], paramTypes[j]=["+paramTypes[j]+"], funcArgsIsPrimitive[j]=["+funcArgsIsPrimitive[j]+"] \n\t\t\t\t\t| funcArgs[j].getClass()=["+funcArgs[j].getClass()+"]");
+                                          if (funcArgsIsPrimitive[j])   // a primitive value at this position?
                                           {
-                                              Class pCl=paramTypes[j],
-                                                    fCl=funcArgs[j].getClass();
+if (bDebug) System.err.println("\t\t\t\tab) paramTypes["+j+"].isPrimitive()=["+paramTypes[j].isPrimitive()+"], in \"funcArgsIsPrimitive\" branch...");
+                                              if (paramTypes[j].isPrimitive())
+                                              {
+if (bDebug) System.err.println("\t\t\t\tabc1)paramTypes["+j+"].isPrimitive()=["+paramTypes[j].isPrimitive()+"], in \"paramTypes.isPrimitive()\" branch...");
+                                                  Class pCl=paramTypes[j],
+                                                        fCl=funcArgs[j].getClass();
 
-                                                   if (pCl==boolean.class) { bFound=( Boolean.class.isAssignableFrom(fCl)) ;}
-                                              else if (pCl==int.class )    { bFound=( Integer.class.isAssignableFrom(fCl)) ;}
-                                              else if (pCl==char.class)    { bFound=( Character.class.isAssignableFrom(fCl)) ;}
-                                              else if (pCl==byte.class)    { bFound=( Byte.class.isAssignableFrom(fCl)) ;}
-                                              else if (pCl==short.class)   { bFound=( Short.class.isAssignableFrom(fCl)) ;}
-                                              else if (pCl==long.class)    { bFound=( Long.class.isAssignableFrom(fCl)) ;}
-                                              else if (pCl==float.class)   { bFound=( Float.class.isAssignableFrom(fCl)) ;}
-                                              else if (pCl==double.class)  { bFound=( Double.class.isAssignableFrom(fCl)) ;}
+                                                       if (pCl==boolean.class) { bFound=( Boolean.class.isAssignableFrom(fCl)) ;}
+                                                  else if (pCl==int.class )    { bFound=( Integer.class.isAssignableFrom(fCl)) ;}
+                                                  else if (pCl==char.class)    { bFound=( Character.class.isAssignableFrom(fCl)) ;}
+                                                  else if (pCl==byte.class)    { bFound=( Byte.class.isAssignableFrom(fCl)) ;}
+                                                  else if (pCl==short.class)   { bFound=( Short.class.isAssignableFrom(fCl)) ;}
+                                                  else if (pCl==long.class)    { bFound=( Long.class.isAssignableFrom(fCl)) ;}
+                                                  else if (pCl==float.class)   { bFound=( Float.class.isAssignableFrom(fCl)) ;}
+                                                  else if (pCl==double.class)  { bFound=( Double.class.isAssignableFrom(fCl)) ;}
+                                              }
+                                              else  // this is not the method we search for strictly!
+                                              {
+if (bDebug) System.err.println("\t\t\t\tabc2)paramTypes["+j+"].isPrimitive()=["+paramTypes[j].isPrimitive()+"], in \"paramTypes.isPrimitive()\", method not found, check next one!");
+                                                  bFound=false;
+                                              }
                                           }
-                                          else
+
+                                          else  // only check, if the Rexx strict type is of "Object"
                                           {
+if (bDebug) System.err.println("\t\t\t\tB) paramTypes["+j+"].isPrimitive()=["+paramTypes[j].isPrimitive()+"], funcArgsIsPrimitive[j]=["+funcArgsIsPrimitive[j]+"] in \"Object\" branch...");
                                               bFound=(((Class<?>)paramTypes[j]).isAssignableFrom(funcArgs[j].getClass()));
                                           }
 
@@ -6138,87 +6171,92 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], val
             return null;
 
 
-         switch (Character.toUpperCase(type.charAt(0)) )
+         if (type.length()>0)
          {
+             switch ( Character.toUpperCase(type.charAt(0)) )
+             {
 
-             case 'S':
-                        if (type.length() == 1) break;    // leave switch
-                        switch (Character.toUpperCase(type.charAt(1)))
-                        {
-                           case 'T':    // String
-                                     return value;
+                 case 'S':
+                            if (type.length() == 1) break;    // leave switch
+                            switch (Character.toUpperCase(type.charAt(1)))
+                            {
+                               case 'T':    // String
+                                         return value;
 
-                           case 'H':    // Short
-                                     return new Short( value );
+                               case 'H':    // Short
+                                         return new Short( value );
 
-                           default:  break;     // unknown type
-                        }
+                               default:  break;     // unknown type
+                            }
 
-             case 'O':  // no object indicated, hence return null
-                        if (value.equals("")) return null;
+                 case 'O':  // no object indicated, hence return null
+                            if (value.equals("")) return null;
 
-                        Object tmp;
-                        if (bUseRAJReg==true)
-                        {
-                            tmp=RAJReg.lookupBean(value, bsfPrefixReturnValue);
-                        }
-                        else
-                        {
-                            tmp = mgr.lookupBean(value);
-                        }
+                            Object tmp;
+                            if (bUseRAJReg==true)
+                            {
+                                tmp=RAJReg.lookupBean(value, bsfPrefixReturnValue);
+                            }
+                            else
+                            {
+                                tmp = mgr.lookupBean(value);
+                            }
 
-                        if (tmp==null){
-                            throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                                "Bean ["+value+"] not registered.");
-                        }
+                            if (tmp==null){
+                                throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                    "Bean ["+value+"] not registered.");
+                            }
 
-                        return tmp;
+                            return tmp;
 
-             case 'I':  return new Integer      (value);
-             case 'C':
-                        // char/Character - deal with the special case that an empty string is supplied, probably
-                        //                  because programmer supplied 0x00 on the Rexx side which gets transformed
-                        //                  to an empty string in JNI's NewStringUTF()
+                 case 'I':  return new Integer      (value);
+                 case 'C':
+                            // char/Character - deal with the special case that an empty string is supplied, probably
+                            //                  because programmer supplied 0x00 on the Rexx side which gets transformed
+                            //                  to an empty string in JNI's NewStringUTF()
 
-                        if (value==null || value.length()==0)  // 0x00 from the Rexx side or empty string: deal with as 0x00
-                        {
+                            if (value==null || value.length()==0)  // 0x00 from the Rexx side or empty string: deal with as 0x00
+                            {
 
-if (bDebug)
-{
-    Character res=new Character((char)0);
-    System.out.println("RexxAndJava.convFromRexx(): new Character: res=["+res+"], Integer.toHexString()=["+Integer.toHexString(res.charValue())+"]");
-}
-                            return new Character((char)0);       // create 0x00 char
-                        }
+    if (bDebug)
+    {
+        Character res=new Character((char)0);
+        System.out.println("RexxAndJava.convFromRexx(): new Character: res=["+res+"], Integer.toHexString()=["+Integer.toHexString(res.charValue())+"]");
+    }
+                                return new Character((char)0);       // create 0x00 char
+                            }
 
-                        return new Character    (value.charAt(0));
+                            return new Character    (value.charAt(0));
 
-             case 'B':  // need second character
-                        if (type.length() == 1) break;    // leave switch
-                        switch (Character.toUpperCase(type.charAt(1)))
-                        {
-                           case 'O':    // Boolean
-                                     // return new Boolean( value.equals("1") || value.equalsIgnoreCase("true") );
-                                     if (value.equals("1") || value.equalsIgnoreCase("true"))
-                                     {
-                                         return Boolean.TRUE;
-                                     }
-                                     return Boolean.FALSE;
+                 case 'B':  // need second character
+                            if (type.length() == 1) break;    // leave switch
+                            switch (Character.toUpperCase(type.charAt(1)))
+                            {
+                               case 'O':    // Boolean
+                                         // return new Boolean( value.equals("1") || value.equalsIgnoreCase("true") );
+                                         if (value.equals("1") || value.equalsIgnoreCase("true"))
+                                         {
+                                             return Boolean.TRUE;
+                                         }
+                                         return Boolean.FALSE;
 
-                           case 'Y':    // Byte
-                                     return new Byte( value );
+                               case 'Y':    // Byte
+                                         return new Byte( value );
 
-                           default:  break;     // unknown type
-                        }
+                               default:  break;     // unknown type
+                            }
 
 
-             case 'F':  return new Float        (value);
-             case 'L':  return new Long         (value);
-             case 'D':  return new Double       (value);
+                 case 'F':  return new Float        (value);
+                 case 'L':  return new Long         (value);
+                 case 'D':  return new Double       (value);
 
+             }
          }
+
+            // if we arrive here, we have a problem ...
          throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-             "unknown argType ["+type+"], with value ["+value+"].");
+             "unknown argType ["+type+"] or incompatible value ["+value+"].");
     }
 
 
