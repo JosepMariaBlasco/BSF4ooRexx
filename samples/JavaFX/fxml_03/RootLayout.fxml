@@ -34,5 +34,5 @@
    </top>
 
     <!-- comment: Rexx program that stores all fx:id objects in .local~personOverview.fxml directory -->
-    <fx:script source="Put_FXID_Objects_Into.my.app.rex" />
+    <fx:script source="put_FXID_objects_into.my.app.rex" />
 </BorderPane>

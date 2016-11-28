@@ -22,7 +22,7 @@
         <items>
           <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="160.0" prefWidth="100.0">
                <children>
-                  <TableView fx:id="personTable" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                  <TableView fx:id="personTable" editable="true" prefHeight="200.0" prefWidth="200.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                     <columns>
                       <TableColumn fx:id="firstNameColumn" prefWidth="75.0" text="First Name" />
                       <TableColumn fx:id="lastNameColumn" prefWidth="75.0" text="Last Name" />
@@ -66,9 +66,9 @@
                   </GridPane>
                   <HBox layoutX="209.0" layoutY="253.0" spacing="5.0">
                      <children>
-                        <Button mnemonicParsing="false" text="New ..." />
-                        <Button mnemonicParsing="false" text="Edit ..." />
-                        <Button mnemonicParsing="false" text="Delete ..." />
+                        <Button fx:id="btnNew" mnemonicParsing="false" text="New ..." />
+                        <Button fx:id="btnEdit" mnemonicParsing="false" text="Edit ..." />
+                        <Button fx:id="btnDelete" mnemonicParsing="false" text="Delete ..." />
                      </children>
                   </HBox>
                </children>
@@ -78,5 +78,5 @@
    </children>
 
     <!-- comment: Rexx program that stores all fx:id objects in .local~personOverview.fxml directory -->
-    <fx:script source="Put_FXID_Objects_Into.my.app.rex" />
+    <fx:script source="put_FXID_objects_into.my.app.rex" />
 </AnchorPane>

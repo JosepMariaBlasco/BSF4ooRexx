@@ -44,6 +44,8 @@ say center(" after rxApp~launch ", 70, "-")
 
 ::requires "BSF.CLS"    -- get Java support
 
+::requires "rgf_util2.rex"    -- get Rexx utilities (installed with BSF4ooRexx) to ease debugging (cf. dump2(), ppCondition2()...)
+
 
 /* =================================================================================== */
 /* implements the abstract method "start" for the Java class javafx.application.Application
@@ -54,23 +56,11 @@ say center(" after rxApp~launch ", 70, "-")
 
    /* for tutorial Part 2: create an ObservableList and create and store Person data in it */
 ::attribute personData
+-- ::attribute arrayListPersonData
 ::method init  -- constructor
-  expose personData
+  expose personData -- arrayListPersonData
    -- create and store an ObservableList
   personData=bsf.loadClass("javafx.collections.FXCollections")~observableArrayList
-/*
-    public MainApp() {
-        // Add some sample data
-        personData.add(new Person("Hans", "Muster"));
-        personData.add(new Person("Ruth", "Mueller"));
-        personData.add(new Person("Heinz", "Kurz"));
-        personData.add(new Person("Cornelia", "Meier"));
-        personData.add(new Person("Werner", "Meyer"));
-        personData.add(new Person("Lydia", "Kunz"));
-        personData.add(new Person("Anna", "Best"));
-        personData.add(new Person("Stefan", "Meier"));
-        personData.add(new Person("Martin", "Mueller"));
-*/
       -- this creates ooRexx Person objects that get stored as Java RexxProxy objects
   personData~add(.person~new("Hans", "Muster"))
   personData~add(.person~new("Ruth", "Mueller"))
@@ -82,6 +72,23 @@ say center(" after rxApp~launch ", 70, "-")
   personData~add(.person~new("Stefan", "Meier"))
   personData~add(.person~new("Martin", "Mueller"))
 
+/*
+  al=.bsf~new("java.util.ArrayList")
+  aL~add(.person~new("Hans", "Muster"))
+  aL~add(.person~new("Ruth", "Mueller"))
+  aL~add(.person~new("Heinz", "Kurz"))
+  aL~add(.person~new("Cornelia", "Meier"))
+  aL~add(.person~new("Werner", "Meyer"))
+  aL~add(.person~new("Lydia", "Kunz"))
+  aL~add(.person~new("Anna", "Best"))
+  aL~add(.person~new("Stefan", "Meier"))
+  aL~add(.person~new("Martin", "Mueller"))
+  arrayListPersonData=aL
+
+  personData=bsf.loadClass("javafx.collections.FXCollections")~observableList(al)
+*/
+
+
 
    /* loads the fxml document defining the GUI elements, sets up a scene for it and shows it */
 ::method start    -- will be invoked by the "launch" method
@@ -91,33 +98,25 @@ say center(" after rxApp~launch ", 70, "-")
   .my.app~primaryStage=stage      -- save in .my.app
   stage~setTitle("AddressApp")
 
-/*
-// Load the root layout from the fxml file
-            FXMLLoader loader = new FXMLLoader(MainApp.class.getResource("view/RootLayout.fxml"));
-            rootLayout = (BorderPane) loader.load();
-
-            Scene scene = new Scene(rootLayout);
-            primaryStage.setScene(scene);
-            primaryStage.show();
-
-           showPersonOverview();
-*/
-
-
    -- create an URL for the FMXLDocument.fxml file (hence the protocol "file:")
   rootLayoutUrl=.bsf~new("java.net.URL", "file:RootLayout.fxml")
   rootLayout=bsf.loadClass("javafx.fxml.FXMLLoader")~load(rootLayoutUrl) -- load the fxml document
   .my.app~rootLayout=rootLayout   -- save in .my.app
 
   scene=.bsf~new("javafx.scene.Scene", rootLayout) -- create a scene for our document
-.my.app~rootScene=scene
+  .my.app~rootScene=scene
   stage~setScene(scene)                         -- set the stage to our scene
+
   -- scene~getStyleSheets~add("fxml_02.css")       -- use this CSS to style the UI
 
   -- img=.bsf~new("javafx.scene.image.Image", "oorexx_032.png")
   -- stage~getIcons~add(img)                       -- set application icon
-  stage~show                                    -- show the stage (and thereby our scene)
-  self~showPersonOverview
+
+  say "/// ... ---> ... now getting at and filling the TableColumns ... <--- ... ///"
+  self~showPersonOverview     -- get the TableView, fill it with our data
+  say "done."
+
+  stage~show                  -- now show the stage (and thereby our scene)
 
 
 
@@ -130,13 +129,16 @@ say center(" after rxApp~launch ", 70, "-")
 */
    overviewUrl=.bsf~new("java.net.URL", "file:PersonOverview.fxml")
    overviewPage=bsf.loadClass("javafx.fxml.FXMLLoader")~load(overviewUrl) -- load the fxml document, AnchorPage (root) returned
-.my.app~overviewPage=overviewPage
+  .my.app~overviewPage=overviewPage
   .my.app~rootLayout~setCenter(overviewPage)
-  .my.app~personOverviewController=.PersonOverviewController~new(overviewPage)
+  .my.app~personOverviewController=.PersonOverviewController~new
+
+/*
   call "rgf_util2.rex"
   call dump2 .environment
   call dump2 .my.app~PERSONOVERVIEW.FXML, .my.app~PERSONOVERVIEW.FXML~location~toString
   call dump2 .my.app~RootLayout.fxml    , .my.app~rootLayout.fxml    ~location~toString
+*/
 
 /* =================================================================================== */
 /* for tutorial part 2: define the PersonOverviewController */
@@ -146,51 +148,45 @@ say center(" after rxApp~launch ", 70, "-")
 ::attribute lastNameColumn
 
 ::method init
-  expose personTable firstNameColumn lastNameColumn
-  use arg overviewPage
-  poDir=.my.app~personOverview.fxml    -- fetch the directory containing the JavaFX fx:id controls and assign them to attribute
+  expose personTable firstNameColumn lastNameColumn firstNameLabel lastNameLabel streetLabel -
+                     postalCodeLabel cityLabel birthdayLabel  -
+                     btnNew btnEdit btnDelete
+  -- fetch the directory containing the JavaFX fx:id JavaFX objects and assign them to attributes
+  poDir=.my.app~personOverview.fxml
   personTable    =poDir~personTable
   firstNameColumn=poDir~firstNameColumn
-say "firstNameColumn         :" pp(firstNameColumn) pp(firstNameColumn~getClass~toString) "rii_id:" pp(firstNameColumn~rii_id)
-say "firstNameColumn~toString:" pp(firstNameColumn~toString)
-
   lastNameColumn =poDir~lastNameColumn
 
-signal on syntax
-   -- now set the callback method to fill the firstName column using the JavaFX property
-   juclz=bsf.loadClass("javafx.util.Callback")
-   say "--> juclz:" pp(juclz) pp(juclz~toString)
-   jval=BsfCreateRexxProxy(.PropertyValueFactory~new("firstNameProperty"), ,"javafx.util.Callback")
-   say "--> jval:" pp(jval) pp(jval~toString)
-   say "--> juclz~isInstance(jval):" pp(juclz~isInstance(jval))
+  firstNameLabel =poDir~firstNameLabel
+  lastNameLabel  =poDir~lastNameLabel
+  streetLabel    =poDir~streetLabel
+  postalCodeLabel=poDir~postalCodeLabel
+  cityLabel      =poDir~cityLabel
+  birthdayLabel  =poDir~birthdayLabel
+
+  btnNew         =poDir~btnNew
+  btnEdit        =poDir~btnEdit
+  btnDelete      =poDir~btnDelete
 
   firstNameColumn~setCellValueFactory(BsfCreateRexxProxy(.PropertyValueFactory~new("firstNameProperty"), ,"javafx.util.Callback"))
-  lastNameColumn~setCellValueFactory(BsfCreateRexxProxy(.PropertyValueFactory~new("lastNameProperty"),  ,"javafx.util.Callback"))
+  lastNameColumn ~setCellValueFactory(BsfCreateRexxProxy(.PropertyValueFactory~new("lastNameProperty"),  ,"javafx.util.Callback"))
 
 
-/* this works, still we are not able to get at the JavaFX objects inside FXML's FXML ... (could be
-   done, but veeery cumbersome, rather employing the RexxScriptEngine instead ...)
+   /* for tutorial part 3: fill-in the Person's details */
+  self~showPersonDetails(.nil)   -- clear the labels
+   --  auto resize columns
+  personTable~setColumnResizePolicy(personTable~CONSTRAINED_RESIZE_POLICY)    -- TableView constant
 
-  -- say 'rootNode~lookup("tableView"):' pp(rootNode~lookup("tableView"))
-  say "overviewPage:" pp(overviewPage) pp(overviewPage~toString) pp(overviewPage~getScene)
-  scene=overviewPage~getScene~getRoot  -- lookupAll only in root !
-  -- scene=overviewPage~getScene
-id="#colFirstName"
-id="#tableView"
-id="#rootId"
-id="*"
-  say "scene:" pp(scene) pp(scene~toString)
-  say "id:" pp(id)
-  say "  scene~lookUp(id)   :" pp(scene~lookup(id))
-  lookupAll=scene~lookupAll(id)
-  say "  scene~lookupAll(id):" pp(lookupAll)
-  do node over lookupAll
-     say "    " pp(node) "scene:" pp(node~getScene)
-  end
+   -- add self as the ChangeListener (we have its method "changed" implemented) and EventHandler (method "handle" implemented)
+  rp=BSFCreateRexxProxy(self, ,"javafx.beans.value.ChangeListener", "javafx.event.EventHandler")
+  personTable~getSelectionModel ~selectedItemProperty ~addListener(rp)
 
---- */
+   -- add us as the event handler to the buttons
+  btnNew   ~setOnAction(rp)
+  btnEdit  ~setOnAction(rp)
+  btnDelete~setOnAction(rp)
 
-  self~setItems
+  self~setItems      -- fill the TableView
   return
 
 syntax:
@@ -200,34 +196,102 @@ syntax:
 
 ::method refresh        -- force a refresh
   expose personTable
+say self"::refresh ..."
   personTable~setItems(.nil)  -- remove all entries
   self~setItems         -- add current personData
 
 ::method setItems
   expose personTable
+say self"::setItems ..."
   personTable~setItems(.my.app~mainApp~personData) -- add current personData
+
+/* for tutorial part 3: fill-in the Person's details */
+::method showPersonDetails
+  expose firstNameLabel lastNameLabel streetLabel postalCodeLabel cityLabel birthdayLabel
+  use arg p
+say "showPersonDetails: person="pp(p)
+-- if p<>.nil then p=p~getValue
+
+  if p=.nil then  -- reset details
+  do
+     firstNameLabel  ~setText("")
+     lastNameLabel   ~setText("")
+     streetLabel     ~setText("")
+     postalCodeLabel ~setText("")
+     cityLabel       ~setText("")
+     birthdayLabel   ~setText("")
+  end
+  else   -- set Person's details
+  do
+     firstNameLabel  ~setText(p~firstName)
+     lastNameLabel   ~setText(p~lastName)
+     streetLabel     ~setText(p~street)
+     postalCodeLabel ~setText(p~postalCode)
+     cityLabel       ~setText(p~city)
+     birthdayLabel   ~setText(p~birthday)
+  end
+
+
+::method handleDeletePerson   /* invoked when the user clicks the delete button   */
+  expose personTable
+
+  selectedIndex=personTable~getSelectionModel~getSelectedIndex
+say self"::handleDeletePerson: selectedIndex="pp(selectedIndex)
+
+  if selectedIndex >= 0 then
+  do
+     -- IMPORTANT: we must use bsf.invokeStrict() to become able to give explicitly the argument's type as otherwise
+     --            it may be possible that the wrong "remove(Object)" method is used instead of "remove(int)" (both
+     --            methods behave differntly)
+     personTable~getItems~bsf.invokeStrict("remove", "int", selectedIndex)
+
+     -- do m over .my.app~mainApp~personData;say m; end  -- show current objects in the ObservableArrayList
+
+  end
+  else   -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
+     .bsf.dialog~messageBox("Please select a person in the table.", "No Selection", "warning")
+
+/*
+PersonEditDialog.fxml
+
+        <Button mnemonicParsing="false" onAction="#handleOk" prefWidth="80.0" text="OK" />
+        <Button mnemonicParsing="false" onAction="#handleCancel" prefWidth="80.0" text="Cancel" />
+
+*/
+
+
+   -- JavaFX event handlers implemented in Rexx
+::method changed  /* implements the interface "javafx.beans.value.ChangeListener" */
+  use arg observable, oldValue, newValue
+  self~showPersonDetails(newValue)  -- fill in the labels to show currently selected Person's details
+
+::method handle   /* implements the interface "javafx.event"   */
+  expose btnNew btnEdit btnDelete
+  use arg event, slotDir
+say self":handle event:" pp(event~toString)
+-- call dump2 slotDir, self"::handle - slotDir"
+-- say "event~getTarget:" pp(event~getTarget) pp(event~getTarget~toString) "getEventType:" pp(event~getEventType) pp(event~getEventType~toString) "getName:" pp(event~getEventType~getName)
+-- say "slotDir~METHODOBJECT~toString:" pp(slotDir~METHODOBJECT~toString)
+  tgtObjectName=event~getTarget~objectname
+  select
+     when tgtObjectName=btnNew~objectName    then say "BUTTON NEW  was the target!"
+     when tgtObjectName=btnEdit~objectName   then say "BUTTON EDIT was the target!"
+     when tgtObjectName=btnDelete~objectName then self~handleDeletePerson
+     otherwise say "UNKNOWN target:" pp(tgt) pp(tgt~tostring)
+  end
 
 
 /* =================================================================================== */
 /* implements "R javafx.util.Callback<P,R>(P o) for PropertyValueFactory */
 ::class PropertyValueFactory
 ::method init
-  expose  propName      -- name of property getter method
+  expose  propName   -- name of property getter method
   use arg propName
 
 ::method call
   expose propName
-  use arg o
---  say "...rexx: propName="pp(propName) "o~getValue="pp(o~getValue) "o~getClass~toString:" pp(o~getValue~getClass~toString)
-  -- say "... propName="pp(propName) "o="pp(o) "o~getValue="pp(o~getValue) "o~getClass~toString:" pp(o~getValue~getClass~toString)
-  -- return o~getValue~send(propName)        -- return the property
-
-   -- we get a RexxProxy so we send it the Rexx message via Java, works:
-  -- return o~getValue~sendMessage0(propName)        -- return the property
-
-   -- we get the Rexx object off the RexxProxy and send it directly the Rexx message
+  use arg o          -- an observable value for the ooRexx person object boxed in a Java RexxProxy object
   return BsfRexxProxy(o~getValue)~send(propName)
-
 
 
 
@@ -351,4 +415,16 @@ syntax:
   co~Additional[2]~printStackTrace
   say "<---"
 
-::requires "rgf_util2.rex"
+
+
+/* =================================================================================== */
+/* for tutorial part 3: interacting with the user */
+   /* Instead of a class we define a Rexx routine that carries out the checking */
+::Routine validString    -- returns .true, if date is valid, .false else
+  parse arg date
+  signal on syntax
+  .DateTime~fromStandardDate(date, "-")
+  return .true
+syntax:     -- Rexx condition raised
+  return .false
+
