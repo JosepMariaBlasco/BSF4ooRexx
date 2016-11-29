@@ -12,9 +12,9 @@
 <?language rexx?>
 
 
-<AnchorPane prefHeight="224.0" prefWidth="321.0" xmlns:fx="http://javafx.com/fxml" fx:controller="ch.makery.address.PersonEditDialogController">
+<AnchorPane prefHeight="225.0" prefWidth="320.0" xmlns="http://javafx.com/javafx/8.0.45" xmlns:fx="http://javafx.com/fxml/1" >
   <children>
-    <GridPane prefHeight="164.0" prefWidth="301.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
+    <GridPane prefHeight="165.0" prefWidth="300.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
       <children>
         <Label text="First Name" GridPane.columnIndex="0" GridPane.rowIndex="0" />
         <Label text="Last Name" GridPane.columnIndex="0" GridPane.rowIndex="1" />
@@ -31,7 +31,7 @@
       </children>
       <columnConstraints>
         <ColumnConstraints fillWidth="true" hgrow="SOMETIMES" maxWidth="80.0" minWidth="80.0" prefWidth="80.0" />
-        <ColumnConstraints fillWidth="true" hgrow="SOMETIMES" maxWidth="231.0" minWidth="10.0" prefWidth="216.0" />
+        <ColumnConstraints fillWidth="true" hgrow="SOMETIMES" maxWidth="230.0" minWidth="10.0" prefWidth="216.0" />
       </columnConstraints>
       <rowConstraints>
         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
@@ -44,8 +44,8 @@
     </GridPane>
     <HBox id="HBox" alignment="CENTER" minWidth="-1.0" spacing="5.0" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="10.0">
       <children>
-        <Button mnemonicParsing="false" onAction="#handleOk" prefWidth="80.0" text="OK" />
-        <Button mnemonicParsing="false" onAction="#handleCancel" prefWidth="80.0" text="Cancel" />
+        <Button fx:id="btnOK"     mnemonicParsing="false" prefWidth="80.0" text="OK" />
+        <Button fx:id="btnCancel" mnemonicParsing="false" prefWidth="80.0" text="Cancel" />
       </children>
     </HBox>
   </children>
