@@ -12,6 +12,16 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2016-11-30, ---rgf, - make the UNKNOWN methods Unguarded; it is possible that a method invocation
+                               on the Java object is taking place, while from the Java side (e.g. for an
+                               event handler) a callback occurs (in a different RexxActivation) which from
+                               the Rexx side invokes another Java method in the UNKNOWN method, which will
+                               block; UNGUARDED solves this problem (and does not introduce a problem into
+                               Rexx)
+
+         2016-11-29, ---rgf, - make sure that .UNO_PROXY and .UNO_ARRAY_PROXY are Rexx class objects
+                               before using them in isA-tests
+
          2016-11-19, ---rgf, - updated major version number to 6 to indicate new base level Java 1.6/6
 
          2016-11-10, ---rgf, - .jsr223: added class methods get and set to process the Rexx script
@@ -566,7 +576,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20161119" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20161130" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1169,7 +1179,7 @@ any:
 /* -------------------------------------------------------------
    class method to allow invoking static methods via ooRexx
    ------------------------------------------------------------- */
-::method unknown class
+::method unknown class unguarded
   expose bsf.jco  -- 2010-05-08, rgf
 
   signal on syntax name any
@@ -1484,7 +1494,8 @@ any:
 ::ATTRIBUTE bsf.null_string set CLASS
 
 
-::attribute rii_id  private      -- stores the RII (Rexx interpreter instance) id that created the instance
+::attribute rii_id  set private  -- stores the RII (Rexx interpreter instance) id that created the instance
+::attribute rii_id  get -- rgf, 2016-11-27, stores the RII (Rexx interpreter instance) id that created the instance
 
 /* -------------------------------------------------------------
    method to construct an instance (a "bean"); arguments are
@@ -1657,7 +1668,7 @@ call rgf_util2
    message was sent to an instance of this class); forwards the
    message to BSF including all of the received arguments
    ------------------------------------------------------------- */
-::METHOD unknown
+::METHOD unknown  unguarded
   USE ARG name, args
 
 -- .error~say("BSF.CLS - BSF::UNKNOWN()" "self="pp(self~objectname) "name="pp(name) "args="pp(args~makestring("l",",")~left(40)))
@@ -2355,9 +2366,13 @@ any:
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
   tmp="return bsf.wrap(bsf('createArrayOf'"
+  bUnoProxy=.uno_proxy~isA(.class)     -- determine whether we have UNO (OpenOffice) support available
 
   do i=1 to arg()
      a=arg(i)
+
+     bBoxRP=.false  -- wrap Rexx object as a RexxProxy ?
+/*
      if i>1, \a~isA(.string), \a~isA(.bsf), \a~isA(.uno_proxy), a<>.nil then
      do
         tmp=tmp ", """ || BsfCreateRexxProxy(a) || """"
@@ -2365,6 +2380,21 @@ any:
      end
      else
         tmp=tmp ", """ || a || """"
+*/
+     if i>1, \a~isA(.string), \a~isA(.bsf), a<>.nil then
+     do
+        bBoxRP=.true
+        if bUnoProxy then  -- we have .UNO-support there
+        do
+           if a~isA(.uno_proxy) then bBoxRP=.false   -- do not
+        end
+     end
+
+     if bBoxRP then    -- plain Rexx object, box it into a RexxProxy
+        tmp=tmp ", """ || BsfCreateRexxProxy(a) || """"
+     else
+        tmp=tmp ", """ || a || """"
+
   end
   tmp=tmp"))"
 
@@ -2551,8 +2581,11 @@ any:
 
    -- rgf, 2015-07-20: increment BSF registry counter for this Java object, such that only running its UNINIT removes Java object from BSF registry
    --                  (only done, if RexxEngine.call() or .apply() was used)
+
   if bIncr=.true then
       call bsf 'increaseRefCounter', beanName   -- increment BSF registry reference counter
+
+
 --      call bsf 'rawRegisterBean', beanName, beanName   -- increment BSF registry reference counter
 
 /*
@@ -2649,8 +2682,10 @@ forward class (super)
   indexArray=.bsf_array_proxy~new(indexArray, 1, dimension)
 
    -- rgf, 2015-07-21: increment BSF registry counter for this Java object, such that running UNINIT does not remove Java object from BSF registry
+
   if bIncr=.true then
      call bsf 'increaseRefCounter', beanName   -- increment BSF registry reference counter
+
 --     call bsf 'rawRegisterBean', beanName, beanName   -- increment BSF registry reference counter
 
 -- .stderr~say( "BSF.CLS: BSF_ARRAY_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x) "TID:" pp(BsfGetTid()) "- done, returning.")
@@ -3490,7 +3525,7 @@ any:
 
   -- this method will be used to deal with UNKNOWN messages; it will retrieve the unknown message name
   -- as a fieldName into the Java class object stored with this class
-::method unknown private
+::method unknown private  unguarded
   expose JavaClassObject bUseCache
   parse arg fieldName .
 
@@ -4008,7 +4043,14 @@ Button Return Values    -1  Dialog CLOSE
 */
 
   -- option collection
-  if textOptions~isA(.BSF_ARRAY_REFERENCE) | textOptions~isA(.UNO_ARRAY_PROXY) then
+
+  -- if textOptions~isA(.BSF_ARRAY_REFERENCE) | textOptions~isA(.UNO_ARRAY_PROXY) then
+  if textOptions~isA(.BSF_ARRAY_REFERENCE) then
+  do
+     javaArr=textOptions      /* already a Java array in hands, just pass it through */
+  end
+     -- determine whether we have UNO (OpenOffice) support available and if so, test for it
+  else if .uno_array_proxy~isA(.class), textOptions~isA(.uno_array_proxy) then
   do
      javaArr=textOptions      /* already a Java array in hands, just pass it through */
   end
