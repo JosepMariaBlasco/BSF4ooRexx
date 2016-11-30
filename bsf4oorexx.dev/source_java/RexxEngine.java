@@ -1405,10 +1405,15 @@ if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterprete
       */
     public boolean unregisterBean(String beanName )  throws RexxException
     {
+
+/* // rgf, 2016-11-30: even if the Rexx engine is terminated, unregisterBean remains valid, reducing the refCount
+   // of the registered Java object
+
         if (bTerminated==true)       // engine got terminated, cannot use it anymore
         {
             throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
         }
+*/
         return rexxInterface.unregisterBean(beanName);
     }
 
