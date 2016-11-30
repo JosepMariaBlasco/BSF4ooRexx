@@ -26,7 +26,7 @@ import org.apache.bsf.BSFException;
  *
 
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2009-2010 Rony G. Flatscher
+ *    Copyright (C) 2009-2016 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -41,11 +41,51 @@ import org.apache.bsf.BSFException;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 1.0.1, 2009-05-03, 2009-06-27, 2009-07-11, 2009-07-31, 2010-04-16
+  * @version 1.0.2, 2009-05-03, 2009-06-27, 2009-07-11, 2009-07-31, 2010-04-16, 2016-11-04
   * @author Rony G. Flatscher (<a href="http://www.wu.ac.at">WU/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu.ac.at/english">http://www.wu.ac.at/english</a>)
   */
 
 /*
+    2016-11-05, rgf, - oops, overlooked that the test program did it from Rexx, now we make sure we
+                       use Janino instead of ASM by setting to Janino in the static block
+
+    2016-11-04, rgf, - Use Janino instead of ASM for extending abstract classes (would need to add
+                       a default constructor in the case of an abstract class; however, Janino has
+                       been maintained nicely and has become fast enought to replace ASM, so
+                       contemplating of removing ASM for good eventually)
+                     - cast "null" to "(java.lang.Class<?>[]) null" in Object.class.getMethod(...) for
+                       "hashCode" and "toString" to get rid of the compiler warning
+                     - rebasing on Java 1.6/6.0, get rid of generics related warnings where possible:
+
+                           source_java>javac -Xlint:unchecked RexxProxy.java
+                           RexxProxy.java:118: warning: [unchecked] unchecked call to getDeclaredMethod(java.lang.String,java.lang.Class<?>...) asa member of the raw type java.lang.Class
+                                           mCreateProxiedJavaClass=clzProxiedJavaClassTool.getDeclaredMethod(
+                                                                                                            ^
+                           RexxProxy.java:898: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
+                                               al.add(clz);        // add interface class object
+                                                     ^
+                           RexxProxy.java:906: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
+                                                   al.add(ifs[k]);         // add interface class object
+                                                         ^
+                           RexxProxy.java:1054: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
+                                           al.add( raj.convFromRexx((String) o));  // string a key into BSFRegistry; if so return Java object
+                                                 ^
+                           RexxProxy.java:1059: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
+                                           al.add(o);
+                                                 ^
+                           RexxProxy.java:1064: warning: [unchecked] unchecked call to set(int,E) as a member of the raw type java.util.ArrayList
+                                   al.set(0,clz);      // replace the very first element with the retrieved class object it stands for
+                                         ^
+                           RexxProxy.java:1178: warning: [unchecked] unchecked call to getMethod(java.lang.String,java.lang.Class<?>...) as a membe
+                           r of the raw type java.lang.Class
+                                           Method mSDH=extendedClz.getMethod("setDefaultHandler", new Class[]{org.rexxla.bsf.engines.rexx.RexxProxy.class});
+                                                                            ^
+                           RexxProxy.java:1262: warning: [unchecked] unchecked call to getMethod(java.lang.String,java.lang.Class<?>...) as a membe
+                           r of the raw type java.lang.Class
+                                       Method mSetDH=extendedClz.getMethod("setDefaultHandler", new Class[]{org.rexxla.bsf.engines.rexx.RexxProxy.class});
+                                                                          ^
+
+
     2010-04-16/17, rgf, - added ability to switch to using the new Janino-based dynamic extension
                        of Java classes: takes at least about five to twenty times longer (e.g. 70,
                        15, 0 msec vs. 330msec), however allows for proxying methods of superclasses,
@@ -74,16 +114,19 @@ import org.apache.bsf.BSFException;
                        instead of just a method name
 */
 
+// TODO: 2016-11-04, rgf: tidy up code that uses reflection to see whether running on Java = 1.4
+
 public class RexxProxy implements InvocationHandler
 {
+
      /** Version information on this class. */
-    static final public String version="101.20100416";
+    static final public String version="102.20161105";
 
 
     // rgf, 2010-04-16 --->
     static final private String PROXIED_JAVA_CLASS_TOOL_NAME="org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool";
     static final private String M_CREATE_PROXIED_JCLZ_NAME="createProxiedJavaClass";
-    static       private Class   clzProxiedJavaClassTool=null;
+    static       private Class<?>   clzProxiedJavaClassTool=null;   // ---rgf, 20161104, cf. <http://stackoverflow.com/questions/892725/proper-way-to-check-java-reflection-calls>
     static       private Method  mCreateProxiedJavaClass=null;
     /** If set to <code>true</code> the Janino based implementation is used to extend
      *  the given abstract or concrete class.
@@ -142,18 +185,29 @@ public class RexxProxy implements InvocationHandler
     private static Method hashCodeMethod;
     private static Method equalsMethod;
     private static Method toStringMethod;
+
+    // -------------- static initializer ----------------------------------------------------------------
     static {
 	try
         {
-	    hashCodeMethod = Object.class.getMethod("hashCode", null);
-	    equalsMethod   = Object.class.getMethod("equals", new Class[] { Object.class });
-	    toStringMethod = Object.class.getMethod("toString", null);
+                // rgf, 2016-11-04: cast null to suppress warnings on the argumentless methods "hashCode" and "toString"
+	    hashCodeMethod = Object.class.getMethod("hashCode", (java.lang.Class<?>[]) null);
+	    equalsMethod   = Object.class.getMethod("equals",                          new Class[] { Object.class });
+	    toStringMethod = Object.class.getMethod("toString", (java.lang.Class<?>[]) null);
         }
         catch (NoSuchMethodException e)
         {
 	    throw new NoSuchMethodError(e.getMessage());
 	}
+
+        try // ---rgf, 2016-11-05: make sure we use Janino ("ProxiedJavaClassTool.java") instead of ASM ("RexxExtend*.java"), which still is a fallback
+        {
+            setExtendUsingJanino(true);
+        }
+        catch (Exception e) {}
     }
+
+    // ------------------------- instance stuff ------------------------------
 
     protected Integer proxyHashCode(Object proxy)
     {
@@ -832,13 +886,14 @@ if (bDebug) System.err.println("////// ---> RexxProxy.invoke(jO, mN, mD, args): 
      * @return java.lang.reflect.Proxy object which dispatches all messages to this RexxProxy instance, which
      *                    itself will dispatch (forward) it to ooRexx via a callback
      */
-    public Object newJavaProxyInstance(Object[] interfaces) throws IllegalArgumentException
+    // public Object newJavaProxyInstance(Object[] interfaces) throws IllegalArgumentException
+    public Proxy newJavaProxyInstance(Object[] interfaces) throws IllegalArgumentException
     {
         ClassLoader cl=this.getClass().getClassLoader();
 
 if (bDebug) System.err.println("newJavaProxyInstance(), interfaces.length="+interfaces.length);
 
-        ArrayList   al  = new ArrayList();
+        ArrayList<Class>   al  = new ArrayList<Class>();
         Class       clz = null;
         Object      o   = null;
 
@@ -881,6 +936,7 @@ if (bDebug) System.err.println("\t#3 now trying to get and process interfaces fr
                 // now process all implemented interfaces as reported by the
                 if (clz.isInterface())  // already an interface class ?
                 {
+                    // ignore -Xlint:unchecked warning: no exception defined in the abstract AbstractList.add() can take place; hence ignoring warning (alternative: add a try block)
                     al.add(clz);        // add interface class object
                 }
                 else
@@ -932,7 +988,8 @@ if (bDebug)
         System.err.println("<----");
 }
 
-        return obj;
+        // return obj;
+        return (Proxy) obj;
 
         // return Proxy.newProxyInstance(cl, (Class[]) ao, this);
 
@@ -1024,7 +1081,7 @@ if (bDebug)
         // to check and use
         // Object convFromRexx(String value) throws BSFException
         //
-        ArrayList al=new ArrayList();
+        ArrayList<Object> al=new ArrayList<Object>();
 
         // RexxAndJava raj=this.rexxEngine.getRexxInterface();  // get RexxAndJava instance
 
@@ -1129,7 +1186,7 @@ if (bDebug) System.err.println("     added:                            o=["+o+"]
 
         // o.k. we now are sure we have an abstract class in hand, so let us create an extended version of it
 
-        Class extendedClz=null;
+        Class<?> extendedClz=null;
 
         if (extendUsingJanino)
         {
@@ -1226,6 +1283,11 @@ if (bDebug) System.err.println("     added:                            o=["+o+"]
 
         if (!bFound)  // no matching constructor found
         {
+for (int t=0; t<funcArgs.length; t++)
+{
+    System.err.println("---///RexxProxy.newExtendedProxyInstance(Object[]args]\\\\\\---> funcArgs["+i+"]=["+funcArgs[t]+"]");
+
+}
             throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                      "RexxProxy.newExtendedProxyInstance( []Object ): "+
                      "no constructor with number of needed arguments (\""+nrArgs+"\") found for dynamically extended Java class ["+extendedClz+"], cannot create an instance...\n");

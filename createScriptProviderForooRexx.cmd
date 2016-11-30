@@ -51,8 +51,9 @@ copy /y %tmprgf%.jar %tmprgf%.oxt
 
 
 @rem now create package
-del %tmprgf%.oxt
-jar vcf %tmprgf%.oxt %tmprgf%.jar
+@rem rgf 20161027 removed this block as it does not make sense to first create the oxt file and then delete and recreate it
+@rem del %tmprgf%.oxt
+@rem jar vcf %tmprgf%.oxt %tmprgf%.jar
 
 setlocal
 cd bsf4oorexx.dev\ScriptProviderForooRexxPackage

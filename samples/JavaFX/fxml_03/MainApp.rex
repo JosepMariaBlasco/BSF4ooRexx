@@ -1,7 +1,6 @@
-/* TODO: create another Rexx-Sample matching <http://docs.oracle.com/javafx/2/get_started/hello_world.htm>
-*/
-
 /*
+   author:  Rony G. Flatscher
+   date:    2016-11-30, preliminary
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList;
@@ -15,27 +14,37 @@
             Creation of the FXML-files was done exactly as the above Java tutorials suggested.
 
             The ooRexx code takes advantage of ooRexx features like the .local environment to
-            store the primaryStage to ease coupling different parts of the Rexx application
+            store the primaryStage to ease coupling different parts of the Rexx application.
+
+            All controllers are coded in one Rexx file ("Rexx package") as Rexx classes.
+
+
+   license: Apache License 2.0
 
 
    invoke:
-            rexx fxml_02
-            rexx fxml_02 en
-               ... use English properties file
-            rexx fxml_02 de
-               ... use German properties file
+            rexx Main.rex
+            rexxj.{cmd|sh} Main.rex
+
 */
 
-   /* only "de" has an effect and will use the German translation for the */
-parse arg locale .
 
 .environment~my.app=.directory~new   -- directory to contain objects relevant to this application
+   -- starting with JavaFX 8u40 true dialogs got introduced; taking advantage of them if running on Java 1.8 or higher
 
    -- import JavaFX classes that we may use more often
 call bsf.import "javafx.fxml.FXMLLoader",                      "fx.FXMLLoader"
 call bsf.import "javafx.scene.Scene",                          "fx.Scene"
 call bsf.import "javafx.beans.property.SimpleStringProperty",  "fx.SimpleStringProperty"
 call bsf.import "javafx.beans.property.SimpleIntegerProperty", "fx.SimpleIntegerProperty"
+
+   -- since JavaFX 8u40
+call bsf.import "javafx.scene.control.Alert",                  "fx.Alert"
+   -- note "AlertType" is public "inner" enum class, i.e. it is defined within the class "Alert", hence
+   -- the JavaDocs refer to "AlertType" as "Alert.AlertType": however the Java compiler produces the
+   -- class file as "Alert$AlertType"
+call bsf.import "javafx.scene.control.Alert$AlertType",        "fx.Alert.Type"
+
 
    -- create Rexx object that will control the FXML set up
 rexxApp=.RxMainApplication~new
@@ -45,7 +54,6 @@ jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
    -- launch the application, invoke "start" and then stay up until the application closes
 jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of launch in order to work
 
-say center(" after rexxApp~launch ", 70, "-")
 
 ::requires "BSF.CLS"    -- get Java support
 
@@ -64,7 +72,8 @@ say center(" after rexxApp~launch ", 70, "-")
 ::attribute personData
 -- ::attribute arrayListPersonData
 ::method init  -- constructor
-  expose personData
+  expose personData        -- observableArrayList (maintained by TableView)
+
    -- create and store an ObservableList
   personData=bsf.loadClass("javafx.collections.FXCollections")~observableArrayList
       -- this creates ooRexx Person objects that get stored as Java RexxProxy objects, to be used for the TableView
@@ -85,7 +94,9 @@ say center(" after rexxApp~launch ", 70, "-")
   expose locale
   use arg stage   -- we get the stage to use for our UI
 
-say self"::start, BSFGetTID():" pp(BSFgetTID())
+   -- starting with JavaFX 8u40 true dialogs got introduced; taking advantage of them if running on Java 1.8 or higher
+   -- get the JavaFX runtime version (only available when running it), e.g. "8.0.111-b14"
+  .my.app~Dialogs.Alerts.Available=(.java.lang.system~getProperty("javafx.runtime.version")>8)  -- determine availability
 
   .my.app~primaryStage=stage      -- save in .my.app
   stage~setTitle("AddressApp")
@@ -118,64 +129,43 @@ say self"::start, BSFGetTID():" pp(BSFgetTID())
   stage~show                  -- now show the stage (and thereby our scene)
 
 
-/*
-::method showPersonOverview
-/*
-     // Load the fxml file and set into the center of the main layout
-   FXMLLoader loader = new FXMLLoader(MainApp.class.getResource("view/PersonOverview.fxml"));
-   AnchorPane overviewPage = (AnchorPane) loader.load();
-   rootLayout.setCenter(overviewPage);
-*/
-   overviewUrl=.bsf~new("java.net.URL", "file:PersonOverview.fxml")
-   overviewPage=.fx.FXMLLoader~load(overviewUrl)   -- load the fxml document, AnchorPage (root) returned
-  .my.app~overviewPage=overviewPage
-  .my.app~rootLayout~setCenter(overviewPage)
-  .my.app~personOverviewController=.PersonOverviewController~new
-
-/*
-  call "rgf_util2.rex"
-  call dump2 .environment
-  call dump2 .my.app~PERSONOVERVIEW.FXML, .my.app~PERSONOVERVIEW.FXML~location~toString
-  call dump2 .my.app~RootLayout.fxml    , .my.app~rootLayout.fxml    ~location~toString
-*/
-*/
-
 /* Load the fxml-form, define a stage for it, create an instance of the Rexx class controlling
    the fxml-form.
+   Unlike the original tutorial we do not create the dialog and controller over and over again, we
+   just cache them using two attributes and reuse them.
 */
 ::method showPersonEditDialog
+  expose pedDialog pedController
   use arg person
 
-  say self"::showPersonEditDialog, BSFGetTID():" pp(BSFGetTID()) "before reply"
---reply .false
---  say self"::showPersonEditDialog, BSFGetTID():" pp(BSFGetTID) "after reply"
-signal on syntax
+-- signal on syntax
 
-  -- Load the fxml file and create a new stage for the popup
-  personEditDialogUrl=.bsf~new("java.net.URL", "file:PersonEditDialog.fxml")
-  page  = .fx.FXMLLoader~load(personEditDialogUrl)
-  scene = .fx.Scene~new(page)
+  if \var("pedDIALOG") then   -- not yet created, setup PersonEdit data
+  do
+     -- Load the fxml file and create a new stage for the popup
+     personEditDialogUrl=.bsf~new("java.net.URL", "file:PersonEditDialog.fxml")
+     page  = .fx.FXMLLoader~load(personEditDialogUrl)
+     scene = .fx.Scene~new(page)
 
-  -- AnchorPane page = (AnchorPane) loader.load();
-  dialogStage = .bsf~new("javafx.stage.Stage")
-  dialogStage~setTitle("Edit Person")
-  dialogStage~initModality(bsf.import("javafx.stage.Modality")~WINDOW_MODAL)
-say self"::showPersonEditDialog: .my.app~primaryStage="pp(.my.app~primaryStage)
-say self"::showPersonEditDialog: BsfGetTID():" pp(BsfGetTID())
-  dialogStage~initOwner(.my.app~primaryStage)
---  dialogStage~initOwner(.nil)
-  dialogStage~setScene(scene)
+     -- AnchorPane page = (AnchorPane) loader.load();
+     dialogStage = .bsf~new("javafx.stage.Stage")
+     dialogStage~setTitle("Edit Person")
+     dialogStage~initModality(bsf.import("javafx.stage.Modality")~WINDOW_MODAL)
 
-  -- Set the person into the controller
-  controller = .PersonEditDialogController~new
-  controller~dialogStage=dialogStage   -- this way the controller is able to close the stage
-  controller~setPerson(person)
+     dialogStage~initOwner(.my.app~primaryStage)
+     dialogStage~setScene(scene)
+
+     -- Set the person into the controller
+     pedController = .PersonEditDialogController~new
+     pedController~dialogStage=dialogStage   -- this way the pedController is able to close the stage
+  end
+
+  pedController~setPerson(person)
+  pedController~okClicked=.false          -- make sure we start out with .false
 
   -- Show the dialog and wait until the user closes it
-say self"::showPersonEditDialog: now going in showAndWait ..."
   dialogStage~showAndWait
-say self"::showPersonEditDialog: showAndWait is over ..."
-  return controller~OkClicked
+  return pedController~OkClicked
 
 syntax:
   co=condition('object')
@@ -215,21 +205,8 @@ syntax:
   btnEdit        =poDir~btnEdit
   btnDelete      =poDir~btnDelete
 
-str="personTable firstNameColumn lastNameColumn firstNameLabel lastNameLabel streetLabel " -
-    "postalCodeLabel cityLabel birthdayLabel"  -
-    "btnNew btnEdit btnDelete"
-do name over str~makearray(" ")
-   val=poDir~entry(name)
-   str="..." "name:" pp(name) "val:" pp(val) "val~isA(.bsf):" pp(val~isA(.bsf))
-   if val~isA(.bsf) then str ||=  "0d0a09"x || "val~toString:" pp(val~toString) "val~getClass~toString:" pp(val~getClass~toString)
-   say str
-end
-
-
-
   firstNameColumn~setCellValueFactory(BsfCreateRexxProxy(.PropertyValueFactory~new("firstNameProperty"), ,"javafx.util.Callback"))
   lastNameColumn ~setCellValueFactory(BsfCreateRexxProxy(.PropertyValueFactory~new("lastNameProperty"),  ,"javafx.util.Callback"))
-
 
    /* for tutorial part 3: fill-in the Person's details */
   self~showPersonDetails(.nil)   -- clear the labels
@@ -271,8 +248,6 @@ say self"::refresh ..."
 ::method showPersonDetails
   expose firstNameLabel lastNameLabel streetLabel postalCodeLabel cityLabel birthdayLabel
   use arg p
-say "showPersonDetails: person="pp(p)
--- if p<>.nil then p=p~getValue
 
   if p=.nil then  -- reset details
   do
@@ -298,7 +273,6 @@ say "showPersonDetails: person="pp(p)
   expose personTable
 
   selectedIndex=personTable~getSelectionModel~getSelectedIndex
-say self"::handleDeletePerson: selectedIndex="pp(selectedIndex)
 
   if selectedIndex >= 0 then
   do
@@ -306,19 +280,30 @@ say self"::handleDeletePerson: selectedIndex="pp(selectedIndex)
      --            it may be possible that the wrong "remove(Object)" method is used instead of "remove(int)" (both
      --            methods behave differntly)
      personTable~getItems~bsf.invokeStrict("remove", "int", selectedIndex) -- we want the remove method with the primitive int argument!
-
-     -- do m over .my.app~mainApp~personData;say m; end  -- show current objects in the ObservableArrayList
-
   end
-  else   -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
-     .bsf.dialog~messageBox("Please select a person in the table.", "No Selection", "warning")
+  else
+  do
+      if .my.app~Dialogs.Alerts.Available then
+      do
+         alert=.fx.alert~new(.fx.Alert.Type~WARNING)   -- create a warning alert
+
+         alert~setTitle("No Selection")
+         alert~setHeaderText(.nil)
+         alert~setContentText("Please select a person in the table.")
+         alert~showAndWait
+      end
+      else  -- use BSF.CLS' .bsf.dialog utility class
+      do
+         -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
+        .bsf.dialog~messageBox("Please select a person in the table.", "No Selection", "warning")
+      end
+  end
 
 
 
 /* for tutorial part 3: fill-in the Person's details */
 ::method handleNewPerson
   tempPerson=.Person~new
-
 
   okClicked = .my.app~mainApp~showPersonEditDialog(tempPerson)
   if okClicked then
@@ -328,21 +313,31 @@ say self"::handleDeletePerson: selectedIndex="pp(selectedIndex)
 ::method handleEditPerson
   expose personTable
 
-
   selectedPerson = personTable~getSelectionModel~getSelectedItem
   if selectedPerson <> .nil then
   do
-say self"::handleEditPerson: selectedPerson="pp(selectedPerson)
       person=BSFRexxProxy(selectedPerson) -- unbox Rexx object
-say self"::handleEditPerson: person="pp(person)
-say self"::handleEditPerson: BsfGetTID():" pp(BsfGetTID())
       okClicked = .my.app~mainApp~showPersonEditDialog(person)
       if okClicked=.true then
-          showPersonDetails(person)
+          self~showPersonDetails(person)
   end
-  else   -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
-     .bsf.dialog~messageBox("Please select a person in the table.", "No Selection", "warning")
+  else
+  do
+      if .my.app~Dialogs.Alerts.Available then
+      do
+         alert=.fx.alert~new(.fx.Alert.Type~WARNING)   -- create a warning alert
 
+         alert~setTitle("No Selection")
+         alert~setHeaderText(.nil)
+         alert~setContentText("Please select a person in the table.")
+         alert~showAndWait
+      end
+      else  -- use BSF.CLS' .bsf.dialog utility class
+      do
+         -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
+        .bsf.dialog~messageBox("Please select a person in the table.", "No Selection", "warning")
+      end
+  end
 
 
    -- JavaFX event handlers implemented in Rexx
@@ -356,8 +351,7 @@ say self"::handleEditPerson: BsfGetTID():" pp(BsfGetTID())
 
 
   tgtObjectName=event~getTarget~objectname
-say self"::handle: BsfGetTID():" pp(BsfGetTID())
-say self"::handle: event~toString:" pp(event~toString)
+-- say self"::handle: event~toString:" pp(event~toString)
   select
      when tgtObjectName=btnNew~objectName    then self~handleNewPerson  -- say "BUTTON NEW  was the target!"
      when tgtObjectName=btnEdit~objectName   then self~handleEditPerson -- say "BUTTON EDIT was the target!"
@@ -422,8 +416,7 @@ say self"::handle: event~toString:" pp(event~toString)
 ::method handle      -- method defined "javafx.event.EventHandler"
   expose btnOK btnCancel
   use arg event
-say self"::handle, event="pp(event~toString)
-say self"::handle: BsfGetTID():" pp(BsfGetTID())
+-- say self"::handle, event="pp(event~toString)
 
   tgtObjectName=event~getTarget~objectname
   select
@@ -431,7 +424,6 @@ say self"::handle: BsfGetTID():" pp(BsfGetTID())
      when tgtObjectName=btnCancel~objectName then self~handleCancel     -- say "BUTTON CANCEL was the target!"
      otherwise say "UNKNOWN target:" pp(event~getTarget) pp(event~getTarget~tostring)
   end
-say self"::handle, event="pp(event~toString) "about to return ..."
 
 
 ::method setPerson
@@ -449,40 +441,26 @@ say self"::handle, event="pp(event~toString) "about to return ..."
 
 ::method handleCancel
   expose dialogStage
-say self"::handleCancel, dialogStage="pp(dialogStage)
-say self"::handleCancel, BSFGetTID():" pp(BsfGetTID())
-say self"::handleCancel, dialogStage~toString:" pp(dialogStage~toString)
-  dialogStage~close
-/*
-say "isShowing:"
-say "          " pp(dialogStage~isShowing)
-say "before hiding..."
+
   dialogStage~hide
-*/
-say self"::handleCancel, dialogStage="pp(dialogStage) "about to return."
 
 
 ::method handleOK
   expose firstNameField lastNameField streetField postalCodeField cityField birthdayField -
          person okClicked dialogStage
 
-say self"::handleOK, dialogStage="pp(dialogStage) "person="pp(person)
-say self"::handleOK, BSFGetTID():" pp(BsfGetTID())
-
   if (self~isInputValid) then
   do
-      person~firstName    = firstNameField ~getText
-      person~setLastName  = lastNameField  ~getText
-      person~setStreet    = streetField    ~getText
-      person~setPostalCode= postalCodeField~getText
-      person~setCity      = cityField      ~getText
-      person~setBirthday  = birthdayField  ~getText
+      person~firstName  = firstNameField ~getText
+      person~lastName   = lastNameField  ~getText
+      person~street     = streetField    ~getText
+      person~postalCode = postalCodeField~getText
+      person~city       = cityField      ~getText
+      person~birthday   = birthdayField  ~getText
 
       okClicked = .true
-      dialogStage~close
-      -- dialogStage~hide
+      dialogStage~hide
   end
-say self"::handleOK, dialogStage="pp(dialogStage) "person="pp(person) "about to return."
 
 ::method isInputValid
   expose firstNameField lastNameField streetField postalCodeField cityField birthdayField -
@@ -493,34 +471,47 @@ say self"::handleOK, dialogStage="pp(dialogStage) "person="pp(person) "about to 
   LF = "0a"x     -- line feed character
 
   if (firstNameField~getText = .nil | firstNameField~getText~length = 0) then
-     errorMessage = LF"No valid first name\\n"
+     errorMessage = LF"No valid first name"
 
   if (lastNameField~getText = .nil | lastNameField~getText~length = 0) then
-     errorMessage ||= LF"No valid last name\\n"
+     errorMessage ||= LF"No valid last name"
 
   if (streetField~getText = .nil | streetField~getText~length = 0) then
-     errorMessage ||= LF"No valid street\\n"
+     errorMessage ||= LF"No valid street"
 
   if (postalCodeField~getText = .nil | postalCodeField~getText~length = 0) then
-     errorMessage ||= LF"No valid postal code\\n"
+     errorMessage ||= LF"No valid postal code"
   else
      if \ DataType(postalCodeField~getText, "Whole") then
-         errorMessage ||= LF"No valid postal code (must be an integer)\\n"
+         errorMessage ||= LF"No valid postal code (must be an integer)"
 
   if (cityField~getText = .nil | cityField~getText~length = 0) then
-     errorMessage ||= LF"No valid city\\n"
+     errorMessage ||= LF"No valid city"
 
   if (birthdayField~getText = .nil | birthdayField~getText~length = 0) then
-     errorMessage ||= LF"No valid birthday\\n"
+     errorMessage ||= LF"No valid birthday"
   else
      if \ validString(birthdayField~getText) then
-         errorMessage ||= LF"No valid birthday. Use the format yyyy-mm-dd\\n"
+         errorMessage ||= LF"No valid birthday. Use the format yyyy-mm-dd"
 
   if (errorMessage~length = 0) then
      return .true
 
   -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
-  .bsf.dialog~messageBox("Please correct invalid fields:" LF errorMessage, "Invalid Fields", "error")
+  if .my.app~Dialogs.Alerts.Available then
+  do
+     alert=.fx.alert~new(.fx.Alert.Type~ERROR)  -- create a warning alert
+     alert~setTitle("Invalid Fields")
+     alert~setHeaderText("Please correct the listed errors!")
+     alert~setContentText("Invalid values:" LF errorMessage)
+     alert~showAndWait
+  end
+  else  -- use BSF.CLS' .bsf.dialog utility class
+  do
+     -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
+    .bsf.dialog~messageBox("Please correct the listed invalid fields:" LF errorMessage, "Invalid Fields", "error")
+  end
+
    return .false
 
 

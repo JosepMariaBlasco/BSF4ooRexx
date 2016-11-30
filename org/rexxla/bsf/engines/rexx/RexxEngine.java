@@ -14,7 +14,7 @@ import java.lang.reflect.Method;
   * using the RexxSAA interface.
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2015 Rony G. Flatscher
+ *    Copyright (C) 2001-2016 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 4.5.2, 20150717
+  * @version 6.0.0, 20161119
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,21 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2016-11-19, ---rgf, - updated major version number to 6 to indicate new base level Java 1.6/6
+
+    2016-11-04, ---rgf, - basing on Java 1.6/6.0, getting rid of "-Xlint:unchecked" warnings:
+                            RexxEngine.java:517: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                                   beanVector.addElement(res[1]);        // remember beanName for later deregistering
+                                                                        ^
+                            RexxEngine.java:662: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                                   beanVector.addElement(res[1]);       // remember beanName for later deregistering
+                                                                        ^
+                            RexxEngine.java:842: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                                   beanVector.addElement(res[1]);       // remember beanName for later deregistering
+                                                                        ^
+                            RexxEngine.java:1087: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                                      beanVector.addElement(res[1]);    // remember beanName for later deregistering
 
     2015-07-17, ---rgf, - fixed bug in call() where a dynamically created bean name containing the
                           object prefix was not removed for unregisterBean()
@@ -142,7 +157,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "452.20150717";
+    static final public String version = "600.20161119";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -491,7 +506,7 @@ if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ==
         // 2003-01-06, ---rgf, deal with arguments (non-primitive Java objects) which need to be turned into Beans
         // Vector beanVector = new Vector(args.length);   // maximum size
         // Vector beanVector = new Vector(editedArgs.length);   // maximum size
-        Vector beanVector = new Vector();
+        Vector<Object> beanVector = new Vector<Object>();
         Object [] res;                  // to contain the results of args2RexxString()
 
             // if true, then pass RexxProxy objects as is (will be dealt with in JNI)
@@ -641,7 +656,7 @@ if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ==
         // 2003-01-06, ---rgf, deal with arguments (non-primitive Java objects) which need to be turned into Beans
         // Vector beanVector = new Vector(args.length);   // maximum size
         // Vector beanVector = new Vector(editedArgs.length);   // maximum size
-        Vector beanVector = new Vector();
+        Vector<Object> beanVector = new Vector<Object>();
         Object [] res;                  // to contain the results of args2RexxString()
 
 
@@ -821,7 +836,7 @@ if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ==
         // 2003-01-06, ---rgf, deal with arguments (non-primitive Java objects) which need to be turned into Beans
         // Vector beanVector = new Vector(args.length);   // maximum size
         // Vector beanVector = new Vector(editedArgs.length);   // maximum size
-        Vector beanVector = new Vector();
+        Vector<Object> beanVector = new Vector<Object>();
         Object [] res;                  // to contain the results of args2RexxString()
 
 
@@ -1050,7 +1065,7 @@ if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ==
         lastScriptCode=script;   // save script's code, fall 2002, ---rgf
         lastSourceLocation=source;  // save script source info, 2008-06-14
 
-        Vector beanVector  = null;  // bean Vector to build (for each argument one entry)
+        Vector<Object> beanVector  = null;  // bean Vector to build (for each argument one entry)
 
         Object objArg[] = null;     // args for Rexx
         // 2003-01-06, ---rgf, deal with arguments (non-primitive Java objects) which need to be turned into Beans
@@ -1068,7 +1083,7 @@ if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ==
             Enumeration e=vArgs.elements();
             // this works under JRE 1.1.8, i.e. under older versions of OS/2 Warp as well, 2001-05-23, ---rgf
             objArg = new Object [vArgs.size()];
-            beanVector= new Vector(vArgs.size());
+            beanVector= new Vector<Object>(vArgs.size());
 
             for ( i=0; e.hasMoreElements() ; i++)
             {
@@ -1390,10 +1405,15 @@ if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterprete
       */
     public boolean unregisterBean(String beanName )  throws RexxException
     {
+
+/* // rgf, 2016-11-30: even if the Rexx engine is terminated, unregisterBean remains valid, reducing the refCount
+   // of the registered Java object
+
         if (bTerminated==true)       // engine got terminated, cannot use it anymore
         {
             throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
         }
+*/
         return rexxInterface.unregisterBean(beanName);
     }
 

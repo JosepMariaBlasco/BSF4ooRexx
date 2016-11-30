@@ -6,7 +6,8 @@
 @rem 2011-03-20, add MacOSX support
 @rem 2014-05-25, create one jar only, containing both, bsf package et.al. and rexx engine
 @rem 2015-05-12, adding JSR-223 support
-@rem 2016-08-15, addig .NET/CLR support
+@rem 2016-08-15, adding .NET/CLR support
+@rem 2016-11-24, adding JavaFX support, basing on Java 1.6/6.0, hence version "600" (6.00)
 
 @rem @echo createDistribution.cmd (for BSF4ooRexx)
 @echo %0 (for BSF4ooRexx)
@@ -27,14 +28,15 @@ set CLASSPATH=.;%CLASSPATH%;%cd%\jars\Xalan\junit.jar;%cd%\jars\Xalan\xalan.jar
 set CLASSPATH=%CLASSPATH%;D:\Programme\OpenOffice.org 3\program\;D:\Programme\OpenOffice.org 3\Basis\program\classes\unoil.jar;D:\Programme\OpenOffice.org 3\URE\java\ridl.jar;D:\Programme\OpenOffice.org 3\URE\java\jurt.jar;D:\Programme\OpenOffice.org 3\URE\java\juh.jar;D:\Programme\OpenOffice.org 3\Basis\program\classes\ScriptFramework.jar
 
 
-set releaseDate=20160815
-set runDate=20160815
-set doc_date=20160815
+set releaseDate=20161130
+set runDate=20161130
+set doc_date=20161130
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
 @rem set bsfVersion=v400
-set releaseVersion=v452
+@rem set releaseVersion=v452
+set releaseVersion=v600
 set releaseName=bsf4ooRexx-%releaseVersion%-%releaseDate%
 set bsfJarNameBin=%releaseName%-bin.jar
 set bsfJarNameSource=%releaseName%-source.jar

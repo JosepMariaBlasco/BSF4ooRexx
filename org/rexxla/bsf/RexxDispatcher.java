@@ -7,7 +7,7 @@ import java.io.*;
 /** Invokes given Rexx or ooRexx program and supplies the commandline arguments.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2006-2013 Rony G. Flatscher
+ *    Copyright (C) 2006-2016 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -23,11 +23,13 @@ import java.io.*;
  * ----------------------------------------------------------------------------- </pre>
  *
  * @author   Rony G. Flatscher
- * @version  402.20120606
+ * @version  403.20161105
  */
 
  /*
      last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+     2016-11-05, ---rgf: - basing on 1.6/6.0, get rid of generic warnings
 
      2013-01-07, ---rgf, - somehow I mangled a local copy of this file, introducing an error,
                            reordering Rexx termination sequences
@@ -57,7 +59,7 @@ public class RexxDispatcher {
         /** Version string indicating version of this class (majorVersion*100+minorVersion
          *  concatenated with a dot and the sorted date of last change.
          */
-        static final public String version = "402.20120606";
+        static final public String version = "403.20161105";
 
         /** Key for storing the received args-String array in the BSF registry for Rexx to
          *  get at it.
@@ -100,7 +102,7 @@ public class RexxDispatcher {
 
             String [] args4rexx    = null;
             String    argline      = null;
-            java.util.Vector vArgs = null;
+            java.util.Vector<String> vArgs = null;
 
             Object scriptString    = null;
             org.apache.bsf.BSFManager ap_mgr  = null;   // Apache's bsf, Java >= 1.3
@@ -124,7 +126,7 @@ public class RexxDispatcher {
                 // if additional arguments, pass them as a blank delimited string to Rexx
             if (args.length>1)
             {
-                vArgs=new java.util.Vector();
+                vArgs=new java.util.Vector<String>();
                 argline="";
                 boolean bEnquote=false;
 

@@ -62,6 +62,7 @@ TODO: (maybe)
 */
 
  /*
+
      2016-11-28, ---rgf, - convFromRexx(): check that type string is not the empty string, change error message
                            to be more meaningful
                          - fixing a subtle bug where even invokestrict() may be fooled in method chosing: e.g.
