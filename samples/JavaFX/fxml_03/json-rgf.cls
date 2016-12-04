@@ -78,7 +78,7 @@ if .json.useRexxV5 then .local~json.dirClass=.stringTable -- use .stringTable, n
                    else .local~json.dirClass=.directory    -- use .directory, availabe in 4.x and higher
 
 
-bDebug=.true      -- show debug output in prolog code?
+bDebug=.false -- .true      -- show debug output in prolog code?
 if bDebug then
 do
    parse source s

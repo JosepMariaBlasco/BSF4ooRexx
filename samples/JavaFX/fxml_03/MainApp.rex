@@ -38,13 +38,10 @@ call bsf.import "javafx.scene.Scene",                          "fx.Scene"
 call bsf.import "javafx.beans.property.SimpleStringProperty",  "fx.SimpleStringProperty"
 call bsf.import "javafx.beans.property.SimpleIntegerProperty", "fx.SimpleIntegerProperty"
 
-   -- since JavaFX 8u40
-call bsf.import "javafx.scene.control.Alert",                  "fx.Alert"
-   -- note "AlertType" is public "inner" enum class, i.e. it is defined within the class "Alert", hence
-   -- the JavaDocs refer to "AlertType" as "Alert.AlertType": however the Java compiler produces the
-   -- class file as "Alert$AlertType"
-call bsf.import "javafx.scene.control.Alert$AlertType",        "fx.Alert.Type"
+call bsf.import "javafx.collections.FXCollections",            "fx.FXCollections"
+call bsf.import "javafx.stage.Modality",                       "fx.Modality"
 
+call tryLoadAlertClasses   -- since JavaFX 8u40
 
    -- create Rexx object that will control the application
 rexxApp=.RxMainApplication~new
@@ -60,6 +57,20 @@ end
 jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
    -- launch the application, invoke "start" and then stay up until the application closes
 jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of launch in order to work
+exit
+
+::routine tryLoadAlertClasses    -- if Java classes are not available, a syntax condition gets raised
+   signal on syntax
+      -- since JavaFX 8u40
+   call bsf.import "javafx.scene.control.Alert",                  "fx.Alert"
+      -- note "AlertType" is public "inner" enum class, i.e. it is defined within the class "Alert", hence
+      -- the JavaDocs refer to "AlertType" as "Alert.AlertType": however the Java compiler produces the
+      -- class file as "Alert$AlertType"
+   call bsf.import "javafx.scene.control.Alert$AlertType",        "fx.Alert.Type"
+signal:
+   return
+
+
 
 
 ::requires "BSF.CLS"          -- get Java support
@@ -82,6 +93,8 @@ jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of laun
 ::attribute primaryStage   -- stores the primaryStage supplied via the start method by JavaFX
 
    -- tutorial, part 5
+::attribute personFilePath
+/*
 ::attribute personFilePath set   -- allow anyone to set a value
 ::attribute personFilePath get   -- getter method that returns the current filePath
   expose personFilePath
@@ -89,39 +102,50 @@ jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of laun
   if \ var("personFilePath") then   -- if no filepath supplied via command line, try to get it from user's root Preferences node
      personFilePath=self~getPersonFilePath   -- get "filePath" from userRoot Preferences, if any set
   return personFilePath
+*/
 
--- ::attribute arrayListPersonData
 ::method init  -- constructor
   expose personData prefs personFilePath    -- observableArrayList (maintained by TableView)
 
+   -- create and save an ObservableList
+  personData=.fx.FXCollections~observableArrayList
+
+   -- do we have a file save already, such that a "filePath" preference was set at the user's root node?
   prefs=bsf.importClass("java.util.prefs.Preferences")~userRoot   -- get the user's root preference node, tutorial part # 5
-  personFilePath=.nil      -- make sure no file path is set at initialization time
-
-   -- create and store an ObservableList
-  personData=bsf.loadClass("javafx.collections.FXCollections")~observableArrayList
-      -- this creates ooRexx Person objects that get stored as Java RexxProxy objects, to be used for the TableView
-  personData~add(.person~new("Hans", "Muster"))
-  personData~add(.person~new("Ruth", "Mueller"))
-  personData~add(.person~new("Heinz", "Kurz"))
-  personData~add(.person~new("Cornelia", "Meier"))
-  personData~add(.person~new("Werner", "Meyer"))
-  personData~add(.person~new("Lydia", "Kunz"))
-  personData~add(.person~new("Anna", "Best"))
-  personData~add(.person~new("Stefan", "Meier"))
-  personData~add(.person~new("Martin", "Mueller"))
-
+  personFilePath=prefs~get("filePath", .nil) -- get filePath preference, if any
+  if personFilePath<>.nil then
+  do
+     if sysFileExists(personFilePath) then
+        self~loadPersonDataFromFile(personfilePath)
+     else   -- if file does not exist, do not show it
+        personFilePath=.nil
+  end
+  else   -- temporarily make sure we have (debug) data available to us
+  do
+         -- this creates ooRexx Person objects that get stored as Java RexxProxy objects, to be used for the TableView
+     personData~add(.person~new("Hans", "Muster"))
+     personData~add(.person~new("Ruth", "Mueller"))
+     personData~add(.person~new("Heinz", "Kurz"))
+     personData~add(.person~new("Cornelia", "Meier"))
+     personData~add(.person~new("Werner", "Meyer"))
+     personData~add(.person~new("Lydia", "Kunz"))
+     personData~add(.person~new("Anna", "Best"))
+     personData~add(.person~new("Stefan", "Meier"))
+     personData~add(.person~new("Martin", "Mueller"))
+  end
 
 
    /* loads the fxml document defining the GUI elements, sets up a scene for it and shows it */
 ::method start    -- will be invoked by the "launch" method
-  expose locale primaryStage
+  expose locale primaryStage personFilePath
   use arg primaryStage  -- we get the stage to use for our UI
 
    -- starting with JavaFX 8u40 true dialogs got introduced; taking advantage of them if running on Java 1.8 or higher
    -- get the JavaFX runtime version (only available when running it), e.g. "8.0.111-b14"
   .my.app~Dialogs.Alerts.Available=(.java.lang.system~getProperty("javafx.runtime.version")>8)  -- determine availability
 
-  primaryStage~setTitle("AddressApp")
+  if personFilePath=.nil then primaryStage~setTitle("AddressApp")
+                         else primaryStage~title="AddressApp -" personFilePath
 
    -- create an URL for the FMXLDocument.fxml file (hence the protocol "file:")
   rootLayoutUrl=.bsf~new("java.net.URL", "file:RootLayout.fxml")
@@ -192,24 +216,6 @@ jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of laun
 
   say "... error in loadPersonDataFromFile!!" errMsg
 
-/*
-
-        personData.clear();
-        personData.addAll(wrapper.getPersons());
-
-        // Save the file path to the registry.
-        setPersonFilePath(file);
-
-    } catch (Exception e) { // catches ANY exception
-        Alert alert = new Alert(AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText("Could not load data");
-        alert.setContentText("Could not load data from file:\n" + file.getPath());
-
-        alert.showAndWait();
-    }
-}
-*/
 
 
 /* tutorial, step 5: using JSON instead of XML as file format */
@@ -221,7 +227,6 @@ jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of laun
   do
      arr=.array~new
      do p over personData  -- iterate over ObservableList
-say "... savePersonDataToFile, p="pp(p)
         dir=.directory~new
         dir["firstName"] =p~firstName
         dir["lastName"]  =p~lastName
@@ -235,6 +240,7 @@ say "... savePersonDataToFile, p="pp(p)
      s=.stream~new(filepath)~~open("write replace")   -- open stream for replacement
      jsonStr=s~charout(.json~new~toJson(arr)) -- create and write JSON string to stream
      s~close                              -- close stream
+     self~setPersonFilePath(filePath)     -- save this one as preference for next load
      return
   end
 /*
@@ -265,7 +271,7 @@ say "... savePersonDataToFile, p="pp(p)
      -- AnchorPane page = (AnchorPane) loader.load();
      dialogStage = .bsf~new("javafx.stage.Stage")
      dialogStage~setTitle("Edit Person")
-     dialogStage~initModality(bsf.import("javafx.stage.Modality")~WINDOW_MODAL)
+     dialogStage~initModality(.fx.Modality~WINDOW_MODAL)
 
      dialogStage~initOwner(primaryStage)
      dialogStage~setScene(scene)
@@ -286,6 +292,29 @@ syntax:
   co=condition('object')
   call dumpConditionObject co -- show condition information
   raise propagate
+
+
+::method showPersonStatistics
+  expose primaryStage personData
+
+  -- Load the fxml file and create a new stage for the popup
+  birthdayStatisticsUrl=.bsf~new("java.net.URL", "file:BirthdayStatistics.fxml")
+  page  = .fx.FXMLLoader~load(birthdayStatisticsUrl)
+  scene = .fx.Scene~new(page)
+
+  -- AnchorPane page = (AnchorPane) loader.load();
+  dialogStage = .bsf~new("javafx.stage.Stage")
+  dialogStage~setTitle("Birthday Statistics")
+  dialogStage~initModality(.fx.Modality~WINDOW_MODAL)
+
+  dialogStage~initOwner(primaryStage)
+  dialogStage~setScene(scene)
+
+  -- Set the persons into the controller
+  controller = .BirthdayStatisticsController~new
+  controller~setPersonData(personData)
+  dialogStage~show
+
 
 
 /* =================================================================================== */
@@ -348,13 +377,6 @@ syntax:
   raise propagate
 */
 
-/*
-::method refresh        -- force a refresh
-  expose personTable
-say self"::refresh ..."
-  personTable~setItems(.nil)  -- remove all entries
-  self~setItems         -- add current personData
-*/
 
 ::method setItems
   expose personTable
@@ -410,7 +432,7 @@ say self"::refresh ..."
       end
       else  -- use BSF.CLS' .bsf.dialog utility class
       do
-         -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
+         -- .bsf.dialog is defined in BSF.CLS and uses swing
         .bsf.dialog~messageBox("Please select a person in the table.", "No Selection", "warning")
       end
   end
@@ -450,7 +472,7 @@ say self"::refresh ..."
       end
       else  -- use BSF.CLS' .bsf.dialog utility class
       do
-         -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
+         -- .bsf.dialog is defined in BSF.CLS and uses swing
         .bsf.dialog~messageBox("Please select a person in the table.", "No Selection", "warning")
       end
   end
@@ -465,9 +487,7 @@ say self"::refresh ..."
   expose btnNew btnEdit btnDelete
   use arg event, slotDir
 
-
   tgtObjectName=event~getTarget~objectname
--- say self"::handle: event~toString:" pp(event~toString)
   select
      when tgtObjectName=btnNew~objectName    then self~handleNewPerson  -- say "BUTTON NEW  was the target!"
      when tgtObjectName=btnEdit~objectName   then self~handleEditPerson -- say "BUTTON EDIT was the target!"
@@ -529,10 +549,10 @@ say self"::refresh ..."
   btnOK    ~setOnAction(rp)
   btnCancel~setOnAction(rp)
 
+
 ::method handle      -- method defined "javafx.event.EventHandler"
   expose btnOK btnCancel
   use arg event
--- say self"::handle, event="pp(event~toString)
 
   tgtObjectName=event~getTarget~objectname
   select
@@ -554,6 +574,7 @@ say self"::refresh ..."
   cityField      ~setText(person~city)
   birthdayField  ~setText(person~birthday)
   birthdayField  ~setPromptText("yyyy-mm-dd")
+
 
 ::method handleCancel
   expose dialogStage
@@ -613,7 +634,7 @@ say self"::refresh ..."
   if (errorMessage~length = 0) then
      return .true
 
-  -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
+  -- .bsf.dialog is defined in BSF.CLS and uses swing
   if .my.app~Dialogs.Alerts.Available then
   do
      alert=.fx.alert~new(.fx.Alert.Type~ERROR)  -- create a warning alert
@@ -624,7 +645,7 @@ say self"::refresh ..."
   end
   else  -- use BSF.CLS' .bsf.dialog utility class
   do
-     -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
+     -- .bsf.dialog is defined in BSF.CLS and uses swing
     .bsf.dialog~messageBox("Please correct the listed invalid fields:" LF errorMessage, "Invalid Fields", "error")
   end
 
@@ -770,7 +791,7 @@ say self"::refresh ..."
 
 ::method init        -- constructor
   expose mainApp -
-         menuNew menuOpen menuSave menuSaveAs menuAbout menuExit
+         menuNew menuOpen menuSave menuSaveAs menuAbout menuExit menuBirthdayStatistics
 
   use arg mainApp -- fetch and save object in attribute
 
@@ -785,6 +806,8 @@ say self"::refresh ..."
   menuSaveAs=rlDir~menuSaveAs~~setOnAction(rp)
   menuAbout =rlDir~menuAbout ~~setOnAction(rp)
   menuExit  =rlDir~menuExit  ~~setOnAction(rp)
+  -- tutorial, part 6
+  menuBirthdayStatistics=rlDir~menuBirthdayStatistics ~~setOnAction(rp)
 
 
 /* create an empty address book */
@@ -818,7 +841,7 @@ say self"::refresh ..."
   expose mainApp
 
   if mainApp~personFilePath<>.nil then
-     mainApp~savePersonDataToFile
+     mainApp~savePersonDataToFile(mainApp~personFilePath)
   else
      self~handleSaveAs
 
@@ -832,7 +855,12 @@ say self"::refresh ..."
   jarrExtensions=bsf.createJavaArrayOf("java.lang.String", "*.json")
   extFilter=  .bsf~new("javafx.stage.FileChooser$ExtensionFilter", "JSON files (*.json)", jarrExtensions)
   fileChooser~getExtensionFilters~add(extFilter)
-  fileChooser~setInitialDirectory(.bsf~new("java.io.File", "."))  -- set current directory
+
+  filePath=mainApp~personFilePath
+  if filePath=.nil then
+     fileChooser~setInitialDirectory(.bsf~new("java.io.File", "."))  -- set current directory
+  else
+     fileChooser~setInitialDirectory(.bsf~new("java.io.File", filespec("Directory",filePath)))  -- set directory
 
   -- Show save file dialog
   file = fileChooser~showSaveDialog(mainApp~primaryStage)
@@ -841,7 +869,7 @@ say self"::refresh ..."
      filePath=file~getPath
      if filePath~right(5)<>".json" then   -- Make sure it has the correct extension
         filePath||=".json"
-     mainApp~savePersonDataToFile(filePath )
+     mainApp~savePersonDataToFile( filePath )
   end
 
 
@@ -867,7 +895,7 @@ say self"::refresh ..."
   end
   else  -- use BSF.CLS' .bsf.dialog utility class
   do
-     -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
+     -- .bsf.dialog is defined in BSF.CLS and uses swing
     .bsf.dialog~messageBox(text, "AddressApp", "information")
   end
 
@@ -878,7 +906,7 @@ say self"::refresh ..."
 
 
 ::method handle   /* implements the interface "javafx.event"   */
-  expose menuNew menuOpen menuSave menuSaveAs menuAbout menuExit
+  expose menuNew menuOpen menuSave menuSaveAs menuAbout menuExit mainApp menuBirthdayStatistics
   use arg event, slotDir
 
   tgtObjectName=event~getTarget~objectname
@@ -892,11 +920,62 @@ say self"::refresh ..."
      when tgtObjectName=menuSaveAs~objectName then self~handleSaveAs
      when tgtObjectName=menuAbout ~objectName then self~handleAbout
      when tgtObjectName=menuExit  ~objectName then self~handleExit
+
+      -- tutorial, part 6:
+     when tgtObjectName=menuBirthdayStatistics~objectName then mainApp~showPersonStatistics
      otherwise say "UNKNOWN target:" pp(event~getTarget) pp(event~getTarget~tostring)
   end
 
 
 
+/* tutorial, part 6 */
+::class BirthdayStatisticsController
+
+::method init        -- constructor
+  expose monthNames barChart xAxis
+
+  -- fetch the directory containing the JavaFX fx:id JavaFX objects and assign them us as for event handling (cf. method "handle")
+  bsDir=.my.app~BirthdayStatistics.fxml
+  barChart=bsDir~barChart
+  xAxis   =bsDir~xAxis
+
+  -- create and set the monthNames
+  -- Get an array with the English month names.
+  dfsClz=bsf.loadClass("java.text.DateFormatSymbols")
+  locClz=bsf.loadClass("java.util.Locale")
+  months = dfsClz~getInstance(locClz~ENGLISH)~getMonths
+  --  Convert it to a list and add it to an ObservableList of months.
+  monthNames=.fx.FXCollections~observableArrayList ~~addAll(bsf.loadClass("java.util.Arrays")~asList(months))
+  xAxis~setCategories(monthNames)
+
+
+/*  Sets the persons to show the statistics for. */
+::method  setPersonData
+  expose barChart
+
+  use arg persons
+  monthCounter=bsf.createJavaArray("int.class", 12)
+  do p over persons
+     parse value p~birthDay with "-" month "-"
+     monthCounter[month]+=1
+  end
+  series=self~createMonthDataSeries(monthCounter)
+  barChart~getData~add(series)
+
+
+/* Creates a XYChart.Data object for each month. All month data is then returned as a series. */
+::method createMonthDataSeries
+  expose monthNames
+  use arg monthCounter
+
+  series=.bsf~new("javafx.scene.chart.XYChart$Series")
+  seriesData=series~getData
+  do i=1 to monthCounter~size
+      -- force number by boxing montCounter value to int
+     monthData=.bsf~new("javafx.scene.chart.XYChart$Data", monthNames~get(i-1), box("i",monthCounter[i]))
+     seriesData~add(monthData)
+  end
+  return series
 
 
 /* =================================================================================== */

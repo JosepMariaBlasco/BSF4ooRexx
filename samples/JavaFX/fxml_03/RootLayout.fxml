@@ -11,7 +11,7 @@
 
 <?language rexx?>
 
-<BorderPane fx:id="rootPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="600.0" stylesheets="@DarkTheme.css" xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1">
+<BorderPane fx:id="rootPane" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0" prefWidth="700.0" stylesheets="@DarkTheme.css" xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1">
    <top>
       <MenuBar BorderPane.alignment="CENTER">
         <menus>
@@ -19,30 +19,40 @@
             <items>
                   <MenuItem fx:id="menuNew" mnemonicParsing="false" text="New">
                      <accelerator>
-                        <KeyCodeCombination alt="ANY" code="N" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                        <KeyCodeCombination alt="DOWN" code="N" control="UP" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator>
                   </MenuItem>
                   <MenuItem fx:id="menuOpen" mnemonicParsing="false" text="Open...">
                      <accelerator>
-                        <KeyCodeCombination alt="ANY" code="O" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                        <KeyCodeCombination alt="DOWN" code="O" control="UP" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator>
                   </MenuItem>
                   <MenuItem fx:id="menuSave" mnemonicParsing="false" text="Save">
                      <accelerator>
-                        <KeyCodeCombination alt="ANY" code="S" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                        <KeyCodeCombination alt="DOWN" code="S" control="UP" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator>
                   </MenuItem>
-                  <MenuItem fx:id="menuSaveAs" mnemonicParsing="false" text="Save..." />
+                  <MenuItem fx:id="menuSaveAs" mnemonicParsing="false" text="Save...">
+                     <accelerator>
+                        <KeyCodeCombination alt="DOWN" code="A" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                     </accelerator>
+                  </MenuItem>
               <MenuItem fx:id="MenuExit" mnemonicParsing="false" text="Exit">
                      <accelerator>
-                        <KeyCodeCombination alt="ANY" code="F4" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                        <KeyCodeCombination alt="DOWN" code="X" control="UP" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator></MenuItem>
             </items>
           </Menu>
-          <Menu mnemonicParsing="false" text="Edit">
+          <Menu mnemonicParsing="false" text="Statistics">
             <items>
-              <MenuItem mnemonicParsing="false" text="Delete" />
+              <MenuItem fx:id="menuBirthdayStatistics" mnemonicParsing="false" text="Birthday Month Statistics">
+                     <accelerator>
+                        <KeyCodeCombination alt="ANY" code="M" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                     </accelerator></MenuItem>
             </items>
+               <accelerator>
+                  <KeyCodeCombination alt="ANY" code="T" control="UP" meta="UP" shift="UP" shortcut="UP" />
+               </accelerator>
           </Menu>
           <Menu mnemonicParsing="false" text="Help">
             <items>
