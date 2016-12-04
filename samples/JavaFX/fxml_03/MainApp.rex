@@ -46,8 +46,15 @@ call bsf.import "javafx.scene.control.Alert",                  "fx.Alert"
 call bsf.import "javafx.scene.control.Alert$AlertType",        "fx.Alert.Type"
 
 
-   -- create Rexx object that will control the FXML set up
+   -- create Rexx object that will control the application
 rexxApp=.RxMainApplication~new
+if arg()>0 then      -- if a command line JSON filename was given, use it to set the attribute
+do
+   parse arg jsonFile
+   rexxApp~personFilePath=strip(jsonFile)
+end
+
+
 .my.app~mainApp=rexxApp        -- store the Rexx MainApp object in .my.app
    -- instantiate the abstract JavaFX class, the abstract "start" method will be served by rexxHandler
 jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
@@ -55,7 +62,8 @@ jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
 jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of launch in order to work
 
 
-::requires "BSF.CLS"    -- get Java support
+::requires "BSF.CLS"          -- get Java support
+::requires "json-rgf.cls"     -- get JSON support for ooRexx (to load and store person data)
 
 ::requires "rgf_util2.rex"    -- get Rexx utilities (installed with BSF4ooRexx) to ease debugging (cf. dump2(), ppCondition2()...)
 
@@ -70,9 +78,24 @@ jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of laun
 
    /* for tutorial Part 2: create an ObservableList and create and store Person data in it */
 ::attribute personData
+
+::attribute primaryStage   -- stores the primaryStage supplied via the start method by JavaFX
+
+   -- tutorial, part 5
+::attribute personFilePath set   -- allow anyone to set a value
+::attribute personFilePath get   -- getter method that returns the current filePath
+  expose personFilePath
+
+  if \ var("personFilePath") then   -- if no filepath supplied via command line, try to get it from user's root Preferences node
+     personFilePath=self~getPersonFilePath   -- get "filePath" from userRoot Preferences, if any set
+  return personFilePath
+
 -- ::attribute arrayListPersonData
 ::method init  -- constructor
-  expose personData        -- observableArrayList (maintained by TableView)
+  expose personData prefs personFilePath    -- observableArrayList (maintained by TableView)
+
+  prefs=bsf.importClass("java.util.prefs.Preferences")~userRoot   -- get the user's root preference node, tutorial part # 5
+  personFilePath=.nil      -- make sure no file path is set at initialization time
 
    -- create and store an ObservableList
   personData=bsf.loadClass("javafx.collections.FXCollections")~observableArrayList
@@ -91,43 +114,135 @@ jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of laun
 
    /* loads the fxml document defining the GUI elements, sets up a scene for it and shows it */
 ::method start    -- will be invoked by the "launch" method
-  expose locale
-  use arg stage   -- we get the stage to use for our UI
+  expose locale primaryStage
+  use arg primaryStage  -- we get the stage to use for our UI
 
    -- starting with JavaFX 8u40 true dialogs got introduced; taking advantage of them if running on Java 1.8 or higher
    -- get the JavaFX runtime version (only available when running it), e.g. "8.0.111-b14"
   .my.app~Dialogs.Alerts.Available=(.java.lang.system~getProperty("javafx.runtime.version")>8)  -- determine availability
 
-  .my.app~primaryStage=stage      -- save in .my.app
-  stage~setTitle("AddressApp")
+  primaryStage~setTitle("AddressApp")
 
    -- create an URL for the FMXLDocument.fxml file (hence the protocol "file:")
   rootLayoutUrl=.bsf~new("java.net.URL", "file:RootLayout.fxml")
   rootLayout   =.fx.FXMLLoader~load(rootLayoutUrl) -- load the fxml document
-  .my.app~rootLayout=rootLayout   -- save in .my.app
+  .my.app~rootLayout=rootLayout     -- save in .my.app
+  .rootLayoutController~new(self)   -- create an instance of the controller
 
-  scene=.fx.scene~new(rootLayout) -- create a scene for our document
+  scene=.fx.scene~new(rootLayout)   -- create a scene for our document
   .my.app~rootScene=scene
-  stage~setScene(scene)                         -- set the stage to our scene
+  primaryStage~setScene(scene)      -- set the stage to our scene
 
-  -- scene~getStyleSheets~add("fxml_02.css")       -- use this CSS to style the UI
+   -- add application icon
+  img=.bsf~new("javafx.scene.image.Image", "address_book_32.png")
+  primaryStage~getIcons~add(img)
 
-  -- img=.bsf~new("javafx.scene.image.Image", "oorexx_032.png")
-  -- stage~getIcons~add(img)                       -- set application icon
-
---  say "/// ... ---> ... now getting at and filling the TableColumns ... <--- ... ///"
---  self~showPersonOverview     -- get the TableView, fill it with our data
-      -- load PersonOverview.fxml, place it into the rootLayout, create the Rexx object controlling the PersonOverview form
+   -- load PersonOverview.fxml, place it into the rootLayout, create the Rexx object controlling the PersonOverview form
   overviewUrl=.bsf~new("java.net.URL", "file:PersonOverview.fxml")
   overviewPage=.fx.FXMLLoader~load(overviewUrl)   -- load the fxml document, AnchorPage (root) returned
   .my.app~overviewPage=overviewPage
   .my.app~rootLayout~setCenter(overviewPage)
   .my.app~personOverviewController=.PersonOverviewController~new
 
---  say "done."
+  primaryStage~show        -- now show the stage (and thereby our scene)
 
-  stage~show                  -- now show the stage (and thereby our scene)
 
+/* tutorial, step 5: get filePath via Java's Preferences mechanism   */
+::method getPersonFilePath
+  expose prefs
+  filePath=prefs~get("filePath", .nil)
+  return filePath
+
+
+/* tutorial, step 5: set filePath via Java's Preferences mechanism (supplying .nil will remove the preference)   */
+::method setPersonFilePath
+  expose prefs primaryStage
+  use arg filePath
+
+  if file<>.nil then
+  do
+     prefs~put("filePath", filePath)
+     primaryStage~title="AddressApp -" filePath
+  end
+  else
+  do
+     prefs~remove("filePath")
+     primaryStage~title="AddressApp"
+  end
+
+/* tutorial, step 5: using JSON instead of XML as file format */
+::method loadPersonDataFromFile
+  expose personData     -- get access to the ObservableList
+  use arg filePath
+
+  if sysFileExists(filePath) then
+  do
+     s=.stream~new(filepath)~~open("read")   -- open stream
+     jsonStr=s~charIn(1, s~query("size"))    -- read entire content
+     s~close                                 -- close stream
+     persons=.Json~new~fromJSON(jsonStr)
+     personData~clear      -- clear the ObservableList
+     do p over persons     -- add persons to ObservableList
+        personData~add(.person~new( p["firstName"], p["lastName"], p["street"], p["postalCode"], p["city"], p["birthday"]))
+     end
+     return
+  end
+  else
+     errMsg="File" pp(filePath) "does not exist."
+
+  say "... error in loadPersonDataFromFile!!" errMsg
+
+/*
+
+        personData.clear();
+        personData.addAll(wrapper.getPersons());
+
+        // Save the file path to the registry.
+        setPersonFilePath(file);
+
+    } catch (Exception e) { // catches ANY exception
+        Alert alert = new Alert(AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText("Could not load data");
+        alert.setContentText("Could not load data from file:\n" + file.getPath());
+
+        alert.showAndWait();
+    }
+}
+*/
+
+
+/* tutorial, step 5: using JSON instead of XML as file format */
+::method savePersonDataToFile
+  expose personData     -- get access to the ObservableList
+  use arg filePath
+
+--  if sysFileExists(filePath) then
+  do
+     arr=.array~new
+     do p over personData  -- iterate over ObservableList
+say "... savePersonDataToFile, p="pp(p)
+        dir=.directory~new
+        dir["firstName"] =p~firstName
+        dir["lastName"]  =p~lastName
+        dir["street"]    =p~street
+        dir["postalCode"]=p~postalCode
+        dir["city"]      =p~city
+        dir["birthday"]  =p~birthday
+        arr~append(dir)
+     end
+
+     s=.stream~new(filepath)~~open("write replace")   -- open stream for replacement
+     jsonStr=s~charout(.json~new~toJson(arr)) -- create and write JSON string to stream
+     s~close                              -- close stream
+     return
+  end
+/*
+  else
+*/
+     errMsg="File" pp(filePath) "does not exist."
+
+  say "... error in savePersonDataFromFile!!" errMsg
 
 /* Load the fxml-form, define a stage for it, create an instance of the Rexx class controlling
    the fxml-form.
@@ -135,7 +250,7 @@ jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of laun
    just cache them using two attributes and reuse them.
 */
 ::method showPersonEditDialog
-  expose pedDialog pedController
+  expose pedDialog pedController primaryStage
   use arg person
 
 -- signal on syntax
@@ -152,7 +267,7 @@ jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of laun
      dialogStage~setTitle("Edit Person")
      dialogStage~initModality(bsf.import("javafx.stage.Modality")~WINDOW_MODAL)
 
-     dialogStage~initOwner(.my.app~primaryStage)
+     dialogStage~initOwner(primaryStage)
      dialogStage~setScene(scene)
 
      -- Set the person into the controller
@@ -188,6 +303,7 @@ syntax:
   expose personTable firstNameColumn lastNameColumn firstNameLabel lastNameLabel streetLabel -
                      postalCodeLabel cityLabel birthdayLabel  -
                      btnNew btnEdit btnDelete
+
   -- fetch the directory containing the JavaFX fx:id JavaFX objects and assign them to attributes
   poDir=.my.app~personOverview.fxml
   personTable    =poDir~personTable
@@ -307,7 +423,7 @@ say self"::refresh ..."
 
   okClicked = .my.app~mainApp~showPersonEditDialog(tempPerson)
   if okClicked then
-     .my.app~mainApp~getPersonData~add(tempPerson)
+     .my.app~mainApp~personData~add(tempPerson)
 
 
 ::method handleEditPerson
@@ -620,17 +736,23 @@ say self"::refresh ..."
    ----------------------------------------------------------------------------------------
 ::method init        -- constructor
   expose firstName lastName street postalCode city birthday
-  use arg strFirstName, strLastName
-
+  use arg strFirstName, strLastName, strStreet=.nil, strPostalCode=.nil, strCity=.nil, strBirthday=.nil
 
   firstName=.fx.SimpleStringProperty~new(strFirstName)
   lastName =.fx.SimpleStringProperty~new(strLastName)
 
-  -- some initial dummy data
-  street     = .fx.SimpleStringProperty~new("some street")
-  postalCode = .fx.SimpleIntegerProperty~new(1234)
-  city       = .fx.SimpleStringProperty~new("some city")
-  birthday   = .fx.SimpleStringProperty~new(.DateTime~new~standardDate("-"))    -- ooRexx .DateTime
+  if strStreet=.nil then street = .fx.SimpleStringProperty~new("some street")
+                    else street = .fx.SimpleStringProperty~new(strStreet)
+
+  if strPostalCode=.nil then postalCode = .fx.SimpleIntegerProperty~new(1234)
+                        else postalCode = .fx.SimpleIntegerProperty~new(strPostalCode)
+
+  if strCity=.nil then city = .fx.SimpleStringProperty~new("some city")
+               else city = .fx.SimpleStringProperty~new(strCity)
+
+        -- ooRexx .DateTime
+  if strBirthday=.nil then birthday = .fx.SimpleStringProperty~new(.DateTime~new~standardDate("-"))
+                   else birthday = .fx.SimpleStringProperty~new(strBirthday)
 
 
 ::routine dumpConditionObject
@@ -638,6 +760,142 @@ say self"::refresh ..."
   say ppCondition2(co)
   co~Additional[2]~printStackTrace
   say "<---"
+
+
+
+
+
+/* tutorial, part 5 */
+::class RootLayoutController
+
+::method init        -- constructor
+  expose mainApp -
+         menuNew menuOpen menuSave menuSaveAs menuAbout menuExit
+
+  use arg mainApp -- fetch and save object in attribute
+
+   -- add self as the ChangeListener (we have its method "changed" implemented) and EventHandler (method "handle" implemented)
+  rp=BSFCreateRexxProxy(self, ,"javafx.event.EventHandler")
+
+  -- fetch the directory containing the JavaFX fx:id JavaFX objects and assign them us as for event handling (cf. method "handle")
+  rlDir=.my.app~rootLayout.fxml
+  menuNew   =rlDir~menuNew   ~~setOnAction(rp)
+  menuOpen  =rlDir~menuOpen  ~~setOnAction(rp)
+  menuSave  =rlDir~menuSave  ~~setOnAction(rp)
+  menuSaveAs=rlDir~menuSaveAs~~setOnAction(rp)
+  menuAbout =rlDir~menuAbout ~~setOnAction(rp)
+  menuExit  =rlDir~menuExit  ~~setOnAction(rp)
+
+
+/* create an empty address book */
+::method handleNew
+  expose mainApp
+
+  mainApp~personData~clear
+  mainApp~personFilePath=.nil
+  mainApp~primaryStage~title="AddressApp"
+
+/* load person data from JSON file */
+::method handleOpen
+  expose mainApp
+
+  fileChooser=.bsf~new("javafx.stage.FileChooser")
+   -- crate an array of file extensions (only one in this case)
+  jarrExtensions=bsf.createJavaArrayOf("java.lang.String", "*.json")
+  extFilter=  .bsf~new("javafx.stage.FileChooser$ExtensionFilter", "JSON files (*.json)", jarrExtensions)
+  fileChooser~getExtensionFilters~add(extFilter)
+  fileChooser~setInitialDirectory(.bsf~new("java.io.File", "."))  -- set current directory
+
+  -- Show open file dialog
+  file = fileChooser~showOpenDialog(mainApp~primaryStage)
+  if file<>.nil then
+     mainApp~loadPersonDataFromFile(file~getPath)  -- supply the full path, not the Java file object
+
+
+/* Saves the file to the person file that is currently open. If there is no
+ * open file, the "save as" dialog is shown. */
+ ::method handleSave
+  expose mainApp
+
+  if mainApp~personFilePath<>.nil then
+     mainApp~savePersonDataToFile
+  else
+     self~handleSaveAs
+
+
+ /* Opens a FileChooser to let the user select a file to save to. */
+::method handleSaveAs
+  expose mainApp
+
+  fileChooser=.bsf~new("javafx.stage.FileChooser")
+   -- crate an array of file extensions (only one in this case)
+  jarrExtensions=bsf.createJavaArrayOf("java.lang.String", "*.json")
+  extFilter=  .bsf~new("javafx.stage.FileChooser$ExtensionFilter", "JSON files (*.json)", jarrExtensions)
+  fileChooser~getExtensionFilters~add(extFilter)
+  fileChooser~setInitialDirectory(.bsf~new("java.io.File", "."))  -- set current directory
+
+  -- Show save file dialog
+  file = fileChooser~showSaveDialog(mainApp~primaryStage)
+  if file<>.nil then
+  do
+     filePath=file~getPath
+     if filePath~right(5)<>".json" then   -- Make sure it has the correct extension
+        filePath||=".json"
+     mainApp~savePersonDataToFile(filePath )
+  end
+
+
+/* Opens an about dialog. */
+::method handleAbout
+  expose mainApp
+
+  lf="0a"x
+  text="Original author of the Java version: Marco Jakob" lf"Website: http://code.makery.ch"                             -
+     lf"Java tutorial: http://code.makery.ch/library/javafx-8-tutorial/" lf                                              -
+     lf"Author of the ooRexx version: Rony G. Flatscher" lf"Website of Rexx related technologies: http://www.RexxLA.org" -
+     lf"Using ooRexx (Open Object Rexx), website: https://sourceforge.net/projects/oorexx/ or http://www.ooRexx.org"     -
+     lf"Using BSF4ooRexx (ooRexx-Java-bridge), website: https://sourceforge.net/projects/bsf4oorexx/"
+
+  if .my.app~Dialogs.Alerts.Available then
+  do
+     alert=.fx.alert~new(.fx.Alert.Type~information)  -- create an information alert
+
+     alert~setTitle("AddressApp")
+     alert~setHeaderText(.nil)
+     alert~setContentText(text)
+     alert~showAndWait
+  end
+  else  -- use BSF.CLS' .bsf.dialog utility class
+  do
+     -- .bsf.dialog is defined in BSF.CLS and uses swing which may cause troubles
+    .bsf.dialog~messageBox(text, "AddressApp", "information")
+  end
+
+
+ /* Closes the application. */
+::method handleExit
+  .java.lang.System~exit(0)   -- the Java System class is always available by its environment name
+
+
+::method handle   /* implements the interface "javafx.event"   */
+  expose menuNew menuOpen menuSave menuSaveAs menuAbout menuExit
+  use arg event, slotDir
+
+  tgtObjectName=event~getTarget~objectname
+
+-- say self"::handle: event~toString:" pp(event~toString)
+
+  select
+     when tgtObjectName=menuNew   ~objectName then self~handleNew
+     when tgtObjectName=menuOpen  ~objectName then self~handleOpen
+     when tgtObjectName=menuSave  ~objectName then self~handleSave
+     when tgtObjectName=menuSaveAs~objectName then self~handleSaveAs
+     when tgtObjectName=menuAbout ~objectName then self~handleAbout
+     when tgtObjectName=menuExit  ~objectName then self~handleExit
+     otherwise say "UNKNOWN target:" pp(event~getTarget) pp(event~getTarget~tostring)
+  end
+
+
 
 
 
@@ -651,4 +909,5 @@ say self"::refresh ..."
   return .true
 syntax:     -- Rexx condition raised
   return .false
+
 

@@ -14,7 +14,7 @@
 
 <?language rexx?>
 
-<AnchorPane prefHeight="225.0" prefWidth="320.0" xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane prefHeight="225.0" prefWidth="320.0" styleClass="background" stylesheets="@DarkTheme.css" xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1">
   <children>
     <GridPane prefHeight="165.0" prefWidth="300.0" AnchorPane.leftAnchor="10.0" AnchorPane.rightAnchor="10.0" AnchorPane.topAnchor="10.0">
       <children>
@@ -44,10 +44,10 @@
         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
       </rowConstraints>
     </GridPane>
-    <HBox id="HBox" alignment="CENTER" minWidth="-1.0" spacing="5.0" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="10.0">
+    <HBox id="HBox" alignment="CENTER" minWidth="-1.0" prefHeight="33.0" prefWidth="220.0" spacing="5.0" AnchorPane.bottomAnchor="10.0" AnchorPane.rightAnchor="10.0">
       <children>
         <Button fx:id="btnOK" defaultButton="true" mnemonicParsing="false" prefWidth="80.0" text="OK" />
-        <Button fx:id="btnCancel" cancelButton="true" mnemonicParsing="false" prefWidth="80.0" text="Cancel" />
+        <Button fx:id="btnCancel" cancelButton="true" mnemonicParsing="false" prefWidth="93.0" text="Cancel" />
       </children>
     </HBox>
   </children>
