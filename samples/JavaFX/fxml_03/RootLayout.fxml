@@ -15,49 +15,58 @@
    <top>
       <MenuBar BorderPane.alignment="CENTER">
         <menus>
-          <Menu mnemonicParsing="false" text="File">
+          <Menu text="_File">
             <items>
-                  <MenuItem fx:id="menuNew" mnemonicParsing="false" text="New">
+                  <MenuItem fx:id="menuNew" text="_New">
                      <accelerator>
                         <KeyCodeCombination alt="DOWN" code="N" control="UP" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator>
                   </MenuItem>
-                  <MenuItem fx:id="menuOpen" mnemonicParsing="false" text="Open...">
+                  <MenuItem fx:id="menuOpen" text="_Open...">
                      <accelerator>
                         <KeyCodeCombination alt="DOWN" code="O" control="UP" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator>
                   </MenuItem>
-                  <MenuItem fx:id="menuSave" mnemonicParsing="false" text="Save">
+                  <MenuItem fx:id="menuSave" text="_Save">
                      <accelerator>
                         <KeyCodeCombination alt="DOWN" code="S" control="UP" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator>
                   </MenuItem>
-                  <MenuItem fx:id="menuSaveAs" mnemonicParsing="false" text="Save...">
+                  <MenuItem fx:id="menuSaveAs" text="Save _as...">
                      <accelerator>
                         <KeyCodeCombination alt="DOWN" code="A" control="UP" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator>
                   </MenuItem>
-              <MenuItem fx:id="MenuExit" mnemonicParsing="false" text="Exit">
+              <MenuItem fx:id="MenuExit" text="E_xit">
                      <accelerator>
                         <KeyCodeCombination alt="DOWN" code="X" control="UP" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator></MenuItem>
             </items>
+               <accelerator>
+                  <KeyCodeCombination alt="DOWN" code="F" control="UP" meta="UP" shift="UP" shortcut="UP" />
+               </accelerator>
           </Menu>
-          <Menu mnemonicParsing="false" text="Statistics">
+          <Menu text="S_tatistics">
             <items>
-              <MenuItem fx:id="menuBirthdayStatistics" mnemonicParsing="false" text="Birthday Month Statistics">
+              <MenuItem fx:id="menuBirthdayStatistics" text="Birthday _Month Statistics">
                      <accelerator>
-                        <KeyCodeCombination alt="ANY" code="M" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                        <KeyCodeCombination alt="DOWN" code="M" control="UP" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator></MenuItem>
             </items>
                <accelerator>
-                  <KeyCodeCombination alt="ANY" code="T" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                  <KeyCodeCombination alt="DOWN" code="T" control="UP" meta="UP" shift="UP" shortcut="UP" />
                </accelerator>
           </Menu>
-          <Menu mnemonicParsing="false" text="Help">
+          <Menu text="_Help">
             <items>
-              <MenuItem fx:id="menuAbout" mnemonicParsing="false" text="About" />
+              <MenuItem fx:id="menuAbout" text="A_bout">
+                     <accelerator>
+                        <KeyCodeCombination alt="DOWN" code="B" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                     </accelerator></MenuItem>
             </items>
+               <accelerator>
+                  <KeyCodeCombination alt="DOWN" code="H" control="UP" meta="UP" shift="UP" shortcut="UP" />
+               </accelerator>
           </Menu>
         </menus>
       </MenuBar>

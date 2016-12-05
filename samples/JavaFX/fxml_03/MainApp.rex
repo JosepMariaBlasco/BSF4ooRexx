@@ -6,24 +6,34 @@
             among other things also TableView and ObservableList;
             cf. the excellent tutorial:
 
-            There are two versions of the tutorial demonstrating the same application:
+            There are two versions of the tutorial demonstrating the same application as of 2016-12-04:
 
             - Java 1.7/7 ("JavaFX 2"): <http://code.makery.ch/library/javafx-2-tutorial/>
             - Java 1.8/8 ("JavaFX 8"): <http://code.makery.ch/library/javafx-8-tutorial/>
 
-            Creation of the FXML-files was done exactly as the above Java tutorials suggested.
+            The address book icon is from the source given in the above tutorial, i.e.
+            <https://www.iconfinder.com/icons/86957/address_book_icon#size=32>, as of 2016-12-04
+
+            Creation of the FXML-files was done exactly as the above Java tutorials suggested
+            using the SceneBuilder and then adding the process instruction to use Rexx and
+            loading and executing "put_FXID_objects_into.my.app.rex".
 
             The ooRexx code takes advantage of ooRexx features like the .local environment to
             store the primaryStage to ease coupling different parts of the Rexx application.
 
             All controllers are coded in one Rexx file ("Rexx package") as Rexx classes.
 
+            added features:
+               - double-click in TableView will open the PersonEditDialog with the selected person (added
+                 mouse clicked event listener to TableView)
+               - menus have accelerators and show mnemonic character underlined (added CSS .mnemonic-underline)
+
 
    license: Apache License 2.0
 
 
    invoke:
-            rexx Main.rex
+            rexx MainApp.rex
             rexxj.{cmd|sh} Main.rex
 
 */
@@ -41,8 +51,6 @@ call bsf.import "javafx.beans.property.SimpleIntegerProperty", "fx.SimpleInteger
 call bsf.import "javafx.collections.FXCollections",            "fx.FXCollections"
 call bsf.import "javafx.stage.Modality",                       "fx.Modality"
 
-call tryLoadAlertClasses   -- since JavaFX 8u40
-
    -- create Rexx object that will control the application
 rexxApp=.RxMainApplication~new
 if arg()>0 then      -- if a command line JSON filename was given, use it to set the attribute
@@ -51,32 +59,17 @@ do
    rexxApp~personFilePath=strip(jsonFile)
 end
 
-
 .my.app~mainApp=rexxApp        -- store the Rexx MainApp object in .my.app
    -- instantiate the abstract JavaFX class, the abstract "start" method will be served by rexxHandler
 jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
    -- launch the application, invoke "start" and then stay up until the application closes
 jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of launch in order to work
-exit
-
-::routine tryLoadAlertClasses    -- if Java classes are not available, a syntax condition gets raised
-   signal on syntax
-      -- since JavaFX 8u40
-   call bsf.import "javafx.scene.control.Alert",                  "fx.Alert"
-      -- note "AlertType" is public "inner" enum class, i.e. it is defined within the class "Alert", hence
-      -- the JavaDocs refer to "AlertType" as "Alert.AlertType": however the Java compiler produces the
-      -- class file as "Alert$AlertType"
-   call bsf.import "javafx.scene.control.Alert$AlertType",        "fx.Alert.Type"
-signal:
-   return
-
-
 
 
 ::requires "BSF.CLS"          -- get Java support
 ::requires "json-rgf.cls"     -- get JSON support for ooRexx (to load and store person data)
 
-::requires "rgf_util2.rex"    -- get Rexx utilities (installed with BSF4ooRexx) to ease debugging (cf. dump2(), ppCondition2()...)
+-- ::requires "rgf_util2.rex"    -- get Rexx utilities (installed with BSF4ooRexx) to ease debugging (cf. dump2(), ppCondition2()...)
 
 
 /* =================================================================================== */
@@ -93,16 +86,8 @@ signal:
 ::attribute primaryStage   -- stores the primaryStage supplied via the start method by JavaFX
 
    -- tutorial, part 5
-::attribute personFilePath
-/*
-::attribute personFilePath set   -- allow anyone to set a value
-::attribute personFilePath get   -- getter method that returns the current filePath
-  expose personFilePath
+::attribute personFilePath -- .nil or the file path to the file containing the attribute records (in JSON format)
 
-  if \ var("personFilePath") then   -- if no filepath supplied via command line, try to get it from user's root Preferences node
-     personFilePath=self~getPersonFilePath   -- get "filePath" from userRoot Preferences, if any set
-  return personFilePath
-*/
 
 ::method init  -- constructor
   expose personData prefs personFilePath    -- observableArrayList (maintained by TableView)
@@ -142,7 +127,17 @@ signal:
 
    -- starting with JavaFX 8u40 true dialogs got introduced; taking advantage of them if running on Java 1.8 or higher
    -- get the JavaFX runtime version (only available when running it), e.g. "8.0.111-b14"
-  .my.app~Dialogs.Alerts.Available=(.java.lang.system~getProperty("javafx.runtime.version")>8)  -- determine availability
+
+  bAlertsAvailable=Dialogs.Alerts.Available=(.java.lang.system~getProperty("javafx.runtime.version")>8)
+  .my.app~bDialogsAlertsAvailable=bAlertsAvailable  -- determine availability
+  if bAlertsAvailable then    -- available since JavaFX 8u40
+  do
+      call bsf.import "javafx.scene.control.Alert",                  "fx.Alert"
+         -- note "AlertType" is public "inner" enum class, i.e. it is defined within the class "Alert", hence
+         -- the JavaDocs refer to "AlertType" as "Alert.AlertType": however the Java compiler produces the
+         -- class file as "Alert$AlertType"
+      call bsf.import "javafx.scene.control.Alert$AlertType",        "fx.Alert.Type"
+  end
 
   if personFilePath=.nil then primaryStage~setTitle("AddressApp")
                          else primaryStage~title="AddressApp -" personFilePath
@@ -150,11 +145,11 @@ signal:
    -- create an URL for the FMXLDocument.fxml file (hence the protocol "file:")
   rootLayoutUrl=.bsf~new("java.net.URL", "file:RootLayout.fxml")
   rootLayout   =.fx.FXMLLoader~load(rootLayoutUrl) -- load the fxml document
-  .my.app~rootLayout=rootLayout     -- save in .my.app
+--  .my.app~rootLayout=rootLayout     -- save in .my.app
   .rootLayoutController~new(self)   -- create an instance of the controller
 
   scene=.fx.scene~new(rootLayout)   -- create a scene for our document
-  .my.app~rootScene=scene
+--  .my.app~rootScene=scene
   primaryStage~setScene(scene)      -- set the stage to our scene
 
    -- add application icon
@@ -165,7 +160,8 @@ signal:
   overviewUrl=.bsf~new("java.net.URL", "file:PersonOverview.fxml")
   overviewPage=.fx.FXMLLoader~load(overviewUrl)   -- load the fxml document, AnchorPage (root) returned
   .my.app~overviewPage=overviewPage
-  .my.app~rootLayout~setCenter(overviewPage)
+--   .my.app~rootLayout~setCenter(overviewPage)
+  rootLayout~setCenter(overviewPage)
   .my.app~personOverviewController=.PersonOverviewController~new
 
   primaryStage~show        -- now show the stage (and thereby our scene)
@@ -194,28 +190,20 @@ signal:
      primaryStage~title="AddressApp"
   end
 
+
 /* tutorial, step 5: using JSON instead of XML as file format */
 ::method loadPersonDataFromFile
   expose personData     -- get access to the ObservableList
   use arg filePath
 
-  if sysFileExists(filePath) then
-  do
-     s=.stream~new(filepath)~~open("read")   -- open stream
-     jsonStr=s~charIn(1, s~query("size"))    -- read entire content
-     s~close                                 -- close stream
-     persons=.Json~new~fromJSON(jsonStr)
-     personData~clear      -- clear the ObservableList
-     do p over persons     -- add persons to ObservableList
-        personData~add(.person~new( p["firstName"], p["lastName"], p["street"], p["postalCode"], p["city"], p["birthday"]))
-     end
-     return
+  s=.stream~new(filepath)~~open("read")   -- open stream
+  jsonStr=s~charIn(1, s~query("size"))    -- read entire content
+  s~close                                 -- close stream
+  persons=.Json~new~fromJSON(jsonStr)
+  personData~clear      -- clear the ObservableList
+  do p over persons     -- add persons to ObservableList
+     personData~add(.person~new( p["firstName"], p["lastName"], p["street"], p["postalCode"], p["city"], p["birthday"]))
   end
-  else
-     errMsg="File" pp(filePath) "does not exist."
-
-  say "... error in loadPersonDataFromFile!!" errMsg
-
 
 
 /* tutorial, step 5: using JSON instead of XML as file format */
@@ -223,32 +211,24 @@ signal:
   expose personData     -- get access to the ObservableList
   use arg filePath
 
---  if sysFileExists(filePath) then
-  do
-     arr=.array~new
-     do p over personData  -- iterate over ObservableList
-        dir=.directory~new
-        dir["firstName"] =p~firstName
-        dir["lastName"]  =p~lastName
-        dir["street"]    =p~street
-        dir["postalCode"]=p~postalCode
-        dir["city"]      =p~city
-        dir["birthday"]  =p~birthday
-        arr~append(dir)
-     end
-
-     s=.stream~new(filepath)~~open("write replace")   -- open stream for replacement
-     jsonStr=s~charout(.json~new~toJson(arr)) -- create and write JSON string to stream
-     s~close                              -- close stream
-     self~setPersonFilePath(filePath)     -- save this one as preference for next load
-     return
+  arr=.array~new
+  do p over personData  -- iterate over ObservableList
+     dir=.directory~new
+     dir["firstName"] =p~firstName
+     dir["lastName"]  =p~lastName
+     dir["street"]    =p~street
+     dir["postalCode"]=p~postalCode
+     dir["city"]      =p~city
+     dir["birthday"]  =p~birthday
+     arr~append(dir)
   end
-/*
-  else
-*/
-     errMsg="File" pp(filePath) "does not exist."
 
-  say "... error in savePersonDataFromFile!!" errMsg
+  s=.stream~new(filepath)~~open("write replace")   -- open stream for replacement
+  jsonStr=s~charout(.json~new~toJson(arr)) -- create and write JSON string to stream
+  s~close                              -- close stream
+  self~setPersonFilePath(filePath)     -- save this one as preference for next load
+
+
 
 /* Load the fxml-form, define a stage for it, create an instance of the Rexx class controlling
    the fxml-form.
@@ -350,6 +330,13 @@ syntax:
   btnEdit        =poDir~btnEdit
   btnDelete      =poDir~btnDelete
 
+   -- add self as the ChangeListener (we have its method "changed" implemented) and EventHandler (method "handle" implemented)
+  rp=BSFCreateRexxProxy(self, ,"javafx.beans.value.ChangeListener", "javafx.event.EventHandler")
+
+  /* set callback for creating TableView rows to which we add us as an event listener to get mouse click events on the rows */
+  personTable~setOnMouseClicked(rp) -- allows us to get the mouse clicked event
+
+   /* set callback for filling the individual TableView cells */
   firstNameColumn~setCellValueFactory(BsfCreateRexxProxy(.PropertyValueFactory~new("firstNameProperty"), ,"javafx.util.Callback"))
   lastNameColumn ~setCellValueFactory(BsfCreateRexxProxy(.PropertyValueFactory~new("lastNameProperty"),  ,"javafx.util.Callback"))
 
@@ -359,8 +346,8 @@ syntax:
   personTable~setColumnResizePolicy(personTable~CONSTRAINED_RESIZE_POLICY)    -- TableView constant
 
    -- add self as the ChangeListener (we have its method "changed" implemented) and EventHandler (method "handle" implemented)
-  rp=BSFCreateRexxProxy(self, ,"javafx.beans.value.ChangeListener", "javafx.event.EventHandler")
   personTable~getSelectionModel ~selectedItemProperty ~addListener(rp)
+
    -- add us as the event handler to the buttons, the event handler (method "handle") will be able to get at the pressed button
   btnNew   ~setOnAction(rp)
   btnEdit  ~setOnAction(rp)
@@ -421,7 +408,7 @@ syntax:
   end
   else
   do
-      if .my.app~Dialogs.Alerts.Available then
+      if .my.app~bDialogsAlertsAvailable then
       do
          alert=.fx.alert~new(.fx.Alert.Type~WARNING)   -- create a warning alert
 
@@ -461,7 +448,7 @@ syntax:
   end
   else
   do
-      if .my.app~Dialogs.Alerts.Available then
+      if .my.app~bDialogsAlertsAvailable then
       do
          alert=.fx.alert~new(.fx.Alert.Type~WARNING)   -- create a warning alert
 
@@ -484,16 +471,28 @@ syntax:
   self~showPersonDetails(newValue)  -- fill in the labels to show currently selected Person's details
 
 ::method handle   /* implements the interface "javafx.event"   */
-  expose btnNew btnEdit btnDelete
+  expose btnNew btnEdit btnDelete personTable
   use arg event, slotDir
 
   tgtObjectName=event~getTarget~objectname
   select
-     when tgtObjectName=btnNew~objectName    then self~handleNewPerson  -- say "BUTTON NEW  was the target!"
-     when tgtObjectName=btnEdit~objectName   then self~handleEditPerson -- say "BUTTON EDIT was the target!"
+     when tgtObjectName=btnNew~objectName    then self~handleNewPerson
+     when tgtObjectName=btnEdit~objectName   then self~handleEditPerson
      when tgtObjectName=btnDelete~objectName then self~handleDeletePerson
-     otherwise say "UNKNOWN target:" pp(event~getTarget) pp(event~getTarget~tostring)
+     otherwise --
+     do
+        if event~getSource~objectName=personTable~objectName then -- TableView the source of the event?
+        do
+            if event~getClickCount>1 then    -- if a double-click, then go into edit record mode
+               self~handleEditPerson
+        end
+        else   -- a truly unknown/unexpected event!
+        do
+           .error~say(self"::handle, UNKNOWN event:" pp(event~toString))
+        end
+     end
   end
+
 
 
 /* =================================================================================== */
@@ -504,15 +503,31 @@ syntax:
 */
 ::class PropertyValueFactory
 ::method init
-  expose  propName   -- name of property getter method
-  use arg propName
+  expose  propName   --handler -- name of property getter method
+  use strict arg propName -- , handler
 
 ::method call
-  expose propName
+  expose propName   -- handler
   use arg o          -- an observable value for the ooRexx person object boxed in a Java RexxProxy object
+-- say self"::call, o="pp(o) pp(o~toString)
+--  o~getTableColumn~setOnMouseClicked(handler)
+
   return BsfRexxProxy(o~getValue)~send(propName)
 
 
+/*
+::class RowFactory
+::method init
+  expose handler     -- the Rexx proxy object that is supposed to handle the mouse click events (cf. PersonOverviewController)
+  use arg handler
+
+::method call
+  expose handler
+  row=.bsf~new("javafx.scene.control.TableRow")
+  row~setOnMouseClicked(handler)
+say "RowFactory, call(): handler="pp(handler) pp(handler~toString) "row:" pp(row) pp(row~toString)
+  return row
+*/
 
 /* =================================================================================== */
 /* for tutorial part 3: define the PersonEditDialogController */
@@ -558,7 +573,7 @@ syntax:
   select
      when tgtObjectName=btnOK~objectName     then self~handleOK         -- say "BUTTON OK    was the target!"
      when tgtObjectName=btnCancel~objectName then self~handleCancel     -- say "BUTTON CANCEL was the target!"
-     otherwise say "UNKNOWN target:" pp(event~getTarget) pp(event~getTarget~tostring)
+     otherwise .error~say("UNKNOWN target:" pp(event~getTarget) pp(event~getTarget~tostring))
   end
 
 
@@ -635,7 +650,7 @@ syntax:
      return .true
 
   -- .bsf.dialog is defined in BSF.CLS and uses swing
-  if .my.app~Dialogs.Alerts.Available then
+  if .my.app~bDialogsAlertsAvailable then
   do
      alert=.fx.alert~new(.fx.Alert.Type~ERROR)  -- create a warning alert
      alert~setTitle("Invalid Fields")
@@ -832,7 +847,11 @@ syntax:
   -- Show open file dialog
   file = fileChooser~showOpenDialog(mainApp~primaryStage)
   if file<>.nil then
-     mainApp~loadPersonDataFromFile(file~getPath)  -- supply the full path, not the Java file object
+  do
+     filePath=file~getPath
+     mainApp~loadPersonDataFromFile(filePath)   -- supply the full path, not the Java file object
+     mainApp~primaryStage~title="AddressApp -" filePath
+  end
 
 
 /* Saves the file to the person file that is currently open. If there is no
@@ -884,7 +903,7 @@ syntax:
      lf"Using ooRexx (Open Object Rexx), website: https://sourceforge.net/projects/oorexx/ or http://www.ooRexx.org"     -
      lf"Using BSF4ooRexx (ooRexx-Java-bridge), website: https://sourceforge.net/projects/bsf4oorexx/"
 
-  if .my.app~Dialogs.Alerts.Available then
+  if .my.app~bDialogsAlertsAvailable then
   do
      alert=.fx.alert~new(.fx.Alert.Type~information)  -- create an information alert
 
@@ -923,7 +942,7 @@ syntax:
 
       -- tutorial, part 6:
      when tgtObjectName=menuBirthdayStatistics~objectName then mainApp~showPersonStatistics
-     otherwise say "UNKNOWN target:" pp(event~getTarget) pp(event~getTarget~tostring)
+     otherwise .error~say("UNKNOWN target:" pp(event~getTarget) pp(event~getTarget~tostring))
   end
 
 

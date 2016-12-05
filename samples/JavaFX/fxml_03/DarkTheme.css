@@ -143,3 +143,8 @@
 .button:default:hover {
     -fx-background-color: derive(-fx-focus-color,30%);
 }
+
+/* cf. <http://stackoverflow.com/questions/20541038/how-to-have-the-menu-mnemonic-underline-appearing-always>, 2016-12-05 */
+.mnemonic-underline {
+    -fx-stroke: -fx-text-fill;
+}
