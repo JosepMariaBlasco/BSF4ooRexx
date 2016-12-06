@@ -48,9 +48,9 @@
           </Menu>
           <Menu text="S_tatistics">
             <items>
-              <MenuItem fx:id="menuBirthdayStatistics" text="Birthday _Month Statistics">
+              <MenuItem fx:id="menuBirthdayStatistics" text="Show S_tatistics">
                      <accelerator>
-                        <KeyCodeCombination alt="DOWN" code="M" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                        <KeyCodeCombination alt="DOWN" code="T" control="UP" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator></MenuItem>
             </items>
                <accelerator>

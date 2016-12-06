@@ -1,45 +1,51 @@
 /*
    author:  Rony G. Flatscher
-   date:    2016-11-30, preliminary
+   date:    2016-12-06
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
-            among other things also TableView and ObservableList;
-            cf. the excellent tutorial:
-
-            There are two versions of the tutorial demonstrating the same application as of 2016-12-04:
+            among other things also TableView and ObservableList; cf. the excellent tutorial as
+            of 2016-12-06:
 
             - Java 1.7/7 ("JavaFX 2"): <http://code.makery.ch/library/javafx-2-tutorial/>
             - Java 1.8/8 ("JavaFX 8"): <http://code.makery.ch/library/javafx-8-tutorial/>
 
-            The address book icon is from the source given in the above tutorial, i.e.
-            <https://www.iconfinder.com/icons/86957/address_book_icon#size=32>, as of 2016-12-04
+            The enclosed address book icon was created with Apache Open Office (AOO) and its
+            symbol libraries.
 
             Creation of the FXML-files was done exactly as the above Java tutorials suggested
             using the SceneBuilder and then adding the process instruction to use Rexx and
-            loading and executing "put_FXID_objects_into.my.app.rex".
+            loading and executing "put_FXID_objects_into.my.app.rex" (this program will fetch
+            the JavaFX objects having an fx:id attribute and store them in a directory named
+            after the FXML file in an application related directory named "my.app" in the
+            global ooRexx runtime environment named ".environment"; as a result one can fetch
+            that entry using the environment symbol - one that starts with a dot - ".my.app"
+            from any Rexx program).
 
-            The ooRexx code takes advantage of ooRexx features like the .local environment to
-            store the primaryStage to ease coupling different parts of the Rexx application.
-
-            All controllers are coded in one Rexx file ("Rexx package") as Rexx classes.
+            The controllers are coded in this Rexx file (a "Rexx package") as Rexx classes.
 
             added features:
                - double-click in TableView will open the PersonEditDialog with the selected person (added
                  mouse clicked event listener to TableView)
                - menus have accelerators and show mnemonic character underlined (added CSS .mnemonic-underline)
+               - bar chart: adds a title describing the depicted data and adds a name to the data series
+               - supplying the name of a jfson-file on the command line will cause that address book
+                 to be loaded
 
 
-   license: Apache License 2.0
-
+   license: Apache License 2.0 (see at bottom)
 
    invoke:
-            rexx MainApp.rex
-            rexxj.{cmd|sh} Main.rex
+
+         rexx MainApp.rex [json-file]
+         rexxj.{cmd|sh} Main.rex [json-file]
+
+   needs: ooRexx 4.1 or higher, and BSF4ooRexx 6.00 or highter
 
 */
 
-
-.environment~my.app=.directory~new   -- directory to contain objects relevant to this application
+.environment~my.app=.directory~new  -- directory to contain objects relevant to this application
+.my.app~bDebug=.false               /* if set to .true, "put_FXID_objects_into.my.app.rex" will show
+                                       all entries in ScriptContext Bindings on the console           */
    -- starting with JavaFX 8u40 true dialogs got introduced; taking advantage of them if running on Java 1.8 or higher
 
    -- import JavaFX classes that we may use more often
@@ -56,20 +62,19 @@ rexxApp=.RxMainApplication~new
 if arg()>0 then      -- if a command line JSON filename was given, use it to set the attribute
 do
    parse arg jsonFile
-   rexxApp~personFilePath=strip(jsonFile)
+   rexxApp~personFilePath=strip(jsonFile) -- save filePath, if any, in the attribute "personFilePath"
 end
-
 .my.app~mainApp=rexxApp        -- store the Rexx MainApp object in .my.app
-   -- instantiate the abstract JavaFX class, the abstract "start" method will be served by rexxHandler
+
+   -- instantiate the abstract JavaFX class, the abstract "start" method will be served by rexxApp
 jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
+
    -- launch the application, invoke "start" and then stay up until the application closes
-jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of launch in order to work
+jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch in order to work
 
 
 ::requires "BSF.CLS"          -- get Java support
 ::requires "json-rgf.cls"     -- get JSON support for ooRexx (to load and store person data)
-
--- ::requires "rgf_util2.rex"    -- get Rexx utilities (installed with BSF4ooRexx) to ease debugging (cf. dump2(), ppCondition2()...)
 
 
 /* =================================================================================== */
@@ -145,22 +150,19 @@ jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of laun
    -- create an URL for the FMXLDocument.fxml file (hence the protocol "file:")
   rootLayoutUrl=.bsf~new("java.net.URL", "file:RootLayout.fxml")
   rootLayout   =.fx.FXMLLoader~load(rootLayoutUrl) -- load the fxml document
---  .my.app~rootLayout=rootLayout     -- save in .my.app
   .rootLayoutController~new(self)   -- create an instance of the controller
 
   scene=.fx.scene~new(rootLayout)   -- create a scene for our document
---  .my.app~rootScene=scene
   primaryStage~setScene(scene)      -- set the stage to our scene
 
    -- add application icon
-  img=.bsf~new("javafx.scene.image.Image", "address_book_32.png")
+  img=.bsf~new("javafx.scene.image.Image", "address_book_128.png")
   primaryStage~getIcons~add(img)
 
    -- load PersonOverview.fxml, place it into the rootLayout, create the Rexx object controlling the PersonOverview form
   overviewUrl=.bsf~new("java.net.URL", "file:PersonOverview.fxml")
   overviewPage=.fx.FXMLLoader~load(overviewUrl)   -- load the fxml document, AnchorPage (root) returned
   .my.app~overviewPage=overviewPage
---   .my.app~rootLayout~setCenter(overviewPage)
   rootLayout~setCenter(overviewPage)
   .my.app~personOverviewController=.PersonOverviewController~new
 
@@ -239,8 +241,6 @@ jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of laun
   expose pedDialog pedController primaryStage
   use arg person
 
--- signal on syntax
-
   if \var("pedDIALOG") then   -- not yet created, setup PersonEdit data
   do
      -- Load the fxml file and create a new stage for the popup
@@ -267,11 +267,6 @@ jRexxApp~launch(jRexxApp~getClass, .nil)     -- need to use this version of laun
   -- Show the dialog and wait until the user closes it
   dialogStage~showAndWait
   return pedController~OkClicked
-
-syntax:
-  co=condition('object')
-  call dumpConditionObject co -- show condition information
-  raise propagate
 
 
 ::method showPersonStatistics
@@ -425,7 +420,6 @@ syntax:
   end
 
 
-
 /* for tutorial part 3: fill-in the Person's details */
 ::method handleNewPerson
   tempPerson=.Person~new
@@ -470,7 +464,7 @@ syntax:
   use arg observable, oldValue, newValue
   self~showPersonDetails(newValue)  -- fill in the labels to show currently selected Person's details
 
-::method handle   /* implements the interface "javafx.event"   */
+::method handle   /* implements the interface "javafx.event.EventHandler"   */
   expose btnNew btnEdit btnDelete personTable
   use arg event, slotDir
 
@@ -479,7 +473,7 @@ syntax:
      when tgtObjectName=btnNew~objectName    then self~handleNewPerson
      when tgtObjectName=btnEdit~objectName   then self~handleEditPerson
      when tgtObjectName=btnDelete~objectName then self~handleDeletePerson
-     otherwise --
+     otherwise
      do
         if event~getSource~objectName=personTable~objectName then -- TableView the source of the event?
         do
@@ -509,25 +503,8 @@ syntax:
 ::method call
   expose propName   -- handler
   use arg o          -- an observable value for the ooRexx person object boxed in a Java RexxProxy object
--- say self"::call, o="pp(o) pp(o~toString)
---  o~getTableColumn~setOnMouseClicked(handler)
-
   return BsfRexxProxy(o~getValue)~send(propName)
 
-
-/*
-::class RowFactory
-::method init
-  expose handler     -- the Rexx proxy object that is supposed to handle the mouse click events (cf. PersonOverviewController)
-  use arg handler
-
-::method call
-  expose handler
-  row=.bsf~new("javafx.scene.control.TableRow")
-  row~setOnMouseClicked(handler)
-say "RowFactory, call(): handler="pp(handler) pp(handler~toString) "row:" pp(row) pp(row~toString)
-  return row
-*/
 
 /* =================================================================================== */
 /* for tutorial part 3: define the PersonEditDialogController */
@@ -772,33 +749,17 @@ say "RowFactory, call(): handler="pp(handler) pp(handler~toString) "row:" pp(row
    ----------------------------------------------------------------------------------------
 ::method init        -- constructor
   expose firstName lastName street postalCode city birthday
-  use arg strFirstName, strLastName, strStreet=.nil, strPostalCode=.nil, strCity=.nil, strBirthday=.nil
+  use arg strFirstName, strLastName, -
+          strStreet="some unknown street", strPostalCode=(random(1000,9999)), -
+          strCity="Some City", strBirthday=(random(1950,.dateTime~new~year)"-"random(1,12)~right(2,0)"-"random(1,28)~right(2,0))
 
-  firstName=.fx.SimpleStringProperty~new(strFirstName)
-  lastName =.fx.SimpleStringProperty~new(strLastName)
+  firstName= .fx.SimpleStringProperty~new(strFirstName)
+  lastName = .fx.SimpleStringProperty~new(strLastName)
 
-  if strStreet=.nil then street = .fx.SimpleStringProperty~new("some street")
-                    else street = .fx.SimpleStringProperty~new(strStreet)
-
-  if strPostalCode=.nil then postalCode = .fx.SimpleIntegerProperty~new(1234)
-                        else postalCode = .fx.SimpleIntegerProperty~new(strPostalCode)
-
-  if strCity=.nil then city = .fx.SimpleStringProperty~new("some city")
-               else city = .fx.SimpleStringProperty~new(strCity)
-
-        -- ooRexx .DateTime
-  if strBirthday=.nil then birthday = .fx.SimpleStringProperty~new(.DateTime~new~standardDate("-"))
-                   else birthday = .fx.SimpleStringProperty~new(strBirthday)
-
-
-::routine dumpConditionObject
-  use arg co
-  say ppCondition2(co)
-  co~Additional[2]~printStackTrace
-  say "<---"
-
-
-
+  street    = .fx.SimpleStringProperty~new(strStreet)
+  postalCode= .fx.SimpleIntegerProperty~new(strPostalCode)
+  city      = .fx.SimpleStringProperty~new(strCity)
+  birthday  = .fx.SimpleStringProperty~new(strBirthday)
 
 
 /* tutorial, part 5 */
@@ -821,6 +782,7 @@ say "RowFactory, call(): handler="pp(handler) pp(handler~toString) "row:" pp(row
   menuSaveAs=rlDir~menuSaveAs~~setOnAction(rp)
   menuAbout =rlDir~menuAbout ~~setOnAction(rp)
   menuExit  =rlDir~menuExit  ~~setOnAction(rp)
+
   -- tutorial, part 6
   menuBirthdayStatistics=rlDir~menuBirthdayStatistics ~~setOnAction(rp)
 
@@ -930,8 +892,6 @@ say "RowFactory, call(): handler="pp(handler) pp(handler~toString) "row:" pp(row
 
   tgtObjectName=event~getTarget~objectname
 
--- say self"::handle: event~toString:" pp(event~toString)
-
   select
      when tgtObjectName=menuNew   ~objectName then self~handleNew
      when tgtObjectName=menuOpen  ~objectName then self~handleOpen
@@ -939,12 +899,10 @@ say "RowFactory, call(): handler="pp(handler) pp(handler~toString) "row:" pp(row
      when tgtObjectName=menuSaveAs~objectName then self~handleSaveAs
      when tgtObjectName=menuAbout ~objectName then self~handleAbout
      when tgtObjectName=menuExit  ~objectName then self~handleExit
-
       -- tutorial, part 6:
      when tgtObjectName=menuBirthdayStatistics~objectName then mainApp~showPersonStatistics
      otherwise .error~say("UNKNOWN target:" pp(event~getTarget) pp(event~getTarget~tostring))
   end
-
 
 
 /* tutorial, part 6 */
@@ -965,6 +923,7 @@ say "RowFactory, call(): handler="pp(handler) pp(handler~toString) "row:" pp(row
   months = dfsClz~getInstance(locClz~ENGLISH)~getMonths
   --  Convert it to a list and add it to an ObservableList of months.
   monthNames=.fx.FXCollections~observableArrayList ~~addAll(bsf.loadClass("java.util.Arrays")~asList(months))
+  barChart~title="Birthday Month Distributions"
   xAxis~setCategories(monthNames)
 
 
@@ -979,6 +938,7 @@ say "RowFactory, call(): handler="pp(handler) pp(handler~toString) "row:" pp(row
      monthCounter[month]+=1
   end
   series=self~createMonthDataSeries(monthCounter)
+  series~name="Month"
   barChart~getData~add(series)
 
 
@@ -1009,3 +969,21 @@ syntax:     -- Rexx condition raised
   return .false
 
 
+
+/*
+      ------------------------ Apache Version 2.0 license -------------------------
+         Copyright 2016 Rony G. Flatscher
+
+         Licensed under the Apache License, Version 2.0 (the "License");
+         you may not use this file except in compliance with the License.
+         You may obtain a copy of the License at
+
+             http://www.apache.org/licenses/LICENSE-2.0
+
+         Unless required by applicable law or agreed to in writing, software
+         distributed under the License is distributed on an "AS IS" BASIS,
+         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+         See the License for the specific language governing permissions and
+         limitations under the License.
+      -----------------------------------------------------------------------------
+*/

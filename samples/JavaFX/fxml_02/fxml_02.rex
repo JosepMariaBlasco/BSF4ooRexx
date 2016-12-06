@@ -1,18 +1,27 @@
-/* TODO: create another Rexx-Sample matching <http://docs.oracle.com/javafx/2/get_started/hello_world.htm>
-*/
-
 /*
-   purpose: demonstrate using a ResourceBundle (properties-files) for automatic translation of
-            items with the "%"-notation; in addtion also making GUI elements draw their values from
+   author:  Rony G. Flatscher
+   date:    2016-12-06
+
+   purpose: this is a simple the Rexx GUI application (taking advantage of JavaFX)
+            where the GUI elements are defined in a FXML file ("FXML_02_Document.fxml"),
+            which also defines running the Rexx program ("fxml_02_controller.rex")
+            and invoking a public routine ("klickButtonAction") therein, if the user
+            presses the push button in the GUI;
+
+            demonstrate using a ResourceBundle (properties-files) for automatic translation of
+            items with the "%"-notation; in addition also making GUI elements draw their values from
             the ScriptContext' Bindings using the $notation and the ${notation} (constantly
             updating a GUI element); cf. comments in "FXML_02_Document.fxml"
 
+   license: Apache License 2.0 (see at bottom)
+
    invoke:
-            rexx fxml_02
-            rexx fxml_02 en
-               ... use English properties file
-            rexx fxml_02 de
-               ... use German properties file
+
+         rexx fxml_02.rex [en|de]
+         rexxj.{cmd|sh} fxml_02.rex [en|de]
+
+   needs: ooRexx 4.1 or higher, and BSF4ooRexx 6.00 or highter
+
 */
 
    /* only "de" has an effect and will use the German translation for the */
@@ -60,3 +69,24 @@ say center(" after rxApp~launch ", 70, "-")
   img=.bsf~new("javafx.scene.image.Image", "oorexx_032.png")
   stage~getIcons~add(img)                       -- set application icon
   stage~show                                    -- show the stage (and thereby our scene)
+
+
+
+
+/*
+      ------------------------ Apache Version 2.0 license -------------------------
+         Copyright 2016 Rony G. Flatscher
+
+         Licensed under the Apache License, Version 2.0 (the "License");
+         you may not use this file except in compliance with the License.
+         You may obtain a copy of the License at
+
+             http://www.apache.org/licenses/LICENSE-2.0
+
+         Unless required by applicable law or agreed to in writing, software
+         distributed under the License is distributed on an "AS IS" BASIS,
+         WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+         See the License for the specific language governing permissions and
+         limitations under the License.
+      -----------------------------------------------------------------------------
+*/
