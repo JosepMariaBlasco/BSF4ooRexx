@@ -434,6 +434,10 @@ TODO: (maybe)
 
 
 class RexxAndJava {
+
+// TODO: rgf, 2016-12-03, remove after debugging
+final static boolean bDebugRefCounter=false;
+
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
@@ -6074,8 +6078,11 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                                bean.refCount+=1;                        // increase refcount
                                str= makeString4Rexx(bean.refCount);   // return new refcount for the bean
                            }
-if (bDebug)
-    System.err.println("//**//  increaseRefCounter(beanName=["+beanName+"], RAJBean: "+bean+" \\\\**\\\\");
+// if (bDebug)
+if (bDebugRefCounter && bean.refCount>3)
+{
+    System.err.println("//++// increaseRefCounter, RAJBean: "+bean+" \\\\++\\\\");
+}
                        }
 
                        return str;
@@ -7529,7 +7536,7 @@ if (bDebug) System.err.println(this+": runPendingUninits(): this rii_ID=["+rii_I
 
 if (bDebug && bean==null)
 {
-    System.err.println("//*...*// attempt #1: "+RAJReg.class+": lookupBean(beanName=["+beanName+"]): NOT FOUND! \\\\...\\\\");
+    System.err.println("//*...*// attempt #1: lookupBean(beanName=["+beanName+"]): NOT FOUND! \\\\...\\\\");
 }
                 // bean not found, maybe still has prefix ?
             if (bean==null && bsfPrefixReturnValue && beanName.startsWith(OBJECT_INDICATOR_PREFIX))
@@ -7539,7 +7546,7 @@ if (bDebug && bean==null)
 
 if (bDebug && bean==null)
 {
-    System.err.println("//*...*// attempt #2: "+RAJReg.class+": lookupBean(beanName=["+beanName+"],boolean): bean=["+bean+"] \\\\...\\\\");
+    System.err.println("//*...*// attempt #2: lookupBean(beanName=["+beanName+"],boolean): bean=["+bean+"] \\\\...\\\\");
 }
             }
 
@@ -7586,8 +7593,11 @@ if (bDebug && bean==null)
             }
 
 
-if (bDebug==true)
-    System.err.println("//**// "+RAJReg.class+": registerBean(beanName=["+beanName+"], object=["+object+"], RAJBean: "+bean+" \\\\**\\\\");
+// if (bDebug==true)
+if (bDebugRefCounter && bean.refCount>3)
+{
+    System.err.println("//++// registerBean, RAJBean: "+bean+" \\\\++\\\\ (AFTER increasing refCount)");
+}
 
             return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+beanName;   // if so, return beanName
         }
@@ -7627,8 +7637,11 @@ if (bDebug==true)
             }
 
 
-if (bDebug==true)
-    System.err.println("//**// "+RAJReg.class+": registerBean(beanName=["+beanName+"], object=["+object+"], RAJBean: "+bean+" \\\\**\\\\");
+// if (bDebug==true)
+if (bDebugRefCounter && bean.refCount>3)
+{
+System.err.println("//++// rawRegisterBean, RAJBean: "+bean+" \\\\++\\\\ (AFTER increasing refCount)");
+}
 
             return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+beanName;   // if so, return beanName
         }
@@ -7670,11 +7683,18 @@ if (bDebug && bUseRAJReg) // testing; TODO: remove
 
             if (bean==null)
             {
+
+System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), not in registry anymore!");
                 return false;
             }
 
 //            synchronized (bean)
             {
+if (bDebugRefCounter && bean.refCount>3)
+{
+System.err.println("//--// RAJ.unregisterBean(), decreasing refCount! bean=["+bean+"], new refCount=["+(bean.refCount-1)+"] \\\\--\\\\");
+}
+
                 bean.refCount-=1;       // reduce counter
                 if (bean.refCount==0)   // dropped to 0, remove bean
                 {
