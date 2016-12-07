@@ -1,4 +1,4 @@
-/* @showsource
+/*
    Rexx companion script that gets loaded and evaluated by Nutshell_04_Eval.java:
 
    /** Demonstrate evaluating a Rexx script, creating Rexx variables from the values
@@ -16,7 +16,8 @@ parse source s
 say "parse source:" pp(s)
 
 say "creating Rexx context variables from all scriptContext Bindings using the Rexx script annotation ""/*@" || "get()*/"" ..."
-/*@get()*/ -- from now on we can access the ScriptScope attributes as local Rexx variables !
+/*@get()*/ /* from now on we can access *all* the ScriptScope attributes as local Rexx variables !
+              Alternatively, one can denote the desired attributes by blank delimited names within the parentheses */
 
 say "Java host started set-up at:" pp(started_at)
 say "calculating aggregate width and height, returning it to Java"
