@@ -19,7 +19,7 @@ import javax.script.SimpleScriptContext;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015 Rony G. Flatscher
+   Copyright 2015-2016 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,6 +33,11 @@ import javax.script.SimpleScriptContext;
    See the License for the specific language governing permissions and
    limitations under the License.
 -----------------------------------------------------------------------------
+
+    changed: 2016-12-06, rgf: if no argument is given, show the help after the list of
+                              currently available javax.script engines
+    changed: 2016-12-07, rgf: reformat getProgram()-output such that line comments are replaced by
+                              block comments
 */
 
 
@@ -59,6 +64,8 @@ import javax.script.SimpleScriptContext;
  */
 public class RunScript
 {
+    static final boolean bDebug=false;  // controls debug output statements
+
     public static void main(String args[])
     {
 
@@ -85,10 +92,13 @@ public class RunScript
 
         if (args.length==0)     // list all available javax.script engines
         {
+            System.out.println("The following javax.script engines are currently available:\n");
             for (String key : keys)
             {
-                System.out.println(key);
+                System.out.println('\t'+key);
             }
+            System.out.println();
+            showHelp();
             return;
         }
         else    // process the first argument to decide what we need to do
@@ -123,13 +133,7 @@ public class RunScript
 
                 else if (uSwitch.equals("H"))   // -h ... help text
                 {
-                    System.out.println("usage: java RunScript [{-i | -t | -e enginename filename [args...] | filename [args...]}]\n");
-                    System.out.println("          ... no arguments lists the available javax.script engines");
-                    System.out.println("       -h ... 'help', gives this usage text");
-                    System.out.println("       -i ... lists the available javax.script engines and informs about their properties");
-                    System.out.println("       -t ... lists the availabel javax.script engines and tests evaluating their \"getOutputStatement(String)\" method");
-                    System.out.println("       -e  enginename filename [args...] ... uses \"enginename\" to evaluate \"filename\" supplying the arguments \"args...\"");
-                    System.out.println("       filename [args...] ... the \"filename\" extension determines the script engine to evaluate it, supplying the arguments \"args...\"");
+                    showHelp();
                     return;
                 }
 
@@ -217,7 +221,7 @@ public class RunScript
         sc.setAttribute(ScriptEngine.FILENAME, filename, ScriptContext.ENGINE_SCOPE);
 
         //        - if arguments, setup ARGV in ENGINE_SCOPE
-System.err.println("args.length="+args.length+", argsStartAt="+argsStartAt+", > ? "+ (args.length>argsStartAt));
+if (bDebug) System.err.println("args.length="+args.length+", argsStartAt="+argsStartAt+", > ? "+ (args.length>argsStartAt));
         if (args.length>argsStartAt)    // do we have command line arguments to supply?
         {
             String argArr []=new String [args.length-argsStartAt];    // determine array size
@@ -228,7 +232,7 @@ System.err.println("args.length="+args.length+", argsStartAt="+argsStartAt+", > 
             }
             sc.setAttribute(ScriptEngine.ARGV, argArr, ScriptContext.ENGINE_SCOPE);
         }
-System.err.println("sc.getAttribute(ScriptEngine.ARGV)="+sc.getAttribute(ScriptEngine.ARGV));
+if (bDebug) System.err.println("sc.getAttribute(ScriptEngine.ARGV)="+sc.getAttribute(ScriptEngine.ARGV));
 
         //        - eval the script
         try
@@ -276,13 +280,14 @@ System.err.println("sc.getAttribute(ScriptEngine.ARGV)="+sc.getAttribute(ScriptE
     // create an output statement and execute output statement for each available script engine
     static void testEngine(String name, ScriptEngineFactory sef, ScriptEngine se)
     {
+        System.out.println("---> language ["+name+"]: ---------------------------------------->\n");
         String text="hello world, this is \""+name+"\" speaking! ";
-        // String code=sef.getProgram(sef.getOutputStatement(text));
         String code=sef.getOutputStatement(text);
-        System.out.println("---> language: "+name+"\n");
-        System.out.println("\toutput statement to process: \n\n\t\t"+text+"\n");
-        System.out.println("\tgetOutputStatement(text) returned: \n\n\t\t"+code+"\n");
-        System.out.println("\tnow running \"eval(code)\" using the scripting engine: \n");
+        System.out.println("\t1) output statement to process: "+text+"\n");
+
+        System.out.print("\t--> testing getOutputStatement(String)");
+        System.out.println(", produced the following ["+name+"] output statement \n\n"+code+"\n");
+        System.out.println("\t... now running \"eval(code)\" using the scripting engine ["+name+"]: \n\n");
         try
         {
             se.eval(code);
@@ -290,8 +295,31 @@ System.err.println("sc.getAttribute(ScriptEngine.ARGV)="+sc.getAttribute(ScriptE
         }
         catch (ScriptException sexc)
         {
-            System.err.println(sexc+" while eval() the code: "+code);
+            System.err.println(sexc+" while eval() the code: "+code+"\n");
         }
+
+        System.out.print("\t2) testing getMethodCallSyntax(obj, meth, arg...)");
+        String methCode=sef.getMethodCallSyntax("object", "method", "arg1", "arg2");
+        System.out.println(", produced the following ["+name+"] method call statement: \n\n"+methCode+"\n");
+
+        System.out.print("\t3) testing getProgram(String...)");
+        String programCode=sef.getProgram(code, methCode);
+        System.out.println(" produced the following ["+name+"] program: \n\n"+programCode+"\n");
+
+        System.out.println("<--- end of testing language ["+name+"]. <----------------------------------------\n");
+    }
+
+    // allow us to call this from different parts
+    static void showHelp()
+    {
+        System.out.println("usage: java RunScript [{-i | -t | -e enginename filename [args...] | filename [args...]}]\n");
+        System.out.println("          ... no arguments lists the available javax.script engines");
+        System.out.println("       -h ... 'help', gives this usage text");
+        System.out.println("       -i ... lists the available javax.script engines and informs about their properties");
+        System.out.println("       -t ... lists the availabel javax.script engines and tests evaluating their \"getOutputStatement(String)\" method");
+        System.out.println("       -e  enginename filename [args...] ... uses \"enginename\" to evaluate \"filename\" supplying the arguments \"args...\"");
+        System.out.println("       filename [args...] ... the \"filename\" extension determines the script engine to evaluate it, supplying the arguments \"args...\"");
+        return;
     }
 }
 

@@ -93,6 +93,15 @@ public class Nutshell_04_Eval
             // now evaluate "nutshell_04c.rex"!
             filename="nutshell_04c.rex";
             sc.setAttribute(ScriptEngine.FILENAME, filename, ScriptContext.ENGINE_SCOPE);
+            sc.setAttribute(ScriptEngine.ARGV,     dimArr,   ScriptContext.ENGINE_SCOPE);
+            System.err.println("(Java) executing ["+filename+"] (Rexx uses the Rexx script annotation @get() to fetch all attributes as Rexx variables:");
+            obj=(Dimension) rse.eval(new FileReader(filename), sc);  // now let us execute the Rexx script
+            System.out.println("(Java) Evaluated Rexx script ["+filename+"] returned: ["+obj.toString()+"]");
+
+            System.out.println("--------------------");
+            // now evaluate "nutshell_04d.rex"!
+            filename="nutshell_04d.rex";
+            sc.setAttribute(ScriptEngine.FILENAME, filename, ScriptContext.ENGINE_SCOPE);
             // add the ARGV entry which will cause the RexxScriptEngine to supply the array elements as
             // individual arguments; it then will append another Rexx directory with an entry "ScriptContext"
             sc.setAttribute(ScriptEngine.ARGV,     dimArr,   ScriptContext.ENGINE_SCOPE);
