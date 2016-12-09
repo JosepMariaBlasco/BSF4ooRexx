@@ -12,6 +12,13 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+
+         2016-12-09, ---rgf, - if Rexx started Java the unknown method of BSF if processing sendmessage
+                               messages would load its RexxAndJava object, but not garbage collect it;
+                               fixed by using bsf.wrap on the returned value
+
+         2016-12-07, ---rgf, - .JSR223::SET method: second argument defaults to the null string ""
+
          2016-11-30, ---rgf, - make the UNKNOWN methods Unguarded; it is possible that a method invocation
                                on the Java object is taking place, while from the Java side (e.g. for an
                                event handler) a callback occurs (in a different RexxActivation) which from
@@ -477,7 +484,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20161119)
+   version:     6.00 (20161207)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -486,7 +493,7 @@
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2001-2015 Rony G. Flatscher
+   Copyright 2001-2016 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -504,7 +511,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2001-2015 Rony G. Flatscher
+   Copyright 2001-2016 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -576,7 +583,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20161130" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20161207" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1053,15 +1060,20 @@ any:
       dimension = verify(data, "[")-1  -- is it a Java array?
       if dimension>0 then   -- rgf, 2003-02-09, no upper limit anymore
       do
--- 2015-08-11, rgf: overlooked changing this accordingly! :(
          if bIncr<>"" then
+do
+-- say "---BSF.WRAP()--- .bsf_array_reference~new(data="data", bIncr=.TRUE!"
             return .bsf_array_reference~new(data, dimension, bIncr) -- return a BSF_ARRAY proxy
+end
          else
             return .bsf_array_reference~new(data, dimension) -- return a BSF_ARRAY proxy
       end
 
       if bIncr<>"" then
+do
+-- say "---BSF.WRAP()--- .bsf_reference~new(data="data", bIncr=.true!"
          return .bsf_reference~new(data,bIncr)  -- return a BSF_REFERENCE, increase reference counter
+end
       else
          return .bsf_reference~new(data)  -- return a BSF_REFERENCE
    end
@@ -1734,7 +1746,8 @@ return bsf.wrap(tmp)
   if objName~abbrev("org.rexxla.bsf.engines.rexx.RexxProxy@"), -
      "SENDMESSAGE0 SENDMESSAGE1 SENDMESSAGE2 SENDMESSAGE3 SENDMESSAGE4 SENDMESSAGE5 SENDMESSAGE"~caselessWordPos(name)>0 then
   do
-      code=code ', "' || bsf('getRexxAndJava')~substr(4) || '"'      -- make sure this call
+      -- code=code ', "' || bsf('getRexxAndJava')~substr(4) || '"'      -- make sure this call
+      code=code ', "' || bsf.wrap(bsf('getRexxAndJava')) || '"'      -- make sure this call
 -- say "///---/// BSF.CLS - a RexxProxy, adapted the code fragment to -->" pp(code) "\\\---\\\"
   end
 
@@ -2608,11 +2621,31 @@ forward class (super)
    Class:       BSF_PROXY
    Purpose:     allows to wrap up Java objects as Object Rexx objects;
                 if instances are destroyed, then no deregistration from
-                the BSF registry takes place
+                the BSF registry takes place;
+
+                this class is meant for interacting with "functional" BSF4ooRexx programs that
+                only use the Java bean name (a string), such that they have to manually
+                release Java objects from the bean registry, if they do not need them anymore;
+
+                using a Java object (actually the bean name, a string) from such a functional
+                BSF4ooRexx program in an OO-fashion becomes possible by creating a BSF_PROXY
+                instance for it, without interfering with the registry reference counting
+                for such a Java object, as BSF_PROXY will not reduce the reference counter
+                automatically when an instance gets garbage collected, unlike instances of
+                BSF or BSF_REFERENCE and the like
+
+                this way it becomes possible to use the OO-interfaces for Java beans
+                that are maintained in the functional manner (using themselves only direct
+                BSF() invocations)
+
    restriction: no check is done, whether the given beanName is really
-                in the BSF-registry
+                in the BSF-registry;
+                the reference counter of the proxied Java object will not be increased (upon
+                instantiation) or decreased (upon garbage collection), this remains the
+                sole responsibility
+
    ************************************************************* */
-::CLASS BSF_PROXY subclass BSF PUBLIC
+::CLASS BSF_PROXY subclass BSF public
 
 /* -------------------------------------------------------------
    method to construct an instance (a "bean"); as the object was returned
@@ -5144,7 +5177,7 @@ say ppCondition2(co)
 */
 ::method set class
    signal on syntax
-   use strict arg scriptContext, attributeNames, rxVarDir
+   use strict arg scriptContext, attributeNames="", rxVarDir
 
    if scriptContext~isA(.RexxContext) then   -- fetch the scriptContext entry from the slotDir (last) argument
       scriptContext=scriptContext~args~lastItem~scriptContext

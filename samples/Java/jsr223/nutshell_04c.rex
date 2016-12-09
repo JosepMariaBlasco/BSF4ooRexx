@@ -15,9 +15,14 @@
 parse source s
 say "parse source:" pp(s)
 
-say "creating Rexx context variables from all scriptContext Bindings using the Rexx script annotation ""/*@" || "get()*/"" ..."
-/*@get()*/ /* from now on we can access *all* the ScriptScope attributes as local Rexx variables !
-              Alternatively, one can denote the desired attributes by blank delimited names within the parentheses */
+say "creating Rexx context variables from the ScriptContext Bindings using a Rexx script annotation:"
+/* @get(d1 d2 d3 d4 d5 d6 d7 d8 started_at) */
+           /* from now on we can access the listed ScriptScope attributes as local Rexx variables !
+              If leaving out the blank delimited list of ScriptScope attributes, then all ScriptScope
+              attributes would be made directly available as local Rexx variables. To see the injected
+              code on either version supply the "@showsource" Rexx script annotation (within a block
+              comment, where begin and end of block comment must reside on the same line as the Rexx
+              script annotation in order to be honored. */
 
 say "Java host started set-up at:" pp(started_at)
 say "calculating aggregate width and height, returning it to Java"

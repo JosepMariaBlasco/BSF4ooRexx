@@ -24,7 +24,9 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
-    6.0.0   2016-11-19, ---rgf: updated major version number to 6 to indicate new base level Java 1.6/6;
+    6.0.0   2016-12-08, rgf corrected comment: BSF_PROXY -> BSF_REFERENCE
+
+    6.0.0   2016-11-19, rgf updated major version number to 6 to indicate new base level Java 1.6/6;
                             JNI_VERSION_1_6 should only be used, if we need to use the new 1.6/6 JNI function
                             "jobjectRefType GetObjectRefType(env,refObj)"
 
@@ -3267,7 +3269,7 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
     // 20150721, rgf: added "bIncr": if 1 then let BSF.WRAP run "rawRegister" to increase reference
     //                counter in BSF registry in use cases where jniRexxRunProgram() or
     //                jniRexxSendMessageToRexx() is employed (they register and unregister the Java objects;
-    //                BSF_PROXY will by default not register, but unregister)
+    //                BSF_REFERENCE will by default not register, but unregister)
 inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
                                                      jobjectArray j_args,           // args from Java
                                                      RexxDirectoryObject slotDir,    // slotDir with userData & methodName in original case
@@ -5758,7 +5760,7 @@ inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (
     RexxObjectPtr rJavaThrowable=NULL;
     if (bsfClz!=rtc->Nil())  // class found, do a bsf.wrap() on the beanName
     {
-        rJavaThrowable=rtc->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_PROXY object
+        rJavaThrowable=rtc->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_REFERENCE object
     }
     else    // cast RexxString to RexxObject
     {
@@ -8153,13 +8155,13 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
     // RexxObjectPtr r_result=(RexxObjectPtr) context->String(c_bsfRegistryKey);
     RexxObjectPtr r_result=(RexxObjectPtr) context->String(c_bsfRegistryKey);
 
-        // if returned string looks like BSF.CLS is active, run BSF.WRAP to return a BSF_PROXY instead of the name only
+        // if returned string looks like BSF.CLS is active, run BSF.WRAP to return a BSF_REFERENCE instead of the name only
     if (c_bsfRegistryKey[0]=='<' && c_bsfRegistryKey[2]=='>')   // looks like BSF.CLS induced prefix "<S>" or "<O>" is active, hence run bsf.wrap()
     {
         RexxClassObject clz=context->FindClass("BSF");  // try to get the BSF class
         if (clz!=NULL)  // class found?
         {
-            r_result=context->SendMessage1(clz, "BSF.WRAP", r_result);  // run bsf.wrap(), may return a BSF_PROXY object
+            r_result=context->SendMessage1(clz, "BSF.WRAP", r_result);  // run bsf.wrap(), may return a BSF_REFERENCE object
         }
         else
         {
@@ -8582,7 +8584,7 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
                     RexxObjectPtr bsfClz=rgfGetEntryFromLocal (context->threadContext, "BSF"); // get .BSF, if available
                     if (bsfClz!=context->Nil())  // class found, do a bsf.wrap() on the beanName
                     {
-                        result_Obj=context->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_PROXY object
+                        result_Obj=context->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_REFERENCE object
                     }
                     else    // just return the supplied beanName (a String)
                     {
@@ -9542,7 +9544,7 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
 
             if (bsfClz!=context->Nil())  // class found, do a bsf.wrap() on the beanName
             {
-                result_Obj=context->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_PROXY object
+                result_Obj=context->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_REFERENCE object
             }
             else    // just return the supplied beanName (a String)
             {
@@ -12738,7 +12740,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             {
                 RexxObjectPtr rop=ro_methodObject;
 //                ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
-                // increase ref counter, such that Rexx BSF proxy uninit method can safely decrease it
+                // increase ref counter, such that Rexx BSF_REFERENCE uninit method can safely decrease it
+// TODO: rgf, 2016-12-09: registerBean4JNI instead ?
                 ro_methodObject=(RexxStringObject) rtc->SendMessage2(clzBSF, "BSF.WRAP", rop, rtc->True());
                 // rgf, 201310 rtc->ReleaseLocalReference(rop);
             }
@@ -12766,7 +12769,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
                     RexxObjectPtr rop=ro_methodObject;
                     // ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", ro_methodObject);
 //                    ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
-                    // increase ref counter, such that Rexx BSF proxy uninit method can safely decrease it
+                    // increase ref counter, such that Rexx BSF_REFERENCE uninit method can safely decrease it
+// TODO: rgf, 2016-12-09: registerBean4JNI instead ?
                     ro_methodObject=(RexxStringObject) rtc->SendMessage2(clzBSF, "BSF.WRAP", rop, rtc->True());
                     // rgf, 201310 rtc->ReleaseLocalReference(rop);
                 }

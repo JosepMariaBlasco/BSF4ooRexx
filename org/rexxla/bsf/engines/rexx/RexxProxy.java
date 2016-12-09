@@ -430,7 +430,8 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage(m,args): m=["+
      */
     public Object sendMessage0 (String messageName) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage0(m): m=["+messageName+"]...");
+// if (bDebug)
+System.err.println("////// ---> RexxProxy.sendMessage0(m): m=["+messageName+"]...");
 
         return this.rexxEngine.call(this, messageName, null);
     }
@@ -548,7 +549,8 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage(re,m,args): re
      */
     public Object sendMessage0 (RexxEngine re, String messageName) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage0(re,m): re=["+re+"], m=["+messageName+"]...");
+// if (bDebug)
+System.err.println("////// ---> RexxProxy.sendMessage0(re,m): re=["+re+"], m=["+messageName+"]...");
 
         return (re==null ? this.rexxEngine : re).call(this, messageName, null);
     }
@@ -674,9 +676,17 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage(raj,m, args): 
      */
     public Object sendMessage0 (RexxAndJava raj, String messageName) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage0(raj,m): raj=["+raj+"], m=["+messageName+"]...");
+// TODO: analyze execution path if Java started from Rexx (RAJ gets registerBean() via registerBean4JNI
+if (bDebug)
+System.err.println("////// ---> RexxProxy.sendMessage0(raj,m): raj=["+raj+"], m=["+messageName+"]...");
 
         return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, null);
+/*
+        Object o= (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, null);
+
+System.err.println("////// <--- RexxProxy.sendMessage0(raj,m): o=["+o+"].");
+return o;
+*/
     }
 
     /** Sends the given message with the given argument using a callback to ooRexx using the RexxEngine instance.

@@ -41,7 +41,9 @@ import javax.script.SimpleScriptContext;
 */
 
 
-/** A command line Java utility to query, test and evaluate {@link javax.script} scripting engines.
+/** A command line Java utility to query, test and evaluate {@link javax.script} scripting engines that
+ *  gets distributed via the BSF4ooRexx package from Sourceforge.
+ *
  *  <p>Usage: <code>java RunScript [{-i | -t | -e enginename filename [args...] | filename [args...]}]</code>
  * <br>
  * <ul>
@@ -64,8 +66,6 @@ import javax.script.SimpleScriptContext;
  */
 public class RunScript
 {
-    static final boolean bDebug=false;  // controls debug output statements
-
     public static void main(String args[])
     {
 
@@ -221,7 +221,6 @@ public class RunScript
         sc.setAttribute(ScriptEngine.FILENAME, filename, ScriptContext.ENGINE_SCOPE);
 
         //        - if arguments, setup ARGV in ENGINE_SCOPE
-if (bDebug) System.err.println("args.length="+args.length+", argsStartAt="+argsStartAt+", > ? "+ (args.length>argsStartAt));
         if (args.length>argsStartAt)    // do we have command line arguments to supply?
         {
             String argArr []=new String [args.length-argsStartAt];    // determine array size
@@ -232,7 +231,6 @@ if (bDebug) System.err.println("args.length="+args.length+", argsStartAt="+argsS
             }
             sc.setAttribute(ScriptEngine.ARGV, argArr, ScriptContext.ENGINE_SCOPE);
         }
-if (bDebug) System.err.println("sc.getAttribute(ScriptEngine.ARGV)="+sc.getAttribute(ScriptEngine.ARGV));
 
         //        - eval the script
         try
@@ -316,11 +314,10 @@ if (bDebug) System.err.println("sc.getAttribute(ScriptEngine.ARGV)="+sc.getAttri
         System.out.println("          ... no arguments lists the available javax.script engines");
         System.out.println("       -h ... 'help', gives this usage text");
         System.out.println("       -i ... lists the available javax.script engines and informs about their properties");
-        System.out.println("       -t ... lists the availabel javax.script engines and tests evaluating their \"getOutputStatement(String)\" method");
+        System.out.println("       -t ... lists the available javax.script engines and tests evaluating their \"getOutputStatement(String)\" method");
         System.out.println("       -e  enginename filename [args...] ... uses \"enginename\" to evaluate \"filename\" supplying the arguments \"args...\"");
         System.out.println("       filename [args...] ... the \"filename\" extension determines the script engine to evaluate it, supplying the arguments \"args...\"");
         return;
     }
 }
-
 

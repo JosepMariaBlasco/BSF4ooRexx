@@ -1,10 +1,10 @@
 /*
    author:  Rony G. Flatscher
-   date:    2016-12-06
+   date:    2016-12-08
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
-            of 2016-12-06:
+            of 2016-12-08:
 
             - Java 1.7/7 ("JavaFX 2"): <http://code.makery.ch/library/javafx-2-tutorial/>
             - Java 1.8/8 ("JavaFX 8"): <http://code.makery.ch/library/javafx-8-tutorial/>
@@ -762,6 +762,12 @@ syntax:
   birthday  = .fx.SimpleStringProperty~new(strBirthday)
 
 
+/* =================================================================================== */
+/* for tutorial part 5: define the RootLayoutController
+
+   This Rexx class controls the interaction with the fxml form named "RootLayout.fxml".
+
+*/
 /* tutorial, part 5 */
 ::class RootLayoutController
 
@@ -785,6 +791,25 @@ syntax:
 
   -- tutorial, part 6
   menuBirthdayStatistics=rlDir~menuBirthdayStatistics ~~setOnAction(rp)
+
+
+::method handle   /* implements the interface "javafx.event"   */
+  expose menuNew menuOpen menuSave menuSaveAs menuAbout menuExit mainApp menuBirthdayStatistics
+  use arg event, slotDir
+
+  tgtObjectName=event~getTarget~objectname
+
+  select
+     when tgtObjectName=menuNew   ~objectName then self~handleNew
+     when tgtObjectName=menuOpen  ~objectName then self~handleOpen
+     when tgtObjectName=menuSave  ~objectName then self~handleSave
+     when tgtObjectName=menuSaveAs~objectName then self~handleSaveAs
+     when tgtObjectName=menuAbout ~objectName then self~handleAbout
+     when tgtObjectName=menuExit  ~objectName then self~handleExit
+      -- tutorial, part 6:
+     when tgtObjectName=menuBirthdayStatistics~objectName then mainApp~showPersonStatistics
+     otherwise .error~say("UNKNOWN target:" pp(event~getTarget) pp(event~getTarget~tostring))
+  end
 
 
 /* create an empty address book */
@@ -861,7 +886,7 @@ syntax:
   lf="0a"x
   text="Original author of the Java version: Marco Jakob" lf"Website: http://code.makery.ch"                             -
      lf"Java tutorial: http://code.makery.ch/library/javafx-8-tutorial/" lf                                              -
-     lf"Author of the ooRexx version: Rony G. Flatscher" lf"Website of Rexx related technologies: http://www.RexxLA.org" -
+     lf"Author of the ooRexx version: Rony G. Flatscher, 2016-12-08" lf"Website of Rexx related technologies: http://www.RexxLA.org" -
      lf"Using ooRexx (Open Object Rexx), website: https://sourceforge.net/projects/oorexx/ or http://www.ooRexx.org"     -
      lf"Using BSF4ooRexx (ooRexx-Java-bridge), website: https://sourceforge.net/projects/bsf4oorexx/"
 
@@ -886,26 +911,13 @@ syntax:
   .java.lang.System~exit(0)   -- the Java System class is always available by its environment name
 
 
-::method handle   /* implements the interface "javafx.event"   */
-  expose menuNew menuOpen menuSave menuSaveAs menuAbout menuExit mainApp menuBirthdayStatistics
-  use arg event, slotDir
 
-  tgtObjectName=event~getTarget~objectname
+/* =================================================================================== */
+/* for tutorial part 6: define the BirthdayStatisticsController
 
-  select
-     when tgtObjectName=menuNew   ~objectName then self~handleNew
-     when tgtObjectName=menuOpen  ~objectName then self~handleOpen
-     when tgtObjectName=menuSave  ~objectName then self~handleSave
-     when tgtObjectName=menuSaveAs~objectName then self~handleSaveAs
-     when tgtObjectName=menuAbout ~objectName then self~handleAbout
-     when tgtObjectName=menuExit  ~objectName then self~handleExit
-      -- tutorial, part 6:
-     when tgtObjectName=menuBirthdayStatistics~objectName then mainApp~showPersonStatistics
-     otherwise .error~say("UNKNOWN target:" pp(event~getTarget) pp(event~getTarget~tostring))
-  end
+   This Rexx class controls the interaction with the fxml form named "BirthdayStatistics.fxml".
 
-
-/* tutorial, part 6 */
+*/
 ::class BirthdayStatisticsController
 
 ::method init        -- constructor

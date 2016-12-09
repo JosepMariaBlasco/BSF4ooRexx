@@ -195,15 +195,15 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
         StringBuilder sb=new StringBuilder();
         String strThis=this.toString();
 
-        sb.append("-- begin of "+strThis+".getProgram() --> "+getGMTFormattedDateAsISO()+" -->\n");
+        sb.append("/* --> begin of "+strThis+".getProgram(String[]) --> "+getGMTFormattedDateAsISO()+" --> */;\n");
 
         if (statements==null)
         {
-            sb.append("\t-- no statements supplied (received \"null\")\n");
+            sb.append("\t/* -- no statements supplied (received \"null\") */;\n");
         }
         else if (statements.length==0)
         {
-            sb.append("\t-- no statements supplied (received an empty array)\n");
+            sb.append("\t/* -- no statements supplied (received an empty array) */; \n");
         }
         else
         {
@@ -211,16 +211,15 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
             {
                 if (statements[i]==null)
                 {
-                    sb.append("\t-- 'null' received! \n");
+                    sb.append("\t-- 'null' received!;\n");
                 }
                 else
                 {
-                    sb.append("\t"+statements[i]+"\n");
+                    sb.append("\t"+statements[i]+";\n");
                 }
             }
         }
-
-        sb.append("-- end of   "+strThis+".getProgram() <-- "+getGMTFormattedDateAsISO()+" <--\n");
+        sb.append("/* <-- end   of "+strThis+".getProgram(String[]) <-- "+getGMTFormattedDateAsISO()+" <-- */; \n");
         return sb.toString();
     }
 
