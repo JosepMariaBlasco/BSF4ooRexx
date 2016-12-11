@@ -27,37 +27,45 @@
 package org.codehaus.commons.compiler;
 
 import java.io.File;
-import java.lang.reflect.*;
+import java.lang.reflect.Method;
 import java.security.ProtectionDomain;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.StringTokenizer;
+
+import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
- * A {@link ClassLoader} that, unlike usual {@link ClassLoader}s, does not load byte code, but reads Java&trade; source
+ * A {@link ClassLoader} that, unlike usual {@link ClassLoader}s, does not load byte code, but reads Java source
  * code and then scans, parses, compiles and loads it into the virtual machine.
  * <p>
- * As with any {@link ClassLoader}, it is not possible to "update" classes after they've been loaded. The way to
- * achieve this is to give up on the {@link AbstractJavaSourceClassLoader} and create a new one.
+ *   As with any {@link ClassLoader}, it is not possible to "update" classes after they've been loaded. The way to
+ *   achieve this is to give up on the {@link AbstractJavaSourceClassLoader} and create a new one.
+ * </p>
  */
-public abstract class AbstractJavaSourceClassLoader extends ClassLoader {
-
-    protected ProtectionDomainFactory  optionalProtectionDomainFactory = null;
-
-    public AbstractJavaSourceClassLoader() {
-    }
-
-    public AbstractJavaSourceClassLoader(ClassLoader parentClassLoader) {
-        super(parentClassLoader);
-    }
+public abstract
+class AbstractJavaSourceClassLoader extends ClassLoader {
 
     /**
-     * @param sourcePath The sequence of directories to search for Java&trade; source files
+     * @see ClassLoader#defineClass(String, byte[], int, int, ProtectionDomain)
+     */
+    @Nullable protected ProtectionDomainFactory optionalProtectionDomainFactory;
+
+    public
+    AbstractJavaSourceClassLoader() {}
+
+    public
+    AbstractJavaSourceClassLoader(ClassLoader parentClassLoader) { super(parentClassLoader); }
+
+    /**
+     * @param sourcePath The sequence of directories to search for Java source files
      */
     public abstract void setSourcePath(File[] sourcePath);
 
     /**
      * @param optionalCharacterEncoding if {@code null}, use platform default encoding
      */
-    public abstract void setSourceFileCharacterEncoding(String optionalCharacterEncoding);
+    public abstract void setSourceFileCharacterEncoding(@Nullable String optionalCharacterEncoding);
 
     /**
      * @param lines  Whether line number debugging information should be generated
@@ -69,35 +77,42 @@ public abstract class AbstractJavaSourceClassLoader extends ClassLoader {
     /**
      * @see ClassLoader#defineClass(String, byte[], int, int, ProtectionDomain)
      */
-    public final void setProtectionDomainFactory(ProtectionDomainFactory optionalProtectionDomainFactory) {
+    public final void
+    setProtectionDomainFactory(@Nullable ProtectionDomainFactory optionalProtectionDomainFactory) {
         this.optionalProtectionDomainFactory = optionalProtectionDomainFactory;
     }
 
-    public interface ProtectionDomainFactory {
+    /**
+     * @see AbstractJavaSourceClassLoader#setProtectionDomainFactory
+     */
+    public
+    interface ProtectionDomainFactory {
 
         /**
-         * @param sourceResourceName E.g. 'pkg1/pkg2/Outer.java'
+         * @param sourceResourceName E.g. "pkg1/pkg2/Outer.java"
          */
         ProtectionDomain getProtectionDomain(String sourceResourceName);
     }
 
     /**
-     * Read Java&trade; source code for a given class name, scan, parse, compile and load it into the virtual machine,
+     * Reads Java source code for a given class name, scan, parse, compile and load it into the virtual machine,
      * and invoke its "main()" method with the given arguments.
      * <p>
-     * Usage is as follows:
+     *   Usage is as follows:
+     * </p>
      * <pre>
-     *   java org.codehaus.commons.compiler.AbstractJavaSourceClassLoader [ <i>option</i> ] ... <i>class-name</i> [ <i>argument</i> ] ...
+     *   java {@link AbstractJavaSourceClassLoader} [ <i>option</i> ] ... <i>class-name</i> [ <i>argument</i> ] ...
      *
      *   <i>option</i>:
      *     -sourcepath <i>colon-separated-list-of-source-directories</i>
      *     -encoding <i>character-encoding</i>
      *     -g                           Generate all debugging info
      *     -g:none                      Generate no debugging info
-     *     -g:{lines,vars,source}       Generate only some debugging info
+     *     -g:{source,lines,vars}       Generate only some debugging info
      * </pre>
      */
-    public static void main(String[] args) throws Exception {
+    public static void
+    main(String[] args) throws Exception {
         File[]  optionalSourcePath        = null;
         String  optionalCharacterEncoding = null;
 
@@ -113,28 +128,28 @@ public abstract class AbstractJavaSourceClassLoader extends ClassLoader {
             if (!arg.startsWith("-")) break;
 
             if ("-sourcepath".equals(arg)) {
-                optionalSourcePath = splitPath(args[++i]);
+                optionalSourcePath = AbstractJavaSourceClassLoader.splitPath(args[++i]);
             } else
             if ("-encoding".equals(arg)) {
                 optionalCharacterEncoding = args[++i];
             } else
-            if (arg.equals("-g")) {
+            if ("-g".equals(arg)) {
                 debuggingInfoLines  = true;
                 debuggingInfoVars   = true;
                 debuggingInfoSource = true;
-                haveDebuggingInfo = true;
+                haveDebuggingInfo   = true;
             } else
-            if (arg.equals("-g:none")) {
+            if ("-g:none".equals(arg)) {
                 debuggingInfoLines  = false;
                 debuggingInfoVars   = false;
                 debuggingInfoSource = false;
-                haveDebuggingInfo = true;
+                haveDebuggingInfo   = true;
             } else
-            if (arg.startsWith("-g:")) {
-                debuggingInfoLines  = arg.contains("lines");
-                debuggingInfoVars   = arg.contains("vars");
-                debuggingInfoSource = arg.contains("source");
-                haveDebuggingInfo = true;
+            if ("-g:".startsWith(arg)) {
+                debuggingInfoLines  = arg.indexOf("lines") != -1;
+                debuggingInfoVars   = arg.indexOf("vars") != -1;
+                debuggingInfoSource = arg.indexOf("source") != -1;
+                haveDebuggingInfo   = true;
             } else
             if ("-help".equals(arg)) {
                 System.out.println("Usage:");
@@ -150,7 +165,7 @@ public abstract class AbstractJavaSourceClassLoader extends ClassLoader {
                 System.out.println("    -encoding <character-encoding>");
                 System.out.println("    -g                     Generate all debugging info");
                 System.out.println("    -g:none                Generate no debugging info");
-                System.out.println("    -g:{lines,vars,source} Generate only some debugging info");
+                System.out.println("    -g:{source,lines,vars} Generate only some debugging info");
                 System.exit(0);
             } else
             {
@@ -164,7 +179,7 @@ public abstract class AbstractJavaSourceClassLoader extends ClassLoader {
             System.err.println("No class name given, try \"-help\"");
             System.exit(1);
         }
-        String className = args[i++];
+        final String className = args[i++];
 
         // Determine arguments passed to "main()".
         String[] mainArgs = new String[args.length - i];
@@ -179,7 +194,7 @@ public abstract class AbstractJavaSourceClassLoader extends ClassLoader {
         if (optionalSourcePath != null) ajscl.setSourcePath(optionalSourcePath);
 
         // Load the given class.
-        Class clazz = ajscl.loadClass(className);
+        Class<?> clazz = ajscl.loadClass(className);
 
         // Find its "main" method.
         Method mainMethod;
@@ -195,8 +210,10 @@ public abstract class AbstractJavaSourceClassLoader extends ClassLoader {
         mainMethod.invoke(null, new Object[] { mainArgs });
     }
 
-    private static File[] splitPath(String string) {
-        List/*<File>*/ l = new ArrayList();
+    private static File[]
+    splitPath(String string) {
+
+        List<File> l = new ArrayList<File>();
         for (StringTokenizer st = new StringTokenizer(string, File.pathSeparator); st.hasMoreTokens();) {
             l.add(new File(st.nextToken()));
         }

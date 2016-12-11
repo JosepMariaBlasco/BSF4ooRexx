@@ -26,25 +26,29 @@
 
 package org.codehaus.janino.util.iterator;
 
-import java.util.*;
+import java.util.Enumeration;
+import java.util.Iterator;
 
 /**
- * An {@link java.util.Iterator} that iterates over the elements of an
- * {@link java.util.Enumeration}.
+ * An {@link java.util.Iterator} that iterates over the elements of an {@link java.util.Enumeration}.
+ *
+ * @param <T> The element type of the enumeration and the iterator
  */
-public class EnumerationIterator implements Iterator {
-    private final Enumeration e;
+public
+class EnumerationIterator<T> implements Iterator<T> {
 
-    public EnumerationIterator(Enumeration e) { this.e = e; }
+    private final Enumeration<? extends T> e;
 
-    public boolean hasNext() { return this.e.hasMoreElements(); }
-    public Object  next()    { return this.e.nextElement(); }
+    public EnumerationIterator(Enumeration<? extends T> e) { this.e = e; }
+
+    @Override public boolean hasNext() { return this.e.hasMoreElements(); }
+    @Override public T       next()    { return this.e.nextElement(); }
 
     /**
-     * Since {@link Enumeration}s don't support element removal, this method always throws
-     * an {@link UnsupportedOperationException}.
+     * Since {@link Enumeration}s don't support element removal, this method always throws an {@link
+     * UnsupportedOperationException}.
      *
      * @see Iterator#remove()
      */
-    public void    remove()  { throw new UnsupportedOperationException("remove"); }
+    @Override public void remove() { throw new UnsupportedOperationException("remove"); }
 }

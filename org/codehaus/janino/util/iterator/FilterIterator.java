@@ -26,19 +26,25 @@
 
 package org.codehaus.janino.util.iterator;
 
-import java.util.*;
+import java.util.Iterator;
 
 /**
- * An {@link java.util.Iterator} that retrieves its elements from a delegate
- * {@link java.util.Iterator}. The default implementation simply passes
- * all method invocations to the delegate.
+ * An {@link java.util.Iterator} that retrieves its elements from a delegate {@link java.util.Iterator}. The default
+ * implementation simply passes all method invocations to the delegate.
+ *
+ * @param <T> The element type of the iterator
  */
-public abstract class FilterIterator implements Iterator {
-    protected final Iterator delegate;
+public abstract
+class FilterIterator<T> implements Iterator<T> {
 
-    public FilterIterator(Iterator delegate) { this.delegate = delegate; }
+    /**
+     * @see FilterIterator
+     */
+    protected final Iterator<T> delegate;
 
-    public boolean hasNext() { return this.delegate.hasNext(); }
-    public Object  next()    { return this.delegate.next(); }
-    public void    remove()  { this.delegate.remove(); }
+    public FilterIterator(Iterator<T> delegate) { this.delegate = delegate; }
+
+    @Override public boolean hasNext() { return this.delegate.hasNext(); }
+    @Override public T       next()    { return this.delegate.next(); }
+    @Override public void    remove()  { this.delegate.remove(); }
 }

@@ -26,38 +26,80 @@
 
 package org.codehaus.janino.util.iterator;
 
-import java.util.*;
+import java.util.ListIterator;
+
+import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
- * An {@link java.util.ListIterator} that retrieves its elements from a delegate
- * {@link java.util.ListIterator}. The default implementation simply passes
- * all method invocations to the delegate.
+ * An {@link java.util.ListIterator} that retrieves its elements from a delegate {@link java.util.ListIterator}. The
+ * default implementation simply passes all method invocations to the delegate.
+ *
+ * @param <T> The element type of the list iterator
  */
-public abstract class FilterListIterator implements ListIterator {
-    /** */
-    protected final ListIterator delegate;
+public abstract
+class FilterListIterator<T> implements ListIterator<T> {
 
-    /** */
-    public FilterListIterator(ListIterator delegate) {
+    /**
+     * @see FilterListIterator
+     */
+    protected final ListIterator<T> delegate;
+
+    public
+    FilterListIterator(ListIterator<T> delegate) {
         this.delegate = delegate;
     }
 
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#hasNext()} */
-    public boolean hasNext()       { return this.delegate.hasNext(); }
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#next()} */
-    public Object  next()          { return this.delegate.next(); }
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#hasPrevious()} */
-    public boolean hasPrevious()   { return this.delegate.hasPrevious(); }
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#previous()} */
-    public Object  previous()      { return this.delegate.previous(); }
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#nextIndex()} */
-    public int     nextIndex()     { return this.delegate.nextIndex(); }
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#previousIndex()} */
-    public int     previousIndex() { return this.delegate.previousIndex(); }
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#remove()} */
-    public void    remove()        { this.delegate.remove(); }
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#set(java.lang.Object)} */
-    public void    set(Object o)   { this.delegate.set(o); }
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#add(java.lang.Object)} */
-    public void    add(Object o)   { this.delegate.add(o); }
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#hasNext()}
+     */
+    @Override public boolean
+    hasNext() { return this.delegate.hasNext(); }
+
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#next()}
+     */
+    @Override public T
+    next() { return this.delegate.next(); }
+
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#hasPrevious()}
+     */
+    @Override public boolean
+    hasPrevious() { return this.delegate.hasPrevious(); }
+
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#previous()}
+     */
+    @Override public T
+    previous() { return this.delegate.previous(); }
+
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#nextIndex()}
+     */
+    @Override public int
+    nextIndex() { return this.delegate.nextIndex(); }
+
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#previousIndex()}
+     */
+    @Override public int
+    previousIndex() { return this.delegate.previousIndex(); }
+
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#remove()}
+     */
+    @Override public void
+    remove() { this.delegate.remove(); }
+
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#set(java.lang.Object)}
+     */
+    @Override public void
+    set(@Nullable T o) { this.delegate.set(o); }
+
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#add(java.lang.Object)}
+     */
+    @Override public void
+    add(@Nullable T o) { this.delegate.add(o); }
 }

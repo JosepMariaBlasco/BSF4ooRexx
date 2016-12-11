@@ -26,105 +26,117 @@
 
 package org.codehaus.janino;
 
-import java.io.*;
-import java.util.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 
-import org.codehaus.janino.util.*;
-import org.codehaus.janino.util.enumerator.*;
-import org.codehaus.janino.util.resource.*;
+import org.codehaus.commons.nullanalysis.Nullable;
+import org.codehaus.janino.util.ClassFile;
+import org.codehaus.janino.util.resource.DirectoryResourceCreator;
+import org.codehaus.janino.util.resource.DirectoryResourceFinder;
+import org.codehaus.janino.util.resource.PathResourceFinder;
+import org.codehaus.janino.util.resource.Resource;
+import org.codehaus.janino.util.resource.ResourceCreator;
+import org.codehaus.janino.util.resource.ResourceFinder;
 
 /**
- * A {@link org.codehaus.janino.JavaSourceClassLoader} that uses a resource storage provided by the application to cache
- * compiled classes and thus saving unnecessary recompilations.
+ * A {@link org.codehaus.janino.JavaSourceClassLoader} that uses a resource storage provided by the application to
+ * cache compiled classes and thus saving unnecessary recompilations.
  * <p>
- * The application provides access to the resource storeage through a pair of a {@link
- * org.codehaus.janino.util.resource.ResourceFinder} and a {@link org.codehaus.janino.util.resource.ResourceCreator}
- * (see {@link #CachingJavaSourceClassLoader(ClassLoader, ResourceFinder, String, ResourceFinder, ResourceCreator,
- * EnumeratorSet)}.
+ *   The application provides access to the resource storeage through a pair of a {@link
+ *   org.codehaus.janino.util.resource.ResourceFinder} and a {@link org.codehaus.janino.util.resource.ResourceCreator}
+ *   (see {@link #CachingJavaSourceClassLoader(ClassLoader, ResourceFinder, String, ResourceFinder, ResourceCreator)}.
+ * </p>
  * <p>
- * See {@link org.codehaus.janino.JavaSourceClassLoader#main(String[])} for an example how to use this class.
+ *   See {@link org.codehaus.janino.JavaSourceClassLoader#main(String[])} for an example how to use this class.
+ * </p>
  * <p>
- * <b>Notice:</b> You must NOT rely on that this class stores some particular data in some particular resources through
- * the given {@code classFileCacheResourceFinder/Creator}! These serve only as a means for the {@link
- * CachingJavaSourceClassLoader} to persistently cache some data between invocations. In other words: If you want to
- * compile {@code .java} files into {@code .class} files, then don't use <i>this</i> class but {@link Compiler}
- * instead!
+ *   <b>Notice:</b> You must NOT rely on that this class stores some particular data in some particular resources
+ *   through the given {@code classFileCacheResourceFinder/Creator}! These serve only as a means for the {@link
+ *   CachingJavaSourceClassLoader} to persistently cache some data between invocations. In other words: If you want to
+ *   compile {@code .java} files into {@code .class} files, then don't use <em>this</em> class but {@link Compiler}
+ *   instead!
+ * </p>
  */
-public class CachingJavaSourceClassLoader extends JavaSourceClassLoader {
+public
+class CachingJavaSourceClassLoader extends JavaSourceClassLoader {
     private final ResourceFinder  classFileCacheResourceFinder;
     private final ResourceCreator classFileCacheResourceCreator;
     private final ResourceFinder  sourceFinder;
 
     /**
-     * See {@link #CachingJavaSourceClassLoader(ClassLoader, ResourceFinder, String, ResourceFinder, ResourceCreator,
-     * EnumeratorSet)}.
+     * See {@link #CachingJavaSourceClassLoader(ClassLoader, ResourceFinder, String, ResourceFinder, ResourceCreator)}.
      *
      * @param optionalSourcePath Directories to scan for source files
-     * @param cacheDirectory Directory to use for caching generated class files (see class description)
+     * @param cacheDirectory     Directory to use for caching generated class files (see class description)
      */
-    public CachingJavaSourceClassLoader(
-        ClassLoader   parentClassLoader,
-        File[]        optionalSourcePath,
-        String        optionalCharacterEncoding,
-        File          cacheDirectory,
-        EnumeratorSet debuggingInformation
+    public
+    CachingJavaSourceClassLoader(
+        ClassLoader             parentClassLoader,
+        @Nullable File[]        optionalSourcePath,
+        @Nullable String        optionalCharacterEncoding,
+        File                    cacheDirectory
     ) {
         this(
-            parentClassLoader,                            // parentClassLoader
-            (                                             // sourceFinder
-                optionalSourcePath == null ?
-                (ResourceFinder) new DirectoryResourceFinder(new File(".")) :
-                (ResourceFinder) new PathResourceFinder(optionalSourcePath)
+            parentClassLoader,                           // parentClassLoader
+            (                                            // sourceFinder
+                optionalSourcePath == null
+                ? (ResourceFinder) new DirectoryResourceFinder(new File("."))
+                : (ResourceFinder) new PathResourceFinder(optionalSourcePath)
             ),
-            optionalCharacterEncoding,                    // optionalCharacterEncoding
-            new DirectoryResourceFinder(cacheDirectory),  // classFileCacheResourceFinder
-            new DirectoryResourceCreator(cacheDirectory), // classFileCacheResourceCreator
-            debuggingInformation                          // debuggingInformation
+            optionalCharacterEncoding,                   // optionalCharacterEncoding
+            new DirectoryResourceFinder(cacheDirectory), // classFileCacheResourceFinder
+            new DirectoryResourceCreator(cacheDirectory) // classFileCacheResourceCreator
         );
     }
 
     /**
-     * Notice that this class is thread-safe if and only if the {@code classFileCacheResourceCreator} stores its data
-     * atomically, i.e. the {@code classFileCacheResourceFinder} sees the resource written by the {@code
+     * Notice that this class is thread-safe if and only if the <var>classFileCacheResourceCreator</var> stores its
+     * data atomically, i.e. the <var>classFileCacheResourceFinder</var> sees the resource written by the {@code
      * classFileCacheResourceCreator} only after the {@link OutputStream} is closed.
      * <p>
-     * In order to make the caching scheme work, both the {@code classFileCacheResourceFinder} and the {@code
-     * sourceFinder} must support the {@link org.codehaus.janino.util.resource.Resource#lastModified()} method, so that
-     * the modification time of the source and the class files can be compared.
+     *   In order to make the caching scheme work, both the <var>classFileCacheResourceFinder</var> and the {@code
+     *   sourceFinder} must support the {@link org.codehaus.janino.util.resource.Resource#lastModified()} method, so
+     *   that the modification time of the source and the class files can be compared.
+     * </p>
      *
      * @param parentClassLoader             Attempt to load classes through this one before looking for source files
-     * @param sourceFinder                  Finds Java&trade; source for class {@code pkg.Cls} in resource {@code
+     * @param sourceFinder                  Finds Java source for class {@code pkg.Cls} in resource {@code
      *                                      pkg/Cls.java}
-     * @param optionalCharacterEncoding     Encoding of Java&trade; source or {@code null} for platform default
+     * @param optionalCharacterEncoding     Encoding of Java source or {@code null} for platform default
      *                                      encoding
      * @param classFileCacheResourceFinder  Finds precompiled class {@code pkg.Cls} in resource {@code pkg/Cls.class}
      *                                      (see class description)
      * @param classFileCacheResourceCreator Stores compiled class {@code pkg.Cls} in resource {@code pkg/Cls.class} (see
      *                                      class description)
-     * @param debuggingInformation          What debugging information to include into the generated class files
      */
-    public CachingJavaSourceClassLoader(
-        ClassLoader     parentClassLoader,
-        ResourceFinder  sourceFinder,
-        String          optionalCharacterEncoding,
-        ResourceFinder  classFileCacheResourceFinder,
-        ResourceCreator classFileCacheResourceCreator,
-        EnumeratorSet   debuggingInformation
+    public
+    CachingJavaSourceClassLoader(
+        ClassLoader      parentClassLoader,
+        ResourceFinder   sourceFinder,
+        @Nullable String optionalCharacterEncoding,
+        ResourceFinder   classFileCacheResourceFinder,
+        ResourceCreator  classFileCacheResourceCreator
     ) {
-        super(parentClassLoader, sourceFinder, optionalCharacterEncoding, debuggingInformation);
+        super(parentClassLoader, sourceFinder, optionalCharacterEncoding);
         this.classFileCacheResourceFinder  = classFileCacheResourceFinder;
         this.classFileCacheResourceCreator = classFileCacheResourceCreator;
         this.sourceFinder                  = sourceFinder;
     }
 
     /**
-     * Override {@link JavaSourceClassLoader#generateBytecodes(String)} to implement class file caching.
+     * Overrides {@link JavaSourceClassLoader#generateBytecodes(String)} to implement class file caching.
      *
-     * @return                        String name => byte[] bytecode, or {@code null} if no source code could be found
+     * @return                        String name =&gt; byte[] bytecode, or {@code null} if no source code could be
+     *                                found
      * @throws ClassNotFoundException Compilation problems or class file cache I/O problems
      */
-    protected Map generateBytecodes(String className) throws ClassNotFoundException {
-
+    @Override @Nullable protected Map<String /*name*/, byte[] /*bytecode*/>
+    generateBytecodes(String className) throws ClassNotFoundException {
         // Check whether a class file resource exists in the cache.
         {
             Resource classFileResource = this.classFileCacheResourceFinder.findResource(
@@ -146,7 +158,7 @@ public class CachingJavaSourceClassLoader extends JavaSourceClassLoader {
                     } catch (IOException ex) {
                         throw new ClassNotFoundException("Reading class file from \"" + classFileResource + "\"", ex);
                     }
-                    Map m = new HashMap();
+                    Map<String /*name*/, byte[] /*bytecode*/> m = new HashMap<String, byte[]>();
                     m.put(className, bytecode);
                     return m;
                 }
@@ -154,14 +166,13 @@ public class CachingJavaSourceClassLoader extends JavaSourceClassLoader {
         }
 
         // Cache miss... generate the bytecode from source.
-        Map bytecodes = super.generateBytecodes(className);
+        Map<String /*name*/, byte[] /*bytecode*/> bytecodes = super.generateBytecodes(className);
         if (bytecodes == null) return null;
 
         // Write the generated bytecodes to the class file cache.
-        for (Iterator it = bytecodes.entrySet().iterator(); it.hasNext();) {
-            Map.Entry me = (Map.Entry) it.next();
+        for (Map.Entry<String, byte[]> me : bytecodes.entrySet()) {
             String className2 = (String) me.getKey();
-            byte[] bytecode = (byte[]) me.getValue();
+            byte[] bytecode   = (byte[]) me.getValue();
 
             try {
                 CachingJavaSourceClassLoader.writeResource(
@@ -181,11 +192,12 @@ public class CachingJavaSourceClassLoader extends JavaSourceClassLoader {
     }
 
     /**
-     * Read all bytes from the given resource.
+     * Reads all bytes from the given resource.
      */
-    private static byte[] readResource(Resource r) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        byte[] buffer = new byte[4096];
+    private static byte[]
+    readResource(Resource r) throws IOException {
+        ByteArrayOutputStream baos   = new ByteArrayOutputStream();
+        byte[]                buffer = new byte[4096];
 
         InputStream is = r.open();
         try {
@@ -195,25 +207,22 @@ public class CachingJavaSourceClassLoader extends JavaSourceClassLoader {
                 baos.write(buffer, 0, cnt);
             }
         } finally {
-            try { is.close(); } catch (IOException ex) { }
+            try { is.close(); } catch (IOException ex) {}
         }
 
         return baos.toByteArray();
     }
 
     /**
-     * Create a resource with the given name and store the data in it.
+     * Creates a resource with the given name and store the data in it.
      */
-    private static void writeResource(
-        ResourceCreator resourceCreator,
-        String          resourceName,
-        byte[]          data
-    ) throws IOException {
+    private static void
+    writeResource(ResourceCreator resourceCreator, String resourceName, byte[] data) throws IOException {
         OutputStream os = resourceCreator.createResource(resourceName);
         try {
             os.write(data);
         } finally {
-            try { os.close(); } catch (IOException ex) { }
+            try { os.close(); } catch (IOException ex) {}
         }
     }
 }

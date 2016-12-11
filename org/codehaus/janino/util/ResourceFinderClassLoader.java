@@ -26,39 +26,39 @@
 
 package org.codehaus.janino.util;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.codehaus.commons.nullanalysis.Nullable;
 import org.codehaus.janino.JaninoRuntimeException;
-import org.codehaus.janino.tools.Disassembler;
 import org.codehaus.janino.util.resource.Resource;
 import org.codehaus.janino.util.resource.ResourceFinder;
 
 
 /**
- * A {@link ClassLoader} that uses a {@link org.codehaus.janino.util.resource.ResourceFinder}
- * to find ".class" files.
+ * A {@link ClassLoader} that uses a {@link org.codehaus.janino.util.resource.ResourceFinder} to find ".class" files.
  */
-public class ResourceFinderClassLoader extends ClassLoader {
-    private static final boolean DEBUG = false;
+public
+class ResourceFinderClassLoader extends ClassLoader {
 
     private final ResourceFinder resourceFinder;
 
-    public ResourceFinderClassLoader(ResourceFinder resourceFinder, ClassLoader parent) {
+    public
+    ResourceFinderClassLoader(ResourceFinder resourceFinder, ClassLoader parent) {
         super(parent);
         this.resourceFinder = resourceFinder;
     }
 
-    public ResourceFinder getResourceFinder() {
-        return this.resourceFinder;
-    }
-
     /**
-     * @throws ClassNotFoundException
+     * @return The underlying {@link ResourceFinder}
      */
-    protected Class findClass(String className) throws ClassNotFoundException {
+    public ResourceFinder
+    getResourceFinder() { return this.resourceFinder; }
+
+    @Override protected Class<?>
+    findClass(@Nullable String className) throws ClassNotFoundException {
+        assert className != null;
 
         // Find the resource containing the class bytecode.
         Resource classFileResource = this.resourceFinder.findResource(ClassFile.getClassFileResourceName(className));
@@ -69,12 +69,12 @@ public class ResourceFinderClassLoader extends ClassLoader {
         try {
             is = classFileResource.open();
         } catch (IOException ex) {
-            throw new JaninoRuntimeException(
+            throw new JaninoRuntimeException((
                 "Opening class file resource \""
                 + classFileResource.getFileName()
                 + "\": "
                 + ex.getMessage()
-            );
+            ), ex);
         }
 
         // Read bytecode from the resource into a byte array.
@@ -89,23 +89,12 @@ public class ResourceFinderClassLoader extends ClassLoader {
         } catch (IOException ex) {
             throw new ClassNotFoundException("Reading class file from \"" + classFileResource + "\"", ex);
         } finally {
-            try { is.close(); } catch (IOException ex) { }
+            try { is.close(); } catch (IOException ex) {}
         }
         byte[] ba = baos.toByteArray();
 
-        // Disassemble the the class bytecode(for debugging).
-        if (ResourceFinderClassLoader.DEBUG) {
-            System.out.println("*** Disassembly of class \"" + className + "\":");
-            try {
-                new Disassembler().disasm(new ByteArrayInputStream(ba));
-                System.out.flush();
-            } catch (IOException ex) {
-                throw new JaninoRuntimeException("SNO: IOException despite ByteArrayInputStream");
-            }
-        }
-
         // Define the class in this ClassLoader.
-        Class clazz = super.defineClass(null, ba, 0, ba.length);
+        Class<?> clazz = super.defineClass(null, ba, 0, ba.length);
 
         if (!clazz.getName().equals(className)) {
 

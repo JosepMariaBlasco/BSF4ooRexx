@@ -26,52 +26,56 @@
 
 package org.codehaus.janino;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 
-import org.apache.tools.ant.taskdefs.compilers.*;
+import org.apache.tools.ant.taskdefs.compilers.DefaultCompilerAdapter;
 import org.apache.tools.ant.types.Path;
 import org.codehaus.commons.compiler.CompileException;
-import org.codehaus.janino.util.enumerator.*;
+import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
- * A simple {@link org.apache.tools.ant.taskdefs.compilers.CompilerAdapter} for the "ant" tool
- * that silently ignores most of the configuration parameters and attempts to compile all given
- * source files into class files.
+ * A simple {@link org.apache.tools.ant.taskdefs.compilers.CompilerAdapter} for the "ant" tool that silently ignores
+ * most of the configuration parameters and attempts to compile all given source files into class files.
  */
-public class AntCompilerAdapter extends DefaultCompilerAdapter {
+public
+class AntCompilerAdapter extends DefaultCompilerAdapter {
 
     /**
-     * Compile all source files in <code>DefaultCompilerAdapter.compileList</code> individually and
-     * write class files in directory <code>DefaultCompilerAdapter.destDir</code>.
+     * Compiles all source files in {@code DefaultCompilerAdapter.compileList} individually and creates class files in
+     * the {@code DefaultCompilerAdapter.destDir}.
      * <p>
      * The following fields of {@link DefaultCompilerAdapter} are honored:
      * <ul>
-     *   <li><code>DefaultCompilerAdapter.compileList</code> - the set of Java&trade; source files to compile
-     *   <li><code>DefaultCompilerAdapter.destDir</code> - where to store the class files
-     *   <li><code>DefaultCompilerAdapter.compileSourcepath</code> - where to look for more Java&trade; source files
-     *   <li><code>DefaultCompilerAdapter.compileClasspath</code> - where to look for required classes
-     *   <li><code>DefaultCompilerAdapter.extdirs</code>
-     *   <li><code>DefaultCompilerAdapter.bootclasspath</code>
-     *   <li><code>DefaultCompilerAdapter.encoding</code> - how the Java&trade; source files are encoded
-     *   <li><code>DefaultCompilerAdapter.verbose</code>
-     *   <li><code>DefaultCompilerAdapter.debug</code>
-     *   <li><code>org.apache.tools.ant.taskdefs.Javac.getDebugLevel()</code>
-     *   <li><code>DefaultCompilerAdapter.src</code>
+     *   <li>{@code DefaultCompilerAdapter.compileList} - the set of Java source files to compile</li>
+     *   <li>{@code DefaultCompilerAdapter.destDir} - where to store the class files</li>
+     *   <li>{@code DefaultCompilerAdapter.compileSourcepath} - where to look for more Java source files</li>
+     *   <li>{@code DefaultCompilerAdapter.compileClasspath} - where to look for required classes</li>
+     *   <li>{@code DefaultCompilerAdapter.extdirs}</li>
+     *   <li>{@code DefaultCompilerAdapter.bootclasspath}</li>
+     *   <li>{@code DefaultCompilerAdapter.encoding} - how the Java source files are encoded</li>
+     *   <li>{@code DefaultCompilerAdapter.verbose}</li>
+     *   <li>{@code DefaultCompilerAdapter.debug}</li>
+     *   <li>{@code org.apache.tools.ant.taskdefs.Javac.getDebugLevel()}</li>
+     *   <li>{@code DefaultCompilerAdapter.src}</li>
      * </ul>
-     * The following fields of {@link DefaultCompilerAdapter} are not honored at this time:
+     * <p>
+     *   The following fields of {@link DefaultCompilerAdapter} are not honored at this time:
+     * </p>
      * <ul>
-     *   <li><code>DefaultCompilerAdapter.depend</code>
-     *   <li><code>DefaultCompilerAdapter.deprecation</code>
-     *   <li><code>DefaultCompilerAdapter.includeAntRuntime</code>
-     *   <li><code>DefaultCompilerAdapter.includeJavaRuntime</code>
-     *   <li><code>DefaultCompilerAdapter.location</code>
-     *   <li><code>DefaultCompilerAdapter.optimize</code>
-     *   <li><code>DefaultCompilerAdapter.target</code>
+     *   <li>{@code DefaultCompilerAdapter.depend}</li>
+     *   <li>{@code DefaultCompilerAdapter.deprecation}</li>
+     *   <li>{@code DefaultCompilerAdapter.includeAntRuntime}</li>
+     *   <li>{@code DefaultCompilerAdapter.includeJavaRuntime}</li>
+     *   <li>{@code DefaultCompilerAdapter.location}</li>
+     *   <li>{@code DefaultCompilerAdapter.optimize}</li>
+     *   <li>{@code DefaultCompilerAdapter.target}</li>
      * </ul>
      *
      * @return "true" on success
      */
-    public boolean execute() {
+    @Override public boolean
+    execute() {
 
         // Convert source files into source file names.
         File[] sourceFiles = this.compileList;
@@ -80,41 +84,46 @@ public class AntCompilerAdapter extends DefaultCompilerAdapter {
         File destinationDirectory = this.destDir == null ? Compiler.NO_DESTINATION_DIRECTORY : this.destDir;
 
         // Determine the source path.
-        File[] optionalSourcePath = AntCompilerAdapter.pathToFiles(
-            this.compileSourcepath != null ?
-            this.compileSourcepath :
-            this.src
+        @Nullable File[] optionalSourcePath = AntCompilerAdapter.pathToFiles(
+            this.compileSourcepath != null
+            ? this.compileSourcepath
+            : this.src
         );
 
         // Determine the class path.
         File[] classPath = AntCompilerAdapter.pathToFiles(this.compileClasspath, new File[] { new File(".") });
 
         // Determine the ext dirs.
-        File[] optionalExtDirs = AntCompilerAdapter.pathToFiles(this.extdirs);
+        @Nullable File[] optionalExtDirs = AntCompilerAdapter.pathToFiles(this.extdirs);
 
         // Determine the boot class path
-        File[] optionalBootClassPath = AntCompilerAdapter.pathToFiles(this.bootclasspath);
+        @Nullable File[] optionalBootClassPath = AntCompilerAdapter.pathToFiles(this.bootclasspath);
 
         // Determine the encoding.
-        String optionalCharacterEncoding = this.encoding;
+        @Nullable String optionalCharacterEncoding = this.encoding;
 
         // Determine verbosity.
         boolean verbose = this.verbose;
 
         // Determine debugging information.
-        EnumeratorSet debuggingInformation;
+        boolean debugSource, debugLines, debugVars;
         if (!this.debug) {
-            debuggingInformation = DebuggingInformation.NONE;
+            debugSource = false;
+            debugLines  = false;
+            debugVars   = false;
         } else {
             String debugLevel = this.attributes.getDebugLevel();
             if (debugLevel == null) {
-                debuggingInformation = DebuggingInformation.DEFAULT_DEBUGGING_INFORMATION;
+                debugSource = true;
+                debugLines  = true;
+                debugVars   = false;
             } else {
-                try {
-                    debuggingInformation = new EnumeratorSet(DebuggingInformation.class, debugLevel);
-                } catch (EnumeratorFormatException ex) {
-                    debuggingInformation = DebuggingInformation.NONE;
-                }
+                debugSource = false;
+                debugLines  = false;
+                debugVars   = false;
+                if (debugLevel.indexOf("source") != -1) debugSource = true;
+                if (debugLevel.indexOf("lines") != -1)  debugLines = true;
+                if (debugLevel.indexOf("vars") != -1)   debugVars = true;
             }
         }
 
@@ -128,7 +137,9 @@ public class AntCompilerAdapter extends DefaultCompilerAdapter {
                 destinationDirectory,
                 optionalCharacterEncoding,
                 verbose,
-                debuggingInformation,
+                debugSource,
+                debugLines,
+                debugVars,
                 Compiler.DEFAULT_WARNING_HANDLE_PATTERNS,
                 false                        // rebuild
             ).compile(sourceFiles);
@@ -143,30 +154,34 @@ public class AntCompilerAdapter extends DefaultCompilerAdapter {
     }
 
     /**
-     * Convert a {@link org.apache.tools.ant.types.Path} into an array of
-     * {@link File}.
-     * @param path
-     * @return The converted path, or <code>null</code> if <code>path</code> is <code>null</code>
+     * Converts a {@link org.apache.tools.ant.types.Path} into an array of {@link File}s.
+     *
+     * @return The converted path, or {@code null} if {@code path} is {@code null}
      */
-    private static File[] pathToFiles(Path path) {
+    @Nullable private static File[]
+    pathToFiles(@Nullable Path path) {
         if (path == null) return null;
 
         String[] fileNames = path.list();
-        File[] files = new File[fileNames.length];
+        File[]   files     = new File[fileNames.length];
         for (int i = 0; i < fileNames.length; ++i) files[i] = new File(fileNames[i]);
         return files;
     }
 
     /**
-     * Convert a {@link org.apache.tools.ant.types.Path} into an array of
-     * {@link File}.
-     * @param path
-     * @param defaultValue
-     * @return The converted path, or, if <code>path</code> is <code>null</code>, the <code>defaultValue</code>
+     * Converts a {@link org.apache.tools.ant.types.Path} into an array of {@link File}s.
+     *
+     * @return The converted path, or, if {@code path} is {@code null}, the {@code defaultValue}
      */
-    private static File[] pathToFiles(Path path, File[] defaultValue) {
+    private static File[]
+    pathToFiles(@Nullable Path path, File[] defaultValue) {
+
         if (path == null) return defaultValue;
-        return AntCompilerAdapter.pathToFiles(path);
+
+        File[] result = AntCompilerAdapter.pathToFiles(path);
+        assert result != null;
+
+        return result;
     }
 }
 

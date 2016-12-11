@@ -26,62 +26,87 @@
 
 package org.codehaus.janino;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.codehaus.commons.compiler.CompileException;
+import org.codehaus.commons.compiler.ErrorHandler;
 import org.codehaus.commons.compiler.Location;
-import org.codehaus.janino.util.*;
-import org.codehaus.janino.util.resource.*;
+import org.codehaus.commons.compiler.WarningHandler;
+import org.codehaus.commons.nullanalysis.Nullable;
+import org.codehaus.janino.Java.CompilationUnit;
+import org.codehaus.janino.util.ClassFile;
+import org.codehaus.janino.util.resource.Resource;
+import org.codehaus.janino.util.resource.ResourceFinder;
 
 
 /**
  * This {@link org.codehaus.janino.IClassLoader} finds, scans and parses compilation units.
  * <p>
- * Notice that it does not compile them!
+ *   Notice that it does not compile them!
+ * </p>
  */
-public final class JavaSourceIClassLoader extends IClassLoader {
-    private static final boolean DEBUG = false;
+public
+class JavaSourceIClassLoader extends IClassLoader {
 
-    private ResourceFinder            sourceFinder;
-    private String                    optionalCharacterEncoding;
-    private final Set                 unitCompilers; // UnitCompiler
-    private UnitCompiler.ErrorHandler optionalCompileErrorHandler = null;
-    private WarningHandler            optionalWarningHandler = null;
+    private static final Logger LOGGER = Logger.getLogger(JavaSourceIClassLoader.class.getName());
+
+    private ResourceFinder           sourceFinder;
+    @Nullable private String         optionalCharacterEncoding;
 
     /**
-     * Notice that the <code>unitCompilers</code> set is both read and written
-     * by the {@link JavaSourceIClassLoader}: As it searches for {@link IClass}es, it looks
-     * into <code>unitCompilers</code> for class declarations, and as it opens,
-     * scans and parses compilation units on-the-fly, it adds them to
-     * <code>unitCompilers</code>.
+     * Collection of parsed compilation units.
      */
-    public JavaSourceIClassLoader(
-        ResourceFinder sourceFinder,
-        String         optionalCharacterEncoding,
-        Set            unitCompilers, // UnitCompiler
-        IClassLoader   optionalParentIClassLoader
+    private final Set<UnitCompiler>  unitCompilers = new HashSet<UnitCompiler>();
+
+    @Nullable private ErrorHandler   optionalCompileErrorHandler;
+    @Nullable private WarningHandler optionalWarningHandler;
+
+    public
+    JavaSourceIClassLoader(
+        ResourceFinder         sourceFinder,
+        @Nullable String       optionalCharacterEncoding,
+        @Nullable IClassLoader optionalParentIClassLoader
     ) {
         super(optionalParentIClassLoader);
 
-        this.sourceFinder               = sourceFinder;
-        this.optionalCharacterEncoding  = optionalCharacterEncoding;
-        this.unitCompilers              = unitCompilers;
+        this.sourceFinder              = sourceFinder;
+        this.optionalCharacterEncoding = optionalCharacterEncoding;
         super.postConstruct();
     }
 
-    public void setSourceFinder(ResourceFinder pathResourceFinder) {
+    /**
+     * Returns the set of {@link UnitCompiler}s that were created so far.
+     */
+    public Set<UnitCompiler>
+    getUnitCompilers() { return this.unitCompilers; }
+
+    /**
+     * @param pathResourceFinder The source path
+     */
+    public void
+    setSourceFinder(ResourceFinder pathResourceFinder) {
         this.sourceFinder = pathResourceFinder;
     }
 
-    public void setCharacterEncoding(String optionalCharacterEncoding) {
+    /**
+     * @param optionalCharacterEncoding The name of the charset that is used to read source files, or {@code null} to
+     *                                  use the platform's 'default charset'
+     */
+    public void
+    setCharacterEncoding(@Nullable String optionalCharacterEncoding) {
         this.optionalCharacterEncoding = optionalCharacterEncoding;
     }
 
     /**
      * @see UnitCompiler#setCompileErrorHandler(ErrorHandler)
      */
-    public void setCompileErrorHandler(UnitCompiler.ErrorHandler optionalCompileErrorHandler) {
+    public void
+    setCompileErrorHandler(@Nullable ErrorHandler optionalCompileErrorHandler) {
         this.optionalCompileErrorHandler = optionalCompileErrorHandler;
     }
 
@@ -89,20 +114,22 @@ public final class JavaSourceIClassLoader extends IClassLoader {
      * @see Parser#setWarningHandler(WarningHandler)
      * @see UnitCompiler#setCompileErrorHandler(ErrorHandler)
      */
-    public void setWarningHandler(WarningHandler optionalWarningHandler) {
+    public void
+    setWarningHandler(@Nullable WarningHandler optionalWarningHandler) {
         this.optionalWarningHandler = optionalWarningHandler;
     }
 
     /**
-     * @param type field descriptor of the {@link IClass} to load, e.g. "Lpkg1/pkg2/Outer$Inner;"
-     * @throws ClassNotFoundException if an exception was raised while loading the {@link IClass}
+     * @param fieldDescriptor         Field descriptor of the {@link IClass} to load, e.g. "Lpkg1/pkg2/Outer$Inner;"
+     * @throws ClassNotFoundException An exception was raised while loading the {@link IClass}
      */
-    public IClass findIClass(final String type) throws ClassNotFoundException {
-        if (JavaSourceIClassLoader.DEBUG) System.out.println("type = " + type);
+    @Override @Nullable public IClass
+    findIClass(final String fieldDescriptor) throws ClassNotFoundException {
+        JavaSourceIClassLoader.LOGGER.entering(null, "findIClass", fieldDescriptor);
 
         // Class type.
-        String className = Descriptor.toClassName(type); // E.g. "pkg1.pkg2.Outer$Inner"
-        if (JavaSourceIClassLoader.DEBUG) System.out.println("2 className = \"" + className + "\"");
+        String className = Descriptor.toClassName(fieldDescriptor); // E.g. "pkg1.pkg2.Outer$Inner"
+        JavaSourceIClassLoader.LOGGER.log(Level.FINE, "className={0}", className);
 
         // Do not attempt to load classes from package "java".
         if (className.startsWith("java.")) return null;
@@ -115,8 +142,7 @@ public final class JavaSourceIClassLoader extends IClassLoader {
         }
 
         // Check the already-parsed compilation units.
-        for (Iterator it = this.unitCompilers.iterator(); it.hasNext();) {
-            UnitCompiler uc = (UnitCompiler) it.next();
+        for (UnitCompiler uc : this.unitCompilers) {
             IClass res = uc.findClass(topLevelClassName);
             if (res != null) {
                 if (!className.equals(topLevelClassName)) {
@@ -128,29 +154,10 @@ public final class JavaSourceIClassLoader extends IClassLoader {
             }
         }
 
-        // Find source file.
-        Resource sourceResource = this.sourceFinder.findResource(ClassFile.getSourceResourceName(className));
-        if (sourceResource == null) return null;
-        if (JavaSourceIClassLoader.DEBUG) System.out.println("sourceURL=" + sourceResource);
-
         try {
+            Java.CompilationUnit cu = this.findCompilationUnit(className);
+            if (cu == null) return null;
 
-            // Scan and parse the source file.
-            InputStream inputStream = sourceResource.open();
-            Java.CompilationUnit cu;
-            try {
-                Scanner scanner = new Scanner(
-                    sourceResource.getFileName(),
-                    inputStream,
-                    this.optionalCharacterEncoding
-                );
-                scanner.setWarningHandler(this.optionalWarningHandler);
-                Parser parser = new Parser(scanner);
-                parser.setWarningHandler(this.optionalWarningHandler);
-                cu = parser.parseCompilationUnit();
-            } finally {
-                try { inputStream.close(); } catch (IOException ex) { }
-            }
             UnitCompiler uc = new UnitCompiler(cu, this);
             uc.setCompileErrorHandler(this.optionalCompileErrorHandler);
             uc.setWarningHandler(this.optionalWarningHandler);
@@ -162,22 +169,51 @@ public final class JavaSourceIClassLoader extends IClassLoader {
             IClass res = uc.findClass(className);
             if (res == null) {
                 if (className.equals(topLevelClassName)) {
-                    throw new CompileException((
-                        "Source file \""
-                        + sourceResource.getFileName()
-                        + "\" does not declare class \""
-                        + className
-                        + "\""
-                    ), (Location) null);
+                    throw new CompileException(
+                        "Compilation unit '" + className + "' does not declare a class with the same name",
+                        (Location) null
+                    );
                 }
                 return null;
             }
             this.defineIClass(res);
             return res;
         } catch (IOException e) {
-            throw new ClassNotFoundException("Parsing compilation unit \"" + sourceResource + "\"", e);
+            throw new ClassNotFoundException("Parsing compilation unit '" + className + "'", e);
         } catch (CompileException e) {
-            throw new ClassNotFoundException("Parsing compilation unit \"" + sourceResource + "\"", e);
+            throw new ClassNotFoundException("Parsing compilation unit '" + className + "'", e);
+        }
+    }
+
+    /**
+     * Finds the Java source file for the named class through the configured 'source resource finder' and parses it.
+     *
+     * @return {@code null} iff the source file could not be found
+     */
+    @Nullable protected CompilationUnit
+    findCompilationUnit(String className) throws IOException, CompileException {
+
+        // Find source file.
+        Resource sourceResource = this.sourceFinder.findResource(ClassFile.getSourceResourceName(className));
+        JavaSourceIClassLoader.LOGGER.log(Level.FINE, "sourceResource={0}", sourceResource);
+        if (sourceResource == null) return null;
+
+        // Scan and parse the source file.
+        InputStream inputStream = sourceResource.open();
+        try {
+
+            Scanner scanner = new Scanner(
+                sourceResource.getFileName(),
+                inputStream,
+                this.optionalCharacterEncoding
+            );
+
+            Parser parser = new Parser(scanner);
+            parser.setWarningHandler(this.optionalWarningHandler);
+
+            return parser.parseCompilationUnit();
+        } finally {
+            try { inputStream.close(); } catch (IOException ex) {}
         }
     }
 }

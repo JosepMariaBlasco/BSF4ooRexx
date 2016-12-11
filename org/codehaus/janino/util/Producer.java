@@ -26,24 +26,25 @@
 
 package org.codehaus.janino.util;
 
+import org.codehaus.commons.nullanalysis.Nullable;
+
 /**
- * An object that produces some {@link java.lang.Object} each time the
- * {@link #produce()} method is invoked. This behavior is similar to the
- * {@link java.util.Iterator}, but is represented by one single
- * {@link #produce()} method as opposed to {@link java.util.Iterator}'s
- * two methods {@link java.util.Iterator#hasNext()} and
- * {@link java.util.Iterator#next()}. This simplifies the implementation of
- * certain complex iterations.
+ * An object that produces some {@link java.lang.Object} each time the {@link #produce()} method is invoked. This
+ * behavior is similar to the {@link java.util.Iterator}, but is represented by one single {@link #produce()} method as
+ * opposed to {@link java.util.Iterator}'s two methods {@link java.util.Iterator#hasNext()} and {@link
+ * java.util.Iterator#next()}. This simplifies the implementation of certain complex iterations.
  *
- * @see org.codehaus.janino.util.iterator.DirectoryIterator
- * @see org.codehaus.janino.util.iterator.ProducerIterator
+ * @param <T> The type of the products
+ * @see       org.codehaus.janino.util.iterator.DirectoryIterator
+ * @see       org.codehaus.janino.util.iterator.ProducerIterator
  */
-public interface Producer {
+public
+interface Producer<T> {
 
     /**
-     * Produce the next object.
+     * Produces the next object.
      *
-     * @return the next object or <code>null</code> to indicate that no more objects can be produced
+     * @return the next object or {@code null} to indicate that no more objects can be produced
      */
-    Object produce();
+    @Nullable T produce();
 }

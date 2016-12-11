@@ -26,17 +26,22 @@
 
 package org.codehaus.janino.util.resource;
 
-import java.io.*;
+import java.io.File;
+
+import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
- * This class specializes the {@link org.codehaus.janino.util.resource.ResourceFinder}
- * for finding resources in {@link java.io.File}s.
+ * This class specializes the {@link org.codehaus.janino.util.resource.ResourceFinder} for finding resources in {@link
+ * java.io.File}s.
  * <p>
- * It finds {@link FileResource}s instead of simple
- * {@link Resource}s.
+ *   It finds {@link FileResource}s instead of simple {@link Resource}s.
+ * </p>
  */
-public abstract class FileResourceFinder extends ResourceFinder {
-    public final Resource findResource(String resourceName) {
+public abstract
+class FileResourceFinder extends ResourceFinder {
+
+    @Override @Nullable public final Resource
+    findResource(String resourceName) {
         File file = this.findResourceAsFile(resourceName);
         if (file == null) return null;
         return new FileResource(file);
@@ -45,5 +50,6 @@ public abstract class FileResourceFinder extends ResourceFinder {
     /**
      * Converts a given resource resource name into a {@link File}.
      */
-    protected abstract File findResourceAsFile(String resourceName);
+    @Nullable protected abstract File
+    findResourceAsFile(String resourceName);
 }

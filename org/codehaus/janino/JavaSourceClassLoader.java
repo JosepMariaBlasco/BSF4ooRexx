@@ -26,127 +26,131 @@
 
 package org.codehaus.janino;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.Reader;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-import org.codehaus.commons.compiler.*;
-import org.codehaus.janino.tools.Disassembler;
-import org.codehaus.janino.util.*;
-import org.codehaus.janino.util.enumerator.*;
-import org.codehaus.janino.util.resource.*;
+import org.codehaus.commons.compiler.AbstractJavaSourceClassLoader;
+import org.codehaus.commons.compiler.CompileException;
+import org.codehaus.commons.compiler.ErrorHandler;
+import org.codehaus.commons.compiler.ICookable;
+import org.codehaus.commons.compiler.WarningHandler;
+import org.codehaus.commons.nullanalysis.Nullable;
+import org.codehaus.janino.util.ClassFile;
+import org.codehaus.janino.util.resource.DirectoryResourceFinder;
+import org.codehaus.janino.util.resource.PathResourceFinder;
+import org.codehaus.janino.util.resource.ResourceFinder;
 
 /**
- * A {@link ClassLoader} that, unlike usual {@link ClassLoader}s,
- * does not load byte code, but reads Java&trade; source code and then scans, parses,
- * compiles and loads it into the virtual machine.
+ * A {@link ClassLoader} that, unlike usual {@link ClassLoader}s, does not load byte code, but reads Java source code
+ * and then scans, parses, compiles and loads it into the virtual machine.
  * <p>
- * As with any {@link ClassLoader}, it is not possible to "update" classes after they've been
- * loaded. The way to achieve this is to give up on the {@link JavaSourceClassLoader} and create
- * a new one.
+ *   As with any {@link ClassLoader}, it is not possible to "update" classes after they've been loaded. The way to
+ *   achieve this is to give up on the {@link JavaSourceClassLoader} and create a new one.
+ * </p>
  */
-public class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
-    private static final boolean DEBUG = false;
+public
+class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
 
-    public JavaSourceClassLoader() {
-        this(ClassLoader.getSystemClassLoader());
-    }
+    public
+    JavaSourceClassLoader() { this(ClassLoader.getSystemClassLoader()); }
 
-    public JavaSourceClassLoader(ClassLoader parentClassLoader) {
+    public
+    JavaSourceClassLoader(ClassLoader parentClassLoader) {
         this(
             parentClassLoader,
-            (File[]) null,                                // optionalSourcePath
-            null,                                         // optionalCharacterEncoding
-            new EnumeratorSet(DebuggingInformation.class) // debuggingInformation
+            (File[]) null,     // optionalSourcePath
+            null               // optionalCharacterEncoding
         );
     }
 
     /**
-     * Set up a {@link JavaSourceClassLoader} that finds Java&trade; source code in a file
-     * that resides in either of the directories specified by the given source path.
-     * <p>
-     * You can specify to include certain debugging information in the generated class files, which
-     * is useful if you want to debug through the generated classes (see
-     * {@link Scanner#Scanner(String, Reader)}).
+     * Sets up a {@link JavaSourceClassLoader} that finds Java source code in a file that resides in either of
+     * the directories specified by the given source path.
      *
      * @param parentClassLoader         See {@link ClassLoader}
-     * @param optionalSourcePath        A collection of directories that are searched for Java&trade; source files in
+     * @param optionalSourcePath        A collection of directories that are searched for Java source files in
      *                                  the given order
-     * @param optionalCharacterEncoding The encoding of the Java&trade; source files (<code>null</code> for platform
+     * @param optionalCharacterEncoding The encoding of the Java source files ({@code null} for platform
      *                                  default encoding)
-     * @param debuggingInformation      What kind of debugging information to generate, see {@link DebuggingInformation}
      */
-    public JavaSourceClassLoader(
-        ClassLoader   parentClassLoader,
-        File[]        optionalSourcePath,
-        String        optionalCharacterEncoding,
-        EnumeratorSet debuggingInformation
+    public
+    JavaSourceClassLoader(
+        ClassLoader      parentClassLoader,
+        @Nullable File[] optionalSourcePath,
+        @Nullable String optionalCharacterEncoding
     ) {
         this(
-            parentClassLoader,         // parentClassLoader
-            (                          // sourceFinder
-                optionalSourcePath == null ?
-                (ResourceFinder) new DirectoryResourceFinder(new File(".")) :
-                (ResourceFinder) new PathResourceFinder(optionalSourcePath)
+            parentClassLoader,        // parentClassLoader
+            (                         // sourceFinder
+                optionalSourcePath == null
+                ? (ResourceFinder) new DirectoryResourceFinder(new File("."))
+                : (ResourceFinder) new PathResourceFinder(optionalSourcePath)
             ),
-            optionalCharacterEncoding, // optionalCharacterEncoding
-            debuggingInformation       // debuggingInformation
+            optionalCharacterEncoding // optionalCharacterEncoding
         );
     }
 
     /**
-     * Set up a {@link JavaSourceClassLoader} that finds Java&trade; source code through
-     * a given {@link ResourceFinder}.
+     * Constructs a {@link JavaSourceClassLoader} that finds Java source code through a given {@link
+     * ResourceFinder}.
      * <p>
-     * You can specify to include certain debugging information in the generated class files, which
-     * is useful if you want to debug through the generated classes (see
-     * {@link Scanner#Scanner(String, Reader)}).
+     *   You can specify to include certain debugging information in the generated class files, which is useful if you
+     *   want to debug through the generated classes (see {@link Scanner#Scanner(String, Reader)}).
+     * </p>
      *
      * @param parentClassLoader         See {@link ClassLoader}
      * @param sourceFinder              Used to locate additional source files
-     * @param optionalCharacterEncoding The encoding of the Java&trade; source files (<code>null</code> for platform
+     * @param optionalCharacterEncoding The encoding of the Java source files ({@code null} for platform
      *                                  default encoding)
-     * @param debuggingInformation      What kind of debugging information to generate, see {@link DebuggingInformation}
      */
-    public JavaSourceClassLoader(
-        ClassLoader    parentClassLoader,
-        ResourceFinder sourceFinder,
-        String         optionalCharacterEncoding,
-        EnumeratorSet  debuggingInformation
+    public
+    JavaSourceClassLoader(
+        ClassLoader      parentClassLoader,
+        ResourceFinder   sourceFinder,
+        @Nullable String optionalCharacterEncoding
     ) {
-        super(parentClassLoader);
-
-        this.iClassLoader = new JavaSourceIClassLoader(
+        this(parentClassLoader, new JavaSourceIClassLoader(
             sourceFinder,                                  // sourceFinder
             optionalCharacterEncoding,                     // optionalCharacterEncoding
-            this.unitCompilers,                            // unitCompilers
             new ClassLoaderIClassLoader(parentClassLoader) // optionalParentIClassLoader
-        );
-
-        this.debuggingInformation = debuggingInformation;
+        ));
     }
 
-    public void setSourcePath(File[] sourcePath) {
+    /**
+     * Constructs a {@link JavaSourceClassLoader} that finds classes through an {@link JavaSourceIClassLoader}.
+     */
+    public
+    JavaSourceClassLoader(ClassLoader parentClassLoader, JavaSourceIClassLoader iClassLoader) {
+        super(parentClassLoader);
+        this.iClassLoader = iClassLoader;
+    }
+
+    @Override public void
+    setSourcePath(File[] sourcePath) {
         this.iClassLoader.setSourceFinder(new PathResourceFinder(sourcePath));
     }
 
-    public void setSourceFileCharacterEncoding(String optionalCharacterEncoding) {
+    @Override public void
+    setSourceFileCharacterEncoding(@Nullable String optionalCharacterEncoding) {
         this.iClassLoader.setCharacterEncoding(optionalCharacterEncoding);
     }
 
-    public void setDebuggingInfo(boolean lines, boolean vars, boolean source) {
-        this.debuggingInformation = new EnumeratorSet(DebuggingInformation.class).addAll(Arrays.asList(
-            new DebuggingInformation[] {
-                lines  ? DebuggingInformation.LINES  : null,
-                vars   ? DebuggingInformation.VARS   : null,
-                source ? DebuggingInformation.SOURCE : null,
-            }
-        ));
+    @Override public void
+    setDebuggingInfo(boolean debugSource, boolean debugLines, boolean debugVars) {
+        this.debugSource = debugSource;
+        this.debugLines  = debugLines;
+        this.debugVars   = debugVars;
     }
 
     /**
      * @see UnitCompiler#setCompileErrorHandler
      */
-    public void setCompileErrorHandler(UnitCompiler.ErrorHandler optionalCompileErrorHandler) {
+    public void
+    setCompileErrorHandler(@Nullable ErrorHandler optionalCompileErrorHandler) {
         this.iClassLoader.setCompileErrorHandler(optionalCompileErrorHandler);
     }
 
@@ -154,7 +158,8 @@ public class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
      * @see Parser#setWarningHandler(WarningHandler)
      * @see UnitCompiler#setCompileErrorHandler
      */
-    public void setWarningHandler(WarningHandler optionalWarningHandler) {
+    public void
+    setWarningHandler(@Nullable WarningHandler optionalWarningHandler) {
         this.iClassLoader.setWarningHandler(optionalWarningHandler);
     }
 
@@ -163,7 +168,10 @@ public class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
      *
      * @throws ClassNotFoundException
      */
-    protected Class findClass(String name) throws ClassNotFoundException {
+    @Override protected /*synchronized <- No need to synchronize, because 'loadClass()' is synchronized
+    */ Class<?>
+    findClass(@Nullable String name) throws ClassNotFoundException {
+        assert name != null;
 
         // Check if the bytecode for that class was generated already.
         byte[] bytecode = (byte[]) this.precompiledClasses.remove(name);
@@ -171,7 +179,7 @@ public class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
 
             // Read, scan, parse and compile the right compilation unit.
             {
-                Map bytecodes = this.generateBytecodes(name);
+                Map<String /*name*/, byte[] /*bytecode*/> bytecodes = this.generateBytecodes(name);
                 if (bytecodes == null) throw new ClassNotFoundException(name);
                 this.precompiledClasses.putAll(bytecodes);
             }
@@ -191,43 +199,35 @@ public class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
     }
 
     /**
-     * This {@link Map} keeps those classes which were already compiled, but not
-     * yet defined i.e. which were not yet passed to
-     * {@link ClassLoader#defineClass(java.lang.String, byte[], int, int)}.
+     * This {@link Map} keeps those classes which were already compiled, but not yet defined i.e. which were not yet
+     * passed to {@link ClassLoader#defineClass(java.lang.String, byte[], int, int)}.
      */
-    Map precompiledClasses = new HashMap(); // String name => byte[] bytecode
+    private final Map<String /*name*/, byte[] /*bytecode*/> precompiledClasses = new HashMap<String, byte[]>();
 
     /**
-     * Find, scan, parse the right compilation unit. Compile the parsed compilation unit to
-     * bytecode. This may cause more compilation units being scanned and parsed. Continue until
-     * all compilation units are compiled.
+     * Finds, scans, parses the right compilation unit. Compile the parsed compilation unit to bytecode. This may cause
+     * more compilation units being scanned and parsed. Continue until all compilation units are compiled.
      *
-     * @return String name => byte[] bytecode, or <code>null</code> if no source code could be found
+     * @return String name =&gt; byte[] bytecode, or {@code null} if no source code could be found
      * @throws ClassNotFoundException on compilation problems
      */
-    protected Map generateBytecodes(String name) throws ClassNotFoundException {
+    @Nullable protected Map<String /*name*/, byte[] /*bytecode*/>
+    generateBytecodes(String name) throws ClassNotFoundException {
         if (this.iClassLoader.loadIClass(Descriptor.fromClassName(name)) == null) return null;
 
-        Map bytecodes = new HashMap(); // String name => byte[] bytecode
-        Set compiledUnitCompilers = new HashSet();
+        Map<String /*name*/, byte[] /*bytecode*/> bytecodes             = new HashMap<String, byte[]>();
+        Set<UnitCompiler>                         compiledUnitCompilers = new HashSet<UnitCompiler>();
         COMPILE_UNITS:
         for (;;) {
-            for (Iterator it = this.unitCompilers.iterator(); it.hasNext();) {
-                UnitCompiler uc = (UnitCompiler) it.next();
+            for (UnitCompiler uc : this.iClassLoader.getUnitCompilers()) {
                 if (!compiledUnitCompilers.contains(uc)) {
                     ClassFile[] cfs;
                     try {
-                        cfs = uc.compileUnit(this.debuggingInformation);
+                        cfs = uc.compileUnit(this.debugSource, this.debugLines, this.debugVars);
                     } catch (CompileException ex) {
-                        throw new ClassNotFoundException(
-                            "Compiling unit \"" + uc.compilationUnit.optionalFileName + "\"",
-                            ex
-                        );
+                        throw new ClassNotFoundException(ex.getMessage(), ex);
                     }
-                    for (int i = 0; i < cfs.length; ++i) {
-                        ClassFile cf = cfs[i];
-                        bytecodes.put(cf.getThisClassName(), cf.toByteArray());
-                    }
+                    for (ClassFile cf : cfs) bytecodes.put(cf.getThisClassName(), cf.toByteArray());
                     compiledUnitCompilers.add(uc);
                     continue COMPILE_UNITS;
                 }
@@ -237,56 +237,22 @@ public class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
     }
 
     /**
-     * Define a set of classes, like {@link java.lang.ClassLoader#defineClass(java.lang.String, byte[], int, int)}. If
-     * the <code>bytecodes</code> contains an entry for <code>name</code>, then the {@link Class} defined for that name
-     * is returned.
-     *
-     * @param bytecodes         String name => byte[] bytecode
      * @throws ClassFormatError
-     */
-    protected Class defineBytecodes(String name, Map bytecodes) {
-        Class clazz = null;
-        for (Iterator it = bytecodes.entrySet().iterator(); it.hasNext();) {
-            Map.Entry me = (Map.Entry) it.next();
-            String name2 = (String) me.getKey();
-            byte[] ba = (byte[]) me.getValue();
-
-            Class c = this.defineBytecode(name2, ba);
-            if (name2.equals(name)) clazz = c;
-        }
-        return clazz;
-    }
-
-    /**
      * @see #setProtectionDomainFactory
-     *
-     * @throws ClassFormatError
      */
-    protected Class defineBytecode(String className, byte[] ba) {
-
-        // Disassemble the the class bytecode(for debugging).
-        if (JavaSourceClassLoader.DEBUG) {
-            System.out.println("*** Disassembly of class \"" + className + "\":");
-            try {
-                new Disassembler().disasm(new ByteArrayInputStream(ba));
-                System.out.flush();
-            } catch (IOException ex) {
-                throw new JaninoRuntimeException("SNO: IOException despite ByteArrayInputStream");
-            }
-        }
+    private Class<?>
+    defineBytecode(String className, byte[] ba) {
 
         return this.defineClass(className, ba, 0, ba.length, (
-            this.optionalProtectionDomainFactory == null
-            ? null
-            : this.optionalProtectionDomainFactory.getProtectionDomain(ClassFile.getSourceResourceName(className))
+            this.optionalProtectionDomainFactory != null
+            ? this.optionalProtectionDomainFactory.getProtectionDomain(ClassFile.getSourceResourceName(className))
+            : null
         ));
     }
 
     private final JavaSourceIClassLoader iClassLoader;
-    private EnumeratorSet                debuggingInformation;
 
-    /**
-     * Collection of parsed, but uncompiled compilation units.
-     */
-    private final Set unitCompilers = new HashSet(); // UnitCompiler
+    private boolean debugSource = Boolean.getBoolean(ICookable.SYSTEM_PROPERTY_SOURCE_DEBUGGING_ENABLE);
+    private boolean debugLines  = this.debugSource;
+    private boolean debugVars   = this.debugSource;
 }

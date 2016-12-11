@@ -26,41 +26,41 @@
 
 package org.codehaus.janino;
 
-import java.io.*;
+import java.io.FilterReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+
+import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
- * A {@link FilterReader} that unescapes the "Unicode Escapes"
- * as described in
- * <a href="http://java.sun.com/docs/books/jls/second_edition/html/lexical.doc.html#100850">the
- * Java Language Specification, 2nd edition</a>.
+ * A {@link FilterReader} that unescapes the "Unicode Escapes" as described in JLS7 3.10.6.
  * <p>
- * Notice that it is possible to formulate invalid escape sequences, e.g.
- * "&#92;u123g" ("g" is not a valid hex character). This is handled by
- * throwing a {@link java.lang.RuntimeException}-derived
- * {@link org.codehaus.janino.UnicodeUnescapeException}.
+ *   Notice that it is possible to formulate invalid escape sequences, e.g. "&#92;u123g" ("g" is not a valid hex
+ *   character). This is handled by throwing a {@link java.lang.RuntimeException}-derived {@link
+ *   UnicodeUnescapeException}.
+ * </p>
  */
-public class UnicodeUnescapeReader extends FilterReader {
+public
+class UnicodeUnescapeReader extends FilterReader {
+
+    public
+    UnicodeUnescapeReader(Reader in) { super(in); }
 
     /**
-     * @param in
-     */
-    public UnicodeUnescapeReader(Reader in) {
-        super(in);
-    }
-
-    /**
-     * Override {@link FilterReader#read()}.
+     * Overrides {@link FilterReader#read()}.
      *
      * @throws UnicodeUnescapeException Invalid escape sequence encountered
      */
-    public int read() throws IOException {
+    @Override public int
+    read() throws IOException {
         int c;
 
         // Read next character.
         if (this.unreadChar == -1) {
             c = this.in.read();
         } else {
-            c = this.unreadChar;
+            c               = this.unreadChar;
             this.unreadChar = -1;
         }
 
@@ -74,7 +74,7 @@ public class UnicodeUnescapeReader extends FilterReader {
         // Read one character ahead and check if it is a "u".
         c = this.in.read();
         if (c != 'u') {
-            this.unreadChar = c;
+            this.unreadChar              = c;
             this.oddPrecedingBackslashes = true;
             return '\\';
         }
@@ -92,14 +92,16 @@ public class UnicodeUnescapeReader extends FilterReader {
         try {
             return 0xffff & Integer.parseInt(new String(ca), 16);
         } catch (NumberFormatException ex) {
-            throw new UnicodeUnescapeException("Invalid escape sequence \"\\u" + new String(ca) + "\"");
+            throw new UnicodeUnescapeException("Invalid escape sequence \"\\u" + new String(ca) + "\"", ex);
         }
     }
 
     /**
-     * Override {@link FilterReader#read(char[], int, int)}.
+     * Overrides {@link FilterReader#read(char[], int, int)}.
      */
-    public int read(char[] cbuf, int off, int len) throws IOException {
+    @Override public int
+    read(@Nullable char[] cbuf, int off, int len) throws IOException {
+        assert cbuf != null;
         if (len == 0) return 0;
         int res = 0;
         do {
@@ -113,7 +115,8 @@ public class UnicodeUnescapeReader extends FilterReader {
     /**
      * Simple unit testing.
      */
-    public static void main(String[] args) throws IOException {
+    public static void
+    main(String[] args) throws IOException {
         Reader r = new UnicodeUnescapeReader(new StringReader(args[0]));
         for (;;) {
             int c = r.read();
@@ -124,5 +127,5 @@ public class UnicodeUnescapeReader extends FilterReader {
     }
 
     private int     unreadChar = -1; // -1 == none
-    private boolean oddPrecedingBackslashes = false;
+    private boolean oddPrecedingBackslashes;
 }

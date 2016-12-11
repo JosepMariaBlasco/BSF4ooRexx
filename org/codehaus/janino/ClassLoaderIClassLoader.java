@@ -26,24 +26,29 @@
 
 package org.codehaus.janino;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.codehaus.commons.nullanalysis.Nullable;
+
 /**
- * An {@link IClassLoader} that loads {@link IClass}es through a reflection
- * {@link ClassLoader}.
+ * An {@link IClassLoader} that loads {@link IClass}es through a reflection {@link ClassLoader}.
  */
-public class ClassLoaderIClassLoader extends IClassLoader {
-    private static final boolean DEBUG = false;
+public
+class ClassLoaderIClassLoader extends IClassLoader {
+
+    private static final Logger LOGGER = Logger.getLogger(ClassLoaderIClassLoader.class.getName());
 
     /**
-     * @param classLoader The delegate that loads the classes.
+     * @param classLoader The delegate that loads the classes
      */
-    public ClassLoaderIClassLoader(ClassLoader classLoader) {
+    public
+    ClassLoaderIClassLoader(ClassLoader classLoader) {
         super(
             null   // optionalParentIClassLoader
         );
-
-        if (classLoader == null) throw new NullPointerException();
-
         this.classLoader = classLoader;
+
         super.postConstruct();
     }
 
@@ -53,33 +58,34 @@ public class ClassLoaderIClassLoader extends IClassLoader {
      *   ClassLoaderIClassLoader(Thread.currentThread().getContextClassLoader())
      * </pre>
      */
-    public ClassLoaderIClassLoader() {
-        this(Thread.currentThread().getContextClassLoader());
-    }
-
-    public ClassLoader getClassLoader() {
-        return this.classLoader;
-    }
+    public
+    ClassLoaderIClassLoader() { this(Thread.currentThread().getContextClassLoader()); }
 
     /**
-     * Find a new {@link IClass} by descriptor.
+     * @return The delegate {@link ClassLoader}
      */
-    protected IClass findIClass(String descriptor) throws ClassNotFoundException {
+    public ClassLoader
+    getClassLoader() { return this.classLoader; }
 
-        //
-        // See also [ 931385 ] Janino 2.0 throwing exception on arrays of java.io.File:
-        //
-        // "ClassLoader.loadClass()" and "Class.forName()" should be identical,
-        // but "ClassLoader.loadClass("[Ljava.lang.Object;")" throws a
-        // ClassNotFoundException under JDK 1.5.0 beta.
-        // Unclear whether this a beta version bug and SUN will fix this in the final
-        // release, but "Class.forName()" seems to work fine in all cases, so we
-        // use that.
-        //
+    @Override @Nullable protected IClass
+    findIClass(String descriptor) throws ClassNotFoundException {
+        ClassLoaderIClassLoader.LOGGER.entering(null, "findIClass", descriptor);
 
-        Class clazz;
+        Class<?> clazz;
         try {
-//            clazz = this.classLoader.loadClass(className);
+
+            //
+            // See also [ 931385 ] Janino 2.0 throwing exception on arrays of java.io.File:
+            //
+            // "ClassLoader.loadClass()" and "Class.forName()" should be identical,
+            // but "ClassLoader.loadClass("[Ljava.lang.Object;")" throws a
+            // ClassNotFoundException under JDK 1.5.0 beta.
+            // Unclear whether this a beta version bug and SUN will fix this in the final
+            // release, but "Class.forName()" seems to work fine in all cases, so we
+            // use that.
+            //
+
+//            clazz = this.classLoader.loadClass(Descriptor.toClassName(descriptor));
             clazz = Class.forName(Descriptor.toClassName(descriptor), false, this.classLoader);
         } catch (ClassNotFoundException e) {
             if (e.getException() == null) {
@@ -89,12 +95,12 @@ public class ClassLoaderIClassLoader extends IClassLoader {
                 throw e;
             }
         }
-        if (ClassLoaderIClassLoader.DEBUG) System.out.println("clazz = " + clazz);
+        ClassLoaderIClassLoader.LOGGER.log(Level.FINE, "clazz={0}", clazz);
 
         IClass result = new ReflectionIClass(clazz, this);
         this.defineIClass(result);
         return result;
     }
 
-    private /*final*/ ClassLoader classLoader;
+    private final ClassLoader classLoader;
 }

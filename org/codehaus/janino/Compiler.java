@@ -27,24 +27,25 @@
 package org.codehaus.janino;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.codehaus.commons.compiler.CompileException;
+import org.codehaus.commons.compiler.ErrorHandler;
 import org.codehaus.commons.compiler.Location;
-import org.codehaus.janino.UnitCompiler.ErrorHandler;
-import org.codehaus.janino.tools.Disassembler;
+import org.codehaus.commons.compiler.WarningHandler;
+import org.codehaus.commons.nullanalysis.Nullable;
+import org.codehaus.janino.Java.CompilationUnit;
 import org.codehaus.janino.util.Benchmark;
 import org.codehaus.janino.util.ClassFile;
 import org.codehaus.janino.util.StringPattern;
-import org.codehaus.janino.util.enumerator.EnumeratorFormatException;
-import org.codehaus.janino.util.enumerator.EnumeratorSet;
 import org.codehaus.janino.util.resource.DirectoryResourceCreator;
 import org.codehaus.janino.util.resource.DirectoryResourceFinder;
 import org.codehaus.janino.util.resource.FileResource;
@@ -57,31 +58,35 @@ import org.codehaus.janino.util.resource.ResourceFinder;
 
 /**
  * A simplified substitute for the <tt>javac</tt> tool.
- *
- * Usage:
+ * <p>
+ *   Usage:
+ * </p>
  * <pre>
- * java org.codehaus.janino.Compiler \
- *           [ -d <i>destination-dir</i> ] \
- *           [ -sourcepath <i>dirlist</i> ] \
- *           [ -classpath <i>dirlist</i> ] \
- *           [ -extdirs <i>dirlist</i> ] \
- *           [ -bootclasspath <i>dirlist</i> ] \
- *           [ -encoding <i>encoding</i> ] \
- *           [ -verbose ] \
- *           [ -g:none ] \
- *           [ -g:{lines,vars,source} ] \
- *           [ -warn:<i>pattern-list</i> ] \
- *           <i>source-file</i> ...
- * java org.codehaus.janino.Compiler -help
+ *     java org.codehaus.janino.Compiler \
+ *               [ -d <em>destination-dir</em> ] \
+ *               [ -sourcepath <em>dirlist</em> ] \
+ *               [ -classpath <em>dirlist</em> ] \
+ *               [ -extdirs <em>dirlist</em> ] \
+ *               [ -bootclasspath <em>dirlist</em> ] \
+ *               [ -encoding <em>encoding</em> ] \
+ *               [ -verbose ] \
+ *               [ -g:none ] \
+ *               [ -g:{source,lines,vars} ] \
+ *               [ -warn:<em>pattern-list</em> ] \
+ *               <em>source-file</em> ...
+ *     java org.codehaus.janino.Compiler -help
  * </pre>
  */
-public class Compiler {
-    private static final boolean DEBUG = false;
+public
+class Compiler {
+
+    private static final Logger LOGGER = Logger.getLogger(Compiler.class.getName());
 
     /**
      * Command line interface.
      */
-    public static void main(String[] args) {
+    public static void
+    main(String[] args) {
         File            destinationDirectory      = Compiler.NO_DESTINATION_DIRECTORY;
         File[]          optionalSourcePath        = null;
         File[]          classPath                 = { new File(".") };
@@ -89,7 +94,9 @@ public class Compiler {
         File[]          optionalBootClassPath     = null;
         String          optionalCharacterEncoding = null;
         boolean         verbose                   = false;
-        EnumeratorSet   debuggingInformation      = DebuggingInformation.DEFAULT_DEBUGGING_INFORMATION;
+        boolean         debugSource               = true;
+        boolean         debugLines                = true;
+        boolean         debugVars                 = false;
         StringPattern[] warningHandlePatterns     = Compiler.DEFAULT_WARNING_HANDLE_PATTERNS;
         boolean         rebuild                   = false;
 
@@ -98,54 +105,49 @@ public class Compiler {
         for (i = 0; i < args.length; ++i) {
             String arg = args[i];
             if (arg.charAt(0) != '-') break;
-            if (arg.equals("-d")) {
+            if ("-d".equals(arg)) {
                 destinationDirectory = new File(args[++i]);
             } else
-            if (arg.equals("-sourcepath")) {
+            if ("-sourcepath".equals(arg)) {
                 optionalSourcePath = PathResourceFinder.parsePath(args[++i]);
             } else
-            if (arg.equals("-classpath")) {
+            if ("-classpath".equals(arg)) {
                 classPath = PathResourceFinder.parsePath(args[++i]);
             } else
-            if (arg.equals("-extdirs")) {
+            if ("-extdirs".equals(arg)) {
                 optionalExtDirs = PathResourceFinder.parsePath(args[++i]);
             } else
-            if (arg.equals("-bootclasspath")) {
+            if ("-bootclasspath".equals(arg)) {
                 optionalBootClassPath = PathResourceFinder.parsePath(args[++i]);
             } else
-            if (arg.equals("-encoding")) {
+            if ("-encoding".equals(arg)) {
                 optionalCharacterEncoding = args[++i];
             } else
-            if (arg.equals("-verbose")) {
+            if ("-verbose".equals(arg)) {
                 verbose = true;
             } else
-            if (arg.equals("-g")) {
-                debuggingInformation = DebuggingInformation.ALL;
+            if ("-g".equals(arg)) {
+                debugSource = true;
+                debugLines  = true;
+                debugVars   = true;
             } else
             if (arg.startsWith("-g:")) {
-                try {
-                    debuggingInformation = new EnumeratorSet(DebuggingInformation.class, arg.substring(3));
-                } catch (EnumeratorFormatException ex) {
-                    System.err.println(
-                        "Invalid debugging option \""
-                        + arg
-                        + "\", only \""
-                        + DebuggingInformation.ALL
-                        + "\" allowed"
-                    );
-                    System.exit(1);
-                }
+                if (arg.indexOf("none")   != -1) debugSource = (debugLines = (debugVars = false));
+                if (arg.indexOf("source") != -1) debugSource = true;
+                if (arg.indexOf("lines")  != -1) debugLines = true;
+                if (arg.indexOf("vars")   != -1) debugVars = true;
             } else
             if (arg.startsWith("-warn:")) {
                 warningHandlePatterns = StringPattern.parseCombinedPattern(arg.substring(6));
             } else
-            if (arg.equals("-rebuild")) {
+            if ("-rebuild".equals(arg)) {
                 rebuild = true;
             } else
-            if (arg.equals("-help")) {
-                for (int j = 0; j < Compiler.USAGE.length; ++j) System.out.println(Compiler.USAGE[j]);
+            if ("-help".equals(arg)) {
+                System.out.printf(Compiler.USAGE, (Object[]) null);
                 System.exit(1);
-            } else {
+            } else
+            {
                 System.err.println("Unrecognized command line option \"" + arg + "\"; try \"-help\".");
                 System.exit(1);
             }
@@ -168,7 +170,9 @@ public class Compiler {
             destinationDirectory,
             optionalCharacterEncoding,
             verbose,
-            debuggingInformation,
+            debugSource,
+            debugLines,
+            debugVars,
             warningHandlePatterns,
             rebuild
         );
@@ -177,115 +181,132 @@ public class Compiler {
         try {
             compiler.compile(sourceFiles);
         } catch (Exception e) {
-            System.err.println(e.toString());
+
+            if (verbose) {
+                e.printStackTrace();
+            } else {
+                System.err.println(e.toString());
+            }
+
             System.exit(1);
         }
     }
 
-    private static final String[] USAGE = {
-        "Usage:",
-        "",
-        "  java " + Compiler.class.getName() + " [ <option> ] ... <source-file> ...",
-        "",
-        "Supported <option>s are:",
-        "  -d <output-dir>           Where to save class files",
-        "  -sourcepath <dirlist>     Where to look for other source files",
-        "  -classpath <dirlist>      Where to look for other class files",
-        "  -extdirs <dirlist>        Where to look for other class files",
-        "  -bootclasspath <dirlist>  Where to look for other class files",
-        "  -encoding <encoding>      Encoding of source files, e.g. \"UTF-8\" or \"ISO-8859-1\"",
-        "  -verbose",
-        "  -g                        Generate all debugging info",
-        "  -g:none                   Generate no debugging info",
-        "  -g:{lines,vars,source}    Generate only some debugging info",
-        "  -warn:<pattern-list>      Issue certain warnings; examples:",
-        "    -warn:*                 Enables all warnings",
-        "    -warn:IASF              Only warn against implicit access to static fields",
-        "    -warn:*-IASF            Enables all warnings, except those against implicit",
-        "                            access to static fields",
-        "    -warn:*-IA*+IASF        Enables all warnings, except those against implicit",
-        "                            accesses, but do warn against implicit access to",
-        "                            static fields",
-        "  -rebuild                  Compile all source files, even if the class files",
-        "                            seems up-to-date",
-        "  -help",
-        "",
-        (
-            "The default encoding in this environment is \""
-            + new InputStreamReader(new ByteArrayInputStream(new byte[0])).getEncoding()
-            + "\"."
-        ),
-    };
-
-    private /*final*/ ResourceFinder    classFileFinder;
-    /** Special value for "classFileResourceFinder". */
-    public static final ResourceFinder  FIND_NEXT_TO_SOURCE_FILE = null;
-    private /*final*/ ResourceCreator   classFileCreator;
-    /** Special value for "classFileResourceCreator". */
-    public static final ResourceCreator CREATE_NEXT_TO_SOURCE_FILE = null;
-    private /*final*/ String            optionalCharacterEncoding;
-    private /*final*/ Benchmark         benchmark;
-    private /*final*/ EnumeratorSet     debuggingInformation;
-    private /*final*/ WarningHandler    optionalWarningHandler;
-    private UnitCompiler.ErrorHandler   optionalCompileErrorHandler = null;
-
-    private /*final*/ IClassLoader iClassLoader;
-    private final ArrayList    parsedCompilationUnits = new ArrayList(); // UnitCompiler
+    private static final String USAGE = (
+        ""
+        + "Usage:%n"
+        + "%n"
+        + "  java " + Compiler.class.getName() + " [ <option> ] ... <source-file> ...%n"
+        + "%n"
+        + "Supported <option>s are:%n"
+        + "  -d <output-dir>           Where to save class files%n"
+        + "  -sourcepath <dirlist>     Where to look for other source files%n"
+        + "  -classpath <dirlist>      Where to look for other class files%n"
+        + "  -extdirs <dirlist>        Where to look for other class files%n"
+        + "  -bootclasspath <dirlist>  Where to look for other class files%n"
+        + "  -encoding <encoding>      Encoding of source files, e.g. \"UTF-8\" or \"ISO-8859-1\"%n"
+        + "  -verbose%n"
+        + "  -g                        Generate all debugging info%n"
+        + "  -g:none                   Generate no debugging info%n"
+        + "  -g:{source,lines,vars}    Generate only some debugging info%n"
+        + "  -warn:<pattern-list>      Issue certain warnings; examples:%n"
+        + "    -warn:*                 Enables all warnings%n"
+        + "    -warn:IASF              Only warn against implicit access to static fields%n"
+        + "    -warn:*-IASF            Enables all warnings, except those against implicit%n"
+        + "                            access to static fields%n"
+        + "    -warn:*-IA*+IASF        Enables all warnings, except those against implicit%n"
+        + "                            accesses, but do warn against implicit access to%n"
+        + "                            static fields%n"
+        + "  -rebuild                  Compile all source files, even if the class files%n"
+        + "                            seems up-to-date%n"
+        + "  -help%n"
+        + "%n"
+        + "The default encoding in this environment is \"" + Charset.defaultCharset().toString() + "\"."
+    );
 
     /**
-     * Initialize a Java&trade; compiler with the given parameters.
+     * Special value for "classFileResourceFinder".
+     */
+    @Nullable public static final ResourceFinder  FIND_NEXT_TO_SOURCE_FILE = null;
+
+    /**
+     * Special value for "classFileResourceCreator".
+     */
+    @Nullable public static final ResourceCreator CREATE_NEXT_TO_SOURCE_FILE = null;
+
+    @Nullable private final ResourceCreator classFileCreator;
+    @Nullable private final ResourceFinder  classFileFinder;
+    @Nullable private final String          optionalCharacterEncoding;
+    private final Benchmark                 benchmark;
+    private final boolean                   debugSource;
+    private final boolean                   debugLines;
+    private final boolean                   debugVars;
+    @Nullable private WarningHandler        optionalWarningHandler;
+    @Nullable private ErrorHandler          optionalCompileErrorHandler;
+
+    private final IClassLoader       iClassLoader;
+    private final List<UnitCompiler> parsedCompilationUnits = new ArrayList<UnitCompiler>();
+
+    /**
+     * Initializes a Java compiler with the given parameters.
      * <p>
-     * Classes are searched in the following order:
+     *   Classes are searched in the following order:
+     * <p>
      * <ul>
-     *   <li>If <code>optionalBootClassPath</code> is <code>null</code>:
-     *   <ul>
-     *     <li>Through the system class loader of the JVM that runs JANINO
-     *   </ul>
-     *   <li>If <code>optionalBootClassPath</code> is not <code>null</code>:
-     *   <ul>
-     *     <li>Through the <code>optionalBootClassPath</code>
-     *   </ul>
-     *   <li>If <code>optionalExtDirs</code> is not <code>null</code>:
-     *   <ul>
-     *     <li>Through the <code>optionalExtDirs</code>
-     *   </ul>
-     *   <li>Through the <code>classPath</code>
-     *   <li>If <code>optionalSourcePath</code> is <code>null</code>:
-     *   <ul>
-     *     <li>Through source files found on the <code>classPath</code>
-     *   </ul>
-     *   <li>If <code>optionalSourcePath</code> is not <code>null</code>:
-     *   <ul>
-     *     <li>Through source files found on the <code>sourcePath</code>
-     *   </ul>
+     *   <li>
+     *     <b>If <var>optionalBootClassPath</var> is {@code null}:</b> Through the system class loader of the JVM
+     *     that runs JANINO
+     *   </li>
+     *   <li>
+     *     <b>If <var>optionalBootClassPath</var> is not {@code null}:</b> Through the
+     *     <var>optionalBootClassPath</var>
+     *   </li>
+     *   <li>
+     *     <b>If <var>optionalExtDirs</var> is not {@code null}:</b> Through the <var>optionalExtDirs</var>
+     *   </li>
+     *   <li>
+     *     Through the <var>classPath</var>
+     *   </li>
+     *   <li>
+     *     <b>If <var>optionalSourcePath</var> is {@code null}:</b> Through source files found on the
+     *     <var>classPath</var>
+     *   </li>
+     *   <li>
+     *     <b>If <var>optionalSourcePath</var> is not {@code null}:</b> Through source files found on the {@code
+     *     sourcePath}
+     *   </li>
      * </ul>
      * <p>
-     * The file name of a class file that represents class "pkg.Example"
-     * is determined as follows:
+     *   The file name of a class file that represents class "pkg.Example" is determined as follows:
+     * </p>
      * <ul>
      *   <li>
-     *   If <code>optionalDestinationDirectory</code> is not {@link #NO_DESTINATION_DIRECTORY}:
-     *   <code><i>optionalDestinationDirectory</i>/pkg/Example.class</code>
+     *     <b>If <var>optionalDestinationDirectory</var> is not {@link #NO_DESTINATION_DIRECTORY}:</b>
+     *     <var>optionalDestinationDirectory</var>{@code /pkg/Example.class}
+     *   </li>
      *   <li>
-     *   If <code>optionalDestinationDirectory</code> is {@link #NO_DESTINATION_DIRECTORY}:
-     *   <code>dir1/dir2/Example.class</code> (Assuming that the file name of the
-     *   source file that declares the class was
-     *   <code>dir1/dir2/Any.java</code>.)
+     *     <b>If <var>optionalDestinationDirectory</var> is {@link #NO_DESTINATION_DIRECTORY}:</b> {@code
+     *     dir1/dir2/Example.class} (Assuming that the file name of the source file that declares the class was {@code
+     *     dir1/dir2/Any.java}.)
+     *   </li>
      * </ul>
      *
      * @see #DEFAULT_WARNING_HANDLE_PATTERNS
      */
-    public Compiler(
-        final File[]    optionalSourcePath,
-        final File[]    classPath,
-        final File[]    optionalExtDirs,
-        final File[]    optionalBootClassPath,
-        final File      destinationDirectory,
-        final String    optionalCharacterEncoding,
-        boolean         verbose,
-        EnumeratorSet   debuggingInformation,
-        StringPattern[] warningHandlePatterns,
-        boolean         rebuild
+    public
+    Compiler(
+        @Nullable final File[] optionalSourcePath,
+        final File[]           classPath,
+        @Nullable final File[] optionalExtDirs,
+        @Nullable final File[] optionalBootClassPath,
+        @Nullable final File   destinationDirectory,
+        @Nullable final String optionalCharacterEncoding,
+        boolean                verbose,
+        boolean                debugSource,
+        boolean                debugLines,
+        boolean                debugVars,
+        StringPattern[]        warningHandlePatterns,
+        boolean                rebuild
     ) {
         this(
             new PathResourceFinder(                       // sourceFinder
@@ -297,17 +318,22 @@ public class Compiler {
                 classPath
             ),
             (                                             // classFileFinder
-                rebuild ? ResourceFinder.EMPTY_RESOURCE_FINDER :
-                destinationDirectory == Compiler.NO_DESTINATION_DIRECTORY ? Compiler.FIND_NEXT_TO_SOURCE_FILE :
-                new DirectoryResourceFinder(destinationDirectory)
+                rebuild
+                ? ResourceFinder.EMPTY_RESOURCE_FINDER
+                : destinationDirectory == null // Compiler.NO_DESTINATION_DIRECTORY
+                ? Compiler.FIND_NEXT_TO_SOURCE_FILE
+                : new DirectoryResourceFinder(destinationDirectory)
             ),
             (                                             // classFileCreator
-                destinationDirectory == Compiler.NO_DESTINATION_DIRECTORY ? Compiler.CREATE_NEXT_TO_SOURCE_FILE :
-                new DirectoryResourceCreator(destinationDirectory)
+                destinationDirectory == null // Compiler.NO_DESTINATION_DIRECTORY
+                ? Compiler.CREATE_NEXT_TO_SOURCE_FILE
+                : new DirectoryResourceCreator(destinationDirectory)
             ),
             optionalCharacterEncoding,                    // optionalCharacterEncoding
             verbose,                                      // verbose
-            debuggingInformation,                         // debuggingInformation
+            debugSource,                                  // debugSource
+            debugLines,                                   // debugLines
+            debugVars,                                    // debugVars
             new FilterWarningHandler(                     // optionalWarningHandler
                 warningHandlePatterns,
                 new SimpleWarningHandler() // <= Anonymous class here is complicated because the enclosing instance is
@@ -324,117 +350,155 @@ public class Compiler {
         this.benchmark.report("Destination directory",   destinationDirectory);
         this.benchmark.report("Character encoding",      optionalCharacterEncoding);
         this.benchmark.report("Verbose",                 new Boolean(verbose));
-        this.benchmark.report("Debugging information",   debuggingInformation);
+        this.benchmark.report("Debug source",            new Boolean(debugSource));
+        this.benchmark.report("Debug lines",             new Boolean(debugSource));
+        this.benchmark.report("Debug vars",              new Boolean(debugSource));
         this.benchmark.report("Warning handle patterns", warningHandlePatterns);
         this.benchmark.report("Rebuild",                 new Boolean(rebuild));
     }
-    /** Backwards compatibility -- previously, "null" was officially documented. */
-    public static final File NO_DESTINATION_DIRECTORY = null;
-    public static class SimpleWarningHandler implements WarningHandler {
-        public void handleWarning(String handle, String message, Location optionalLocation) {
-            StringBuffer sb = new StringBuffer();
+
+    /**
+     * Backwards compatibility -- previously, "null" was officially documented.
+     */
+    @Nullable public static final File NO_DESTINATION_DIRECTORY = null;
+
+    /**
+     * Prints warnings to STDERR.
+     */
+    public static
+    class SimpleWarningHandler implements WarningHandler {
+
+        @Override public void
+        handleWarning(@Nullable String handle, String message, @Nullable Location optionalLocation) {
+
+            StringBuilder sb = new StringBuilder();
+
             if (optionalLocation != null) sb.append(optionalLocation).append(": ");
-            sb.append("Warning ").append(handle).append(": ").append(message);
+
+            if (handle == null) {
+                sb.append("Warning: ");
+            } else {
+                sb.append("Warning ").append(handle).append(": ");
+            }
+
+            sb.append(message);
+
             System.err.println(sb.toString());
         }
     }
+
+    /**
+     * The default value for the <var>warningHandlerPatterns</var> parameter of {@link Compiler#Compiler(File[], File[],
+     * File[], File[], File, String, boolean, boolean, boolean, boolean, StringPattern[], boolean)}.
+     */
     public static final StringPattern[] DEFAULT_WARNING_HANDLE_PATTERNS = StringPattern.PATTERNS_NONE;
 
     /**
-     * To mimic the behavior of JAVAC with a missing "-d" command line option,
-     * pass {@link #FIND_NEXT_TO_SOURCE_FILE} as the <code>classFileResourceFinder</code> and
-     * {@link #CREATE_NEXT_TO_SOURCE_FILE} as the <code>classFileResourceCreator</code>.
+     * To mimic the behavior of JAVAC with a missing "-d" command line option, pass {@link #FIND_NEXT_TO_SOURCE_FILE}
+     * as the <var>classFileResourceFinder</var> and {@link #CREATE_NEXT_TO_SOURCE_FILE} as the
+     * <var>classFileResourceCreator</var>.
      * <p>
-     * If it is impossible to check whether an already-compiled class file
-     * exists, or if you want to enforce recompilation, pass
-     * {@link ResourceFinder#EMPTY_RESOURCE_FINDER} as the
-     * <code>classFileResourceFinder</code>.
+     *   If it is impossible to check whether an already-compiled class file exists, or if you want to enforce
+     *   recompilation, pass {@link ResourceFinder#EMPTY_RESOURCE_FINDER} as the <var>classFileResourceFinder</var>.
+     * </p>
      *
-     * @param sourceFinder Finds extra Java compilation units that need to be compiled (a.k.a. "sourcepath")
-     * @param iClassLoader loads auxiliary {@link IClass}es; e.g. <code>new ClassLoaderIClassLoader(ClassLoader)</code>
-     * @param classFileFinder Where to look for up-to-date class files that need not be compiled
-     * @param classFileCreator Used to store generated class files
-     * @param optionalCharacterEncoding
-     * @param verbose
-     * @param debuggingInformation a combination of <code>Java.DEBUGGING_...</code>
-     * @param optionalWarningHandler used to issue warnings
+     * @param sourceFinder           Finds extra Java compilation units that need to be compiled (a.k.a. "-sourcepath")
+     * @param iClassLoader           Loads auxiliary {@link IClass}es (a.k.a. "-classpath"), e.g. <code>new
+     *                               ClassLoaderIClassLoader(ClassLoader)</code>
+     * @param classFileFinder        Where to look for up-to-date class files that need not be compiled (a.k.a. "-d")
+     * @param classFileCreator       Used to store generated class files (a.k.a. "-d")
+     * @param optionalWarningHandler Used to issue warnings
      */
-    public Compiler(
-        ResourceFinder  sourceFinder,
-        IClassLoader    iClassLoader,
-        ResourceFinder  classFileFinder,
-        ResourceCreator classFileCreator,
-        final String    optionalCharacterEncoding,
-        boolean         verbose,
-        EnumeratorSet   debuggingInformation,
-        WarningHandler  optionalWarningHandler
+    public
+    Compiler(
+        ResourceFinder            sourceFinder,
+        IClassLoader              iClassLoader,
+        @Nullable ResourceFinder  classFileFinder,
+        @Nullable ResourceCreator classFileCreator,
+        @Nullable final String    optionalCharacterEncoding,
+        boolean                   verbose,
+        boolean                   debugSource,
+        boolean                   debugLines,
+        boolean                   debugVars,
+        @Nullable WarningHandler  optionalWarningHandler
     ) {
         this.classFileFinder           = classFileFinder;
         this.classFileCreator          = classFileCreator;
         this.optionalCharacterEncoding = optionalCharacterEncoding;
         this.benchmark                 = new Benchmark(verbose);
-        this.debuggingInformation      = debuggingInformation;
+        this.debugSource               = debugSource;
+        this.debugLines                = debugLines;
+        this.debugVars                 = debugVars;
         this.optionalWarningHandler    = optionalWarningHandler;
 
         // Set up the IClassLoader.
-        this.iClassLoader = new CompilerIClassLoader(
-            sourceFinder,
-            iClassLoader
-        );
+        this.iClassLoader = new CompilerIClassLoader(sourceFinder, iClassLoader);
     }
 
     /**
-     * Install a custom {@link UnitCompiler.ErrorHandler}. The default
-     * {@link UnitCompiler.ErrorHandler} prints the first 20 compile errors to
+     * Installs a custom {@link ErrorHandler}. The default {@link ErrorHandler} prints the first 20 compile errors to
      * {@link System#err} and then throws a {@link CompileException}.
      * <p>
-     * Passing <code>null</code> restores the default {@link UnitCompiler.ErrorHandler}.
+     *   Passing {@code null} restores the default {@link ErrorHandler}.
+     * </p>
      * <p>
-     * Notice that scan and parse errors are <i>not</i> redirected to this {@link ErrorHandler},
-     * instead, they cause a {@link CompileException} to be thrown.
-     * Also, the {@link Compiler} may choose to throw {@link CompileException}s in certain,
-     * fatal compile error situations, even if an {@link ErrorHandler} is installed.
+     *   Notice that scan and parse errors are <em>not</em> redirected to this {@link ErrorHandler}, instead, they
+     *   cause a {@link CompileException} to be thrown. Also, the {@link Compiler} may choose to throw {@link
+     *   CompileException}s in certain, fatal compile error situations, even if an {@link ErrorHandler} is installed.
+     * </p>
      * <p>
-     * In other words: In situations where compilation can reasonably continue after a compile
-     * error, the {@link ErrorHandler} is called; all other error conditions cause a
-     * {@link CompileException} to be thrown.
+     *   In other words: In situations where compilation can reasonably continue after a compile error, the {@link
+     *   ErrorHandler} is called; all other error conditions cause a {@link CompileException} to be thrown.
+     * </p>
      */
-    public void setCompileErrorHandler(UnitCompiler.ErrorHandler optionalCompileErrorHandler) {
+    public void
+    setCompileErrorHandler(@Nullable ErrorHandler optionalCompileErrorHandler) {
         this.optionalCompileErrorHandler = optionalCompileErrorHandler;
     }
 
     /**
-     * Reads a set of Java&trade; compilation units (a.k.a. "source
-     * files") from the file system, compiles them into a set of "class
-     * files" and stores these in the file system. Additional source files are
-     * parsed and compiled on demand through the "source path" set of
-     * directories.
+     * By default, warnings are discarded, but an application my install a custom {@link WarningHandler}.
+     *
+     * @param optionalWarningHandler {@code null} to indicate that no warnings be issued
+     */
+    public void
+    setWarningHandler(@Nullable WarningHandler optionalWarningHandler) {
+        this.optionalWarningHandler = optionalWarningHandler;
+    }
+
+    /**
+     * Reads a set of Java compilation units (a.k.a. "source files") from the file system, compiles them into a set of
+     * "class files" and stores these in the file system. Additional source files are parsed and compiled on demand
+     * through the "source path" set of directories.
      * <p>
-     * For example, if the source path comprises the directories "A/B" and "../C",
-     * then the source file for class "com.acme.Main" is searched in
+     *   For example, if the source path comprises the directories "A/B" and "../C", then the source file for class
+     *   "com.acme.Main" is searched in
+     * </p>
      * <dl>
      *   <dd>A/B/com/acme/Main.java
      *   <dd>../C/com/acme/Main.java
      * </dl>
-     * Notice that it does make a difference whether you pass multiple source
-     * files to {@link #compile(File[])} or if you invoke
-     * {@link #compile(File[])} multiply: In the former case, the source
-     * files may contain arbitrary references among each other (even circular
-     * ones). In the latter case, only the source files on the source path
-     * may contain circular references, not the <code>sourceFiles</code>.
      * <p>
-     * This method must be called exactly once after object construction.
+     *   Notice that it does make a difference whether you pass multiple source files to {@link #compile(File[])} or if
+     *   you invoke {@link #compile(File[])} multiply: In the former case, the source files may contain arbitrary
+     *   references among each other (even circular ones). In the latter case, only the source files on the source path
+     *   may contain circular references, not the <var>sourceFiles</var>.
+     * </p>
      * <p>
-     * Compile errors are reported as described at
-     * {@link #setCompileErrorHandler(UnitCompiler.ErrorHandler)}.
+     *   This method must be called exactly once after object construction.
+     * </p>
+     * <p>
+     *   Compile errors are reported as described at {@link #setCompileErrorHandler(ErrorHandler)}.
+     * </p>
      *
      * @param sourceFiles       Contain the compilation units to compile
-     * @return                  <code>true</code> for backwards compatibility (return value can safely be ignored)
-     * @throws CompileException Fatal compilation error, or the {@link CompileException} thrown be the installed compile
-     *                          error handler
-     * @throws IOException      Occurred when reading from the <code>sourceFiles</code>
+     * @return                  {@code true} for backwards compatibility (return value can safely be ignored)
+     * @throws CompileException Fatal compilation error, or the {@link CompileException} thrown be the installed
+     *                          compile error handler
+     * @throws IOException      Occurred when reading from the <var>sourceFiles</var>
      */
-    public boolean compile(File[] sourceFiles) throws CompileException, IOException {
+    public boolean
+    compile(File[] sourceFiles) throws CompileException, IOException {
         this.benchmark.report("Source files", sourceFiles);
 
         Resource[] sourceFileResources = new Resource[sourceFiles.length];
@@ -447,19 +511,21 @@ public class Compiler {
      * See {@link #compile(File[])}.
      *
      * @param sourceResources Contain the compilation units to compile
-     * @return <code>true</code> for backwards compatibility (return value can safely be ignored)
+     * @return {@code true} for backwards compatibility (return value can safely be ignored)
      */
-    public boolean compile(
-        Resource[] sourceResources
-    ) throws CompileException, IOException {
+    public boolean
+    compile(Resource[] sourceResources) throws CompileException, IOException {
 
         // Set up the compile error handler as described at "setCompileErrorHandler()".
-        UnitCompiler.ErrorHandler ceh = (
+        final ErrorHandler ceh = (
             this.optionalCompileErrorHandler != null
             ? this.optionalCompileErrorHandler
-            : new UnitCompiler.ErrorHandler() {
-                int compileErrorCount = 0;
-                public void handleError(String message, Location optionalLocation) throws CompileException {
+            : new ErrorHandler() {
+
+                int compileErrorCount;
+
+                @Override public void
+                handleError(String message, @Nullable Location optionalLocation) throws CompileException {
                     CompileException ex = new CompileException(message, optionalLocation);
                     if (++this.compileErrorCount >= 20) throw ex;
                     System.err.println(ex.getMessage());
@@ -472,23 +538,27 @@ public class Compiler {
 
             // Parse all source files.
             this.parsedCompilationUnits.clear();
-            for (int i = 0; i < sourceResources.length; ++i) {
-                if (Compiler.DEBUG) System.out.println("Compiling \"" + sourceResources[i] + "\"");
+            for (Resource sourceResource : sourceResources) {
+                Compiler.LOGGER.log(Level.FINE, "Compiling \"{0}\"", sourceResource);
+
                 this.parsedCompilationUnits.add(new UnitCompiler(this.parseCompilationUnit(
-                    sourceResources[i].getFileName(),                   // fileName
-                    new BufferedInputStream(sourceResources[i].open()), // inputStream
-                    this.optionalCharacterEncoding                      // optionalCharacterEncoding
+                    sourceResource.getFileName(),                   // fileName
+                    new BufferedInputStream(sourceResource.open()), // inputStream
+                    this.optionalCharacterEncoding                  // optionalCharacterEncoding
                 ), this.iClassLoader));
             }
 
-            // Compile all parsed compilation units. The vector of parsed CUs may
-            // grow while they are being compiled, but eventually all CUs will
-            // be compiled.
+            // Compile all parsed compilation units. The vector of parsed CUs may grow while they are being compiled,
+            // but eventually all CUs will be compiled.
             for (int i = 0; i < this.parsedCompilationUnits.size(); ++i) {
                 UnitCompiler unitCompiler = (UnitCompiler) this.parsedCompilationUnits.get(i);
-                Java.CompilationUnit cu = unitCompiler.compilationUnit;
-                if (cu.optionalFileName == null) throw new JaninoRuntimeException();
-                File sourceFile = new File(cu.optionalFileName);
+
+                File sourceFile;
+                {
+                    CompilationUnit compilationUnit = unitCompiler.getCompilationUnit();
+                    if (compilationUnit.optionalFileName == null) throw new JaninoRuntimeException();
+                    sourceFile = new File(compilationUnit.optionalFileName);
+                }
 
                 unitCompiler.setCompileErrorHandler(ceh);
                 unitCompiler.setWarningHandler(this.optionalWarningHandler);
@@ -498,7 +568,7 @@ public class Compiler {
                 try {
 
                     // Compile the compilation unit.
-                    classFiles = unitCompiler.compileUnit(this.debuggingInformation);
+                    classFiles = unitCompiler.compileUnit(this.debugSource, this.debugLines, this.debugVars);
                 } finally {
                     this.benchmark.endReporting();
                 }
@@ -512,9 +582,7 @@ public class Compiler {
                     + "\""
                 );
                 try {
-                    for (int j = 0; j < classFiles.length; ++j) {
-                        this.storeClassFile(classFiles[j], sourceFile);
-                    }
+                    for (ClassFile classFile : classFiles) this.storeClassFile(classFile, sourceFile);
                 } finally {
                     this.benchmark.endReporting();
                 }
@@ -526,19 +594,23 @@ public class Compiler {
     }
 
     /**
-     * Read one compilation unit from a file and parse it.
+     * Reads one compilation unit from a file and parses it.
      * <p>
-     * The <code>inputStream</code> is closed before the method returns.
+     *   The <var>inputStream</var> is closed before the method returns.
+     * </p>
+     *
      * @return the parsed compilation unit
      */
-    private Java.CompilationUnit parseCompilationUnit(
-        String      fileName,
-        InputStream inputStream,
-        String      optionalCharacterEncoding
+    private Java.CompilationUnit
+    parseCompilationUnit(
+        String           fileName,
+        InputStream      inputStream,
+        @Nullable String optionalCharacterEncoding
     ) throws CompileException, IOException {
         try {
+
             Scanner scanner = new Scanner(fileName, inputStream, optionalCharacterEncoding);
-            scanner.setWarningHandler(this.optionalWarningHandler);
+
             Parser parser = new Parser(scanner);
             parser.setWarningHandler(this.optionalWarningHandler);
 
@@ -554,22 +626,23 @@ public class Compiler {
     }
 
     /**
-     * Construct the name of a file that could store the byte code of the class with the given
-     * name.
+     * Constructs the name of a file that could store the byte code of the class with the given name.
      * <p>
-     * If <code>optionalDestinationDirectory</code> is non-null, the returned path is the
-     * <code>optionalDestinationDirectory</code> plus the package of the class (with dots replaced
-     * with file separators) plus the class name plus ".class". Example:
-     * "destdir/pkg1/pkg2/Outer$Inner.class"
+     *   If <var>optionalDestinationDirectory</var> is non-null, the returned path is the
+     *   <var>optionalDestinationDirectory</var> plus the package of the class (with dots replaced with file
+     *   separators) plus the class name plus ".class". Example: "destdir/pkg1/pkg2/Outer$Inner.class"
+     * </p>
      * <p>
-     * If <code>optionalDestinationDirectory</code> is null, the returned path is the
-     * directory of the <code>sourceFile</code> plus the class name plus ".class". Example:
-     * "srcdir/Outer$Inner.class"
+     *   If <var>optionalDestinationDirectory</var> is null, the returned path is the directory of the
+     *   <var>sourceFile</var> plus the class name plus ".class". Example: "srcdir/Outer$Inner.class"
+     * </p>
+     *
      * @param className E.g. "pkg1.pkg2.Outer$Inner"
      * @param sourceFile E.g. "srcdir/Outer.java"
      * @param optionalDestinationDirectory E.g. "destdir"
      */
-    public static File getClassFile(String className, File sourceFile, File optionalDestinationDirectory) {
+    public static File
+    getClassFile(String className, File sourceFile, @Nullable File optionalDestinationDirectory) {
         if (optionalDestinationDirectory != null) {
             return new File(optionalDestinationDirectory, ClassFile.getClassFileResourceName(className));
         } else {
@@ -582,24 +655,28 @@ public class Compiler {
     }
 
     /**
-     * Store the byte code of this {@link ClassFile} in the file system. Directories are created
-     * as necessary.
+     * Stores the byte code of this {@link ClassFile} in the file system. Directories are created as necessary.
+     *
      * @param classFile
      * @param sourceFile Required to compute class file path if no destination directory given
      */
-    public void storeClassFile(ClassFile classFile, final File sourceFile) throws IOException {
+    public void
+    storeClassFile(ClassFile classFile, final File sourceFile) throws IOException {
         String classFileResourceName = ClassFile.getClassFileResourceName(classFile.getThisClassName());
 
         // Determine where to create the class file.
         ResourceCreator rc;
         if (this.classFileCreator != Compiler.CREATE_NEXT_TO_SOURCE_FILE) {
             rc = this.classFileCreator;
+            assert rc != null;
         } else {
 
             // If the JAVAC option "-d" is given, place the class file next
             // to the source file, irrespective of the package name.
             rc = new FileResourceCreator() {
-                protected File getFile(String resourceName) {
+
+                @Override protected File
+                getFile(String resourceName) {
                     return new File(
                         sourceFile.getParentFile(),
                         resourceName.substring(resourceName.lastIndexOf('/') + 1)
@@ -609,77 +686,64 @@ public class Compiler {
         }
         OutputStream os = rc.createResource(classFileResourceName);
         try {
-            if (DEBUG) {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                classFile.store(baos);
-                byte[] ba = baos.toByteArray();
-                System.out.println("*** Disassembly of class \"" + classFile.getThisClassName() + "\":");
-                try {
-                    new Disassembler().disasm(new ByteArrayInputStream(ba));
-                    System.out.flush();
-                } catch (IOException ex) {
-                    throw new JaninoRuntimeException("SNO: IOException despite ByteArrayInputStream");
-                }
-                os.write(ba);
-            } else
-            {
-                classFile.store(os);
-            }
-        } catch (IOException ex) {
-            try { os.close(); } catch (IOException e) { }
+            classFile.store(os);
+        } catch (IOException ioe) {
+            try { os.close(); } catch (IOException e) {}
             os = null;
             if (!rc.deleteResource(classFileResourceName)) {
-                throw new IOException(
+                IOException ioe2 = new IOException(
                     "Could not delete incompletely written class file \""
                     + classFileResourceName
                     + "\""
                 );
+                ioe2.initCause(ioe);
+                throw ioe2; // SUPPRESS CHECKSTYLE AvoidHidingCause
             }
-            throw ex;
+            throw ioe;
         } finally {
-            if (os != null) try { os.close(); } catch (IOException e) { }
+            if (os != null) try { os.close(); } catch (IOException e) {}
         }
     }
 
     /**
-     * A specialized {@link IClassLoader} that loads {@link IClass}es from the following
-     * sources:
+     * A specialized {@link IClassLoader} that loads {@link IClass}es from the following sources:
      * <ol>
      *   <li>An already-parsed compilation unit
      *   <li>A class file in the output directory (if existant and younger than source file)
      *   <li>A source file in any of the source path directories
      *   <li>The parent class loader
      * </ol>
-     * Notice that the {@link CompilerIClassLoader} is an inner class of {@link Compiler} and
-     * heavily uses {@link Compiler}'s members.
+     * <p>
+     *   Notice that the {@link CompilerIClassLoader} is an inner class of {@link Compiler} and heavily uses {@link
+     *   Compiler}'s members.
+     * </p>
      */
-    private class CompilerIClassLoader extends IClassLoader {
+    private
+    class CompilerIClassLoader extends IClassLoader {
         private final ResourceFinder sourceFinder;
 
         /**
          * @param sourceFinder Where to look for source files
          * @param optionalParentIClassLoader {@link IClassLoader} through which {@link IClass}es are to be loaded
          */
-        public CompilerIClassLoader(
-            ResourceFinder sourceFinder,
-            IClassLoader   optionalParentIClassLoader
-        ) {
+        CompilerIClassLoader(ResourceFinder sourceFinder, @Nullable IClassLoader optionalParentIClassLoader) {
             super(optionalParentIClassLoader);
             this.sourceFinder = sourceFinder;
             super.postConstruct();
         }
 
         /**
-         * @param type field descriptor of the {@IClass} to load, e.g. "Lpkg1/pkg2/Outer$Inner;"
-         * @return <code>null</code> if a the type could not be found
-         * @throws ClassNotFoundException if an exception was raised while loading the {@link IClass}
+         * @param type                    field descriptor of the {@IClass} to load, e.g. "Lpkg1/pkg2/Outer$Inner;"
+         * @return                        {@code null} if a the type could not be found
+         * @throws ClassNotFoundException An exception was raised while loading the {@link IClass}
          */
-        protected IClass findIClass(final String type) throws ClassNotFoundException {
-            if (Compiler.DEBUG) System.out.println("type = " + type);
+        @Override @Nullable protected IClass
+        findIClass(final String type) throws ClassNotFoundException {
+            Compiler.LOGGER.entering(null, "findIClass", type);
 
             // Determine the class name.
             String className = Descriptor.toClassName(type); // E.g. "pkg1.pkg2.Outer$Inner"
-            if (Compiler.DEBUG) System.out.println("2 className = \"" + className + "\"");
+            Compiler.LOGGER.log(Level.FINE, "className={0}", className);
 
             // Do not attempt to load classes from package "java".
             if (className.startsWith("java.")) return null;
@@ -693,8 +757,8 @@ public class Compiler {
 
             // Check the already-parsed compilation units.
             for (int i = 0; i < Compiler.this.parsedCompilationUnits.size(); ++i) {
-                UnitCompiler uc = (UnitCompiler) Compiler.this.parsedCompilationUnits.get(i);
-                IClass res = uc.findClass(topLevelClassName);
+                UnitCompiler uc  = (UnitCompiler) Compiler.this.parsedCompilationUnits.get(i);
+                IClass       res = uc.findClass(topLevelClassName);
                 if (res != null) {
                     if (!className.equals(topLevelClassName)) {
                         res = uc.findClass(className);
@@ -710,9 +774,12 @@ public class Compiler {
             if (sourceResource == null) return null;
 
             // Find an existing class file.
+            ResourceFinder cff = Compiler.this.classFileFinder;
+
             Resource classFileResource;
-            if (Compiler.this.classFileFinder != Compiler.FIND_NEXT_TO_SOURCE_FILE) {
-                classFileResource = Compiler.this.classFileFinder.findResource(
+            if (cff != Compiler.FIND_NEXT_TO_SOURCE_FILE) {
+                assert cff != null;
+                classFileResource = cff.findResource(
                     ClassFile.getClassFileResourceName(className)
                 );
             } else {
@@ -737,17 +804,15 @@ public class Compiler {
         }
 
         /**
-         * Parse the compilation unit stored in the given <code>sourceResource</code>, remember it in
-         * <code>Compiler.this.parsedCompilationUnits</code> (it may declare other classes that
-         * are needed later), find the declaration of the type with the given
-         * <code>className</code>, and define it in the {@link IClassLoader}.
+         * Parses the compilation unit stored in the given <var>sourceResource</var>, remembers it in {@code
+         * Compiler.this.parsedCompilationUnits} (it may declare other classes that are needed later), finds the
+         * declaration of the type with the given <var>className</var>, and defines it in the {@link IClassLoader}.
          * <p>
-         * Notice that the CU is not compiled here!
+         *   Notice that the CU is not compiled here!
+         * </p>
          */
-        private IClass defineIClassFromSourceResource(
-            Resource sourceResource,
-            String                  className
-        ) throws ClassNotFoundException {
+        private IClass
+        defineIClassFromSourceResource(Resource sourceResource, String className) throws ClassNotFoundException {
 
             // Parse the source file.
             UnitCompiler uc;
@@ -776,28 +841,29 @@ public class Compiler {
                 // for, but doesn't. This is possible if the underlying file system has
                 // case-insensitive file names and/or file names that are limited in length
                 // (e.g. DOS 8.3).
-                return null;
+                throw new ClassNotFoundException("\"" + sourceResource + "\" does not declare \"" + className + "\"");
             }
             this.defineIClass(res);
             return res;
         }
 
         /**
-         * Open the given <code>classFileResource</code>, read its contents, define it in the
-         * {@link IClassLoader}, and resolve it (this step may involve loading more classes).
+         * Opens the given <var>classFileResource</var>, reads its contents, defines it in the {@link IClassLoader},
+         * and resolves it (this step may involve loading more classes).
          */
-        private IClass defineIClassFromClassFileResource(Resource classFileResource) throws ClassNotFoundException {
+        private IClass
+        defineIClassFromClassFileResource(Resource classFileResource) throws ClassNotFoundException {
             Compiler.this.benchmark.beginReporting("Loading class file \"" + classFileResource.getFileName() + "\"");
             try {
                 InputStream is = null;
-                ClassFile cf;
+                ClassFile   cf;
                 try {
                     is = classFileResource.open();
                     cf = new ClassFile(new BufferedInputStream(is));
                 } catch (IOException ex) {
                     throw new ClassNotFoundException("Opening class file resource \"" + classFileResource + "\"", ex);
                 } finally {
-                    if (is != null) try { is.close(); } catch (IOException e) { }
+                    if (is != null) try { is.close(); } catch (IOException e) {}
                 }
                 ClassFileIClass result = new ClassFileIClass(
                     cf,                       // classFile
@@ -818,5 +884,3 @@ public class Compiler {
         }
     }
 }
-
-

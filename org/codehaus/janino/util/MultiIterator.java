@@ -28,71 +28,64 @@ package org.codehaus.janino.util;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.codehaus.janino.JaninoRuntimeException;
 
 /**
- * An {@link java.util.Iterator} that traverses a {@link java.util.Collection} of
- * {@link java.util.Iterator}s.
+ * An {@link java.util.Iterator} that traverses a {@link java.util.Collection} of {@link java.util.Iterator}s.
+ *
+ * @param <T> The element type of the iterator
  */
-public class MultiIterator implements Iterator {
-    private static final Iterator AT_END = new Iterator() {
-        public boolean hasNext() { return false; }
-        public Object  next()    { throw new NoSuchElementException(); }
-        public void    remove()  { throw new UnsupportedOperationException(); }
-    };
+public
+class MultiIterator<T> implements Iterator<T> {
 
-    private final Iterator outer; // Over Iterators, Collections or arrays
-    private Iterator       inner = MultiIterator.AT_END;
+    private final Iterator<?> outer; // Over Iterators, Collections or arrays
+    private Iterator<T>       inner = Collections.<T>emptyList().iterator();
 
     /**
      * @param iterators An array of {@link Iterator}s
      */
-    public MultiIterator(Iterator[] iterators) {
-        this.outer = Arrays.asList(iterators).iterator();
-    }
+    public
+    MultiIterator(Iterator<T>[] iterators) { this.outer = Arrays.asList(iterators).iterator(); }
 
     /**
      * @param collections An array of {@link Collection}s
      */
-    public MultiIterator(Collection[] collections) {
-        this.outer = Arrays.asList(collections).iterator();
-    }
+    public
+    MultiIterator(Collection<T>[] collections) { this.outer = Arrays.asList(collections).iterator(); }
 
     /**
      * @param arrays An array of arrays
      */
-    public MultiIterator(Object[][] arrays) {
-        this.outer = Arrays.asList(arrays).iterator();
-    }
+    public
+    MultiIterator(Object/*T*/[][] arrays) { this.outer = Arrays.asList(arrays).iterator(); }
 
     /**
      * @param collection A {@link Collection} of {@link Collection}s, {@link Iterator}s and/or arrays
      */
-    public MultiIterator(Collection collection) {
-        this.outer = collection.iterator();
-    }
+    public
+    MultiIterator(Collection<?> collection) { this.outer = collection.iterator(); }
 
     /**
      * @param iterator An iterator over {@link Collection}s, {@link Iterator}s and/or arrays
      */
-    public MultiIterator(Iterator iterator) {
-        this.outer = iterator;
-    }
+    public
+    MultiIterator(Iterator<?> iterator) { this.outer = iterator; }
 
     /**
      * @param array An array of {@link Collection}s, {@link Iterator}s and/or arrays
      */
-    public MultiIterator(Object[] array) {
-        this.outer = Arrays.asList(array).iterator();
-    }
+    public
+    MultiIterator(Object[] array) { this.outer = Arrays.asList(array).iterator(); }
 
     /**
      * Iterates over the given {@link Collection}, prepended with the given {@link Object}.
      */
-    public MultiIterator(Object object, Collection collection) {
+    public
+    MultiIterator(Object/*T*/ object, Collection<T> collection) {
         this.outer = Arrays.asList(new Object[] {
             new Object[] { object },
             collection
@@ -102,7 +95,8 @@ public class MultiIterator implements Iterator {
     /**
      * Iterates over the given {@link Collection}, appended with the given {@link Object}.
      */
-    public MultiIterator(Collection collection, Object object) {
+    public
+    MultiIterator(Collection<T> collection, Object/*T*/ object) {
         this.outer = Arrays.asList(new Object[] {
             collection,
             new Object[] { object }
@@ -110,9 +104,10 @@ public class MultiIterator implements Iterator {
     }
 
     /**
-     * Iterates over the given {@link Iterator}, prepended with the given <code>prefix</code>.
+     * Iterates over the given {@link Iterator}, prepended with the given <var>prefix</var>.
      */
-    public MultiIterator(Object prefix, Iterator iterator) {
+    public
+    MultiIterator(Object/*T*/ prefix, Iterator<T> iterator) {
         this.outer = Arrays.asList(new Object[] {
             new Object[] { prefix },
             iterator
@@ -120,28 +115,33 @@ public class MultiIterator implements Iterator {
     }
 
     /**
-     * Iterates over the given {@link Iterator}, appended with the given <code>suffix</code>.
+     * Iterates over the given {@link Iterator}, appended with the given {@code suffix}.
      */
-    public MultiIterator(Iterator iterator, Object suffix) {
+    public
+    MultiIterator(Iterator<T> iterator, Object/*T*/ suffix) {
         this.outer = Arrays.asList(new Object[] {
             iterator,
             new Object[] { suffix }
         }).iterator();
     }
 
-    public boolean hasNext() {
+    @Override public boolean
+    hasNext() {
         for (;;) {
             if (this.inner.hasNext()) return true;
             if (!this.outer.hasNext()) return false;
             Object o = this.outer.next();
             if (o instanceof Iterator) {
-                this.inner = (Iterator) o;
+                @SuppressWarnings("unchecked") Iterator<T> tmp = (Iterator<T>) o;
+                this.inner = tmp;
             } else
             if (o instanceof Collection) {
-                this.inner = ((Collection) o).iterator();
+                @SuppressWarnings("unchecked") Collection<T> tmp = (Collection<T>) o;
+                this.inner = tmp.iterator();
             } else
             if (o instanceof Object[]) {
-                this.inner = Arrays.asList((Object[]) o).iterator();
+                @SuppressWarnings("unchecked") T[] tmp = (T[]) o;
+                this.inner = Arrays.asList(tmp).iterator();
             } else
             {
                 throw new JaninoRuntimeException("Unexpected element type \"" + o.getClass().getName() + "\"");
@@ -149,12 +149,14 @@ public class MultiIterator implements Iterator {
         }
     }
 
-    public Object next() {
+    @Override public T
+    next() {
         if (this.hasNext()) return this.inner.next();
         throw new NoSuchElementException();
     }
 
-    public void remove() {
+    @Override public void
+    remove() {
         this.inner.remove();
     }
 }

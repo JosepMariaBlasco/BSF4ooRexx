@@ -26,39 +26,59 @@
 
 package org.codehaus.janino.util.resource;
 
-import java.io.*;
-import java.util.*;
-import java.util.zip.*;
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.zip.ZipFile;
 
-import org.codehaus.janino.util.iterator.*;
+import org.codehaus.commons.nullanalysis.Nullable;
+import org.codehaus.janino.util.iterator.MultiDimensionalIterator;
+import org.codehaus.janino.util.iterator.TransformingIterator;
 
 /**
  * Finds resources in any of the "*.jar" files that exist in a given set of directories.
  */
-public class JarDirectoriesResourceFinder extends LazyMultiResourceFinder {
+public
+class JarDirectoriesResourceFinder extends LazyMultiResourceFinder {
 
     /**
      * @param directories The set of directories to search for JAR files.
      */
-    public JarDirectoriesResourceFinder(final File[] directories) {
-        super(new MultiDimensionalIterator(
+    public
+    JarDirectoriesResourceFinder(final File[] directories) {
+        super(new MultiDimensionalIterator<ResourceFinder>(
 
             // Iterate over directories.
-            new TransformingIterator(Arrays.asList(directories).iterator()) {
-                protected Object transform(Object o) { // File directory => Iterator ResourceFinder
+            new TransformingIterator<Object, Iterator<?>>(Arrays.asList(directories).iterator()) {
+
+                @Override protected Iterator<ResourceFinder>
+                transform(Object o) {
                     File directory = (File) o;
 
-                    if (!directory.exists()) return Collections.EMPTY_LIST.iterator();
+                    if (!directory.exists()) return Collections.<ResourceFinder>emptyList().iterator();
 
                     // Iterate over the JAR files in the given directory.
                     File[] jarFiles = directory.listFiles(new FilenameFilter() {
-                        public boolean accept(File dir, String name) { return name.endsWith(".jar"); }
+
+                        @Override public boolean
+                        accept(@Nullable File dir, @Nullable String name) {
+                            assert dir != null;
+                            assert name != null;
+                            return name.endsWith(".jar");
+                        }
                     });
-                    return new TransformingIterator(Arrays.asList(jarFiles).iterator()) {
-                        protected Object transform(Object o) { // File jarFile => ResourceFinder
-                            File zipFile = (File) o;
+
+                    return new TransformingIterator<Object, ResourceFinder>(Arrays.asList(jarFiles).iterator()) {
+
+                        @Override protected ResourceFinder
+                        transform(Object o) {
+                            File jarFile = (File) o;
+
                             try {
-                                return new ZipFileResourceFinder(new ZipFile(zipFile));
+                                return new ZipFileResourceFinder(new ZipFile(jarFile));
                             } catch (IOException e) {
                                 return ResourceFinder.EMPTY_RESOURCE_FINDER;
                             }

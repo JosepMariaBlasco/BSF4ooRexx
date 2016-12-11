@@ -26,22 +26,29 @@
 
 package org.codehaus.janino.util.resource;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
  * Representation of a resource that is a {@link java.io.File}.
  */
-public class FileResource implements Resource {
+public
+class FileResource implements Resource {
     public FileResource(File file) { this.file = file; }
 
     // Implement "Resource".
-    public final String      getFileName()             { return this.file.toString(); }
-    public final InputStream open() throws IOException { return new FileInputStream(this.file); }
-    public final long        lastModified()            { return this.file.lastModified(); }
+    @Override public final String      getFileName()             { return this.file.toString(); }
+    @Override public final InputStream open() throws IOException { return new FileInputStream(this.file); }
+    @Override public final long        lastModified()            { return this.file.lastModified(); }
 
+    /**
+     * @return The file containing the contents of this resource
+     */
     public final File getFile() { return this.file; }
 
-    public final String toString() { return this.getFileName(); }
+    @Override public final String toString() { return this.getFileName(); }
 
     private final File file;
 }

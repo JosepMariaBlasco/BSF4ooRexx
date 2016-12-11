@@ -28,43 +28,59 @@ package org.codehaus.janino;
 
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import org.codehaus.commons.compiler.*;
 
-public class CompilerFactory extends AbstractCompilerFactory {
+import org.codehaus.commons.compiler.AbstractCompilerFactory;
+import org.codehaus.commons.compiler.AbstractJavaSourceClassLoader;
+import org.codehaus.commons.compiler.IClassBodyEvaluator;
+import org.codehaus.commons.compiler.ICompilerFactory;
+import org.codehaus.commons.compiler.IExpressionEvaluator;
+import org.codehaus.commons.compiler.IScriptEvaluator;
+import org.codehaus.commons.compiler.ISimpleCompiler;
 
-    public String getId() {
-        return "org.codehaus.janino";
-    }
+/**
+ * The JANINO implementation of {@link ICompilerFactory}.
+ */
+public
+class CompilerFactory extends AbstractCompilerFactory {
 
-    public IExpressionEvaluator newExpressionEvaluator() {
-        return new ExpressionEvaluator();
-    }
+    @Override public String
+    getId() { return "org.codehaus.janino"; }
 
-    public IScriptEvaluator newScriptEvaluator() {
-        return new ScriptEvaluator();
-    }
+    @Override public String
+    toString() { return "janino"; }
 
-    public IClassBodyEvaluator newClassBodyEvaluator() {
-        return new ClassBodyEvaluator();
-    }
+    @Override public String
+    getImplementationVersion() { return CompilerFactory.class.getPackage().getImplementationVersion(); }
 
-    public ISimpleCompiler newSimpleCompiler() {
-        return new SimpleCompiler();
-    }
+    @Override public IExpressionEvaluator
+    newExpressionEvaluator() { return new ExpressionEvaluator(); }
 
-    public AbstractJavaSourceClassLoader newJavaSourceClassLoader() {
-        return (AbstractJavaSourceClassLoader) AccessController.doPrivileged(new PrivilegedAction() {
-            public Object run() {
-                return new JavaSourceClassLoader();
-            }
+    @Override public IScriptEvaluator
+    newScriptEvaluator() { return new ScriptEvaluator(); }
+
+    @Override public IClassBodyEvaluator
+    newClassBodyEvaluator() { return new ClassBodyEvaluator(); }
+
+    @Override public ISimpleCompiler
+    newSimpleCompiler() { return new SimpleCompiler(); }
+
+    @Override public AbstractJavaSourceClassLoader
+    newJavaSourceClassLoader() {
+
+        return AccessController.doPrivileged(new PrivilegedAction<AbstractJavaSourceClassLoader>() {
+
+            @Override public AbstractJavaSourceClassLoader
+            run() { return new JavaSourceClassLoader(); }
         });
     }
 
-    public AbstractJavaSourceClassLoader newJavaSourceClassLoader(final ClassLoader parentClassLoader) {
-        return (AbstractJavaSourceClassLoader) AccessController.doPrivileged(new PrivilegedAction() {
-            public Object run() {
-                return new JavaSourceClassLoader(parentClassLoader);
-            }
+    @Override public AbstractJavaSourceClassLoader
+    newJavaSourceClassLoader(final ClassLoader parentClassLoader) {
+
+        return AccessController.doPrivileged(new PrivilegedAction<AbstractJavaSourceClassLoader>() {
+
+            @Override public AbstractJavaSourceClassLoader
+            run() { return new JavaSourceClassLoader(parentClassLoader); }
         });
     }
 }

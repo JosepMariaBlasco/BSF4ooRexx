@@ -26,25 +26,29 @@
 
 package org.codehaus.janino.samples;
 
-import java.io.*;
+import java.io.FileReader;
+import java.io.IOException;
 
 import org.codehaus.commons.compiler.CompileException;
-import org.codehaus.janino.*;
-import org.codehaus.janino.util.*;
+import org.codehaus.janino.Java;
+import org.codehaus.janino.Parser;
+import org.codehaus.janino.Scanner;
+import org.codehaus.janino.util.Traverser;
 
 /**
- * An example application for the {@link org.codehaus.janino.util.Traverser}:
- * Reads, scans and parses the files named on the command line and counts
- * several kinds of declarations.
+ * An example application for the {@link org.codehaus.janino.util.Traverser}: Reads, scans and parses the files named
+ * on the command line and counts several kinds of declarations.
  */
-public class DeclarationCounter extends Traverser {
-    public static void main(String[] args) throws CompileException, IOException {
+public
+class DeclarationCounter extends Traverser<RuntimeException> {
+
+    public static void // SUPPRESS CHECKSTYLE JavadocMethod
+    main(String[] args) throws CompileException, IOException {
         DeclarationCounter dc = new DeclarationCounter();
-        for (int i = 0; i < args.length; ++i) {
-            String fileName = args[i];
+        for (String fileName : args) {
 
             // Parse each compilation unit.
-            FileReader r = new FileReader(fileName);
+            FileReader           r = new FileReader(fileName);
             Java.CompilationUnit cu;
             try {
                 cu = new Parser(new Scanner(fileName, r)).parseCompilationUnit();
@@ -63,30 +67,34 @@ public class DeclarationCounter extends Traverser {
     }
 
     // Count class declarations.
-    public void traverseClassDeclaration(Java.ClassDeclaration cd) {
+    @Override public void
+    traverseClassDeclaration(Java.AbstractClassDeclaration cd) {
         ++this.classDeclarationCount;
         super.traverseClassDeclaration(cd);
     }
-    private int classDeclarationCount = 0;
+    private int classDeclarationCount;
 
     // Count interface declarations.
-    public void traverseInterfaceDeclaration(Java.InterfaceDeclaration id) {
+    @Override public void
+    traverseInterfaceDeclaration(Java.InterfaceDeclaration id) {
         ++this.interfaceDeclarationCount;
         super.traverseInterfaceDeclaration(id);
     }
-    private int interfaceDeclarationCount = 0;
+    private int interfaceDeclarationCount;
 
     // Count fields.
-    public void traverseFieldDeclaration(Java.FieldDeclaration fd) {
+    @Override public void
+    traverseFieldDeclaration(Java.FieldDeclaration fd) {
         this.fieldCount += fd.variableDeclarators.length;
         super.traverseFieldDeclaration(fd);
     }
-    private int fieldCount = 0;
+    private int fieldCount;
 
     // Count local variables.
-    public void traverseLocalVariableDeclarationStatement(Java.LocalVariableDeclarationStatement lvds) {
+    @Override public void
+    traverseLocalVariableDeclarationStatement(Java.LocalVariableDeclarationStatement lvds) {
         this.localVariableCount += lvds.variableDeclarators.length;
         super.traverseLocalVariableDeclarationStatement(lvds);
     }
-    private int localVariableCount = 0;
+    private int localVariableCount;
 }

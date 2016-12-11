@@ -26,34 +26,53 @@
 
 package org.codehaus.janino;
 
+import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
+
+import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
  * Helper class that defines useful methods for handling "field descriptors"
- * (JVMS 4.3.2) and "method descriptors" (JVMS 4.3.3).<p>
- * Typical descriptors are:
+ * (JVMS 4.3.2) and "method descriptors" (JVMS 4.3.3).
+ * <p>
+ *   Typical descriptors are:
+ * </p>
  * <ul>
- *   <li><code>I</code> Integer
- *   <li><code>[I</code> Array of integer
- *   <li><code>Lpkg1/pkg2/Cls;</code> Class
- *   <li><code>Lpkg1/pkg2/Outer$Inner;</code> Member class
+ *   <li>{@code I} Integer
+ *   <li>{@code [I} Array of integer
+ *   <li>{@code Lpkg1/pkg2/Cls;} Class
+ *   <li>{@code Lpkg1/pkg2/Outer$Inner;} Member class
  * </ul>
  */
-public final class Descriptor {
+public final
+class Descriptor {
     private Descriptor() {}
 
-    public static boolean isReference(String d) {
-        return d.length() > 1;
-    }
-    public static boolean isClassOrInterfaceReference(String d) {
-        return d.charAt(0) == 'L';
-    }
-    public static boolean isArrayReference(String d) {
-        return d.charAt(0) == '[';
-    }
-    public static String getComponentDescriptor(String d) {
+    /**
+     * @return Whether this {@link Descriptor} describes a reference (i.e. non-primitive) type
+     */
+    public static boolean
+    isReference(String d) { return d.length() > 1; }
+
+    /**
+     * @return Whether this {@link Descriptor} describes a class or an interface (and not an array or a primitive type)
+     */
+    public static boolean
+    isClassOrInterfaceReference(String d) { return d.charAt(0) == 'L'; }
+
+    /**
+     * @return Whether this {@link Descriptor} describes an array type
+     */
+    public static boolean
+    isArrayReference(String d) { return d.charAt(0) == '['; }
+
+    /**
+     * @return                        The descriptor of the component of the array type <var>d</var>
+     * @throws JaninoRuntimeException <var>d</var> does not describe an array type
+     */
+    public static String
+    getComponentDescriptor(String d) {
         if (d.charAt(0) != '[') {
             throw new JaninoRuntimeException(
                 "Cannot determine component descriptor from non-array descriptor \""
@@ -63,24 +82,45 @@ public final class Descriptor {
         }
         return d.substring(1);
     }
-    public static short size(String d) {
-        if (d.equals(Descriptor.VOID_)) return 0;
+
+    /**
+     * @return The number of slots (1 or two) that a value of the type described by <var>d</var> occupies on the
+     *         operand stack or in the local variable array, or 0 iff <var>d</var> describes the type VOID
+     */
+    public static short
+    size(String d) {
+        if (d.equals(Descriptor.VOID)) return 0;
         if (Descriptor.hasSize1(d)) return 1;
         if (Descriptor.hasSize2(d)) return 2;
         throw new JaninoRuntimeException("No size defined for type \"" + Descriptor.toString(d) + "\"");
     }
-    public static boolean hasSize1(String d) {
+
+    /**
+     * @return {@code true} iff <var>d</var> describes a primitive type except LONG and DOUBLE, or a reference type
+     */
+    public static boolean
+    hasSize1(String d) {
         if (d.length() == 1) return "BCFISZ".indexOf(d) != -1;
         return Descriptor.isReference(d);
     }
-    public static boolean hasSize2(String d) {
-        return d.equals(Descriptor.LONG_) || d.equals(Descriptor.DOUBLE_);
+
+    /**
+     * @return {@code true} iff <var>d</var> LONG or DOUBLE
+     */
+    public static boolean
+    hasSize2(String d) {
+        return d.equals(Descriptor.LONG) || d.equals(Descriptor.DOUBLE);
     }
 
-    // Pretty-print.
-    public static String toString(String d) {
-        int idx = 0;
-        StringBuffer sb = new StringBuffer();
+    /**
+     * Pretty-prints the given descriptor.
+     *
+     * @param d A valid field or method descriptor
+     */
+    public static String
+    toString(String d) {
+        int           idx = 0;
+        StringBuilder sb  = new StringBuilder();
         if (d.charAt(0) == '(') {
             ++idx;
             sb.append("(");
@@ -95,7 +135,8 @@ public final class Descriptor {
         Descriptor.toString(d, idx, sb);
         return sb.toString();
     }
-    private static int toString(String d, int idx, StringBuffer sb) {
+    private static int
+    toString(String d, int idx, StringBuilder sb) {
         int dimensions = 0;
         while (idx < d.length() && d.charAt(idx) == '[') {
             ++dimensions;
@@ -111,15 +152,33 @@ public final class Descriptor {
                 idx = idx2;
             }
             break;
-        case 'V': sb.append("void");    break;
-        case 'B': sb.append("byte");    break;
-        case 'C': sb.append("char");    break;
-        case 'D': sb.append("double");  break;
-        case 'F': sb.append("float");   break;
-        case 'I': sb.append("int");     break;
-        case 'J': sb.append("long");    break;
-        case 'S': sb.append("short");   break;
-        case 'Z': sb.append("boolean"); break;
+        case 'V':
+            sb.append("void");
+            break;
+        case 'B':
+            sb.append("byte");
+            break;
+        case 'C':
+            sb.append("char");
+            break;
+        case 'D':
+            sb.append("double");
+            break;
+        case 'F':
+            sb.append("float");
+            break;
+        case 'I':
+            sb.append("int");
+            break;
+        case 'J':
+            sb.append("long");
+            break;
+        case 'S':
+            sb.append("short");
+            break;
+        case 'Z':
+            sb.append("boolean");
+            break;
         default:
             throw new JaninoRuntimeException("Invalid descriptor \"" + d + "\"");
         }
@@ -128,50 +187,53 @@ public final class Descriptor {
     }
 
     /**
-     * Convert a class name as defined by "Class.getName()" into a
-     * descriptor.
+     * Converts a class name as defined by "Class.getName()" into a descriptor.
      */
-    public static String fromClassName(String className) {
-        String res = (String) Descriptor.classNameToDescriptor.get(className);
+    public static String
+    fromClassName(String className) {
+        String res = (String) Descriptor.CLASS_NAME_TO_DESCRIPTOR.get(className);
         if (res != null) { return res; }
         if (className.startsWith("[")) return className.replace('.', '/');
         return 'L' + className.replace('.', '/') + ';';
     }
 
     /**
-     * Convert a class name in the "internal form" as described in JVMS 4.2 into a descriptor.
+     * Converts a class name in the "internal form" as described in JVMS 4.2 into a descriptor.
      * <p>
-     * Also implement the encoding of array types as described in JVMS 4.4.1.
+     *   Also implements the encoding of array types as described in JVMS 4.4.1.
+     * </p>
      */
-    public static String fromInternalForm(String internalForm) {
+    public static String
+    fromInternalForm(String internalForm) {
         if (internalForm.charAt(0) == '[') return internalForm;
         return 'L' + internalForm + ';';
     }
 
     /**
-     * Convert a field descriptor into a class name as defined by {@link
-     * Class#getName()}.
+     * Converts a field descriptor into a class name as defined by {@link Class#getName()}.
      */
-    public static String toClassName(String d) {
-        String res = (String) Descriptor.descriptorToClassName.get(d);
+    public static String
+    toClassName(String d) {
+        String res = (String) Descriptor.DESCRIPTOR_TO_CLASSNAME.get(d);
         if (res != null) { return res; }
 
-            char firstChar = d.charAt(0);
-            if (firstChar == 'L' && d.endsWith(";")) {
-                // Class or interface -- convert "Ljava/lang/String;" to "java.lang.String".
-                return d.substring(1, d.length() - 1).replace('/', '.');
-            }
-            if (firstChar == '[') {
-                // Array type -- convert "[Ljava/lang/String;" to "[Ljava.lang.String;".
-                return d.replace('/', '.');
-            }
+        char firstChar = d.charAt(0);
+        if (firstChar == 'L' && d.endsWith(";")) {
+            // Class or interface -- convert "Ljava/lang/String;" to "java.lang.String".
+            return d.substring(1, d.length() - 1).replace('/', '.');
+        }
+        if (firstChar == '[') {
+            // Array type -- convert "[Ljava/lang/String;" to "[Ljava.lang.String;".
+            return d.replace('/', '.');
+        }
         throw new JaninoRuntimeException("(Invalid field descriptor \"" + d + "\")");
     }
 
     /**
-     * Convert a descriptor into the "internal form" as defined by JVMS 4.2.
+     * Converts a descriptor into the "internal form" as defined by JVMS 4.2.
      */
-    public static String toInternalForm(String d) {
+    public static String
+    toInternalForm(String d) {
         if (d.charAt(0) != 'L') {
             throw new JaninoRuntimeException(
                 "Attempt to convert non-class descriptor \""
@@ -182,20 +244,24 @@ public final class Descriptor {
         return d.substring(1, d.length() - 1);
     }
 
-    public static boolean isPrimitive(String d) {
-        return d.length() == 1 && "VBCDFIJSZ".indexOf(d.charAt(0)) != -1;
-    }
-
-    public static boolean isPrimitiveNumeric(String d) {
-        return d.length() == 1 && "BDFIJSC".indexOf(d.charAt(0)) != -1;
-    }
+    /**
+     * @return Whether <var>d</var> describes a primitive type or VOID
+     */
+    public static boolean
+    isPrimitive(String d) { return d.length() == 1 && "VBCDFIJSZ".indexOf(d.charAt(0)) != -1; }
 
     /**
-     * Returns the package name of a class or interface reference descriptor,
-     * or <code>null</code> if the class or interface is declared in the
-     * default package.
+     * @return Whether <var>d</var> describes a primitive type except {@code boolean} and {@code void}
      */
-    public static String getPackageName(String d) {
+    public static boolean
+    isPrimitiveNumeric(String d) { return d.length() == 1 && "BDFIJSC".indexOf(d.charAt(0)) != -1; }
+
+    /**
+     * Returns the package name of a class or interface reference descriptor, or {@code null} iff the class or
+     * interface is declared in the default package.
+     */
+    @Nullable public static String
+    getPackageName(String d) {
         if (d.charAt(0) != 'L') {
             throw new JaninoRuntimeException("Attempt to get package name of non-class descriptor \"" + d + "\"");
         }
@@ -204,76 +270,247 @@ public final class Descriptor {
     }
 
     /**
-     * Check whether two reference types are declared in the same package.
+     * Checks whether two reference types are declared in the same package.
      */
-    public static boolean areInSamePackage(String d1, String d2) {
+    public static boolean
+    areInSamePackage(String d1, String d2) {
         String packageName1 = Descriptor.getPackageName(d1);
         String packageName2 = Descriptor.getPackageName(d2);
         return packageName1 == null ? packageName2 == null : packageName1.equals(packageName2);
     }
 
-    public static final String VOID_    = "V";
-    public static final String BYTE_    = "B";
-    public static final String CHAR_    = "C";
-    public static final String DOUBLE_  = "D";
-    public static final String FLOAT_   = "F";
-    public static final String INT_     = "I";
-    public static final String LONG_    = "J";
-    public static final String SHORT_   = "S";
-    public static final String BOOLEAN_ = "Z";
-    public static final String OBJECT            = "Ljava/lang/Object;";
-    public static final String STRING            = "Ljava/lang/String;";
-    public static final String STRING_BUFFER     = "Ljava/lang/StringBuffer;";
-    public static final String STRING_BUILDER    = "Ljava/lang/StringBuilder;"; // Since 1.5!
-    public static final String CLASS             = "Ljava/lang/Class;";
-    public static final String THROWABLE         = "Ljava/lang/Throwable;";
-    public static final String RUNTIME_EXCEPTION = "Ljava/lang/RuntimeException;";
-    public static final String ERROR             = "Ljava/lang/Error;";
-    public static final String CLONEABLE         = "Ljava/lang/Cloneable;";
-    public static final String SERIALIZABLE      = "Ljava/io/Serializable;";
-    public static final String BOOLEAN   = "Ljava/lang/Boolean;";
-    public static final String BYTE      = "Ljava/lang/Byte;";
-    public static final String CHARACTER = "Ljava/lang/Character;";
-    public static final String SHORT     = "Ljava/lang/Short;";
-    public static final String INTEGER   = "Ljava/lang/Integer;";
-    public static final String LONG      = "Ljava/lang/Long;";
-    public static final String FLOAT     = "Ljava/lang/Float;";
-    public static final String DOUBLE    = "Ljava/lang/Double;";
+    /**
+     * The field descriptor for the type {@code void}.
+     */
+    public static final String VOID = "V";
 
-    private static final Map classNameToDescriptor = new HashMap();
-    private static final Map descriptorToClassName = new HashMap();
+    // Primitive types.
+
+    /**
+     * The field descriptor for the primitive type BYTE.
+     */
+    public static final String BYTE = "B";
+
+    /**
+     * The field descriptor for the primitive type CHAR.
+     */
+    public static final String CHAR = "C";
+
+    /**
+     * The field descriptor for the primitive type DOUBLE.
+     */
+    public static final String DOUBLE = "D";
+
+    /**
+     * The field descriptor for the primitive type FLOAT.
+     */
+    public static final String FLOAT = "F";
+
+    /**
+     * The field descriptor for the primitive type INT.
+     */
+    public static final String INT = "I";
+
+    /**
+     * The field descriptor for the primitive type LONG.
+     */
+    public static final String LONG = "J";
+
+    /**
+     * The field descriptor for the primitive type SHORT.
+     */
+    public static final String SHORT = "S";
+
+    /**
+     * The field descriptor for the primitive type BOOLEAN.
+     */
+    public static final String BOOLEAN = "Z";
+
+    // Annotations.
+
+    /**
+     * The field descriptor for the annotation {@link java.lang.annotation.Retention}.
+     */
+    public static final String JAVA_LANG_ANNOTATION_RETENTION = "Ljava/lang/annotation/Retention;";
+
+    /**
+     * The field descriptor for the annotation {@link java.lang.Override}.
+     */
+    public static final String JAVA_LANG_OVERRIDE = "Ljava/lang/Override;";
+
+    // Classes.
+
+    /**
+     * The field descriptor for the class {@link java.lang.AssertionError}.
+     */
+    public static final String JAVA_LANG_ASSERTIONERROR = "Ljava/lang/AssertionError;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Boolean}.
+     */
+    public static final String JAVA_LANG_BOOLEAN = "Ljava/lang/Boolean;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Byte}.
+     */
+    public static final String JAVA_LANG_BYTE = "Ljava/lang/Byte;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Character}.
+     */
+    public static final String JAVA_LANG_CHARACTER = "Ljava/lang/Character;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Class}.
+     */
+    public static final String JAVA_LANG_CLASS = "Ljava/lang/Class;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Double}.
+     */
+    public static final String JAVA_LANG_DOUBLE = "Ljava/lang/Double;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Enum}.
+     */
+    public static final String JAVA_LANG_ENUM = "Ljava/lang/Enum;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Error}.
+     */
+    public static final String JAVA_LANG_ERROR = "Ljava/lang/Error;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Exception}.
+     */
+    public static final String JAVA_LANG_EXCEPTION = "Ljava/lang/Exception;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Float}.
+     */
+    public static final String JAVA_LANG_FLOAT = "Ljava/lang/Float;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Integer}.
+     */
+    public static final String JAVA_LANG_INTEGER = "Ljava/lang/Integer;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Long}.
+     */
+    public static final String JAVA_LANG_LONG = "Ljava/lang/Long;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Object}.
+     */
+    public static final String JAVA_LANG_OBJECT = "Ljava/lang/Object;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.RuntimeException}.
+     */
+    public static final String JAVA_LANG_RUNTIMEEXCEPTION = "Ljava/lang/RuntimeException;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Short}.
+     */
+    public static final String JAVA_LANG_SHORT = "Ljava/lang/Short;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.String}.
+     */
+    public static final String JAVA_LANG_STRING = "Ljava/lang/String;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.StringBuilder}.
+     */
+    public static final String JAVA_LANG_STRINGBUILDER = "Ljava/lang/StringBuilder;"; // Since 1.5!
+
+    /**
+     * The field descriptor for the class {@link java.lang.System}.
+     */
+    public static final String JAVA_LANG_SYSTEM = "Ljava/lang/System;";
+
+    /**
+     * The field descriptor for the class {@link java.lang.Throwable}.
+     */
+    public static final String JAVA_LANG_THROWABLE = "Ljava/lang/Throwable;";
+
+    // Interfaces.
+
+    /**
+     * The field descriptor for the interface {@link java.io.Serializable}.
+     */
+    public static final String JAVA_IO_SERIALIZABLE = "Ljava/io/Serializable;";
+
+    /**
+     * The field descriptor for the interface {@link java.lang.Cloneable}.
+     */
+    public static final String JAVA_LANG_CLONEABLE = "Ljava/lang/Cloneable;";
+
+    /**
+     * The field descriptor for the interface {@link java.lang.Iterable}.
+     */
+    public static final String JAVA_LANG_ITERABLE = "Ljava/lang/Iterable;";
+
+    /**
+     * The field descriptor for the interface {@link java.util.Iterator}.
+     */
+    public static final String JAVA_UTIL_ITERATOR = "Ljava/util/Iterator;";
+
+    private static final Map<String, String> DESCRIPTOR_TO_CLASSNAME;
     static {
-        descriptorToClassName.put(Descriptor.VOID_,             "void");
-        descriptorToClassName.put(Descriptor.BYTE_,             "byte");
-        descriptorToClassName.put(Descriptor.CHAR_,             "char");
-        descriptorToClassName.put(Descriptor.DOUBLE_,           "double");
-        descriptorToClassName.put(Descriptor.FLOAT_,            "float");
-        descriptorToClassName.put(Descriptor.INT_,              "int");
-        descriptorToClassName.put(Descriptor.LONG_,             "long");
-        descriptorToClassName.put(Descriptor.SHORT_,            "short");
-        descriptorToClassName.put(Descriptor.BOOLEAN_,          "boolean");
-        descriptorToClassName.put(Descriptor.OBJECT,            "java.lang.Object");
-        descriptorToClassName.put(Descriptor.STRING,            "java.lang.String");
-        descriptorToClassName.put(Descriptor.STRING_BUFFER,     "java.lang.StringBuffer");
-        descriptorToClassName.put(Descriptor.STRING_BUILDER,    "java.lang.StringBuilder");
-        descriptorToClassName.put(Descriptor.CLASS,             "java.lang.Class");
-        descriptorToClassName.put(Descriptor.THROWABLE,         "java.lang.Throwable");
-        descriptorToClassName.put(Descriptor.RUNTIME_EXCEPTION, "java.lang.RuntimeException");
-        descriptorToClassName.put(Descriptor.ERROR,             "java.lang.Error");
-        descriptorToClassName.put(Descriptor.CLONEABLE,         "java.lang.Cloneable");
-        descriptorToClassName.put(Descriptor.SERIALIZABLE,      "java.io.Serializable");
-        descriptorToClassName.put(Descriptor.BOOLEAN,           "java.lang.Boolean");
-        descriptorToClassName.put(Descriptor.BYTE,              "java.lang.Byte");
-        descriptorToClassName.put(Descriptor.CHARACTER,         "java.lang.Character");
-        descriptorToClassName.put(Descriptor.SHORT,             "java.lang.Short");
-        descriptorToClassName.put(Descriptor.INTEGER,           "java.lang.Integer");
-        descriptorToClassName.put(Descriptor.LONG,              "java.lang.Long");
-        descriptorToClassName.put(Descriptor.FLOAT,             "java.lang.Float");
-        descriptorToClassName.put(Descriptor.DOUBLE,            "java.lang.Double");
+        Map<String, String> m = new HashMap<String, String>();
 
-        for (Iterator it = descriptorToClassName.entrySet().iterator(); it.hasNext();) {
-            Map.Entry e = (Map.Entry) it.next();
-            classNameToDescriptor.put(e.getValue(), e.getKey());
+        m.put(Descriptor.VOID, "void");
+
+        // Primitive types.
+        m.put(Descriptor.BYTE,    "byte");
+        m.put(Descriptor.CHAR,    "char");
+        m.put(Descriptor.DOUBLE,  "double");
+        m.put(Descriptor.FLOAT,   "float");
+        m.put(Descriptor.INT,     "int");
+        m.put(Descriptor.LONG,    "long");
+        m.put(Descriptor.SHORT,   "short");
+        m.put(Descriptor.BOOLEAN, "boolean");
+
+        // Annotations.
+        m.put(Descriptor.JAVA_LANG_OVERRIDE, "java.lang.Override");
+
+        // Classes.
+        m.put(Descriptor.JAVA_LANG_ASSERTIONERROR,   "java.lang.AssertionError");
+        m.put(Descriptor.JAVA_LANG_BOOLEAN,          "java.lang.Boolean");
+        m.put(Descriptor.JAVA_LANG_BYTE,             "java.lang.Byte");
+        m.put(Descriptor.JAVA_LANG_CHARACTER,        "java.lang.Character");
+        m.put(Descriptor.JAVA_LANG_CLASS,            "java.lang.Class");
+        m.put(Descriptor.JAVA_LANG_DOUBLE,           "java.lang.Double");
+        m.put(Descriptor.JAVA_LANG_EXCEPTION,        "java.lang.Exception");
+        m.put(Descriptor.JAVA_LANG_ERROR,            "java.lang.Error");
+        m.put(Descriptor.JAVA_LANG_FLOAT,            "java.lang.Float");
+        m.put(Descriptor.JAVA_LANG_INTEGER,          "java.lang.Integer");
+        m.put(Descriptor.JAVA_LANG_LONG,             "java.lang.Long");
+        m.put(Descriptor.JAVA_LANG_OBJECT,           "java.lang.Object");
+        m.put(Descriptor.JAVA_LANG_RUNTIMEEXCEPTION, "java.lang.RuntimeException");
+        m.put(Descriptor.JAVA_LANG_SHORT,            "java.lang.Short");
+        m.put(Descriptor.JAVA_LANG_STRING,           "java.lang.String");
+        m.put(Descriptor.JAVA_LANG_STRINGBUILDER,    "java.lang.StringBuilder");
+        m.put(Descriptor.JAVA_LANG_THROWABLE,        "java.lang.Throwable");
+
+        // Interfaces.
+        m.put(Descriptor.JAVA_IO_SERIALIZABLE, "java.io.Serializable");
+        m.put(Descriptor.JAVA_LANG_CLONEABLE,  "java.lang.Cloneable");
+        m.put(Descriptor.JAVA_LANG_ITERABLE,   "java.lang.Iterable");
+        m.put(Descriptor.JAVA_UTIL_ITERATOR,   "java.util.Iterator");
+
+        DESCRIPTOR_TO_CLASSNAME = Collections.unmodifiableMap(m);
+    }
+
+    private static final Map<String, String> CLASS_NAME_TO_DESCRIPTOR;
+
+    static {
+        Map<String, String> m = new HashMap<String, String>();
+        for (Map.Entry<String, String> e : Descriptor.DESCRIPTOR_TO_CLASSNAME.entrySet()) {
+            m.put(e.getValue(), e.getKey());
         }
+        CLASS_NAME_TO_DESCRIPTOR = Collections.unmodifiableMap(m);
     }
 }

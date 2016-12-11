@@ -26,94 +26,143 @@
 
 package org.codehaus.janino;
 
-import java.io.*;
-import java.lang.reflect.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.Cookable;
+import org.codehaus.commons.compiler.IExpressionEvaluator;
 import org.codehaus.commons.compiler.IScriptEvaluator;
 import org.codehaus.commons.compiler.Location;
-import org.codehaus.janino.Java.AmbiguousName;
+import org.codehaus.commons.nullanalysis.Nullable;
+import org.codehaus.janino.Java.Atom;
+import org.codehaus.janino.Java.BlockStatement;
+import org.codehaus.janino.Java.ExpressionStatement;
+import org.codehaus.janino.Java.LocalClassDeclaration;
+import org.codehaus.janino.Java.LocalClassDeclarationStatement;
 import org.codehaus.janino.Java.LocalVariableDeclarationStatement;
+import org.codehaus.janino.Java.MethodDeclarator;
+import org.codehaus.janino.Java.Modifiers;
+import org.codehaus.janino.Java.Primitive;
+import org.codehaus.janino.Java.PrimitiveType;
+import org.codehaus.janino.Java.Type;
+import org.codehaus.janino.Java.VariableDeclarator;
+import org.codehaus.janino.Parser.ClassDeclarationContext;
 import org.codehaus.janino.util.Traverser;
 
 /**
- * A number of "convenience constructors" exist that execute the setup steps instantly. Their use is discouraged.
+ * An implementation of {@link IScriptEvaluator} that utilizes the JANINO Java compiler.
+ * <p>
+ *   This implementation implements the concept of "Local methods", i.e. statements may be freely intermixed with
+ *   method declarations. These methods are typically called by the "main code" of the script evaluator. One limitation
+ *   exists: When cooking <em>multiple</em> scripts in one {@link ScriptEvaluator}, then local method signatures
+ *   (names and parameter types) must not collide between scripts.
+ * </p>
+ * <p>
+ *   A plethora of "convenience constructors" exist that execute the setup steps instantly. Their use is discouraged,
+ *   in favor of using the default constructor, plus calling a number of setters, and then one of the {@code cook()}
+ *   methods.
+ * </p>
  */
-public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvaluator {
-
-    protected boolean[]  optionalStaticMethod = null;
-    protected Class[]    optionalReturnTypes = null;
-    protected String[]   optionalMethodNames = null;
-    protected String[][] optionalParameterNames = null;
-    protected Class[][]  optionalParameterTypes = null;
-    protected Class[][]  optionalThrownExceptions = null;
-
-    private Method[]     result = null; // null=uncooked
+public
+class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvaluator {
 
     /**
-     * Equivalent to<pre>
-     * ScriptEvaluator se = new ScriptEvaluator();
-     * se.cook(script);</pre>
+     * Whether methods override a method declared by a supertype; {@code null} means "none".
+     */
+    @Nullable protected boolean[] optionalOverrideMethod;
+
+    /**
+     * Whether methods are static; {@code null} means "all".
+     */
+    @Nullable protected boolean[] optionalStaticMethod;
+
+    /**
+     * The methods' return types; {@code null} means "none".
+     */
+    @Nullable protected Class<?>[] optionalReturnTypes;
+
+    @Nullable private String[]     optionalMethodNames;
+    @Nullable private String[][]   optionalParameterNames;
+    @Nullable private Class<?>[][] optionalParameterTypes;
+    @Nullable private Class<?>[][] optionalThrownExceptions;
+
+    @Nullable private Method[] result; // null=uncooked
+
+    /**
+     * Equivalent to
+     * <pre>
+     *     ScriptEvaluator se = new ScriptEvaluator();
+     *     se.cook(script);
+     * </pre>
      *
      * @see #ScriptEvaluator()
      * @see Cookable#cook(String)
      */
-    public ScriptEvaluator(
-        String   script
-    ) throws CompileException {
+    public
+    ScriptEvaluator(String script) throws CompileException {
         this.cook(script);
     }
 
     /**
-     * Equivalent to<pre>
-     * ScriptEvaluator se = new ScriptEvaluator();
-     * se.setReturnType(returnType);
-     * se.cook(script);</pre>
+     * Equivalent to
+     * <pre>
+     *     ScriptEvaluator se = new ScriptEvaluator();
+     *     se.setReturnType(returnType);
+     *     se.cook(script);
+     * </pre>
      *
      * @see #ScriptEvaluator()
      * @see #setReturnType(Class)
      * @see Cookable#cook(String)
      */
-    public ScriptEvaluator(
-        String   script,
-        Class    returnType
-    ) throws CompileException {
+    public
+    ScriptEvaluator(String script, Class<?> returnType) throws CompileException {
         this.setReturnType(returnType);
         this.cook(script);
     }
 
     /**
-     * Equivalent to<pre>
-     * ScriptEvaluator se = new ScriptEvaluator();
-     * se.setReturnType(returnType);
-     * se.setParameters(parameterNames, parameterTypes);
-     * se.cook(script);</pre>
+     * Equivalent to
+     * <pre>
+     *     ScriptEvaluator se = new ScriptEvaluator();
+     *     se.setReturnType(returnType);
+     *     se.setParameters(parameterNames, parameterTypes);
+     *     se.cook(script);
+     * </pre>
      *
      * @see #ScriptEvaluator()
      * @see #setReturnType(Class)
      * @see #setParameters(String[], Class[])
      * @see Cookable#cook(String)
      */
-    public ScriptEvaluator(
-        String   script,
-        Class    returnType,
-        String[] parameterNames,
-        Class[]  parameterTypes
-    ) throws CompileException {
+    public
+    ScriptEvaluator(String script, Class<?> returnType, String[] parameterNames, Class<?>[] parameterTypes)
+    throws CompileException {
         this.setReturnType(returnType);
         this.setParameters(parameterNames, parameterTypes);
         this.cook(script);
     }
 
     /**
-     * Equivalent to<pre>
-     * ScriptEvaluator se = new ScriptEvaluator();
-     * se.setReturnType(returnType);
-     * se.setParameters(parameterNames, parameterTypes);
-     * se.setThrownExceptions(thrownExceptions);
-     * se.cook(script);</pre>
+     * Equivalent to
+     * <pre>
+     *     ScriptEvaluator se = new ScriptEvaluator();
+     *     se.setReturnType(returnType);
+     *     se.setParameters(parameterNames, parameterTypes);
+     *     se.setThrownExceptions(thrownExceptions);
+     *     se.cook(script);
+     * </pre>
      *
      * @see #ScriptEvaluator()
      * @see #setReturnType(Class)
@@ -121,12 +170,13 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
      * @see #setThrownExceptions(Class[])
      * @see Cookable#cook(String)
      */
-    public ScriptEvaluator(
-        String   script,
-        Class    returnType,
-        String[] parameterNames,
-        Class[]  parameterTypes,
-        Class[]  thrownExceptions
+    public
+    ScriptEvaluator(
+        String     script,
+        Class<?>   returnType,
+        String[]   parameterNames,
+        Class<?>[] parameterTypes,
+        Class<?>[] thrownExceptions
     ) throws CompileException {
         this.setReturnType(returnType);
         this.setParameters(parameterNames, parameterTypes);
@@ -135,13 +185,15 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
     }
 
     /**
-     * Equivalent to<pre>
-     * ScriptEvaluator se = new ScriptEvaluator();
-     * se.setReturnType(returnType);
-     * se.setParameters(parameterNames, parameterTypes);
-     * se.setThrownExceptions(thrownExceptions);
-     * se.setParentClassLoader(optionalParentClassLoader);
-     * se.cook(optionalFileName, is);</pre>
+     * Equivalent to
+     * <pre>
+     *     ScriptEvaluator se = new ScriptEvaluator();
+     *     se.setReturnType(returnType);
+     *     se.setParameters(parameterNames, parameterTypes);
+     *     se.setThrownExceptions(thrownExceptions);
+     *     se.setParentClassLoader(optionalParentClassLoader);
+     *     se.cook(optionalFileName, is);
+     * </pre>
      *
      * @see #ScriptEvaluator()
      * @see #setReturnType(Class)
@@ -150,14 +202,15 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
      * @see SimpleCompiler#setParentClassLoader(ClassLoader)
      * @see Cookable#cook(String, InputStream)
      */
-    public ScriptEvaluator(
-        String      optionalFileName,
-        InputStream is,
-        Class       returnType,
-        String[]    parameterNames,
-        Class[]     parameterTypes,
-        Class[]     thrownExceptions,
-        ClassLoader optionalParentClassLoader // null = use current thread's context class loader
+    public
+    ScriptEvaluator(
+        @Nullable String      optionalFileName,
+        InputStream           is,
+        Class<?>              returnType,
+        String[]              parameterNames,
+        Class<?>[]            parameterTypes,
+        Class<?>[]            thrownExceptions,
+        @Nullable ClassLoader optionalParentClassLoader // null = use current thread's context class loader
     ) throws CompileException, IOException {
         this.setReturnType(returnType);
         this.setParameters(parameterNames, parameterTypes);
@@ -167,13 +220,15 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
     }
 
     /**
-     * Equivalent to<pre>
-     * ScriptEvaluator se = new ScriptEvaluator();
-     * se.setReturnType(returnType);
-     * se.setParameters(parameterNames, parameterTypes);
-     * se.setThrownExceptions(thrownExceptions);
-     * se.setParentClassLoader(optionalParentClassLoader);
-     * se.cook(reader);</pre>
+     * Equivalent to
+     * <pre>
+     *     ScriptEvaluator se = new ScriptEvaluator();
+     *     se.setReturnType(returnType);
+     *     se.setParameters(parameterNames, parameterTypes);
+     *     se.setThrownExceptions(thrownExceptions);
+     *     se.setParentClassLoader(optionalParentClassLoader);
+     *     se.cook(reader);
+     * </pre>
      *
      * @see #ScriptEvaluator()
      * @see #setReturnType(Class)
@@ -182,14 +237,15 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
      * @see SimpleCompiler#setParentClassLoader(ClassLoader)
      * @see Cookable#cook(String, Reader)
      */
-    public ScriptEvaluator(
-        String      optionalFileName,
-        Reader      reader,
-        Class       returnType,
-        String[]    parameterNames,
-        Class[]     parameterTypes,
-        Class[]     thrownExceptions,
-        ClassLoader optionalParentClassLoader // null = use current thread's context class loader
+    public
+    ScriptEvaluator(
+        @Nullable String      optionalFileName,
+        Reader                reader,
+        Class<?>              returnType,
+        String[]              parameterNames,
+        Class<?>[]            parameterTypes,
+        Class<?>[]            thrownExceptions,
+        @Nullable ClassLoader optionalParentClassLoader // null = use current thread's context class loader
     ) throws CompileException, IOException {
         this.setReturnType(returnType);
         this.setParameters(parameterNames, parameterTypes);
@@ -199,13 +255,15 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
     }
 
     /**
-     * Equivalent to<pre>
-     * ScriptEvaluator se = new ScriptEvaluator();
-     * se.setReturnType(returnType);
-     * se.setParameters(parameterNames, parameterTypes);
-     * se.setThrownExceptions(thrownExceptions);
-     * se.setParentClassLoader(optionalParentClassLoader);
-     * se.cook(scanner);</pre>
+     * Equivalent to
+     * <pre>
+     *     ScriptEvaluator se = new ScriptEvaluator();
+     *     se.setReturnType(returnType);
+     *     se.setParameters(parameterNames, parameterTypes);
+     *     se.setThrownExceptions(thrownExceptions);
+     *     se.setParentClassLoader(optionalParentClassLoader);
+     *     se.cook(scanner);
+     * </pre>
      *
      * @see #ScriptEvaluator()
      * @see #setReturnType(Class)
@@ -214,13 +272,14 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
      * @see SimpleCompiler#setParentClassLoader(ClassLoader)
      * @see Cookable#cook(Reader)
      */
-    public ScriptEvaluator(
-        Scanner     scanner,
-        Class       returnType,
-        String[]    parameterNames,
-        Class[]     parameterTypes,
-        Class[]     thrownExceptions,
-        ClassLoader optionalParentClassLoader // null = use current thread's context class loader
+    public
+    ScriptEvaluator(
+        Scanner               scanner,
+        Class<?>              returnType,
+        String[]              parameterNames,
+        Class<?>[]            parameterTypes,
+        Class<?>[]            thrownExceptions,
+        @Nullable ClassLoader optionalParentClassLoader // null = use current thread's context class loader
     ) throws CompileException, IOException {
         this.setReturnType(returnType);
         this.setParameters(parameterNames, parameterTypes);
@@ -230,15 +289,17 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
     }
 
     /**
-     * Equivalent to<pre>
-     * ScriptEvaluator se = new ScriptEvaluator();
-     * se.setExtendedType(optionalExtendedType);
-     * se.setImplementedTypes(implementedTypes);
-     * se.setReturnType(returnType);
-     * se.setParameters(parameterNames, parameterTypes);
-     * se.setThrownExceptions(thrownExceptions);
-     * se.setParentClassLoader(optionalParentClassLoader);
-     * se.cook(scanner);</pre>
+     * Equivalent to
+     * <pre>
+     *     ScriptEvaluator se = new ScriptEvaluator();
+     *     se.setExtendedType(optionalExtendedType);
+     *     se.setImplementedTypes(implementedTypes);
+     *     se.setReturnType(returnType);
+     *     se.setParameters(parameterNames, parameterTypes);
+     *     se.setThrownExceptions(thrownExceptions);
+     *     se.setParentClassLoader(optionalParentClassLoader);
+     *     se.cook(scanner);
+     * </pre>
      *
      * @see #ScriptEvaluator()
      * @see ClassBodyEvaluator#setExtendedClass(Class)
@@ -249,15 +310,16 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
      * @see SimpleCompiler#setParentClassLoader(ClassLoader)
      * @see Cookable#cook(Reader)
      */
-    public ScriptEvaluator(
-        Scanner     scanner,
-        Class       optionalExtendedType,
-        Class[]     implementedTypes,
-        Class       returnType,
-        String[]    parameterNames,
-        Class[]     parameterTypes,
-        Class[]     thrownExceptions,
-        ClassLoader optionalParentClassLoader // null = use current thread's context class loader
+    public
+    ScriptEvaluator(
+        Scanner               scanner,
+        @Nullable Class<?>    optionalExtendedType,
+        Class<?>[]            implementedTypes,
+        Class<?>              returnType,
+        String[]              parameterNames,
+        Class<?>[]            parameterTypes,
+        Class<?>[]            thrownExceptions,
+        @Nullable ClassLoader optionalParentClassLoader // null = use current thread's context class loader
     ) throws CompileException, IOException {
         this.setExtendedClass(optionalExtendedType);
         this.setImplementedInterfaces(implementedTypes);
@@ -269,18 +331,20 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
     }
 
     /**
-     * Equivalent to<pre>
-     * ScriptEvaluator se = new ScriptEvaluator();
-     * se.setClassName(className);
-     * se.setExtendedType(optionalExtendedType);
-     * se.setImplementedTypes(implementedTypes);
-     * se.setStaticMethod(staticMethod);
-     * se.setReturnType(returnType);
-     * se.setMethodName(methodName);
-     * se.setParameters(parameterNames, parameterTypes);
-     * se.setThrownExceptions(thrownExceptions);
-     * se.setParentClassLoader(optionalParentClassLoader);
-     * se.cook(scanner);</pre>
+     * Equivalent to
+     * <pre>
+     *     ScriptEvaluator se = new ScriptEvaluator();
+     *     se.setClassName(className);
+     *     se.setExtendedType(optionalExtendedType);
+     *     se.setImplementedTypes(implementedTypes);
+     *     se.setStaticMethod(staticMethod);
+     *     se.setReturnType(returnType);
+     *     se.setMethodName(methodName);
+     *     se.setParameters(parameterNames, parameterTypes);
+     *     se.setThrownExceptions(thrownExceptions);
+     *     se.setParentClassLoader(optionalParentClassLoader);
+     *     se.cook(scanner);
+     * </pre>
      *
      * @see #ScriptEvaluator()
      * @see ClassBodyEvaluator#setClassName(String)
@@ -294,18 +358,19 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
      * @see SimpleCompiler#setParentClassLoader(ClassLoader)
      * @see Cookable#cook(Reader)
      */
-    public ScriptEvaluator(
-        Scanner     scanner,
-        String      className,
-        Class       optionalExtendedType,
-        Class[]     implementedTypes,
-        boolean     staticMethod,
-        Class       returnType,
-        String      methodName,
-        String[]    parameterNames,
-        Class[]     parameterTypes,
-        Class[]     thrownExceptions,
-        ClassLoader optionalParentClassLoader // null = use current thread's context class loader
+    public
+    ScriptEvaluator(
+        Scanner               scanner,
+        String                className,
+        @Nullable Class<?>    optionalExtendedType,
+        Class<?>[]            implementedTypes,
+        boolean               staticMethod,
+        Class<?>              returnType,
+        String                methodName,
+        String[]              parameterNames,
+        Class<?>[]            parameterTypes,
+        Class<?>[]            thrownExceptions,
+        @Nullable ClassLoader optionalParentClassLoader // null = use current thread's context class loader
     ) throws CompileException, IOException {
         this.setClassName(className);
         this.setExtendedClass(optionalExtendedType);
@@ -319,210 +384,249 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
         this.cook(scanner);
     }
 
+    /**
+     * Constructs a script evaluator with all the default settings (return type {@code void}
+     */
     public ScriptEvaluator() {}
 
-    public void setStaticMethod(boolean staticMethod) {
-        this.setStaticMethod(new boolean[] { staticMethod });
+    @Override public void
+    setOverrideMethod(boolean overrideMethod) { this.setOverrideMethod(new boolean[] { overrideMethod }); }
+
+    @Override public void
+    setStaticMethod(boolean staticMethod) { this.setStaticMethod(new boolean[] { staticMethod }); }
+
+    /**
+     * Defines the return types of the generated methods.
+     *
+     * @param returnType The method's return type; {@code null} means the "default return type", which is the type
+     *                   returned by {@link #getDefaultReturnType()} ({@code void.class} for {@link ScriptEvaluator}
+     *                   and {@code Object.class} for {@link ExpressionEvaluator})
+     * @see              ScriptEvaluator#getDefaultReturnType()
+     * @see              ExpressionEvaluator#getDefaultReturnType()
+     */
+    @Override public void
+    setReturnType(Class<?> returnType) { this.setReturnTypes(new Class[] { returnType }); }
+
+    @Override public void
+    setMethodName(String methodName) { this.setMethodNames(new String[] { methodName }); }
+
+    @Override public void
+    setParameters(String[] parameterNames, Class<?>[] parameterTypes) {
+        this.setParameters(new String[][] { parameterNames }, new Class[][] { parameterTypes });
     }
 
-    public void setReturnType(Class returnType) {
-        this.setReturnTypes(new Class[] { returnType });
+    @Override public void
+    setThrownExceptions(Class<?>[] thrownExceptions) { this.setThrownExceptions(new Class[][] { thrownExceptions }); }
+
+    @Override public final void
+    cook(Scanner scanner) throws CompileException, IOException { this.cook(new Scanner[] { scanner }); }
+
+    @Override @Nullable public Object
+    evaluate(@Nullable Object[] arguments) throws InvocationTargetException { return this.evaluate(0, arguments); }
+
+    @Override public Method
+    getMethod() { return this.getMethod(0); }
+
+    @Override public void
+    setOverrideMethod(boolean[] overrideMethod) { this.optionalOverrideMethod = overrideMethod.clone(); }
+
+    @Override public void
+    setStaticMethod(boolean[] staticMethod) { this.optionalStaticMethod = staticMethod.clone(); }
+
+    /**
+     * Defines the return types of the generated methods.
+     *
+     * @param returnTypes The methods' return types; {@code null} elements mean the "default return type", which is the
+     *                    type returned by {@link #getDefaultReturnType()} ({@code void.class} for {@link
+     *                    ScriptEvaluator} and {@code Object.class} for {@link ExpressionEvaluator})
+     * @see               ScriptEvaluator#getDefaultReturnType()
+     * @see               ExpressionEvaluator#getDefaultReturnType()
+     */
+    @Override public void
+    setReturnTypes(Class<?>[] returnTypes) { this.optionalReturnTypes = returnTypes.clone(); }
+
+    @Override public void
+    setMethodNames(String[] methodNames) { this.optionalMethodNames = methodNames.clone(); }
+
+    @Override public void
+    setParameters(String[][] parameterNames, Class<?>[][] parameterTypes) {
+        this.optionalParameterNames = parameterNames.clone();
+        this.optionalParameterTypes = parameterTypes.clone();
     }
 
-    public void setMethodName(String methodName) {
-        this.setMethodNames(new String[] { methodName });
-    }
+    @Override public void
+    setThrownExceptions(Class<?>[][] thrownExceptions) { this.optionalThrownExceptions = thrownExceptions.clone(); }
 
-    public void setParameters(String[] parameterNames, Class[] parameterTypes) {
-        this.setParameters(new String[][] { parameterNames }, new Class[][] {parameterTypes });
-    }
+    /**
+     * Like {@link #cook(Scanner)}, but cooks a <em>set</em> of scripts into one class. Notice that if <em>any</em> of
+     * the scripts causes trouble, the entire compilation will fail. If you need to report <em>which</em> of the
+     * scripts causes the exception, you may want to use the {@code optionalFileName} argument of {@link
+     * Scanner#Scanner(String, Reader)} to distinguish between the individual token sources.
+     * <p>
+     *   On a 2 GHz Intel Pentium Core Duo under Windows XP with an IBM 1.4.2 JDK, compiling 10000 expressions "a + b"
+     *   (integer) takes about 4 seconds and 56 MB of main memory. The generated class file is 639203 bytes large.
+     * </p>
+     * <p>
+     *   The number and the complexity of the scripts is restricted by the <a
+     *   href="http://java.sun.com/docs/books/vmspec/2nd-edition/html/ClassFile.doc.html#88659">Limitations of the Java
+     *   Virtual Machine</a>, where the most limiting factor is the 64K entries limit of the constant pool. Since every
+     *   method with a distinct name requires one entry there, you can define at best 32K (very simple) scripts.
+     * </p>
+     * <p>
+     *   If and only if the number of scanners is one, then that single script may contain leading IMPORT directives.
+     * </p>
+     *
+     * @throws IllegalStateException Any of the preceeding {@code set...()} had an array size different from that
+     *                               of {@code scanners}
+     */
+    public final void
+    cook(Scanner[] scanners) throws CompileException, IOException {
 
-    public void setThrownExceptions(Class[] thrownExceptions) {
-        this.setThrownExceptions(new Class[][] { thrownExceptions });
-    }
-
-    public final void cook(Scanner scanner) throws CompileException, IOException {
-        this.cook(new Scanner[] { scanner });
-    }
-
-    public Object evaluate(Object[] parameterValues) throws InvocationTargetException {
-        return this.evaluate(0, parameterValues);
-    }
-
-    public Method getMethod() {
-        return this.getMethod(0);
-    }
-
-    public void setStaticMethod(boolean[] staticMethod) {
-        assertNotCooked();
-        this.optionalStaticMethod = (boolean[]) staticMethod.clone();
-    }
-
-    public void setReturnTypes(Class[] returnTypes) {
-        assertNotCooked();
-        this.optionalReturnTypes = (Class[]) returnTypes.clone();
-    }
-
-    public void setMethodNames(String[] methodNames) {
-        assertNotCooked();
-        this.optionalMethodNames = (String[]) methodNames.clone();
-    }
-
-    public void setParameters(String[][] parameterNames, Class[][] parameterTypes) {
-        assertNotCooked();
-        this.optionalParameterNames = (String[][]) parameterNames.clone();
-        this.optionalParameterTypes = (Class[][]) parameterTypes.clone();
-    }
-
-    public void setThrownExceptions(Class[][] thrownExceptions) {
-        assertNotCooked();
-        this.optionalThrownExceptions = (Class[][]) thrownExceptions.clone();
+        Parser[] parsers = new Parser[scanners.length];
+        for (int i = 0; i < scanners.length; ++i) {
+            parsers[i] = new Parser(scanners[i]);
+        }
+        this.cook(parsers);
     }
 
     /**
-     * Like {@link #cook(Scanner)}, but cooks a <i>set</i> of scripts into one class. Notice that
-     * if <i>any</i> of the scripts causes trouble, the entire compilation will fail. If you
-     * need to report <i>which</i> of the scripts causes the exception, you may want to use the
-     * <code>optionalFileName</code> argument of {@link Scanner#Scanner(String, Reader)} to
-     * distinguish between the individual token sources.
-     * <p>
-     * On a 2 GHz Intel Pentium Core Duo under Windows XP with an IBM 1.4.2 JDK, compiling
-     * 10000 expressions "a + b" (integer) takes about 4 seconds and 56 MB of main memory.
-     * The generated class file is 639203 bytes large.
-     * <p>
-     * The number and the complexity of the scripts is restricted by the
-     * <a href="http://java.sun.com/docs/books/vmspec/2nd-edition/html/ClassFile.doc.html#88659">Limitations
-     * of the Java Virtual Machine</a>, where the most limiting factor is the 64K entries limit
-     * of the constant pool. Since every method with a distinct name requires one entry there,
-     * you can define at best 32K (very simple) scripts.
-     *
-     * If and only if the number of scanners is one, then that single script may contain leading
-     * IMPORT directives.
-     *
-     * @throws IllegalStateException Any of the preceeding <code>set...()</code> had an array size different from that
-     *                               of <code>scanners</code>
+     * @see #cook(Scanner[])
      */
-    public final void cook(Scanner[] scanners) throws CompileException, IOException {
-        if (scanners == null) throw new NullPointerException();
+    public final void
+    cook(Parser[] parsers) throws CompileException, IOException {
+
+        final Class<?>[]   orts = this.optionalReturnTypes;
+        final String[][]   opns = this.optionalParameterNames;
+        final Class<?>[][] opts = this.optionalParameterTypes;
+        final boolean[]    osm  = this.optionalStaticMethod;
+        final Class<?>[][] otes = this.optionalThrownExceptions;
+        final String[]     omns = this.optionalMethodNames;
 
         // The "dimension" of this ScriptEvaluator, i.e. how many scripts are cooked at the same
         // time.
-        int count = scanners.length;
+        int count = parsers.length;
 
         // Check array sizes.
-        if (this.optionalMethodNames != null && this.optionalMethodNames.length != count) {
-            throw new IllegalStateException("methodName");
+        if (omns != null && omns.length != count) {
+            throw new IllegalStateException("methodName count");
         }
-        if (this.optionalParameterNames != null && this.optionalParameterNames.length != count) {
-            throw new IllegalStateException("parameterNames");
+        if (opns != null && opns.length != count) {
+            throw new IllegalStateException("parameterNames count");
         }
-        if (this.optionalParameterTypes != null && this.optionalParameterTypes.length != count) {
-            throw new IllegalStateException("parameterTypes");
+        if (opts != null && opts.length != count) {
+            throw new IllegalStateException("parameterTypes count");
         }
-        if (this.optionalReturnTypes != null && this.optionalReturnTypes.length != count) {
-            throw new IllegalStateException("returnTypes");
+        if (this.optionalOverrideMethod != null && this.optionalOverrideMethod.length != count) {
+            throw new IllegalStateException("overrideMethod count");
         }
-        if (this.optionalStaticMethod != null && this.optionalStaticMethod.length != count) {
-            throw new IllegalStateException("staticMethod");
+        if (orts != null && orts.length != count) {
+            throw new IllegalStateException("returnTypes count");
         }
-        if (this.optionalThrownExceptions != null && this.optionalThrownExceptions.length != count) {
-            throw new IllegalStateException("thrownExceptions");
+        if (osm != null && osm.length != count) {
+            throw new IllegalStateException("staticMethod count");
         }
-
-        this.setUpClassLoaders();
+        if (otes != null && otes.length != count) {
+            throw new IllegalStateException("thrownExceptions count");
+        }
 
         // Create compilation unit.
-        Java.CompilationUnit compilationUnit = this.makeCompilationUnit(count == 1 ? scanners[0] : null);
+        Java.CompilationUnit compilationUnit = this.makeCompilationUnit(count == 1 ? parsers[0] : null);
 
         // Create class declaration.
-        Java.ClassDeclaration cd = this.addPackageMemberClassDeclaration(scanners[0].location(), compilationUnit);
+        final Java.AbstractClassDeclaration
+        cd = this.addPackageMemberClassDeclaration(parsers[0].location(), compilationUnit);
 
         // Determine method names.
         String[] methodNames;
-        if (this.optionalMethodNames == null) {
+        if (omns == null) {
             methodNames = new String[count];
             for (int i = 0; i < count; ++i) methodNames[i] = "eval" + i;
         } else
         {
-            methodNames = this.optionalMethodNames;
+            methodNames = omns;
         }
 
         // Create methods with one block each.
         for (int i = 0; i < count; ++i) {
-            Scanner scanner = scanners[i];
+            Parser parser = parsers[i];
 
-            List statements = this.makeStatements(i, scanner);
+            List<Java.BlockStatement> statements;
+            List<MethodDeclarator>    localMethods = new ArrayList<Java.MethodDeclarator>();
+
+            // Try "makeStatements()" first, iff that returns NULL, call "parseScript()".
+            statements = this.makeStatements(i, parser);
+            if (statements == null) {
+                statements = new ArrayList<Java.BlockStatement>();
+                this.parseScript(parser, statements, localMethods);
+            }
 
             // Determine the following script properties AFTER the call to "makeBlock()",
             // because "makeBlock()" may modify these script properties on-the-fly.
-            boolean  staticMethod = this.optionalStaticMethod == null || this.optionalStaticMethod[i];
-            Class returnType = (
-                this.optionalReturnTypes == null
-                ? this.getDefaultReturnType()
-                : this.optionalReturnTypes[i]
-            );
-            String[] parameterNames = (
-                this.optionalParameterNames == null
-                ? new String[0]
-                : this.optionalParameterNames[i]
-            );
-            Class[] parameterTypes = (
-                this.optionalParameterTypes == null
-                ? new Class[0]
-                : this.optionalParameterTypes[i]
-            );
-            Class[] thrownExceptions = (
-                this.optionalThrownExceptions == null
-                ? new Class[0]
-                : this.optionalThrownExceptions[i]
-            );
+            boolean staticMethod   = osm   == null || osm[i];
+            boolean overrideMethod = this.optionalOverrideMethod != null && this.optionalOverrideMethod[i];
 
+            Class<?>   returnType       = orts == null ? this.getDefaultReturnType() : orts[i];
+            String[]   parameterNames   = opns == null ? new String[0] : opns[i];
+            Class<?>[] parameterTypes   = opts == null ? new Class[0] : opts[i];
+            Class<?>[] thrownExceptions = otes == null ? new Class[0] : otes[i];
+
+            // If the method is non-static, assume that it overrides a method in a supertype.
+            Location loc = parser.location();
             cd.addDeclaredMethod(this.makeMethodDeclaration(
-                scanner.location(), // location
-                staticMethod,       // staticMethod
-                returnType,         // returnType
-                methodNames[i],     // methodName
-                parameterTypes,     // parameterTypes
-                parameterNames,     // parameterNames
-                thrownExceptions,   // thrownExceptions
-                statements          // statements
+                loc,              // location
+                (                 // annotations
+                    overrideMethod
+                    ? new Java.Annotation[] { new Java.MarkerAnnotation(this.classToType(loc, Override.class)) }
+                    : new Java.Annotation[0]
+                ),
+                staticMethod,     // staticMethod
+                returnType,       // returnType
+                methodNames[i],   // methodName
+                parameterTypes,   // parameterTypes
+                parameterNames,   // parameterNames
+                thrownExceptions, // thrownExceptions
+                statements        // statements
             ));
+
+            for (MethodDeclarator method : localMethods) {
+                cd.addDeclaredMethod(method);
+            }
         }
 
         // Compile and load the compilation unit.
-        Class c = this.compileToClass(
-            compilationUnit,                                    // compilationUnit
-            DebuggingInformation.DEFAULT_DEBUGGING_INFORMATION, // debuggingInformation
-            this.className
-        );
+        Class<?> c = this.compileToClass(compilationUnit);
 
         // Find the script methods by name.
-        this.result = new Method[count];
+        Method[] methods = new Method[count];
         if (count <= 10) {
             for (int i = 0; i < count; ++i) {
                 try {
-                    this.result[i] = c.getDeclaredMethod(
+                    methods[i] = c.getDeclaredMethod(
                         methodNames[i],
-                        this.optionalParameterTypes == null ? new Class[0] : this.optionalParameterTypes[i]
+                        opts == null ? new Class[0] : opts[i]
                     );
                 } catch (NoSuchMethodException ex) {
-                    throw new JaninoRuntimeException(
+                    throw new JaninoRuntimeException((
                         "SNO: Loaded class does not declare method \""
                         + methodNames[i]
                         + "\""
-                    );
+                    ), ex);
                 }
             }
         } else
         {
             class MethodWrapper {
-                private final String  name;
-                private final Class[] parameterTypes;
-                MethodWrapper(String name, Class[] parameterTypes) {
-                    this.name = name;
+
+                private final String     name;
+                private final Class<?>[] parameterTypes;
+
+                MethodWrapper(String name, Class<?>[] parameterTypes) {
+                    this.name           = name;
                     this.parameterTypes = parameterTypes;
                 }
-                public boolean equals(Object o) {
+
+                @Override public boolean
+                equals(@Nullable Object o) {
                     if (!(o instanceof MethodWrapper)) return false;
                     MethodWrapper that = (MethodWrapper) o;
                     if (!this.name.equals(that.name)) return false;
@@ -533,24 +637,21 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
                     }
                     return true;
                 }
-                public int hashCode() {
+
+                @Override public int
+                hashCode() {
                     int hc = this.name.hashCode();
-                    for (int i = 0; i < this.parameterTypes.length; ++i) {
-                        hc ^= this.parameterTypes[i].hashCode();
-                    }
+                    for (Class<?> parameterType : this.parameterTypes) hc ^= parameterType.hashCode();
                     return hc;
                 }
             }
-            Method[] ma = c.getDeclaredMethods();
-            Map dms = new HashMap(2 * count);
-            for (int i = 0; i < ma.length; ++i) {
-                Method m = ma[i];
-                dms.put(new MethodWrapper(m.getName(), m.getParameterTypes()), m);
-            }
+            Method[]                   ma  = c.getDeclaredMethods();
+            Map<MethodWrapper, Method> dms = new HashMap<MethodWrapper, Method>(2 * count);
+            for (Method m : ma) dms.put(new MethodWrapper(m.getName(), m.getParameterTypes()), m);
             for (int i = 0; i < count; ++i) {
                 Method m = (Method) dms.get(new MethodWrapper(
                     methodNames[i],
-                    this.optionalParameterTypes == null ? new Class[0] : this.optionalParameterTypes[i]
+                    opts == null ? new Class[0] : opts[i]
                 ));
                 if (m == null) {
                     throw new JaninoRuntimeException(
@@ -559,30 +660,30 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
                         + "\""
                     );
                 }
-                this.result[i] = m;
+                methods[i] = m;
             }
         }
+
+        this.result = methods;
     }
 
-    public final void cook(Reader[] readers) throws CompileException, IOException {
+    @Override public final void
+    cook(Reader[] readers) throws CompileException, IOException {
         this.cook(new String[readers.length], readers);
     }
 
     /**
-     * On a 2 GHz Intel Pentium Core Duo under Windows XP with an IBM 1.4.2 JDK, compiling
-     * 10000 expressions "a + b" (integer) takes about 4 seconds and 56 MB of main memory.
-     * The generated class file is 639203 bytes large.
+     * On a 2 GHz Intel Pentium Core Duo under Windows XP with an IBM 1.4.2 JDK, compiling 10000 expressions "a + b"
+     * (integer) takes about 4 seconds and 56 MB of main memory. The generated class file is 639203 bytes large.
      * <p>
-     * The number and the complexity of the scripts is restricted by the
-     * <a href="http://java.sun.com/docs/books/vmspec/2nd-edition/html/ClassFile.doc.html#88659">Limitations
-     * of the Java Virtual Machine</a>, where the most limiting factor is the 64K entries limit
-     * of the constant pool. Since every method with a distinct name requires one entry there,
-     * you can define at best 32K (very simple) scripts.
+     *   The number and the complexity of the scripts is restricted by the <a
+     *   href="http://java.sun.com/docs/books/vmspec/2nd-edition/html/ClassFile.doc.html#88659">Limitations of the Java
+     *   Virtual Machine</a>, where the most limiting factor is the 64K entries limit of the constant pool. Since every
+     *   method with a distinct name requires one entry there, you can define at best 32K (very simple) scripts.
+     * </p>
      */
-    public final void cook(
-        String[] optionalFileNames,
-        Reader[] readers
-    ) throws CompileException, IOException {
+    @Override public final void
+    cook(@Nullable String[] optionalFileNames, Reader[] readers) throws CompileException, IOException {
         Scanner[] scanners = new Scanner[readers.length];
         for (int i = 0; i < readers.length; ++i) {
             scanners[i] = new Scanner(optionalFileNames == null ? null : optionalFileNames[i], readers[i]);
@@ -590,91 +691,213 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
         this.cook(scanners);
     }
 
-    public final void cook(String[] strings) throws CompileException {
-        this.cook(null, strings);
-    }
+    @Override public final void
+    cook(String[] strings) throws CompileException { this.cook(null, strings); }
 
-    public final void cook(
-        String[] optionalFileNames,
-        String[] strings
-    ) throws CompileException {
+    @Override public final void
+    cook(@Nullable String[] optionalFileNames, String[] strings) throws CompileException {
         Reader[] readers = new Reader[strings.length];
         for (int i = 0; i < strings.length; ++i) readers[i] = new StringReader(strings[i]);
         try {
             this.cook(optionalFileNames, readers);
         } catch (IOException ex) {
-            throw new JaninoRuntimeException("SNO: IOException despite StringReader");
+            throw new JaninoRuntimeException("SNO: IOException despite StringReader", ex);
         }
     }
 
-    protected Class getDefaultReturnType() {
-        return void.class;
-    }
-
     /**
-     * Fill the given <code>block</code> by parsing statements until EOF and adding
-     * them to the block.
+     * @return {@code void.class}
+     * @see    #setReturnTypes(Class[])
      */
-    protected List/*<BlockStatement>*/ makeStatements(
-        int     idx,
-        Scanner scanner
-    ) throws CompileException, IOException {
-        List/*<BlockStatement>*/ statements = new ArrayList();
-        Parser parser = new Parser(scanner);
-        while (!scanner.peek().isEOF()) {
-            statements.add(parser.parseBlockStatement());
+    protected Class<?>
+    getDefaultReturnType() { return void.class; }
+
+    /**
+     * @return The return type of the indexed script.
+     */
+    protected final Class<?>
+    getReturnType(int i) {
+
+        if (this.optionalReturnTypes != null) {
+            Class<?> rt = this.optionalReturnTypes[i];
+            assert rt != null;
+            return rt;
         }
 
-        return statements;
+        return this.getDefaultReturnType();
     }
 
-    protected void compileToMethods(
-        Java.CompilationUnit compilationUnit,
-        String[]             methodNames,
-        Class[][]            parameterTypes
-    ) throws CompileException {
+    /**
+     * @throws CompileException
+     * @throws IOException
+     */
+    @Nullable protected List<BlockStatement>
+    makeStatements(int idx, Parser parser) throws CompileException, IOException {
+        return null;
+    }
 
-        // Compile and load the compilation unit.
-        Class c = this.compileToClass(
-            compilationUnit,                                    // compilationUnit
-            DebuggingInformation.DEFAULT_DEBUGGING_INFORMATION, // debuggingInformation
-            this.className
-        );
+    /**
+     * Fills the given {@code block} by parsing statements until EOF and adding them to the block.
+     */
+    protected void
+    parseScript(Parser parser, List<Java.BlockStatement> mainStatements, List<Java.MethodDeclarator> localMethods)
+    throws CompileException, IOException {
 
-        // Find the script method by name.
-        this.result = new Method[methodNames.length];
-        for (int i = 0; i < this.result.length; ++i) {
-            try {
-                this.result[i] = c.getMethod(methodNames[i], parameterTypes[i]);
-            } catch (NoSuchMethodException ex) {
-                throw new JaninoRuntimeException(
-                    "SNO: Loaded class does not declare method \""
-                    + this.optionalMethodNames[i]
-                    + "\""
-                );
-            }
+        while (!parser.peekEof()) {
+            ScriptEvaluator.parseScriptStatement(parser, mainStatements, localMethods);
         }
     }
 
     /**
-     * To the given {@link Java.ClassDeclaration}, add
+     * <pre>
+     *   ScriptStatement :=
+     *     Statement                                               (1)
+     *     | 'class' ...                                           (2)
+     *     | [ Modifiers ] 'void' Identifier MethodDeclarationRest (3a)
+     *     | Modifiers Type Identifier MethodDeclarationRest ';'   (3b)
+     *     | Expression Identifier MethodDeclarationRest           (3c) (5)
+     *     | Modifiers Type VariableDeclarators ';'                (4a)
+     *     | Expression VariableDeclarators ';'                    (4b) (5)
+     *     | Expression ';'
+     * </pre>
+     * <p> (1): Includes the "labeled statement".</p>
+     * <p> (2): Local class declaration.</p>
+     * <p> (3a), (3b), (3c): Local method declaration statement.</p>
+     * <p> (4) Local variable declaration statement.</p>
+     * <p> (5) "Expression" must pose a type.</p>
+     */
+    private static void
+    parseScriptStatement(
+        Parser                      parser,
+        List<Java.BlockStatement>   mainStatements,
+        List<Java.MethodDeclarator> localMethods
+    ) throws CompileException, IOException {
+
+        // Statement?
+        if (
+            (parser.peekIdentifier() != null && parser.peekNextButOne(":"))
+            || parser.peek(new String[] {
+                "if", "for", "while", "do", "try", "switch", "synchronized",
+                "return", "throw", "break", "continue", "assert",
+                "{", ";"
+            }) != -1
+        ) {
+            mainStatements.add(parser.parseStatement());
+            return;
+        }
+
+        // Local class declaration?
+        if (parser.peekRead("class")) {
+
+            final LocalClassDeclaration lcd = (LocalClassDeclaration) parser.parseClassDeclarationRest(
+                null,                         // optionalDocComment
+                new Modifiers(),              // modifiers
+                ClassDeclarationContext.BLOCK // context
+            );
+            mainStatements.add(new LocalClassDeclarationStatement(lcd));
+            return;
+        }
+
+        Modifiers modifiers = parser.parseModifiers();
+
+        // "void" method declaration (without type parameters).
+        if (parser.peekRead("void")) {
+            String name = parser.readIdentifier();
+            localMethods.add(parser.parseMethodDeclarationRest(
+                null,                                                 // optionalDocComment
+                modifiers,                                            // modifiers
+                null,                                                 // optionalTypeParameters
+                new PrimitiveType(parser.location(), Primitive.VOID), // type
+                name                                                  // name
+            ));
+            return;
+        }
+
+        if (!modifiers.isBlank()) {
+
+            Type methodOrVariableType = parser.parseType();
+
+            // Modifiers Type Identifier MethodDeclarationRest ';'
+            if (parser.peek().type == TokenType.IDENTIFIER && parser.peekNextButOne("(")) {
+                localMethods.add(parser.parseMethodDeclarationRest(
+                    null,                   // optionalDocComment
+                    modifiers,              // modifiers
+                    null,                   // optionalTypeParameters
+                    methodOrVariableType,   // type
+                    parser.readIdentifier() // name
+                ));
+                return;
+            }
+
+            // Modifiers Type VariableDeclarators ';'
+            mainStatements.add(new LocalVariableDeclarationStatement(
+                parser.location(),                // location
+                modifiers,                        // modifiers
+                methodOrVariableType,             // type
+                parser.parseVariableDeclarators() // variableDeclarators
+            ));
+            parser.read(";");
+            return;
+        }
+
+        // It's either a non-final local variable declaration or an expression statement, or a non-void method
+        // declaration. We can only tell after parsing an expression.
+
+        Atom a = parser.parseExpression();
+
+        // Expression ';'
+        if (parser.peekRead(";")) {
+            mainStatements.add(new ExpressionStatement(a.toRvalueOrCompileException()));
+            return;
+        }
+
+        Type methodOrVariableType = a.toTypeOrCompileException();
+
+        // [ Modifiers ] Expression identifier MethodDeclarationRest
+        if (parser.peek().type == TokenType.IDENTIFIER && parser.peekNextButOne("(")) {
+            localMethods.add(parser.parseMethodDeclarationRest(
+                null,                   // optionalDocComment
+                modifiers,              // modifiers
+                null,                   // optionalTypeParameters
+                methodOrVariableType,   // type
+                parser.readIdentifier() // name
+            ));
+            return;
+        }
+
+        // [ Modifiers ] Expression VariableDeclarators ';'
+        mainStatements.add(new LocalVariableDeclarationStatement(
+            a.getLocation(),                  // location
+            modifiers,                        // modifiers
+            methodOrVariableType,             // type
+            parser.parseVariableDeclarators() // variableDeclarators
+        ));
+        parser.read(";");
+    }
+
+    /**
+     * To the given {@link Java.AbstractClassDeclaration}, adds
      * <ul>
-     *   <li>A public method declaration with the given return type, name, parameter
-     *       names and values and thrown exceptions
-     *   <li>A block
+     *   <li>
+     *     A public method declaration with the given return type, name, parameter names and values and thrown
+     *     exceptions
+     *   </li>
+     *   <li>A block</li>
      * </ul>
      *
      * @param returnType Return type of the declared method
      */
-    protected Java.MethodDeclarator makeMethodDeclaration(
-        Location                 location,
-        boolean                  staticMethod,
-        Class                    returnType,
-        String                   methodName,
-        Class[]                  parameterTypes,
-        String[]                 parameterNames,
-        Class[]                  thrownExceptions,
-        List/*<BlockStatement>*/ statements
+    protected Java.MethodDeclarator
+    makeMethodDeclaration(
+        Location                  location,
+        Java.Annotation[]         annotations,
+        boolean                   staticMethod,
+        Class<?>                  returnType,
+        String                    methodName,
+        Class<?>[]                parameterTypes,
+        String[]                  parameterNames,
+        Class<?>[]                thrownExceptions,
+        List<Java.BlockStatement> statements
     ) {
         if (parameterNames.length != parameterTypes.length) {
             throw new JaninoRuntimeException(
@@ -686,11 +909,14 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
             );
         }
 
-        Java.FunctionDeclarator.FormalParameter[] fps = new Java.FunctionDeclarator.FormalParameter[
-            parameterNames.length
-        ];
-        for (int i = 0; i < fps.length; ++i) {
-            fps[i] = new Java.FunctionDeclarator.FormalParameter(
+        Java.FunctionDeclarator.FormalParameters fps = new Java.FunctionDeclarator.FormalParameters(
+            location,
+            new Java.FunctionDeclarator.FormalParameter[parameterNames.length],
+            false
+        );
+
+        for (int i = 0; i < fps.parameters.length; ++i) {
+            fps.parameters[i] = new Java.FunctionDeclarator.FormalParameter(
                 location,                                      // location
                 true,                                          // finaL
                 this.classToType(location, parameterTypes[i]), // type
@@ -701,11 +927,11 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
         return new Java.MethodDeclarator(
             location,                                        // location
             null,                                            // optionalDocComment
-            (                                                // modifiers
-                staticMethod ?
-                (short) (Mod.PUBLIC | Mod.STATIC) :
-                (short) Mod.PUBLIC
+            new Java.Modifiers(                              // modifiers
+                staticMethod ? (short) (Mod.PUBLIC | Mod.STATIC) : (short) Mod.PUBLIC,
+                annotations
             ),
+            null,                                            // optionalTypeParameters
             this.classToType(location, returnType),          // type
             methodName,                                      // name
             fps,                                             // formalParameters
@@ -715,27 +941,26 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
     }
 
     /**
-     * @deprecated
-     * @see #createFastScriptEvaluator(Scanner, String[], String, Class, Class, String[], ClassLoader)
+     * @deprecated Use {@link #createFastScriptEvaluator(Scanner, String[], String, Class, Class, String[],
+     *             ClassLoader)} instead
      */
-    public static Object createFastScriptEvaluator(
-        String   script,
-        Class    interfaceToImplement,
-        String[] parameterNames
-    ) throws CompileException {
+    @Deprecated public static Object
+    createFastScriptEvaluator(String script, Class<?> interfaceToImplement, String[] parameterNames)
+    throws CompileException {
         ScriptEvaluator se = new ScriptEvaluator();
         return se.createFastEvaluator(script, interfaceToImplement, parameterNames);
     }
 
     /**
-     * @deprecated
-     * @see #createFastScriptEvaluator(Scanner, String[], String, Class, Class, String[], ClassLoader)
+     * @deprecated Use {@link #createFastScriptEvaluator(Scanner, String[], String, Class, Class, String[],
+     *             ClassLoader)} instead
      */
-    public static Object createFastScriptEvaluator(
-        Scanner     scanner,
-        Class       interfaceToImplement,
-        String[]    parameterNames,
-        ClassLoader optionalParentClassLoader
+    @Deprecated public static Object
+    createFastScriptEvaluator(
+        Scanner               scanner,
+        Class<?>              interfaceToImplement,
+        String[]              parameterNames,
+        @Nullable ClassLoader optionalParentClassLoader
     ) throws CompileException, IOException {
         ScriptEvaluator se = new ScriptEvaluator();
         se.setParentClassLoader(optionalParentClassLoader);
@@ -743,16 +968,17 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
     }
 
     /**
-     * @deprecated
-     * @see #createFastScriptEvaluator(Scanner, String[], String, Class, Class, String[], ClassLoader)
+     * @deprecated Use {@link #createFastScriptEvaluator(Scanner, String[], String, Class, Class, String[],
+     *             ClassLoader)} instead
      */
-    public static Object createFastScriptEvaluator(
-        Scanner     scanner,
-        String      className,
-        Class       optionalExtendedType,
-        Class       interfaceToImplement,
-        String[]    parameterNames,
-        ClassLoader optionalParentClassLoader
+    @Deprecated public static Object
+    createFastScriptEvaluator(
+        Scanner               scanner,
+        String                className,
+        @Nullable Class<?>    optionalExtendedType,
+        Class<?>              interfaceToImplement,
+        String[]              parameterNames,
+        @Nullable ClassLoader optionalParentClassLoader
     ) throws CompileException, IOException {
         ScriptEvaluator se = new ScriptEvaluator();
         se.setClassName(className);
@@ -762,27 +988,27 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
     }
 
     /**
-     * Use {@link #createFastEvaluator(Scanner,Class,String[])} instead:
      * <pre>
-     * {@link ScriptEvaluator} se = new {@link ScriptEvaluator#ScriptEvaluator() ScriptEvaluator}();
-     * se.{@link #setDefaultImports(String[]) setDefaultImports}.(optionalDefaultImports);
-     * se.{@link #setClassName(String) setClassName}.(className);
-     * se.{@link #setExtendedClass(Class) setExtendedClass}.(optionalExtendedClass);
-     * se.{@link #setParentClassLoader(ClassLoader) setParentClassLoader}(optionalParentClassLoader);
-     * return se.{@link #createFastEvaluator(Scanner, Class, String[]) createFastEvaluator}(scanner,
-     * interfaceToImplement, parameterNames);
+     *     {@link ScriptEvaluator} se = new {@link ScriptEvaluator#ScriptEvaluator() ScriptEvaluator}();
+     *     se.{@link #setDefaultImports(String[]) setDefaultImports}.(optionalDefaultImports);
+     *     se.{@link #setClassName(String) setClassName}.(className);
+     *     se.{@link #setExtendedClass(Class) setExtendedClass}.(optionalExtendedClass);
+     *     se.{@link #setParentClassLoader(ClassLoader) setParentClassLoader}(optionalParentClassLoader);
+     *     return se.{@link #createFastEvaluator(Scanner, Class, String[]) createFastEvaluator}(scanner,
+     *     interfaceToImplement, parameterNames);
      * </pre>
      *
-     * @deprecated
+     * @deprecated Use {@link #createFastEvaluator(Scanner,Class,String[])} instead:
      */
-    public static Object createFastScriptEvaluator(
-        Scanner     scanner,
-        String[]    optionalDefaultImports,
-        String      className,
-        Class       optionalExtendedClass,
-        Class       interfaceToImplement,
-        String[]    parameterNames,
-        ClassLoader optionalParentClassLoader
+    @Deprecated public static Object
+    createFastScriptEvaluator(
+        Scanner               scanner,
+        @Nullable String[]    optionalDefaultImports,
+        String                className,
+        @Nullable Class<?>    optionalExtendedClass,
+        Class<?>              interfaceToImplement,
+        String[]              parameterNames,
+        @Nullable ClassLoader optionalParentClassLoader
     ) throws CompileException, IOException {
         ScriptEvaluator se = new ScriptEvaluator();
         se.setDefaultImports(optionalDefaultImports);
@@ -795,23 +1021,19 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
     /**
      * Don't use.
      */
-    public final Object createInstance(Reader reader) {
+    @Override public final Object
+    createInstance(Reader reader) {
         throw new UnsupportedOperationException("createInstance");
     }
 
-    public Object createFastEvaluator(
-        Reader   reader,
-        Class    interfaceToImplement,
-        String[] parameterNames
-    ) throws CompileException, IOException {
+    @Override public <T> Object
+    createFastEvaluator(Reader reader, Class<T> interfaceToImplement, String[] parameterNames)
+    throws CompileException, IOException {
         return this.createFastEvaluator(new Scanner(null, reader), interfaceToImplement, parameterNames);
     }
 
-    public Object createFastEvaluator(
-        String   script,
-        Class    interfaceToImplement,
-        String[] parameterNames
-    ) throws CompileException {
+    @Override public <T> Object
+    createFastEvaluator(String script, Class<T> interfaceToImplement, String[] parameterNames) throws CompileException {
         try {
             return this.createFastEvaluator(
                 new StringReader(script),
@@ -819,94 +1041,109 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
                 parameterNames
             );
         } catch (IOException ex) {
-            throw new JaninoRuntimeException("IOException despite StringReader");
+            throw new JaninoRuntimeException("IOException despite StringReader", ex);
         }
     }
 
     /**
-     * Notice: This method is not declared in {@link IScriptEvaluator}, and is hence only available in <i>this</i>
-     * implementation of <code>org.codehaus.commons.compiler</code>. To be independent from this particular
+     * Notice: This method is not declared in {@link IScriptEvaluator}, and is hence only available in <em>this</em>
+     * implementation of {@code org.codehaus.commons.compiler}. To be independent from this particular
      * implementation, try to switch to {@link #createFastEvaluator(Reader, Class, String[])}.
      *
      * @param scanner Source of tokens to read
      * @see #createFastEvaluator(Reader, Class, String[])
      */
-    public Object createFastEvaluator(
-        Scanner  scanner,
-        Class    interfaceToImplement,
-        String[] parameterNames
-    ) throws CompileException, IOException {
+    public Object
+    createFastEvaluator(Scanner scanner, Class<?> interfaceToImplement, String[] parameterNames)
+    throws CompileException, IOException {
         if (!interfaceToImplement.isInterface()) {
             throw new JaninoRuntimeException("\"" + interfaceToImplement + "\" is not an interface");
         }
 
-        Method[] methods = interfaceToImplement.getDeclaredMethods();
-        if (methods.length != 1) {
-            throw new JaninoRuntimeException(
-                "Interface \""
-                + interfaceToImplement
-                + "\" must declare exactly one method"
-            );
+        Method methodToImplement;
+        {
+            Method[] methods = interfaceToImplement.getDeclaredMethods();
+            if (methods.length != 1) {
+                throw new JaninoRuntimeException(
+                    "Interface \""
+                    + interfaceToImplement
+                    + "\" must declare exactly one method"
+                );
+            }
+            methodToImplement = methods[0];
         }
-        Method methodToImplement = methods[0];
 
         this.setImplementedInterfaces(new Class[] { interfaceToImplement });
+        this.setOverrideMethod(true);
         this.setStaticMethod(false);
-        this.setReturnType(methodToImplement.getReturnType());
+        if (this instanceof IExpressionEvaluator) {
+
+            // Must not call "IExpressionEvaluator.setReturnType()".
+            ((IExpressionEvaluator) this).setExpressionType(methodToImplement.getReturnType());
+        } else {
+            this.setReturnType(methodToImplement.getReturnType());
+        }
         this.setMethodName(methodToImplement.getName());
         this.setParameters(parameterNames, methodToImplement.getParameterTypes());
         this.setThrownExceptions(methodToImplement.getExceptionTypes());
         this.cook(scanner);
-        Class c = this.getMethod().getDeclaringClass();
+        Class<?> c = this.getMethod().getDeclaringClass();
         try {
             return c.newInstance();
         } catch (InstantiationException e) {
             // SNO - Declared class is always non-abstract.
-            throw new JaninoRuntimeException(e.toString());
+            throw new JaninoRuntimeException(e.toString(), e);
         } catch (IllegalAccessException e) {
             // SNO - interface methods are always PUBLIC.
-            throw new JaninoRuntimeException(e.toString());
+            throw new JaninoRuntimeException(e.toString(), e);
         }
     }
 
     /**
-     * Guess the names of the parameters used in the given expression. The strategy is to look
-     * at all "ambiguous names" in the expression (e.g. in "a.b.c.d()", the ambiguous name
-     * is "a.b.c"), and then at the components of the ambiguous name.
+     * Guesses the names of the parameters used in the given expression. The strategy is to look at all "ambiguous
+     * names" in the expression (e.g. in "a.b.c.d()", the ambiguous name is "a.b.c"), and then at the components of the
+     * ambiguous name.
      * <ul>
-     *   <li>If any component starts with an upper-case letter, then ambiguous name is assumed to
-     *       be a type name.
-     *   <li>Otherwise, if the first component of the ambiguous name matches the name of a
-     *       previously defined local variable, then the first component of the ambiguous name is
-     *       assumed to be a local variable name. (Notice that this strategy does not consider that
-     *       the scope of a local variable declaration may end before the end of the script.)
-     *   <li>Otherwise, the first component of the ambiguous name is assumed to be a parameter name.
+     *   <li>
+     *     If any component starts with an upper-case letter, then ambiguous name is assumed to be a type name.
+     *   </li>
+     *   <li>
+     *     Otherwise, if the first component of the ambiguous name matches the name of a previously defined local
+     *     variable, then the first component of the ambiguous name is assumed to be a local variable name. (Notice
+     *     that this strategy does not consider that the scope of a local variable declaration may end before the end
+     *     of the script.)
+     *   </li>
+     *   <li>
+     *     Otherwise, the first component of the ambiguous name is assumed to be a parameter name.
+     *   </li>
      * </ul>
      *
      * @see Scanner#Scanner(String, Reader)
      */
-    public static String[] guessParameterNames(Scanner scanner) throws CompileException, IOException {
+    public static String[]
+    guessParameterNames(Scanner scanner) throws CompileException, IOException {
         Parser parser = new Parser(scanner);
 
         // Eat optional leading import declarations.
-        while (scanner.peek().isKeyword("import")) parser.parseImportDeclaration();
+        while (parser.peek("import")) parser.parseImportDeclaration();
 
         // Parse the script statements into a block.
         Java.Block block = new Java.Block(scanner.location());
-        while (!scanner.peek().isEOF()) block.addStatement(parser.parseBlockStatement());
+        while (!parser.peekEof()) block.addStatement(parser.parseBlockStatement());
 
         // Traverse the block for ambiguous names and guess which of them are parameter names.
-        final Set localVariableNames = new HashSet();
-        final Set parameterNames = new HashSet();
-        new Traverser() {
-            public void traverseLocalVariableDeclarationStatement(LocalVariableDeclarationStatement lvds) {
-                for (int i = 0; i < lvds.variableDeclarators.length; ++i) {
-                    localVariableNames.add(lvds.variableDeclarators[i].name);
-                }
+        final Set<String> localVariableNames = new HashSet<String>();
+        final Set<String> parameterNames     = new HashSet<String>();
+        new Traverser<RuntimeException>() {
+
+            @Override public void
+            traverseLocalVariableDeclarationStatement(Java.LocalVariableDeclarationStatement lvds) {
+                for (VariableDeclarator vd : lvds.variableDeclarators) localVariableNames.add(vd.name);
                 super.traverseLocalVariableDeclarationStatement(lvds);
             }
 
-            public void traverseAmbiguousName(AmbiguousName an) {
+            @Override public void
+            traverseAmbiguousName(Java.AmbiguousName an) {
 
                 // If any of the components starts with an upper-case letter, then the ambiguous
                 // name is most probably a type name, e.g. "System.out" or "java.lang.System.out".
@@ -920,22 +1157,28 @@ public class ScriptEvaluator extends ClassBodyEvaluator implements IScriptEvalua
                 // It's most probably a parameter name (although it could be a field name as well).
                 parameterNames.add(an.identifiers[0]);
             }
-        }.traverseBlock(block);
+        }.visitBlockStatement(block);
 
         return (String[]) parameterNames.toArray(new String[parameterNames.size()]);
     }
 
-    public Object evaluate(int idx, Object[] parameterValues) throws InvocationTargetException {
-        if (this.result == null) throw new IllegalStateException("Must only be called after \"cook()\"");
+    @Override @Nullable public Object
+    evaluate(int idx, @Nullable Object[] arguments) throws InvocationTargetException {
         try {
-            return this.result[idx].invoke(null, parameterValues);
+            return this.assertCooked()[idx].invoke(null, arguments);
         } catch (IllegalAccessException ex) {
-            throw new JaninoRuntimeException(ex.toString());
+            throw new JaninoRuntimeException(ex.toString(), ex);
         }
     }
 
-    public Method getMethod(int idx) {
-        if (this.result == null) throw new IllegalStateException("Must only be called after \"cook()\"");
-        return this.result[idx];
+    private Method[]
+    assertCooked() {
+
+        if (this.result != null) return this.result;
+
+        throw new IllegalStateException("Must only be called after \"cook()\"");
     }
+
+    @Override public Method
+    getMethod(int idx) { return this.assertCooked()[idx]; }
 }

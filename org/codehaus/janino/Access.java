@@ -26,22 +26,45 @@
 
 package org.codehaus.janino;
 
-import org.codehaus.janino.util.enumerator.Enumerator;
-import org.codehaus.janino.util.enumerator.EnumeratorFormatException;
-
 /**
  * Return value for {@link IClass.IMember#getAccess}.
- * JLS2 6.6
  */
-public final class Access extends Enumerator {
-    public static final Access PRIVATE   = new Access("private");
-    public static final Access PROTECTED = new Access("protected");
-    public static final Access DEFAULT   = new Access("/*default*/");
-    public static final Access PUBLIC    = new Access("public");
+public
+enum Access {
 
-    // These MUST be declared exactly like this:
-    private Access(String name) { super(name); }
-    public static Access fromString(String name) throws EnumeratorFormatException {
-        return (Access) Enumerator.fromString(name, Access.class);
+    /**
+     * Representation of PRIVATE accessibility.
+     */
+    PRIVATE,
+
+    /**
+     * Representation of PROTECTED accessibility.
+     */
+    PROTECTED,
+
+    /**
+     * Representation of DEFAULT accessibility.
+     */
+    DEFAULT,
+
+    /**
+     * Representation of PUBLIC accessibility.
+     */
+    PUBLIC,
+
+    ;
+
+    /**
+     * @return <var>s</var>, converted to {@link Access}
+     */
+    public static Access
+    fromString(String s) {
+        if ("private".equals(s)) return PRIVATE;
+        if ("protected".equals(s)) return PROTECTED;
+        if ("public".equals(s)) return PUBLIC;
+        throw new IllegalArgumentException(s);
     }
+
+    @Override public String
+    toString() { return this.name().toLowerCase(); }
 }

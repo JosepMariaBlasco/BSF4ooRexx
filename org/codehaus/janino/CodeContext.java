@@ -32,54 +32,67 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import org.codehaus.commons.nullanalysis.Nullable;
+import org.codehaus.janino.Java.LocalVariableSlot;
 import org.codehaus.janino.util.ClassFile;
-
+import org.codehaus.janino.util.ClassFile.AttributeInfo;
+import org.codehaus.janino.util.ClassFile.LineNumberTableAttribute.Entry;
 
 /**
- * The context of the compilation of a function (constructor or method). Manages generation of
- * byte code, the exception table, generation of line number tables, allocation of local variables,
- * determining of stack size and local variable table size and flow analysis.
+ * The context of the compilation of a function (constructor or method). Manages generation of byte code, the exception
+ * table, generation of line number tables, allocation of local variables, determining of stack size and local variable
+ * table size and flow analysis.
  */
-public class CodeContext {
-    private static final boolean DEBUG = false;
+public
+class CodeContext {
+
+    private  static final Logger LOGGER = Logger.getLogger(CodeContext.class.getName());
+
     private static final int     INITIAL_SIZE   = 128;
-    private static final byte    UNEXAMINED = -1;
+    private static final byte    UNEXAMINED     = -1;
     private static final byte    INVALID_OFFSET = -2;
-    private static final int     MAX_STACK_SIZE = 254;
-    private /*final*/ ClassFile classFile;
+    private static final int     MAX_STACK_SIZE = 65535;
 
-    private short           maxStack;
-    private short           maxLocals;
-    private byte[]          code;
-    private /*final*/ Offset    beginning;
-    private /*final*/ Inserter  end;
-    private Inserter        currentInserter;
-    private /*final*/ List      exceptionTableEntries; // ExceptionTableEntry
+    private final ClassFile classFile;
+    private final String    functionName;
 
-    /**
-     * List of Java.LocalVariableSlot objects that contain all the local variables that
-     * are allocated in any block in this CodeContext.
-     */
-    private List           allLocalVars = new ArrayList();
-    /**
-     * List of List of Java.LocalVariableSlot objects. Each List of Java.LocalVariableSlot is
-     * the local variables allocated for a block. They are pushed and poped onto the list together
-     * to make allocation of the next local variable slot easy.
-     */
-    private List           scopedVars = new ArrayList();
-    private short          nextLocalVariableSlot = 0;
-
-    private final List     relocatables = new ArrayList();
+    private int                             maxStack;
+    private short                           maxLocals;
+    private byte[]                          code;
+    private final Offset                    beginning;
+    private final Inserter                  end;
+    private Inserter                        currentInserter;
+    private final List<ExceptionTableEntry> exceptionTableEntries;
 
     /**
-     * Create an empty "Code" attribute.
+     * All the local variables that are allocated in any block in this {@link CodeContext}.
      */
-    public CodeContext(ClassFile classFile) {
-        this.classFile             = classFile;
+    private final List<Java.LocalVariableSlot> allLocalVars = new ArrayList<Java.LocalVariableSlot>();
+
+    /**
+     * Each List of Java.LocalVariableSlot is the local variables allocated for a block. They are pushed and poped onto
+     * the list together to make allocation of the next local variable slot easy.
+     */
+    private final List<List<Java.LocalVariableSlot>> scopedVars = new ArrayList<List<Java.LocalVariableSlot>>();
+
+    private short                   nextLocalVariableSlot;
+    private final List<Relocatable> relocatables = new ArrayList<Relocatable>();
+
+    /**
+     * Creates an empty "Code" attribute.
+     */
+    public
+    CodeContext(ClassFile classFile, String functionName) {
+        this.classFile    = classFile;
+        this.functionName = functionName;
 
         this.maxStack              = 0;
         this.maxLocals             = 0;
@@ -87,70 +100,64 @@ public class CodeContext {
         this.beginning             = new Offset();
         this.end                   = new Inserter();
         this.currentInserter       = this.end;
-        this.exceptionTableEntries = new ArrayList();
+        this.exceptionTableEntries = new ArrayList<ExceptionTableEntry>();
 
         this.beginning.offset = 0;
-        this.end.offset = 0;
-        this.beginning.next = this.end;
-        this.end.prev = this.beginning;
+        this.end.offset       = 0;
+        this.beginning.next   = this.end;
+        this.end.prev         = this.beginning;
     }
 
-    public ClassFile getClassFile() {
-        return this.classFile;
-    }
+    /**
+     * The {@link ClassFile} this context is related to.
+     */
+    public ClassFile
+    getClassFile() { return this.classFile; }
 
 
     /**
-     * Allocate space for a local variable of the given size (1 or 2)
-     * on the local variable array.
-     *
-     * As a side effect, the "max_locals" field of the "Code" attribute
-     * is updated.
-     *
-     * The only way to deallocate local variables is to
-     * {@link #saveLocalVariables()} and later {@link
-     * #restoreLocalVariables()}.
+     * Allocates space for a local variable of the given size (1 or 2) on the local variable array.
+     * <p>
+     *   As a side effect, the "max_locals" field of the "Code" attribute is updated.
+     * </p>
+     * <p>
+     *   The only way to deallocate local variables is to {@link #saveLocalVariables()} and later {@link
+     *   #restoreLocalVariables()}.
+     * </p>
      *
      * @param size The number of slots to allocate (1 or 2)
      * @return The slot index of the allocated variable
      */
-    public short allocateLocalVariable(
-            short size
-    ) {
-        return allocateLocalVariable(size, null, null).getSlotIndex();
-        }
+    public short
+    allocateLocalVariable(short size) { return this.allocateLocalVariable(size, null, null).getSlotIndex(); }
 
     /**
-     * Allocate space for a local variable of the given size (1 or 2)
-     * on the local variable array.
+     * Allocates space for a local variable of the given size (1 or 2) on the local variable array. As a side effect,
+     * the "max_locals" field of the "Code" attribute is updated.
+     * <p>
+     *   The only way to deallocate local variables is to {@link #saveLocalVariables()} and later {@link
+     *   #restoreLocalVariables()}.
+     * </p>
      *
-     * As a side effect, the "max_locals" field of the "Code" attribute
-     * is updated.
-     *
-     * The only way to deallocate local variables is to
-     * {@link #saveLocalVariables()} and later {@link
-     * #restoreLocalVariables()}.
      * @param size Number of slots to use (1 or 2)
-     * @param name The variable name, if it's null, the variable won't be written to the localvariabletable
-     * @param type The variable type. if the name isn't null, the type is needed to write to the localvariabletable
+     * @param name The variable name; if {@code null}, then the variable won't be written to the localvariabletable
+     * @param type The variable type; if the <var>name</var> is not null, then the type is needed to write to the
+     *             localvariabletable
      */
-    public Java.LocalVariableSlot allocateLocalVariable(
-        short size,
-        String name,
-        IClass type
-    ) {
-        List currentVars = null;
+    public Java.LocalVariableSlot
+    allocateLocalVariable(short size, @Nullable String name, @Nullable IClass type) {
+        List<Java.LocalVariableSlot> currentVars = null;
 
         if (this.scopedVars.size() == 0) {
             throw new Error("saveLocalVariables must be called first");
         } else {
-            currentVars = (List) this.scopedVars.get(this.scopedVars.size() - 1);
+            currentVars = (List<Java.LocalVariableSlot>) this.scopedVars.get(this.scopedVars.size() - 1);
         }
 
         Java.LocalVariableSlot slot = new Java.LocalVariableSlot(name, this.nextLocalVariableSlot, type);
 
-        if (slot.getName() != null) {
-            slot.setStart(newOffset());
+        if (name != null) {
+            slot.setStart(this.newOffset());
         }
 
         this.nextLocalVariableSlot += size;
@@ -165,70 +172,74 @@ public class CodeContext {
     }
 
     /**
-     * Remember the current size of the local variables array.
+     * Remembers the current size of the local variables array.
      */
-    public List saveLocalVariables() {
-        //
-        // push empty list on the stack to hold a new block's local vars
-        //
-        List l = new ArrayList();
+    public List<Java.LocalVariableSlot>
+    saveLocalVariables() {
+
+        // Push empty list on the stack to hold a new block's local vars.
+        List<Java.LocalVariableSlot> l = new ArrayList<LocalVariableSlot>();
         this.scopedVars.add(l);
 
         return l;
     }
 
     /**
-     * Restore the previous size of the local variables array. This MUST to be called for every call
-     * to saveLocalVariables as it closes the variable extent for all the active local variables in
-     * the current block.
+     * Restores the previous size of the local variables array. This MUST to be called for every call to
+     * saveLocalVariables as it closes the variable extent for all the active local variables in the current block.
      */
-    public void restoreLocalVariables() {
-        //
-        // pop the list containing the current block's local vars
-        //
-        Iterator iter = ((List) this.scopedVars.remove(this.scopedVars.size() - 1)).iterator();
+    public void
+    restoreLocalVariables() {
 
-        while (iter.hasNext()) {
-            Java.LocalVariableSlot slot = (Java.LocalVariableSlot) iter.next();
+        // Pop the list containing the current block's local vars.
+        List<Java.LocalVariableSlot>
+        slots = (List<Java.LocalVariableSlot>) this.scopedVars.remove(this.scopedVars.size() - 1);
 
+        for (Java.LocalVariableSlot slot : slots) {
             if (slot.getName() != null) {
-                slot.setEnd(newOffset());
+                slot.setEnd(this.newOffset());
             }
         }
     }
 
     /**
-     *
      * @param dos
      * @param lineNumberTableAttributeNameIndex 0 == don't generate a "LineNumberTable" attribute
      * @throws IOException
      */
-    protected void storeCodeAttributeBody(
+    protected void
+    storeCodeAttributeBody(
         DataOutputStream dos,
         short            lineNumberTableAttributeNameIndex,
         short            localVariableTableAttributeNameIndex
     ) throws IOException {
-        dos.writeShort(this.maxStack);                                // max_stack
-        dos.writeShort(this.maxLocals);                               // max_locals
-        dos.writeInt(this.end.offset);                                // code_length
-        dos.write(this.code, 0, this.end.offset);                     // code
-        dos.writeShort(this.exceptionTableEntries.size());            // exception_table_length
-        for (int i = 0; i < this.exceptionTableEntries.size(); ++i) { // exception_table
-            ExceptionTableEntry exceptionTableEntry = (ExceptionTableEntry) this.exceptionTableEntries.get(i);
+        dos.writeShort((short) this.maxStack);                                       // max_stack
+        dos.writeShort(this.maxLocals);                                              // max_locals
+        dos.writeInt(this.end.offset);                                               // code_length
+        dos.write(this.code, 0, this.end.offset);                                    // code
+        dos.writeShort(this.exceptionTableEntries.size());                           // exception_table_length
+        for (ExceptionTableEntry exceptionTableEntry : this.exceptionTableEntries) { // exception_table
             dos.writeShort(exceptionTableEntry.startPC.offset);
             dos.writeShort(exceptionTableEntry.endPC.offset);
             dos.writeShort(exceptionTableEntry.handlerPC.offset);
             dos.writeShort(exceptionTableEntry.catchType);
         }
 
-        List attributes = new ArrayList(); // ClassFile.AttributeInfo
+        List<ClassFile.AttributeInfo> attributes = new ArrayList<AttributeInfo>();
 
         // Add "LineNumberTable" attribute.
         if (lineNumberTableAttributeNameIndex != 0) {
-            List lnt = new ArrayList();
+            List<ClassFile.LineNumberTableAttribute.Entry> lnt = new ArrayList<Entry>();
             for (Offset o = this.beginning; o != null; o = o.next) {
                 if (o instanceof LineNumberOffset) {
-                    lnt.add(new ClassFile.LineNumberTableAttribute.Entry(o.offset, ((LineNumberOffset) o).lineNumber));
+
+                    int offset = o.offset;
+                    if (offset > 0xffff) throw new JaninoRuntimeException("LineNumberTable entry offset out of range");
+
+                    int lineNumber = ((LineNumberOffset) o).lineNumber;
+                    if (lineNumber > 0xffff) lineNumber = 0xffff;
+
+                    lnt.add(new ClassFile.LineNumberTableAttribute.Entry((short) offset, (short) lineNumber));
                 }
             }
             ClassFile.LineNumberTableAttribute.Entry[] lnte = (ClassFile.LineNumberTableAttribute.Entry[]) lnt.toArray(
@@ -240,71 +251,79 @@ public class CodeContext {
             ));
         }
 
+        // Add "LocalVariableTable" attribute.
         if (localVariableTableAttributeNameIndex != 0) {
-            ClassFile.AttributeInfo ai = storeLocalVariableTable(dos, localVariableTableAttributeNameIndex);
+            ClassFile.AttributeInfo ai = this.storeLocalVariableTable(dos, localVariableTableAttributeNameIndex);
 
             if (ai != null) attributes.add(ai);
         }
 
-        dos.writeShort(attributes.size());                         // attributes_count
-        for (Iterator it = attributes.iterator(); it.hasNext();) { // attributes;
-            ClassFile.AttributeInfo attribute = (ClassFile.AttributeInfo) it.next();
+        dos.writeShort(attributes.size());                     // attributes_count
+        for (ClassFile.AttributeInfo attribute : attributes) { // attributes;
             attribute.store(dos);
         }
     }
 
-    protected ClassFile.AttributeInfo storeLocalVariableTable(
-            DataOutputStream dos,
-            short localVariableTableAttributeNameIndex
-    ) {
-        ClassFile       cf = getClassFile();
-        Iterator        iter = getAllLocalVars().iterator();
-        final List      entryList = new ArrayList();
+    /**
+     * @return A {@link org.codehaus.janino.util.ClassFile.LocalVariableTableAttribute} for this {@link CodeContext}
+     */
+    @Nullable protected ClassFile.AttributeInfo
+    storeLocalVariableTable(DataOutputStream dos, short localVariableTableAttributeNameIndex) {
 
-        while (iter.hasNext()) {
-            Java.LocalVariableSlot slot = (Java.LocalVariableSlot) iter.next();
+        ClassFile cf = this.getClassFile();
 
-            if (slot.getName() != null) {
-                String typeName = slot.getType().getDescriptor();
-                short  classSlot = cf.addConstantUtf8Info(typeName);
-                short  varNameSlot = cf.addConstantUtf8Info(slot.getName());
+        final List<ClassFile.LocalVariableTableAttribute.Entry>
+        entryList = new ArrayList<org.codehaus.janino.util.ClassFile.LocalVariableTableAttribute.Entry>();
 
-//                System.out.println("slot: " + slot + ", typeSlot: " + classSlot + ", varSlot: " + varNameSlot);
+        for (Java.LocalVariableSlot slot : this.getAllLocalVars()) {
+
+            String localVariableName = slot.getName();
+            if (localVariableName != null) {
+
+                String      typeName    = slot.getType().getDescriptor();
+                final short classSlot   = cf.addConstantUtf8Info(typeName);
+                final short varNameSlot = cf.addConstantUtf8Info(localVariableName);
+
+                Offset start = slot.getStart();
+                Offset end2  = slot.getEnd();
+
+                assert start != null;
+                assert end2 != null;
 
                 ClassFile.LocalVariableTableAttribute.Entry entry = new ClassFile.LocalVariableTableAttribute.Entry(
-                        (short) slot.getStart().offset,
-                        (short) (slot.getEnd().offset - slot.getStart().offset),
-                        varNameSlot,
-                        classSlot,
-                        slot.getSlotIndex()
+                    (short) start.offset,
+                    (short) (end2.offset - start.offset),
+                    varNameSlot,
+                    classSlot,
+                    slot.getSlotIndex()
                 );
                 entryList.add(entry);
             }
         }
 
         if (entryList.size() > 0) {
-            Object entries = entryList.toArray(new ClassFile.LocalVariableTableAttribute.Entry [entryList.size()]);
+            Object entries = entryList.toArray(new ClassFile.LocalVariableTableAttribute.Entry[entryList.size()]);
 
             return new ClassFile.LocalVariableTableAttribute(
                 localVariableTableAttributeNameIndex,
-                (ClassFile.LocalVariableTableAttribute.Entry []) entries
+                (ClassFile.LocalVariableTableAttribute.Entry[]) entries
             );
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     /**
      * Checks the code for consistency; updates the "maxStack" member.
-     *
-     * Notice: On inconsistencies, a "RuntimeException" is thrown (KLUDGE).
+     * <p>
+     *   Notice: On inconsistencies, a "RuntimeException" is thrown (KLUDGE).
+     * </p>
      */
-    public void flowAnalysis(String functionName) {
-        if (CodeContext.DEBUG) {
-            System.err.println("flowAnalysis(" + functionName + ")");
-        }
+    public void
+    flowAnalysis(String functionName) {
+        CodeContext.LOGGER.entering(null, "flowAnalysis", functionName);
 
-        short[] stackSizes = new short[this.end.offset];
+        int[] stackSizes = new int[this.end.offset];
         Arrays.fill(stackSizes, CodeContext.UNEXAMINED);
 
         // Analyze flow from offset zero.
@@ -313,23 +332,22 @@ public class CodeContext {
             this.code,       // code
             this.end.offset, // codeSize
             0,               // offset
-            (short) 0,       // stackSize
+            0,               // stackSize
             stackSizes       // stackSizes
         );
 
         // Analyze flow from exception handler entry points.
         int analyzedExceptionHandlers = 0;
         while (analyzedExceptionHandlers != this.exceptionTableEntries.size()) {
-            for (int i = 0; i < this.exceptionTableEntries.size(); ++i) {
-                ExceptionTableEntry exceptionTableEntry = (ExceptionTableEntry) this.exceptionTableEntries.get(i);
+            for (ExceptionTableEntry exceptionTableEntry : this.exceptionTableEntries) {
                 if (stackSizes[exceptionTableEntry.startPC.offset] != CodeContext.UNEXAMINED) {
                     this.flowAnalysis(
                         functionName,
-                        this.code,                                                    // code
-                        this.end.offset,                                              // codeSize
-                        exceptionTableEntry.handlerPC.offset,                         // offset
-                        (short) (stackSizes[exceptionTableEntry.startPC.offset] + 1), // stackSize
-                        stackSizes                                                    // stackSizes
+                        this.code,                                          // code
+                        this.end.offset,                                    // codeSize
+                        exceptionTableEntry.handlerPC.offset,               // offset
+                        stackSizes[exceptionTableEntry.startPC.offset] + 1, // stackSize
+                        stackSizes                                          // stackSizes
                     );
                     ++analyzedExceptionHandlers;
                 }
@@ -339,29 +357,38 @@ public class CodeContext {
         // Check results and determine maximum stack size.
         this.maxStack = 0;
         for (int i = 0; i < stackSizes.length; ++i) {
-            short ss = stackSizes[i];
+            int ss = stackSizes[i];
+
             if (ss == CodeContext.UNEXAMINED) {
-                if (CodeContext.DEBUG) {
-                    System.out.println(functionName + ": Unexamined code at offset " + i);
+                String message = functionName + ": Unexamined code at offset " + i;
+                if (CodeContext.LOGGER.isLoggable(Level.FINE)) {
+                    CodeContext.LOGGER.fine(message);
+
+                    // Complete normally, so the .class file is created and can be examined.
                     return;
-                } else {
-                    throw new JaninoRuntimeException(functionName + ": Unexamined code at offset " + i);
                 }
+                throw new JaninoRuntimeException(message);
             }
+
             if (ss > this.maxStack) this.maxStack = ss;
         }
     }
 
-    private void flowAnalysis(
+    private void
+    flowAnalysis(
         String functionName,
         byte[] code,      // Bytecode
         int    codeSize,  // Size
         int    offset,    // Current PC
-        short    stackSize, // Stack size on entry
-        short[] stackSizes // Stack sizes in code
+        int    stackSize, // Stack size on entry
+        int[]  stackSizes // Stack sizes in code
     ) {
         for (;;) {
-            if (CodeContext.DEBUG) System.out.println("Offset = " + offset + ", stack size = " + stackSize);
+            CodeContext.LOGGER.entering(
+                null,
+                "flowAnalysis",
+                new Object[] { functionName, code, codeSize, offset, stackSize, stackSizes }
+            );
 
             // Check current bytecode offset.
             if (offset < 0 || offset >= codeSize) {
@@ -371,40 +398,43 @@ public class CodeContext {
             // Have we hit an area that has already been analyzed?
             int css = stackSizes[offset];
             if (css == stackSize) return; // OK.
-            if (css == CodeContext.INVALID_OFFSET) throw new JaninoRuntimeException(functionName + ": Invalid offset");
-            if (css != CodeContext.UNEXAMINED) {
-                if (CodeContext.DEBUG) {
-                    System.err.println(
-                        functionName
-                        + ": Operand stack inconsistent at offset "
-                        + offset
-                        + ": Previous size "
-                        + css
-                        + ", now "
-                        + stackSize
-                    );
+            if (css == CodeContext.INVALID_OFFSET) {
+                String message = functionName + ": Invalid offset";
+                if (CodeContext.LOGGER.isLoggable(Level.FINE)) {
+                    CodeContext.LOGGER.fine(message);
+
+                    // Complete normally, so the .class file is created and can be examined.
                     return;
-                } else {
-                    throw new JaninoRuntimeException(
-                        functionName
-                        + ": Operand stack inconsistent at offset "
-                        + offset
-                        + ": Previous size "
-                        + css
-                        + ", now "
-                        + stackSize
-                    );
                 }
+                throw new JaninoRuntimeException(message);
+            }
+            if (css != CodeContext.UNEXAMINED) {
+                String message = (
+                    functionName
+                    + ": Operand stack inconsistent at offset "
+                    + offset
+                    + ": Previous size "
+                    + css
+                    + ", now "
+                    + stackSize
+                );
+                if (CodeContext.LOGGER.isLoggable(Level.FINE)) {
+                    CodeContext.LOGGER.fine(message);
+
+                    // Complete normally, so the .class file is created and can be examined.
+                    return;
+                }
+                throw new JaninoRuntimeException(message);
             }
             stackSizes[offset] = stackSize;
 
             // Analyze current opcode.
-            byte opcode = code[offset];
-            int operandOffset = offset + 1;
+            byte  opcode        = code[offset];
+            int   operandOffset = offset + 1;
             short props;
             if (opcode == Opcode.WIDE) {
                 opcode = code[operandOffset++];
-                props = Opcode.WIDE_OPCODE_PROPERTIES[0xff & opcode];
+                props  = Opcode.WIDE_OPCODE_PROPERTIES[0xff & opcode];
             } else {
                 props = Opcode.OPCODE_PROPERTIES[0xff & opcode];
             }
@@ -436,19 +466,17 @@ public class CodeContext {
 
             case Opcode.SD_GETFIELD:
                 --stackSize;
-                /* FALL THROUGH */
-            case Opcode.SD_GETSTATIC:
+            case Opcode.SD_GETSTATIC: // SUPPRESS CHECKSTYLE FallThrough
                 stackSize += this.determineFieldSize((short) (
-                    extract16BitValue(0, operandOffset, code)
+                    CodeContext.extract16BitValue(0, operandOffset, code)
                 ));
                 break;
 
             case Opcode.SD_PUTFIELD:
                 --stackSize;
-                /* FALL THROUGH */
-            case Opcode.SD_PUTSTATIC:
+            case Opcode.SD_PUTSTATIC: // SUPPRESS CHECKSTYLE FallThrough
                 stackSize -= this.determineFieldSize((short) (
-                    extract16BitValue(0, operandOffset, code)
+                    CodeContext.extract16BitValue(0, operandOffset, code)
                 ));
                 break;
 
@@ -456,10 +484,9 @@ public class CodeContext {
             case Opcode.SD_INVOKESPECIAL:
             case Opcode.SD_INVOKEINTERFACE:
                 --stackSize;
-                /* FALL THROUGH */
-            case Opcode.SD_INVOKESTATIC:
+            case Opcode.SD_INVOKESTATIC: // SUPPRESS CHECKSTYLE FallThrough
                 stackSize -= this.determineArgumentsSize((short) (
-                    extract16BitValue(0, operandOffset, code)
+                    CodeContext.extract16BitValue(0, operandOffset, code)
                 ));
                 break;
 
@@ -472,35 +499,37 @@ public class CodeContext {
             }
 
             if (stackSize < 0) {
-                String msg = (
+                String message = (
                     this.classFile.getThisClassName()
                     + '.'
                     + functionName
                     + ": Operand stack underrun at offset "
                     + offset
                 );
-                if (CodeContext.DEBUG) {
-                    System.err.println(msg);
+                if (CodeContext.LOGGER.isLoggable(Level.FINE)) {
+                    CodeContext.LOGGER.fine(message);
+
+                    // Complete normally, so the .class file is created and can be examined.
                     return;
-                } else {
-                    throw new JaninoRuntimeException(msg);
                 }
+                throw new JaninoRuntimeException(message);
             }
 
-            if (stackSize > MAX_STACK_SIZE) {
-                String msg = (
+            if (stackSize > CodeContext.MAX_STACK_SIZE) {
+                String message = (
                     this.classFile.getThisClassName()
                     + '.'
                     + functionName
                     + ": Operand stack overflow at offset "
                     + offset
                 );
-                if (CodeContext.DEBUG) {
-                    System.err.println(msg);
+                if (CodeContext.LOGGER.isLoggable(Level.FINE)) {
+                    CodeContext.LOGGER.fine(message);
+
+                    // Complete normally, so the .class file is created and can be examined.
                     return;
-                } else {
-                    throw new JaninoRuntimeException(msg);
                 }
+                throw new JaninoRuntimeException(message);
             }
 
             switch (props & Opcode.OP1_MASK) {
@@ -523,16 +552,11 @@ public class CodeContext {
                 break;
 
             case Opcode.OP1_BO2:
-                if (CodeContext.DEBUG) {
-                    System.out.println("Offset = " + offset);
-                    System.out.println("Operand offset = " + operandOffset);
-                    System.out.println(code[operandOffset]);
-                    System.out.println(code[operandOffset + 1]);
-                }
                 this.flowAnalysis(
                     functionName,
-                    code, codeSize,
-                    extract16BitValue(offset, operandOffset, code),
+                    code,
+                    codeSize,
+                    CodeContext.extract16BitValue(offset, operandOffset, code),
                     stackSize,
                     stackSizes
                 );
@@ -540,20 +564,15 @@ public class CodeContext {
                 break;
 
             case Opcode.OP1_JSR:
-                if (CodeContext.DEBUG) {
-                    System.out.println("Offset = " + offset);
-                    System.out.println("Operand offset = " + operandOffset);
-                    System.out.println(code[operandOffset]);
-                    System.out.println(code[operandOffset + 1]);
-                }
-                int targetOffset = extract16BitValue(offset, operandOffset, code);
+                int targetOffset = CodeContext.extract16BitValue(offset, operandOffset, code);
                 operandOffset += 2;
                 if (stackSizes[targetOffset] == CodeContext.UNEXAMINED) {
                     this.flowAnalysis(
                         functionName,
-                        code, codeSize,
+                        code,
+                        codeSize,
                         targetOffset,
-                        (short) (stackSize + 1),
+                        stackSize + 1,
                         stackSizes
                     );
                 }
@@ -562,9 +581,11 @@ public class CodeContext {
             case Opcode.OP1_BO4:
                 this.flowAnalysis(
                     functionName,
-                    code, codeSize,
-                    extract32BitValue(offset, operandOffset, code),
-                    stackSize, stackSizes
+                    code,
+                    codeSize,
+                    CodeContext.extract32BitValue(offset, operandOffset, code),
+                    stackSize,
+                    stackSizes
                 );
                 operandOffset += 4;
                 break;
@@ -573,22 +594,26 @@ public class CodeContext {
                 while ((operandOffset & 3) != 0) ++operandOffset;
                 this.flowAnalysis(
                     functionName,
-                    code, codeSize,
-                    extract32BitValue(offset, operandOffset, code),
-                    stackSize, stackSizes
+                    code,
+                    codeSize,
+                    CodeContext.extract32BitValue(offset, operandOffset, code),
+                    stackSize,
+                    stackSizes
                 );
                 operandOffset += 4;
 
-                int npairs = extract32BitValue(0, operandOffset, code);
+                int npairs = CodeContext.extract32BitValue(0, operandOffset, code);
                 operandOffset += 4;
 
                 for (int i = 0; i < npairs; ++i) {
                     operandOffset += 4; //skip match value
                     this.flowAnalysis(
                         functionName,
-                        code, codeSize,
-                        extract32BitValue(offset, operandOffset, code),
-                        stackSize, stackSizes
+                        code,
+                        codeSize,
+                        CodeContext.extract32BitValue(offset, operandOffset, code),
+                        stackSize,
+                        stackSizes
                     );
                     operandOffset += 4; //advance over offset
                 }
@@ -598,21 +623,25 @@ public class CodeContext {
                 while ((operandOffset & 3) != 0) ++operandOffset;
                 this.flowAnalysis(
                     functionName,
-                    code, codeSize,
-                    extract32BitValue(offset, operandOffset, code),
-                    stackSize, stackSizes
+                    code,
+                    codeSize,
+                    CodeContext.extract32BitValue(offset, operandOffset, code),
+                    stackSize,
+                    stackSizes
                 );
                 operandOffset += 4;
-                int low = extract32BitValue(offset, operandOffset, code);
+                int low = CodeContext.extract32BitValue(offset, operandOffset, code);
                 operandOffset += 4;
-                int hi = extract32BitValue(offset, operandOffset, code);
+                int hi = CodeContext.extract32BitValue(offset, operandOffset, code);
                 operandOffset += 4;
                 for (int i = low; i <= hi; ++i) {
                     this.flowAnalysis(
                         functionName,
-                        code, codeSize,
-                        extract32BitValue(offset, operandOffset, code),
-                        stackSize, stackSizes
+                        code,
+                        codeSize,
+                        CodeContext.extract32BitValue(offset, operandOffset, code),
+                        stackSize,
+                        stackSizes
                     );
                     operandOffset += 4;
                 }
@@ -662,128 +691,123 @@ public class CodeContext {
     }
 
     /**
-     * Extract a 16 bit value at offset in code and add bias to it
+     * Extracts a 16 bit value at offset in code and adds <var>bias</var> to it.
      *
      * @param bias   An int to skew the final result by (useful for calculating relative offsets)
      * @param offset The position in the code array to extract the bytes from
      * @param code   The array of bytes
      * @return       An integer that treats the two bytes at position offset as an UNSIGNED SHORT
      */
-    private int extract16BitValue(int bias, int offset, byte[] code) {
-        int res = bias + (
-            ((code[offset]) << 8)
-            + (code[offset + 1] & 0xff)
+    private static int
+    extract16BitValue(int bias, int offset, byte[] code) {
+        CodeContext.LOGGER.entering(
+            null,
+            "extract16BitValue",
+            new Object[] { bias, offset, code[offset], code[offset + 1] }
         );
-        if (CodeContext.DEBUG) {
-            System.out.println("extract16BitValue(bias, offset) = (" + bias + ", " + offset + ")");
-            System.out.println("bytes = {" + code[offset] + ", " + code[offset + 1] + "}");
-            System.out.println("result = " + res);
-        }
-        return res;
+
+        int result = bias + ((code[offset]) << 8) + (code[offset + 1] & 0xff);
+        CodeContext.LOGGER.exiting(null,  "extract16BitValue", result);
+        return result;
     }
 
     /**
-     * Extract a 32 bit value at offset in code and add bias to it
+     * Extracts a 32 bit value at offset in code and adds <var>bias</var> to it.
      *
      * @param bias   An int to skew the final result by (useful for calculating relative offsets)
      * @param offset The position in the code array to extract the bytes from
      * @param code   The array of bytes
      * @return       The 4 bytes at position offset + bias
      */
-    private int extract32BitValue(int bias, int offset, byte[] code) {
-        int res = bias + (
-            (code[offset]              << 24) +
-            ((0xff & code[offset + 1]) << 16) +
-            ((0xff & code[offset + 2]) <<  8) +
-            (0xff & code[offset + 3])
+    private static int
+    extract32BitValue(int bias, int offset, byte[] code) {
+        CodeContext.LOGGER.entering(
+            null,
+            "extract32BitValue",
+            new Object[] { bias, offset, code[offset], code[offset + 1], code[offset + 2], code[offset + 3] }
         );
-        if (CodeContext.DEBUG) {
-            System.out.println("extract32BitValue(bias, offset) = (" + bias + ", " + offset + ")");
-            System.out.println(
-                "bytes = {" +
-                code[offset] + ", " +
-                code[offset + 1] + ", " +
-                code[offset + 2] + ", " +
-                code[offset + 3] + "}"
-            );
-            System.out.println("result = " + res);
-        }
-        return res;
+
+        int result = bias + (
+            (code[offset] << 24)
+            + ((0xff & code[offset + 1]) << 16)
+            + ((0xff & code[offset + 2]) << 8)
+            + (0xff & code[offset + 3])
+        );
+
+        CodeContext.LOGGER.exiting(null, "extract32BitValue", result);
+        return result;
     }
 
     /**
-     * fixUp() all of the offsets and relocate() all relocatables
+     * Fixes up all of the offsets and relocate() all relocatables.
      */
-    public void fixUpAndRelocate() {
+    public void
+    fixUpAndRelocate() {
 
         // We do this in a loop to allow relocatables to adjust the size
         // of things in the byte stream.  It is extremely unlikely, but possible
         // that a late relocatable will grow the size of the bytecode, and require
         // an earlier relocatable to switch from 32K mode to 64K mode branching
         do {
-            fixUp();
-        } while (!relocate());
+            this.fixUp();
+        } while (!this.relocate());
     }
 
     /**
-     * Fix up all offsets.
+     * Fixes up all offsets.
      */
-    private void fixUp() {
+    private void
+    fixUp() {
         for (Offset o = this.beginning; o != this.end; o = o.next) {
+            assert o != null;
             if (o instanceof FixUp) ((FixUp) o).fixUp();
         }
     }
 
     /**
-     * Relocate all relocatables and aggregate their response into a single one
-     * @return true if all of them relocated successfully
-     *         false if any of them needed to change size
+     * Relocates all relocatables and aggregate their response into a single one.
+     *
+     * @return {@code true} if all of them relocated successfully, {@code false} if any of them needed to change size
      */
-    private boolean relocate() {
+    private boolean
+    relocate() {
         boolean finished = true;
-        for (int i = 0; i < this.relocatables.size(); ++i) {
-            //do not terminate earlier so that everything gets a chance to grow in the first pass
-            //changes the common case for this to be O(n) instead of O(n**2)
-            boolean part =  ((Relocatable) this.relocatables.get(i)).relocate();
-            finished = finished && part;
+        for (Relocatable relocatable : this.relocatables) {
+
+            // Do not terminate earlier so that everything gets a chance to grow in the first pass changes the common
+            // case for this to be O(n) instead of O(n**2).
+            finished &= relocatable.relocate();
         }
         return finished;
     }
 
     /**
-     * Analyse the descriptor of the Fieldref and return its size.
+     * Analyses the descriptor of the Fieldref and return its size.
      */
-    private int determineFieldSize(short idx) {
+    private int
+    determineFieldSize(short idx) {
         ClassFile.ConstantFieldrefInfo cfi = (
             (ClassFile.ConstantFieldrefInfo) this.classFile.getConstantPoolInfo(idx)
         );
-        ClassFile.ConstantNameAndTypeInfo cnati = (
-            (ClassFile.ConstantNameAndTypeInfo) this.classFile.getConstantPoolInfo(cfi.getNameAndTypeIndex())
-        );
-        ClassFile.ConstantUtf8Info cui = (
-            (ClassFile.ConstantUtf8Info) this.classFile.getConstantPoolInfo(cnati.getDescriptorIndex())
-        );
-        return Descriptor.size(cui.getString());
+        return Descriptor.size(cfi.getNameAndType(this.classFile).getDescriptor(this.classFile));
     }
 
     /**
-     * Analyse the descriptor of the Methodref and return the sum of the
-     * arguments' sizes minus the return value's size.
+     * Analyses the descriptor of the Methodref and returns the sum of the arguments' sizes minus the return value's
+     * size.
      */
-    private int determineArgumentsSize(short idx) {
-        ClassFile.ConstantPoolInfo cpi = this.classFile.getConstantPoolInfo(idx);
-        ClassFile.ConstantNameAndTypeInfo nat = (ClassFile.ConstantNameAndTypeInfo) this.classFile.getConstantPoolInfo(
-            cpi instanceof ClassFile.ConstantInterfaceMethodrefInfo ?
-            ((ClassFile.ConstantInterfaceMethodrefInfo) cpi).getNameAndTypeIndex() :
-            ((ClassFile.ConstantMethodrefInfo) cpi).getNameAndTypeIndex()
+    private int
+    determineArgumentsSize(short idx) {
+        ClassFile.ConstantPoolInfo        cpi = this.classFile.getConstantPoolInfo(idx);
+        ClassFile.ConstantNameAndTypeInfo nat = (
+            cpi instanceof ClassFile.ConstantInterfaceMethodrefInfo
+            ? ((ClassFile.ConstantInterfaceMethodrefInfo) cpi).getNameAndType(this.classFile)
+            : ((ClassFile.ConstantMethodrefInfo)          cpi).getNameAndType(this.classFile)
         );
-        ClassFile.ConstantUtf8Info cui = (
-            (ClassFile.ConstantUtf8Info) this.classFile.getConstantPoolInfo(nat.getDescriptorIndex())
-        );
-        String desc = cui.getString();
+        String desc = nat.getDescriptor(this.classFile);
 
         if (desc.charAt(0) != '(') throw new JaninoRuntimeException("Method descriptor does not start with \"(\"");
-        int i = 1;
+        int i   = 1;
         int res = 0;
         for (;;) {
             switch (desc.charAt(i++)) {
@@ -814,13 +838,13 @@ public class CodeContext {
     }
 
     /**
-     * Inserts a sequence of bytes at the current insertion position. Creates
-     * {@link LineNumberOffset}s as necessary.
+     * Inserts a sequence of bytes at the current insertion position. Creates {@link LineNumberOffset}s as necessary.
      *
      * @param lineNumber The line number that corresponds to the byte code, or -1
      * @param b
      */
-    public void write(short lineNumber, byte[] b) {
+    public void
+    write(short lineNumber, byte[] b) {
         if (b.length == 0) return;
 
         int ico = this.currentInserter.offset;
@@ -829,65 +853,64 @@ public class CodeContext {
     }
 
     /**
-     * Inserts a byte at the current insertion position. Creates
-     * {@link LineNumberOffset}s as necessary.
+     * Inserts a byte at the current insertion position. Creates {@link LineNumberOffset}s as necessary.
      * <p>
-     * This method is an optimization to avoid allocating small byte[] and ease
-     * GC load.
+     *   This method is an optimization to avoid allocating small byte[] and ease GC load.
+     * </p>
      *
      * @param lineNumber The line number that corresponds to the byte code, or -1
      * @param b1
      */
-    public void write(short lineNumber, byte b1) {
+    public void
+    write(short lineNumber, byte b1) {
         int ico = this.currentInserter.offset;
         this.makeSpace(lineNumber, 1);
         this.code[ico] = b1;
     }
 
     /**
-     * Inserts bytes at the current insertion position. Creates
-     * {@link LineNumberOffset}s as necessary.
+     * Inserts bytes at the current insertion position. Creates {@link LineNumberOffset}s as necessary.
      * <p>
-     * This method is an optimization to avoid allocating small byte[] and ease
-     * GC load.
+     *   This method is an optimization to avoid allocating small byte[] and ease GC load.
+     * </p>
      *
      * @param lineNumber The line number that corresponds to the byte code, or -1
      * @param b1
      * @param b2
      */
-    public void write(short lineNumber, byte b1, byte b2) {
+    public void
+    write(short lineNumber, byte b1, byte b2) {
         int ico = this.currentInserter.offset;
         this.makeSpace(lineNumber, 2);
         this.code[ico++] = b1;
-        this.code[ico  ] = b2;
+        this.code[ico]   = b2;
     }
 
     /**
-     * Inserts bytes at the current insertion position. Creates
-     * {@link LineNumberOffset}s as necessary.
+     * Inserts bytes at the current insertion position. Creates {@link LineNumberOffset}s as necessary.
      * <p>
-     * This method is an optimization to avoid allocating small byte[] and ease
-     * GC load.
+     *   This method is an optimization to avoid allocating small byte[] and ease GC load.
+     * </p>
      *
      * @param lineNumber The line number that corresponds to the byte code, or -1
      * @param b1
      * @param b2
      * @param b3
      */
-    public void write(short lineNumber, byte b1, byte b2, byte b3) {
+    public void
+    write(short lineNumber, byte b1, byte b2, byte b3) {
         int ico = this.currentInserter.offset;
         this.makeSpace(lineNumber, 3);
         this.code[ico++] = b1;
         this.code[ico++] = b2;
-        this.code[ico  ] = b3;
+        this.code[ico]   = b3;
     }
 
     /**
-     * Inserts bytes at the current insertion position. Creates
-     * {@link LineNumberOffset}s as necessary.
+     * Inserts bytes at the current insertion position. Creates {@link LineNumberOffset}s as necessary.
      * <p>
-     * This method is an optimization to avoid allocating small byte[] and ease
-     * GC load.
+     *   This method is an optimization to avoid allocating small byte[] and ease GC load.
+     * </p>
      *
      * @param lineNumber The line number that corresponds to the byte code, or -1
      * @param b1
@@ -895,29 +918,31 @@ public class CodeContext {
      * @param b3
      * @param b4
      */
-    public void write(short lineNumber, byte b1, byte b2, byte b3, byte b4) {
+    public void
+    write(short lineNumber, byte b1, byte b2, byte b3, byte b4) {
         int ico = this.currentInserter.offset;
         this.makeSpace(lineNumber, 4);
         this.code[ico++] = b1;
         this.code[ico++] = b2;
         this.code[ico++] = b3;
-        this.code[ico  ] = b4;
+        this.code[ico]   = b4;
     }
 
     /**
-     * Add space for size bytes at current offset. Creates
-     * {@link LineNumberOffset}s as necessary.
+     * Adds space for <var>size</var> bytes at current offset. Creates {@link LineNumberOffset}s as necessary.
      *
      * @param lineNumber The line number that corresponds to the byte code, or -1
      * @param size       The size in bytes to inject
      */
-    public void makeSpace(short lineNumber, int size) {
+    public void
+    makeSpace(short lineNumber, int size) {
         if (size == 0) return;
 
         INSERT_LINE_NUMBER_OFFSET:
         if (lineNumber != -1) {
             Offset o;
             for (o = this.currentInserter.prev; o != this.beginning; o = o.prev) {
+                assert o != null;
                 if (o instanceof LineNumberOffset) {
                     if (((LineNumberOffset) o).lineNumber == lineNumber) break INSERT_LINE_NUMBER_OFFSET;
                     break;
@@ -926,8 +951,9 @@ public class CodeContext {
             LineNumberOffset lno = new LineNumberOffset(this.currentInserter.offset, lineNumber);
             lno.prev = this.currentInserter.prev;
             lno.next = this.currentInserter;
+
             this.currentInserter.prev.next = lno;
-            this.currentInserter.prev = lno;
+            this.currentInserter.prev      = lno;
         }
 
         int ico = this.currentInserter.offset;
@@ -942,7 +968,9 @@ public class CodeContext {
             int newSize = Math.max(Math.min(oldCode.length * 2, 0xffff), oldCode.length + size);
             if (newSize > 0xffff) {
                 throw new JaninoRuntimeException(
-                    "Code attribute in class \""
+                    "Code of method \""
+                    + this.functionName
+                    + "\" of class \""
                     + this.classFile.getThisClassName()
                     + "\" grows beyond 64 KB"
                 );
@@ -958,22 +986,24 @@ public class CodeContext {
     /**
      * @param lineNumber The line number that corresponds to the byte code, or -1
      */
-    public void writeShort(short lineNumber, int v) {
-        this.write(lineNumber, (byte) (v >> 8), (byte) v);
-    }
+    public void
+    writeShort(short lineNumber, int v) { this.write(lineNumber, (byte) (v >> 8), (byte) v); }
 
     /**
      * @param lineNumber The line number that corresponds to the byte code, or -1
      */
-    public void writeBranch(short lineNumber, int opcode, final Offset dst) {
+    public void
+    writeBranch(short lineNumber, int opcode, final Offset dst) {
         this.relocatables.add(new Branch(opcode, dst));
         this.write(lineNumber, (byte) opcode, (byte) -1, (byte) -1);
     }
 
-    private class Branch extends Relocatable {
-        public Branch(int opcode, Offset destination) {
-            this.opcode = opcode;
-            this.source = CodeContext.this.newInserter();
+    private
+    class Branch extends Relocatable {
+
+        Branch(int opcode, Offset destination) {
+            this.opcode      = opcode;
+            this.source      = CodeContext.this.newInserter();
             this.destination = destination;
             if (opcode == Opcode.JSR_W || opcode == Opcode.GOTO_W) {
                 //no need to expand wide opcodes
@@ -983,7 +1013,8 @@ public class CodeContext {
             }
         }
 
-        public boolean relocate() {
+        @Override public boolean
+        relocate() {
             if (this.destination.offset == Offset.UNSET) {
                 throw new JaninoRuntimeException("Cannot relocate branch to unset destination offset");
             }
@@ -992,17 +1023,19 @@ public class CodeContext {
             if (!this.expanded && (offset > Short.MAX_VALUE || offset < Short.MIN_VALUE)) {
                 //we want to insert the data without skewing our source position,
                 //so we will cache it and then restore it later.
-                int pos = this.source.offset;
-                CodeContext.this.pushInserter(this.source); {
+                final int pos = this.source.offset;
+                CodeContext.this.pushInserter(this.source);
+                {
                     // promotion to a wide instruction only requires 2 extra bytes
                     // everything else requires a new GOTO_W instruction after a negated if
                     CodeContext.this.makeSpace(
                         (short) -1,
                         this.opcode == Opcode.GOTO ? 2 : this.opcode == Opcode.JSR ? 2 : 5
                     );
-                } CodeContext.this.popInserter();
+                }
+                CodeContext.this.popInserter();
                 this.source.offset = pos;
-                this.expanded = true;
+                this.expanded      = true;
                 return false;
             }
 
@@ -1032,9 +1065,9 @@ public class CodeContext {
                     //  [GOTO_W offset]
                     ba = new byte[] {
                         CodeContext.invertBranchOpcode((byte) this.opcode),
-                        (byte) 0,
-                        (byte) 8, //jump from this instruction past the GOTO_W
-                        (byte) Opcode.GOTO_W,
+                        0,
+                        8, // Jump from this instruction past the GOTO_W
+                        Opcode.GOTO_W,
                         (byte) (offset >> 24),
                         (byte) (offset >> 16),
                         (byte) (offset >> 8),
@@ -1046,23 +1079,25 @@ public class CodeContext {
             return true;
         }
 
-        private boolean expanded; //marks whether this has been expanded to account for a wide branch
-        private final int opcode;
+        private boolean        expanded; //marks whether this has been expanded to account for a wide branch
+        private final int      opcode;
         private final Inserter source;
-        private final Offset destination;
+        private final Offset   destination;
     }
 
     /**
      * E.g. {@link Opcode#IFLT} ("less than") inverts to {@link Opcode#IFGE} ("greater than or equal to").
      */
-    private static byte invertBranchOpcode(byte branchOpcode) {
-        return ((Byte) CodeContext.BRANCH_OPCODE_INVERSION.get(new Byte(branchOpcode))).byteValue();
+    private static byte
+    invertBranchOpcode(byte branchOpcode) {
+        return (Byte) CodeContext.BRANCH_OPCODE_INVERSION.get(new Byte(branchOpcode));
     }
 
-    /** Byte branch-opcode => Byte inverted-branch-opcode */
-    private static final Map BRANCH_OPCODE_INVERSION = CodeContext.createBranchOpcodeInversion();
-    private static Map createBranchOpcodeInversion() {
-        Map m = new HashMap();
+    private static final Map<Byte /*branch-opcode*/, Byte /*inverted-branch-opcode*/>
+    BRANCH_OPCODE_INVERSION = CodeContext.createBranchOpcodeInversion();
+    private static Map<Byte, Byte>
+    createBranchOpcodeInversion() {
+        Map<Byte, Byte> m = new HashMap<Byte, Byte>();
         m.put(new Byte(Opcode.IF_ACMPEQ), new Byte(Opcode.IF_ACMPNE));
         m.put(new Byte(Opcode.IF_ACMPNE), new Byte(Opcode.IF_ACMPEQ));
         m.put(new Byte(Opcode.IF_ICMPEQ), new Byte(Opcode.IF_ICMPNE));
@@ -1082,24 +1117,31 @@ public class CodeContext {
         return Collections.unmodifiableMap(m);
     }
 
-    public void writeOffset(short lineNumber, Offset src, final Offset dst) {
+    /**
+     * Writes a four-byte offset (as it is used in TABLESWITCH and LOOKUPSWITCH) into this code context.
+     */
+    public void
+    writeOffset(short lineNumber, Offset src, final Offset dst) {
         this.relocatables.add(new OffsetBranch(this.newOffset(), src, dst));
         this.write(lineNumber, (byte) -1, (byte) -1, (byte) -1, (byte) -1);
     }
 
-    private class OffsetBranch extends Relocatable {
-        public OffsetBranch(Offset where, Offset source, Offset destination) {
+    private
+    class OffsetBranch extends Relocatable {
+
+        OffsetBranch(Offset where, Offset source, Offset destination) {
             this.where       = where;
             this.source      = source;
             this.destination = destination;
         }
-        public boolean relocate() {
-            if (
-                this.source.offset == Offset.UNSET ||
-                this.destination.offset == Offset.UNSET
-            ) throw new JaninoRuntimeException("Cannot relocate offset branch to unset destination offset");
-            int offset = this.destination.offset - this.source.offset;
-            byte[] ba = new byte[] {
+
+        @Override public boolean
+        relocate() {
+            if (this.source.offset == Offset.UNSET || this.destination.offset == Offset.UNSET) {
+                throw new JaninoRuntimeException("Cannot relocate offset branch to unset destination offset");
+            }
+            int    offset = this.destination.offset - this.source.offset;
+            byte[] ba     = new byte[] {
                 (byte) (offset >> 24),
                 (byte) (offset >> 16),
                 (byte) (offset >> 8),
@@ -1111,121 +1153,129 @@ public class CodeContext {
         private final Offset where, source, destination;
     }
 
-    public Offset newOffset() {
+    /**
+     * Creates and inserts an {@link CodeContext.Offset} at the current inserter's current position.
+     */
+    public Offset
+    newOffset() {
         Offset o = new Offset();
         o.set();
         return o;
     }
 
     /**
-     * Allocate an {@link Inserter}, set it to the current offset, and
-     * insert it before the current offset.
-     *
-     * In clear text, this means that you can continue writing to the
-     * "Code" attribute, then {@link #pushInserter(CodeContext.Inserter)} the
-     * {@link Inserter}, then write again (which inserts bytes into the
-     * "Code" attribute at the previously remembered position), and then
-     * {@link #popInserter()}.
+     * Allocates an {@link Inserter}, set it to the current offset, and inserts it before the current offset.
+     * <p>
+     *   In clear text, this means that you can continue writing to the "Code" attribute, then {@link
+     *   #pushInserter(CodeContext.Inserter)} the {@link Inserter}, then write again (which inserts bytes into the
+     *   "Code" attribute at the previously remembered position), and then {@link #popInserter()}.
+     * </p>
      */
-    public Inserter newInserter() {
-        Inserter i = new Inserter();
-        i.set();
-        return i;
-    }
-
-    public Inserter currentInserter() {
-        return this.currentInserter;
-    }
+    public Inserter
+    newInserter() { Inserter i = new Inserter(); i.set(); return i; }
 
     /**
-     * Remember the current {@link Inserter}, then replace it with the
-     * new one.
+     * @return The current inserter
      */
-    public void pushInserter(Inserter ins) {
+    public Inserter
+    currentInserter() { return this.currentInserter; }
+
+    /**
+     * Remembers the current {@link Inserter}, then replaces it with the new one.
+     */
+    public void
+    pushInserter(Inserter ins) {
         if (ins.nextInserter != null) throw new JaninoRuntimeException("An Inserter can only be pushed once at a time");
-        ins.nextInserter = this.currentInserter;
+        ins.nextInserter     = this.currentInserter;
         this.currentInserter = ins;
     }
 
     /**
-     * Replace the current {@link Inserter} with the remembered one (see
-     * {@link #pushInserter(CodeContext.Inserter)}).
+     * Replaces the current {@link Inserter} with the remembered one (see {@link #pushInserter(CodeContext.Inserter)}).
      */
-    public void popInserter() {
+    public void
+    popInserter() {
         Inserter ni = this.currentInserter.nextInserter;
         if (ni == null) throw new JaninoRuntimeException("Code inserter stack underflow");
         this.currentInserter.nextInserter = null; // Mark it as "unpushed".
-        this.currentInserter = ni;
+        this.currentInserter              = ni;
     }
 
     /**
      * A class that represents an offset within a "Code" attribute.
-     *
-     * The concept of an "offset" is that if one writes into the middle of
-     * a "Code" attribute, all offsets behind the insertion point are
-     * automatically shifted.
+     * <p>
+     *   The concept of an "offset" is that if one writes into the middle of a "Code" attribute, all offsets behind the
+     *   insertion point are automatically shifted.
+     * </p>
      */
-    public class Offset {
-        int              offset = Offset.UNSET;
-        Offset             prev = null, next = null;
+    public
+    class Offset {
+
+        /**
+         * The offset in the code attribute that this object represents.
+         */
+        int offset = Offset.UNSET;
+
+        /**
+         * Links to preceding and succeding offsets. Both are {@code null} <em>before</em> {@link #set()} is called,
+         * and both are non-{@code null} <em>after</em> {@link #set()} has been called. This implies that {@link
+         * #set()} must be invoked at most <em>once</em>.
+         */
+        @Nullable Offset prev, next;
+
+        /**
+         * Special value for {@link #offset} which indicates that this {@link Offset} has not yet been {@link #set()}
+         */
         static final int UNSET = -1;
 
         /**
-         * Set this "Offset" to the offset of the current inserter; insert
-         * this "Offset" before the current inserter.
+         * Sets this "Offset" to the offset of the current inserter; inserts this "Offset" before the current inserter.
          */
-        public void set() {
+        public void
+        set() {
             if (this.offset != Offset.UNSET) throw new JaninoRuntimeException("Cannot \"set()\" Offset more than once");
 
             this.offset = CodeContext.this.currentInserter.offset;
-            this.prev = CodeContext.this.currentInserter.prev;
-            this.next = CodeContext.this.currentInserter;
 
+            this.prev      = CodeContext.this.currentInserter.prev;
+            this.next      = CodeContext.this.currentInserter;
             this.prev.next = this;
             this.next.prev = this;
         }
+
+        /**
+         * @return The {@link CodeContext} that this {@link Offset} belongs to
+         */
         public final CodeContext getCodeContext() { return CodeContext.this; }
 
-        public String toString() {
-            return CodeContext.this.classFile.getThisClassName() + ": " + this.offset;
-        }
+        @Override public String
+        toString() { return CodeContext.this.classFile.getThisClassName() + ": " + this.offset; }
     }
 
     /**
-     * Add another entry to the "exception_table" of this code attribute (see JVMS 4.7.3).
-     * @param startPC
-     * @param endPC
-     * @param handlerPC
-     * @param catchTypeFD
+     * Adds another entry to the "exception_table" of this code attribute (see JVMS 4.7.3).
+     *
+     * @param catchTypeFd {@code null} means {@code finally} clause
      */
-    public void addExceptionTableEntry(
-        Offset startPC,
-        Offset endPC,
-        Offset handlerPC,
-        String catchTypeFD // null == "finally" clause
-    ) {
+    public void
+    addExceptionTableEntry(Offset startPc, Offset endPc, Offset handlerPc, @Nullable String catchTypeFd) {
         this.exceptionTableEntries.add(new ExceptionTableEntry(
-            startPC,
-            endPC,
-            handlerPC,
-            catchTypeFD == null ? (short) 0 : this.classFile.addConstantClassInfo(catchTypeFD)
+            startPc,
+            endPc,
+            handlerPc,
+            catchTypeFd == null ? (short) 0 : this.classFile.addConstantClassInfo(catchTypeFd)
         ));
     }
 
     /**
-     * Representation of an entry in the "exception_table" of a "Code" attribute (see JVMS
-     * 4.7.3).
+     * Representation of an entry in the "exception_table" of a "Code" attribute (see JVMS 4.7.3).
      */
-    private static class ExceptionTableEntry {
-        ExceptionTableEntry(
-            Offset startPC,
-            Offset endPC,
-            Offset handlerPC,
-            short  catchType
-        ) {
-            this.startPC   = startPC;
-            this.endPC     = endPC;
-            this.handlerPC = handlerPC;
+    private static
+    class ExceptionTableEntry {
+        ExceptionTableEntry(Offset startPc, Offset endPc, Offset handlerPc, short  catchType) {
+            this.startPC   = startPc;
+            this.endPC     = endPc;
+            this.handlerPC = handlerPc;
             this.catchType = catchType;
         }
         final Offset startPC, endPC, handlerPC;
@@ -1233,42 +1283,160 @@ public class CodeContext {
     }
 
     /**
-     * A class that implements an insertion point into a "Code"
-     * attribute.
+     * A class that implements an insertion point into a "Code" attribute.
      */
-    public class Inserter extends Offset {
-        private Inserter nextInserter = null; // null == not in "currentInserter" stack
+    public
+    class Inserter extends Offset {
+        @Nullable private Inserter nextInserter; // null == not in "currentInserter" stack
     }
 
-    public class LineNumberOffset extends Offset {
+    /**
+     * An {@link Offset} who#s sole purpose is to later create a 'LneNumberTable' attribute.
+     */
+    public
+    class LineNumberOffset extends Offset {
         private final int lineNumber;
-        public LineNumberOffset(int offset, int lineNumber) {
+
+        public
+        LineNumberOffset(int offset, int lineNumber) {
             this.lineNumber = lineNumber;
-            this.offset = offset;
+            this.offset     = offset;
         }
     }
 
-    private abstract class Relocatable {
+    private abstract
+    class Relocatable {
+
         /**
-         * Relocate this object.
-         * @return true if the relocation succeeded in place
-         *         false if the relocation grew the number of bytes required
+         * Relocates this object.
+         *
+         * @return {@code true} if the relocation succeeded in place; {@code false} if the relocation grew the number
+         *         of bytes required
          */
         public abstract boolean relocate();
     }
 
     /**
-     * A throw-in interface that marks {@link CodeContext.Offset}s
-     * as "fix-ups": During the execution of
-     * {@link CodeContext#fixUp}, all "fix-ups" are invoked and
-     * can do last touches to the code attribute.
+     * A throw-in interface that marks {@link CodeContext.Offset}s as "fix-ups": During the execution of {@link
+     * CodeContext#fixUp}, all "fix-ups" are invoked and can do last touches to the code attribute.
      * <p>
-     * This is currently used for inserting the "padding bytes" into the
-     * TABLESWITCH and LOOKUPSWITCH instructions.
+     *   This is currently used for inserting the "padding bytes" into the TABLESWITCH and LOOKUPSWITCH instructions.
+     * </p>
      */
-    public interface FixUp {
+    public
+    interface FixUp {
+
+        /**
+         * @see FixUp
+         */
         void fixUp();
     }
 
-    public List getAllLocalVars() { return this.allLocalVars; }
+    /**
+     * @return All the local variables that are allocated in any block in this {@link CodeContext}
+     */
+    public List<Java.LocalVariableSlot>
+    getAllLocalVars() { return this.allLocalVars; }
+
+    /**
+     * Removes all code between <var>from</var> and <var>to</var>. Also removes any {@link CodeContext.Relocatable}s
+     * existing in that range.
+     */
+    public void
+    removeCode(Offset from, Offset to) {
+
+        if (from == to) return;
+
+        int size = to.offset - from.offset;
+        assert size >= 0;
+
+        if (size == 0) return; // Short circuit.
+
+        // Shift down the bytecode past 'to'.
+        System.arraycopy(this.code, to.offset, this.code, from.offset, this.end.offset - to.offset);
+
+        // Invalidate all offsets between 'from' and 'to'.
+        // Remove all relocatables that originate between 'from' and 'to'.
+        Set<Offset> invalidOffsets = new HashSet<Offset>();
+        {
+            Offset o = from.next;
+            assert o != null;
+
+            for (; o != to;) {
+                assert o != null;
+
+                invalidOffsets.add(o);
+
+                // Invalidate the offset for fast failure.
+                final Offset n = o.next;
+                o.offset    = -77;
+                o.prev      = null;
+                o.next      = null;
+
+                o = n;
+                assert o != null;
+            }
+
+            for (;;) {
+                o.offset -= size;
+                if (o == this.end) break;
+                o = o.next;
+                assert o != null;
+            }
+        }
+
+        // Invalidate all relocatables which originate or target a removed offset.
+        for (Iterator<Relocatable> it = this.relocatables.iterator(); it.hasNext();) {
+            Relocatable r = (Relocatable) it.next();
+
+            if (r instanceof Branch) {
+                Branch b = (Branch) r;
+
+                if (invalidOffsets.contains(b.source)) {
+                    it.remove();
+                } else {
+                    assert !invalidOffsets.contains(b.destination);
+                }
+            }
+
+            if (r instanceof OffsetBranch) {
+                OffsetBranch ob = (OffsetBranch) r;
+
+                if (invalidOffsets.contains(ob.source)) {
+                    it.remove();
+                } else {
+                    assert !invalidOffsets.contains(ob.destination);
+                }
+            }
+        }
+
+        for (Iterator<ExceptionTableEntry> it = this.exceptionTableEntries.iterator(); it.hasNext();) {
+            ExceptionTableEntry ete = (ExceptionTableEntry) it.next();
+
+            // Start, end and handler must either ALL lie IN the range to remove or ALL lie outside.
+
+            if (invalidOffsets.contains(ete.startPC)) {
+                assert invalidOffsets.contains(ete.endPC);
+                assert invalidOffsets.contains(ete.handlerPC);
+                it.remove();
+            } else {
+                assert !invalidOffsets.contains(ete.endPC);
+                assert !invalidOffsets.contains(ete.handlerPC);
+            }
+        }
+
+        // Remove local variables in dead-code block.
+        for (Iterator<LocalVariableSlot> it = this.allLocalVars.iterator(); it.hasNext();) {
+            final LocalVariableSlot var = (LocalVariableSlot) it.next();
+            if (invalidOffsets.contains(var.getStart())) {
+                assert invalidOffsets.contains(var.getEnd());
+                it.remove();
+            } else {
+                assert !invalidOffsets.contains(var.getEnd());
+            }
+        }
+
+        from.next = to;
+        to.prev   = from;
+    }
 }

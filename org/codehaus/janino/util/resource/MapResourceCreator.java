@@ -26,38 +26,47 @@
 
 package org.codehaus.janino.util.resource;
 
-import java.io.*;
-import java.util.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Creates resources as byte arrays in a delegate {@link java.util.Map}.
  */
-public class MapResourceCreator implements ResourceCreator {
-    private final Map map;
+public
+class MapResourceCreator implements ResourceCreator {
+
+    private final Map<String, byte[]> map;
 
     /**
      * Auto-create the delegate {@link Map}.
      */
-    public MapResourceCreator() {
-        this.map = new HashMap();
-    }
-    public MapResourceCreator(Map map) {
-        this.map = map;
-    }
-    public final Map getMap() {
-        return this.map;
-    }
+    public
+    MapResourceCreator() { this.map = new HashMap<String, byte[]>(); }
 
-    public final OutputStream createResource(final String resourceName) throws IOException {
+    public
+    MapResourceCreator(Map<String, byte[]> map) { this.map = map; }
+
+    /**
+     * @return The {@link String}-to-{@code byte[]} map of the resources created
+     */
+    public final Map<String, byte[]>
+    getMap() { return this.map; }
+
+    @Override public final OutputStream
+    createResource(final String resourceName) {
         return new ByteArrayOutputStream() {
-            public void close() throws IOException {
+
+            @Override public void
+            close() throws IOException {
                 super.close();
                 MapResourceCreator.this.map.put(resourceName, this.toByteArray());
             }
         };
     }
 
-    public final boolean deleteResource(String resourceName) {
-        return this.map.remove(resourceName) != null;
-    }
+    @Override public final boolean
+    deleteResource(String resourceName) { return this.map.remove(resourceName) != null; }
 }

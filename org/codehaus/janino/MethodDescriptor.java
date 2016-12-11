@@ -26,33 +26,41 @@
 
 package org.codehaus.janino;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Representation of a "method descriptor" (JVMS 4.3.3).
  */
-public class MethodDescriptor {
+public
+class MethodDescriptor {
 
-    /** The field descriptors of the method parameters. */
-    public final String[] parameterFDs;
+    /**
+     * The field descriptors of the method parameters.
+     */
+    public final String[] parameterFds;
 
-    /** The field descriptor of the method return value. */
-    public final String   returnFD;
+    /**
+     * The field descriptor of the method return value.
+     */
+    public final String   returnFd;
 
-    /** */
-    public MethodDescriptor(String[] parameterFDs, String returnFD) {
-        this.parameterFDs = parameterFDs;
-        this.returnFD     = returnFD;
+    /***/
+    public
+    MethodDescriptor(String[] parameterFds, String returnFd) {
+        this.parameterFds = parameterFds;
+        this.returnFd     = returnFd;
     }
 
     /**
-     * Parse a method descriptor into parameter FDs and return FDs.
+     * Parses a method descriptor into parameter FDs and return FDs.
      */
-    public MethodDescriptor(String s) {
+    public
+    MethodDescriptor(String s) {
         if (s.charAt(0) != '(') throw new JaninoRuntimeException();
 
-        int from = 1;
-        List parameterFDs = new ArrayList(); // String
+        int          from         = 1;
+        List<String> parameterFDs = new ArrayList<String>();
         while (s.charAt(from) != ')') {
             int to = from;
             while (s.charAt(to) == '[') ++to;
@@ -68,23 +76,23 @@ public class MethodDescriptor {
             parameterFDs.add(s.substring(from, to));
             from = to;
         }
-        this.parameterFDs = (String[]) parameterFDs.toArray(new String[parameterFDs.size()]);
-        this.returnFD = s.substring(++from);
+        this.parameterFds = (String[]) parameterFDs.toArray(new String[parameterFDs.size()]);
+        this.returnFd     = s.substring(++from);
     }
 
     /**
-     * Returns the "method descriptor" (JVMS 4.3.3).
+     * @return The "method descriptor" (JVMS 4.3.3)
      */
-    public String toString() {
-        StringBuffer sb = new StringBuffer("(");
-        for (int i = 0; i < this.parameterFDs.length; ++i) sb.append(this.parameterFDs[i]);
-        return sb.append(')').append(this.returnFD).toString();
+    @Override public String
+    toString() {
+        StringBuilder sb = new StringBuilder("(");
+        for (String parameterFd : this.parameterFds) sb.append(parameterFd);
+        return sb.append(')').append(this.returnFd).toString();
     }
 
     /**
-     * Patch an additional parameter into a given method descriptor.
+     * Patches an additional parameter into a given method descriptor.
      */
-    public static String prependParameter(String md, String parameterFD) {
-        return '(' + parameterFD + md.substring(1);
-    }
+    public static String
+    prependParameter(String md, String parameterFd) { return '(' + parameterFd + md.substring(1); }
 }

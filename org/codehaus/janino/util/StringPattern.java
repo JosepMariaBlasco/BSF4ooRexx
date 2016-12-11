@@ -26,15 +26,19 @@
 
 package org.codehaus.janino.util;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
  * Implementation of a UNIX shell-like string pattern algorithm.
  * <p>
- * Additionally, the concept of the "combined pattern" is supported (see
- * {@link #matches(StringPattern[], String)}.
+ *   Additionally, the concept of the "combined pattern" is supported (see {@link #matches(StringPattern[], String)}.
+ * </p>
  */
-public class StringPattern {
+public
+class StringPattern {
 
     /**
      * @see #matches(StringPattern[], String)
@@ -46,59 +50,70 @@ public class StringPattern {
      */
     public static final int EXCLUDE = 1;
 
-    private final int    mode;
-    private final String pattern;
+    private final int              mode;
+    @Nullable private final String pattern;
 
     /**
      * @param mode {@link #INCLUDE} or {@link #EXCLUDE}
      */
-    public StringPattern(int mode, String pattern) {
+    public
+    StringPattern(int mode, String pattern) {
         this.mode    = mode;
         this.pattern = pattern;
     }
 
-    public StringPattern(String pattern) {
+    public
+    StringPattern(@Nullable String pattern) {
         this.mode    = StringPattern.INCLUDE;
         this.pattern = pattern;
     }
 
-    public int getMode() { return this.mode; }
+    /**
+     * @return Whether this {@link StringPattern} represents <em>inclusion</em> ({@link #INCLUDE}) or <em>exclusion</em>
+     *         exclusion ({@link #EXCLUDE}) of subjects
+     */
+    public int
+    getMode() { return this.mode; }
 
     /**
-     * Match the given <code>text</code> against the pattern represented by the current instance,
+     * Matches the given {@code text} against the pattern represented by the current instance,
      * as follows:
      * <ul>
      *   <li>
-     *     A <code>*</code> in the pattern matches any sequence of zero or more characters in the
-     *     <code>text</code>
+     *     A {@code *} in the pattern matches any sequence of zero or more characters in the
+     *     {@code text}
      *   </li>
      *   <li>
-     *     A <code>?</code> in the pattern matches exactly one character in the <code>text</code>
+     *     A {@code ?} in the pattern matches exactly one character in the {@code text}
      *   </li>
      *   <li>
-     *     Any other character in the pattern must appear exactly as it is in the <code>text</code>
+     *     Any other character in the pattern must appear exactly as it is in the {@code text}
      * </ul>
-     * Notice: The <code>mode</code> flag of the current instance does not take any effect here.
+     * <p>
+     *   Notice: The {@code mode} flag of the current instance does not take any effect here.
+     * </p>
      */
-    public boolean matches(String text) {
-        return StringPattern.wildmatch(this.pattern, text);
-    }
+    public boolean
+    matches(String text) { return StringPattern.wildmatch(this.pattern, text); }
 
     /**
-     * Parse a "combined pattern" into an array of {@link StringPattern}s. A combined pattern
+     * Parses a "combined pattern" into an array of {@link StringPattern}s. A combined pattern
      * string is structured as follows:
      * <pre>
      *   combined-pattern :=
      *     [ '+' | '-' ] pattern
      *     { ( '+' | '-' ) pattern }
      * </pre>
-     * If a pattern is preceeded with a '-', then the {@link StringPattern} is created with mode
-     * {@link #EXCLUDE}, otherwise with mode {@link #INCLUDE}.
+     * <p>
+     *   If a pattern is preceeded with a '-', then the {@link StringPattern} is created with mode {@link #EXCLUDE},
+     *   otherwise with mode {@link #INCLUDE}.
+     * </p>
      */
-    public static StringPattern[] parseCombinedPattern(String combinedPattern) {
-        ArrayList al = new ArrayList();
+    public static StringPattern[]
+    parseCombinedPattern(String combinedPattern) {
+        List<StringPattern> al = new ArrayList<StringPattern>();
         for (int k = 0, l; k < combinedPattern.length(); k = l) {
-            int patternMode;
+            int  patternMode;
             char c = combinedPattern.charAt(k);
             if (c == '+') {
                 patternMode = StringPattern.INCLUDE;
@@ -120,36 +135,51 @@ public class StringPattern {
     }
 
     /**
-     * Match a given <code>text</code> against an array of {@link StringPattern}s (which was
-     * typically created by {@link #parseCombinedPattern(String)}.
+     * Matchs a given {@code text} against an array of {@link StringPattern}s (which was typically created by {@link
+     * #parseCombinedPattern(String)}.
      * <p>
-     * The last matching pattern takes effect; if its mode is {@link #INCLUDE}, then
-     * <code>true</code> is returned, if its mode is {@link #EXCLUDE}, then <code>false</code> is
-     * returned.
+     *   The last matching pattern takes effect; if its mode is {@link #INCLUDE}, then {@code true} is returned, if its
+     *   mode is {@link #EXCLUDE}, then {@code false} is returned.
+     * </p>
      * <p>
-     * If <code>patterns</code> is {@link #PATTERNS_NONE}, or empty, or none of its patterns
-     * matches, then <code>false</code> is returned.
+     *   If {@code patterns} is {@link #PATTERNS_NONE}, or empty, or none of its patterns matches, then {@code false}
+     *   is returned.
+     * </p>
      * <p>
-     * If <code>patterns</code> is {@link #PATTERNS_ALL}, then <code>true</code> is
-     * returned.
+     *   If {@code patterns} is {@link #PATTERNS_ALL}, then {@code true} is returned.
+     * </p>
      * <p>
-     * For backwards compatibility, <code>null</code> patterns are treated like
-     * {@link #PATTERNS_NONE}.
+     *   For backwards compatibility, {@code null} patterns are treated like {@link #PATTERNS_NONE}.
+     * </p>
      */
-    public static boolean matches(StringPattern[] patterns, String text) {
-        if (patterns == null) return false; // Backwards compatibility -- previously, "null" was officially documented.
+    @SuppressWarnings({ "unused", "null" })
+    public static boolean
+    matches(StringPattern[] patterns, String text) {
+
+        // Backwards compatibility -- previously, "null" was officially documented.
+        if (patterns == null) return false;
 
         for (int i = patterns.length - 1; i >= 0; --i) {
             if (patterns[i].matches(text)) {
                 return patterns[i].getMode() == StringPattern.INCLUDE;
             }
         }
+
         return false; // No patterns defined or no pattern matches.
     }
-    public static final StringPattern[] PATTERNS_ALL = new StringPattern[] { new StringPattern("*") };
+
+    /**
+     * A {@link StringPattern} that matches any subject.
+     */
+    public static final StringPattern[] PATTERNS_ALL  = new StringPattern[] { new StringPattern("*") };
+
+    /**
+     * A {@link StringPattern} that matches no subject whatsoever.
+     */
     public static final StringPattern[] PATTERNS_NONE = new StringPattern[0];
 
-    public String toString() {
+    @Override public String
+    toString() {
         return (
             this.mode == StringPattern.INCLUDE ? '+' :
             this.mode == StringPattern.EXCLUDE ? '-' :
@@ -157,7 +187,11 @@ public class StringPattern {
         ) + this.pattern;
     }
 
-    private static boolean wildmatch(String pattern, String text) {
+    private static boolean
+    wildmatch(@Nullable String pattern, String text) {
+
+        if (pattern == null) return true;
+
         int i;
         for (i = 0; i < pattern.length(); ++i) {
             char c = pattern.charAt(i);

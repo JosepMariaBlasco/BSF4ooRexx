@@ -26,27 +26,30 @@
 
 package org.codehaus.janino.util.resource;
 
-import java.util.*;
+import java.util.Collection;
+
+import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
  * A {@link org.codehaus.janino.util.resource.ResourceFinder} that finds its resources through a collection of
  * other {@link org.codehaus.janino.util.resource.ResourceFinder}s.
  */
-public class MultiResourceFinder extends ResourceFinder {
-    private final Collection resourceFinders; // One for each entry
+public
+class MultiResourceFinder extends ResourceFinder {
+
+    private final Collection<ResourceFinder> resourceFinders; // One for each entry
 
     /**
      * @param resourceFinders The entries of the "path"
      */
-    public MultiResourceFinder(Collection resourceFinders) {
-        this.resourceFinders = resourceFinders;
-    }
+    public
+    MultiResourceFinder(Collection<ResourceFinder> resourceFinders) { this.resourceFinders = resourceFinders; }
 
     // Implement ResourceFinder.
 
-    public final Resource findResource(String resourceName) {
-        for (Iterator it = this.resourceFinders.iterator(); it.hasNext();) {
-            ResourceFinder rf = (ResourceFinder) it.next();
+    @Override @Nullable public final Resource
+    findResource(String resourceName) {
+        for (ResourceFinder rf : this.resourceFinders) {
             Resource resource = rf.findResource(resourceName);
 //System.err.println("*** " + resourceName + " in " + rf + "? => " + url);
             if (resource != null) return resource;

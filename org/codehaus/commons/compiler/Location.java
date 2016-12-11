@@ -28,39 +28,59 @@ package org.codehaus.commons.compiler;
 
 import java.io.Serializable;
 
-/**
- * Represents the location of a character in a document, as defined by an optional file name, a
- * line number and a column number.
- */
-public class Location implements Serializable {
-    public static final Location NOWHERE = new Location("<internally generated location>", (short)-1, (short)-1);
+import org.codehaus.commons.nullanalysis.Nullable;
 
-    private final String optionalFileName;
-    private final short  lineNumber;
-    private final short  columnNumber;
+/**
+ * Immutable representation of the location of a character in a document, as defined by an optional file name, a line
+ * number and a column number.
+ */
+public
+class Location implements Serializable {
 
     /**
-     * @param optionalFileName A human-readable indication where the document related to this
-     *                         {@link Location} can be found
+     * Representation of an unspecified location.
      */
-    public Location(String optionalFileName, short lineNumber, short columnNumber) {
+    public static final Location NOWHERE = new Location("<internally generated location>", (short) -1, (short) -1);
+
+    @Nullable private final String optionalFileName;
+    private final int              lineNumber;
+    private final int              columnNumber;
+
+    /**
+     * @param optionalFileName A human-readable indication where the document related to this {@link Location} can be
+     *                         found
+     */
+    public
+    Location(@Nullable String optionalFileName, int lineNumber, int columnNumber) {
         this.optionalFileName = optionalFileName;
         this.lineNumber       = lineNumber;
         this.columnNumber     = columnNumber;
     }
 
-    public String getFileName()     { return this.optionalFileName; }
-    public short  getLineNumber()   { return this.lineNumber; }
-    public short  getColumnNumber() { return this.columnNumber; }
+    /**
+     * @return The "file name" associated with this location, or {@code null}
+     */
+    @Nullable public String getFileName() { return this.optionalFileName; }
 
     /**
-     * Converts this {@link Location} into an english text, like<pre>
-     * File Main.java, Line 23, Column 79</pre>
+     * @return The line number associated with this location, or -1
      */
-    public String toString() {
-        StringBuffer sb = new StringBuffer();
+    public int getLineNumber() { return this.lineNumber; }
+
+    /**
+     * @return The column number associated with this location, or -1
+     */
+    public int getColumnNumber() { return this.columnNumber; }
+
+    /**
+     * Converts this {@link Location} into an english text, like '{@code File Main.java, Line 23, Column 79}'.
+     */
+    @Override public String
+    toString() {
+
+        StringBuilder sb = new StringBuilder();
         if (this.optionalFileName != null) {
-            sb.append("File ").append(this.optionalFileName).append(", ");
+            sb.append("File '").append(this.optionalFileName).append("', ");
         }
         sb.append("Line ").append(this.lineNumber).append(", ");
         sb.append("Column ").append(this.columnNumber);

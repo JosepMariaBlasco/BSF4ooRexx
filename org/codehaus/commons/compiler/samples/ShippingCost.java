@@ -26,17 +26,21 @@
 
 package org.codehaus.commons.compiler.samples;
 
-import org.codehaus.commons.compiler.*;
+import org.codehaus.commons.compiler.CompilerFactoryFactory;
+import org.codehaus.commons.compiler.IExpressionEvaluator;
 
 /**
- * Sample application which demonstrates how to use the
- * {@link org.codehaus.janino.ExpressionEvaluator ExpressionEvaluator} class.
+ * Sample application which demonstrates how to use the {@link IExpressionEvaluator} class.
  */
-public final class ShippingCost {
+public final
+class ShippingCost {
 
     private ShippingCost() {}
 
-    public static void main(String[] args) throws Exception {
+    /***/
+    public static void
+    main(String[] args) throws Exception {
+
         if (args.length != 1) {
             System.err.println("Usage: <total>");
             System.err.println("Computes the shipping costs from the double value \"total\".");
@@ -44,8 +48,8 @@ public final class ShippingCost {
             System.exit(1);
         }
 
-        // Convert command line argument to parameter "total".
-        Object[] parameterValues = new Object[] { new Double(args[0]) };
+        // Convert command line argument to call argument "total".
+        Object[] arguments = new Object[] { new Double(args[0]) };
 
         // Create "ExpressionEvaluator" object.
         IExpressionEvaluator ee = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
@@ -54,9 +58,9 @@ public final class ShippingCost {
         ee.cook("total >= 100.0 ? 0.0 : 7.95");
 
         // Evaluate expression with actual parameter values.
-        Object res = ee.evaluate(parameterValues);
+        Object res = ee.evaluate(arguments);
 
         // Print expression result.
-        System.out.println("Result = " + (res == null ? "(null)" : res.toString()));
+        System.out.println("Result = " + String.valueOf(res));
     }
 }

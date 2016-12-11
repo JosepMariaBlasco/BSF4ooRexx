@@ -26,32 +26,39 @@
 
 package org.codehaus.janino.util.resource;
 
-import java.io.*;
-import java.util.*;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.Map;
+
+import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
- * A {@link org.codehaus.janino.util.resource.ResourceFinder} that provides access
- * to resource stored as byte arrays in a {@link java.util.Map}.
+ * A {@link org.codehaus.janino.util.resource.ResourceFinder} that provides access to resource stored as byte arrays in
+ * a {@link java.util.Map}.
  */
-public class MapResourceFinder extends ResourceFinder {
-    private final Map map;
-    private long      lastModified = 0L;
+public
+class MapResourceFinder extends ResourceFinder {
+    private final Map<String, byte[]> map;
+    private long                      lastModified;
 
-    public MapResourceFinder(Map map) {
-        this.map = map;
-    }
-    public final void setLastModified(long lastModified) {
-        this.lastModified = lastModified;
-    }
+    public
+    MapResourceFinder(Map<String, byte[]> map) { this.map = map; }
 
-    public final Resource findResource(final String resourceName) {
+    /**
+     * @param lastModified The return value of {@link Resource#lastModified()} for the next resources found
+     */
+    public final void
+    setLastModified(long lastModified) { this.lastModified = lastModified; }
+
+    @Override @Nullable public final Resource
+    findResource(final String resourceName) {
         final byte[] ba = (byte[]) this.map.get(resourceName);
         if (ba == null) return null;
 
         return new Resource() {
-            public InputStream open() throws IOException { return new ByteArrayInputStream(ba); }
-            public String getFileName()                  { return resourceName; }
-            public long lastModified()                   { return MapResourceFinder.this.lastModified; }
+            @Override public InputStream open()         { return new ByteArrayInputStream(ba); }
+            @Override public String      getFileName()  { return resourceName; }
+            @Override public long        lastModified() { return MapResourceFinder.this.lastModified; }
         };
     }
 }

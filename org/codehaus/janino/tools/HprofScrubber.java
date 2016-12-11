@@ -26,24 +26,39 @@
 
 package org.codehaus.janino.tools;
 
-import java.io.*;
-import java.text.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.text.FieldPosition;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
+
+import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
  * Example for object allocation statistics:
- *
+ * <pre>
  *     java -Xrunhprof:heap=sites,monitor=n,cutoff=0,depth=4 MyClass
+ * </pre>
  */
-public final class HprofScrubber {
+public final
+class HprofScrubber {
     private HprofScrubber() {}
 
-    private static class Site {
-        public final int allocatedBytes;
-        public final int allocatedObjects;
-        public final int traceNumber;
+    private static
+    class Site {
+        public final int    allocatedBytes;
+        public final int    allocatedObjects;
+        public final int    traceNumber;
         public final String className;
-        public Site(int allocatedBytes, int allocatedObjects, int traceNumber, String className) {
+
+        Site(int allocatedBytes, int allocatedObjects, int traceNumber, String className) {
             this.allocatedBytes   = allocatedBytes;
             this.allocatedObjects = allocatedObjects;
             this.traceNumber      = traceNumber;
@@ -51,23 +66,26 @@ public final class HprofScrubber {
         }
     }
 
-    private static class Sample {
+    private static
+    class Sample {
         public final int count;
         public final int traceNumber;
-        public Sample(int count, int traceNumber) {
+
+        Sample(int count, int traceNumber) {
             this.count       = count;
             this.traceNumber = traceNumber;
         }
     }
 
-    public static void main(String[] args) throws Exception {
+    public static void // SUPPRESS CHECKSTYLE JavadocMethod
+    main(String[] args) throws Exception {
         String fileName = args.length == 0 ? "java.hprof.txt" : args[0];
 
         BufferedReader br = new BufferedReader(new FileReader(fileName));
         try {
-            Map traces = new HashMap(); // Integer number => String[] stackFrames
-            List sites = new ArrayList(); // Site
-            List samples = new ArrayList(); // Sample
+            Map<Integer /*number*/, String[] /*stackFrames*/> traces  = new HashMap<Integer, String[]>();
+            List<Site>                                        sites   = new ArrayList<Site>();
+            List<Sample>                                      samples = new ArrayList<Sample>();
 
             String s = br.readLine();
             while (s != null) {
@@ -92,8 +110,8 @@ public final class HprofScrubber {
                     }
                 } else
                 if (s.startsWith("TRACE ") && s.endsWith(":")) {
-                    int traceNumber = Integer.parseInt(s.substring(6, s.length() - 1));
-                    List l = new ArrayList();
+                    int          traceNumber = Integer.parseInt(s.substring(6, s.length() - 1));
+                    List<String> l           = new ArrayList<String>();
                     for (;;) {
                         s = br.readLine();
                         if (!s.startsWith("\t")) break;
@@ -101,7 +119,7 @@ public final class HprofScrubber {
                     }
                     traces.put(
                         new Integer(traceNumber),
-                        l.toArray(new String[l.size()])
+                        (String[]) l.toArray(new String[l.size()])
                     );
                 } else
                 if (s.startsWith("CPU SAMPLES BEGIN")) {
@@ -128,21 +146,25 @@ public final class HprofScrubber {
             HprofScrubber.dumpSamples((Sample[]) samples.toArray(new Sample[samples.size()]), traces);
 
         } finally {
-            try { br.close(); } catch (IOException e) { }
+            try { br.close(); } catch (IOException e) {}
         }
     }
 
-    private static void dumpSites(Site[] ss, Map traces) {
-        Arrays.sort(ss, new Comparator() {
-            public int compare(Object o1, Object o2) {
+    private static void
+    dumpSites(Site[] ss, Map<Integer, String[]> traces) {
+        Arrays.sort(ss, new Comparator<Object>() {
+
+            @Override public int
+            compare(@Nullable Object o1, @Nullable Object o2) {
+                assert o1 != null;
+                assert o2 != null;
                 return ((Site) o2).allocatedBytes - ((Site) o1).allocatedBytes;
             }
         });
 
         int totalAllocatedBytes = 0, totalAllocatedObjects = 0;
-        for (int i = 0; i < ss.length; ++i) {
-            Site site = ss[i];
-            totalAllocatedBytes += site.allocatedBytes;
+        for (Site site : ss) {
+            totalAllocatedBytes   += site.allocatedBytes;
             totalAllocatedObjects += site.allocatedObjects;
         }
 
@@ -150,12 +172,12 @@ public final class HprofScrubber {
         System.out.println("rank   self  accum      bytes  objects  class name");
         System.out.println("Total:              " + totalAllocatedBytes + "  " + totalAllocatedObjects);
 
-        double accumulatedPercentage = 0.0;
-        MessageFormat mf = new MessageFormat(
+        double        accumulatedPercentage = 0.0;
+        MessageFormat mf                    = new MessageFormat(
             "{0,number,00000} {1,number,00.00}% {2,number,00.00}% {3,number,000000000} {4,number,000000000} {5}"
         );
         for (int i = 0; i < ss.length; ++i) {
-            Site site = ss[i];
+            Site   site           = ss[i];
             double selfPercentage = 100.0 * ((double) site.allocatedBytes / (double) totalAllocatedBytes);
             accumulatedPercentage += selfPercentage;
 //            System.out.println(
@@ -185,27 +207,29 @@ public final class HprofScrubber {
             ));
             String[] stackFrames = (String[]) traces.get(new Integer(site.traceNumber));
             if (stackFrames != null) {
-                for (int j = 0; j < stackFrames.length; ++j) {
-                    System.out.println("                           " + stackFrames[j]);
+                for (String stackFrame : stackFrames) {
+                    System.out.println("                           " + stackFrame);
                 }
             }
         }
     }
 
-    private static void dumpSamples(Sample[] ss, Map traces) {
+    private static void
+    dumpSamples(Sample[] ss, Map<Integer, String[]> traces) {
         int totalCount = 0;
-        for (int i = 0; i < ss.length; ++i) totalCount += ss[i].count;
+        for (Sample s : ss) totalCount += s.count;
 
         System.out.println("          percent");
         System.out.println("rank   self  accum      count");
         System.out.println("Total:              " + totalCount);
 
         double accumulatedPercentage = 0.0;
+
         MessageFormat mf = new MessageFormat(
             "{0,number,00000} {1,number,00.00}% {2,number,00.00}% {3,number,000000000}"
         );
         for (int i = 0; i < ss.length; ++i) {
-            Sample sample = ss[i];
+            Sample sample         = ss[i];
             double selfPercentage = 100.0 * ((double) sample.count / (double) totalCount);
             accumulatedPercentage += selfPercentage;
 //            System.out.println(
@@ -231,9 +255,7 @@ public final class HprofScrubber {
             ));
             String[] stackFrames = (String[]) traces.get(new Integer(sample.traceNumber));
             if (stackFrames != null) {
-                for (int j = 0; j < stackFrames.length; ++j) {
-                    System.out.println("                           " + stackFrames[j]);
-                }
+                for (String stackFrame : stackFrames) System.out.println("                           " + stackFrame);
             }
         }
     }

@@ -26,57 +26,65 @@
 
 package org.codehaus.janino.util.resource;
 
-import java.io.*;
-import java.util.*;
-import java.util.zip.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.zip.ZipFile;
 
-import org.codehaus.janino.util.iterator.*;
+import org.codehaus.janino.util.iterator.TransformingIterator;
 
 
 /**
- * A {@link org.codehaus.janino.util.resource.ResourceFinder} that finds its resources along a "path"
- * consisting of JAR file names, ZIP file names, and directory names.
+ * A {@link org.codehaus.janino.util.resource.ResourceFinder} that finds its resources along a "path" consisting of JAR
+ * file names, ZIP file names, and directory names.
+ *
  * @see org.codehaus.janino.util.resource.ZipFileResourceFinder
  * @see org.codehaus.janino.util.resource.DirectoryResourceFinder
  */
-public class PathResourceFinder extends LazyMultiResourceFinder {
+public
+class PathResourceFinder extends LazyMultiResourceFinder {
 
     /**
      * @param entries The entries of the "path"
      */
-    public PathResourceFinder(final File[] entries) {
+    public
+    PathResourceFinder(final File[] entries) {
         super(PathResourceFinder.createIterator(Arrays.asList(entries).iterator()));
     }
 
     /**
-     * @param entries The entries of the "path" (type must be {@link File})
+     * @param entries The entries of the "path"
      */
-    public PathResourceFinder(Iterator entries) {
-        super(entries);
-    }
+    public
+    PathResourceFinder(Iterator<ResourceFinder> entries) { super(entries); }
 
     /**
-     * @param path A java-like path, i.e. a "path separator"-separated list of entries.
+     * @param path A java-like path, i.e. a "path separator"-separated list of entries
      */
-    public PathResourceFinder(String path) {
-        this(PathResourceFinder.parsePath(path));
-    }
+    public
+    PathResourceFinder(String path) { this(PathResourceFinder.parsePath(path)); }
 
-    private static Iterator createIterator(final Iterator entries) {
-        return new TransformingIterator(entries) {
-            protected Object transform(Object o) {
-                return PathResourceFinder.createResourceFinder((File) o);
-            }
+    private static Iterator<ResourceFinder>
+    createIterator(final Iterator<File> entries) {
+
+        return new TransformingIterator<Object, ResourceFinder>(entries) {
+
+            @Override protected ResourceFinder
+            transform(Object o) { return PathResourceFinder.createResourceFinder((File) o); }
         };
     }
 
     /**
-     * Break a given string up by the system-dependent path-separator character (on UNIX systems,
+     * Breaks a given string up by the system-dependent path-separator character (on UNIX systems,
      * this character is ':'; on Microsoft Windows systems it is ';'). Empty components are
      * ignored.
      * <p>
-     * UNIX Examples:
-     * <dl>
+     *   UNIX Examples:
+     * </p>
+     * <dl style="border: 1px solid; padding: 6px">
      *   <dt>A:B:C          <dd>A, B, C
      *   <dt>::B:           <dd>B
      *   <dt>:A             <dd>A
@@ -85,9 +93,10 @@ public class PathResourceFinder extends LazyMultiResourceFinder {
      *
      * @see File#pathSeparatorChar
      */
-    public static File[] parsePath(String s) {
-        int from = 0;
-        List l = new ArrayList(); // File
+    public static File[]
+    parsePath(String s) {
+        int        from = 0;
+        List<File> l    = new ArrayList<File>();
         for (;;) {
             int to = s.indexOf(File.pathSeparatorChar, from);
             if (to == -1) {
@@ -104,7 +113,7 @@ public class PathResourceFinder extends LazyMultiResourceFinder {
      * A factory method that creates a Java classpath-style ResourceFinder as
      * follows:
      * <table>
-     *   <tr><th><code>entry</code></th><th>Returned {@link ResourceFinder}</th></tr>
+     *   <tr><th>{@code entry}</th><th>Returned {@link ResourceFinder}</th></tr>
      *   <tr><td>"*.jar" file</td><td>{@link ZipFileResourceFinder}</td></tr>
      *   <tr><td>"*.zip" file</td><td>{@link ZipFileResourceFinder}</td></tr>
      *   <tr><td>directory</td><td>{@link DirectoryResourceFinder}</td></tr>
@@ -112,12 +121,13 @@ public class PathResourceFinder extends LazyMultiResourceFinder {
      * </table>
      * @return a valid {@link ResourceFinder}
      */
-    private static ResourceFinder createResourceFinder(final File entry) {
+    private static ResourceFinder
+    createResourceFinder(final File entry) {
 
         // ZIP file or JAR file.
         if (
-            (entry.getName().endsWith(".jar") || entry.getName().endsWith(".zip")) &&
-            entry.isFile()
+            (entry.getName().endsWith(".jar") || entry.getName().endsWith(".zip"))
+            && entry.isFile()
         ) {
             try {
                 return new ZipFileResourceFinder(new ZipFile(entry));

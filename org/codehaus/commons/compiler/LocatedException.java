@@ -26,39 +26,43 @@
 
 package org.codehaus.commons.compiler;
 
+import org.codehaus.commons.nullanalysis.Nullable;
+
 /**
  * An {@link Exception} that is associated with an optional {@link Location} in a source file.
  */
-public class LocatedException extends CausedException {
-    private final Location optionalLocation;
+public
+class LocatedException extends Exception {
 
-    public LocatedException(String message, Location optionalLocation) {
+    @Nullable private final Location optionalLocation;
+
+    public
+    LocatedException(String message, @Nullable Location optionalLocation) {
         super(message);
         this.optionalLocation = optionalLocation;
     }
 
-    public LocatedException(String message, Location optionalLocation, Throwable optionalCause) {
+    public
+    LocatedException(String message, @Nullable Location optionalLocation, @Nullable Throwable optionalCause) {
         super(message, optionalCause);
         this.optionalLocation = optionalLocation;
     }
 
     /**
-     * Returns the message specified at creation time, preceeded with nicely formatted location
-     * information (if any).
+     * Returns the message specified at creation time, preceeded with nicely formatted location information (if any).
      */
-    public String getMessage() {
+    @Override public String
+    getMessage() {
         return (
-            this.optionalLocation == null
-            ? super.getMessage()
-            : this.optionalLocation.toString() + ": " + super.getMessage()
+            this.optionalLocation != null
+            ? this.optionalLocation.toString() + ": " + super.getMessage()
+            : super.getMessage()
         );
     }
 
     /**
-     * Returns the {@link Location} object specified at
-     * construction time (may be <code>null</code>).
+     * @return The {@link Location} specified at construction time (may be {@code null})
      */
-    public Location getLocation() {
-        return this.optionalLocation;
-    }
+    @Nullable public Location
+    getLocation() { return this.optionalLocation; }
 }

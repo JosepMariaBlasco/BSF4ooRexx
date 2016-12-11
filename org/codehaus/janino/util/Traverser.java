@@ -26,393 +26,959 @@
 
 package org.codehaus.janino.util;
 
-import org.codehaus.janino.*;
-import org.codehaus.janino.Java.CompilationUnit.*;
-import org.codehaus.janino.Visitor.ComprehensiveVisitor;
-
-import java.util.*;
+import org.codehaus.commons.nullanalysis.Nullable;
+import org.codehaus.janino.JaninoRuntimeException;
+import org.codehaus.janino.Java.AbstractClassDeclaration;
+import org.codehaus.janino.Java.AbstractPackageMemberClassDeclaration;
+import org.codehaus.janino.Java.AbstractTypeBodyDeclaration;
+import org.codehaus.janino.Java.AbstractTypeDeclaration;
+import org.codehaus.janino.Java.AlternateConstructorInvocation;
+import org.codehaus.janino.Java.AmbiguousName;
+import org.codehaus.janino.Java.Annotation;
+import org.codehaus.janino.Java.AnonymousClassDeclaration;
+import org.codehaus.janino.Java.ArrayAccessExpression;
+import org.codehaus.janino.Java.ArrayInitializer;
+import org.codehaus.janino.Java.ArrayInitializerOrRvalue;
+import org.codehaus.janino.Java.ArrayLength;
+import org.codehaus.janino.Java.ArrayType;
+import org.codehaus.janino.Java.AssertStatement;
+import org.codehaus.janino.Java.Assignment;
+import org.codehaus.janino.Java.Atom;
+import org.codehaus.janino.Java.BinaryOperation;
+import org.codehaus.janino.Java.Block;
+import org.codehaus.janino.Java.BlockStatement;
+import org.codehaus.janino.Java.BooleanLiteral;
+import org.codehaus.janino.Java.BooleanRvalue;
+import org.codehaus.janino.Java.BreakStatement;
+import org.codehaus.janino.Java.BreakableStatement;
+import org.codehaus.janino.Java.Cast;
+import org.codehaus.janino.Java.CatchClause;
+import org.codehaus.janino.Java.CharacterLiteral;
+import org.codehaus.janino.Java.ClassLiteral;
+import org.codehaus.janino.Java.CompilationUnit;
+import org.codehaus.janino.Java.CompilationUnit.ImportDeclaration;
+import org.codehaus.janino.Java.ConditionalExpression;
+import org.codehaus.janino.Java.ConstructorDeclarator;
+import org.codehaus.janino.Java.ConstructorInvocation;
+import org.codehaus.janino.Java.ContinuableStatement;
+import org.codehaus.janino.Java.ContinueStatement;
+import org.codehaus.janino.Java.Crement;
+import org.codehaus.janino.Java.DoStatement;
+import org.codehaus.janino.Java.ElementValue;
+import org.codehaus.janino.Java.ElementValueArrayInitializer;
+import org.codehaus.janino.Java.ElementValuePair;
+import org.codehaus.janino.Java.EmptyStatement;
+import org.codehaus.janino.Java.EnumConstant;
+import org.codehaus.janino.Java.ExpressionStatement;
+import org.codehaus.janino.Java.FieldAccess;
+import org.codehaus.janino.Java.FieldAccessExpression;
+import org.codehaus.janino.Java.FieldDeclaration;
+import org.codehaus.janino.Java.FloatingPointLiteral;
+import org.codehaus.janino.Java.ForEachStatement;
+import org.codehaus.janino.Java.ForStatement;
+import org.codehaus.janino.Java.FunctionDeclarator;
+import org.codehaus.janino.Java.IfStatement;
+import org.codehaus.janino.Java.Initializer;
+import org.codehaus.janino.Java.Instanceof;
+import org.codehaus.janino.Java.IntegerLiteral;
+import org.codehaus.janino.Java.InterfaceDeclaration;
+import org.codehaus.janino.Java.Invocation;
+import org.codehaus.janino.Java.LabeledStatement;
+import org.codehaus.janino.Java.Literal;
+import org.codehaus.janino.Java.LocalClassDeclaration;
+import org.codehaus.janino.Java.LocalClassDeclarationStatement;
+import org.codehaus.janino.Java.LocalVariableAccess;
+import org.codehaus.janino.Java.LocalVariableDeclarationStatement;
+import org.codehaus.janino.Java.Located;
+import org.codehaus.janino.Java.Lvalue;
+import org.codehaus.janino.Java.MarkerAnnotation;
+import org.codehaus.janino.Java.MemberAnnotationTypeDeclaration;
+import org.codehaus.janino.Java.MemberClassDeclaration;
+import org.codehaus.janino.Java.MemberEnumDeclaration;
+import org.codehaus.janino.Java.MemberInterfaceDeclaration;
+import org.codehaus.janino.Java.MethodDeclarator;
+import org.codehaus.janino.Java.MethodInvocation;
+import org.codehaus.janino.Java.NamedClassDeclaration;
+import org.codehaus.janino.Java.NamedTypeDeclaration;
+import org.codehaus.janino.Java.NewAnonymousClassInstance;
+import org.codehaus.janino.Java.NewArray;
+import org.codehaus.janino.Java.NewClassInstance;
+import org.codehaus.janino.Java.NewInitializedArray;
+import org.codehaus.janino.Java.NormalAnnotation;
+import org.codehaus.janino.Java.NullLiteral;
+import org.codehaus.janino.Java.Package;
+import org.codehaus.janino.Java.PackageMemberAnnotationTypeDeclaration;
+import org.codehaus.janino.Java.PackageMemberEnumDeclaration;
+import org.codehaus.janino.Java.PackageMemberInterfaceDeclaration;
+import org.codehaus.janino.Java.PackageMemberTypeDeclaration;
+import org.codehaus.janino.Java.ParameterAccess;
+import org.codehaus.janino.Java.ParenthesizedExpression;
+import org.codehaus.janino.Java.PrimitiveType;
+import org.codehaus.janino.Java.QualifiedThisReference;
+import org.codehaus.janino.Java.ReferenceType;
+import org.codehaus.janino.Java.ReturnStatement;
+import org.codehaus.janino.Java.Rvalue;
+import org.codehaus.janino.Java.RvalueMemberType;
+import org.codehaus.janino.Java.SimpleConstant;
+import org.codehaus.janino.Java.SimpleType;
+import org.codehaus.janino.Java.SingleElementAnnotation;
+import org.codehaus.janino.Java.Statement;
+import org.codehaus.janino.Java.StringLiteral;
+import org.codehaus.janino.Java.SuperConstructorInvocation;
+import org.codehaus.janino.Java.SuperclassFieldAccessExpression;
+import org.codehaus.janino.Java.SuperclassMethodInvocation;
+import org.codehaus.janino.Java.SwitchStatement;
+import org.codehaus.janino.Java.SynchronizedStatement;
+import org.codehaus.janino.Java.ThisReference;
+import org.codehaus.janino.Java.ThrowStatement;
+import org.codehaus.janino.Java.TryStatement;
+import org.codehaus.janino.Java.Type;
+import org.codehaus.janino.Java.TypeBodyDeclaration;
+import org.codehaus.janino.Java.TypeDeclaration;
+import org.codehaus.janino.Java.UnaryOperation;
+import org.codehaus.janino.Java.VariableDeclarator;
+import org.codehaus.janino.Java.WhileStatement;
+import org.codehaus.janino.Visitor;
+import org.codehaus.janino.Visitor.AnnotationVisitor;
+import org.codehaus.janino.Visitor.BlockStatementVisitor;
+import org.codehaus.janino.Visitor.ElementValueVisitor;
 
 /**
- * This class traverses the subnodes of an AST. Derived classes may override
- * individual methods to process specific nodes, e.g.:<pre>
+ * This class traverses the subnodes of an AST. Derived classes override individual "{@code traverse*()}" methods to
+ * process specific nodes.
+ * <p>
+ *   Example:
+ * </p>
+ * <pre>
  *     LocalClassDeclaration lcd = ...;
- *     lcd.accept(new Traverser() {
+ *
+ *     new Traverser() {
+ *
  *         int n = 0;
- *         public void traverseMethodDeclarator(Java.MethodDeclarator md) {
+ *
+ *         protected void
+ *         traverseMethodDeclarator(MethodDeclarator md) {
  *             ++this.n;
  *             super.traverseMethodDeclarator(md);
  *         }
- *     }.comprehensiveVisitor());</pre>
+ *     }.visitTypeDeclaration(lcd);
+ * </pre>
+ *
+ * @param <EX> The exception that the "{@code traverse*()}" and "{@code visit*()}" methods may throw
+ * @see #visitAnnotation(Java.Annotation)
+ * @see #visitAtom(Java.Atom)
+ * @see #visitBlockStatement(Java.BlockStatement)
+ * @see #visitElementValue(Java.ElementValue)
+ * @see #visitImportDeclaration(Java.CompilationUnit.ImportDeclaration)
+ * @see #visitTypeBodyDeclaration(Java.TypeBodyDeclaration)
+ * @see #visitTypeDeclaration(Java.TypeDeclaration)
+ * @see #traverseCompilationUnit(Java.CompilationUnit)
  */
-public class Traverser {
-    private final Visitor.ComprehensiveVisitor cv = new Visitor.ComprehensiveVisitor() {
-        // CHECKSTYLE(LineLengthCheck):OFF
-        public final void visitSingleTypeImportDeclaration(Java.CompilationUnit.SingleTypeImportDeclaration stid)      { Traverser.this.traverseSingleTypeImportDeclaration(stid); } // SUPPRESS CHECKSTYLE
-        public final void visitTypeImportOnDemandDeclaration(Java.CompilationUnit.TypeImportOnDemandDeclaration tiodd) { Traverser.this.traverseTypeImportOnDemandDeclaration(tiodd); }
-        public final void visitSingleStaticImportDeclaration(SingleStaticImportDeclaration ssid)                       { Traverser.this.traverseSingleStaticImportDeclaration(ssid); }
-        public final void visitStaticImportOnDemandDeclaration(StaticImportOnDemandDeclaration siodd)                  { Traverser.this.traverseStaticImportOnDemandDeclaration(siodd); }
-        public final void visitAnonymousClassDeclaration(Java.AnonymousClassDeclaration acd)                           { Traverser.this.traverseAnonymousClassDeclaration(acd); }
-        public final void visitLocalClassDeclaration(Java.LocalClassDeclaration lcd)                                   { Traverser.this.traverseLocalClassDeclaration(lcd); }
-        public final void visitPackageMemberClassDeclaration(Java.PackageMemberClassDeclaration pmcd)                  { Traverser.this.traversePackageMemberClassDeclaration(pmcd); }
-        public final void visitMemberInterfaceDeclaration(Java.MemberInterfaceDeclaration mid)                         { Traverser.this.traverseMemberInterfaceDeclaration(mid); }
-        public final void visitPackageMemberInterfaceDeclaration(Java.PackageMemberInterfaceDeclaration pmid)          { Traverser.this.traversePackageMemberInterfaceDeclaration(pmid); }
-        public final void visitMemberClassDeclaration(Java.MemberClassDeclaration mcd)                                 { Traverser.this.traverseMemberClassDeclaration(mcd); }
-        public final void visitConstructorDeclarator(Java.ConstructorDeclarator cd)                                    { Traverser.this.traverseConstructorDeclarator(cd); }
-        public final void visitInitializer(Java.Initializer i)                                                         { Traverser.this.traverseInitializer(i); }
-        public final void visitMethodDeclarator(Java.MethodDeclarator md)                                              { Traverser.this.traverseMethodDeclarator(md); }
-        public final void visitFieldDeclaration(Java.FieldDeclaration fd)                                              { Traverser.this.traverseFieldDeclaration(fd); }
-        public final void visitLabeledStatement(Java.LabeledStatement ls)                                              { Traverser.this.traverseLabeledStatement(ls); }
-        public final void visitBlock(Java.Block b)                                                                     { Traverser.this.traverseBlock(b); }
-        public final void visitExpressionStatement(Java.ExpressionStatement es)                                        { Traverser.this.traverseExpressionStatement(es); }
-        public final void visitIfStatement(Java.IfStatement is)                                                        { Traverser.this.traverseIfStatement(is); }
-        public final void visitForStatement(Java.ForStatement fs)                                                      { Traverser.this.traverseForStatement(fs); }
-        public final void visitWhileStatement(Java.WhileStatement ws)                                                  { Traverser.this.traverseWhileStatement(ws); }
-        public final void visitTryStatement(Java.TryStatement ts)                                                      { Traverser.this.traverseTryStatement(ts); }
-        public final void visitSwitchStatement(Java.SwitchStatement ss)                                                { Traverser.this.traverseSwitchStatement(ss); }
-        public final void visitSynchronizedStatement(Java.SynchronizedStatement ss)                                    { Traverser.this.traverseSynchronizedStatement(ss); }
-        public final void visitDoStatement(Java.DoStatement ds)                                                        { Traverser.this.traverseDoStatement(ds); }
-        public final void visitLocalVariableDeclarationStatement(Java.LocalVariableDeclarationStatement lvds)          { Traverser.this.traverseLocalVariableDeclarationStatement(lvds); }
-        public final void visitReturnStatement(Java.ReturnStatement rs)                                                { Traverser.this.traverseReturnStatement(rs); }
-        public final void visitThrowStatement(Java.ThrowStatement ts)                                                  { Traverser.this.traverseThrowStatement(ts); }
-        public final void visitBreakStatement(Java.BreakStatement bs)                                                  { Traverser.this.traverseBreakStatement(bs); }
-        public final void visitContinueStatement(Java.ContinueStatement cs)                                            { Traverser.this.traverseContinueStatement(cs); }
-        public final void visitEmptyStatement(Java.EmptyStatement es)                                                  { Traverser.this.traverseEmptyStatement(es); }
-        public final void visitLocalClassDeclarationStatement(Java.LocalClassDeclarationStatement lcds)                { Traverser.this.traverseLocalClassDeclarationStatement(lcds); }
-        public final void visitPackage(Java.Package p)                                                                 { Traverser.this.traversePackage(p); }
-        public final void visitArrayLength(Java.ArrayLength al)                                                        { Traverser.this.traverseArrayLength(al); }
-        public final void visitAssignment(Java.Assignment a)                                                           { Traverser.this.traverseAssignment(a); }
-        public final void visitUnaryOperation(Java.UnaryOperation uo)                                                  { Traverser.this.traverseUnaryOperation(uo); }
-        public final void visitBinaryOperation(Java.BinaryOperation bo)                                                { Traverser.this.traverseBinaryOperation(bo); }
-        public final void visitCast(Java.Cast c)                                                                       { Traverser.this.traverseCast(c); }
-        public final void visitClassLiteral(Java.ClassLiteral cl)                                                      { Traverser.this.traverseClassLiteral(cl); }
-        public final void visitConditionalExpression(Java.ConditionalExpression ce)                                    { Traverser.this.traverseConditionalExpression(ce); }
-        public final void visitCrement(Java.Crement c)                                                                 { Traverser.this.traverseCrement(c); }
-        public final void visitInstanceof(Java.Instanceof io)                                                          { Traverser.this.traverseInstanceof(io); }
-        public final void visitMethodInvocation(Java.MethodInvocation mi)                                              { Traverser.this.traverseMethodInvocation(mi); }
-        public final void visitSuperclassMethodInvocation(Java.SuperclassMethodInvocation smi)                         { Traverser.this.traverseSuperclassMethodInvocation(smi); }
-        public final void visitLiteral(Java.Literal l)                                                                 { Traverser.this.traverseLiteral(l); }
-        public final void visitNewAnonymousClassInstance(Java.NewAnonymousClassInstance naci)                          { Traverser.this.traverseNewAnonymousClassInstance(naci); }
-        public final void visitNewArray(Java.NewArray na)                                                              { Traverser.this.traverseNewArray(na); }
-        public final void visitNewInitializedArray(Java.NewInitializedArray nia)                                       { Traverser.this.traverseNewInitializedArray(nia); }
-        public final void visitNewClassInstance(Java.NewClassInstance nci)                                             { Traverser.this.traverseNewClassInstance(nci); }
-        public final void visitParameterAccess(Java.ParameterAccess pa)                                                { Traverser.this.traverseParameterAccess(pa); }
-        public final void visitQualifiedThisReference(Java.QualifiedThisReference qtr)                                 { Traverser.this.traverseQualifiedThisReference(qtr); }
-        public final void visitThisReference(Java.ThisReference tr)                                                    { Traverser.this.traverseThisReference(tr); }
-        public final void visitArrayType(Java.ArrayType at)                                                            { Traverser.this.traverseArrayType(at); }
-        public final void visitBasicType(Java.BasicType bt)                                                            { Traverser.this.traverseBasicType(bt); }
-        public final void visitReferenceType(Java.ReferenceType rt)                                                    { Traverser.this.traverseReferenceType(rt); }
-        public final void visitRvalueMemberType(Java.RvalueMemberType rmt)                                             { Traverser.this.traverseRvalueMemberType(rmt); }
-        public final void visitSimpleType(Java.SimpleType st)                                                          { Traverser.this.traverseSimpleType(st); }
-        public final void visitAlternateConstructorInvocation(Java.AlternateConstructorInvocation aci)                 { Traverser.this.traverseAlternateConstructorInvocation(aci); }
-        public final void visitSuperConstructorInvocation(Java.SuperConstructorInvocation sci)                         { Traverser.this.traverseSuperConstructorInvocation(sci); }
-        public final void visitAmbiguousName(Java.AmbiguousName an)                                                    { Traverser.this.traverseAmbiguousName(an); }
-        public final void visitArrayAccessExpression(Java.ArrayAccessExpression aae)                                   { Traverser.this.traverseArrayAccessExpression(aae); }
-        public final void visitFieldAccess(Java.FieldAccess fa)                                                        { Traverser.this.traverseFieldAccess(fa); }
-        public final void visitFieldAccessExpression(Java.FieldAccessExpression fae)                                   { Traverser.this.traverseFieldAccessExpression(fae); }
-        public final void visitSuperclassFieldAccessExpression(Java.SuperclassFieldAccessExpression scfae)             { Traverser.this.traverseSuperclassFieldAccessExpression(scfae); }
-        public final void visitLocalVariableAccess(Java.LocalVariableAccess lva)                                       { Traverser.this.traverseLocalVariableAccess(lva); }
-        public final void visitParenthesizedExpression(Java.ParenthesizedExpression pe)                                { Traverser.this.traverseParenthesizedExpression(pe); }
-        // CHECKSTYLE(LineLengthCheck):ON
+public
+class Traverser<EX extends Throwable> {
+
+    /**
+     * Invokes the "{@code traverse*()}" method for the concrete {@link ImportDeclaration}.
+     */
+    private final Visitor.ImportVisitor<Void, EX>
+    importTraverser = new Visitor.ImportVisitor<Void, EX>() {
+
+        // SUPPRESS CHECKSTYLE LineLength:4
+        @Override @Nullable public Void visitSingleTypeImportDeclaration(CompilationUnit.SingleTypeImportDeclaration stid)          throws EX { Traverser.this.traverseSingleTypeImportDeclaration(stid);      return null; }
+        @Override @Nullable public Void visitTypeImportOnDemandDeclaration(CompilationUnit.TypeImportOnDemandDeclaration tiodd)     throws EX { Traverser.this.traverseTypeImportOnDemandDeclaration(tiodd);   return null; }
+        @Override @Nullable public Void visitSingleStaticImportDeclaration(CompilationUnit.SingleStaticImportDeclaration ssid)      throws EX { Traverser.this.traverseSingleStaticImportDeclaration(ssid);    return null; }
+        @Override @Nullable public Void visitStaticImportOnDemandDeclaration(CompilationUnit.StaticImportOnDemandDeclaration siodd) throws EX { Traverser.this.traverseStaticImportOnDemandDeclaration(siodd); return null; }
     };
 
-    public ComprehensiveVisitor comprehensiveVisitor() {
-        return this.cv;
+    /**
+     * Invokes the "{@code traverse*()}" method for the concrete {@link TypeDeclaration}.
+     */
+    private final Visitor.TypeDeclarationVisitor<Void, EX>
+    typeDeclarationTraverser = new Visitor.TypeDeclarationVisitor<Void, EX>() {
+
+        // SUPPRESS CHECKSTYLE LineLength:11
+        @Override @Nullable public Void visitAnonymousClassDeclaration(AnonymousClassDeclaration acd)                             throws EX { Traverser.this.traverseAnonymousClassDeclaration(acd);                return null; }
+        @Override @Nullable public Void visitLocalClassDeclaration(LocalClassDeclaration lcd)                                     throws EX { Traverser.this.traverseLocalClassDeclaration(lcd);                    return null; }
+        @Override @Nullable public Void visitPackageMemberClassDeclaration(AbstractPackageMemberClassDeclaration apmcd)           throws EX { Traverser.this.traversePackageMemberClassDeclaration(apmcd);          return null; }
+        @Override @Nullable public Void visitPackageMemberInterfaceDeclaration(PackageMemberInterfaceDeclaration pmid)            throws EX { Traverser.this.traversePackageMemberInterfaceDeclaration(pmid);       return null; }
+        @Override @Nullable public Void visitEnumConstant(EnumConstant ec)                                                        throws EX { Traverser.this.traverseEnumConstant(ec);                              return null; }
+        @Override @Nullable public Void visitPackageMemberEnumDeclaration(PackageMemberEnumDeclaration pmed)                      throws EX { Traverser.this.traversePackageMemberEnumDeclaration(pmed);            return null; }
+        @Override @Nullable public Void visitMemberAnnotationTypeDeclaration(MemberAnnotationTypeDeclaration matd)                throws EX { Traverser.this.traverseMemberAnnotationTypeDeclaration(matd);         return null; }
+        @Override @Nullable public Void visitPackageMemberAnnotationTypeDeclaration(PackageMemberAnnotationTypeDeclaration pmatd) throws EX { Traverser.this.traversePackageMemberAnnotationTypeDeclaration(pmatd); return null; }
+        @Override @Nullable public Void visitMemberEnumDeclaration(MemberEnumDeclaration med)                                     throws EX { Traverser.this.traverseMemberEnumDeclaration(med);                    return null; }
+        @Override @Nullable public Void visitMemberInterfaceDeclaration(MemberInterfaceDeclaration mid)                           throws EX { Traverser.this.traverseMemberInterfaceDeclaration(mid);               return null; }
+        @Override @Nullable public Void visitMemberClassDeclaration(MemberClassDeclaration mcd)                                   throws EX { Traverser.this.traverseMemberClassDeclaration(mcd);                   return null; }
+    };
+
+    /**
+     * Invokes the "{@code traverse*()}" method for the concrete {@link Rvalue}.
+     */
+    private final Visitor.RvalueVisitor<Void, EX>
+    rvalueTraverser = new Visitor.RvalueVisitor<Void, EX>() {
+
+        @Override @Nullable public Void
+        visitLvalue(Lvalue lv) throws EX {
+            lv.accept(new Visitor.LvalueVisitor<Void, EX>() {
+
+                // SUPPRESS CHECKSTYLE LineLength:7
+                @Override @Nullable public Void visitAmbiguousName(AmbiguousName an)                                        throws EX { Traverser.this.traverseAmbiguousName(an);                      return null; }
+                @Override @Nullable public Void visitArrayAccessExpression(ArrayAccessExpression aae)                       throws EX { Traverser.this.traverseArrayAccessExpression(aae);             return null; }
+                @Override @Nullable public Void visitFieldAccess(FieldAccess fa)                                            throws EX { Traverser.this.traverseFieldAccess(fa);                        return null; }
+                @Override @Nullable public Void visitFieldAccessExpression(FieldAccessExpression fae)                       throws EX { Traverser.this.traverseFieldAccessExpression(fae);             return null; }
+                @Override @Nullable public Void visitSuperclassFieldAccessExpression(SuperclassFieldAccessExpression scfae) throws EX { Traverser.this.traverseSuperclassFieldAccessExpression(scfae); return null; }
+                @Override @Nullable public Void visitLocalVariableAccess(LocalVariableAccess lva)                           throws EX { Traverser.this.traverseLocalVariableAccess(lva);               return null; }
+                @Override @Nullable public Void visitParenthesizedExpression(ParenthesizedExpression pe)                    throws EX { Traverser.this.traverseParenthesizedExpression(pe);            return null; }
+            });
+            return null;
+        }
+
+        // SUPPRESS CHECKSTYLE LineLength:25
+        @Override @Nullable public Void visitArrayLength(ArrayLength al)                                throws EX { Traverser.this.traverseArrayLength(al);                        return null; }
+        @Override @Nullable public Void visitAssignment(Assignment a)                                   throws EX { Traverser.this.traverseAssignment(a);                          return null; }
+        @Override @Nullable public Void visitUnaryOperation(UnaryOperation uo)                          throws EX { Traverser.this.traverseUnaryOperation(uo);                     return null; }
+        @Override @Nullable public Void visitBinaryOperation(BinaryOperation bo)                        throws EX { Traverser.this.traverseBinaryOperation(bo);                    return null; }
+        @Override @Nullable public Void visitCast(Cast c)                                               throws EX { Traverser.this.traverseCast(c);                                return null; }
+        @Override @Nullable public Void visitClassLiteral(ClassLiteral cl)                              throws EX { Traverser.this.traverseClassLiteral(cl);                       return null; }
+        @Override @Nullable public Void visitConditionalExpression(ConditionalExpression ce)            throws EX { Traverser.this.traverseConditionalExpression(ce);              return null; }
+        @Override @Nullable public Void visitCrement(Crement c)                                         throws EX { Traverser.this.traverseCrement(c);                             return null; }
+        @Override @Nullable public Void visitInstanceof(Instanceof io)                                  throws EX { Traverser.this.traverseInstanceof(io);                         return null; }
+        @Override @Nullable public Void visitMethodInvocation(MethodInvocation mi)                      throws EX { Traverser.this.traverseMethodInvocation(mi);                   return null; }
+        @Override @Nullable public Void visitSuperclassMethodInvocation(SuperclassMethodInvocation smi) throws EX { Traverser.this.traverseSuperclassMethodInvocation(smi);        return null; }
+        @Override @Nullable public Void visitIntegerLiteral(IntegerLiteral il)                          throws EX { Traverser.this.traverseIntegerLiteral(il);                     return null; }
+        @Override @Nullable public Void visitFloatingPointLiteral(FloatingPointLiteral fpl)             throws EX { Traverser.this.traverseFloatingPointLiteral(fpl);              return null; }
+        @Override @Nullable public Void visitBooleanLiteral(BooleanLiteral bl)                          throws EX { Traverser.this.traverseBooleanLiteral(bl);                     return null; }
+        @Override @Nullable public Void visitCharacterLiteral(CharacterLiteral cl)                      throws EX { Traverser.this.traverseCharacterLiteral(cl);                   return null; }
+        @Override @Nullable public Void visitStringLiteral(StringLiteral sl)                            throws EX { Traverser.this.traverseStringLiteral(sl);                      return null; }
+        @Override @Nullable public Void visitNullLiteral(NullLiteral nl)                                throws EX { Traverser.this.traverseNullLiteral(nl);                        return null; }
+        @Override @Nullable public Void visitSimpleConstant(SimpleConstant sl)                          throws EX { Traverser.this.traverseSimpleLiteral(sl);                      return null; }
+        @Override @Nullable public Void visitNewAnonymousClassInstance(NewAnonymousClassInstance naci)  throws EX { Traverser.this.traverseNewAnonymousClassInstance(naci);        return null; }
+        @Override @Nullable public Void visitNewArray(NewArray na)                                      throws EX { Traverser.this.traverseNewArray(na);                           return null; }
+        @Override @Nullable public Void visitNewInitializedArray(NewInitializedArray nia)               throws EX { Traverser.this.traverseNewInitializedArray(nia);               return null; }
+        @Override @Nullable public Void visitNewClassInstance(NewClassInstance nci)                     throws EX { Traverser.this.traverseNewClassInstance(nci);                  return null; }
+        @Override @Nullable public Void visitParameterAccess(ParameterAccess pa)                        throws EX { Traverser.this.traverseParameterAccess(pa);                    return null; }
+        @Override @Nullable public Void visitQualifiedThisReference(QualifiedThisReference qtr)         throws EX { Traverser.this.traverseQualifiedThisReference(qtr);            return null; }
+        @Override @Nullable public Void visitThisReference(ThisReference tr)                            throws EX { Traverser.this.traverseThisReference(tr);                      return null; }
+    };
+
+    /**
+     * Invokes the "{@code traverse*()}" method for the concrete {@link TypeBodyDeclaration}.
+     */
+    private final Visitor.TypeBodyDeclarationVisitor<Void, EX>
+    typeBodyDeclarationTraverser = new Visitor.TypeBodyDeclarationVisitor<Void, EX>() {
+
+        @Override @Nullable public Void
+        visitFunctionDeclarator(FunctionDeclarator fd) throws EX {
+            fd.accept(new Visitor.FunctionDeclaratorVisitor<Void, EX>() {
+
+                // SUPPRESS CHECKSTYLE LineLength:2
+                @Override @Nullable public Void visitConstructorDeclarator(ConstructorDeclarator cd) throws EX { Traverser.this.traverseConstructorDeclarator(cd); return null; }
+                @Override @Nullable public Void visitMethodDeclarator(MethodDeclarator md)           throws EX { Traverser.this.traverseMethodDeclarator(md);      return null; }
+            });
+            return null;
+        }
+
+        // SUPPRESS CHECKSTYLE LineLength:6
+        @Override @Nullable public Void visitMemberAnnotationTypeDeclaration(MemberAnnotationTypeDeclaration matd) throws EX { Traverser.this.traverseMemberAnnotationTypeDeclaration(matd); return null; }
+        @Override @Nullable public Void visitMemberInterfaceDeclaration(MemberInterfaceDeclaration mid)            throws EX { Traverser.this.traverseMemberInterfaceDeclaration(mid);       return null; }
+        @Override @Nullable public Void visitMemberClassDeclaration(MemberClassDeclaration mcd)                    throws EX { Traverser.this.traverseMemberClassDeclaration(mcd);           return null; }
+        @Override @Nullable public Void visitMemberEnumDeclaration(MemberEnumDeclaration med)                      throws EX { Traverser.this.traverseMemberEnumDeclaration(med);            return null; }
+        @Override @Nullable public Void visitInitializer(Initializer i)                                            throws EX { Traverser.this.traverseInitializer(i);                        return null; }
+        @Override @Nullable public Void visitFieldDeclaration(FieldDeclaration fd)                                 throws EX { Traverser.this.traverseFieldDeclaration(fd);                  return null; }
+    };
+
+    /**
+     * Invokes the "{@code traverse*()}" method for the concrete {@link BlockStatement}.
+     */
+    private final Visitor.BlockStatementVisitor<Void, EX>
+    blockStatementTraverser = new BlockStatementVisitor<Void, EX>() {
+
+        // SUPPRESS CHECKSTYLE LineLength:23
+        @Override @Nullable public Void visitInitializer(Initializer i)                                                throws EX { Traverser.this.traverseInitializer(i);                          return null; }
+        @Override @Nullable public Void visitFieldDeclaration(FieldDeclaration fd)                                     throws EX { Traverser.this.traverseFieldDeclaration(fd);                    return null; }
+        @Override @Nullable public Void visitLabeledStatement(LabeledStatement ls)                                     throws EX { Traverser.this.traverseLabeledStatement(ls);                    return null; }
+        @Override @Nullable public Void visitBlock(Block b)                                                            throws EX { Traverser.this.traverseBlock(b);                                return null; }
+        @Override @Nullable public Void visitExpressionStatement(ExpressionStatement es)                               throws EX { Traverser.this.traverseExpressionStatement(es);                 return null; }
+        @Override @Nullable public Void visitIfStatement(IfStatement is)                                               throws EX { Traverser.this.traverseIfStatement(is);                         return null; }
+        @Override @Nullable public Void visitForStatement(ForStatement fs)                                             throws EX { Traverser.this.traverseForStatement(fs);                        return null; }
+        @Override @Nullable public Void visitForEachStatement(ForEachStatement fes)                                    throws EX { Traverser.this.traverseForEachStatement(fes);                   return null; }
+        @Override @Nullable public Void visitWhileStatement(WhileStatement ws)                                         throws EX { Traverser.this.traverseWhileStatement(ws);                      return null; }
+        @Override @Nullable public Void visitTryStatement(TryStatement ts)                                             throws EX { Traverser.this.traverseTryStatement(ts);                        return null; }
+        @Override @Nullable public Void visitSwitchStatement(SwitchStatement ss)                                       throws EX { Traverser.this.traverseSwitchStatement(ss);                     return null; }
+        @Override @Nullable public Void visitSynchronizedStatement(SynchronizedStatement ss)                           throws EX { Traverser.this.traverseSynchronizedStatement(ss);               return null; }
+        @Override @Nullable public Void visitDoStatement(DoStatement ds)                                               throws EX { Traverser.this.traverseDoStatement(ds);                         return null; }
+        @Override @Nullable public Void visitLocalVariableDeclarationStatement(LocalVariableDeclarationStatement lvds) throws EX { Traverser.this.traverseLocalVariableDeclarationStatement(lvds); return null; }
+        @Override @Nullable public Void visitReturnStatement(ReturnStatement rs)                                       throws EX { Traverser.this.traverseReturnStatement(rs);                     return null; }
+        @Override @Nullable public Void visitThrowStatement(ThrowStatement ts)                                         throws EX { Traverser.this.traverseThrowStatement(ts);                      return null; }
+        @Override @Nullable public Void visitBreakStatement(BreakStatement bs)                                         throws EX { Traverser.this.traverseBreakStatement(bs);                      return null; }
+        @Override @Nullable public Void visitContinueStatement(ContinueStatement cs)                                   throws EX { Traverser.this.traverseContinueStatement(cs);                   return null; }
+        @Override @Nullable public Void visitAssertStatement(AssertStatement as)                                       throws EX { Traverser.this.traverseAssertStatement(as);                     return null; }
+        @Override @Nullable public Void visitEmptyStatement(EmptyStatement es)                                         throws EX { Traverser.this.traverseEmptyStatement(es);                      return null; }
+        @Override @Nullable public Void visitLocalClassDeclarationStatement(LocalClassDeclarationStatement lcds)       throws EX { Traverser.this.traverseLocalClassDeclarationStatement(lcds);    return null; }
+        @Override @Nullable public Void visitAlternateConstructorInvocation(AlternateConstructorInvocation aci)        throws EX { Traverser.this.traverseAlternateConstructorInvocation(aci);     return null; }
+        @Override @Nullable public Void visitSuperConstructorInvocation(SuperConstructorInvocation sci)                throws EX { Traverser.this.traverseSuperConstructorInvocation(sci);         return null; }
+    };
+
+    /**
+     * Invokes the "{@code traverse*()}" method for the concrete {@link Atom}.
+     */
+    private final Visitor.AtomVisitor<Void, EX>
+    atomTraverser = new Visitor.AtomVisitor<Void, EX>() {
+
+        @Override @Nullable public Void
+        visitRvalue(Rvalue rv) throws EX {
+            rv.accept(Traverser.this.rvalueTraverser);
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitPackage(Package p) throws EX {
+            Traverser.this.traversePackage(p);
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitType(Type t) throws EX {
+
+            t.accept(new Visitor.TypeVisitor<Void, EX>() {
+
+                // SUPPRESS CHECKSTYLE LineLength:5
+                @Override @Nullable public Void visitArrayType(ArrayType at)                throws EX { Traverser.this.traverseArrayType(at);         return null; }
+                @Override @Nullable public Void visitPrimitiveType(PrimitiveType bt)        throws EX { Traverser.this.traversePrimitiveType(bt);     return null; }
+                @Override @Nullable public Void visitReferenceType(ReferenceType rt)        throws EX { Traverser.this.traverseReferenceType(rt);     return null; }
+                @Override @Nullable public Void visitRvalueMemberType(RvalueMemberType rmt) throws EX { Traverser.this.traverseRvalueMemberType(rmt); return null; }
+                @Override @Nullable public Void visitSimpleType(SimpleType st)              throws EX { Traverser.this.traverseSimpleType(st);        return null; }
+            });
+            return null;
+        }
+
+        @Override @Nullable public Void
+        visitConstructorInvocation(ConstructorInvocation ci) throws EX {
+
+            ci.accept(new Visitor.ConstructorInvocationVisitor<Void, EX>() {
+
+                // SUPPRESS CHECKSTYLE LineLength:2
+                @Override @Nullable public Void visitAlternateConstructorInvocation(AlternateConstructorInvocation aci) throws EX { Traverser.this.traverseAlternateConstructorInvocation(aci); return null; }
+                @Override @Nullable public Void visitSuperConstructorInvocation(SuperConstructorInvocation sci)         throws EX { Traverser.this.traverseSuperConstructorInvocation(sci);     return null; }
+            });
+            return null;
+        }
+    };
+
+    /**
+     * Invokes the "{@code traverse*()}" method for the concrete {@link ElementValue}.
+     */
+    private final ElementValueVisitor<Void, EX>
+    elementValueTraverser = new ElementValueVisitor<Void, EX>() {
+
+        @Override @Nullable public Void
+        visitRvalue(Rvalue rv) throws EX {
+            rv.accept(Traverser.this.rvalueTraverser);
+            return null;
+        }
+
+        // SUPPRESS CHECKSTYLE LineLength:2
+        @Override @Nullable public Void visitElementValueArrayInitializer(ElementValueArrayInitializer evai) throws EX { Traverser.this.traverseElementValueArrayInitializer(evai); return null; }
+        @Override @Nullable public Void visitAnnotation(Annotation a)                                        throws EX { Traverser.this.traverseAnnotation(a);                      return null; }
+    };
+
+    /**
+     * Invokes the "{@code traverse*()}" method for the concrete {@link Annotation}.
+     */
+    private final AnnotationVisitor<Void, EX>
+    annotationTraverser = new AnnotationVisitor<Void, EX>() {
+
+        // SUPPRESS CHECKSTYLE LineLength:3
+        @Override @Nullable public Void visitMarkerAnnotation(MarkerAnnotation ma)                throws EX { Traverser.this.traverseMarkerAnnotation(ma);         return null; }
+        @Override @Nullable public Void visitNormalAnnotation(NormalAnnotation na)                throws EX { Traverser.this.traverseNormalAnnotation(na);         return null; }
+        @Override @Nullable public Void visitSingleElementAnnotation(SingleElementAnnotation sea) throws EX { Traverser.this.traverseSingleElementAnnotation(sea); return null; }
+    };
+
+    /**
+     * @see Traverser
+     */
+    public void
+    visitImportDeclaration(CompilationUnit.ImportDeclaration id) throws EX {
+        id.accept(Traverser.this.importTraverser);
+    }
+
+    /**
+     * @see Traverser
+     */
+    public void
+    visitTypeDeclaration(TypeDeclaration td) throws EX {
+        td.accept(Traverser.this.typeDeclarationTraverser);
+    }
+
+    /**
+     * @see Traverser
+     */
+    public void
+    visitTypeBodyDeclaration(TypeBodyDeclaration tbd) throws EX {
+        tbd.accept(Traverser.this.typeBodyDeclarationTraverser);
+    }
+
+    /**
+     * @see Traverser
+     */
+    public void
+    visitBlockStatement(BlockStatement bs) throws EX {
+        bs.accept(Traverser.this.blockStatementTraverser);
+    }
+
+    /**
+     * @see Traverser
+     */
+    public void
+    visitAtom(Atom a) throws EX {
+        a.accept(Traverser.this.atomTraverser);
+    }
+
+    /**
+     * @see Traverser
+     */
+    public void
+    visitElementValue(ElementValue ev) throws EX {
+        ev.accept(Traverser.this.elementValueTraverser);
+    }
+
+    /**
+     * @see Traverser
+     */
+    public void
+    visitAnnotation(Annotation a) throws EX {
+        a.accept(Traverser.this.annotationTraverser);
     }
 
     // These may be overridden by derived classes.
 
-    public void traverseCompilationUnit(Java.CompilationUnit cu) {
+    /**
+     * @see Traverser
+     */
+    public void
+    traverseCompilationUnit(CompilationUnit cu) throws EX {
 
         // The optionalPackageDeclaration is considered an integral part of
         // the compilation unit and is thus not traversed.
 
-        for (Iterator it = cu.importDeclarations.iterator(); it.hasNext();) {
-            ((Java.CompilationUnit.ImportDeclaration) it.next()).accept(this.cv);
+        for (CompilationUnit.ImportDeclaration id : cu.importDeclarations) {
+            id.accept(this.importTraverser);
         }
-        for (Iterator it = cu.packageMemberTypeDeclarations.iterator(); it.hasNext();) {
-            ((Java.PackageMemberTypeDeclaration) it.next()).accept(this.cv);
+
+        for (PackageMemberTypeDeclaration pmtd : cu.packageMemberTypeDeclarations) {
+            pmtd.accept(this.typeDeclarationTraverser);
         }
     }
 
-    public void traverseSingleTypeImportDeclaration(Java.CompilationUnit.SingleTypeImportDeclaration stid) {
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseSingleTypeImportDeclaration(CompilationUnit.SingleTypeImportDeclaration stid) throws EX {
         this.traverseImportDeclaration(stid);
     }
 
-    public void traverseTypeImportOnDemandDeclaration(Java.CompilationUnit.TypeImportOnDemandDeclaration tiodd) {
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseTypeImportOnDemandDeclaration(CompilationUnit.TypeImportOnDemandDeclaration tiodd) throws EX {
         this.traverseImportDeclaration(tiodd);
     }
 
-    public void traverseSingleStaticImportDeclaration(Java.CompilationUnit.SingleStaticImportDeclaration stid) {
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseSingleStaticImportDeclaration(CompilationUnit.SingleStaticImportDeclaration stid) throws EX {
         this.traverseImportDeclaration(stid);
     }
 
-    public void traverseStaticImportOnDemandDeclaration(Java.CompilationUnit.StaticImportOnDemandDeclaration siodd) {
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseStaticImportOnDemandDeclaration(CompilationUnit.StaticImportOnDemandDeclaration siodd) throws EX {
         this.traverseImportDeclaration(siodd);
     }
 
-    public void traverseImportDeclaration(Java.CompilationUnit.ImportDeclaration id) {
-        this.traverseLocated(id);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseImportDeclaration(CompilationUnit.ImportDeclaration id) throws EX { this.traverseLocated(id); }
 
-    public void traverseAnonymousClassDeclaration(Java.AnonymousClassDeclaration acd) {
-        acd.baseType.accept((Visitor.TypeVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseAnonymousClassDeclaration(AnonymousClassDeclaration acd) throws EX {
+        acd.baseType.accept(this.atomTraverser);
         this.traverseClassDeclaration(acd);
     }
 
-    public void traverseLocalClassDeclaration(Java.LocalClassDeclaration lcd) {
-        this.traverseNamedClassDeclaration(lcd);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseLocalClassDeclaration(LocalClassDeclaration lcd) throws EX { this.traverseNamedClassDeclaration(lcd); }
 
-    public void traversePackageMemberClassDeclaration(Java.PackageMemberClassDeclaration pmcd) {
+    /**
+     * @see Traverser
+     */
+    protected void
+    traversePackageMemberClassDeclaration(AbstractPackageMemberClassDeclaration pmcd) throws EX {
         this.traverseNamedClassDeclaration(pmcd);
     }
 
-    public void traverseMemberInterfaceDeclaration(Java.MemberInterfaceDeclaration mid) {
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseMemberInterfaceDeclaration(MemberInterfaceDeclaration mid) throws EX {
         this.traverseInterfaceDeclaration(mid);
     }
 
-    public void traversePackageMemberInterfaceDeclaration(Java.PackageMemberInterfaceDeclaration pmid) {
+    /**
+     * @see Traverser
+     */
+    protected void
+    traversePackageMemberInterfaceDeclaration(PackageMemberInterfaceDeclaration pmid) throws EX {
         this.traverseInterfaceDeclaration(pmid);
     }
 
-    public void traverseMemberClassDeclaration(Java.MemberClassDeclaration mcd) {
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseMemberClassDeclaration(MemberClassDeclaration mcd) throws EX {
         this.traverseNamedClassDeclaration(mcd);
     }
 
-    public void traverseConstructorDeclarator(Java.ConstructorDeclarator cd) {
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseConstructorDeclarator(ConstructorDeclarator cd) throws EX {
         if (cd.optionalConstructorInvocation != null) {
-            cd.optionalConstructorInvocation.accept((Visitor.BlockStatementVisitor) this.cv);
+            cd.optionalConstructorInvocation.accept(this.blockStatementTraverser);
         }
         this.traverseFunctionDeclarator(cd);
     }
 
-    public void traverseInitializer(Java.Initializer i) {
-        i.block.accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseInitializer(Initializer i) throws EX {
+        i.block.accept(this.blockStatementTraverser);
         this.traverseAbstractTypeBodyDeclaration(i);
     }
 
-    public void traverseMethodDeclarator(Java.MethodDeclarator md) {
-        this.traverseFunctionDeclarator(md);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseMethodDeclarator(MethodDeclarator md) throws EX { this.traverseFunctionDeclarator(md); }
 
-    public void traverseFieldDeclaration(Java.FieldDeclaration fd) {
-        fd.type.accept((Visitor.TypeVisitor) this.cv);
-        for (int i = 0; i < fd.variableDeclarators.length; ++i) {
-            Java.ArrayInitializerOrRvalue optionalInitializer = fd.variableDeclarators[i].optionalInitializer;
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseFieldDeclaration(FieldDeclaration fd) throws EX {
+        fd.type.accept(this.atomTraverser);
+        for (VariableDeclarator vd : fd.variableDeclarators) {
+            ArrayInitializerOrRvalue optionalInitializer = vd.optionalInitializer;
             if (optionalInitializer != null) this.traverseArrayInitializerOrRvalue(optionalInitializer);
         }
         this.traverseStatement(fd);
     }
 
-    public void traverseLabeledStatement(Java.LabeledStatement ls) {
-        ls.body.accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseLabeledStatement(LabeledStatement ls) throws EX {
+        ls.body.accept(this.blockStatementTraverser);
         this.traverseBreakableStatement(ls);
     }
 
-    public void traverseBlock(Java.Block b) {
-        for (Iterator it = b.statements.iterator(); it.hasNext();) {
-            ((Java.Statement) it.next()).accept(this.cv);
-        }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseBlock(Block b) throws EX {
+        for (BlockStatement bs : b.statements) bs.accept(this.blockStatementTraverser);
         this.traverseStatement(b);
     }
 
-    public void traverseExpressionStatement(Java.ExpressionStatement es) {
-        es.rvalue.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseExpressionStatement(ExpressionStatement es) throws EX {
+        es.rvalue.accept(this.rvalueTraverser);
         this.traverseStatement(es);
     }
 
-    public void traverseIfStatement(Java.IfStatement is) {
-        is.condition.accept((Visitor.RvalueVisitor) this.cv);
-        is.thenStatement.accept(this.cv);
-        if (is.optionalElseStatement != null) is.optionalElseStatement.accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseIfStatement(IfStatement is) throws EX {
+        is.condition.accept(this.rvalueTraverser);
+        is.thenStatement.accept(this.blockStatementTraverser);
+        if (is.optionalElseStatement != null) is.optionalElseStatement.accept(this.blockStatementTraverser);
         this.traverseStatement(is);
     }
 
-    public void traverseForStatement(Java.ForStatement fs) {
-        if (fs.optionalInit != null) fs.optionalInit.accept(this.cv);
-        if (fs.optionalCondition != null) fs.optionalCondition.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseForStatement(ForStatement fs) throws EX {
+        if (fs.optionalInit != null) fs.optionalInit.accept(this.blockStatementTraverser);
+        if (fs.optionalCondition != null) fs.optionalCondition.accept(this.rvalueTraverser);
         if (fs.optionalUpdate != null) {
-            for (int i = 0; i < fs.optionalUpdate.length; ++i) {
-                fs.optionalUpdate[i].accept((Visitor.RvalueVisitor) this.cv);
-            }
+            for (Rvalue rv : fs.optionalUpdate) rv.accept(this.rvalueTraverser);
         }
-        fs.body.accept(this.cv);
+        fs.body.accept(this.blockStatementTraverser);
         this.traverseContinuableStatement(fs);
     }
 
-    public void traverseWhileStatement(Java.WhileStatement ws) {
-        ws.condition.accept((Visitor.RvalueVisitor) this.cv);
-        ws.body.accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseForEachStatement(ForEachStatement fes) throws EX {
+        this.traverseFormalParameter(fes.currentElement);
+        fes.expression.accept(this.rvalueTraverser);
+        fes.body.accept(this.blockStatementTraverser);
+        this.traverseContinuableStatement(fes);
+    }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseWhileStatement(WhileStatement ws) throws EX {
+        ws.condition.accept(this.rvalueTraverser);
+        ws.body.accept(this.blockStatementTraverser);
         this.traverseContinuableStatement(ws);
     }
 
-    public void traverseTryStatement(Java.TryStatement ts) {
-        ts.body.accept(this.cv);
-        for (Iterator it = ts.catchClauses.iterator(); it.hasNext();) {
-            ((Java.CatchClause) it.next()).body.accept(this.cv);
-        }
-        if (ts.optionalFinally != null) ts.optionalFinally.accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseTryStatement(TryStatement ts) throws EX {
+        ts.body.accept(this.blockStatementTraverser);
+        for (CatchClause cc : ts.catchClauses) cc.body.accept(this.blockStatementTraverser);
+        if (ts.optionalFinally != null) ts.optionalFinally.accept(this.blockStatementTraverser);
         this.traverseStatement(ts);
     }
 
-    public void traverseSwitchStatement(Java.SwitchStatement ss) {
-        ss.condition.accept((Visitor.RvalueVisitor) this.cv);
-        for (Iterator it = ss.sbsgs.iterator(); it.hasNext();) {
-            Java.SwitchStatement.SwitchBlockStatementGroup sbsg = (
-                (Java.SwitchStatement.SwitchBlockStatementGroup) it.next()
-            );
-            for (Iterator it2 = sbsg.caseLabels.iterator(); it2.hasNext();) {
-                ((Java.Rvalue) it2.next()).accept((Visitor.RvalueVisitor) this.cv);
-            }
-            for (Iterator it2 = sbsg.blockStatements.iterator(); it2.hasNext();) {
-                ((Java.BlockStatement) it2.next()).accept(this.cv);
-            }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseSwitchStatement(SwitchStatement ss) throws EX {
+        ss.condition.accept(this.rvalueTraverser);
+        for (SwitchStatement.SwitchBlockStatementGroup sbsg : ss.sbsgs) {
+            for (Rvalue cl : sbsg.caseLabels) cl.accept(this.rvalueTraverser);
+            for (BlockStatement bs : sbsg.blockStatements) bs.accept(this.blockStatementTraverser);
             this.traverseLocated(sbsg);
         }
         this.traverseBreakableStatement(ss);
     }
 
-    public void traverseSynchronizedStatement(Java.SynchronizedStatement ss) {
-        ss.expression.accept((Visitor.RvalueVisitor) this.cv);
-        ss.body.accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseSynchronizedStatement(SynchronizedStatement ss) throws EX {
+        ss.expression.accept(this.rvalueTraverser);
+        ss.body.accept(this.blockStatementTraverser);
         this.traverseStatement(ss);
     }
 
-    public void traverseDoStatement(Java.DoStatement ds) {
-        ds.body.accept(this.cv);
-        ds.condition.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseDoStatement(DoStatement ds) throws EX {
+        ds.body.accept(this.blockStatementTraverser);
+        ds.condition.accept(this.rvalueTraverser);
         this.traverseContinuableStatement(ds);
     }
 
-    public void traverseLocalVariableDeclarationStatement(Java.LocalVariableDeclarationStatement lvds) {
-        lvds.type.accept((Visitor.TypeVisitor) this.cv);
-        for (int i = 0; i < lvds.variableDeclarators.length; ++i) {
-            Java.ArrayInitializerOrRvalue optionalInitializer = lvds.variableDeclarators[i].optionalInitializer;
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseLocalVariableDeclarationStatement(LocalVariableDeclarationStatement lvds) throws EX {
+        lvds.type.accept(this.atomTraverser);
+        for (VariableDeclarator vd : lvds.variableDeclarators) {
+            ArrayInitializerOrRvalue optionalInitializer = vd.optionalInitializer;
             if (optionalInitializer != null) this.traverseArrayInitializerOrRvalue(optionalInitializer);
         }
         this.traverseStatement(lvds);
     }
 
-    public void traverseReturnStatement(Java.ReturnStatement rs) {
-        if (rs.optionalReturnValue != null) rs.optionalReturnValue.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseReturnStatement(ReturnStatement rs) throws EX {
+        if (rs.optionalReturnValue != null) rs.optionalReturnValue.accept(this.rvalueTraverser);
         this.traverseStatement(rs);
     }
 
-    public void traverseThrowStatement(Java.ThrowStatement ts) {
-        ts.expression.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseThrowStatement(ThrowStatement ts) throws EX {
+        ts.expression.accept(this.rvalueTraverser);
         this.traverseStatement(ts);
     }
 
-    public void traverseBreakStatement(Java.BreakStatement bs) {
-        this.traverseStatement(bs);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseBreakStatement(BreakStatement bs) throws EX { this.traverseStatement(bs); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseContinueStatement(ContinueStatement cs) throws EX { this.traverseStatement(cs); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseAssertStatement(AssertStatement as) throws EX {
+        as.expression1.accept(this.rvalueTraverser);
+        if (as.optionalExpression2 != null) as.optionalExpression2.accept(this.rvalueTraverser);
+        this.traverseStatement(as);
     }
 
-    public void traverseContinueStatement(Java.ContinueStatement cs) {
-        this.traverseStatement(cs);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseEmptyStatement(EmptyStatement es) throws EX { this.traverseStatement(es); }
 
-    public void traverseEmptyStatement(Java.EmptyStatement es) {
-        this.traverseStatement(es);
-    }
-
-    public void traverseLocalClassDeclarationStatement(Java.LocalClassDeclarationStatement lcds) {
-        lcds.lcd.accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseLocalClassDeclarationStatement(LocalClassDeclarationStatement lcds) throws EX {
+        lcds.lcd.accept(this.typeDeclarationTraverser);
         this.traverseStatement(lcds);
     }
 
-    public void traversePackage(Java.Package p) {
-        this.traverseAtom(p);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traversePackage(Package p) throws EX { this.traverseAtom(p); }
 
-    public void traverseArrayLength(Java.ArrayLength al) {
-        al.lhs.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseArrayLength(ArrayLength al) throws EX {
+        al.lhs.accept(this.rvalueTraverser);
         this.traverseRvalue(al);
     }
 
-    public void traverseAssignment(Java.Assignment a) {
-        a.lhs.accept((Visitor.LvalueVisitor) this.cv);
-        a.rhs.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseAssignment(Assignment a) throws EX {
+        a.lhs.accept(this.rvalueTraverser);
+        a.rhs.accept(this.rvalueTraverser);
         this.traverseRvalue(a);
     }
 
-    public void traverseUnaryOperation(Java.UnaryOperation uo) {
-        uo.operand.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseUnaryOperation(UnaryOperation uo) throws EX {
+        uo.operand.accept(this.rvalueTraverser);
         this.traverseBooleanRvalue(uo);
     }
 
-    public void traverseBinaryOperation(Java.BinaryOperation bo) {
-        bo.lhs.accept((Visitor.RvalueVisitor) this.cv);
-        bo.rhs.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseBinaryOperation(BinaryOperation bo) throws EX {
+        bo.lhs.accept(this.rvalueTraverser);
+        bo.rhs.accept(this.rvalueTraverser);
         this.traverseBooleanRvalue(bo);
     }
 
-    public void traverseCast(Java.Cast c) {
-        c.targetType.accept((Visitor.TypeVisitor) this.cv);
-        c.value.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseCast(Cast c) throws EX {
+        c.targetType.accept(this.atomTraverser);
+        c.value.accept(this.rvalueTraverser);
         this.traverseRvalue(c);
     }
 
-    public void traverseClassLiteral(Java.ClassLiteral cl) {
-        cl.type.accept((Visitor.TypeVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseClassLiteral(ClassLiteral cl) throws EX {
+        cl.type.accept(this.atomTraverser);
         this.traverseRvalue(cl);
     }
 
-    public void traverseConditionalExpression(Java.ConditionalExpression ce) {
-        ce.lhs.accept((Visitor.RvalueVisitor) this.cv);
-        ce.mhs.accept((Visitor.RvalueVisitor) this.cv);
-        ce.rhs.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseConditionalExpression(ConditionalExpression ce) throws EX {
+        ce.lhs.accept(this.rvalueTraverser);
+        ce.mhs.accept(this.rvalueTraverser);
+        ce.rhs.accept(this.rvalueTraverser);
         this.traverseRvalue(ce);
     }
 
-    public void traverseCrement(Java.Crement c) {
-        c.operand.accept((Visitor.LvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseCrement(Crement c) throws EX {
+        c.operand.accept(this.rvalueTraverser);
         this.traverseRvalue(c);
     }
 
-    public void traverseInstanceof(Java.Instanceof io) {
-        io.lhs.accept((Visitor.RvalueVisitor) this.cv);
-        io.rhs.accept((Visitor.TypeVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseInstanceof(Instanceof io) throws EX {
+        io.lhs.accept(this.rvalueTraverser);
+        io.rhs.accept(this.atomTraverser);
         this.traverseRvalue(io);
     }
 
-    public void traverseMethodInvocation(Java.MethodInvocation mi) {
-        if (mi.optionalTarget != null) mi.optionalTarget.accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseMethodInvocation(MethodInvocation mi) throws EX {
+        if (mi.optionalTarget != null) mi.optionalTarget.accept(this.atomTraverser);
         this.traverseInvocation(mi);
     }
 
-    public void traverseSuperclassMethodInvocation(Java.SuperclassMethodInvocation smi) {
-        this.traverseInvocation(smi);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseSuperclassMethodInvocation(SuperclassMethodInvocation smi) throws EX { this.traverseInvocation(smi); }
 
-    public void traverseLiteral(Java.Literal l) {
-        this.traverseRvalue(l);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseLiteral(Literal l) throws EX { this.traverseRvalue(l); }
 
-    public void traverseNewAnonymousClassInstance(Java.NewAnonymousClassInstance naci) {
-        if (naci.optionalQualification != null) naci.optionalQualification.accept((Visitor.RvalueVisitor) this.cv);
-        naci.anonymousClassDeclaration.accept(this.cv);
-        for (int i = 0; i < naci.arguments.length; ++i) naci.arguments[i].accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseIntegerLiteral(IntegerLiteral il) throws EX { this.traverseLiteral(il); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseFloatingPointLiteral(FloatingPointLiteral fpl) throws EX { this.traverseLiteral(fpl); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseBooleanLiteral(BooleanLiteral bl) throws EX { this.traverseLiteral(bl); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseCharacterLiteral(CharacterLiteral cl) throws EX { this.traverseLiteral(cl); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseStringLiteral(StringLiteral sl) throws EX { this.traverseLiteral(sl); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseNullLiteral(NullLiteral nl) throws EX { this.traverseLiteral(nl); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseSimpleLiteral(SimpleConstant sl) throws EX { this.traverseRvalue(sl); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseNewAnonymousClassInstance(NewAnonymousClassInstance naci) throws EX {
+        if (naci.optionalQualification != null) {
+            naci.optionalQualification.accept(this.rvalueTraverser);
+        }
+        naci.anonymousClassDeclaration.accept(this.typeDeclarationTraverser);
+        for (Rvalue argument : naci.arguments) argument.accept(this.rvalueTraverser);
         this.traverseRvalue(naci);
     }
 
-    public void traverseNewArray(Java.NewArray na) {
-        na.type.accept((Visitor.TypeVisitor) this.cv);
-        for (int i =  0; i < na.dimExprs.length; ++i) na.dimExprs[i].accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseNewArray(NewArray na) throws EX {
+        na.type.accept(this.atomTraverser);
+        for (Rvalue dimExpr : na.dimExprs) dimExpr.accept(this.rvalueTraverser);
         this.traverseRvalue(na);
     }
 
-    public void traverseNewInitializedArray(Java.NewInitializedArray nia) {
-        nia.arrayType.accept((Visitor.TypeVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseNewInitializedArray(NewInitializedArray nia) throws EX {
+        assert nia.arrayType != null;
+        nia.arrayType.accept(this.atomTraverser);
         this.traverseArrayInitializerOrRvalue(nia.arrayInitializer);
     }
 
-    public void traverseArrayInitializerOrRvalue(Java.ArrayInitializerOrRvalue aiorv) {
-        if (aiorv instanceof Java.Rvalue) {
-            ((Java.Atom) aiorv).accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseArrayInitializerOrRvalue(ArrayInitializerOrRvalue aiorv) throws EX {
+        if (aiorv instanceof Rvalue) {
+            ((Rvalue) aiorv).accept(this.atomTraverser);
         } else
-        if (aiorv instanceof Java.ArrayInitializer) {
-            Java.ArrayInitializerOrRvalue[] values = ((Java.ArrayInitializer) aiorv).values;
-            for (int i = 0; i < values.length; ++i) this.traverseArrayInitializerOrRvalue(values[i]);
+        if (aiorv instanceof ArrayInitializer) {
+            ArrayInitializerOrRvalue[] values = ((ArrayInitializer) aiorv).values;
+            for (ArrayInitializerOrRvalue value : values) this.traverseArrayInitializerOrRvalue(value);
         } else
         {
             throw new JaninoRuntimeException(
@@ -421,187 +987,405 @@ public class Traverser {
             );
         }
     }
-    public void traverseNewClassInstance(Java.NewClassInstance nci) {
-        if (nci.optionalQualification != null) nci.optionalQualification.accept((Visitor.RvalueVisitor) this.cv);
-        nci.type.accept((Visitor.TypeVisitor) this.cv);
-        for (int i = 0; i < nci.arguments.length; ++i) nci.arguments[i].accept((Visitor.RvalueVisitor) this.cv);
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseNewClassInstance(NewClassInstance nci) throws EX {
+        if (nci.optionalQualification != null) {
+            nci.optionalQualification.accept(this.rvalueTraverser);
+        }
+        if (nci.type != null) nci.type.accept(this.atomTraverser);
+        for (Rvalue argument : nci.arguments) argument.accept(this.rvalueTraverser);
         this.traverseRvalue(nci);
     }
 
-    public void traverseParameterAccess(Java.ParameterAccess pa) {
-        this.traverseRvalue(pa);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseParameterAccess(ParameterAccess pa) throws EX { this.traverseRvalue(pa); }
 
-    public void traverseQualifiedThisReference(Java.QualifiedThisReference qtr) {
-        qtr.qualification.accept((Visitor.TypeVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseQualifiedThisReference(QualifiedThisReference qtr) throws EX {
+        qtr.qualification.accept(this.atomTraverser);
         this.traverseRvalue(qtr);
     }
 
-    public void traverseThisReference(Java.ThisReference tr) {
-        this.traverseRvalue(tr);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseThisReference(ThisReference tr) throws EX { this.traverseRvalue(tr); }
 
-    public void traverseArrayType(Java.ArrayType at) {
-        at.componentType.accept((Visitor.TypeVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseArrayType(ArrayType at) throws EX {
+        at.componentType.accept(this.atomTraverser);
         this.traverseType(at);
     }
 
-    public void traverseBasicType(Java.BasicType bt) {
-        this.traverseType(bt);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traversePrimitiveType(PrimitiveType bt) throws EX { this.traverseType(bt); }
 
-    public void traverseReferenceType(Java.ReferenceType rt) {
-        this.traverseType(rt);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseReferenceType(ReferenceType rt) throws EX { this.traverseType(rt); }
 
-    public void traverseRvalueMemberType(Java.RvalueMemberType rmt) {
-        rmt.rvalue.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseRvalueMemberType(RvalueMemberType rmt) throws EX {
+        rmt.rvalue.accept(this.rvalueTraverser);
         this.traverseType(rmt);
     }
 
-    public void traverseSimpleType(Java.SimpleType st) {
-        this.traverseType(st);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseSimpleType(SimpleType st) throws EX { this.traverseType(st); }
 
-    public void traverseAlternateConstructorInvocation(Java.AlternateConstructorInvocation aci) {
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseAlternateConstructorInvocation(AlternateConstructorInvocation aci) throws EX {
         this.traverseConstructorInvocation(aci);
     }
 
-    public void traverseSuperConstructorInvocation(Java.SuperConstructorInvocation sci) {
-        if (sci.optionalQualification != null) sci.optionalQualification.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseSuperConstructorInvocation(SuperConstructorInvocation sci) throws EX {
+        if (sci.optionalQualification != null) {
+            sci.optionalQualification.accept(this.rvalueTraverser);
+        }
         this.traverseConstructorInvocation(sci);
     }
 
-    public void traverseAmbiguousName(Java.AmbiguousName an) {
-        this.traverseLvalue(an);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseAmbiguousName(AmbiguousName an) throws EX { this.traverseLvalue(an); }
 
-    public void traverseArrayAccessExpression(Java.ArrayAccessExpression aae) {
-        aae.lhs.accept((Visitor.RvalueVisitor) this.cv);
-        ((Java.Atom) aae.index).accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseArrayAccessExpression(ArrayAccessExpression aae) throws EX {
+        aae.lhs.accept(this.rvalueTraverser);
+        aae.index.accept(this.atomTraverser);
         this.traverseLvalue(aae);
     }
 
-    public void traverseFieldAccess(Java.FieldAccess fa) {
-        fa.lhs.accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseFieldAccess(FieldAccess fa) throws EX {
+        fa.lhs.accept(this.atomTraverser);
         this.traverseLvalue(fa);
     }
 
-    public void traverseFieldAccessExpression(Java.FieldAccessExpression fae) {
-        fae.lhs.accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseFieldAccessExpression(FieldAccessExpression fae) throws EX {
+        fae.lhs.accept(this.atomTraverser);
         this.traverseLvalue(fae);
     }
 
-    public void traverseSuperclassFieldAccessExpression(Java.SuperclassFieldAccessExpression scfae) {
-        if (scfae.optionalQualification != null) scfae.optionalQualification.accept((Visitor.TypeVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseSuperclassFieldAccessExpression(SuperclassFieldAccessExpression scfae) throws EX {
+        if (scfae.optionalQualification != null) {
+            scfae.optionalQualification.accept(this.atomTraverser);
+        }
         this.traverseLvalue(scfae);
     }
 
-    public void traverseLocalVariableAccess(Java.LocalVariableAccess lva) {
-        this.traverseLvalue(lva);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseLocalVariableAccess(LocalVariableAccess lva) throws EX { this.traverseLvalue(lva); }
 
-    public void traverseParenthesizedExpression(Java.ParenthesizedExpression pe) {
-        pe.value.accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseParenthesizedExpression(ParenthesizedExpression pe) throws EX {
+        pe.value.accept(this.rvalueTraverser);
         this.traverseLvalue(pe);
     }
 
-    public void traverseClassDeclaration(Java.ClassDeclaration cd) {
-        for (Iterator it = cd.constructors.iterator(); it.hasNext();) {
-            ((Java.ConstructorDeclarator) it.next()).accept(this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseElementValueArrayInitializer(ElementValueArrayInitializer evai) throws EX {
+        for (ElementValue elementValue : evai.elementValues) elementValue.accept(this.elementValueTraverser);
+        this.traverseElementValue(evai);
+    }
+
+    /**
+     * @throws EX
+     * @see Traverser
+     */
+    protected void
+    traverseElementValue(ElementValue ev) throws EX {}
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseSingleElementAnnotation(SingleElementAnnotation sea) throws EX {
+        sea.type.accept(this.atomTraverser);
+        sea.elementValue.accept(this.elementValueTraverser);
+        this.traverseAnnotation(sea);
+    }
+
+    /**
+     * @throws EX
+     * @see Traverser
+     */
+    protected void
+    traverseAnnotation(Annotation a) throws EX {}
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseNormalAnnotation(NormalAnnotation na) throws EX {
+        na.type.accept(this.atomTraverser);
+        for (ElementValuePair elementValuePair : na.elementValuePairs) {
+            elementValuePair.elementValue.accept(this.elementValueTraverser);
         }
-        for (Iterator it = cd.variableDeclaratorsAndInitializers.iterator(); it.hasNext();) {
-            ((Java.TypeBodyDeclaration) it.next()).accept(this.cv);
+        this.traverseAnnotation(na);
+    }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseMarkerAnnotation(MarkerAnnotation ma) throws EX {
+        ma.type.accept(this.atomTraverser);
+        this.traverseAnnotation(ma);
+    }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseClassDeclaration(AbstractClassDeclaration cd) throws EX {
+        for (ConstructorDeclarator ctord : cd.constructors) ctord.accept(this.typeBodyDeclarationTraverser);
+        for (BlockStatement vdoi : cd.variableDeclaratorsAndInitializers) {
+            vdoi.accept(this.blockStatementTraverser);
         }
         this.traverseAbstractTypeDeclaration(cd);
     }
 
-    public void traverseAbstractTypeDeclaration(Java.AbstractTypeDeclaration atd) {
-        for (Iterator it = atd.getMemberTypeDeclarations().iterator(); it.hasNext();) {
-            ((Java.NamedTypeDeclaration) it.next()).accept(this.cv);
-        }
-        for (Iterator it = atd.getMethodDeclarations().iterator(); it.hasNext();) {
-            this.traverseMethodDeclarator((Java.MethodDeclarator) it.next());
-        }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseAbstractTypeDeclaration(AbstractTypeDeclaration atd) throws EX {
+        for (Annotation a : atd.getAnnotations()) this.traverseAnnotation(a);
+        for (NamedTypeDeclaration mtd : atd.getMemberTypeDeclarations()) mtd.accept(this.typeDeclarationTraverser);
+        for (MethodDeclarator md : atd.getMethodDeclarations()) this.traverseMethodDeclarator(md);
     }
 
-    public void traverseNamedClassDeclaration(Java.NamedClassDeclaration ncd) {
-        for (int i = 0; i < ncd.implementedTypes.length; ++i) {
-            ncd.implementedTypes[i].accept((Visitor.TypeVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseNamedClassDeclaration(NamedClassDeclaration ncd) throws EX {
+        for (Type implementedType : ncd.implementedTypes) {
+            implementedType.accept(this.atomTraverser);
         }
-        if (ncd.optionalExtendedType != null) ncd.optionalExtendedType.accept((Visitor.TypeVisitor) this.cv);
+        if (ncd.optionalExtendedType != null) ncd.optionalExtendedType.accept(this.atomTraverser);
         this.traverseClassDeclaration(ncd);
     }
 
-    public void traverseInterfaceDeclaration(Java.InterfaceDeclaration id) {
-        for (Iterator it = id.constantDeclarations.iterator(); it.hasNext();) {
-            ((Java.TypeBodyDeclaration) it.next()).accept(this.cv);
-        }
-        for (int i = 0; i < id.extendedTypes.length; ++i) {
-            id.extendedTypes[i].accept((Visitor.TypeVisitor) this.cv);
-        }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseInterfaceDeclaration(InterfaceDeclaration id) throws EX {
+        for (TypeBodyDeclaration cd : id.constantDeclarations) cd.accept(this.typeBodyDeclarationTraverser);
+        for (Type extendedType : id.extendedTypes) extendedType.accept(this.atomTraverser);
         this.traverseAbstractTypeDeclaration(id);
     }
 
-    public void traverseFunctionDeclarator(Java.FunctionDeclarator fd) {
-        for (int i = 0; i < fd.formalParameters.length; ++i) {
-            fd.formalParameters[i].type.accept((Visitor.TypeVisitor) this.cv);
-        }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseFunctionDeclarator(FunctionDeclarator fd) throws EX {
+        this.traverseFormalParameters(fd.formalParameters);
         if (fd.optionalStatements != null) {
-            for (Iterator it = fd.optionalStatements.iterator(); it.hasNext();) {
-                Java.BlockStatement bs = (Java.BlockStatement) it.next();
-                bs.accept(this.cv);
-            }
+            for (BlockStatement bs : fd.optionalStatements) bs.accept(this.blockStatementTraverser);
         }
     }
 
-    public void traverseAbstractTypeBodyDeclaration(Java.AbstractTypeBodyDeclaration atbd) {
-        this.traverseLocated(atbd);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseFormalParameters(FunctionDeclarator.FormalParameters formalParameters) throws EX {
+        for (FunctionDeclarator.FormalParameter formalParameter : formalParameters.parameters) {
+            this.traverseFormalParameter(formalParameter);
+        }
     }
 
-    public void traverseStatement(Java.Statement s) {
-        this.traverseLocated(s);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseFormalParameter(FunctionDeclarator.FormalParameter formalParameter) throws EX {
+        formalParameter.type.accept(this.atomTraverser);
     }
 
-    public void traverseBreakableStatement(Java.BreakableStatement bs) {
-        this.traverseStatement(bs);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseAbstractTypeBodyDeclaration(AbstractTypeBodyDeclaration atbd) throws EX { this.traverseLocated(atbd); }
 
-    public void traverseContinuableStatement(Java.ContinuableStatement cs) {
-        this.traverseBreakableStatement(cs);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseStatement(Statement s) throws EX { this.traverseLocated(s); }
 
-    public void traverseRvalue(Java.Rvalue rv) {
-        this.traverseAtom(rv);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseBreakableStatement(BreakableStatement bs) throws EX { this.traverseStatement(bs); }
 
-    public void traverseBooleanRvalue(Java.BooleanRvalue brv) {
-        this.traverseRvalue(brv);
-    }
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseContinuableStatement(ContinuableStatement cs) throws EX { this.traverseBreakableStatement(cs); }
 
-    public void traverseInvocation(Java.Invocation i) {
-        for (int j = 0; j < i.arguments.length; ++j) i.arguments[j].accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseRvalue(Rvalue rv) throws EX { this.traverseAtom(rv); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseBooleanRvalue(BooleanRvalue brv) throws EX { this.traverseRvalue(brv); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseInvocation(Invocation i) throws EX {
+        for (Rvalue argument : i.arguments) argument.accept(this.rvalueTraverser);
         this.traverseRvalue(i);
     }
 
-    public void traverseConstructorInvocation(Java.ConstructorInvocation ci) {
-        for (int i = 0; i < ci.arguments.length; ++i) ci.arguments[i].accept((Visitor.RvalueVisitor) this.cv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseConstructorInvocation(ConstructorInvocation ci) throws EX {
+        for (Rvalue argument : ci.arguments) argument.accept(this.rvalueTraverser);
         this.traverseAtom(ci);
     }
 
-    public void traverseLvalue(Java.Lvalue lv) {
-        this.traverseRvalue(lv);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseEnumConstant(EnumConstant ec) throws EX {
+
+        for (ConstructorDeclarator cd : ec.constructors) this.traverseConstructorDeclarator(cd);
+
+        if (ec.optionalArguments != null) {
+            for (Rvalue a : ec.optionalArguments) this.traverseRvalue(a);
+        }
+
+        this.traverseAbstractTypeDeclaration(ec);
     }
 
-    public void traverseType(Java.Type t) {
-        this.traverseAtom(t);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traversePackageMemberEnumDeclaration(PackageMemberEnumDeclaration pmed) throws EX {
+        this.traversePackageMemberClassDeclaration(pmed);
     }
 
-    public void traverseAtom(Java.Atom a) {
-        this.traverseLocated(a);
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseMemberEnumDeclaration(MemberEnumDeclaration med) throws EX {
+        this.traverseMemberClassDeclaration(med);
     }
 
-    public void traverseLocated(Java.Located l) {
-        ;
+    /**
+     * @see Traverser
+     */
+    protected void
+    traversePackageMemberAnnotationTypeDeclaration(PackageMemberAnnotationTypeDeclaration pmatd) throws EX {
+        this.traversePackageMemberInterfaceDeclaration(pmatd);
     }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseMemberAnnotationTypeDeclaration(MemberAnnotationTypeDeclaration matd) throws EX {
+        this.traverseMemberInterfaceDeclaration(matd);
+    }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseLvalue(Lvalue lv) throws EX { this.traverseRvalue(lv); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseType(Type t) throws EX { this.traverseAtom(t); }
+
+    /**
+     * @see Traverser
+     */
+    protected void
+    traverseAtom(Atom a) throws EX { this.traverseLocated(a); }
+
+    /**
+     * @see Traverser
+     */
+    @SuppressWarnings("unused") protected void
+    traverseLocated(Located l) throws EX {}
 }

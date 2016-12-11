@@ -26,28 +26,53 @@
 
 package org.codehaus.janino.util.iterator;
 
-import java.util.*;
+import java.util.ListIterator;
 
 /**
- * A {@link java.util.ListIterator} that reverses the direction of all operations
- * of a delegate {@link java.util.ListIterator}.
+ * A {@link java.util.ListIterator} that reverses the direction of all operations of a delegate {@link
+ * java.util.ListIterator}.
+ *
+ * @param <T> The element type of the list iterator
  */
-public class ReverseListIterator extends FilterListIterator {
-    /** */
-    public ReverseListIterator(ListIterator delegate) {
-        super(delegate);
-    }
+public
+class ReverseListIterator<T> extends FilterListIterator<T> {
 
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#hasPrevious()} */
-    public boolean hasNext()       { return super.hasPrevious(); }
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#hasNext()} */
-    public boolean hasPrevious()   { return super.hasNext(); }
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#previous()} */
-    public Object  next()          { return super.previous(); }
-    /** Calls {@link #delegate}.{@link java.util.ListIterator#next()} */
-    public Object  previous()      { return super.next(); }
-    /** Throws an {@link UnsupportedOperationException}. */
-    public int     nextIndex()     { throw new UnsupportedOperationException(); }
-    /** Throws an {@link UnsupportedOperationException}. */
-    public int     previousIndex() { throw new UnsupportedOperationException(); }
+    public
+    ReverseListIterator(ListIterator<T> delegate) { super(delegate); }
+
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#hasPrevious()}
+     */
+    @Override public boolean
+    hasNext() { return super.hasPrevious(); }
+
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#hasNext()}
+     */
+    @Override public boolean
+    hasPrevious() { return super.hasNext(); }
+
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#previous()}
+     */
+    @Override public T
+    next() { return super.previous(); }
+
+    /**
+     * Calls {@link #delegate}.{@link java.util.ListIterator#next()}
+     */
+    @Override public T
+    previous() { return super.next(); }
+
+    /**
+     * Throws an {@link UnsupportedOperationException}.
+     */
+    @Override public int
+    nextIndex() { throw new UnsupportedOperationException(); }
+
+    /**
+     * Throws an {@link UnsupportedOperationException}.
+     */
+    @Override public int
+    previousIndex() { throw new UnsupportedOperationException(); }
 }

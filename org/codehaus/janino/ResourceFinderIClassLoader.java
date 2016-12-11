@@ -26,30 +26,32 @@
 
 package org.codehaus.janino;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
 
+import org.codehaus.commons.nullanalysis.Nullable;
 import org.codehaus.janino.util.ClassFile;
-import org.codehaus.janino.util.resource.*;
+import org.codehaus.janino.util.resource.Resource;
+import org.codehaus.janino.util.resource.ResourceFinder;
 
 
 /**
- * This {@link org.codehaus.janino.IClassLoader} loads IClasses through a
- * a {@link org.codehaus.janino.util.resource.ResourceFinder} that designates
- * {@link org.codehaus.janino.util.ClassFile}s.
+ * This {@link org.codehaus.janino.IClassLoader} loads IClasses through a a {@link
+ * org.codehaus.janino.util.resource.ResourceFinder} that designates {@link org.codehaus.janino.util.ClassFile}s.
  */
-public class ResourceFinderIClassLoader extends IClassLoader {
+public
+class ResourceFinderIClassLoader extends IClassLoader {
     private final ResourceFinder resourceFinder;
 
-    public ResourceFinderIClassLoader(
-        ResourceFinder resourceFinder,
-        IClassLoader   optionalParentIClassLoader
-    ) {
+    public
+    ResourceFinderIClassLoader(ResourceFinder resourceFinder, @Nullable IClassLoader optionalParentIClassLoader) {
         super(optionalParentIClassLoader);
         this.resourceFinder = resourceFinder;
         this.postConstruct();
     }
 
-    protected IClass findIClass(String descriptor) throws ClassNotFoundException {
+    @Override @Nullable protected IClass
+    findIClass(String descriptor) throws ClassNotFoundException {
         String className = Descriptor.toClassName(descriptor);
 
         // Find the class file resource.
@@ -71,11 +73,10 @@ public class ResourceFinderIClassLoader extends IClassLoader {
         } catch (IOException e) {
             throw new ClassNotFoundException("Reading resource \"" + classFileResource.getFileName() + "\"", e);
         } finally {
-            try { is.close(); } catch (IOException e) { }
+            try { is.close(); } catch (IOException e) {}
         }
         IClass iClass = new ClassFileIClass(cf, this);
         this.defineIClass(iClass);
         return iClass;
     }
-
 }

@@ -26,51 +26,73 @@
 
 package org.codehaus.janino.util.iterator;
 
-import java.util.*;
+import java.util.AbstractCollection;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
- * A {@link java.util.Collection} that lazily reads its elements from an
- * {@link java.util.Iterator}.
+ * A {@link java.util.Collection} that lazily reads its elements from an {@link java.util.Iterator}.
  * <p>
- * In other words, you can call {@link #iterator()} as often as you want, but the
- * {@link IteratorCollection} will iterate over its delegate only once.
+ *   In other words, you can call {@link #iterator()} as often as you want, but the {@link IteratorCollection} will
+ *   iterate over its delegate only once.
+ * </p>
+ *
+ * @param <T> The element type of the iterator and the collection
  */
-public class IteratorCollection extends AbstractCollection {
-    /** The delegate. */
-    private final Iterator iterator;
-    /** Lazily-filled collection of the elements delivered by the delegate. */
-    private final List     elements = new ArrayList();
+public
+class IteratorCollection<T> extends AbstractCollection<T> {
 
-    public IteratorCollection(Iterator iterator) {
-        this.iterator = iterator;
-    }
+    /**
+     * The delegate.
+     */
+    private final Iterator<T> iterator;
 
-    public Iterator iterator() {
-        return new Iterator() {
-            private Iterator elementsIterator = IteratorCollection.this.elements.iterator();
-            public Object next() {
-                if (this.elementsIterator != null) {
-                    if (this.elementsIterator.hasNext()) return this.elementsIterator.next();
+    /**
+     * Lazily-filled collection of the elements delivered by the delegate.
+     */
+    private final List<T> elements = new ArrayList<T>();
+
+    public
+    IteratorCollection(Iterator<T> iterator) { this.iterator = iterator; }
+
+    @Override public Iterator<T>
+    iterator() {
+        return new Iterator<T>() {
+
+            @Nullable private Iterator<T> elementsIterator = IteratorCollection.this.elements.iterator();
+
+            @Override public T
+            next() {
+                Iterator<T> ei = this.elementsIterator;
+                if (ei != null) {
+                    if (ei.hasNext()) return ei.next();
                     this.elementsIterator = null;
                 }
-                Object o = IteratorCollection.this.iterator.next();
+                T o = IteratorCollection.this.iterator.next();
                 IteratorCollection.this.elements.add(o);
                 return o;
             }
-            public boolean hasNext() {
+
+            @Override public boolean
+            hasNext() {
                 return (
                     (this.elementsIterator != null && this.elementsIterator.hasNext())
                     || IteratorCollection.this.iterator.hasNext()
                 );
             }
-            public void remove() {
-                throw new UnsupportedOperationException();
-            }
+
+            @Override public void
+            remove() { throw new UnsupportedOperationException(); }
         };
     }
-    public int size() {
+
+    @Override public int
+    size() {
         int size = 0;
-        for (Iterator it = this.iterator(); it.hasNext(); it.next()) ++size;
+        for (@SuppressWarnings("unused") Object o : this) ++size;
         return size;
     }
 }

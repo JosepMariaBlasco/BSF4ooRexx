@@ -26,24 +26,24 @@
 
 package org.codehaus.janino.util.resource;
 
-import java.util.*;
+import java.util.Iterator;
 
 import org.codehaus.janino.util.iterator.IteratorCollection;
 
-
 /**
- * A {@link org.codehaus.janino.util.resource.ResourceFinder} that examines a set
- * of {@link org.codehaus.janino.util.resource.ResourceFinder}s lazily as it
- * searches for resources.
+ * A {@link org.codehaus.janino.util.resource.ResourceFinder} that examines a set of {@link
+ * org.codehaus.janino.util.resource.ResourceFinder}s lazily as it searches for resources.
  *
- * @see org.codehaus.janino.util.iterator.IteratorCollection
+ * @see IteratorCollection
  */
-public class LazyMultiResourceFinder extends MultiResourceFinder {
+public
+class LazyMultiResourceFinder extends MultiResourceFinder {
 
     /**
      * @param resourceFinders delegate {@link ResourceFinder}s
      */
-    public LazyMultiResourceFinder(Iterator resourceFinders) {
-        super(new IteratorCollection(resourceFinders));
+    public
+    LazyMultiResourceFinder(Iterator<ResourceFinder> resourceFinders) {
+        super(new IteratorCollection<ResourceFinder>(resourceFinders));
     }
 }

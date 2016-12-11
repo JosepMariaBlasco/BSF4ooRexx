@@ -26,40 +26,47 @@
 
 package org.codehaus.commons.compiler.samples;
 
-import org.codehaus.commons.compiler.*;
+import java.util.Arrays;
+
+import org.codehaus.commons.compiler.CompilerFactoryFactory;
+import org.codehaus.commons.compiler.IExpressionEvaluator;
 
 /**
- * A test program that allows you to play around with the
- * {@link org.codehaus.janino.ExpressionEvaluator ExpressionEvaluator} class.
+ * A test program that allows you to play around with the {@link IExpressionEvaluator} class.
  */
-public final class ExpressionDemo extends DemoBase {
-    public static void main(String[] args) throws Exception {
-        Class    optionalExpressionType = null;
-        String[] parameterNames         = {};
-        Class[]  parameterTypes         = {};
-        Class[]  thrownExceptions       = {};
-        String[] optionalDefaultImports = null;
+public final
+class ExpressionDemo extends DemoBase {
+
+    /***/
+    public static void
+    main(String[] args) throws Exception {
+
+        Class<?>   optionalExpressionType = null;
+        String[]   parameterNames         = {};
+        Class<?>[] parameterTypes         = {};
+        Class<?>[] thrownExceptions       = {};
+        String[]   optionalDefaultImports = null;
 
         int i;
         for (i = 0; i < args.length; ++i) {
             String arg = args[i];
             if (!arg.startsWith("-")) break;
-            if (arg.equals("-et")) {
+            if ("-et".equals(arg)) {
                 optionalExpressionType = DemoBase.stringToType(args[++i]);
             } else
-            if (arg.equals("-pn")) {
+            if ("-pn".equals(arg)) {
                 parameterNames = DemoBase.explode(args[++i]);
             } else
-            if (arg.equals("-pt")) {
+            if ("-pt".equals(arg)) {
                 parameterTypes = DemoBase.stringToTypes(args[++i]);
             } else
-            if (arg.equals("-te")) {
+            if ("-te".equals(arg)) {
                 thrownExceptions = DemoBase.stringToTypes(args[++i]);
             } else
-            if (arg.equals("-di")) {
+            if ("-di".equals(arg)) {
                 optionalDefaultImports = DemoBase.explode(args[++i]);
             } else
-            if (arg.equals("-help")) {
+            if ("-help".equals(arg)) {
                 System.err.println("Usage:");
                 System.err.println("  ExpressionDemo { <option> } <expression> { <parameter-value> }");
                 System.err.println("Compiles and evaluates the given expression and prints its value.");
@@ -83,7 +90,7 @@ public final class ExpressionDemo extends DemoBase {
             System.err.println("Expression missing; try \"-help\".");
             System.exit(1);
         }
-        String expression = args[i++];
+        final String expression = args[i++];
 
         if (parameterTypes.length != parameterNames.length) {
             System.err.println(
@@ -108,25 +115,29 @@ public final class ExpressionDemo extends DemoBase {
             System.exit(1);
         }
 
-        // Convert command line arguments to parameter values.
-        Object[] parameterValues = new Object[parameterNames.length];
+        // Convert command line arguments to call arguments.
+        Object[] arguments = new Object[parameterNames.length];
         for (int j = 0; j < parameterNames.length; ++j) {
-            parameterValues[j] = DemoBase.createObject(parameterTypes[j], args[i + j]);
+            arguments[j] = DemoBase.createObject(parameterTypes[j], args[i + j]);
         }
 
         // Create "ExpressionEvaluator" object.
         IExpressionEvaluator ee = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
-        ee.setExpressionType(optionalExpressionType);
+        if (optionalExpressionType != null) ee.setExpressionType(optionalExpressionType);
         ee.setDefaultImports(optionalDefaultImports);
         ee.setParameters(parameterNames, parameterTypes);
         ee.setThrownExceptions(thrownExceptions);
         ee.cook(expression);
 
         // Evaluate expression with actual parameter values.
-        Object res = ee.evaluate(parameterValues);
+        Object res = ee.evaluate(arguments);
 
         // Print expression result.
-        System.out.println("Result = " + DemoBase.toString(res));
+        System.out.println("Result = " + (
+            res instanceof Object[]
+            ? Arrays.toString((Object[]) res)
+            : String.valueOf(res)
+        ));
     }
 
     private ExpressionDemo() {}

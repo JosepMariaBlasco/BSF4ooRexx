@@ -26,23 +26,32 @@
 
 package org.codehaus.commons.compiler.samples;
 
-import java.io.*;
-import java.lang.reflect.*;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.Reader;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 
-import org.codehaus.commons.compiler.*;
+import org.codehaus.commons.compiler.CompilerFactoryFactory;
+import org.codehaus.commons.compiler.IClassBodyEvaluator;
 
 /**
- * A test program that allows you to play with the {@link ClassBodyEvaluator} API.
+ * A test program that allows you to play with the {@link IClassBodyEvaluator} API.
  */
-public final class ClassBodyDemo {
-    public static void main(String[] args) throws Exception {
-        if (args.length > 0 && args[0].equals("-help")) {
+public final
+class ClassBodyDemo {
+
+    /***/
+    public static void
+    main(String[] args) throws Exception {
+
+        if (args.length > 0 && "-help".equals(args[0])) {
             System.out.println("Usage:");
             System.out.println("  ClassBodyDemo <class-body> { <argument> }");
             System.out.println("  ClassBodyDemo -help");
             System.out.println("If <class-body> starts with a '@', then the class body is read");
             System.out.println("from the named file.");
-            System.out.println("The <class-body> must declare a method \"public static main(String[])\"");
+            System.out.println("The <class-body> must declare a method \"public static void main(String[])\"");
             System.out.println("to which the <argument>s are passed. If the return type of that method is");
             System.out.println("not VOID, then the returned value is printed to STDOUT.");
             System.exit(0);
@@ -64,23 +73,31 @@ public final class ClassBodyDemo {
         // Compile the class body.
         IClassBodyEvaluator cbe = CompilerFactoryFactory.getDefaultCompilerFactory().newClassBodyEvaluator();
         cbe.cook(classBody);
-        Class c = cbe.getClazz();
+        Class<?> c = cbe.getClazz();
 
         // Invoke the "public static main(String[])" method.
-        Method m = c.getMethod("main", new Class[] { String[].class });
+        Method m           = c.getMethod("main", new Class[] { String[].class });
         Object returnValue = m.invoke(null, new Object[] { arguments });
 
         // If non-VOID, print the return value.
-        if (m.getReturnType() != void.class) System.out.println(DemoBase.toString(returnValue));
+        if (m.getReturnType() != void.class) {
+            System.out.println(
+                returnValue instanceof Object[]
+                ? Arrays.toString((Object[]) returnValue)
+                : String.valueOf(returnValue)
+            );
+        }
     }
 
     private ClassBodyDemo() {}
 
-    private static String readFileToString(String fileName) throws IOException {
+    private static String
+    readFileToString(String fileName) throws IOException {
+
         Reader r = new FileReader(fileName);
         try {
-            StringBuffer sb = new StringBuffer();
-            char[] ca = new char[1024];
+            StringBuilder sb = new StringBuilder();
+            char[]        ca = new char[1024];
             for (;;) {
                 int cnt = r.read(ca, 0, ca.length);
                 if (cnt == -1) break;

@@ -26,40 +26,47 @@
 
 package org.codehaus.janino.util.resource;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
- * A {@link org.codehaus.janino.util.resource.FileResourceFinder} that finds file resources in
- * a directory. The name of the file is constructed by concatenating a dirctory name
- * with the resource name such that slashes in the resource name map to file
- * separators.
+ * A {@link org.codehaus.janino.util.resource.FileResourceFinder} that finds file resources in a directory. The name of
+ * the file is constructed by concatenating a dirctory name with the resource name such that slashes in the resource
+ * name map to file separators.
  */
-public class DirectoryResourceFinder extends FileResourceFinder {
-    private final File directory;
-    private final Map  subdirectoryNameToFiles = new HashMap(); // String directoryName => Set => File
+public
+class DirectoryResourceFinder extends FileResourceFinder {
+    private final File                                     directory;
+    private final Map<String /*directoryName*/, Set<File>> subdirectoryNameToFiles = new HashMap<String, Set<File>>();
 
     /**
      * @param directory the directory to use as the search base
      */
-    public DirectoryResourceFinder(File directory) {
-        this.directory = directory;
-    }
+    public
+    DirectoryResourceFinder(File directory) { this.directory = directory; }
 
-    public final String toString() { return "dir:" + this.directory; }
+    @Override public final String toString() { return "dir:" + this.directory; }
 
     // Implement FileResourceFinder.
-    protected final File findResourceAsFile(String resourceName) {
+    @Override @Nullable protected final File
+    findResourceAsFile(String resourceName) {
 
         // Determine the subdirectory name (null for no subdirectory).
-        int idx = resourceName.lastIndexOf('/');
+        int    idx              = resourceName.lastIndexOf('/');
         String subdirectoryName = (
             idx == -1 ? null :
             resourceName.substring(0, idx).replace('/', File.separatorChar)
         );
 
         // Determine files existing in this subdirectory.
-        Set files = (Set) this.subdirectoryNameToFiles.get(subdirectoryName); // String directoryName => Set => File
+        Set<File> files = (Set<File>) this.subdirectoryNameToFiles.get(subdirectoryName);
         if (files == null) {
             File subDirectory = (
                 subdirectoryName == null
@@ -67,7 +74,7 @@ public class DirectoryResourceFinder extends FileResourceFinder {
                 : new File(this.directory, subdirectoryName)
             );
             File[] fa = subDirectory.listFiles();
-            files = (fa == null) ? Collections.EMPTY_SET : new HashSet(Arrays.asList(fa));
+            files = fa == null ? Collections.<File>emptySet() : new HashSet<File>(Arrays.asList(fa));
             this.subdirectoryNameToFiles.put(subdirectoryName, files);
         }
 

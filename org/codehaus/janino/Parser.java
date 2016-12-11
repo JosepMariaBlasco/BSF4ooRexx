@@ -26,27 +26,154 @@
 
 package org.codehaus.janino;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.Location;
+import org.codehaus.commons.compiler.WarningHandler;
+import org.codehaus.commons.nullanalysis.Nullable;
+import org.codehaus.janino.Java.AbstractClassDeclaration;
+import org.codehaus.janino.Java.AlternateConstructorInvocation;
+import org.codehaus.janino.Java.AmbiguousName;
+import org.codehaus.janino.Java.Annotation;
+import org.codehaus.janino.Java.AnnotationTypeDeclaration;
+import org.codehaus.janino.Java.AnonymousClassDeclaration;
+import org.codehaus.janino.Java.ArrayAccessExpression;
+import org.codehaus.janino.Java.ArrayInitializer;
+import org.codehaus.janino.Java.ArrayInitializerOrRvalue;
+import org.codehaus.janino.Java.ArrayType;
+import org.codehaus.janino.Java.AssertStatement;
+import org.codehaus.janino.Java.Assignment;
+import org.codehaus.janino.Java.Atom;
+import org.codehaus.janino.Java.BinaryOperation;
+import org.codehaus.janino.Java.Block;
+import org.codehaus.janino.Java.BlockStatement;
+import org.codehaus.janino.Java.BooleanLiteral;
+import org.codehaus.janino.Java.BreakStatement;
+import org.codehaus.janino.Java.Cast;
+import org.codehaus.janino.Java.CatchClause;
+import org.codehaus.janino.Java.CharacterLiteral;
+import org.codehaus.janino.Java.ClassLiteral;
+import org.codehaus.janino.Java.CompilationUnit;
 import org.codehaus.janino.Java.CompilationUnit.ImportDeclaration;
-import org.codehaus.janino.util.enumerator.Enumerator;
+import org.codehaus.janino.Java.ConditionalExpression;
+import org.codehaus.janino.Java.ConstructorDeclarator;
+import org.codehaus.janino.Java.ConstructorInvocation;
+import org.codehaus.janino.Java.ContinueStatement;
+import org.codehaus.janino.Java.Crement;
+import org.codehaus.janino.Java.DoStatement;
+import org.codehaus.janino.Java.ElementValue;
+import org.codehaus.janino.Java.ElementValuePair;
+import org.codehaus.janino.Java.EmptyStatement;
+import org.codehaus.janino.Java.ExpressionStatement;
+import org.codehaus.janino.Java.FieldAccessExpression;
+import org.codehaus.janino.Java.FieldDeclaration;
+import org.codehaus.janino.Java.FloatingPointLiteral;
+import org.codehaus.janino.Java.ForEachStatement;
+import org.codehaus.janino.Java.ForStatement;
+import org.codehaus.janino.Java.FunctionDeclarator.FormalParameter;
+import org.codehaus.janino.Java.FunctionDeclarator.FormalParameters;
+import org.codehaus.janino.Java.IfStatement;
+import org.codehaus.janino.Java.Initializer;
+import org.codehaus.janino.Java.Instanceof;
+import org.codehaus.janino.Java.IntegerLiteral;
+import org.codehaus.janino.Java.InterfaceDeclaration;
+import org.codehaus.janino.Java.LabeledStatement;
+import org.codehaus.janino.Java.LocalClassDeclaration;
+import org.codehaus.janino.Java.LocalClassDeclarationStatement;
+import org.codehaus.janino.Java.LocalVariableDeclarationStatement;
+import org.codehaus.janino.Java.Lvalue;
+import org.codehaus.janino.Java.MemberAnnotationTypeDeclaration;
+import org.codehaus.janino.Java.MemberClassDeclaration;
+import org.codehaus.janino.Java.MemberInterfaceDeclaration;
+import org.codehaus.janino.Java.MemberTypeDeclaration;
+import org.codehaus.janino.Java.MethodDeclarator;
+import org.codehaus.janino.Java.MethodInvocation;
+import org.codehaus.janino.Java.Modifiers;
+import org.codehaus.janino.Java.NamedClassDeclaration;
+import org.codehaus.janino.Java.NewAnonymousClassInstance;
+import org.codehaus.janino.Java.NewArray;
+import org.codehaus.janino.Java.NewClassInstance;
+import org.codehaus.janino.Java.NewInitializedArray;
+import org.codehaus.janino.Java.NullLiteral;
+import org.codehaus.janino.Java.PackageDeclaration;
+import org.codehaus.janino.Java.PackageMemberAnnotationTypeDeclaration;
+import org.codehaus.janino.Java.PackageMemberClassDeclaration;
+import org.codehaus.janino.Java.PackageMemberEnumDeclaration;
+import org.codehaus.janino.Java.PackageMemberInterfaceDeclaration;
+import org.codehaus.janino.Java.PackageMemberTypeDeclaration;
+import org.codehaus.janino.Java.ParenthesizedExpression;
+import org.codehaus.janino.Java.Primitive;
+import org.codehaus.janino.Java.PrimitiveType;
+import org.codehaus.janino.Java.QualifiedThisReference;
+import org.codehaus.janino.Java.ReferenceType;
+import org.codehaus.janino.Java.ReturnStatement;
+import org.codehaus.janino.Java.Rvalue;
+import org.codehaus.janino.Java.RvalueMemberType;
+import org.codehaus.janino.Java.Statement;
+import org.codehaus.janino.Java.StringLiteral;
+import org.codehaus.janino.Java.SuperConstructorInvocation;
+import org.codehaus.janino.Java.SuperclassFieldAccessExpression;
+import org.codehaus.janino.Java.SuperclassMethodInvocation;
+import org.codehaus.janino.Java.SwitchStatement;
+import org.codehaus.janino.Java.SynchronizedStatement;
+import org.codehaus.janino.Java.ThisReference;
+import org.codehaus.janino.Java.ThrowStatement;
+import org.codehaus.janino.Java.TryStatement;
+import org.codehaus.janino.Java.Type;
+import org.codehaus.janino.Java.TypeArgument;
+import org.codehaus.janino.Java.TypeParameter;
+import org.codehaus.janino.Java.UnaryOperation;
+import org.codehaus.janino.Java.VariableDeclarator;
+import org.codehaus.janino.Java.WhileStatement;
+import org.codehaus.janino.Java.Wildcard;
 
 /**
- * A parser for the Java&trade; programming language.
+ * A parser for the Java programming language.
+ * <p>
+ *   'JLS7' refers to the <a href="http://docs.oracle.com/javase/specs/">Java Language Specification, Java SE 7
+ *   Edition</a>.
+ * </p>
  */
-public class Parser {
-    private final Scanner scanner;
+public
+class Parser {
 
-    public Parser(Scanner scanner) {
-        this.scanner = scanner;
+    private final Scanner     scanner;
+    private final TokenStream tokenStream;
+
+    public
+    Parser(Scanner scanner) { this(scanner, new TokenStreamImpl(scanner)); }
+
+    public
+    Parser(Scanner scanner, TokenStream tokenStream) {
+        (this.scanner = scanner).setIgnoreWhiteSpace(true);
+        this.tokenStream = tokenStream;
     }
 
-    public Scanner getScanner() {
-        return this.scanner;
+    /**
+     * The optional JAVADOC comment preceding the {@link #nextToken}.
+     */
+    @Nullable private String optionalDocComment;
+
+    /**
+     * Gets the text of the doc comment (a.k.a. "JAVADOC comment") preceeding the next token.
+     *
+     * @return {@code null} if the next token is not preceeded by a doc comment
+     */
+    @Nullable public String
+    doc() {
+        String s = this.optionalDocComment;
+        this.optionalDocComment = null;
+        return s;
     }
+
+    /**
+     * @return The scanner that produces the tokens for this parser.
+     */
+    public Scanner
+    getScanner() { return this.scanner; }
 
     /**
      * <pre>
@@ -55,24 +182,55 @@ public class Parser {
      *                      { TypeDeclaration }
      * </pre>
      */
-    public Java.CompilationUnit parseCompilationUnit() throws CompileException, IOException {
-        Java.CompilationUnit compilationUnit = new Java.CompilationUnit(this.location().getFileName());
+    public CompilationUnit
+    parseCompilationUnit() throws CompileException, IOException {
 
-        if (this.peekKeyword("package")) {
-            compilationUnit.setPackageDeclaration(this.parsePackageDeclaration());
-        }
+        CompilationUnit compilationUnit = new CompilationUnit(this.location().getFileName());
 
-        while (this.peekKeyword("import")) {
-            compilationUnit.addImportDeclaration(this.parseImportDeclaration());
-        }
+        String    docComment = this.doc();
+        Modifiers modifiers  = this.parseModifiers();
 
-        while (!this.scanner.peek().isEOF()) {
-            if (this.peekOperator(";")) {
-                this.eatToken();
-            } else
-            {
-                compilationUnit.addPackageMemberTypeDeclaration(this.parsePackageMemberTypeDeclaration());
+        if (this.peek("package")) {
+            if (modifiers.accessFlags != 0) {
+                this.warning("package.modifiers", "No modifiers allowed on package declarations", this.location());
             }
+
+            // Ignore doc comment and annotations.
+
+            compilationUnit.setPackageDeclaration(this.parsePackageDeclaration());
+
+            docComment = this.doc();
+            modifiers  = this.parseModifiers();
+        }
+
+        while (this.peek("import")) {
+            if (modifiers.accessFlags != 0) {
+                this.warning("import.modifiers", "No modifiers allowed on import declarations", this.location());
+            }
+            if (modifiers.annotations.length > 0) {
+                this.warning("import.annotations", "No annotations allowed on import declarations", this.location());
+            }
+            if (docComment != null) {
+                this.warning("import.doc_comment", "Doc comment on import declaration", this.location());
+            }
+            compilationUnit.addImportDeclaration(this.parseImportDeclaration());
+
+            docComment = this.doc();
+            modifiers  = this.parseModifiers();
+        }
+
+        if (this.peekEof()) return compilationUnit;
+
+        // Parse the first package-member type declaration.
+        compilationUnit.addPackageMemberTypeDeclaration(
+            this.parsePackageMemberTypeDeclarationRest(docComment, modifiers)
+        );
+
+        // Parse the second, third, ... package-member type declaration.
+        while (!this.peekEof()) {
+            if (this.peekRead(";")) continue;
+
+            compilationUnit.addPackageMemberTypeDeclaration(this.parsePackageMemberTypeDeclaration());
         }
 
         return compilationUnit;
@@ -83,13 +241,14 @@ public class Parser {
      *   PackageDeclaration := 'package' QualifiedIdentifier ';'
      * </pre>
      */
-    public Java.PackageDeclaration parsePackageDeclaration() throws CompileException, IOException {
-        this.readKeyword("package");
-        Location loc = this.location();
-        String packageName = Parser.join(this.parseQualifiedIdentifier(), ".");
-        this.readOperator(";");
+    public PackageDeclaration
+    parsePackageDeclaration() throws CompileException, IOException {
+        this.read("package");
+        Location loc         = this.location();
+        String   packageName = Parser.join(this.parseQualifiedIdentifier(), ".");
+        this.read(";");
         this.verifyStringIsConventionalPackageName(packageName, loc);
-        return new Java.PackageDeclaration(loc, packageName);
+        return new PackageDeclaration(loc, packageName);
     }
 
     /**
@@ -97,10 +256,11 @@ public class Parser {
      *   ImportDeclaration := 'import' ImportDeclarationBody ';'
      * </pre>
      */
-    public Java.CompilationUnit.ImportDeclaration parseImportDeclaration() throws CompileException, IOException {
-        this.readKeyword("import");
-        Java.CompilationUnit.ImportDeclaration importDeclaration = this.parseImportDeclarationBody();
-        this.readOperator(";");
+    public CompilationUnit.ImportDeclaration
+    parseImportDeclaration() throws CompileException, IOException {
+        this.read("import");
+        CompilationUnit.ImportDeclaration importDeclaration = this.parseImportDeclarationBody();
+        this.read(";");
         return importDeclaration;
     }
 
@@ -109,35 +269,30 @@ public class Parser {
      *   ImportDeclarationBody := [ 'static' ] Identifier { '.' Identifier } [ '.' '*' ]
      * </pre>
      */
-    public Java.CompilationUnit.ImportDeclaration parseImportDeclarationBody() throws CompileException, IOException {
-        Location loc = this.location();
-        boolean isStatic;
-        if (this.peekKeyword("static")) {
-            isStatic = true;
-            this.eatToken();
-        } else
-        {
-            isStatic = false;
-        }
-        List l = new ArrayList();
+    public CompilationUnit.ImportDeclaration
+    parseImportDeclarationBody() throws CompileException, IOException {
+        final Location loc = this.location();
+
+        boolean isStatic = this.peekRead("static");
+
+        List<String> l = new ArrayList<String>();
         l.add(this.readIdentifier());
         for (;;) {
-            if (!this.peekOperator(".")) {
+            if (!this.peek(".")) {
                 String[] identifiers = (String[]) l.toArray(new String[l.size()]);
                 return (
                     isStatic
-                    ? (ImportDeclaration) new Java.CompilationUnit.SingleStaticImportDeclaration(loc, identifiers)
-                    : (ImportDeclaration) new Java.CompilationUnit.SingleTypeImportDeclaration(loc, identifiers)
+                    ? (ImportDeclaration) new CompilationUnit.SingleStaticImportDeclaration(loc, identifiers)
+                    : (ImportDeclaration) new CompilationUnit.SingleTypeImportDeclaration(loc, identifiers)
                 );
             }
-            this.readOperator(".");
-            if (this.peekOperator("*")) {
-                this.eatToken();
+            this.read(".");
+            if (this.peekRead("*")) {
                 String[] identifiers = (String[]) l.toArray(new String[l.size()]);
                 return (
                     isStatic
-                    ? (ImportDeclaration) new Java.CompilationUnit.StaticImportOnDemandDeclaration(loc, identifiers)
-                    : (ImportDeclaration) new Java.CompilationUnit.TypeImportOnDemandDeclaration(loc, identifiers)
+                    ? (ImportDeclaration) new CompilationUnit.StaticImportOnDemandDeclaration(loc, identifiers)
+                    : (ImportDeclaration) new CompilationUnit.TypeImportOnDemandDeclaration(loc, identifiers)
                 );
             }
             l.add(this.readIdentifier());
@@ -145,14 +300,16 @@ public class Parser {
     }
 
     /**
-     * QualifiedIdentifier := Identifier { '.' Identifier }
+     * <pre>
+     *   QualifiedIdentifier := Identifier { '.' Identifier }
+     * </pre>
      */
-    public String[] parseQualifiedIdentifier() throws CompileException, IOException {
-        if (!this.scanner.peek().isIdentifier()) this.throwCompileException("Identifier expected");
-        List l = new ArrayList();
+    public String[]
+    parseQualifiedIdentifier() throws CompileException, IOException {
+        List<String> l = new ArrayList<String>();
         l.add(this.readIdentifier());
-        while (this.peekOperator(".") && this.scanner.peekNextButOne().isIdentifier()) {
-            this.eatToken();
+        while (this.peek(".") && this.peekNextButOne().type == TokenType.IDENTIFIER) {
+            this.read();
             l.add(this.readIdentifier());
         }
         return (String[]) l.toArray(new String[l.size()]);
@@ -160,148 +317,284 @@ public class Parser {
 
     /**
      * <pre>
-     *   PackageMemberTypeDeclaration :=
-     *             ModifiersOpt 'class' ClassDeclarationRest |
-     *             ModifiersOpt 'interface' InterfaceDeclarationRest
+     *   PackageMemberTypeDeclaration := ModifiersOpt PackageMemberTypeDeclarationRest
      * </pre>
      */
-    public Java.PackageMemberTypeDeclaration parsePackageMemberTypeDeclaration() throws CompileException, IOException {
-        String optionalDocComment = this.scanner.doc();
+    public PackageMemberTypeDeclaration
+    parsePackageMemberTypeDeclaration() throws CompileException, IOException {
 
-        short modifiers = this.parseModifiersOpt();
+        return this.parsePackageMemberTypeDeclarationRest(this.doc(), this.parseModifiers());
+    }
 
-        Java.PackageMemberTypeDeclaration res;
-        if (this.peekKeyword("class")) {
+    /**
+     * <pre>
+     *   PackageMemberTypeDeclarationRest :=
+     *             'class' ClassDeclarationRest |
+     *             'enum' EnumDeclarationRest |
+     *             'interface' InterfaceDeclarationRest
+     *             '@' 'interface' AnnotationTypeDeclarationRest
+     * </pre>
+     */
+    private PackageMemberTypeDeclaration
+    parsePackageMemberTypeDeclarationRest(@Nullable String optionalDocComment, Modifiers modifiers)
+    throws CompileException, IOException {
+
+        switch (this.read(new String[] { "class", "enum", "interface", "@" })) {
+
+        case 0: // "class"
             if (optionalDocComment == null) this.warning("CDCM", "Class doc comment missing", this.location());
-            this.eatToken();
-            res = (Java.PackageMemberClassDeclaration) this.parseClassDeclarationRest(
+            return (PackageMemberClassDeclaration) this.parseClassDeclarationRest(
                 optionalDocComment,                      // optionalDocComment
                 modifiers,                               // modifiers
                 ClassDeclarationContext.COMPILATION_UNIT // context
             );
-        } else
-        if (this.peekKeyword("interface")) {
+
+        case 1: // "enum"
+            if (optionalDocComment == null) this.warning("EDCM", "Enum doc comment missing", this.location());
+            return (PackageMemberEnumDeclaration) this.parseEnumDeclarationRest(
+                optionalDocComment,                      // optionalDocComment
+                modifiers,                               // modifiers
+                ClassDeclarationContext.COMPILATION_UNIT // context
+            );
+
+        case 2: // "interface"
             if (optionalDocComment == null) this.warning("IDCM", "Interface doc comment missing", this.location());
-            this.eatToken();
-            res = (Java.PackageMemberInterfaceDeclaration) this.parseInterfaceDeclarationRest(
+            return (PackageMemberInterfaceDeclaration) this.parseInterfaceDeclarationRest(
                 optionalDocComment,                          // optionalDocComment
                 modifiers,                                   // modifiers
                 InterfaceDeclarationContext.COMPILATION_UNIT // context
             );
-        } else
-        {
-            this.throwCompileException(
-                "Unexpected token \""
-                + this.scanner.peek()
-                + "\" in class or interface declaration"
+
+        case 3: // "@"
+            this.read("interface");
+            if (optionalDocComment == null) {
+                this.warning("ATDCM", "Annotation type doc comment missing", this.location());
+            }
+            return (PackageMemberAnnotationTypeDeclaration) this.parseAnnotationTypeDeclarationRest(
+                optionalDocComment,                          // optionalDocComment
+                modifiers,                                   // modifiers
+                InterfaceDeclarationContext.COMPILATION_UNIT // context
             );
-            /* NEVER REACHED */ return null;
+
+        default:
+            throw new IllegalStateException();
         }
-        return res;
     }
 
     /**
      * <pre>
-     *   ModifiersOpt := { 'public' | 'protected' | 'private' | 'static' |
-     *           'abstract' | 'final' | 'native' | 'synchronized' |
-     *           'transient' | 'volatile' | 'strictfp'
+     *   ModifiersAndAnnotations := { 'public' | 'protected' | 'private' | 'static' | 'abstract' | 'final' | 'native'
+     *           | 'synchronized' | 'transient' | 'volatile' | 'strictfp' | Annotation }
      * </pre>
+     * <p>
+     *   Includes the case "no modifiers".
+     * </p>
      */
-    public short parseModifiersOpt() throws CompileException, IOException {
-        short mod = 0;
-        while (this.peekKeyword()) {
-            String kw = this.scanner.peek().getKeyword();
-            short x = (short) (
-                kw == "public"       ? Mod.PUBLIC       :
-                kw == "protected"    ? Mod.PROTECTED    :
-                kw == "private"      ? Mod.PRIVATE      :
-                kw == "static"       ? Mod.STATIC       :
-                kw == "abstract"     ? Mod.ABSTRACT     :
-                kw == "final"        ? Mod.FINAL        :
-                kw == "native"       ? Mod.NATIVE       :
-                kw == "synchronized" ? Mod.SYNCHRONIZED :
-                kw == "transient"    ? Mod.TRANSIENT    :
-                kw == "volatile"     ? Mod.VOLATILE     :
-                kw == "strictfp"     ? Mod.STRICTFP     :
-                -1
-            );
-            if (x == -1) break;
+    public Java.Modifiers
+    parseModifiers() throws CompileException, IOException {
+        short                 mod = 0;
+        List<Java.Annotation> as  = new ArrayList<Java.Annotation>();
+        for (;;) {
+            if (this.peek("@")) {
 
-            this.eatToken();
-            if ((mod & x) != 0) this.throwCompileException("Duplicate modifier \"" + kw + "\"");
-            for (int i = 0; i < Parser.MUTUALS.length; ++i) {
-                short m = Parser.MUTUALS[i];
+                // Annotation type declaration ahead?
+                if (this.peekNextButOne().value.equals("interface")) break;
+
+                as.add(this.parseAnnotation());
+                continue;
+            }
+
+            int idx = this.peekRead(Parser.MODIFIER_NAMES);
+            if (idx == -1) break;
+            String kw = Parser.MODIFIER_NAMES[idx];
+            short  x  = Parser.MODIFIER_CODES[idx];
+
+            if ((mod & x) != 0) throw this.compileException("Duplicate modifier \"" + kw + "\"");
+            for (short m : Parser.MUTUALLY_EXCLUSIVE_MODIFIER_CODES) {
                 if ((x & m) != 0 && (mod & m) != 0) {
-                    this.throwCompileException("Only one of \"" + Mod.shortToString(m) + "\" allowed");
+                    throw this.compileException("Only one of '" + Mod.shortToString(m) + "' allowed");
                 }
             }
             mod |= x;
         }
-        return mod;
+
+        if (as.isEmpty() && mod == 0) return Parser.NO_MODIFIERS;
+
+        return new Modifiers(mod, (Annotation[]) as.toArray(new Java.Annotation[as.size()]));
     }
-    private static final short[] MUTUALS = {
-        Mod.PUBLIC | Mod.PROTECTED | Mod.PRIVATE,
+    private static final String[] MODIFIER_NAMES = {
+        "public", "protected", "private", "static", "abstract", "final", "native", "synchronized",
+        "transient", "volatile", "strictfp"
     };
+    private static final short[] MODIFIER_CODES = {
+        Mod.PUBLIC, Mod.PROTECTED, Mod.PRIVATE, Mod.STATIC, Mod.ABSTRACT, Mod.FINAL, Mod.NATIVE, Mod.SYNCHRONIZED,
+        Mod.TRANSIENT, Mod.VOLATILE, Mod.STRICTFP
+    };
+    private static final short[] MUTUALLY_EXCLUSIVE_MODIFIER_CODES = {
+        Mod.PUBLIC | Mod.PROTECTED | Mod.PRIVATE,
+        Mod.ABSTRACT | Mod.FINAL,
+    };
+    private static final Modifiers NO_MODIFIERS = new Modifiers();
+
+    /**
+     * <pre>
+     *   Annotation :=
+     *           MarkerAnnotation             // JLS7 9.7.2
+     *           | SingleElementAnnotation    // JLS7 9.7.3
+     *           | NormalAnnotation           // JLS7 9.7.1
+     *
+     *   MarkerAnnotation        := '@' Identifier
+     *
+     *   SingleElementAnnotation := '@' Identifier '(' ElementValue ')'
+     *
+     *   NormalAnnotation        := '@' TypeName '(' ElementValuePairsOpt ')'
+     *
+     *   ElementValuePairsOpt    := [ ElementValuePair { ',' ElementValuePair } ]
+     * </pre>
+     */
+    private Java.Annotation
+    parseAnnotation() throws CompileException, IOException {
+        this.read("@");
+        ReferenceType type = new ReferenceType(this.location(), this.parseQualifiedIdentifier(), null);
+
+        // Marker annotation?
+        if (!this.peekRead("(")) return new Java.MarkerAnnotation(type);
+
+        // Single-element annotation?
+        if (this.peekIdentifier() == null || !this.peekNextButOne("=")) {
+            Java.ElementValue elementValue = this.parseElementValue();
+            this.read(")");
+            return new Java.SingleElementAnnotation(type, elementValue);
+        }
+
+        // Normal annotation.
+        ElementValuePair[] elementValuePairs;
+        if (this.peekRead(")")) {
+            elementValuePairs = new ElementValuePair[0];
+        } else {
+            List<Java.ElementValuePair> evps = new ArrayList<Java.ElementValuePair>();
+            do {
+                evps.add(this.parseElementValuePair());
+            } while (this.read(new String[] { ",", ")" }) == 0);
+            elementValuePairs = (ElementValuePair[]) evps.toArray(new Java.ElementValuePair[evps.size()]);
+        }
+
+        return new Java.NormalAnnotation(
+            type,
+            elementValuePairs
+        );
+    }
+
+    /**
+     * <pre>
+     *   ElementValuePair := Identifier '=' ElementValue
+     * </pre>
+     */
+    private Java.ElementValuePair
+    parseElementValuePair() throws CompileException, IOException {
+        String identifier = this.readIdentifier();
+        this.read("=");
+        return new Java.ElementValuePair(identifier, this.parseElementValue());
+    }
+
+    /**
+     * <pre>
+     *   ElementValue :=
+     *           ConditionalExpression
+     *           | Annotation
+     *           | ElementValueArrayInitializer
+     * </pre>
+     */
+    private Java.ElementValue
+    parseElementValue() throws CompileException, IOException {
+        if (this.peek("@")) return this.parseAnnotation();
+        if (this.peek("{")) return this.parseElementValueArrayInitializer();
+        return this.parseConditionalAndExpression().toRvalueOrCompileException();
+    }
+
+    /**
+     * <pre>
+     *   ElementValueArrayInitializer := '{' { ElementValue | ',' } '}'
+     * </pre>
+     */
+    private ElementValue
+    parseElementValueArrayInitializer() throws CompileException, IOException {
+        this.read("{");
+        Location                loc = this.location();
+        List<Java.ElementValue> evs = new ArrayList<Java.ElementValue>();
+        while (!this.peekRead("}")) {
+            if (this.peekRead(",")) continue;
+            evs.add(this.parseElementValue());
+        }
+        return new Java.ElementValueArrayInitializer(
+            (ElementValue[]) evs.toArray(new Java.ElementValue[evs.size()]),
+            loc
+        );
+    }
 
     /**
      * <pre>
      *   ClassDeclarationRest :=
-     *        Identifier
+     *        Identifier [ typeParameters ]
      *        [ 'extends' ReferenceType ]
      *        [ 'implements' ReferenceTypeList ]
      *        ClassBody
      * </pre>
      */
-    public Java.NamedClassDeclaration parseClassDeclarationRest(
-        String                  optionalDocComment,
-        short                   modifiers,
+    public NamedClassDeclaration
+    parseClassDeclarationRest(
+        @Nullable String        optionalDocComment,
+        Modifiers               modifiers,
         ClassDeclarationContext context
     ) throws CompileException, IOException {
-        Location location = this.location();
-        String className = this.readIdentifier();
+        Location location  = this.location();
+        String   className = this.readIdentifier();
         this.verifyIdentifierIsConventionalClassOrInterfaceName(className, location);
 
-        Java.ReferenceType optionalExtendedType = null;
-        if (this.peekKeyword("extends")) {
-            this.eatToken();
+        TypeParameter[] optionalTypeParameters = this.parseTypeParametersOpt();
+
+        ReferenceType optionalExtendedType = null;
+        if (this.peekRead("extends")) {
             optionalExtendedType = this.parseReferenceType();
         }
 
-        Java.ReferenceType[] implementedTypes = new Java.ReferenceType[0];
-        if (this.peekKeyword("implements")) {
-            this.eatToken();
+        ReferenceType[] implementedTypes = new ReferenceType[0];
+        if (this.peekRead("implements")) {
             implementedTypes = this.parseReferenceTypeList();
         }
 
-        Java.NamedClassDeclaration namedClassDeclaration;
+        NamedClassDeclaration namedClassDeclaration;
         if (context == ClassDeclarationContext.COMPILATION_UNIT) {
-            namedClassDeclaration = new Java.PackageMemberClassDeclaration(
-                location,                              // location
-                optionalDocComment,                    // optionalDocComment
-                modifiers,                             // modifiers
-                className,                             // name
-                optionalExtendedType,                  // optinalExtendedType
-                implementedTypes                       // implementedTypes
+            namedClassDeclaration = new PackageMemberClassDeclaration(
+                location,               // location
+                optionalDocComment,     // optionalDocComment
+                modifiers,              // modifiers
+                className,              // name
+                optionalTypeParameters, // optionalTypeParameters
+                optionalExtendedType,   // optinalExtendedType
+                implementedTypes        // implementedTypes
             );
         } else
         if (context == ClassDeclarationContext.TYPE_DECLARATION) {
-            namedClassDeclaration = new Java.MemberClassDeclaration(
-                location,             // location
-                optionalDocComment,   // optionalDocComment
-                modifiers,            // modifiers
-                className,            // name
-                optionalExtendedType, // optionalExtendedType
-                implementedTypes      // implementedTypes
+            namedClassDeclaration = new MemberClassDeclaration(
+                location,               // location
+                optionalDocComment,     // optionalDocComment
+                modifiers,              // modifiers
+                className,              // name
+                optionalTypeParameters, // optionalTypeParameters
+                optionalExtendedType,   // optionalExtendedType
+                implementedTypes        // implementedTypes
             );
         } else
         if (context == ClassDeclarationContext.BLOCK) {
-            namedClassDeclaration = new Java.LocalClassDeclaration(
-                location,             // location
-                optionalDocComment,   // optionalDocComment
-                modifiers,            // modifiers
-                className,            // name
-                optionalExtendedType, // optionalExtendedType
-                implementedTypes      // implementedTypes
+            namedClassDeclaration = new LocalClassDeclaration(
+                location,               // location
+                optionalDocComment,     // optionalDocComment
+                modifiers,              // modifiers
+                className,              // name
+                optionalTypeParameters, // optionalTypeParameters
+                optionalExtendedType,   // optionalExtendedType
+                implementedTypes        // implementedTypes
             );
         } else
         {
@@ -311,11 +604,83 @@ public class Parser {
         this.parseClassBody(namedClassDeclaration);
         return namedClassDeclaration;
     }
-    public static final class ClassDeclarationContext extends Enumerator {
-        public static final ClassDeclarationContext BLOCK            = new ClassDeclarationContext("block");
-        public static final ClassDeclarationContext TYPE_DECLARATION = new ClassDeclarationContext("type_declaration");
-        public static final ClassDeclarationContext COMPILATION_UNIT = new ClassDeclarationContext("compilation_unit");
-        private ClassDeclarationContext(String name) { super(name); }
+
+    /**
+     * <pre>
+     *   EnumDeclarationRest := Identifier [ 'implements' ReferenceTypeList ] EnumBody
+     * </pre>
+     */
+    public Java.EnumDeclaration
+    parseEnumDeclarationRest(
+        @Nullable String        optionalDocComment,
+        Modifiers               modifiers,
+        ClassDeclarationContext context
+    ) throws CompileException, IOException {
+        Location location = this.location();
+        String   enumName = this.readIdentifier();
+        this.verifyIdentifierIsConventionalClassOrInterfaceName(enumName, location);
+
+        if (this.peekRead("<")) {
+            throw new CompileException("Enum declaration must not have type parameters", this.location());
+        }
+
+        if (this.peekRead("extends")) {
+            throw new CompileException("Enum declaration must not have an EXTENDS clause", this.location());
+        }
+
+        ReferenceType[] implementedTypes = new ReferenceType[0];
+        if (this.peekRead("implements")) {
+            implementedTypes = this.parseReferenceTypeList();
+        }
+
+        Java.EnumDeclaration enumDeclaration;
+        if (context == ClassDeclarationContext.COMPILATION_UNIT) {
+            enumDeclaration = new Java.PackageMemberEnumDeclaration(
+                location,           // location
+                optionalDocComment, // optionalDocComment
+                modifiers,          // modifiers
+                enumName,           // name
+                implementedTypes    // implementedTypes
+            );
+        } else
+        if (context == ClassDeclarationContext.TYPE_DECLARATION) {
+            enumDeclaration = new Java.MemberEnumDeclaration(
+                location,           // location
+                optionalDocComment, // optionalDocComment
+                modifiers,          // modifiers
+                enumName,           // name
+                implementedTypes    // implementedTypes
+            );
+        } else
+        {
+            throw new JaninoRuntimeException("SNO: Enum declaration in unexpected context " + context);
+        }
+
+        this.parseEnumBody(enumDeclaration);
+
+        return enumDeclaration;
+    }
+
+    /**
+     * The kinds of context where a class declaration can occur.
+     */
+    public
+    enum ClassDeclarationContext {
+
+        /**
+         * The class declaration appears inside a 'block'.
+         */
+        BLOCK,
+
+        /**
+         * The class declaration appears (directly) inside a type declaration.
+         */
+        TYPE_DECLARATION,
+
+        /**
+         * The class declaration appears on the top level.
+         */
+        COMPILATION_UNIT,
     }
 
     /**
@@ -323,17 +688,12 @@ public class Parser {
      *   ClassBody := '{' { ClassBodyDeclaration } '}'
      * </pre>
      */
-    public void parseClassBody(
-        Java.ClassDeclaration classDeclaration
-    ) throws CompileException, IOException {
-        if (!this.peekOperator("{")) this.throwCompileException("\"{\" expected at start of class body");
-        this.eatToken();
+    public void
+    parseClassBody(AbstractClassDeclaration classDeclaration) throws CompileException, IOException {
+        this.read("{");
 
         for (;;) {
-            if (this.peekOperator("}")) {
-                this.eatToken();
-                return;
-            }
+            if (this.peekRead("}")) return;
 
             this.parseClassBodyDeclaration(classDeclaration);
         }
@@ -341,69 +701,112 @@ public class Parser {
 
     /**
      * <pre>
+     *   EnumBody := '{' [ EnumConstant { ',' EnumConstant } [ ',' ] [ ';' ] { ClassBodyDeclaration } '}'
+     * </pre>
+     */
+    public void
+    parseEnumBody(Java.EnumDeclaration enumDeclaration) throws CompileException, IOException {
+        this.read("{");
+
+        while (this.peek(new String[] { ";", "}" }) == -1) {
+            enumDeclaration.addConstant(this.parseEnumConstant());
+            if (!this.peekRead(",")) break;
+        }
+
+        while (!this.peekRead("}")) {
+            this.parseClassBodyDeclaration((AbstractClassDeclaration) enumDeclaration);
+        }
+    }
+
+    /**
+     * <pre>
+     *   EnumConstant := [ Annotations ] Identifier [ Arguments ] [ ClassBody ]
+     * </pre>
+     */
+    public Java.EnumConstant
+    parseEnumConstant() throws CompileException, IOException {
+
+        List<Java.Annotation> annotations = new ArrayList<Java.Annotation>();
+        while (this.peek("@")) {
+            annotations.add(this.parseAnnotation());
+        }
+
+        String name = this.readIdentifier();
+
+        Rvalue[] arguments = this.peek("(") ? this.parseArguments() : null;
+
+        Java.EnumConstant result = new Java.EnumConstant(
+            this.location(), // location
+            this.doc(),      // optionalDocComment
+            annotations,     // annotations
+            name,            // name
+            arguments        // optionalArguments
+        );
+
+        if (this.peek("{")) {
+            this.parseClassBody(result);
+        }
+
+        return result;
+    }
+
+    /**
+     * <pre>
      *   ClassBodyDeclaration :=
      *     ';' |
      *     ModifiersOpt (
-     *       Block |                                    // Instance (JLS2 8.6) or static initializer (JLS2 8.7)
+     *       Block |                                    // Instance (JLS7 8.6) or static initializer (JLS7 8.7)
      *       'void' Identifier MethodDeclarationRest |
      *       'class' ClassDeclarationRest |
      *       'interface' InterfaceDeclarationRest |
      *       ConstructorDeclarator |
-     *       Type Identifier (
-     *         MethodDeclarationRest |
-     *         FieldDeclarationRest ';'
-     *       )
+     *       [ TypeArguments ] Type Identifier MethodDeclarationRest |
+     *       Type Identifier FieldDeclarationRest ';'
      *     )
-     *
      * </pre>
      */
-    public void parseClassBodyDeclaration(
-        Java.ClassDeclaration classDeclaration
-    ) throws CompileException, IOException {
-        if (this.peekOperator(";")) {
-            this.eatToken();
-            return;
-        }
+    public void
+    parseClassBodyDeclaration(AbstractClassDeclaration classDeclaration) throws CompileException, IOException {
+        if (this.peekRead(";")) return;
 
-        String optionalDocComment = this.scanner.doc();
-        short modifiers = this.parseModifiersOpt();
+        String    optionalDocComment = this.doc();
+        Modifiers modifiers          = this.parseModifiers();
 
         // Initializer?
-        if (this.peekOperator("{")) {
-            if ((modifiers & ~Mod.STATIC) != 0) {
-                this.throwCompileException("Only modifier \"static\" allowed on initializer");
+        if (this.peek("{")) {
+            if ((modifiers.accessFlags & ~Mod.STATIC) != 0) {
+                throw this.compileException("Only modifier \"static\" allowed on initializer");
             }
 
-            Java.Initializer initializer = new Java.Initializer(
-                this.location(),               // location
-                (modifiers & Mod.STATIC) != 0, // statiC
-                this.parseBlock()              // block
+            Initializer initializer = new Initializer(
+                this.location(),                     // location
+                Mod.isStatic(modifiers.accessFlags), // statiC
+                this.parseBlock()                    // block
             );
 
-            classDeclaration.addVariableDeclaratorOrInitializer(initializer);
+            classDeclaration.addInitializer(initializer);
             return;
         }
 
-        // "void" method declaration.
-        if (this.peekKeyword("void")) {
+        // "void" method declaration (without type arguments).
+        if (this.peekRead("void")) {
             Location location = this.location();
-            this.eatToken();
             if (optionalDocComment == null) this.warning("MDCM", "Method doc comment missing", location);
             String name = this.readIdentifier();
             classDeclaration.addDeclaredMethod(this.parseMethodDeclarationRest(
-                optionalDocComment,                                  // declaringType
-                modifiers,                                // optionalDocComment
-                new Java.BasicType(location, Java.BasicType.VOID),                                         // modifiers
-                name                                               // name
+                optionalDocComment,                          // optionalDocComment
+                modifiers,                                   // modifiers
+                null,                                        // optionalTypeParameters
+                new PrimitiveType(location, Primitive.VOID), // type
+                name                                         // name
             ));
             return;
         }
 
         // Member class.
-        if (this.peekKeyword("class")) {
+        if (this.peekRead("class")) {
             if (optionalDocComment == null) this.warning("MCDCM", "Member class doc comment missing", this.location());
-            this.eatToken();
-            classDeclaration.addMemberTypeDeclaration((Java.MemberTypeDeclaration) this.parseClassDeclarationRest(
+            classDeclaration.addMemberTypeDeclaration((MemberTypeDeclaration) this.parseClassDeclarationRest(
                 optionalDocComment,                      // optionalDocComment
                 modifiers,                               // modifiers
                 ClassDeclarationContext.TYPE_DECLARATION // context
@@ -411,15 +814,40 @@ public class Parser {
             return;
         }
 
+        // Member enum.
+        if (this.peekRead("enum")) {
+            if (optionalDocComment == null) this.warning("MEDCM", "Member enum doc comment missing", this.location());
+            classDeclaration.addMemberTypeDeclaration((MemberTypeDeclaration) this.parseEnumDeclarationRest(
+                optionalDocComment,                      // optionalDocComment
+                modifiers.add(Mod.ENUM),                 // modifiers
+                ClassDeclarationContext.TYPE_DECLARATION // context
+            ));
+            return;
+        }
+
         // Member interface.
-        if (this.peekKeyword("interface")) {
+        if (this.peekRead("interface")) {
             if (optionalDocComment == null) {
                 this.warning("MIDCM", "Member interface doc comment missing", this.location());
             }
-            this.eatToken();
-            classDeclaration.addMemberTypeDeclaration((Java.MemberTypeDeclaration) this.parseInterfaceDeclarationRest(
+            classDeclaration.addMemberTypeDeclaration((MemberTypeDeclaration) this.parseInterfaceDeclarationRest(
                 optionalDocComment,                                // optionalDocComment
-                (short) (modifiers | Mod.STATIC),                  // modifiers
+                modifiers.add(Mod.STATIC),                         // modifiers
+                InterfaceDeclarationContext.NAMED_TYPE_DECLARATION // context
+            ));
+            return;
+        }
+
+        // Member annotation type.
+        if (this.peek("@") && this.peekNextButOne("interface")) {
+            this.read();
+            this.read();
+            if (optionalDocComment == null) {
+                this.warning("MATDCM", "Member annotation type doc comment missing", this.location());
+            }
+            classDeclaration.addMemberTypeDeclaration((MemberTypeDeclaration) this.parseInterfaceDeclarationRest(
+                optionalDocComment,                                // optionalDocComment
+                modifiers.add(Mod.STATIC | Mod.ANNOTATION),        // modifiers
                 InterfaceDeclarationContext.NAMED_TYPE_DECLARATION // context
             ));
             return;
@@ -427,104 +855,178 @@ public class Parser {
 
         // Constructor.
         if (
-            classDeclaration instanceof Java.NamedClassDeclaration &&
-            this.scanner.peek().isIdentifier(((Java.NamedClassDeclaration) classDeclaration).getName()) &&
-            this.scanner.peekNextButOne().isOperator("(")
+            classDeclaration instanceof NamedClassDeclaration
+            && this.peek().value.equals(((NamedClassDeclaration) classDeclaration).getName())
+            && this.peekNextButOne("(")
         ) {
             if (optionalDocComment == null) this.warning("CDCM", "Constructor doc comment missing", this.location());
             classDeclaration.addConstructor(this.parseConstructorDeclarator(
-                optionalDocComment,   // declaringClass
+                optionalDocComment, // declaringClass
                 modifiers           // modifiers
             ));
             return;
         }
 
         // Member method or field.
-        Java.Type memberType = this.parseType();
-        Location location = this.location();
-        String memberName = this.readIdentifier();
+        TypeParameter[] optionalTypeParameters = this.parseTypeParametersOpt();
+
+        // VOID method declaration?
+        if (this.peekRead("void")) {
+            if (optionalDocComment == null) this.warning("MDCM", "Method doc comment missing", this.location());
+            String name = this.readIdentifier();
+            classDeclaration.addDeclaredMethod(this.parseMethodDeclarationRest(
+                optionalDocComment,                                 // optionalDocComment
+                modifiers,                                          // modifiers
+                optionalTypeParameters,                             // optionalTypeParameters
+                new PrimitiveType(this.location(), Primitive.VOID), // type
+                name                                                // name
+            ));
+            return;
+        }
+
+        Type           memberType    = this.parseType();
+        Location       location      = this.location();
+        String         memberName    = this.readIdentifier();
 
         // Method declarator.
-        if (this.peekOperator("(")) {
+        if (this.peek("(")) {
             if (optionalDocComment == null) this.warning("MDCM", "Method doc comment missing", this.location());
             classDeclaration.addDeclaredMethod(this.parseMethodDeclarationRest(
-                optionalDocComment,   // declaringType
-                modifiers, // optionalDocComment
-                memberType,          // modifiers
-                memberName          // name
+                optionalDocComment,     // optionalDocComment
+                modifiers,              // modifiers
+                optionalTypeParameters, // optionalTypeParameters
+                memberType,             // type
+                memberName              // name
             ));
             return;
         }
 
         // Field declarator.
+        if (optionalTypeParameters != null) {
+            throw new CompileException("Type parameters not allowed on field declaration", this.location());
+        }
         if (optionalDocComment == null) this.warning("FDCM", "Field doc comment missing", this.location());
-        Java.FieldDeclaration fd = new Java.FieldDeclaration(
+        FieldDeclaration fd = new FieldDeclaration(
             location,                                  // location
             optionalDocComment,                        // optionalDocComment
             modifiers,                                 // modifiers
             memberType,                                // type
             this.parseFieldDeclarationRest(memberName) // variableDeclarators
         );
-        this.readOperator(";");
-        classDeclaration.addVariableDeclaratorOrInitializer(fd);
+        this.read(";");
+        classDeclaration.addFieldDeclaration(fd);
     }
 
     /**
      * <pre>
      *   InterfaceDeclarationRest :=
-     *     Identifier
+     *     Identifier [ typeParameters ]
      *     [ 'extends' ReferenceTypeList ]
      *     InterfaceBody
      * </pre>
      */
-    public Java.InterfaceDeclaration parseInterfaceDeclarationRest(
-        String                      optionalDocComment,
-        short                       modifiers,
+    public InterfaceDeclaration
+    parseInterfaceDeclarationRest(
+        @Nullable String            optionalDocComment,
+        Modifiers                   modifiers,
         InterfaceDeclarationContext context
     ) throws CompileException, IOException {
-        Location location = this.location();
-        String interfaceName = this.readIdentifier();
+        Location location      = this.location();
+        String   interfaceName = this.readIdentifier();
         this.verifyIdentifierIsConventionalClassOrInterfaceName(interfaceName, location);
 
-        Java.ReferenceType[] extendedTypes = new Java.ReferenceType[0];
-        if (this.peekKeyword("extends")) {
-            this.eatToken();
+        TypeParameter[] optionalTypeParameters = this.parseTypeParametersOpt();
+
+        ReferenceType[] extendedTypes = new ReferenceType[0];
+        if (this.peekRead("extends")) {
             extendedTypes = this.parseReferenceTypeList();
         }
 
-        Java.InterfaceDeclaration interfaceDeclaration;
+        InterfaceDeclaration id;
         if (context == InterfaceDeclarationContext.COMPILATION_UNIT) {
-            interfaceDeclaration = new Java.PackageMemberInterfaceDeclaration(
-                location,                              // location
-                optionalDocComment,                    // optionalDocComment
-                modifiers,                             // modifiers
-                interfaceName,                         // name
-                extendedTypes                          // extendedTypes
+            id = new PackageMemberInterfaceDeclaration(
+                location,               // location
+                optionalDocComment,     // optionalDocComment
+                modifiers,              // modifiers
+                interfaceName,          // name
+                optionalTypeParameters, // optionalTypeParameters
+                extendedTypes           // extendedTypes
             );
         } else
         if (context == InterfaceDeclarationContext.NAMED_TYPE_DECLARATION) {
-            interfaceDeclaration = new Java.MemberInterfaceDeclaration(
-                location,                                   // location
-                optionalDocComment,                         // optionalDocComment
-                modifiers,                                  // modifiers
-                interfaceName,                              // name
-                extendedTypes                               // extendedTypes
+            id = new MemberInterfaceDeclaration(
+                location,               // location
+                optionalDocComment,     // optionalDocComment
+                modifiers,              // modifiers
+                interfaceName,          // name
+                optionalTypeParameters, // optionalTypeParameters
+                extendedTypes           // extendedTypes
             );
         } else
         {
             throw new JaninoRuntimeException("SNO: Interface declaration in unexpected context " + context);
         }
 
-        this.parseInterfaceBody(interfaceDeclaration);
-        return interfaceDeclaration;
+        this.parseInterfaceBody(id);
+        return id;
     }
-    public static final class InterfaceDeclarationContext extends Enumerator {
-        // CHECKSTYLE(LineLengthCheck):OFF
-        public static final InterfaceDeclarationContext NAMED_TYPE_DECLARATION = new InterfaceDeclarationContext("named_type_declaration");
-        public static final InterfaceDeclarationContext COMPILATION_UNIT       = new InterfaceDeclarationContext("compilation_unit");
-        // CHECKSTYLE(LineLengthCheck):ON
 
-        InterfaceDeclarationContext(String name) { super(name); }
+    /**
+     * <pre>
+     *   AnnotationTypeDeclarationRest := Identifier AnnotationTypeBody
+     * </pre>
+     */
+    public AnnotationTypeDeclaration
+    parseAnnotationTypeDeclarationRest(
+        @Nullable String            optionalDocComment,
+        Modifiers                   modifiers,
+        InterfaceDeclarationContext context
+    ) throws CompileException, IOException {
+        Location location           = this.location();
+        String   annotationTypeName = this.readIdentifier();
+        this.verifyIdentifierIsConventionalClassOrInterfaceName(annotationTypeName, location);
+
+        AnnotationTypeDeclaration atd;
+        if (context == InterfaceDeclarationContext.COMPILATION_UNIT) {
+            atd = new PackageMemberAnnotationTypeDeclaration(
+                location,           // location
+                optionalDocComment, // optionalDocComment
+                modifiers,          // modifiers
+                annotationTypeName  // name
+            );
+        } else
+        if (context == InterfaceDeclarationContext.NAMED_TYPE_DECLARATION) {
+            atd = new MemberAnnotationTypeDeclaration(
+                location,           // location
+                optionalDocComment, // optionalDocComment
+                modifiers,          // modifiers
+                annotationTypeName  // name
+            );
+        } else
+        {
+            throw new JaninoRuntimeException("SNO: Interface declaration in unexpected context " + context);
+        }
+
+        this.parseInterfaceBody((InterfaceDeclaration) atd);
+
+        return atd;
+    }
+
+    /**
+     * The kinds of context where an interface declaration can occur.
+     */
+    public
+    enum InterfaceDeclarationContext {
+
+        /**
+         * The interface declaration appears (directly) inside a 'named type declaration'.
+         */
+        NAMED_TYPE_DECLARATION,
+
+        /**
+         * The interface declaration appears at the top level.
+         */
+        COMPILATION_UNIT,
     }
 
     /**
@@ -543,105 +1045,143 @@ public class Parser {
      *   } '}'
      * </pre>
      */
-    public void parseInterfaceBody(
-        Java.InterfaceDeclaration interfaceDeclaration
-    ) throws CompileException, IOException {
-        this.readOperator("{");
+    public void
+    parseInterfaceBody(InterfaceDeclaration interfaceDeclaration) throws CompileException, IOException {
+        this.read("{");
 
-        for (;;) {
-            if (this.peekOperator("}")) {
-                this.eatToken();
-                break;
-            }
+        while (!this.peekRead("}")) {
 
-            if (this.peekOperator(";")) {
-                this.eatToken();
+            if (this.peekRead(";")) continue;
+
+            String    optionalDocComment = this.doc();
+            Modifiers modifiers          = this.parseModifiers();
+
+            // "void" method declaration (without type parameters).
+            if (this.peekRead("void")) {
+                if (optionalDocComment == null) this.warning("MDCM", "Method doc comment missing", this.location());
+                Location location = this.location();
+                String   name     = this.readIdentifier();
+                interfaceDeclaration.addDeclaredMethod(this.parseMethodDeclarationRest(
+                    optionalDocComment,                          // optionalDocComment
+                    modifiers.add(Mod.ABSTRACT | Mod.PUBLIC),    // modifiers
+                    null,                                        // optionalTypeParameters
+                    new PrimitiveType(location, Primitive.VOID), // type
+                    name                                         // name
+                ));
                 continue;
             }
 
-            String optionalDocComment = this.scanner.doc();
-            short modifiers = this.parseModifiersOpt();
-
-            // "void" method declaration.
-            if (this.peekKeyword("void")) {
-                if (optionalDocComment == null) this.warning("MDCM", "Method doc comment missing", this.location());
-                Location location = this.location();
-                this.eatToken();
-                String name = this.readIdentifier();
-                interfaceDeclaration.addDeclaredMethod(this.parseMethodDeclarationRest(
-                    optionalDocComment,                                // declaringType
-                    (short) (modifiers | Mod.ABSTRACT | Mod.PUBLIC),   // optionalDocComment
-                    new Java.BasicType(location, Java.BasicType.VOID), // modifiers
-                    name                                               // name
-                ));
-            } else
-
             // Member class.
-            if (this.peekKeyword("class")) {
+            if (this.peekRead("class")) {
                 if (optionalDocComment == null) {
                     this.warning("MCDCM", "Member class doc comment missing", this.location());
                 }
-                this.eatToken();
                 interfaceDeclaration.addMemberTypeDeclaration(
-                    (Java.MemberTypeDeclaration) this.parseClassDeclarationRest(
-                        optionalDocComment,                            // optionalDocComment
-                        (short) (modifiers | Mod.STATIC | Mod.PUBLIC), // modifiers
-                        ClassDeclarationContext.TYPE_DECLARATION       // context
+                    (MemberTypeDeclaration) this.parseClassDeclarationRest(
+                        optionalDocComment,                      // optionalDocComment
+                        modifiers.add(Mod.STATIC | Mod.PUBLIC),  // ModifiersAndAnnotations
+                        ClassDeclarationContext.TYPE_DECLARATION // context
                     )
                 );
-            } else
+                continue;
+            }
+
+            // Member enum.
+            if (this.peekRead("enum")) {
+                if (optionalDocComment == null) {
+                    this.warning("MEDCM", "Member enum doc comment missing", this.location());
+                }
+                interfaceDeclaration.addMemberTypeDeclaration(
+                    (MemberTypeDeclaration) this.parseClassDeclarationRest(
+                        optionalDocComment,                                // optionalDocComment
+                        modifiers.add(Mod.STATIC | Mod.PUBLIC | Mod.ENUM), // ModifiersAndAnnotations
+                        ClassDeclarationContext.TYPE_DECLARATION           // context
+                    )
+                );
+                continue;
+            }
 
             // Member interface.
-            if (this.peekKeyword("interface")) {
+            if (this.peekRead("interface")) {
                 if (optionalDocComment == null) {
                     this.warning("MIDCM", "Member interface doc comment missing", this.location());
                 }
-                this.eatToken();
                 interfaceDeclaration.addMemberTypeDeclaration(
-                    (Java.MemberTypeDeclaration) this.parseInterfaceDeclarationRest(
+                    (MemberTypeDeclaration) this.parseInterfaceDeclarationRest(
                         optionalDocComment,                                // optionalDocComment
-                        (short) (modifiers | Mod.STATIC | Mod.PUBLIC),     // modifiers
+                        modifiers.add(Mod.STATIC | Mod.PUBLIC),            // ModifiersAndAnnotations
                         InterfaceDeclarationContext.NAMED_TYPE_DECLARATION // context
                     )
                 );
-            } else
+                continue;
+            }
+
+            // Member annotation type.
+            if (this.peek("@") && this.peekNextButOne("interface")) {
+                this.read();
+                this.read();
+                if (optionalDocComment == null) {
+                    this.warning("MATDCM", "Member annotation type doc comment missing", this.location());
+                }
+                interfaceDeclaration.addMemberTypeDeclaration(
+                    (MemberTypeDeclaration) this.parseInterfaceDeclarationRest(
+                        optionalDocComment,                                      // optionalDocComment
+                        modifiers.add(Mod.STATIC | Mod.PUBLIC | Mod.ANNOTATION), // ModifiersAndAnnotations
+                        InterfaceDeclarationContext.NAMED_TYPE_DECLARATION       // context
+                    )
+                );
+                continue;
+            }
 
             // Member method or field.
-            {
-                Java.Type memberType = this.parseType();
-                if (!this.scanner.peek().isIdentifier()) {
-                    this.throwCompileException("Identifier expected in member declaration");
-                }
+
+            TypeParameter[] optionalTypeParameters = this.parseTypeParametersOpt();
+
+            // "void" method declaration?
+            if (this.peekRead("void")) {
+                if (optionalDocComment == null) this.warning("MDCM", "Method doc comment missing", this.location());
                 Location location = this.location();
-                String memberName = this.readIdentifier();
-
-                // Method declarator.
-                if (this.peekOperator("(")) {
-                    if (optionalDocComment == null) this.warning("MDCM", "Method doc comment missing", this.location());
-                    interfaceDeclaration.addDeclaredMethod(this.parseMethodDeclarationRest(
-                        optionalDocComment,                              // declaringType
-                        (short) (modifiers | Mod.ABSTRACT | Mod.PUBLIC), // optionalDocComment
-                        memberType,                                      // modifiers
-                        memberName                                       // name
-                    ));
-                } else
-
-                // Field declarator.
-                {
-                    if (optionalDocComment == null) this.warning("FDCM", "Field doc comment missing", this.location());
-                    Java.FieldDeclaration fd = new Java.FieldDeclaration(
-                        location,                                  // location
-                        optionalDocComment,                        // optionalDocComment
-                        (short) (                                  // modifiers
-                            modifiers |
-                            Mod.PUBLIC | Mod.STATIC | Mod.FINAL
-                        ),
-                        memberType,                                // type
-                        this.parseFieldDeclarationRest(memberName) // variableDeclarators
-                    );
-                    interfaceDeclaration.addConstantDeclaration(fd);
-                }
+                String   name     = this.readIdentifier();
+                interfaceDeclaration.addDeclaredMethod(this.parseMethodDeclarationRest(
+                    optionalDocComment,                          // optionalDocComment
+                    modifiers.add(Mod.ABSTRACT | Mod.PUBLIC),    // modifiers
+                    optionalTypeParameters,                      // optionalTypeParameters
+                    new PrimitiveType(location, Primitive.VOID), // type
+                    name                                         // name
+                ));
+                continue;
             }
+
+            Type     memberType = this.parseType();
+            String   memberName = this.readIdentifier();
+            Location location   = this.location();
+
+            // Method declarator?
+            if (this.peek("(")) {
+                if (optionalDocComment == null) this.warning("MDCM", "Method doc comment missing", this.location());
+                interfaceDeclaration.addDeclaredMethod(this.parseMethodDeclarationRest(
+                    optionalDocComment,                       // optionalDocComment
+                    modifiers.add(Mod.ABSTRACT | Mod.PUBLIC), // modifiers
+                    optionalTypeParameters,                   // optionalTypeParameters
+                    memberType,                               // type
+                    memberName                                // name
+                ));
+                continue;
+            }
+
+            // Must be a field declarator.
+            if (optionalTypeParameters != null) {
+                throw new CompileException("Type parameters not allowed with field declaration", this.location());
+            }
+            if (optionalDocComment == null) this.warning("FDCM", "Field doc comment missing", this.location());
+            FieldDeclaration fd = new FieldDeclaration(
+                location,                                           // location
+                optionalDocComment,                                 // optionalDocComment
+                modifiers.add(Mod.PUBLIC | Mod.STATIC | Mod.FINAL), // modifiers
+                memberType,                                         // type
+                this.parseFieldDeclarationRest(memberName)          // variableDeclarators
+            );
+            interfaceDeclaration.addConstantDeclaration(fd);
         }
     }
 
@@ -657,70 +1197,66 @@ public class Parser {
      *     '}'
      * </pre>
      */
-    public Java.ConstructorDeclarator parseConstructorDeclarator(
-        String optionalDocComment,
-        short  modifiers
-    ) throws CompileException, IOException {
-        Location location = this.location();
+    public ConstructorDeclarator
+    parseConstructorDeclarator(@Nullable String optionalDocComment, Modifiers modifiers)
+    throws CompileException, IOException {
         this.readIdentifier();  // Class name
 
         // Parse formal parameters.
-        Java.FunctionDeclarator.FormalParameter[] formalParameters = this.parseFormalParameters(
-        );
+        final FormalParameters formalParameters = this.parseFormalParameters();
 
         // Parse "throws" clause.
-        Java.ReferenceType[] thrownExceptions;
-        if (this.peekKeyword("throws")) {
-            this.eatToken();
+        ReferenceType[] thrownExceptions;
+        if (this.peekRead("throws")) {
             thrownExceptions = this.parseReferenceTypeList();
         } else {
-            thrownExceptions = new Java.ReferenceType[0];
+            thrownExceptions = new ReferenceType[0];
         }
 
         // Parse constructor body.
-        location = this.location();
-        this.readOperator("{");
+        final Location location = this.location();
+        this.read("{");
 
         // Special treatment for the first statement of the constructor body: If this is surely an
         // expression statement, and if it could be a "ConstructorInvocation", then parse the
         // expression and check if it IS a ConstructorInvocation.
-        Java.ConstructorInvocation optionalConstructorInvocation = null;
-        List/*<BlockStatement>*/   statements = new ArrayList();
+        ConstructorInvocation optionalConstructorInvocation = null;
+        List<BlockStatement>  statements                    = new ArrayList<BlockStatement>();
         if (
-            this.peekKeyword(new String[] {
+            this.peek(new String[] {
                 "this", "super", "new", "void",
                 "byte", "char", "short", "int", "long", "float", "double", "boolean",
-            })
-            || this.scanner.peek().isLiteral()
-            || this.scanner.peek().isIdentifier()
+            }) != -1
+            || this.peekLiteral()
+            || this.peekIdentifier() != null
         ) {
-            Java.Atom a = this.parseExpression();
-            if (a instanceof Java.ConstructorInvocation) {
-                this.readOperator(";");
-                optionalConstructorInvocation = (Java.ConstructorInvocation) a;
+            Atom a = this.parseExpression();
+            if (a instanceof ConstructorInvocation) {
+                this.read(";");
+                optionalConstructorInvocation = (ConstructorInvocation) a;
             } else {
-                Java.Statement s;
-                if (this.scanner.peek().isIdentifier()) {
-                    Java.Type variableType = a.toTypeOrPE();
-                    s = new Java.LocalVariableDeclarationStatement(
-                        a.getLocation(),                     // location
-                        (short) 0,                           // modifiers
-                        variableType,                        // type
-                        this.parseLocalVariableDeclarators() // variableDeclarators
+                Statement s;
+                if (this.peekIdentifier() != null) {
+                    Type variableType = a.toTypeOrCompileException();
+                    s = new LocalVariableDeclarationStatement(
+                        a.getLocation(),                // location
+                        new Java.Modifiers(Mod.NONE),   // modifiers
+                        variableType,                   // type
+                        this.parseVariableDeclarators() // variableDeclarators
                     );
-                    this.readOperator(";");
+                    this.read(";");
                 } else {
-                    s = new Java.ExpressionStatement(a.toRvalueOrPE());
-                    this.readOperator(";");
+                    s = new ExpressionStatement(a.toRvalueOrCompileException());
+                    this.read(";");
                 }
                 statements.add(s);
             }
         }
         statements.addAll(this.parseBlockStatements());
 
-        this.readOperator("}");
+        this.read("}");
 
-        return new Java.ConstructorDeclarator(
+        return new ConstructorDeclarator(
             location,                      // location
             optionalDocComment,            // optionalDocComment
             modifiers,                     // modifiers
@@ -740,52 +1276,54 @@ public class Parser {
      *     ( ';' | MethodBody )
      * </pre>
      */
-    public Java.MethodDeclarator parseMethodDeclarationRest(
-        String                       optionalDocComment,
-        short                        modifiers,
-        Java.Type                    type,
-        String                       name
+    public MethodDeclarator
+    parseMethodDeclarationRest(
+        @Nullable String          optionalDocComment,
+        Modifiers                 modifiers,
+        @Nullable TypeParameter[] optionalTypeParameters,
+        Type                      type,
+        String                    name
     ) throws CompileException, IOException {
         Location location = this.location();
 
         this.verifyIdentifierIsConventionalMethodName(name, location);
 
-        Java.FunctionDeclarator.FormalParameter[] formalParameters = this.parseFormalParameters();
+        final FormalParameters formalParameters = this.parseFormalParameters();
 
-        for (int i = this.parseBracketsOpt(); i > 0; --i) type = new Java.ArrayType(type);
+        for (int i = this.parseBracketsOpt(); i > 0; --i) type = new ArrayType(type);
 
-        Java.ReferenceType[] thrownExceptions;
-        if (this.peekKeyword("throws")) {
-            this.eatToken();
+        ReferenceType[] thrownExceptions;
+        if (this.peekRead("throws")) {
             thrownExceptions = this.parseReferenceTypeList();
         } else {
-            thrownExceptions = new Java.ReferenceType[0];
+            thrownExceptions = new ReferenceType[0];
         }
 
-        List/*<BlockStatement>*/ optionalStatements;
-        if (this.peekOperator(";")) {
-            if ((modifiers & (Mod.ABSTRACT | Mod.NATIVE)) == 0) {
-                this.throwCompileException("Non-abstract, non-native method must have a body");
+        List<BlockStatement> optionalStatements;
+        if (this.peekRead(";")) {
+            if (!Mod.isAbstract(modifiers.accessFlags) && !Mod.isNative(modifiers.accessFlags)) {
+                throw this.compileException("Non-abstract, non-native method must have a body");
             }
-            this.eatToken();
             optionalStatements = null;
         } else {
-            if ((modifiers & (Mod.ABSTRACT | Mod.NATIVE)) != 0) {
-                this.throwCompileException("Abstract or native method must not have a body");
+            if (Mod.isAbstract(modifiers.accessFlags) || Mod.isNative(modifiers.accessFlags)) {
+                throw this.compileException("Abstract or native method must not have a body");
             }
-            this.readOperator("{");
+            this.read("{");
             optionalStatements = this.parseBlockStatements();
-            this.readOperator("}");
+            this.read("}");
         }
-        return new Java.MethodDeclarator(
-            location,           // location
-            optionalDocComment, // optionalDocComment
-            modifiers,          // modifiers
-            type,               // type
-            name,               // name
-            formalParameters,   // formalParameters
-            thrownExceptions,   // thrownExceptions
-            optionalStatements  // optionalStatements
+
+        return new MethodDeclarator(
+            location,               // location
+            optionalDocComment,     // optionalDocComment
+            modifiers,              // modifiers
+            optionalTypeParameters, // optionalTypeParameters
+            type,                   // type
+            name,                   // name
+            formalParameters,       // formalParameters
+            thrownExceptions,       // thrownExceptions
+            optionalStatements      // optionalStatements
         );
     }
 
@@ -796,12 +1334,13 @@ public class Parser {
      *     Expression
      * </pre>
      */
-    public Java.ArrayInitializerOrRvalue parseVariableInitializer() throws CompileException, IOException {
-        if (this.peekOperator("{")) {
+    public ArrayInitializerOrRvalue
+    parseVariableInitializer() throws CompileException, IOException {
+        if (this.peek("{")) {
             return this.parseArrayInitializer();
         } else
         {
-            return this.parseExpression().toRvalueOrPE();
+            return this.parseExpression().toRvalueOrCompileException();
         }
     }
 
@@ -811,20 +1350,19 @@ public class Parser {
      *     '{' [ VariableInitializer { ',' VariableInitializer } [ ',' ] '}'
      * </pre>
      */
-    public Java.ArrayInitializer parseArrayInitializer() throws CompileException, IOException {
-        Location location = this.location();
-        this.readOperator("{");
-        List l = new ArrayList(); // ArrayInitializerOrRvalue
-        while (!this.peekOperator("}")) {
+    public ArrayInitializer
+    parseArrayInitializer() throws CompileException, IOException {
+        final Location location = this.location();
+        this.read("{");
+        List<ArrayInitializerOrRvalue> l = new ArrayList<ArrayInitializerOrRvalue>();
+        while (!this.peekRead("}")) {
             l.add(this.parseVariableInitializer());
-            if (this.peekOperator("}")) break;
-            if (!this.peekOperator(",")) this.throwCompileException("\",\" or \"}\" expected");
-            this.eatToken();
+            if (this.peekRead("}")) break;
+            this.read(",");
         }
-        this.eatToken();
-        return new Java.ArrayInitializer(
+        return new ArrayInitializer(
             location,
-            (Java.ArrayInitializerOrRvalue[]) l.toArray(new Java.ArrayInitializerOrRvalue[l.size()])
+            (ArrayInitializerOrRvalue[]) l.toArray(new ArrayInitializerOrRvalue[l.size()])
         );
     }
 
@@ -833,43 +1371,58 @@ public class Parser {
      *   FormalParameters := '(' [ FormalParameter { ',' FormalParameter } ] ')'
      * </pre>
      */
-    public Java.FunctionDeclarator.FormalParameter[] parseFormalParameters(
-    ) throws CompileException, IOException {
-        this.readOperator("(");
-        if (this.peekOperator(")")) {
-            this.eatToken();
-            return new Java.FunctionDeclarator.FormalParameter[0];
-        }
+    public FormalParameters
+    parseFormalParameters() throws CompileException, IOException {
+        this.read("(");
+        if (this.peekRead(")")) return new FormalParameters(this.location());
 
-        List l = new ArrayList(); // Java.FormalParameter
-        for (;;) {
-            l.add(this.parseFormalParameter());
-            if (!this.peekOperator(",")) break;
-            this.eatToken();
-        }
-        this.readOperator(")");
-        return (Java.FunctionDeclarator.FormalParameter[]) l.toArray(
-            new Java.FunctionDeclarator.FormalParameter[l.size()]
+        List<FormalParameter> l           = new ArrayList<FormalParameter>();
+        final boolean[]       hasEllipsis = new boolean[1];
+        do {
+            if (hasEllipsis[0]) throw this.compileException("Only the last parameter may have an ellipsis");
+            l.add(this.parseFormalParameter(hasEllipsis));
+        } while (this.read(new String[] { ",", ")" }) == 0);
+        return new FormalParameters(
+            this.location(),                                              // location
+            (FormalParameter[]) l.toArray(new FormalParameter[l.size()]), // parameters
+            hasEllipsis[0]                                                // variableArity
         );
     }
 
     /**
      * <pre>
-     *   FormalParameter := [ 'final' ] Type Identifier BracketsOpt
+     *   FormalParameter := [ 'final' ] Type [ '.' '.' '.' ] Identifier BracketsOpt
      * </pre>
      */
-    public Java.FunctionDeclarator.FormalParameter parseFormalParameter() throws CompileException, IOException {
-        boolean finaL = this.peekKeyword("final");
-        if (finaL) this.eatToken();
+    public FormalParameter
+    parseFormalParameter(boolean[] hasEllipsis) throws CompileException, IOException {
 
-        Java.Type type = this.parseType();
+        Modifiers modifiers = this.parseModifiers();
+        if ((modifiers.accessFlags & ~Mod.FINAL) != 0) {
+            this.warning(
+                "OFAAAOPD",
+                "Only \"final\" and annotations allowed on parameter declaration",
+                this.location()
+            );
+        }
 
+        final boolean finaL = (modifiers.accessFlags & Mod.FINAL) != 0;
+
+        // Ignore annotations.
+
+        Type type = this.parseType(); // SUPPRESS CHECKSTYLE UsageDistance
+
+        if (this.peekRead(".")) {
+            this.read(".");
+            this.read(".");
+            hasEllipsis[0] = true;
+        }
         Location location = this.location();
-        String name = this.readIdentifier();
+        String   name     = this.readIdentifier();
         this.verifyIdentifierIsConventionalLocalVariableOrParameterName(name, location);
 
-        for (int i = this.parseBracketsOpt(); i > 0; --i) type = new Java.ArrayType(type);
-        return new Java.FunctionDeclarator.FormalParameter(location, finaL, type, name);
+        for (int i = this.parseBracketsOpt(); i > 0; --i) type = new ArrayType(type);
+        return new FormalParameter(location, finaL, type, name);
     }
 
     /**
@@ -877,14 +1430,12 @@ public class Parser {
      *   BracketsOpt := { '[' ']' }
      * </pre>
      */
-    int parseBracketsOpt() throws CompileException, IOException {
+    int
+    parseBracketsOpt() throws CompileException, IOException {
         int res = 0;
-        while (
-            this.scanner.peek().isOperator("[")
-            && this.scanner.peekNextButOne().isOperator("]")
-        ) {
-            this.eatToken();
-            this.eatToken();
+        while (this.peek("[") && this.peekNextButOne("]")) {
+            this.read();
+            this.read();
             ++res;
         }
         return res;
@@ -895,20 +1446,20 @@ public class Parser {
      *   MethodBody := Block
      * </pre>
      */
-    public Java.Block parseMethodBody() throws CompileException, IOException {
-        return this.parseBlock();
-    }
+    public Block
+    parseMethodBody() throws CompileException, IOException { return this.parseBlock(); }
 
     /**
      * <pre>
-     *   '{' BlockStatements '}'
+     *   Block := '{' BlockStatements '}'
      * </pre>
      */
-    public Java.Block parseBlock() throws CompileException, IOException {
-        Java.Block block = new Java.Block(this.location());
-        this.readOperator("{");
+    public Block
+    parseBlock() throws CompileException, IOException {
+        Block block = new Block(this.location());
+        this.read("{");
         block.addStatements(this.parseBlockStatements());
-        this.readOperator("}");
+        this.read("}");
         return block;
     }
 
@@ -917,113 +1468,113 @@ public class Parser {
      *   BlockStatements := { BlockStatement }
      * </pre>
      */
-    public List parseBlockStatements() throws CompileException, IOException {
-        List l = new ArrayList();
-        while (
-            !this.peekOperator("}") &&
-            !this.peekKeyword("case") &&
-            !this.peekKeyword("default")
-        ) l.add(this.parseBlockStatement());
+    public List<BlockStatement>
+    parseBlockStatements() throws CompileException, IOException {
+        List<BlockStatement> l = new ArrayList<BlockStatement>();
+        while (!this.peek("}") && !this.peek("case") && !this.peek("default")) l.add(this.parseBlockStatement());
         return l;
     }
 
     /**
      * <pre>
-     *   BlockStatement := { Identifier ':' } (
-     *     ( Modifiers Type | ModifiersOpt BasicType ) LocalVariableDeclarators ';' |
-     *     'class' ... |
-     *     Statement |
-     *     'final' Type LocalVariableDeclarators ';' |
+     *   BlockStatement :=
+     *     Statement |                                     (1)
+     *     'class' ... |                                   (2)
+     *     Modifiers Type VariableDeclarators ';' |
      *     Expression ';' |
-     *     Expression LocalVariableDeclarators ';'   (1)
-     *   )
+     *     Expression BracketsOpt VariableDeclarators ';'  (3)
      * </pre>
      *
-     * (1) "Expression" must pose a type, and has optional trailing brackets.
+     * <p>
+     *   (1) Includes the "labeled statement".
+     * </p>
+     * <p>
+     *   (2) Local class declaration.
+     * </p>
+     * <p>
+     *   (3) Local variable declaration statement; "Expression" must pose a type, and has optional trailing brackets.
+     * </p>
      */
-    public Java.BlockStatement parseBlockStatement() throws CompileException, IOException {
+    public BlockStatement
+    parseBlockStatement() throws CompileException, IOException {
 
         // Statement?
         if (
             (
-                this.scanner.peek().isIdentifier() &&
-                this.scanner.peekNextButOne().isOperator(":")
-            ) ||
-            this.peekKeyword(new String[] {
+                this.peekIdentifier() != null
+                && this.peekNextButOne(":")
+            )
+            || this.peek(new String[] {
                 "if", "for", "while", "do", "try", "switch", "synchronized",
-                "return", "throw", "break", "continue"
-            }) ||
-            this.peekOperator(new String[] { "{", ";" })
+                "return", "throw", "break", "continue", "assert"
+            }) != -1
+            || this.peek(new String[] { "{", ";" }) != -1
         ) return this.parseStatement();
 
         // Local class declaration?
-        if (this.peekKeyword("class")) {
+        if (this.peekRead("class")) {
             // JAVADOC[TM] ignores doc comments for local classes, but we
             // don't...
-            String optionalDocComment = this.scanner.doc();
+            String optionalDocComment = this.doc();
             if (optionalDocComment == null) this.warning("LCDCM", "Local class doc comment missing", this.location());
 
-            this.eatToken();
-            final Java.LocalClassDeclaration lcd = (Java.LocalClassDeclaration) this.parseClassDeclarationRest(
+            final LocalClassDeclaration lcd = (LocalClassDeclaration) this.parseClassDeclarationRest(
                 optionalDocComment,           // optionalDocComment
-                Mod.NONE,                     // modifiers
+                new Modifiers(),              // modifiers
                 ClassDeclarationContext.BLOCK // context
             );
-            return new Java.LocalClassDeclarationStatement(lcd);
+            return new LocalClassDeclarationStatement(lcd);
         }
 
-        // 'final' Type LocalVariableDeclarators ';'
-        if (this.peekKeyword("final")) {
-            Location location = this.location();
-            this.eatToken();
-            Java.Type variableType = this.parseType();
-            Java.LocalVariableDeclarationStatement lvds = new Java.LocalVariableDeclarationStatement(
-                location,                            // location
-                Mod.FINAL,                           // modifiers
-                variableType,                        // type
-                this.parseLocalVariableDeclarators() // variableDeclarators
+        // Modifiers Type VariableDeclarators ';'
+        if (this.peek(new String[] { "final", "@" }) != -1) {
+            LocalVariableDeclarationStatement lvds = new LocalVariableDeclarationStatement(
+                this.location(),                // location
+                this.parseModifiers(),          // modifiers
+                this.parseType(),               // type
+                this.parseVariableDeclarators() // variableDeclarators
             );
-            this.readOperator(";");
+            this.read(";");
             return lvds;
         }
 
         // It's either a non-final local variable declaration or an expression statement. We can
         // only tell after parsing an expression.
-        Java.Atom a = this.parseExpression();
+
+        Atom a = this.parseExpression();
 
         // Expression ';'
-        if (this.peekOperator(";")) {
-            this.eatToken();
-            return new Java.ExpressionStatement(a.toRvalueOrPE());
+        if (this.peekRead(";")) {
+            return new ExpressionStatement(a.toRvalueOrCompileException());
         }
 
-        // Expression LocalVariableDeclarators ';'
-        Java.Type variableType = a.toTypeOrPE();
-        Java.LocalVariableDeclarationStatement lvds = new Java.LocalVariableDeclarationStatement(
-            a.getLocation(),                     // location
-            Mod.NONE,                            // modifiers
-            variableType,                        // type
-            this.parseLocalVariableDeclarators() // variableDeclarators
+        // Expression BracketsOpt VariableDeclarators ';'
+        Type variableType = a.toTypeOrCompileException();
+        for (int i = this.parseBracketsOpt(); i > 0; --i) variableType = new ArrayType(variableType);
+        LocalVariableDeclarationStatement lvds = new LocalVariableDeclarationStatement(
+            a.getLocation(),                // location
+            new Java.Modifiers(Mod.NONE),   // modifiers
+            variableType,                   // type
+            this.parseVariableDeclarators() // variableDeclarators
         );
-        this.readOperator(";");
+        this.read(";");
         return lvds;
     }
 
     /**
      * <pre>
-     *   LocalVariableDeclarators := VariableDeclarator { ',' VariableDeclarator }
+     *   VariableDeclarators := VariableDeclarator { ',' VariableDeclarator }
      * </pre>
      */
-    public Java.VariableDeclarator[] parseLocalVariableDeclarators() throws CompileException, IOException {
-        List l = new ArrayList();
-        for (;;) {
-            Java.VariableDeclarator vd = this.parseVariableDeclarator();
+    public VariableDeclarator[]
+    parseVariableDeclarators() throws CompileException, IOException {
+        List<VariableDeclarator> l = new ArrayList<VariableDeclarator>();
+        do {
+            VariableDeclarator vd = this.parseVariableDeclarator();
             this.verifyIdentifierIsConventionalLocalVariableOrParameterName(vd.name, vd.getLocation());
             l.add(vd);
-            if (!this.peekOperator(",")) break;
-            this.eatToken();
-        }
-        return (Java.VariableDeclarator[]) l.toArray(new Java.VariableDeclarator[l.size()]);
+        } while (this.peekRead(","));
+        return (VariableDeclarator[]) l.toArray(new VariableDeclarator[l.size()]);
     }
 
     /**
@@ -1033,21 +1584,21 @@ public class Parser {
      *     { ',' VariableDeclarator }
      * </pre>
      */
-    public Java.VariableDeclarator[] parseFieldDeclarationRest(String name) throws CompileException, IOException {
-        List l = new ArrayList();
+    public VariableDeclarator[]
+    parseFieldDeclarationRest(String name) throws CompileException, IOException {
+        List<VariableDeclarator> l = new ArrayList<VariableDeclarator>();
 
-        Java.VariableDeclarator vd = this.parseVariableDeclaratorRest(name);
+        VariableDeclarator vd = this.parseVariableDeclaratorRest(name);
         this.verifyIdentifierIsConventionalFieldName(vd.name, vd.getLocation());
         l.add(vd);
 
-        while (this.peekOperator(",")) {
-            this.eatToken();
+        while (this.peekRead(",")) {
 
             vd = this.parseVariableDeclarator();
             this.verifyIdentifierIsConventionalFieldName(vd.name, vd.getLocation());
             l.add(vd);
         }
-        return (Java.VariableDeclarator[]) l.toArray(new Java.VariableDeclarator[l.size()]);
+        return (VariableDeclarator[]) l.toArray(new VariableDeclarator[l.size()]);
     }
 
     /**
@@ -1055,7 +1606,8 @@ public class Parser {
      *   VariableDeclarator := Identifier VariableDeclaratorRest
      * </pre>
      */
-    public Java.VariableDeclarator parseVariableDeclarator() throws CompileException, IOException {
+    public VariableDeclarator
+    parseVariableDeclarator() throws CompileException, IOException {
         return this.parseVariableDeclaratorRest(this.readIdentifier());
     }
 
@@ -1063,17 +1615,19 @@ public class Parser {
      * <pre>
      *   VariableDeclaratorRest := { '[' ']' } [ '=' VariableInitializer ]
      * </pre>
-     * Used by field declarations and local variable declarations.
+     * <p>
+     *   Used by field declarations and local variable declarations.
+     * </p>
      */
-    public Java.VariableDeclarator parseVariableDeclaratorRest(String name) throws CompileException, IOException  {
-        Location loc = this.location();
-        int brackets = this.parseBracketsOpt();
-        Java.ArrayInitializerOrRvalue initializer = null;
-        if (this.peekOperator("=")) {
-            this.eatToken();
-            initializer = this.parseVariableInitializer();
-        }
-        return new Java.VariableDeclarator(loc, name, brackets, initializer);
+    public VariableDeclarator
+    parseVariableDeclaratorRest(String name) throws CompileException, IOException  {
+        Location                 loc         = this.location();
+        int                      brackets    = this.parseBracketsOpt();
+        ArrayInitializerOrRvalue initializer = null;
+
+        if (this.peekRead("=")) initializer = this.parseVariableInitializer();
+
+        return new VariableDeclarator(loc, name, brackets, initializer);
     }
 
     /**
@@ -1096,32 +1650,29 @@ public class Parser {
      *     ExpressionStatement
      * </pre>
      */
-    public Java.Statement parseStatement() throws CompileException, IOException {
-        if (
-            this.scanner.peek().isIdentifier() &&
-            this.scanner.peekNextButOne().isOperator(":")
-        ) {
+    public Statement
+    parseStatement() throws CompileException, IOException {
+        if (this.peekIdentifier() != null && this.peekNextButOne(":")) {
             return this.parseLabeledStatement();
         }
 
-        Scanner.Token t = this.scanner.peek();
-        Java.Statement stmt = (
-            t.isOperator("{")           ? this.parseBlock() :
-            t.isKeyword("if")           ? this.parseIfStatement() :
-            t.isKeyword("for")          ? this.parseForStatement() :
-            t.isKeyword("while")        ? this.parseWhileStatement() :
-            t.isKeyword("do")           ? this.parseDoStatement() :
-            t.isKeyword("try")          ? this.parseTryStatement() :
-            t.isKeyword("switch")       ? this.parseSwitchStatement() :
-            t.isKeyword("synchronized") ? this.parseSynchronizedStatement() :
-            t.isKeyword("return")       ? this.parseReturnStatement() :
-            t.isKeyword("throw")        ? this.parseThrowStatement() :
-            t.isKeyword("break")        ? this.parseBreakStatement() :
-            t.isKeyword("continue")     ? this.parseContinueStatement() :
-            t.isOperator(";")           ? this.parseEmptyStatement() :
+        Statement stmt = (
+            this.peek("{")            ? this.parseBlock() :
+            this.peek("if")           ? this.parseIfStatement() :
+            this.peek("for")          ? this.parseForStatement() :
+            this.peek("while")        ? this.parseWhileStatement() :
+            this.peek("do")           ? this.parseDoStatement() :
+            this.peek("try")          ? this.parseTryStatement() :
+            this.peek("switch")       ? this.parseSwitchStatement() :
+            this.peek("synchronized") ? this.parseSynchronizedStatement() :
+            this.peek("return")       ? this.parseReturnStatement() :
+            this.peek("throw")        ? this.parseThrowStatement() :
+            this.peek("break")        ? this.parseBreakStatement() :
+            this.peek("continue")     ? this.parseContinueStatement() :
+            this.peek("assert")       ? this.parseAssertStatement() :
+            this.peek(";")            ? this.parseEmptyStatement() :
             this.parseExpressionStatement()
         );
-        if (stmt == null) this.throwCompileException("\"" + t.getKeyword() + "\" NYI");
 
         return stmt;
     }
@@ -1131,10 +1682,11 @@ public class Parser {
      *   LabeledStatement := Identifier ':' Statement
      * </pre>
      */
-    public Java.Statement parseLabeledStatement() throws CompileException, IOException {
+    public Statement
+    parseLabeledStatement() throws CompileException, IOException {
         String label = this.readIdentifier();
-        this.readOperator(":");
-        return new Java.LabeledStatement(
+        this.read(":");
+        return new LabeledStatement(
             this.location(),        // location
             label,                  // label
             this.parseStatement()   // body
@@ -1146,22 +1698,22 @@ public class Parser {
      *   IfStatement := 'if' '(' Expression ')' Statement [ 'else' Statement ]
      * </pre>
      */
-    public Java.Statement parseIfStatement() throws CompileException, IOException {
-        Location location = this.location();
-        this.readKeyword("if");
-        this.readOperator("(");
-        final Java.Rvalue condition = this.parseExpression().toRvalueOrPE();
-        this.readOperator(")");
+    public Statement
+    parseIfStatement() throws CompileException, IOException {
+        final Location location = this.location();
+        this.read("if");
+        this.read("(");
+        final Rvalue condition = this.parseExpression().toRvalueOrCompileException();
+        this.read(")");
 
-        Java.Statement thenStatement = this.parseStatement();
+        Statement thenStatement = this.parseStatement();
 
-        Java.Statement optionalElseStatement = null;
-        if (this.peekKeyword("else")) {
-            this.eatToken();
+        Statement optionalElseStatement = null;
+        if (this.peekRead("else")) {
             optionalElseStatement = this.parseStatement();
         }
 
-        return new Java.IfStatement(
+        return new IfStatement(
             location,             // location
             condition,            // condition
             thenStatement,        // thenStatement
@@ -1172,107 +1724,142 @@ public class Parser {
     /**
      * <pre>
      *   ForStatement :=
-     *     'for' '('
-     *       [ ForInit ] ';'
-     *       [ Expression ] ';'
-     *       [ ExpressionList ]
-     *     ')' Statement
+     *     'for' '(' [ ForInit ] ';' [ Expression ] ';' [ ExpressionList ] ')' Statement
+     *     | 'for' '(' FormalParameter ':' Expression ')' Statement
+     *
+     *   ForInit :=
+     *     Modifiers Type VariableDeclarators
+     *     | ModifiersOpt PrimitiveType VariableDeclarators
+     *     | Expression VariableDeclarators              (1)
+     *     | Expression { ',' Expression }
      * </pre>
+     * <p>
+     *   (1) "Expression" must pose a type.
+     * </p>
      */
-    public Java.Statement parseForStatement() throws CompileException, IOException {
-        Location location = this.location();
-        this.readKeyword("for");
+    public Statement
+    parseForStatement() throws CompileException, IOException {
+        this.read("for");
+        Location forLocation = this.location();
 
-        this.readOperator("(");
+        this.read("(");
 
-        Java.BlockStatement optionalInit = null;
-        if (!this.peekOperator(";")) optionalInit = this.parseForInit();
+        BlockStatement optionalInit = null;
+        INIT:
+        if (!this.peek(";")) {
 
-        this.readOperator(";");
+            // 'for' '(' Modifiers Type VariableDeclarators
+            // 'for' '(' [ Modifiers ] PrimitiveType VariableDeclarators
+            if (this.peek(new String[] {
+                "final", "@", "byte", "short", "char", "int", "long", "float", "double", "boolean"
+            }) != -1) {
+                Modifiers modifiers = this.parseModifiers();
+                Type      type      = this.parseType();
+                if (this.peekIdentifier() != null && this.peekNextButOne(":")) {
 
-        Java.Rvalue optionalCondition = null;
-        if (!this.peekOperator(";")) optionalCondition = this.parseExpression().toRvalueOrPE();
+                    // 'for' '(' [ Modifiers ] Type identifier ':' Expression ')' Statement
+                    final String   name         = this.readIdentifier();
+                    final Location nameLocation = this.location();
+                    this.read(":");
+                    Rvalue expression = this.parseExpression().toRvalueOrCompileException();
+                    this.read(")");
+                    return new ForEachStatement(
+                        forLocation,          // location
+                        new FormalParameter(  // currentElement
+                            nameLocation,
+                            Mod.isFinal(modifiers.accessFlags),
+                            type,
+                            name
+                        ),
+                        expression,           // expression
+                        this.parseStatement() // body
+                    );
+                }
 
-        this.readOperator(";");
+                // 'for' '(' [ Modifiers ] Type VariableDeclarators
+                optionalInit = new LocalVariableDeclarationStatement(
+                    this.location(),                // location
+                    modifiers,                      // modifiers
+                    type,                           // type
+                    this.parseVariableDeclarators() // variableDeclarators
+                );
+                break INIT;
+            }
 
-        Java.Rvalue[] optionalUpdate = null;
-        if (!this.peekOperator(")")) optionalUpdate = this.parseExpressionList();
+            Atom a = this.parseExpression();
 
-        this.readOperator(")");
+            if (this.peekIdentifier() != null) {
+                if (this.peekNextButOne(":")) {
 
-        // KLUDGE: Insert an implicit Block here.
-//        Java.Block implicitBlock = new Java.Block(location);
-        return /*Java.ForStatement forStatement =*/ new Java.ForStatement(
-            location,             // location
+                    // 'for' '(' Expression identifier ':' Expression ')' Statement
+                    final String   name         = this.readIdentifier();
+                    final Location nameLocation = this.location();
+                    this.read(":");
+                    Rvalue expression = this.parseExpression().toRvalueOrCompileException();
+                    this.read(")");
+                    return new ForEachStatement(
+                        forLocation,          // location
+                        new FormalParameter(  // currentElement
+                            nameLocation,
+                            false,
+                            a.toTypeOrCompileException(),
+                            name
+                        ),
+                        expression,           // expression
+                        this.parseStatement() // body
+                    );
+                }
+
+                // 'for' '(' Expression VariableDeclarators
+                optionalInit = new LocalVariableDeclarationStatement(
+                    this.location(),                // location
+                    new Java.Modifiers(Mod.NONE),   // modifiers
+                    a.toTypeOrCompileException(),   // type
+                    this.parseVariableDeclarators() // variableDeclarators
+                );
+                break INIT;
+            }
+
+            if (!this.peekRead(",")) {
+
+                // 'for' '(' Expression
+                optionalInit = new ExpressionStatement(a.toRvalueOrCompileException());
+                break INIT;
+            }
+
+            // 'for' '(' Expression { ',' Expression }
+            {
+                List<BlockStatement> l = new ArrayList<BlockStatement>();
+                l.add(new ExpressionStatement(a.toRvalueOrCompileException()));
+                do {
+                    l.add(new ExpressionStatement(this.parseExpression().toRvalueOrCompileException()));
+                } while (this.peekRead(","));
+
+                Block b = new Block(a.getLocation());
+                b.addStatements(l);
+                optionalInit = b;
+            }
+        }
+
+        this.read(";");
+
+        Rvalue optionalCondition = null;
+        if (!this.peek(";")) optionalCondition = this.parseExpression().toRvalueOrCompileException();
+
+        this.read(";");
+
+        Rvalue[] optionalUpdate = null;
+        if (!this.peek(")")) optionalUpdate = this.parseExpressionList();
+
+        this.read(")");
+
+        return new ForStatement(
+            forLocation,          // location
             optionalInit,         // optionalInit
             optionalCondition,    // optionalCondition
             optionalUpdate,       // optionalUpdate
             this.parseStatement() // body
         );
-//        implicitBlock.addStatement(forStatement);
-
-//        return implicitBlock;
-    }
-
-    /**
-     * <pre>
-     *   ForInit :=
-     *     Modifiers Type LocalVariableDeclarators |
-     *     ModifiersOpt BasicType LocalVariableDeclarators |
-     *     Expression (
-     *       LocalVariableDeclarators |       (1)
-     *       { ',' Expression }
-     *     )
-     * </pre>
-     *
-     * (1) "Expression" must pose a type.
-     */
-    private Java.BlockStatement parseForInit() throws CompileException, IOException {
-
-        // Modifiers Type LocalVariableDeclarators
-        // ModifiersOpt BasicType LocalVariableDeclarators
-        if (this.peekKeyword(new String[] {
-            "final", "byte", "short", "char", "int", "long", "float", "double", "boolean"
-        })) {
-            short modifiers = this.parseModifiersOpt();
-            Java.Type variableType = this.parseType();
-            return new Java.LocalVariableDeclarationStatement(
-                this.location(),                     // location
-                modifiers,                           // modifiers
-                variableType,                        // type
-                this.parseLocalVariableDeclarators() // variableDeclarators
-            );
-        }
-
-        Java.Atom a = this.parseExpression();
-
-        // Expression LocalVariableDeclarators
-        if (this.scanner.peek().isIdentifier()) {
-            Java.Type variableType = a.toTypeOrPE();
-            return new Java.LocalVariableDeclarationStatement(
-                a.getLocation(),                     // location
-                Mod.NONE,                            // modifiers
-                variableType,                        // type
-                this.parseLocalVariableDeclarators() // variableDeclarators
-            );
-        }
-
-        // Expression { ',' Expression }
-        if (!this.peekOperator(",")) {
-            return new Java.ExpressionStatement(a.toRvalueOrPE());
-        }
-        this.eatToken();
-        List l = new ArrayList();
-        l.add(new Java.ExpressionStatement(a.toRvalueOrPE()));
-        for (;;) {
-            l.add(new Java.ExpressionStatement(this.parseExpression().toRvalueOrPE()));
-            if (!this.peekOperator(",")) break;
-            this.eatToken();
-        }
-
-        Java.Block b = new Java.Block(a.getLocation());
-        b.addStatements(l);
-        return b;
     }
 
     /**
@@ -1280,15 +1867,16 @@ public class Parser {
      *   WhileStatement := 'while' '(' Expression ')' Statement
      * </pre>
      */
-    public Java.Statement parseWhileStatement() throws CompileException, IOException {
-        Location location = this.location();
-        this.readKeyword("while");
+    public Statement
+    parseWhileStatement() throws CompileException, IOException {
+        final Location location = this.location();
+        this.read("while");
 
-        this.readOperator("(");
-        Java.Rvalue condition = this.parseExpression().toRvalueOrPE();
-        this.readOperator(")");
+        this.read("(");
+        Rvalue condition = this.parseExpression().toRvalueOrCompileException();
+        this.read(")");
 
-        return new Java.WhileStatement(
+        return new WhileStatement(
             location,             // location
             condition,            // condition
             this.parseStatement() // body
@@ -1300,19 +1888,20 @@ public class Parser {
      *   DoStatement := 'do' Statement 'while' '(' Expression ')' ';'
      * </pre>
      */
-    public Java.Statement parseDoStatement() throws CompileException, IOException {
-        Location location = this.location();
-        this.readKeyword("do");
+    public Statement
+    parseDoStatement() throws CompileException, IOException {
+        final Location location = this.location();
+        this.read("do");
 
-        Java.Statement body = this.parseStatement();
+        final Statement body = this.parseStatement();
 
-        this.readKeyword("while");
-        this.readOperator("(");
-        Java.Rvalue condition = this.parseExpression().toRvalueOrPE();
-        this.readOperator(")");
-        this.readOperator(";");
+        this.read("while");
+        this.read("(");
+        final Rvalue condition = this.parseExpression().toRvalueOrCompileException();
+        this.read(")");
+        this.read(";");
 
-        return new Java.DoStatement(
+        return new DoStatement(
             location, // location
             body,     // body
             condition // condition
@@ -1332,38 +1921,39 @@ public class Parser {
      *   Finally := 'finally' Block
      * </pre>
      */
-    public Java.Statement parseTryStatement() throws CompileException, IOException {
+    public Statement
+    parseTryStatement() throws CompileException, IOException {
         Location location = this.location();
-        this.readKeyword("try");
+        this.read("try");
 
-        Java.Block body = this.parseBlock();
+        final Block body = this.parseBlock();
 
         // { CatchClause }
-        List ccs = new ArrayList();
-        while (this.peekKeyword("catch")) {
-            Location loc = this.location();
-            this.eatToken();
-            this.readOperator("(");
-            Java.FunctionDeclarator.FormalParameter caughtException = this.parseFormalParameter();
-            this.readOperator(")");
-            ccs.add(new Java.CatchClause(
+        List<CatchClause> ccs = new ArrayList<CatchClause>();
+        while (this.peekRead("catch")) {
+            final Location loc = this.location();
+            this.read("(");
+            boolean[]             hasEllipsis     = new boolean[1];
+            final FormalParameter caughtException = this.parseFormalParameter(hasEllipsis);
+            if (hasEllipsis[0]) throw this.compileException("Catch clause parameter must not have an ellipsis");
+            this.read(")");
+            ccs.add(new CatchClause(
                 loc,              // location
                 caughtException,  // caughtException
                 this.parseBlock() // body
             ));
         }
-        Java.Block optionalFinally = null;
-        if (this.peekKeyword("finally")) {
-            this.eatToken();
+        Block optionalFinally = null;
+        if (this.peekRead("finally")) {
             optionalFinally = this.parseBlock();
         }
         if (ccs.size() == 0 && optionalFinally == null) {
-            this.throwCompileException(
+            throw this.compileException(
                 "\"try\" statement must have at least one \"catch\" clause or a \"finally\" clause"
             );
         }
 
-        return new Java.TryStatement(
+        return new TryStatement(
             location,       // location
             body,           // body
             ccs,            // catchClauses
@@ -1381,49 +1971,49 @@ public class Parser {
      *   SwitchLabel := 'case' Expression ':' | 'default' ':'
      * </pre>
      */
-    public Java.Statement parseSwitchStatement() throws CompileException, IOException {
-        Location location = this.location();
-        this.readKeyword("switch");
+    public Statement
+    parseSwitchStatement() throws CompileException, IOException {
+        final Location location = this.location();
+        this.read("switch");
 
-        this.readOperator("(");
-        Java.Rvalue condition = this.parseExpression().toRvalueOrPE();
-        this.readOperator(")");
+        this.read("(");
+        final Rvalue condition = this.parseExpression().toRvalueOrCompileException();
+        this.read(")");
 
-        this.readOperator("{");
-        List sbsgs = new ArrayList();
-        while (!this.peekOperator("}")) {
-            Location location2 = this.location();
-            boolean hasDefaultLabel = false;
-            List caseLabels = new ArrayList();
+        this.read("{");
+
+        List<SwitchStatement.SwitchBlockStatementGroup>
+        sbsgs = new ArrayList<SwitchStatement.SwitchBlockStatementGroup>();
+        while (!this.peekRead("}")) {
+            Location     location2       = this.location();
+            boolean      hasDefaultLabel = false;
+            List<Rvalue> caseLabels      = new ArrayList<Rvalue>();
             do {
-                if (this.peekKeyword("case")) {
-                    this.eatToken();
-                    caseLabels.add(this.parseExpression().toRvalueOrPE());
+                if (this.peekRead("case")) {
+                    caseLabels.add(this.parseExpression().toRvalueOrCompileException());
                 } else
-                if (this.peekKeyword("default")) {
-                    this.eatToken();
-                    if (hasDefaultLabel) this.throwCompileException("Duplicate \"default\" label");
+                if (this.peekRead("default")) {
+                    if (hasDefaultLabel) throw this.compileException("Duplicate \"default\" label");
                     hasDefaultLabel = true;
                 } else {
-                    this.throwCompileException("\"case\" or \"default\" expected");
+                    throw this.compileException("\"case\" or \"default\" expected");
                 }
-                this.readOperator(":");
-            } while (this.peekKeyword(new String[] { "case", "default" }));
+                this.read(":");
+            } while (this.peek(new String[] { "case", "default" }) != -1);
 
-            Java.SwitchStatement.SwitchBlockStatementGroup sbsg = new Java.SwitchStatement.SwitchBlockStatementGroup(
-                location2, // location
-                caseLabels, // caseLabels
-                hasDefaultLabel, // hasDefaultLabel
+            SwitchStatement.SwitchBlockStatementGroup sbsg = new SwitchStatement.SwitchBlockStatementGroup(
+                location2,                  // location
+                caseLabels,                 // caseLabels
+                hasDefaultLabel,            // hasDefaultLabel
                 this.parseBlockStatements() // blockStatements
             );
             sbsgs.add(sbsg);
         }
-        this.eatToken();
-        return new Java.SwitchStatement(
-                location,  // location
-                condition, // condition
-                sbsgs      // sbsgs
-            );
+        return new SwitchStatement(
+            location,  // location
+            condition, // condition
+            sbsgs      // sbsgs
+        );
     }
 
     /**
@@ -1432,13 +2022,14 @@ public class Parser {
      *     'synchronized' '(' expression ')' Block
      * </pre>
      */
-    public Java.Statement parseSynchronizedStatement() throws CompileException, IOException {
-        Location location = this.location();
-        this.readKeyword("synchronized");
-        this.readOperator("(");
-        Java.Rvalue expression = this.parseExpression().toRvalueOrPE();
-        this.readOperator(")");
-        return new Java.SynchronizedStatement(
+    public Statement
+    parseSynchronizedStatement() throws CompileException, IOException {
+        final Location location = this.location();
+        this.read("synchronized");
+        this.read("(");
+        Rvalue expression = this.parseExpression().toRvalueOrCompileException();
+        this.read(")");
+        return new SynchronizedStatement(
             location,         // location
             expression,       // expression
             this.parseBlock() // body
@@ -1450,12 +2041,13 @@ public class Parser {
      *   ReturnStatement := 'return' [ Expression ] ';'
      * </pre>
      */
-    public Java.Statement parseReturnStatement() throws CompileException, IOException {
-        Location location = this.location();
-        this.readKeyword("return");
-        Java.Rvalue returnValue = this.peekOperator(";") ? null : this.parseExpression().toRvalueOrPE();
-        this.readOperator(";");
-        return new Java.ReturnStatement(location, returnValue);
+    public Statement
+    parseReturnStatement() throws CompileException, IOException {
+        final Location location = this.location();
+        this.read("return");
+        Rvalue returnValue = this.peek(";") ? null : this.parseExpression().toRvalueOrCompileException();
+        this.read(";");
+        return new ReturnStatement(location, returnValue);
     }
 
     /**
@@ -1463,13 +2055,14 @@ public class Parser {
      *   ThrowStatement := 'throw' Expression ';'
      * </pre>
      */
-    public Java.Statement parseThrowStatement() throws CompileException, IOException {
-        Location location = this.location();
-        this.readKeyword("throw");
-        final Java.Rvalue expression = this.parseExpression().toRvalueOrPE();
-        this.readOperator(";");
+    public Statement
+    parseThrowStatement() throws CompileException, IOException {
+        final Location location = this.location();
+        this.read("throw");
+        final Rvalue expression = this.parseExpression().toRvalueOrCompileException();
+        this.read(";");
 
-        return new Java.ThrowStatement(location, expression);
+        return new ThrowStatement(location, expression);
     }
 
     /**
@@ -1477,13 +2070,14 @@ public class Parser {
      *   BreakStatement := 'break' [ Identifier ] ';'
      * </pre>
      */
-    public Java.Statement parseBreakStatement() throws CompileException, IOException {
-        Location location = this.location();
-        this.readKeyword("break");
+    public Statement
+    parseBreakStatement() throws CompileException, IOException {
+        final Location location = this.location();
+        this.read("break");
         String optionalLabel = null;
-        if (this.scanner.peek().isIdentifier()) optionalLabel = this.readIdentifier();
-        this.readOperator(";");
-        return new Java.BreakStatement(location, optionalLabel);
+        if (this.peekIdentifier() != null) optionalLabel = this.readIdentifier();
+        this.read(";");
+        return new BreakStatement(location, optionalLabel);
     }
 
     /**
@@ -1491,13 +2085,31 @@ public class Parser {
      *   ContinueStatement := 'continue' [ Identifier ] ';'
      * </pre>
      */
-    public Java.Statement parseContinueStatement() throws CompileException, IOException {
-        Location location = this.location();
-        this.readKeyword("continue");
+    public Statement
+    parseContinueStatement() throws CompileException, IOException {
+        final Location location = this.location();
+        this.read("continue");
         String optionalLabel = null;
-        if (this.scanner.peek().isIdentifier()) optionalLabel = this.readIdentifier();
-        this.readOperator(";");
-        return new Java.ContinueStatement(location, optionalLabel);
+        if (this.peekIdentifier() != null) optionalLabel = this.readIdentifier();
+        this.read(";");
+        return new ContinueStatement(location, optionalLabel);
+    }
+
+    /**
+     * <pre>
+     *   AssertStatement := 'assert' Expression [ ':' Expression ] ';'
+     * </pre>
+     */
+    public Statement
+    parseAssertStatement() throws CompileException, IOException {
+        this.read("assert");
+        Location loc = this.location();
+
+        Rvalue expression1         = this.parseExpression().toRvalueOrCompileException();
+        Rvalue optionalExpression2 = this.peekRead(":") ? this.parseExpression().toRvalueOrCompileException() : null;
+        this.read(";");
+
+        return new AssertStatement(loc, expression1, optionalExpression2);
     }
 
     /**
@@ -1505,10 +2117,11 @@ public class Parser {
      *   EmptyStatement := ';'
      * </pre>
      */
-    public Java.Statement parseEmptyStatement() throws CompileException, IOException {
+    public Statement
+    parseEmptyStatement() throws CompileException, IOException {
         Location location = this.location();
-        this.readOperator(";");
-        return new Java.EmptyStatement(location);
+        this.read(";");
+        return new EmptyStatement(location);
     }
 
     /**
@@ -1516,14 +2129,13 @@ public class Parser {
      *   ExpressionList := Expression { ',' Expression }
      * </pre>
      */
-    public Java.Rvalue[] parseExpressionList() throws CompileException, IOException {
-        List l = new ArrayList();
-        for (;;) {
-            l.add(this.parseExpression().toRvalueOrPE());
-            if (!this.peekOperator(",")) break;
-            this.eatToken();
-        }
-        return (Java.Rvalue[]) l.toArray(new Java.Rvalue[l.size()]);
+    public Rvalue[]
+    parseExpressionList() throws CompileException, IOException {
+        List<Rvalue> l = new ArrayList<Rvalue>();
+        do {
+            l.add(this.parseExpression().toRvalueOrCompileException());
+        } while (this.peekRead(","));
+        return (Rvalue[]) l.toArray(new Rvalue[l.size()]);
     }
 
     /**
@@ -1535,38 +2147,120 @@ public class Parser {
      *   ) { '[' ']' }
      * </pre>
      */
-    public Java.Type parseType() throws CompileException, IOException {
-        Scanner.Token t = this.scanner.peek();
-        int bt = -1;
-        if (t.isKeyword("byte"))    { bt = Java.BasicType.BYTE;    } else
-        if (t.isKeyword("short"))   { bt = Java.BasicType.SHORT;   } else
-        if (t.isKeyword("char"))    { bt = Java.BasicType.CHAR;    } else
-        if (t.isKeyword("int"))     { bt = Java.BasicType.INT;     } else
-        if (t.isKeyword("long"))    { bt = Java.BasicType.LONG;    } else
-        if (t.isKeyword("float"))   { bt = Java.BasicType.FLOAT;   } else
-        if (t.isKeyword("double"))  { bt = Java.BasicType.DOUBLE;  } else
-        if (t.isKeyword("boolean")) { bt = Java.BasicType.BOOLEAN; }
-        Java.Type res;
-        if (bt != -1) {
-            res = new Java.BasicType(t.getLocation(), bt);
-            this.eatToken();
-        } else {
-            res = this.parseReferenceType();
+    public Type
+    parseType() throws CompileException, IOException {
+
+        Type res;
+        switch (this.peekRead(new String[] {
+            "byte", "short", "char", "int", "long", "float", "double", "boolean"
+        })) {
+        case 0:  res = new PrimitiveType(this.location(), Primitive.BYTE);    break;
+        case 1:  res = new PrimitiveType(this.location(), Primitive.SHORT);   break;
+        case 2:  res = new PrimitiveType(this.location(), Primitive.CHAR);    break;
+        case 3:  res = new PrimitiveType(this.location(), Primitive.INT);     break;
+        case 4:  res = new PrimitiveType(this.location(), Primitive.LONG);    break;
+        case 5:  res = new PrimitiveType(this.location(), Primitive.FLOAT);   break;
+        case 6:  res = new PrimitiveType(this.location(), Primitive.DOUBLE);  break;
+        case 7:  res = new PrimitiveType(this.location(), Primitive.BOOLEAN); break;
+        case -1: res = this.parseReferenceType(); break;
+        default: throw new AssertionError();
         }
-        for (int i = this.parseBracketsOpt(); i > 0; --i) res = new Java.ArrayType(res);
+
+        for (int i = this.parseBracketsOpt(); i > 0; --i) res = new ArrayType(res);
+
         return res;
     }
 
     /**
      * <pre>
-     *   ReferenceType := QualifiedIdentifier
+     *   ReferenceType := QualifiedIdentifier [ TypeArguments ]
      * </pre>
      */
-    public Java.ReferenceType parseReferenceType() throws CompileException, IOException {
-        return new Java.ReferenceType(
-            this.location(),                // location
-            this.parseQualifiedIdentifier() // identifiers
-        );
+    public ReferenceType
+    parseReferenceType() throws CompileException, IOException {
+        return new ReferenceType(this.location(), this.parseQualifiedIdentifier(), this.parseTypeArgumentsOpt());
+    }
+
+    /**
+     * <pre>
+     *   TypeParameters := '<' TypeParameter { ',' TypeParameter } '>'
+     * </pre>
+     */
+    @Nullable private TypeParameter[]
+    parseTypeParametersOpt() throws CompileException, IOException {
+
+        if (!this.peekRead("<")) return null;
+
+        List<TypeParameter> l = new ArrayList<TypeParameter>();
+        l.add(this.parseTypeParameter());
+        while (this.read(new String[] { ",", ">" }) == 0) {
+            l.add(this.parseTypeParameter());
+        }
+        return (TypeParameter[]) l.toArray(new TypeParameter[l.size()]);
+    }
+
+    /**
+     * <pre>
+     *   TypeParameter := identifier [ 'extends' ( identifier | ReferenceType { '&' ReferenceType }
+     * </pre>
+     */
+    private TypeParameter
+    parseTypeParameter() throws CompileException, IOException {
+        String name = this.readIdentifier();
+        if (this.peekRead("extends")) {
+            List<ReferenceType> bound = new ArrayList<ReferenceType>();
+            bound.add(this.parseReferenceType());
+            while (this.peekRead("&")) this.parseReferenceType();
+            return new TypeParameter(name, (ReferenceType[]) bound.toArray(new ReferenceType[bound.size()]));
+        }
+        return new TypeParameter(name, null);
+    }
+
+    /**
+     * <pre>
+     *   TypeArguments := '<' TypeArgument { ',' TypeArgument } '>'
+     * </pre>
+     *
+     * @return {@code null} iff there are no type arguments
+     */
+    @Nullable private TypeArgument[]
+    parseTypeArgumentsOpt() throws CompileException, IOException {
+
+        if (!this.peekRead("<")) return null;
+
+        List<TypeArgument> typeArguments = new ArrayList<TypeArgument>();
+        typeArguments.add(this.parseTypeArgument());
+        while (this.read(new String[] { ">", "," }) == 1) {
+            typeArguments.add(this.parseTypeArgument());
+        }
+        return (TypeArgument[]) typeArguments.toArray(new TypeArgument[typeArguments.size()]);
+    }
+
+    /**
+     * <pre>
+     *   TypeArgument :=
+     *     ReferenceType { '[' ']' }    &lt;= The optional brackets are mising in JLS7, section 18!?
+     *     | PrimitiveType '[' ']' { '[' ']' }
+     *     | '?' extends ReferenceType
+     *     | '?' super ReferenceType
+     * </pre>
+     */
+    private TypeArgument
+    parseTypeArgument() throws CompileException, IOException {
+        if (this.peekRead("?")) {
+            return (
+                this.peekRead("extends") ? new Wildcard(Wildcard.BOUNDS_EXTENDS, this.parseReferenceType()) :
+                this.peekRead("super")   ? new Wildcard(Wildcard.BOUNDS_SUPER,   this.parseReferenceType()) :
+                new Wildcard()
+            );
+        }
+
+        Type t = this.parseType();
+
+        int i = this.parseBracketsOpt();
+        for (; i > 0; i--) t = new ArrayType(t);
+        if (!(t instanceof TypeArgument)) throw this.compileException("'" + t + "' is not a valid type argument");
+        return (TypeArgument) t;
     }
 
     /**
@@ -1574,14 +2268,14 @@ public class Parser {
      *   ReferenceTypeList := ReferenceType { ',' ReferenceType }
      * </pre>
      */
-    public Java.ReferenceType[] parseReferenceTypeList() throws CompileException, IOException {
-        List l = new ArrayList();
+    public ReferenceType[]
+    parseReferenceTypeList() throws CompileException, IOException {
+        List<ReferenceType> l = new ArrayList<ReferenceType>();
         l.add(this.parseReferenceType());
-        while (this.peekOperator(",")) {
-            this.eatToken();
+        while (this.peekRead(",")) {
             l.add(this.parseReferenceType());
         }
-        return (Java.ReferenceType[]) l.toArray(new Java.ReferenceType[l.size()]);
+        return (ReferenceType[]) l.toArray(new ReferenceType[l.size()]);
     }
 
     /**
@@ -1589,7 +2283,8 @@ public class Parser {
      *   Expression := AssignmentExpression
      * </pre>
      */
-    public Java.Atom parseExpression() throws CompileException, IOException  {
+    public Atom
+    parseExpression() throws CompileException, IOException  {
         return this.parseAssignmentExpression();
     }
 
@@ -1599,20 +2294,21 @@ public class Parser {
      *     ConditionalExpression [ AssignmentOperator AssignmentExpression ]
      *
      *   AssignmentOperator :=
-     *     '=' | '*=' | '/=' | '%=' | '+=' | '-=' | '<<=' |
-     *     '>>=' | '>>>=' | '&=' | '^=' | '|='
+     *     '=' | '*=' | '/=' | '%=' | '+=' | '-=' | '&lt;&lt;=' |
+     *     '&gt;&gt;=' | '&gt;&gt;&gt;=' | '&amp;=' | '^=' | '|='
      * </pre>
      */
-    public Java.Atom parseAssignmentExpression() throws CompileException, IOException  {
-        Java.Atom a = this.parseConditionalExpression();
-        if (this.peekOperator(
+    public Atom
+    parseAssignmentExpression() throws CompileException, IOException  {
+        Atom a = this.parseConditionalExpression();
+        if (this.peek(
             new String[] { "=", "+=", "-=", "*=", "/=", "&=", "|=", "^=", "%=", "<<=", ">>=", ">>>=" }
-        )) {
-            Location location = this.location();
-            String operator = this.readOperator();
-            final Java.Lvalue lhs = a.toLvalueOrPE();
-            final Java.Rvalue rhs = this.parseAssignmentExpression().toRvalueOrPE();
-            return new Java.Assignment(location, lhs, operator, rhs);
+        ) != -1) {
+            final Lvalue lhs      = a.toLvalueOrCompileException();
+            Location     location = this.location();
+            String       operator = this.readOperator();
+            final Rvalue rhs      = this.parseAssignmentExpression().toRvalueOrCompileException();
+            return new Assignment(location, lhs, operator, rhs);
         }
         return a;
     }
@@ -1623,17 +2319,17 @@ public class Parser {
      *     ConditionalOrExpression [ '?' Expression ':' ConditionalExpression ]
      * </pre>
      */
-    public Java.Atom parseConditionalExpression() throws CompileException, IOException  {
-        Java.Atom a = this.parseConditionalOrExpression();
-        if (!this.peekOperator("?")) return a;
+    public Atom
+    parseConditionalExpression() throws CompileException, IOException  {
+        Atom a = this.parseConditionalOrExpression();
+        if (!this.peekRead("?")) return a;
         Location location = this.location();
-        this.eatToken();
 
-        Java.Rvalue lhs = a.toRvalueOrPE();
-        Java.Rvalue mhs = this.parseExpression().toRvalueOrPE();
-        this.readOperator(":");
-        Java.Rvalue rhs = this.parseConditionalExpression().toRvalueOrPE();
-        return new Java.ConditionalExpression(location, lhs, mhs, rhs);
+        Rvalue lhs = a.toRvalueOrCompileException();
+        Rvalue mhs = this.parseExpression().toRvalueOrCompileException();
+        this.read(":");
+        Rvalue rhs = this.parseConditionalExpression().toRvalueOrCompileException();
+        return new ConditionalExpression(location, lhs, mhs, rhs);
     }
 
     /**
@@ -1642,16 +2338,16 @@ public class Parser {
      *     ConditionalAndExpression { '||' ConditionalAndExpression ]
      * </pre>
      */
-    public Java.Atom parseConditionalOrExpression() throws CompileException, IOException  {
-        Java.Atom a = this.parseConditionalAndExpression();
-        while (this.peekOperator("||")) {
+    public Atom
+    parseConditionalOrExpression() throws CompileException, IOException  {
+        Atom a = this.parseConditionalAndExpression();
+        while (this.peekRead("||")) {
             Location location = this.location();
-            this.eatToken();
-            a = new Java.BinaryOperation(
+            a = new BinaryOperation(
                 location,
-                a.toRvalueOrPE(),
+                a.toRvalueOrCompileException(),
                 "||",
-                this.parseConditionalAndExpression().toRvalueOrPE()
+                this.parseConditionalAndExpression().toRvalueOrCompileException()
             );
         }
         return a;
@@ -1660,19 +2356,19 @@ public class Parser {
     /**
      * <pre>
      *   ConditionalAndExpression :=
-     *     InclusiveOrExpression { '&&' InclusiveOrExpression }
+     *     InclusiveOrExpression { '&amp;&amp;' InclusiveOrExpression }
      * </pre>
      */
-    public Java.Atom parseConditionalAndExpression() throws CompileException, IOException  {
-        Java.Atom a = this.parseInclusiveOrExpression();
-        while (this.peekOperator("&&")) {
+    public Atom
+    parseConditionalAndExpression() throws CompileException, IOException  {
+        Atom a = this.parseInclusiveOrExpression();
+        while (this.peekRead("&&")) {
             Location location = this.location();
-            this.eatToken();
-            a = new Java.BinaryOperation(
+            a = new BinaryOperation(
                 location,
-                a.toRvalueOrPE(),
+                a.toRvalueOrCompileException(),
                 "&&",
-                this.parseInclusiveOrExpression().toRvalueOrPE()
+                this.parseInclusiveOrExpression().toRvalueOrCompileException()
             );
         }
         return a;
@@ -1684,16 +2380,16 @@ public class Parser {
      *     ExclusiveOrExpression { '|' ExclusiveOrExpression }
      * </pre>
      */
-    public Java.Atom parseInclusiveOrExpression() throws CompileException, IOException  {
-        Java.Atom a = this.parseExclusiveOrExpression();
-        while (this.peekOperator("|")) {
+    public Atom
+    parseInclusiveOrExpression() throws CompileException, IOException  {
+        Atom a = this.parseExclusiveOrExpression();
+        while (this.peekRead("|")) {
             Location location = this.location();
-            this.eatToken();
-            a = new Java.BinaryOperation(
+            a = new BinaryOperation(
                 location,
-                a.toRvalueOrPE(),
+                a.toRvalueOrCompileException(),
                 "|",
-                this.parseExclusiveOrExpression().toRvalueOrPE()
+                this.parseExclusiveOrExpression().toRvalueOrCompileException()
             );
         }
         return a;
@@ -1705,16 +2401,16 @@ public class Parser {
      *     AndExpression { '^' AndExpression }
      * </pre>
      */
-    public Java.Atom parseExclusiveOrExpression() throws CompileException, IOException  {
-        Java.Atom a = this.parseAndExpression();
-        while (this.peekOperator("^")) {
+    public Atom
+    parseExclusiveOrExpression() throws CompileException, IOException  {
+        Atom a = this.parseAndExpression();
+        while (this.peekRead("^")) {
             Location location = this.location();
-            this.eatToken();
-            a = new Java.BinaryOperation(
+            a = new BinaryOperation(
                 location,
-                a.toRvalueOrPE(),
+                a.toRvalueOrCompileException(),
                 "^",
-                this.parseAndExpression().toRvalueOrPE()
+                this.parseAndExpression().toRvalueOrCompileException()
             );
         }
         return a;
@@ -1723,19 +2419,19 @@ public class Parser {
     /**
      * <pre>
      *   AndExpression :=
-     *     EqualityExpression { '&' EqualityExpression }
+     *     EqualityExpression { '&amp;' EqualityExpression }
      * </pre>
      */
-    public Java.Atom parseAndExpression() throws CompileException, IOException  {
-        Java.Atom a = this.parseEqualityExpression();
-        while (this.peekOperator("&")) {
+    public Atom
+    parseAndExpression() throws CompileException, IOException  {
+        Atom a = this.parseEqualityExpression();
+        while (this.peekRead("&")) {
             Location location = this.location();
-            this.eatToken();
-            a = new Java.BinaryOperation(
+            a = new BinaryOperation(
                 location,
-                a.toRvalueOrPE(),
+                a.toRvalueOrCompileException(),
                 "&",
-                this.parseEqualityExpression().toRvalueOrPE()
+                this.parseEqualityExpression().toRvalueOrCompileException()
             );
         }
         return a;
@@ -1747,15 +2443,16 @@ public class Parser {
      *     RelationalExpression { ( '==' | '!=' ) RelationalExpression }
      * </pre>
      */
-    public Java.Atom parseEqualityExpression() throws CompileException, IOException  {
-        Java.Atom a = this.parseRelationalExpression();
+    public Atom
+    parseEqualityExpression() throws CompileException, IOException  {
+        Atom a = this.parseRelationalExpression();
 
-        while (this.peekOperator(new String[] { "==", "!=" })) {
-            a = new Java.BinaryOperation(
-                this.location(),                                // location
-                a.toRvalueOrPE(),                               // lhs
-                this.readOperator(),                            // op
-                this.parseRelationalExpression().toRvalueOrPE() // rhs
+        while (this.peek(new String[] { "==", "!=" }) != -1) {
+            a = new BinaryOperation(
+                this.location(),                                              // location
+                a.toRvalueOrCompileException(),                               // lhs
+                this.read().value,                                            // op
+                this.parseRelationalExpression().toRvalueOrCompileException() // rhs
             );
         }
         return a;
@@ -1765,30 +2462,76 @@ public class Parser {
      * <pre>
      *   RelationalExpression :=
      *     ShiftExpression {
-     *       ( ( '<' | '>' | '<=' | '>=' ) ShiftExpression ) |
-     *       ( 'instanceof' ReferenceType )
+     *       'instanceof' ReferenceType
+     *       | '&lt;' ShiftExpression [ { ',' TypeArgument } '&gt;' ]
+     *       | '&lt;' TypeArgument [ { ',' TypeArgument } '&gt;' ]
+     *       | ( '&gt;' | '&lt;=' | '&gt;=' ) ShiftExpression
      *     }
      * </pre>
      */
-    public Java.Atom parseRelationalExpression() throws CompileException, IOException  {
-        Java.Atom a = this.parseShiftExpression();
+    public Atom
+    parseRelationalExpression() throws CompileException, IOException  {
+        Atom a = this.parseShiftExpression();
 
         for (;;) {
-            if (this.peekKeyword("instanceof")) {
+            if (this.peekRead("instanceof")) {
                 Location location = this.location();
-                this.eatToken();
-                a = new Java.Instanceof(
+                a = new Instanceof(
                     location,
-                    a.toRvalueOrPE(),
+                    a.toRvalueOrCompileException(),
                     this.parseType()
                 );
             } else
-            if (this.peekOperator(new String[] { "<", ">", "<=", ">=" })) {
-                a = new Java.BinaryOperation(
-                    this.location(),                    // location
-                    a.toRvalueOrPE(),                          // lhs
-                    this.readOperator(),                       // op
-                    this.parseShiftExpression().toRvalueOrPE() // rhs
+            if (this.peek(new String[] { "<", ">", "<=", ">=" }) != -1) {
+
+                // ambiguous-name '<' '?' ...
+                if (a instanceof Java.AmbiguousName && this.peek("<") && this.peekNextButOne("?")) {
+                    return new ReferenceType(
+                        this.location(),
+                        ((Java.AmbiguousName) a).identifiers,
+                        this.parseTypeArgumentsOpt()
+                    );
+                }
+
+                String op = this.read().value;
+
+                Atom rhs = this.parseShiftExpression();
+
+                if ("<".equals(op) && a instanceof Java.AmbiguousName) {
+
+                    if (this.peek(new String[] { "<", ">", "," }) != -1) {
+                        final String[] identifiers = ((Java.AmbiguousName) a).identifiers;
+
+                        // '<' ShiftExpression [ TypeArguments ] ( '<' | '>' | ',' )
+                        this.parseTypeArgumentsOpt();
+                        Type t = rhs.toTypeOrCompileException();
+
+                        TypeArgument ta;
+                        if (t instanceof ArrayType)     { ta = (ArrayType)     t; } else
+                        if (t instanceof ReferenceType) { ta = (ReferenceType) t; } else
+                        {
+                            throw this.compileException("'" + t + "' is not a valid type argument");
+                        }
+
+                        List<TypeArgument> typeArguments = new ArrayList<TypeArgument>();
+                        typeArguments.add(ta);
+                        while (this.read(new String[] { ">", "," }) == 1) {
+                            typeArguments.add(this.parseTypeArgument());
+                        }
+
+                        return new ReferenceType(
+                            this.location(),
+                            identifiers,
+                            (TypeArgument[]) typeArguments.toArray(new TypeArgument[typeArguments.size()])
+                        );
+                    }
+                }
+
+                a = new BinaryOperation(
+                    this.location(),                 // location
+                    a.toRvalueOrCompileException(),  // lhs
+                    op,                              // op
+                    rhs.toRvalueOrCompileException() // rhs
                 );
             } else {
                 return a;
@@ -1799,18 +2542,19 @@ public class Parser {
     /**
      * <pre>
      *   ShiftExpression :=
-     *     AdditiveExpression { ( '<<' | '>>' | '>>>' ) AdditiveExpression }
+     *     AdditiveExpression { ( '&lt;&lt;' | '&gt;&gt;' | '&gt;&gt;&gt;' ) AdditiveExpression }
      * </pre>
      */
-    public Java.Atom parseShiftExpression() throws CompileException, IOException  {
-        Java.Atom a = this.parseAdditiveExpression();
+    public Atom
+    parseShiftExpression() throws CompileException, IOException  {
+        Atom a = this.parseAdditiveExpression();
 
-        while (this.peekOperator(new String[] { "<<", ">>", ">>>" })) {
-            a = new Java.BinaryOperation(
-                this.location(),                       // location
-                a.toRvalueOrPE(),                             // lhs
-                this.readOperator(),                          // op
-                this.parseAdditiveExpression().toRvalueOrPE() // rhs
+        while (this.peek(new String[] { "<<", ">>", ">>>" }) != -1) {
+            a = new BinaryOperation(
+                this.location(),                                            // location
+                a.toRvalueOrCompileException(),                             // lhs
+                this.read().value,                                          // op
+                this.parseAdditiveExpression().toRvalueOrCompileException() // rhs
             );
         }
         return a;
@@ -1822,15 +2566,16 @@ public class Parser {
      *     MultiplicativeExpression { ( '+' | '-' ) MultiplicativeExpression }
      * </pre>
      */
-    public Java.Atom parseAdditiveExpression() throws CompileException, IOException  {
-        Java.Atom a = this.parseMultiplicativeExpression();
+    public Atom
+    parseAdditiveExpression() throws CompileException, IOException  {
+        Atom a = this.parseMultiplicativeExpression();
 
-        while (this.peekOperator(new String[] { "+", "-" })) {
-            a = new Java.BinaryOperation(
-                this.location(),                                    // location
-                a.toRvalueOrPE(),                                   // lhs
-                this.readOperator(),                                // op
-                this.parseMultiplicativeExpression().toRvalueOrPE() // rhs
+        while (this.peek(new String[] { "+", "-" }) != -1) {
+            a = new BinaryOperation(
+                this.location(),                                                  // location
+                a.toRvalueOrCompileException(),                                   // lhs
+                this.read().value,                                                // op
+                this.parseMultiplicativeExpression().toRvalueOrCompileException() // rhs
             );
         }
         return a;
@@ -1842,15 +2587,16 @@ public class Parser {
      *     UnaryExpression { ( '*' | '/' | '%' ) UnaryExpression }
      * </pre>
      */
-    public Java.Atom parseMultiplicativeExpression() throws CompileException, IOException {
-        Java.Atom a = this.parseUnaryExpression();
+    public Atom
+    parseMultiplicativeExpression() throws CompileException, IOException {
+        Atom a = this.parseUnaryExpression();
 
-        while (this.peekOperator(new String[] { "*", "/", "%" })) {
-            a = new Java.BinaryOperation(
-                this.location(),                    // location
-                a.toRvalueOrPE(),                          // lhs
-                this.readOperator(),                       // op
-                this.parseUnaryExpression().toRvalueOrPE() // rhs
+        while (this.peek(new String[] { "*", "/", "%" }) != -1) {
+            a = new BinaryOperation(
+                this.location(),                                         // location
+                a.toRvalueOrCompileException(),                          // lhs
+                this.read().value,                                       // op
+                this.parseUnaryExpression().toRvalueOrCompileException() // rhs
             );
         }
         return a;
@@ -1866,34 +2612,35 @@ public class Parser {
      *   PostfixOperator := '++' | '--'
      * </pre>
      */
-    public Java.Atom parseUnaryExpression() throws CompileException, IOException {
-        if (this.peekOperator(new String[] { "++", "--" })) {
-            return new Java.Crement(
-                this.location(),                           // location
-                this.readOperator(),                       // operator
-                this.parseUnaryExpression().toLvalueOrPE() // operand
+    public Atom
+    parseUnaryExpression() throws CompileException, IOException {
+        if (this.peek(new String[] { "++", "--" }) != -1) {
+            return new Crement(
+                this.location(),                                         // location
+                this.read().value,                                       // operator
+                this.parseUnaryExpression().toLvalueOrCompileException() // operand
             );
         }
 
-        if (this.peekOperator(new String[] { "+", "-", "~", "!" })) {
-            return new Java.UnaryOperation(
-                this.location(),                           // location
-                this.readOperator(),                       // operator
-                this.parseUnaryExpression().toRvalueOrPE() // operand
+        if (this.peek(new String[] { "+", "-", "~", "!" }) != -1) {
+            return new UnaryOperation(
+                this.location(),                                         // location
+                this.read().value,                                       // operator
+                this.parseUnaryExpression().toRvalueOrCompileException() // operand
             );
         }
 
-        Java.Atom a = this.parsePrimary();
+        Atom a = this.parsePrimary();
 
-        while (this.peekOperator(new String[] { ".", "[" })) {
+        while (this.peek(new String[] { ".", "[" }) != -1) {
             a = this.parseSelector(a);
         }
 
-        while (this.peekOperator(new String[] { "++", "--" })) {
-            a = new Java.Crement(
-                this.location(),    // location
-                a.toLvalueOrPE(),   // operand
-                this.readOperator() // operator
+        while (this.peek(new String[] { "++", "--" }) != -1) {
+            a = new Crement(
+                this.location(),                // location
+                a.toLvalueOrCompileException(), // operand
+                this.read().value               // operator
             );
         }
 
@@ -1919,8 +2666,8 @@ public class Parser {
      *     NewAnonymousClassInstance |             // ClassInstanceCreationExpression 15.9
      *     NewArray |                              // ArrayCreationExpression 15.10
      *     NewInitializedArray |                   // ArrayInitializer 10.6
-     *     BasicType { '[]' } |                    // Type
-     *     BasicType { '[]' } '.' 'class' |        // ClassLiteral 15.8.2
+     *     PrimitiveType { '[]' } |                // Type
+     *     PrimitiveType { '[]' } '.' 'class' |    // ClassLiteral 15.8.2
      *     'void' '.' 'class'                      // ClassLiteral 15.8.2
      *
      *   CastExpression :=
@@ -1936,104 +2683,99 @@ public class Parser {
      *   NewInitializedArray := 'new' ArrayType ArrayInitializer
      * </pre>
      */
-    public Java.Atom parsePrimary() throws CompileException, IOException {
-        if (this.peekOperator("(")) {
-            this.eatToken();
+    public Atom
+    parsePrimary() throws CompileException, IOException {
+        if (this.peekRead("(")) {
             if (
-                this.peekKeyword(new String[] { "boolean", "char", "byte", "short", "int", "long", "float", "double", })
+                this.peek(new String[] { "boolean", "char", "byte", "short", "int", "long", "float", "double", }) != -1
             ) {
                 // '(' PrimitiveType { '[]' } ')' UnaryExpression
-                Java.Type type = this.parseType();
-                int brackets = this.parseBracketsOpt();
-                this.readOperator(")");
-                for (int i = 0; i < brackets; ++i) type = new Java.ArrayType(type);
-                return new Java.Cast(
-                    this.location(),                           // location
-                    type,                                      // targetType
-                    this.parseUnaryExpression().toRvalueOrPE() // value
+                Type type     = this.parseType();
+                int  brackets = this.parseBracketsOpt();
+                this.read(")");
+                for (int i = 0; i < brackets; ++i) type = new ArrayType(type);
+                return new Cast(
+                    this.location(),                                         // location
+                    type,                                                    // targetType
+                    this.parseUnaryExpression().toRvalueOrCompileException() // value
                 );
             }
-            Java.Atom a = this.parseExpression();
-            this.readOperator(")");
+            Atom a = this.parseExpression();
+            this.read(")");
 
             if (
-                this.scanner.peek().isLiteral() ||
-                this.scanner.peek().isIdentifier() ||
-                this.peekOperator(new String[] { "(", "~", "!", }) ||
-                this.peekKeyword(new String[] { "this", "super", "new", })
+                this.peekLiteral()
+                || this.peekIdentifier() != null
+                || this.peek(new String[] { "(", "~", "!", }) != -1
+                || this.peek(new String[] { "this", "super", "new", }) != -1
             ) {
                 // '(' Expression ')' UnaryExpression
-                return new Java.Cast(
-                    this.location(),                           // location
-                    a.toTypeOrPE(),                            // targetType
-                    this.parseUnaryExpression().toRvalueOrPE() // value
+                return new Cast(
+                    this.location(),                                         // location
+                    a.toTypeOrCompileException(),                            // targetType
+                    this.parseUnaryExpression().toRvalueOrCompileException() // value
                 );
             }
 
             // '(' Expression ')'
-            return new Java.ParenthesizedExpression(a.getLocation(), a.toRvalueOrPE());
+            return new ParenthesizedExpression(a.getLocation(), a.toRvalueOrCompileException());
         }
 
-        if (this.scanner.peek().isLiteral()) {
+        if (this.peekLiteral()) {
+
             // Literal
             return this.parseLiteral();
         }
 
-        if (this.scanner.peek().isIdentifier()) {
+        if (this.peekIdentifier() != null) {
             Location location = this.location();
-            String[] qi = this.parseQualifiedIdentifier();
-            if (this.peekOperator("(")) {
+            String[] qi       = this.parseQualifiedIdentifier();
+            if (this.peek("(")) {
                 // Name Arguments
-                return new Java.MethodInvocation(
-                    this.location(),                                // location
-                    qi.length == 1 ? null : new Java.AmbiguousName( // optionalTarget
+                return new MethodInvocation(
+                    this.location(),                           // location
+                    qi.length == 1 ? null : new AmbiguousName( // optionalTarget
                         location,       // location
                         qi,             // identifiers
                         qi.length - 1   // n
                     ),
-                    qi[qi.length - 1],                              // methodName
-                    this.parseArguments()                           // arguments
+                    qi[qi.length - 1],                         // methodName
+                    this.parseArguments()                      // arguments
                 );
             }
-            if (
-                this.peekOperator("[")
-                && this.scanner.peekNextButOne().isOperator("]")
-            ) {
+            if (this.peek("[") && this.peekNextButOne("]")) {
                 // Name '[]' { '[]' }
                 // Name '[]' { '[]' } '.' 'class'
-                Java.Type res = new Java.ReferenceType(
+                Type res = new ReferenceType(
                     location, // location
-                    qi        // identifiers
+                    qi,       // identifiers
+                    null      // optionalTypeArguments
                 );
                 int brackets = this.parseBracketsOpt();
-                for (int i = 0; i < brackets; ++i) res = new Java.ArrayType(res);
-                if (
-                    this.peekOperator(".")
-                    && this.scanner.peekNextButOne().isKeyword("class")
-                ) {
-                    this.eatToken();
+                for (int i = 0; i < brackets; ++i) res = new ArrayType(res);
+                if (this.peek(".") && this.peekNextButOne("class")) {
+                    this.read();
                     Location location2 = this.location();
-                    this.eatToken();
-                    return new Java.ClassLiteral(location2, res);
+                    this.read();
+                    return new ClassLiteral(location2, res);
                 } else {
                     return res;
                 }
             }
             // Name
-            return new Java.AmbiguousName(
-                this.location(), // location
-                qi               // identifiers
+            return new AmbiguousName(
+                location, // location
+                qi        // identifiers
             );
         }
 
-        if (this.peekKeyword("this")) {
+        if (this.peekRead("this")) {
             Location location = this.location();
-            this.eatToken();
-            if (this.peekOperator("(")) {
+            if (this.peek("(")) {
 
                 // 'this' Arguments
-                // Alternate constructor invocation (JLS 8.8.5.1)
-                return new Java.AlternateConstructorInvocation(
+                // Alternate constructor invocation (JLS7 8.8.7.1).
+                return new AlternateConstructorInvocation(
                     location,             // location
                     this.parseArguments() // arguments
                 );
@@ -2041,28 +2783,27 @@ public class Parser {
             {
 
                 // 'this'
-                return new Java.ThisReference(location);
+                return new ThisReference(location);
             }
         }
 
-        if (this.peekKeyword("super")) {
-            this.eatToken();
-            if (this.peekOperator("(")) {
+        if (this.peekRead("super")) {
+            if (this.peek("(")) {
 
                 // 'super' Arguments
-                // Unqualified superclass constructor invocation (JLS 8.8.5.1)
-                return new Java.SuperConstructorInvocation(
+                // Unqualified superclass constructor invocation (JLS7 8.8.7.1).
+                return new SuperConstructorInvocation(
                     this.location(),      // location
-                    (Java.Rvalue) null,   // optionalQualification
+                    (Rvalue) null,        // optionalQualification
                     this.parseArguments() // arguments
                 );
             }
-            this.readOperator(".");
+            this.read(".");
             String name = this.readIdentifier();
-            if (this.peekOperator("(")) {
+            if (this.peek("(")) {
 
                 // 'super' '.' Identifier Arguments
-                return new Java.SuperclassMethodInvocation(
+                return new SuperclassMethodInvocation(
                     this.location(),      // location
                     name,                 // methodName
                     this.parseArguments() // arguments
@@ -2070,54 +2811,50 @@ public class Parser {
             } else {
 
                 // 'super' '.' Identifier
-                return new Java.SuperclassFieldAccessExpression(
-                    this.location(),  // location
-                    (Java.Type) null, // optionalQualification
-                    name              // fieldName
+                return new SuperclassFieldAccessExpression(
+                    this.location(), // location
+                    (Type) null,     // optionalQualification
+                    name             // fieldName
                 );
             }
         }
 
         // 'new'
-        if (this.peekKeyword("new")) {
+        if (this.peekRead("new")) {
             Location location = this.location();
-            this.eatToken();
-            Java.Type type = this.parseType();
-            if (type instanceof Java.ArrayType) {
+            Type     type     = this.parseType();
+            if (type instanceof ArrayType) {
                 // 'new' ArrayType ArrayInitializer
-                return new Java.NewInitializedArray(location, (Java.ArrayType) type, this.parseArrayInitializer());
+                return new NewInitializedArray(location, (ArrayType) type, this.parseArrayInitializer());
             }
-            if (
-                type instanceof Java.ReferenceType
-                && this.peekOperator("(")
-            ) {
+            if (type instanceof ReferenceType && this.peek("(")) {
                 // 'new' ReferenceType Arguments [ ClassBody ]
-                Java.Rvalue[] arguments = this.parseArguments();
-                if (this.peekOperator("{")) {
+                Rvalue[] arguments = this.parseArguments();
+                if (this.peek("{")) {
                     // 'new' ReferenceType Arguments ClassBody
-                    final Java.AnonymousClassDeclaration anonymousClassDeclaration = new Java.AnonymousClassDeclaration(
+                    final AnonymousClassDeclaration anonymousClassDeclaration = new AnonymousClassDeclaration(
                         this.location(), // location
                         type             // baseType
                     );
                     this.parseClassBody(anonymousClassDeclaration);
-                    return new Java.NewAnonymousClassInstance(
+                    return new NewAnonymousClassInstance(
                         location,                  // location
-                        (Java.Rvalue) null,        // optionalQualification
+                        (Rvalue) null,             // optionalQualification
                         anonymousClassDeclaration, // anonymousClassDeclaration
                         arguments                  // arguments
                     );
                 } else {
                     // 'new' ReferenceType Arguments
-                    return new Java.NewClassInstance(
-                        location,           // location
-                        (Java.Rvalue) null, // optionalQualification
-                        type,               // type
-                        arguments           // arguments
+                    return new NewClassInstance(
+                        location,      // location
+                        (Rvalue) null, // optionalQualification
+                        type,          // type
+                        arguments      // arguments
                     );
                 }
             }
             // 'new' Type DimExprs { '[]' }
-            return new Java.NewArray(
+            return new NewArray(
                 location,               // location
                 type,                   // type
                 this.parseDimExprs(),   // dimExprs
@@ -2125,142 +2862,143 @@ public class Parser {
             );
         }
 
-        // BasicType
-        if (this.peekKeyword(new String[] { "boolean", "char", "byte", "short", "int", "long", "float", "double", })) {
-            Java.Type res = this.parseType();
-            int brackets = this.parseBracketsOpt();
-            for (int i = 0; i < brackets; ++i) res = new Java.ArrayType(res);
-            if (
-                this.peekOperator(".")
-                && this.scanner.peekNextButOne().isKeyword("class")
-            ) {
-                // BasicType { '[]' } '.' 'class'
-                this.eatToken();
+        // PrimitiveType
+        if (this.peek(new String[] { "boolean", "char", "byte", "short", "int", "long", "float", "double" }) != -1) {
+            Type res      = this.parseType();
+            int  brackets = this.parseBracketsOpt();
+            for (int i = 0; i < brackets; ++i) res = new ArrayType(res);
+            if (this.peek(".") && this.peekNextButOne("class")) {
+                // PrimitiveType { '[]' } '.' 'class'
+                this.read();
                 Location location = this.location();
-                this.eatToken();
-                return new Java.ClassLiteral(location, res);
+                this.read();
+                return new ClassLiteral(location, res);
             }
-            // BasicType { '[]' }
+            // PrimitiveType { '[]' }
             return res;
         }
 
         // 'void'
-        if (this.peekKeyword("void")) {
-            this.eatToken();
-            if (
-                this.peekOperator(".")
-                && this.scanner.peekNextButOne().isKeyword("class")
-            ) {
+        if (this.peekRead("void")) {
+            if (this.peek(".") && this.peekNextButOne("class")) {
                 // 'void' '.' 'class'
-                this.eatToken();
+                this.read();
                 Location location = this.location();
-                this.eatToken();
-                return new Java.ClassLiteral(location, new Java.BasicType(location, Java.BasicType.VOID));
+                this.read();
+                return new ClassLiteral(location, new PrimitiveType(location, Primitive.VOID));
             }
-            this.throwCompileException("\"void\" encountered in wrong context");
+            throw this.compileException("\"void\" encountered in wrong context");
         }
 
-        this.throwCompileException("Unexpected token \"" + this.scanner.peek() + "\" in primary");
-        /* NEVER REACHED */ return null;
+        throw this.compileException("Unexpected token \"" + this.peek().value + "\" in primary");
     }
 
     /**
      * <pre>
      *   Selector :=
-     *     '.' Identifier |                       // FieldAccess 15.11.1
-     *     '.' Identifier Arguments |             // MethodInvocation
-     *     '.' 'this'                             // QualifiedThis 15.8.4
-     *     '.' 'super' Arguments                  // Qualified superclass constructor invocation (JLS 8.8.5.1)
-     *     '.' 'super' '.' Identifier |           // SuperclassFieldReference (JLS 15.11.2)
-     *     '.' 'super' '.' Identifier Arguments | // SuperclassMethodInvocation (JLS 15.12.4.9)
-     *     '.' 'new' Identifier Arguments [ ClassBody ] | // QualifiedClassInstanceCreationExpression  15.9
+     *     '.' Identifier |                                // FieldAccess 15.11.1
+     *     '.' Identifier Arguments |                      // MethodInvocation
+     *     '.' '&lt;' TypeList '&gt;' 'super' Arguments                  // Superconstructor invocation (?)
+     *     '.' '&lt;' TypeList '&gt;' 'super' '.' . Identifier           // ???
+     *     '.' '&lt;' TypeList '&gt;' 'super' '.' . Identifier Arguments // Supermethod invocation
+     *     '.' '&lt;' TypeList '&gt;' Identifier Arguments // ExplicitGenericInvocation
+     *     '.' 'this'                                      // QualifiedThis 15.8.4
+     *     '.' 'super' Arguments                           // Qualified superclass constructor invocation (JLS7 8.8.7.1)
+     *     '.' 'super' '.' Identifier |                    // SuperclassFieldReference (JLS7 15.11.2)
+     *     '.' 'super' '.' Identifier Arguments |          // SuperclassMethodInvocation (JLS7 15.12.3)
+     *     '.' 'new' Identifier Arguments [ ClassBody ] |  // QualifiedClassInstanceCreationExpression  15.9
      *     '.' 'class'
-     *     '[' Expression ']'                     // ArrayAccessExpression 15.13
+     *     '[' Expression ']'                              // ArrayAccessExpression 15.13
+     *
+     *   ExplicitGenericInvocationSuffix :=
+     *     'super' SuperSuffix
+     *     | Identifier Arguments
      * </pre>
      */
-    public Java.Atom parseSelector(Java.Atom atom) throws CompileException, IOException {
-        if (this.peekOperator(".")) {
-            this.eatToken();
-            if (this.scanner.peek().isIdentifier()) {
+    public Atom
+    parseSelector(Atom atom) throws CompileException, IOException {
+        if (this.peekRead(".")) {
+
+            // Parse and ignore type arguments.
+            this.parseTypeArgumentsOpt();
+
+            if (this.peek().type == TokenType.IDENTIFIER) {
                 String identifier = this.readIdentifier();
-                if (this.peekOperator("(")) {
+                if (this.peek("(")) {
                     // '.' Identifier Arguments
-                    return new Java.MethodInvocation(
-                        this.location(),      // location
-                        atom.toRvalueOrPE(),  // optionalTarget
-                        identifier,           // methodName
-                        this.parseArguments() // arguments
+                    return new MethodInvocation(
+                        this.location(),                   // location
+                        atom.toRvalueOrCompileException(), // optionalTarget
+                        identifier,                        // methodName
+                        this.parseArguments()              // arguments
                     );
                 }
                 // '.' Identifier
-                return new Java.FieldAccessExpression(
-                    this.location(),     // location
-                    atom.toRvalueOrPE(), // lhs
-                    identifier           // fieldName
+                return new FieldAccessExpression(
+                    this.location(),                   // location
+                    atom.toRvalueOrCompileException(), // lhs
+                    identifier                         // fieldName
                 );
             }
-            if (this.peekKeyword("this")) {
+            if (this.peekRead("this")) {
                 // '.' 'this'
                 Location location = this.location();
-                this.eatToken();
-                return new Java.QualifiedThisReference(
-                    location,                // location
-                    atom.toTypeOrPE()        // qualification
+                return new QualifiedThisReference(
+                    location,                       // location
+                    atom.toTypeOrCompileException() // qualification
                 );
             }
-            if (this.peekKeyword("super")) {
+            if (this.peekRead("super")) {
                 Location location = this.location();
-                this.eatToken();
-                if (this.peekOperator("(")) {
+                if (this.peek("(")) {
 
                     // '.' 'super' Arguments
-                    // Qualified superclass constructor invocation (JLS 8.8.5.1) (LHS is an Rvalue)
-                    return new Java.SuperConstructorInvocation(
-                        location,             // location
-                        atom.toRvalueOrPE(),  // optionalQualification
-                        this.parseArguments() // arguments
+                    // Qualified superclass constructor invocation (JLS7 8.7.1.2.2) (LHS is an Rvalue)
+                    return new SuperConstructorInvocation(
+                        location,                          // location
+                        atom.toRvalueOrCompileException(), // optionalQualification
+                        this.parseArguments()              // arguments
                     );
                 }
-                this.readOperator(".");
+                this.read(".");
                 String identifier = this.readIdentifier();
 
-                if (this.peekOperator("(")) {
+                if (this.peek("(")) {
 
                     // '.' 'super' '.' Identifier Arguments
-                    // Qualified superclass method invocation (JLS 15.12) (LHS is a ClassName)
+                    // Qualified superclass method invocation (JLS7 15.12.1.1.4) (LHS is a ClassName).
                     // TODO: Qualified superclass method invocation
-                    this.throwCompileException("Qualified superclass method invocation NYI");
+                    throw this.compileException("Qualified superclass method invocation NYI");
                 } else {
 
                     // '.' 'super' '.' Identifier
-                    // Qualified superclass field access (JLS 15.11.2) (LHS is an Rvalue)
-                    return new Java.SuperclassFieldAccessExpression(
-                        location,          // location
-                        atom.toTypeOrPE(), // optionalQualification
-                        identifier         // fieldName
+                    // Qualified superclass field access (JLS7 15.11.2) (LHS is an Rvalue).
+                    return new SuperclassFieldAccessExpression(
+                        location,                        // location
+                        atom.toTypeOrCompileException(), // optionalQualification
+                        identifier                       // fieldName
                     );
                 }
             }
-            if (this.peekKeyword("new")) {
+            if (this.peekRead("new")) {
                 // '.' 'new' Identifier Arguments [ ClassBody ]
-                Java.Rvalue lhs = atom.toRvalue();
-                Location location = this.location();
-                this.eatToken();
-                String identifier = this.readIdentifier();
-                Java.Type type = new Java.RvalueMemberType(
+                Rvalue   lhs        = atom.toRvalueOrCompileException();
+                Location location   = this.location();
+                String   identifier = this.readIdentifier();
+                Type     type       = new RvalueMemberType(
                     location,  // location
                     lhs,       // rValue
                     identifier // identifier
                 );
-                Java.Rvalue[] arguments = this.parseArguments();
-                if (this.peekOperator("{")) {
+                Rvalue[] arguments = this.parseArguments();
+                if (this.peek("{")) {
                     // '.' 'new' Identifier Arguments ClassBody (LHS is an Rvalue)
-                    final Java.AnonymousClassDeclaration anonymousClassDeclaration = new Java.AnonymousClassDeclaration(
+                    final AnonymousClassDeclaration anonymousClassDeclaration = new AnonymousClassDeclaration(
                         this.location(), // location
                         type             // baseType
                     );
                     this.parseClassBody(anonymousClassDeclaration);
-                    return new Java.NewAnonymousClassInstance(
+                    return new NewAnonymousClassInstance(
                         location,                  // location
                         lhs,                       // optionalQualification
                         anonymousClassDeclaration, // anonymousClassDeclaration
@@ -2268,7 +3006,7 @@ public class Parser {
                     );
                 } else {
                     // '.' 'new' Identifier Arguments (LHS is an Rvalue)
-                    return new Java.NewClassInstance(
+                    return new NewClassInstance(
                         location, // location
                         lhs,      // optionalQualification
                         type,     // referenceType
@@ -2276,28 +3014,25 @@ public class Parser {
                     );
                 }
             }
-            if (this.peekKeyword("class")) {
+            if (this.peekRead("class")) {
                 // '.' 'class'
                 Location location = this.location();
-                this.eatToken();
-                return new Java.ClassLiteral(location, atom.toTypeOrPE());
+                return new ClassLiteral(location, atom.toTypeOrCompileException());
             }
-            this.throwCompileException("Unexpected selector \"" + this.scanner.peek() + "\" after \".\"");
+            throw this.compileException("Unexpected selector '" + this.peek().value + "' after \".\"");
         }
-        if (this.peekOperator("[")) {
+        if (this.peekRead("[")) {
             // '[' Expression ']'
             Location location = this.location();
-            this.eatToken();
-            Java.Rvalue index = this.parseExpression().toRvalueOrPE();
-            this.readOperator("]");
-            return new Java.ArrayAccessExpression(
-                location,        // location
-                atom.toRvalueOrPE(), // lhs
-                index            // index
+            Rvalue   index    = this.parseExpression().toRvalueOrCompileException();
+            this.read("]");
+            return new ArrayAccessExpression(
+                location,                          // location
+                atom.toRvalueOrCompileException(), // lhs
+                index                              // index
             );
         }
-        this.throwCompileException("Unexpected token \"" + this.scanner.peek() + "\" in selector");
-        /* NEVER REACHED */ return null;
+        throw this.compileException("Unexpected token '" + this.peek().value + "' in selector");
     }
 
     /**
@@ -2305,14 +3040,14 @@ public class Parser {
      *   DimExprs := DimExpr { DimExpr }
      * </pre>
      */
-    public Java.Rvalue[] parseDimExprs() throws CompileException, IOException {
-        List l = new ArrayList();
+    public Rvalue[]
+    parseDimExprs() throws CompileException, IOException {
+        List<Rvalue> l = new ArrayList<Rvalue>();
         l.add(this.parseDimExpr());
-        while (
-            this.peekOperator("[")
-            && !this.scanner.peekNextButOne().isOperator("]")
-        ) l.add(this.parseDimExpr());
-        return (Java.Rvalue[]) l.toArray(new Java.Rvalue[l.size()]);
+        while (this.peek("[") && !this.peekNextButOne("]")) {
+            l.add(this.parseDimExpr());
+        }
+        return (Rvalue[]) l.toArray(new Rvalue[l.size()]);
     }
 
     /**
@@ -2320,10 +3055,11 @@ public class Parser {
      *   DimExpr := '[' Expression ']'
      * </pre>
      */
-    public Java.Rvalue parseDimExpr() throws CompileException, IOException {
-        this.readOperator("[");
-        Java.Rvalue res = this.parseExpression().toRvalueOrPE();
-        this.readOperator("]");
+    public Rvalue
+    parseDimExpr() throws CompileException, IOException {
+        this.read("[");
+        Rvalue res = this.parseExpression().toRvalueOrCompileException();
+        this.read("]");
         return res;
     }
 
@@ -2332,14 +3068,12 @@ public class Parser {
      *   Arguments := '(' [ ArgumentList ] ')'
      * </pre>
      */
-    public Java.Rvalue[] parseArguments() throws CompileException, IOException {
-        this.readOperator("(");
-        if (this.peekOperator(")")) {
-            this.eatToken();
-            return new Java.Rvalue[0];
-        }
-        Java.Rvalue[] arguments = this.parseArgumentList();
-        this.readOperator(")");
+    public Rvalue[]
+    parseArguments() throws CompileException, IOException {
+        this.read("(");
+        if (this.peekRead(")")) return new Rvalue[0];
+        Rvalue[] arguments = this.parseArgumentList();
+        this.read(")");
         return arguments;
     }
 
@@ -2348,52 +3082,39 @@ public class Parser {
      *   ArgumentList := Expression { ',' Expression }
      * </pre>
      */
-    public Java.Rvalue[] parseArgumentList() throws CompileException, IOException {
-        List l = new ArrayList();
-        for (;;) {
-            l.add(this.parseExpression().toRvalueOrPE());
-            if (!this.peekOperator(",")) break;
-            this.eatToken();
+    public Rvalue[]
+    parseArgumentList() throws CompileException, IOException {
+        List<Rvalue> l = new ArrayList<Rvalue>();
+        do {
+            l.add(this.parseExpression().toRvalueOrCompileException());
+        } while (this.peekRead(","));
+        return (Rvalue[]) l.toArray(new Rvalue[l.size()]);
+    }
+
+    /**
+     * <pre>
+     *   Literal :=
+     *     IntegerLiteral
+     *     | FloatingPointLiteral
+     *     | BooleanLiteral
+     *     | CharacterLiteral
+     *     | StringLiteral
+     *     | NullLiteral
+     * </pre>
+     */
+    public Rvalue
+    parseLiteral() throws CompileException, IOException {
+        Token t = this.read();
+        switch (t.type) {
+        case INTEGER_LITERAL:        return new IntegerLiteral(t.getLocation(), t.value);
+        case FLOATING_POINT_LITERAL: return new FloatingPointLiteral(t.getLocation(), t.value);
+        case BOOLEAN_LITERAL:        return new BooleanLiteral(t.getLocation(), t.value);
+        case CHARACTER_LITERAL:      return new CharacterLiteral(t.getLocation(), t.value);
+        case STRING_LITERAL:         return new StringLiteral(t.getLocation(), t.value);
+        case NULL_LITERAL:           return new NullLiteral(t.getLocation(), t.value);
+        default:
+            throw this.compileException("Literal expected");
         }
-        return (Java.Rvalue[]) l.toArray(new Java.Rvalue[l.size()]);
-    }
-
-    public Java.Atom parseLiteral() throws CompileException, IOException {
-        Scanner.Token t = this.scanner.read();
-        if (!t.isLiteral()) this.throwCompileException("Literal expected");
-        return new Java.Literal(t.getLocation(), t.getLiteralValue());
-    }
-
-    // Simplified access to the scanner.
-
-    public Location location()                                           { return this.scanner.location(); }
-    public void     eatToken() throws CompileException, IOException { this.scanner.read(); }
-    // Keyword-related.
-    public boolean peekKeyword()                  { return this.scanner.peek().isKeyword(); }
-    public boolean peekKeyword(String keyword)    { return this.scanner.peek().isKeyword(keyword); }
-    public boolean peekKeyword(String[] keywords) { return this.scanner.peek().isKeyword(keywords); }
-    public void    readKeyword(String keyword) throws CompileException, IOException {
-        if (!this.scanner.read().isKeyword(keyword)) this.throwCompileException("\"" + keyword + "\" expected");
-    }
-    // Operator-related.
-    public boolean peekOperator(String operator)    { return this.scanner.peek().isOperator(operator); }
-    public boolean peekOperator(String[] operators) { return this.scanner.peek().isOperator(operators); }
-    public String  readOperator() throws CompileException, IOException {
-        Scanner.Token t = this.scanner.read();
-        if (!t.isOperator()) this.throwCompileException("Operator expected");
-        return t.getOperator();
-    }
-    public void    readOperator(String operator) throws CompileException, IOException {
-        if (!this.scanner.read().isOperator(operator)) {
-            this.throwCompileException("Operator \"" + operator + "\" expected");
-        }
-    }
-    // Identifier-related.
-    public boolean peekIdentifier() { return this.scanner.peek().isIdentifier(); }
-    public String readIdentifier() throws CompileException, IOException {
-        Scanner.Token t = this.scanner.read();
-        if (!t.isIdentifier()) this.throwCompileException("Identifier expected");
-        return t.getIdentifier();
     }
 
     /**
@@ -2401,22 +3122,49 @@ public class Parser {
      *   ExpressionStatement := Expression ';'
      * </pre>
      */
-    public Java.Statement parseExpressionStatement() throws CompileException, IOException {
-        Java.Rvalue rv = this.parseExpression().toRvalueOrPE();
-        this.readOperator(";");
+    public Statement
+    parseExpressionStatement() throws CompileException, IOException {
+        Rvalue rv = this.parseExpression().toRvalueOrCompileException();
+        this.read(";");
 
-        return new Java.ExpressionStatement(rv);
+        return new ExpressionStatement(rv);
     }
 
     /**
-     * Issue a warning if the given string does not comply with the package naming conventions
-     * (JLS2 6.8.1).
+     * @return The location of the first character of the previously {@link #peek()}ed or {@link #read()} token
      */
-    private void verifyStringIsConventionalPackageName(String s, Location loc) {
+    public Location
+    location() { return this.scanner.location(); }
+
+    // Token-level methods.
+
+    // Shorthand for the various "TokenStream" methods.       SUPPRESS CHECKSTYLE LineLength|JavadocMethod:16
+    public Token            peek() throws CompileException, IOException                           { return this.tokenStream.peek(); }
+    public Token            peekNextButOne() throws CompileException, IOException                 { return this.tokenStream.peekNextButOne(); }
+    public Token            read() throws CompileException, IOException                           { return this.tokenStream.read(); }
+    public boolean          peek(String suspected) throws CompileException, IOException           { return this.tokenStream.peek(suspected); }
+    public int              peek(String[] suspected) throws CompileException, IOException         { return this.tokenStream.peek(suspected); }
+    public int              peek(TokenType[] suspected) throws CompileException, IOException      { return this.tokenStream.peek(suspected); }
+    public boolean          peekNextButOne(String suspected) throws CompileException, IOException { return this.tokenStream.peekNextButOne(suspected); }
+    public void             read(String expected) throws CompileException, IOException            { this.tokenStream.read(expected); }
+    public int              read(String[] expected) throws CompileException, IOException          { return this.tokenStream.read(expected); }
+    public boolean          peekRead(String suspected) throws CompileException, IOException       { return this.tokenStream.peekRead(suspected); }
+    public int              peekRead(String[] suspected) throws CompileException, IOException     { return this.tokenStream.peekRead(suspected); }
+    public boolean          peekEof() throws CompileException, IOException                        { return this.tokenStream.peekEof(); }
+    @Nullable public String peekIdentifier() throws CompileException, IOException                 { return this.tokenStream.peekIdentifier(); }
+    public boolean          peekLiteral() throws CompileException, IOException                    { return this.tokenStream.peekLiteral(); }
+    public String           readIdentifier() throws CompileException, IOException                 { return this.tokenStream.readIdentifier(); }
+    public String           readOperator() throws CompileException, IOException                   { return this.tokenStream.readOperator(); }
+
+    /**
+     * Issues a warning if the given string does not comply with the package naming conventions.
+     */
+    private void
+    verifyStringIsConventionalPackageName(String s, Location loc) throws CompileException {
         if (!Character.isLowerCase(s.charAt(0))) {
             this.warning(
                 "UPN",
-                "Package name \"" + s + "\" does not begin with a lower-case letter (see JLS2 6.8.1)",
+                "Package name \"" + s + "\" does not begin with a lower-case letter (see JLS7 6.8.1)",
                 loc
             );
             return;
@@ -2432,14 +3180,15 @@ public class Parser {
     }
 
     /**
-     * Issue a warning if the given identifier does not comply with the class and interface type
-     * naming conventions (JLS2 6.8.2).
+     * Issues a warning if the given identifier does not comply with the class and interface type naming conventions
+     * (JLS7 6.8.2).
      */
-    private void verifyIdentifierIsConventionalClassOrInterfaceName(String id, Location loc) {
+    private void
+    verifyIdentifierIsConventionalClassOrInterfaceName(String id, Location loc) throws CompileException {
         if (!Character.isUpperCase(id.charAt(0))) {
             this.warning(
                 "UCOIN1",
-                "Class or interface name \"" + id + "\" does not begin with an upper-case letter (see JLS2 6.8.2)",
+                "Class or interface name \"" + id + "\" does not begin with an upper-case letter (see JLS7 6.8.2)",
                 loc
             );
             return;
@@ -2452,7 +3201,7 @@ public class Parser {
                     + id
                     + "\" contains unconventional character \""
                     + c
-                    + "\" (see JLS2 6.8.2)"
+                    + "\" (see JLS7 6.8.2)"
                 ), loc);
                 return;
             }
@@ -2460,14 +3209,14 @@ public class Parser {
     }
 
     /**
-     * Issue a warning if the given identifier does not comply with the method naming conventions
-     * (JLS2 6.8.3).
+     * Issues a warning if the given identifier does not comply with the method naming conventions (JLS7 6.8.3).
      */
-    private void verifyIdentifierIsConventionalMethodName(String id, Location loc) {
+    private void
+    verifyIdentifierIsConventionalMethodName(String id, Location loc) throws CompileException {
         if (!Character.isLowerCase(id.charAt(0))) {
             this.warning(
                 "UMN1",
-                "Method name \"" + id + "\" does not begin with a lower-case letter (see JLS2 6.8.3)",
+                "Method name \"" + id + "\" does not begin with a lower-case letter (see JLS7 6.8.3)",
                 loc
             );
             return;
@@ -2477,7 +3226,7 @@ public class Parser {
             if (!Character.isLetter(c) && !Character.isDigit(c)) {
                 this.warning(
                     "UMN",
-                    "Method name \"" + id + "\" contains unconventional character \"" + c + "\" (see JLS2 6.8.3)",
+                    "Method name \"" + id + "\" contains unconventional character \"" + c + "\" (see JLS7 6.8.3)",
                     loc
                 );
                 return;
@@ -2486,10 +3235,11 @@ public class Parser {
     }
 
     /**
-     * Issue a warning if the given identifier does not comply with the field naming conventions
-     * (JLS2 6.8.4) and constant naming conventions (JLS2 6.8.5).
+     * Issues a warning if the given identifier does not comply with the field naming conventions (JLS7 6.8.4) and
+     * constant naming conventions (JLS7 6.8.5).
      */
-    private void verifyIdentifierIsConventionalFieldName(String id, Location loc) {
+    private void
+    verifyIdentifierIsConventionalFieldName(String id, Location loc) throws CompileException {
 
         // In practice, a field is not always a constant iff it is static-final. So let's
         // always tolerate both field and constant names.
@@ -2500,7 +3250,7 @@ public class Parser {
                 if (!Character.isUpperCase(c) && !Character.isDigit(c) && c != '_') {
                     this.warning(
                         "UCN",
-                        "Constant name \"" + id + "\" contains unconventional character \"" + c + "\" (see JLS2 6.8.5)",
+                        "Constant name \"" + id + "\" contains unconventional character \"" + c + "\" (see JLS7 6.8.5)",
                         loc
                     );
                     return;
@@ -2513,7 +3263,7 @@ public class Parser {
                 if (!Character.isLetter(c) && !Character.isDigit(c)) {
                     this.warning(
                         "UFN",
-                        "Field name \"" + id + "\" contains unconventional character \"" + c + "\" (see JLS2 6.8.4)",
+                        "Field name \"" + id + "\" contains unconventional character \"" + c + "\" (see JLS7 6.8.4)",
                         loc
                     );
                     return;
@@ -2523,20 +3273,21 @@ public class Parser {
             this.warning("UFN1", (
                 "\""
                 + id
-                + "\" is neither a conventional field name (JLS2 6.8.4) nor a conventional constant name (JLS2 6.8.5)"
+                + "\" is neither a conventional field name (JLS7 6.8.4) nor a conventional constant name (JLS7 6.8.5)"
             ), loc);
         }
     }
 
     /**
-     * Issue a warning if the given identifier does not comply with the local variable and
-     * parameter naming conventions (JLS2 6.8.6).
+     * Issues a warning if the given identifier does not comply with the local variable and parameter naming
+     * conventions (JLS7 6.8.6).
      */
-    private void verifyIdentifierIsConventionalLocalVariableOrParameterName(String id, Location loc) {
+    private void
+    verifyIdentifierIsConventionalLocalVariableOrParameterName(String id, Location loc) throws CompileException {
         if (!Character.isLowerCase(id.charAt(0))) {
             this.warning(
                 "ULVN1",
-                "Local variable name \"" + id + "\" does not begin with a lower-case letter (see JLS2 6.8.6)",
+                "Local variable name \"" + id + "\" does not begin with a lower-case letter (see JLS7 6.8.6)",
                 loc
             );
             return;
@@ -2549,7 +3300,7 @@ public class Parser {
                     + id
                     + "\" contains unconventional character \""
                     + c
-                    + "\" (see JLS2 6.8.6)"
+                    + "\" (see JLS7 6.8.6)"
                 ), loc);
                 return;
             }
@@ -2559,44 +3310,55 @@ public class Parser {
     /**
      * By default, warnings are discarded, but an application my install a {@link WarningHandler}.
      * <p>
-     * Notice that there is no <code>Parser.setErrorHandler()</code> method, but parse errors always throw a {@link
-     * CompileException}. The reason being is that there is no reasonable way to recover from parse errors and continue
-     * parsing, so there is no need to install a custom parse error handler.
+     *   Notice that there is no {@code Parser.setErrorHandler()} method, but parse errors always throw a {@link
+     *   CompileException}. The reason being is that there is no reasonable way to recover from parse errors and
+     *   continue parsing, so there is no need to install a custom parse error handler.
+     * </p>
      *
-     * @param optionalWarningHandler <code>null</code> to indicate that no warnings be issued
+     * @param optionalWarningHandler {@code null} to indicate that no warnings be issued
      */
-    public void setWarningHandler(WarningHandler optionalWarningHandler) {
+    public void
+    setWarningHandler(@Nullable WarningHandler optionalWarningHandler) {
         this.optionalWarningHandler = optionalWarningHandler;
+        this.tokenStream.setWarningHandler(optionalWarningHandler);
     }
 
     // Used for elaborate warning handling.
-    private WarningHandler optionalWarningHandler = null;
+    @Nullable private WarningHandler optionalWarningHandler;
 
     /**
      * Issues a warning with the given message and location and returns. This is done through
      * a {@link WarningHandler} that was installed through
      * {@link #setWarningHandler(WarningHandler)}.
      * <p>
-     * The <code>handle</code> argument qulifies the warning and is typically used by
+     * The {@code handle} argument qualifies the warning and is typically used by
      * the {@link WarningHandler} to suppress individual warnings.
+     *
+     * @throws CompileException The optionally installed {@link WarningHandler} decided to throw a {@link
+     *                          CompileException}
      */
-    private void warning(String handle, String message, Location optionalLocation) {
+    private void
+    warning(String handle, String message, @Nullable Location optionalLocation) throws CompileException {
         if (this.optionalWarningHandler != null) {
             this.optionalWarningHandler.handleWarning(handle, message, optionalLocation);
         }
     }
 
     /**
-     * Convenience method for throwing a CompileException.
+     * Convenience method for throwing a {@link CompileException}.
      */
-    protected final void throwCompileException(String message) throws CompileException {
-        throw new CompileException(message, this.location());
+    protected final CompileException
+    compileException(String message) {
+        return new CompileException(message, this.location());
     }
 
-    private static String join(String[] sa, String separator) {
+    private static String
+    join(@Nullable String[] sa, String separator) {
+
         if (sa == null) return ("(null)");
+
         if (sa.length == 0) return ("(zero length array)");
-        StringBuffer sb = new StringBuffer(sa[0]);
+        StringBuilder sb = new StringBuilder(sa[0]);
         for (int i = 1; i < sa.length; ++i) {
             sb.append(separator).append(sa[i]);
         }

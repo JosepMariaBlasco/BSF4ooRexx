@@ -26,15 +26,21 @@
 
 package org.codehaus.commons.compiler;
 
-/**
- * An exception that reflects an error during compilation.
- */
-public class CompileException extends LocatedException {
+import org.codehaus.commons.nullanalysis.Nullable;
 
-    public CompileException(String message, Location optionalLocation) {
+/**
+ * Representation of an error condition during compilation.
+ */
+public
+class CompileException extends LocatedException {
+
+    public
+    CompileException(String message, @Nullable Location optionalLocation) {
         super(message, optionalLocation);
     }
-    public CompileException(String message, Location optionalLocation, Throwable cause) {
+
+    public
+    CompileException(String message, @Nullable Location optionalLocation, Throwable cause) {
         super(message, optionalLocation, cause);
     }
 }
