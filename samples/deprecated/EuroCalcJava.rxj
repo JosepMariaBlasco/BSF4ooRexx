@@ -29,6 +29,14 @@
             2010-05-16, rgf, heightened frame a little bit (made it parametrized in addition)
             2011-04-16, rgf, added Estonian crown (EEK)
             2013-01-03, rgf, added bsf.exit to make sure that no callbacks from Java occur anymore at the end
+            2016-12-11, rgf, class BSF_PROXY removed, use instead of .bsf_proxy ~new(beanName) the
+                             public routine bsf.wrap(beanName,.true);
+                             note: this program does a "requires BSF.CLS" which will cause BSF4ooRexx to
+                                   prepend "<O>" to the beanname for Java objects and "<S>" for Java strings,
+                                   if returning values from the Java side, therefore bsf.wrap() expects these
+                                   type indicators as the first three characters; if necessary, prepend
+                                   the type indicator "<O>" to your bean name, if you know that it is a
+                                   Java object for bsf.wrap() to function correctly;
 
    Author:   Rony G. Flatscher, University of Augsburg, WU Wien University
 
@@ -142,16 +150,19 @@ setup_euro_infos : PROCEDURE EXPOSE euro.     /* expose stem, i.e. belongs to ca
 
         /* whenever a keytype occurred recalc values    */
 DoTheWork : procedure expose euro.
-  parse arg input    -- this string is the index into the BSFRegistry
-
-  -- turn into a BSF proxy, make sure registered Java object does not get removed
-  -- from BSFRegistry when this ooRexx gets garbage collected
-  input=.bsf_proxy~new(input)
+  parse arg input -- this string is the index into the BSFRegistry; as we only use bsf()-functions
+                  -- there is no need to try to wrap it up into a Rexx reference/proxy
 
   /* parse first three words, translate them into uppercase       */
         /* bug in OS/2's JRE 1.1.8: value of a TextField only set after first
            call which retrieves the value of the TextField, hence a dummy call first */
+/*
   PARSE UPPER VALUE bsf('invoke', input, 'getText')~substr(4) WITH Amount InputCurrency .
+*/
+   -- bsf.wrap() will remove the type identifier ("<O>" for object, "<S>" for string),
+   -- in this case ("getText" method) a string will be returned from Java, hence the
+   -- prefix would be "<S>"
+  PARSE UPPER VALUE bsf.wrap(bsf('invoke', input, 'getText')) WITH Amount InputCurrency .
 
         /* RGF - clear message fields */
   call bsf 'invoke', "label."401,  "setText", pp(date("S") time())
@@ -210,6 +221,9 @@ setup_java_awt_gui : procedure expose euro.
                         reason: there are two Color-constructors which could match, one with three
                                 float args in the range of 0.0-1.0, one with three int args in the
                                 range of 0-255 */
+      /* BSF subfunctions "new", "newStrict", "registerBean", "registerBeanStrict" will have their
+         refCount increased already on the Java side and the type identifier "<O>" prepended already,
+         such that bsf.wrap() will return a BSF_REFERENCE proxy object for the Java bean */
   bgColour =bsf.wrap(BSF( 'newStrict', '', 'java.awt.Color', 'int', '150', 'int', '150', 'int', '250'))
 
         /* create and size frame window */
@@ -255,10 +269,18 @@ setup_java_awt_gui : procedure expose euro.
 
      do j=0 to 100 by 100
         name="label."||(id+j)       -- define name of this label
+
                 -- create Java object under specified name (a number in this case)
+                -- the returned Java bean name will be the string "<O>" prepended to the supplied name;
+                -- as we are not fetching that adjusted bean name, we will have to prepend the type
+                -- indicator "<O>" for ourselves, if we use bsf.wrap() on it
         call BSF  'new', name, 'java.awt.Label'
+
                 -- make label objects available as BSF Rexx objects, allowing easy interaction with it
-        label=.BSF_Proxy~new(name)  -- a bsf_proxy won't remove the proxied Java object from BSFRegistry
+                -- by sending it ooRexx messages directly, that get translated to Java method invocations
+        -- label=.BSF_Proxy~new(name)  -- a bsf_proxy won't remove the proxied Java object from BSFRegistry
+         -- using bsf.wrap, prepend "<O>" to the name used to create/register a new bean
+        label=bsf.wrap("<O>"name)
                 -- now use the Java object as if it was a Rexx object
         label ~setAlignment(choose(j=0, label_right, label_left))
         label ~setSize(choose(j=0, 115, 175), 16)
@@ -282,7 +304,13 @@ setup_java_awt_gui : procedure expose euro.
   do id=401 to 402
         -- create Java object procedurally, wrap it up in an Object Rexx proxy,
         -- can therefore be used in procedure calls as well as with messages
-     label=.bsf_proxy~new(bsf('new', "label."id, 'java.awt.Label')~substr(4))
+     -- label=.bsf_proxy~new(bsf('new', "label."id, 'java.awt.Label')~substr(4))
+      -- subfunction 'new' ('registerBean') will have the refCounter increased already
+      -- (so no need to supply ".true" as the second argument to bsf.wrap()) and return
+      -- a beanname with the type identifier "<O>" prefixed already, which is causes
+      -- bsf.wrap to return a BSF_REFERENCE proxy object for it
+     label=bsf.wrap(bsf('new', "label."id, 'java.awt.Label'))
+
      label~setAlignment( label_center )
      call bsf 'invoke', label, 'setSize',      w_width-w_col1-left-right, 16
      -- call bsf 'invoke', label, 'setLocation',  w_col1+left, 170+choose(id=401,0,20)+top

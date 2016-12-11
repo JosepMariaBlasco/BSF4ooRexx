@@ -13,6 +13,15 @@
 
    date:
 
+         2016-12-11, ---rgf, - removed public class "BSF_PROXY", which is not really safe to use, if
+                               programmers do not know what to do with it; this class was created to
+                               ease mixing BSF()-function style programming with ooRexx-style by
+                               creating BSF or BSF_REFERENCE proxy objects to which we send the names
+                               of the Java messages to invoke;
+                               rather, from now on, use the public routine bsf.wrap() to create
+                               BSF_REFERENCE proxy objects from Java objects returned from the Java
+                               side
+
          2016-12-09, ---rgf, - if Rexx started Java the unknown method of BSF if processing sendmessage
                                messages would load its RexxAndJava object, but not garbage collect it;
                                fixed by using bsf.wrap on the returned value
@@ -2618,7 +2627,7 @@ forward class (super)
 
 
 /* *************************************************************
-   Class:       BSF_PROXY
+   Class:       BSF_PROXY - DEPRECATED and REMOVED on 2016-12-11
    Purpose:     allows to wrap up Java objects as Object Rexx objects;
                 if instances are destroyed, then no deregistration from
                 the BSF registry takes place;
@@ -2644,8 +2653,26 @@ forward class (super)
                 instantiation) or decreased (upon garbage collection), this remains the
                 sole responsibility
 
+   deprecation: instead of
+
+                    o=.bsf_proxy~new(beanname)
+
+                do
+
+                    o=bsf.wrap(beanname)
+
+                explanation: .BSF_PROXY was never documented, but used in one function-based
+                    sample (deprecated\EuroCalcJava.rxj), where intermixing old (function) and
+                    new (oo) style of programming was demonstrated; introducing the "<O>" and
+                    "<S>" prefix type indicator that get returned from the Java side its use
+                    was lost and its usage could be the cause of creating a potential memory
+                    leak;
+                    instead of using BSF_PROXY one needs to use the public routine BSF.WRAP(beanname)
+                    as a replacement; that routine works on the type indicator prefix and returns
+                    a BSF_REFERENCE proxy object, if the returned bean name starts with "<O>"
+
    ************************************************************* */
-::CLASS BSF_PROXY subclass BSF public
+::CLASS BSF_PROXY_DEPRECATED_20121211_SEE_TEXT_ABOVE subclass BSF -- public
 
 /* -------------------------------------------------------------
    method to construct an instance (a "bean"); as the object was returned

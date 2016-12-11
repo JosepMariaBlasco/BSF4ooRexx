@@ -12742,6 +12742,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 //                ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
                 // increase ref counter, such that Rexx BSF_REFERENCE uninit method can safely decrease it
 // TODO: rgf, 2016-12-09: registerBean4JNI instead ?
+//
                 ro_methodObject=(RexxStringObject) rtc->SendMessage2(clzBSF, "BSF.WRAP", rop, rtc->True());
                 // rgf, 201310 rtc->ReleaseLocalReference(rop);
             }
