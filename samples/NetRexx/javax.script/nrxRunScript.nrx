@@ -19,7 +19,7 @@ import javax.script.SimpleScriptContext
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015 Rony G. Flatscher
+   Copyright 2015-2016 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -33,6 +33,9 @@ import javax.script.SimpleScriptContext
    See the License for the specific language governing permissions and
    limitations under the License.
 -----------------------------------------------------------------------------
+
+   changes:
+      2016-12-18, rgf: - adopt the changes of its Java sibling (cf. "samples/Java/javax.script/RunScript.java")
 */
 
 
@@ -89,6 +92,8 @@ method main(args=String[]) static
       loop while it.hasNext()
          say it.next()
       end
+      say
+      showHelp
       return
    end
    else
@@ -121,13 +126,7 @@ method main(args=String[]) static
 
          else if nrxFirstWord="-H" then   -- "h"elp: show how to invoke
          do
-           say "usage: java nrxRunScript [{-i | -t | -e enginename filename [args...] | filename [args...]}]\n"
-           say "          ... no arguments lists the available javax.script engines"
-           say "       -h ... 'help', gives this usage text"
-           say "       -i ... lists the available javax.script engines and informs about their properties"
-           say "       -t ... lists the availabel javax.script engines and tests evaluating their \"getOutputStatement(String)\" method"
-           say "       -e  enginename filename [args...] ... uses \"enginename\" to evaluate \"filename\" supplying the arguments \"args...\""
-           say "       filename [args...] ... the \"filename\" extension determines the script engine to evaluate it, supplying the arguments \"args...\""
+           showHelp
            return
          end
 
@@ -288,3 +287,13 @@ method testEngine(name=String, sef=ScriptEngineFactory, se=ScriptEngine) static
       say sexc "while eval() the code:" code
    end
 
+
+    -- allow us to call this from different parts
+method showHelp static
+   say "usage: java RunScript [{-i | -t | -e enginename filename [args...] | filename [args...]}]\n"
+   say "          ... no arguments lists the available javax.script engines"
+   say "       -h ... 'help', gives this usage text"
+   say "       -i ... lists the available javax.script engines and informs about their properties"
+   say '       -t ... lists the available javax.script engines and tests evaluating their "getOutputStatement(String)" method'
+   say '       -e  enginename filename [args...] ... uses "enginename" to evaluate "filename" supplying the arguments "args..."'
+   say '       filename [args...] ... the "filename" extension determines the script engine to evaluate it, supplying the arguments "args..."'

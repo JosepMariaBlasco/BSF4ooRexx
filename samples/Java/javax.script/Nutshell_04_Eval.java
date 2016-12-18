@@ -11,7 +11,7 @@ import org.rexxla.bsf.engines.rexx.jsr223.*;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015 Rony G. Flatscher
+   Copyright 2015-2016 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -25,6 +25,10 @@ import org.rexxla.bsf.engines.rexx.jsr223.*;
    See the License for the specific language governing permissions and
    limitations under the License.
 -----------------------------------------------------------------------------
+
+    changes:
+        2016-12-18, rgf: - the inserted new Rexx-script "nutshell_04c.rex" uses Rexx script annotations
+                           and therefore does not need setting ARGV explicitly
 */
 
 /** Demonstrate evaluating a Rexx script, once without supplying arguements and once supplying
@@ -65,7 +69,7 @@ public class Nutshell_04_Eval
                       d8= new Dimension(200,120),
                       dimArr[]={d1,d2,d3,d4,d5,d6,d7,d8};
 
-                // define four Dimension objects that Rexx should use to add up the widht and the height and return a new Dimension object
+                // define four Dimension objects that Rexx should use to add up the width and the height and return a new Dimension object
             sc.setAttribute("d1", d1, ScriptContext.ENGINE_SCOPE);
             sc.setAttribute("d2", d2, ScriptContext.ENGINE_SCOPE);
             sc.setAttribute("d3", d3, ScriptContext.ENGINE_SCOPE);
@@ -93,7 +97,6 @@ public class Nutshell_04_Eval
             // now evaluate "nutshell_04c.rex"!
             filename="nutshell_04c.rex";
             sc.setAttribute(ScriptEngine.FILENAME, filename, ScriptContext.ENGINE_SCOPE);
-            sc.setAttribute(ScriptEngine.ARGV,     dimArr,   ScriptContext.ENGINE_SCOPE);
             System.err.println("(Java) executing ["+filename+"] (Rexx program contains the Rexx script annotation /* @get(d1 d2 d3 d4 d5 d6 d7 d8 started_at) */ to fetch all attributes from the ScriptContext Bindings as Rexx variables):");
             obj=(Dimension) rse.eval(new FileReader(filename), sc);  // now let us execute the Rexx script
             System.out.println("(Java) Evaluated Rexx script ["+filename+"] returned: ["+obj.toString()+"]");

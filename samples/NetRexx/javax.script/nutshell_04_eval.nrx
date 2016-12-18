@@ -25,6 +25,12 @@ import org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine
    See the License for the specific language governing permissions and
    limitations under the License.
 -----------------------------------------------------------------------------
+
+    changes:
+        2016-12-18, rgf:
+            - adapted the program to match its pure Java sibling
+            - the inserted new Rexx-script "nutshell_04c.rex" uses Rexx script annotations
+              and therefore does not need setting ARGV explicitly
 */
 
 
@@ -58,7 +64,7 @@ import org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine
             d8= Dimension(200,120)
             dimArr=[d1,d2,d3,d4,d5,d6,d7,d8]
 
-                -- define four Dimension objects that Rexx should use to add up the widht and the height and return a new Dimension object
+                -- define four Dimension objects that Rexx should use to add up the width and the height and return a new Dimension object
             sc.setAttribute("d1", d1, ScriptContext.ENGINE_SCOPE)
             sc.setAttribute("d2", d2, ScriptContext.ENGINE_SCOPE)
             sc.setAttribute("d3", d3, ScriptContext.ENGINE_SCOPE)
@@ -68,30 +74,38 @@ import org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine
             sc.setAttribute("d7", d7, ScriptContext.ENGINE_SCOPE)
             sc.setAttribute("d8", d8, ScriptContext.ENGINE_SCOPE)
 
-            say "(Java) executing ["filename"] without arguments:"
+            say "(NetRexx) executing ["filename"] without arguments:"
             obj=rse.eval(FileReader(filename), sc)   -- now let us execute the Rexx script
 
             -- Dimension obj=(Dimension) rse.getCurrentScript().eval(sc);         -- now let us re-execute the Rexx script
-            say "(Java) Evaluated Rexx script ["filename"] returned: ["obj"]"
+            say "(NetRexx) Evaluated Rexx script ["filename"] returned: ["obj"]"
 
             say "--------------------"
             -- now evaluate "nutshell_04b.rex"!
             filename="nutshell_04b.rex"
             sc.setAttribute(ScriptEngine.FILENAME, filename, ScriptContext.ENGINE_SCOPE)
-            say "(Java) executing ["filename"] without arguments:"
+            say "(NetRexx) executing ["filename"] without arguments:"
             obj=rse.eval(FileReader(filename), sc)   -- now let us execute the Rexx script
-            say "(Java) Evaluated Rexx script ["filename"] returned: ["obj"]"
+            say "(NetRexx) Evaluated Rexx script ["filename"] returned: ["obj"]"
 
             say "--------------------"
             -- now evaluate "nutshell_04c.rex"!
             filename="nutshell_04c.rex"
             sc.setAttribute(ScriptEngine.FILENAME, filename, ScriptContext.ENGINE_SCOPE)
+            System.err.println("(NetRexx) executing ["filename"] (Rexx program contains the Rexx script annotation /* @get(d1 d2 d3 d4 d5 d6 d7 d8 started_at) */ to fetch all attributes from the ScriptContext Bindings as Rexx variables):")
+            obj=rse.eval(FileReader(filename), sc)   -- now let us execute the Rexx script
+            say "(NetRexx) Evaluated Rexx script ["filename"] returned: ["obj"]"
+
+            say "--------------------"
+            -- now evaluate "nutshell_04d.rex"!
+            filename="nutshell_04d.rex"
+            sc.setAttribute(ScriptEngine.FILENAME, filename, ScriptContext.ENGINE_SCOPE)
             -- add the ARGV entry which will cause the RexxScriptEngine to supply the array elements as
             -- individual arguments; it then will append another Rexx directory with an entry "ScriptContext"
             sc.setAttribute(ScriptEngine.ARGV,     dimArr,   ScriptContext.ENGINE_SCOPE)
-            say "(Java) executing ["filename"] WITH arguments (ScriptEngine.ARGV):"
+            say "(NetRexx) executing ["filename"] WITH arguments (ScriptEngine.ARGV):"
             obj=rse.eval(FileReader(filename), sc)   -- now let us execute the Rexx script
-            say "(Java) Evaluated Rexx script ["filename"] returned: ["obj"]"
+            say "(NetRexx) Evaluated Rexx script ["filename"] returned: ["obj"]"
         catch exc=RuntimeException
             exc.printStackTrace()
             System.err.println(exc)

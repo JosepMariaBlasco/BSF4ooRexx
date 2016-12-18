@@ -94,6 +94,11 @@ all platforms and can be downloaded from its homepage at
                 argument (a Rexx directory that the <code>RexxScriptEngine</code> appends as the last argument).
 
             <li><a href="nutshell_04c.rex">nutshell_04c.rex</a>: simply fetches the values (Java objects)
+                with the Rexx script annotation <code>&quot;/*@get()*/&quot;</code> which causes all
+                attributes from all <code>&quot;ScriptContext Bindings&quot;</code> to be made immediately
+                available as local Rexx variables by the same name.
+
+            <li><a href="nutshell_04d.rex">nutshell_04d.rex</a>: simply fetches the values (Java objects)
                 directly as Rexx arguments and uses them directly. In addition fetches the
                 supplied <code>ScriptContext</code> which is always supplied as an entry
                 named <code>&quot;ScriptContext&quot;</code> in the <code>slotDir</code> argument

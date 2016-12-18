@@ -7,7 +7,7 @@ import org.rexxla.bsf.engines.rexx.jsr223;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015 Rony G. Flatscher
+   Copyright 2015-2016 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import org.rexxla.bsf.engines.rexx.jsr223;
    See the License for the specific language governing permissions and
    limitations under the License.
 -----------------------------------------------------------------------------
+   changes:
+      - 2016-12-18, rgf: output the string "(NetRexx)" instead of "(Java)"
 */
 
 
@@ -44,13 +46,13 @@ do
    rp=RexxProxy rse.eval(FileReader(String filename), b) -- now let us execute the Rexx script
 
        -- use public <T> T getInterface(Class<T> clasz)
-   say "(Java) using \"<T> T getInterface(Class<T> clasz)\" using the <RexxScriptEngine>:"
-   say "(Java) executing ["filename"] fetching resulting ooRexx object:"
+   say "(NetRexx) using \"<T> T getInterface(Class<T> clasz)\" using the <RexxScriptEngine>:"
+   say "(NetRexx) executing ["filename"] fetching resulting ooRexx object:"
    rp=RexxProxy rse.eval(FileReader(String filename), b)  -- now let us execute the Rexx script
    say "---"
 
    r=Runnable rse.getInterface(Runnable.class)     -- get an interface implementation
-   say "(Java) creating new Thread supplying ["r"]:"
+   say "(NetRexx) creating new Thread supplying ["r"]:"
    th = Thread(r)
    th.start()
    th.sleep(100)   -- should be enough time for the thread to end (after running the Rexx code)
@@ -61,18 +63,18 @@ do
    rcs=rse.getCurrentScript()   -- get current script
 
        -- use public <T> T getInterface(Class<T> clasz)
-   say "(Java) using \"<T> T getInterface(Class<T> clasz)\" using the <RexxCompiledScript>:"
+   say "(NetRexx) using \"<T> T getInterface(Class<T> clasz)\" using the <RexxCompiledScript>:"
    r=Runnable rcs.getInterface(Runnable.class)     -- get an interface implementation
-   say "(Java) creating new Thread supplying ["r"]:"
+   say "(NetRexx) creating new Thread supplying ["r"]:"
    th = Thread(r)
    th.start()
    th.sleep(100)   -- should be enough time for the thread to end (after running the Rexx code)
    say "---"
 
        -- use public <T> T getInterface(Object thiz, Class<T> clasz)
-   say "(Java) using \"<T> T getInterface(Object thiz, Class<T> clasz)\" using the <RexxCompiledScript>:"
+   say "(NetRexx) using \"<T> T getInterface(Object thiz, Class<T> clasz)\" using the <RexxCompiledScript>:"
    r=Runnable rcs.getInterface(rp, Runnable.class)     -- get an interface implementation
-   say "(Java) creating new Thread supplying ["r"]:"
+   say "(NetRexx) creating new Thread supplying ["r"]:"
    r=Runnable rcs.getInterface(rp, Runnable.class)     -- get an interface implementation
    th = Thread(r)
    th.start()
