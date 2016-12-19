@@ -13,6 +13,11 @@
 
    date:
 
+         2016-12-12, ---rgf, - make sure we return a BSF/BSF_REFERENCE object unchanged; allowing it
+                               to be wrapped up as a BSF_REFERENCE again, may cause runtime errors
+                               if the wrong number of uninits get executed (each decreases the refCount
+                               on the Java side)
+
          2016-12-11, ---rgf, - removed public class "BSF_PROXY", which is not really safe to use, if
                                programmers do not know what to do with it; this class was created to
                                ease mixing BSF()-function style programming with ooRexx-style by
@@ -20,7 +25,7 @@
                                of the Java messages to invoke;
                                rather, from now on, use the public routine bsf.wrap() to create
                                BSF_REFERENCE proxy objects from Java objects returned from the Java
-                               side
+                               side;
 
          2016-12-09, ---rgf, - if Rexx started Java the unknown method of BSF if processing sendmessage
                                messages would load its RexxAndJava object, but not garbage collect it;
@@ -493,7 +498,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20161207)
+   version:     6.00 (20161212)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -592,7 +597,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20161207" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20161212" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1049,7 +1054,14 @@ any:
    --                  in the BSF registry is increased (needed, if Java object is an argument
    --                  to RexxEngine.call() [native code: ...jniRexxRunProgram(),
    --                  ...jniRexxSendMessageToRexxObject()]
+   -- 2016-12-12, rgf: make sure we return a BSF/BSF_REFERENCE object unchanged; allowing it
+   --                  to be wrapped up as a BSF_REFERENCE again, may cause runtime errors
+   --                  if the wrong number of uninits get executed (each decreases the refCount
+   --                  on the Java side)
 ::ROUTINE bsf.wrap public
+   if arg(1)~isA(.bsf) then   -- make sure we do not create a BSF_REFERENCE for an existing BSF, BSF_REFERENCE instance
+      return arg(1)
+
    parse arg indicator +3 data, bIncr
 
 -- .error~say( "bsf.wrap: arg(1)="pp(arg(1)) "indicator="pp(indicator) "data="pp(data) )
