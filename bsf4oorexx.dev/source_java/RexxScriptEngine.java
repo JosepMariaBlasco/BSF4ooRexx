@@ -626,7 +626,10 @@ if (bDebug==true){ System.err.println("arrived: getCreateRoutineAndPackage(), re
     public RexxScriptEngine()
     {
         super();
-if (bDebug==true) { System.out.println("--> RexxScriptEngine() -->: "+this+" (CONSTRUCTOR!)"); }
+
+// if (bDebug==true)
+{ System.out.println("--> RexxScriptEngine() -->: "+this+" (CONSTRUCTOR!)"); }
+
         bsfMgr = new BSFManager ();                // get an instance of BSFManager
         try
         {
@@ -1292,12 +1295,13 @@ if (bDebug==true) {exc.printStackTrace();}
 //          check whether current re-assignments are in place already or not
     synchronized void updateRexxEngine(ScriptContext sc) throws ScriptException, BSFException
     {
-if (bDebug) {System.err.println("--> RexxScriptEngine().updateRexxEngine(), sc=["+sc+"] ...");}
+        boolean bDebug=true;
+if (bDebug) {System.err.println(this+": --> RexxScriptEngine().updateRexxEngine(), sc=["+sc+"] ...");}
 
             // make sure we have the native code set to support the camouflaging support from the beginning
         if (bInitialBSFRequiresDone==false) // make sure that JNI subsystem uses BSF.CLS for passing (Java object) arguments to Rexx scripts
         {
-if (bDebug) {System.err.println("--> RexxScriptEngine().updateRexxEngine(), bInitialBSFRequiresDone==false !");}
+if (bDebug) {System.err.println(this+": --> RexxScriptEngine().updateRexxEngine(), bInitialBSFRequiresDone==false !");}
             // the following statement makes sure, that the BSF infrastructure gets set up and is available
             // the package object will be returned by the Rexx code and can be used for adding it to
             // the next Rexx script that gets compiled
@@ -1314,7 +1318,7 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().updateRexxEngine(), bIni
 
         if (bRedirectStandardFiles==true)
         {
-if (bDebug) {System.err.println("    RexxScriptEngine(), getting and setting reader and writers ...");}
+if (bDebug) {System.err.println(this+":     RexxScriptEngine(), getting and setting reader and writers ...");}
 
                 // determine whether we need to change this Rexx engines .input, .output and/or .error monitors
             Reader tmpReader     =(Reader) sc.getReader();

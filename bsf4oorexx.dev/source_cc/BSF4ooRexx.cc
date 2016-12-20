@@ -24,13 +24,26 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
-    6.0.0   2016-12-08, rgf corrected comment: BSF_PROXY -> BSF_REFERENCE
+    6.0.0   2016-12-20, rgf: in _jniRexxSendMessageToRexxObject: do not do a bsf.wrap with .true as the second
+                             argument anymore; RexxEngine.java was changed to increase the refCount (on JavaObject
+                             or MethodObject), such that bsf.wrap returned .BSF object can safely run unregisterBean
+                             in its uninit method
 
-    6.0.0   2016-11-19, rgf updated major version number to 6 to indicate new base level Java 1.6/6;
+                             in J_jniUnregisterRexxObject: from now on, again execute the unregisterRexxObject, if
+                             Rexx started Java; on ooRexx 5.0 beta no problems have occurred in testing anymore
+
+                             new external Rexx function BsfDoUnregisterRexxObject([.true|.false]); default: .false;
+                             this controls whether RgfRemoveProxyObject(c_obj_ID) is carried out by the native function
+                             Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject in the case Java
+                             was loaded by Rexx.
+
+    6.0.0   2016-12-08, rgf: corrected comment: BSF_PROXY -> BSF_REFERENCE
+
+    6.0.0   2016-11-19, rgf: updated major version number to 6 to indicate new base level Java 1.6/6;
                             JNI_VERSION_1_6 should only be used, if we need to use the new 1.6/6 JNI function
                             "jobjectRefType GetObjectRefType(env,refObj)"
 
-    4.5.2.  2016-03-28  jlf (Jean-Louis Faucher): "Fix bug 28 overflow under Ubuntu 14.04";
+    4.5.2.  2016-03-28  jlf: (Jean-Louis Faucher): "Fix bug 28 overflow under Ubuntu 14.04";
                             cf. bug 28: <https://sourceforge.net/p/bsf4oorexx/bugs/28/>
 
     4.5.2.  2015-09-24  rgf: applying fix as described in <https://sourceforge.net/p/bsf4oorexx/bugs/25/>,
@@ -932,11 +945,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20160328 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20161220 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20160328 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20161220 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20160328 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20161220 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -961,10 +974,17 @@ int       bShowErrorString = 1;         // default to showing (dumping) Java tra
 const int lenBsfErrorString = (int) strlen(BSF_ERROR_STRING);   // calc length once and forever
 #endif
 
+    // 2016-12-20: rgf, new global variable: if set to false and Java got invoked by Rexx, then no Rexx object -
+    //             i.e. RgfRemoveProxyObject(c_obj_ID) - unregistering will take place as this callback from Java
+    //             may address a Rexx interpreter which is not available anymore, causing an exception (has not
+    //             occurred while running with the beta version of ooRexx 5.0)
+
+logical_t bsfDoUnregisterRexxObject=false;
 
 // forward prototypes
     PVOID RgfAllocateMemory(size_t size);
     void  RgfFreeMemory (void * memory);
+
 
 
 // === (BEGIN) ========================> maintain list of RexxInterpreterInstances, OREXX_REGISTRY ========>
@@ -5566,6 +5586,7 @@ PSZ ApiFncTable[]=      // if invoked via Rexx, these are the functions we repor
     "BsfContextVariables"         ,  // rgf, 2015-06-07
     "BsfCreateRexxProxy"          , // ---rgf, 2009-09-12
 //    "BsfDetach"                   , // ---rgf, 2008-07-26, 2014-05-15: do not report anymore (auto-attach implemented)
+    "BsfDoUnregisterRexxObject"   , // ---rgf, 2016-12-20: allow control over using RgfRemoveRexxProxy() in case Java was started by Rexx
     "BsfDropFuncs"                ,
     "BsfGetTID"                   , // ---rgf, 2003-08-06
     "BsfInvokedBy"                ,
@@ -5593,6 +5614,7 @@ PSZ ApiFncTable4Java[]=      // if invoked via Java, these are the functions we 
     "BsfContextVariables"         ,  // rgf, 2015-06-07
     "BsfCreateRexxProxy"          , // ---rgf, 2009-09-12
 //    "BsfDetach"                   , // ---rgf, 2008-07-26, 2014-05-15: do not report anymore (auto-attach implemented)
+    "BsfDoUnregisterRexxObject"   , // ---rgf, 2016-12-20: allow control over using RgfRemoveRexxProxy() in case Java was started by Rexx
     "BsfDropFuncs"                ,
     "BsfGetTID"                   , // ---rgf, 2003-08-06
     "BsfInvokedBy"                ,
@@ -7405,6 +7427,37 @@ RexxRoutine1(RexxStemObject, BsfQueryAllFunctions, OPTIONAL_RexxStemObject, stem
     return stem;
 }
 
+
+
+    /***********************************************************************************************************/
+    /* Queries or sets the logical value of the globalc variable bsfDoUnregisterRexxObject (since 2016-12-20). */
+    /* If set to .true (default), then in the case that Rexx started Java the routine                          */
+    /* Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject will not carry out                 */
+    /* RgfRemoveProxyObject(c_obj_ID); this may be needed, if there are errors caused by Rexx shutting down    */
+    /* while Java still uses jniUnregisterRexxObject (cf. RexxProxy.java).                                     */
+    /*                                                                                                         */
+    /* returns old value, if argument left out, returns current value                                          */
+    /***********************************************************************************************************/
+//                 which can be changed by the new external BSF-function BsfDoUnregisterRexxObject
+RexxRoutine1(logical_t, BsfDoUnregisterRexxObject, OPTIONAL_logical_t, newValue)  // 20161220, ---rgf
+{
+#ifdef RGF_INFO
+    fprintf(stderr, "*** RGF_INFO: BsfDoUnregisterRexxObject() 1 ...\n");
+    fflush(stderr);
+#endif
+
+    logical_t oldValue=bsfDoUnregisterRexxObject;
+
+    if (argumentExists(1))          // was argument supplied ?
+    {
+        if (newValue!=oldValue)     // set to new value
+        {
+            bsfDoUnregisterRexxObject=newValue;
+        }
+    }
+
+    return oldValue;
+}
 
 
 
@@ -11351,8 +11404,11 @@ fprintf(stderr, "///  marker (5b), res=[%d]...\n", ret);fflush(stderr);
         REXX_TYPED_ROUTINE( BsfAttachToTID              , BsfAttachToTID              ),
 //        REXX_TYPED_ROUTINE( BsfProcessCallbackArgs      , BsfProcessCallbackArgs      ),
         REXX_TYPED_ROUTINE( BsfCreateRexxProxy          , BsfCreateRexxProxy          ),
-        REXX_TYPED_ROUTINE( BsfRexxProxy              , BsfRexxProxy              ),
+        REXX_TYPED_ROUTINE( BsfRexxProxy                , BsfRexxProxy                ),
         REXX_TYPED_ROUTINE( BsfDetach                   , BsfDetach                   ),
+
+        REXX_TYPED_ROUTINE( BsfDoUnregisterRexxObject   , BsfDoUnregisterRexxObject   ),    // rgf, 2016-12-20
+
         REXX_TYPED_ROUTINE( BsfDropFuncs                , BsfDropFuncs                ),
         REXX_TYPED_ROUTINE( BsfGetRIID                  , BsfGetRIID                  ),
         REXX_TYPED_ROUTINE( BsfGetTID                   , BsfGetTID                   ),
@@ -11381,7 +11437,7 @@ fprintf(stderr, "///  marker (5b), res=[%d]...\n", ret);fflush(stderr);
         STANDARD_PACKAGE_HEADER
         REXX_INTERPRETER_4_1_0,              // anything including and after 4.1.0 will work
         "bsf",                               // name of the package
-        "4.5",                               // package version information
+        "6.0",                               // package version information
         bsfLoader,                           // no load function
         bsfUnloader,                         // no unload function
         bsf_external_functions,              // the exported functions
@@ -12738,6 +12794,10 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             RexxObjectPtr clzBSF=rgfGetEntryFromLocal (rtc, "BSF");
             if (clzBSF != rtc->Nil() ) // BSF.CLS got loaded ?
             {
+
+                // 20161220, rgf: RexxEngine.java does increase the refCount (faster) as the .BSF unknown method will do an unregisterBean as well
+                ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", ro_methodObject);
+/*
                 RexxObjectPtr rop=ro_methodObject;
 //                ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
                 // increase ref counter, such that Rexx BSF_REFERENCE uninit method can safely decrease it
@@ -12745,6 +12805,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 //
                 ro_methodObject=(RexxStringObject) rtc->SendMessage2(clzBSF, "BSF.WRAP", rop, rtc->True());
                 // rgf, 201310 rtc->ReleaseLocalReference(rop);
+*/
             }
 
             rtc->DirectoryPut(slotDir, ro_methodObject, "METHODOBJECT");    // save it in callback directory
@@ -12761,24 +12822,28 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             // if (env->ExceptionCheck())
             fprintf(stderr, "\\\\\\\\ 07 - tid=[%lu], env->ExceptionCheck()=[%d] //// \n", (unsigned long) thisTid, env->ExceptionCheck()); fflush(stderr);
         #endif                 /// <============
-                RexxObjectPtr ro_methodObject=rtc->String(c_javaObjectBean);  // turn native string into a RexxString
+                RexxObjectPtr ro_javaObject=rtc->String(c_javaObjectBean);  // turn native string into a RexxString
                 RexxFreeMemory(c_javaObjectBean);     // make sure we free the allocated memory
 
                 RexxObjectPtr clzBSF=rgfGetEntryFromLocal (rtc, "BSF"); // BSF.CLS available, if so, wrap it up as a BSF proxy
                 if (clzBSF != rtc->Nil() ) // BSF.CLS got loaded ?
                 {
-                    RexxObjectPtr rop=ro_methodObject;
-                    // ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", ro_methodObject);
-//                    ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
+                    // 20161220, rgf: RexxEngine.java does increase the refCount (faster) as the .BSF unknown method will do an unregisterBean as well
+                    ro_javaObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", ro_javaObject);
+/*
+                    RexxObjectPtr rop=ro_javaObject;
+                    // ro_javaObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", ro_javaObject);
+//                    ro_javaObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop);
                     // increase ref counter, such that Rexx BSF_REFERENCE uninit method can safely decrease it
 // TODO: rgf, 2016-12-09: registerBean4JNI instead ?
-                    ro_methodObject=(RexxStringObject) rtc->SendMessage2(clzBSF, "BSF.WRAP", rop, rtc->True());
+                    ro_javaObject=(RexxStringObject) rtc->SendMessage2(clzBSF, "BSF.WRAP", rop, rtc->True());
                     // rgf, 201310 rtc->ReleaseLocalReference(rop);
+*/
                 }
 
-                rtc->DirectoryPut(slotDir, ro_methodObject, "JAVAOBJECT");    // save it in callback directory
+                rtc->DirectoryPut(slotDir, ro_javaObject, "JAVAOBJECT");    // save it in callback directory
                 // rgf, 201310 rtc->ReleaseLocalReference(clzBSF);
-                // rgf, 201310 rtc->ReleaseLocalReference(ro_methodObject);
+                // rgf, 201310 rtc->ReleaseLocalReference(ro_javaObject);
             }
 
 
@@ -13376,7 +13441,11 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregiste
     //          (maybe quite unlikely, hence not implementing at the time of this writing)
     //
     // global variable: int bsfInvokedBy = 0;     // 0=noJVM, 1=byJava, 2=byRexx
-    if (bsfInvokedBy==2)    // BSF4Rexx invoked by Rexx (Java loaded via Rexx) ?
+//  rgf, 20161220: on ooRexx 5.0 beta no problem; creating a global boolean variable bsfDoUnregisterRexxObject
+//                 which can be changed by the new external BSF-function BsfDoUnregisterRexxObject in case
+//                 traps occur because of this at the end of a Rexx program (when a Java RexxProxy gets finalized
+//                 and this callback gets used
+    if (bsfInvokedBy==2 &&  bsfDoUnregisterRexxObject==false)    // BSF4Rexx invoked by Rexx (Java loaded via Rexx) ?
     {
         return -2;                  // indicate that not processed
     }

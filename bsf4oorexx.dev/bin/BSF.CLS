@@ -13,6 +13,11 @@
 
    date:
 
+         2016-12-20, ---rgf, - on unregisterBean do not supply rii_id anymore (not needed anymore)
+
+                             - initialize.bsf.dir(): make sure that the pre-registered classes get
+                               their refCount increased (for multi Rexx-interpreter scenarios)
+
          2016-12-12, ---rgf, - make sure we return a BSF/BSF_REFERENCE object unchanged; allowing it
                                to be wrapped up as a BSF_REFERENCE again, may cause runtime errors
                                if the wrong number of uninits get executed (each decreases the refCount
@@ -498,7 +503,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20161212)
+   version:     6.00 (20161220)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -597,7 +602,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20161212" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20161220" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -746,7 +751,7 @@ syntax:
       "Void.class",       'Void.class'         )    -- a Java Object class
 
   do i=1 to arr~items by 2    -- pre-registered classes (see above)
-     bsf.dir~setentry(arr[i], .bsf_reference~new(arr[i+1]))
+     bsf.dir~setentry(arr[i], .bsf_reference~new(arr[i+1], .true))
   end
 
       -- Java classes for "String" and those representing the primitive datatypes
@@ -1062,6 +1067,7 @@ any:
    if arg(1)~isA(.bsf) then   -- make sure we do not create a BSF_REFERENCE for an existing BSF, BSF_REFERENCE instance
       return arg(1)
 
+      -- parse the string returned by the Java side, it will have either "<S>" (string) or "<O>" (Java object) prepended;
    parse arg indicator +3 data, bIncr
 
 -- .error~say( "bsf.wrap: arg(1)="pp(arg(1)) "indicator="pp(indicator) "data="pp(data) )
@@ -1595,7 +1601,7 @@ any:
 --  return BSF("unregisterBean", self~objectname)~substr(4)
    -- 2015-08-03, ---rgf: supply RII_ID of this object to help the Java side decide whether really doing it in the
    --                     context of the current RII (uninits may be carried out by any RII)
-  return BSF("unregisterBean", self~objectname, rii_id)~substr(4)
+  return BSF("unregisterBean", self~objectname)~substr(4)
 
 
    /* 2015-08-04, rgf:
@@ -2776,7 +2782,7 @@ any:
   expose indexArray
 -- .stderr~say( "*** BSF.CLS::BSF_ARRAY_REFERENCE::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x)  "indexArray="pp(indexArray) "indexArray~class="pp(indexArray~class) "self~rii_ID:" pp(self~rii_ID) "TID:" pp(BsfGetTid()))
 
-  call bsf 'unregisterBean', indexArray, self~rii_id
+  call bsf 'unregisterBean', indexArray
 -- .stderr~say( "<-- BSF.CLS::BSF_ARRAY_REFERENCE::UNINIT:" pp(self~objectname) 'call bsf, ''unregisterBean'', indexArray='pp(indexArray)", now doing 'self~uninit:super'..."  "TID:" pp(BsfGetTid()))
   self~uninit:super  -- now let superclass clean up
 

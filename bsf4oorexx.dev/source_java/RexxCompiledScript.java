@@ -33,6 +33,8 @@ Changes:
     2016-11-08: ---rgf, add RexxCompiledScript object to slotDir, if available; supplied as new
                         fourth argument to static method createArgV(...).
     2016-11-27: ---rgf, created public getter method getRexxScriptEngine()
+
+    2016-12-20: ---rgf, supply RexxScriptEngine instance via slotDir argument as well
 */
 
 
@@ -49,7 +51,7 @@ Changes:
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20161127
+ * @version 100.20161220
  * @since  2015-05-11
  *
  */
@@ -698,7 +700,9 @@ if (bDebug)
         {
             rpDir.sendMessage2("SETENTRY","REXXCOMPILEDSCRIPT",rcs);    // supply this RexxCompiledScript for reflective usage by Rexx program (e.g. for debugging)
         }
-        else    // give the Rexx script the possibility to interact at leasat with the RexxScriptEngine (and get the currentScript from it
+
+        // rgf, 2016-12-20: supply always the RESSCRIPTENGINE, if available // give the Rexx script the possibility to interact at leasat with the RexxScriptEngine (and get the currentScript from it
+        if (rse!=null)
         {
             rpDir.sendMessage2("SETENTRY","REXXSCRIPTENGINE",rse);      // supply this RexxCompiledScript for reflective usage by Rexx program (e.g. for debugging)
         }

@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 6.0.0, 20161119
+  * @version 6.0.0, 20161120
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,11 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2016-12-20, ---rgf, - methods that supply a Java methodObject or javaObject via jniRexxSendMessageToRexxObject,
+                          will now increase the respective bean's refCount by one as the native C++ method
+                          jniRexxSendMessageToRexxObject will use bsf.wrap to create a Rexx .BSF object which will
+                          use unregisterBean upon running its uninit method
 
     2016-11-19, ---rgf, - updated major version number to 6 to indicate new base level Java 1.6/6
 
@@ -157,7 +162,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20161119";
+    static final public String version = "600.20161120";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -643,6 +648,15 @@ if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ==
 
         String name=methodObject.getName();
         String methodObjectBean=rexxInterface.makeString4Rexx(methodObject);
+        // 20161220, rgf: increase refCount by one as the C++ method will use wrap.bsf() such that .bsf uninit will run and do a unregisterBean
+        if (rexxInterface.bsfPrefixReturnValue==true)
+        {
+            rexxInterface.registerBean(methodObjectBean.substring(3), methodObject);    // remove "<O>" prefix
+        }
+        else
+        {
+            rexxInterface.registerBean(methodObjectBean, methodObject);
+        }
 
 
         // String editedArgs[] = new String [ (args!= null ? args.length : 0) ];
@@ -824,6 +838,15 @@ if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ==
 
 
         String javaObjectBean=rexxInterface.makeString4Rexx(javaObject);
+        // 20161220, rgf: increase refCount by one as the C++ method will use wrap.bsf() such that .bsf uninit will run and do a unregisterBean
+        if (rexxInterface.bsfPrefixReturnValue==true)
+        {
+            rexxInterface.registerBean(javaObjectBean.substring(3), javaObject);    // remove "<O>" prefix
+        }
+        else
+        {
+            rexxInterface.registerBean(javaObjectBean, javaObject);
+        }
 
         // String editedArgs[] = new String [ (args!= null ? args.length : 0) ];
         Object editedArgs[] = null;

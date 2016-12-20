@@ -37,7 +37,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2016-12-19
+  * @version 6.0.0, 2016-12-20
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -59,6 +59,8 @@ TODO: (maybe)
 */
 
  /*
+     2016-12-20, ---rgf, - remove rii_id in unregisterBean, not needed anymore
+
      2016-12-19, ---rgf, - refactoring the new registry code such that we can save calls from the instance
                            *Registry*() to the static *Registry*()-methods
 
@@ -444,7 +446,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20161219";
+    static final public String version = "600.20161220";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -627,35 +629,34 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
     {
 
 // TODO: rgf, 2016-12-19: one may remove the beanName from RAJBean after debugging
-
             // preregister important classes with a predefined bean name in the new central registry
-        rajRegistry.put("Class.class",    new RAJBean("Class.class",      Class.class    ));
-        rajRegistry.put("Object.class",   new RAJBean("Object.class",     Object.class   ));
-        rajRegistry.put("Method.class",   new RAJBean("Method.class",     Method.class   ));
+        rajRegistry.put("Class.class",    new RAJBean("Class.class",    Class.class    ));
+        rajRegistry.put("Object.class",   new RAJBean("Object.class",   Object.class   ));
+        rajRegistry.put("Method.class",   new RAJBean("Method.class",   Method.class   ));
 
-        rajRegistry.put("Array.class",    new RAJBean("Array.class",      Array.class    ));
-        rajRegistry.put("String.class",   new RAJBean("String.class",     String.class   ));
-        rajRegistry.put("System.class",   new RAJBean("System.class",     System.class   ));
-        rajRegistry.put("Thread.class",   new RAJBean("Thread.class",     Thread.class   ));
+        rajRegistry.put("Array.class",    new RAJBean("Array.class",    Array.class    ));
+        rajRegistry.put("String.class",   new RAJBean("String.class",   String.class   ));
+        rajRegistry.put("System.class",   new RAJBean("System.class",   System.class   ));
+        rajRegistry.put("Thread.class",   new RAJBean("Thread.class",   Thread.class   ));
 
-        rajRegistry.put("Boolean.class",  new RAJBean("Boolean.class",    Boolean.class  ));
-        rajRegistry.put("boolean.class",  new RAJBean("boolean.class",    boolean.class  ));
-        rajRegistry.put("Byte.class",     new RAJBean("Byte.class",       Byte.class     ));
-        rajRegistry.put("byte.class",     new RAJBean("byte.class",       byte.class     ));
-        rajRegistry.put("char.class",     new RAJBean("char.class",       char.class     ));
-        rajRegistry.put("Character.class",new RAJBean("Character.class",  Character.class));
-        rajRegistry.put("Double.class",   new RAJBean("Double.class",     Double.class   ));
-        rajRegistry.put("double.class",   new RAJBean("double.class",     double.class   ));
-        rajRegistry.put("Float.class",    new RAJBean("Float.class",      Float.class    ));
-        rajRegistry.put("float.class",    new RAJBean("float.class",      float.class    ));
-        rajRegistry.put("int.class",      new RAJBean("int.class",        int.class      ));
-        rajRegistry.put("Integer.class",  new RAJBean("Integer.class",    Integer.class  ));
-        rajRegistry.put("Long.class",     new RAJBean("Long.class",       Long.class     ));
-        rajRegistry.put("long.class",     new RAJBean("long.class",       long.class     ));
-        rajRegistry.put("Short.class",    new RAJBean("Short.class",      Short.class    ));
-        rajRegistry.put("short.class",    new RAJBean("short.class",      short.class    ));
-        rajRegistry.put("Void.class",     new RAJBean("Void.class",       Void.class     ));
-        rajRegistry.put("void.class",     new RAJBean("void.class",       void.class     ));
+        rajRegistry.put("Boolean.class",  new RAJBean("Boolean.class",  Boolean.class  ));
+        rajRegistry.put("boolean.class",  new RAJBean("boolean.class",  boolean.class  ));
+        rajRegistry.put("Byte.class",     new RAJBean("Byte.class",     Byte.class     ));
+        rajRegistry.put("byte.class",     new RAJBean("byte.class",     byte.class     ));
+        rajRegistry.put("char.class",     new RAJBean("char.class",     char.class     ));
+        rajRegistry.put("Character.class",new RAJBean("Character.class",Character.class));
+        rajRegistry.put("Double.class",   new RAJBean("Double.class",   Double.class   ));
+        rajRegistry.put("double.class",   new RAJBean("double.class",   double.class   ));
+        rajRegistry.put("Float.class",    new RAJBean("Float.class",    Float.class    ));
+        rajRegistry.put("float.class",    new RAJBean("float.class",    float.class    ));
+        rajRegistry.put("int.class",      new RAJBean("int.class",      int.class      ));
+        rajRegistry.put("Integer.class",  new RAJBean("Integer.class",  Integer.class  ));
+        rajRegistry.put("Long.class",     new RAJBean("Long.class",     Long.class     ));
+        rajRegistry.put("long.class",     new RAJBean("long.class",     long.class     ));
+        rajRegistry.put("Short.class",    new RAJBean("Short.class",    Short.class    ));
+        rajRegistry.put("short.class",    new RAJBean("short.class",    short.class    ));
+        rajRegistry.put("Void.class",     new RAJBean("Void.class",     Void.class     ));
+        rajRegistry.put("void.class",     new RAJBean("void.class",     void.class     ));
 
 
 
@@ -5358,27 +5359,17 @@ System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], r.lB["+lookupBean(args
                    *
                    * - beanName: the bean to unregister
                    *
-                   * - RII_ID: optional, the RII_ID in which to unregister (since 2015-08-03)
                    *********************************************************/
                       {
                           final boolean bDebug= // true;    // if true, show debug infos
                                                  false;
 
-/*
-                          if(args.length!=2)
+                            // 2015-08-03, rgf
+                          if (args.length!=2)
                           {
                               throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                        "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: call BSF " +
                                   "'"+args[0]+"', beanName");
-                          }
-*/
-
-                            // 2015-08-03, rgf
-                          if (args.length<2 || args.length>3)
-                          {
-                              throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: call BSF " +
-                                  "'"+args[0]+"', beanName[, RII_ID]");
                           }
 
 
@@ -6450,7 +6441,7 @@ if (bDebugRefCounter && bean.refCount>3)
                               false;
 
 if (bDebug==true)
-System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"): bTerminated=["+bTerminated+"] ...");
+System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"): bTerminated=["+bTerminated+"] ...");
 
 
 /* // rgf, 2016-11-30: even if the Rexx engine is terminated, unregisterBean remains valid, reducing the refCount
@@ -6464,18 +6455,19 @@ System.err.println(this+":   ===> RexxAndJava.unregisterBean("+beanName+"): bTer
 // FIXME: remove output after debugging
 if (bDebug==true && bTerminated==true)
 {
-    System.err.println("RAJ.unregisterBean(): ***************** ***************** bTerminated=true !!!! beanName=["+beanName+"] ***************** *****************");
+    System.err.println("RAJ:   ===> RexxAndJava.unregisterBean(): ***************** ***************** bTerminated=true !!!! beanName=["+beanName+"] ***************** *****************");
 }
 
 
 if (bDebug) // testing; TODO: remove
 {
-    System.err.println("RAJ.unregisterBean(beanName="+beanName+")");
+    System.err.println("RAJ:   ===> RexxAndJava.unregisterBean(beanName="+beanName+")");
 }
 
             RAJBean bean=rajRegistry.get(beanName);
 
-if (bDebugRefCounter) System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), bean.refCount=["+bean.refCount+"]  ...");
+if (bDebugRefCounter && (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null))
+System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), bean.refCount=["+bean.refCount+"]  ...");
 
             // bean not found, maybe still has prefix ?
             if (bean==null && bsfPrefixReturnValue && beanName.startsWith(OBJECT_INDICATOR_PREFIX))
@@ -6518,6 +6510,10 @@ if (bDebugRefCounter)
         }
         System.err.println("//--// RAJ.unregisterBean(), REMOVING FROM REGISTRY! beanName=["+beanName+"], bean.refCount=["+bean.refCount+"] "+str+"\\\\--\\\\");
         rajRegistryToWatch.remove(beanName);
+    }
+    else    // TODO: 20161220, rgf: temporaryly show all removals!
+    {
+        System.err.println("//--// RAJ.unregisterBean(), REMOVING FROM REGISTRY! beanName=["+beanName+"], bean.refCount=["+bean.refCount+"] \\\\--\\\\");
     }
 }
 
@@ -6966,7 +6962,6 @@ if (bDebug) {System.err.println(this+".createRexxInterpreterInstance(...), retur
 
 
 
-// TODO: rgf, 20161219: remove name field after debugging
 //
     /** This class maintains the name, the Java object denoted by it and the reference count of the Java object.
      *  The name will be used as the key.
@@ -6976,12 +6971,13 @@ if (bDebug) {System.err.println(this+".createRexxInterpreterInstance(...), retur
     public static class RAJBean    // "RexxAndJava"-Bean
     {
             // package private
-        /** The name of the {@link javaObject}, which is used as a key into {@link rajRegistry}.
-         */
-        String name=null;       // bean name to serve as the key
-        /** The Java ojbect {@link name} refers to.
+        /** The name used to store the bean in the registry. */
+        String name=null;
+
+        /** The Java object (&quot;Java bean&quot;).
          */
         Object javaObject=null; // the Java object
+
         /** Serves as the reference count field for maintenance purposes of the {@link rajRegistry}.
          */
         int refCount=1;         // allows to maintain the reference count value for this particular bean
@@ -6997,14 +6993,10 @@ if (bDebug) {System.err.println(this+".createRexxInterpreterInstance(...), retur
          */
         public RAJBean(String name, Object javaObject)
         {
-            this.name      =name;
             this.javaObject=javaObject;
+            this.name=name;
         }
 
-        public String getName()
-        {
-            return name;
-        }
         public Object getJavaObject()
         {
             return javaObject;
