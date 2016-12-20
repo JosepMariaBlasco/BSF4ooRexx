@@ -627,7 +627,7 @@ if (bDebug==true){ System.err.println("arrived: getCreateRoutineAndPackage(), re
     {
         super();
 
-// if (bDebug==true)
+if (bDebug==true)
 { System.out.println("--> RexxScriptEngine() -->: "+this+" (CONSTRUCTOR!)"); }
 
         bsfMgr = new BSFManager ();                // get an instance of BSFManager
@@ -1295,7 +1295,7 @@ if (bDebug==true) {exc.printStackTrace();}
 //          check whether current re-assignments are in place already or not
     synchronized void updateRexxEngine(ScriptContext sc) throws ScriptException, BSFException
     {
-        boolean bDebug=true;
+        // boolean bDebug=false; true;
 if (bDebug) {System.err.println(this+": --> RexxScriptEngine().updateRexxEngine(), sc=["+sc+"] ...");}
 
             // make sure we have the native code set to support the camouflaging support from the beginning

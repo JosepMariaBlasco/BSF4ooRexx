@@ -337,7 +337,7 @@ public class RexxProxy implements InvocationHandler
     }
 
 
-    protected RexxAndJava rexxInterface=null;
+//    protected RexxAndJava rexxInterface=null;
 
 
     /** Make sure, no default constructor is available. */
@@ -837,7 +837,8 @@ if (bDebug) System.err.println("////// ---> RexxProxy.invoke(jO, mN, mD, args): 
         }
 
         // remove ooRexx entry in JNI registry
-        int nr=this.rexxEngine.getRexxInterface().jniUnregisterRexxObject(rexxObjectID);
+
+        int  nr=this.rexxEngine.getRexxInterface().jniUnregisterRexxObject(rexxObjectID);
 
         if (bDebug)
         {
