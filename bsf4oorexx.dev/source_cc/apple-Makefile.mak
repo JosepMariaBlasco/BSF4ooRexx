@@ -17,7 +17,9 @@
 INC_PATH = -I/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers -I .
 INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers
 
-LIB_2_REXX = /System/Library/Frameworks/ooRexx.framework/Libraries
+# rgf local (20161220): adjust to your ooRexx lib directories
+# LIB_2_REXX = /System/Library/Frameworks/ooRexx.framework/Libraries
+LIB_2_REXX = /opt/oldrexx/ooRexx-x86_64/lib/
 LIB_2_REXX_32 = /opt/oldrexx/ooRexx-i386/lib
 
 # INC_PATH_ORX = -I/opt/ooRexx/include $(INC_PATH)
