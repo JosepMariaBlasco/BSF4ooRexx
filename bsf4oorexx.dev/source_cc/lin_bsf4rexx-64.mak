@@ -42,7 +42,8 @@ BLD_PATH = .
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk-amd64
 
 # 2015-07-27
-JDK_BASE = /usr/lib/jvm/java-6-oracle
+# JDK_BASE = /usr/lib/jvm/java-6-oracle
+JDK_BASE = /usr/lib/jvm/java-6-openjdk
 
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 
