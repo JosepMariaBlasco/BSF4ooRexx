@@ -110,7 +110,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20161207
+ * @version 100.20161221
  * @since  2015-05-11
  *
  */
