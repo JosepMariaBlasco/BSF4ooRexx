@@ -1,16 +1,721 @@
+
+-------------------------------------- 2016-12-21 ----------------------------------
+
+- RexxScriptEngineFactory.java
+
+  - getLanguageVersion() now gets the "parse version" string from the used
+    ooRexx interpreter, saves it in LANGUAGE_VERSION (now package private)
+    and returns that value
+
+- RexxScriptEngine.java
+
+  - if RexxScriptEngineFactory.LANGUAGE_VERSION is null in its constructor,
+    then the "parse version" string is queried from the installed ooRexx
+    interpreter and saved in that package private field, such that it gets
+    used for supplying it via the script context's language Bindings
+
+- samples/1-070_demoDoOver.rxj
+
+  - make sure that "DO WITH" is run on ooRexx 5.0.0 or higher only
+
+-------------------------------------- 2016-12-20 ----------------------------------
+
+- BSF.CLS
+
+  - on unregisterBean do not supply rii_id anymore (not needed anymore)
+
+  - initialize.bsf.dir(): make sure that the pre-registered classes get
+    their refCount increased (for multi Rexx-interpreter scenarios)
+
+- BSF4ooRexx.cc
+
+  - in _jniRexxSendMessageToRexxObject: do not do a bsf.wrap with .true as the second
+    argument anymore; RexxEngine.java was changed to increase the refCount (on JavaObject
+    or MethodObject), such that bsf.wrap returned .BSF object can safely run unregisterBean
+    in its uninit method
+
+    in J_jniUnregisterRexxObject: from now on, again execute the unregisterRexxObject, if
+    Rexx started Java; on ooRexx 5.0 beta no problems have occurred in testing anymore
+
+    new external Rexx function BsfDoUnregisterRexxObject([.true|.false]); default: .false;
+    this controls whether RgfRemoveProxyObject(c_obj_ID) is carried out by the native function
+    Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject in the case Java
+    was loaded by Rexx.
+
+- RexxAndJava.java
+
+  - remove rii_id in unregisterBean, not needed anymore
+
+- RexxCompiledScript.java
+
+  - supply RexxScriptEngine instance via slotDir argument as well
+
+- RexxEngine.java
+
+  - methods that supply a Java methodObject or javaObject via jniRexxSendMessageToRexxObject,
+    will now increase the respective bean's refCount by one as the native C++ method
+    jniRexxSendMessageToRexxObject will use bsf.wrap to create a Rexx .BSF object which will
+    use unregisterBean upon running its uninit method
+
+- RexxScriptEngineFactory.java
+
+  - changed version number to reflect that work in the javax.script
+    support has taken place
+
+-------------------------------------- 2016-12-19 ----------------------------------
+
+- RexxAndJava.java
+
+  - refactoring the new registry code such that we can save calls from the instance
+    *Registry*() to the static *Registry*()-methods
+
+-------------------------------------- 2016-12-18 ----------------------------------
+
+- renamed directories 'samples/{Java|NetRexx}/jsr223' to 'samples/{Java|NetRexx}/javax.script'
+
+  - this rename was done as probably not too many people might know what jsr223 means,
+    "javax.script" is the name of the Java package that defines the Java scripting framework
+    and that was introduced with Java 1.6/6 (the JSR-223 group created that standard)
+
+  - updating all the NetRexx programs to match the Java siblings programs
+
+
+- samples/Java/javax.script/nutshell_04d.rex
+
+  - long standing "nutshell_04c.rex" got renamed to "nutshell_04d.rex"
+
+- new samples/Java/javax.script/nutshell_04c.rex
+
+  - the new Rexx-script "nutshell_04c.rex" uses and demonstrates Rexx script
+    annotations and therefore does not need setting ARGV explicitly
+
+- samples/Java/javax.script/Nutshell_04_Eval.java
+
+  - adapted to the new script and the renamed script
+
+
+- samples/NetRexx/javax.script/nrxRunScript.nrx
+
+  - adopt the changes of its Java sibling (cf. "samples/Java/javax.script/RunScript.java")
+
+- samples/NetRexx/javax.script/nutshell_04d.rex
+
+  - long standing "nutshell_04c.rex" got renamed to "nutshell_04d.rex"
+
+- new samples/NetRexx/javax.script/nutshell_04c.rex
+
+  - the new Rexx-script "nutshell_04c.rex" uses and demonstrates Rexx script
+    annotations and therefore does not need setting ARGV explicitly
+
+- samples/NetRexx/javax.script/Nutshell_04_Eval.nrx
+
+  - adapted to the new script and the renamed script
+
+
+
+-------------------------------------- 2016-12-12 ----------------------------------
+
+- BSF.CLS
+
+  - make sure we return a BSF/BSF_REFERENCE object unchanged; allowing it
+    to be wrapped up as a BSF_REFERENCE again, may cause runtime errors
+    if the wrong number of uninits get executed (each decreases the refCount
+    on the Java side)
+
 -------------------------------------- 2016-12-11 ----------------------------------
 
 - Janino (http://janino-compiler.github.io/janino/)
 
-  - replaced Janino 2.6 (from 2010) with latest version (3.0.6, baselin is Java 6 and
+  - replaced Janino 2.6 (from 2010) with latest version (3.0.6, baseline is Java 6 and
     is able to compile up to Java 1.8/8 features, check feature list as not everything
     is implemented, although almost everything :) )
 
+- BSF.CLS
 
--------------------------------------- 2016-xx-yy ----------------------------------
+  - removed public class "BSF_PROXY", which is not really safe to use, if
+    programmers do not know what to do with it; this class was created to
+    ease mixing BSF()-function style programming with ooRexx-style by
+    creating BSF or BSF_REFERENCE proxy objects to which we send the names
+    of the Java messages to invoke;
 
-... TODO: incorporate all changes since 2016-08-15 (quite a few) ...
+    rather, from now on, use the public routine bsf.wrap() to create
+    BSF_REFERENCE proxy objects from Java objects returned from the Java
+    side;
 
+-------------------------------------- 2016-12-08 ----------------------------------
+
+- samples/JavaFX
+
+  - created "samples/JavaFX" directory, incorporated the following JavaFX sample files:
+
+        F:\work\svn\bsf4oorexx\trunk\samples\JavaFX>dir /s
+         Datenträger in Laufwerk F: ist root_f
+         Volumeseriennummer: 7A10-C4A0
+
+         Verzeichnis von F:\work\svn\bsf4oorexx\trunk\samples\JavaFX
+
+        09.12.2016  15:25    <DIR>          .
+        09.12.2016  15:25    <DIR>          ..
+        09.12.2016  15:25    <DIR>          bkp.test
+        21.11.2016  13:34    <DIR>          fxml_01
+        06.12.2016  14:53    <DIR>          fxml_02
+        20.12.2016  15:52    <DIR>          fxml_03
+        06.12.2016  14:34             5.206 index.html
+        06.12.2016  14:39             4.436 javafx_01.rex
+        06.12.2016  14:39            12.852 javafx_02.rex
+        06.12.2016  14:17             1.839 javafx_property_binding.rex
+                       4 Datei(en),         24.333 Bytes
+
+         Verzeichnis von F:\work\svn\bsf4oorexx\trunk\samples\JavaFX\bkp.test
+
+        09.12.2016  15:25    <DIR>          .
+        09.12.2016  15:25    <DIR>          ..
+        07.12.2016  18:45             3.080 errorsIdeas.txt
+        06.12.2016  14:44             3.069 fxml_01.rex
+        21.11.2016  15:21             1.063 fxml_01_controller.rex
+        07.12.2016  19:19             2.333 FXML_01_Document.fxml
+        06.12.2016  14:53                96 helloWorld.js
+        06.12.2016  14:54                81 helloWorld.rex
+        06.12.2016  14:08             1.732 index.html
+        08.12.2016  20:20               966 test.rex
+                       8 Datei(en),         12.420 Bytes
+
+         Verzeichnis von F:\work\svn\bsf4oorexx\trunk\samples\JavaFX\fxml_01
+
+        21.11.2016  13:34    <DIR>          .
+        21.11.2016  13:34    <DIR>          ..
+        06.12.2016  14:44             3.069 fxml_01.rex
+        21.11.2016  15:21             1.063 fxml_01_controller.rex
+        21.11.2016  16:30             1.871 FXML_01_Document.fxml
+        06.12.2016  14:08             1.732 index.html
+                       4 Datei(en),          7.735 Bytes
+
+         Verzeichnis von F:\work\svn\bsf4oorexx\trunk\samples\JavaFX\fxml_02
+
+        06.12.2016  14:53    <DIR>          .
+        06.12.2016  14:53    <DIR>          ..
+        31.07.2010  17:57             2.785 bsf4oorexx_032.png
+        24.11.2016  14:27             1.519 fxml_02.css
+        06.12.2016  14:47             4.112 fxml_02.rex
+        19.11.2016  14:36             4.071 fxml_02_controller.rex
+        22.11.2016  13:43               374 FXML_02_de.properties
+        24.11.2016  14:33             4.464 FXML_02_Document.fxml
+        22.11.2016  13:43               372 FXML_02_en.properties
+        06.12.2016  14:08             3.052 index.html
+        31.07.2010  17:57             2.746 oorexx_032.png
+                       9 Datei(en),         23.495 Bytes
+
+         Verzeichnis von F:\work\svn\bsf4oorexx\trunk\samples\JavaFX\fxml_03
+
+        20.12.2016  15:52    <DIR>          .
+        20.12.2016  15:52    <DIR>          ..
+        06.12.2016  10:13            35.704 address_book.odg
+        06.12.2016  10:14            25.074 address_book_128.png
+        04.12.2016  16:31             1.215 BirthdayStatistics.fxml
+        05.12.2016  12:50             3.500 DarkTheme.css
+        06.12.2016  14:08             4.994 index.html
+        04.12.2016  17:30            34.489 json-rgf.cls
+        20.12.2016  16:46            38.552 MainApp.rex
+        06.12.2016  10:09               323 notices.txt
+        04.12.2016  16:20             3.650 PersonEditDialog.fxml
+        04.12.2016  16:25             5.693 PersonOverview.fxml
+        06.12.2016  14:48             5.813 put_FXID_objects_into.my.app.rex
+        06.12.2016  10:45             3.667 RootLayout.fxml
+                      12 Datei(en),        162.674 Bytes
+
+             Anzahl der angezeigten Dateien:
+                      37 Datei(en),        230.657 Bytes
+
+
+-------------------------------------- 2016-12-08 ----------------------------------
+
+- BSF4ooRexx.cc
+
+  - corrected comment: BSF_PROXY -> BSF_REFERENCE
+
+- RexxAndJava.java
+
+  - tidying up code, removing all code relating to the Java registry changes/additions
+    of 2015-08-03, new central Java registry replaces it
+
+-------------------------------------- 2016-12-07 ----------------------------------
+
+- BSF.CLS
+
+  - .JSR223::SET method: second argument defaults to the null string ""
+
+- RexxScriptEngine.java
+
+  - adapted logic for the injection code in the case that the
+    Rexx script annotation does not contain a value (using explicitly empty string instead)
+
+- samples/Java/javax.script/RunScript.java
+
+  - reformat getProgram()-output such that line comments are replaced by
+    block comments
+
+-------------------------------------- 2016-12-06 ----------------------------------
+
+- BSF.CLS
+
+  - if Rexx started Java the unknown method of BSF if processing sendmessage
+    messages would load its RexxAndJava object, but not garbage collect it;
+    fixed by using bsf.wrap on the returned value
+
+- samples/Java/javax.script/RunScript.java
+
+  - if no argument is given, show the help after the list of
+    currently available javax.script engines
+
+-------------------------------------- 2016-12-04 ----------------------------------
+
+- JavaFX (= powerful GUI) samples
+
+  - work started on "fxml_03"
+
+
+-------------------------------------- 2016-11-30 ----------------------------------
+
+- BSF.CLS
+
+  - make the UNKNOWN methods Unguarded; it is possible that a method invocation
+    on the Java object is taking place, while from the Java side (e.g. for an
+    event handler) a callback occurs (in a different RexxActivation) which from
+    the Rexx side invokes another Java method in the UNKNOWN method, which will
+    block; UNGUARDED solves this problem (and does not introduce a problem into
+    Rexx)
+
+-------------------------------------- 2016-11-29 ----------------------------------
+
+- BSF.CLS
+
+  - make sure that .UNO_PROXY and .UNO_ARRAY_PROXY are Rexx class objects
+    before using them in isA-tests
+
+-------------------------------------- 2016-11-28 ----------------------------------
+
+- RexxAndJava.java
+
+  - convFromRexx(): check that type string is not the empty string, change error message
+    to be more meaningful
+
+  - fixing a subtle bug where even invokestrict() may be fooled in method chosing: e.g.
+    java.lang.List possesses two remove methods with the signature "Object remove(int)"
+    and "boolean remove(Object)". The current algorithm in INVOKE_STRICT can be misled
+    to choose the wrong method if checking the "remove(Object)" first (because an Integer
+    object, to which the primitive int value was converted to already, could be used as
+    an argument). Now checking if argument must be primitive, so not to accept a parameter
+    of type Object.
+
+
+-------------------------------------- 2016-11-27 ----------------------------------
+
+- RexxAndJava.java
+
+  - new central RAJRegistry with RAJBeans, global to all Rexx interpreter instances
+
+  - make glob_tcr static
+
+- RexxCompiledScript.java
+
+  - created public getter method getRexxScriptEngine()
+
+-------------------------------------- 2016-11-22 ----------------------------------
+
+- JavaFX (= powerful GUI) samples
+
+  - work started on "fxml_02"
+
+-------------------------------------- 2016-11-21 ----------------------------------
+
+- JavaFX (= powerful GUI) samples
+
+  - work started on "fxml_01"
+
+-------------------------------------- 2016-11-19 ----------------------------------
+
+- BSF.CLS
+
+  - updated major version number to 6 to indicate new base level Java 1.6/6
+
+- BSF4ooRexx.cc
+
+  - updated major version number to 6 to indicate new base level Java 1.6/6;
+    JNI_VERSION_1_6 should only be used, if we need to use the new 1.6/6 JNI function
+    "jobjectRefType GetObjectRefType(env,refObj)"
+
+- RexxAndJava.java
+
+  - updated major version number to 6 to indicate new base level Java 1.6/6
+
+- RexxEngine.java
+
+  - updated major version number to 6 to indicate new base level Java 1.6/6
+
+-------------------------------------- 2016-11-12 ----------------------------------
+
+- RexxAndJava.java
+
+  - change from .isAssignableFrom() to .isInstance() when checking whether
+    MAKEARRAY/SUPPLIER could be honored
+
+-------------------------------------- 2016-11-10 ----------------------------------
+
+- BSF.CLS
+
+  - .jsr223: added class methods get and set to process the Rexx script
+    annotations
+
+-------------------------------------- 2016-11-09 ----------------------------------
+
+- BSF.CLS
+
+  - bsf.redirectTo(): if no monitored objects are supplied the current one
+    gets removed (unless there would be no previous monitored object left),
+    before a default one gets created and assigned
+
+- RexxScriptEngine.java
+
+  - added static boolean field "bRedirectStandardFiles" that controls whether
+    the ScriptContext's Reader, Writer and ErrorWriter should replace the
+    monitored objects of .input (.debugInput), .output or .error (.traceOutput)
+
+-------------------------------------- 2016-11-08 ----------------------------------
+
+- BSF.CLS
+
+  - bsf.OutputStream: now also inserts the prefix after LF chars if the string to
+    output contains contains any
+
+  - bsf.OutputStream::charout() now has an optional third argument, if set to .true,
+    the prefix gets skipped (used by bsf.InputStream::linein)
+
+- RexxCompiledScript.java
+
+  - add RexxCompiledScript object to slotDir, if available; supplied as new
+    fourth argument to static method createArgV(...).
+
+- RexxScriptEngine.java
+
+  - supply null as new fourth argument to RexxCompiledScript.createArgV(...)
+    as we have no RexxCompiledScript available in the case of invokeMethod()
+
+- samples/Java/jsr223
+
+  - changed (adapted) all Rexx scripts to not issue "Rexx" anymore as this is now
+    automatically done by BSF.CLS for Rexx script (javax.script) programs
+
+-------------------------------------- 2016-11-07 ----------------------------------
+
+- BSF.CLS
+
+  - added ability to output a prefix-string for BSF.InputStream and BSF.OutputStream objects
+
+  - routine bsf.redirectTo now sets that prefix for the redirectred standard Rexx files
+    monitored by .input, .output, .error, .debugInput, .traceOutput to
+    "REXXin?>", "REXXout>", "REXXerr>", "REXXdbgIn?>", "REXXtrc>" respectively;
+    in order to turn the redirected prefix on or off just set the "prefix" attribute to .nil,
+    in order to change the string just change the "prefix" attribute
+
+- ProxiedJavaClassTool.java
+
+  - remove reflective usage of Method.isSynthetic() as we can now rely it to be available
+
+- RexxScriptEngine.java
+
+  - updateRexxEngine() method should be synchronized to make sure that
+    re-assigning standard files does not get interrupted, if multithreaded
+    usages
+
+- new samples/1-070_demoDoOver.rxj
+
+   Demonstrate how to use DO...OVER and (starting with ooRexx 5) DO WITH...OVER with
+
+   - java.lang.Enum class objects
+        - MAKEARRAY will supply all enum Java objects
+        - SUPPLIER will supply as index the ordinal value and as item the enum Java object
+
+   or with Java objects implementing one of the following interfaces:
+
+   - java.lang.Iterable
+   - java.util.Collection
+   - java.util.Enumeration
+   - java.util.Iterator
+        - MAKEARRAY will supply the collected values
+        - SUPPLIER will supply as index and item the collected value (as if they were ooRexx Bags)
+
+   - java.util.Map
+        - MAKEARRAY will supply the key values
+        - SUPPLIER will supply as index the key and as item the value stored with the key
+
+- org.oorexx.datergf.DateRgf.java
+
+  - added a static main method that gives a brief overview of this class
+
+- samples/9-010_ExecuteMainMethodInJavaClass.rxj
+
+  - hint the user to test with the org.oorexx.datergf.DateRGF Java
+    class which is supplied with BSF4ooRexx and got a static main method
+    added for this hint text
+
+-------------------------------------- 2016-11-06 ----------------------------------
+
+- RexxAndJava.java
+
+  - if non-existing MAKEARRAY or SUPPLIER methods should be invoked, then check, whether
+    we have a Java collection in hand that has one of the following interfaces implemented:
+    java.lang.Iterable, java.util.Collection, java.util.Enumeration, java.util.Iterator or
+    java.util.Map. If so, then create and return a genuine Rexx object of type .Array or
+    .Supplier wrapped as a RexxProxy which can be unwrapped on the ooRexx side using BsfRexxProxy(rp,"o")
+    as will be done in BSF.CLS' class BSF.
+
+    In addition treat a Java class object of type java.lang.Enum as a collection of enum values
+    and return them for MAKEARRAY; in the case of SUPPLIER use the ordinal enum values for the index
+    array and the enum values for the item array
+
+-------------------------------------- 2016-11-05 ----------------------------------
+
+- ProxiedJavaClassTool.java
+
+  - basing on 1.6/6.0, get rid of generic warnings
+
+- RexxDispatcher.java
+
+  - basing on 1.6/6.0, get rid of generic warnings
+
+- RexxProxy.java
+
+  - oops, overlooked that the test program did it from Rexx, now we make sure we
+    use Janino instead of ASM by setting to Janino in the static block
+
+- RexxScriptEngine.java
+
+  - basing on 1.6/6.0, get rid of generic warnings
+
+-------------------------------------- 2016-11-04 ----------------------------------
+
+- ProxiedJavaClassTool.java
+
+  - fixed bug that did not extend an abstract class, if not methods to proxy were supplied
+    (which will be the case when invoked by RexxProxy.newExtendedProxyInstance(...))
+
+- RexxAndJava.java
+
+  - basing on 1.6/6.0, get rid of generic warnings:
+
+                    source_java>javac -Xlint:unchecked RexxAndJava.java
+                    RexxAndJava.java:543: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.HashMap
+                            pendingUninits.put(new_rii_ID, new ArrayList(64));
+                                              ^
+                    RexxAndJava.java:711: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.HashMap
+                                    pendingUninits.put(rii_ID, new ArrayList(64));
+                                                      ^
+                    RexxAndJava.java:4070: warning: [unchecked] unchecked call to isAssignableFrom(java.lang.Class<?>) as a member of the raw type java.lang.Class
+                                                                  bFound=(paramTypes[j].isAssignableFrom(funcArgs[j].getClass()));
+                                                                                                        ^
+                    RexxAndJava.java:5179: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
+                                                              al.add(args[1]);
+                                                                    ^
+                    RexxAndJava.java:5594: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.Hashtable
+                                           orxReferences.put(beanName, newRefCount); // remember refCount
+                                                            ^
+                    RexxAndJava.java:5911: warning: [unchecked] unchecked call to isAssignableFrom(java.lang.Class<?>) as a member of the raw type java.lang.Class
+                                    if (!(paramTypes[k].isAssignableFrom (funcArgs[k].getClass()))) // not compatible, break
+                                                                         ^
+                    RexxAndJava.java:5957: warning: [unchecked] unchecked call to getConstructor(java.lang.Class<?>...) as a member of the raw type java.lang.Class
+                                            Constructor constr=paramTypes[k].getConstructor( argClass );
+                                                                                           ^
+                    RexxAndJava.java:6167: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.Hashtable
+                                orxReferences.put(beanName, new Integer(refCount)); // remember refCount
+                                                 ^
+                    RexxAndJava.java:6173: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.HashSet
+                                        beansCreated.add(beanName);
+                                                        ^
+                    RexxAndJava.java:6236: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.Hashtable
+                                       orxReferences.put(beanName, new Integer(refCount));
+                                                        ^
+                    RexxAndJava.java:6597: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                               eventTextVectorHigh.addElement(o);   // changed to addElement() for JRE 1.1.8, ---rgf
+                                                                             ^
+                    RexxAndJava.java:6601: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                               eventTextVectorLow.addElement(o);    // changed to addElement() for JRE 1.1.8, ---rgf
+                                                                            ^
+                    RexxAndJava.java:6606: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                               eventTextVector.addElement(o);       // changed to addElement() for JRE 1.1.8, ---rgf
+                                                                         ^
+                    RexxAndJava.java:6764: warning: [unchecked] unchecked call to <T>toArray(T[]) as a member of the raw type java.util.ArrayList
+                                    entries=(String[]) al.toArray(entries);
+                                                                 ^
+                    14 warnings
+
+- RexxCompiledScript.java
+
+  - rebasing on Java 1.6/6.0; generics related warning cannot be circumvented
+    (cf. comments in getInterface(Class<T> clasz) method)
+
+- RexxConfiguration.java
+
+  - rebasing on Java 1.6/6.0, fix generics related warnings:
+
+                    RexxConfiguration.java:126: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
+                            load_required_library.add(libraryName);
+                                                     ^
+                    RexxConfiguration.java:195: warning: [unchecked] unchecked call to add(int,E) as a member of the raw type java.util.ArrayList
+                                exitHandlers.add(i,null);
+                                                ^
+                    RexxConfiguration.java:402: warning: [unchecked] unchecked call to add(int,E) as a member of the raw type java.util.ArrayList
+                            exitHandlers.add(function,exitHandler); // save exit handler wit
+                                            ^
+                    RexxConfiguration.java:428: warning: [unchecked] unchecked call to set(int,E) as a member of the raw type java.util.ArrayList
+                                exitHandlers.set(function,exitHandler); // save exit handler wit
+                                                ^
+                    RexxConfiguration.java:478: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.HashMap
+                            commandHandlers.put(name,commandHandler); // save exit handler wit
+                                               ^
+                    RexxConfiguration.java:506: warning: [unchecked] unchecked call to put(K,V) as a member of the raw type java.util.HashMap
+                                commandHandlers.put(name,commandHandler); // save exit handler with
+                                                   ^
+
+
+- RexxEngine.java
+
+  - basing on Java 1.6/6.0, getting rid of "-Xlint:unchecked" warnings:
+
+                    RexxEngine.java:517: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                           beanVector.addElement(res[1]);        // remember beanName for later deregistering
+                                                                ^
+                    RexxEngine.java:662: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                           beanVector.addElement(res[1]);       // remember beanName for later deregistering
+                                                                ^
+                    RexxEngine.java:842: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                           beanVector.addElement(res[1]);       // remember beanName for later deregistering
+                                                                ^
+                    RexxEngine.java:1087: warning: [unchecked] unchecked call to addElement(E) as a member of the raw type java.util.Vector
+                                              beanVector.addElement(res[1]);    // remember beanName for later deregistering
+
+- RexxProxy.java
+
+  - Use Janino instead of ASM for extending abstract classes (would need to add
+    a default constructor in the case of an abstract class; however, Janino has
+    been maintained nicely and has become fast enought to replace ASM, so
+    contemplating of removing ASM for good eventually)
+
+  - cast "null" to "(java.lang.Class<?>[]) null" in Object.class.getMethod(...) for
+    "hashCode" and "toString" to get rid of the compiler warning
+
+  - rebasing on Java 1.6/6.0, get rid of generics related warnings where possible:
+
+                    source_java>javac -Xlint:unchecked RexxProxy.java
+                    RexxProxy.java:118: warning: [unchecked] unchecked call to getDeclaredMethod(java.lang.String,java.lang.Class<?>...) asa member of the raw type java.lang.Class
+                                    mCreateProxiedJavaClass=clzProxiedJavaClassTool.getDeclaredMethod(
+                                                                                                     ^
+                    RexxProxy.java:898: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
+                                        al.add(clz);        // add interface class object
+                                              ^
+                    RexxProxy.java:906: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
+                                            al.add(ifs[k]);         // add interface class object
+                                                  ^
+                    RexxProxy.java:1054: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
+                                    al.add( raj.convFromRexx((String) o));  // string a key into BSFRegistry; if so return Java object
+                                          ^
+                    RexxProxy.java:1059: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
+                                    al.add(o);
+                                          ^
+                    RexxProxy.java:1064: warning: [unchecked] unchecked call to set(int,E) as a member of the raw type java.util.ArrayList
+                            al.set(0,clz);      // replace the very first element with the retrieved class object it stands for
+                                  ^
+                    RexxProxy.java:1178: warning: [unchecked] unchecked call to getMethod(java.lang.String,java.lang.Class<?>...) as a membe
+                    r of the raw type java.lang.Class
+                                    Method mSDH=extendedClz.getMethod("setDefaultHandler", new Class[]{org.rexxla.bsf.engines.rexx.RexxProxy.class});
+                                                                     ^
+                    RexxProxy.java:1262: warning: [unchecked] unchecked call to getMethod(java.lang.String,java.lang.Class<?>...) as a membe
+                    r of the raw type java.lang.Class
+                                Method mSetDH=extendedClz.getMethod("setDefaultHandler", new Class[]{org.rexxla.bsf.engines.rexx.RexxProxy.class});
+                                                                   ^
+
+-------------------------------------- 2016-11-03 ----------------------------------
+
+- ProxiedJavaClassTool.java
+
+  - if no methods given, but an abstract class, then proxy all abstract (public or protected) methods only
+
+
+-------------------------------------- 2016-11-01 ----------------------------------
+
+- ProxiedJavaClassTool.java
+
+  - do not use the ClassLoader from the target's class (e.g. javafx.* classes in Java 1.8/8
+    use their own class loaders which may confine them to see only javafx.*)
+
+
+-------------------------------------- 2016-11-06 ----------------------------------
+
+- BSF.CLS
+
+  - if a BSF (Java) object gets a MAKEARRAY or SUPPLIER message sent to it which
+   cannot be resolved, then RexxAndJava.java checks whether it is a collection type
+   object (having one of the interfaces java.lang.Iterable, java.util.Collection,
+   java.util.Enumeration, java.util.Iterator or java.util.Map implemented; or being
+   a class object of type java.lang.Enum such that its values are regarded to be
+   attributes and returned);
+
+-------------------------------------- 2016-10-27 ----------------------------------
+
+- BSF.CLS
+
+  - public routine bsf.ScriptContext2rexx now uses .JSR223~ScriptContext2RexxDir(...)
+
+-------------------------------------- 2016-10-26 ----------------------------------
+
+- BSF.CLS
+
+  - JSR223-support:
+
+    - bsf.ScriptContext2rexx():
+
+      - allow .context argument instead of ScriptContext to ease using this routine
+
+      - make sure that the names (keys of SimpleBindings) are mapped to valid Rexx symbol names for
+        using BSFContextVariables(...)
+
+    - new public utility class "JSR223" for easying interfacing with "javax.script" invocations
+
+      - defines constants "ENGINE_SCOPE", "GLOBAL_SCOPE"
+
+      - defines class methods getBindings(), normalizedName(), ScriptContext2RexxDir();
+        getAttribute(), getAttributes(), setAttribute()
+
+- RexxCompiledScript.java
+
+  - added a few additional debug statements (debugging instrumentation by JavaFX),
+    in addition also conditionally allowing to display the Rexx source
+
+
+- RexxScriptEngine.java
+
+  - adjust to observed usage by JavaFX
+
+    - added protected field "latestRexxPackage": stores latest created Rexx package
+      (from last compile()) to be added to the package of the next to be compiled
+      Rexx script
+
+    - added protected field "bAddLatestPackageDynamically" and public
+      methods setAddLatestPackageDynamically() and getAddLatestPackageDynamically():
+      if set to true will add dynamically the last package to a new compiled Rexx
+      script thereby allowing later Rexx scripts to access any public routines and
+      public classes of any prior compiled Rexx scripts (includes access to package
+      BSF.CLS)
+
+    - change: public static field "bPrependDynamicRequiresStatement" (to inject a dynamic
+      requires to package 'BSF.CLS') now honored only, if field "bAddLatestPackageDynamically"
+      is false
+
+    - changed method updateRexxEngine(): the very first time 'BSF.CLS' is dynamically
+      required, the package of that Rexx code is stored in the protected field
+      "latestRexxPackage", such that it can be added to new compiled Rexx scripts
+
+
+====================================================================================
 -------------------------------------- 2016-08-15 ----------------------------------
 
 - information/installation
@@ -18,6 +723,11 @@
   - added Eva Gerger's and Julian Reindorf's installation documentation, which
     nicely explains 32-bit and 64-bit installation combinations of ooRexx and
     Java for Linux, Windows and MacOSX
+
+- BSF.CLS
+
+  - BSF.Dialog class: when fetching constants (static fields) use the
+    imported javax.swing.JOptionsPane class
 
 -------------------------------------- 2016-08-14 ----------------------------------
 
@@ -98,6 +808,10 @@
                   - added UNGUARDED to STRING and GETNAME methods to allow using
                     the string method concurrently in another activity (eg in another
                     Rexx interpreter instance)
+
+- RexxAndJava.java
+
+  - updated kudos-entries
 
 
 -------------------------------------- 2015-08-11 ----------------------------------

@@ -87,7 +87,7 @@ TODO: (maybe)
                     could be honored
 
      2016-11-06, ---rgf, if non-existing MAKEARRAY or SUPPLIER methods should be invoked, then check, whether
-                    we have a Java collection in hand that has one of the follwoing interfaces implemented:
+                    we have a Java collection in hand that has one of the following interfaces implemented:
                     java.lang.Iterable, java.util.Collection, java.util.Enumeration, java.util.Iterator or
                     java.util.Map. If so, then create and return a genuine Rexx object of type .Array or
                     .Supplier wrapped as a RexxProxy which can be unwrapped on the ooRexx side using BsfRexxProxy(rp,"o")

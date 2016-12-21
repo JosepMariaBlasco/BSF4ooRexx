@@ -41,7 +41,7 @@ import java.util.*;         // BitSet
                       renamed getRequiredLibrary[4JNI]() to getRequiredLibraries[4JNI] to reflect the
                       fact, that multiple libraries can be required
    2012-02-26, rgf: - fix wrong documentation for getExitHandlers4JNI()
-   2016-11-04, rgf: - re-basing on Java 1.6/6.0, fix generics related warnings:
+   2016-11-04, rgf: - rebasing on Java 1.6/6.0, fix generics related warnings:
                     RexxConfiguration.java:126: warning: [unchecked] unchecked call to add(E) as a member of the raw type java.util.ArrayList
                             load_required_library.add(libraryName);
                                                      ^

@@ -74,7 +74,7 @@
                         object (having one of the interfaces java.lang.Iterable, java.util.Collection,
                         java.util.Enumeration, java.util.Iterator or java.util.Map implemented; or being
                         a class object of type java.lang.Enum such that its values are regarded to be
-                        meant and returned);
+                        attributes and returned);
 
          2016-10-27, rgf: - public routine bsf.ScriptContext2rexx now uses .JSR223~ScriptContext2RexxDir(...)
 

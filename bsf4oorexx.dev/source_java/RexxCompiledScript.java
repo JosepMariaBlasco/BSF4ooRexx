@@ -27,11 +27,14 @@ import org.rexxla.bsf.engines.rexx.RexxProxy;
 
 Changes:
     2016-10-26: ---rgf, added a few additional debug statements (debugging instrumentation by JavaFX),
-                          in additon also conditionally allowing to display the Rexx source
+                          in addition also conditionally allowing to display the Rexx source
+
     2016-11-04: ---rgf, rebasing on Java 1.6/6.0; generics related warning cannot be circumvented
-                          (cf. comments in getInterface(Class<T> clasz) method)
+                        (cf. comments in getInterface(Class<T> clasz) method)
+
     2016-11-08: ---rgf, add RexxCompiledScript object to slotDir, if available; supplied as new
                         fourth argument to static method createArgV(...).
+
     2016-11-27: ---rgf, created public getter method getRexxScriptEngine()
 
     2016-12-20: ---rgf, supply RexxScriptEngine instance via slotDir argument as well
