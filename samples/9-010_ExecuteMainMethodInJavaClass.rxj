@@ -6,7 +6,10 @@
             arguments given on the command line
    date:    2008-09-03
             2009-07-06 Walter Pachl  add help
-            2016-11-07 rgf, use by default the org.oorexx.datergf.DateRGF class
+            2016-11-07 rgf, hint the user to test with the org.oorexx.datergf.DateRGF Java
+                       class which is supplied with BSF4ooRexx and got a static main method
+                       added for this hint text
+
 
    usage:   RunJavaClass fullyQualifiedJavaClassName [arg] ...
    license:

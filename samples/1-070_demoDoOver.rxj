@@ -1,12 +1,11 @@
 /*
     Author:     Rony G. Flatscher
     Date:       2016-11-07
-    Purpose:    Demonstrate how to use DO...OVER and (starting with ooRexx 5) DO WITH...OVER
-                with
+    Purpose:    Demonstrate how to use DO...OVER and (starting with ooRexx 5) DO WITH...OVER with
 
                 - java.lang.Enum class objects
                      - MAKEARRAY will supply all enum Java objects
-                     - SUPPLIER will supply as index the ordinal value and as itme the enum Java object
+                     - SUPPLIER will supply as index the ordinal value and as item the enum Java object
 
                   or with Java objects implementing one of the following interfaces:
 
@@ -21,7 +20,7 @@
                      - MAKEARRAY will supply the key values
                      - SUPPLIER will supply as index the key and as item the value stored with the key
 
-    Changed:    -
+    Changed:    2016-12-21, rgf: make sure that "DO WITH" is run on ooRexx 5.0.0 or higher
 
     Needs:      BSF4ooRexx
 
@@ -46,6 +45,9 @@
 
 tab="09"x                  -- define the TAB character for indentation
 line="-"~copies(79)        -- define line
+
+parse version  "_" v "."
+.local~rexxVersion=v
 
 call demo_Enum        tab, line  -- run the java.lang.Enum demo
 call demo_Map         tab, line  -- run the java.Util.Map demo
@@ -74,18 +76,21 @@ call demo_Enumeration tab, line  -- run the java.Util.Map demo
    end
    say
 
-   say tab "iterating over all enum values using DO...OVER (sends MAKEARRAY message implicitly):"
-   say
-   do e over clz
-         -- on enum value: instead of "name" one could use "toString" as well to get at its string representation
-      say tab tab "ordinal value:" pp(e~ordinal~right(2)) "string value:" pp(e~name)
-   end
-   say
+   if .rexxVersion>4 then  -- "DO WITH" was introduced with version 5.0.0
+   do
+      say tab "iterating over all enum values using DO...OVER (sends MAKEARRAY message implicitly):"
+      say
+      do e over clz
+            -- on enum value: instead of "name" one could use "toString" as well to get at its string representation
+         say tab tab "ordinal value:" pp(e~ordinal~right(2)) "string value:" pp(e~name)
+      end
+      say
 
-   say tab "iterating over all enum values using DO WITH...OVER (sends SUPPLIER message implicitly):"
-   say
-   do with index i item e over clz
-      say tab tab "index (ordinal value):" pp(i~right(2)) "item:" pp(e~name)
+      say tab "iterating over all enum values using DO WITH...OVER (sends SUPPLIER message implicitly):"
+      say
+      do with index i item e over clz
+         say tab tab "index (ordinal value):" pp(i~right(2)) "item:" pp(e~name)
+      end
    end
    say line
 
@@ -115,10 +120,13 @@ call demo_Enumeration tab, line  -- run the java.Util.Map demo
    end
    say
 
-   say tab "iterating over all key/value pairs using DO WITH...OVER (sends SUPPLIER message implicitly):"
-   say
-   do with index i item v over hm
-      say tab tab "index:" pp(i) "item:" pp(v)
+   if .rexxVersion>4 then  -- "DO WITH" was introduced with version 5.0.0
+   do
+      say tab "iterating over all key/value pairs using DO WITH...OVER (sends SUPPLIER message implicitly):"
+      say
+      do with index i item v over hm
+         say tab tab "index:" pp(i) "item:" pp(v)
+      end
    end
    say line
 
@@ -149,13 +157,15 @@ call demo_Enumeration tab, line  -- run the java.Util.Map demo
    end
    say
 
-   say tab "iterating over all values using DO WITH...OVER (sends SUPPLIER message implicitly):"
-   say
-   do with index i item v over arrList
-      say tab tab "index:" pp(i)~left(22) "item:" pp(v)
+   if .rexxVersion>4 then  -- "DO WITH" was introduced with version 5.0.0
+   do
+      say tab "iterating over all values using DO WITH...OVER (sends SUPPLIER message implicitly):"
+      say
+      do with index i item v over arrList
+         say tab tab "index:" pp(i)~left(22) "item:" pp(v)
+      end
    end
    say line
-   return
 
 
 -- demonstrates iterating over a java.util.Iterator
@@ -190,13 +200,16 @@ call demo_Enumeration tab, line  -- run the java.Util.Map demo
    end
    say
 
-   say tab "now getting another Iterator from the ArrayList... (previous one got exhausted)"
-   it=arrList~iterator
-   say
-   say tab "iterating over all values using DO WITH...OVER (sends SUPPLIER message implicitly):"
-   say
-   do with index i item v over it   -- using the Iterator object
-      say tab tab "index:" pp(i)~left(22) "item:" pp(v)
+   if .rexxVersion>4 then  -- "DO WITH" was introduced with version 5.0.0
+   do
+      say tab "now getting another Iterator from the ArrayList... (previous one got exhausted)"
+      it=arrList~iterator
+      say
+      say tab "iterating over all values using DO WITH...OVER (sends SUPPLIER message implicitly):"
+      say
+      do with index i item v over it   -- using the Iterator object
+         say tab tab "index:" pp(i)~left(22) "item:" pp(v)
+      end
    end
    say line
 
@@ -231,16 +244,18 @@ call demo_Enumeration tab, line  -- run the java.Util.Map demo
    end
    say
 
-   say tab "creating a StringTokenizer instance... (previous one got exhausted)"
-   tokenized=.BSF~new("java.util.StringTokenizer", string)
-   say
-   say tab "iterating over all values using DO WITH...OVER (sends SUPPLIER message implicitly):"
-   say
-   do with index i item v over tokenized  -- using the Iterator object
-      say tab tab "index:" pp(i)~left(12) "item:" pp(v)
+   if .rexxVersion>4 then  -- "DO WITH" was introduced with version 5.0.0
+   do
+      say tab "creating a StringTokenizer instance... (previous one got exhausted)"
+      tokenized=.BSF~new("java.util.StringTokenizer", string)
+      say
+      say tab "iterating over all values using DO WITH...OVER (sends SUPPLIER message implicitly):"
+      say
+      do with index i item v over tokenized  -- using the Iterator object
+         say tab tab "index:" pp(i)~left(12) "item:" pp(v)
+      end
    end
    say line
-
 
 
 ::requires bsf.cls

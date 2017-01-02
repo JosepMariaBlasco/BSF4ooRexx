@@ -35,7 +35,14 @@ import javax.script.SimpleScriptContext
 -----------------------------------------------------------------------------
 
    changes:
-      2016-12-18, rgf: - adopt the changes of its Java sibling (cf. "samples/Java/javax.script/RunScript.java")
+      2016-12-18, rgf: - adopt the changes of its Java sibling (cf. "samples/Java/javax.script/RunScript.java"), ie:
+
+                         changed: 2016-12-06, rgf: if no argument is given, show the help after the list of
+                                                   currently available javax.script engines
+
+                         changed: 2016-12-07, rgf: reformat getProgram()-output such that line comments are replaced by
+                                                   block comments
+
 */
 
 

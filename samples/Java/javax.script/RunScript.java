@@ -36,6 +36,7 @@ import javax.script.SimpleScriptContext;
 
     changed: 2016-12-06, rgf: if no argument is given, show the help after the list of
                               currently available javax.script engines
+
     changed: 2016-12-07, rgf: reformat getProgram()-output such that line comments are replaced by
                               block comments
 */
