@@ -41,6 +41,11 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
    Changes:
 
+        2016-12-21, ---rgf, if RexxScriptEngineFactory.LANGUAGE_VERSION is null in its constructor,
+                            then the "parse version" string is queried from the installed ooRexx
+                            interpreter and saved in that package private field, such that it gets
+                            used for supplying it via the script context's language Bindings
+
         2016-12-07, ---rgf, adapted logic for the injection code in the case that the
                             Rexx script annotation does not contain a value (using explicitly empty string instead)
 
@@ -105,7 +110,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20161207
+ * @version 100.20161221
  * @since  2015-05-11
  *
  */
@@ -641,6 +646,14 @@ if (bDebug==true)
            sc.setAttribute(ENGINE          , ref.getEngineName(),      ScriptContext.ENGINE_SCOPE);
            sc.setAttribute(ENGINE_VERSION  , ref.getEngineVersion(),   ScriptContext.ENGINE_SCOPE);
            sc.setAttribute(LANGUAGE        , ref.getLanguageName(),    ScriptContext.ENGINE_SCOPE);
+
+           if (ref.LANGUAGE_VERSION==null)  // no Rexx version set as of yet, query the bsfRexxEngine for it
+           {
+               String rexxCode="parse version v; return v";    // get Rexx version
+               ref.LANGUAGE_VERSION=(String) bsfRexxEngine.apply(
+                   "RexxScriptEngine.java", 0, 0, rexxCode, null, null);
+           }
+
            sc.setAttribute(LANGUAGE_VERSION, ref.getLanguageVersion(), ScriptContext.ENGINE_SCOPE);
            sc.setAttribute(NAME            , ref.getName(),            ScriptContext.ENGINE_SCOPE);
         }

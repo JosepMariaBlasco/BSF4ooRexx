@@ -31,13 +31,17 @@ import org.apache.bsf.*;   // BSF support
     Changes:
         - 2015-05-19, ---rgf: added a getName() method to return the explicit short name "Rexx"
                               (used for the ScriptEngine.NAME entry in the ENGINE_SCOPE)
+
+        - 2016-12-21, ---rgf: getLanguageVersion() now gets the "parse version" string from the used
+                              ooRexx interpreter, saves it in LANGUAGE_VERSION (now package private)
+                              and returns that value
 */
 
 
 /** Class that implements the <code>javax.script.ScriptEngineFactory</code> interface for the ooRexx support.
  *
  * @author Rony G. Flatscher
- * @version 100.20161026
+ * @version 100.20161221
  * @since   2015-05-11
  *
  */
@@ -49,12 +53,13 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     final public static RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY=new RexxScriptEngineFactory();
 
     final private static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
-    final private static String       ENGINE_VERSION   ="100.20161127";
+    final private static String       ENGINE_VERSION   ="100.20161221";
     final private static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
                                                                 "rxj", "rexxj", "jrexx",
                                                                 "rxo" );
     final private static String       LANGUAGE_NAME    ="ooRexx";
-    final private static String       LANGUAGE_VERSION ="4.1.0";
+    // final private static String       LANGUAGE_VERSION ="4.1.0";
+    static String                     LANGUAGE_VERSION=null;    // let it be accessed by RexxScriptEngine's constructor
 
     final private static String       SHORT_NAME       ="Rexx";
 
@@ -94,6 +99,11 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     /** Returns the version of the scripting language supported by this ScriptEngine. */
     public String getLanguageVersion()
     {
+        // ask the currently available Rexx interpreter about its version
+        if (LANGUAGE_VERSION==null)
+        {
+            getScriptEngine();  // causes a RexxScriptEngine to be created, which constructor will set the actual LANGUAGE_VERSION
+        }
         return LANGUAGE_VERSION;
     }
 
@@ -227,7 +237,8 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     /** Creates and returns an instance of the ScriptEngine associated with this ScriptEngineFactory. */
     public ScriptEngine getScriptEngine()
     {
-if (bDebug) { System.err.println("... arrived in "+this+".getScriptEngine()");}
+if (bDebug)
+{ System.err.println("... arrived in "+this+".getScriptEngine()");}
 
         RexxScriptEngine rse=new RexxScriptEngine();
         return rse;
@@ -235,7 +246,7 @@ if (bDebug) { System.err.println("... arrived in "+this+".getScriptEngine()");}
 
 
     // -------------- utility
-    /** Utility method that creates a valid filename for the current ISO date (GMT).
+    /** Utility method that creates and returns a GMT-based ISO date string.
      *
      *  @return the current ISO date, edited to be usable as a filename
      */
