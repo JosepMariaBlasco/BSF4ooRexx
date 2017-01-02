@@ -1089,7 +1089,6 @@ say self"::handle, tid="pp(bsfGetTID())
      say "strUrlFn:" pp(strUrlFn)
 
      webEngine~load(strUrlFn)       -- load data from file
-webEngine~load(.bsf~new("java.net.URL", "file:///"currDir"/testTable.html")~toString)
 
   end
   else  -- load HTML from string
