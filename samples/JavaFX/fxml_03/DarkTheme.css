@@ -1,5 +1,7 @@
 /* Source: <http://code.makery.ch/library/javafx-2-tutorial/part4/> as of 2016-12-03 */
 
+
+
 .background {
     -fx-background-color: #1d1d1d;
 }
@@ -10,6 +12,15 @@
     -fx-text-fill: white;
     -fx-opacity: 0.6;
 }
+
+.label-rgf {
+    -fx-font-size: 8pt;
+    -fx-font-family: 'Source Code Pro', monospace;
+    -fx-text-fill: white;
+    -fx-background-color: #1d1d1d;
+    -fx-opacity: 0.6;
+}
+
 
 .label-bright {
     -fx-font-size: 11pt;
@@ -148,3 +159,22 @@
 .mnemonic-underline {
     -fx-stroke: -fx-text-fill;
 }
+
+/* cf. <http://edutechwiki.unige.ch/en/CSS_box_model_tutorial> pointing to: <http://css-tricks.com/2841-the-css-box-model/>, as of: 20161230
+         * {
+           border: 1px solid red !important;
+         }
+*/
+
+/* rgf, 20161230: the following is parsed correctly by JavaFX and has the desired effect to depict the CSS boxes in use: */
+
+/* (remove begin and end of comment to see the effect)
+
+* {
+   -fx-border-width: 1px !important;
+   -fx-border-style: dashed !important;
+   -fx-border-color: yellow !important;
+ }
+
+*/
+

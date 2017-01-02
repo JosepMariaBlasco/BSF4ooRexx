@@ -27,6 +27,11 @@
                         <KeyCodeCombination alt="DOWN" code="O" control="UP" meta="UP" shift="UP" shortcut="UP" />
                      </accelerator>
                   </MenuItem>
+                  <MenuItem fx:id="menuPrint" text="_Print">
+                     <accelerator>
+                        <KeyCodeCombination alt="DOWN" code="P" control="UP" meta="UP" shift="UP" shortcut="UP" />
+                     </accelerator>
+                  </MenuItem>
                   <MenuItem fx:id="menuSave" text="_Save">
                      <accelerator>
                         <KeyCodeCombination alt="DOWN" code="S" control="UP" meta="UP" shift="UP" shortcut="UP" />
@@ -72,6 +77,6 @@
       </MenuBar>
    </top>
 
-    <!-- comment: Rexx program that stores all fx:id objects in .local~personOverview.fxml directory -->
+    <!-- comment: Rexx program that stores all fx:id objects in .local~rootLayout.fxml directory -->
     <fx:script source="put_FXID_objects_into.my.app.rex" />
 </BorderPane>

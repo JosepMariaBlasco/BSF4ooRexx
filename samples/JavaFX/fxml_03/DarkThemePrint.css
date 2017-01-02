@@ -1,0 +1,110 @@
+/* rgf as of 2017-01-01 */
+
+@media print, screen
+{
+        body
+        {
+            font-size: 14pt;
+            color: black;
+            counter-reset: addr ;       /* define a counter named "addr" */
+        }
+
+        div.address:before
+        {
+            font-size: 50%;
+            content: "# " counter(addr)  ": ";      /* as of JavaFX 1.8 we must use counters() */
+        }
+
+        div.address
+        {
+           font-size: 18px;
+           font-family: serif;
+           background: LightGoldenRodYellow;
+           border: 2px;
+           border-style: dotted none none dotted;
+           padding: 5px;
+           margin-top: 1.25cm;
+           margin-bottom: 0.5cm;
+
+           page-break-inside: avoid;
+           counter-increment: addr;
+        }
+
+        .lastName
+        {
+           font-weight: bold;
+        }
+
+        .birthday
+        {
+           font-family: sans-serif;
+           font-size: small;
+           color:     red;
+        }
+
+        .postalCode, .city
+        {
+           font-family: sans-serif;
+           font-size:   smaller;
+           color:       blue;
+        }
+}
+
+/* rgf, 20170102: seems that @page, @bottom-center, page and pages counters are not supported by WebEngine.print() */
+
+@media print
+{
+        @page {
+
+          @bottom-center
+          {
+             margin: 10pt 0 30pt 0;
+             border-top: .25pt solid #666;
+             content: "Address Book, page " counter(page) " of " counter(pages);
+             font-size: 9pt;
+             color: #333;
+          }
+
+        }
+}
+
+
+
+
+/*
+        @page { margin: 2cm }
+
+        @page :first {
+          margin-top: 10cm;
+        }
+
+        @page :left {
+          margin-left: 3cm;
+          margin-right: 2cm;
+        }
+
+        @page :right {
+          margin-left: 2cm;
+          margin-right: 3cm;
+        }
+*/
+
+
+/* cf. <http://edutechwiki.unige.ch/en/CSS_box_model_tutorial> pointing to: <http://css-tricks.com/2841-the-css-box-model/>, as of: 20161230
+         * {
+           border: 1px solid red !important;
+         }
+*/
+
+/* rgf, 20161230: the following is parsed correctly by JavaFX and has the desired effect to depict the CSS boxes in use: */
+
+/* (remove begin and end of comment to see the effect) */
+
+* {
+   -fx-border-width: 1px !important;
+   -fx-border-style: dashed !important;
+   -fx-border-color: red !important;
+ }
+
+/* */
+

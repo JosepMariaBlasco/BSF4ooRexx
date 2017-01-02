@@ -1,6 +1,12 @@
 /*
    author:  Rony G. Flatscher
    date:    2016-12-08
+   changes: 2016-12-31, adding demonstration of printing via JavaFX using the information
+                        in <http://docs.oracle.com/javafx/8/webview/printing.htm>; printing
+                        a GUI node to a printer is demonstrated in:
+                        in <https://carlfx.wordpress.com/2013/07/15/introduction-by-example-javafx-8-printing/>
+            2017-01-02, demo bringing up printer dialog (to choose different printer, to set page properties,
+                        to cancel printing)
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -133,7 +139,7 @@ jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch 
    -- starting with JavaFX 8u40 true dialogs got introduced; taking advantage of them if running on Java 1.8 or higher
    -- get the JavaFX runtime version (only available when running it), e.g. "8.0.111-b14"
 
-  bAlertsAvailable=Dialogs.Alerts.Available=(.java.lang.system~getProperty("javafx.runtime.version")>8)
+  bAlertsAvailable=(.java.lang.system~getProperty("javafx.runtime.version")>8)
   .my.app~bDialogsAlertsAvailable=bAlertsAvailable  -- determine availability
   if bAlertsAvailable then    -- available since JavaFX 8u40
   do
@@ -291,6 +297,30 @@ jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch 
   dialogStage~show
 
 
+::method showPersonPrinterDialog
+  expose primaryStage personData
+
+  -- Load the fxml file and create a new stage for the popup
+  Url=.bsf~new("java.net.URL", "file:PersonPrinterDialog.fxml")
+  page  = .fx.FXMLLoader~load(Url)
+  scene = .fx.Scene~new(page)
+
+  -- AnchorPane page = (AnchorPane) loader.load();
+  dialogStage = .bsf~new("javafx.stage.Stage")
+  dialogStage~setTitle("Adress Book Printing")
+  dialogStage~initModality(.fx.Modality~WINDOW_MODAL)
+
+  dialogStage~initOwner(primaryStage)
+  dialogStage~setScene(scene)
+
+  -- Set the persons into the controller
+  controller = .PersonPrinterDialogController~new(personData, dialogStage)
+  controller~createAndLoadPrintData -- render the print data
+  dialogStage~showAndWait
+
+
+
+
 
 /* =================================================================================== */
 /* for tutorial part 2: define the PersonOverviewController
@@ -349,15 +379,6 @@ jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch 
   btnDelete~setOnAction(rp)
 
   self~setItems      -- fill the TableView
-
-/*
-  return
-
-syntax:
-  co=condition('object')
-  call dumpConditionObject co -- show condition information
-  raise propagate
-*/
 
 
 ::method setItems
@@ -460,13 +481,13 @@ syntax:
 
 
    -- JavaFX event handlers implemented in Rexx
-::method changed  /* implements the interface "javafx.beans.value.ChangeListener" */
+::method changed unguarded    /* implements the interface "javafx.beans.value.ChangeListener" */
   use arg observable, oldValue, newValue
   self~showPersonDetails(newValue)  -- fill in the labels to show currently selected Person's details
 
 ::method handle   /* implements the interface "javafx.event.EventHandler"   */
   expose btnNew btnEdit btnDelete personTable
-  use arg event, slotDir
+  use arg event
 
   tgtObjectName=event~getTarget~objectname
   select
@@ -656,7 +677,7 @@ syntax:
    left as an excercise for the interested reader.)
 */
 ::class Person
-::method init class  -- class initializer
+
    -- the following attribute definitions follow a pattern that could be exploited by creating
    -- them dynamically when this class constructor runs:
    -- - the attribute's storage is a JavaFX property
@@ -749,7 +770,7 @@ syntax:
    ----------------------------------------------------------------------------------------
 ::method init        -- constructor
   expose firstName lastName street postalCode city birthday
-  use arg strFirstName, strLastName, -
+  use arg strFirstName="<enter firstName>", strLastName="<enter lastName>", -
           strStreet="some unknown street", strPostalCode=(random(1000,9999)), -
           strCity="Some City", strBirthday=(random(1950,.dateTime~new~year)"-"random(1,12)~right(2,0)"-"random(1,28)~right(2,0))
 
@@ -773,7 +794,7 @@ syntax:
 
 ::method init        -- constructor
   expose mainApp -
-         menuNew menuOpen menuSave menuSaveAs menuAbout menuExit menuBirthdayStatistics
+         menuNew menuOpen menuPrint menuSave menuSaveAs menuAbout menuExit menuBirthdayStatistics
 
   use arg mainApp -- fetch and save object in attribute
 
@@ -784,6 +805,7 @@ syntax:
   rlDir=.my.app~rootLayout.fxml
   menuNew   =rlDir~menuNew   ~~setOnAction(rp)
   menuOpen  =rlDir~menuOpen  ~~setOnAction(rp)
+  menuPrint =rlDir~menuPrint ~~setOnAction(rp)  -- demonstrate JavaFX printing as of JavaFX 8
   menuSave  =rlDir~menuSave  ~~setOnAction(rp)
   menuSaveAs=rlDir~menuSaveAs~~setOnAction(rp)
   menuAbout =rlDir~menuAbout ~~setOnAction(rp)
@@ -794,8 +816,10 @@ syntax:
 
 
 ::method handle   /* implements the interface "javafx.event"   */
-  expose menuNew menuOpen menuSave menuSaveAs menuAbout menuExit mainApp menuBirthdayStatistics
+  expose menuNew menuOpen menuPrint menuSave menuSaveAs menuAbout menuExit mainApp menuBirthdayStatistics
   use arg event, slotDir
+
+say self"::handle, tid="pp(bsfGetTID())
 
   tgtObjectName=event~getTarget~objectname
 
@@ -808,6 +832,9 @@ syntax:
      when tgtObjectName=menuExit  ~objectName then self~handleExit
       -- tutorial, part 6:
      when tgtObjectName=menuBirthdayStatistics~objectName then mainApp~showPersonStatistics
+     -- demonstrate JavaFX printing as of JavaFX 8
+     when tgtObjectName=menuPrint ~objectName then mainApp~showPersonPrinterDialog
+
      otherwise .error~say("UNKNOWN target:" pp(event~getTarget) pp(event~getTarget~tostring))
   end
 
@@ -970,6 +997,221 @@ syntax:
 
 
 /* =================================================================================== */
+/* for tutorial part 6: define the BirthdayStatisticsController
+
+   This Rexx class controls the interaction with the fxml form named "PersonPrinterDialog.fxml".
+
+*/
+::class PersonPrinterDialogController
+::method init
+  expose  webViewControl webEngine lblHint btnPrint btnCancel personData webEngine worker.state dialogStage currPrinter
+  use arg personData, dialogStage
+
+  -- fetch the directory containing the JavaFX fx:id JavaFX objects and assign them to attributes
+  ppdDir=.my.app~personPrinterDialog.fxml
+  webViewControl =ppdDir~webViewControl
+  worker.state   =bsf.import("javafx.concurrent.Worker$State") -- load the Enumeration class to check whether loading succeeded
+
+  lblHint        =ppdDir~lblHint
+  btnPrint       =ppdDir~btnPrint
+  btnPrint ~setDisable(.true) -- make sure button is disabled (will be enabled when loading html-data is done)
+  btnCancel      =ppdDir~btnCancel
+
+
+   -- add self as the ChangeListener (we have its method "changed" implemented) and EventHandler (method "handle" implemented)
+  rp=BSFCreateRexxProxy(self, ,"javafx.beans.value.ChangeListener", "javafx.event.EventHandler")
+
+   -- add self as the ChangeListener (we have its method "changed" implemented) and EventHandler (method "handle" implemented)
+  webEngine =webViewControl~getEngine
+  webEngine ~getLoadWorker ~stateProperty ~addListener(rp)
+
+   -- add us as the event handler to the buttons, the event handler (we have its method "handle" implemented)
+  btnPrint ~setOnAction(rp)
+  btnCancel~setOnAction(rp)
+
+   -- define printer to print to
+  currPrinter=bsf.importClass("javafx.print.Printer")~getDefaultPrinter
+
+
+  -- carry out the creation of text and loading of it in a separate thread
+  -- note: loading must be done in the JavaFX thread !
+::method createAndLoadPrintData
+  expose webEngine personData
+
+  bSaveToFile=.true     -- set to .false to do it in memory only
+
+  mb=.mutableBuffer~new
+  nl="0d0a"x   -- CRLF characters
+
+  mb~~append("<!DOCTYPE html>")
+  mb ~~append(nl) ~~append("<html>")
+
+  mb ~~append(nl) ~~append("<head>")
+  mb ~~append(nl) ~~append("  <title>Address Book</title>")
+   -- this defines the (print) CSS to use
+  mb ~~append(nl) ~~append('  <link rel="stylesheet" href="DarkThemePrint.css" type="text/css" />' )
+  mb ~~append(nl) ~~append("</head>")
+
+  mb ~~append(nl) ~~append("<body>")
+
+  do p over personData  -- iterate over ObservableList, create xhtml rendering
+     mb~~append(nl) ~~append('  <div class="address">')
+
+     mb~~append(nl) ~~append('    <span class="lastName">')   ~~append(esc(p~lastName))   ~~append('</span>, ')
+     mb~~append(nl) ~~append('    <span class="firstName">')  ~~append(esc(p~firstName))  ~~append('</span>  <br/>')
+     mb~~append(nl) ~~append('    <span class="birthday">')   ~~append(esc(p~birthday))   ~~append('</span>  <br/>')
+     mb~~append(nl) ~~append('    <span class="street">')     ~~append(esc(p~street))     ~~append('</span>  <br/>')
+     mb~~append(nl) ~~append('    <span class="postalCode">') ~~append(esc(p~postalCode)) ~~append('</span>')
+     mb~~append(nl) ~~append('    <span class="city">')       ~~append(esc(p~city))       ~~append('</span>')
+
+     mb~~append(nl) ~~append('  </div>')
+     mb~append(nl)
+  end
+
+  mb ~~append(nl) ~~append("</body>")
+  mb ~~append(nl) ~~append("</html>")
+
+  say "mb~string:" pp(mb)           -- show user generated HTML
+
+  currDir=directory()               -- get current directory from Rexx
+
+  if bSaveToFile=.true then         -- save the html data in a file (e.g. for debugging)
+  do
+     fn="AddressBook_printout.html" -- define file name to use
+
+     stream=.stream~new(fn)~~open("replace")
+     stream~~charout(mb~string)~~close
+     say "generated HTML data saved as:" pp(fn)
+
+        -- on Windows the path does not start with a forward slash
+     if currDir~left(1)<>"/" then strUrlFn=.bsf~new("java.net.URL", "file:///"currDir"/"fn)~toString -- Windows should start with "file:///"!
+                             else strUrlFn=.bsf~new("java.net.URL", "file:"currDir"/"fn)~toString    -- Unix
+     say "strUrlFn:" pp(strUrlFn)
+
+     webEngine~load(strUrlFn)       -- load data from file
+webEngine~load(.bsf~new("java.net.URL", "file:///"currDir"/testTable.html")~toString)
+
+  end
+  else  -- load HTML from string
+  do
+     sn="DarkThemePrint.css"        -- name of style sheet file
+     strUrlStyleSheet=.bsf~new("java.net.URL", "file:///"currDir"/"sn)~toString  -- define location of CSS to use
+     webEngine~setUserStyleSheetLocation(strUrlStyleSheet)
+     webEngine~loadContent(mb~string)    -- now let the webEngine load the data into the WebView
+  end
+
+
+::routine esc  -- escape '&', '<', '>' with their SGML entities
+  parse arg str
+  return str~changeStr('&','&quot;') ~changeStr('<','&lt;') ~changeStr('>','&gt;')
+
+
+::method changed unguarded    -- javafx.beans.value.ChangeListener (for webWorker)
+  expose btnPrint lblHint worker.state  webEngine
+  use arg obsValue, oldState, newState
+
+  str=.dateTime~new "-> loadWorker status="pp(newState~toString)
+
+  .traceOutput~say("... loadWorker status changed:" str)
+
+  if newState~toString="FAILED" then
+  do
+    lblHint~setText("loadWorker FAILED!") -- inform user via label
+    worker=webEngine~getLoadWorker
+    .error~say("FAILED! loadWorker~message:  " pp(worker~message))
+    exc=worker~exception
+    .error~say("        loadWorker~exception:" pp(exc~toString))
+    .error~say("        stacktrace of the exception:")
+    exc~printStackTrace
+    return
+  end
+
+  lblHint~setText(str)
+      -- using the ooRexx object name which is the same for both Enum values, if the Enum values are the same
+  if newState~objectName=worker.state~succeeded~objectName then -- text has been fully loaded
+  do
+     if .my.app~bDialogsAlertsAvailable then    -- on Java 1.8 or newer, all what is needed from javafx.print.* available!
+         btnPrint~setDisable(.false) -- enable print button
+     else
+     do
+         -- .bsf.dialog is defined in BSF.CLS and uses swing
+        .bsf.dialog~messageBox("You need Java 1.8/8 or newer to use the JavaFX printing feature!", "No JavaFX-Printer Support", "error")
+     end
+  end
+
+::method handle   /* implements the interface "javafx.event.EventHandler"   */
+  expose btnPrint btnCancel dialogStage
+  use arg event
+
+  tgtObjectName=event~getTarget~objectname
+  if tgtObjectName=btnPrint~objectName then self~handlePrinting
+                                       else dialogStage~close     -- close the dialog stage (btnCancel was pressed)
+
+::method handlePrinting
+  expose  webViewControl webEngine lblHint btnPrint dialogStage currPrinter
+
+  if currPrinter=.nil then    -- no default printer, hence no printer installed at all!
+  do
+     alert=.fx.alert~new(.fx.Alert.Type~ERROR)  -- create a warning alert
+     alert~setTitle("No Default Printer Found")
+     alert~setHeaderText("Printer Missing")
+     alert~setContentText("No printer found, please install one on this system!")
+     alert~showAndWait
+     return
+  end
+
+  lblHint~text=pp(currPrinter~toString)
+
+/*
+--- >
+  paper      =bsf.loadClass("javafx.print.Paper")~a4
+  orientation=bsf.loadClass("javafx.print.PageOrientation")~portrait
+  margins    =bsf.loadClass("javafx.print.Printer$MarginType")~default
+  pageLayout=defPrinter~createPageLayout(paper,orientation,margins)
+
+/* the following is meant for printing a GUI-node from screen to printer, hence the transforming, cf.
+   <https://carlfx.wordpress.com/2013/07/15/introduction-by-example-javafx-8-printing/>: */
+
+  -- transform screen viewport to print viewport dimensions
+  boundsInParent=webViewControl~getBoundsInParent
+  scaleX=pageLayout~getPrintableWidth  / boundsInParent~width
+  scaleY=pageLayout~getPrintableHeight / boundsInParent~height
+
+say "webViewControl="pp(webViewControl)
+say "webViewControl~toString="pp(webViewControl~toString)
+  webViewControl~getTransforms~add(.bsf~new("javafx.scene.transform.Scale", scaleX, scaleY) )
+--- <
+
+  job=bsf.loadClass("javafx.print.PrinterJob")~createPrinterJob
+  if job<>.nil, job~printPage(webViewControl) then job~endJob
+*/
+
+  job=bsf.loadClass("javafx.print.PrinterJob")~createPrinterJob
+
+  if job<>.nil then
+  do
+      -- allow user to switch printer and set page properties
+     if job~showPrintDialog(dialogStage)=.false then  -- user cancelled printing
+     do
+        lblHint~text="Printing cancelled by user"
+        job~endJob
+        return
+     end
+
+     jobPrinter=job~getPrinter      -- get selected printer
+     if jobPrinter~objectName<>currPrinter~objectname then
+     do
+        lblHint~text="Printing to:" pp(jobPrinter~toString)
+        currPrinter=jobPrinter
+     end
+
+     webEngine~print(job)  -- using the WebView's WebEngine to print, which is able to do multiple page printings
+     job~endJob
+  end
+
+
+
+/* =================================================================================== */
 /* for tutorial part 3: interacting with the user */
    /* Instead of a class we define a Rexx routine that carries out the checking */
 ::Routine validString    -- returns .true, if date is valid, .false else
@@ -984,7 +1226,7 @@ syntax:     -- Rexx condition raised
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016 Rony G. Flatscher
+         Copyright 2016-2017 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

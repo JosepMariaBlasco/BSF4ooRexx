@@ -23,6 +23,6 @@
       </BarChart>
    </children>
 
-    <!-- comment: Rexx program that stores all fx:id objects in .local~personOverview.fxml directory -->
+    <!-- comment: Rexx program that stores all fx:id objects in .local~birthdayStatistics.fxml directory -->
     <fx:script source="put_FXID_objects_into.my.app.rex" />
 </AnchorPane>
