@@ -138,7 +138,7 @@ package org.oorexx.datergf; // "DateTime_RGF"-package
   *             2001-04-05      - included update() here
   *
   *             2005-12-28      - added Apache license 2.0, put sources with BSF4Rexx
- *              2016-11-07      - added main method to give a brief overview
+  *             2016-11-07      - added a static main method that gives a brief overview of this class
   * </pre>
   *
   * <hr>
