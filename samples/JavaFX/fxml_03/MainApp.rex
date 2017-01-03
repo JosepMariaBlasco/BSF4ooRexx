@@ -1074,7 +1074,7 @@ say self"::handle, tid="pp(bsfGetTID())
   say "mb~string:" pp(mb)           -- show user generated HTML
 
   currDir=directory()               -- get current directory from Rexx
-
+  say "Employing:" pp(webEngine~getUserAgent)
   if bSaveToFile=.true then         -- save the html data in a file (e.g. for debugging)
   do
      fn="AddressBook_printout.html" -- define file name to use
@@ -1087,9 +1087,8 @@ say self"::handle, tid="pp(bsfGetTID())
      if currDir~left(1)<>"/" then strUrlFn=.bsf~new("java.net.URL", "file:///"currDir"/"fn)~toString -- Windows should start with "file:///"!
                              else strUrlFn=.bsf~new("java.net.URL", "file:"currDir"/"fn)~toString    -- Unix
      say "strUrlFn:" pp(strUrlFn)
-
      webEngine~load(strUrlFn)       -- load data from file
-
+-- webEngine~load(.bsf~new("java.net.URL", "file:///"currDir"/testTable.html")~toString)
   end
   else  -- load HTML from string
   do

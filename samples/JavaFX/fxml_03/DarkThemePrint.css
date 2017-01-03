@@ -1,4 +1,4 @@
-/* rgf as of 2017-01-01 */
+/* rgf as of 2017-01-01, 2017-01-03 */
 
 @media print, screen
 {
@@ -7,6 +7,11 @@
             font-size: 14pt;
             color: black;
             counter-reset: addr ;       /* define a counter named "addr" */
+
+                /* print background as well!
+                   as of 20170103: cf. <https://developer.mozilla.org/en/docs/Web/CSS/-webkit-print-color-adjust>;
+                   print background: "exact"; do NOT print background (default): "economy" */
+            -webkit-print-color-adjust: exact;
         }
 
         div.address:before
@@ -50,8 +55,10 @@
         }
 }
 
-/* rgf, 20170102: seems that @page, @bottom-center, page and pages counters are not supported by WebEngine.print() */
 
+/* rgf, 20170102: seems that @page, @bottom-center, page and pages counters are not supported by WebEngine.userAgent (WebKit) */
+
+/*
 @media print
 {
         @page {
@@ -67,30 +74,13 @@
 
         }
 }
-
-
-
-
-/*
-        @page { margin: 2cm }
-
-        @page :first {
-          margin-top: 10cm;
-        }
-
-        @page :left {
-          margin-left: 3cm;
-          margin-right: 2cm;
-        }
-
-        @page :right {
-          margin-left: 2cm;
-          margin-right: 3cm;
-        }
 */
 
 
-/* cf. <http://edutechwiki.unige.ch/en/CSS_box_model_tutorial> pointing to: <http://css-tricks.com/2841-the-css-box-model/>, as of: 20161230
+
+
+
+/* for debugging: cf. <http://edutechwiki.unige.ch/en/CSS_box_model_tutorial> pointing to: <http://css-tricks.com/2841-the-css-box-model/>, as of: 20161230
          * {
            border: 1px solid red !important;
          }
@@ -100,11 +90,11 @@
 
 /* (remove begin and end of comment to see the effect) */
 
+/*
 * {
    -fx-border-width: 1px !important;
    -fx-border-style: dashed !important;
-   -fx-border-color: red !important;
+   -fx-border-color: blue !important;
  }
-
-/* */
+*/
 
