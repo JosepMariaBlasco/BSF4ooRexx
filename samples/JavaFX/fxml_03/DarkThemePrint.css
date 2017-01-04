@@ -12,7 +12,11 @@
                    as of 20170103: cf. <https://developer.mozilla.org/en/docs/Web/CSS/-webkit-print-color-adjust>;
                    print background: "exact"; do NOT print background (default): "economy" */
             -webkit-print-color-adjust: exact;
+
+            print-color-adjust: exact;    /* in case this becomes official */
+
         }
+
 
         div.address:before
         {
@@ -53,6 +57,7 @@
            font-size:   smaller;
            color:       blue;
         }
+
 }
 
 
