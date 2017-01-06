@@ -8,6 +8,9 @@ import org.rexxla.bsf.engines.rexx.RexxEngine;
 import org.rexxla.bsf.engines.rexx.RexxException;
 import org.rexxla.bsf.engines.rexx.RexxProxy;
 
+
+// TODO: check and correct visibility of new fields and methods
+
 /*
 ------------------------ Apache Version 2.0 license -------------------------
    Copyright 2015-2016 Rony G. Flatscher

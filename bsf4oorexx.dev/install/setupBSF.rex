@@ -7,6 +7,10 @@
    Date:    2006-01-07
    Version: 1.32
    Changed:
+            2017-01-05, ---rgf, reesolving <https://sourceforge.net/p/bsf4oorexx/bugs/26/>
+                                - getJavaProps(): now returns stem with Java properties
+                                - determinePath2JavaBinary(): on Windows will proceed searching, if
+                                  a found java.exe does not match the bitness of ooRexx
             2016-08-15, ---rgf, - MacOSX: adjust for El Capitan, target dirs now "/usr/local/bin" and "/usr/local/lib"
                                 - Windows: change elevation to use Gil Barmwater's "elevate.rex" script instead (bitness agnostic)
                                 - Windows: add .NET/CLR (common language runtime) support
@@ -202,6 +206,7 @@ cmd.eIsUnix   =\cmd.eIsWindows   /* if not Windows, it's a Unix dialect       */
 
 cmd.eBitness=getRexxBitness()    -- can be "0" if not determinable, else "32" or "64"
 
+   -- setting file and path separators manually
 if cmd.eIsWindows=.true then
 do
    j.file.separator="\"
@@ -239,15 +244,13 @@ parse value parseArgs(arg(1)) with cmd.eJavaBinary (cmd.eArgSeparator) cmd.eBinD
 if cmd.eJavaBinary="" then       /* no path to java.exe given, determine it   */
 do
    say "setupBSF.rex: no path to Java's binary supplied, using determinePath2javaBinary()..."
-   call determinePath2javaBinary
+   call determinePath2javaBinary -- will do getJavaProps() and set j.
 end
 else
 do
    say "setupBSF.rex: path to Java's binary supplied, using: ["cmd.eJavaBinary"]"
+   j.=getJavaProps()    /* returns stem object that contains the Java properties */
 end
-
-
-call getJavaProps                /* get the properties of the installed Java  */
 
 
 say 'setupBSF.rex - dumpJavaProps():'
@@ -258,9 +261,6 @@ j.file.separator="/" -- rgf, debug
 j.path.separator=":" -- rgf, debug
 -- */
 
-
-
-
 if j.path.separator="" | j.file.separator="" then
 do
    say "PANIC: could not use 'java' to get at its properties!"
@@ -269,7 +269,18 @@ do
    say "with an argument being the fully qualified path to the 'java' executable"
    say "for which you wish to create the 'un/install' and 'bsf4rexx' scripts."
    say
-   call usage
+   call usage  -- will exit -1
+end
+
+if j.sun.arch.data.model<>cmd.eBitness then  -- found Java not the same bitness as Rexx ?
+do
+   say "PANIC: Java's bitness ("j.sun.arch.data.model") does not match Rexx' bitness ("pp(cmd.eBitness)")!"
+   say
+   say "Please make sure that you have Java and ooRexx installed with the same bitness (addressing mode)!"
+   say
+   say "   ooRexx:" cmd.eBitness"-bit, Java:" j.sun.arch.data.model"-bit"
+   say
+   call usage  -- will exit -1
 end
 
       /* determine commands depending on Unix or Windows (OS2)    */
@@ -1491,13 +1502,25 @@ dumpJavaProps: procedure expose j. cmd. path. sort.
 /* execute the Java program "JavaInfo4BSF4RexxInstallation.class" to queue all Java properties to
    the system Rexx queue and make them available via the stem variable "j."
 */
-getJavaProps: procedure expose j. cmd. path.
+getJavaProps: procedure expose cmd. path.
    signal on any name usage                           /* trap to usage label     */
-         /* get the Java properties    */
-   if cmd.eJavaBinary="" then java="java"             /* default     */
-                         else java=cmd.eJavaBinary    /* use command-line value  */
+   parse arg altJavaBinary
 
-   java "-cp . JavaInfo4BSF4RexxInstallation | rxqueue"
+         /* get the Java properties    */
+   if cmd.eJavaBinary="" then
+   do
+       if altJavaBinary<>"" then -- as of 20170104: supplied only on Windows from determinePath2javaBinary
+          java=altJavaBinary     -- use fully qualified, alternate Java binary
+       else
+          java="java"             /* default     */
+   end
+   else
+       java=cmd.eJavaBinary    /* use command-line value  */
+
+   j.=""
+      -- execute the Java program in current directory (bsf4oorexx/install)
+   command=java "-cp . JavaInfo4BSF4RexxInstallation | rxqueue"
+   command  -- execute the command
 
    i=0
    max=0
@@ -1505,7 +1528,8 @@ getJavaProps: procedure expose j. cmd. path.
    sort.=""
    if queued()=0 then
    do
-      say "PANIC: nothing in external Rexx queue, cannot get at the Java properties, aborting..."
+      say "PANIC (getJavaProps) after executing:" pp(command)
+      say "PANIC (getJavaProps): nothing in external Rexx queue, cannot get at the Java properties, aborting..."
       say
       call usage
    end
@@ -1527,7 +1551,7 @@ getJavaProps: procedure expose j. cmd. path.
       j.uName=j.i.eValue
       j.0=i                         /* save maximum number of entries*/
    end
-   return
+   return j.
 
 
 
@@ -1636,7 +1660,8 @@ getFromPath: procedure expose j. cmd. path.
 
      if fn<>"" then return fn /* found, return it                 */
   end
-  return filename
+  -- return filename
+  return ""    -- indicate not found by returning empty string
 
 
 
@@ -1900,13 +1925,23 @@ canonizePath: procedure expose j. cmd. path.
 
 /* Determine fully qualified path to the "java" binary (Windows: "java.exe")  */
 determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: determine path to java binary
+   say "determinePath2javaBinary(), starting ..." "line #" pp(.line)
+
    if cmd.eIsWindows=.false then
    do
       cmd.eJavaBinary=getFromPath("java") /* get fully qualified path   */
-      say "determinePath2javaBinary(), getFromPath() returned: ["cmd.eJavaBinary"]"
+      say "determinePath2javaBinary(), getFromPath() returned: ["cmd.eJavaBinary"]" "line #" pp(.line)
+      if cmd.eJavaBinary<>"" then
+      do
+          j.=getJavaProps(cmd.eJavaBinary)   -- get and assign Java properties; bitness test done in caller part
+          say "determinePath2javaBinary(), found! Java binary:" pp(cmd.eJavaBinary)", returning." "line #" pp(.line)
+      end
       return
    end
 
+   ----------------------------------------------------------------------------
+   -- from here on it is Windows only!
+      -- try to find java.exe in %windir% directory
    wProgramFiles  =value("ProgramFiles",,"environment")
    wProgramFiles86=value("ProgramFiles(x86)",,"environment")   -- 32-bit folder, available on 64-bit Windows only
    wProgramW6432  =value("ProgramW6432",,"environment")        -- WOW (Windows-on-Windows), available on 64-bit Windows only
@@ -1924,72 +1959,138 @@ determinePath2javaBinary: procedure expose cmd. j. path. -- rgf, 2011-05-24: det
       else if sysfileexists(win32) then
           cmd.eJavaBinary=qw(win32)
 
-      say "determinePath2javaBinary(), 'ProgramW6432':" pp(wProgramW6432)", cmd.eJavaBinary="pp(cmd.eJavaBinary)
+      say "determinePath2javaBinary(), 'ProgramW6432':" pp(wProgramW6432)", cmd.eJavaBinary="pp(cmd.eJavaBinary) "line #" pp(.line)
    end
 
-   if cmd.eJavaBinary="" then       -- not yet determined
+   if cmd.eJavaBinary<>"" then   -- 20170104: test for matching bitness
    do
-      javaExe="java.exe"                 -- executable's name
-      tmpJavaBinary=getFromPath(javaExe) -- on path ?
-      say "determinePath2javaBinary(), getFromPath() returned: ["tmpJavaBinary"]"
-
-         -- 32-bit Rexx on 64-bit Windows, but java.exe not in "ProgramFiles(x86)", then we point to 64-bit Java, reset
-      if cmd.eBitness=32, wProgramW6432<>"", tmpJavaBinary~caselessAbbrev(wProgramFiles86)=.false then
+      tmpJ.=getJavaProps(cmd.eJavaBinary)
+         -- if Java and ooRexx do not match in bitness, look for another Java
+      if tmpJ.sun.arch.data.model<>cmd.eBitness then
       do
-          say "determinePath2javaBinary(), 32-bit Rexx on 64-bit Windows, but java.exe seems to be in a 64-bit directory, reset & continue search"
-          tmpJavaBinary=javaExe        --  reset, make sure search continues
+         say "determinePath2javaBinary(), Java bitness does not match ooRexx bitness, Java tested:" pp(cmd.eJavaBinary)", continuing search ..." "line #" pp(.line)
+         cmd.eJavaBinary=""
       end
-
-      if tmpJavaBinary=javaExe then    -- not found on path, try JRE registry entry
+      else  -- found, assign Java property stem, return
       do
-         say "determinePath2javaBinary(), Java binary not found, consulting registry ..."
-         wsh  = .OleObject~new("WScript.Shell")
-         baseKey = "HKLM\Software\JavaSoft\Java Runtime Environment"
-
-         version=wsh~regRead(basekey"\CurrentVersion")
-         say "... ["||basekey"\CurrentVersion]:" version
-
-         javaHome=wsh~regRead(basekey"\"version"\JavaHome")
-         say "... ["||basekey"\"version"\JavaHome}: ["javaHome"]"
-         binJava=javaHome"\bin\java.exe"
-
-            -- 32-bit Rexx on 64-bit Windows, but java.exe not in "ProgramFiles(x86)", then we point to 64-bit Java, reset
-         if cmd.eBitness=32, wProgramW6432<>"", javaHome~caselessAbbrev(wProgramFiles86)=.false then
-         do
-             say "determinePath2javaBinary(), 32-bit Rexx on 64-bit Windows, but java.exe seems to be in a 64-bit directory, reset & continue search"
-             binJava=""                   --  reset, make sure search continues
-         end
-
-         if sysFileExists(binJava) then   -- o.k. finally found !
-            cmd.eJavaBinary=qw(binJava)
-         else   -- not yet found try looking in the file system, ---rgf, 20150512
-         do
-            pf=wProgramFiles           -- value("ProgramFiles",,"environment")
-            if cmd.eBitness=32 then    -- Rexx is 32-bit
-            do
-                pf=wProgramFiles86     -- value("ProgramFiles(x86)",,"environment")   -- on 64-bit Windows?
-
-                if pf="" then -- on 32-bit Windows
-                   pf=wProgramFiles    -- value("ProgramFiles",,"environment")
-            end
-            searchPattern=pf"\Java\java.exe"
-            say "determinePath2javaBinary(), java.exe not found yet, looking in ["searchPattern"] and its subdirectories ..."
-              -- try to locate java.exe, use the last one (assuming it is the newest)
-            call SysFileTree searchPattern, "files.", "FSO"
-            count=files.0
-            if count>0 then
-            do
-                cmd.eJavaBinary=qw(files.count)
-                say "determinePath2javaBinary(), java.exe found in" count " places using ["searchPattern"], returning ["files.count"]."
-            end
-         end
-      end
-      else  -- found on path, use it
-      do
-         cmd.eJavaBinary=qw(tmpJavaBinary)
+          j.=tmpJ.
+          say "determinePath2javaBinary(), found! Java binary:" pp(cmd.eJavaBinary)", returning." "line #" pp(.line)
+          return
       end
    end
-   say "determinePath2javaBinary():" cmd.eJavaBinary
+
+   ----------------------------------------------------------------------------
+      -- try to find java.exe on PATH
+   javaExe="java.exe"                 -- executable's name
+   tmpJavaBinary=getFromPath(javaExe) -- on path ?
+   say "determinePath2javaBinary(), getFromPath() returned: ["tmpJavaBinary"]" "line #" pp(.line)
+
+      -- 32-bit Rexx on 64-bit Windows, but java.exe not in "ProgramFiles(x86)", then we point to 64-bit Java, reset
+   if cmd.eBitness=32, wProgramW6432<>"", tmpJavaBinary~caselessAbbrev(wProgramFiles86)=.false then
+   do
+       say "determinePath2javaBinary(), 32-bit Rexx on 64-bit Windows, but java.exe seems to be in a 64-bit directory, reset & continue search" "line #" pp(.line)
+       tmpJavaBinary=javaExe        --  reset, make sure search continues
+   end
+   else  -- check whether bitness really matches (it should, but who knows what a user did! )
+   do
+      tmpJavaBinary=qw(tmpJavaBinary)
+      tmpJ.=getJavaProps(tmpJavaBinary)
+         -- if Java and ooRexx do not match in bitness, look for another Java
+      if tmpJ.sun.arch.data.model<>cmd.eBitness then
+      do
+         say "determinePath2javaBinary(), Java bitness does not match ooRexx bitness, Java tested:" pp(tmpJavaBinary)", continuing search ..." "line #" pp(.line)
+         tmpJavaBinary=javaExe        --  reset, make sure search continues
+      end
+      else  -- found, save cmd.eJavaBinary assign Java property stem, return
+      do
+         cmd.eJavaBinary=tmpJavaBinary
+         j.=tmpJ.
+          say "determinePath2javaBinary(), found! Java binary:" pp(cmd.eJavaBinary)", returning." "line #" pp(.line)
+         return
+      end
+   end
+
+   ----------------------------------------------------------------------------
+      -- try to find java.exe via Windows registry
+   say "determinePath2javaBinary(), Java binary not found, consulting registry ..." "line #" pp(.line)
+   wsh  = .OleObject~new("WScript.Shell")
+   baseKey = "HKLM\Software\JavaSoft\Java Runtime Environment"
+
+   version=wsh~regRead(basekey"\CurrentVersion")
+   say "... ["||basekey"\CurrentVersion]:" version
+
+   javaHome=wsh~regRead(basekey"\"version"\JavaHome")
+   say "... ["||basekey"\"version"\JavaHome}: ["javaHome"]"
+   tmpJavaBinary=javaHome"\bin\java.exe"
+
+      -- 32-bit Rexx on 64-bit Windows, but java.exe not in "ProgramFiles(x86)", then we point to 64-bit Java, reset
+   if cmd.eBitness=32, wProgramW6432<>"", javaHome~caselessAbbrev(wProgramFiles86)=.false then
+   do
+       say "determinePath2javaBinary(), 32-bit Rexx on 64-bit Windows, but java.exe seems to be in a 64-bit directory, reset & continue search" "line #" pp(.line)
+       tmpJavaBinary=""                   --  reset, make sure search continues
+   end
+
+   if sysFileExists(tmpJavaBinary) then   -- o.k. finally found !?
+   do
+      tmpJavaBinary=qw(tmpJavaBinary)
+      tmpJ.=getJavaProps(tmpJavaBinary)
+         -- if Java and ooRexx do not match in bitness, look for another Java
+      if tmpJ.sun.arch.data.model<>cmd.eBitness then
+      do
+         say "determinePath2javaBinary(), Java bitness does not match ooRexx bitness, Java tested:" pp(tmpJavaBinary)", continuing search ..." "line #" pp(.line)
+         tmpJavaBinary=javaExe        --  reset, make sure search continues
+      end
+      else  -- found, save cmd.eJavaBinary assign Java property stem, return
+      do
+         cmd.eJavaBinary=tmpJavaBinary
+         j.=tmpJ.
+          say "determinePath2javaBinary(), found! Java binary:" pp(cmd.eJavaBinary)", returning." "line #" pp(.line)
+         return
+      end
+   end
+
+
+   ----------------------------------------------------------------------------
+      -- not yet found try looking in the file system, ---rgf, 20150512
+   say "determinePath2javaBinary(), Java binary not found, explicitly looking in standard program file directories ..." "line #" pp(.line)
+   pf=wProgramFiles           -- value("ProgramFiles",,"environment")
+   if cmd.eBitness=32 then    -- Rexx is 32-bit
+   do
+       pf=wProgramFiles86     -- value("ProgramFiles(x86)",,"environment")   -- on 64-bit Windows?
+
+       if pf="" then -- on 32-bit Windows
+          pf=wProgramFiles    -- value("ProgramFiles",,"environment")
+   end
+   searchPattern=pf"\Java\java.exe"
+   say "determinePath2javaBinary(), java.exe not found yet, looking in ["searchPattern"] and its subdirectories ..." "line #" pp(.line)
+     -- try to locate java.exe, use the last one (assuming it is the newest)
+   call SysFileTree searchPattern, "files.", "FSO"
+   count=files.0
+   if count>0 then
+   do
+       cmd.eJavaBinary=qw(files.count)
+       say "determinePath2javaBinary(), java.exe found in" count " places using ["searchPattern"], returning ["files.count"]." "line #" pp(.line)
+   end
+
+   do i=1 to count.0
+       cmd.eJavaBinary=qw(files.count)
+       say "determinePath2javaBinary(), checking files."i"/"count.0" ["files.count"]." "line #" pp(.line)
+       tmpJ.=getJavaProps(cmd.eJavaBinary)
+          -- if Java and ooRexx do not match in bitness, look for another Java
+       if tmpJ.sun.arch.data.model<>cmd.eBitness then
+       do
+          say "determinePath2javaBinary(), Java bitness does not match ooRexx bitness, Java tested:" pp(cmd.eJavaBinary)", continuing search ..." "line #" pp(.line)
+       end
+       else  -- found, save cmd.eJavaBinary assign Java property stem, return
+       do
+          j.=tmpJ.
+          say "determinePath2javaBinary(), found! Java binary:" pp(cmd.eJavaBinary)", returning." "line #" pp(.line)
+          return
+       end
+   end
+
+   cmd.eJavaBinary=""      --
+   say "determinePath2javaBinary(): Java (with matching bitness) NOT found!" "line #" pp(.line)
    return
 
 
