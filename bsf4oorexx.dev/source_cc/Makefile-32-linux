@@ -1,10 +1,10 @@
-# make -f Makefile-32-linux-32 rebuild
+# make -f Makefile-32-linux rebuild
 #-------------------------------------------------------------------------
-# Makefile-32-linux-32: makefile to build libBSF4ooRexx.so-32-x86
+# Makefile-32-linux: makefile to build libBSF4ooRexx.so-32-x86
 #
 # ooRexx 4.x, 2005-06-07, 2009-09-08, 2017-01-08
 #
-# make -f Makefile-32-linux [ all | orexx | clean | clean_dll | rebuild ]
+# make -f Makefile-32-linux [ all | clean | clean_dll | rebuild ]
 #-------------------------------------------------------------------------
 
 # ------------------------ Apache Version 2.0 license -------------------------
@@ -29,7 +29,7 @@
 # build path to use
 # BLD_PATH = ~/tmp
 # BLD_PATH = .
-BLD_PATH = tmp
+BLD_PATH = ./tmp
 
 # directory to copy generated lib to
 TGT_LIB_DIR     = ./lib
@@ -63,15 +63,18 @@ BSF_SRC	= BSF4ooRexx.cc
 cc = gcc -fPIC
 link = gcc
 
+BITNESS         = 32
+ARCH            = x86
+
 #
-CFLAGS		= -c -O3 -D__cplusplus -DUNIX -m32 -DBSF4REXX_32_BIT
+CFLAGS		= -c -O3 -D__cplusplus -DUNIX -m$(BITNESS) -DBSF4REXX_$(BITNESS)_BIT
 CFLAGS_ORX      = -DUSE_OREXX
 # TODO: 20170108, rgf: -ldl really needed ?
 LINK_FLAGS      = -shared -rdynamic -lpthread -lc  -lm -ldl
 LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
 
-BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-32-x86.o
-BSF_ORX_TARGET  = $(BLD_PATH)/libBSF4ooRexx.so-32-x86
+BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
+BSF_ORX_TARGET  = $(BLD_PATH)/libBSF4ooRexx.so-$(BITNESS)-$(ARCH)
 BSF4REXX	= $(BLD_PATH)/libBSF4ooRexx.so
 
 # *************************************************************************** #
@@ -88,18 +91,13 @@ $(BSF_ORX_TARGET) : $(BSF_SRC)
 	echo Building $@ ...
 	echo
 	$(cc) $(CFLAGS) $(CFLAGS_ORX) -o$(BSF_OBJ_ORX) $(INC_PATH) $(INC_PATH_ORX) $(LIB_PATH) $(BSF_SRC)
-	$(link) -Wl,-soname,$@ -o $(BLD_PATH)/$@ $(BSF_OBJ_ORX) \
+	$(link) -Wl,-soname,$@ -o $@ $(BSF_OBJ_ORX) \
 	$(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
 	$(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
 	$(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)
-#	$(copy_cmd) $(BSF4REXX) ../bsf4rexx
 
 
 #---------------------------------------------------------- END section
-orexx :		$(BSF_ORX_TARGET)
-
-#---------------------------------------------------------- END section
-# -------------------------------------------------------------------
 # builds all
 rebuild: clean clean_dll orexx
 
@@ -110,7 +108,7 @@ clean:
 
 #---------------------------------------------------------- END section
 clean_dll:
-	- $(del_cmd) $(BLD_PATH)/*.so
+	- $(del_cmd) $(BLD_PATH)/*.so*
 
 
 # -------------------------------------------------------------------

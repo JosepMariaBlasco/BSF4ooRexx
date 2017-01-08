@@ -68,17 +68,41 @@
 INC_PATH	=  .;$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32
 INCLUDE = $(INCLUDE);$(INC_PATH)
 OP_SYS          = -DWINDOWS
+
+# --------------------------------------------------------
+# delete command to use
+del_cmd  = del
+
+# copy command to use
+copy_cmd = copy
+
+
+# -----------------------  Path Definitions  ----------------------------
+# build path to use
+BLD_PATH = tmp
+
+# directory to copy generated lib to
+TGT_LIB_DIR     = .\lib
+
+
+BSF_SRC	        = BSF4ooRexx.cc
+BSF_OBJ_ORX     = $(BLD_PATH)\BSF4ooRexx-32-x86.obj
+BSF_ORX_TARGET  = $(BLD_PATH)\BSF4ooRexx.dll-32-x86
+BSF4REXX	= $(BLD_PATH)\BSF4ooRexx.dll
+
+
 # <--- rgf
 
-
-# What we are going to build
-all: BSF4ooRexx-32.dll
 
 !IF DEFINED(REXX_HOME)
 INCLUDE = $(INCLUDE);$(REXX_HOME)\api
 LIB = $(LIB);$(REXX_HOME)\api
 !ENDIF
 
+# fallback: the directory the 32-bit ooRexx API files are located locally (e.g. if REXX_HOME points to 64-bit ooRexx or is not available at all)
+REXX_API_DIR = .\rexxapi.win\32
+INCLUDE = $(INCLUDE);$(REXX_API_DIR)
+LIB = $(LIB);$(REXX_API_DIR)
 REXX_LIBS = rexx.lib rexxapi.lib
 
 WARNINGFLAGS = /W3       /D_CRT_SECURE_NO_DEPRECATE /D_CRT_NONSTDC_NO_DEPRECATE
@@ -99,34 +123,37 @@ DLL_LFLAGS = /nologo /DEBUG -debugtype:cv /SUBSYSTEM:Windows $(REXX_LIBS) $(DEF_
 !ENDIF
 
 
-BSF4ooRexx-32.dll: BSF4ooRexx-32.obj
-    @echo "DLL_LFLAGS :" $(DLL_LFLAGS)
-#     @echo "INCLUDE    :" $(INCLUDE)
-    link $(DLL_LFLAGS) $(@B).obj -out:$(@B).dll
-    copy $(@B).dll BSF4ooRexx.dll
-    copy $(@B).dll 32\BSF4ooRexx.dll
-    copy $(@B).dll ..\..\bsf4oorexx\BSF4ooRexx.dll
-    @if exist $(@B).exp copy $(@B).exp BSF4ooRexx.exp > nul
-    @if exist $(@B).ilk copy $(@B).ilk BSF4ooRexx.ilk > nul
-    @if exist $(@B).lib copy $(@B).lib BSF4ooRexx.lib > nul
-    @if exist $(@B).obj copy $(@B).obj BSF4ooRexx.obj > nul
-    @if exist $(@B).pdb copy $(@B).pdb BSF4ooRexx.pdb > nul
+# ------------- what we are going to build
+all: $(BSF4REXX)
+
+# -------------
+$(BSF4REXX) : $(BSF_OBJ_ORX)
+    @echo "--- linking step, target:" $(BSF4REXX) "dependent on:" $(BSF_OBJ_ORX) "---"
+#    link $(DLL_LFLAGS) $(@B).obj -out:$(@B).dll
+    link $(DLL_LFLAGS) $(BSF_OBJ_ORX) -out:$(BSF_ORX_TARGET)
+    @echo "finished linking."
+    @echo " "
+
+    $(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
+    $(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)
+
+# rgf's developer test installation on Windows as of 2017-01-08: just remove the following statement
+    $(copy_cmd)  $(BSF4REXX)  ..\..\bsf4oorexx\BSF4ooRexx.dll
+ @echo "done."
 
 
-
-BSF4ooRexx-32.obj: BSF4ooRexx.cc
-   @echo "OOREXX_CFLAGS:" $(OOREXX_CFLAGS)
-#     @echo "INCLUDE    :" $(INCLUDE)
-#    call rexx envList.rex PATH
-#    call rexx envList.rex INCLUDE oorexxapi.h
-#    call rexx envList.rex LIB rexxapi.lib
-  cl $(OOREXX_CFLAGS) /Fo$(@B).obj BSF4ooRexx.cc
+# ----------- BSF4ooRexx-32-x86.obj
+$(BSF_OBJ_ORX) : $(BSF_SRC)
+    @echo "--- compiling step, target:" $(BSF_OBJ_ORX) "dependent on:" $(BSF_SRC) "---"
+#  cl $(OOREXX_CFLAGS) /Fo$(@B).obj BSF4ooRexx.cc
+    cl $(OOREXX_CFLAGS) /Fo$(BSF_OBJ_ORX) $(BSF_SRC)
+    @echo "finished compiling."
+    @echo " "
 
 mostlyclean:
-	del *.obj *.ilk *.lib *.exp  *.cod *.res *.map 1>nul 2>&1
+	$(del_cmd)  $(BLD_PATH)\*.obj $(BLD_PATH)\*.ilk $(BLD_PATH)\*.lib $(BLD_PATH)\*.exp  $(BLD_PATH)\*.cod $(BLD_PATH)\*.res $(BLD_PATH)\*.map 1>nul 2>&1
 
 clean:
-  attrib -h *.suo 1>nul 2>&1
-#	del *.exe *.dll *.obj *.ilk *.pdb *.lib *.exp *.suo *.cod *.res *.sln *.map 1>nul 2>&1
-	del       *.dll *.obj *.ilk *.pdb *.lib *.exp *.suo *.cod *.res *.sln *.map 1>nul 2>&1
+        attrib -h $(BLD_PATH)\* 1>nul 2>&1
+	$(del_cmd) $(BLD_PATH)\*.dll $(BLD_PATH)\*.obj $(BLD_PATH)\*.ilk $(BLD_PATH)\*.pdb $(BLD_PATH)\*.lib $(BLD_PATH)\*.exp $(BLD_PATH)\*.suo $(BLD_PATH)\*.cod $(BLD_PATH)\*.res $(BLD_PATH)\*.sln $(BLD_PATH)\*.map 1>nul 2>&1
 

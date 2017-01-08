@@ -1,7 +1,10 @@
-# usage: make -f Makefile-all-macosx [all \ i386 | x86_64 | ppc | universal \ clean ]
-# rgf, 2011-01-02, 2011-01-12, 2011-02-20
+# usage: make -f Makefile-all-macosx [all \ x86 | x86_64 | ppc | universal \ clean ]
+# rgf, 2011-01-02, 2011-01-12, 2011-02-20, 2013-08-12, 2017-01-08
 
-# rgf, 2013-08-12: to support an earlier version of MacOSX use e.g. "export MACOSX_DEPLOYMENT_TARGET=10.6" before compiling (cf. "man g++")
+# to support earlier versions of MacOSX export MACOSX_DEPLOYMENT_TARGET=min_version
+# before compiling (cf. "man g++"), e.g.:
+#
+#                  export MACOSX_DEPLOYMENT_TARGET=10.6
 
 #/*----------------------------------------------------------------------------*/
 #/*                                                                            */
@@ -41,58 +44,68 @@
 #/*----------------------------------------------------------------------------*/
 
 
-# INC_PATH = -I. -I/System/Library/Frameworks/JavaVM.framework/headers
-
-
 # allow earlier versions of MacOSX to use the lib
 # export MACOSX_DEPLOYMENT_TARGET=10.6
 # echo $MACOSX_DEPLOYMENT_TARGET
 
+# --------------------------------------------------------
+# build path to use
+BLD_PATH = ./tmp
+
+# directory to copy generated lib to
+TGT_LIB_DIR     = ./lib
+
+# 32-bit target names
+BSF_OBJ_ORX_32     = $(BLD_PATH)/BSF4ooRexx-32-x86.o
+BSF_ORX_TARGET_32  = $(BLD_PATH)/libBSF4ooRexx.dylib-32-x86
+
+# 64-bit target names
+BSF_OBJ_ORX_64     = $(BLD_PATH)/BSF4ooRexx-64-x86_64.o
+BSF_ORX_TARGET_64  = $(BLD_PATH)/libBSF4ooRexx.dylib-64-x86_64
+
+# neutral target name
+BSF4REXX   	   = $(BLD_PATH)/libBSF4ooRexx.dylib
 
 
 # rgf, 2014-03-30, 2014-03-31
+# INC_PATH = -I. -I/System/Library/Frameworks/JavaVM.framework/headers
 # INC_PATH = -I. -I/Developer/SDKs/MacOSX10.6.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers
 INC_PATH = -I/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers -I .
 INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers
 
-# rgf local (20161220): adjust to your ooRexx lib directories
-# LIB_2_REXX = /System/Library/Frameworks/ooRexx.framework/Libraries
-LIB_2_REXX = /opt/oldrexx/ooRexx-x86_64/lib/
-LIB_2_REXX_32 = /opt/oldrexx/ooRexx-i386/lib
+ORX_LIBPATH_32 = /opt/oldrexx/ooRexx-i386/lib
+ORX_LIBPATH_64 = /opt/oldrexx/ooRexx-x86_64/lib/
 
-# INC_PATH_ORX = -I/opt/ooRexx/include $(INC_PATH)
+ORX_LIBS_32 = $(ORX_LIBPATH_32)/librexx.dylib $(ORX_LIBPATH_32)/librexxapi.dylib
+ORX_LIBS_64 = $(ORX_LIBPATH_64)/librexx.dylib $(ORX_LIBPATH_64)/librexxapi.dylib
 
 CFLAGS = -fPIC
 LFLAGS = -shared
 
 # --------------------------------------------------------
-#all: i386 x86_64 ppc universal
-all: i386 x86_64 universal
+all: x86 x86_64 universal
 
 # -------------------------------------------------------- needs 32-bit ooRexx installed currently
-i386: BSF4ooRexx.cc
-#	g++ -c $(CFLAGS) $(INC_PATH_ORX) -m32 -arch i386 -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -oBSF4ooRexx-mac-i386.o BSF4ooRexx.cc
-#	g++ -c $(CFLAGS) $(INC_PATH) -I/opt/ooRexx-i386/include -m32 -arch i386 -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -oBSF4ooRexx-mac-i386.o BSF4ooRexx.cc
-	g++ -c $(CFLAGS) $(INC_PATH_ALL) -m32 -arch i386 -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -oBSF4ooRexx-mac-i386.o BSF4ooRexx.cc
+x86: BSF4ooRexx.cc
+#	g++ -c $(CFLAGS) $(INC_PATH_ALL) -m32 -arch i386 -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -oBSF4ooRexx-mac-i386.o BSF4ooRexx.cc
+	g++ -c $(CFLAGS) $(INC_PATH_ALL) -m32 -arch i386 -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -o$(BSF_OBJ_ORX_32) BSF4ooRexx.cc
 
+#	g++ -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_32) $(BSF_OBJ_ORX_32) $(LIB_2_REXX_32)/librexx.dylib $(LIB_2_REXX_32)/librexxapi.dylib -framework JavaVM -arch i386
+	g++ -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_32) $(BSF_OBJ_ORX_32) $(ORX_LIBS_32) -framework JavaVM -arch i386
 
-	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-i386.dylib BSF4ooRexx-mac-i386.o $(LIB_2_REXX_32)/librexx.dylib $(LIB_2_REXX_32)/librexxapi.dylib -framework JavaVM -arch i386
-
-#	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-i386.dylib BSF4ooRexx-mac-i386.o $(LIB_2_REXX)/librexx.dylib $(LIB_2_REXX)/librexxapi.dylib -framework JavaVM -arch i386
-#	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-i386.dylib BSF4ooRexx-mac-i386.o /usr/lib/librexx.dylib /usr/lib/librexxapi.dylib -framework JavaVM -arch i386
-#	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-i386.dylib BSF4ooRexx-mac-i386.o -L/usr/lib -llibrexx.dylib -llibrexxapi.dylib -framework JavaVM -arch i386
-
-	cp -p libBSF4ooRexx-i386.dylib 32/libBSF4ooRexx.dylib
+	cp -p $(BSF_ORX_TARGET_32) $(BSF4REXX)
+	cp -p $(BSF_ORX_TARGET_32) $(TGT_LIB_DIR)
 
 # --------------------------------------------------- needs 64-bit ooRexx installed currently
 x86_64: BSF4ooRexx.cc
-#	g++ -c $(CFLAGS) $(INC_PATH) -I/opt/ooRexx-x86_64/include -m64 -arch x86_64 -DUSE_OREXX -DUNIX -DBSF4REXX_64_BIT -oBSF4ooRexx-mac-x86_64.o BSF4ooRexx.cc
-	g++ -c $(CFLAGS) $(INC_PATH) $(INC_PATH_ALL) -m64 -arch x86_64 -DUSE_OREXX -DUNIX -DBSF4REXX_64_BIT -oBSF4ooRexx-mac-x86_64.o BSF4ooRexx.cc
+#	g++ -c $(CFLAGS) $(INC_PATH) $(INC_PATH_ALL) -m64 -arch x86_64 -DUSE_OREXX -DUNIX -DBSF4REXX_64_BIT -oBSF4ooRexx-mac-x86_64.o BSF4ooRexx.cc
+	g++ -c $(CFLAGS) $(INC_PATH) $(INC_PATH_ALL) -m64 -arch x86_64 -DUSE_OREXX -DUNIX -DBSF4REXX_64_BIT -o$(BSF_OBJ_ORX_64) BSF4ooRexx.cc
 
-#	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-x86_64.dylib BSF4ooRexx-mac-x86_64.o /opt/ooRexx-x86_64/lib/librexx.dylib /opt/ooRexx-x86_64/lib/librexxapi.dylib -framework JavaVM -arch x86_64
-	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-x86_64.dylib BSF4ooRexx-mac-x86_64.o $(LIB_2_REXX)/librexx.dylib $(LIB_2_REXX)/librexxapi.dylib -framework JavaVM -arch x86_64
+# 	g++ -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(LIB_2_REXX)/librexx.dylib $(LIB_2_REXX)/librexxapi.dylib -framework JavaVM -arch x86_64
+	g++ -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -framework JavaVM -arch x86_64
 
-	cp -p libBSF4ooRexx-x86_64.dylib 64/libBSF4ooRexx.dylib
+	cp -p $(BSF_ORX_TARGET_64) $(BSF4REXX)
+	cp -p $(BSF_ORX_TARGET_64) $(TGT_LIB_DIR)
 
 # ---------------------------------------------------
 ppc: BSF4ooRexx.cc
@@ -101,16 +114,13 @@ ppc: BSF4ooRexx.cc
 	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-ppc.dylib BSF4ooRexx-mac-ppc.o /opt/ooRexx-ppc/lib/ooRexx/librexx.dylib /opt/ooRexx-ppc/lib/ooRexx/librexxapi.dylib -framework JavaVM -arch ppc
 
 # ---------------------------------------------------
-universal: BSF4ooRexx.cc i386 x86_64
-	lipo -create -output libBSF4ooRexx.dylib -arch x86_64 libBSF4ooRexx-x86_64.dylib -arch i386 libBSF4ooRexx-i386.dylib
-
+universal: BSF4ooRexx.cc x86 x86_64
 #	lipo -create -output libBSF4ooRexx.dylib -arch x86_64 libBSF4ooRexx-x86_64.dylib -arch i386 libBSF4ooRexx-i386.dylib -arch ppc libBSF4ooRexx-ppc.dylib
+	lipo -create -output $(BSF4REXX)-universal -arch x86_64 $(BSF_ORX_TARGET_64) -arch i386 $(BSF_ORX_TARGET_32)
+
 
 # ---------------------------------------------------
-
-
 .PHONY: clean
 clean:
-	rm -f *.dylib
-	rm -f *.jnilib
-	rm -f *.o
+	rm -f $(BLD_PATH)/*.dylib*
+	rm -f $(BLD_PATH)/*.o

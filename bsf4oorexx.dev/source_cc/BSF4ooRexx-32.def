@@ -1,5 +1,5 @@
 ; ------------------------ Apache Version 2.0 license -------------------------
-;    Copyright (C) 2001-2009 Rony G. Flatscher
+;    Copyright (C) 2001-2017 Rony G. Flatscher
 ;
 ;    Licensed under the Apache License, Version 2.0 (the "License");
 ;    you may not use this file except in compliance with the License.
@@ -20,65 +20,14 @@
 ; 2004-04-04, ---rgf, created BSF-neutral Rexx engine
 ; 2008-10-21, ---rgf, new MSVC (2008), version: 15.00.21022.08 for 80x86
 ; 2009-09-11, ---rgf, increased stack and heap size from 40KB (40960B) to 128KB (131072B)
+; 2017-01-08, ---rgf, adjusted LIBRARY name the one the Makefile-32-windows uses for the link step
 
-
-LIBRARY   BSF4ooRexx-32
-; HEAPSIZE  40960
-; STACKSIZE 40960
+LIBRARY   BSF4ooRexx.dll-32-x86
+; LIBRARY   BSF4ooRexx-32
 
 HEAPSIZE  131072
 STACKSIZE  131072
 
-
-
-; functions in the DLL to be made available to other programs
+; ooRexx 4.0.0 (and later) related function, which allows the interpreter to load all external functions
 EXPORTS
-;        BSF
-;-        Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRegisterBSF
-
-
-;; 2003-01-21, support for calling & registering from Rexx
-;        BsfInvokedBy
-;        BsfLoadFuncs
-;        BsfDropFuncs
-;
-;        BsfLoadJava
-;        BsfUnloadJava
-;
-;; 2003-01-26, support for informational functions
-;        BsfVersion
-;        BsfQueryAllFunctions
-;        BsfQueryRegisteredFunctions
-;
-;; 2003-08-06, support for threads
-;        BsfAttachToTID
-;        BsfGetTID
-;
-;; 2006-11-19, new function
-;        BsfShowErrorMessage
-;
-;; 2008-07-26
-;        BsfDetach
-
-; 2009-04-02, support for halting/terminating Rexx interpreter (instances)
-;-        Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxGetTID
-;-        Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSetHalt
-
-; 2009-04-23: work started for ooRexx 4.0
         RexxGetPackage
-
-; 2009-05-03, new functionality, that depends on the new ooRexx 4.0 APIs
-;-        Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCreateInterpreterInstance
-;-        Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltInterpreterInstance
-;-        Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTerminateInterpreterInstance
-
-;-        Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject
-
-; 2009-05-11
-;-        Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRunProgram
-;-        Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSendMessageToRexxObject
-
-
-; 2009-05-23; removed on: 2009-06-23, rgf
-;        BsfProcessCallbackArgs
-
