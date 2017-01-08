@@ -24,6 +24,8 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    6.0.0   2017-01-08, rgf: fixed conversion warning where returning NULL instead of 0 (-Wconversion-null).
+
     6.0.0   2016-12-20, rgf: in _jniRexxSendMessageToRexxObject: do not do a bsf.wrap with .true as the second
                              argument anymore; RexxEngine.java was changed to increase the refCount (on JavaObject
                              or MethodObject), such that bsf.wrap returned .BSF object can safely run unregisterBean
@@ -16632,7 +16634,7 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpre
     fflush(stderr);
 #endif
 
-        return NULL;
+        return 0; // return NULL;
     }
 
     // no need to do a rtc->ReleaseGlobalReference(ro) as these references get released upon rtc->DetachThread() !
@@ -16657,7 +16659,7 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpre
     fflush(stderr);
 #endif
 
-        return NULL;
+        return 0; // return NULL;
     }
 
     size_t res=rtc->InterpreterVersion();
@@ -16685,7 +16687,7 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpre
 #endif
 
         RexxFreeMemory(msg);
-        return NULL;
+        return 0; // return NULL;
     }
 
 
@@ -16764,7 +16766,7 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
     fflush(stderr);
 #endif
 
-        return NULL;
+        return 0; // return NULL;
     }
 
     // no need to do a rtc->ReleaseGlobalReference(ro) as these references get released upon rtc->DetachThread() !
@@ -16789,7 +16791,7 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
     fflush(stderr);
 #endif
 
-        return NULL;
+        return 0; // return NULL;
     }
 
     size_t res=rtc->LanguageLevel();
@@ -16817,7 +16819,7 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
 #endif
 
         RexxFreeMemory(msg);
-        return NULL;
+        return 0; // return NULL;
     }
 
 
