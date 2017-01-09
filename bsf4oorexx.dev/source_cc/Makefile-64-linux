@@ -39,10 +39,8 @@ TGT_LIB_DIR     = ./lib
 # JDK_BASE = /usr/lib/jvm/java-6-sun
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk-amd64
 
-
 # 2015-07-27
 JDK_BASE = /usr/lib/jvm/java-6-oracle
-# JDK_BASE = /usr/lib/jvm/java-6-openjdk
 
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 
@@ -78,6 +76,7 @@ CFLAGS_ORX      = -DUSE_OREXX
 LINK_FLAGS      = -shared -rdynamic -lpthread -lc  -lm
 LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
 
+
 # BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-64-amd64.o
 BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
 # BSF_ORX_TARGET  = $(BLD_PATH)/libBSF4ooRexx.so-64-amd64
@@ -91,6 +90,9 @@ BSF4REXX	= $(BLD_PATH)/libBSF4ooRexx.so
 #	  $(cc) $(CFLAGS) -o$*.o $(INC_PATH) $(LIB_PATH) $*.cc
 
 #---------------------------------------------------------- Generate library
+
+orexx :                $(BSF_ORX_TARGET)
+#---------------------------------------------------------- END section
 
 # Object Rexx ----------------------------------------------
 $(BSF_ORX_TARGET) : $(BSF_SRC)
@@ -121,8 +123,4 @@ clean_dll:
 # -------------------------------------------------------------------
 # builds all
 all: clean orexx
-
-# -------------------------------------------------------------------
-# i:
-# 	$(cc) $(CFLAGS) $(CFLAGS_ORX) -oBSF4ooRexx.i $(INC_PATH) $(INC_PATH_ORX) -E $(LIB_PATH) $(BSF_SRC)
 

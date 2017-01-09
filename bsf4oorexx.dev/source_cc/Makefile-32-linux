@@ -85,6 +85,9 @@ BSF4REXX	= $(BLD_PATH)/libBSF4ooRexx.so
 
 #---------------------------------------------------------- Generate library
 
+orexx :                $(BSF_ORX_TARGET)
+#---------------------------------------------------------- END section
+
 # Object Rexx ----------------------------------------------
 $(BSF_ORX_TARGET) : $(BSF_SRC)
 	echo

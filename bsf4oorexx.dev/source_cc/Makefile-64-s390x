@@ -1,5 +1,12 @@
 # make -f Makefile-64-s390x rebuild
+#-------------------------------------------------------------------------
+# Makefile-64-linux: makefile to build libBSF4ooRexx.so-64-amd64
 #
+# ooRexx 4.x, 2005-06-07, 2009-09-08, 2017-01-08
+#
+# make -f Makefile-64-linux [ all | clean | clean_dll | rebuild ]
+#-------------------------------------------------------------------------
+
 # ------------------------ Apache Version 2.0 license -------------------------
 #    Copyright (C) 2001-2017 Rony G. Flatscher, 2016 Paul Dunkley
 #
@@ -16,28 +23,17 @@
 #    limitations under the License.
 # -----------------------------------------------------------------------------
 
-#-------------------------------------------------------------------------
-#
-# ooRexx 4.x, 2005-06-07, 2009-09-08
-#
-# make -f Makefile-64-s390x [orexx | clean | clean_dll | rebuild ]
-#-------------------------------------------------------------------------
 
 # -----------------------  Path Definitions  ----------------------------
-BLD_PATH = .
 
-# JDK_BASE = /usr/java/j2sdk1.4.2_08
-# JDK_BASE = /home/rony/dev/jdk1.6.0_06
-# JDK_BASE = /usr/lib/jvm/java-6-sun
-# JDK_BASE = /usr/lib/jvm/java-6-openjdk
-# JDK_BASE = /usr/lib/jvm/java-6-sun-1.6.0.24
-# JDK_BASE = /usr/lib/jvm/java-6-sun
-# JDK_BASE = /usr/lib/jvm/java-6-openjdk-amd64
+# build path to use
+# BLD_PATH = ~/tmp
+# BLD_PATH = .
+BLD_PATH = ./tmp
 
-# 2016-06-21, rgf: for very old 64-Bit Ubuntu VM
-# JDK_BASE = /usr/lib/jvm/java-6-openjdk
+# directory to copy generated lib to
+TGT_LIB_DIR     = ./lib
 
-# JDK_BASE = /usr/lib/jvm/java-6-sun-1.6.0.16
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk-amd64
 
 # 2016-04-05
@@ -45,51 +41,44 @@ JDK_BASE = /opt/ibm/java-s390x-60
 
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 
-# INC_PATH_ORX = -I/opt/orexx $(INC_PATH)
-
 INC_PATH_ORX = -I/usr/include $(INC_PATH)
 
-# LIB_PATH = -L. -L/usr/local/lib -L/usr/lib -L/opt/ooRexx/lib
 LIB_PATH = -L. -L/usr/local/lib64 -L/usr/lib64 -L/usr/lib
 
+
 # --------------------------------------------------------
+# delete command to use
 del_cmd  = rm -f
-# copy_cmd = cp -p
+
+# copy command to use
 copy_cmd = cp
 
-ORX     = OREXX
+# source file to compile
 BSF_SRC	= BSF4ooRexx.cc
-
 
 #
 # Compiler macros
 #
-# cc = g++ -fPIC
 cc = gcc -fPIC
 link = gcc
 
+BITNESS         = 64
+ARCH            = s390x
+
 #
 # CFLAGS_ori     = -c -ggdb -D__cplusplus
-CFLAGS		= -c -O3 -D__cplusplus -DUNIX -m64 -DBSF4REXX_64_BIT
+CFLAGS		= -c -O3 -D__cplusplus -DUNIX -m$(BITNESS) -DBSF4REXX_$(BITNESS)_BIT
+CFLAGS_ORX      = -DUSE_OREXX
 
-CFLAGS_ORX      = -DUSE_$(ORX)
-
-
-# link_lib_flags_lib_bsf4rexx_ori = -shared -rdynamic -lpthreads -lrexxapi -lc  -lm
-# 2003-04-05, ---rgf, added "-ljvm"
-# LINK_FLAGS      = -shared -rdynamic -lpthread -ljvm -lc  -lm
-# LINK_FLAGS      = -shared -rdynamic -lpthread /usr/java/j2sdk1.4.1_02/jre/lib/i386/client/libjvm.so -lc  -lm
 # LINK_FLAGS      = -shared -rdynamic -lpthread $(JDK_BASE)/jre/lib/i386/client/libjvm.so -lc  -lm
 LINK_FLAGS      = --export-dynamic -shared -rdynamic -lpthread $(JDK_BASE)/jre/bin/classic/libjvm.so -lc  -lm
-# LINK_FLAGS      = -shared -rdynamic -lpthread -lc  -lm
-# LINK_FLAGS      = --export-dynamic -shared -rdynamic -lpthread -lc  -lm
-
-
 LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
 
-BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-s390x-64.o
-BSF_ORX_TARGET  = $(BLD_PATH)/libBSF4ooRexx-s390x-64.so
-BSF4REXX	= $(BLD_PATH)/libBSF4ooRexx-s390x.so
+# BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-s390x-64.o
+BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
+# BSF_ORX_TARGET  = $(BLD_PATH)/libBSF4ooRexx-s390x-64.so
+BSF_ORX_TARGET  = $(BLD_PATH)/libBSF4ooRexx.so-$(BITNESS)-$(ARCH)
+BSF4REXX	= $(BLD_PATH)/libBSF4ooRexx.so
 
 # *************************************************************************** #
 # Rules									      #
@@ -99,24 +88,22 @@ BSF4REXX	= $(BLD_PATH)/libBSF4ooRexx-s390x.so
 
 #---------------------------------------------------------- Generate library
 
+orexx :                $(BSF_ORX_TARGET)
+#---------------------------------------------------------- END section
+
 # Object Rexx ----------------------------------------------
 $(BSF_ORX_TARGET) : $(BSF_SRC)
 	echo
 	echo Building $@ ...
 	echo
 	$(cc) $(CFLAGS) $(CFLAGS_ORX) -o$(BSF_OBJ_ORX) $(INC_PATH) $(INC_PATH_ORX) $(LIB_PATH) $(BSF_SRC)
-	$(link) -Wl,-soname,$@ -o $(BLD_PATH)/$@ $(BSF_OBJ_ORX) \
+	$(link) -Wl,-soname,$@ -o $@ $(BSF_OBJ_ORX) \
 	$(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
 	$(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
-	$(copy_cmd) $(BSF4REXX) 64
-#	$(copy_cmd) $(BSF4REXX) ../bsf4rexx
+	$(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)
 
 
 #---------------------------------------------------------- END section
-orexx :		$(BSF_ORX_TARGET)
-
-#---------------------------------------------------------- END section
-# -------------------------------------------------------------------
 # builds all
 rebuild: clean clean_dll orexx
 
@@ -127,14 +114,11 @@ clean:
 
 #---------------------------------------------------------- END section
 clean_dll:
-	- $(del_cmd) $(BLD_PATH)/*.so
+	- $(del_cmd) $(BLD_PATH)/*.so*
 
 
-# -------------------------------------------------------------------
+#---------------------------------------------------------- END section
 # builds all
 all: clean orexx
 
-# -------------------------------------------------------------------
-i:
-	$(cc) $(CFLAGS) $(CFLAGS_ORX) -oBSF4ooRexx.i $(INC_PATH) $(INC_PATH_ORX) -E $(LIB_PATH) $(BSF_SRC)
 
