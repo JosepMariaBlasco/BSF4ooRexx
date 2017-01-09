@@ -28,9 +28,9 @@ set CLASSPATH=.;%CLASSPATH%;%cd%\jars\Xalan\junit.jar;%cd%\jars\Xalan\xalan.jar
 set CLASSPATH=%CLASSPATH%;D:\Programme\OpenOffice.org 3\program\;D:\Programme\OpenOffice.org 3\Basis\program\classes\unoil.jar;D:\Programme\OpenOffice.org 3\URE\java\ridl.jar;D:\Programme\OpenOffice.org 3\URE\java\jurt.jar;D:\Programme\OpenOffice.org 3\URE\java\juh.jar;D:\Programme\OpenOffice.org 3\Basis\program\classes\ScriptFramework.jar
 
 
-set releaseDate=20170105
-set runDate=20170105
-set doc_date=20170105
+set releaseDate=20170109
+set runDate=20170109
+set doc_date=20170109
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -273,15 +273,9 @@ copy %path2dev%\%tmpPath%\*                        bsf4oorexx\%tmpPath%\
 
 copy /y %path2dev%\source_cc\associationChanged.exe     bsf4oorexx\install\
 
-md  bsf4oorexx\install\32
-copy /y %path2dev%\source_cc\32\*.dll              bsf4oorexx\install\32\
-copy /y %path2dev%\source_cc\32\lib*.so            bsf4oorexx\install\32\
-copy /y %path2dev%\source_cc\32\lib*.dylib         bsf4oorexx\install\32\
-
-md  bsf4oorexx\install\64
-copy /y %path2dev%\source_cc\64\*.dll              bsf4oorexx\install\64\
-copy /y %path2dev%\source_cc\64\lib*.so            bsf4oorexx\install\64\
-copy /y %path2dev%\source_cc\64\lib*.dylib         bsf4oorexx\install\64\
+@rem since 20170109, rgf
+md  bsf4oorexx\install\lib
+copy /y %path2dev%\source_cc\lib\*                bsf4oorexx\install\lib\
 
 md  bsf4oorexx\install\macosx
 rem 20110320, rgf - universal install script, hence use the Linux versions
