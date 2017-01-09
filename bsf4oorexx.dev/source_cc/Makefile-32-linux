@@ -95,7 +95,7 @@ $(BSF_ORX_TARGET) : $(BSF_SRC)
 	echo
 	$(cc) $(CFLAGS) $(CFLAGS_ORX) -o$(BSF_OBJ_ORX) $(INC_PATH) $(INC_PATH_ORX) $(LIB_PATH) $(BSF_SRC)
 	$(link) -Wl,-soname,$@ -o $@ $(BSF_OBJ_ORX) \
-	$(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
+                $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
 	$(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
 	$(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)
 
@@ -117,8 +117,4 @@ clean_dll:
 # -------------------------------------------------------------------
 # builds all
 all: clean orexx
-
-# -------------------------------------------------------------------
-# i:
-#	$(cc) $(CFLAGS) $(CFLAGS_ORX) -oBSF4ooRexx.i $(INC_PATH) $(INC_PATH_ORX) -E $(LIB_PATH) $(BSF_SRC)
 
