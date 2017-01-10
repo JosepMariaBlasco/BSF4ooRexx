@@ -407,7 +407,9 @@ cmd.eHintString="created:" q(cmd.eDateTimeEdited) "by user" q(j.["USER.NAME"]) -
 if cmd.eIsUnix then
 do
    -- controls whether a link to the current libjvm.{so|dylib} should be created in the BSF4ooRexx directory
-   cmd.bCreateLinkInB4RHome?=.false    -- do not create the link anymore (as of 2017-01-09), Java installations are now cleverer ;)
+   -- by default set to .true as on systems with multiple versions of Java installed this link
+   -- will control which libjvm.so to use
+   cmd.bCreateLinkInB4RHome?=.true  -- create a link to libjvm.so from install time to /opt/BSF4ooRexx from where the JVM gets picked up
    suname=value("SUDO_USER",,"ENVIRONMENT") -- fetch environment value, if available
    if suname<>"" then
       cmd.eHintString="created:" q(cmd.eDateTimeEdited) "by sudo user" q(suname)
