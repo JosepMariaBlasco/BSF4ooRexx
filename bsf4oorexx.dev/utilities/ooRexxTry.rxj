@@ -73,6 +73,19 @@
                                absolute heights as that may distort the bottom split panes under
                                certain conditions
 
+            2017-01-16, rgf: - in componentResize sometimes the buttonPanel is .nil; two fixes (one
+                               registers the buttonPanel in the userData directory immediately after
+                               its creation; two: only sends it a message, if the buttonPanel entry
+                               exists in the userData directory)
+
+            2017-01-17, rgf: - restructured and changed logic in class CExitHandler making sure
+                               that only string values get forwarded to the Java object that will
+                               display the output (otherwise a Java runtime error will occur as
+                               the value for append(); also class GUIErrorStream got adapted (used
+                               for outputting error messages by this app) to prepend the "REXXerr>"
+                               string
+
+
 */
 
 /*----------------------------------------------------------------------------*/
@@ -1637,6 +1650,7 @@ say str
 
     -- buttonpanel = .bsf~new("javax.swing.JPanel")
     buttonpanel = .javax.swing.JPanel~new
+    userData~buttonpanel = buttonpanel
     buttonpanel~~add(runButton)~~add(historybutton)~~add(exitButton)
 
     dimbutton = .Dimension~new()
@@ -1644,7 +1658,6 @@ say str
     buttonpanel~setPreferredSize(dimbutton)
 
     -- contentpanel~add(buttonpanel)
-    userData~buttonpanel = buttonpanel
     .local~mm.dir~buttonpanel = buttonpanel
 
     contentpanel~bsf.invoke("add", buttonpanel)     -- GLEITNER
@@ -1891,11 +1904,13 @@ syntax:
 ::method lineout
     use arg output
 
+-- .stdout~say("\\\ in GUIErrorStream, output="pp(output~string) pp(output~class))
+
     call attach2java       -- make sure we can interact with Java on this thread
 
     -- .mm.dir~hcque~setelem(TIME("L"),"E",output .endOfLine) /* G.LEITNER */
 
-    .mm.dir~errorsArea~append(output)
+    .mm.dir~errorsArea~append("REXXerr>"output)
     .mm.dir~errorsArea~append(.endOfLine)
     .mm.dir~errorsArea~setCaretPosition(.mm.dir~errorsArea~getDocument~getLength)
     if .mm.dir~enableErrorSocket & .mm.dir~clientConnected then .mm.dir~out~println("[.ERROR] "||output)
@@ -2027,6 +2042,9 @@ syntax:
 ::class GUIOutputStream subclass stream
 ::method say
     use arg output
+
+-- .stdout~say("\\\ in GUIErrorStream, output="pp(output~string) pp(output~class))
+
     if .mm.dir~isdebug == true then return 0 -- XXX enable debugging
     call attach2java       -- make sure we can interact with Java on this thread
 
@@ -4842,11 +4860,18 @@ use arg bounds
       if z < 99 then exit
 
       if .mm.dir~isdebug == true then say "splitpane handling"
-      Call BSF 'invoke', methArgs~userdata~splitpane, 'setpreferredsize',     dimsp
-      if .mm.dir~isdebug == true then say methArgs~userdata~splitpane~getpreferredsize~width methArgs~userdata~splitpane~getpreferredsize~height
-      Call BSF 'invoke', methArgs~userdata~splitpane, 'reshape', 0, 0, w1, h1
-      Call BSF 'invoke', methArgs~userdata~buttonpanel, 'revalidate'
-      Call BSF 'invoke', methArgs~userdata~splitpane, 'revalidate'
+      if methArgs~userdata~splitpane<>.nil then
+      do
+         Call BSF 'invoke', methArgs~userdata~splitpane, 'setpreferredsize',     dimsp
+         if .mm.dir~isdebug == true then
+            say methArgs~userdata~splitpane~getpreferredsize~width methArgs~userdata~splitpane~getpreferredsize~height
+         Call BSF 'invoke', methArgs~userdata~splitpane, 'reshape', 0, 0, w1, h1
+      end
+      if methArgs~userdata~buttonpanel<>.nil then
+         Call BSF 'invoke', methArgs~userdata~buttonpanel, 'revalidate'
+
+      if methArgs~userdata~splitpane<>.nil then
+         Call BSF 'invoke', methArgs~userdata~splitpane, 'revalidate'
 
       -- remember the last framesize for splitframe
       .mm.dir~sWidth = methArgs~userdata~frame~getWidth
@@ -5386,30 +5411,93 @@ exit
 *                actually here strings are associated to certain streams
 *                furthermore entries for the history array are made
 */
+/*  ---rgf, 2017-01-17: as this Rexx exit handler is used for exitNumber 5, there is no need to
+                        check for this handler; restructure the code for better legibility;
+                        no need to compare for exact equality (==) as this is Rexx ;)
+*/
 ::class CExitHandler
 ::method handleExit
-use arg slot, exitNumber, subFunction, parmBlock
+  use arg slot, exitNumber, subFunction, parmBlock
 
-if .mm.dir~isdebug == true then say "CEXITHANDLER" exitNumber subFunction parmBlock[1]
+-- .stdout~say("/// --> /// in CExitHandler.handleExit(), exitNumber="pp(exitNumber)", subFunction="pp(subFunction))
 
+  if .mm.dir~isdebug == true then say "CEXITHANDLER" exitNumber subFunction parmBlock[1]
+
+  mark=substr("SEII",subFunction,1)    -- assign 1->"S" (stdout), 2->"E" (stderr), 3->"I" (stdin), 4->"I" (stdin)
+
+  select
+     when subFunction=1 then .output~lineout("REXXout>"parmBlock[1]~string)   -- stdout
+     when subFunction=2 then .error ~lineout("REXXerr>"parmBlock[1]~string)   -- stderr
+     otherwise parmBlock[1]=.input~linein -- input (3, 4)
+  end
+
+  .mm.dir~hcque~setelem(TIME("L"),mark,parmBlock[1])
+  return .mm.dir~RXEXIT_HANDLED
+
+/* original code with debug statements)
 -- generate history array
 if subFunction == 1 then mark = "S"
 if subFunction == 2 then mark = "E"
 if subFunction == 3 then mark = "I"
 if subFunction == 4 then mark = "I"
 
-if subFunction == 1 then .output~lineout(parmBlock[1])
-if subFunction == 2 then .error~lineout(parmBlock[1])
+oPB=parmBlock[1]
+.stdout~say(self": subFunction="subFunction", parmBlock[1]="pp(oPB)", pB[1]~class="pp(oPB~class))
+
+if subFunction=1 | subfunction=2 then
+do
+-- .stdout~say("   accessing -> parmBlock~class:" pp(parmBlock~class) )
+   str=parmBlock[1]~string -- make sure we get a Rexx string object in any case!
+.stdout~say("   -> parmBlock as string:" pp(str) "~class:" pp(str~class) )
+
+/*
+   select
+      when str~isA(.bsf) then str=str~toString -- a Java object, get String value
+      when str~isA(.uno) then str=str~toString
+      otherwise nop
+   end
+*/
+
+   if subFunction = 1 then
+   do
+      -- .output~lineout(parmBlock[1])
+
+.stdout~say("   -> -> before .output~lineout(str) ..." ".output~current:" pp(.output~current) pp(.output~current~class))
+      -- .output~lineout(str)
+      .output~lineout("REXXout>"str)
+.stdout~say("   <- <- after  .output~lineout(str) ...")
+   end
+
+   if subFunction = 2 then
+   do
+      -- .error~lineout(parmBlock[1])
+
+.stdout~say("   -> -> before .error~lineout(str) ...")
+      -- .error~lineout(str)
+      .error~lineout("REXXerr>"str)
+.stdout~say("   <- <- after  .error~lineout(str) ...")
+   end
+
+.stdout~say("   ---> AFTER outputting 'str', before putting it into HCQUE !")
+   .mm.dir~hcque~setelem(TIME("L"),mark,str)
+.stdout~say("   <--- BEFORE returnint RXEXIT_HANDLED.")
+   return .mm.dir~RXEXIT_HANDLED
+
+
+end
+
 if subFunction == 3 then parmBlock[1] = .input~linein
 if subFunction == 4 then parmBlock[1] = .input~linein
 
 if exitNumber == 5 then do
+say "*** in exitNumber==5 !! raw parmBlock[1] which is not a string ! ***"
    .mm.dir~hcque~setelem(TIME("L"),mark,parmBlock[1])
    return .mm.dir~RXEXIT_HANDLED
 end
 else do
    return .mm.dir~RXEXIT_NOT_HANDLED
 end
+*/
 /* GLEITNER Classes end */
 
 
