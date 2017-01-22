@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 public class OoRexxFileTypeFactory extends FileTypeFactory{
 
-    public static String[] fileExtensions = new String[]{"rexx", "rex", "cls", "rxj"};
+    public static String[] fileExtensions = new String[]{"cls", "frm", "jrexx", "orx", "rex", "rexx", "rexxj", "rxj", "rxo", "testGroup", "testUnit"};
 
     @Override
     public void createFileTypes(@NotNull FileTypeConsumer fileTypeConsumer) {

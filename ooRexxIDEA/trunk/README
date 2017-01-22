@@ -2,15 +2,19 @@ ooRexx Plugin for IntelliJ IDEA
 -------------------------------
 Author: Alexander Seik
 Date: 16.01.2017
+License: AL 2.0
+
+This README explains how to correctly install the source code of "ooRexx Plugin for IntelliJ IDEA" in order to start developing the plugin.
 
 Prerequisite:
-- Java 8
+- Java 8: e.g. URL: <http://www.java.com>
 - IntelliJ IDEA 2016 Community Edition or Ultimate
+        - URL: <https://www.jetbrains.com/idea/download/#section=windows>
 
 Start:
 - Start IntelliJ IDEA
 - Check out the source code: File -> New -> Project From Version Control -> Subversion
-- Copy the content of <<Project_Root>>/ooRexxIDE.iml into <<Project_Root>>/.idea/<<Project_Name>.iml
+- Copy the content of <<Project_Root>>/ooRexxIDE.iml into <<Project_Root>>/.idea/<<Project_Name>.iml (<<Project_Root>> is the path where you checked out the source to)
 - Go to: File -> Project Strucute -> Project. Create new project SDK: "IntelliJ Platform SDK" (Choose the root of Intellij IDEA you installed it to),
   select project language level to 8, and "Project Compiler Output" to <<Project_Root>>/out. (Replace <<Project_Root>> with the actual path.)
 - Restart Intellij IDEA
