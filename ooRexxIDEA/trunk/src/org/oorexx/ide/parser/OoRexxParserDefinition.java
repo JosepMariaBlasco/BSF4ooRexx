@@ -1,4 +1,4 @@
-package org.oorexx.ide.lang;
+package org.oorexx.ide.parser;
 
 import com.intellij.lang.ASTNode;
 import com.intellij.lang.Language;

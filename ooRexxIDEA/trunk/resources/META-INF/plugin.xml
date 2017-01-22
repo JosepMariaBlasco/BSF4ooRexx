@@ -14,7 +14,7 @@
     <lang.foldingBuilder language="ooRexx" implementationClass="org.oorexx.ide.intellij.folding.FoldingBuilder"/>
     <colorSettingsPage implementation="org.oorexx.ide.intellij.highlighting.OoRexxColorSettingPage"/>
     <lang.syntaxHighlighterFactory key="ooRexx" implementationClass="org.oorexx.ide.intellij.highlighting.OoRexxSyntaxHighlighterFactory"/>
-    <lang.parserDefinition language="ooRexx" implementationClass="org.oorexx.ide.lang.OoRexxParserDefinition"/>
+    <lang.parserDefinition language="ooRexx" implementationClass="org.oorexx.ide.parser.OoRexxParserDefinition"/>
     <fileTypeFactory implementation="org.oorexx.ide.intellij.file.OoRexxFileTypeFactory" />
 
     <annotator language="ooRexx" implementationClass="org.oorexx.ide.intellij.annotator.UniqueConstraintAnnotator"/>
