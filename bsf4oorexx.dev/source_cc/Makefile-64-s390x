@@ -72,13 +72,16 @@ CFLAGS_ORX      = -DUSE_OREXX
 
 # LINK_FLAGS      = -shared -rdynamic -lpthread $(JDK_BASE)/jre/lib/i386/client/libjvm.so -lc  -lm
 LINK_FLAGS      = --export-dynamic -shared -rdynamic -lpthread $(JDK_BASE)/jre/bin/classic/libjvm.so -lc  -lm
-LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
 
-# BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-s390x-64.o
+# rgf, 2017-01-26: "-lrexxutil" not needed
+# LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
+LINK_ORX_FLAGS  = -lrexx -lrexxapi
+
+BSF_SONAME      = libBSF4ooRexx.so
 BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
-# BSF_ORX_TARGET  = $(BLD_PATH)/libBSF4ooRexx-s390x-64.so
-BSF_ORX_TARGET  = $(BLD_PATH)/libBSF4ooRexx.so-$(BITNESS)-$(ARCH)
-BSF4REXX	= $(BLD_PATH)/libBSF4ooRexx.so
+BSF_ORX_TARGET  = $(BLD_PATH)/$(BSF_SONAME)-$(BITNESS)-$(ARCH)
+BSF4REXX	= $(BLD_PATH)/$(BSF_SONAME)
+
 
 # *************************************************************************** #
 # Rules									      #
@@ -96,9 +99,11 @@ $(BSF_ORX_TARGET) : $(BSF_SRC)
 	echo
 	echo Building $@ ...
 	echo
+
 	$(cc) $(CFLAGS) $(CFLAGS_ORX) -o$(BSF_OBJ_ORX) $(INC_PATH) $(INC_PATH_ORX) $(LIB_PATH) $(BSF_SRC)
-	$(link) -Wl,-soname,$@ -o $@ $(BSF_OBJ_ORX) \
-	        $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
+
+	$(link) -Wl,-soname,$@ -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
+
 	$(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
 	$(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)
 

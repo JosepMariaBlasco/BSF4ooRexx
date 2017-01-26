@@ -59,7 +59,9 @@ BSF_SRC	= BSF4ooRexx.cc
 #
 # Compiler macros
 #
-cc = gcc -c -fPIC
+# rgf, 20170126: move to CFLAGS like in the other Makefiles
+# cc = gcc -c -fPIC
+cc = gcc
 link = gcc
 
 BITNESS         = 64
@@ -69,18 +71,21 @@ ARCH            = aix
 # CFLAGS_ori     = -c -ggdb -D__cplusplus
 #CFLAGS		= -c -O3 -D__cplusplus -DUNIX -m64 -DBSF4REXX_64_BIT
 # CFLAGS= -maix64 -DAIX61 -DUNIX -D_ALL_SOURCE -DFUNCPROTO=15 -O -DBSF4REXX_64_BIT -DOBJECT_MODE=64
-CFLAGS= -maix$(BITNESS) -DAIX61 -DUNIX -D_ALL_SOURCE -DFUNCPROTO=15 -O -DBSF4REXX_$(BITNESS)_BIT -DOBJECT_MODE=$(BITNESS)
+CFLAGS= -c -fPIC -m$(ARCH)$(BITNESS) -DAIX61 -DUNIX -D_ALL_SOURCE -DFUNCPROTO=15 -O -DBSF4REXX_$(BITNESS)_BIT -DOBJECT_MODE=$(BITNESS)
 CFLAGS_ORX      = -DUSE_OREXX
 
 # link_lib_flags_lib_bsf4rexx_ori = -shared -rdynamic -lpthreads -lrexxapi -lc  -lm
 LINK_FLAGS = -shared -lpthread -lc -lm
-LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
+# rgf, 2017-01-26: "-lrexxutil" not needed
+# LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
+LINK_ORX_FLAGS  = -lrexx -lrexxapi
 
-# BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-64.o
+
+BSF_SONAME      = libBSF4ooRexx.so
 BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
-# BSF_ORX_TARGET  = $(BLD_PATH)/libBSF4ooRexx-64.so
-BSF_ORX_TARGET  = $(BLD_PATH)/libBSF4ooRexx.so-$(BITNESS)-$(ARCH)
-BSF4REXX	= $(BLD_PATH)/libBSF4ooRexx.so
+BSF_ORX_TARGET  = $(BLD_PATH)/$(BSF_SONAME)-$(BITNESS)-$(ARCH)
+BSF4REXX	= $(BLD_PATH)/$(BSF_SONAME)
+
 
 # *************************************************************************** #
 # Rules									      #
@@ -98,10 +103,14 @@ $(BSF_ORX_TARGET) : $(BSF_SRC)
 	echo
 	echo Building $@ ...
 	echo
+
 	$(cc) $(CFLAGS) $(CFLAGS_ORX) -o$(BSF_OBJ_ORX) $(INC_PATH) $(INC_PATH_ORX) $(LIB_PATH) $(BSF_SRC)
+
 #	$(link) -maix64 -DAIX61 -DUNIX -Wl,-b64,-brtl -g -o $(BLD_PATH)/$@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS) -lstdc++
-	$(link) -maix64 -DAIX61 -DUNIX -Wl,-b64,-brtl -g -o $@ $(BSF_OBJ_ORX) \
+
+	$(link) -m$(ARCH)$(BITNESS) -DAIX61 -DUNIX -Wl,-b$(BITNESS),-brtl,-soname,$(BSF_SONAME) -g -o $@ $(BSF_OBJ_ORX) \
                 $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS) -lstdc++
+
 	$(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
 	$(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)
 
