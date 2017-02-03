@@ -153,7 +153,7 @@ say "..." pp(.DateTime~new) "Rexx main program, JFrame got closed."
 
 ::method wait     -- method to allow for blocking
   expose wait
-  guard on when wait<>.true   -- the caller will be blocked until this condition turns to true
+  guard on when wait<>.true   -- the caller will be blocked until this condition turns to .false
 
 ::method windowClosing        -- Window event when window gets closed, release wait lock
   expose wait

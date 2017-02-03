@@ -2,6 +2,7 @@
 /* --------------------------------------------------------------------------------------------------- */
 /* This routine will be called from the Rexx code defined with the "onAction" attribute in Button's definition */
 ::routine klickButtonAction public
+  use arg slotDir    -- using Rexx script annotation instead
   say .dateTime~new": arrived in code defined for Button's setOnAction method, i.e. the public routine 'klickButtonAction"
 
        /* the following Rexx script annotation will incorporate the attribute (the Label

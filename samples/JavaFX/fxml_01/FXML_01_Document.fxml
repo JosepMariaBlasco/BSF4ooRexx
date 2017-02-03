@@ -23,7 +23,7 @@
                       double-quotes ("), hence each Rexx statement is explicitly ended with the
                       semi-colon character -->
         <Button fx:id="button" layoutX="170.0" layoutY="89.0" onAction=
-                      "use arg slotDir /* always supplied by BSF4ooRexx as the last argument */ ;
+                      "slotDir=arg(arg()) /* always supplied by BSF4ooRexx as the last argument */ ;
                        call klickButtonAction slotDir /* now process the event, pass on slotDir */ ;"
                       text="Click Me!" textFill="GREEN"
         />

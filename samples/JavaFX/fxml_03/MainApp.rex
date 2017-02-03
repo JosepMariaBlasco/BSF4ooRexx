@@ -7,6 +7,7 @@
                         in <https://carlfx.wordpress.com/2013/07/15/introduction-by-example-javafx-8-printing/>
             2017-01-02, demo bringing up printer dialog (to choose different printer, to set page properties,
                         to cancel printing)
+            2017-02-03, only runs, if ooRexx is 5.0 or higher
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -45,9 +46,22 @@
          rexx MainApp.rex [json-file]
          rexxj.{cmd|sh} Main.rex [json-file]
 
-   needs: ooRexx 4.1 or higher, and BSF4ooRexx 6.00 or highter
+   needs: ooRexx 5.0 or higher, and BSF4ooRexx 6.00 or highter
 
 */
+
+   -- make sure we run this program only, if ooRexx 5.0 or higher (ooRexx 4.2.0 exhibits a runtime error)
+parse version "_" v "."
+if v<5 then
+do
+   parse version v
+   parse source  . . pgm
+   .error~say(pp(pgm)" needs ooRexx 5.0 or higher, found:" pp(v))
+   .bsf.dialog~messageBox(pp(pgm)" needs ooRexx 5.0 or higher," "0a"x || "found:" pp(v), -
+                          "Wrong version of ooRexx", "error")
+   exit -1
+end
+
 
 .environment~my.app=.directory~new  -- directory to contain objects relevant to this application
 .my.app~bDebug=.false               /* if set to .true, "put_FXID_objects_into.my.app.rex" will show
