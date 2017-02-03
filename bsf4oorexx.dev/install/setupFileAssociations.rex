@@ -4,7 +4,7 @@
    Purpose: creates files to set up and remove file associations
    Author:  Rony G. Flatscher
    Date:    2010-07-26/27/30/31, 2010-08-20
-   Version: 1.00
+   Version: 1.01
    Changes:
             2010-07-26, ---rgf, plain
             2010-12-08, ---rgf, changing application/x-rexx* -> text/x-rexx*
@@ -14,6 +14,7 @@
             2011-05-28, ---rgf, - Unix: make sure group of new files is set to "admin" and "admin" users
                                         have full write access to these files as well
             2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
+            2017-01-22, ---rgf, - add file extension ".frm" as a Rexx type
 
    last svn check-in: $Revision: 640 $ $Author: rony $ $Date: 2010-04-17 22:25:38 +0200 (Sat, 17 Apr 2010) $
 
@@ -22,7 +23,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2011 Rony G. Flatscher
+       Copyright (C) 2010-2017 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -110,7 +111,7 @@ dir ~ rxj.mimetype = "text/x-rexx-java"
 dir ~ rxo.mimetype = "text/x-rexx-java-ooo"
 
    -- on Windows ".rex" is already set up
-dir ~ rex.extensions = .array~of( ".cls",   ".orx",  ".rex", ".rexx", ".testGroup", ".testUnit" )
+dir ~ rex.extensions = .array~of( ".cls",   ".orx",  ".frm", ".rex", ".rexx", ".testGroup", ".testUnit" )
 
 if opsys<>'W' then -- add '.rex' filetype for Unix
    dir ~ rex.extensions ~ append(".rex")

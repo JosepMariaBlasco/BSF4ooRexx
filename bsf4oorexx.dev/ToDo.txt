@@ -1,3 +1,13 @@
+2017-01-22, rgf:
+
+        - Janino development has occurred, is up-to-date, which is great
+
+        - ad ASM on Android: it seems that creating at runtime does no good as the created
+          class files need to be signed before becoming available for use (needs to be
+          confirmed); if Janino can be used on Android, it would be the solution to go for
+          good
+
+
 2014, ---rgf:
 
         - Re-change method resolution (but make sure that default interface methods of Java 8 get resolved)

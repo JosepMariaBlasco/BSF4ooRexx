@@ -80,7 +80,6 @@ LINK_FLAGS      = -shared -rdynamic -lpthread -lc  -lm
 # LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
 LINK_ORX_FLAGS  = -lrexx -lrexxapi
 
-BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
 BSF_SONAME      = libBSF4ooRexx.so
 BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
 BSF_ORX_TARGET  = $(BLD_PATH)/$(BSF_SONAME)-$(BITNESS)-$(ARCH)

@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-05,14,18
-   version: 1.08
+   version: 1.09
    name:    setupAllAndRun.rex
    purpose: installer to install or reinstall the BSF4ooRexx package
 
@@ -67,13 +67,19 @@
                                 distinguish separate, successive runs in case of re/un/installation errors
             2015-08-24, gab   - replace the Windows command "rd" with an "echo" since the directory tree cannot be
                                 removed while the script is still running
+            2017-01-22, rgf   - add file extension "frm" as a Rexx type of file
+            2017-02-03, rgf   - when copying the entire tree to its destination, make sure that in Unix the timestamps
+                                get preserved
+                              - make sure that the libBSF4ooRexx* shared libraries get the x-bit set (despite new naming)
+                              - new routine sayWhetherInstallationWasSuccessful() to test whether setup was successful
+                                (using rexxj{.sh|.cmd})
 
    remark:  ---
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010-2015 Rony G. Flatscher
+       Copyright (C) 2010-2017 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -97,6 +103,8 @@ cmd.eIsMacOSX=(s="M")      -- determine whether running on "MACOSX"
 
 
 cmd.eOriginalDirectory=directory()  -- original directory from where this script go started
+
+cmd.bShowSuccessAsGUI=.false  -- determines whether .bsf.dialog should be used to display success
 
 bPauseAtEnd=.true                -- pause at end, such that user can see the output in the console
    -- using 'elevate{32|64}.exe' in wait mode; if command line window does not close, the user
@@ -548,8 +556,13 @@ do
 
    if cmd.eBQuiet=.false then
    do
-      res=showMessageBoxViaBSF(cmd., msg, title, "information")   -- try to bring up a dialog to inform user
+      if cmd.bShowSuccessAsGUI=.true then    -- show a .bsf.dialog GUI about success?
+         res=showMessageBoxViaBSF(cmd., msg, title, "information")   -- try to bring up a dialog to inform user
+      else
+         res=sayWasInstallationSuccessful(cmd.)   -- test whether setup was successful (using rexxj{.sh|.cmd})
+
       if res=.true then bPauseAtEnd=.false
+
    end
 end
 
@@ -738,14 +751,18 @@ do
 
    if cmd.eBQuiet=.false then
    do
-      res=showMessageBoxViaBSF(cmd., msg, title, "information")   -- try to bring up a dialog to inform user
+      if cmd.bShowSuccessAsGUI=.true then    -- show a .bsf.dialog GUI about success?
+         res=showMessageBoxViaBSF(cmd., msg, title, "information")   -- try to bring up a dialog to inform user
+      else
+         res=sayWasInstallationSuccessful(cmd.)   -- test whether setup was successful (using rexxj{.sh|.cmd})
+
       if res=.true then bPauseAtEnd=.false
    end
 end
 
 if cmd.eBLogFile=.true then cmd.eLogFile~close  -- close logfile
 
-if bPauseAtEnd=.true then  -- pause at end, such that user can
+if bPauseAtEnd=.true then  -- pause at end, such that user can read the output in the terminal window
 do
    say cmd.eThisName": end of run."
    say "Please hit enter to end program ..."
@@ -847,7 +864,8 @@ exit 0
          end
       end
 
-      cmd='cp -rfv ../*' enQQ(targetDir)
+      -- cmd='cp -rfv ../*' enQQ(targetDir)
+      cmd='cp -prfv ../*' enQQ(targetDir)    -- rgf, 2017-02-03: make sure to preserve timestamps
   end
 
   say cmd.eThisName" copyPackage() - (install-mode): about to run '"cmd"' ..."
@@ -950,11 +968,20 @@ exit 0
       chunk1="find .."   -- leadin, start from parent directory
       chunk2="-type f -execdir chmod ugo+x '{}' \;"   /* make sure executable gets set for all */
       tmpStr=""
-      do ext over .array~of("sh", "so", "rex", "rxj", "rxo", "rexxj", "jrexx", "cls", "orx", "testGroup", "testUnit", "exe", "class", "cmd", "py", "js", "nrx", "jacl")
+      do ext over .array~of("sh", "so", "rex", "rxj", "rxo", "rexxj", "jrexx", "cls", "orx", "frm", "testGroup", "testUnit", "exe", "class", "cmd", "py", "js", "nrx", "jacl")
          if tmpStr="" then tmpStr =           '-iname "*'ext'"'
                       else tmpStr = tmpStr '-o -iname "*'ext'"'
       end
+
+      -- rgf, 2017-02-03: as the libBSF4ooRexx files changed (bitness and architecture appended) make sure they get ther x-bit set
+      tmpStr = tmpStr '-o -iname "libBSF4ooRexx*"'
+
       cmd = chunk1 "\(" tmpStr "\)" chunk2   -- build command
+
+      strTmp="setupAllAndRun.rex: line #" pp(.line) cmd
+      if cmd.eBLogFile=.true then cmd.eLogFile~say(strTmp)
+      say strTmp  -- show command (for logging)
+
       cmd cmd.eRedirect2LogFile                                    -- let the shell run the command
    end
    else  /* just make sure that all (possibly newly created) .sh-files in the current directory get set to: 775 */
@@ -978,11 +1005,43 @@ exit 0
   signal on any
   deli=enQQ("/=/")     -- define delimiter
   cmd=cmd.eRexxJ "msgBox.rxj" enQQ(msg || deli || title || deli || type)
+
   cmd                -- let environment carry out the command
   return .true       -- indicate success
 
 any:                 -- something went wrong while executing the program
   cmd.eLogFile~say("-> showMessageBoxViaBSF(): condition ["condition("C")"] raised when executing 'msgBox.rxj'")
+  return .false      -- indicate error
+
+
+::routine sayWasInstallationSuccessful
+  use strict arg cmd.
+  testScript="wasInstallationSuccessful.rxj"
+
+  signal on any
+  do while queued()  -- make sure the external Rexx queue is empty (it should)
+     parse pull .
+  end
+
+  cmd=cmd.eRexxJ testScript "| rxqueue"   -- pipe output to rxqueue, such that we can fetch it
+
+  strTmp="setupAllAndRun.rex, line #" pp(.line)":" cmd
+  if cmd.eBLogFile=.true then cmd.eLogFile~say(strTmp)
+  say strTmp
+
+  cmd                -- let environment carry out the command
+
+  do while queued()
+     parse pull text
+     if cmd.eBLogFile=.true then cmd.eLogFile~say(text)
+     say text
+  end
+  if word(text,1)="CONGRATULATIONS!" then return .true   -- indicate success
+
+  return .false   -- indicate failure
+
+any:                 -- something went wrong while executing the program
+  cmd.eLogFile~say("-> sayWhetherInstallationWasSuccessful(): condition ["condition("C")"] raised when executing '"testScript"'")
   return .false      -- indicate error
 
 

@@ -13,6 +13,10 @@
 
    date:
 
+         2017-01-20, ---rgf, - renamed operating system name from "PARSE SOURCE opsys ." from "DARWIN" to "MACOSX",
+                               this quick fix should keep everything everywhere (in BSF4ooRexx) humming...;
+                               TODO: check all BSF4ooRexx-supplied scripts for explicit usage of "MACOSX"
+
          2016-12-20, ---rgf, - on unregisterBean do not supply rii_id anymore (not needed anymore)
 
                              - initialize.bsf.dir(): make sure that the pre-registered classes get
@@ -564,6 +568,8 @@
 
    parse source opsys .       -- get name of operating system, rgf, 2010-02-20
 
+   if opsys="DARWIN" then opsys="MACOSX"
+
    if BsfInvokedBy()=0 then   -- JVM not yet loaded
    do
 --      call BsfLoadJava
@@ -602,7 +608,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20170109" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20170203" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase

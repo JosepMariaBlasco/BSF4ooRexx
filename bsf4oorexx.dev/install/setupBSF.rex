@@ -7,6 +7,11 @@
    Date:    2006-01-07
    Version: 1.32
    Changed:
+            2017-02-03, ---rgf, - adjust test for MacOSX for new operating system name "Darwin" (used to be "MacOSX")
+                                - if Java cannot be found, abort installation with appropriate message and usage
+                                - make sure that the libBSF4ooRexx* shared libraries get the x-bit set (despite new naming)
+                                - use "/sbin/ldconfig" instead of "ldconfig" to make sure that it is being found, if available
+
             2017-01-09, ---rgf, - adopting the installation of the lib/dll file to their new names and
                                   locations
                                 - on Unix: do not create a link to the libjvm.{so|dylib} to serve as
@@ -257,6 +262,11 @@ do
    j.=getJavaProps()    /* returns stem object that contains the Java properties */
 end
 
+if cmd.eJavaBinary="" then -- rgf, 2017-02-03, no Java binary found, abort installation !
+do
+   say "setupBSF.rex: could not find Java, please install or supply path to Java home directory, aborting ... (line #" .line")"
+   call usage  -- will exit -1
+end
 
 say 'setupBSF.rex - dumpJavaProps():'
 call dumpJavaProps               /* dump the Java properties in sorted order  */
@@ -292,7 +302,7 @@ end
 cmd.eIsUnix=(j.file.separator="/")
 
 parse upper source s +1  -- get operating system name in uppercase
-cmd.eIsMacOSX=(s="M")    -- determine whether running on "MACOSX"
+cmd.eIsMacOSX=(s="M" || s="D")    -- determine whether running on "MACOSX", "Darwin"
 
 -- cmd.eIsUnix=.true -- for debugging only !!
 
@@ -530,8 +540,12 @@ do
 
       select      -- determine location and name of library to use
          when cmd.eBitness=32   then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-32-x86"
-         when cmd.eBitness=64   then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-amd64"
-         when j.os.arch='s390x' then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-s390x"
+         when cmd.eBitness=64   then
+         do
+             if j.os.arch='s390x' then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-s390x"
+                                  else cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-amd64"
+         end
+
          when j.os.arch~caselessAbbrev('aix') then
                                      cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-aix"
          otherwise                   cmd.eDll.sourcePath="lib/panic-unknown-bitness-"cmd.eBitness"-arch-"j.os.arch
@@ -912,7 +926,9 @@ createInstallScript: procedure expose j. cmd. path.
 
          -- tmpCmd="ldconfig"
          -- tmpCmd="ldconfig -n /usr/lib /usr/lib32 /usr/lib64 /opt/BSF4ooRexx"   -- rgf, 2010-08-14
-         tmpCmd="ldconfig /usr/local/lib /usr/local/lib32 /usr/local/lib64 /opt/BSF4ooRexx /usr/lib /usr/lib32 /usr/lib64 "   -- rgf, 2012-02-25, 2016-08-15
+         -- tmpCmd="ldconfig /usr/local/lib /usr/local/lib32 /usr/local/lib64 /opt/BSF4ooRexx /usr/lib /usr/lib32 /usr/lib64 "   -- rgf, 2012-02-25, 2016-08-15
+         -- rgf, 2017-02-03: supply full path to ldconfig such that it can be located on systems that do not place sbin on the PATH
+         tmpCmd="/sbin/ldconfig /usr/local/lib /usr/local/lib32 /usr/local/lib64 /opt/BSF4ooRexx /usr/lib /usr/lib32 /usr/lib64 "   -- rgf, 2012-02-25, 2016-08-15
          call lineout fn, cmd.eEcho qc(tmpCmd)
          call lineout fn, tmpCmd
          call lineout fn, ""
@@ -2317,7 +2333,14 @@ say "unixDetermineLibs:" _mode"|"lib"|"target "..."
          if tmpStr="" then tmpStr =           '-iname "*'ext'"'
                       else tmpStr = tmpStr '-o -iname "*'ext'"'
       end
+
+      -- rgf, 2017-02-03: as the libBSF4ooRexx files changed (bitness and architecture appended) make sure they get ther x-bit set
+      tmpStr = tmpStr '-o -iname "libBSF4ooRexx*"'
+
       cmd = chunk1 "\(" tmpStr "\)" chunk2   -- build command
+
+      say "setupBSF.rex: line #" pp(.line) cmd  -- show command (for logging)
+
       cmd                                    -- let the shell run the command
    end
    else  /* just make sure that all (possibly newly created) .sh-files in the current directory get set to: 775 */

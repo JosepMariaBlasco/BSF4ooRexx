@@ -10,6 +10,7 @@
     <glob pattern="*.rexx"/>
     <glob pattern="*.testGroup"/>
     <glob pattern="*.testUnit"/>
+    <glob pattern="*.frm"/>       <!-- added 20170122, rgf -->
     <magic priority="75">         <!-- just for testing purposes as priority of 60 did not overrule the standard hash bang catching match -->
         <match type="string" offset="0" value="#!/usr/bin/rexx"/>
     </magic>

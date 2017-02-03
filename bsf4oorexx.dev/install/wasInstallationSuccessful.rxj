@@ -1,0 +1,45 @@
+#!/usr/bin/rexx
+/*
+   Name:    wasInstallationSuccessful.rxj
+   Author:  Rony G. Flatscher
+   Date:    2017-02-03
+   Purpose: determine whether the installation of BSF4ooRexx was successful if using
+            the generated script rexxj{.sh|.cmd} to invoke this script; the output
+            to STDOUT: could be piped into the calling Rexx program using rxqueue.
+
+   Usage:   just invoke it, use rxqueue to pipe success message into calling program
+
+   Version: 1.00
+
+   Last svn check-in: $Revision: 912 $ $Author: Administrator $ $Date: 2010-08-23 16:49:55 +0200 (Mon, 23 Aug 2010) $
+
+   License:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2017 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+   -- ".java.lang.System is the Rexx proxy class for "java.lang.System", if everything worked out
+if .java.lang.System~isA(.class) then
+do
+   say "CONGRATULATIONS! Installation of 'BSF4ooRexx' was successful! :)"
+   return
+end
+
+say "INSTALLATION OF 'BSF4ooRexx' WAS *NOT* SUCCESSFUL! :("
+
+
+::requires "BSF.CLS" -- create and setup ooRexx-Java bridge
