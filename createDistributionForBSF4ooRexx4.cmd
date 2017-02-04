@@ -28,9 +28,9 @@ set CLASSPATH=.;%CLASSPATH%;%cd%\jars\Xalan\junit.jar;%cd%\jars\Xalan\xalan.jar
 set CLASSPATH=%CLASSPATH%;D:\Programme\OpenOffice.org 3\program\;D:\Programme\OpenOffice.org 3\Basis\program\classes\unoil.jar;D:\Programme\OpenOffice.org 3\URE\java\ridl.jar;D:\Programme\OpenOffice.org 3\URE\java\jurt.jar;D:\Programme\OpenOffice.org 3\URE\java\juh.jar;D:\Programme\OpenOffice.org 3\Basis\program\classes\ScriptFramework.jar
 
 
-set releaseDate=20170109
-set runDate=20170109
-set doc_date=20170109
+set releaseDate=20170204
+set runDate=20170204
+set doc_date=20170204
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910

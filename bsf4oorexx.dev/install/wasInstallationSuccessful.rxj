@@ -35,11 +35,11 @@
    -- ".java.lang.System is the Rexx proxy class for "java.lang.System", if everything worked out
 if .java.lang.System~isA(.class) then
 do
-   say "CONGRATULATIONS! Installation of 'BSF4ooRexx' was successful! :)"
+   say "==> CONGRATULATIONS! Installation of 'BSF4ooRexx' was successful! :) <=="
    return
 end
 
-say "INSTALLATION OF 'BSF4ooRexx' WAS *NOT* SUCCESSFUL! :("
+say "==> INSTALLATION OF 'BSF4ooRexx' WAS *NOT* SUCCESSFUL! :( <=="
 
 
 ::requires "BSF.CLS" -- create and setup ooRexx-Java bridge

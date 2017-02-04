@@ -550,7 +550,7 @@ do
    msg=msg lf lf"Logfile for this run can be found at:" "["cmd.eLogFileName"]"
    msg=msg lf lf"(This very dialog was written in Rexx using Java for an operating system independent GUI dialog!)"
 
-   if cmd.eBLogFile=.true then cmd.eLogFile~say(msg)
+   if cmd.bShowSuccessAsGUI=.true, cmd.eBLogFile=.true then cmd.eLogFile~say(msg)
 
    msg=msg~changeStr(lf,"/LF/")
 
@@ -746,7 +746,9 @@ do
 
    msg=msg lf lf"Logfile for this run can be found at:" "["cmd.eLogFileName"]"
    msg=msg lf lf"(This very dialog was written in Rexx using Java for an operating system independent GUI dialog!)"
-   cmd.eLogFile~say(msg)
+
+   if cmd.bShowSuccessAsGUI=.true then cmd.eLogFile~say(msg)
+
    msg=msg~changeStr(lf,"/LF/")
 
    if cmd.eBQuiet=.false then
@@ -978,9 +980,8 @@ exit 0
 
       cmd = chunk1 "\(" tmpStr "\)" chunk2   -- build command
 
-      strTmp="setupAllAndRun.rex: line #" pp(.line) cmd
+      strTmp="setupAllAndRun.rex: line # [".line"]" cmd
       if cmd.eBLogFile=.true then cmd.eLogFile~say(strTmp)
-      say strTmp  -- show command (for logging)
 
       cmd cmd.eRedirect2LogFile                                    -- let the shell run the command
    end
@@ -1025,11 +1026,10 @@ any:                 -- something went wrong while executing the program
 
   cmd=cmd.eRexxJ testScript "| rxqueue"   -- pipe output to rxqueue, such that we can fetch it
 
-  strTmp="setupAllAndRun.rex, line #" pp(.line)":" cmd
+  strTmp="setupAllAndRun.rex, line # [".line"]:" cmd
   if cmd.eBLogFile=.true then cmd.eLogFile~say(strTmp)
-  say strTmp
 
-  cmd                -- let environment carry out the command
+  cmd cmd.eRedirect2LogFile               -- let the shell run the command
 
   do while queued()
      parse pull text

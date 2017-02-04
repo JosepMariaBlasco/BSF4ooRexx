@@ -927,8 +927,17 @@ createInstallScript: procedure expose j. cmd. path.
          -- tmpCmd="ldconfig"
          -- tmpCmd="ldconfig -n /usr/lib /usr/lib32 /usr/lib64 /opt/BSF4ooRexx"   -- rgf, 2010-08-14
          -- tmpCmd="ldconfig /usr/local/lib /usr/local/lib32 /usr/local/lib64 /opt/BSF4ooRexx /usr/lib /usr/lib32 /usr/lib64 "   -- rgf, 2012-02-25, 2016-08-15
+         -- tmpCmd="/sbin/ldconfig /usr/local/lib /usr/local/lib32 /usr/local/lib64 /opt/BSF4ooRexx /usr/lib /usr/lib32 /usr/lib64 "   -- rgf, 2012-02-25, 2016-08-15
          -- rgf, 2017-02-03: supply full path to ldconfig such that it can be located on systems that do not place sbin on the PATH
-         tmpCmd="/sbin/ldconfig /usr/local/lib /usr/local/lib32 /usr/local/lib64 /opt/BSF4ooRexx /usr/lib /usr/lib32 /usr/lib64 "   -- rgf, 2012-02-25, 2016-08-15
+         if sysFileExists("/sbin/ldconfig") then   -- supply fully qualified name
+            tmpCmd="/sbin/ldconfig"
+         else                 -- fallback that may yield a runtime error "command not found"
+            tmpCmd="ldconfig"
+            -- only work on existing lib directories
+         do libDir over .array~of("/usr/local/lib", "/usr/local/lib32",  "/usr/local/lib64", "/opt/BSF4ooRexx", "/usr/lib", "/usr/lib32", "/usr/lib64")
+            if sysFileExists(libDir) then tmpCmd = tmpCmd libDir  -- lib directory exists, add it
+         end
+
          call lineout fn, cmd.eEcho qc(tmpCmd)
          call lineout fn, tmpCmd
          call lineout fn, ""
@@ -2420,4 +2429,5 @@ looking for Unix:    libjvm.so | libjvm.dylib | libjvm.sl
 
 */
 
-
+::routine pp   -- rgf, 2017-02-04
+  return "["arg(1)"]"
