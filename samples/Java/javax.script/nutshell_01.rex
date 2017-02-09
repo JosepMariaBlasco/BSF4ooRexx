@@ -1,5 +1,8 @@
 /*
    Rexx companion script that gets loaded and evaluated by Nutshell_01_Eval.java:
+   changed: 2017-02-09, rgf: doing a bsf.loadClass() for interface class ScriptEngine instead of
+                             a bsf.importClass(), which wrongly would indicate that instances could
+                             be created of it
 
    /** Demonstrate evaluating a Rexx script, once without supplying arguements and once supplying
     *  arguments.
@@ -20,7 +23,7 @@ do i=1 to arg()
       say "the last argument is a Rexx directory containing the ScriptContext of this invocation:"
       sc=arg(i)~scriptContext      -- fetch script context
          -- get the constant field values for FILENAME, ARGV from class javax.script.ScriptEngine
-      jclz=bsf.importClass("javax.script.ScriptEngine")  -- import the Java class
+      jclz=bsf.loadClass("javax.script.ScriptEngine")  -- import the Java class
       fn=jclz~FILENAME     -- get FILENAME constant value
       argv=jclz~ARGV       -- get ARGV constant value
       say "                 FILENAME ->" pp(sc~getAttributesScope(fn))  pp(fn)    pp(sc~getAttribute(fn))
@@ -32,7 +35,7 @@ end
 
 /*
    ------------------------ Apache Version 2.0 license -------------------------
-      Copyright 2015-2016 Rony G. Flatscher
+      Copyright 2015-2017 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.
