@@ -16,6 +16,8 @@
                    Bindings for the global scope, such that we can fetch these objects from there and
                    save it in a directory named after the FXML location (file name) that defines them for
                    later retrieval by other Rexx programs
+
+      changed:    2017-02-09, rgf: remove usage of .jsr223 as it is not needed anymore
 */
 
 parse source . . thisProg
@@ -30,9 +32,9 @@ bDebug=(.my.app~bDebug=.true)  -- set debug mode
 
 if bDebug then say .dateTime~new " ==> ---> arrived in Rexx program '"thisProg"' ..."
 
-use arg slotDir  -- fetch the slotDir argument (BSF4ooRexx adds this as the last argument at the Java side)
+-- use arg slotDir  -- fetch the slotDir argument (BSF4ooRexx adds this as the last argument at the Java side)
+slotDir=arg(arg())  -- fetch the slotDir argument (BSF4ooRexx adds this as the last argument at the Java side)
 scriptContext=slotDir~scriptContext   -- get the slotDir (the last) argument, get the entry "SCRIPTCONTEXT"
-
 
 if bDebug then
 do
@@ -59,13 +61,15 @@ end
 
   -- get and save all entries in GLOBAL_SCOPE in .my.app, entry name is the FXML file name
   -- (FXMLLoader places all JavaFX objects with a fx:id into the GLOBAL_SCOPE Bindings)
-url= scriptContext~getAttribute("location", .jsr223~global_scope)
+engine_scope=100
+global_scope=200
+url= scriptContext~getAttribute("location", global_scope)
 if bDebug then say "location:" pp(url~toString) "getFile:" pp(filespec("name",url~getFile)) -- make sure we get the file-name only
 fxmlFileName=filespec("name",url~getFile)      -- get filename, make sure we get unqualified file-name
 dir2obj =.directory~new         -- all GLOBAL_SCOPE entries, mapping uppercase attribute names to Java-values
 .my.app~setEntry(fxmlFileName, dir2obj)
 
-bindings=.jsr223~getBindings(scriptContext,.jsr223~global_scope)  -- get the Bindings for the global scope
+bindings=scriptContext~getBindings(global_scope)   -- get the Bindings for the global scope
 keys=bindings~keySet~makearray -- get the kay values as a Rexx array
 do key over keys
    val=bindings~get(key)       -- fetch the key's value
@@ -77,12 +81,12 @@ do
       /* show the currently defined attributes in all ScriptContext's scopes   */
    say "getting all attributes from all ScriptContext's scopes..."
    dir=.directory~new
-   dir[.jsr223~engine_scope]="ENGINE_SCOPE"
-   dir[.jsr223~global_scope]="GLOBAL_SCOPE"
-   arr=.array~of(.jsr223~engine_scope, .jsr223~global_scope)
+   dir[100]="ENGINE_SCOPE"
+   dir[200]="GLOBAL_SCOPE"
+   arr=.array~of(100,200)
    do sc over arr
        say "ScriptContext scope:" pp(sc) "("dir~entry(sc)"), available attributes:"
-       bin=.jsr223~getBindings(scriptContext,sc)
+       bin=scriptContext~getBindings(sc)
        if bin=.nil then iterate -- inexistent scope
        keys=bin~keySet          -- get kay values
        it=keys~makearray        -- get the keys as a Rexx array
@@ -105,7 +109,7 @@ end
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016 Rony G. Flatscher
+         Copyright 2016-2017 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

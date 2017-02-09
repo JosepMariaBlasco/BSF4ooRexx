@@ -106,7 +106,7 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
                    say ' ==&gt; ---&gt; arrived in button''s onAction-code ...'  ;
                    /*@showsource*/ /* the previous Rexx script annotation will cause this code to be shown in original and edited state */ ;
                    use arg slotDir /* this argument is always sent by BSF4ooRexx */ ;
-                   /*@get('label')*/ /* the previous Rexx script annotation will incorporate the attribute 'label' as a local Rexx variable */ ;
+                   /*@get(label)*/ /* the previous Rexx script annotation will incorporate the attribute 'label' as a local Rexx variable */ ;
                    say ' ... label~getText='pp(label~getText)  ;
                    say ' ... changing text in label to current date and time ...' ;
                    label~text=.dateTime~new~string             ;
