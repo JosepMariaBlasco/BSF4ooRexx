@@ -12,6 +12,12 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2017-02-11, ---rgf, - made internal ("procedure") routine "escapeQuotes" a routine
+                             - methods and routines bsf.createArrayOf and bsf.createJavaArrayOf will
+                               now use "escapeQuotes" to escape Rexx strings as INTERPRET would
+                               otherwise cause unexpected results
+
+         2017-02-07, ---rgf, - .JSR223::getBindings(): also handle a .context object
 
          2017-01-20, ---rgf, - renamed operating system name from "PARSE SOURCE opsys ." from "DARWIN" to "MACOSX",
                                this quick fix should keep everything everywhere (in BSF4ooRexx) humming...;
@@ -608,7 +614,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20170204" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20170211" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -895,7 +901,7 @@ syntax:
 
   return "CALL BsfLoadJava" tmpArgs~string
 
-  escapeQuotes: procedure
+::routine  escapeQuotes
      return '"'||changestr('"', arg(1), '""')||'"'
 
 /*
@@ -2439,7 +2445,8 @@ any:
      if bBoxRP then    -- plain Rexx object, box it into a RexxProxy
         tmp=tmp ", """ || BsfCreateRexxProxy(a) || """"
      else
-        tmp=tmp ", """ || a || """"
+        tmp=tmp ", " escapeQuotes(a)
+        -- tmp=tmp ", """ || a || """"
 
   end
   tmp=tmp"))"
@@ -2513,7 +2520,7 @@ any:
 -- .stderr~say("method bsf.createJavaArrayOf(): BINGO, BINGO, BINGO: arg("i")="pp(a) "clz="pp(a~class) "wrapped as a RexxProxy!")
      end
      else
-        tmp=tmp ", """ || a || """"
+        tmp=tmp ", " escapeQuotes(a)
   end
   tmp=tmp"))"
 
@@ -3339,7 +3346,7 @@ any:
 -- .stderr~say("routine bsf.createJavaArrayOf(): BINGO, BINGO, BINGO: arg("i")="pp(a) "clz="pp(a~class) "wrapped as a RexxProxy!")
      end
      else
-        tmp=tmp ", """ || a || """"
+        tmp=tmp ", " escapeQuotes(a)
   end
   tmp=tmp"))"
 
@@ -4880,6 +4887,10 @@ syntax: raise propagate
   expose does.not.exist
   use strict arg scriptContext, sc
   signal on syntax         -- if a scope does not exist, then an IllegalArgumentException gets thrown
+
+  if scriptContext~isA(.RexxContext) then
+     scriptContext=scriptContext~args~lastItem~scriptContext
+
   return scriptContext~getBindings(sc)
 syntax:
   return does.not.exist
@@ -5122,6 +5133,7 @@ syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext
 *  @return a Rexx directory object where the index is a valid Rexx variable name derived from the attribute,
 *              cf. class method {@link normalizeName}
 */
+-- TODO: rework, document and test the non-documented "scopeNr:" "attrname:scopeNr"
 ::method get class
    signal on syntax
    use strict arg scriptContext, attributeNames=""
@@ -5226,6 +5238,7 @@ say ppCondition2(co)
 *
 *   @param rxVarDir Rexx directory containing the currently defined Rexx variables with their values
 */
+-- TODO: rework, document and test the non-documented "scopeNr:" "attrname:scopeNr"
 ::method set class
    signal on syntax
    use strict arg scriptContext, attributeNames="", rxVarDir
