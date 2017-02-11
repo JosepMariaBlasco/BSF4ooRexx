@@ -33,15 +33,15 @@ b~put(rse~FILENAME,filename)
 
 ----------
     -- use public <T> T getInterface(Class<T> clasz)
-.error~say("using ""<T> T getInterface(Class<T> clasz)"" using the <RexxScriptEngine>:")
-.error~say("executing[" pp(filename) "fetching resulting ooRexx object:")
+.error~say("(Host) using ""<T> T getInterface(Class<T> clasz)"" using the <RexxScriptEngine>:")
+.error~say("(Host) executing[" pp(filename) "fetching resulting ooRexx object:")
 rp=rse~eval(.bsf~new("java.io.FileReader",filename), b)  -- now let us execute the Rexx script
 .error~say("---")
 
 clzRunnable=bsf.loadClass("java.lang.Runnable")
 
 r=rse~getInterface(clzRunnable)  -- get an interface implementation, will use the latest CompiledRexxScript object
-.error~say("creating new Thread supplying" pp(r)":")
+.error~say("(Host) creating new Thread supplying" pp(r)":")
 th = .bsf~new("java.lang.Thread",r)
 th~bsf.dispatch("start")   -- make sure the "start" message is sent to the Java side
 th~sleep(100)  -- should be enough time for the thread to end (after running the Rexx code)
@@ -49,9 +49,9 @@ th~sleep(100)  -- should be enough time for the thread to end (after running the
 
 
     -- use public <T> T getInterface(Object thiz, Class<T> clasz)
-.error~say("using ""<T> T getInterface(Object thiz, Class<T> clasz)"" using the <RexxScriptEngine>:")
+.error~say("(Host) using ""<T> T getInterface(Object thiz, Class<T> clasz)"" using the <RexxScriptEngine>:")
 r=rse~getInterface(rp, clzRunnable)    -- get an interface implementation
-.error~say("creating new Thread supplying[" pp(r)":")
+.error~say("(Host) creating new Thread supplying[" pp(r)":")
 th = .bsf~new("java.lang.Thread",r)
 th~bsf.dispatch("start")   -- make sure the "start" message is sent to the Java side
 th~sleep(100)  -- should be enough time for the thread to end (after running the Rexx code)
@@ -63,7 +63,7 @@ th~sleep(100)  -- should be enough time for the thread to end (after running the
 rcs=rse~getCurrentScript   -- get current script
 
     -- use public <T> T getInterface(Class<T> clasz)
-.error~say("using ""<T> T getInterface(Class<T> clasz)"" using the <RexxCompiledScript>:")
+.error~say("(Host) using ""<T> T getInterface(Class<T> clasz)"" using the <RexxCompiledScript>:")
 r=rcs~getInterface(clzRunnable)  -- get an interface implementation
 .error~say("creating new Thread supplying" pp(r)":")
 th = .bsf~new("java.lang.Thread",r)
@@ -72,7 +72,7 @@ th~sleep(100)  -- should be enough time for the thread to end (after running the
 .error~say("---");
 
     -- use public <T> T getInterface(Object thiz, Class<T> clasz)
-.error~say("using ""<T> T getInterface(Object thiz, Class<T> clasz)"" using the <RexxCompiledScript>:")
+.error~say("(Host) using ""<T> T getInterface(Object thiz, Class<T> clasz)"" using the <RexxCompiledScript>:")
 r=rcs~getInterface(rp, clzRunnable) -- get an interface implementation
 .error~say("creating new Thread supplying" pp(r)":");
 r=rcs~getInterface(rp, clzRunnable) --get an interface implementation

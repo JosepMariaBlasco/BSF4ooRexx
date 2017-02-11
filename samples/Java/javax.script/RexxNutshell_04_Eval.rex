@@ -52,26 +52,26 @@ sc~setAttribute("d6", d6, sc~ENGINE_SCOPE)
 sc~setAttribute("d7", d7, sc~ENGINE_SCOPE)
 sc~setAttribute("d8", d8, sc~ENGINE_SCOPE)
 
-.error~say("executing" pp(filename) "without arguments:")
+.error~say("(Host) executing" pp(filename) "without arguments:")
 obj=rse~eval(.bsf~new("java.io.FileReader",filename), sc)   -- now let us execute the Rexx script
-.output~say("Evaluated Rexx script" pp(filename) "returned:" pp(obj~toString))
+.output~say("(Host) Evaluated Rexx script" pp(filename) "returned:" pp(obj~toString))
 .output~say("--------------------")
 
    -- now evaluate "nutshell_04b.rex"!
 filename="nutshell_04b.rex"
 sc~setAttribute(rse~FILENAME, filename, sc~ENGINE_SCOPE)
-.error~say("(Java) executing" pp(filename) "without arguments:")
+.error~say("(Host) executing" pp(filename) "without arguments:")
 obj=rse~eval(.bsf~new("java.io.FileReader",filename), sc)   -- now let us execute the Rexx script
-.output~say("(Java) Evaluated Rexx script" pp(filename) "returned:" pp(obj~toString))
-.output~say("--------------------")
+say "(Host) Evaluated Rexx script" pp(filename) "returned:" pp(obj~toString)
+say "--------------------"
 
    -- now evaluate "nutshell_04c.rex"!
 filename="nutshell_04c.rex"
 sc~setAttribute(rse~FILENAME, filename, sc~ENGINE_SCOPE)
-.error~say("executing" pp(filename) "(Rexx program contains the Rexx script annotation /* @get(d1 d2 d3 d4 d5 d6 d7 d8 started_at) */ to fetch all attributes from the ScriptContext Bindings as Rexx variables):")
+.error~say("(Host) executing" pp(filename) "(Rexx program contains the Rexx script annotation /* @get(d1 d2 d3 d4 d5 d6 d7 d8 started_at) */ to fetch all attributes from the ScriptContext Bindings as Rexx variables):")
 obj=rse~eval(.bsf~new("java.io.FileReader",filename), sc)   -- now let us execute the Rexx script
-.output~say("Evaluated Rexx script" pp(filename) "returned:" pp(obj~toString))
-.output~say("--------------------")
+say "(Host) Evaluated Rexx script" pp(filename) "returned:" pp(obj~toString)
+say "--------------------"
 
 
    -- now evaluate "nutshell_04d.rex"!
@@ -80,8 +80,8 @@ sc~setAttribute(rse~FILENAME, filename, sc~ENGINE_SCOPE);
 -- add the ARGV entry which will cause the RexxScriptEngine to supply the array elements as
 -- individual arguments; it then will append another Rexx directory with an entry "ScriptContext"
 sc~setAttribute(rse~ARGV,     dimArr,   sc~ENGINE_SCOPE)
-.error~say("executing" pp(filename) "WITH arguments (ScriptEngine.ARGV):")
+.error~say("(Host) executing" pp(filename) "WITH arguments (ScriptEngine.ARGV):")
 obj=rse~eval(.bsf~new("java.io.FileReader",filename), sc)   -- now let us execute the Rexx script
-.output~say("Evaluated Rexx script" pp(filename) "returned:" pp(obj~toString))
+say "(Host) Evaluated Rexx script" pp(filename) "returned:" pp(obj~toString)
 
 ::requires "BSF.CLS"    -- get Java support

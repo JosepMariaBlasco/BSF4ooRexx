@@ -26,11 +26,11 @@ sc=rse~getContext -- get the default ScriptContext
 filename="nutshell_01.rex"
 sc~setAttribute(rse~FILENAME,filename,sc~ENGINE_SCOPE)
 
-.error~say("executing" pp(filename) "without arguments:")
+.error~say("(Host) executing" pp(filename) "without arguments:")
 rse~eval(.bsf~new("java.io.FileReader", filename), sc)   -- now let us execute the Rexx script
 
 .error~say("-------------------------")
-.error~say("executing" pp(filename)", now with four arguments, the third one being 'null':")
+.error~say("(Host) executing" pp(filename)", now with four arguments, the third one being 'null':")
     -- add arguments for the script to the ENGINE_SCOPE bindings
 args=bsf.createJavaArrayOf("java.lang.Object", "one", "zwei", .nil, "quatre")
 sc~setAttribute(rse~ARGV, args, sc~ENGINE_SCOPE)

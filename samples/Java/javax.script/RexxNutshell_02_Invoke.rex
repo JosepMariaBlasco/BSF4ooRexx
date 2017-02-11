@@ -31,39 +31,39 @@ if (b==.nil) then    -- if no ENGINE_SCOPE bindings available, create a Bindings
 
 b~put(rse~FILENAME,filename)
 
-.error~say("executing" pp(filename) "fetching resulting ooRexx object:")
+.error~say("(Host) executing" pp(filename) "fetching resulting ooRexx object:")
 rp=rse~eval(.bsf~new("java.io.FileReader", filename), b) -- now let us execute the Rexx script
 
    -- use invokeMethod(...)
-.error~~say("using invokeMethod() using the <RexxScriptEngine>:")~~say
-.error ~say("invokeMethod('one'):" rse~invokeMethod(rp, "ONE", .nil))
+.error~~say("(Host) using invokeMethod() using the <RexxScriptEngine>:")~~say
+.error ~say("(Host) invokeMethod('one'):" rse~invokeMethod(rp, "ONE", .nil))
 args=bsf.createJavaArrayOf("java.lang.Object", "un", "deux", "trois")
-.error ~say("invokeMethod('two'):" rse~invokeMethod(rp, "two", args)) -- "un", "deux", "trois"))
-.error ~say("invokeMethod('now'):" rse~invokeMethod(rp, "now", .nil))
+.error ~say("(Host) invokeMethod('two'):" rse~invokeMethod(rp, "two", args)) -- "un", "deux", "trois"))
+.error ~say("(Host) invokeMethod('now'):" rse~invokeMethod(rp, "now", .nil))
 .error~~say("---")~~say
 
    -- use invokeFunction(...)
-.error~~say("using invokeFunction() using the <RexxScriptEngine>:")~~say
-.error ~say("invokeFunction('routine_eins'):" rse~invokeFunction("ROUTINE_EINS", .nil))
+.error~~say("(Host) using invokeFunction() using the <RexxScriptEngine>:")~~say
+.error ~say("(Host) invokeFunction('routine_eins'):" rse~invokeFunction("ROUTINE_EINS", .nil))
 args=bsf.createJavaArrayOf("java.lang.Object", "eins", "zwei", "drei")
-.error ~say("invokeFunction('routine_zwei'):" rse~invokeFunction("routine_zwei", args))
+.error ~say("(Host) invokeFunction('routine_zwei'):" rse~invokeFunction("routine_zwei", args))
 .error~~say("---")~~say
 
 rcs=rse~getCurrentScript   -- get current script
 
     -- use invokeMethod(...)
-.error~~say("using invokeMethod() using the the <RexxCompiledScript> directly:")~~say
-.error ~say("invokeMethod('one'):" rcs~invokeMethod(rp, "ONE", .nil))
+.error~~say("(Host) using invokeMethod() using the the <RexxCompiledScript> directly:")~~say
+.error ~say("(Host) invokeMethod('one'):" rcs~invokeMethod(rp, "ONE", .nil))
 args=bsf.createJavaArrayOf("java.lang.Object", "un", "deux", "trois")
-.error ~say("invokeMethod('two'):" rcs~invokeMethod(rp, "two", args))
-.error ~say("invokeMethod('now'):" rcs~invokeMethod(rp, "now", .nil))
+.error ~say("(Host) invokeMethod('two'):" rcs~invokeMethod(rp, "two", args))
+.error ~say("(Host) invokeMethod('now'):" rcs~invokeMethod(rp, "now", .nil))
 .error~~say("---")~~say
 
     -- use invokeFunction(...)
-.error~~say("using invokeFunction() using the the <RexxCompiledScript> Rexx script> directly:")~~say
-.error ~say("invokeFunction('routine_eins'):" rcs~invokeFunction("ROUTINE_EINS", .nil))
+.error~~say("(Host) using invokeFunction() using the the <RexxCompiledScript> Rexx script> directly:")~~say
+.error ~say("(Host) invokeFunction('routine_eins'):" rcs~invokeFunction("ROUTINE_EINS", .nil))
 args=bsf.createJavaArrayOf("java.lang.Object", "eins", "zwei", "drei")
-.error ~say("invokeFunction('routine_zwei'):" rcs~invokeFunction("routine_zwei", args))
+.error ~say("(Host) invokeFunction('routine_zwei'):" rcs~invokeFunction("routine_zwei", args))
 .error~~say("---")~~say
 
 ::requires "BSF.CLS"    -- get Java support
