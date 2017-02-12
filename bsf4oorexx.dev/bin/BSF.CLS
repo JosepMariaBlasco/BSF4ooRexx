@@ -5143,24 +5143,7 @@ syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext
    signal on syntax
    use strict arg scriptContext, attributeNames=""
 
-
-say ".jsr223~get, attributeNames="pp(attributeNames)
-/* -->
-len=length(attributeNames)
-nextStartPos=1
-do until nextStartPos>len
-   res=self~getNextAttribute(attributeNames,nextStartPos)
---   say "res="pp(res)
-   if .nil<>res then
-   do
-      say "... returned attribute name="pp(res[1]) "nextStartPos="pp(res[2])
-      nextStartPos=res[2]
-   end
-   else  -- stop loop
-      nextStartPos=len+1
-end
-say "-"~copies(50)
-<-- */
+-- say ".jsr223~get, attributeNames="pp(attributeNames)
 
    if scriptContext~isA(.RexxContext) then   -- fetch the scriptContext entry
       scriptContext=scriptContext~args~lastItem~scriptContext
@@ -5395,106 +5378,6 @@ say ppCondition2(co)
 *   @param rxVarDir Rexx directory containing the currently defined Rexx variables with their values
 */
 -- TODO: rework, document and test the non-documented "scopeNr:" "attrname:scopeNr"
-::method set_original class
-   signal on syntax
-   use strict arg scriptContext, attributeNames="", rxVarDir
-
-   if scriptContext~isA(.RexxContext) then   -- fetch the scriptContext entry from the slotDir (last) argument
-      scriptContext=scriptContext~args~lastItem~scriptContext
-
-   if attributeNames="" then      -- get all attributes from all Bindings of the current script context
-      return self~scriptContext2RexxDir(scriptContext)
-
-      -- get all scopes and their Bindings
-   arrScopes =scriptContext~getScopes~makearray~sort  -- sort ascendingly: solve attributes from lowest to highest
-   dirBindings=.directory~new
-   do scope over arrScopes
-      dirBindings[scope]=scriptContext~getBindings(scope)   -- fetch and store Bindings
-   end
-
-   -- process each word in the attributeNames string
-   scopeNr=.nil               -- Bindings number in the ScriptContext
-
-   -- if attribute is a number and no attribute exists for it, then the scope of the Bindings to work
-   -- on is determined for all following attributes;
-   -- attributes may contain spaces, in that case the Rexx script annotation must quote the name;
-   -- if an attribute name is followed by a colon and a number, the number determines the scope of
-   -- the Bindings to work on
-   -- TODO: implement the above rules
-   do label outer while attributeNames<>""
-      parse var attributeNames attrName attributeNames
-
-      if pos(':',attrName)>0 then
-      do
-          parse var attrName before ":" after
-          if after="" then       -- "before" should be a scope number, which can be used to fetch the respective Bindings from the ScriptContext
-          do
-             if datatype(before,"W") then
-             do
-                if dirBindings~hasIndex(before) then -- does scope number exist?
-                   scopeNr=before      -- from now on look only in this scope!
-                else -- scope does not exist, warn and ignore
-                do
-                   .error~say("Warning: Rexx script annotation /* @set("arg(2)") */ contains a non-existing scope" pp(before) "in" pp(attrName)", hence cannot honor it")
-                   iterate
-                end
-             end
-          end
-
-            -- assuming "abc:100", but theretically could also be the name of an attribute
-          if datatype(after,"W") then     -- try to fetch the Bindings and get the attribute
-          do
-             if dirBindings~hasIndex(after) then -- does scope number exist, look for attribute in there
-             do
-                tmpBindings=dirBindings~at(after)        -- fetch Bindings
-                if tmpBindings<>.nil, tmpBindings~containsKey(before) then  -- check whether attribute is contained
-                do
-                   rxVarName=self~normalizeName(before)
-                   if rxVarDir~hasEntry(rxVarName) then
-                   do
-                        -- set the attribute's value using a Rexx variable with the normalized attribute name
-                      tmpBindings~put(before,rxVarName~entry(rxVarName))
-                      iterate
-                   end
-                   .error~say("Warning: Rexx script annotation /* @set("arg(2)") */ there is no Rexx variable named" pp(rxVarName) "to set the attribute named" pp(before)", skipping")
-                   iterate
-                end
-             end
-          end
-      end
-
-      -- now process
-      if scopeNr=.nil then    -- no scope explicitly given, go through all available scopes
-         arr=arrScopes
-      else                    -- process explicitly defined scope only
-         arr=.array~of(scopeNr)
-
-      do scope over arr       -- iterate over bindings
-
-         tmpBindings=dirBindings~at(scope)   -- fetch Bindings
-         if tmpBindings<>.nil, tmpBindings~containsKey(attrName) then   -- check whether attribute is contained
-         do
-            rxVarName=self~normalizeName(attrName)
-            if rxVarDir~hasEntry(rxVarName) then
-            do
-                 -- set the attribute's value using a Rexx variable with the normalized attribute name
-               tmpBindings~put(attrName,rxVarDir~entry(rxVarName))
-               iterate outer
-            end
-         end
-      end
-      .error~say("Warning: Rexx script annotation /* @set("arg(2)") */ there is no Rexx variable named" pp(rxVarName) "to set the attribute named" pp(before)", skipping")
-   end
-   return
-
-syntax:
-/*
-co=condition("obj")
-.traceOutput~say( ".jsr223~SET(...): SYNTAX raised!")
-call "rgf_util2.rex"
-say ppCondition2(co)
-*/
-   raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
 
 /**
 *
@@ -5519,33 +5402,12 @@ specs:
 */
 
 ::method set class
+/* rgf, 2017-02-12: with some test cases using .error might cause a Rexx error sometimes (ooRexx 5.0beta better than 4.2) */
+-- .stderr~say( "----> IN .JSR223::SET::CLASS <----" )
    signal on syntax
    use strict arg scriptContext, attributeNames="", rxVarDir
 
-
-say ".jsr223~set, scriptContext="pp(scriptContext)", attributeNames="pp(attributeNames)", rxVarDir="pp(rxVarDir)
-/*
-say "::::"
-call rgf_util2.rex
-call dump2 rxVarDir, "rxVarDir"
-say "::::"
-*/
-/* -->
-len=length(attributeNames)
-nextStartPos=1
-do until nextStartPos>len
-   res=self~getNextAttribute(attributeNames,nextStartPos)
---   say "res="pp(res)
-   if .nil<>res then
-   do
-      say "... returned attribute name="pp(res[1]) "nextStartPos="pp(res[2])
-      nextStartPos=res[2]
-   end
-   else  -- stop loop
-      nextStartPos=len+1
-end
-say "-"~copies(50)
-<-- */
+-- .stderr~say( ".jsr223~set, scriptContext="pp(scriptContext)", attributeNames="pp(attributeNames)", rxVarDir="pp(rxVarDir))
 
    if scriptContext~isA(.RexxContext) then   -- fetch the scriptContext entry
       scriptContext=scriptContext~args~lastItem~scriptContext
@@ -5570,44 +5432,45 @@ say "-"~copies(50)
    */
    if attributeNames="" then
    do
-say "---> processing all Rexx variables and all Bindings ...."
+-- say "---> processing all Rexx variables and all Bindings ...."
       do rxVarName over RxVarDir~allIndexes~sort   -- iterate over all Rexx variables in alphabetical order
-say "---> rxVarName="pp(rxVarName)
+-- say "---> rxVarName="pp(rxVarName)
          RxVarApplied4=""           -- was this Rexx variable name already applied
          do tmpScope over arrScopes -- look for attribute names that match the Rexx variable name
-say "---> ---> tmpScope="pp(tmpScope)
+-- say "---> ---> tmpScope="pp(tmpScope)
 
              bin=scriptContext~getBindings(tmpScope)
              keys=bin~keySet           -- get Bindings' keys
              it=bin~keySet~makearray   -- get the keys as a Rexx array
              do key over it~sortWith(.CaselessComparator~new) -- sort keys (attributes) caselessly
-                normalizedName=self~normalizeName(key)      -- get symbol usable as Rexx variable name (illegal Rexx chars are replaced by '?')
-                if RxVarDir~hasEntry(normalizedName) then   -- ha, attribute candidate found!
+                normalizedName=self~normalizeName(key)~upper      -- get symbol usable as Rexx variable name (illegal Rexx chars are replaced by '?')
+-- say "---> ---> ---> key="pp(key) "rxVaName="pp(rxVarName) "normalizedName="pp(normalizedName)
+                if rxVarName=normalizedName, RxVarDir~hasEntry(normalizedName) then   -- ha, attribute candidate found!
                 do
                    if RxVarApplied4="" then  -- Rexx variable was already applied, give a warning!
                    do
                        rxVarApplied4=pp(key)":"pp(tmpScope) -- remember to which attribute in which scope
-                       currVal=bin~getAttribute(key)        -- get Bindings value
+                       currVal=bin~get(key)                 -- get Bindings value
                        rexxVal=RxVarDir~entry(normalizedName)  -- get Rexx value
                         -- if of equal type, then do they have the same objectname ?
                        bEqual=(currVal~class=rexxVal~class) & (currVal~objectName=rexxVal~objectName)
                         -- only update attribute's value in the Bindings, if a new value
                        if bEqual=.false then
                        do
-say "---> ---> ---> attribute="pp(key) "set to value:" pp(rexxVal)
-                          bin~setAttribute(key,rexxVal)     -- set attribute to Rexx variable's value
+-- say "---> ---> ---> attribute="pp(key) "set to value:" pp(rexxVal)
+                          bin~put(key,rexxVal)     -- set attribute to Rexx variable's value
                        end
                    end
                    else -- oops: Rexx variable was already used, warn
                    do
-                       .error~say("Warning: Rexx variable could be applied to" pp(key)":"pp(tmpScope)", howver was already used for:" RxVarApplied4)
+                       .error~say("Warning: Rexx variable could be applied to" pp(key)":"pp(tmpScope)", however it was already used for:" RxVarApplied4 "(to override specify scope number explicitly)")
                    end
                 end
              end
 
          end
       end
-say "<--- done."
+-- say "<--- done."
       return      -- done with processing
    end
 
@@ -5680,17 +5543,17 @@ say "<--- done."
          arr=.array~of(scopeNr)
       end
 
-say "---> attrName="pp(attrName)
+-- say "---> attrName="pp(attrName)
 
       do label inner scope over arr       -- iterate over bindings
-say "---> ---> scope="pp(scope)
+-- say "---> ---> scope="pp(scope)
 
          tmpBindings=dirBindings~at(scope)   -- fetch Bindings
          if tmpBindings~containsKey(attrName) then
          do
    -- iterate over all Bindings and check which attribute name can be mapped to a Rexx variable name
             normalizedName=self~normalizeName(attrName)  -- get normalized name of the attribute
-say "---> ---> ---> found, normalizedName="pp(normalizedName) "RxVarDir~hasEntry(normalizedName):" pp(RxVarDir~hasEntry(normalizedName))
+-- say "---> ---> ---> found, normalizedName="pp(normalizedName) "RxVarDir~hasEntry(normalizedName):" pp(RxVarDir~hasEntry(normalizedName))
 
    -- --->
             if RxVarDir~hasEntry(normalizedName) then -- ha, attribute candidate found!
@@ -5701,14 +5564,14 @@ say "---> ---> ---> found, normalizedName="pp(normalizedName) "RxVarDir~hasEntry
                -- bEqual=(currVal~class=rexxVal~class) & (currVal~objectName=rexxVal~objectName)
                bEqual=(currVal~class=rexxVal~class) & (currVal~string=rexxVal~string)
                 -- only update attribute's value in the Bindings, if a new value
-say "---> ---> ---> ---> scope="pp(scope) "attrName="pp(attrName) "value="pp(currVal) "normalizedName="pp(normalizedName) "Rexx value="pp(rexxVal) "bEqual="pp(bEqual)
+-- say "---> ---> ---> ---> scope="pp(scope) "attrName="pp(attrName) "value="pp(currVal) "normalizedName="pp(normalizedName) "Rexx value="pp(rexxVal) "bEqual="pp(bEqual)
                if bEqual=.false then
                do
-say "---> ---> ---> ---> setting new value (from Rexx):" pp(rexxVal)
+-- say "---> ---> ---> ---> setting new value (from Rexx):" pp(rexxVal)
                   tmpBindings~put(attrName,rexxVal)   -- set attribute to Rexx variable's value
                end
-else
-say "---> ---> ---> ---> value unchanged, NOT updating!"
+-- else
+-- say "---> ---> ---> ---> value unchanged, NOT updating!"
 
             end
 --            leave inner
