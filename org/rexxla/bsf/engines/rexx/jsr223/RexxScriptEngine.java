@@ -22,6 +22,8 @@ import org.rexxla.bsf.engines.rexx.RexxEngine;
 import org.rexxla.bsf.engines.rexx.RexxProxy;
 import org.rexxla.bsf.engines.rexx.RexxException;
 
+// TODO: check and correct visibility of new fields and methods
+
 /*
 ------------------------ Apache Version 2.0 license -------------------------
    Copyright 2015-2016 Rony G. Flatscher
@@ -895,7 +897,12 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
                 }
                 else    // submit the Rexx string
                 {
-                    sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), ran.contentAsRexxString) );
+// rgf,20170212                   sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), ran.contentAsRexxString) );
+//                    sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), ran.contentAsIs) );
+// submit annotation content as is
+                    String tmpString='"'+ran.contentAsIs.replace("\"", "\"\"")+'"';   // escape any quotes
+
+                    sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), tmpString) );
                 }
 
                     // append entire Rexx script annotation (if multiple annotations of the same kind, the first one gets honored)

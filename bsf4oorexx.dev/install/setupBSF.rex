@@ -7,6 +7,9 @@
    Date:    2006-01-07
    Version: 1.32
    Changed:
+            2017-02-12, ---rgf, - add quoted cmd.ePath2JavaDLL to "ldconfig" command; it seems that some
+                                  Linuxes (possibly with multiple Java installations) otherwise do not
+                                  find the libjvm.so that gets loaded with dlopen() by BSF4ooRexx
             2017-02-03, ---rgf, - adjust test for MacOSX for new operating system name "Darwin" (used to be "MacOSX")
                                 - if Java cannot be found, abort installation with appropriate message and usage
                                 - make sure that the libBSF4ooRexx* shared libraries get the x-bit set (despite new naming)
@@ -937,6 +940,8 @@ createInstallScript: procedure expose j. cmd. path.
          do libDir over .array~of("/usr/local/lib", "/usr/local/lib32",  "/usr/local/lib64", "/opt/BSF4ooRexx", "/usr/lib", "/usr/lib32", "/usr/lib64")
             if sysFileExists(libDir) then tmpCmd = tmpCmd libDir  -- lib directory exists, add it
          end
+
+         tmpCmd = tmpCmd enquote(cmd.ePath2JavaDLL)   -- 2017-02-12, rgf: make sure
 
          call lineout fn, cmd.eEcho qc(tmpCmd)
          call lineout fn, tmpCmd

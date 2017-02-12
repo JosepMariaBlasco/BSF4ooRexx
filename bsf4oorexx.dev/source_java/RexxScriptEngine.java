@@ -26,7 +26,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2016 Rony G. Flatscher
+   Copyright 2015-2017 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -42,6 +42,9 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+
+        2017-02-12, ---rgf, use the Rexx annotation string as is: enclose in double-quotes after
+                            escaping double-quotes (adhering to the Rexx rules)
 
         2016-12-21, ---rgf, if RexxScriptEngineFactory.LANGUAGE_VERSION is null in its constructor,
                             then the "parse version" string is queried from the installed ooRexx
@@ -112,7 +115,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20161221
+ * @version 100.20170212
  * @since  2015-05-11
  *
  */
@@ -897,7 +900,11 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
                 }
                 else    // submit the Rexx string
                 {
-                    sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), ran.contentAsRexxString) );
+// rgf,20170212                   sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), ran.contentAsRexxString) );
+// submit annotation content as is, escape and enquote according to Rexx rules
+                    String tmpString='"'+ran.contentAsIs.replace("\"", "\"\"")+'"';   // escape any quotes
+
+                    sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), tmpString) );
                 }
 
                     // append entire Rexx script annotation (if multiple annotations of the same kind, the first one gets honored)

@@ -65,6 +65,10 @@
 # rgf --->
 # need access to "org_rexxla_bsf_engines_rexx_RexxAndJava.h", created from "RexxAndJava" with "javah"
 # also use JDK include path for "win32"
+
+# if no JAVA_HOME defined in environment, define it manually
+JAVA_HOME       = c:\Program Files (x86)\Java\jdk1.8.0_77
+
 INC_PATH	=  .;$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32
 INCLUDE = $(INCLUDE);$(INC_PATH)
 OP_SYS          = -DWINDOWS

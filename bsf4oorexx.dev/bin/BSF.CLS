@@ -12,6 +12,11 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2017-02-18, ---rgf, - .JSR223' "get" and "set" methods: adjust logic to desired functionality:
+                               - honor: attribute names immediately followed by a colon and scope number
+                               - if an attribute is in fact a scope number than process the following
+                                 attribute names only in that scope (otherwise all scopes are inspected)
+
          2017-02-11, ---rgf, - made internal ("procedure") routine "escapeQuotes" a routine
                              - methods and routines bsf.createArrayOf and bsf.createJavaArrayOf will
                                now use "escapeQuotes" to escape Rexx strings as INTERPRET would
@@ -5138,6 +5143,25 @@ syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext
    signal on syntax
    use strict arg scriptContext, attributeNames=""
 
+
+say ".jsr223~get, attributeNames="pp(attributeNames)
+/* -->
+len=length(attributeNames)
+nextStartPos=1
+do until nextStartPos>len
+   res=self~getNextAttribute(attributeNames,nextStartPos)
+--   say "res="pp(res)
+   if .nil<>res then
+   do
+      say "... returned attribute name="pp(res[1]) "nextStartPos="pp(res[2])
+      nextStartPos=res[2]
+   end
+   else  -- stop loop
+      nextStartPos=len+1
+end
+say "-"~copies(50)
+<-- */
+
    if scriptContext~isA(.RexxContext) then   -- fetch the scriptContext entry
       scriptContext=scriptContext~args~lastItem~scriptContext
 
@@ -5145,7 +5169,7 @@ syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext
       return self~scriptContext2RexxDir(scriptContext)
 
       -- get all scopes and their Bindings
-   arrScopes =scriptContext~getScopes~makearray~sort  -- sort ascendingly: solve attributes from lowest to highest
+   arrScopes =scriptContext~getScopes~makearray~sortWith(.NumericComparator~new)  -- sort ascendingly: solve attributes from lowest to highest
    dirBindings=.directory~new
    do scope over arrScopes
       dirBindings[scope]=scriptContext~getBindings(scope)   -- fetch and store Bindings
@@ -5155,47 +5179,68 @@ syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext
    resDir=.directory~new      -- directory that will hold the Rexx variable name and its value
    scopeNr=.nil               -- Bindings number in the ScriptContext
 
-   do label outer while attributeNames<>""
-      parse var attributeNames attrName attributeNames
+   -- - attributes may contain spaces, in that case the Rexx script annotation must quote the name;
+   -- - if attribute is a number and no attribute exists for it, then the scope of the Bindings to work
+   --   on is determined for all following attributes;
+   -- - if an attribute name is followed by a colon and a number, the number determines the scope of
+   --   the Bindings to work on
+   -- TODO: implement the above rules
+   -- DONE: - 2017-02-11, rgf: attributes with space, quoted by Rexx rules
+   res=.array~of(attributeNames,1)
+   do label outer while res<>.nil -- attributeNames<>""
+      -- parse var attributeNames attrName attributeNames
+         -- res: an array [1]->attrName or scopeNr to use from now on; [2] next start position; [3] if not .nil the scopeNr to use for the given attrName
+      res=self~getNextAttribute(attributeNames,res)
+      if res=.nil then leave
+      attrName=res[1]
+      currScopeNr =res[3]   -- .nil or a number (or empty string, if colon was there, but no number followed!)
 
-      if pos(':',attrName)>0 then
+      if currScopeNr="" then  -- attribute name was followed by a colon ':', but the scope number is missing!
       do
-          parse var attrName before ":" after
-          if after="" then       -- "before" should be a scope number, which can be used to fetch the respective Bindings from the ScriptContext
-          do
-             if datatype(before,"W") then
-             do
-                if dirBindings~hasIndex(before) then -- does scope number exist?
-                   scopeNr=before      -- from now on look only in this scope!
-                else -- scope does not exist, warn and ignore
-                do
-                   .error~say("Warning: Rexx script annotation /* @get("arg(2)") */ contains a non-existing scope" pp(before) "in" pp(attrName)", hence cannot honor it")
-                   iterate
-                end
-             end
-          end
+         .error~say("Warning: Rexx script annotation /* @get("arg(2)") */ contains an attribute with a trailing colon, but no scope number:" pp(attrName":")", ignoring!")
+         iterate
+      end
 
-            -- assuming "abc:100", but theretically could also be the name of an attribute
-          if datatype(after,"W") then     -- try to fetch the Bindings and get the attribute
+      if datatype(attrName,"W"), currScopeNr=.nil then -- maybe just a scope number given that is to be used from now on?
+      do
+          tmpScopeNr=scriptContext~getAttributesScope(attrName)   -- could be that the number is a key into a Bindings
+          if tmpScopeNr<>-1 then    -- found entry (a number key) in a scope, use that scope
+              currScopeNr=tmpScopeNr
+          else    -- attrName is the scopeNr to use from now on!
           do
-             if dirBindings~hasIndex(after) then -- does scope number exist, look for attribute in there
-             do
-                tmpBindings=dirBindings~at(after)        -- fetch Bindings
-                if tmpBindings<>.nil, tmpBindings~containsKey(before) then  -- check whether attribute is contained
-                do
-                     -- fetch the attribute's value, make sure attrName is a valid Rexx variable name
-                   resDir~put(tmpBindings~get(before),self~normalizeName(before))
-                   iterate
-                end
-             end
+             if dirBindings~hasIndex(attrName) then -- does scope number exist?
+                scopeNr=attrName    -- from now on look only in this scope!
+             else -- scope does not exist, warn and ignore
+                .error~say("Warning: Rexx script annotation /* @get("arg(2)") */ contains a non-existing scope" pp(attrName)", hence cannot honor it")
+             iterate
+          end
+      end
+
+      if currScopeNr<>.nil then  -- explicit scope given for attribute name, check it out
+      do
+          if \dirBindings~hasIndex(currScopeNr) then -- does scope number exist?
+          do
+             .error~say("Warning: Rexx script annotation /* @get("arg(2)") */ contains a non-existing scope" pp(currScopeNr) "in" pp(attrName||":"||currScopeNr)", hence cannot honor it")
+             iterate
           end
       end
 
       -- now process
-      if scopeNr=.nil then    -- no scope explicitly given, go through all available scopes
+      if scopeNr=.nil, currScopeNr=.nil then -- no scope explicitly given, go through all available scopes
+      do
+-- say "<== <-- attrName="pp(attrName) "all scopes!"
          arr=arrScopes
-      else                    -- process explicitly defined scope only
+      end
+      else if currScopeNr<>.nil then   -- process explicitly defined scope only
+      do
+-- say "<== <-- attrName="pp(attrName) "CURRscopeNr!" pp(currScopeNr)
+         arr=.array~of(currScopeNr)
+      end
+      else                             -- process explicitly defined scope only
+      do
+-- say "<== <-- attrName="pp(attrName) "scopeNr!" pp(scopeNr)
          arr=.array~of(scopeNr)
+      end
 
       do scope over arr       -- iterate over bindings
          tmpBindings=dirBindings~at(scope)   -- fetch Bindings
@@ -5206,8 +5251,12 @@ syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext
             iterate outer
          end
       end
-      .error~say("Warning: Rexx script annotation /* @get("arg(2)") */: cannot find attribute" pp(attrName) "in any of the ScriptContext's scopes")
+      if currScopeNr<>.nil then
+         .error~say("Warning: Rexx script annotation /* @get("arg(2)") */: cannot find attribute" pp(attrName) "in the explicitly supplied scopeNr" pp(currScopeNr)", cf. for some entry" pp(attrName":"currScopeNr) "in the Rexx script annotation")
+      else
+         .error~say("Warning: Rexx script annotation /* @get("arg(2)") */: cannot find attribute" pp(attrName) "in any of the ScriptContext's scopes")
    end
+
    return resDir
 
 syntax:
@@ -5218,6 +5267,113 @@ call "rgf_util2.rex"
 say ppCondition2(co)
 */
    raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
+
+/** Method that extracts the next attribute name, starting out with the optional supplied startPos.
+* This method is able to work with quoted attribute names according to the Rexx rules, which may
+* be given in a Rexx script annotation. Each attribute name may be immediately followed by a colon, which
+* is immediately followed by a scope number to use for the attribute.
+*
+* @return returns .nil, if no attribute names left, or an .Array with index [1] the attribute name and
+                  index [2] the position right after the name; index [3] the scopeNr, if given
+*/
+   -- make sure no one else uses this, so we have no need to check for argument erros
+::method getNextAttribute class private
+  use arg attrString, startPos=1
+
+  len=attrString~length
+
+   -- if the previously returned array is supplied as the second argument, extract the startPos from it
+  if startPos~isA(.array) then startPos=startPos[2]
+  if startPos>length(attrString) then return .nil -- at the end
+
+  if startPos>len then return .nil  -- beyond string
+
+   -- next non-blank character
+  -- pos=verify(attrString, " '""" || "09"x, "Match", startPos)
+  pos=verify(attrString, " " || "09"x, "Nomatch", startPos)
+  if pos=0 then return .nil      -- no more attribute names available
+
+  startChar=attrString~substr(pos,1)
+  if pos(startChar, '"''')>0 then   -- a quoted attribute name in hand
+  do
+-- say "getNextAttribute(): quoted attribute name!"
+     bQuoteOpen=.true      -- set to .false if matching closing quote was found
+     mb=.MutableBuffer~new
+     startPos=pos+1
+
+     do endPos=startPos while endPos<=len
+-- say "--- qu --> startPos="pp(startPos) "endPos="pp(endPos)
+        currChar=attrString~substr(endPos,1)
+
+        if bQuoteOpen, currChar=startChar then -- a quote in hand, that must be escaped! If not, it is regarded as the ending quote
+        do
+           if endPos<len then
+           do
+              nextChar=attrString~substr(endPos+1,1)
+              if nextChar=currChar then   -- the same quote, then it is escaped!
+              do
+                 mb~append(currChar)   -- an escaped quote
+                 endPos+=1             -- account for skipping the escape quote
+                 iterate
+              end
+              else   -- stop character (next attribute name or ":scope" starts), current attribute name
+              do
+-- say "<--- /1/ qu: mb~string="pp(mb~string) "endPos+1="pp(endPos+1)
+                 bQuoteOpen=.false
+
+                 if nextChar=":" then  -- ok, must be followed by a scope number
+                 do
+                    endPos+=2    -- skip colon
+                    scopeNr=""
+                    do while endPos<=len, datatype(attrString~substr(endPos,1),"N")
+                       scopeNr ||= attrString~substr(endPos,1)
+                       endPos+=1
+                    end
+-- say "<--- /1/ qu: mb~string="pp(mb~string) "endPos="pp(endPos) "scopeNr="pp(scopeNr)
+
+                    return .array~of(mb~string,endPos,scopeNr)  -- next start position
+                 end
+
+                 return .array~of(mb~string,endPos+1)    -- next start position
+
+              end
+           end
+
+               -- attribute name ended, define next starting position (beyond end of string)
+-- say "<--- /2/ qu: mb~string="pp(mb~string) "endPos+1="pp(endPos+1)
+           return .array~of(mb~string,endPos+1)
+        end
+        else   -- either not a quote or not the one used as delimiter
+        do
+           mb~append(currChar)
+        end
+     end
+-- say "<--- /3/ qu: mb~string="pp(mb~string) "endPos="pp(endPos)
+     return .array~of(mb~string, endPos)
+  end
+
+-- say "getNextAttribute(): normal attribute name!"
+
+  endPos=verify(attrString, " '"":" || "09"x, "Match", pos+1)
+  if endPos=0 then
+     return .array~of(attrString~substr(pos),len+1)
+
+  if attrString~subStr(endPos,1)=":" then  -- ok, must be followed by a scope number
+  do
+     attrLength=endPos-pos    -- get length of attrName
+     endPos+=1    -- skip colon
+     scopeNr=""
+     do while endPos<=len, datatype(attrString~substr(endPos,1),"N")
+        scopeNr ||= attrString~substr(endPos,1)
+        endPos+=1
+     end
+-- say "<--- /4/ qu: mb~string="pp(attrString~substr(pos, attrLength)) "endPos="pp(endPos) "scopeNr="pp(scopeNr)
+     -- return .array~of(mb~string,endPos,scopeNr)  -- next start position
+     return .array~of(attrString~substr(pos, attrLength),endPos,scopeNr)
+  end
+
+-- say "<--- /5/ qu: mb~string="pp(attrString~substr(pos, endPos-pos)) "endPos="pp(endPos)
+  return .array~of(attrString~substr(pos, endPos-pos),endPos)
 
 
 
@@ -5239,7 +5395,7 @@ say ppCondition2(co)
 *   @param rxVarDir Rexx directory containing the currently defined Rexx variables with their values
 */
 -- TODO: rework, document and test the non-documented "scopeNr:" "attrname:scopeNr"
-::method set class
+::method set_original class
    signal on syntax
    use strict arg scriptContext, attributeNames="", rxVarDir
 
@@ -5259,6 +5415,12 @@ say ppCondition2(co)
    -- process each word in the attributeNames string
    scopeNr=.nil               -- Bindings number in the ScriptContext
 
+   -- if attribute is a number and no attribute exists for it, then the scope of the Bindings to work
+   -- on is determined for all following attributes;
+   -- attributes may contain spaces, in that case the Rexx script annotation must quote the name;
+   -- if an attribute name is followed by a colon and a number, the number determines the scope of
+   -- the Bindings to work on
+   -- TODO: implement the above rules
    do label outer while attributeNames<>""
       parse var attributeNames attrName attributeNames
 
@@ -5334,4 +5496,241 @@ say ppCondition2(co)
 */
    raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
 
+/**
+*
+
+specs:
+   - no attributeNames
+      - update all attributes in all scopes matching the Rexx variable name
+        - if a Rexx variables was already used for updating, give a warning and show
+          the attribute name and the scope used for it
+      - does not add new attributes for unused Rexx variables; this needs to be
+        done explicitly by the Rexx programmer to not have unexpected side-effects;
+        give a warning identifying the name of the Rexx variable
+
+   - attributeNames
+      - attribute names may be followed immediately by a colon and a scope number
+         - if not present, give a warning
+      - if an attribute name is a scope number, then all following attribute names
+        are restricted to the closest, previous scope number
+      - no scope restriction, no individual scope number given: search all scopes and
+        set the value in the first found one; otherwise give a warning
+
+*/
+
+::method set class
+   signal on syntax
+   use strict arg scriptContext, attributeNames="", rxVarDir
+
+
+say ".jsr223~set, scriptContext="pp(scriptContext)", attributeNames="pp(attributeNames)", rxVarDir="pp(rxVarDir)
+/*
+say "::::"
+call rgf_util2.rex
+call dump2 rxVarDir, "rxVarDir"
+say "::::"
+*/
+/* -->
+len=length(attributeNames)
+nextStartPos=1
+do until nextStartPos>len
+   res=self~getNextAttribute(attributeNames,nextStartPos)
+--   say "res="pp(res)
+   if .nil<>res then
+   do
+      say "... returned attribute name="pp(res[1]) "nextStartPos="pp(res[2])
+      nextStartPos=res[2]
+   end
+   else  -- stop loop
+      nextStartPos=len+1
+end
+say "-"~copies(50)
+<-- */
+
+   if scriptContext~isA(.RexxContext) then   -- fetch the scriptContext entry
+      scriptContext=scriptContext~args~lastItem~scriptContext
+
+      -- get all scopes and their Bindings
+   arrScopes =scriptContext~getScopes~makearray~sortWith(.NumericComparator~new)  -- sort ascendingly: solve attributes from lowest to highest
+   dirBindings=.directory~new
+   do scope over arrScopes
+      dirBindings[scope]=scriptContext~getBindings(scope)   -- fetch and store Bindings
+   end
+
+   /*
+       if no attribute names are given, then update the first occurrence, but check all scopes
+       for possible candidates: if found, give a warning depicting the attribute name and scope
+       that was not updated; there may be two different reasons for this,
+
+       - one are attribute names that are identically spelled in different Bindings, the other
+
+       - one is that the mapping of differently spelled attribute names still map to the same
+         Rexx variable name (illegal characters will be replaced by the '?' character, a
+         leading '.' too, to allow it to be a Rexx variable and not an environment symbol)
+   */
+   if attributeNames="" then
+   do
+say "---> processing all Rexx variables and all Bindings ...."
+      do rxVarName over RxVarDir~allIndexes~sort   -- iterate over all Rexx variables in alphabetical order
+say "---> rxVarName="pp(rxVarName)
+         RxVarApplied4=""           -- was this Rexx variable name already applied
+         do tmpScope over arrScopes -- look for attribute names that match the Rexx variable name
+say "---> ---> tmpScope="pp(tmpScope)
+
+             bin=scriptContext~getBindings(tmpScope)
+             keys=bin~keySet           -- get Bindings' keys
+             it=bin~keySet~makearray   -- get the keys as a Rexx array
+             do key over it~sortWith(.CaselessComparator~new) -- sort keys (attributes) caselessly
+                normalizedName=self~normalizeName(key)      -- get symbol usable as Rexx variable name (illegal Rexx chars are replaced by '?')
+                if RxVarDir~hasEntry(normalizedName) then   -- ha, attribute candidate found!
+                do
+                   if RxVarApplied4="" then  -- Rexx variable was already applied, give a warning!
+                   do
+                       rxVarApplied4=pp(key)":"pp(tmpScope) -- remember to which attribute in which scope
+                       currVal=bin~getAttribute(key)        -- get Bindings value
+                       rexxVal=RxVarDir~entry(normalizedName)  -- get Rexx value
+                        -- if of equal type, then do they have the same objectname ?
+                       bEqual=(currVal~class=rexxVal~class) & (currVal~objectName=rexxVal~objectName)
+                        -- only update attribute's value in the Bindings, if a new value
+                       if bEqual=.false then
+                       do
+say "---> ---> ---> attribute="pp(key) "set to value:" pp(rexxVal)
+                          bin~setAttribute(key,rexxVal)     -- set attribute to Rexx variable's value
+                       end
+                   end
+                   else -- oops: Rexx variable was already used, warn
+                   do
+                       .error~say("Warning: Rexx variable could be applied to" pp(key)":"pp(tmpScope)", howver was already used for:" RxVarApplied4)
+                   end
+                end
+             end
+
+         end
+      end
+say "<--- done."
+      return      -- done with processing
+   end
+
+   -- process each word in the attributeNames string
+
+--   resDir=.directory~new      -- directory that will hold the Rexx variable name and its value
+
+   scopeNr=.nil               -- Bindings number in the ScriptContext
+
+   -- - attributes may contain spaces, in that case the Rexx script annotation must quote the name;
+   -- - if attribute is a number and no attribute exists for it, then the scope of the Bindings to work
+   --   on is determined for all following attributes;
+   -- - if an attribute name is followed by a colon and a number, the number determines the scope of
+   --   the Bindings to work on
+   -- TODO: implement the above rules
+   -- DONE: - 2017-02-11, rgf: attributes with space, quoted by Rexx rules
+   res=.array~of(attributeNames,1)
+   do label outer while res<>.nil -- attributeNames<>""
+      -- parse var attributeNames attrName attributeNames
+         -- res: an array [1]->attrName or scopeNr to use from now on; [2] next start position; [3] if not .nil the scopeNr to use for the given attrName
+      res=self~getNextAttribute(attributeNames,res)
+      if res=.nil then leave
+      attrName=res[1]
+      currScopeNr =res[3]   -- .nil or a number
+      if currScopeNr="" then  -- attribute name was followed by a colon ':', but the scope number is missing!
+      do
+         .error~say("Warning: Rexx script annotation /* @set("arg(2)") */ contains an attribute with a trailing colon, but no scope number:" pp(attrName":")", ignoring!")
+         iterate
+      end
+
+
+      if datatype(attrName,"W"), currScopeNr=.nil then -- maybe just a scope number given that is to be used from now on?
+      do
+          tmpScopeNr=scriptContext~getAttributesScope(attrName)   -- could be that the number is a key into a Bindings
+          if tmpScopeNr<>-1 then    -- found entry (a number key) in a scope, use that scope
+              currScopeNr=tmpScopeNr
+          else    -- attrName is the scopeNr to use from now on!
+          do
+             if dirBindings~hasIndex(attrName) then -- does scope number exist?
+                scopeNr=attrName    -- from now on look only in this scope!
+             else -- scope does not exist, warn and ignore
+                .error~say("Warning: Rexx script annotation /* @set("arg(2)") */ contains a non-existing scope" pp(attrName)", hence cannot honor it")
+             iterate
+          end
+      end
+
+      if currScopeNr<>.nil then  -- explicit scope given for attribute name, check it out
+      do
+          if \dirBindings~hasIndex(currScopeNr) then -- does scope number exist?
+          do
+             .error~say("Warning: Rexx script annotation /* @set("arg(2)") */ contains a non-existing scope" pp(currScopeNr) "in" pp(attrName||":"||currScopeNr)", hence cannot honor it")
+             iterate
+          end
+      end
+
+      -- now process
+      if scopeNr=.nil, currScopeNr=.nil then -- no scope explicitly given, go through all available scopes
+      do
+-- say "<== <-- attrName="pp(attrName) "all scopes!"
+         arr=arrScopes
+      end
+      else if currScopeNr<>.nil then   -- process explicitly defined scope only
+      do
+-- say "<== <-- attrName="pp(attrName) "CURRscopeNr!" pp(currScopeNr)
+         arr=.array~of(currScopeNr)
+      end
+      else                             -- process explicitly defined scope only
+      do
+-- say "<== <-- attrName="pp(attrName) "scopeNr!" pp(scopeNr)
+         arr=.array~of(scopeNr)
+      end
+
+say "---> attrName="pp(attrName)
+
+      do label inner scope over arr       -- iterate over bindings
+say "---> ---> scope="pp(scope)
+
+         tmpBindings=dirBindings~at(scope)   -- fetch Bindings
+         if tmpBindings~containsKey(attrName) then
+         do
+   -- iterate over all Bindings and check which attribute name can be mapped to a Rexx variable name
+            normalizedName=self~normalizeName(attrName)  -- get normalized name of the attribute
+say "---> ---> ---> found, normalizedName="pp(normalizedName) "RxVarDir~hasEntry(normalizedName):" pp(RxVarDir~hasEntry(normalizedName))
+
+   -- --->
+            if RxVarDir~hasEntry(normalizedName) then -- ha, attribute candidate found!
+            do
+               currVal=tmpBindings~get(attrName)      -- get Bindings value
+               rexxVal=RxVarDir~entry(normalizedName) -- get Rexx value
+                -- if of equal type, then do they have the same objectname ?
+               -- bEqual=(currVal~class=rexxVal~class) & (currVal~objectName=rexxVal~objectName)
+               bEqual=(currVal~class=rexxVal~class) & (currVal~string=rexxVal~string)
+                -- only update attribute's value in the Bindings, if a new value
+say "---> ---> ---> ---> scope="pp(scope) "attrName="pp(attrName) "value="pp(currVal) "normalizedName="pp(normalizedName) "Rexx value="pp(rexxVal) "bEqual="pp(bEqual)
+               if bEqual=.false then
+               do
+say "---> ---> ---> ---> setting new value (from Rexx):" pp(rexxVal)
+                  tmpBindings~put(attrName,rexxVal)   -- set attribute to Rexx variable's value
+               end
+else
+say "---> ---> ---> ---> value unchanged, NOT updating!"
+
+            end
+--            leave inner
+         end
+-- <---
+      end
+/*
+      if currScopeNr<>.nil then
+         .error~say("Warning: Rexx script annotation /* @set("arg(2)") */: cannot find attribute" pp(attrName) "in the explicitly supplied scopeNr" pp(currScopeNr)", cf. for some entry" pp(attrName":"currScopeNr) "in the Rexx script annotation")
+      else
+         .error~say("Warning: Rexx script annotation /* @set("arg(2)") */: cannot find attribute" pp(attrName) "in any of the ScriptContext's scopes")
+*/
+   end
+
+   return
+
+syntax:
+/*
+co=condition("obj")
+.traceOutput~say( ".jsr223~get(...): SYNTAX raised!")
+call "rgf_util2.rex"
+say ppCondition2(co)
+*/
+   raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
 
