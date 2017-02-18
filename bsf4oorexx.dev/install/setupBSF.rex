@@ -7,6 +7,8 @@
    Date:    2006-01-07
    Version: 1.32
    Changed:
+            2017-02-14, ---rgf, - Linux: carry out a separate ldconfig with the directory to which
+                                  /opt/BSF4ooRexx/libjvm.so points to
             2017-02-12, ---rgf, - add quoted cmd.ePath2JavaDLL to "ldconfig" command; it seems that some
                                   Linuxes (possibly with multiple Java installations) otherwise do not
                                   find the libjvm.so that gets loaded with dlopen() by BSF4ooRexx
@@ -933,21 +935,25 @@ createInstallScript: procedure expose j. cmd. path.
          -- tmpCmd="/sbin/ldconfig /usr/local/lib /usr/local/lib32 /usr/local/lib64 /opt/BSF4ooRexx /usr/lib /usr/lib32 /usr/lib64 "   -- rgf, 2012-02-25, 2016-08-15
          -- rgf, 2017-02-03: supply full path to ldconfig such that it can be located on systems that do not place sbin on the PATH
          if sysFileExists("/sbin/ldconfig") then   -- supply fully qualified name
-            tmpCmd="/sbin/ldconfig"
+            cmdLDconfig="/sbin/ldconfig"
          else                 -- fallback that may yield a runtime error "command not found"
-            tmpCmd="ldconfig"
+            cmdLDconfig="ldconfig"
             -- only work on existing lib directories
+         tmpCmd=cmdLDconfig
          do libDir over .array~of("/usr/local/lib", "/usr/local/lib32",  "/usr/local/lib64", "/opt/BSF4ooRexx", "/usr/lib", "/usr/lib32", "/usr/lib64")
             if sysFileExists(libDir) then tmpCmd = tmpCmd libDir  -- lib directory exists, add it
          end
 
-         tmpCmd = tmpCmd enquote(cmd.ePath2JavaDLL)   -- 2017-02-12, rgf: make sure
+            -- a separate ldconfig targeting the libjvm.so directory we link to /opt/BSF4ooRexx
+         tmpCmd2 = cmdLDconfig enquote(cmd.ePath2JavaDLL)
 
          call lineout fn, cmd.eEcho qc(tmpCmd)
          call lineout fn, tmpCmd
+         call lineout fn, tmpCmd2
          call lineout fn, ""
          call lineout ui, cmd.eEcho qc(tmpCmd)
          call lineout ui, tmpCmd
+         call lineout ui, tmpCmd2
          call lineout ui, ""
 
         -- copy *bins to /usr/bin

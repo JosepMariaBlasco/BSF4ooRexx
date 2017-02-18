@@ -2,7 +2,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2010-08-05,14,18
-   version: 1.09
+   version: 1.10
    name:    setupAllAndRun.rex
    purpose: installer to install or reinstall the BSF4ooRexx package
 
@@ -73,6 +73,7 @@
                               - make sure that the libBSF4ooRexx* shared libraries get the x-bit set (despite new naming)
                               - new routine sayWhetherInstallationWasSuccessful() to test whether setup was successful
                                 (using rexxj{.sh|.cmd})
+            2017-02-14, rgf   - getRexxBitness(): compare casselessly with "Address Mode"
 
    remark:  ---
 
@@ -941,7 +942,7 @@ exit 0
    bitness=.nil                  -- default value
    do while queued()>0           -- make sure we process entire queue (to empty it)
       parse pull hint ":" val .
-      if hint="Addressing Mode" then bitness=val
+      if hint~caselessEquals("Addressing Mode") then bitness=val
    end
    return bitness
 
