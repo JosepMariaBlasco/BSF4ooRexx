@@ -1,0 +1,177 @@
+use arg slotDir         -- fetch the slotDir argument (BSF4ooRexx adds this as the last argument at the Java side)
+scriptContext = slotDir~scriptContext -- get the ScriptContext from the slotDir (last) argument
+
+parse source s
+call bsf.import "javafx.scene.control.Alert",                  "fx.Alert"
+call bsf.import "javafx.scene.control.Alert$AlertType",        "fx.Alert.Type"
+ /*
+  * note "AlertType" is public "inner" enum class, i.e. it is defined within the class "Alert", hence
+  * the JavaDocs refer to "AlertType" as "Alert.AlertType": however the Java compiler produces the
+  * class file as "Alert$AlertType"
+  */
+.my.app~imageDropped = .false
+
+
+/* *************************************************************************************************** */
+/* --------------------------------------------------------------------------------------------------- */
+/* This routine will be called from the Rexx code defined with the "onAction" event attribute; cf.
+ */
+::routine previewButtonAction public
+    use arg slotDir  -- fetch the slotDir argument (BSF4ooRexx adds this as the last argument at the Java side)
+    scriptContext = slotDir~scriptContext   -- get the slotDir (the last) argument, get the entry "SCRIPTCONTEXT"
+
+    terms = scriptContext~getAttribute("terms") -- reference of the checkbox with fx:id "terms"
+  if terms~isSelected then do -- is the checkbox checked?
+      if \.my.app~hasEntry("scene2") then do
+          -- use application's URLClassloader to find the resource (returns a URL)
+         scene2FXMLUrl=.my.app~appClzLdr~findResource("fxml/registrationStep2.fxml")
+         scene2FXML   =.my.app~fxmlLoader~load( scene2FXMLUrl )   -- load the fxml document
+         .my.app~scene2=.bsf~new("javafx.scene.Scene", scene2FXML) -- create a scene for our document
+         stylesheet = "stylesheets/style.css"
+         .my.app~scene2~getStyleSheets~add(styleSheet)
+      end
+      .my.app~primaryStage~setScene(.my.app~scene2)
+      .my.app~primaryStage~centerOnScreen
+
+      /* @get(user pw birthday description gender color imageview) */
+      newItems = .my.app~registrationStep2.fxml -- save all elements with an fx:id in this fxml file to the directory "newItems"
+      newItems~labelUsername~setText(user~getText) -- set the label of fx:id labelUsername to the username of the first stage
+      if birthday~getValue = .nil then do -- datepicker has a value, not text
+        bd = "" -- if it is not set, set it to an empty string
+      end
+      else do
+        bd = birthday~getValue~toString
+      end
+      newItems~labelBirthday~setText(bd)
+      newItems~labelDescription~setText(description~getText)
+      newItems~labelColor~setText(color~getValue~toString)
+      pwlength = pw~length
+      newItems~labelPassword~setText("*"~copies(pwlength)) -- replace password characters with *
+      if gender~getValue = .nil then do
+        g = ''
+      end
+      else g = gender~getValue
+      newItems~labelGender~setText(g)
+
+      if .my.app~imageDropped then do -- display an image if there is one
+        myImage = imageview~image
+        newItems~previewImageView~setImage(myImage)
+      end
+      else do
+        newItems~innerPane~setVisible(.false) -- hide the image section
+      end
+
+      call animateProgressBar 0, 0.5, 1.0     -- set progressbar from 0% to 50%
+
+  end
+  else do -- terms not checked
+         alert = .fx.alert~new(.fx.Alert.Type~error)   -- create an error alert
+         alert~setTitle("warning")
+         alert~setHeaderText(.nil)
+         alert~setContentText("You have to check the Terms of Use.")
+         alert~showAndWait
+  end
+
+/* --------------------------------------------------------------------------------------------------- */
+
+::routine goToStep1 public
+    use arg slotDir  -- fetch the slotDir argument (BSF4ooRexx adds this as the last argument at the Java side)
+    scriptContext=slotDir~scriptContext   -- get the slotDir (the last) argument, get the entry "SCRIPTCONTEXT"
+
+    .my.app~primaryStage~setScene(.my.app~mainScene)
+    .my.app~~imageDropped = .false                   -- reset everything
+
+/* --------------------------------------------------------------------------------------------------- */
+
+::routine submitButtonAction public
+     .my.app~registrationStep2.fxml~submit~setDisable(.true) -- disable the second submit button
+     call animateProgressBar 0.5, 1.0, 1.0   -- animate progressbar from 50% to 100%
+
+     alert=.fx.alert~new(.fx.Alert.Type~information)
+     alert~setTitle("registration successful")
+     alert~setHeaderText(.nil)
+     lf = "0a"x -- define linefeed character
+     alert~setContentText("You have successfully completed the registration!" lf || "This window will close now.")
+     call syssleep 1             -- allow the progressbar to animat
+     alert~showAndWait
+    .my.app~primaryStage~close   -- close the window and exit program
+
+/* --------------------------------------------------------------------------------------------------- */
+
+::routine handleDragOver public
+    use arg slotDir
+    ScriptContext = slotDir~ScriptContext
+
+    DragEvent = ScriptContext~getAttribute("event") -- retrieve caller dragevent form scriptcontext
+    if DragEvent~getDragboard~hasFiles then do
+        TransferModes = bsf.loadClass("javafx.scene.input.TransferMode") -- get access to enum TransferMode
+        DragEvent~acceptTransferModes(TransferModes~any) -- allow transfering files
+    end
+
+/* --------------------------------------------------------------------------------------------------- */
+
+::routine handleDrop public
+    use arg slotDir
+    ScriptContext = slotDir~ScriptContext
+
+    DragEvent = ScriptContext~getAttribute("event")
+    files = DragEvent~getDragboard~getFiles -- get the list of dragged files
+    file = files~get(0) -- use the first file, drop the rest if there are any
+
+    FileInputStream = .bsf~new("java.io.FileInputStream", file)
+    Image = .bsf~new("javafx.scene.image.Image", FileInputStream)
+    ScriptContext~getAttribute("imageview")~setImage(Image)
+    .my.app~~imageDropped = .true
+
+/* --------------------------------------------------------------------------------------------------- */
+
+::routine handleTermsClicked public
+    /* open a URL in a web browser */
+
+    Desktop = bsf.loadClass("java.awt.Desktop")~getDesktop -- get a reference of the Desktop class
+    url="https://opensource.org/licenses/Apache-2.0"
+    uri = .bsf~new("java.net.URI", url)
+    Desktop~browse(uri) -- let the OS handle the URI using its preferred settings
+
+/* --------------------------------------------------------------------------------------------------- */
+
+::routine animateProgressBar
+   use arg from=0, to=0.5, range=1.0
+
+   if .my.app~hasEntry("clzRexxTask")=.false then  -- create a Java proxy class
+   do    -- define and store the proxy class
+       -- create a new Java proxy class where the methods named "call" and "updateProgress" get defined
+       .my.app~clzRexxTask=bsf.createProxyClass("javafx.concurrent.Task", "RexxTask", "call", "updateProgress")
+   end
+
+   jobj =BSFCreateRexxProxy(.rexxTask~new(from,to,range))   -- create a Java proxy for the Rexx object
+   jtask=.my.app~clzRexxTask~new(jobj)             -- create a Java object, invocations handled by the Rexx object
+
+   progressbar=.my.app~registrationStep2.fxml ~progressbar  -- fecth JavaFX ProgressBar object from the form
+   progressbar~progressProperty~unbind -- make sure we releas a binding
+   progressbar~progressProperty~bind(jtask~progressProperty)
+   .bsf~new("java.lang.Thread",jtask)~bsf.dispatch("start")          -- start the Task
+
+/* The "javafx.concurrent.Task" allows to interface with JavaFX objects in a background
+*  thread such that updates get carried out on the JavaFX application thread.
+*/
+::class rexxTask  -- extending the abstract class "javafx.concurrent.Task" with Rexx
+::method init     -- constructor
+  expose start end range   -- progress bar
+  use arg start, end, range=1.00
+
+::method call     -- implementation of the abstract method
+  expose start end range   -- progress bar
+  use arg slotDir
+
+  do i=start to end by 0.05   -- increase by 5% steps
+     slotDir~javaObject~updateProgress(i,range)
+     call SysSleep 0.075      -- sleep 0.075 seconds before increasing again
+  end
+  return .true
+
+::method updateProgress -- this implementation allows one to forward to the protected method "updateProgress"
+  use arg currValue, range, slotDir
+  slotDir~javaObject~updateProgress_forwardToSuper(currValue,range)
+
+/* --------------------------------------------------------------------------------------------------- */

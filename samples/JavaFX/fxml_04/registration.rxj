@@ -1,0 +1,107 @@
+/*
+   author:     Adrian Baginski (with a little help from Rony G. Flatscher)
+
+   date:       2017-02-17
+
+   purpose:    - show how versatile and easy JavaFX can be
+               - demonstrate how to use resources in subdirectories (loading files using an URLClassLoader)
+
+   needs:      need to change into the directory where this file resides and start the application
+               from there (otherwise JavaFX/Java-related operations may go astray as they address
+               resources relative to the directory at startup of the program)
+
+   usage:      rexx registration.rxj or rexxj.sh|rexxj.cmd registration.rxj or double-clicking ;)
+
+   license:    - Apache License 2.0 (AL 2.0)
+*/
+
+
+/* Create a directory in the global Rexx .environment named MY.APP, such that we can store/retrieve
+   objects that we need globally (over all Rexx programs):
+
+   - entries in .local and .environment should contain a dot, hence MY.APP
+   - entries in .local and .environment can be retrieved using the environment
+     symbol naming the entry (its index), hence .MY.APP will allow us to retrieve
+     that directory from any Rexx program
+*/
+.environment~setEntry("my.app", .directory~new)
+
+   -- determine our location and create an URLClassLoader to find resources relative to it
+parse source . . s
+
+appDirectory = filespec("Location", s)   -- determine path to this Rexx program
+   -- use a java.io.File to to get an URL for the file
+jfile = .bsf~new("java.io.File",appDirectory)
+urlAppDir = jfile~toUri~toUrl
+   -- create the URLClassLoader using the appDirectory for resolving resources via it
+.my.app~appClzLdr = .bsf~new("java.net.URLClassLoader", bsf.createJavaArrayOf("java.net.URL", urlAppDir))
+
+   -- load the FXMLLoader class, save it for multiple usages
+.my.app~fxmlLoader = bsf.loadClass("javafx.fxml.FXMLLoader")
+
+   -- create Rexx object that will control the FXML set up
+rexxHandler = .rxDocHandler~new
+
+   -- instantiate the abstract JavaFX class, the abstract "start" method will be served by rexxHandler
+rxApp = BsfCreateRexxProxy(rexxHandler,,"javafx.application.Application")
+
+   -- launch the application, invoke "start" and then stay up until the application closes
+rxApp~launch(rxApp~getClass, .nil)     -- need to use this version of launch in order to work
+
+::requires "BSF.CLS"    -- get Java support
+
+/* implements the abstract method "start" for the Java class javafx.application.Application
+   (BSF4ooRexx also supplies another (trailing) slotDir (a Rexx Directory) argument, as "start" is
+   invoked from Java)
+*/
+::class RxDocHandler
+::method init
+
+   /* loads the fxml document defining the GUI elements, sets up a scene for it and shows it */
+::method start    -- will be invoked by the "launch" method
+  use arg primaryStage  -- we get the primary stage to use for our UI
+
+  .my.app~primaryStage = primaryStage -- save the primary stage in our directory
+
+   -- use application's URLClassloader to find the resource (returns a URL)
+  mainSceneFXMLUrl = .my.app~appClzLdr~findResource("fxml/registration.fxml")
+  mainSceneFXML    = .my.app~fxmlLoader~load( mainSceneFXMLUrl )   -- load the fxml document
+
+  /* add a mouse click listener to the JavaFX object named imageview */
+  imageview = .my.app~registration.fxml~imageview
+  rexxproxy = bsfCreateRexxProxy(.ImageClickHandler~new, , "javafx.event.EventHandler")
+  MouseEvent = bsf.loadClass("javafx.scene.input.MouseEvent")
+  imageview~addEventHandler(MouseEvent~MOUSE_CLICKED, rexxproxy)        -- attach an event listener to the imageview
+
+   -- create a scene from the FXML DOM and assign it to the primaryStage
+  .my.app~mainScene = .bsf~new("javafx.scene.Scene", mainSceneFXML) -- create a scene for our document
+  styleSheet = "stylesheets/style.css"         -- a Scene is able to retrieve this on its own
+  .my.app~mainScene~getStyleSheets~add(styleSheet) -- use the CSS to style the UI
+  primaryStage~setScene(.my.app~mainScene)   -- set the stage to our scene
+
+  primaryStage~setTitle("Registration Form")
+   -- create an image for the application icon from the InputStream
+  inpStrIcon = .my.app~appClzLdr~getResourceAsStream("images/oorexx_032.png")
+  imgIcon = .bsf~new("javafx.scene.image.Image",inpStrIcon)
+  primaryStage~getIcons~add(imgIcon)         -- set application icon
+  primaryStage~setResizable(.false)          -- disallow resizing of the window
+  primaryStage~show                          -- show the stage (and thereby our scene)
+                                                                        -- if the mouse event "mouse_clicked" triggers
+  /* handle click event */
+::class ImageClickHandler
+::method handle
+    use arg eventObject
+
+    FileChooser = .bsf~new("javafx.stage.FileChooser")                  -- instantiate the javafx FileChooser class
+    FileChooser~setTitle("Choose a Profile Picture")                    -- set the title for the FileChooser Dialog
+
+    extensions = bsf.createJavaArrayOf("java.lang.String", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp")
+    filter = .bsf~new("javafx.stage.FileChooser$ExtensionFilter", "Image Files", extensions)
+    FileChooser~getExtensionFilters~add(filter)                         /* only allow files to be uploaded which have
+                                                                        the extensions defined in the ExtensionFilter */
+    file = FileChooser~showOpenDialog(.my.app~primaryStage)             -- show the Dialog
+    if file \= .nil then do
+        Image = .bsf~new("javafx.scene.image.Image", file~toUri~toString)   /* create a new Image using the URI of the
+                                                                           file represented as a string */
+        .my.app~registration.fxml~imageview~setImage(Image)             -- set the image in the imageview
+    end
