@@ -26,10 +26,14 @@ public class FoldingBuilder extends FoldingBuilderEx {
 
     private List<FoldingDescriptor> descriptors = new ArrayList<>();
 
+    private TextRange limit;
+
     @NotNull
     @Override
     public FoldingDescriptor[] buildFoldRegions(@NotNull PsiElement root, @NotNull Document document, boolean fast) {
         if(!(root instanceof OoRexxFile)) return new FoldingDescriptor[0];
+
+        limit = root.getTextRange();
 
         descriptors = new ArrayList<>();
 
@@ -197,13 +201,28 @@ public class FoldingBuilder extends FoldingBuilderEx {
     }
 
     private TextRange getRange(DirectiveWrapper directiveWrapper, DirectiveWrapper nextWrapper){
+        TextRange textRange = null;
+        int start, end;
+
         if(nextWrapper == null) {
-            int start = directiveWrapper.getDirective().getTextOffset() + directiveWrapper.getDirective().getText().indexOf("\n");
-            int end = directiveWrapper.getDirective().getTextLength() + directiveWrapper.getDirective().getTextOffset();
-            return new TextRange(start, end);
+            start = directiveWrapper.getDirective().getTextOffset() + directiveWrapper.getDirective().getText().indexOf("\n");
+            end = directiveWrapper.getDirective().getTextLength() + directiveWrapper.getDirective().getTextOffset();
+        } else {
+            start = directiveWrapper.getDirective().getTextOffset() + directiveWrapper.getDirective().getText().indexOf("\n");
+            end = nextWrapper.getAnchorElement().getTextOffset() - 1;
         }
 
-        return new TextRange(directiveWrapper.getDirective().getTextOffset() + directiveWrapper.getDirective().getText().indexOf("\n"), nextWrapper.getAnchorElement().getTextOffset()-1);
+        if (start > end) {
+            textRange = new TextRange(end, start);
+        }
+        else {
+            textRange = new TextRange(start, end);
+        }
+
+        if(textRange.getLength() > limit.getLength())
+            return new TextRange(start, limit.getLength());
+
+        return textRange;
     }
 
     @Override
@@ -242,7 +261,11 @@ public class FoldingBuilder extends FoldingBuilderEx {
             PsiElement first = select.getFirstChild();
             PsiElement last = select.getLastChild();
 
-            descriptors.add(new FoldingDescriptor(select.getNode(),new TextRange(select.getTextOffset() + select.getText().indexOf("\n"), last.getTextOffset() + last.getTextLength() )));
+            try{
+                descriptors.add(new FoldingDescriptor(select.getNode(),new TextRange(select.getTextOffset() + select.getText().indexOf("\n"), last.getTextOffset() + last.getTextLength() )));
+            }catch (AssertionError e){
+                //TODO: fix this
+            }
         }
 
     }

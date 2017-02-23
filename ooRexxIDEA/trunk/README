@@ -14,7 +14,7 @@ Prerequisite:
 Start:
 - Start IntelliJ IDEA
 - Check out the source code: File -> New -> Project From Version Control -> Subversion
-- Copy the content of <<Project_Root>>/ooRexxIDE.iml into <<Project_Root>>/.idea/<<Project_Name>.iml (<<Project_Root>> is the path where you checked out the source to)
+- Copy the content of <<Project_Root>>/ooRexxPlugin4IntelliJ.iml into <<Project_Root>>/.idea/<<Project_Name>.iml (<<Project_Root>> is the path where you checked out the source to)
 - Go to: File -> Project Strucute -> Project. Create new project SDK: "IntelliJ Platform SDK" (Choose the root of Intellij IDEA you installed it to),
   select project language level to 8, and "Project Compiler Output" to <<Project_Root>>/out. (Replace <<Project_Root>> with the actual path.)
 - Restart Intellij IDEA
