@@ -125,7 +125,8 @@ EOL = ([\ \t]* {SINGLE_EOL}+ [\ \t]*)+
 // Identifier
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-IDENTIFIER = [a-zA-Z\_\?\!\.]+[0-9a-zA-Z\_\?\!\.]*
+IDENTIFIER_WITHOUT_SPECIAL_CHARS = [a-zA-Z\_\?\!\.]+[0-9a-zA-Z\_\?\!\.]* // No "special" chars
+IDENTIFIER = [a-zA-Z\_\?\!\.\#\$\@\¢]+[0-9a-zA-Z\_\?\!\.\#\$\@\¢]*
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -286,8 +287,9 @@ DEC_LITERAL = [0-9] [0-9_]*
 
 
   "~"                             { return TILDE; }
-
+"IF"   / "("                   { return IF; }
   {IDENTIFIER}  / "("             {return FUNC_IDENTIFIER;}
+
 
     "PACKAGE" {return PACKAGE;}
 
@@ -342,7 +344,8 @@ DEC_LITERAL = [0-9] [0-9_]*
     "EXPOSE"                      { return EXPOSE; }
     "FORWARD"                      { return FORWARD; }
     "GUARD"                      { return GUARD; }
-    "IF"                      { return IF; }
+
+    "IF"                    { return IF; }
     "INTERPRET"                      { return INTERPRET; }
     "ITERATE"                      { return ITERATE; }
     "INDEX" {return INDEX;}
@@ -427,7 +430,6 @@ DEC_LITERAL = [0-9] [0-9_]*
     "UNTIL"                      { return UNTIL; }
     "UPPER"                      { return UPPER; }
     "USER"                      { return USER; }
-    "NUMBER"                      { return NUMBER; }
     "VAR"                      { return VAR; }
     "VERSION"                      { return VERSION; }
     "WHEN"                      { return WHEN; }
@@ -587,7 +589,7 @@ DEC_LITERAL = [0-9] [0-9_]*
 
 <IN_STRING_LITERAL>{
 
-    "'(" {
+    "'" / "(" {
     if(doubleQuoteStringLiteralStart == 0){
                     singleQuoteStringLiteralStart++;
 
@@ -641,7 +643,7 @@ DEC_LITERAL = [0-9] [0-9_]*
         }
     }
 
-    "\"(" {
+    "\""  / "(" {
     if(singleQuoteStringLiteralStart == 0){
                     doubleQuoteStringLiteralStart++;
 

@@ -146,7 +146,6 @@
             NOSTRING = 'NOSTRING'
             NOTREADY = 'NOTREADY'
             NOVALUE = 'NOVALUE'
-            NUMBER = 'NUMBER'
             OFF = 'OFF'
             ON = 'ON'
             OTHERWISE = 'OTHERWISE'
@@ -319,15 +318,15 @@ file ::= shebang? (new_line | instruction)* (directive)*
 private meta paren ::= <<p>> | (LPAREN (<<paren  <<p>>>>| <<p>>) RPAREN)
 environment_id ::= ENV_IDENTIFIER | ENV_ENVIRONMENT | ENV_LOCAL
 id ::= (namespace_prefix (new_line* !assignments_and_keywords))? (identifier | environment_id | keyword_list)
-keyword_list ::= (STATE) | (COMMAND) | (OPEN) | (DELETE) | (EXIST) | (CREATE) | (COUNT) | (SUPER) | (PACKAGE) | (ABSTRACT) | (ANNOTATE) | (ATTRIBUTE) | (CLASS) | (CONDITION) | (DIGITS) | (EXTERNAL) | (FORM) | (FUZZ) | (GET) | (GUARDED) | (INHERIT) | (LIBRARY) | (METACLASS) | (MIXINCLASS) | (NAMESPACE) | (NOPROLOG) | (PRIVATE) | (PROLOG) | (PROTECTED) | (PUBLIC) | (RESOURCE) | (RESOURCE_DATA) | (SET) | (SUBCLASS) | (TRACE) | (UNGUARDED) | (UNPROTECTED) | (ADDRESS) | (ARG) | (CALL) | (DO) | (DROP) | (EXIT) | (EXPOSE) | (FORWARD) | (GUARD) | (IF) | (INTERPRET) | (ITERATE) | (LEAVE) | (LOOP) | (NOP) | (NUMERIC) | (OPTIONS) | (PARSE) | (PROCEDURE) | (PULL) | (PUSH) | (QUEUE) | (RAISE) | (REPLY) | (RETURN) | (SAY) | (SELECT) | (SIGNAL) | (TRACE) | (USE) | (SELF) | (ADDITIONAL) | (ANY) | (ARG) | (ARGUMENTS) | (ARRAY) | (BY) | (CASELESS) | (CLASS) | (COMMANDS) | (CONTINUE) | (DESCRIPTION) | (DIGIT) | (DROP) | (ELSE) | (END) | (ENGINEERING) | (ERROR) | (EXIT) | (EXPOSE) | (FAILURE) | (FOR) | (FOREVER) | (FORM) | (FUZZ) | (HALT) | (INTERMEDIATES) | (LABEL) | (LABELS) | (LINEIN) | (LINEOUT) | (LOSTDIGITS) | (LOWER) | (MESSAGE) | (NAME) | (NOMETHOD) | (NORMAL) | (NOSTRING) | (NOTREADY) | (NOVALUE) | (OFF) | (ON) | (OTHERWISE) | (OVER) | (PROPAGATE) | (PULL) | (RESULTS) | (RETURN) | (SCIENTIFIC) | (SOURCE) | (STRICT) | (SYNTAX) | (THEN) | (TO) | (UNTIL) | (UPPER) | (USER) | (VALUE) | (VAR) | (VERSION) | (WHEN) | (WHILE) | (WITH) | (ITEM) | (INDEX)
+keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) | (EXIST) | (CREATE) | (COUNT) | (SUPER) | (PACKAGE) | (ABSTRACT) | (ANNOTATE) | (ATTRIBUTE) | (CLASS) | (CONDITION) | (DIGITS) | (EXTERNAL) | (FORM) | (FUZZ) | (GET) | (GUARDED) | (INHERIT) | (LIBRARY) | (METACLASS) | (MIXINCLASS) | (NAMESPACE) | (NOPROLOG) | (PRIVATE) | (PROLOG) | (PROTECTED) | (PUBLIC) | (RESOURCE) | (RESOURCE_DATA) | (SET) | (SUBCLASS) | (TRACE) | (UNGUARDED) | (UNPROTECTED) | (ADDRESS) | (ARG) | (CALL) | (DO) | (DROP) | (EXIT) | (EXPOSE) | (FORWARD) | (GUARD) | (IF) | (INTERPRET) | (ITERATE) | (LEAVE) | (LOOP) | (NOP) | (NUMERIC) | (OPTIONS) | (PARSE) | (PROCEDURE) | (PULL) | (PUSH) | (QUEUE) | (RAISE) | (REPLY) | (RETURN) | (SAY) | (SELECT) | (SIGNAL) | (TRACE) | (USE) | (SELF) | (ADDITIONAL) | (ANY) | (ARG) | (ARGUMENTS) | (ARRAY) | (BY) | (CASELESS) | (CLASS) | (COMMANDS) | (CONTINUE) | (DESCRIPTION) | (DIGIT) | (DROP) | (ELSE) | (END) | (ENGINEERING) | (ERROR) | (EXIT) | (EXPOSE) | (FAILURE) | (FOR) | (FOREVER) | (FORM) | (FUZZ) | (HALT) | (INTERMEDIATES) | (LABEL) | (LABELS) | (LINEIN) | (LINEOUT) | (LOSTDIGITS) | (LOWER) | (MESSAGE) | (NAME) | (NOMETHOD) | (NORMAL) | (NOSTRING) | (NOTREADY) | (NOVALUE) | (OFF) | (ON) | (OTHERWISE) | (OVER) | (PROPAGATE) | (PULL) | (RESULTS) | (RETURN) | (SCIENTIFIC) | (SOURCE) | (STRICT) | (SYNTAX) | (THEN) | (TO) | (UNTIL) | (UPPER) | (USER) | (VALUE) | (VAR) | (VERSION) | (WHEN) | (WHILE) | (WITH) | (ITEM) | (INDEX)
 
-private assignments_and_keywords ::= (  assignment | (keyword_instruction) | <<excluding_expr keyword_list>> )
-instruction ::= SEMICOLON | label_instruction | (assignments_and_keywords  instruction_terminator)
+private assignments_and_keywords ::= ( assignment |  <<excluding_expr keyword_list>> | (keyword_instruction) )
+instruction ::= (SEMICOLON | label_instruction | ((assignments_and_keywords | (!END keyword_list))  instruction_terminator))
 
 function_call ::= built_in_functions | (namespace_prefix? function_call_without_namespace)
 private function_call_without_namespace ::= ((FUNC_IDENTIFIER | built_in_functions_keyword_list) LPAREN (COMMA | parameter_expr)* RPAREN){pin = 2}
 
-private template_list ::= (expr (COMMA expr)*)+
+private template_list ::= assignment | (expr (COMMA expr)*)+ | COMMA | DOT
 
 namespace_prefix ::= (identifier | keyword_list) COLON
 
@@ -346,6 +345,7 @@ id_with_lit ::= id | lit
 id_with_number ::= id | number_lit
 
 symbol_or_string ::= STRING_LITERAL | id
+symbol_or_string_or_function ::= symbol_or_string | function_call
 
 new_line ::= EOL
 
@@ -353,19 +353,24 @@ new_line ::= EOL
 // Message Term
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-message_term ::=  (message_term_receiver message_term_tail)
+standalone_keyword_message_term ::= &(keyword_list TILDE) expr
+
+message_term ::=  (message_term_receiver message_term_tail+)
 
 message_term_tail ::= (message_term_tilde | message_term_brack)
 message_term_brack ::= (LBRACK (expr | COMMA)* RBRACK)
 message_term_tilde ::= (message_term_operator
                                (
-                                   ((symbol_or_string COLON)? function_call_without_namespace) | (symbol_or_string (COLON symbol_or_string)?)
+                                   ((symbol_or_string COLON)? function_call_without_namespace) | ((symbol_or_string) (COLON symbol_or_string)?)
                                )
                            )
-message_term_receiver ::= (array_term_parenthized | lit | id | function_call)
+message_term_receiver ::= (keyword_list | array_term_parenthized | lit | id | function_call)
 message_term_operator ::= (TILDE TILDE) | TILDE
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Array Term
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 array_term ::= ((expr)? COMMA (COMMA | expr | <<paren array_term>> )*)
 array_term_parenthized ::= LPAREN array_term RPAREN
 
@@ -373,7 +378,7 @@ array_term_parenthized ::= LPAREN array_term RPAREN
 // Assignment
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-assignment ::= (message_term | id) extended_assignment expr
+assignment ::= (message_term | id) extended_assignment expr{pin = 2}
 
 extended_assignment ::= EQ  | ( (PLUS | MINUS | (MUL MUL) | MUL | (DIV DIV) | DIV | INTDIV | (PIPE PIPE) | PIPE | (AND AND) | AND) EQ)
 
@@ -382,7 +387,7 @@ extended_assignment ::= EQ  | ( (PLUS | MINUS | (MUL MUL) | MUL | (DIV DIV) | DI
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 meta excluding_expr ::=  <<meta_expr (<<p>>)>> | (LPAREN (expr) RPAREN !<<p>>)
-parameter_expr ::= <<parameter_meta_expr DUMMYOBJECT>>
+parameter_expr ::= DOT | <<parameter_meta_expr DUMMYOBJECT>>
 expr ::= <<meta_expr DUMMYOBJECT>>
 private meta parameter_meta_expr ::= !COMMA (<<expr_raw <<p>>>> (((PIPE PIPE))? !COMMA <<meta_expr <<p>>>>)*)
 private meta meta_expr ::= COMMA? (<<expr_raw <<p>>>> ((COMMA |(PIPE PIPE))? <<meta_expr <<p>>>>)*)
@@ -398,11 +403,11 @@ private mul_op ::= (MUL MUL)|MUL|(DIV DIV)| DIV|INTDIV
 
 private meta primary ::=  (  message_term | literal_expr | <<ref_expr <<p>>>> | function_call  | paren_expr )
 
- meta paren_expr ::= '(' expr ')' {pin=1}
- meta ref_expr ::= (namespace_prefix (new_line* !assignments_and_keywords))? (identifier | environment_id | (!<<p>> keyword_list) ) // ID
+ meta paren_expr ::= MINUS? '(' expr ')' {pin=2}
+ meta ref_expr ::= (namespace_prefix (new_line* !assignments_and_keywords))? MINUS? (identifier | environment_id | (!<<p>> keyword_list) ) // ID
 literal_expr ::= string_lit | negative_numeric_expr | numeric_expr | bool_lit |  NIL
 numeric_expr ::= PLUS? (INTEGER_LITERAL | FLOAT_LITERAL)
-negative_numeric_expr ::= "-" (INTEGER_LITERAL | FLOAT_LITERAL)
+negative_numeric_expr ::= MINUS (INTEGER_LITERAL | FLOAT_LITERAL)
 
 private comparator ::= (EQ EQ) | (LT LT EQ)| (GT GT EQ)| (LT LT) | (GT GT) | (LT GT)
 | (GT LT) | (NEGATION LT LT) | (NEGATION GT GT) | (LT EQ) | (GT EQ)
@@ -412,7 +417,7 @@ private comparator ::= (EQ EQ) | (LT LT EQ)| (GT GT EQ)| (LT LT) | (GT GT) | (LT
 // Label instruction
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-label_instruction ::= symbol_or_string COLON (keyword_procedure keyword_expose?)? instruction_terminator?
+label_instruction ::= (symbol_or_string | keyword_list) COLON (keyword_procedure keyword_expose?)? (instruction_terminator | instruction)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Directives
@@ -477,7 +482,7 @@ directive_class_body ::= (!(directive_start (directive_class | directive_require
 // ::Constant
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-directive_constant ::= CONSTANT symbol_or_string lit? {implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
+directive_constant ::= CONSTANT symbol_or_string lit? instruction_terminator{implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ::Method
@@ -539,6 +544,8 @@ private keyword_instruction_recovery ::= !instruction_terminator
 
 instruction_terminator ::= (EOL+ | (SEMICOLON+ new_line*) | <<eof>>)
 
+comma_separated_expr ::= (expr (COMMA+ expr)*)
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Address
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -556,7 +563,7 @@ keyword_arg ::= ARG template_list?{pin = 1}
 
 keyword_call_variants ::= (keyword_call | keyword_call_on | keyword_call_off)
 
-keyword_call ::= CALL (symbol_or_string | ( LPAREN expr RPAREN)) (expr (COMMA expr)*)?{pin = 1}
+keyword_call ::= CALL (symbol_or_string_or_function | ( LPAREN expr RPAREN)) comma_separated_expr?{pin = 1}
 
 keyword_call_on ::= CALL ON (((ANY | ERROR | FAILURE | HALT | NOTREADY | (USER id)) (NAME id)) |
                             ((NAME id) (ANY | ERROR | FAILURE | HALT | NOTREADY | (USER id)))){pin = 1}
@@ -681,12 +688,12 @@ keyword_options ::= OPTIONS expr{pin = 1}
 // Parse
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-keyword_parse ::= PARSE (keyword_parse_caseless | keyword_parse_upper_lower)* keyword_arg_etc (keyword_parse_caseless | keyword_parse_upper_lower)* (template_list | DOT)+ {pin = 1}
+keyword_parse ::= PARSE (keyword_parse_caseless | keyword_parse_upper_lower)* keyword_arg_etc (keyword_parse_caseless | keyword_parse_upper_lower)* (template_list | DOT)* {pin = 1}
 
 keyword_parse_upper_lower ::= UPPER | LOWER {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 keyword_parse_caseless ::= CASELESS {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-keyword_arg_etc ::= ARG | LINEIN | PULL | SOURCE | VAR symbol_or_string | VERSION | (VALUE <<excluding_expr WITH>> WITH) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-
+keyword_arg_etc ::= ARG | LINEIN | PULL | SOURCE | VAR (assignment | expr) | VERSION | (VALUE <<excluding_expr WITH>> WITH) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+//parse var path2file +(lpos) theme "/" name "." ext
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Procedure
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -696,7 +703,7 @@ keyword_procedure ::= PROCEDURE (keyword_expose)?{pin = 1}
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Pull
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-keyword_pull ::= PULL template_list{pin = 1}
+keyword_pull ::= PULL template_list*{pin = 1}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // PUSH
@@ -713,7 +720,6 @@ keyword_queue::= QUEUE expr?{pin = 1}
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // RAISE
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-//TODO: array (self~string, msgName) -> array() func_id
 keyword_raise::= RAISE (keyword_raise_error_etc | keyword_raise_options)*{pin = 1}
 keyword_raise_error_etc ::= (ERROR (lit | (LPAREN expr RPAREN))) | (FAILURE (lit | (LPAREN expr RPAREN))) | HALT | LOSTDIGITS | NOMETHOD | NOSTRING | NOTREADY | NOVALUE | (SYNTAX (lit | (LPAREN expr RPAREN))) | (USER symbol_or_string) | PROPAGATE {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 keyword_raise_options ::= (keyword_raise_options_array | keyword_raise_options_description | keyword_raise_options_exit_return | keyword_raise_options_additional)+
