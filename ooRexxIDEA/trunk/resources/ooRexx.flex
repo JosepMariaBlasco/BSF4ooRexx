@@ -73,8 +73,12 @@ import static com.intellij.psi.TokenType.*;
         zzMarkedPos = zzStartRead + 1;
     }
     concatinationOffset = -1;
-
-    return e;
+    if(!isWhiteSpace){
+        if(isMinus)
+            return MINUS;
+        else
+            return COMMA;
+    } else return e;
 
 
   }
@@ -126,8 +130,9 @@ EOL = ([\ \t]* {SINGLE_EOL}+ [\ \t]*)+
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 IDENTIFIER_WITHOUT_SPECIAL_CHARS = [a-zA-Z\_\?\!\.]+[0-9a-zA-Z\_\?\!\.]* // No "special" chars
-IDENTIFIER = [a-zA-Z\_\?\!\.\#\$\@\¢]+[0-9a-zA-Z\_\?\!\.\#\$\@\¢]*
+IDENTIFIER_WITH_SPECIAL_CHARS = [a-zA-Z\_\?\!\.\#\$\@\¢]+[0-9a-zA-Z\_\?\!\.\#\$\@\¢]*
 
+IDENTIFIER = {IDENTIFIER_WITHOUT_SPECIAL_CHARS}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Literals
@@ -325,7 +330,6 @@ DEC_LITERAL = [0-9] [0-9_]*
 
     "PUBLIC"                      { return PUBLIC; }
     "RESOURCE"                  {return RESOURCE;}
-    "RESOURCE_DATA"                  {return RESOURCE_DATA;} //TODO: parse data
     "SET"                      { return SET; }
     "SUBCLASS"                      { return SUBCLASS; }
     "TRACE"                      { return TRACE; }
@@ -518,11 +522,10 @@ DEC_LITERAL = [0-9] [0-9_]*
 
 
     "-" {
-
             if(!commentStart){
 
                 if(concatinationOffset != -1){
-                                    return imbueConcat(MINUS, false);
+                    return imbueConcat(MINUS, false);
                 }
                 concatinationOffset = zzStartRead;
 
