@@ -326,7 +326,10 @@ instruction ::= (SEMICOLON | label_instruction | ((assignments_and_keywords | (!
 function_call ::= built_in_functions | (namespace_prefix? function_call_without_namespace)
 private function_call_without_namespace ::= ((FUNC_IDENTIFIER | built_in_functions_keyword_list) LPAREN (COMMA | parameter_expr)* RPAREN){pin = 2}
 
-private template_list ::= assignment | (expr (COMMA expr)*)+ | COMMA | DOT
+private template_list ::= ( (expr (COMMA expr)*)+ | COMMA | DOT | template_list_eq | template_list_minus | template_list_plus)+
+private template_list_plus ::= PLUS LPAREN expr RPAREN
+private template_list_minus ::= MINUS LPAREN expr RPAREN
+private template_list_eq ::= EQ LPAREN expr RPAREN
 
 namespace_prefix ::= (identifier | keyword_list) COLON
 
@@ -688,11 +691,11 @@ keyword_options ::= OPTIONS expr{pin = 1}
 // Parse
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-keyword_parse ::= PARSE (keyword_parse_caseless | keyword_parse_upper_lower)* keyword_arg_etc (keyword_parse_caseless | keyword_parse_upper_lower)* (template_list | DOT)* {pin = 1}
+keyword_parse ::= PARSE (keyword_parse_caseless | keyword_parse_upper_lower)* keyword_arg_etc (keyword_parse_caseless | keyword_parse_upper_lower)* (template_list)? {pin = 1}
 
 keyword_parse_upper_lower ::= UPPER | LOWER {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 keyword_parse_caseless ::= CASELESS {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-keyword_arg_etc ::= ARG | LINEIN | PULL | SOURCE | VAR (assignment | expr) | VERSION | (VALUE <<excluding_expr WITH>> WITH) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+keyword_arg_etc ::= ARG | LINEIN | PULL | SOURCE | VAR (symbol_or_string) | VERSION | (VALUE <<excluding_expr WITH>> WITH) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 //parse var path2file +(lpos) theme "/" name "." ext
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Procedure
