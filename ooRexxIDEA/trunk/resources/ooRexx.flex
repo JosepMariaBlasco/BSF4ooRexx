@@ -9,8 +9,9 @@ import static com.intellij.psi.TokenType.*;
 %%
 
 %{
-  public OoRexxLexer() {
+  public OoRexxLexer(boolean allowSpecialChars) {
     this((java.io.Reader)null);
+    this.allowSpecialChars = allowSpecialChars;
   }
 %}
 
@@ -40,6 +41,8 @@ import static com.intellij.psi.TokenType.*;
   private boolean isMinus;
   private boolean isConcatinationWhiteSpace = false;
    private int yychar;
+   private boolean allowSpecialChars = false;
+   private static java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(".*(\\u0040|\\u0023|\\u00A2|\\u0024).*", java.util.regex.Pattern.CASE_INSENSITIVE);
 
 %}
 
@@ -101,6 +104,7 @@ import static com.intellij.psi.TokenType.*;
 %s IN_LIFETIME_OR_CHAR
 %s IN_CONCATINATION
 %s IN_EOL
+%s IN_IDENTIFIER
 
 %unicode
 
@@ -132,7 +136,7 @@ EOL = ([\ \t]* {SINGLE_EOL}+ [\ \t]*)+
 IDENTIFIER_WITHOUT_SPECIAL_CHARS = [a-zA-Z\_\?\!\.]+[0-9a-zA-Z\_\?\!\.]* // No "special" chars
 IDENTIFIER_WITH_SPECIAL_CHARS = [a-zA-Z\_\?\!\.\#\$\@\¢]+[0-9a-zA-Z\_\?\!\.\#\$\@\¢]*
 
-IDENTIFIER = {IDENTIFIER_WITHOUT_SPECIAL_CHARS}
+IDENTIFIER = {IDENTIFIER_WITH_SPECIAL_CHARS}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Literals
@@ -460,7 +464,17 @@ DEC_LITERAL = [0-9] [0-9_]*
   "--" {return EOL_COMMENT;}
 
   "." {IDENTIFIER}                    { return ENV_IDENTIFIER; }
-  {IDENTIFIER}                    { return IDENTIFIER; }
+  {IDENTIFIER}                    { if(allowSpecialChars) return IDENTIFIER; else {
+        String text = yytext().toString();
+
+
+                java.util.regex.Matcher matcher = pattern.matcher(text);
+
+        if(matcher.matches())
+            return BAD_CHARACTER;
+        else return IDENTIFIER;
+  }
+  }
 
 
   /* LITERALS */
@@ -703,6 +717,8 @@ DEC_LITERAL = [0-9] [0-9_]*
     [^]     { }
 
 }
+
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Lifetimes & Literals

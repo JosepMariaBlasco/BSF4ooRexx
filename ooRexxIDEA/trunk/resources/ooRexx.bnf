@@ -180,6 +180,7 @@
             EOL_COMMENT = 'EOL_COMMENT'
             DOC_COMMENT = 'DOC_COMMENT'
             SHEBANG_LINE = 'SHEBANG_LINE'
+
             TILDE = '~'
             PLUS = '+'
             MINUS = '-'
