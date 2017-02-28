@@ -27,7 +27,8 @@
     <runConfigurationProducer implementation="org.oorexx.ide.intellij.run.configuration.RunConfigurationProducer"/>
 
     <additionalTextAttributes scheme="Default" file="colorSchemes/ooRexxColors.xml"/>
-
+    <applicationConfigurable groupId="language"  displayName="ooRexx" id="ooRexx" instance="org.oorexx.ide.intellij.setting.OoRexxLanguageConfigurable" />
+    <applicationService serviceImplementation="org.oorexx.ide.intellij.setting.OoRexxLanguageSettings"/>
   </extensions>
   <depends>com.intellij.modules.lang</depends>
 </idea-plugin>

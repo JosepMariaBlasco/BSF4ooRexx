@@ -1,5 +1,6 @@
 package org.oorexx.ide.parser;
 
+import com.intellij.ide.util.PropertiesComponent;
 import com.intellij.lang.ASTNode;
 import com.intellij.lang.Language;
 import com.intellij.lang.ParserDefinition;
@@ -19,6 +20,8 @@ import org.oorexx.ide.lang.OoRexxTypes;
 import org.oorexx.ide.lexer.OoRexxLexerAdapter;
 import org.oorexx.ide.lexer.token.OoRexxTokenType;
 import org.oorexx.ide.parser.OoRexxParser;
+
+import static org.oorexx.ide.intellij.setting.SettingPropertyNames.ALLOW_SPECIAL_CHARS;
 
 public class OoRexxParserDefinition implements ParserDefinition {
 
