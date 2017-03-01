@@ -30,20 +30,34 @@ import static com.intellij.psi.TokenType.*;
   /**
     * Dedicated nested-comment level counter
     */
-  private int zzNestedCommentLevel = 0;
+    private int zzNestedCommentLevel = 0;
 
-  private int doubleQuoteStringLiteralStart = 0;
-  private int singleQuoteStringLiteralStart = 0;
+    private int doubleQuoteStringLiteralStart = 0;
+    private int singleQuoteStringLiteralStart = 0;
 
-  private int concatinationOffset = -1;
-  private int commentLevel = 0;
-  private boolean commentStart = false;
-  private boolean isMinus;
-  private boolean isConcatinationWhiteSpace = false;
-   private int yychar;
-   private boolean allowSpecialChars = false;
-   private static java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(".*(\\u0040|\\u0023|\\u00A2|\\u0024).*", java.util.regex.Pattern.CASE_INSENSITIVE);
+    private int concatinationOffset = -1;
+    private int commentLevel = 0;
+    private boolean commentStart = false;
+    private boolean isMinus;
+    private boolean isConcatinationWhiteSpace = false;
+    private int yychar;
+    private boolean allowSpecialChars = false;
+    private static java.util.regex.Pattern pattern = java.util.regex.Pattern.compile(".*(\\u0040|\\u0023|\\u00A2|\\u0024).*", java.util.regex.Pattern.CASE_INSENSITIVE);
 
+    public IElementType getIdentifier(IElementType identifier){
+        if(allowSpecialChars){
+            return identifier;
+        } else {
+            String text = yytext().toString();
+            java.util.regex.Matcher matcher = pattern.matcher(text);
+
+            if(matcher.matches()){
+                return BAD_CHARACTER;
+            } else {
+                return identifier;
+            }
+        }
+    }
 %}
 
 %{
@@ -297,7 +311,7 @@ DEC_LITERAL = [0-9] [0-9_]*
 
   "~"                             { return TILDE; }
 "IF"   / "("                   { return IF; }
-  {IDENTIFIER}  / "("             {return FUNC_IDENTIFIER;}
+  {IDENTIFIER}  / "("             {return getIdentifier(FUNC_IDENTIFIER);}
 
 
     "PACKAGE" {return PACKAGE;}
@@ -463,17 +477,8 @@ DEC_LITERAL = [0-9] [0-9_]*
   "--" .* ([^\n | \r | \r\n])                        { return EOL_COMMENT; }
   "--" {return EOL_COMMENT;}
 
-  "." {IDENTIFIER}                    { return ENV_IDENTIFIER; }
-  {IDENTIFIER}                    { if(allowSpecialChars) return IDENTIFIER; else {
-        String text = yytext().toString();
-
-
-                java.util.regex.Matcher matcher = pattern.matcher(text);
-
-        if(matcher.matches())
-            return BAD_CHARACTER;
-        else return IDENTIFIER;
-  }
+  "." {IDENTIFIER}                    { return getIdentifier(ENV_IDENTIFIER); }
+  {IDENTIFIER}                    { return getIdentifier(IDENTIFIER);
   }
 
 
