@@ -12,6 +12,14 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2017-03-09, ---rgf, - routine bsf.createProxyClass enhanced with the possibility to add any number
+         2017-03-12            of blank delimited Java interface class names after the Java class name that
+                               is to be extended (alternatively this can be an array with each item being
+                               a string denoting the fully qualified class name or a Java class object);
+                               ProxiedJavaClassTool.java got enhanced appropriately
+                               (TODO: remove ASM from BSF4ooRexx); now possible to extend an interface
+                               class and implement its methods in Rexx without using a java.reflect.Proxy!
+
          2017-02-13, ---rgf, - finalizing implementation of .JSR223's set() and get() methods
 
          2017-02-12, ---rgf, - .JSR223' "get" and "set" methods: adjust logic to desired functionality:
@@ -621,7 +629,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20170213" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20170311" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -636,7 +644,6 @@
    call BSfShowErrorMessage .false  -- turn off displaying the Java exception message (leftover from the very early BSF4Rexx days)
 
 -- .stderr~say("BSF.CLS - about to leave the PROLOG code, tid="pp(bsfGetTID()) ".bsf.rii_ID="pp(.bsf.rii_ID) ".bsf.primodalTID="pp(.bsf.primodalTID)  ".local~identityHash~d2x="pp(.local~identityHash~d2x) ".bsf~identityhash~d2x="pp(.bsf~identityhash~d2x) "<=== "~copies(5))
-
    return
 
 syntax:
@@ -4311,9 +4318,15 @@ syntax:
 *    first argument. If the class' <em>defaultHandler</em> is not set yet, then the extended constructor's
 *    code will set it to the <em>targetRexxProxy</em> automatically.
 *
-* @param javaClzName the fully qualified Java class name to be extended
+* @param javaClzName the fully qualified Java class name to be extended, either a string or a Java class object.
+         If the argument is a string, then it can be optionally followed by blank-delimited Java interface names
+         that the new class would implement as well and get serviced by the <code>RexxProxy</code> handling
+         the Java method invocations. Alternatively this can be an array where each array element is either
+         a string fully qualifying the Java class or a Java class object directly representing the class.
+
 * @param newName the optional name of the newly created Java class, if omitted, a synthetic name
 *        will be created, containing the string &quot;<em>visitorName</em>_$RexxExtendClass$_<em>someHashcode</em>&quot;
+
 * @param methName... optional, either a list of single Java method names or an array of Java method names
 *        the Rexx proxy needs to implement; optionally, each Java method name may be preceded by
 *        the Java class name and a blank; if <code>.nil</code>
@@ -4326,11 +4339,12 @@ syntax:
 *
 * @return Java class object that is able to delegate its method invocations to a <code>RexxProxy</code> object
 *
-* @since 2010-04-18, 2014-08-31
+* @since 2010-04-18, 2014-08-31, 2017-03-09
 */
 
+-- TODO: class name can be followed with blank-delimited interface class names
 ::routine bsf.createProxyClass public
-   use strict arg javaClzToProxy, newName=.nil, methName=.nil, ...
+   use strict arg javaClzToProxy, newName=.nil, methName="", ...
 
    signal on syntax
 
@@ -4338,7 +4352,7 @@ syntax:
    jPJCT=.bsf4rexx~entry("ProxiedJavaClassTool")
    if jPJCT=.nil then
    do
- -- say ".... bsf.createProxyClass(): need to load and save ProxiedJavaClassTool clz"
+-- say ".... BSF.CLS/routine/bsf.createProxyClass(): need to load and save ProxiedJavaClassTool clz" "javaClzToProxy:" pp(javaClzToProxy) "newName="pp(newName) "methName="pp(methName)
        clzName="org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool"
        jPJCT=bsf.loadClass(clzName)
        .bsf4rexx~setEntry(clzName, jPJCT)
@@ -4346,8 +4360,47 @@ syntax:
 
    -- jPJCT~bss=.true   -- show created Java source code of the extended class on stderr, meant for debugging only
 
+   arrInterfaceClasses=.nil   -- if interface classes are contained in first argument, this variable will be used for them
    if javaClzToProxy~isA(.string) then
-      javaClzToProxy=bsf.loadClass(javaClzToProxy)   -- load Java class
+   do
+      -- make an array of classes, could be that optionally blank delimited interface classes follow
+      allClasses=javaClzToProxy~makeArray(" ")
+      items=allClasses~items
+      javaClzToProxy=bsf.loadClass(allClasses[1])  -- load Java class
+      if items>1 then   -- interface classes supplied too?
+      do
+         arrInterfaceClasses=bsf.createJavaArray("java.lang.Class", items-1)
+         loop i=2 to allClasses~items
+            tmpClz=bsf.loadClass(allClasses[i])    -- load the Java interface class
+            if tmpClz~isInterface<>.true then      -- not a Java interface class!
+            do
+               raise syntax 40.900 array ("BSF.CLS/routine/bsf.createProxyClass(): error 1 in argument 1: the additional supplied interface class" pp(allClasses[i]) "is not a Java interface class")
+            end
+            arrInterfaceClasses[i-1]=tmpClz        -- save interface class object
+         end
+      end
+   end
+   else if javaClzToProxy~isA(.array) then      -- assuming an array of strings denoting the Java classes or Java class objects
+   do
+       ifItems=javaClzToProxy~items-1
+       arrInterfaceClasses=bsf.createJavaArray("java.lang.Class", javaClzToProxy~items-1)
+       loop i=2 to javaClzToProxy~items         -- create array of Java interface classes to proxy
+          tmpClz=javaClzToProxy[i]              -- get entry
+          if tmp~isA(.string) then
+             tmpClz=bsf.loadClass(allClasses[i])   -- load the Java interface class
+
+          if tmpClz~isInterface<>.true then     -- not a Java interface class!
+          do
+             raise syntax 40.900 array ("BSF.CLS/routine/bsf.createProxyClass(): error 2 in argument 1: the additional supplied interface class" pp(allClasses[i]) "at index" pp(i) "is not a Java interface class")
+          end
+          arrInterfaceClasses[i-1]=tmpClz       -- save interface class object
+       end
+
+       javaClzToProxy=javaClzToProxy[1]         -- now replace the class to be extended with first entry in the supplied array
+       if javaClzToProxy~isA(.string) then      -- make sure we have a Java object in hand
+          javaClzToProxy=bsf.loadClass(javaClzToProxy)   -- load the Java class
+
+   end
 
    if methName="", arg()<4 then     -- if only an empty method given, turn argument to empty Java String array
       methName=bsf.createJavaArray("java.lang.String", 0)
@@ -4366,7 +4419,9 @@ syntax:
       end
    end
 
-   newProxyClz=jPJCT~createProxiedJavaClass(javaClzToProxy, newName, methName)
+   -- newProxyClz=jPJCT~createProxiedJavaClass(javaClzToProxy, newName, methName)
+-- say "bsf.createProxyClass(): arrInterfaceClasses="pp(arrInterfaceClasses)
+   newProxyClz=jPJCT~createProxiedJavaClass(javaClzToProxy, newName, methName, arrInterfaceClasses)
 
    -- now add ooRexx' new() and newStrict() class methods to it
    newProxyClz=.bsf~bsf.import(newProxyClz~getName, .nil, newProxyClz)
@@ -4460,7 +4515,7 @@ syntax: raise propagate
       return BSFRawBytes(obj~getBytes("UTF-8"))       -- render String value to a Rexx string and return it
    end
 
-   raise syntax 40.900 array ("Wrong argument, must be a Java String object (JSO) or a Java object which String value (result of sending it the 'toString' message) will be processed upon. Instead, received an ooRexx object.")
+   raise syntax 40.900 array ("BSF.CLS/routine/bsf.JSOasUtf8string(): wrong argument, must be a Java String object (JSO) or a Java object which String value (result of sending it the 'toString' message) will be processed upon. Instead, received an ooRexx object.")
 
 syntax:
    raise propagate
@@ -4478,7 +4533,7 @@ syntax:
       return BSFRawBytes(obj~getBytes("UTF-8"))       -- render String value to a Rexx string and return it
    end
 
-   raise syntax 40.900 array ("Wrong argument, must be a Java String object (JSO) or a Java object which String value (result of sending it the 'toString' message) will be processed upon. Instead, received an ooRexx object.")
+   raise syntax 40.900 array ("BSF.CLS/routine/JSOasUtf8string(): wrong argument, must be a Java String object (JSO) or a Java object which String value (result of sending it the 'toString' message) will be processed upon. Instead, received an ooRexx object.")
 
 syntax:
    raise propagate
@@ -5292,7 +5347,7 @@ syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext
    signal on syntax
    use strict arg scriptContext, attributeNames=""
 
-say ".jsr223~get, attributeNames="pp(attributeNames)
+-- say ".jsr223~get, attributeNames="pp(attributeNames)
 
    if scriptContext~isA(.RexxContext) then   -- fetch the scriptContext entry
       scriptContext=scriptContext~args~lastItem~scriptContext
