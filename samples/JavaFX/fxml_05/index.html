@@ -1,0 +1,106 @@
+<head>
+    <title>Brief Overview of the BSF4ooRexx Samples in this Directory</title>
+</head>
+
+<body>
+<h1>
+      &quot;fxml_05&quot; List staff at WU to demonstrate opensource and free JavaFX controls
+</h1>
+
+<p style="font-size: smaller;">
+
+<em>Hint:</em> if you wish to look at the ooRexx code with syntax highlighting, then you can
+use the free and open-source editor <code>&quot;[g]vim&quot;</code>, which is available for practically
+all platforms and can be downloaded from its homepage at
+<a href="http://www.vim.org/">http://www.vim.org/</a>.
+
+<dl>
+    <dt><em><a href=".">.  &lt;directory&gt; (List of this directory)</a></em>
+    <dd>Display all of this directory's files and directories.
+
+    <dt><em><a href="../index.html">..  &lt;directory&gt; (List of parent directory)</a></em>
+    <dd>Display all of the parent directory's files and directories.
+
+    <dt><em><a href="css">css  &lt;directory&gt; </a></em>
+    <dd>Stylesheet used in the application
+
+    <dt><em><a href="fxml">fxml  &lt;directory&gt; </a></em>
+    <dd>FXML-files comprising the graphical user interface (GUI), a utility Rexx program, and the Rexx controller program
+
+    <dt><em><a href="images">images  &lt;directory&gt; </a></em>
+    <dd>Bitmap files used in the application
+
+</dl>
+
+<p style="font-size: smaller;">
+
+The following files and Rexx packages (Rexx programs) are used in this application.
+
+<dl>
+
+    <dt> <a href="controlsfx-8.40.12.jar">controlsfx-8.40.12.jar</a>
+    <dd> The Java archive containing all free and opensource JavaFX controls from the
+         ControlsFX project as of 2017-03-22. This file needs to be present on the
+         Java <code>CLASSPATH</code> environment variable in order for Java to find
+         its contained Java classes.
+
+    <dt> <a href="license.txt">license.txt</a>
+    <dd> The license for the ControlsFX Java archive.
+
+
+    <dt> <a href="readme.html">readme.html</a>
+    <dd> This file describes and documents this application and the files it is comprised of.
+         It also supplies links to the ControlsFX web site and links to the description of the
+         free and opensource JavaFX controls used from that project.
+
+    <dt> <a href="run.cmd">run.cmd</a>
+    <dd> This is the Windows script to run this Rexx application. It is needed to add the ControlsFX
+         jar file to the Java <code>CLASSPATH</code> environment variable, such that Java becomes
+         able to find the ControlsFX Java classes that are used in this application.
+
+    <dt> <a href="run.sh">run.sh</a>
+    <dd> This is the Unix (Linux, MacOSX) script to run this Rexx application. It is needed to add
+         the ControlsFX jar file to the Java <code>CLASSPATH</code> environment variable, such that
+         Java becomes able to find the ControlsFX Java classes that are used in this application.
+
+    <dt> <a href="staff.rxj">staff.rxj</a>, use the <code>run.cmd</code> (Windows) or <code>run.sh</code> (Linux,
+         MacOSX) to execute this Rexx program
+    <dd> The main Rexx program that sets up and starts the JavaFX application.
+
+
+    <dt> <a href="fxml/put_FXID_objects_into.my.app.rex">fxml/put_FXID_objects_into.my.app.rex</a>
+    <dd> A utility Rexx program/package that is called from within each GUI-FXML file which
+         makes all its JavaFX objects (those that have a &quot;fx:id&quot; attribute defined)
+         available to all running Rexx programs.
+
+    <dt> <a href="fxml/staff.fxml">fxml/staff.fxml</a>
+    <dd> The FXML file defining the GUI for the application using some ControlsFX JavaFX controls.
+
+    <dt> <a href="fxml/staffController.rxj">fxml/staffController.rxj</a>
+    <dd> The Rexx controller program, which is used from the GUI-FXML file.
+
+
+    <dt> <a href="images/bsf4oorexx_032.png">images/bsf4oorexx_032.png</a>
+    <dd> The BSF4ooRexx logo in 32x32 pixels.
+
+    <dt> <a href="images/SceneBuilder.png">images/SceneBuilder.png</a>
+    <dd> A screenshot demonstrating how to add the ControlsFX Java archive file to the
+         <code>SceneBuilder</code>, referred to by <a href="readme.html">readme.html</a>
+
+    <dt> <a href="images/staff.fxml.png">images/staff.fxml.png</a>
+    <dd> A screenshot displaying <a href="fxml/staff.fxml">fxml/staff.fxml</a> in
+         <code>SceneBuilder</code>, referred to by <a href="readme.html">readme.html</a>
+
+    <dt> <a href="stylesheets/style.css">stylesheets/style.css</a>
+    <dd> A simple style sheet used in the application.
+</dl>
+
+
+
+
+<p>
+<hr>
+<p style="font-size: smaller;">
+Rony G. Flatscher, 2017-03-22, Wien/Vienna, Austria, Europe
+</body>
+

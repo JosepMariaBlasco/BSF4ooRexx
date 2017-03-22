@@ -4,16 +4,16 @@
 
 <body>
 <h1>
-      &quot;fxml_04&quot; Registration Form
+      &quot;fxml_04&quot; HTML Editor
 </h1>
 
 <p style="font-size: smaller;">
 
-<p style="font-size: smaller;">
 <em>Hint:</em> if you wish to look at the ooRexx code with syntax highlighting, then you can
 use the free and open-source editor <code>&quot;[g]vim&quot;</code>, which is available for practically
 all platforms and can be downloaded from its homepage at
 <a href="http://www.vim.org/">http://www.vim.org/</a>.
+
 
 <dl>
     <dt><em><a href=".">.  &lt;directory&gt; (List of this directory)</a></em>
@@ -27,57 +27,36 @@ all platforms and can be downloaded from its homepage at
 
     <dt><em><a href="images">images  &lt;directory&gt; </a></em>
     <dd>Bitmap files used in the application
-
-    <dt><em><a href="stylesheets">stylesheets  &lt;directory&gt; </a></em>
-    <dd>Contains a simple stylesheet that changes the icon from an arrow to a hand, if hovering over the button named &quot;send data&quot; or the image drop area.  
-
 </dl>
 
 <p style="font-size: smaller;">
 
-The following Rexx packages (Rexx programs) are used in this application.
+The following files and Rexx packages (Rexx programs) are used in this application.
 
 <dl>
-    <dt> <a href="registration.rxj">registration.rxj</a>, usage: &quot;<code>rexx registration.rxj</code>&quot; or
-         (on Linux use <code>rexxj.sh</code> instead) &quot;<code>rexxj.cmd registration.rxj</code>&quot;
-    <dd> The main Rexx program that sets up and starts the JavaFX application. 
+    <dt> <a href="htmlEditor.rxj">htmlEditor.rxj</a>, usage: &quot;<code>rexx htmlEditor.rxj</code>&quot; or
+         (on MacOSX use <code>rexxj.sh</code> instead) &quot;<code>rexxj.cmd htmlEditor.rxj</code>&quot;
+    <dd> The main Rexx program that sets up and starts the JavaFX application.
 
     <dt> <a href="fxml/put_FXID_objects_into.my.app.rex">fxml/put_FXID_objects_into.my.app.rex</a>
-    <dd> A utilty Rexx program/package that is called from within each GUI-FXML file which
+    <dd> A utility Rexx program/package that is called from within each GUI-FXML file which
          makes all its JavaFX objects (those that have a &quot;fx:id&quot; attribute defined)
          available to all running Rexx programs.
 
     <dt> <a href="fxml/registration.fxml">fxml/registration.fxml</a>
     <dd> The FXML file defining the GUI for the registration form.
 
-    <dt> <a href="fxml/registrationStep2.fxml">fxml/registrationStep2.fxml</a>
-    <dd> The FXML file defining another GUI for the registration form, that is used, once the user presses the &quot;send data&quot; button.
-   
-    <dt> <a href="fxml/registration_controller.rxj">fxml/registration_controller.rxj</a>
-    <dd> The Rexx controller program, which is used from the GUI-FXML files.
+    <dt> <a href="fxml/htmlEditorController.rxj">fxml/htmlEditorController.rxj</a>
+    <dd> The Rexx controller program, which is used from the GUI-FXML file.
 
     <dt> <a href="images/bsf4oorexx_032.png">images/bsf4oorexx_032.png</a>
     <dd> The BSF4ooRexx logo in 32x32 pixels.
-
-    <dt> <a href="images/ImageDropArea.png">images/ImageDropArea.png</a>
-    <dd> The bitmap used for the image dropping area.
-
-    <dt> <a href="images/ImageDropArea.psd">images/ImageDropArea.psd</a>
-    <dd> The used for the image dropping area, the Adobe Photoshop document defining it.
-
-    <dt> <a href="images/oorexx_032.png">images/oorexx_032.png</a>
-    <dd> The ooRexx logo in 32x32 pixels, used as the application icon.
-
-    <dt> <a href="stylesheets/style.css">stylesheets/style.css</a>
-    <dd> The stylesheet thethat changes the icon from an arrow to a hand, if hovering over the button named &quot;send data&quot; or the image drop area. 
 </dl>
 
 
 <p>
 <hr>
 <p style="font-size: smaller;">
-Adrian Baginski, Rony G. Flatscher, 2017-02-19 Wien/Vienna, Austria, Europe
+Rony G. Flatscher, 2017-03-22, Wien/Vienna, Austria, Europe
 </body>
-
-
 

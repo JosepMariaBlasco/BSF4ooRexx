@@ -4,16 +4,10 @@
 
 <body>
 <h1>
-      &quot;fxml_03&quot; Rexx Address Book Application
+      &quot;fxml_04&quot; Registration Form
 </h1>
 
 <p style="font-size: smaller;">
-
-This directory contains the Rexx implementation (cf. <a href="MainApp.rex">MainApp.rexMainApp.rex</a>) of the JavaFX address book tutorial from:
-   <ul style="font-size: smaller;">
-       <li><a href="http://code.makery.ch/library/javafx-2-tutorial/">Java 1.7/7 (&quot;JavaFX 2&quot;): Address Book Tutorial</a>
-       <li><a href="http://code.makery.ch/library/javafx-8-tutorial/">Java 1.8/8 (&quot;JavaFX 8&quot;): Address Book Tutorial</a>
-   </ul>
 
 <p style="font-size: smaller;">
 <em>Hint:</em> if you wish to look at the ooRexx code with syntax highlighting, then you can
@@ -27,6 +21,16 @@ all platforms and can be downloaded from its homepage at
 
     <dt><em><a href="../index.html">..  &lt;directory&gt; (List of parent directory)</a></em>
     <dd>Display all of the parent directory's files and directories.
+
+    <dt><em><a href="fxml">fxml  &lt;directory&gt; </a></em>
+    <dd>FXML-files comprising the graphical user interface (GUI), a utility Rexx program, and the Rexx controller program
+
+    <dt><em><a href="images">images  &lt;directory&gt; </a></em>
+    <dd>Bitmap files used in the application
+
+    <dt><em><a href="stylesheets">stylesheets  &lt;directory&gt; </a></em>
+    <dd>Contains a simple stylesheet that changes the icon from an arrow to a hand, if hovering over the button named &quot;send data&quot; or the image drop area.  
+
 </dl>
 
 <p style="font-size: smaller;">
@@ -34,77 +38,45 @@ all platforms and can be downloaded from its homepage at
 The following Rexx packages (Rexx programs) are used in this application.
 
 <dl>
-    <dt> <a href="MainApp.rex">MainApp.rex</a>, usage: &quot;<code>rexx MainApp.rex [json-file]</code>&quot; or
-         (on Linux use <code>rexxj.sh</code> instead) &quot;<code>rexxj.cmd MainApp.rex [json-file]</code>&quot;
+    <dt> <a href="registration.rxj">registration.rxj</a>, usage: &quot;<code>rexx registration.rxj</code>&quot; or
+         (on MacOSX use <code>rexxj.sh</code> instead) &quot;<code>rexxj.cmd registration.rxj</code>&quot;
+    <dd> The main Rexx program that sets up and starts the JavaFX application. 
 
-    <dd> The main Rexx program that sets up and starts the JavaFX application. This program
-         will cause JavaFX to load and process the GUI defined in the XML text files (file type of <code>.fxml</code>)
-         and implements the controllers for the different GUI-FXML files.
-
-    <dt> <a href="put_FXID_objects_into.my.app.rex">put_FXID_objects_into.my.app.rex</a>
+    <dt> <a href="fxml/put_FXID_objects_into.my.app.rex">fxml/put_FXID_objects_into.my.app.rex</a>
     <dd> A utilty Rexx program/package that is called from within each GUI-FXML file which
          makes all its JavaFX objects (those that have a &quot;fx:id&quot; attribute defined)
          available to all running Rexx programs.
 
-    <dt> <a href="json-rgf.cls">json-rgf.cls</a>
-    <dd> A Rexx package allowing to read and write <a href="http://www.json.org/">JSON</a> encoded data.
-         Used to read and write address book data.
+    <dt> <a href="fxml/registration.fxml">fxml/registration.fxml</a>
+    <dd> The FXML file defining the GUI for the registration form.
+
+    <dt> <a href="fxml/registrationStep2.fxml">fxml/registrationStep2.fxml</a>
+    <dd> The FXML file defining another GUI for the registration form, that is used, once the user presses the &quot;send data&quot; button.
+   
+    <dt> <a href="fxml/registration_controller.rxj">fxml/registration_controller.rxj</a>
+    <dd> The Rexx controller program, which is used from the GUI-FXML files.
+
+    <dt> <a href="images/bsf4oorexx_032.png">images/bsf4oorexx_032.png</a>
+    <dd> The BSF4ooRexx logo in 32x32 pixels.
+
+    <dt> <a href="images/ImageDropArea.png">images/ImageDropArea.png</a>
+    <dd> The bitmap used for the image dropping area.
+
+    <dt> <a href="images/ImageDropArea.psd">images/ImageDropArea.psd</a>
+    <dd> The used for the image dropping area, the Adobe Photoshop document defining it.
+
+    <dt> <a href="images/oorexx_032.png">images/oorexx_032.png</a>
+    <dd> The ooRexx logo in 32x32 pixels, used as the application icon.
+
+    <dt> <a href="stylesheets/style.css">stylesheets/style.css</a>
+    <dd> The stylesheet thethat changes the icon from an arrow to a hand, if hovering over the button named &quot;send data&quot; or the image drop area. 
 </dl>
 
-<p style="font-size: smaller;">
-
-The following <code>FXML</code> files define individual GUI controls (cf.
-<a href="http://docs.oracle.com/javafx/2/api/javafx/fxml/doc-files/introduction_to_fxml.html">
-<code>introduction_to_fxml.html</code> </a>):
-
-
-<dl>
-    <dt> <a href="RootLayout.fxml">RootLayout.fxml</a>
-    <dd> This FXML text file defines the root GUI which is used to place the <a href="PersonOverview.fxml">PersonOverview.fxml</a>
-         GUI into its center area and which gets displayed in the application's primary
-         <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/stage/Stage.html">stage</a> (a window).
-
-    <dt> <a href="PersonOverview.fxml">PersonOverview.fxml</a>
-    <dd> This FXML text file defines the GUI to display all address book persons in a list (using a
-         <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/TableView.html">TableView</a>)
-         and depict the details of a selected person on the right hand side together with a menu to create, edit
-         or delete persons in the list.
-
-    <dt> <a href="PersonEditDialog.fxml">PersonEditDialog.fxml</a>
-    <dd> This FXML text file defines the GUI to display and edit a person's detail. It will be displayed
-         in its own window (a <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/stage/Stage.html">Stage</a>),
-         but modal to the primary stage.
-
-    <dt> <a href="BirthdayStatistics.fxml">BirthdayStatistics.fxml</a>
-    <dd> This FXML text file defines the GUI to display and edit a
-         <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/chart/BarChart.html">bar chart</a> depicting
-         the frequency of the birthday months. This GUI will be displayed in its own window (a
-         <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/stage/Stage.html">Stage</a>),
-         but modal to the primary stage.
-
-    <dt> <a href="PersonPrinterDialog.fxml">PersonPrinterDialog.fxml</a>
-    <dd> This FXML text file defines the GUI to display and print the generated print data.
-</dl>
-
-
-<p style="font-size: smaller;">
-The following file defines the CSS (cascading style sheet) rules to apply to all the JavaFX GUI elements:
-<dl>
-    <dt> <a href="DarkTheme.css">DarkTheme.css</a>
-    <dd> The CSS rules to format all GUI elements of this application, cf.
-         <a href="http://code.makery.ch/library/javafx-8-tutorial/part4/">JavaFX 8 Tutorial - Part 4: CSS Styling</a>.
-
-    <dt> <a href="DarkThemePrint.css">DarkTheme<em>Print</em>.css</a>
-    <dd> The CSS rules to format all GUI elements of this application for printing. As of 2017-01-04 note:
-         JavaFX 8.0 <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/web/WebEngine.html"><code>WebEngine</code></a>
-         uses <a href="https://en.wikipedia.org/wiki/WebKit">WebKit</a> as the user
-         agent to render the generated HTML 5 data.
-</div>
 
 <p>
 <hr>
 <p style="font-size: smaller;">
-Rony G. Flatscher, 2016-12-06, 2017-01-04 Wien/Vienna, Austria, Europe
+Adrian Baginski, Rony G. Flatscher, 2017-02-19 Wien/Vienna, Austria, Europe
 </body>
 
 
