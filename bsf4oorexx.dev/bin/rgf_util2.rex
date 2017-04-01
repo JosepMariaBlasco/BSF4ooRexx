@@ -91,7 +91,8 @@
                               - new routine ppPackage2(package[,indent1=""[, indent2="09"x[, lf==.endOfLine]]):
                                 returns a string rendering of the supplied package object
                   2011-08-03, - ppCondition2(): make sure that length is only calculated, if a string in hand
-                  2017-02-18, - ppCondition2(): add additional information to stackframe output to ease debugging
+                  2017-04-01, - ppCondition2(): if a Java exception in hand, show it and the causes that have
+                                led to it to ease debugging
 
 
       purpose:    set of 3.2 utilities to ease programming of 3.2.0, e.g. offer sort2()- and
@@ -128,7 +129,7 @@
 
                   LGPL 3.0, <http://www.fsf.org/licensing/licenses/lgpl.html> (as of: 2008-02-17)
 
-      version:    1.0.6
+      version:    1.0.7
 */
 
 .local~rgf.non.printable=xrange("00"x,"1F"x)||"FF"x
@@ -3257,101 +3258,29 @@ syntax: raise propagate
      entry=co[idx]
      mb~~append(indent1) ~~append(pp2(idx)~left(maxWidth)) ~~append("=") ~~append(pp2(entry)) ~~append(lf)
      if entry~isA(.collection) then
-     do
-        bStackFrames=(idx="STACKFRAMES")
-        do val over entry
-           mb ~~append(indent2) ~~append(pp2(val)) ~~append(lf)
-           if bStackFrames then
-           do
-               type=val~type
-               tmpStr="    running" ("/"type"/")~left(14)
-               target=val~target
-               if target<>.nil then
-               do
-                  tmpStr ||= " target:" pp2(target)
-               end
-
-               name=val~name
-               if name<>.nil | name<>"" then
-                  tmpStr ||= " name:" pp2(name)
-
-               items=val~arguments~items
-               if items>0 then
-               do
-                  if items>1 then tmpStr ||= " arguments: "
-                             else tmpStr ||= " argument: "
-                  tmpStr ||= pp2(args_to_string(val))
-               end
-
-               if val~executable<>.nil then
-               do
-                  pkgName=val~executable~package~name
-                  tmpStr ||= " package:" pp2(pkgName)
-/*
-                  tmpStr ||= " package:" pp2(filespec('Name',pkgName))
-                  location=filespec('Location',pkgName)
-                  if location<>"" then tmpStr ||= " in" pp2(location)
-*/
-               end
-
-               line=val~line
-               if line<>.nil then tmpStr ||= ", line #" val~line
-
-               mb ~~append(indent3) ~~append(tmpStr) ~~append(lf) ~~append(lf)
-           end
-        end
+     do val over entry
+        mb ~~append(indent2) ~~append(pp2(val)) ~~append(lf)
      end
      else if entry~isA(.package), bShowPackageInfo=.true then
      do
         mb ~~append(ppPackage2(entry, indent2, indent3, lf))
      end
 
+     if idx="ADDITIONAL", entry[2]~isA(.bsf) then -- rgf, 2017-04-01: if the additional array has a Java except object, show it and its causes
+     do
+         jexc=entry[2]
+         do i=1 while jexc<>.nil
+            mb ~~append(indent3)
+            if i=1 then mb ~~append( "--> exception: " ) ~~append(pp2(jexc))
+                   else mb ~~append( "--> caused by: " ) ~~append(pp2(jexc~toString))
+            mb   ~~append(lf) -- show Java exception string
+            jexc=jexc~getCause      -- get next cause
+         end
+     end
+
   end
 
   return mb~string
-
-args_to_string: procedure
-  use arg stackFrame, maxLen=10
-  args=stackFrame~arguments
-  if args~size=0 then return ""
-
-  if args~hasindex(1)=.false, args~size>1 then
-     str=" "
-  else
-     str=""
-say "... args_to_string:" "items="pp2(args~items) "size="pp2(args~size) pp2(args~toString(,","))
-  do i=1 to args~size
-     if args~hasindex(i)=.true then -- not omitted, process argument
-     do
-        val=args[i]
-        tmp=""
-        select
-        when val=.nil then tmp=".nil"  -- .nil
-        when val=""   then tmp='""'    -- empty string
-        otherwise
-           do
-              tmp=val~string           -- get string representatoin
-              if tmp~length>maxLen then
-                 tmp=tmp~substr(1,maxLen)"..."
-              tmp=enquote(tmp)
-           end
-        end
-        str||=tmp
-
-        if i<args~size then str ||=", "
-     end
-     else   -- omitted argument
-     do
-        str||=", "
-     end
-  end
-  return str --~strip
-
-enquote: procedure
-  parse arg a
-  q='"';qq='""'
-  return q || a~changestr(q,qq) || q
-
 
 
 /* Create and return a string rendering of the package information.
