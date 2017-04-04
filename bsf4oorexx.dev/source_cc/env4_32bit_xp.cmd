@@ -50,7 +50,10 @@ echo PATH=%path%
 echo .
 
 rem set classpath to the BSF-version we want to work with
-set classpath=e:\rony\dev\bsf\src;.;%classpath%;
+rem set classpath=e:\rony\dev\bsf\src;.;%classpath%; -- old BSF4Rexx !
+rem new: BSF4ooRexx
+set classpath=F:\work\svn\bsf4oorexx\trunk;.;%classpath%;
+
 echo CLASSPATH=%classpath%
 echo .
 
