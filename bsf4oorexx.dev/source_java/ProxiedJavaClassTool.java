@@ -39,6 +39,7 @@ import java.lang.reflect.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Arrays;
 
 import org.apache.bsf.BSFException;
 import org.rexxla.bsf.engines.rexx.RexxProxy;
@@ -183,8 +184,8 @@ if (bDebug==true)
    System.err.println("... arrived in \"public static Class createProxiedJavaClass(...)\"");
    System.err.println("\targ #1, javaClassToProxy : ["+javaClassToProxy.toString()+"]");
    System.err.println("\targ #2, newClzName       : ["+newClzName                 +"]");
-   System.err.println("\targ #3, methodNames2proxy: ["+(methodNames2proxy==null ? null : methodNames2proxy.toString())+"]");
-   System.err.println("\targ #4, interfaceClasses : ["+(interfaceClasses==null ? null : interfaceClasses.toString())+"]");
+   System.err.println("\targ #3, methodNames2proxy: ["+(methodNames2proxy==null ? null : Arrays.toString(methodNames2proxy))+"]");
+   System.err.println("\targ #4, interfaceClasses : ["+(interfaceClasses==null  ? null : Arrays.toString(interfaceClasses)) +"]");
 }
 
         long crtSrcStartTime=0l, crtSrcEndTime=0l;
@@ -906,6 +907,7 @@ if (bDebug==true) System.err.println("createConstructors(), END. <--");
      *                (create proxy method only, if no concrete declaredMethod() of it exists)
      *
      */
+// TODO: make sure we proxy also default interface methods, if "*" was supplied!
     static void createInterfaceMethods(StringBuffer sb, String newClzName, Class ifClz, RunInfos ri, Class<?> tmpClz)    // rgf, 2017-02-09: create methods for the interface classes
     {
         createInterfaceMethodsWorker(sb, newClzName, ifClz, ri, tmpClz);
