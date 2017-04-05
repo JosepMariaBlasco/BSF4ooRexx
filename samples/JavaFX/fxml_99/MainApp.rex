@@ -833,7 +833,7 @@ jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch 
   expose menuNew menuOpen menuPrint menuSave menuSaveAs menuAbout menuExit mainApp menuBirthdayStatistics
   use arg event, slotDir
 
-say self"::handle, tid="pp(bsfGetTID())
+-- say self"::handle, tid="pp(bsfGetTID())  -- debug statement
 
   tgtObjectName=event~getTarget~objectname
 

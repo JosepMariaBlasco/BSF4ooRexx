@@ -22,7 +22,7 @@ import org.apache.bsf.util.type.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2016 Rony G. Flatscher
+ *    Copyright (C) 2001-2017 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2016-12-20
+  * @version 6.0.0, 2017-04-04
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -59,6 +59,9 @@ TODO: (maybe)
 */
 
  /*
+
+     2017-04-04, ---rgf, - removed debug-output in registerBean4JNI()
+
      2016-12-20, ---rgf, - remove rii_id in unregisterBean, not needed anymore
 
      2016-12-19, ---rgf, - refactoring the new registry code such that we can save calls from the instance
@@ -446,7 +449,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20161220";
+    static final public String version = "600.20170404";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -6334,8 +6337,8 @@ if (bDebug==true)
     private String registerBean4JNI(Object object)
     {
 // rgf, 201507
-// if (bDebugRefCounter==true)
-System.err.println(this+":  registerBean4JNI("+object+"], object.getClass()=["+(object==null? null : object.getClass())+"]");
+if (bDebugRefCounter==true)
+System.err.println(this+":  registerBean4JNI(object=["+object+"]): object.getClass()->["+(object==null? null : object.getClass())+"]");
 
         if (bTerminated==true)
         {
@@ -6343,7 +6346,7 @@ System.err.println(this+":  registerBean4JNI("+object+"], object.getClass()=["+(
         }
 // rgf, 201507
 if (bDebugRefCounter==true)
-System.err.println(this+":  registerBean4JNI("+object+"], object.getClass()=["+(object==null? null : object.getClass())+"]");
+System.err.println(this+":  registerBean4JNI(object=["+object+"]): object.getClass()->["+(object==null? null : object.getClass())+"]");
 
         return registerBean(makeBeanName(object), object);
     }

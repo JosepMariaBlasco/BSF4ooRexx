@@ -26,7 +26,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2016 Rony G. Flatscher
+   Copyright 2015-2017 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -42,6 +42,16 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+
+        2017-04-03, ---rgf, correct parsing of Rexx script annotations
+
+        2017-02-21, ---rgf, make sure that any NL character in a potential Rexx script annotation
+                            (between "/ *" and "* /") causes the annotation to be ignored; this allows
+                            for leaving them in the code, by merely inserting a NL character after
+                            and/or before the block comment
+
+        2017-02-12, ---rgf, use the Rexx annotation string as is: enclose in double-quotes after
+                            escaping double-quotes (adhering to the Rexx rules)
 
         2016-12-21, ---rgf, if RexxScriptEngineFactory.LANGUAGE_VERSION is null in its constructor,
                             then the "parse version" string is queried from the installed ooRexx
@@ -112,7 +122,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20161221
+ * @version 100.20170403
  * @since  2015-05-11
  *
  */
@@ -841,11 +851,13 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
         boolean bShowSource=(ran.posStartAnnotationChar>-1 && ran.isAnnotationWithinBlockCommentOnSameLine);
         if (bShowSource)    // show (for debugging purposes the supplied Rexx script)
         {
-            System.err.println("Rexx script annotation \"/*@showsource*/\" present in file [" +filename+"], hence showing :"
-                                +"\n\n----------- begin of Rexx script ----------- \n"
+// System.err.println(this+" - /1/ ORIGINAL bShowSource=["+bShowSource+"]");
+            System.err.println(this+": show source of Rexx script, annotation \"/*@showsource*/\" present in file [" +filename+"]:"
+                                +"\n/// ----------------------------------------> begin of Rexx script ----------------------------------------> ///\n"
                                 +script
-                                +"\n----------- end of Rexx script (\"/*@showsource*/\" Rexx script annotation) -----------\n");
+                                +"\n\\\\\\ <----------------------------------------- end of Rexx script <----------------------------------------- \\\\\\");
         }
+// System.err.println(this+" - \\1\\ ORIGINAL bShowSource=["+bShowSource+"]");
 
         // - process @GET, @GET() and @SET() Rexx script annotations; if @SET() is empty, give a warning and ignore,
         //   save the edited script
@@ -870,7 +882,7 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
                      ran.isAnnotationWithinBlockCommentOnSameLine   // a valid annotation that has also an ending block comment?
                   )
             {
-// System.err.println("--- 0 --- found a [@"+rxAnno+"], begin BComment: ["+ran.posStartBlockComment+"], '@'-pos: ["+ran.posStartAnnotationChar+"]...");
+if (bDebug) System.err.println("--- 0 --- found a [@"+rxAnno+"], begin BComment: ["+ran.posStartBlockComment+"], '@'-pos: ["+ran.posStartAnnotationChar+"], ran.isAnnotationWithinBlockCommentOnSameLine=["+ran.isAnnotationWithinBlockCommentOnSameLine+"]...");
                     // allow one annotation per block comment only
                 if (sbEditedScript==null)       // not yet created?
                 {
@@ -882,13 +894,13 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
 
                 if (prevPosEnd>prevPosStart)    // is there anything to be carried over from the original script ?
                 {
-// System.err.println("--- 1 --- adding script code before annotation, prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd+"\n--->>>["+tmpScriptSource.substring(prevPosStart, prevPosEnd)+"]\n<<<---");
+if (bDebug) System.err.println("--- 1 --- adding script code before annotation, prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd+"\n--->>>["+tmpScriptSource.substring(prevPosStart, prevPosEnd)+"]\n<<<---");
 
                     sbEditedScript.append( tmpScriptSource.substring(prevPosStart, prevPosEnd));
                     prevPosStart=prevPosEnd;
                 }
 
-// System.err.println("--- 2 --- RSE.compile(): now prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd);
+if (bDebug) System.err.println("--- 2 --- RSE.compile(): now prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd);
 
                     // inject code
                 if (ran.contentAsRexxString==null)  // no content, then use empty string ("") instead to mean all atributes
@@ -898,8 +910,7 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
                 else    // submit the Rexx string
                 {
 // rgf,20170212                   sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), ran.contentAsRexxString) );
-//                    sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), ran.contentAsIs) );
-// submit annotation content as is
+// submit annotation content as is, escape and enquote according to Rexx rules
                     String tmpString='"'+ran.contentAsIs.replace("\"", "\"\"")+'"';   // escape any quotes
 
                     sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), tmpString) );
@@ -908,19 +919,19 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
                     // append entire Rexx script annotation (if multiple annotations of the same kind, the first one gets honored)
                 prevPosEnd=ran.posEndBlockComment+2;
 
-// System.err.println("--- 3 --- RSE.compile(): after appending code for ["+rxAnno+"] annotation, new prevPosEnd: ["+prevPosEnd+"]");
+if (bDebug) System.err.println("--- 3 --- RSE.compile(): after appending code for ["+rxAnno+"] annotation, new prevPosEnd: ["+prevPosEnd+"]");
                 // extract script section and append, if anything to append
                 if (prevPosStart<prevPosEnd)
                 {
-// System.err.println("--- 4 --- RSE.compile(): add original script section - prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd+", hence: ["+tmpScriptSource.substring(prevPosStart, prevPosEnd)+"]");
+if (bDebug) System.err.println("--- 4 --- RSE.compile(): add original script section - prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd+", hence: ["+tmpScriptSource.substring(prevPosStart, prevPosEnd)+"]");
                     sbEditedScript.append( tmpScriptSource.substring(prevPosStart, prevPosEnd));
                     // set currPos and prevPosStart
                     prevPosStart=prevPosEnd;
-// System.err.println("--- 4b --- RSE.compile(): now currPos=prevPosStart=prevPosEnd: ["+prevPosEnd+"]");
+if (bDebug) System.err.println("--- 4b --- RSE.compile(): now currPos=prevPosStart=prevPosEnd: ["+prevPosEnd+"]");
                 }
                 currPos=prevPosEnd;     // set currPos after current Rexx script annotation's end
 
-// System.err.println("--- 5 --- RSE.compile(): processing of this annotation ended, next round: currPos="+currPos+", prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd);
+if (bDebug) System.err.println("--- 5 --- RSE.compile(): processing of this annotation ended, next round: currPos="+currPos+", prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd);
             }
 
                 // did we edit the script source?
@@ -932,18 +943,19 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
                 {
                     // sbEditedScript.append( tmpScriptSource.substring(prevPosStart, tssLength));
                     sbEditedScript.append( tmpScriptSource.substring(prevPosEnd, tssLength));
-// System.err.println("--- 6 --- RSE.compile(): appending remaining script - prevPosEnd="+prevPosEnd+", tssLength="+tssLength+", appended from String:"+"\n--->>>["+tmpScriptSource.substring(prevPosEnd, tssLength)+"]\n<<<---");
+if (bDebug) System.err.println("--- 6 --- RSE.compile(): appending remaining script - prevPosEnd="+prevPosEnd+", tssLength="+tssLength+", appended from String:"+"\n--->>>["+tmpScriptSource.substring(prevPosEnd, tssLength)+"]\n<<<---");
                 }
                 tmpScriptSource=sbEditedScript.toString();  // create a String off it
                 sbEditedScript=null;                        // reset StringBuilder variable to null
 
-// System.err.println("--- 7 --- RSE.compile(): finished editing for ["+rxAnno+"] annotations, sbEditedScript.toString() --> ---> ===>["+tmpScriptSource+"] <=== <--- <--");
+if (bDebug) System.err.println("--- 7 --- RSE.compile(): finished editing for ["+rxAnno+"] annotations, sbEditedScript.toString() --> ---> ===>["+tmpScriptSource+"] <=== <--- <-- sbEditedScript!=NULL, hence bGotScriptEdited->[TRUE]!");
             }
         }
 
           // only necessary, if BSF-support is needed and no dynamic package additions take place (which would include the package BSF.CLS)
         if (bAddLatestPackageDynamically==false && bPrependDynamicRequiresStatement==true)     // inject dynamic requires for BSF.CLS
         {
+if (bDebug) System.err.println("--- 8 --- RSE.compile(): bAddLatestPackageDynamically==false && bPrependDynamicRequiresStatement==true, bGotScriptEdited -> [TRUE] !");
             bGotScriptEdited=true;      // indicate that the script got edited
             // check for hash bang line [#!/usr/bin/rexx] to inject code appropriately!
             if (tmpScriptSource.charAt(0)=='#' && tmpScriptSource.charAt(1)=='!')     // starts with hash-bang line, inject after \n!
@@ -1015,10 +1027,13 @@ if (bDebug==true) {exc.printStackTrace();}
             currentScript.editedScriptSource=tmpScriptSource;
             if (bShowSource)
             {
-                System.err.println("Rexx script annotation \"/*@showsource*/\" present in file [" +filename+"], hence showing :"
-                                    +"\n\n----------- begin of EDITED Rexx script ----------- \n"
+// System.err.println(this+" - /2/ EDITED bShowSource=["+bShowSource+"], bGotScriptEdited=true");
+
+                System.err.println(this+": show source of EDITED Rexx script, annotation \"/*@showsource*/\" present in [" +filename+"]:"
+                                    +"\n/// ========================================> begin of EDITED Rexx script ========================================> ///\n"
                                     +tmpScriptSource
-                                    +"\n----------- end of EDITED Rexx script (\"/*@showsource*/\" Rexx script annotation) -----------\n");
+                                    +"\n\\\\\\ <========================================= end of EDITED Rexx script <========================================= \\\\\\");
+// System.err.println(this+" - \\2\\ EDITED bShowSource=["+bShowSource+"], bGotScriptEdited=true");
             }
         }
 
@@ -1512,10 +1527,22 @@ if (bDebug) if (this.posStartAtChar>=0) System.err.println("RexxAnnotation(): '@
                 if (this.posStartAtChar==-1) return;    // no (@) found, no further annotation present
 
                 int begIdx=this.posStartAtChar+1;
-                int endIdx=begIdx+ucName.length();
+
+// 2017-04-02, rgf: check whether we have --->
+                int k=0, m=0,                       // do not interfere with "i"
+                    lengthUCName=ucName.length(),
+                    endIdx=begIdx+lengthUCName
+                    ;
+                // determine whether we have enough characters left to test the needle against a substring
+                for (k=begIdx; k<scriptLength && m<lengthUCName; k++, m++ )
+                {}
+
+// 2017-04-02, rgf: check whether we have <---
+                // int endIdx=begIdx+ucName.length();
+
 
 if (bDebug) System.err.println("RexxAnnotation(): begIdx="+begIdx+", endIdx="+endIdx+", script.substr()=["+script.substring(begIdx,endIdx)+"], ucName=["+ucName+"]");
-                if (ucName.equalsIgnoreCase(script.substring(begIdx,endIdx)))  // found ?
+                if (lengthUCName==m && ucName.equalsIgnoreCase(script.substring(begIdx,endIdx)))  // found ?
                 {
                     this.posStartAnnotationChar=begIdx;
                     this.posEndAnnotationChar  =endIdx-1;
@@ -1550,9 +1577,10 @@ if (bDebug) System.err.println("<=== RexxAnnotation(): AFTER  calling parseAnnot
          * @return true if we found a RexxScriptAnnotation
         */
         // boolean isRexxScriptAnnotation(String script, String name, int startPos, int scriptLength)
-        void parseAnnotation(String script, String name, int scriptLength)
+        void parseAnnotation(final String script, final String name, final int scriptLength)
         {
-if (bDebug) System.err.println("RexxAnnotation(): this.posStartAnnotationChar="+this.posStartAnnotationChar+", this.posEndAnnotationChar="+this.posEndAnnotationChar);
+// boolean bDebug=true; // set temporaryly locally to true
+if (bDebug) System.err.println("RexxAnnotation().parseAnnotation(): needle/name=["+name+"],  this.posStartAnnotationChar="+this.posStartAnnotationChar+", this.posEndAnnotationChar="+this.posEndAnnotationChar);
 
                 // find previous begin of block comment
             for (int i=posStartAnnotationChar-1; i>0; i--)
@@ -1682,24 +1710,24 @@ if (bDebug) System.err.println("RexxAnnotation(): contentAsRexxString=["+content
                 // determine whether Rexx script annotation is on the same line as the opening block content
                 // (we do not allow them to be on separate lines)
             isAnnotationWithinBlockCommentOnSameLine=true;
-            for (int i=this.posStartBlockComment+2; (i<this.posStartAtChar-1) && isAnnotationWithinBlockCommentOnSameLine==true; i++)
-            {
-                isAnnotationWithinBlockCommentOnSameLine= (script.charAt(i)!='\n');
-            }
 
-                // check that no end block comment comes before our script annotation
-            for (int i=this.posStartBlockComment+2; (i<this.posStartAtChar-1) && isAnnotationWithinBlockCommentOnSameLine==true; i++)
+            for (int i=this.posStartBlockComment+2; i<this.posStartAtChar && isAnnotationWithinBlockCommentOnSameLine==true; i++)
             {
-                isAnnotationWithinBlockCommentOnSameLine= script.charAt(i)!='*' && script.charAt(i+1)!='/';
+                char ch=script.charAt(i);
+                isAnnotationWithinBlockCommentOnSameLine= ch!='\n' &&
+                                                          ch!='*' && script.charAt(i+1)!='/';
             }
 
                 // check that no newline comes before block end comment
-            for (int i=this.posEndAnnotationChar; (i<this.posEndBlockComment-1) && isAnnotationWithinBlockCommentOnSameLine==true; i++)
+            for (int i=this.posEndAnnotationChar; (i<this.posEndBlockComment) && isAnnotationWithinBlockCommentOnSameLine==true; i++)
             {
-                isAnnotationWithinBlockCommentOnSameLine= script.charAt(i)!='*' && script.charAt(i+1)!='/';
+                // if a NL char, then we ignore the annotation
+                char ch=script.charAt(i);
+                isAnnotationWithinBlockCommentOnSameLine= ch!='\n' &&
+                                                          ch!='*' && script.charAt(i+1)!='/';
             }
 
-
+if (bDebug) System.err.println("RexxAnnotation().toString():\n["+this.toString()+"]\n");
 if (bDebug) System.err.println("RexxAnnotation() - end of constructor! :)\n<---");
 
         }

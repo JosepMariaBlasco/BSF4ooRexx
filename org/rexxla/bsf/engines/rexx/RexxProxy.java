@@ -26,7 +26,7 @@ import org.apache.bsf.BSFException;
  *
 
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2009-2016 Rony G. Flatscher
+ *    Copyright (C) 2009-2017 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -125,7 +125,7 @@ public class RexxProxy implements InvocationHandler
 
     // rgf, 2010-04-16 --->
     static final private String PROXIED_JAVA_CLASS_TOOL_NAME="org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool";
-    static final private String M_CREATE_PROXIED_JCLZ_NAME="createProxiedJavaClass";
+    static final private String M_CREATE_PROXIED_JCLZ_NAME  ="createProxiedJavaClass";
     static       private Class<?>   clzProxiedJavaClassTool=null;   // ---rgf, 20161104, cf. <http://stackoverflow.com/questions/892725/proper-way-to-check-java-reflection-calls>
     static       private Method  mCreateProxiedJavaClass=null;
     /** If set to <code>true</code> the Janino based implementation is used to extend
@@ -149,7 +149,7 @@ public class RexxProxy implements InvocationHandler
                 clzProxiedJavaClassTool=RexxProxy.class.getClassLoader().loadClass(PROXIED_JAVA_CLASS_TOOL_NAME);
                 mCreateProxiedJavaClass=clzProxiedJavaClassTool.getDeclaredMethod(
                              M_CREATE_PROXIED_JCLZ_NAME,
-                             new Class [] { Class.class, String.class, String[].class }
+                             new Class [] { Class.class, String.class, String[].class, Class[].class }
                             );
             }
             catch (Exception e) // class not loadable, hence cannot be used
@@ -364,48 +364,12 @@ if (bDebug==true)
 {
       System.err.println("RexxProxy-constructor --> ["+this+"]: riid=["+rexxInterpreterId+
                    "], objectId=["+objectId+"/"+Long.toHexString(Long.parseLong(objectId))+
-                   "], userDataId=["+userDataId+"], engine=["+engine+"]"); }
+                   "], userDataId=["+userDataId+"], engine=["+engine+"]");
 }
 
-
-
-
-// TODO: remove this particular method (succeeded by sendMessage(...) !
-    /** Invokes the given method with the given arguments using a callback to ooRexx using the RexxEngine instance.
-     *
-     * @param   methodName name of the method to invoke
-     * @param   args array of Objects serving as arguments
-     *
-     * @return  value that the ooRexx method returns, if any
-     */
-    // public Object invoke (String methodName, Object[] args) throws BSFException
-    private Object invoke_to_be_removed (String methodName, Object[] args) throws BSFException
-    {
-// if (bDebug) System.err.println("////// ---> RexxProxy.invoke(m, args): m=["+methodName+"], TID=["+creationTID+"] args.length=["+(args==null ? null+"" : args.length+"")+"]...");
-if (bDebug) System.err.println("////// ---> RexxProxy.invoke(m, args): m=["+methodName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
-
-        return this.rexxEngine.call(this, methodName, args);
-
-/*
-        Object result=rexxEngine.call(this, methodName, args);
-if (bDebug) System.err.println("////// ---> RexxProxy.invoke(m, args): m=["+methodName+"], TID=["+creationTID+"],... result=["+result+"]");
-
-
-        if (result==null)
-        {
-            return null;
-        }
-
-        return result;
-*/
-
-/*
-if (bDebug) System.err.println("////// ---> RexxProxy.invoke(m, args): m=["+methodName+"], TID=["+creationTID+"],... rexxInterface.convFromRexx(result)=["+rexxInterface.convFromRexx((String) result)+"]");
-
-        return rexxInterface.convFromRexx((String) result);
-*/
-        // return result;
     }
+
+
 
 
     /** Sends the given message with the given arguments using a callback to ooRexx using the RexxEngine instance.
@@ -1205,7 +1169,7 @@ if (bDebug) System.err.println("     added:                            o=["+o+"]
             {
                 // extendedClz=clzProxiedJavaClassTool(clz, null, null);   // no explicit name, no list of methods to proxy
                 try {
-                    extendedClz=(Class) mCreateProxiedJavaClass.invoke(null, new Object[] {clz, null, null} );
+                    extendedClz=(Class) mCreateProxiedJavaClass.invoke(null, new Object[] {clz, null, null, null} );
                 }
                 catch (InvocationTargetException ite)
                 {
