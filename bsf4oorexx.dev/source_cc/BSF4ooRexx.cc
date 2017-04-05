@@ -963,11 +963,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20170404 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170405 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20170404 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170405 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20170404 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170405 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -6966,14 +6966,8 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
 
 
     // ??? TODO: attach to Java, carry out conversions, return result
-#ifdef RGF_ATTACH_NEW
     // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
     STRUCT_ATTACH_PARAM param={0, 0, (void *)context->threadContext->instance, false, 0};
-#else
-    // STRUCT_PARAM param={tid,env,rajo,riid,bDetach,attachResult,error};
-    STRUCT_PARAM param={tid, 0, 0, (void *)context->threadContext->instance, 0, 0, 0, 0};
-#endif
-
 
     RgfAcquireLock();
 
