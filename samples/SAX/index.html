@@ -20,30 +20,51 @@ all platforms and can be downloaded from its homepage at
     <dt><em><a href="../index.html">..  &lt;directory&gt; (List of parent directory)</a></em>
     <dd>Display all of the parent directory's files and directories.
 
-    <dd><a href="readme.txt">readme.txt</a>
-    <dt>Explains briefly how to invoke each script.
+    <dt><em><a href="DTD">DTD &lt;directory&gt; (document type definitions) </a></em>
+    <dd>Display the document type definitions (DTD) used in the test file  <code>www.rexxla.org.htm</code>,
+    such that the parser becomes able to validate.
 
-    <dd><a href="01_getText.rxj">01_getText.rex</a>
-    <dt>Script to extract text from an XML file.
+    <dt><a href="www.rexxla.org.htm"><code>www.rexxla.org.htm</code></a>
+    <dd>A properly formatted <code>xhtml</code> file serving as test file.
 
-    <dd><a href="02_getText.rxj">02_getText.rex</a>
-    <dt>Script to extract text from an XML file, suppressing duplicate empty lines.
+    <dt><a href="readme.txt">readme.txt</a>
+    <dd>Explains briefly how to invoke each script.
 
-    <dd><a href="03_listElementNames.rxj">03_listElementNames.rxj</a>
-    <dt>Script dumping the element names in document order.
+    <dt><a href="01_getText.rxj">01_getText.rex</a>
+    <dd>Script to extract text from an XML file.
+    <br>On Windows use <code>rexxj</code> or <code>rexxj.cmd</code> instead of <code>rexxj.sh</code>:
+    <br><code>rexxj.sh 01_getText.rxj www.rexxla.org.htm</code>
 
-    <dd><a href="04_listElementNamesIndented.rxj">04_listElementNamesIndented.rxj</a>
-    <dt>Script dumping the element names in document order, indenting output according to nesting level.
+    <dt><a href="02_getText.rxj">02_getText.rex</a>
+    <dd>Script to extract text from an XML file, suppressing duplicate empty lines.
+    <br>On Windows use <code>rexxj</code> or <code>rexxj.cmd</code> instead of <code>rexxj.sh</code>:
+    <br><code>rexxj.sh 02_getText.rxj www.rexxla.org.htm</code>
 
-    <dd><a href="05_listElementNamesIndentedWithAttributes.rxj">05_listElementNamesIndentedWithAttributes.rxj</a>
-    <dt>Same as <code>04_listElementNamesIndented.rxj</code> and in addition dumping attributes, if any defined with an element.
+    <dt><a href="03_listElementNames.rxj">03_listElementNames.rxj</a>
+    <dd>Script dumping the element names in document order.
+    <br>On Windows use <code>rexxj</code> or <code>rexxj.cmd</code> instead of <code>rexxj.sh</code>:
+    <br><code>rexxj.sh 03_listElementNames.rxj www.rexxla.org.htm</code>
 
-    <dd><a href="06_listElementNamesIndentedWithAttributes_DOES_NOT_USE_DTD.rxj">06_listElementNamesIndentedWithAttributes_DOES_NOT_USE_DTD.rxj</a>
-    <dt>Same as <code>05_listElementNamesIndentedWithAttributes.rxj</code>, but without
+    <dt><a href="04_listElementNamesIndented.rxj">04_listElementNamesIndented.rxj</a>
+    <dd>Script dumping the element names in document order, indenting output according to nesting level.
+    <br>On Windows use <code>rexxj</code> or <code>rexxj.cmd</code> instead of <code>rexxj.sh</code>:
+    <br><code>rexxj.sh 04_listElementNamesIndented.rxj www.rexxla.org.htm</code>
+
+    <dt><a href="05_listElementNamesIndentedWithAttributes.rxj">05_listElementNamesIndentedWithAttributes.rxj</a>
+    <dd>Same as <code>04_listElementNamesIndented.rxj</code> and in addition dumping attributes, if any defined with an element.
+    <br>On Windows use <code>rexxj</code> or <code>rexxj.cmd</code> instead of <code>rexxj.sh</code>:
+    <br><code>rexxj.sh 05_listElementNamesIndentedWithAttributes.rxj www.rexxla.org.htm</code>
+
+    <dt><a href="06_listElementNamesIndentedWithAttributes_DOES_NOT_USE_DTD.rxj">06_listElementNamesIndentedWithAttributes_DOES_NOT_USE_DTD.rxj</a>
+    <dd>Same as <code>05_listElementNamesIndentedWithAttributes.rxj</code>, but without
         validation (ignores any DTD).
+    <br>On Windows use <code>rexxj</code> or <code>rexxj.cmd</code> instead of <code>rexxj.sh</code>:
+    <br><code>rexxj.sh 06_listElementNamesIndentedWithAttributes_DOES_NOT_USE_DTD.rxj www.rexxla.org.htm</code>
 
-    <dd><a href="07_listElementNamesAsTree.rxj">07_listElementNamesAsTree.rxj</a>
-    <dt>Displays elements in a graphical (hierarchical) tree.
+    <dt><a href="07_listElementNamesAsTree.rxj">07_listElementNamesAsTree.rxj</a>
+    <dd>Displays elements in a graphical (hierarchical) tree.
+    <br>On Windows use <code>rexxj</code> or <code>rexxj.cmd</code> instead of <code>rexxj.sh</code>:
+    <br><code>rexxj.sh 07_listElementNamesAsTree.rxj www.rexxla.org.htm</code>
 </dl>
 
 <p>
