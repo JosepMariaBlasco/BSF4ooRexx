@@ -350,7 +350,7 @@ id_with_number ::= id | number_lit
 
 symbol_or_string ::= STRING_LITERAL | id
 symbol_or_string_or_function ::= symbol_or_string | function_call
-
+symbol_or_string_or_keyword ::= symbol_or_string | keyword_list | lit
 new_line ::= EOL
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -522,7 +522,7 @@ directive_requires::= REQUIRES (id | STRING_LITERAL) (LIBRARY | (NAMESPACE id))?
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 directive_resource ::= (directive_resource_with_delemiter | directive_resource_end_directive)
 private external directive_resource_with_delemiter::= directive_resource_with_delemiter_ext
-private directive_resource_end_directive::= "RESOURCE" symbol_or_string instruction_terminator (!<<eof>> !directive_resource_end directive_resource_data)* directive_resource_end instruction_terminator {implements = "org.oorexx.ide.lang.core.DirectiveHeader"  pin = 3}
+private directive_resource_end_directive::= "RESOURCE" (!(END END)symbol_or_string_or_keyword) instruction_terminator (!<<eof>> !directive_resource_end directive_resource_data)* directive_resource_end instruction_terminator {implements = "org.oorexx.ide.lang.core.DirectiveHeader"  pin = 3}
 directive_resource_end ::= (directive_start END)
 directive_resource_data ::= directive_resource_data_ext_call
 private external directive_resource_data_ext_call ::= directive_resource_data_ext

@@ -14,6 +14,7 @@ import com.intellij.psi.tree.IFileElementType;
 import com.intellij.psi.tree.TokenSet;
 import org.jetbrains.annotations.NotNull;
 import org.oorexx.ide.intellij.file.OoRexxFile;
+import org.oorexx.ide.intellij.setting.OoRexxLanguageSettings;
 import org.oorexx.ide.lang.OoRexx;
 import org.oorexx.ide.lang.OoRexxTypes;
 import org.oorexx.ide.lexer.OoRexxLexerAdapter;
@@ -29,7 +30,7 @@ public class OoRexxParserDefinition implements ParserDefinition {
         @NotNull
         @Override
         public Lexer createLexer(Project project) {
-            return new OoRexxLexerAdapter();
+            return new OoRexxLexerAdapter(OoRexxLanguageSettings.getInstance());
         }
 
         @NotNull

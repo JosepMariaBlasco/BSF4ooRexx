@@ -9,9 +9,14 @@ import static com.intellij.psi.TokenType.*;
 %%
 
 %{
-  public OoRexxLexer() {
+  public OoRexxLexer(org.oorexx.ide.intellij.setting.OoRexxLanguageSettings settings) {
     this((java.io.Reader)null);
-    this.allowSpecialChars = allowSpecialChars = org.oorexx.ide.intellij.setting.OoRexxLanguageSettings.getInstance().isAllowSpecialChars();;
+     this.allowSpecialChars = allowSpecialChars = settings.isAllowSpecialChars();;
+  }
+
+  public OoRexxLexer(){
+    this((java.io.Reader)null);
+    this.allowSpecialChars = false;
   }
 %}
 
