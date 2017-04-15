@@ -71,13 +71,20 @@ BSF4REXX   	   = $(BLD_PATH)/libBSF4ooRexx.dylib
 # INC_PATH = -I. -I/System/Library/Frameworks/JavaVM.framework/headers
 # INC_PATH = -I. -I/Developer/SDKs/MacOSX10.6.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers
 INC_PATH = -I/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers -I .
-INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers
 
+# old ooRexx 4.x installations (need different ones for ooRexx 5.0beta)
 ORX_LIBPATH_32 = /opt/oldrexx/ooRexx-i386/lib
 ORX_LIBPATH_64 = /opt/oldrexx/ooRexx-x86_64/lib/
 
+# rgf, 2017-04-05: manually creating an ooRexx 5.0 "installation"
+ORX_LIBPATH_64 = /opt/oldrexx/ooRexx-5-x86_64/lib/
+ORX5_INCPATH_64 = -I/opt/oldrexx/ooRexx-5-x86_64/include/
+
 ORX_LIBS_32 = $(ORX_LIBPATH_32)/librexx.dylib $(ORX_LIBPATH_32)/librexxapi.dylib
 ORX_LIBS_64 = $(ORX_LIBPATH_64)/librexx.dylib $(ORX_LIBPATH_64)/librexxapi.dylib
+
+
+INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers $(ORX5_INCPATH_64)
 
 CFLAGS = -fPIC
 LFLAGS = -shared

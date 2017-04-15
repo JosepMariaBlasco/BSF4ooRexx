@@ -43,6 +43,11 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
    Changes:
 
+        2017-04-15, ---rgf, use .slot.argument class (created by BSF4ooRexx.cc as subclass of .directory
+                            and stored in .environment ad load time of the library); this way
+                             Rexx programmers become able to unambiguously identify whether the last
+                             argument is a slot argument
+
         2017-04-03, ---rgf, correct parsing of Rexx script annotations
 
         2017-02-21, ---rgf, make sure that any NL character in a potential Rexx script annotation
@@ -122,7 +127,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20170403
+ * @version 100.20170415
  * @since  2015-05-11
  *
  */
@@ -524,51 +529,51 @@ if (bDebug==true) {exc.printStackTrace();}
      * @return a newly created Rexx directory object, with the supplied <code>entryName</code> and
      *         <code>entryValue</code>
      */
-    String rexxCreateDirectoryCode=
+    String rexxCreateSlotArgumentCode=
            "use strict arg entryName=.nil, entryValue=.nil                  \n" +
-           "dir=.directory~new                                              \n" +
+           "dir=.slot.argument~new                                          \n" +
            "if entryName<>.nil then                                         \n" +
            "   dir~setEntry(entryName,entryValue)                           \n" +
            "return dir          /* return Rexx directory object */          \n" +
            "                                                                \n" +
            "::requires 'BSF.CLS'    /* add Java support         */          \n" ;
 
-    /** <code>RexxProxy</code> for the Rexx routine created by the Rexx code stored in {@link rexxCreateDirectoryCode}. */
-    private RexxProxy rexxCreateDirectory=null;
+    /** <code>RexxProxy</code> for the Rexx routine created by the Rexx code stored in {@link rexxCreateSlotArgumentCode}. */
+    private RexxProxy rexxCreateSlotArgument=null;
 
-    /** Getter method to return {@link rexxCreateDirectory}. If {@link rexxCreateDirectory} is <code>null</code>
+    /** Getter method to return {@link rexxCreateSlotArgument}. If {@link rexxCreateSlotArgument} is <code>null</code>
      *  the Rexx routine object will get created, stored and returned.
      *  @return the <code>RexxProxy</code> for the Rexx routine to create a Rexx directory (and optionally supply
      *          a single entry)
      */
-    RexxProxy getCreateDirectory()  throws ScriptException
+    RexxProxy getCreateSlotArgument()  throws ScriptException
     {
-if (bDebug==true){ System.err.println("arrived: getCreateDirectory(), rexxCreateDirectory="+rexxCreateDirectory);}
-        if (rexxCreateDirectory!=null)
+if (bDebug==true){ System.err.println("arrived: getCreateSlotArgument(), rexxCreateSlotArgument="+rexxCreateSlotArgument);}
+        if (rexxCreateSlotArgument!=null)
         {
-            return rexxCreateDirectory;
+            return rexxCreateSlotArgument;
         }
 
-        String filename="RexxScriptEngine_rexxCreateDirectoryCode.rex";
+        String filename="RexxScriptEngine_rexxCreateSlotArgumentCode.rex";
         try
         {
             if (bInitialBSFRequiresDone==false) updateRexxEngine(null);
 /*
             Vector args=new Vector();
-            args.add("createDirectory");
-            args.add(rexxCreateDirectoryCode);
+            args.add("createSlotArgument");
+            args.add(rexxCreateSlotArgumentCode);
 
-            rexxCreateDirectory=(RexxProxy) bsfRexxEngine.apply(filename, 0, 0, rexxCreateRoutineCode, null, args);
+            rexxCreateSlotArgument=(RexxProxy) bsfRexxEngine.apply(filename, 0, 0, rexxCreateRoutineCode, null, args);
 */
 
-            rexxCreateDirectory=(RexxProxy) getCreateRoutine().sendMessage2("CALL", "createDirectory", rexxCreateDirectoryCode);
+            rexxCreateSlotArgument=(RexxProxy) getCreateRoutine().sendMessage2("CALL", "createSlotArgument", rexxCreateSlotArgumentCode);
         }
         catch (Exception exc)
         {
 if (bDebug==true) {exc.printStackTrace();}
             throw new ScriptException(exc);     // re-throw, wrap cause in script
         }
-        return rexxCreateDirectory;
+        return rexxCreateSlotArgument;
     }
 
 
@@ -1070,7 +1075,7 @@ if (bDebug==true) {exc.printStackTrace();}
      *           classes in a single Rexx class.
      *
      *  <p>Hint #2: when an interface method gets invoked, the Rexx method routine gets all its arguments in the
-     *           same order supplied to, plus an appended <code>RexxDirectory</code> &quot;slot directory</code>
+     *           same order supplied to, plus an appended <code>RexxSlotArgument</code> &quot;slot directory</code>
      *           object, which contains information about this particular method invocation. This slot directory
      *           will also contain an entry, named <code>&quot;SCRIPTCONTEXT&quot;</code>, which allows the
      *           Rexx routine to fully interact with the <code>ScriptContext</code> used for its invocation.

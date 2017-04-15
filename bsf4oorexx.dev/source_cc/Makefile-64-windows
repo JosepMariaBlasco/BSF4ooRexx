@@ -57,6 +57,7 @@
 # will have to have built the interpreter.
 
 #REXX_HOME = C:\work.ooRexx\wc\main\Win32Dbg   # For example
+REXX_HOME = F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\source_cc\rexxapi.win\win64
 
 # Define RELEASE on the command line, or here, to build a non-debug version.  By
 # default debug versions are built.  I.e. nMake RELEASE=1

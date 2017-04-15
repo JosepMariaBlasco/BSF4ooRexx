@@ -24,6 +24,11 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    6.0.0   2017-04-15, rgf: add a directory subclass named "SLOT.ARGUMENT" to .environment; all slot arguments,
+                             either from native or Java code must instantiate this class, such that Rexx programmers
+                             become able to unambiguously identify the slot arguments (appended arguments as a
+                             result of sending a message from Java)
+
     6.0.0   2017-04-04, rgf: make return values after raising Rexx exceptions dependent on DEBUG_RAISE_CONDITION
 
     6.0.0   2017-02-19, rgf: after invoking RaiseException() the return value will be ignored by Rexx; for debugging
@@ -963,11 +968,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20170405 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170415 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20170405 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170415 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20170405 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170415 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -983,6 +988,8 @@ RgfGetTID();
 // globals, rgf, 2008-08-01
 JavaVM    *currentJVM=NULL;     // JVM to use
 int       bsfInvokedBy = 0;     // 0=noJVM, 1=byJava, 2=byRexx
+// 2017-04-15, rgf
+RexxClassObject rcoSlotArgument=NULL;   // the loader function will create the slot.argument class and save it
 
     // ---rgf, 2006-11-19: define boolean and maximum length for Java's event trace
 int       bShowErrorString = 1;         // default to showing (dumping) Java traceback in case of an error
@@ -8624,6 +8631,7 @@ void RexxEntry rgfDestroyLocks()
 //                   hece it runs once per process only
 void RexxEntry bsfLoader (RexxThreadContext *rtc)
 {
+
 #if defined(DEBUG1) || defined (DEBUG40) || defined (DEBUG_LOADER_UNLOADER ) || defined (DEBUG_JNI)
     #ifdef UNIX
         pthread_t
@@ -8637,6 +8645,39 @@ void RexxEntry bsfLoader (RexxThreadContext *rtc)
 #endif
 
     rgfInitLocks();        // Initialize critical section
+
+    // rgf, 2017-04-15: create slot.argument (subclass of directory) and save it in GlobalEnvironment
+        // create a subclass from .Directory, name it Slot.Argument
+    rcoSlotArgument = (RexxClassObject) rtc->SendMessage1(rtc->FindClass("DIRECTORY"), "SUBCLASS", rtc->CString("Slot.Argument"));
+
+#ifdef DEBUG_LOADER_UNLOADER
+    fprintf(stderr, "/// in bsfLoader(), rcoSlotArgument=[%p]\n", rcoSlotArgument); fflush(stderr);
+    fprintf(stderr, "/// in bsfLoader(); rcoSlotArgument~string=[%s]\n", rtc->CString( rtc->SendMessage0(rcoSlotArgument,"STRING") ));
+#endif
+
+    // save in global directory (".environment")
+    rtc->DirectoryPut( rtc->GetGlobalEnvironment(), rcoSlotArgument, "SLOT.ARGUMENT");
+
+#ifdef DEBUG_LOADER_UNLOADER
+
+    fprintf(stderr, "/// in bsfLoader(), now fetching rcoSlotArgument from .ENVIRONMENT ...\n");
+    // RexxObjectPtr rop = rtc->SendMessage1(rtc->GetGlobalEnvironment(), "ENTRY", newClzName);
+    RexxObjectPtr rop = rtc->DirectoryAt(rtc->GetGlobalEnvironment(), "SLOT.ARGUMENT");
+    fprintf(stderr, "/// in bsfLoader(), rcoSlotArgument=[%p]\n", rcoSlotArgument); fflush(stderr);
+    fprintf(stderr, "/// in bsfLoader(); .environment~slot.argument=[%p]\n", rop);
+    fprintf(stderr, "/// in bsfLoader(); .environment~slot.argument~string=[%s]\n", rtc->CString( rtc->SendMessage0(rop,"STRING") ));
+    fflush(stderr);
+
+//       // test it
+//   RexxDirectoryObject rdoSlot = (RexxDirectoryObject) rtc->SendMessage0(rop,"NEW");
+//   fprintf(stderr, "/// in bsfLoader(), created rdoSlot=[%p]\n", rdoSlot);fflush(stderr);
+//   rtc->DirectoryPut(rdoSlot, rtc->CString("hi, there, this is the entry for AHA!"), "AHA");
+//   fprintf(stderr, "/// in bsfLoader(), fetching \"AHA\" from rdoSlot: [%s]\n",
+//                   rtc->CString(rtc->DirectoryAt(rdoSlot, "AHA")));fflush(stderr);
+//   fprintf(stderr, "/// in bsfLoader(), done, will return now ...\n");fflush(stderr);
+
+
+#endif
 }
 
 
@@ -8779,8 +8820,8 @@ fprintf(stderr, "///  marker (5b), res=[%d]...\n", ret);fflush(stderr);
         REXX_INTERPRETER_4_1_0,              // anything including and after 4.1.0 will work
         "bsf",                               // name of the package
         "6.0",                               // package version information
-        bsfLoader,                           // no load function
-        bsfUnloader,                         // no unload function
+        bsfLoader,                           // load function
+        bsfUnloader,                         // unload function
         bsf_external_functions,              // the exported functions
         NULL                                 // no exported methods
     };
@@ -10102,7 +10143,9 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         (j_methodObjectBean!=NULL) ||
         (j_methodDescription!=NULL))      // build slotArgument (an ooRexx directory object) ?
     {
-        slotDir=rtc->NewDirectory();    // create ooRexx directory object
+        // slotDir=rtc->NewDirectory();    // create ooRexx directory object
+        // rgf, 2017-04-15, use new rcoSlotArgument (a subclass of directory to allow unambiguous testing)
+        slotDir=(RexxDirectoryObject) rtc->SendMessage0(rcoSlotArgument, "NEW");    // create "SLOT.ARGUMENT" instance, ooRexx directory object
 
         if (j_userData_ID!=NULL)    // userData is given, hence create directory containing it (will get supplied as last argument)
         {

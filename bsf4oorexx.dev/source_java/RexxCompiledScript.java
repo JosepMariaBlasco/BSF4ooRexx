@@ -13,7 +13,7 @@ import org.rexxla.bsf.engines.rexx.RexxProxy;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2016 Rony G. Flatscher
+   Copyright 2015-2018 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -30,7 +30,9 @@ import org.rexxla.bsf.engines.rexx.RexxProxy;
 
 Changes:
     2016-10-26: ---rgf, added a few additional debug statements (debugging instrumentation by JavaFX),
-                          in addition also conditionally allowing to display the Rexx source
+                        in addition also conditionally allowing to display the Rexx source;
+                        this way Rexx programmers become able to unambiguously identify whether the last
+                        argument is a slot argument
 
     2016-11-04: ---rgf, rebasing on Java 1.6/6.0; generics related warning cannot be circumvented
                         (cf. comments in getInterface(Class<T> clasz) method)
@@ -41,6 +43,8 @@ Changes:
     2016-11-27: ---rgf, created public getter method getRexxScriptEngine()
 
     2016-12-20: ---rgf, supply RexxScriptEngine instance via slotDir argument as well
+
+    2017-04-15: ---rgf, use new .Slot.Argument (a subclass of .Directory) instead of a regula .directory
 */
 
 
@@ -57,7 +61,7 @@ Changes:
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20161220
+ * @version 100.20170415
  * @since  2015-05-11
  *
  */
@@ -701,7 +705,7 @@ if (bDebug)
             // (this way Rexx routines - even those invoked from JavaProxy invocations - can rely that
             // the last argument is a directory containing an entry "SCRIPTCONTEXT")
         // arrArgV[i]=rse.getCreateDirectory().sendMessage2("CALL","SCRIPTCONTEXT",sc);
-        RexxProxy rpDir=(RexxProxy) rse.getCreateDirectory().sendMessage2("CALL","SCRIPTCONTEXT",sc); // create .directory supply a first entry
+        RexxProxy rpDir=(RexxProxy) rse.getCreateSlotArgument().sendMessage2("CALL","SCRIPTCONTEXT",sc); // create .directory supply a first entry
         if (rcs!=null)
         {
             rpDir.sendMessage2("SETENTRY","REXXCOMPILEDSCRIPT",rcs);    // supply this RexxCompiledScript for reflective usage by Rexx program (e.g. for debugging)
