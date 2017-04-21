@@ -478,9 +478,7 @@ DEC_LITERAL = [0-9] [0-9_]*
   // Comments
 
   "/*"                            { yybegin(IN_BLOCK_COMMENT); yypushback(2); }
-  "--" ([^\n | \r | \r\n]) {return EOL_COMMENT;}
-  "--" .* ([^\n | \r | \r\n])                        { return EOL_COMMENT; }
-  "--" {return EOL_COMMENT;}
+  "--"  .* ([^\n|\r|\n\r])*             {return EOL_COMMENT;}
 
   "." {IDENTIFIER}                    { return getIdentifier(ENV_IDENTIFIER); }
   {IDENTIFIER}                    { return getIdentifier(IDENTIFIER);
