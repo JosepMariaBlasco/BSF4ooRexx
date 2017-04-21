@@ -316,7 +316,10 @@
 
 file ::= shebang? (new_line | instruction)* (directive)*
 
+shebang ::= SHEBANG_LINE
+
 private meta paren ::= <<p>> | (LPAREN (<<paren  <<p>>>>| <<p>>) RPAREN)
+
 environment_id ::= ENV_IDENTIFIER | ENV_ENVIRONMENT | ENV_LOCAL
 id ::= (namespace_prefix (new_line* !assignments_and_keywords))? (identifier | environment_id | keyword_list)
 keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) | (EXIST) | (CREATE) | (COUNT) | (SUPER) | (PACKAGE) | (ABSTRACT) | (ANNOTATE) | (ATTRIBUTE) | (CLASS) | (CONDITION) | (DIGITS) | (EXTERNAL) | (FORM) | (FUZZ) | (GET) | (GUARDED) | (INHERIT) | (LIBRARY) | (METACLASS) | (MIXINCLASS) | (NAMESPACE) | (NOPROLOG) | (PRIVATE) | (PROLOG) | (PROTECTED) | (PUBLIC) | (RESOURCE) | (RESOURCE_DATA) | (SET) | (SUBCLASS) | (TRACE) | (UNGUARDED) | (UNPROTECTED) | (ADDRESS) | (ARG) | (CALL) | (DO) | (DROP) | (EXIT) | (EXPOSE) | (FORWARD) | (GUARD) | (IF) | (INTERPRET) | (ITERATE) | (LEAVE) | (LOOP) | (NOP) | (NUMERIC) | (OPTIONS) | (PARSE) | (PROCEDURE) | (PULL) | (PUSH) | (QUEUE) | (RAISE) | (REPLY) | (RETURN) | (SAY) | (SELECT) | (SIGNAL) | (TRACE) | (USE) | (SELF) | (ADDITIONAL) | (ANY) | (ARG) | (ARGUMENTS) | (ARRAY) | (BY) | (CASELESS) | (CLASS) | (COMMANDS) | (CONTINUE) | (DESCRIPTION) | (DIGIT) | (DROP) | (ELSE) | (END) | (ENGINEERING) | (ERROR) | (EXIT) | (EXPOSE) | (FAILURE) | (FOR) | (FOREVER) | (FORM) | (FUZZ) | (HALT) | (INTERMEDIATES) | (LABEL) | (LABELS) | (LINEIN) | (LINEOUT) | (LOSTDIGITS) | (LOWER) | (MESSAGE) | (NAME) | (NOMETHOD) | (NORMAL) | (NOSTRING) | (NOTREADY) | (NOVALUE) | (OFF) | (ON) | (OTHERWISE) | (OVER) | (PROPAGATE) | (PULL) | (RESULTS) | (RETURN) | (SCIENTIFIC) | (SOURCE) | (STRICT) | (SYNTAX) | (THEN) | (TO) | (UNTIL) | (UPPER) | (USER) | (VALUE) | (VAR) | (VERSION) | (WHEN) | (WHILE) | (WITH) | (ITEM) | (INDEX)
@@ -327,14 +330,9 @@ instruction ::= (SEMICOLON | label_instruction | ((assignments_and_keywords | (!
 function_call ::= built_in_functions | (namespace_prefix? function_call_without_namespace)
 private function_call_without_namespace ::= ((FUNC_IDENTIFIER | built_in_functions_keyword_list) LPAREN (COMMA | parameter_expr)* RPAREN){pin = 2}
 
-private template_list ::= ( (expr (COMMA expr)*)+ | COMMA | DOT | template_list_eq | template_list_minus | template_list_plus)+
-private template_list_plus ::= PLUS LPAREN expr RPAREN
-private template_list_minus ::= MINUS LPAREN expr RPAREN
-private template_list_eq ::= EQ LPAREN expr RPAREN
+private template_list ::= ( (expr (COMMA expr)*)+ | COMMA | DOT | ( (EQ | MINUS | PLUS) <<paren expr>>))+
 
 namespace_prefix ::= (identifier | keyword_list) COLON
-
-shebang ::= SHEBANG_LINE
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Literals
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -696,7 +694,7 @@ keyword_parse ::= PARSE (keyword_parse_caseless | keyword_parse_upper_lower)* ke
 
 keyword_parse_upper_lower ::= UPPER | LOWER {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 keyword_parse_caseless ::= CASELESS {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-keyword_arg_etc ::= ARG | LINEIN | PULL | SOURCE | VAR (symbol_or_string) | VERSION | (VALUE <<excluding_expr WITH>> WITH) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+private keyword_arg_etc ::= ARG | LINEIN | PULL | SOURCE | VAR (symbol_or_string) | VERSION | (VALUE <<excluding_expr WITH>> WITH) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 //parse var path2file +(lpos) theme "/" name "." ext
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Procedure
