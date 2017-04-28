@@ -93,6 +93,8 @@
                   2011-08-03, - ppCondition2(): make sure that length is only calculated, if a string in hand
                   2017-04-01, - ppCondition2(): if a Java exception in hand, show it and the causes that have
                                 led to it to ease debugging
+                  2017-04-25, - removing ooRexx 3.x support, which allows for defining all public routines and
+                                public classes verbatimly
 
 
       purpose:    set of 3.2 utilities to ease programming of 3.2.0, e.g. offer sort2()- and
@@ -125,11 +127,7 @@
                      limitations under the License.
                   --------------- cut here ----------------
 
-                  or
-
-                  LGPL 3.0, <http://www.fsf.org/licensing/licenses/lgpl.html> (as of: 2008-02-17)
-
-      version:    1.0.7
+      version:    1.0.8
 */
 
 .local~rgf.non.printable=xrange("00"x,"1F"x)||"FF"x
@@ -142,47 +140,10 @@
 .local~rgf.symbol.chars=".!_?"
 
 
-parse version "_" v "("
-
-if v<4 then       -- ooRexx smaller than 4.0.0, then use ".public_routines"
-do
-      -- make version"2" BIFs globally available
-   do idx over .methods
-     .public_routines~put(.methods[idx], idx)
-   end
-
-      -- make the classes seen globally via .local directory
-   .local~messageComparator     =.messageComparator
-   .local~NumberComparator      =.NumberComparator
-   .local~StringComparator      =.StringComparator
-   .local~StringColumnComparator=.StringColumnComparator
-   .local~StringOfWords         =.StringOfWords
-end
-else  -- running under ooRexx 4.0.0 or higher
-do
-    thisPackage=.context~package
-    do idx over .methods
-       -- routine=.routine~new(idx, .methods[idx]~source)
-       routine=.routine~new("DYNAMICALLY_CREATED_"idx, .methods[idx]~source)
-       thisPackage~addPublicRoutine(idx, routine)
-    end
-
-      -- make the classes seen globally via the package's public classes
-   thisPackage~addPublicClass("MessageComparator"     , .messageComparator     )
-   thisPackage~addPublicClass("NumberComparator"      , .NumberComparator      )
-   thisPackage~addPublicClass("StringComparator"      , .StringComparator      )
-   thisPackage~addPublicClass("StringColumnComparator", .StringColumnComparator)
-   thisPackage~addPublicClass("StringOfWords"         , .StringOfWords         )
-end
-
-/* ======================================================================= */
-/* === methods to be used for new BIFs                                 === */
-/* ======================================================================= */
-
    -- 2008-02-19, rgf:   abbrev      info, string [, n-length]
    /* if length is negative, then  */
 /* ======================================================================= */
-::method "abbrev2"
+::routine "abbrev2"     public
   use strict arg arg1, arg2, ...
 
   argNr=arg()              -- get maximum number of arguments
@@ -233,7 +194,7 @@ syntax:
 /* if count is negative, then the number of changes occur from the right side
    ("change the last 'count' of 'needle' occurrences in string")
 */
-::method "changeStr2"   -- (needle,haystack,newNeedle[,[-]count][,CI])
+::routine "changeStr2"  public  -- (needle,haystack,newNeedle[,[-]count][,CI])
   use strict arg arg1needle, arg2haystack, arg3newNeedle, ... -- make sure at least three args are supplied
   parse arg arg1needle, arg2haystack, arg3newNeedle, arg4count
 
@@ -325,7 +286,7 @@ syntax:
 
 /* ======================================================================= */
 -- string1, string2[, [padChar] [,{C|I}]]
-::method "compare2"
+::routine "compare2"    public
   use strict arg arg1string1, arg2string2, arg3padChar=" ", ...
 
   argNr=arg()              -- get maximum number of arguments
@@ -363,11 +324,11 @@ syntax:
 
 
 /* ======================================================================= */
--- not a BIF ::method "compareTo2"
+-- not a BIF ::routine "compareTo2"
 
 /* ======================================================================= */
 -- needle, haystack[,{C|I}]
-::method "countStr2"
+::routine "countStr2"   public
   use strict arg arg1needle, arg2haystack, ...
 
   argNr=arg()              -- get maximum number of arguments
@@ -402,7 +363,7 @@ syntax:
    -- 2008-02-21, rgf:   delStr2(string ,n-start [, n-length])
    /* if length is negative, then  */
 /* ======================================================================= */
-::method "delStr2"
+::routine "delStr2"     public
   use strict arg arg1, ...    -- make sure we have at least one arg
   parse arg ., arg2, arg3
 
@@ -472,7 +433,7 @@ syntax:
          ... if no words, returns received string
 
 */
-::method "delWord2"    -- allows negative start and length
+::routine "delWord2"    public -- allows negative start and length
   use strict arg string, arg2, ...     -- make sure we have at least one arg
 
   parse arg string, arg2, arg3
@@ -536,13 +497,13 @@ syntax:
 
 
 /* ======================================================================= */
--- not a BIF ::method "Equals2"
+-- not a BIF ::routine "Equals2"
 
 
 
 /* ======================================================================= */
 /*      lastPos     needle, haystack   [,[n-start] [,{C|I}]] */
-::method "lastPos2"
+::routine "lastPos2"    public
   use strict arg arg1needle, arg2haystack, ...
 
   argNr=arg()              -- get maximum number of arguments
@@ -596,11 +557,11 @@ syntax:
 
 
 /* ======================================================================= */
--- not a BIF ::method "match2"
+-- not a BIF ::routine "match2"
 
 /* ======================================================================= */
 /*      left2     string, length [,pad]                      */
-::method "left2"
+::routine "left2"       public
   use strict arg arg1string, arg2length, ...
 
   argNr=arg()              -- get maximum number of arguments
@@ -642,7 +603,7 @@ syntax:
    -- 2008-02-21, rgf:   lower2(string [,[n-start] [, n-length]])
    /* if length is negative, then  */
 /* ======================================================================= */
-::method "lower2"
+::routine "lower2"      public
   use strict arg arg1, ...    -- make sure we have at least one arg
   parse arg ., arg2, arg3
 
@@ -712,15 +673,15 @@ syntax:
 
 
 /* ======================================================================= */
--- not a BIF ::method "match2"
+-- not a BIF ::routine "match2"
 /* ======================================================================= */
--- not a BIF ::method "matchChar2"
+-- not a BIF ::routine "matchChar2"
 
 
    -- 2008-02-22, rgf:   overlay2(new, target [,[n-target-start] [, n-new-length]] [,pad])
    --> ATTENTION: if beyond start, prepend appropriate length pad-filled !
 /* ======================================================================= */
-::method "overlay2"
+::routine "overlay2"    public
   use strict arg new1string, arg1string, ...   -- make sure we have at least two arg
   parse arg ., ., arg2start, arg3NewLength, arg4pad
 
@@ -805,7 +766,7 @@ syntax:
 
 /* ======================================================================= */
 /*      Pos     needle, haystack   [,[n-start] [,{C|I}]] */
-::method "Pos2"
+::routine "Pos2"        public
   use strict arg arg1needle, arg2haystack, ...
 
   argNr=arg()              -- get maximum number of arguments
@@ -861,7 +822,7 @@ syntax:
 
 /* ======================================================================= */
 /*      right2     string, length [,pad]                      */
-::method "right2"
+::routine "right2"      public
   use strict arg arg1string, arg2length, ...
 
   argNr=arg()              -- get maximum number of arguments
@@ -930,7 +891,7 @@ syntax:
    Sort2(array, "M[essages]", arrayOfMessages...)
 
 */
-::method "sort2"
+::routine "sort2"       public
   use strict arg arg1, arg2="A", arg3="IN", ...
 
   signal on syntax
@@ -1059,7 +1020,7 @@ syntax: raise propagate
    stableSort2(array, "M[essages]", arrayOfMessages...)
 
 */
-::method "stableSort2"
+::routine "stableSort2" public
   use strict arg arg1, arg2="A", arg3="I", ...
 
   signal on syntax
@@ -1170,7 +1131,7 @@ syntax: raise propagate
    /* if length is negative, then position from right (end of string) */
    --> ATTENTION: if beyond start, prepend appropriate length pad-filled !
 /* ======================================================================= */
-::method "subchar2"
+::routine "subchar2"    public
   use strict arg arg1, arg2   -- make sure we have at least one arg
   parse arg arg1, arg2
 
@@ -1220,7 +1181,7 @@ syntax:
    /* if length is negative, then  */
    --> ATTENTION: if beyond start, prepend appropriate length pad-filled !
 /* ======================================================================= */
-::method "substr2"
+::routine "substr2"     public
   use strict arg arg1, ...    -- make sure we have at least one arg
   parse arg ., arg2, arg3, arg4
 
@@ -1318,7 +1279,7 @@ pp:
 /*    subWord2(string, start[, length])
          ... if no words, returns received string
 */
-::method "subWord2"  -- allows negative start and length
+::routine "subWord2"    public       -- allows negative start and length
   use strict arg string, arg2, ... -- make sure we have at least two args
 
   parse arg string, arg2, arg3
@@ -1381,7 +1342,7 @@ syntax:
    -- 2008-02-21, rgf:   upper2(string [,[n-start] [, n-length]])
    /* if length is negative, then  */
 /* ======================================================================= */
-::method "upper2"
+::routine "upper2"      public
   use strict arg arg1, ...    -- make sure we have at least one arg
   parse arg ., arg2, arg3
 
@@ -1455,7 +1416,7 @@ syntax:
 /*    WORD2(string, pos)
       ... if beyond string, then return empty string
 */
-::method "word2"       -- extract and return word
+::routine "word2"       public -- extract and return word
   use strict arg string, arg2 -- make sure we have at least one arg
 
   parse arg string, arg2
@@ -1497,7 +1458,7 @@ syntax:
 /*    WORDINDEX2(string, pos)
       ... if beyond string, then return 0
 */
-::method "wordIndex2"
+::routine "wordIndex2"  public
   use strict arg string, arg2 -- make sure we have at least one arg
 
   parse arg string, arg2
@@ -1538,7 +1499,7 @@ syntax:
 /*    WORDLENGTH2(string, position)
       ... if beyond string, then return 0
 */
-::method "wordLength2"
+::routine "wordLength2" public
   use strict arg string, arg2 -- make sure we have at least one arg
 
   parse arg string, arg2
@@ -1581,7 +1542,7 @@ syntax:
 /*
     WORDPOS2(phrase,string[,start][,{C|I}])
 */
-::method "wordPos2"
+::routine "wordPos2"    public
   use strict arg arg1, arg2, arg3=1, ...
 
   argNr=arg()              -- get maximum number of arguments
@@ -1652,7 +1613,7 @@ syntax:
                        word (index  "2")
 */
 
-::method "parseWords2"
+::routine "parseWords2" public
   use strict arg string, reference=(" "||"09"x), kind="D", returnType="W"
 
   signal on syntax
@@ -1908,7 +1869,7 @@ sortArray: procedure
                           then apply respective comparators
 
 */
-::class "MessageComparator" mixinclass Comparator
+::class "MessageComparator" mixinclass Comparator       public
 
 ::method init
   expose message cacheTable messages messageArray numericComparator caselessComparator asc
@@ -2247,7 +2208,7 @@ syntax:     -- propagate syntax exception, if any
 
    Restriction:   this class is used by .StringComparator and uses StringComparator objects as well
 */
-::class "NumberComparator" mixinclass Comparator
+::class "NumberComparator" mixinclass Comparator        public
 ::method init
   expose stringComparator order
   use arg bIgnoreNonNumbers=.true, order="A", case="I"
@@ -2344,7 +2305,7 @@ syntax:     -- propagate syntax exception, if any
 
    Restriction:   this class is used by .NumberComparator and uses NumberComparator objects as well
 */
-::class "StringComparator" mixinclass Comparator
+::class "StringComparator" mixinclass Comparator        public
 ::method init
   parse upper arg order, case
 
@@ -2427,7 +2388,7 @@ syntax:     -- propagate syntax exception, if any
     as pos and length; 'length' is omitted if 'pos' is followed by a non-numeric
     argument (A|D or C|I|N)
 */
-::class 'StringColumnComparator' mixinclass Comparator
+::class 'StringColumnComparator' mixinclass Comparator  public
 
 ::method init
   expose numberComparator
@@ -2797,7 +2758,7 @@ createCodeSnippet: procedure
                  according to "reference" characters interpreted according to "kind"
 
 */
-::class "StringOfWords"
+::class "StringOfWords"                                 public
 /* Arguments:
    string      ... mandatory
    reference   ... optional (default: " "||"09"x), defines a string of characters
