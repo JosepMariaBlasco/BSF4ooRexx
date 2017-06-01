@@ -25,7 +25,7 @@ public class OoRexxParserTest {
     private Logger logger = Logger.getLogger(OoRexxParserTest.class.getCanonicalName());
 
     @Test
-    public void genericTest() throws IOException {
+    public void parserTest() throws IOException {
 
         List<File> noErrors = getNoErrorFiles();
 
@@ -73,7 +73,7 @@ public class OoRexxParserTest {
 
         getFilesOfDir(getTestResource("noErrors"), files);
 
-        //getFilesOfDir(new File("/opt/BSF4ooRexx"), files);
+        getFilesOfDir(new File("/opt/BSF4ooRexx"), files);
 
         return files;
     }
