@@ -24,6 +24,8 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    6.0.0   2017-06-06, rgf: - rename "rcoSlotArgument" to "rcoSlotArgumentClass" to indicate a Rexx class is referenced
+
     6.0.0   2017-04-15, rgf: add a directory subclass named "SLOT.ARGUMENT" to .environment; all slot arguments,
                              either from native or Java code must instantiate this class, such that Rexx programmers
                              become able to unambiguously identify the slot arguments (appended arguments as a
@@ -968,11 +970,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20170415 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170605 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20170415 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170605 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20170415 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170605 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -989,7 +991,7 @@ RgfGetTID();
 JavaVM    *currentJVM=NULL;     // JVM to use
 int       bsfInvokedBy = 0;     // 0=noJVM, 1=byJava, 2=byRexx
 // 2017-04-15, rgf
-RexxClassObject rcoSlotArgument=NULL;   // the loader function will create the slot.argument class and save it
+RexxClassObject rcoSlotArgumentClass=NULL;   // the loader function will create the slot.argument class and save it
 
     // ---rgf, 2006-11-19: define boolean and maximum length for Java's event trace
 int       bShowErrorString = 1;         // default to showing (dumping) Java traceback in case of an error
@@ -1663,6 +1665,7 @@ RexxDirectoryObject OREXX_REGISTRY            = NULL;   // one entry per cached 
 
 RexxDirectoryObject OREXX_REGISTRY_REFCOUNTER = NULL;   // refcounter per registered Rexx object (could be referenced multiple times)
 
+// TODO: rgf, 2017-05-15 - remove this logic (probably not needed anymore) ?
 #define USE_RII2OID_RELATION
 
 #ifdef USE_RII2OID_RELATION
@@ -3056,7 +3059,8 @@ inline int RgfValue4JavaIndicator(RexxThreadContext *rtc, RexxObjectPtr robj)   
 }
 
 
-
+// TODO: rgf, 2017-06-06: check whether prefixing with <O>, <S> necessary for the Java side (maybe String vs. BeanName indistinguishable)
+//                        (check RexxEngine.java, RexxAndJava.java)
     // process return value to Java: if a RexxStringObject in hand, return a jstring,
     //                               if NULL, NULLOBJECT or .nil, return NULL
     //                               else create and return a RexxProxy
@@ -3307,6 +3311,10 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
 
 
 
+
+// TODO: 2017-04-29, ---rgf
+//      - create an updated documentation
+//      - bIncr only has an effect, if .BSF is available
 
     // process args for Rexx, return RexxArray for further processing
     // "j_args" contains either Strings (values or beanNames) or RexxProxy objects
@@ -8648,22 +8656,22 @@ void RexxEntry bsfLoader (RexxThreadContext *rtc)
 
     // rgf, 2017-04-15: create slot.argument (subclass of directory) and save it in GlobalEnvironment
         // create a subclass from .Directory, name it Slot.Argument
-    rcoSlotArgument = (RexxClassObject) rtc->SendMessage1(rtc->FindClass("DIRECTORY"), "SUBCLASS", rtc->CString("Slot.Argument"));
+    rcoSlotArgumentClass = (RexxClassObject) rtc->SendMessage1(rtc->FindClass("DIRECTORY"), "SUBCLASS", rtc->CString("Slot.Argument"));
 
 #ifdef DEBUG_LOADER_UNLOADER
-    fprintf(stderr, "/// in bsfLoader(), rcoSlotArgument=[%p]\n", rcoSlotArgument); fflush(stderr);
-    fprintf(stderr, "/// in bsfLoader(); rcoSlotArgument~string=[%s]\n", rtc->CString( rtc->SendMessage0(rcoSlotArgument,"STRING") ));
+    fprintf(stderr, "/// in bsfLoader(), rcoSlotArgumentClass=[%p]\n", rcoSlotArgumentClass); fflush(stderr);
+    fprintf(stderr, "/// in bsfLoader(); rcoSlotArgumentClass~string=[%s]\n", rtc->CString( rtc->SendMessage0(rcoSlotArgumentClass,"STRING") ));
 #endif
 
     // save in global directory (".environment")
-    rtc->DirectoryPut( rtc->GetGlobalEnvironment(), rcoSlotArgument, "SLOT.ARGUMENT");
+    rtc->DirectoryPut( rtc->GetGlobalEnvironment(), rcoSlotArgumentClass, "SLOT.ARGUMENT");
 
 #ifdef DEBUG_LOADER_UNLOADER
 
-    fprintf(stderr, "/// in bsfLoader(), now fetching rcoSlotArgument from .ENVIRONMENT ...\n");
+    fprintf(stderr, "/// in bsfLoader(), now fetching rcoSlotArgumentClass from .ENVIRONMENT ...\n");
     // RexxObjectPtr rop = rtc->SendMessage1(rtc->GetGlobalEnvironment(), "ENTRY", newClzName);
     RexxObjectPtr rop = rtc->DirectoryAt(rtc->GetGlobalEnvironment(), "SLOT.ARGUMENT");
-    fprintf(stderr, "/// in bsfLoader(), rcoSlotArgument=[%p]\n", rcoSlotArgument); fflush(stderr);
+    fprintf(stderr, "/// in bsfLoader(), rcoSlotArgumentClass=[%p]\n", rcoSlotArgumentClass); fflush(stderr);
     fprintf(stderr, "/// in bsfLoader(); .environment~slot.argument=[%p]\n", rop);
     fprintf(stderr, "/// in bsfLoader(); .environment~slot.argument~string=[%s]\n", rtc->CString( rtc->SendMessage0(rop,"STRING") ));
     fflush(stderr);
@@ -10144,8 +10152,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         (j_methodDescription!=NULL))      // build slotArgument (an ooRexx directory object) ?
     {
         // slotDir=rtc->NewDirectory();    // create ooRexx directory object
-        // rgf, 2017-04-15, use new rcoSlotArgument (a subclass of directory to allow unambiguous testing)
-        slotDir=(RexxDirectoryObject) rtc->SendMessage0(rcoSlotArgument, "NEW");    // create "SLOT.ARGUMENT" instance, ooRexx directory object
+        // rgf, 2017-04-15, use new rcoSlotArgumentClass (a subclass of directory to allow unambiguous testing)
+        slotDir=(RexxDirectoryObject) rtc->SendMessage0(rcoSlotArgumentClass, "NEW");    // create "SLOT.ARGUMENT" instance, ooRexx directory object
 
         if (j_userData_ID!=NULL)    // userData is given, hence create directory containing it (will get supplied as last argument)
         {
@@ -10713,14 +10721,18 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
     // global variable: int bsfInvokedBy = 0;     // 0=noJVM, 1=byJava, 2=byRexx
 // TODO: removing RII's proxy objects independent of how BSF4ooRexx got started
 //    if (bsfInvokedBy==1)    // BSF4Rexx invoked by Java, then o.k. to remove the cached Rexx objects
+#if defined (USE_RII2OID_RELATION)
     {
 
 #if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
         fprintf(stderr, "---> ---> ---> ");
-        fprintf(stderr, "(3c) .._jniRexxTerminateInterpreterInstance(...): BEFORE** RgfRemoveAllProxyObjectsByRIID...\n");
-        fflush(stderr);
+        fprintf(stderr, "(3c) .._jniRexxTerminateInterpreterInstance(...): BEFORE** RgfRemoveAllProxyObjectsByRIID...\n");fflush(stderr);
 #endif
 
+// TODO: ---rgf, 2017-05-12: may be the cause for crashes (e.g. rexx object removed and garbage collected, yet Java proxy invokes a method on the Rexx object)
+// fprintf(stderr, "---> ---> ---> ");
+// fprintf(stderr, "(3c) .._jniRexxTerminateInterpreterInstance(...): BEFORE** RgfRemoveAllProxyObjectsByRIID...\n");fflush(stderr);
+// NOT the cause ! (rgf, 2017-05-12) -- reactivating
         int32_t nrFreed=RgfRemoveAllProxyObjectsByRIID(tmpInstance, c_rii_ID);
 
        // RGF_ATTACH_NEW
@@ -10735,7 +10747,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
 
 //        return -2;                  // indicate that not processed
     }
-
+#endif
 
 
 #if defined (DEBUG40) || defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_TERMINATE_INTERPRETER)

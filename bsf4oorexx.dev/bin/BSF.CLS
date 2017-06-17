@@ -12,6 +12,10 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+
+         2017-04-30, ---rgf, - make sure that all "d2x" messages have a length of 17 (such that negative
+                               values get appropriate leading "F"s)
+
          2017-03-09, ---rgf, - routine bsf.createProxyClass enhanced with the possibility to add any number
          2017-03-12            of blank delimited Java interface class names after the Java class name that
                                is to be extended (alternatively this can be an array with each item being
@@ -537,7 +541,7 @@
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2001-2016 Rony G. Flatscher
+   Copyright 2001-2017 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -555,7 +559,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2001-2016 Rony G. Flatscher
+   Copyright 2001-2017 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -575,6 +579,8 @@
 */
 
 -- .stderr~say("BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ... ")
+
+-- say "... BSF.CLS ... prolog code ..."  ".bsf.rii_ID:" pp(.bsf.rii_ID)  ".bsf.primodalTID="pp(.bsf.primodalTID)  "TID:" pp(BsfGetTid()) "created in RII:" pp(rii_id)
 
    signal on syntax
    parse version v .
@@ -629,7 +635,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20170415" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20170617" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -643,7 +649,8 @@
 
    call BSfShowErrorMessage .false  -- turn off displaying the Java exception message (leftover from the very early BSF4Rexx days)
 
--- .stderr~say("BSF.CLS - about to leave the PROLOG code, tid="pp(bsfGetTID()) ".bsf.rii_ID="pp(.bsf.rii_ID) ".bsf.primodalTID="pp(.bsf.primodalTID)  ".local~identityHash~d2x="pp(.local~identityHash~d2x) ".bsf~identityhash~d2x="pp(.bsf~identityhash~d2x) "<=== "~copies(5))
+-- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
+-- .stderr~say("BSF.CLS - about to leave the PROLOG code, tid="pp(bsfGetTID()) ".bsf.rii_ID="pp(.bsf.rii_ID) ".bsf.primodalTID="pp(.bsf.primodalTID)  ".local~identityHash~d2x="pp(.local~identityHash~d2x(18)) ".bsf~identityhash~d2x="pp(.bsf~identityhash~d2x(18)) "<=== "~copies(5))
    return
 
 syntax:
@@ -1114,6 +1121,7 @@ any:
       if dimension>0 then   -- rgf, 2003-02-09, no upper limit anymore
       do
          if bIncr<>"" then
+
 do
 -- say "---BSF.WRAP()--- .bsf_array_reference~new(data="data", bIncr=.TRUE!"
             return .bsf_array_reference~new(data, dimension, bIncr) -- return a BSF_ARRAY proxy
@@ -1594,7 +1602,8 @@ any:
         -- assign beanName to object, use the Java supplied name
   self~ObjectName=beanName
 
--- .stderr~say( "*** BSF.CLS::BSF::INIT:" pp(self~objectname)"@"pp(self~identityHash~d2x)  "TID:" pp(BsfGetTid()))
+-- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
+-- .stderr~say( "*** BSF.CLS::BSF::INIT:" pp(self~objectname)"@"pp(self~identityHash~d2x(18))  "TID:" pp(BsfGetTid()))
 
   return self
 
@@ -1622,7 +1631,8 @@ any:
   signal on syntax name any         -- trap any exceptions
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
--- .stderr~say( "*** BSF.CLS::BSF::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x)  ".bsf.rii_ID:" pp(.bsf.rii_ID)  ".bsf.primodalTID="pp(.bsf.primodalTID)  "TID:" pp(BsfGetTid()) "created in RII:" pp(rii_id))
+-- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
+-- .stderr~say( "*** BSF.CLS::BSF::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x(18))  ".bsf.rii_ID:" pp(.bsf.rii_ID)  ".bsf.primodalTID="pp(.bsf.primodalTID)  "TID:" pp(BsfGetTid()) "created in RII:" pp(rii_id))
 
 --  return BSF("unregisterBean", self~objectname)~substr(4)
    -- 2015-08-03, ---rgf: supply RII_ID of this object to help the Java side decide whether really doing it in the
@@ -1646,7 +1656,8 @@ any:
 /* for debugging
 co=condition('o')
 call rgf_util2
-.stderr~say( "*** BSF.CLS::BSF::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x) "CONDITION RAISED!" ppCondition2(co))
+-- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
+.stderr~say( "*** BSF.CLS::BSF::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x(18)) "CONDITION RAISED!" ppCondition2(co))
 */
 
 
@@ -2643,7 +2654,8 @@ any:
    use arg beanName, bIncr=.false   -- should be .false by default, only when Java-args get proxied should ".true" be given
    self~ObjectName=beanName
    self~rii_id=.bsf.rii_id    -- remember RII that created this instance
--- .stderr~say( "BSF.CLS: BSF_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x)  "bIncr="pp(bIncr) "TID:" pp(BsfGetTid()) )
+-- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
+-- .stderr~say( "BSF.CLS: BSF_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x(18))  "bIncr="pp(bIncr) "TID:" pp(BsfGetTid()) )
 
 
    -- rgf, 2015-07-20: increment BSF registry counter for this Java object, such that only running its UNINIT removes Java object from BSF registry
@@ -2658,7 +2670,8 @@ any:
 /*
 -- rgf, 2015-07-17: just for debug statements, remove after testing JSR223 related problems
 ::METHOD uninit
--- .stderr~say( "BSF.CLS: BSF_REFERENCE::UNINIT():" pp(self~objectName)"@"pp(self~identityHash~d2x) "- about: self~uninit:super"  "TID:" pp(BsfGetTid()))
+-- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
+-- .stderr~say( "BSF.CLS: BSF_REFERENCE::UNINIT():" pp(self~objectName)"@"pp(self~identityHash~d2x(18)) "- about: self~uninit:super"  "TID:" pp(BsfGetTid()))
 self~uninit:super
 */
 
@@ -2731,13 +2744,16 @@ forward class (super)
    use arg beanName
    self~ObjectName=beanName
    self~rii_id=.bsf.rii_id    -- remember RII that created this instance
--- .stderr~say( "*** BSF.CLS::BSF_PROXY::INIT:" pp(beanname)"@"pp(self~identityHash~d2x) "TID:" pp(BsfGetTid()))
+
+-- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
+-- .stderr~say( "*** BSF.CLS::BSF_PROXY::INIT:" pp(beanname)"@"pp(self~identityHash~d2x(18)) "TID:" pp(BsfGetTid()))
 
    -- make sure that BSF's UNINIT method does not run (it'll deregister
    -- the bean from the BSF registry
 ::METHOD uninit
 
--- .stderr~say( "*** BSF.CLS::BSF_PROXY::UNINIT: NOP !" pp(self~objectname)"@"pp(self~identityHash~d2x) "TID:" pp(BsfGetTid()))
+-- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
+-- .stderr~say( "*** BSF.CLS::BSF_PROXY::UNINIT: NOP !" pp(self~objectname)"@"pp(self~identityHash~d2x(18)) "TID:" pp(BsfGetTid()))
 
   NOP
 
@@ -2768,7 +2784,8 @@ forward class (super)
   use arg beanName, dimension, bIncr=.false  -- assign "dimension" directly to exposed object variable
 
    self~rii_id=.bsf.rii_id    -- remember RII that created this instance
--- .stderr~say( "BSF.CLS: BSF_ARRAY_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x) "bIncr="pp(bIncr)" - begin"  "TID:" pp(BsfGetTid()))
+-- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
+-- .stderr~say( "BSF.CLS: BSF_ARRAY_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x(18)) "bIncr="pp(bIncr)" - begin"  "TID:" pp(BsfGetTid()))
 
   self~ObjectName=beanName
   items=-1                     -- set and indicate, that not calculated as of yet
@@ -2793,7 +2810,7 @@ forward class (super)
 
 --     call bsf 'rawRegisterBean', beanName, beanName   -- increment BSF registry reference counter
 
--- .stderr~say( "BSF.CLS: BSF_ARRAY_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x) "TID:" pp(BsfGetTid()) "- done, returning.")
+-- .stderr~say( "BSF.CLS: BSF_ARRAY_REFERENCE::INIT():" pp(beanName)"@"pp(self~identityHash~d2x(18)) "TID:" pp(BsfGetTid()) "- done, returning.")
   return
 
 any:
@@ -2807,7 +2824,9 @@ any:
 
 ::method uninit      -- rgf, 20120604: make sure we also unregister the index array to avoid a memory leak
   expose indexArray
--- .stderr~say( "*** BSF.CLS::BSF_ARRAY_REFERENCE::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x)  "indexArray="pp(indexArray) "indexArray~class="pp(indexArray~class) "self~rii_ID:" pp(self~rii_ID) "TID:" pp(BsfGetTid()))
+
+-- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
+-- .stderr~say( "*** BSF.CLS::BSF_ARRAY_REFERENCE::UNINIT:" pp(self~objectname)"@"pp(self~identityHash~d2x(18))  "indexArray="pp(indexArray) "indexArray~class="pp(indexArray~class) "self~rii_ID:" pp(self~rii_ID) "TID:" pp(BsfGetTid()))
 
   call bsf 'unregisterBean', indexArray
 -- .stderr~say( "<-- BSF.CLS::BSF_ARRAY_REFERENCE::UNINIT:" pp(self~objectname) 'call bsf, ''unregisterBean'', indexArray='pp(indexArray)", now doing 'self~uninit:super'..."  "TID:" pp(BsfGetTid()))
@@ -3099,7 +3118,8 @@ any:
   self~dimension =dimension
   self~items     =items
 
--- .stderr~say( "*** BSF.CLS::BSF_ARRAY_PROXY::INIT:" pp(beanname)"@"pp(self~identityHash~d2x) "TID:" pp(BsfGetTid()))
+-- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
+-- .stderr~say( "*** BSF.CLS::BSF_ARRAY_PROXY::INIT:" pp(beanname)"@"pp(self~identityHash~d2x(18)) "TID:" pp(BsfGetTid()))
 
 
 ::method dimension attribute
@@ -3151,7 +3171,8 @@ syntax:
 
 ::routine bsf.unregisterBean                 public
   parse arg beanName
--- .stderr~say( "*** BSF.CLS::ROUTINE::BSF.UNREGISTERBEAN():" pp(bean~objectname)"@"pp(bean~identityHash~d2x)  ".bsf~bsf.rii_ID:" pp(.bsf.rii_ID) "TID:" pp(BsfGetTid()))
+-- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
+-- .stderr~say( "*** BSF.CLS::ROUTINE::BSF.UNREGISTERBEAN():" pp(bean~objectname)"@"pp(bean~identityHash~d2x(18))  ".bsf~bsf.rii_ID:" pp(.bsf.rii_ID) "TID:" pp(BsfGetTid()))
   return bsf("unregisterBean", beanName)~substr(4)
 
 

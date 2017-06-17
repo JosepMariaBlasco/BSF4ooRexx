@@ -646,8 +646,9 @@ if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: before ==
 if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ===> rii_ID=["+rii_ID+"]");
         }
 
-        String name=methodObject.getName();
-        String methodObjectBean=rexxInterface.makeString4Rexx(methodObject);
+        String name=methodObject.getName();         // get method name (will be used as message)
+
+        String methodObjectBean=rexxInterface.makeString4Rexx(methodObject);    // create beanName
         // 20161220, rgf: increase refCount by one as the C++ method will use wrap.bsf() such that .bsf uninit will run and do a unregisterBean
         if (rexxInterface.bsfPrefixReturnValue==true)
         {

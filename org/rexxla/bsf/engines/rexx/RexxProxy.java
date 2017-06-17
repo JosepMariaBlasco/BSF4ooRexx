@@ -795,6 +795,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.invoke(jO, mN, mD, args): 
      */
     public void finalize ()
     {
+// boolean bDebug=true;
         if (bDebug)
         {
             System.err.println(this+": in finalize(), rexxObjectID=["+rexxObjectID+"]...");

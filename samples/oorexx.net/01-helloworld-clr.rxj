@@ -4,8 +4,7 @@
  * Shows:       - Import of static classes
  *              - Invokation of methods (with parameters)
  */
-
 console = clr.import("System.Console")  -- get reference to static class "System.Console"
-console~WriteLine("Hello World from ooRexx.NET (via BSF4ooRexx and jni4net)")  -- invoke method "WriteLine" with parameter "Test"
+console~WriteLine("Hello World from ooRexx.NET (via BSF4ooRexx and jni4net)")  -- invoke method "WriteLine"
 
 ::REQUIRES CLR.CLS  -- get ooRexx.NET support

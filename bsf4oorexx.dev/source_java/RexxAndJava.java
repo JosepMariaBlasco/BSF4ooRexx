@@ -449,7 +449,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20170404";
+    static final public String version = "600.20170617";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -919,6 +919,7 @@ System.err.println("*** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -
      * @param args an array of arguments to pass on
      * @param returnType the primitive type signature (for primitive types or matching wrapper classes) or <code>null</code> for any object
      * @throws a {@link RexxException}, if the argument does not denote an existing Rexx interpreter instance
+     *
      * @return <code>0</code>
      *
      * @since May 2009
@@ -2770,6 +2771,16 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
                             "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" array object ["+args[1]+"] is not an array!");
                }
 
+if (bDebug)
+{
+    System.err.println(this+": *ARRAY*:  args[0]=["+args[0]+"]");
+    for (int i=0; i<args.length; i++)
+    {
+        System.err.println("\targs["+i+"]=["+args[i]+"]");
+    }
+
+}
+
 
                Object arrayObj = null;
                arrayObj=lookupBean(args[1]);
@@ -2829,16 +2840,15 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
                if (choice==ARRAY_PUT_STRICT)
                {
                    o_nv=convFromRexx( args[2], args[3] );     // get the Java object
-if (bDebug) System.err.print("ARRAY_PUT_STRICT:  args[2]=["+args[2]+"], "+"args[3]=["+args[3]+"]: o_nv=["+o_nv+"]");
+if (bDebug) System.err.println("ARRAY_PUT_STRICT:  args[2]=["+args[2]+"], "+"args[3]=["+args[3]+"]: o_nv=["+o_nv+"]");
                    firstIdx=4;          // first argument with index-information for arrayPut()
                }
                else if (choice==ARRAY_PUT)      // convert Rexx argument to be stored in array to the appropriate type
                {
                    o_nv=convFromRexx(args[2]);  // get Java null or Java object from BSF registry, String else
+
                    Class cl=arrayObj.getClass(),
                          ct=aw.componentType;
-
-if (bDebug)  System.err.print("ARRAY_PUT: cl=["+cl+"] isPrimitive: ["+cl.isPrimitive()+"] "+"aw.componentType=["+ct+"] isPrimitive(): "+ct.isPrimitive()+", args[2]=["+args[2]+"] --> o_nv=["+o_nv+"]");
 
                    if (o_nv!=null && ct.isPrimitive() )      // if not null, determine component type of array
                    {
@@ -5784,14 +5794,13 @@ if (bDebugRefCounter)
 {
      if (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null)
      {
-System.err.println("//++// increaseRefCounter, RAJBean: "+bean+" \\\\++\\\\");
+System.err.println("//++// increaseRefCounter/(registerBean), RAJBean: "+bean+" \\\\++\\\\");
 
         if (rajRegistryToWatch.get(beanName)==null)
         {
             rajRegistryToWatch.put(beanName, bean);
         }
      }
-
 }
                    }
 
@@ -6280,6 +6289,8 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
     {
         final boolean bDebug=false;
 
+if (bDebug) System.err.println(this+".lookupBean():     beanName=["+beanName+"]");
+
         RAJBean bean=rajRegistry.get(beanName);
 
 if (bDebug && bean==null)
@@ -6300,9 +6311,14 @@ if (bDebug && bean==null)
 
 if (bDebug==true)
 {
-    System.err.println("RAJ: lookupBean("+beanName+"): bean=["+bean+"], bean.javaObject.getClass()=["+
-                       (bean.javaObject==null ? null : bean.javaObject.getClass()) +"]");
+    System.err.println("RAJ: lookupBean(\""+beanName+"\"): bean=["+bean+"], bean.javaObject.getClass()=["+
+                       (bean==null ? null :
+                                    (bean.javaObject==null ? null : bean.javaObject.getClass())
+                       )
+                       +"]");
 }
+
+
 
         return (bean==null ? null : bean.javaObject);
     }
@@ -6317,6 +6333,8 @@ if (bDebug==true)
     private Object lookupBean4JNI(String beanName)
     {
         final boolean bDebug=false;
+
+if (bDebug) System.err.println(this+".lookupBean4JNI(): beanName=["+beanName+"], bTerminated=["+bTerminated+"]");
 
         if (bTerminated==true)
         {
@@ -6365,25 +6383,43 @@ System.err.println(this+":  registerBean4JNI(object=["+object+"]): object.getCla
       */
     protected String registerBean(String beanName, Object object)
     {
+
         if (bTerminated==true)
         {
             return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
         }
+
+final boolean bDebug=false;
+if (bDebug)
+{
+    System.err.print(this+".registerBean(beanName=["+beanName+"], object=["+object+"]: ");
+}
 
         RAJBean bean = rajRegistry.get( beanName );  // already registered?
         if (bean==null)                  // we need to create the bean
         {
             bean=new RAJBean(beanName, object);
             rajRegistry.put(beanName, bean);
+if (bDebug) System.err.print("did not exist, CREATED!");
         }
         else    // exists already, increase refCounter
         {
             bean.refCount+=1;
+if (bDebug) System.err.print("existed alread, refCount increased");
         }
+
+if (bDebug) System.err.println(" -> bean.refCount=["+bean.refCount+"]");
 
 
 if (bDebugRefCounter)
 {
+
+    if (object instanceof String)
+    {
+        String str=(String) object;
+        int len=str.length();
+        System.err.println("/-->/-->/storing a STRING /-->/["+str.substring(0, (len<51 ? len-1 : 50) ) +"] \\<--\\<--\\");
+    }
     if (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null)
     {
         System.err.println("//++// registerBean, RAJBean: "+bean+" \\\\++\\\\ (AFTER increasing refCount=["+bean.refCount+"])");
@@ -6409,6 +6445,11 @@ if (bDebugRefCounter)
       */
     protected String rawRegisterBean(String beanName, Object object)
     {
+final boolean bDebug=false; // true;
+if (bDebug)
+{
+    System.err.println("RAJ.-RAW-rawRegisterBean(beanName=["+beanName+"], object=["+object+"]: ");
+}
         RAJBean bean = rajRegistry.get( beanName );  // already registered?
         if (bean==null)                  // we need to create the bean
         {
@@ -6421,7 +6462,7 @@ if (bDebugRefCounter)
             bean.refCount+=1;
         }
 
-if (bDebugRefCounter && bean.refCount>3)
+if (bDebugRefCounter) // && bean.refCount>3)
 {
     System.err.println("//++// rawRegisterBean, RAJBean: "+bean+" \\\\++\\\\ (AFTER increasing refCount)");
 }
@@ -6469,7 +6510,8 @@ if (bDebug) // testing; TODO: remove
 
             RAJBean bean=rajRegistry.get(beanName);
 
-if (bDebugRefCounter && (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null))
+// if (bDebugRefCounter && (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null))
+if (bDebugRefCounter && rajRegistryToWatch.get(beanName)!=null)
 System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), bean.refCount=["+bean.refCount+"]  ...");
 
             // bean not found, maybe still has prefix ?
@@ -6488,7 +6530,8 @@ if (bDebugRefCounter) System.err.println("RAJ:   ===> RexxAndJava.unregisterBean
 
 if (bDebugRefCounter)
 {
-    if (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null)
+    // if (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null)
+    if (rajRegistryToWatch.get(beanName)!=null)
     {
     System.err.println("//--// RAJ.unregisterBean(), decreasing refCount! bean=["+bean+"], new refCount=["+(bean.refCount-1)+"] \\\\--\\\\");
     }
@@ -7012,6 +7055,14 @@ if (bDebug) {System.err.println(this+".createRexxInterpreterInstance(...), retur
         {
             return "RAJBean@"+Integer.toHexString( System.identityHashCode(this) )+"[name="+name+",javaObject="+javaObject+",refCount="+refCount+"]";
         }
+
+/*
+public void finalize()
+{
+    System.err.println("RAJBean.finalize(): name=["+name+"], refCount=["+refCount+"], javaObject=["+javaObject+"]");
+}
+*/
+
     }
 
 }

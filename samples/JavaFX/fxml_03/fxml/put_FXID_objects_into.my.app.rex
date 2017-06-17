@@ -16,6 +16,7 @@
                    Bindings for the global scope, such that we can fetch these objects from there and
                    save it in a directory named after the FXML location (file name) that defines them for
                    later retrieval by other Rexx programs
+      changed:     20170514, rgf: corrected bDebug setting (now using: ".my.app~bDebug=.true")
 */
 
 parse source . . thisProg
@@ -26,7 +27,7 @@ thisProg=filespec("Name", thisProg)
 if \.environment~hasEntry("my.app") then
    .environment~setEntry("my.app", .directory~new)
 
-bDebug=(.my.app~bDebug=.false)  -- set debug mode
+bDebug=(.my.app~bDebug=.true)  -- set debug mode
 
 if bDebug then say .dateTime~new " ==> ---> arrived in Rexx program '"thisProg"' ..."
 

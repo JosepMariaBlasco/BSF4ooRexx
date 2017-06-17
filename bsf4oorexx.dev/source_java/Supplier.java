@@ -1,13 +1,14 @@
 package org.rexxla.bsf.engines.rexx;
 
 import java.util.*;
+import org.apache.bsf.BSFException;
 
 /** Class modelled after the <a href="http://www.ooRexx.org">ooRexx</a> class &quot;Supplier&quot;. Needs the {@link ArrayWrapper} class.
  *  Allows iterating over an array (regardless of its dimension). In the case an entry of the array is
  *  <code>null</code>, that entry is not reflected in the supplier object.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2009 Rony G. Flatscher
+ *    Copyright (C) 2001-2017 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -27,6 +28,7 @@ import java.util.*;
  */
 
  /*
+    2017-06-17, ---rgf: added BSFException to ArrayWrapper, need to declare it
     2009-09-10, ---rgf: adjust for change in ArrayWrappter, which now throws a ClassNotFound exception
     2007-07-07, ---rgf: added allIndexes() and allItems() method to match ooRexx 3.2.0.
  */
@@ -35,7 +37,7 @@ public class Supplier implements Enumeration
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "104.20090910";
+    static public String version = "104.20170617";
 
     /** Private array storing the values of the array. */
     private Object values[]=null;
@@ -154,7 +156,7 @@ public class Supplier implements Enumeration
      *         Java style (indexing starts with <code>0</code> and multiple indices are delimited by
      *         enclosing each index in square brackets)
      */
-    public Supplier (Object arrObject, boolean bRexxStyle) throws java.lang.ClassNotFoundException
+    public Supplier (Object arrObject, boolean bRexxStyle) throws java.lang.ClassNotFoundException, BSFException
     {
         // ArrayWrapper aw = ArrayWrapper.getArrayWrapper(arrObject);  // wrap up the array
         ArrayWrapper aw = new ArrayWrapper(arrObject);  // wrap up the array
@@ -169,7 +171,7 @@ public class Supplier implements Enumeration
      *
      * @param arrObject an array (of any dimension)
      */
-    public Supplier (Object arrObject) throws java.lang.ClassNotFoundException
+    public Supplier (Object arrObject) throws java.lang.ClassNotFoundException, BSFException
     {
         this(arrObject, false);             // default: use Java style indexing (starts with 0)
     }

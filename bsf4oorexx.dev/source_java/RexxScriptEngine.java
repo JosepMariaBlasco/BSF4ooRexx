@@ -522,7 +522,8 @@ if (bDebug==true) {exc.printStackTrace();}
 
 
 
-    /** Rexx code to create and return a Rexx directory, optionally allowing for one entry-name and entry-value.
+    /** Rexx code to create and return a subclass of the Rexx directory class, which carries the name
+     *  &quot;Slot.Argument&quot;, optionally allowing for one entry-name and entry-value.
      *
      * @param entryName optional, a String denoting the entry name (will be uppercased by Rexx, if necessary)
      * @param entryValue optional, any object to be stored with <code>entryName</code>

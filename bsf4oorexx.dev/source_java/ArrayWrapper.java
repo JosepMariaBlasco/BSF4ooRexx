@@ -1,6 +1,7 @@
 package org.rexxla.bsf.engines.rexx;
 
 import  java.lang.reflect.*;
+import org.apache.bsf.BSFException;
 
 /**
  * This class serves as a wrapper for Java arrays. Its methods allow to fully interact
@@ -8,7 +9,7 @@ import  java.lang.reflect.*;
  * methods are called after their Object Rexx counterparts, if any.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2009 Rony G. Flatscher
+ *    Copyright (C) 2001-2017 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,6 +30,8 @@ import  java.lang.reflect.*;
  */
 
 /*
+   2017-06-17, rgf, - throws an exception if no Java array object is supplied
+
    2009-09-10, rgf, account for Thread context class loader not set
    2006-01-01, rgf, released version 1.3
    2005 ---rgf, fixed a bug when receiving an array-object with a capacity of 0
@@ -39,7 +42,7 @@ public class ArrayWrapper {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "104.20090910";
+    static public String version = "105.20170617";
 
 
     /** Stores the array object which this instance wraps. */
@@ -81,8 +84,15 @@ public class ArrayWrapper {
      *
      *  @param objArray the array object for which an ArrayWrapper instance is sought
      */
-    public ArrayWrapper (Object objArray) throws java.lang.ClassNotFoundException
+    public ArrayWrapper (Object objArray) throws java.lang.ClassNotFoundException, BSFException
     {
+        if (objArray.getClass().isArray()==false)   // not a Java array object!
+        {
+            throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                    "ArrayWrapper(): \""+objArray+"\" is not a Java array!");
+        }
+
+
         arrayObject=objArray;   // save the array with this instance of ArrayWrapper
 
         int    i=0, len=0;
@@ -135,9 +145,6 @@ public class ArrayWrapper {
                                 tmp=tmp+className.charAt(i);
                             }
 
-
-                            // componentType=Class.forName(tmp);   // get appropriate class object
-
                             // componentType=Thread.currentThread().getContextClassLoader().loadClass(tmp);
                             // rgf, 2009-09-10
                             ClassLoader tccl=Thread.currentThread().getContextClassLoader();
@@ -153,9 +160,8 @@ public class ArrayWrapper {
 
                             if (componentType==null)        // did not find the class
                             {
-                                ArrayWrapper.class.getClassLoader().loadClass(tmp);
+                                componentType=ArrayWrapper.class.getClassLoader().loadClass(tmp);
                             }
-
                         }
                         break;
         }

@@ -7,6 +7,7 @@
    Date:    2006-01-07
    Version: 1.32
    Changed:
+            2017-05-09, ---rgf, - add cmd.ePath2JavaDLL to info-output if set or on Windows or MacOSX
             2017-02-14, ---rgf, - Linux: carry out a separate ldconfig with the directory to which
                                   /opt/BSF4ooRexx/libjvm.so points to
             2017-02-12, ---rgf, - add quoted cmd.ePath2JavaDLL to "ldconfig" command; it seems that some
@@ -1766,6 +1767,8 @@ info:                            /* tell user what has happened   */
   say "cmd.eSetBSF4REXX_HOME: ["cmd.eSetBSF4REXX_HOME"]"
   say "cmd.eSetPath:          ["cmd.eSetPath"]"
   say "cmd.eSetCP:            ["cmd.eSetCP"]"
+  if cmd.ePath2JavaDll<>"" | cmd.eIsUnix=0 | cmd.eIsMacOSX then -- rgf, 2017-05-09
+     say "cmd.ePath2JavaDll:     ["cmd.ePath2JavaDll"]"
   say
   say "---"
   say

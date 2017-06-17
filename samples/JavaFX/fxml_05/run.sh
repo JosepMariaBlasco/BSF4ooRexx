@@ -1,2 +1,1 @@
-CLASSPATH=`pwd`/controlsfx-8.40.12.jar:$CLASSPATH
-rexx Program.rxj
+CLASSPATH=`pwd`/controlsfx-8.40.12.jar:$CLASSPATH rexxj.sh staff.rxj

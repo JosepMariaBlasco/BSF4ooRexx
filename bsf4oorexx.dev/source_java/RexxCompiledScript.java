@@ -158,7 +158,7 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
     /** The <code>RexxProxy</code> representing the compiled (tokenized) script (a Rexx routine object). */
     RexxProxy rexxScriptObject;
 
-    /** Getter for the code>RexxProxy</code> representing the Rexx routine object the script got compiled (tokenized) to.
+    /** Getter for the <code>RexxProxy</code> representing the Rexx routine object the script got compiled (tokenized) to.
      *
      * @return a <code>RexxProxy</code> representing the Rexx routine object
      */

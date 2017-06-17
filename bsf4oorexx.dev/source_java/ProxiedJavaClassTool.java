@@ -30,9 +30,8 @@ java org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool TestAbstract Caesar
                          (cf. the changes to BSF.CLS' routine bsf.createProxyClass)
     2017-03-13, rgf:   - redo to allow full replacement of ASM, added functionality to create classes off interface(s) only
                        - changed "bss" to the self documenting name "bShowSource"
-
-
-
+    2017-06-17, rgf:   - if the context class loader is null, make sure that the SimpleCompiler's parent class loader
+                         gets set; this version uses the class loader for ProxiedJavaClassTool.
 */
 
 import java.lang.reflect.*;
@@ -90,7 +89,7 @@ public class ProxiedJavaClassTool
     public static boolean bShowSource= false; // true; // if set to .true, the generated source is printed to stderr
 
      /** Version information on this class. */
-    static final public String version="103.20170313";
+    static final public String version="103.20170617";
 
     /** Allow using this class from the command line to create an extended Java class and displaying the generated source.
      *  Example: <br>
@@ -409,6 +408,12 @@ if (bDebug==true)
 
         try {
             if (bTiming==true)  startTime=System.currentTimeMillis(); // System.nanoTime(); // System.currentTimeMillis();
+
+            // 2017-06-17, rgf: if no context class loader make sure SimpleCompiler gets a parent class loader
+            if (Thread.currentThread().getContextClassLoader()==null)
+            {
+                sc.setParentClassLoader(ProxiedJavaClassTool.class.getClassLoader());
+            }
 
             sc.cook(sb.toString());             // compile program
 
