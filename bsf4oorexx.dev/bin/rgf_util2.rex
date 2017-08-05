@@ -96,6 +96,10 @@
                   2017-04-25, - removing ooRexx 3.x support, which allows for defining all public routines and
                                 public classes verbatimly
 
+                  2017-08-05, - ppCondition2(): if a RexxException is found, recurse ppCondition2() with it
+                                to show embedded Java exceptions that have caused it (possible if Rexx code
+                                gets run from Java)
+
 
       purpose:    set of 3.2 utilities to ease programming of 3.2.0, e.g. offer sort2()- and
                   stableSort2()-BIFs that handle all kind of standard sorting needs, thereby
@@ -127,7 +131,7 @@
                      limitations under the License.
                   --------------- cut here ----------------
 
-      version:    1.0.8
+      version:    1.0.9
 */
 
 .local~rgf.non.printable=xrange("00"x,"1F"x)||"FF"x
@@ -3203,7 +3207,6 @@ syntax: raise propagate
 */
 ::routine ppCondition2 public
   use strict arg co, bShowPackageInfo=.false, indent1="09"x, lf=.endOfLine
-
   indent2=indent1~copies(2)
   indent3=indent1~copies(3)
 
@@ -3235,6 +3238,32 @@ syntax: raise propagate
             if i=1 then mb ~~append( "--> exception: " ) ~~append(pp2(jexc))
                    else mb ~~append( "--> caused by: " ) ~~append(pp2(jexc~toString))
             mb   ~~append(lf) -- show Java exception string
+
+            objectName=jexc~objectName
+            -- if a RexxException object, unfold its content (fetch condition object, recurse ppCondition2())
+            if objectName~abbrev("org.rexxla.bsf.engines.rexx.RexxException@") then
+            do
+                startHint2="/// ---> RECURSING over ["objectName"] ---------> \\\"
+                lengthHint=length(startHint2)-13
+                startHint1="   ///" copies("-",lengthHint-1) "\\\"
+
+                endHint2 ="\\\ <--- end of RECURSING over ["objectName"] <--- ///"
+                endHint1 ="   \\\" copies("-",lengthHint) "///"
+
+                mb ~~ append(lf)
+                mb ~~ append(startHint1) ~~append(lf)
+                mb ~~ append(startHint2) ~~append(lf)
+                mb ~~ append(startHint1) ~~append(lf)
+
+                rexExc=jexc~getRexxConditionObject
+                if rexExc~isA(.bsf) then rexExc=BsfRexxProxy(rexExc)
+                mb ~~ append(ppCondition2(rexExc))
+                mb ~~ append(endHint1) ~~append(lf)
+                mb ~~ append(endHint2) ~~append(lf)
+                mb ~~ append(endHint1) ~~append(lf)
+                mb ~~append(lf)
+            end
+
             jexc=jexc~getCause      -- get next cause
          end
      end
