@@ -12,6 +12,9 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2017-08-05 thru 2017-08-11, ---rgf, - created classes "FxGuiThread" and "GUIMessage" (modelled after
+                               ooRexx class "Message") to allow dispatching Rexx messages on the JavaFX GUI
+                               thread to ease coding for Rexx programmers
 
          2017-04-30, ---rgf, - make sure that all "d2x" messages have a length of 17 (such that negative
                                values get appropriate leading "F"s)
@@ -532,7 +535,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20170404)
+   version:     6.00 (20170811)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -635,7 +638,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20170617" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20170811" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -5729,4 +5732,316 @@ call "rgf_util2.rex"
 say ppCondition2(co)
 */
    raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
+
+
+
+
+
+
+/* ================================================================================================= */
+
+-- rgf, 2017-08-04/05, create a possibility that eases interaction with
+-- the JavaFX GUI objects from Rexx programs in non-GUI-threads, classes "FxGUIThread" and "GUIMessage"
+
+/* ================================================================================================= */
+
+/** This class is meant to help ooRexx programmers to simplify interactions with the JavaFX
+    GUI. If Rexx code is invoked by the GUI maintenance code, that Rexx code will already
+    execute on the GUI thread (called "JavaFX Applicaton Thread" on JavaFX) and can successfully
+    interact with the GUI and the elements. However, if Rexx code on a non-GUI-thread wishes
+    to interact with the GUI, this would hang the GUI (single threaded implementations are
+    typical for GUIs). Rather, such an interaction must occur on the GUI thread.
+    <p>The class methods <code>fxRunLater</code> and <code>fxRunLaterLatest</code> allow
+    Rexx programmers to send Rexx messages later, when running in the GUI thread.
+
+    @since 2017-08-05
+*/
+::class "FxGUIThread"  public
+
+/** Constructor class method. */
+::method init             class
+  expose PlatformClz
+  PlatformClz=.nil
+
+/** Private class method to set up and initilaize the infrastructure.
+*/
+::method setup             class private
+  expose fxQueue fxTable runnable PlatformClz waitingToRun
+  fxQueue=.queue~new         -- fxQueue: all queued messages will be dispatched
+  fxTable=.table~new         -- fxTable: indexed by target, repeated additions will replace target with latest
+  runnable=BsfCreateRexxProxy(self, , "java.lang.Runnable") -- allow this class object to be used as a Runnable
+  PlatformClz=bsf.loadClass("javafx.application.Platform")
+  waitingToRun=.false
+
+/**
+* @return returns <code>.true</code>, if running on the GUI thread ("JavaFX Application Thread"), <code>.false</code> else
+*/
+::method isGuiThread     class
+  expose PlatformClz
+
+  if PlatformClz=.nil then self~setup     -- make sure we are set up correctly
+  return PlatformClz~isFxApplicationThread
+
+
+::method run               class       -- this method will be invoked by Java at a later time
+  expose fxQueue fxTable PlatformClz waitingToRun
+-- say self": arrived at  :" pp(.dateTime~new)
+  -- if PlatformClz=.nil then self~setup
+
+  if PlatformClz~isFxApplicationThread then  -- only execute, if we are running on the GUI thread!
+  do
+      -- process queued items
+     do while fxQueue~items>0
+        self~process(fxQueue~pull)
+     end
+
+      -- process available items in no specific order
+     do idx over fxTable
+         self~process(fxTable~remove(idx))
+     end
+  end
+  waitingToRun=.false   -- indicate that no runLater is pending!
+-- say self": returning at:" pp(.dateTime~new)
+
+/** Private static method that processes the supplied GUIMessage.
+*/
+::method process           class private
+  expose PlatformClz
+  use strict arg guiMsg
+
+  signal on syntax      -- intercept errors
+  if guiMsg~hasArguments then -- create and send messages
+     .message~new(guiMsg~target, guiMsg~messageName, "Array", guiMsg~arguments)~send
+  else
+     .message~new(guiMsg~target, guiMsg~messageName)~send
+
+  if var("RESULT") then    -- was a result returned?
+  do
+     guiMsg~result=result   -- save result
+     guiMsg~hasResult=.true -- indicate we have a result
+  end
+  guiMsg~completed=.true    -- communicate that processing has completed
+  return
+
+syntax:
+  guiMsg~errorCondition=condition("o") -- supply error condition object
+  guiMsg~hasError=.true    -- indicate we had an error
+  guiMsg~completed=.true    -- communicate that processing has completed in this case as well
+-- .stderr~say(self":process, error"pp(condition("C")) "in" pp(guiMsg~target) "~" pp(guiMsg~messageName))
+  return
+
+
+/** Private static method that allows simple creation of a GUIMessage from the supplied array of arguments.
+*   @param args the argument array where index 1 stores the target object, index 2 the message name; optonally
+*               index 3 indicates whether the arguments are supplied individually or in index 4 as an array already
+*
+*   @return returns a <code>GUIMessage</code> instance
+*/
+::method createGUIMessage  class private
+  use strict arg args      -- an array
+
+  signal on syntax
+  target     =args[1]
+  messageName=args[2]
+
+  if args~items>2 then     -- message arguments supplied
+  do
+     argType=args[3]~left(1)~upper   -- must be "Individual" or "Array"
+     select
+        when argType="I" then msgArgs=args~section(4) -- turn individual arguments into an array
+
+        when argType="A" then -- fourth argument is an array of arguments already
+             do
+                if args~items>4 then     -- too many arguments!
+                   raise syntax 88.922 array ("4")
+
+                if \args[4]~isA(.array) then    -- wrong type
+                   raise syntax 88.923 array ("message", "4", args[4])
+
+                msgArgs=args[4]
+             end
+
+        otherwise             -- we have a problem here!
+           raise syntax 93.915 array ("IA", args[3])
+     end
+     guiMsg=.GuiMessage~new(target, messageName, msgArgs)
+  end
+  else
+  do
+     guiMsg=.GuiMessage~new(target, messageName)
+  end
+  return guiMsg
+
+syntax:
+  raise propagate
+
+
+/** This class method allows to define a Rexx message with its arguments that should
+*   be processed on the GUI thread. Each invocation will create a new <code>GUIMessage</code>
+*   from the supplied arguments and returns it for further inspection in addition to queuing
+*   it for later execution on the GUI thread. This method remembers the order of invocations
+*   and makes sure that each GUI message will be executed in that order.
+*
+*   @param target the target object to receive a message on the GUI thread
+*   @param messageName the message name to send to the target on the GUI thread
+*   @param indicator  optional; indicates with &quot;I&quot; (Indivdual) that the arguments
+*                     are listed individually, &quot;A&quot; (Array) indicates that the fourth
+*                     argument is an array containing the arguments to supply with the
+*                     message on the GUI thread
+*
+*   @return GUIMessage a GUI message object (modelled after ooRexx' <code>Message</code> class
+*                     that allows one to inspect the state of the message (process completed,
+*                     fetching a possible result, determining whether an error occurred and
+*                     inspecting it)
+*/
+::method runLater          class
+  expose fxQueue waitingToRun PlatformClz runnable
+  use strict arg target, messageName, ...
+
+  signal on syntax
+  guiMsg=self~createGuiMessage(arg(1,"array"))
+  fxQueue~queue(guiMsg)
+  if waitingToRun=.false then -- "runLater" not invoked yet?
+  do
+     waitingToRun=.true
+     if PlatformClz=.nil then self~setup
+     PlatformClz~runLater(runnable)
+  end
+  return guiMsg            -- allows caller to get a hold of a possible return value
+
+syntax:
+  raise propagate
+
+
+   -- method replaces existing target: this way only the latest sent message will get executed!
+/** This class method allows to define a Rexx message with its arguments that should
+*   be processed on the GUI thread. Each invocation will create a new <code>GUIMessage</code>
+*   from the supplied arguments and returns it for further inspection in addition to storing
+*   it for later execution on the GUI thread. Unlike <code>runLater</code> this method will
+*   replace a preexisting target with the latest message and arguments supplied, such that
+*   multiple invocations of this method with the same target will cause the latest invocation
+*   to be executed! Execution of these GUI messages are in no predetermined order.
+*
+*   @param target the target object to receive a message on the GUI thread
+*   @param messageName the message name to send to the target on the GUI thread
+*   @param indicator  optional; indicates with &quot;I&quot; (Indivdual) that the arguments
+*                     are listed individually, &quot;A&quot; (Array) indicates that the fourth
+*                     argument is an array containing the arguments to supply with the
+*                     message on the GUI thread
+*
+*   @return GUIMessage a GUI message object (modelled after ooRexx' <code>Message</code> class
+*                     that allows one to inspect the state of the message (process completed,
+*                     fetching a possible result, determining whether an error occurred and
+*                     inspecting it)
+*/
+::method runLaterLatest    class
+  expose fxTable waitingToRun PlatformClz runnable
+  use strict arg target, messageName, ...
+
+  signal on syntax
+  guiMsg=self~createGuiMessage(arg(1,"array"))
+  fxTable[target]=guiMsg      -- an existing entry would be overwritten
+  if waitingToRun=.false then -- "runLater" not invoked yet?
+  do
+     if PlatformClz=.nil then self~setup
+     waitingToRun=.true
+     PlatformClz~runLater(runnable)
+  end
+  return guiMsg            -- allows caller to get a hold of a possible return value
+
+syntax:
+  raise propagate
+
+
+/* ================================================================================================= */
+
+
+/** This is a private class modelled after ooRexx <code>Message</code> class and is used in the
+    methods of the BSF4ooRexx class <code>FxGUIThread</code>. It allows for inspecting the
+    message parts meant to be executed on the GUI thread on the next possibility.
+
+    @since 2017-08-05
+*/
+::class "GUIMessage"    PRIVATE -- class to represent a message (including a future result) to be run on the GUI thread
+
+/** Constructor method.
+*
+*  @param target the object to receive the message on the GUI thread
+*  @param messageName the message name to be sent on the GUI thread
+*  @param args optional array of arguments to be supplied when sending the message on the GUI thread
+*/
+::method init
+  expose completed hasResult target messageName arguments hasArguments hasError errorCondition
+  use strict arg target, messageName, args=.nil
+
+  hasArguments=(arg()=3)
+  if hasArguments then
+     arguments=args
+
+  completed=.false
+  hasResult=.false
+  result   =.nil
+  hasError =.false
+  errorCondition=.nil
+
+/** If <code>.true</code> then <code>errorCondition</code> will hold the Rexx condition object.
+ @return returns <code>.true</code>, if an error has occurred while running this message, <code>.false</code> else
+*/
+::attribute hasError
+
+/** If an error occurred while running (executing) the message the error condition object will be made available
+    via this attribute.
+ @return returns the Rexx condition object or <code>.nil</code>, if none
+*/
+::attribute errorCondition
+
+/**
+ @return returns <code>.true</code>, if this message has a result, <code>.false</code> else
+*/
+::attribute hasResult
+/** If the message eas run and has completed and returns a result, this attrbitue makes it available.
+
+ @return returns <code>.true</code>, if this message has completed without an error, <code>.false</code> else
+*/
+::attribute completed
+
+
+/**
+ @return returns the target object which receives the message
+*/
+::attribute target            get
+
+/**
+ @return returns the message name that gets sent
+*/
+::attribute messageName       get
+
+/**
+ @return returns <code>.true</code>, if this message has arguments, <code>.false</code> else
+*/
+::attribute hasArguments
+
+/**
+ @return returns an array of message arguments
+*/
+::attribute arguments         get
+
+/** Returns the result of running the message. This method will block (wait) until the message
+   has been sent and completed (or having an error while executing), before returning the
+   <code>result</code>. You can check the attribute <code>completed</code> to determine
+   whether the message has completed (<code>.true</code>), such that invoking this method
+   does not block. Make sure that <code>hasError</code> is <code>.false</code>, otherwise the
+   result value is invalid.
+
+   @return <code>result</code> object, when <code>completed</code> or <code>hasError</code> turns to <code>.true</code>
+*/
+::attribute result            get
+  expose completed result hasError
+  guard on when completed=.true | hasError=.true
+  return result
+
+/** Setter method allowing setting result. */
+::attribute result            set
+  expose result
+  use strict arg result
 
