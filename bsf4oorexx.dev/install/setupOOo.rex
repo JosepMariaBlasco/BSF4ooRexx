@@ -82,13 +82,14 @@
                                 be installed there anymore, there are no more tests
                                 conducted on that platform
             2016-08-15, ---rgf, - Windows: change elevation to use Gil Barmwater's "elevate.rex" script instead (bitness agnostic)
+            2017-08-13, ---rgf, - make sure to determine MACOSX correctly by honoring the new name DARWIN as well
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2014 Rony G. Flatscher
+       Copyright (C) 2006-2017 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -122,7 +123,7 @@ parse upper source s +1          /* get first character of operating system in u
 cmd.eIsUnix=(pos(s, "WO")=0)     /* neither Windows nor OS/2, hence Unix */
 
 parse upper source s +1  -- get operating system name in uppercase
-cmd.eIsMacOSX=(s="M")    -- determine whether running on "MACOSX"
+cmd.eIsMacOSX=(s="D" | s="M")      -- determine whether running on "MACOSX" replaced by "DARWIN"
 
 
 -- cmd.eIsUnix=1     /* for debugging: force Unix-mode */

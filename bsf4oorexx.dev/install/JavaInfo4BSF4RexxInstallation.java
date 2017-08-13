@@ -6,7 +6,7 @@
  * <p>
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2005-2014 Rony G. Flatscher
+ *    Copyright (C) 2005-2017 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -22,13 +22,17 @@
  * ----------------------------------------------------------------------------- </pre>
  *
  *
- * @author Rony G. Flatscher (c) 2005-2014
+ * @author Rony G. Flatscher (c) 2005-2017
  * @version 1.5
  *
  */
 
  /*
     changes:
+
+        2017-08-13, ---rgf, make sure that the Java System properties are sorted to ease analyzing
+                            installation logs
+
         2014-06-16: ---rgf, unoinfo returns "1" indicator for UTF-16LE, however in AOO 4
                             the encoded data may indeed be ASCII encoded with a "\0\0"
                             indicating end of path; adjust getClassPath4OOo() to cater for
@@ -96,11 +100,17 @@
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
 
 public class JavaInfo4BSF4RexxInstallation
 {
     /** Version field for introspection of this class. */
-    public final String version="105.20140616";
+    public final String version="106.20170813";
 
     public static void main (String argv[]) throws java.lang.Exception // java.io.UnsupportedEncodingException
     {
@@ -116,6 +126,11 @@ for (int i=0; i<argv.length; i++)
 
         if (argv.length==0)
         {
+/*
+System.out.println("----> showSomeProperties:");
+showSomeProperties();
+System.out.println("<---- showSomeProperties");
+*/
             try
             {
                 showAllProperties();    // try to show all defined properties
@@ -175,17 +190,39 @@ for (int i=0; i<argv.length; i++)
         String       nl=System.getProperty("line.separator");
 
 
-        String keys[]={ "file.separator", "path.separator", "line.separator",
-                        "java.class.version", "java.ext.dirs", "java.home",
-                        "java.specification.version", "java.vendor.url",
-                        "java.vendor", "java.version", "os.arch", "os.name",
-                        "os.version", "user.name", "user.home", "user.dir",
-                        "java.library.path", "java.class.path"
+        String keys[]={
+                        "file.encoding",
+                        "file.separator",
+                        "java.class.path",
+                        "java.class.version",
+                        "java.ext.dirs",
+                        "java.home",
+                        "java.io.tmpdir",
+                        "java.library.path",
+                        "java.specification.version",
+                        "java.vendor",
+                        "java.vendor.url",
+                        "java.version",
+                        "line.separator",
+                        "os.arch",
+                        "os.name",
+                        "os.version",
+                        "path.separator",
+                        "user.dir",
+                        "user.home",
+                        "user.name",
+                        "user.timezone",
+
+                        "java.module.path"                                /* Java 9 and up */
                       };
 
-        for (int i=0; i<keys.length; i++)
+        List<String> list = (List<String>) Arrays.asList( keys );
+
+        Collections.sort(list);
+        Iterator<String> it=list.iterator();
+        while (it.hasNext())
         {
-            getAndShowProperty(keys[i], sb, nl);
+            getAndShowProperty( it.next(), sb, nl);
         }
 
         showAdditionalInformation(sb, nl);
@@ -201,16 +238,21 @@ for (int i=0; i<argv.length; i++)
         String       nl=System.getProperty("line.separator");
         String       key="";
 
-        while (prop_names.hasMoreElements())
-        {
-            key=(String) prop_names.nextElement();
-            getAndShowProperty(key, sb, nl);
+        // Properties  props=System.getProperties().stringPropertyNames();;
 
-            //sb=sb.append(key).append("=[").append( nullString(System.getProperty(key))).append("]").append(nl);;
+        ArrayList<String> list=new ArrayList<String> (System.getProperties().stringPropertyNames());
+
+        Collections.sort(list);
+        Iterator<String> it=list.iterator();
+        while (it.hasNext())
+        {
+            getAndShowProperty( it.next(), sb, nl);
         }
 
         showAdditionalInformation(sb, nl);
     }
+
+
 
     /* Creates additional information.
     */
@@ -307,9 +349,9 @@ for (int i=0; i<argv.length; i++)
             try
             {
                     // get static field with Class object argument
-                java.lang.reflect.Method m=clz.getMethod("getVersion", null);
+                java.lang.reflect.Method m=clz.getMethod("getVersion", (Class[]) null);
 
-                kw=kw+m.invoke(null, null).toString()+"]";   // a static field, hence "object" argument is ignored and may be null
+                kw=kw+m.invoke(null, (Object[]) null).toString()+"]";   // a static field, hence "object" argument is ignored and may be null
             }
             catch (Exception e)
             {

@@ -24,6 +24,8 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    6.0.0   2017-07-25, rgf: - allow an array as Rexx-code argument for BsfCreateRexxProxy()
+
     6.0.0   2017-06-06, rgf: - rename "rcoSlotArgument" to "rcoSlotArgumentClass" to indicate a Rexx class is referenced
 
     6.0.0   2017-04-15, rgf: add a directory subclass named "SLOT.ARGUMENT" to .environment; all slot arguments,
@@ -732,6 +734,20 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // #define DEBUG_RAISE_CONDITION       // 2017-04-04: if set, then a string indicating location in cc-file is returned instead of NULL
 
+#if defined FALSE
+    // rgf, 2017-07-16
+    #define DEBUG_CREATE_HALT_TERMINATE
+    #define DEBUG_TERMINATE_INTERPRETER // 2009-09-03
+    #define DEBUG_SEND_MESSAGE_TO_REXX_OBJECT    // 2009-09-06
+//    #define DEBUG_RGF_ATTACH_NEW        // debug new attach/detach strategy
+//    #define RGF_ATTACH  // 2008-08-05, for debugging Attaching
+//    #define RGF_DETACH  // 2008-08-05, for debugging Detaching
+    #define DEBUG_REXX_PROXY        // 2009-06-10
+    #define DEBUG_UNREGISTER_REXX_OBJECT_NOISY
+    #define DEBUG_REGISTER_REXX_OBJECT
+#endif
+
+
 // #if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
 #if defined (WINDOWS) && defined (NIXI_NOXI) // comment before && to activate all of the flags below
     #define DEBUG
@@ -970,11 +986,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20170605 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170725 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20170605 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170725 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20170605 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170725 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -2130,6 +2146,12 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
                     rtc->SendMessage1(OREXX_REGISTRY, "HASENTRY", obj_id)==orxTrue,
                     rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "HASENTRY", obj_id)==orxTrue,
                     rtc->SendMessage1(OREXX_REGISTRY_PACKAGE, "HASENTRY", obj_id)==orxTrue);
+
+    if (rtc->SendMessage1(OREXX_REGISTRY, "HASENTRY", obj_id)==orxTrue)
+    {
+        RexxObjectPtr dbgRop=rtc->SendMessage1(OREXX_REGISTRY, "ENTRY", obj_id);
+        fprintf(stderr, "\t\tOREXX_REGISTRY~HASENTRY(obj_id)~string=[%s]\n", rtc->ObjectToStringValue(dbgRop));fflush(stderr);
+    }
 
 
     #if defined (USE_OREXX_REGISTRY_PACKAGE)
@@ -5768,6 +5790,17 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
     res = rgfCreateJavaVM( &currentJVM, (void **) &jniEnv, &vm_args2);
 #endif
 
+// jni.h defines the return code ("res" above) as one of:
+//
+//     #define JNI_OK           0                 /* success */
+//     #define JNI_ERR          (-1)              /* unknown error */
+//     #define JNI_EDETACHED    (-2)              /* thread detached from the VM */
+//     #define JNI_EVERSION     (-3)              /* JNI version error */
+//     #define JNI_ENOMEM       (-4)              /* not enough memory */
+//     #define JNI_EEXIST       (-5)              /* VM already created */
+//     #define JNI_EINVAL       (-6)              /* invalid arguments */
+
+
 
 #ifdef DEBUG3
 {
@@ -6509,7 +6542,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
 
     RexxObjectPtr r_obj     =context->ArrayAt(argArray,1);
        // if object is string, it's code; attach it as UNKNOWN !
-    if (context->IsOfType(r_obj, "STRING") || context->IsOfType(r_obj, "METHOD") )  // a string object in hand? If so, it's the code to be run!
+    if (context->IsOfType(r_obj, "STRING") || context->IsOfType(r_obj, "ARRAY") || context->IsOfType(r_obj, "METHOD") )  // a string object in hand? If so, it's the code to be run!
     {
 
 // fprintf(stderr, "BSF_OnTheFly.cls !!! ...\n"); fflush(stderr);
@@ -10911,7 +10944,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregiste
         result=RgfRemoveProxyObject(c_obj_ID);      // not found: -1; else remaining refs: >=0
 if (result==-1)
 {
-    fprintf(stderr, "*** PANIC, PANIC, PANIC: while removing obj_ID=[%s], Rexx object could not be fournd PANIC, PANIC, PANIC ***\n",
+    fprintf(stderr, "*** PANIC, PANIC, PANIC: while removing obj_ID=[%s], Rexx object could not be found in BSF4ooRexx registry! PANIC, PANIC, PANIC ***\n",
                      c_obj_ID);
     fflush(stderr);
 }

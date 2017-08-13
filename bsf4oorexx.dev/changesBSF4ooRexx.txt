@@ -1,4 +1,288 @@
 
+-------------------------------------- 2017-08-13 ----------------------------------
+
+- BSF.CLS:
+
+  - make sure that in class "GUIMessage" the constructor method "init" checks that
+    the supplied message name is indeed of type .string and if arguments are supplied
+    that they are in form of an .array
+
+- JavaInfo4BSF4RexxInstallation.java
+
+  - make sure that the Java System properties are sorted to ease analyzing installation logs
+
+- setupAllAndRun.rex
+
+  - make sure to honor "DARWIN" instead of "MACOSX"
+
+- setupBSF.rex
+
+  - corrected determining MacOSX
+
+-------------------------------------- 2017-08-11 ----------------------------------
+
+- BSF.CLS (2017-08-05 - 2017-08-11)
+
+  - created classes "FxGuiThread" and "GUIMessage" (modelled after
+    ooRexx class "Message") to allow dispatching Rexx messages on the JavaFX GUI
+    thread to ease coding for Rexx programmers
+
+-------------------------------------- 2017-07-25 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - allow an array as Rexx-code argument for BsfCreateRexxProxy()
+
+-------------------------------------- 2017-06-17 ----------------------------------
+
+- ArrayWrapper.java:
+
+  - throws an exception if no Java array object is supplied
+
+- ProxiedJavaClassTool.java:
+
+  - if the context class loader is null, make sure that the SimpleCompiler's parent class loader
+    gets set; this version uses the class loader for ProxiedJavaClassTool.
+
+- Supplier.java:
+
+  - added BSFException to ArrayWrapper, need to declare it
+
+-------------------------------------- 2017-06-06 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - rename "rcoSlotArgument" to "rcoSlotArgumentClass" to indicate a Rexx class is referenced
+
+-------------------------------------- 2017-06-09 ----------------------------------
+
+- setupBSF.rex
+
+  - add cmd.ePath2JavaDLL to info-output if set or on Windows or MacOSX
+
+-------------------------------------- 2017-04-30 ----------------------------------
+
+- BSF.CLS
+
+  - make sure that all "d2x" messages have a length of 17 (such that negative
+    values get appropriate leading "F"s)
+
+-------------------------------------- 2017-04-15 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - add a directory subclass named "SLOT.ARGUMENT" to .environment; all slot arguments,
+    either from native or Java code must instantiate this class, such that Rexx programmers
+    become able to unambiguously identify the slot arguments (appended arguments as a
+    result of sending a message from Java)
+
+- RexxCompiledScript.java:
+
+  - use new .Slot.Argument (a subclass of .Directory) instead of a regular .directory,
+    suggested by Jon Wolfers at the 2017 International Rexx symposium
+
+- RexxScriptEngine.java:
+
+  - use .slot.argument class (created by BSF4ooRexx.cc as subclass of .directory
+    and stored in .environment ad load time of the library); this way
+    Rexx programmers become able to unambiguously identify whether the last
+    argument is a slot argument
+
+-------------------------------------- 2017-04-04 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - make return values after raising Rexx exceptions dependent on DEBUG_RAISE_CONDITION
+
+- RexxAndJava.java:
+
+  - removed debug-output in registerBean4JNI()
+
+-------------------------------------- 2017-04-03 ----------------------------------
+
+- RexxScriptEngine.java:
+
+  - correct parsing of Rexx script annotations
+
+-------------------------------------- 2017-03-13 ----------------------------------
+
+- ProxiedJavaClassTool.java:
+
+  - redo to allow full replacement of ASM, added functionality to create classes off interface(s) only
+  - changed "bss" to the self documenting name "bShowSource"
+
+
+-------------------------------------- 2017-03-12 ----------------------------------
+
+- BSF.CLS: (2017-03-09 - 2017-03-12)
+
+  - routine bsf.createProxyClass enhanced with the possibility to add any number
+    of blank delimited Java interface class names after the Java class name that
+    is to be extended (alternatively this can be an array with each item being
+    a string denoting the fully qualified class name or a Java class object);
+    ProxiedJavaClassTool.java got enhanced appropriately
+
+    TODO: remove ASM from BSF4ooRexx); now possible to extend an interface
+          class and implement its methods in Rexx without using a java.reflect.Proxy!
+
+-------------------------------------- 2017-03-09 ----------------------------------
+
+- ProxiedJavaClassTool.java:
+
+  - added option to implement any number of interface classes to the extended Java class
+    (cf. the changes to BSF.CLS' routine bsf.createProxyClass)
+
+-------------------------------------- 2017-02-21 ----------------------------------
+
+- RexxScriptEngine.java:
+
+  - make sure that any NL character in a potential Rexx script annotation
+    (between "/*" and "*/") causes the annotation to be ignored; this allows
+    for leaving them in the code, by merely inserting a NL character after
+    and/or before the block comment
+
+-------------------------------------- 2017-02-19 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - after invoking RaiseException() the return value will be ignored by Rexx; for debugging
+    purposes a RexxStringObject in the form of "BSF4ooRexx.cc-RaiseException-FFF-xx" will
+    be returned, where FFF denotes the function name and xx is a two digit number starting
+    with 01 and incremented for each RaiseException in the same function
+
+-------------------------------------- 2017-02-14 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - BsfContextVariables(): if an operation succeeded (like SET or DROP) will return .true
+    instead of NULL which indicates no return value!
+
+- setupAllAndRun.rex
+
+  - getRexxBitness(): compare casselessly with "Address Mode"
+
+- setupBSF.rex
+
+  - Linux: carry out a separate ldconfig with the directory to which
+    /opt/BSF4ooRexx/libjvm.so points to
+
+-------------------------------------- 2017-02-13 ----------------------------------
+
+- BSF.CLS
+
+  - finalizing implementation of .JSR223's set() and get() methods
+
+-------------------------------------- 2017-02-12 ----------------------------------
+
+- BSF.CLS
+
+  - .JSR223' "get" and "set" methods: adjust logic to desired functionality:
+
+    - honor: attribute names immediately followed by a colon and scope number
+
+    - if an attribute is in fact a scope number than process the following
+      attribute names only in that scope (otherwise all scopes are inspected)
+
+- RexxScriptEngine.java:
+
+  - use the Rexx annotation string as is: enclose in double-quotes after
+    escaping double-quotes (adhering to the Rexx rules)
+
+- setupBSF.rex
+
+  - add quoted cmd.ePath2JavaDLL to "ldconfig" command; it seems that some
+    Linuxes (possibly with multiple Java installations) otherwise do not
+    find the libjvm.so that gets loaded with dlopen() by BSF4ooRexx
+
+-------------------------------------- 2017-02-11 ----------------------------------
+
+- BSF.CLS
+
+  - made internal ("procedure") routine "escapeQuotes" a routine
+
+  - methods and routines bsf.createArrayOf and bsf.createJavaArrayOf will
+    now use "escapeQuotes" to escape Rexx strings as INTERPRET would
+    otherwise cause unexpected results
+
+-------------------------------------- 2017-02-07 ----------------------------------
+
+- BSF.CLS
+
+  - .JSR223::getBindings(): also handle a .context object
+
+-------------------------------------- 2017-02-03 ----------------------------------
+
+- setupAllAndRun.rex
+
+  - when copying the entire tree to its destination, make sure that in Unix the timestamps
+    get preserved
+
+  - make sure that the libBSF4ooRexx* shared libraries get the x-bit set (despite new naming)
+
+  - new routine sayWhetherInstallationWasSuccessful() to test whether setup was successful
+    (using rexxj{.sh|.cmd})
+
+- setupBSF.rex
+
+  - adjust test for MacOSX for new operating system name "Darwin" (used to be "MacOSX")
+
+  - if Java cannot be found, abort installation with appropriate message and usage
+
+  - make sure that the libBSF4ooRexx* shared libraries get the x-bit set (despite new naming)
+
+  - use "/sbin/ldconfig" instead of "ldconfig" to make sure that it is being found, if available
+
+- wasInstallationSuccessful.rxj - new file
+
+  - determine whether the installation of BSF4ooRexx was successful if using
+    the generated script rexxj{.sh|.cmd} to invoke this script; the output
+    to STDOUT: could be piped into the calling Rexx program using rxqueue.
+
+-------------------------------------- 2017-01-22 ----------------------------------
+
+- setupAllAndRun.rex
+
+  - add file extension "frm" as a Rexx type of file
+
+- setupFileAssociations.rex
+
+  - add file extension ".frm" as a Rexx type
+
+-------------------------------------- 2017-01-20 ----------------------------------
+
+- BSF.CLS
+
+  - renamed operating system name from "PARSE SOURCE opsys ." from "DARWIN" to "MACOSX",
+    this quick fix should keep everything everywhere (in BSF4ooRexx) humming...;
+
+
+-------------------------------------- 2017-01-09 ----------------------------------
+
+- setupBSF.rex
+
+  - adopting the installation of the lib/dll file to their new names and
+    locations
+
+  - on Unix: do not create a link to the libjvm.{so|dylib} to serve as
+    the Java to use anymore; leaving the capability in BSF4ooRexx.cc
+
+-------------------------------------- 2017-01-08 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - fixed conversion warning where returning NULL instead of 0 (-Wconversion-null).
+
+-------------------------------------- 2017-01-05 ----------------------------------
+
+- setupBSF.rex
+
+  - resolving <https://sourceforge.net/p/bsf4oorexx/bugs/26/>
+
+  - getJavaProps(): now returns stem with Java properties
+
+  - determinePath2JavaBinary(): on Windows will proceed searching, if
+    a found java.exe does not match the bitness of ooRexx
+
 -------------------------------------- 2016-12-21 ----------------------------------
 
 - RexxScriptEngineFactory.java
@@ -110,8 +394,6 @@
 - samples/NetRexx/javax.script/Nutshell_04_Eval.nrx
 
   - adapted to the new script and the renamed script
-
-
 
 -------------------------------------- 2016-12-12 ----------------------------------
 
@@ -419,7 +701,8 @@
 
 - ProxiedJavaClassTool.java
 
-  - remove reflective usage of Method.isSynthetic() as we can now rely it to be available
+  - remove reflective usage of Method.isSynthetic() as we can now rely on it to be available
+    (baseline is now Java 1.6/6.0)
 
 - RexxScriptEngine.java
 
@@ -480,6 +763,10 @@
   - basing on 1.6/6.0, get rid of generic warnings
 
 - RexxDispatcher.java
+
+  - basing on 1.6/6.0, get rid of generic warnings
+
+- RexxExtendClass.java
 
   - basing on 1.6/6.0, get rid of generic warnings
 

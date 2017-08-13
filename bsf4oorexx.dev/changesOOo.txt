@@ -1,3 +1,31 @@
+-------------------------------------- 2017-08-13 ----------------------------------
+
+- setupOOo.rex
+
+  - make sure to determine MACOSX correctly by honoring the new name DARWIN as well
+
+-------------------------------------- 2016-08-15 ----------------------------------
+
+- setupOOo.rex
+
+  - Windows: change elevation to use Gil Barmwater's "elevate.rex" script instead (bitness agnostic)
+
+-------------------------------------- 2014-05-26 ----------------------------------
+
+- setupOOo.rex
+
+  - removing hint about LibreOffice as oxt-package cannot
+    be installed there anymore, there are no more tests
+    conducted on that platform
+
+-------------------------------------- 2014-05-25 ----------------------------------
+
+- setupOOo.rex
+
+  - routine getRexxBitness() added
+
+  - use elevation starting with Windows Vista (Windows version 6.0)
+
 -------------------------------------- 2014-04-02 ----------------------------------
 
 - ScriptProviderForooRexx.java
@@ -20,6 +48,32 @@
           field, such that the compiler can remove dependent code if flag is set
           to false), which uses popups and copies exception data to the clipboard
 
+-------------------------------------- 2014-02-10 ----------------------------------
+
+- setupOOo.rex
+
+  - MacOSX: make sure the new location "/Applications/OpenOffice.app" is searched first (AOO 4.1 and up)
+
+-------------------------------------- 2014-01-12 ----------------------------------
+
+- setupOOo.rex
+
+  - Windows: make sure "OpenOffice" is searched in registry
+
+-------------------------------------- 2013-07-15 ----------------------------------
+
+- setupOOo.rex
+
+  - output additional log messages to ease debugging
+
+  - Unix: make sure to look for all kind of "libreoffice" variants
+
+-------------------------------------- 2013-07-14 ----------------------------------
+
+- setupOOo.rex
+
+  - Make output more verbose, such that logfile reflects what was found about OOo/LO
+    (displays values for cmd.eSetPath and cmd.eSetCP)
 
 -------------------------------------- 2012-06-19 ----------------------------------
 

@@ -44,7 +44,8 @@ Changes:
 
     2016-12-20: ---rgf, supply RexxScriptEngine instance via slotDir argument as well
 
-    2017-04-15: ---rgf, use new .Slot.Argument (a subclass of .Directory) instead of a regula .directory
+    2017-04-15: ---rgf, use new .Slot.Argument (a subclass of .Directory) instead of a regular .directory,
+                        suggested by Jon Wolfers at the 2017 International Rexx symposium
 */
 
 

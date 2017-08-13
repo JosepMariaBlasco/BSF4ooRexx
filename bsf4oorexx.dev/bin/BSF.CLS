@@ -12,6 +12,10 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2017-08-13, ---rgf, - make sure that in class "GUIMessage" the constructor method "init" checks that
+                               the supplied message name is indeed of type .string and if arguments are supplied
+                               that they are in form of an .array
+
          2017-08-05 thru 2017-08-11, ---rgf, - created classes "FxGuiThread" and "GUIMessage" (modelled after
                                ooRexx class "Message") to allow dispatching Rexx messages on the JavaFX GUI
                                thread to ease coding for Rexx programmers
@@ -535,7 +539,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20170811)
+   version:     6.00 (20170813)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -638,7 +642,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20170811" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20170813" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -695,7 +699,7 @@ syntax:
      paths=.array~of(filespec("Location", path2this)"install/images/linux/hicolor/", -  -- look in directory of this program (may be linked to somewhere else)
                      "/opt/BSF4ooRexx/install/images/linux/hicolor/",                -  -- fallback location
                      "/Applications/BSF4ooRexx.app/Current/Resources/",              -  -- hypothetic location on MacOSX (may need adjustment)
-                     "/Users/rony/bsf4oorexx.201012/root201012/trunk/bsf4oorexx.dev/images/linux/hicolor/" - -- Rony's developer path (to be removed)
+                     "/Users/rony/bsf4oorexx.201012/root201012/trunk/bsf4oorexx.dev/images/linux/hicolor/" - -- TODO: Rony's developer path (to be removed)
                      )
   end
 
@@ -5827,7 +5831,15 @@ syntax:
   guiMsg~errorCondition=condition("o") -- supply error condition object
   guiMsg~hasError=.true    -- indicate we had an error
   guiMsg~completed=.true    -- communicate that processing has completed in this case as well
--- .stderr~say(self":process, error"pp(condition("C")) "in" pp(guiMsg~target) "~" pp(guiMsg~messageName))
+
+-- TODO: remove the following debug statements
+.stderr~say("---> SOD (start of debug), line #" .line)
+.stderr~say(self":process, error" pp(condition("C")) "in" pp(guiMsg~target) "~" pp(guiMsg~messageName))
+.stderr~say
+.context~package~addPackage(.package~new("rgf_util2.rex"))  -- do a dynamic requires
+.stderr~say(ppCondition2(guiMsg~errorCondition))   -- show condition formatted in full
+.stderr~say("<--- EOD (end of debug), line #" .line)
+
   return
 
 
@@ -5843,7 +5855,6 @@ syntax:
   signal on syntax
   target     =args[1]
   messageName=args[2]
-
   if args~items>2 then     -- message arguments supplied
   do
      argType=args[3]~left(1)~upper   -- must be "Individual" or "Array"
@@ -5968,21 +5979,29 @@ syntax:
 *
 *  @param target the object to receive the message on the GUI thread
 *  @param messageName the message name to be sent on the GUI thread
-*  @param args optional array of arguments to be supplied when sending the message on the GUI thread
+*  @param arguments optional array of arguments to be supplied when sending the message on the GUI thread
 */
 ::method init
   expose completed hasResult target messageName arguments hasArguments hasError errorCondition
   use strict arg target, messageName, args=.nil
 
+   -- make sure messageName is a string
+  .ArgUtil~validateClass(pp("messageName")||"="pp(messageName), messageName, .string)   -- check for correct type
+
   hasArguments=(arg()=3)
   if hasArguments then
+  do
+     .ArgUtil~validateClass(pp("arguments")||"="pp(args), args, .array)   -- check for correct type
      arguments=args
+  end
 
   completed=.false
   hasResult=.false
   result   =.nil
   hasError =.false
   errorCondition=.nil
+
+
 
 /** If <code>.true</code> then <code>errorCondition</code> will hold the Rexx condition object.
  @return returns <code>.true</code>, if an error has occurred while running this message, <code>.false</code> else

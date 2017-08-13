@@ -75,6 +75,8 @@
                                 (using rexxj{.sh|.cmd})
             2017-02-14, rgf   - getRexxBitness(): compare casselessly with "Address Mode"
 
+            2017-08-13, rgf   - make sure to honor "DARWIN" instead of "MACOSX"
+
    remark:  ---
 
    license:
@@ -100,8 +102,7 @@ cmd.eOpSysFull=sysVersion()
 cmd.eOpSys=cmd.eOpsysFull~left(1)~upper
 
 parse upper source s +1    -- get operating system name in uppercase
-cmd.eIsMacOSX=(s="M")      -- determine whether running on "MACOSX"
-
+cmd.eIsMacOSX=(s="D" | s="M")      -- determine whether running on "MACOSX" replaced by "DARWIN"
 
 cmd.eOriginalDirectory=directory()  -- original directory from where this script go started
 

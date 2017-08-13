@@ -7,6 +7,7 @@
    Date:    2006-01-07
    Version: 1.32
    Changed:
+            2017-08-13, ---rgf, - corrected determining MacOSX
             2017-05-09, ---rgf, - add cmd.ePath2JavaDLL to info-output if set or on Windows or MacOSX
             2017-02-14, ---rgf, - Linux: carry out a separate ldconfig with the directory to which
                                   /opt/BSF4ooRexx/libjvm.so points to
@@ -308,7 +309,7 @@ end
 cmd.eIsUnix=(j.file.separator="/")
 
 parse upper source s +1  -- get operating system name in uppercase
-cmd.eIsMacOSX=(s="M" || s="D")    -- determine whether running on "MACOSX", "Darwin"
+cmd.eIsMacOSX=(s="D" | s="M")    -- determine whether running on "MACOSX" replaced by "Darwin"
 
 -- cmd.eIsUnix=.true -- for debugging only !!
 

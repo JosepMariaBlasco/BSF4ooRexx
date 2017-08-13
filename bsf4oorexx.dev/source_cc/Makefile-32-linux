@@ -41,7 +41,7 @@ TGT_LIB_DIR     = ./lib
 # JDK_BASE = /home/wu/jdk_rpm_bin/tmp/jdk1.6.0_10
 # JDK_BASE = /usr/lib/jvm/java-6-oracle
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk
-JDK_BASE = ./java_include8/lin_include_6
+JDK_BASE = ./java_include/lin_include_6
 # rgf, 2017-04-05: force it to use the locally stored Java include files
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 
