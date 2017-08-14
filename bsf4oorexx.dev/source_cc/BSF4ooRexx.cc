@@ -24,6 +24,11 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    6.0.0   2017-08-14, rgf: - if first argument is a Rexx string, method or array and the third argument is
+                               "REXXOBJECT", then the first argument is proxied as is (allowing Java to send
+                               it all ooRexx messages) and not used as the code for a dynamically created UNKNOWN
+                               method that gets proxied by the invoked "BSF_OnTheFly.cls" program
+
     6.0.0   2017-07-25, rgf: - allow an array as Rexx-code argument for BsfCreateRexxProxy()
 
     6.0.0   2017-06-06, rgf: - rename "rcoSlotArgument" to "rcoSlotArgumentClass" to indicate a Rexx class is referenced
@@ -6541,39 +6546,55 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
     RexxPackageObject rpo=(RexxPackageObject) context->SendMessage0(context->GetCallerContext(),"PACKAGE");
 
     RexxObjectPtr r_obj     =context->ArrayAt(argArray,1);
-       // if object is string, it's code; attach it as UNKNOWN !
-    if (context->IsOfType(r_obj, "STRING") || context->IsOfType(r_obj, "ARRAY") || context->IsOfType(r_obj, "METHOD") )  // a string object in hand? If so, it's the code to be run!
+
+    // an undocumented feature: if the first argument is a Rexx object of type "STRING", "METHOD" or "ARRAY"
+    // then the companion Rexx program "BSF_OnTheFly.cls" is used to create a Rexx object on the fly with
+    // a single unknown method whose code is this first argument, unless the third argument is "REXX";
+    // in general the Rexx object in the first argumetn will get proxied for Java to become able to interact
+    // with it directly: this allows implementing Java interfaces and abstract classes in Rexx (and even
+    // extend Java classes with Rexx classes)
+    if (context->IsOfType(r_obj, "STRING") || context->IsOfType(r_obj, "METHOD")  || context->IsOfType(r_obj, "ARRAY") )  // a string object in hand? If so, it's the code to be run!
     {
+        bool bCreateProxy=false;
+        RexxObjectPtr arg3=context->ArrayAt(argArray,3);    // get third argument if any
+        if (arg3!=NULL && context->IsOfType(arg3,"STRING"))        // is third argument "R[EXX]", then Rexx object in arg1 is supposed to be proxied
+        {
+            RexxObjectPtr res=context->SendMessage1(arg3, "CASELESSABBREV", context->String("REXX"));
+            bCreateProxy= (res==context->False());      // use BSF_OnTheFly using arg1 as code for unknown method and proxy returned object instead
+        }
 
 // fprintf(stderr, "BSF_OnTheFly.cls !!! ...\n"); fflush(stderr);
 
-        r_obj=context->CallProgram(REXX_PROXY_STUB_PROGRAM, context->ArrayOfOne(r_obj));
-        if (context->CheckCondition()) // oops, something went wrong, let the condition prevail
+        if (bCreateProxy)
         {
-            // char tmpStr[1024]="";
-            char *tmpStr=new char[1024];
-            SNPRINTF(tmpStr, 1024, "/routine/BsfCreateRexxProxy(), error 2: [Rexx raised condition while calling \"%s\" to attach code to dynamically]", REXX_PROXY_STUB_PROGRAM);
+            r_obj=context->CallProgram(REXX_PROXY_STUB_PROGRAM, context->ArrayOfOne(r_obj));
+            if (context->CheckCondition()) // oops, something went wrong, let the condition prevail
+            {
+                // char tmpStr[1024]="";
+                char *tmpStr=new char[1024];
+                SNPRINTF(tmpStr, 1024, "/routine/BsfCreateRexxProxy(), error 2: [Rexx raised condition while calling \"%s\" to attach code to dynamically]", REXX_PROXY_STUB_PROGRAM);
 
-                // get msg with embedded condition info
-            char * tmpMsg=RgfCreateRexxlikeErrorInfo (context->threadContext,
-                                                   context->GetConditionInfo(),
-                                                   tmpStr);
-                                                   // "/routine/BsfCreateRexxProxy() error 2: [Rexx raised condition while calling \"BSF_OnTheFly.cls\" to attach code to]");
-            context->ClearCondition();
+                    // get msg with embedded condition info
+                char * tmpMsg=RgfCreateRexxlikeErrorInfo (context->threadContext,
+                                                       context->GetConditionInfo(),
+                                                       tmpStr);
+                                                       // "/routine/BsfCreateRexxProxy() error 2: [Rexx raised condition while calling \"BSF_OnTheFly.cls\" to attach code to]");
+                context->ClearCondition();
 
-                // now raise new exception
-            context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(tmpMsg));
-            RexxFreeMemory(tmpMsg);        // free memory
-            delete [] tmpStr;
+                    // now raise new exception
+                context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(tmpMsg));
+                RexxFreeMemory(tmpMsg);        // free memory
+                delete [] tmpStr;
 
-            delete [] c_rii_ID;
-            delete [] msg;
+                delete [] c_rii_ID;
+                delete [] msg;
 
-#ifdef DEBUG_RAISE_CONDITION
-            return context->String("BSF4ooRexx.cc-RaiseException-BsfCreateRexxProxy-02");
-#else
-            return NULL;
-#endif
+    #ifdef DEBUG_RAISE_CONDITION
+                return context->String("BSF4ooRexx.cc-RaiseException-BsfCreateRexxProxy-02");
+    #else
+                return NULL;
+    #endif
+            }
         }
     }
 
