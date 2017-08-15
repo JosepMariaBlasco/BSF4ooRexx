@@ -12,6 +12,8 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2017-08-15, ---rgf, - correct error in setting up the "FxGuiThread" class (lazy initialization)
+
          2017-08-13, ---rgf, - make sure that in class "GUIMessage" the constructor method "init" checks that
                                the supplied message name is indeed of type .string and if arguments are supplied
                                that they are in form of an .array
@@ -539,7 +541,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20170813)
+   version:     6.00 (20170815)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -642,7 +644,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20170813" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20170815" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -5783,14 +5785,13 @@ say ppCondition2(co)
 ::method isGuiThread     class
   expose PlatformClz
 
-  if PlatformClz=.nil then self~setup     -- make sure we are set up correctly
+  if PlatformClz=.nil then self~setup  -- make sure attributes are initialized
   return PlatformClz~isFxApplicationThread
 
 
 ::method run               class       -- this method will be invoked by Java at a later time
   expose fxQueue fxTable PlatformClz waitingToRun
 -- say self": arrived at  :" pp(.dateTime~new)
-  -- if PlatformClz=.nil then self~setup
 
   if PlatformClz~isFxApplicationThread then  -- only execute, if we are running on the GUI thread!
   do
@@ -5910,12 +5911,13 @@ syntax:
   use strict arg target, messageName, ...
 
   signal on syntax
+
+  if PlatformClz=.nil then self~setup  -- make sure attributes are initialized
   guiMsg=self~createGuiMessage(arg(1,"array"))
   fxQueue~queue(guiMsg)
   if waitingToRun=.false then -- "runLater" not invoked yet?
   do
      waitingToRun=.true
-     if PlatformClz=.nil then self~setup
      PlatformClz~runLater(runnable)
   end
   return guiMsg            -- allows caller to get a hold of a possible return value
@@ -5950,11 +5952,12 @@ syntax:
   use strict arg target, messageName, ...
 
   signal on syntax
+  if PlatformClz=.nil then self~setup  -- make sure attributes are initialized
+
   guiMsg=self~createGuiMessage(arg(1,"array"))
   fxTable[target]=guiMsg      -- an existing entry would be overwritten
   if waitingToRun=.false then -- "runLater" not invoked yet?
   do
-     if PlatformClz=.nil then self~setup
      waitingToRun=.true
      PlatformClz~runLater(runnable)
   end
@@ -5991,8 +5994,8 @@ syntax:
   hasArguments=(arg()=3)
   if hasArguments then
   do
-     .ArgUtil~validateClass(pp("arguments")||"="pp(args), args, .array)   -- check for correct type
      arguments=args
+     .ArgUtil~validateClass(pp("arguments")||"="pp(args), args, .array)   -- check for correct type
   end
 
   completed=.false
