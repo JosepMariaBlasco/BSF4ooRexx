@@ -6,10 +6,17 @@
    date:             2009-09-10
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF4Rexx 4.0 new external BsfRexxProxy() method
+
+
+   changed:          2017-08-15, rgf: BsfCreateRexxProxy() needs a (new) third argument "REXXOBJECT"
+                                      if making a Rexx array directly available to Java; otherwise
+                                      the Rexx array will be taken to contain the Rexx code from which
+                                      an unknown method should get created
    hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
                      hence this test unit needs to address RexxProxy objects in a Java fashion, using
                      the RexxProxy method "invoke(String methodName, Object[] args)"; any Rexx object
                      that gets returned will be wrapped up as a RexxProxy as well
+
 */
 
   parse source . . fileSpec;
@@ -42,7 +49,7 @@ return testResult
 
     tid=bsfGetTID()              -- get this TID
     arr~append(tid)              -- save main thread's TID
-    rpArr=BsfCreateRexxProxy(arr)-- create a Java RexxProxy for the array
+    rpArr=BsfCreateRexxProxy(arr, , "REXXOBJECT")-- create a Java RexxProxy for the array
 
       -- very light burden, make sure only one Rexx instance which creates 29 Rexx threads
     nrJavaThreads=1

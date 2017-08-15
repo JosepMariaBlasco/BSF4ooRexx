@@ -24,6 +24,12 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
+    6.0.0   2017-08-15, rgf: - BSFCreateRexxProxy(): use "R[EXXOBJECT]" instead of "R[EXX]" to self-document how
+                               the first argument will be  used if of type .string, .method or .array, which
+                               by default will be used for the code to carry out for the dynamically created
+                               unknown method; make sure that now JavaProxy is attempted if third argument
+                               is "R[EXXOBJECT]"
+
     6.0.0   2017-08-14, rgf: - if first argument is a Rexx string, method or array and the third argument is
                                "R[EXX]", then the first argument is proxied as is (allowing Java to send
                                it all ooRexx messages) and not used as the code for a dynamically created UNKNOWN
@@ -991,11 +997,11 @@ RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20170814 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170815 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20170814 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170815 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20170814 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170815 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -6549,24 +6555,27 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
 
     // an undocumented feature: if the first argument is a Rexx object of type "STRING", "METHOD" or "ARRAY"
     // then the companion Rexx program "BSF_OnTheFly.cls" is used to create a Rexx object on the fly with
-    // a single unknown method whose code is this first argument, unless the third argument is "REXX";
+    // a single unknown method whose code is this first argument, unless the third argument is "REXX[OBJECT]";
     // in general the Rexx object in the first argumetn will get proxied for Java to become able to interact
     // with it directly: this allows implementing Java interfaces and abstract classes in Rexx (and even
     // extend Java classes with Rexx classes)
+    bool bCreateJavaProxy=true;    // by default create a JavaProxy, if more than two arguments are given
     if (context->IsOfType(r_obj, "STRING") || context->IsOfType(r_obj, "METHOD")  || context->IsOfType(r_obj, "ARRAY") )  // a string object in hand? If so, it's the code to be run!
     {
-        bool bCreateProxy=false;
+        bool bUseArg1ForRexxCode=true;      // use argument as Rexx code for BSF_OnTheFly.rex
         RexxObjectPtr arg3=context->ArrayAt(argArray,3);    // get third argument if any
-        if (arg3!=NULL && context->IsOfType(arg3,"STRING"))        // is third argument "R[EXX]", then Rexx object in arg1 is supposed to be proxied
+        if (arg3!=NULL && context->IsOfType(arg3,"STRING"))        // is third argument "R[EXXOBJECT]", then Rexx object in arg1 is supposed to be proxied
         {
-            RexxObjectPtr res=context->SendMessage1(arg3, "CASELESSABBREV", context->String("REXX"));
-            bCreateProxy= (res==context->False());      // use BSF_OnTheFly using arg1 as code for unknown method and proxy returned object instead
+            RexxObjectPtr res=context->SendMessage1(context->String("REXXOBJECT"), "CASELESSABBREV", arg3);
+            bUseArg1ForRexxCode= (res==context->False());      // use BSF_OnTheFly using arg1 as code for unknown method and proxy returned object instead
+            bCreateJavaProxy=bUseArg1ForRexxCode;
         }
 
-// fprintf(stderr, "BSF_OnTheFly.cls !!! ...\n"); fflush(stderr);
 
-        if (bCreateProxy)
+        if (bUseArg1ForRexxCode)        // use arg1 as code argument for BSF_onTheFly.rex
         {
+
+// fprintf(stderr, "BSF_OnTheFly.cls !!! ...\n"); fflush(stderr);
             r_obj=context->CallProgram(REXX_PROXY_STUB_PROGRAM, context->ArrayOfOne(r_obj));
             if (context->CheckCondition()) // oops, something went wrong, let the condition prevail
             {
@@ -6598,9 +6607,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
         }
     }
 
-
     RexxObjectPtr r_userData=(context->ArrayAt(argArray, 2)!=NULL ? context->ArrayAt(argArray,2) : NULL);
-
 
     // STRUCT_ATTACH_PARAM param={env,rajo,riid,bDetach,error};
     STRUCT_ATTACH_PARAM param={0, 0, (void *)context->threadContext->instance, false, 0};
@@ -6641,7 +6648,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
     // size_t numArgs=context->ArrayItems(argArray);   // get number of arguments
     size_t numArgs=context->ArraySize(argArray);   // get number of arguments
 
-    if (numArgs>2)      // o.k. creation of a JavaProxy is requested
+    if (numArgs>2 && bCreateJavaProxy)      // o.k. creation of a JavaProxy is requested, third argument is not "R[EXXOBJECT]"
     {
         numArgs=numArgs-2;
         //convert arguments array to Java format

@@ -8,6 +8,11 @@
                                       get otherwise in troubles, if executing all multithreading tests
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF4Rexx 4.0 new external BsfRexxProxy() method
+
+   changed:          2017-08-15, rgf: BsfCreateRexxProxy() needs a (new) third argument "REXXOBJECT"
+                                      if making a Rexx array directly available to Java; otherwise
+                                      the Rexx array will be taken to contain the Rexx code from which
+                                      an unknown method should get created
    hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
                      hence this test unit needs to address RexxProxy objects in a Java fashion, using
                      the RexxProxy method "invoke(String methodName, Object[] args)"; any Rexx object
@@ -75,7 +80,7 @@ return testResult
 
     tid=bsfGetTID()              -- get this TID
     arr~append(tid)              -- save main thread's TID
-    rp=BsfCreateRexxProxy(arr)   -- create a Java RexxProxy for the array
+    rp=BsfCreateRexxProxy(arr, , "REXXOBJECT")   -- create a Java RexxProxy for the array
 
     counter=.counter~new         -- create a counter object
 
@@ -110,9 +115,9 @@ return testResult
     -- nrThreads=100
     nrThreads=10
     do i=1 to nrThreads
-       rp=BsfCreateRexxProxy(arr)   -- create a Java RexxProxy for the array
+       rp=BsfCreateRexxProxy(arr, , "REXXOBJECT")   -- create a Java RexxProxy for the array
        counter~increase                   -- increase the counter
-       .ThreadClz_using_RexxProxy_Array~new~work(self, tid, i, counter, BsfCreateRexxProxy(arr))-- thread will decrease counter before returning
+       .ThreadClz_using_RexxProxy_Array~new~work(self, tid, i, counter, BsfCreateRexxProxy(arr, , "REXXOBJECT"))-- thread will decrease counter before returning
     end
 
     call time "Reset"            -- reset timer
@@ -155,11 +160,13 @@ return testResult
   reply                 -- return & create a new thread
 
   thisTID=BsfGetTID()
+
   testUnit~assertTrue(BsfAttachToTID(TID), "attaching to main TID:" TID", thread #" nr", thisTID="thisTID)
 
   jArrayList~add(thisTID)        -- save this TID
 
   testUnit~assertTrue(BsfDetach(), "detaching from main TID:" TID", thread #" nr", thisTID="thisTID)
+-- say "counter~value:" pp(counter~value) "<---"
   counter~decrease
   return
 
@@ -171,13 +178,17 @@ return testResult
   reply                 -- return & create a new thread
 
   thisTID=BsfGetTID()
+
   testUnit~assertTrue(BsfAttachToTID(TID), "attaching to main TID:" TID", thread #" nr", thisTID="thisTID)
 
    -- have the RexxProxy send the following message to its proxied Rexx object
   -- rpArray~sendMessage("APPEND", bsf.createArrayOf("java.lang.Object", thisTID)) -- save this TID
   rpArray~sendMessage1("APPEND", thisTID) -- save this TID
-
   testUnit~assertTrue(BsfDetach(), "detaching from main TID:" TID", thread #" nr", thisTID="thisTID)
+-- say "counter~value:" pp(counter~value) "<---"
   counter~decrease
   return
 
+
+::routine pp
+  return "["arg(1)"]"
