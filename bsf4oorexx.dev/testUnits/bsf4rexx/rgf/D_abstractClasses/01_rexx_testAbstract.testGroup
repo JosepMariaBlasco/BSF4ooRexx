@@ -4,6 +4,9 @@
    author:           Rony G. Flatscher
    version:          1.0.0
    date:             2009-08-28
+   changed:          2017-08-16, rgf: "test_05_test_correct_methods_generated" corrected expected number of declared
+                              constructors from one to two: default constructor, constructor with RexxProxy as single
+                              argument
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF4Rexx 4.0 new proxying of Java interfaces
    needs:            compiled Java classes in this directory
@@ -103,7 +106,7 @@ return testResult
     self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods)")
     self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods)")
 
-    self~assertTrue(rpClz~getDeclaredConstructors~items=1, "only one (default) constructor")
+    self~assertTrue(rpClz~getDeclaredConstructors~items=2, "only two constructors (one default, one using RexxProxy as argument)")
     return
 
 

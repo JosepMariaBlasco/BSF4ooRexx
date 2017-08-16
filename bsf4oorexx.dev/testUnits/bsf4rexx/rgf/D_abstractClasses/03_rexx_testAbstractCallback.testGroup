@@ -6,6 +6,8 @@
    date:             2009-08-31, 2009-09-05, 2009-09-07
    changed:          2015-06-27, rgf - adapted the test to what is deocumented for supplying an array of
                                        method names to be proxied
+   changed:          2017-08-16, rgf: "test_07_test_correct_methods_generated" corrected expected number of declared
+                              constructors from three to four
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF4Rexx 4.0 new callback from Java to ooRexx
    hint:             RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
@@ -234,8 +236,8 @@ return testResult
     self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods)")
     self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods)")
 
-      -- three constructors to cover
-    self~assertEquals(3, rpClz~getDeclaredConstructors~items, "exactly three constructors")
+      -- four constructors to cover (include default constructor)
+    self~assertEquals(4, rpClz~getDeclaredConstructors~items, "exactly four constructors")
 
     return
 

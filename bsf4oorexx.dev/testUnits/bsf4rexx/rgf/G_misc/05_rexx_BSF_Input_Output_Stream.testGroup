@@ -4,6 +4,11 @@
    author:           Rony G. Flatscher
    version:          1.0.0
    date:             2015-07-01
+   changes:          2016-08-16, rgf:
+                     - corrected method OutputStreamLogger.write(): turning received decimal value into characters
+                     - correcting proxying classes as since using Janino new behaviour: explicitly proxying all methods
+                       to match pre-Janino-behaviour (still not documented)
+
    license:          ASF 2.0 (Apache Software License)
    remarks:          test BSF.CLS public classes "BSF.InputStream" and "BSF.OutputStream"
 */
@@ -79,8 +84,8 @@ return testResult
       -- create a Rexx class for handling all methods of the abstract class java.io.OutputStream
     jclz_os=bsf.createProxyClass("java.io.OutputStream")
 
-      -- create a Rexx class for handling all methods of the class java.io.PrintStream (includes the "print"* methods)
-    jclz_ps=bsf.createProxyClass("java.io.PrintStream")
+      -- create a Rexx class for handling all methods of the class java.io.PrintStream (proxy print() and println() methods)
+    jclz_ps=bsf.createProxyClass("java.io.PrintStream", , "print", "println")
 
 -- say jclz_os~toString":"; do m over jclz_os~declaredMethods; say "method:" pp(m~toString); end;say "---"
 -- say jclz_ps~toString":"; do m over jclz_ps~declaredMethods; say "method:" pp(m~toString); end;say "---"
@@ -120,11 +125,12 @@ return testResult
 
       -- create Rexx proxy classes: make sure this test uses the java.io.Writer methods
 
+
       -- create a Rexx class for handling all methods of the abstract class java.io.OutputStream
-    jclz_is=bsf.createProxyClass("java.io.InputStream")
+    jclz_is=bsf.createProxyClass("java.io.InputStream", , "*")
 
       -- create a Rexx class for handling all methods of the class java.io.PrintWriter
-    jclz_sr=bsf.createProxyClass("java.io.InputStreamReader")
+    jclz_sr=bsf.createProxyClass("java.io.InputStreamReader", , "*")
 
 -- say jclz_is~toString":"; do m over jclz_is~declaredMethods; say "method:" pp(m~toString); end;say "---"
 -- say jclz_sr~toString":"; do m over jclz_sr~declaredMethods; say "method:" pp(m~toString); end;say "---"
@@ -234,7 +240,7 @@ return testResult
       -- create Rexx proxy classes: make sure this test uses the java.io.Writer methods
 
       -- create a Rexx class for handling all methods of the abstract class java.io.OutputStream
-    jclz_is=bsf.createProxyClass("java.io.InputStream")
+    jclz_is=bsf.createProxyClass("java.io.InputStream", , "*")
 
       -- create a Rexx class for handling all methods of the class java.io.PrintWriter
 --    jclz_sr=bsf.createProxyClass("java.io.InputStream")
@@ -345,7 +351,9 @@ return testResult
 
 
 
-/* Class that distinguishes between "print", "println" and "write" invocations and buffers received data. */
+/* Class that distinguishes between "print", "println" and "write" invocations and buffers received data.
+   Implements java.io.OutputStream's write(int) method; java.io.PrintWriter
+*/
 ::class outputStreamLogger
 
 ::attribute printBuffer
@@ -362,17 +370,20 @@ return testResult
 ::method print                      -- process print messages
   expose printBuffer
   use arg val
+-- say self": print(), val="pp(val)
   printBuffer||=val                 -- append received value
 
 ::method println                    -- process print messages
   expose printBuffer
   use arg val
+-- say self": printBuffer(), val="pp(val)  "(appending .endofline)"
   printBuffer||=val || .endofline   -- append received value
 
-::method write                      -- process print messages
+-- rgf, 2017-08-16: the abstract method write() receives an int-value representing a character, hence the need to do a d2c on it!
+::method write                      -- implementing abstract OutputStream.write(int ch)
   expose writeBuffer
   use arg val
-  writeBuffer||=val         -- append character representing received decimal code
+  writeBuffer||=val~d2c    -- append character representing received decimal code
 
 
 ::method close                      -- do nothing
@@ -414,9 +425,24 @@ return testResult
 
 -- as this class is only used by this Rexx code we can safely assume byte=char (no two byte chars)
 -- hint: the Java StreamReader does read's when skipping, sometimes supplies an array with a capacity higher, than the number of chars to read
-::method read
+::method read        -- implementation for abstract InputStream.read()
   expose readBuffer
   use arg arr, start, len
+
+-- say self": read(), arr="pp(arr) "start="pp(start) "len="pp(len) "| readBuffer="pp(readBuffer)
+
+/*
+   if arg()=1 then   -- read(): return int-value of char or -1, if no char
+   do
+       if readBuffer~length>0 then
+       do
+          char=readBuffer~left(1)
+          readBuffer=readBuffer~substr(2)
+          return char~c2d
+       end
+       else return -1
+   end
+*/
 
   isByteArray=(arr~objectName~left(2)~caselessEquals("[B"))
 
@@ -438,3 +464,5 @@ return testResult
   return i-1
 
 ::method close                      -- do nothing
+
+

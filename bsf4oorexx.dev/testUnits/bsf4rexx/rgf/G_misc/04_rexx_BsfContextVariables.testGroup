@@ -4,6 +4,8 @@
    author:           Rony G. Flatscher
    version:          1.0.0
    date:             2015-06-29
+   changed:          2017-08-16, rgf: corrected count-tests by dropping "RESULT" upon return of DROP and SET tests
+
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF4ooRexx new external BsfContextVariablesõ() function
 */
@@ -51,7 +53,10 @@ return testResult
     self~assertEquals("-new-", bsfContextVariables("get", "ANTON"))
     self~assertEquals(4, bsfContextVariables()~items)
     self~assertEquals(4, bsfContextVariables("get")~items)
+
     call bsfContextVariables "drop", "anton"
+    drop result
+
     self~assertEquals(3, bsfContextVariables("get")~items)
 
 
@@ -101,10 +106,12 @@ localVars_01c: procedure                -- 1 local variable
     oneVariable=1
     twoVariable=2
     call bsfContextVariables "drop", "twoVariable"
+    drop result
     return BsfContextVariables()
 
 localVars_01d: procedure                -- 1 local variable
     call BsfContextVariables "set", "newVar", "newValue"
+    drop result
     return BsfContextVariables()
 
 
@@ -119,6 +126,7 @@ localVars_04a: procedure                -- 3 local variables
     dir~b="-b-"
     dir~c="-c-"
     call BsfContextVariables "set", dir
+    drop result
     return BsfContextVariables()
 
 localVars_04b: procedure                -- 0 local variables
@@ -128,7 +136,7 @@ localVars_04b: procedure                -- 0 local variables
     dir~c="-c-"
     call BsfContextVariables "set", dir
     call BsfContextVariables "drop", dir
-    drop dir
+    drop dir result
     return BsfContextVariables()
 
 localVars_05: procedure                -- define five local variables
