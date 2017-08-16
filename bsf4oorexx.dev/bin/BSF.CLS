@@ -12,6 +12,9 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2017-08-16, ---rgf, - deprecated routine bsf.ScriptContext2rexx() by renaiming it to bsf.ScriptContext2rexx_deprecated()
+                             - removed experimental sentinel named "DOES.NOT.EXIST" from .jsr223
+
          2017-08-15, ---rgf, - correct error in setting up the "FxGuiThread" class (lazy initialization)
 
          2017-08-13, ---rgf, - make sure that in class "GUIMessage" the constructor method "init" checks that
@@ -541,7 +544,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20170815)
+   version:     6.00 (20170816)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -644,7 +647,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20170815" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20170816" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4779,7 +4782,7 @@ syntax:
 
   n=javaInputObject~read(charr, 0, length)
 
-  if n=0 then return ""
+  if n<=0 then return ""
   return .java.lang.String~new(charr, 0, n)~toString
 
 syntax:
@@ -4808,6 +4811,7 @@ wrong_args:
   mb=.mutableBuffer~new
   do forever
      char=self~charin            -- read a byte
+
      if char="0d"x then          -- skip CR
         iterate
 
@@ -4939,7 +4943,7 @@ syntax:
 */
 
 -- deprecate in favor of JSR223::ScriptContext2rexx and forward to .JSR223::scriptContext2RexxDir
-::routine bsf.ScriptContext2rexx public
+::routine bsf.ScriptContext2rexx_deprecated public
 signal on syntax
    use strict arg a, ...   -- make sure we have the mandatory argument, now can be a Java ScriptContext or a Rexx .context with a slotDir arg
    argArr=arg(1,'A')     -- get all arguments as an array
@@ -4958,16 +4962,14 @@ syntax: raise propagate
 ::constant ENGINE_SCOPE 100   -- numeric value for javax.script.ScriptContext.ENGINE_SCOPE
 ::constant GLOBAL_SCOPE 200   -- numeric value for javax.script.ScriptContext.GLOBAL_SCOPE
 
-::attribute does.not.exist class get -- sentinel indicating that attribute or scope is not defined
 ::attribute showWarnings class   -- .true or .false
 ::attribute showDebugs   class   -- .true or .false
 
 ::method init class
-  expose tableOut tableIn does.not.exist showWarnings
+  expose tableOut tableIn showWarnings
    -- define input and output table for TRANSLATE()-BIF
   tableOut   =".abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!?_" -- valid (Rexx symbol) characters
   tableIn    =tableOut || xrange("00"x,"ff"x)
-  does.not.exist =.object~new  -- a sentinel value
   showWarnings=.true
 
 
@@ -4978,7 +4980,6 @@ syntax: raise propagate
 * @return the javax.script.Binding or <code>.nil</code> if not found
 */
 ::method getBindings class    -- return bindings from ScriptContext, if not found, .nil
-  expose does.not.exist
   use strict arg scriptContext, sc
   signal on syntax         -- if a scope does not exist, then an IllegalArgumentException gets thrown
 
@@ -4987,7 +4988,7 @@ syntax: raise propagate
 
   return scriptContext~getBindings(sc)
 syntax:
-  return does.not.exist
+  return .nil
 
 
 
@@ -5089,6 +5090,7 @@ syntax:
   do sc over arr
       -- bin=getBindings(scriptContext,sc)
       bin=self~getBindings(scriptContext,sc)
+
       if bin=.nil then iterate   -- inexistent scope
       keys=bin~keySet         -- get kay values
       it=keys~iterator
@@ -5109,15 +5111,14 @@ syntax:           -- propagate the syntax condition to caller
 
 
 
-/** Class method that returns the requested Binding from the ScriptContext.
+/** Class method that returns the requested attribute from the ScriptContext.
 *
 * @param scriptContext the javax.script.ScriptContext
 * @param name the attribute's name
 * @param scope the scope number for the javax.script.Binding to be retrieved from scriptContext
-* @return the javax.script.Binding or <code>.nil</code> if not found
+* @return the attribute's value or <code>.nil</code> if not found
 */
 ::method getAttribute class
-  expose does.not.exist
   use strict arg scriptContext, name, scope=.nil
   signal on syntax
 
@@ -5136,7 +5137,7 @@ syntax:           -- propagate the syntax condition to caller
 syntax1: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
 
 syntax2:       -- no entry by that name in ScriptContext
-  return does.not.exist
+  return .nil
 
 
 /** Fetches the supplied names from the ScriptContext Bindings and returns them as a Rexx directory where the
