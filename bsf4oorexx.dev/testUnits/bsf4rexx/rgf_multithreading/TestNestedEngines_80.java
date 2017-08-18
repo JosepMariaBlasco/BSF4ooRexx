@@ -1,7 +1,8 @@
 // rgf, 2009-09-10, 2009-10-16: test execution of Rexx scripts by concurrently
 //                  creating and using Rexx engines
+// rgf, 2017-08-18, changed package name to reflect new location
 
-package rgf.F_multiThreading;
+package rgf_multithreading;
 
 import org.rexxla.bsf.engines.rexx.RexxEngine;
 import org.rexxla.bsf.engines.rexx.RexxProxy;

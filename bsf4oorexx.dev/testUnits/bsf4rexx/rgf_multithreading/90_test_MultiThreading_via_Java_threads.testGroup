@@ -74,7 +74,7 @@ return testResult
 
     rexxCode=getRexxCode("90_test_Multithreading_via_Java_threads.rex")
 
-    javaClz=bsf.import("rgf.F_multiThreading.TestNestedEngines")
+    javaClz=bsf.import("rgf_multithreading.TestNestedEngines")
 
     bm=bsf.wrap(bsf("getBsfManager"))     -- get this Rexx instance's BSFManager object
     -- jo=javaClz~new(bm, self, nrJavaThreads, nrRexxThreads, rexxCode, rpArr)
