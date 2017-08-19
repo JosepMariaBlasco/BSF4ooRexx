@@ -1,4 +1,13 @@
 /*
+    - "rajo": RexxAndJava-object (Java object used to interface with Rexx)
+
+    - locks used for serializing access to:
+                   JRST_lock         to "environmentAttachToNew(&param)" and "environmentDetachFromNew(&param)"
+
+                   RII_lock          RexxInterpreter instance lock
+                   RII_creation_lock RexxInterpreter instance creation lock
+                   REGISTRY_lock     access to ooRexx registry structures
+
 
 remarks:
 
@@ -24,6 +33,10 @@ remarks:
 
     History:
 
+                             - TODO: remove dead (commented) code
+                             - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
+                             - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
+
     6.0.0   2017-08-19, rgf: continue tidying up and refactoring to make code easier legible
                              - added INFO_* statements for easying debugging calls from Java to Rexx to
                                help trace down cause of Rexx crashes
@@ -48,8 +61,6 @@ remarks:
                              - remove RGF_USE_MUTEX define for Windows, just use it (forgo critical section variant)
                              - remove DEBUG_RAISE_CONDITION
 
-                             - TODO: remove dead (commented) code
-                             - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
 
     6.0.0   2017-08-15, rgf: - BSFCreateRexxProxy(): use "R[EXXOBJECT]" instead of "R[EXX]" to self-document how
                                the first argument will be  used if of type .string, .method or .array, which
@@ -673,11 +684,11 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 /* */
 
 // rgf, 2017-08-19, add INFO_* definitions for helping debug crash, maybe it is related to creating and terminating Rexx interpreter instances
-// #define INFO_CREATE_RII     // rgf, 2017-08-19
-// #define INFO_TERMINATE_RII  // rgf, 2017-08-19
-// #define INFO_HALT_RII       // rgf, 2017-08-19
-// #define INFO_SEND_MESSAGE_TO_REXX_OBJECT // rgf, 2017-08-19
-// #define INFO_REXX_RUN_PROGRAM   // rgf, 2017-08-19
+#define INFO_CREATE_RII     // rgf, 2017-08-19
+#define INFO_TERMINATE_RII  // rgf, 2017-08-19
+#define INFO_HALT_RII       // rgf, 2017-08-19
+#define INFO_SEND_MESSAGE_TO_REXX_OBJECT // rgf, 2017-08-19
+#define INFO_REXX_RUN_PROGRAM   // rgf, 2017-08-19
 
 // rgf, 2017-08-19: hot fix for CRASHes; will slow down flurry of invocations from Java as this adds at least a wait time of 1/100 second (10 ms)
 #define HOT_FIX_CRASH       // rgf, 2017-08-19: hot fix for CRASHes (seems one needs to relinquish thread for 10ms before invoking AttachThread())
@@ -748,8 +759,6 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // #define RGF_TRUE      // ---rgf, 2010-02-10
 
-
-
 // #define RGF_COMMAND_HANDLER         // rgf, 2012-02-07
 // #define RGF_SYSTEM_EXIT_HANDLER     // rgf, 2012-02-07
 // #define DEBUG_JNI
@@ -780,8 +789,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 // #define DEBUG_CONTEXT_VARS          // 2017-02-14
 
-
-#if defined FALSE
+// #define DEBUG_SOME_OPTIONS
+#if defined DEBUG_SOME_OPTIONS
     // rgf, 2017-07-16
     #define DEBUG_CREATE_HALT_TERMINATE
     #define DEBUG_TERMINATE_INTERPRETER // 2009-09-03
@@ -796,8 +805,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 #endif
 
 
-// #if defined (UNIX)  && defined (NIXI_NOXI) // comment before && to activate all of the flags below
-#if defined (WINDOWS) && defined (NIXI_NOXI) // comment before && to activate all of the flags below
+// #define DEBUG_ALL_OPTIONS
+#if defined (DEBUG_ALL_OPTIONS) // comment before && to activate all of the flags below
     #define DEBUG
     #define DEBUG1
     #define DEBUG2
@@ -866,7 +875,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     // command or exit gets invoked)
 
 // rgf, 2012-02-17
-#define CONFIG_REXX_HANDLERS_AS_INTERFACES
+// #define CONFIG_REXX_HANDLERS_AS_INTERFACES
 
 // rgf, 2012-03-11
 #define CONFIG_HANDLE_NETREXX_AS_STRING_4_REXX
@@ -883,12 +892,13 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     // rgf, 2014-03-30, name of entry into .local for primodal TID (will allow one to attach even if no TID is known to the Rexx programmer)
 #define LOCAL_PRIMODAL_TID                    "BSF.PRIMODALTID"
 
+#if defined WINDOWS
+    // __asm Int 3;     // break
+    // DebugBreak();    // break, popup to break will be shown
 
-    // from: <http://ccollomb.free.fr/blog/?p=30>, rgf, 2009-06-02
-// __asm Int 3;    // break, popup to break will be shown
-// DebugBreak();   // break, popup to break will be shown
-                    // debug single step, without popup to break:
-#define BREAK_HERE_SINGLESTEP() __asm __emit 0xF1
+                        // alternative: debug single step, without popup to break:
+    #define BREAK_HERE_SINGLESTEP() __asm __emit 0xF1
+#endif
 
 #include "oorexxapi.h"
 
@@ -900,8 +910,6 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     // if used from Java: if last Rexx interpreter instance terminates, then tear down the OREXX_REGISTRY
 // #define RGF_TEAR_DOWN_OREXX_REGISTRY    // if causing troubles in rexx.exe, comment this line
 
-// rgf, 2017-08-16: not needed anymore
-// #define USE_OREXX_REGISTRY_PACKAGE      // 2009-06-10: use package object from RexxProxy
 
 #define ALLOW_LOADING_JVM   // allow dynamic loading of JVM by ooRexx
 
@@ -924,7 +932,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 // -------------------- JNI-interface related
-#include "org_rexxla_bsf_engines_rexx_RexxAndJava.h" // rgf, 2005-06-02
+#include "org_rexxla_bsf_engines_rexx_RexxAndJava.h"    // rgf, 2005-06-02: Java native functions we must implement
 
 
 // -------------------- ooRexx 4.0 and later
@@ -941,14 +949,12 @@ void JAVA_TO_STRING (JNIEnv *env, jobject jo, char * buffer, int bufSize);
 
 char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryObject condObj, CSTRING header);
 
-
+    // RexxCreateRexxProxy() can have as its first argument a string, method or array object representing the
+    // Rexx code to be executed when a method is invoked on the Java side; this Rexx program implements the
+    // creation of the RexxProxy() defining an UNKNOWN method for that passed-in code
 #define REXX_PROXY_STUB_PROGRAM "BSF_OnTheFly.cls"  // name of Rexx program to use for creating ad hoc RexxProxy object
-// #define REXX_CALLBACK_ARG_STEM_NAME "BSFARG."       // stem name to be used, if setting the callback directory entries in the caller
 
-
-
-// #define USE_DEFINED_JNI_VERSION     JNI_VERSION_1_2 //  JNI_VERSION_1_4
-#define USE_DEFINED_JNI_VERSION     JNI_VERSION_1_4
+#define USE_DEFINED_JNI_VERSION JNI_VERSION_1_6     // minimum JNI interface, we are basing on Java 1.6/6.0
 
 
 // typedef jint (JNICALL *rgf_AttachCurrentThread)  (JavaVM  *, void **, void *);
@@ -966,55 +972,41 @@ thread_id_t  RgfGetTID();
     #define BSF_VERSION     "600.20170819 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
-#define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
-
+    // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
+#define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // can only be used from JNI as everything is private in it
 
 #define DLLNAME         "BSF4ooRexx"      // name of DLL and name for "PARSE SOURCE"
-// #define JAVA_CALL_BSF   "javaCallBSF"   // name of the Java method that carries out the BSF()-call
-
-#define  INVALID_ROUTINE 40            /* Rexx: raise Rexx error # 40   */
-#define  VALID_ROUTINE    0            /* Rexx: successful completion   */
 
 
+// ---------------------------------------------------------------------------------------------------------
 // globals, rgf, 2008-08-01
 JavaVM    *currentJVM=NULL;     // JVM to use
 int       bsfInvokedBy = 0;     // 0=noJVM, 1=byJava, 2=byRexx
-// 2017-04-15, rgf
+
+// 2017-04-15, rgf: when adding a slotDir argument on calls from Java to Rexx, use this class instead of .Directory
+//                  to store the entries, such that Rexx programmers can easily determine by the class name whether
+//                  the last argument is a slotDir argument or not
 RexxClassObject rcoSlotArgumentClass=NULL;   // the loader function will create the slot.argument class and save it
 
     // ---rgf, 2006-11-19: define boolean and maximum length for Java's event trace
 int       bShowErrorString = 1;         // default to showing (dumping) Java traceback in case of an error
 #define BSF_ERROR_STRING  "BSF_ERROR_MESSAGE"    // variable name to use to save Java error message in Rexx variable
 
-#ifdef OBSOLETE
-const int lenBsfErrorString = (int) strlen(BSF_ERROR_STRING);   // calc length once and forever
-#endif
-
     // 2016-12-20: rgf, new global variable: if set to false and Java got invoked by Rexx, then no Rexx object -
     //             i.e. RgfRemoveProxyObject(c_obj_ID) - unregistering will take place as this callback from Java
     //             may address a Rexx interpreter which is not available anymore, causing an exception (has not
-    //             occurred while running with the beta version of ooRexx 5.0)
-
+    //             occurred while running with the beta version of ooRexx 5.0);
+    //             to be backwardly compatible, we default to false;
+    //             cf. external Rexx function BsfDoUnregisterRexxObject([0|1])
 logical_t bsfDoUnregisterRexxObject=false;
 
-// forward prototypes
 
-// === (BEGIN) ========================> maintain list of RexxInterpreterInstances, OREXX_REGISTRY ========>
-    // define locks
-#ifdef UNIX
-   pthread_mutex_t RII_lock      = PTHREAD_MUTEX_INITIALIZER;  // rgf, 2009-05-03, RexxInterpreter instance lock
-   pthread_mutex_t RII_creation_lock = PTHREAD_MUTEX_INITIALIZER;  // rgf, 20121230, RexxInterpreter instance creation lock
-   pthread_mutex_t REGISTRY_lock = PTHREAD_MUTEX_INITIALIZER;  // rgf, 2009-05-03, OREXX_REGISTRY* lock
-
-#elif defined WINDOWS   // used in MUTEX
-   HANDLE RII_lock;                     // rgf, 2009-06-03
-   HANDLE RII_creation_lock;            // rgf, 20121230
-   HANDLE REGISTRY_lock;                // rgf, 2009-06-03
-#endif
 
 
 // ----------------------------------------------------------------------------
-// HOTFIX for crashes (invoking Rexx from native Java threads) by relinquishing the invoked thread for 10ms before doing an AttachThread()
+// ----------------------------------------------------------------------------
+// 2017-08-19: HOTFIX for crashes (invoking Rexx from native Java threads) by relinquishing the
+// invoked thread for 10ms before doing an AttachThread()
 #ifdef HOT_FIX_CRASH            // 2017-08-19
    inline void hotfix_relinquish_thread()
    {
@@ -1029,36 +1021,62 @@ logical_t bsfDoUnregisterRexxObject=false;
    }
 #endif
 
+
+
+
 // ----------------------------------------------------------------------------
-//       DEBUG_HIT_ENTER_TO_CONTINUE
-inline void RgfDebugHitEnterToContinue()
-{
-    fprintf(stderr, "\n[RgfDebugHitEnterToContinue(): Hit Enter to Continue...");fflush(stderr);
-    char stuff[5];
-    int a=fscanf(stdin, "%c", stuff);
-    fprintf(stderr, "\n");fflush(stderr);
-}
+// forward prototypes and inline functions
+
+// === (BEGIN) ========================> maintain list of RexxInterpreterInstances, OREXX_REGISTRY ========>
+    // define locks
+#ifdef WINDOWS
+   HANDLE JVM_setup_lock;       // JVM setup lock
+   HANDLE RII_lock;             // RexxInterpreter instance creation lock
+   HANDLE REGISTRY_lock;        // ooRexx REGISTRY lock
+#else
+   pthread_mutex_t JVM_setup_lock = PTHREAD_MUTEX_INITIALIZER;  // JVM setup lock
+   pthread_mutex_t RII_lock       = PTHREAD_MUTEX_INITIALIZER;  // RexxInterpreter instance lock
+   pthread_mutex_t REGISTRY_lock  = PTHREAD_MUTEX_INITIALIZER;  // ooRexx REGISTRY lock
+#endif
 
 
-inline RexxStringObject RgfDebug_GetMaxStringValue(RexxThreadContext *context, RexxObjectPtr rop, size_t max_len)
-{
-    RexxStringObject rso=context->ObjectToString(rop);  // get String value
-
-    size_t strLen=context->StringLength(rso);
-
-    if (strLen>max_len)
+// ----------------------------------------------------------------------------
+//       DEBUG_HIT_ENTER_TO_CONTINUE: allow halting until user hits enter
+#if defined (DEBUG_HIT_ENTER_TO_CONTINUE)
+    inline void RgfDebugHitEnterToContinue()
     {
-        rso=(RexxStringObject) context->SendMessage2(rso, "SUBSTR",
-                                     (RexxStringObject) context->StringSizeToObject(1),
-                                     (RexxStringObject) context->StringSizeToObject(max_len));
-
-        rso=(RexxStringObject) context->SendMessage1(rso, "||", context->String(" [...]"));
+        fprintf(stderr, "\n[RgfDebugHitEnterToContinue(): Hit Enter to Continue...");fflush(stderr);
+        char stuff[5];
+        int a=fscanf(stdin, "%c", stuff);
+        fprintf(stderr, "\n");fflush(stderr);
     }
-    return rso;
+#endif
 
-}
+
+//      make sure we do not exceed the passed maximum length, use ooRexx to carry out substr()
+#if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA) || defined (DEBUG_ARRAY_ARGS)
+    inline RexxStringObject RgfDebug_GetMaxStringValue(RexxThreadContext *context, RexxObjectPtr rop, size_t max_len)
+    {
+        RexxStringObject rso=context->ObjectToString(rop);  // get String value
+
+        size_t strLen=context->StringLength(rso);
+
+        if (strLen>max_len)
+        {
+            rso=(RexxStringObject) context->SendMessage2(rso, "SUBSTR",
+                                         (RexxStringObject) context->StringSizeToObject(1),
+                                         (RexxStringObject) context->StringSizeToObject(max_len));
+
+            rso=(RexxStringObject) context->SendMessage1(rso, "||", context->String(" [...]"));
+        }
+        return rso;
+    }
+#endif
+
 
 // ----------------------------------------------------------------------------
+// Allow serializing access to JVM_structure, RIIs or ooRexx REGISTRY related functions, hence
+// argument can be on of: "JVM_setup_lock", "RII_lock", "REGISTRY_lock"
 inline void  RgfAcquireLock2(
     #ifdef WINDOWS
         HANDLE
@@ -1066,11 +1084,9 @@ inline void  RgfAcquireLock2(
         pthread_mutex_t
     #endif
                           lock)
-    // ===> 2008-07-23: MUTEX, blocking invocation, waits until lock was successfully acquired
-    //                  - initializing/setting up of 'JRST_lock' is done in JNI_OnLoad()
 {
 
-#if defined (RGF_INFO) || defined (RGF_ATTACH) || defined (RGF_DETACH) || defined (DEBUG_REXX_ATTACH)
+#if defined (RGF_INFO) || defined (DEBUG2)
     thread_id_t tid=RgfGetTID();
 
     fprintf(stderr, "*** RGF_INFO: --- RgfAcquireLock2(lock): tid=[%lu], lock=[%p] ...\n", (unsigned long) tid, (void *)& lock);
@@ -1083,8 +1099,7 @@ inline void  RgfAcquireLock2(
     pthread_mutex_lock(&lock);
 #endif
 
-
-#if defined (RGF_INFO) || defined (RGF_ATTACH) || defined (RGF_DETACH) || defined (DEBUG_REXX_ATTACH)
+#if defined (RGF_INFO) || defined (DEBUG2)
     fprintf(stderr, "*** RGF_INFO: --> RgfAcquireLock2(lock): tid=[%lu], lock=[%p]  ... now ACQUIRED !\n", (unsigned long) tid, (void *) &lock);
     fflush(stderr);
 #endif
@@ -1092,7 +1107,10 @@ inline void  RgfAcquireLock2(
 }
 
 
-inline void  RgfReleaseLock2(                  // prototype definition
+// ----------------------------------------------------------------------------
+// Allow serializing access to JVM_structure, RIIs or ooRexx REGISTRY related functions, hence
+// argument can be on of: "JVM_setup_lock", "RII_lock", "REGISTRY_lock"
+inline void  RgfReleaseLock2(
     #ifdef WINDOWS
         HANDLE
     #else  // UNIX
@@ -1100,7 +1118,7 @@ inline void  RgfReleaseLock2(                  // prototype definition
     #endif
                           lock)
 {
-#if defined (RGF_INFO) || defined (RGF_ATTACH) || defined (RGF_DETACH) || defined (DEBUG_REXX_ATTACH)
+#if defined (RGF_INFO) || defined (DEBUG2)
     thread_id_t tid=RgfGetTID();
     fprintf(stderr, "*** RGF_INFO: --- RgfReleaseLock2(lock): tid=[%lu], lock=[%p]  ...\n", (unsigned long) tid, (void *) & lock);
     fflush(stderr);
@@ -1112,7 +1130,8 @@ inline void  RgfReleaseLock2(                  // prototype definition
     pthread_mutex_unlock(&lock);
 #endif
 
-#if defined (RGF_INFO) || defined (RGF_ATTACH) || defined (RGF_DETACH) || defined (DEBUG_REXX_ATTACH)
+
+#if defined (RGF_INFO) || defined (DEBUG2)
     fprintf(stderr, "*** RGF_INFO: <-- RgfReleaseLock2(lock): tid=[%lu], lock=[%p]  ... now RELEASED !\n", (unsigned long) tid, (void *) & lock);
     fflush(stderr);
 #endif
@@ -1123,10 +1142,6 @@ inline void  RgfReleaseLock2(                  // prototype definition
 
     // rgf, 20090503: add list of RexxInterpreter instances
     // defines the list of "RexxInterpreter instances" (RII)
-    // TODO: maybe add references to RexxEngine, RexxAndJava and its MID for "String makeString4Rexx(Object)"
-    //                         RexxProxy constructor MID and MID for static newJavaProxyInstance,
-    //                         RexxException with MIDs for its constructors
-
 typedef struct _STRUCT_RII {
     struct _STRUCT_RII          *next;      // pointer to next block
     RexxInstance                *instance;  // the instance pointer, needed as anchor
@@ -1143,47 +1158,22 @@ PSTRUCT_RII pRoot_RII=NULL;                 // root of RII list
 const size_t RGF_POINTER_STRING_WIDTH=sizeof( POINTER )*2+2+1+1;
 const size_t RGF_TID_STRING_WIDTH    = 80;  // allows for hex representation of 2**128 plus two bytes (one for \0, the other for evening)
 
-// #define RgfPointer2String(ptr, str)     sprintf((char *)str, "%p", (void *) ptr);   // macro
+// macros for encoding and decoding a pointer value to/from a string
 
-// 2009-10-11, rgf, adding "+1", such that Linux gcc 32-bit does not truncate the pointer value
-// 2016-03-27, jlf bug 28, removing "+1" because
-// a) "+1" added directly to the definition of RGF_POINTER_STRING_WIDTH to get a buffer with correct size
-// b) the difference of size with buffer's size raised a compile-time warning and a runtime abort "overflow" under Ubuntu 14.04 with gcc 4.8.4.
+// ----------------------------------------------------------------------------
+    // 2009-10-11, rgf, adding "+1", such that Linux gcc 32-bit does not truncate the pointer value
+    // 2016-03-27, jlf bug 28, removing "+1" because
+    // a) "+1" added directly to the definition of RGF_POINTER_STRING_WIDTH to get a buffer with correct size
+    // b) the difference of size with buffer's size raised a compile-time warning and a runtime abort "overflow" under Ubuntu 14.04 with gcc 4.8.4.
 #define RgfPointer2String(ptr, str)     SNPRINTF((char *)str, RGF_POINTER_STRING_WIDTH, "%p", (void *) ptr);   // macro
 
-/*
-inline void RgfPointer2String (void * ptr, char * str)
-{
-    ... bla, bla
-}
-*/
-
-#define RgfString2Pointer(str, ptr)     sscanf(str, "%p", &ptr);                    // macro
+// ----------------------------------------------------------------------------
+    // fetch pointer from encoded string
+#define RgfString2Pointer(str, ptr)     sscanf(str, "%p", &ptr);    // macro
 
 
-inline void RgfDumpRexxInstanceList()
-{
-
-    fprintf(stderr, "\n---> RgfDumpRexxInstanceList():\n");
-    fflush(stderr);
-    int st=0;
-
-    for (PSTRUCT_RII i=pRoot_RII; i!=NULL; i=i->next)
-    {
-
-        st++;
-        fprintf(stderr, "\t# [%d]: pRoot_RII=[%p]: i=[%p], i->instance=[%p], i->next=[%p]\n",
-                                               st, pRoot_RII, i, i->instance, i->next);
-
-// if (st>10) { DebugBreak(); }
-
-    }
-    fprintf(stderr, "<--- RgfDumpRexxInstanceList():\n");
-    fflush(stderr);
-}
-
-
-
+// ----------------------------------------------------------------------------
+// Fetches RexxInstance pointer from supplied CSTRING
 inline RexxInstance * RgfGetRexxInstanceFromString(CSTRING c_rii_ID)
 {
     RexxInstance *ri=NULL;
@@ -1192,9 +1182,41 @@ inline RexxInstance * RgfGetRexxInstanceFromString(CSTRING c_rii_ID)
 }
 
 
-// add a new Rexx interpreter instance to the list
-// caller needs to set the lock
-inline logical_t RgfAddRexxInterpreterInstanceToList(RexxThreadContext *rtc, jobject rajo, jobject rexxconf)
+// ----------------------------------------------------------------------------
+#if defined (DEBUG_RII_LIST)    // if debug Rexx interpreter instance list is defined
+    inline void RgfDumpRexxInstanceList()
+    {
+
+        fprintf(stderr, "\n---> RgfDumpRexxInstanceList():\n");
+        fflush(stderr);
+        int st=0;
+
+        for (PSTRUCT_RII i=pRoot_RII; i!=NULL; i=i->next)
+        {
+
+            st++;
+            fprintf(stderr, "\t# [%d]: pRoot_RII=[%p]: i=[%p], i->instance=[%p], i->next=[%p]\n",
+                                                   st, pRoot_RII, i, i->instance, i->next);
+    #ifdef WINDOWS
+        // if (st>10) {
+        //     __asm Int 3;    // break
+        //     DebugBreak();
+        // }
+
+        // or:
+        // BREAK_HERE_SINGLESTEP();
+    #endif
+
+        }
+        fprintf(stderr, "<--- RgfDumpRexxInstanceList():\n");
+        fflush(stderr);
+    }
+#endif
+
+
+// ----------------------------------------------------------------------------
+    // add a new Rexx interpreter instance (RII) to the list
+inline void RgfAddRexxInterpreterInstanceToList(RexxThreadContext *rtc, jobject rajo, jobject rexxconf)
 {
 #if defined (DEBUG_RII_LIST)
     fprintf(stderr, "--> RgfAddRexxInterpreterInstanceToList(...): adding new Rexx instance c_rii_ID=[%p] to the list\n", rtc->instance);
@@ -1221,8 +1243,6 @@ inline logical_t RgfAddRexxInterpreterInstanceToList(RexxThreadContext *rtc, job
     RgfDumpRexxInstanceList();
 #endif
 
-    logical_t rc=true;              // default to true
-
     RgfAcquireLock2(RII_lock);      // lock access to list of RexxInstance instances
     if (pRoot_RII==NULL)            // empty list as of yet?
     {
@@ -1231,7 +1251,6 @@ inline logical_t RgfAddRexxInterpreterInstanceToList(RexxThreadContext *rtc, job
 
         // make sure we have an OOREXX_REGISTRY set up
         RgfSetupOrexxRegistry(rtc);
-
     }
     else                            // find last node, add new one to last one
     {
@@ -1242,7 +1261,6 @@ inline logical_t RgfAddRexxInterpreterInstanceToList(RexxThreadContext *rtc, job
                                                                            i, i->instance, i->next);
     fflush(stderr);
 #endif
-
 
             if (i->next==NULL)      // last node found, insert new RexxInterpreter instance
             {
@@ -1258,19 +1276,17 @@ inline logical_t RgfAddRexxInterpreterInstanceToList(RexxThreadContext *rtc, job
         RgfReleaseLock2(RII_lock);
     }
 
-
 #if defined (DEBUG_RII_LIST)
     fprintf(stderr, "<-- RgfAddRexxInterpreterInstanceToList(...): finished adding new Rexx instance c_rii_ID=[%p]; newNode=[%p]/instance=[%p]/next=[%p] | pRoot_RII=[%p].\n",
                                                                    rtc->instance, newNode, newNode->instance, newNode->next, pRoot_RII);
     fflush(stderr);
 #endif
 
-    return rc;          // indicate success
 }
 
 
-// remove given instance from list, if not found, return NULL
-// caller needs to set the lock
+// ----------------------------------------------------------------------------
+    // remove supplied Rexx interpreter instance (RII) from list and return it, if not found, return NULL
 inline RexxInstance * RgfRemoveRexxInterpreterInstanceFromList(RexxInstance *ri)
 {
 #if defined (DEBUG_RII_LIST)
@@ -1335,14 +1351,11 @@ inline RexxInstance * RgfRemoveRexxInterpreterInstanceFromList(RexxInstance *ri)
 
     RgfReleaseLock2(RII_lock);
 
-
 #if defined (DEBUG_RII_LIST)
     fprintf(stderr, "RgfRemoveRexxInterpreterInstanceFromList(...): 1b) ri=[%p], bFound=[%d], pRoot_RII=[%p], pRoot_RII->instance=[%p], pRoot_RII->next=[%p]\n",
                                    ri, bFound, pRoot_RII, (pRoot_RII == NULL ? NULL : (pRoot_RII->instance == NULL ? NULL : pRoot_RII->instance)),  (pRoot_RII == NULL ? NULL : (pRoot_RII->next==NULL ? NULL : pRoot_RII->next)));
     fflush(stderr);
 #endif
-
-
 
 #if defined ( RGF_TEAR_DOWN_OREXX_REGISTRY )
         // last Rexx interpreter instance found and about to remove from list?
@@ -1351,46 +1364,50 @@ inline RexxInstance * RgfRemoveRexxInterpreterInstanceFromList(RexxInstance *ri)
                 // make sure we clear the OOREXX_REGISTRYies
         RexxThreadContext *rtc;
 
-#if defined (DEBUG_REXX_ATTACH)
-    fprintf(stderr, "--------------> ooRexx->AttachThread() - RgfRemoveRIIfromList... "); fflush(stderr);
-#endif
+    #if defined (DEBUG_REXX_ATTACH)
+        fprintf(stderr, "--------------> ooRexx->AttachThread() - RgfRemoveRIIfromList... "); fflush(stderr);
+    #endif
 
         logical_t rc=ri->AttachThread(&rtc);    // attach thread to Interpreter instance
 
-#if defined (DEBUG_REXX_ATTACH)
-    fprintf(stderr, "done. -------------->\n"); fflush(stderr);
-#endif
+    #if defined (DEBUG_REXX_ATTACH)
+        fprintf(stderr, "AttachThread() done. -------------->\n"); fflush(stderr);
+    #endif
 
-// DebugBreak();
+    #ifdef WINDOWS
+        //     __asm Int 3;    // break
+        //     DebugBreak();
+
+        // or:
+        // BREAK_HERE_SINGLESTEP();
+    #endif
 
         if (rc)                     // if successful, go ahead
         {
             RgfTearDownOrexxRegistry(rtc);  // clear the OREXX_REGISTRYies
 
-#if defined (DEBUG_REXX_ATTACH)
-    fprintf(stderr, "<-------------- ooRexx->DetachThread() - RgfRemoveRIIfromList... "); fflush(stderr);
-#endif
+    #if defined (DEBUG_REXX_ATTACH)
+        fprintf(stderr, "<-------------- ooRexx->DetachThread() - RgfRemoveRIIfromList... "); fflush(stderr);
+    #endif
 
             rtc->DetachThread();    // detach thread from Interpreter instance
 
-#if defined (DEBUG_REXX_ATTACH)
-    fprintf(stderr, "done. <--------------\n"); fflush(stderr);
-#endif
+    #if defined (DEBUG_REXX_ATTACH)
+        fprintf(stderr, "DetachThread() done. <--------------\n"); fflush(stderr);
+    #endif
 
         }
         else
         {
-#if defined (DEBUG_RII_LIST)
-    fprintf(stderr, "RgfRemoveRexxInterpreterInstanceFromList(...): 2) UNSUCCESSFUL to AttachThread(), prematurely returning! ri=[%p], bFound=[%d], pRoot_RII=[%p], pRoot_RII->instance=[%p], pRoot_RII->next=[%p]\n",
-                                   ri, bFound, pRoot_RII, (pRoot_RII == NULL ? NULL : (pRoot_RII->instance == NULL ? NULL : pRoot_RII->instance)),  (pRoot_RII == NULL ? NULL : (pRoot_RII->next==NULL ? NULL : pRoot_RII->next)));
-    fflush(stderr);
-#endif
+    #if defined (DEBUG_RII_LIST)
+        fprintf(stderr, "RgfRemoveRexxInterpreterInstanceFromList(...): 2) UNSUCCESSFUL to AttachThread(), prematurely returning! ri=[%p], bFound=[%d], pRoot_RII=[%p], pRoot_RII->instance=[%p], pRoot_RII->next=[%p]\n",
+                                       ri, bFound, pRoot_RII, (pRoot_RII == NULL ? NULL : (pRoot_RII->instance == NULL ? NULL : pRoot_RII->instance)),  (pRoot_RII == NULL ? NULL : (pRoot_RII->next==NULL ? NULL : pRoot_RII->next)));
+        fflush(stderr);
+    #endif
             return NULL;            // indicate failure
         }
     }
 #endif
-
-
 
 #if defined (DEBUG_RII_LIST)
     fprintf(stderr, "<-- RgfRemoveRexxInterpreterInstanceFromList(...): 3) bFound=[%d], ri=[%p], pRoot_RII=[%p], pRoot_RII->instance=[%p], pRoot_RII->next=[%p]\n",
@@ -1425,9 +1442,9 @@ inline RexxInstance * RgfRemoveRexxInterpreterInstanceFromList(RexxInstance *ri)
 
 
 
+// ----------------------------------------------------------------------------
     // returns supplied RexxInstance, if it exists, otherwise the root instance (could be NULL)
     // if argument is NULL, then root RexxInstance is returned
-    // caller needs to set the lock
 inline RexxInstance * RgfGetRexxInterpreterInstanceFromList(RexxInstance *ri)
 {
 
@@ -1442,9 +1459,8 @@ inline RexxInstance * RgfGetRexxInterpreterInstanceFromList(RexxInstance *ri)
     RexxInstance *tmpRi=ri;
     size_t st=0;
 
-
-    RgfAcquireLock2(RII_lock);      // lock access to list of RexxInstance instances
-    if (ri!=NULL && pRoot_RII!=NULL)        // no RexxInstance given, return (any) root RexxInstance
+    RgfAcquireLock2(RII_lock);          // lock access to list of RexxInstance instances
+    if (ri!=NULL && pRoot_RII!=NULL)    // if root RII available and ri given, look for it and return it
     {
         for (PSTRUCT_RII i=pRoot_RII; i!=NULL; i=i->next) // find node
         {
@@ -1457,13 +1473,17 @@ inline RexxInstance * RgfGetRexxInterpreterInstanceFromList(RexxInstance *ri)
     #if defined (WINDOWS)    // rgf, 2009-08-20
          if (st>10)
          {
+
+             //     __asm Int 3;    // break
              DebugBreak();
+
+             // or:
+             // BREAK_HERE_SINGLESTEP();
          }
     #endif
-
 #endif
 
-            if (i->instance==ri)        // node found, remove it
+            if (i->instance==ri)        // node found!
             {
 
 #if defined (DEBUG_RII_LIST)
@@ -1495,6 +1515,7 @@ inline RexxInstance * RgfGetRexxInterpreterInstanceFromList(RexxInstance *ri)
 }
 
 
+// ----------------------------------------------------------------------------
     // rgf, 2012-02-07: returns the PSTRUCT_RII, such that exit and command handlers can get
     //                  get a fast handle on rajo and rexxconf for calling into Java handlers;
     //                  if supplied RII or no root RII exits, returns NULL
@@ -1523,27 +1544,31 @@ inline PSTRUCT_RII RgfGetRexxInterpreterInstanceStructFromList(RexxInstance *ri)
     for (i=pRoot_RII; i!=NULL; i=i->next) // find node
     {
 
+
 #if defined (DEBUG_RII_LIST)
-fprintf(stderr, "<>RgfGetRexxInterpreterInstanceStructFromList<>, st=[%lu]: pRoot_RII=[%p]: i=[%p], i->instance=[%p], i->next=[%p]; received ri=[%p]\n",
-                                                          ++st, pRoot_RII, i, i->instance, i->next, ri);
-fflush(stderr);
+    fprintf(stderr, "<>RgfGetRexxInterpreterInstanceStructFromList<>, st=[%lu]: pRoot_RII=[%p]: i=[%p], i->instance=[%p], i->next=[%p]; received ri=[%p]\n",
+                                                              ++st, pRoot_RII, i, i->instance, i->next, ri);
+    fflush(stderr);
 
-#if defined (WINDOWS)    // rgf, 2009-08-20
-     if (st>10)
-     {
-         DebugBreak();
-     }
-#endif
+    #if defined (WINDOWS)    // rgf, 2009-08-20
+         if (st>10)
+         {
+             //     __asm Int 3;    // break
+             DebugBreak();
 
+             // or:
+             // BREAK_HERE_SINGLESTEP();
+         }
+    #endif
 #endif
 
         if (i->instance==ri)        // node found, return it
         {
 
 #if defined (DEBUG_RII_LIST)
-fprintf(stderr, "<>RgfGetRexxInterpreterInstanceStructFromList<>, st=[%lu]: i=[%p], i->instance=[%p], ri=[%p] FOUND/FOUND/FOUND!\n",
-                                                          ++st, i, i->instance, ri);
-fflush(stderr);
+    fprintf(stderr, "<>RgfGetRexxInterpreterInstanceStructFromList<>, st=[%lu]: i=[%p], i->instance=[%p], ri=[%p] FOUND/FOUND/FOUND!\n",
+                                                              ++st, i, i->instance, ri);
+    fflush(stderr);
 #endif
 
             bFound=1;
@@ -1563,13 +1588,13 @@ fflush(stderr);
 
 
 
-
 // OREXX_REGISTRY ============================================================================================
   // some helpful inline functions
 
     // if not a RexxThreadContext available, use: "context->threadContext" instead
 
 
+// ----------------------------------------------------------------------------
     // return entry in .local, if avaialble or .nil instead
 inline RexxObjectPtr rgfGetEntryFromLocal (RexxThreadContext *rtc, CSTRING entry)
 {
@@ -1579,6 +1604,7 @@ inline RexxObjectPtr rgfGetEntryFromLocal (RexxThreadContext *rtc, CSTRING entry
     return rop2;
 }
 
+// ----------------------------------------------------------------------------
     // return entry in .environment, if avaialble or .nil instead
 inline RexxObjectPtr rgfGetEntryFromEnvironment (RexxThreadContext *rtc, CSTRING entry)
 {
@@ -1589,28 +1615,31 @@ inline RexxObjectPtr rgfGetEntryFromEnvironment (RexxThreadContext *rtc, CSTRING
 }
 
 
-
-
+// ----------------------------------------------------------------------------
 // RII          Rexx Interpreter Instance
 // OID          Object ID: the identityHashValue as a string
 
   // defines the registry for proxied Rexx objects
      // key: obj~identityHash;
 RexxDirectoryObject OREXX_REGISTRY            = NULL;   // one entry per cached Rexx object
+RexxDirectoryObject OREXX_REGISTRY_REFCOUNTER = NULL;   // refcounter per registered Rexx object (could be referenced multiple times)
+
+// TODO: rgf, 2017-08-16: not needed anymore
+// #define USE_OREXX_REGISTRY_PACKAGE      // 2009-06-10: use package object from RexxProxy
+
+// TODO: rgf, 2017-05-15 - remove this logic (probably not needed anymore) ?
+// #define USE_RII2OID_RELATION
 
 #if defined (USE_OREXX_REGISTRY_PACKAGE)
     RexxDirectoryObject OREXX_REGISTRY_PACKAGE= NULL;   // one entry per cached Rexx object containing the object's package object
 #endif
 
-RexxDirectoryObject OREXX_REGISTRY_REFCOUNTER = NULL;   // refcounter per registered Rexx object (could be referenced multiple times)
-
-// TODO: rgf, 2017-05-15 - remove this logic (probably not needed anymore) ?
-// #define USE_RII2OID_RELATION
-
 #ifdef USE_RII2OID_RELATION
    RexxObjectPtr OREXX_RII2_OID_RELATION = NULL;       // rii->obj_ID; allows to free all rii-related proxies, if an rii ends
 #endif
 
+
+// ----------------------------------------------------------------------------
     // create the OREXX_REGISTRY and OREXX_REGISTRY_REFCOUNTER, do a RequestGlobalReference() on each
 inline void RgfSetupOrexxRegistry(RexxThreadContext *rtc)
 {
@@ -1655,6 +1684,7 @@ inline void RgfSetupOrexxRegistry(RexxThreadContext *rtc)
 }
 
 
+// ----------------------------------------------------------------------------
     // free OREXX_REGISTRY and OREXX_REGISTRY_REFCOUNTER, do a ReleaseGlobalReference() on each
     // this will be called by the library unloader, i.e. at shutdown of BSF4Rexx,
     // hence no locking necessary anymore
@@ -1665,13 +1695,6 @@ inline void RgfTearDownOrexxRegistry(RexxThreadContext *rtc)
     fprintf(stderr, "--> RgfTearDownOrexxRegistry(), rii_id=[%p]... \n", rtc->instance);
     fflush(stderr);
 #endif
-
-//    const char c_rii_ID[ RGF_POINTER_STRING_WIDTH ]="";
-//    RgfPointer2String(rtc->instance, c_rii_ID);     // get Root node's charater value
-// fprintf(stderr, "c_rii_ID=[%s]\n", c_rii_ID);
-// fflush(stderr);
-
-
 
     if (OREXX_REGISTRY!=NULL)                       // if in debug/testing mode, it could be that it's not initialized
     {
@@ -1695,17 +1718,17 @@ inline void RgfTearDownOrexxRegistry(RexxThreadContext *rtc)
 #if defined (USE_OREXX_REGISTRY_PACKAGE)
     if (OREXX_REGISTRY_PACKAGE!=NULL)
     {
-#if defined (DEBUG_OREXX_REGISTRY)
-    fprintf(stderr, "RgfTearDownOrexxRegistry()..., SendMessage0(): emptying OREXX_REGISTRY_PACKAGE\n");
-    fflush(stderr);
-#endif
+    #if defined (DEBUG_OREXX_REGISTRY)
+        fprintf(stderr, "RgfTearDownOrexxRegistry()..., SendMessage0(): emptying OREXX_REGISTRY_PACKAGE\n");
+        fflush(stderr);
+    #endif
 
         rtc->SendMessage0(OREXX_REGISTRY_PACKAGE, "EMPTY");     // empty all objects to give them a chance to uninit
 
-#if defined (DEBUG_OREXX_REGISTRY)
-    fprintf(stderr, "RgfTearDownOrexxRegistry()..., ReleaseGlobalReference(): OREXX_REGISTRY_PACKAGE\n");
-    fflush(stderr);
-#endif
+    #if defined (DEBUG_OREXX_REGISTRY)
+        fprintf(stderr, "RgfTearDownOrexxRegistry()..., ReleaseGlobalReference(): OREXX_REGISTRY_PACKAGE\n");
+        fflush(stderr);
+    #endif
 
         rtc->ReleaseGlobalReference(OREXX_REGISTRY_PACKAGE);    // allow directory object to be garbage collected as well
         OREXX_REGISTRY_PACKAGE=NULL;
@@ -1734,17 +1757,18 @@ inline void RgfTearDownOrexxRegistry(RexxThreadContext *rtc)
 #ifdef USE_RII2OID_RELATION
     if (OREXX_RII2_OID_RELATION!=NULL)            // if in debug/testing mode, it could be that it's not initialized
     {
-#if defined (DEBUG_OREXX_REGISTRY)
-    fprintf(stderr, "RgfTearDownOrexxRegistry()..., SendMessage0(): emptying OREXX_RII2_OID_RELATION\n");
-    fflush(stderr);
-#endif
+    #if defined (DEBUG_OREXX_REGISTRY)
+        fprintf(stderr, "RgfTearDownOrexxRegistry()..., SendMessage0(): emptying OREXX_RII2_OID_RELATION\n");
+        fflush(stderr);
+    #endif
 
         rtc->SendMessage0(OREXX_RII2_OID_RELATION, "EMPTY");  // empty all objects to give them a chance to uninit
 
-#if defined (DEBUG_OREXX_REGISTRY)
-    fprintf(stderr, "RgfTearDownOrexxRegistry()..., ReleaseGlobalReference(): OREXX_RII2_OID_RELATION\n");
-    fflush(stderr);
-#endif
+    #if defined (DEBUG_OREXX_REGISTRY)
+        fprintf(stderr, "RgfTearDownOrexxRegistry()..., ReleaseGlobalReference(): OREXX_RII2_OID_RELATION\n");
+        fflush(stderr);
+    #endif
+
         rtc->ReleaseGlobalReference(OREXX_RII2_OID_RELATION); // allow relation object to be garbage collected as well
         OREXX_RII2_OID_RELATION=NULL;
     }
@@ -1759,6 +1783,7 @@ inline void RgfTearDownOrexxRegistry(RexxThreadContext *rtc)
 }
 
 
+// ----------------------------------------------------------------------------
     // put received Rexx object into the OREXX_REGISTRY and set reference counter to 1; if it exists already
     // just increase the reference counter
 inline CSTRING RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj, RexxPackageObject rpo)
@@ -1843,6 +1868,7 @@ inline CSTRING RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj, Rex
 
 #ifdef USE_RII2OID_RELATION
     // =============================================================================================================
+    // ----------------------------------------------------------------------------
         // remove Rexx object from the JNI registry if counter is 1, otherwise just reduce reference counter by 1;
         // returns number of Rexx proxy objects removed
         //          -1 if not found
@@ -1861,7 +1887,7 @@ inline CSTRING RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj, Rex
         logical_t rc=ri->AttachThread(&rtc);  // attach thread to Interpreter instance
 
     #if defined (DEBUG_REXX_ATTACH) || defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
-        fprintf(stderr, "done. rc=[%d]-------------->\n", (int) rc); fflush(stderr);
+        fprintf(stderr, "AttachThread() done. rc=[%d]-------------->\n", (int) rc); fflush(stderr);
     #endif
 
         if (!rc)                // if successful, go ahead
@@ -1881,7 +1907,7 @@ inline CSTRING RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj, Rex
         rtc->DetachThread();    // detach thread from Interpreter instance
 
     #if defined (DEBUG_REXX_ATTACH) || defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
-        fprintf(stderr, "done. <--------------\n"); fflush(stderr);
+        fprintf(stderr, "DetachThread() done. <--------------\n"); fflush(stderr);
     #endif
 
 
@@ -1895,6 +1921,7 @@ inline CSTRING RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj, Rex
     }
 
 
+    // ----------------------------------------------------------------------------
         // worker function
     inline int32_t RgfRemoveAllProxyObjectsByRIID2(RexxThreadContext *rtc, RexxStringObject rii_id)
     {
@@ -1976,6 +2003,7 @@ inline CSTRING RgfAddProxyObject(RexxThreadContext *rtc, RexxObjectPtr robj, Rex
 
 
 // =============================================================================================================
+    // ----------------------------------------------------------------------------
     // remove Rexx object from the JNI registry if counter is 1, otherwise just reduce reference counter by 1;
     // returns references left: >= 0
     //          -1 if not found
@@ -2008,7 +2036,7 @@ inline int32_t RgfRemoveProxyObject(char * c_obj_id)
     logical_t rc=ri->AttachThread(&rtc);  // attach thread to Interpreter instance
 
 #if defined (DEBUG_REXX_ATTACH) || defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
-    fprintf(stderr, "done. rc=[%d]-------------->\n", (int) rc); fflush(stderr);
+    fprintf(stderr, "AttachThread() done. rc=[%d]-------------->\n", (int) rc); fflush(stderr);
 #endif
 
 
@@ -2029,15 +2057,13 @@ inline int32_t RgfRemoveProxyObject(char * c_obj_id)
     rtc->DetachThread();    // detach thread from Interpreter instance
 
 #if defined (DEBUG_REXX_ATTACH) || defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
-    fprintf(stderr, "done. <--------------\n"); fflush(stderr);
+    fprintf(stderr, "DetachThread() done. <--------------\n"); fflush(stderr);
 #endif
-
 
 #if defined (DEBUG_REXX_PROXY) || defined (DEBUG_UNREGISTER_REXX_OBJECT)
     fprintf(stderr, "<--- RgfRemoveProxyObject(), end:   c_obj_id=[%.256s], remaining references=[%d]\n", c_obj_id, refs);
     fflush(stderr);
 #endif
-
 
     return refs;
 }
@@ -2058,18 +2084,24 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
 #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
     fprintf(stderr, "          RgfRemoveProxyObject2, acquired REGISTRY_lock, before rtc->SendMessage1(\"HASENTRY\",[%s]) ...\n",cstr_obj_id); fflush(stderr);
 
-    fprintf(stderr, "\t\thasIndex([%s]): OREXX_REGISTRY=[%d], OREXX_REGISTRY_REFCOUNTER=[%d], OREXX_REGISTRY_PACKAGE=[%d]\n",
+    #if defined (USE_OREXX_REGISTRY_PACKAGE)
+        fprintf(stderr, "\t\thasIndex([%s]): OREXX_REGISTRY=[%d], OREXX_REGISTRY_REFCOUNTER=[%d], OREXX_REGISTRY_PACKAGE=[%d]\n",
+    #else
+        fprintf(stderr, "\t\thasIndex([%s]): OREXX_REGISTRY=[%d], OREXX_REGISTRY_REFCOUNTER=[%d]\n",
+    #endif
                     cstr_obj_id,
                     rtc->SendMessage1(OREXX_REGISTRY, "HASENTRY", obj_id)==orxTrue,
-                    rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "HASENTRY", obj_id)==orxTrue,
-                    rtc->SendMessage1(OREXX_REGISTRY_PACKAGE, "HASENTRY", obj_id)==orxTrue);
+                    rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "HASENTRY", obj_id)==orxTrue
+    #if defined (USE_OREXX_REGISTRY_PACKAGE)
+                    , rtc->SendMessage1(OREXX_REGISTRY_PACKAGE, "HASENTRY", obj_id)==orxTrue
+    #endif
+                    );
 
     if (rtc->SendMessage1(OREXX_REGISTRY, "HASENTRY", obj_id)==orxTrue)
     {
         RexxObjectPtr dbgRop=rtc->SendMessage1(OREXX_REGISTRY, "ENTRY", obj_id);
         fprintf(stderr, "\t\tOREXX_REGISTRY~HASENTRY(obj_id)~string=[%s]\n", rtc->ObjectToStringValue(dbgRop));fflush(stderr);
     }
-
 
     #if defined (USE_OREXX_REGISTRY_PACKAGE)
             fprintf(stderr, "\t\t\thasItem([%s])=OREXX_RII2_OID_RELATION=[%d]\n",
@@ -2078,7 +2110,6 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
 
     #endif
     fflush(stderr);
-
 
 #endif
 
@@ -2143,15 +2174,12 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
 
 #endif
 
-
-
 #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
     fprintf(stderr, "          RgfRemoveProxyObject2, before removing from OREXX_REGISTRY_REFCOUNTER=[%p]...\n", OREXX_REGISTRY_REFCOUNTER);  fflush(stderr);
 #endif
             rop=rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "REMOVE", obj_id); // add counter entry, set to "1"
             rtc->ReleaseLocalReference(rop);
             // rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "REMOVE", obj_id); // add counter entry, set to "1"
-
 
 #ifdef USE_RII2OID_RELATION
     #if defined (DEBUG_UNREGISTER_REXX_OBJECT_NOISY)
@@ -2182,7 +2210,7 @@ inline int32_t RgfRemoveProxyObject2(RexxThreadContext *rtc, RexxStringObject ob
 }
 
 
-
+// ----------------------------------------------------------------------------
     // get and return the ooRexx objects stored with 'obj_id' in the registry
 inline RexxObjectPtr RgfGetProxyObject(RexxThreadContext *rtc, RexxStringObject obj_id)
 {
@@ -2190,7 +2218,6 @@ inline RexxObjectPtr RgfGetProxyObject(RexxThreadContext *rtc, RexxStringObject 
     fprintf(stderr, "---> RgfGetProxyObject(), begin: obj_id=[%.256s]\n", rtc->CString(obj_id));
     fflush(stderr);
 #endif
-
 
     RgfAcquireLock2(REGISTRY_lock);     // make sure, no one else can interfere
 
@@ -2235,7 +2262,7 @@ fprintf(stderr, "*** PANIC! PANIC! PANIC! RgfGetProxyObject(...), proxy object w
                 rtc->CString(rtc->SendMessage0(obj_id        , "STRING")) );
 fflush(stderr);
 
-// TODO: rgf, 2015-08-06: create an exception/condition ?
+// TODO: rgf, 2015-08-06: shall we create an exception/condition in this case?
         return rtc->Nil();              // return the .nil object
     }
     return obj;
@@ -2243,6 +2270,7 @@ fflush(stderr);
 
 
 
+// ----------------------------------------------------------------------------
     // get and return the ooRexx objects stored with 'obj_id' in the registry
 inline RexxObjectPtr RgfGetProxyObjectRefCount(RexxThreadContext *rtc, RexxStringObject obj_id)
 {
@@ -2250,7 +2278,6 @@ inline RexxObjectPtr RgfGetProxyObjectRefCount(RexxThreadContext *rtc, RexxStrin
     fprintf(stderr, "---> RgfGetProxyObjectRefCount(), begin: obj_id=[%.256s]\n", rtc->CString(obj_id));
     fflush(stderr);
 #endif
-
 
     RgfAcquireLock2(REGISTRY_lock);     // make sure, no one else can interfere
     RexxObjectPtr obj=rtc->SendMessage1(OREXX_REGISTRY_REFCOUNTER, "AT", obj_id);
@@ -2266,7 +2293,6 @@ inline RexxObjectPtr RgfGetProxyObjectRefCount(RexxThreadContext *rtc, RexxStrin
     fflush(stderr);
 #endif
 
-
     if (obj==NULL) {                    // no entry as nothing returned !
         return rtc->Nil();              // return the .nil object
     }
@@ -2277,6 +2303,7 @@ inline RexxObjectPtr RgfGetProxyObjectRefCount(RexxThreadContext *rtc, RexxStrin
 
 
 #if defined (USE_OREXX_REGISTRY_PACKAGE)
+    // ----------------------------------------------------------------------------
         // get and return the ooRexx objects stored with 'obj_id' in the registry
     inline RexxObjectPtr RgfGetProxyObjectPackage(RexxThreadContext *rtc, RexxStringObject obj_id)
     {
@@ -2292,68 +2319,6 @@ inline RexxObjectPtr RgfGetProxyObjectRefCount(RexxThreadContext *rtc, RexxStrin
 #endif
 
 
-
-// TODO: RgfAcquire_Lock2 obsoleted?
-    // ===> 20090503: MUTEX, blocking invocation, waits until lock was successfully acquired
-inline void RgfAcquire_Lock2(
-    #ifdef WINDOWS
-        HANDLE
-    #else  // UNIX
-        pthread_mutex_t
-    #endif
-                          lock)
-{
-
-#if defined (RGF_INFO)
-    thread_id_t tid=RgfGetTID();
-
-    fprintf(stderr, "*** RGF_INFO: RgfAcquire_Lock2(lock): tid=[%lu] ... \n", (unsigned long) tid);
-    fflush(stderr);
-#endif
-
-#ifdef WINDOWS // WIN32
-    WaitForSingleObject(lock, INFINITE);
-#elif defined UNIX
-    pthread_mutex_lock(&lock);    // TODO: potentially deadlock on nested invocation right before return ?
-#endif
-
-
-#if defined (RGF_INFO)
-    fprintf(stderr, "*** RGF_INFO: RgfAcquire_Lock2(lock): tid=[%lu] ... now ACQUIRED !\n", (unsigned long) tid);
-    fflush(stderr);
-#endif
-
-}
-
-
-
-// TODO: RgfRelease_Lock2 obsoleted?
-    // ===> 2009-05-03: MUTEX, release lock
-inline void RgfRelease_Lock2(
-    #ifdef WINDOWS
-        HANDLE
-    #else  // UNIX
-        pthread_mutex_t
-    #endif
-                          lock)
-{
-#if defined (RGF_INFO)
-    thread_id_t tid=RgfGetTID();
-    fprintf(stderr, "*** RGF_INFO: RgfRelease_Lock2(lock): tid=[%lu] ...\n", (unsigned long) tid);
-    fflush(stderr);
-#endif
-
-#if defined WINDOWS
-    ReleaseMutex(lock);
-#else
-    pthread_mutex_unlock(&lock);
-#endif
-
-#if defined (RGF_INFO)
-    fprintf(stderr, "*** RGF_INFO: RgfRelease_Lock2(): tid=[%lu] ... now RELEASED !\n", (unsigned long) tid);
-    fflush(stderr);
-#endif
-}
 // <=== (END) ========================> maintain list of RexxInterpreterInstances, OREXX_REGISTRY <========
 
 
@@ -2406,31 +2371,31 @@ typedef struct _STRUCT_JVM {
     jmethodID                   mid_NetRexx_toString;   // "netrexx/lang/Rexx", 20120311, rgf
 #endif
 
-    jclass                      clz_RexxException;  // "org/rexxla/bsf/engines/rexx/RexxException"
-    jmethodID                   mid_RexxException_init;     // constructor
+    jclass                      clz_RexxException;      // "org/rexxla/bsf/engines/rexx/RexxException"
+    jmethodID                   mid_RexxException_init; // constructor
 
-    jclass                      clz_String;         // java.lang.String class object
-    jmethodID                   mid_String_getBytes;// "getBytes"-method
-    jmethodID                   mid_String_initFromByteArray;  // <init> with byte-array
+    jclass                      clz_String;             // java.lang.String class object
+    jmethodID                   mid_String_getBytes;    // "getBytes"-method
+    jmethodID                   mid_String_initFromByteArray;   // <init> with byte-array
     jstring                     jstring_emptyUTFString; // Java empty string
 
-    jclass                      clz_RexxProxy;      // org.rexxla.bsf.engines.rexx.RexxProxy class object
+    jclass                      clz_RexxProxy;          // org.rexxla.bsf.engines.rexx.RexxProxy class object
     jmethodID                   mid_RexxProxy_init;             // constructor
     jmethodID                   mid_RexxProxy_getRexxObjectID;  // RexxProxy.getRexxObjectID()
     jmethodID                   mid_RexxProxy_newJavaOrExtendedProxyInstanceFromRexx;
-    jmethodID                   mid_RexxProxy_setBsfRegistryKey;   // RexxProxy.setBsfRegistry()
+    jmethodID                   mid_RexxProxy_setBsfRegistryKey;    // RexxProxy.setBsfRegistry()
 
-    jclass                      clz_Throwable;      // java.lang.Throwable class object
+    jclass                      clz_Throwable;          // java.lang.Throwable class object
 
     // rgf, 2012-02-07
     jclass                      clz_RexxConfiguration;  // org.rexxla.bsf.engines.rexx.RexxConfiguration
-    // public RexxExitHandler getExitHandler(int function)
+
+                                                        // public RexxExitHandler getExitHandler(int function)
     jmethodID                   mid_RexxConfiguration_getExitHandler;
-    // public RexxCommandHandler getCommandHandler(String name)
+                                                        // public RexxCommandHandler getCommandHandler(String name)
     jmethodID                   mid_RexxConfiguration_getCommandHandler;
 
-
-
+/* rgf, 2017-08-19: started to remove dead code; however: first debug exit and command handlers, there is a problem requiring BSF.CLS there!
 #ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES // rgf, 2012-02-17
 
     jclass                      clz_RexxExitHandler;    // org.rexxla.bsf.engines.rexx.RexxExitHandler
@@ -2441,6 +2406,7 @@ typedef struct _STRUCT_JVM {
     // public abstract Object handleCommand(String address, String command, Object[] slot);
     jmethodID                   mid_RexxCommandHandler_handleCommand;
 #endif
+*/
 
 } STRUCT_JVM;
 
@@ -2463,11 +2429,11 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
 #endif
 
 
-    RgfAcquireLock2(RII_creation_lock);      // 2012-12-30, rgf: lock access to list of RexxInstance instances to this thread
+    RgfAcquireLock2(JVM_setup_lock);    // 2012-12-30, rgf: lock access for setting up JVM structure
 
-    if  (struct_JVM->jvm!=NULL)     // already initialized, don't reprocess
+    if  (struct_JVM->jvm!=NULL)         // already initialized, don't reprocess
     {
-        RgfReleaseLock2(RII_creation_lock);      // 2012-12-30, rgf: unlock
+        RgfReleaseLock2(JVM_setup_lock);
         return;
     }
 
@@ -2537,6 +2503,7 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
         // public RexxCommandHandler getCommandHandler(String name)
     struct_JVM->mid_RexxConfiguration_getCommandHandler=env->GetMethodID(tmpClz, "getCommandHandler", "(Ljava/lang/String;)Lorg/rexxla/bsf/engines/rexx/RexxCommandHandler;")  ;
 
+/*
 #ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES    // rgf, 2012-02-17
     tmpClz=env->FindClass("org/rexxla/bsf/engines/rexx/RexxExitHandler");    // get class object
     struct_JVM->clz_RexxExitHandler=tmpClz;    // org.rexxla.bsf.engines.rexx.RexxExitHandler
@@ -2555,6 +2522,7 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
            // "handleCommand", "(Ljava/lang/String;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;");
     // rgf, 2012-02-07 --end
 #endif
+*/
 
         // create global references for these important objects
     struct_JVM->clz_Object       =(jclass)  env->NewGlobalRef(struct_JVM->clz_Object);
@@ -2577,10 +2545,12 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
     // rgf, 2012-02-07 --begin
     struct_JVM->clz_RexxConfiguration =(jclass)  env->NewGlobalRef(struct_JVM->clz_RexxConfiguration);
 
+/*
 #ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES    // rgf, 2012-02-17
     struct_JVM->clz_RexxExitHandler   =(jclass)  env->NewGlobalRef(struct_JVM->clz_RexxExitHandler);
     struct_JVM->clz_RexxCommandHandler=(jclass)  env->NewGlobalRef(struct_JVM->clz_RexxCommandHandler);
 #endif
+*/
     // rgf, 2012-02-07 --end
 
 
@@ -2628,6 +2598,7 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxConfiguration_getExitHandler   =[%p]\n",   struct_JVM->mid_RexxConfiguration_getExitHandler);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxConfiguration_getCommandHandler=[%p]\n",   struct_JVM->mid_RexxConfiguration_getCommandHandler);
 
+/*
 #ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES    // rgf, 2012-02-17
    fprintf(stderr, "\tclz_RexxExitHandler   =[%p]\n", struct_JVM->clz_RexxExitHandler);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxExitHandler_handleExit         =[%p]\n",   struct_JVM->mid_RexxExitHandler_handleExit);
@@ -2635,13 +2606,14 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
    fprintf(stderr, "\tclz_RexxCommandHandler=[%p]\n", struct_JVM->clz_RexxCommandHandler);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxCommandHandler_handleCommand   =[%p]\n",   struct_JVM->mid_RexxCommandHandler_handleCommand);
 #endif
+*/
 
    fprintf(stderr, "---\n");
    fflush(stderr);
 
 #endif
 
-   RgfReleaseLock2(RII_creation_lock);      // 2012-12-30, rgf: unlock
+   RgfReleaseLock2(JVM_setup_lock);
 
 }
 
@@ -2652,10 +2624,10 @@ inline void uninit_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM)
    fprintf(stderr, "uninit_STRUCT_JVM(), 1 ...\n");
 #endif
 
-   RgfAcquireLock2(RII_creation_lock);      // 2012-12-30, rgf: lock access to list of RexxInstance instances to this thread
-   if (struct_JVM->jvm==NULL)   // no JVM, no uninits necessary
+   RgfAcquireLock2(JVM_setup_lock);     // lock access for setting up JVM structure
+   if (struct_JVM->jvm==NULL)           // no JVM, no uninits necessary
    {
-       RgfReleaseLock2(RII_creation_lock);      // 2012-12-30, rgf: unlock
+       RgfReleaseLock2(JVM_setup_lock);
        return;
    }
 
@@ -2680,10 +2652,12 @@ inline void uninit_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM)
     // rgf, 2012-02-07 --begin
     env->DeleteGlobalRef(struct_JVM->clz_RexxConfiguration);
 
+/*
 #ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES    // rgf, 2012-02-17
     env->DeleteGlobalRef(struct_JVM->clz_RexxExitHandler);
     env->DeleteGlobalRef(struct_JVM->clz_RexxCommandHandler);
 #endif
+*/
     // rgf, 2012-02-07 --end
 
 
@@ -2702,7 +2676,7 @@ inline void uninit_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM)
     fprintf(stderr, "uninit_STRUCT_JVM(), 2: env->ExceptionCheck()=[%d]\n", env->ExceptionCheck());
 #endif
 
-    RgfReleaseLock2(RII_creation_lock);      // 2012-12-30, rgf: unlock
+    RgfReleaseLock2(JVM_setup_lock);
 }
 
 
@@ -3262,12 +3236,12 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
     fprintf(stderr, "RgfProcessJArgs(...): riid=[%p]\n\t---> len=[%d], len=[%d], len+(slotDir==NULL ? 0 : 1)=[%d], [%lu]\n\tCheckCondition=[%d] <---\n",
                     riid, (int) len, (int) len, (int) len+(slotDir==NULL ? 0 : 1) ,(size_t) (len+ (slotDir==NULL ? 0 : 1)),(int) rtc->CheckCondition());fflush(stderr);
     fprintf(stderr, "\triid=[%p] ---> ra~size=[%lu], ra~items=[%lu]\n",riid, rtc->ArraySize(ra),rtc->ArrayItems(ra));fflush(stderr);
-    fprintf(stderr, "\tj_args.length=[%d]\n", env->GetArrayLength(j_args));
+    fprintf(stderr, "\tj_args.length=[%ld]\n", (long int) env->GetArrayLength(j_args));
 
     jsize size=env->GetArrayLength(j_args);
     for (jsize i=0; i<size; i++)
     {
-       fprintf(stderr, "\tj_args[%d/%d]: ", i, size); fflush(stderr);
+       fprintf(stderr, "\tj_args[%ld/%ld]: ", (long int) i, (long int) size); fflush(stderr);
        jobject jo=env->GetObjectArrayElement(j_args, i);
        if (jo==NULL)
        {
@@ -3289,7 +3263,7 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
     logical_t  bClzBsf=(clzBSF!=rtc->Nil());    // determine whether we have .BSF available
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS )
-   fprintf(stderr, "**** //1// bClzBsf=[%d], rtc->Nil()=[%p], clzBSF=[%p]\n", bClzBsf, rtc->Nil(), clzBSF);
+   fprintf(stderr, "**** //1// bClzBsf=[%lu], rtc->Nil()=[%p], clzBSF=[%p]\n", bClzBsf, rtc->Nil(), clzBSF);
 
    if (clzBSF!=NULL)
    {
@@ -3387,8 +3361,8 @@ if (rtc->CheckCondition())
     {
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS)
-    fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], j_args=[%p], i=[%d]<len=[%d]\n",
-                    riid, j_args, i, len);fflush(stderr);
+    fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], j_args=[%p], i=[%d]<len=[%ld]\n",
+                    riid, j_args, i, (long int) len);fflush(stderr);
 #endif
 
         jobject jobj=env->GetObjectArrayElement(j_args, i); // get array element
@@ -3752,6 +3726,8 @@ inline void createAttachErrorMessageNew(CSTRING title, char *buf, size_t bufLen,
     }
 }
 
+
+
     // Create the Rexx exception message, if something went wrong with environmentAttachToNew
 inline RexxStringObject createAttachErrorMessageRSONew(RexxCallContext *rcc, CSTRING title, PSTRUCT_ATTACH_PARAM param)
 {
@@ -3861,7 +3837,7 @@ inline RexxStringObject createAttachErrorMessageRSONew(RexxCallContext *rcc, CST
 void environmentDetachFromNew(PSTRUCT_ATTACH_PARAM param)
 {
     #if defined (DEBUG_RGF_ATTACH_NEW)
-        fprintf(stderr, "environmentDetachFromNew(), param->bDetach=[%d]\n", param->bDetach);
+        fprintf(stderr, "environmentDetachFromNew(), param->bDetach=[%lu]\n", param->bDetach);
         fflush(stderr);
     #endif
 
@@ -3945,6 +3921,7 @@ inline thread_id_t RgfGetTID()
 }
 
 
+// This function allows to serializes access to "environmentAttachToNew(&param)" and "environmentDetachFromNew(&param)"
     // ===> 2008-07-23: MUTEX, blocking invocation, waits until lock was successfully acquired
     //                  - initializing/setting up of 'JRST_lock' is done in JNI_OnLoad()
 inline void RgfAcquireLock()
@@ -3973,6 +3950,7 @@ inline void RgfAcquireLock()
 
 
 
+// This function allows to serializes access to "environmentAttachToNew(&param)" and "environmentDetachFromNew(&param)"
     // ===> 2008-07-23: MUTEX, release lock
 inline void RgfReleaseLock()
 {
@@ -4488,7 +4466,7 @@ inline jobject RgfRexxObject2JavaObject(
                                             );
 
 #if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_REXX_OBJECT_TO_JAVA) || defined (DEBUG_ARRAY_ARGS)
-     fprintf(stderr, "-> RgfRexxObject2JavaObject(): AFTER creating RexxProxy jresult=[%p], CheckCondition()=[%d]\n",jresult,context->CheckCondition());fflush(stderr);
+     fprintf(stderr, "-> RgfRexxObject2JavaObject(): AFTER creating RexxProxy jresult=[%p], CheckCondition()=[%lu]\n",jresult,context->CheckCondition());fflush(stderr);
 #endif
             }
         }
@@ -4518,7 +4496,7 @@ jobjectArray RgfRexxArray2JavaArray(
 {
 // *** >>>> ????
 #if defined (RGF_INFO_1) || defined (DEBUG_ARRAY_ARGS) // rgf, 20090820
-    fprintf(stderr, "RgfRexxArray2JavaArray():\t 1 - just arrived, CheckCondition()=[%d]...\n", context->CheckCondition());fflush(stderr);
+    fprintf(stderr, "RgfRexxArray2JavaArray():\t 1 - just arrived, CheckCondition()=[%lu]...\n", context->CheckCondition());fflush(stderr);
 #endif
     if (argArray==NULL)     // no object passed in, then return NULL as well
     {
@@ -4537,7 +4515,7 @@ jobjectArray RgfRexxArray2JavaArray(
                               // defaultJVM->jstring_emptyUTFString// (*env).NewStringUTF("")
                               );
 #if defined (RGF_INFO_1) || defined (DEBUG_ARRAY_ARGS) // rgf, 20090820
-    fprintf(stderr, "RgfRexxArray2JavaArray():\t 2 - after creating Java array object 'jarr', CheckCondition()=[%d]...\n", context->CheckCondition());fflush(stderr);
+    fprintf(stderr, "RgfRexxArray2JavaArray():\t 2 - after creating Java array object 'jarr', CheckCondition()=[%lu]...\n", context->CheckCondition());fflush(stderr);
 #endif
 
 
@@ -4587,7 +4565,7 @@ jobjectArray RgfRexxArray2JavaArray(
     }
 
 #if defined (RGF_INFO_1) || defined (DEBUG_ARRAY_ARGS) // rgf, 20120221
-    fprintf(stderr, "RgfRexxArray2JavaArray():\t 4 - before returning, CheckCondition()=[%d]...\n", context->CheckCondition());fflush(stderr);
+    fprintf(stderr, "RgfRexxArray2JavaArray():\t 4 - before returning, CheckCondition()=[%lu]...\n", context->CheckCondition());fflush(stderr);
 #endif
 
     return jarr;
@@ -5452,7 +5430,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
         bCPdefined= (bCPdefined || (strncmp(cTmpStrObj, needle, needleLength)==0));
 #ifdef DEBUG3
     fprintf(stderr, "BsfLoadJava(): Rexx arg # [%lu]=[%.256s]\n", i, cTmpStrObj);
-    fprintf(stderr, "               bCPDefined=[%d], strncmp=[%d]\n", bCPdefined, strncmp(cTmpStrObj, needle, needleLength));
+    fprintf(stderr, "               bCPDefined=[%lu], strncmp=[%d]\n", bCPdefined, strncmp(cTmpStrObj, needle, needleLength));
 #endif
         // create and save supplied option
         size_t tmpLength=strlen(cTmpStrObj);
@@ -7089,17 +7067,6 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
                  context,
                  "%.16s/routine/BSF(), error 3: Java exception occurred: [%s]");
 
-#if defined ( RGF_INVALID_ROUTINE_NIXINOXI )
-    // char tmpStr[2560]=0;"\n<<< BSF(...): ExceptionCheck(), exception occurred:\n[%2048s] >>>\n\n";
-    char tmpStr[2560];
-    // sprintf(tmpStr, "\n<<< BSF(...): ExceptionCheck(), exception occurred:\n[%2048s] >>>\n\n", context->CString(rso));
-    // sprintf(tmpStr, "<<< RGF_INVALID_ROUTINE, RaiseException1(), now context->CheckCondition()=[%d] >>>\n<<< BSF(...): ExceptionCheck(), exception occurred:\n[%.2048s] >>>\n\n",
-    SNPRINTF( tmpStr, 2560, "<<< RGF_INVALID_ROUTINE, RaiseException1(), now context->CheckCondition()=[%d] >>>\n<<< BSF(...): ExceptionCheck(), exception occurred:\n[%.2048s] >>>\n\n",
-                    context->CheckCondition(), context->CString(rso));
-    fprintf(stderr, tmpStr);fflush(stderr);
-//    JNU_MessageBox(a_JRST->penv, tmpStr);
-#endif
-
             // make sure we remove those RexxProxies we registered on this invocation dynamically
             for (size_t z=0; z<nrToRemove; z++)
             {
@@ -7713,7 +7680,7 @@ RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, O
          delete [] title;
 #endif
 
-        RgfAcquireLock2(RII_creation_lock);      // 2012-12-30, rgf: lock access to list of RexxInstance instances to this thread
+        RgfAcquireLock2(JVM_setup_lock);      // lock access for setting up JVM structure
 
         if (currentJVM==NULL)       // invoked by Java, save JVM-pointer
         {
@@ -7740,7 +7707,7 @@ RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, O
 #endif
         }
 
-        RgfReleaseLock2(RII_creation_lock);      // 2012-12-30, rgf: unlock
+        RgfReleaseLock2(JVM_setup_lock);
 
      }
 
@@ -7948,8 +7915,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInitializ
 {
     thread_id_t tid=RgfGetTID();
 
-    RgfAcquireLock2(RII_creation_lock);      // 2012-12-30, rgf: lock access to list of RexxInstance instances to this thread
-// fprintf(stderr, "//// ---> _jniInitialize4Rexx, BEFOR init_STRUCT_JVM, about to return ...\n");fflush(stderr);
+    RgfAcquireLock2(JVM_setup_lock);      // 2012-12-30, rgf: lock access for setting up JVM structure
 
 #if defined (RGF_INFO)  || defined (RGF_JNI)  || defined (DEBUG_JNI_ENTRY)
     fprintf(stderr, "*** RGF_INFO: ..._jniInitialize4Rexx() 1, tid=[%lu], currentJVM=[%p], defaultJVM->jvm=[%p] ... \n",
@@ -8023,14 +7989,13 @@ fprintf(stderr, "//// ---> _jniInitialize4Rexx, #1 AFTER init_STRUCT_JVM, about 
 
 
 #if defined (DEBUG2)  || defined (RGF_JNI)       // ---rgf, 2003-04-30
-    // zeigeGlobs();    // show values for global variables
     fprintf(stderr, "<-- ..._jniInitialize4Rexx() 3, tid=[%lu], about to leave...\n\n",
             (unsigned long) tid);
     fflush(stderr);
 #endif
 
 
-    RgfReleaseLock2(RII_creation_lock);      // 2012-12-30, rgf: unlock
+    RgfReleaseLock2(JVM_setup_lock);
 
     return (jint) 1;              // just return something which can be thought of being true
 }
@@ -8095,13 +8060,12 @@ void RexxEntry rgfInitLocks()
     JRST_lock     = CreateMutex(NULL, FALSE, NULL) ;
     RII_lock      = CreateMutex(NULL, FALSE, NULL)  ;
     REGISTRY_lock = CreateMutex(NULL, FALSE, NULL)  ;
-    RII_creation_lock = CreateMutex(NULL, FALSE, NULL)  ;   // 20121230, rgf
-
-#elif defined UNIX
+    JVM_setup_lock = CreateMutex(NULL, FALSE, NULL)  ;
+#else
     pthread_mutex_init(&JRST_lock, NULL);
     pthread_mutex_init(&RII_lock , NULL);
     pthread_mutex_init(&REGISTRY_lock , NULL);
-    pthread_mutex_init(&RII_creation_lock , NULL);              // 20121230, rgf
+    pthread_mutex_init(&JVM_setup_lock , NULL);
 #endif
 
 #if defined (DEBUG2) || defined (DEBUG40)
@@ -8124,19 +8088,18 @@ void RexxEntry rgfDestroyLocks()
 
     // destroy (uninitialize) critical section var
 #ifdef WINDOWS
-    CloseHandle(JRST_lock    );
-    CloseHandle(RII_lock     );
+    CloseHandle(JRST_lock);
+    CloseHandle(RII_lock);
     CloseHandle(REGISTRY_lock);
-    CloseHandle(RII_creation_lock     );        // 20121230, rgf
+    CloseHandle(JVM_setup_lock);
 #elif defined UNIX
     pthread_mutex_destroy(&JRST_lock);
     pthread_mutex_destroy(&RII_lock);
     pthread_mutex_destroy(&REGISTRY_lock);
-    pthread_mutex_destroy(&RII_creation_lock);      // 20121230, rgf
+    pthread_mutex_destroy(&JVM_setup_lock);
 #endif
 
 #ifdef DEBUG1
-//     fprintf(stderr, " now: bDestroy=[%d]\n", bDestroy);
     fprintf(stderr, "/// in rgfDestroyLocks(), Leaving destroy/delete CRITICAL SECTIION ...\n");
     fflush(stderr);
 #endif
@@ -8486,7 +8449,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         options[idx].option=c_initial_address_environment;
 
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%d], .optionName=[%s], .option=[%.80s]\n",
+    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%ld], .optionName=[%s], .option=[%.80s]\n",
                     idx, options[idx].optionName, (CSTRING) options[idx].option);
 #endif
 
@@ -8502,7 +8465,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         options[idx].optionName=EXTERNAL_CALL_PATH;
         options[idx].option=c_external_call_path;
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%d], .optionName=[%s], external call path=[%s]\n",
+    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%ld], .optionName=[%s], external call path=[%s]\n",
                     idx, options[idx].optionName, c_external_call_path);
 #endif
 
@@ -8519,7 +8482,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
             env->DeleteLocalRef(jstr);
 
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): required library, idx=[%d], .optionName=[%s] | i=[%d]: .option=[%s]\n",
+    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): required library, idx=[%ld], .optionName=[%s] | i=[%d]: .option=[%s]\n",
                     idx, options[idx].optionName, i, (CSTRING) options[idx].option);
 #endif
             idx++;  // increase options index
@@ -8552,7 +8515,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         options[idx].optionName=DIRECT_EXITS;
         options[idx].option=(void *)exits;
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%d], .optionName=[%s]\n",
+    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%ld], .optionName=[%s]\n",
                     idx, options[idx].optionName);
 #endif
 
@@ -8585,7 +8548,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         options[idx].optionName=DIRECT_ENVIRONMENTS;
         options[idx].option=(void *)environments;
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%d], .optionName=[%s]\n",
+    fprintf(stderr, "---> _jniRexxCreateInterpreterInstance(): idx=[%ld], .optionName=[%s]\n",
                     idx, options[idx].optionName);
 #endif
         idx++;  // increase options index
@@ -8596,7 +8559,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 
 
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-    fprintf(stderr, "\n===> _jniRexxCreateInterpreterInstance(): iterating over all options, display option names, idx=[%d], optionCount=[%d]:\n", idx, countOptions);
+    fprintf(stderr, "\n===> _jniRexxCreateInterpreterInstance(): iterating over all options, display option names, idx=[%ld], optionCount=[%d]:\n", idx, countOptions);
 
     {
         for (int i=0; i<countOptions;i++)
@@ -9819,7 +9782,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 #endif
 
 #if defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
-   fprintf(stderr, "...jniRexxSendMessageToRexxObject(): BEFORE SendMessage(), ro=[%p] [%.64s], c_msg=[%.256s], ra=[%p], size=[%u]...\n",ro, rtc->CString(rxStrObj), c_msg, ra, rtc->ArraySize(ra));fflush(stderr);
+   fprintf(stderr, "...jniRexxSendMessageToRexxObject(): BEFORE SendMessage(), ro=[%p] [%.64s], c_msg=[%.256s], ra=[%p], size=[%lu]...\n",ro, rtc->CString(rxStrObj), c_msg, ra, rtc->ArraySize(ra));fflush(stderr);
 #endif
 
 /*
@@ -10043,12 +10006,14 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltI
 #endif
 
 
-// __asm Int 3;    // break
-// DebugBreak();
+#ifdef WINDOWS
+    // __asm Int 3;    // break
+    // DebugBreak();
 
+    // fprintf(stderr, ".._jniRexxHaltInterpreterInstance(...): BREAK_HERE! \n");fflush(stderr);
+    // BREAK_HERE_SINGLESTEP();
+#endif
 
-// fprintf(stderr, ".._jniRexxHaltInterpreterInstance(...): BREAK_HERE! \n");fflush(stderr);
-// BREAK_HERE_SINGLESTEP();
 
         instance->Halt();           // signal HALT to all interpreter threads; a void
     }
@@ -10168,15 +10133,13 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
             return -2;
         }
 
-// TODO: lock
-// RgfAcquireLock2(RII_lock);       // lock access to list of RexxInstance instances
-// __asm Int 3;    // break
-// DebugBreak();
+#ifdef WINDOWS
+    // __asm Int 3;    // break
+    // DebugBreak();
 
-
-// fprintf(stderr, ".._jniRexxTerminateInterpreterInstance(...): BREAK_HERE! \n");fflush(stderr);
-// BREAK_HERE_SINGLESTEP();
-
+    // fprintf(stderr, ".._jniRexxTerminateInterpreterInstance(...): BREAK_HERE! \n");fflush(stderr);
+    // BREAK_HERE_SINGLESTEP();
+#endif
 
         // remove instance from list
 #if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
@@ -11152,6 +11115,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
     int j_exit_rc=0;
 
 #ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES    // rgf, 2012-02-17
+/*
     j_exit_rc=(jint) param.env->CallIntMethod(jhandler,
                                       defaultJVM->mid_RexxExitHandler_handleExit,
                                       jslot,
@@ -11159,6 +11123,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                                       subfunction,
                                       jpb
                                       );
+*/
 #else       // invoke the handler method in the object, if not raise syntax error
     jmethodID jmid=param.env->GetMethodID(param.env->GetObjectClass(jhandler),
                                           CONFIG_REXX_EXIT_HANDLER_NAME,
@@ -11167,12 +11132,12 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
 
     if (param.env->ExceptionCheck())
     {
-#if defined ( RGF_SYSTEM_EXIT_HANDLER )
-    if (exitNumber==RXINI || exitNumber==RXTER)
-    {
-        fprintf(stderr,  "C++ >> >> >> 7 (Java-condition) << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
-    }
-#endif
+    #if defined ( RGF_SYSTEM_EXIT_HANDLER )
+        if (exitNumber==RXINI || exitNumber==RXTER)
+        {
+            fprintf(stderr,  "C++ >> >> >> 7 (Java-condition) << << << 'rexx_exit_handler_entry()', [%s] - returning prematurely!\n",(exitNumber==RXINI ? "RXINI" : "RXTER"));fflush(stderr);
+        }
+    #endif
 
         param.env->ExceptionClear();    // clear the Java exception
 
@@ -11969,7 +11934,7 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
     jstring jcommand=param.env->NewStringUTF(context->CString(command));
 
 #ifndef CONFIG_REXX_HANDLERS_AS_INTERFACES    // rgf, 2012-02-17
-
+/*
     jresult=param.env->CallObjectMethod(jhandler,
                                   defaultJVM->mid_RexxCommandHandler_handleCommand,
                                   jslot,
@@ -11977,7 +11942,7 @@ RexxObjectPtr RexxEntry rexx_command_handler_entry(RexxExitContext *context, Rex
                                   // param.env->NewStringUTF(context->CString(command))
                                   jcommand
                                   );
-
+*/
 #else       // invoke the handler method in the object, if not raise syntax error
     jmethodID jmid=param.env->GetMethodID(param.env->GetObjectClass(jhandler),
                                           CONFIG_REXX_COMMAND_HANDLER_NAME,
@@ -12904,8 +12869,8 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniProcEn
 
 
 #if defined (DEBUG_JNI)
-    fprintf(stderr, "--> invocation type=[%d], c_EnvName=[%s], envBuffer=[%s], c_NewValue=[%s] <--\n",
-                       j_InvocationType, c_EnvName, envBuffer, c_NewValue);
+    fprintf(stderr, "--> invocation type=[%ld], c_EnvName=[%s], envBuffer=[%s], c_NewValue=[%s] <--\n",
+                       (long int) j_InvocationType, c_EnvName, envBuffer, c_NewValue);
     fflush(stderr);
 #endif
 
