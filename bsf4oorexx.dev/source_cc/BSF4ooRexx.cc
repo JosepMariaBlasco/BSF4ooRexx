@@ -8,15 +8,13 @@ remarks:
       routines and public classes
     - using NULL instead of NULLOBJECT, as NULL more clearly indicates that nothing got returend
       (NULLOBJECT could be mistaken to mean .NIL)
-    - native APIs "Condition*()", aber "RaiseException()", inkonsistent; macht's wieder ein Stückchen
-      schwieriger zu verstehen! :(
-      [Begrifflichkeiten inkonsistent]
+    - native APIs "Condition*()", but "RaiseException()", inconsistent; makes it a little bit harder
+      to understand! :(  [Terminology inkonsistent]
 
     - 2010-02-10: no means to test whether a Rexx interpreter instance is still available for
                   executing Rexx code (e.g. in callbacks from Java to Rexx)
 
    last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
-
 
   * This DLL registers implements the Java-ooRexx-bridge in native code, using the ASF (Apache Software Foundation)
   * BSF 2.4 (Bean Scripting Framework)
@@ -24,7 +22,19 @@ remarks:
   *
   * last change: $Revision: 888 $ $Author: Administrator $ $Date: 2010-08-16 16:02:21 +0200 (Mon, 16. Aug 2010) $
 
-    6.0.0   2017-08-18, rgf: start tidying up to make code easier legible (has become a "cemetery" of all versions
+    History:
+
+    6.0.0   2017-08-19, rgf: continue tidying up and refactoring to make code easier legible
+                             - added INFO_* statements for easying debugging calls from Java to Rexx to
+                               help trace down cause of Rexx crashes
+                             - added HOT_FIX_CRASH definition: sleeping/relinquisghing the thread before
+                               doing a Rexx AttachThread() significantly reduces crashes, cf. new function
+                               "hotfix_relinquish_thread()"; trying to remove the crashes by experimenting
+                               with the "rgf_multihreaded" test units to determine number of relinquishes
+                               needed to stabilize; still occassionally/rarely hangs occur
+
+
+    6.0.0   2017-08-18, rgf: start tidying up and refactoring to make code easier legible (has become a "cemetery" of all versions
                              of bsf4rexx and bsf4oorexx in the past 16 years)
 
                              - rename "const char *" (and PSZ) -> CSTRING; removed PSZ definition
@@ -39,7 +49,7 @@ remarks:
                              - remove DEBUG_RAISE_CONDITION
 
                              - TODO: remove dead (commented) code
-                             - TODO: remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
+                             - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
 
     6.0.0   2017-08-15, rgf: - BSFCreateRexxProxy(): use "R[EXXOBJECT]" instead of "R[EXX]" to self-document how
                                the first argument will be  used if of type .string, .method or .array, which
@@ -662,6 +672,16 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 /* */
 
+// rgf, 2017-08-19, add INFO_* definitions for helping debug crash, maybe it is related to creating and terminating Rexx interpreter instances
+// #define INFO_CREATE_RII     // rgf, 2017-08-19
+// #define INFO_TERMINATE_RII  // rgf, 2017-08-19
+// #define INFO_HALT_RII       // rgf, 2017-08-19
+// #define INFO_SEND_MESSAGE_TO_REXX_OBJECT // rgf, 2017-08-19
+// #define INFO_REXX_RUN_PROGRAM   // rgf, 2017-08-19
+
+// rgf, 2017-08-19: hot fix for CRASHes; will slow down flurry of invocations from Java as this adds at least a wait time of 1/100 second (10 ms)
+#define HOT_FIX_CRASH       // rgf, 2017-08-19: hot fix for CRASHes (seems one needs to relinquish thread for 10ms before invoking AttachThread())
+
 
 // Java 1.1 o.k., Java 1.2 trap-popup-window, Java 1.3 shows DLLs does NOT create log-file,
 // Java 1.4 just shows there is "Another exception while handling last error ..
@@ -939,11 +959,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20170818 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170819 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20170818 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170819 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20170818 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170819 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
 #define JAVA_4_REXX     "org/rexxla/bsf/engines/rexx/Java4Rexx"     // 2005-06-02, supportive Java4Rexx-class
@@ -992,6 +1012,22 @@ logical_t bsfDoUnregisterRexxObject=false;
    HANDLE REGISTRY_lock;                // rgf, 2009-06-03
 #endif
 
+
+// ----------------------------------------------------------------------------
+// HOTFIX for crashes (invoking Rexx from native Java threads) by relinquishing the invoked thread for 10ms before doing an AttachThread()
+#ifdef HOT_FIX_CRASH            // 2017-08-19
+   inline void hotfix_relinquish_thread()
+   {
+       #ifdef WINDOWS
+           Sleep(10);       // relinquish thread for at least 10ms (1/100th of a second)
+       #else    // UNIX
+           struct timespec sleepTime;
+           sleepTime.tv_sec  = 0;
+           sleepTime.tv_nsec = 10000000L;   // 10*1000*1000 = 10ms = 1/100th of a second
+           nanosleep(&sleepTime, NULL);
+       #endif
+   }
+#endif
 
 // ----------------------------------------------------------------------------
 //       DEBUG_HIT_ENTER_TO_CONTINUE
@@ -7722,6 +7758,13 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxWaitF
     fflush(stderr);
 #endif
 
+#if defined (INFO_TERMINATE_RII)        // rgf, 2017-08-19
+    static int countRII=0;
+    fprintf(stderr, "<--- arrived in _jniRexxWaitForTermination(),           countRII=[%5d], tid=[%6lu]\n",
+                    ++countRII, (unsigned long) RgfGetTID());
+    fflush(stderr);
+#endif
+
 #ifdef DEBUG        // ---rgf, 2003-04-30
      fprintf(stderr, "..._jniRexxWaitForTermination(), just arrived\n");
 #endif
@@ -7847,6 +7890,14 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSetHa
                     (unsigned long) thisTid);
     fflush(stderr);
 #endif
+
+#if defined (INFO_HALT_RII)        // rgf, 2017-08-19
+    static int countRII=0;
+    fprintf(stderr, "<--- arrived in _jniRexxSetHalt(),                      countRII=[%5d], tid=[%6lu]\n",
+                    ++countRII, (unsigned long) RgfGetTID());
+    fflush(stderr);
+#endif
+
 
     unsigned long tid=0L;
 
@@ -8308,6 +8359,13 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     fflush(stderr);
 #endif
 
+#if defined (INFO_CREATE_RII)           // rgf, 2017-08-19
+    static int countRII=0;
+    fprintf(stderr, "---> arrived in _jniRexxCreateInterpreterInstance(),                      tid=[%6lu]\n",
+                                (unsigned long) RgfGetTID());
+    fflush(stderr);
+#endif
+
 
     // check # of  needed options, allocate necessary memory
         // option[0]: REGISTER_LIBRARY
@@ -8577,6 +8635,12 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         fflush(stderr);
 #endif
 
+#if defined (INFO_CREATE_RII)           // rgf, 2017-08-19
+    fprintf(stderr, "---> SUCCESS in _jniRexxCreateInterpreterInstance(),    countRII=[%5d], tid=[%6lu], rii_id=[%p]\n",
+                    ++countRII, (unsigned long) RgfGetTID(), instance);
+    fflush(stderr);
+#endif
+
 
         // rgf, 20140330: add TID to .local to save the primodal TID for this Rexx interpreter instance
         {
@@ -8608,7 +8672,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         RgfPointer2String(instance, c_rii_ID);  // create a string
 
 #if defined(DEBUG_JNI) || defined (DEBUG40) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
-        fprintf(stderr, "===---=== .._jniRexxCreateInterpreterInstance(...), thisTid=[%lu], CREATED: c_rii_ID={%p]=[%s]\n", (unsigned long) thisTid, instance, c_rii_ID);
+        fprintf(stderr, "===---=== .._jniRexxCreateInterpreterInstance(...), thisTid=[%lu], CREATED: c_rii_ID=[%p]=[%s]\n", (unsigned long) thisTid, instance, c_rii_ID);
         fflush(stderr);
 #endif
 
@@ -8616,6 +8680,15 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         j_rii_ID=env->NewStringUTF( c_rii_ID ); // create Java string
 
     }
+#if defined (INFO_CREATE_RII)           // rgf, 2017-08-19
+    else
+    {
+        fprintf(stderr, "---> FAILURE in _jniRexxCreateInterpreterInstance(),                    tid=[%6lu]\n",
+                                    (unsigned long) RgfGetTID());
+        fflush(stderr);
+    }
+#endif
+
 
         // free memory allocated in this routine
     if ( j_initial_address_environment!=NULL )
@@ -8790,8 +8863,6 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
                                     instance);
     fflush(stderr);
 #endif
-
-
     RexxFreeMemory(c_rii_ID);
 
 /* ---> rgf, 2014-05-17: no need for attaching/detaching to JVM as we are invoked in that context!
@@ -8836,7 +8907,6 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
 
 #if defined(DEBUG_JNI) || defined (DEBUG40)
-
 {
     char tmpBuf[1024];
 
@@ -8926,6 +8996,31 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
     RexxInstance *tmpInstance=NULL;
     tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
+
+#ifdef HOT_FIX_CRASH
+    hotfix_relinquish_thread();    // relinquish thread for at least 10ms (1/100th of a second)
+
+        // running the rgf_multithreaded test units may still exhibit a crash, so relinquishing another time
+    hotfix_relinquish_thread();    // relinquish thread again for at least 10ms (1/100th of a second)
+
+        // running the rgf_multithreaded test units may still exhibit a crash, so relinquishing another time
+    hotfix_relinquish_thread();    // relinquish thread again for at least 10ms (1/100th of a second)
+
+        // running the rgf_multithreaded test units may still exhibit a crash, so relinquishing another time
+    hotfix_relinquish_thread();    // relinquish thread again for at least 10ms (1/100th of a second)
+
+        // running the rgf_multithreaded test units may still exhibit a crash, so relinquishing another time
+    hotfix_relinquish_thread();    // relinquish thread again for at least 10ms (1/100th of a second)
+#endif
+
+
+#if defined (INFO_REXX_RUN_PROGRAM)        // rgf, 2017-08-19
+    static int count=0;
+    fprintf(stderr, "---> arrived in _jniRexxRunProgram(),                   count=[%8d], tid=[%6lu]: supplied rii_ID=[%p], rii_ID returned from list=[%p]%s\n",
+                    ++count, (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>") );
+    fflush(stderr);
+#endif
+
 
 #if defined (DEBUG_RII_ID)
     fprintf(stderr, "             .._jniRexxRunProgram(...), tid=[%lu], instance=[%p], tmpInstance=[%p] (after RgfGetRexxInterpreterInstanceFromList(instance)\n",
@@ -9310,6 +9405,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     fflush(stderr);
 #endif
 
+
+
     thread_id_t          tid=RgfGetTID();   // rgf, 2009-05-24, get current TID
     RexxThreadContext   *rtc=NULL;
     RexxObjectPtr result_obj;           // Rexx object returned from Rexx, NULL[OBJECT], if none
@@ -9382,6 +9479,21 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     // RgfAcquireLock2(RII_lock);      // lock access to list of RexxInstance instances
     tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
     // RgfReleaseLock2(RII_lock);      // lock access to list of RexxInstance instances
+
+
+#ifdef HOT_FIX_CRASH
+    hotfix_relinquish_thread();    // relinquish thread for at least 10ms (1/100th of a second)
+#endif
+
+#if defined (INFO_SEND_MESSAGE_TO_REXX_OBJECT)        // rgf, 2017-08-19
+    static int count=0;
+
+    // rgf, 2017-08-19: it seems that the following call makes rtc->AttachThread() stable !
+    fprintf(stderr, "---> arrived in _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu]: supplied rii_ID=[%p], rii_ID returned from list=[%p]%s\n",
+                    ++count, (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>") );
+    fflush(stderr);
+#endif
+
 
 
 #if defined(DEBUG_RII_ID)
@@ -9882,6 +9994,15 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltI
     tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
     // RgfReleaseLock2(RII_lock);      // lock access to list of RexxInstance instances
 
+
+#if defined (INFO_HALT_RII)        // rgf, 2017-08-19
+    static int countRII=0;
+    fprintf(stderr, "<--- arrived in _jniRexxHaltInterpreterInstance,        count=[%8d], tid=[%6lu]: supplied rii_ID=[%p], rii_ID returned from list=[%p]%s\n",
+                    ++countRII, (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>") );
+    fflush(stderr);
+#endif
+
+
     if (instance != tmpInstance)    // error (do not halt another Rexx Interpreter instance!)
     {
        // char msg[1024]="";
@@ -9965,6 +10086,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
     fflush(stderr);
 #endif
 
+
 // fprintf(stderr, "\n- - - - - - waiting for input, press a key! tid=[%lu]\n", (unsigned long)thisTid); fflush(stderr);
 // char mist=fgetc(stdin);
 // fscanf(stdin, "%c", &mist);
@@ -9982,6 +10104,15 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
 
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
     tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
+
+#if defined (INFO_TERMINATE_RII)        // rgf, 2017-08-19
+    static int countRII=0;
+    fprintf(stderr, "<--- arrived in _jniRexxTerminateInterpreterInstance(), countRII=[%5d], tid=[%6lu]: supplied rii_ID=[%p], rii_ID returned from list=[%p]%s\n",
+                    ++countRII, (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>") );
+    fflush(stderr);
+#endif
+
+
 
 #if defined (DEBUG40) || defined (DEBUG_TERMINATE_INTERPRETER)
     fprintf(stderr, "(2)  .._jniRexxTerminateInterpreterInstance(...), thisTid=[%lu], c_rii_ID=[%p]: after 'RgfGetRexxInterpreterInstanceFromList(instance)': tmpInstance=[%p] \n", (unsigned long) thisTid, instance, tmpInstance);
