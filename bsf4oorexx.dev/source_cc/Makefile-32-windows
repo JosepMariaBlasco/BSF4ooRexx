@@ -134,6 +134,7 @@ all: $(BSF4REXX)
 # -------------
 $(BSF4REXX) : $(BSF_OBJ_ORX)
     @echo "--- linking step, target:" $(BSF4REXX) "dependent on:" $(BSF_OBJ_ORX) "---"
+    @echo "--- linking command:" link $(DLL_LFLAGS) $(BSF_OBJ_ORX) -out:$(BSF_ORX_TARGET)
 #    link $(DLL_LFLAGS) $(@B).obj -out:$(@B).dll
     link $(DLL_LFLAGS) $(BSF_OBJ_ORX) -out:$(BSF_ORX_TARGET)
     @echo "finished linking."
@@ -150,6 +151,7 @@ $(BSF4REXX) : $(BSF_OBJ_ORX)
 # ----------- BSF4ooRexx-32-x86.obj
 $(BSF_OBJ_ORX) : $(BSF_SRC)
     @echo "--- compiling step, target:" $(BSF_OBJ_ORX) "dependent on:" $(BSF_SRC) "---"
+    @echo "--- compiling command:" cl $(OOREXX_CFLAGS) /Fo$(BSF_OBJ_ORX) $(BSF_SRC)
 #  cl $(OOREXX_CFLAGS) /Fo$(@B).obj BSF4ooRexx.cc
     cl $(OOREXX_CFLAGS) /Fo$(BSF_OBJ_ORX) $(BSF_SRC)
     @echo "finished compiling."

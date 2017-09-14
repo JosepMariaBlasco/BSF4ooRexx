@@ -4,7 +4,18 @@
 # to support earlier versions of MacOSX export MACOSX_DEPLOYMENT_TARGET=min_version
 # before compiling (cf. "man g++"), e.g.:
 #
+#  MacOSX 10.6, "Snow Leopard", released: 2009-08-28
+#
 #                  export MACOSX_DEPLOYMENT_TARGET=10.6
+#
+#  MacOSX 10.9, "Mavericks", released: 2013-10-22
+#
+#                  export MACOSX_DEPLOYMENT_TARGET=10.9
+#
+# rgf, 2017-08-17: about using "std++" (C++11) on clang, e.g. cf <https://stackoverflow.com/questions/19774778/when-is-it-necessary-to-use-use-the-flag-stdlib-libstdc>
+#
+#         target 10.9, add to g++ "-std=c++11" (or "-std=gnu++11"); (and before Maverick: "-stdlib=libc++"; to force gnu without c++-11 support use: "-stdlib=libstdc++")
+#
 
 #/*----------------------------------------------------------------------------*/
 #/*                                                                            */

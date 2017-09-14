@@ -655,7 +655,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20170823" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20170914" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1229,6 +1229,16 @@ any:
    class method allows for creating an ooRexx proxy class for a Java class
    which is made available to this process by placing it (optionally) into the
    .local environment, unless the second argument is explicitly .nil
+
+   @param java_path the fully qualified (binary) name of the Java class
+   @param optional classname to be used to save the new class object in .local;
+          if omitted or .nil there will be no entry in .local
+   @param extendecJavaClz optional class object representing a Java class object,
+          which will be used to extend and supply it with the ooRexx new methods
+
+   @return new class object representing the Java class object, but enhanced with
+           the Rexx new and newStrict methods to ease creation of instancews for
+           Rexx programmers
    ------------------------------------------------------------- */
 ::METHOD bsf.import class
   USE ARG java_path, classname=.nil, extendedJavaClz=.nil   -- 2005-06-05, changed argument sequence
