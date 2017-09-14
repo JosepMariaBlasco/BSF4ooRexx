@@ -37,6 +37,20 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
+    6.0.0   2017-09-14, rgf: - BsfJavaException(): allow for omitting first argument; if omitted, then
+                               defaulting to option "CHECK" which returns .true, if a Java exception is
+                               pending, .false else
+
+    6.0.0   2017-09-11, rgf: - BsfJavaException(): corrected leftover quick test that deleted the msg buffer,
+                               which caused an illegal pointer to be used thereafter
+
+    6.0.0   2017-08-27, rgf: - added undocumented function BsfApplyHotFixCrash(), which will be
+                               removed; it allows to activate the "HotFix" in SendMessage() from Java
+                               and runProgram from Java which yields the thread before attaching to
+                               Rexx; this may help to overcome some crashes in the current ooRexx 5 beta;
+                               usage: bsfApplyHotFixCrash( | .true | false); if no argument, the current
+                                      setting will be returned
+
     6.0.0   2017-08-23, rgf: continue tidying up and refactoring to make code easier legible
                              - remove "RGF_INFO_1", "RGF_INFO", "RGF_BIT", "RGF_BIT2", "DEBUG3", "DEBUG40",
                                "RGF_ATTACH", "RGF_DETACH", "DEBUG_JAVA_ATTACH_DETACH"
@@ -830,6 +844,14 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 #endif
 
 
+    // compiling for 64-bit Windows with MSC++ "snprintf" is not known!
+#ifdef WINDOWS // && defined (BSF4REXX_64_BIT)
+   #ifdef BSF4REXX_64_BIT
+       #ifndef snprintf
+          #define snprintf _snprintf
+       #endif
+   #endif
+#endif
 
 
 // -------------------- JNI-interface related: these C++ functions are called from RexxAndJava.java and are implemented here
@@ -870,11 +892,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20170823 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170914 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20170823 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170914 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20170823 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20170914 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -913,7 +935,7 @@ logical_t bsfDoUnregisterRexxObject=false;
 // 2017-08-19: HOTFIX for crashes (invoking Rexx from native Java threads) by relinquishing the
 // invoked thread for 10ms before doing an AttachThread()
 #ifdef HOT_FIX_CRASH            // 2017-08-19
-   logical_t bsfApplyHotFixCrash=1;    // default to applying the HOT_FIX_CRASH
+   logical_t bsfApplyHotFixCrash=0;    // default to NOT apply the HOT_FIX_CRASH
 
    inline void hotfix_relinquish_thread()
    {
@@ -6586,7 +6608,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
 //      - if an error occured, then report it to ooRexx in form of a Rexx condition (and return .false)
 //      - else return .true
 //
-RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObjectPtr, exceptionInfo)
+RexxRoutine2(RexxObjectPtr, BsfJavaException, OPTIONAL_CSTRING, option, OPTIONAL_RexxObjectPtr, exceptionInfo)
 {
     thread_id_t tid=RgfGetTID();    // current thread
 
@@ -6599,34 +6621,39 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, CSTRING, option, OPTIONAL_RexxObje
 
     int flag=0;     // 1=throw,throwableObj, 2=check, 3=clear, 4=object/occurred, 5=fatalError, msg
 
-    if (option[0]=='t' || option[0]=='T')     // throw exception ?
+    if (argumentExists(1))
     {
-        flag=1;         // throw exception in Java
-    }
-    else if ( option[0]=='c' || option[0]=='C' )
-    {
-        if ( option[1]=='h' || option[1]=='H' )
+        if (option[0]=='t' || option[0]=='T')     // throw exception ?
         {
-            flag=2;     // check for pending Java exception
+            flag=1;         // throw exception in Java
         }
-        else if (option[1]=='l' || option[1]=='L')
+        else if ( option[0]=='c' || option[0]=='C' )
         {
-            flag=3;     // clear a pending Java exception
+            if ( option[1]=='h' || option[1]=='H' )
+            {
+                flag=2;     // check for pending Java exception
+            }
+            else if (option[1]=='l' || option[1]=='L')
+            {
+                flag=3;     // clear a pending Java exception
+            }
+        }
+        else if (option[0]=='o' || option[0]=='O')
+        {
+            flag=4;         // get Throwable for pending Java exception
+        }
+        else if (option[0]=='f' || option[0]=='F')
+        {
+            flag=5;         // raise a fatal error in Java
         }
     }
-    else if (option[0]=='o' || option[0]=='O')
+    else
     {
-        flag=4;         // get Throwable for pending Java exception
-    }
-    else if (option[0]=='f' || option[0]=='F')
-    {
-        flag=5;         // raise a fatal error in Java
+        flag=2;    // default to checking for a pending Java exception; returns 1, if pending Java exception, 0 else
     }
 
 
-    // char msg[4096]="";
     char *msg=new char[4096];
-    delete[] msg;
 
     if (flag==0)        // no valid option given
     {
@@ -8238,6 +8265,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     {
         hotfix_relinquish_thread();    // relinquish thread for at least 10ms (1/100th of a second)
 
+/*
             // running the rgf_multithreaded test units may still exhibit a crash, so relinquishing another time
         hotfix_relinquish_thread();    // relinquish thread again for at least 10ms (1/100th of a second)
 
@@ -8249,9 +8277,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
             // running the rgf_multithreaded test units may still exhibit a crash, so relinquishing another time
         hotfix_relinquish_thread();    // relinquish thread again for at least 10ms (1/100th of a second)
-
-            // running the rgf_multithreaded test units may still exhibit a crash, so relinquishing another time
-        hotfix_relinquish_thread();    // relinquish thread again for at least 10ms (1/100th of a second)
+*/
     }
 #endif
 
@@ -8541,7 +8567,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
                   )
 {
 
-#if defined(DEBUG_JNI) || defined (DEBUG_40) || defined (RGF_JNI) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT) || defined (DEBUG_JNI_ENTRY) || defined (DEBUG_RII_ID)
+#if defined(DEBUG_JNI) || defined (RGF_JNI) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT) || defined (DEBUG_JNI_ENTRY) || defined (DEBUG_RII_ID)
     thread_id_t thisTid=RgfGetTID();
 
     char strRajo[256];
