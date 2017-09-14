@@ -277,6 +277,10 @@ end
     sup=rexxObject~supplier
     level+=1                  -- increase level
 
+    /* if an array has no items, do not use indentation between opening and closing bracket */
+    if \sup~available then
+        strIndent1 = ""
+
     do while sup~available    -- iterate and encode item entries only
          buffer~append(.endOfLine)
          self~encodeRexxObject(sup~item)  -- encode item object (recursive call)
@@ -436,6 +440,7 @@ end
 
     jsonStringLength = jsonString~length
     self~trimLeadingWhitespace
+
     rexxObject = self~parseJSONvalue
     if jsonPos >= jsonStringLength then return rexxObject
     else do
@@ -465,16 +470,16 @@ syntax: raise propagate
 
     parse value jsonString with =(jsonPos) char +1
     select
-        when char == '{' then do          -- an unordered JSON collection
-            jsonPos = jsonPos + 1
+        when char = '{' then do          -- an unordered JSON collection
+            jsonPos += 1
             return self~parseJSONobject
         end
-        when char == '[' then do          -- a JSON array
-            jsonPos = jsonPos + 1
+        when char = '[' then do          -- a JSON array
+            jsonPos += 1
             return self~parseJSONarray
         end
-        when char == '"' then do          -- a JSON string
-            jsonPos = jsonPos + 1
+        when char = '"' then do          -- a JSON string
+            jsonPos += 1
             return self~parseJSONstring
         end
         otherwise return self~parseJSONother
@@ -560,12 +565,20 @@ parseError: raise propagate
 
     rexxArray = .array~new
 
-    parse value jsonString with =(jsonPos) char +1
+    /* remove all leading whitespaces */
+    loop forever
+      parse value jsonString with =(jsonPos) char +1
+      if char <> " " then leave
+      jsonPos += 1
+    end
+
+
     if char == ']' then do
-        jsonPos = jsonPos + 1
+        jsonPos += 1
         return rexxArray
     end
     else self~parseJSONarrayValue(rexxArray)
+
 
     do forever
         self~trimLeadingWhitespace
@@ -597,9 +610,13 @@ parseError: raise propagate
     use arg rexxArray
 
     self~trimLeadingWhitespace
-    index = rexxArray~last
+    /*index = rexxArray~last
     if .nil == index then index = 0
     rexxArray[index + 1] = self~parseJSONvalue
+    */
+    rexxArray~append(self~parseJSONvalue)
+
+
 return
 parseError: raise propagate
 
@@ -695,6 +712,77 @@ parseError: raise propagate
         else leave
     end
 
+
+
+/**
+ * Removes all blank characters and line breaks to achieve a smaller String size
+ *
+ * @author Adrian Baginski
+ * @since 100.20170908
+ * @param jsonString - A JSON Encoded String
+ * @return jsonString - The minified version of the JSON String
+ */
+::method minify
+  use arg jsonString
+
+  jsonString=.mutableBuffer~new(jsonString)
+  jsonString~~changeStr("0d0a"x," ")~~changeStr("0a"x, " ") -- replace CR-LF, LF with blank
+
+  currentPos = 1
+  skipDeletingStr = .false
+
+  currentLength=jsonString~length
+
+  do while currentPos <= currentLength
+    /* blank chars are only allowed when quoted in "" */
+    if jsonString~subChar(currentPos)='"' then
+    do
+      /* invert the skipDeletingStr boolean if the previous char was not an escaping character */
+      if currentPos>1, jsonString~subChar(currentPos-1)<>"\" then
+        skipDeletingStr = \skipDeletingStr
+    end
+
+    else -- check for blanks, delete them if skipDeletingStr is .false
+    do
+       posOfNonBlank=jsonString~verify(" ", "N", currentPos)   -- find next position that is not a blank
+       if posOfNonBlank>currentPos then   -- currentPos is a blank, so process
+       do
+          if skipDeletingStr then         -- do not delete blanks
+          do
+               -- find next blank or quote
+              nextBlankOrQuote=jsonString~verify(' "', "Match", posOfNonBlank)
+              if nextBlankOrQuote=0 then  -- not found, none left
+                 currentPos=currentLength -- we are done, no more blanks or quotes in string
+              else   -- position on next blank or quote
+                 currentPos=nextBlankOrQuote-1  -- adjust for "currentPos += 1" at the end
+          end
+          else  -- delete blanks
+          do
+              nrOfBlanksToDelete=posOfNonBlank-currentPos
+              jsonString = jsonString~delStr(currentPos, nrOfBlanksToDelete)
+              currentLength -= nrOfBlanksToDelete -- adjust currentLength
+              currentPos -= 1 -- adjust currentPos
+          end
+       end
+     end
+     currentPos += 1
+  end
+  return jsonString~string -- return the string representation
+
+
+
+/**
+ * Forwards the provided Rexx Object to be converted to a JSON String
+ * Calls the method `minify` to remove all unnecessary line breaks and white spaces
+ *
+ * @param rxObj - the object to be converted
+ * @return minified - a minified JSON encoded string representing the parameter
+ */
+::method toMinifiedJson
+  use arg rxObj
+  jsonString = self~toJson(rxObj)
+  minified   = self~minify(jsonString)
+  return minified
 
 
 /* ========================================================================= */

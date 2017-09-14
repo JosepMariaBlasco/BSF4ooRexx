@@ -5660,7 +5660,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                        String kudos=
                            "Ahammer, Andreas"                       + "\n" +
                            "Augustin, Walter"                       + "\n" +
-                           "Baginski, Adrian"                       + "\n" +    // 2016-08-14, rgf: .NET/CLR nutshell examples
+                           "Baginski, Adrian"                       + "\n" +    // 2016-08-14, rgf: .NET/CLR nutshell examples, 2017: JavaFX, ooRexxTryFX.rxj
                            "Barmwater, Gil"                         + "\n" +
                            "Beck, Andreas"                          + "\n" +
                            "Burger, Martin"                         + "\n" +
