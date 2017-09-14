@@ -394,8 +394,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage(m,args): m=["+
      */
     public Object sendMessage0 (String messageName) throws BSFException
     {
-// if (bDebug)
-System.err.println("////// ---> RexxProxy.sendMessage0(m): m=["+messageName+"]...");
+if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage0(m): m=["+messageName+"]...");
 
         return this.rexxEngine.call(this, messageName, null);
     }
