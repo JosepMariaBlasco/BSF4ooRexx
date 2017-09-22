@@ -43,6 +43,10 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
    Changes:
 
+        2017-09-22, ---rgf, make sure that in the constructor the RexxScriptEngine does not get
+                            used to execute Rexx scripts, such that it is still possible to configure
+                            the (to be created) Rexx interpreter instance
+
         2017-04-15, ---rgf, use .slot.argument class (created by BSF4ooRexx.cc as subclass of .directory
                             and stored in .environment ad load time of the library); this way
                              Rexx programmers become able to unambiguously identify whether the last
@@ -127,7 +131,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20170415
+ * @version 100.20170922
  * @since  2015-05-11
  *
  */
@@ -664,14 +668,6 @@ if (bDebug==true)
            sc.setAttribute(ENGINE          , ref.getEngineName(),      ScriptContext.ENGINE_SCOPE);
            sc.setAttribute(ENGINE_VERSION  , ref.getEngineVersion(),   ScriptContext.ENGINE_SCOPE);
            sc.setAttribute(LANGUAGE        , ref.getLanguageName(),    ScriptContext.ENGINE_SCOPE);
-
-           if (ref.LANGUAGE_VERSION==null)  // no Rexx version set as of yet, query the bsfRexxEngine for it
-           {
-               String rexxCode="parse version v; return v";    // get Rexx version
-               ref.LANGUAGE_VERSION=(String) bsfRexxEngine.apply(
-                   "RexxScriptEngine.java", 0, 0, rexxCode, null, null);
-           }
-
            sc.setAttribute(LANGUAGE_VERSION, ref.getLanguageVersion(), ScriptContext.ENGINE_SCOPE);
            sc.setAttribute(NAME            , ref.getName(),            ScriptContext.ENGINE_SCOPE);
         }

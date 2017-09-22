@@ -13,7 +13,7 @@ import org.apache.bsf.*;   // BSF support
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2016 Rony G. Flatscher
+   Copyright 2015-2017 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -35,13 +35,15 @@ import org.apache.bsf.*;   // BSF support
         - 2016-12-21, ---rgf: getLanguageVersion() now gets the "parse version" string from the used
                               ooRexx interpreter, saves it in LANGUAGE_VERSION (now package private)
                               and returns that value
+        - 2017-09-22, ---rgf: getLanguageVersion() directly employs a BSF Rexx engine, making sure
+                              that BSF.CLS gets required
 */
 
 
 /** Class that implements the <code>javax.script.ScriptEngineFactory</code> interface for the ooRexx support.
  *
  * @author Rony G. Flatscher
- * @version 100.20161221
+ * @version 100.20170922
  * @since   2015-05-11
  *
  */
@@ -53,7 +55,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     final public static RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY=new RexxScriptEngineFactory();
 
     final private static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
-    final private static String       ENGINE_VERSION   ="100.20161221";
+    final private static String       ENGINE_VERSION   ="100.20170922";
     final private static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
                                                                 "rxj", "rexxj", "jrexx",
                                                                 "rxo" );
@@ -102,7 +104,21 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
         // ask the currently available Rexx interpreter about its version
         if (LANGUAGE_VERSION==null)
         {
-            getScriptEngine();  // causes a RexxScriptEngine to be created, which constructor will set the actual LANGUAGE_VERSION
+            try
+            {
+                BSFManager bsfMgr = new BSFManager ();                // get an instance of BSFManager
+                BSFEngine  bsfRexxEngine = bsfMgr.loadScriptingEngine("rexx");  // load the Rexx engine
+
+                String rexxCode="parse version v \n return v \n ::requires BSF.CLS";    // get Rexx version
+                LANGUAGE_VERSION=(String) bsfRexxEngine.apply("RexxScriptEngineFactory.java",
+                                                              0, 0, rexxCode, null, null);
+            }
+            catch (Exception exc)
+            {
+                System.err.println(exc.toString());
+                exc.printStackTrace();  // show stack trace
+            }
+
         }
         return LANGUAGE_VERSION;
     }
