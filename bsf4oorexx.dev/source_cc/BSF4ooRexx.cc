@@ -37,7 +37,11 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
-    6.0.0   2009-09-25, rgf: - new BSFGetRIID(): allow Rexx to retrieve the Rexx instance ID (the instance pointer as string)
+    6.0.0   2017-10-15, rgf: - return external Rexx function names BSFGetRIID() and BSFGetRTC()
+
+    6.0.0   2017-10-05, rgf: - new BSFGetRTC():  allow Rexx to retrieve the Rexx thread context pointer as a string for debugging purposes
+
+    6.0.0   2009-09-25, rgf: - new BSFGetRIID(): allow Rexx to retrieve the Rexx instance ID (the instance pointer as string) for debugging purposes
 
     6.0.0   2017-09-14, rgf: - BsfJavaException(): allow for omitting first argument; if omitted, then
                                defaulting to option "CHECK" which returns .true, if a Java exception is
@@ -4019,7 +4023,9 @@ CSTRING ApiFncTable[]=      // if invoked via Rexx, these are the functions we r
 //    "BsfDetach"                   , // ---rgf, 2008-07-26, 2014-05-15: do not report anymore (auto-attach implemented)
     "BsfDoUnregisterRexxObject"   , // ---rgf, 2016-12-20: allow control over using RgfRemoveRexxProxy() in case Java was started by Rexx
     "BsfDropFuncs"                ,
-    "BsfGetTID"                   , // ---rgf, 2003-08-06
+    "BsfGetRIID"                  , // ---rgf, 2017-09-25: Rexx instance ID (pointer as string)
+    "BsfGetRTC"                   , // ---rgf, 2017-1o-05: Rexx thread context (pointer as string)
+    "BsfGetTID"                   , // ---rgf, 2003-08-06: Rexx thread ID
     "BsfInvokedBy"                ,
     "BsfJavaException"            , // ---rgf, 2009-10-18
     "BsfLoadFuncs"                ,
@@ -4048,6 +4054,8 @@ CSTRING ApiFncTable4Java[]=      // if invoked via Java, these are the functions
 //    "BsfDetach"                   , // ---rgf, 2008-07-26, 2014-05-15: do not report anymore (auto-attach implemented)
     "BsfDoUnregisterRexxObject"   , // ---rgf, 2016-12-20: allow control over using RgfRemoveRexxProxy() in case Java was started by Rexx
     "BsfDropFuncs"                ,
+    "BsfGetRIID"                  , // ---rgf, 2017-09-25: Rexx instance ID (pointer as string)
+    "BsfGetRTC"                   , // ---rgf, 2017-1o-05: Rexx thread context (pointer as string)
     "BsfGetTID"                   , // ---rgf, 2003-08-06
     "BsfInvokedBy"                ,
     "BsfJavaException"            , // ---rgf, 2009-10-18
@@ -5653,9 +5661,8 @@ RexxRoutine0(RexxStringObject, BsfGetRIID)
 }
 
 // ---------------------------------------------------------------------------------------
-/* --- 2017-10-16, rgf: bug <https://sourceforge.net/p/oorexx/bugs/1450/> seems to have been fixed
 
-    // for debugging, maybe remove this
+    // for debugging
     // ---rgf, 2017-10-05: allow Rexx to retrieve the Rexx thread context pointer as a string
 RexxRoutine0(RexxStringObject, BsfGetRTC)
 {
@@ -5674,7 +5681,6 @@ RexxRoutine0(RexxStringObject, BsfGetRTC)
    delete  [] strRTC;
    return rso;
 }
---- */
 
 
 
@@ -7677,7 +7683,7 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
 
         REXX_TYPED_ROUTINE( BsfDropFuncs                , BsfDropFuncs                ),
         REXX_TYPED_ROUTINE( BsfGetRIID                  , BsfGetRIID                  ),
-//        REXX_TYPED_ROUTINE( BsfGetRTC                   , BsfGetRTC                   ),  // rgf, 2017-10-16: no need anymore  // rgf, 2017-10-05: for debugging only
+        REXX_TYPED_ROUTINE( BsfGetRTC                   , BsfGetRTC                   ),  // rgf, 2017-10-05: for debugging only
         REXX_TYPED_ROUTINE( BsfGetTID                   , BsfGetTID                   ),
         REXX_TYPED_ROUTINE( BsfInvokedBy                , BsfInvokedBy                ),
         REXX_TYPED_ROUTINE( BsfJavaException            , BsfJavaException            ),
