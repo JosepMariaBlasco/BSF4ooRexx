@@ -37,6 +37,8 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
+    6.0.0   2009-09-25, rgf: - new BSFGetRIID(): allow Rexx to retrieve the Rexx instance ID (the instance pointer as string)
+
     6.0.0   2017-09-14, rgf: - BsfJavaException(): allow for omitting first argument; if omitted, then
                                defaulting to option "CHECK" which returns .true, if a Java exception is
                                pending, .false else
@@ -717,16 +719,19 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 
 
 // rgf, 2017-08-19: hot fix for CRASHes; will slow down flurry of invocations from Java as this adds at least a wait time of 1/100 second (10 ms)
-#define HOT_FIX_CRASH       // rgf, 2017-08-19: temporary hot fix for CRASHes (seems one needs to relinquish thread for 10ms before invoking AttachThread())
-
-
+// rgf, 2017-10-16: removed, seems RMG could fix the problem in the ooRexx kernel
+// #define HOT_FIX_CRASH       // rgf, 2017-08-19: temporary hot fix for CRASHes (seems one needs to relinquish thread for 10ms before invoking AttachThread())
 
 // rgf, 2017-08-19, add INFO_* definitions for helping debug crash, maybe it is related to creating and terminating Rexx interpreter instances
+// rgf, 2017-10-16: removed, seems RMG found the error in nestActivity() in the ooRexx kernel and fixed it
 // #define INFO_ALL_OPTIONS
 #if defined (INFO_ALL_OPTIONS) // comment before && to activate all of the flags below
+    #define INFO_PRIMODAL_RII   // rgf, 2017-10-04
     #define INFO_CREATE_RII     // rgf, 2017-08-19
     #define INFO_TERMINATE_RII  // rgf, 2017-08-19
     #define INFO_HALT_RII       // rgf, 2017-08-19
+    #define INFO_ATTACH_THREAD  // rgf, 2017-10-04
+    #define INFO_DETACH_THREAD  // rgf, 2017-10-04
     #define INFO_SEND_MESSAGE_TO_REXX_OBJECT // rgf, 2017-08-19
     #define INFO_REXX_RUN_PROGRAM   // rgf, 2017-08-19
 #endif
@@ -892,11 +897,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20170914 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20171016 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20170914 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20171016 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20170914 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20171016 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -5647,6 +5652,30 @@ RexxRoutine0(RexxStringObject, BsfGetRIID)
    return rso;
 }
 
+// ---------------------------------------------------------------------------------------
+/* --- 2017-10-16, rgf: bug <https://sourceforge.net/p/oorexx/bugs/1450/> seems to have been fixed
+
+    // for debugging, maybe remove this
+    // ---rgf, 2017-10-05: allow Rexx to retrieve the Rexx thread context pointer as a string
+RexxRoutine0(RexxStringObject, BsfGetRTC)
+{
+    RexxInstance *ri=context->threadContext->instance;  // get the RexxThreadContext pointer
+#ifdef DEBUG
+    fprintf(stderr, "*** BsfGetRIID(): %%lu=[%lu], %%p=[%p] \n", (long unsigned int) ri, ri);
+    fflush(stderr);
+#endif
+
+   // char strRIID[32]="";         // define a string long enough to receive an integer
+   char *strRTC=new char[RGF_POINTER_STRING_WIDTH];
+   // sprintf(strRIID, "%p%c", ((unsigned long) ri), 0);  // create decimal number
+   snprintf( strRTC, RGF_POINTER_STRING_WIDTH, "%p%c", ri, 0);  // create decimal number
+
+   RexxStringObject rso=context->String(strRTC);
+   delete  [] strRTC;
+   return rso;
+}
+--- */
+
 
 
 
@@ -7183,7 +7212,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxWaitF
 
 #if defined (INFO_TERMINATE_RII)        // rgf, 2017-08-19
     static int countRII=0;
-    fprintf(stderr, "<--- arrived in _jniRexxWaitForTermination(),           countRII=[%5d], tid=[%6lu]\n",
+    fprintf(stderr, "---> arrived in _jniRexxWaitForTermination(),           countRII=[%5d], tid=[%6lu]\n",
                     ++countRII, (unsigned long) RgfGetTID());
     fflush(stderr);
 #endif
@@ -7199,9 +7228,17 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxWaitF
     RexxWaitForTermination();       // wait for Object Rexx to re-synch ... (2003-02-25, ---rgf: doesn't really have any effect
 
 
-#if defined (DEBUG2)   || defined (RGF_JNI)       // ---rgf, 2003-04-30
-    fprintf(stderr, "..._jniRexxWaitForTermination(): about to leave...\n\n");
+#if defined (DEBUG2)   || defined (RGF_JNI)  // ---rgf, 2003-04-30
+    fprintf(stderr, "..._jniRexxWaitForTermination(): about to leave...\n\n"); fflush(stderr);
 #endif
+
+
+#if defined (INFO_TERMINATE_RII)        // rgf, 2017-08-19
+    fprintf(stderr, "<--- _jniRexxWaitForTermination(),           countRII=[%5d], tid=[%6lu]\n",
+                    countRII, (unsigned long) RgfGetTID());
+    fflush(stderr);
+#endif
+
 
     return (jint) 1;               // just return something
 }
@@ -7285,7 +7322,8 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSetHa
 
 #if defined (INFO_HALT_RII)        // rgf, 2017-08-19
     static int countRII=0;
-    fprintf(stderr, "<--- arrived in _jniRexxSetHalt(),                      countRII=[%5d], tid=[%6lu]\n", ++countRII, (unsigned long) RgfGetTID()); fflush(stderr);
+    fprintf(stderr, "---> arrived in _jniRexxSetHalt(), countRII=[%5d], tid=[%6lu]\n",
+                    ++countRII, (unsigned long) RgfGetTID()); fflush(stderr);
 #endif
 
     unsigned long tid=0L;
@@ -7299,13 +7337,20 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSetHa
     fflush(stderr);
 #endif
 
-    return (jint) RexxSetHalt(
+    int intResult = RexxSetHalt(
 #ifdef WINDOWS
         GetCurrentProcessId(), (thread_id_t) tid
 #else
         getpid(), (pthread_t) tid   // Unix
 #endif
                              );
+
+#if defined (INFO_HALT_RII)        // rgf, 2017-08-19
+    fprintf(stderr, "<--- _jniRexxSetHalt(),            countRII=[%5d], tid=[%6lu], intResult=%d\n", countRII, (unsigned long) RgfGetTID(), intResult); fflush(stderr);
+#endif
+
+    return (jint) intResult;
+
 }
 
 
@@ -7548,6 +7593,14 @@ void RexxEntry bsfLoader (RexxThreadContext *rtc)
     fprintf(stderr, "/// in bsfLoader(); .environment~slot.argument~string=[%s]\n", rtc->CString( rtc->SendMessage0(rop,"STRING") ));
     fflush(stderr);
 #endif
+
+
+#if defined (INFO_PRIMODAL_RII)        // rgf, 2017-10-04
+    fprintf(stderr, "===> ===> ===>\n===> bsfLoader(): PRIMODAL REXX INTERPRETER INSTANCE (RII), PRIMODAL RII: tid=[%6lu], rii_ID=[%p], rtc=[%p] <===\n<=== <=== <===\n\n",
+                        (unsigned long) RgfGetTID(), rtc->instance, rtc);
+    fflush(stderr);
+#endif
+
 }
 
 
@@ -7624,6 +7677,7 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
 
         REXX_TYPED_ROUTINE( BsfDropFuncs                , BsfDropFuncs                ),
         REXX_TYPED_ROUTINE( BsfGetRIID                  , BsfGetRIID                  ),
+//        REXX_TYPED_ROUTINE( BsfGetRTC                   , BsfGetRTC                   ),  // rgf, 2017-10-16: no need anymore  // rgf, 2017-10-05: for debugging only
         REXX_TYPED_ROUTINE( BsfGetTID                   , BsfGetTID                   ),
         REXX_TYPED_ROUTINE( BsfInvokedBy                , BsfInvokedBy                ),
         REXX_TYPED_ROUTINE( BsfJavaException            , BsfJavaException            ),
@@ -7705,8 +7759,8 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 
 #if defined (INFO_CREATE_RII)           // rgf, 2017-08-19
     static int countRII=0;
-    fprintf(stderr, "---> arrived in _jniRexxCreateInterpreterInstance(),                      tid=[%6lu]\n",
-                                (unsigned long) RgfGetTID());
+    fprintf(stderr, "\n===> arrived in _jniRexxCreateInterpreterInstance(), countRII=[%8d], tid=[%6lu]\n",
+                                ++countRII, (unsigned long) RgfGetTID());
     fflush(stderr);
 #endif
 
@@ -7977,8 +8031,8 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 #endif
 
 #if defined (INFO_CREATE_RII)           // rgf, 2017-08-19
-    fprintf(stderr, "---> SUCCESS in _jniRexxCreateInterpreterInstance(),    countRII=[%5d], tid=[%6lu], rii_id=[%p]\n",
-                    ++countRII, (unsigned long) RgfGetTID(), instance);
+    fprintf(stderr, "     SUCCESS in _jniRexxCreateInterpreterInstance(), countRII=[%8d], tid=[%6lu], rii_ID=[%p], rtc=[%p]\n",
+                    countRII, (unsigned long) RgfGetTID(), instance, threadContext);
     fflush(stderr);
 #endif
 
@@ -8022,8 +8076,8 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 #if defined (INFO_CREATE_RII)           // rgf, 2017-08-19
     else
     {
-        fprintf(stderr, "---> FAILURE in _jniRexxCreateInterpreterInstance(),                    tid=[%6lu]\n",
-                                    (unsigned long) RgfGetTID());
+        fprintf(stderr, "     FAILURE in _jniRexxCreateInterpreterInstance(), countRII=[%8d], tid=[%6lu]\n",
+                                    countRII, (unsigned long) RgfGetTID());
         fflush(stderr);
     }
 #endif
@@ -8073,6 +8127,13 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
                         (unsigned long) thisTid, c_rii_ID);
     fflush(stderr);
 #endif
+
+#if defined (INFO_CREATE_RII)           // rgf, 2017-08-19
+    fprintf(stderr, "<=============  _jniRexxCreateInterpreterInstance(), countRII=[%8d], tid=[%6lu], rii_ID=[%p], rtc=[%p]\n\n",
+                                countRII, (unsigned long) RgfGetTID(), instance, threadContext);
+    fflush(stderr);
+#endif
+
 
     if (j_load_required_library!=NULL) {env->DeleteLocalRef(j_load_required_library);}
     if (j_load_required_library!=NULL) {env->DeleteLocalRef(j_direct_exits);         }
@@ -8288,19 +8349,30 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     //   4: load Rexx package (and run prolog) from buffer, use the 4.0 API <code>LoadPackageFromData</code>
 #if defined (INFO_REXX_RUN_PROGRAM)        // rgf, 2017-08-19
     static int count=0;
-     fprintf(stderr, "---> arrived in _jniRexxRunProgram() -----------------> count=[%8d], tid=[%6lu] --------------------> type=[%d]: %s\n",
-                    ++count, (unsigned long) RgfGetTID()
-                    , (int) invocationType
-                    , (invocationType==1 ? "CallProgram()" :
-                         (invocationType==2 ? "NewRoutine() + CallRoutine()" :
-                            (invocationType==3 ? "LoadPackage()" :
-                               (invocationType==4 ? "LoadPackageFromData()" : "UNKNOWN - PANIC !" )
-                             )
-                          )
-                       )
-                    );
+    count++;
 
-
+    switch (invocationType)
+    {
+    case 1:
+        fprintf(stderr, "|--> arrived in _jniRexxRunProgram() -----------------> count=[%8d], tid=[%6lu] / type=[%d]: %s\n",
+                        count, (unsigned long) RgfGetTID(), invocationType, "CallProgram()");
+        break;
+    case 2:
+        fprintf(stderr, "|--> arrived in _jniRexxRunProgram() -----------------> count=[%8d], tid=[%6lu] / type=[%d]: %s\n",
+                        count, (unsigned long) RgfGetTID(), invocationType, "NewRoutine() + CallRoutine()");
+        break;
+    case 3:
+        fprintf(stderr, "|--> arrived in _jniRexxRunProgram() -----------------> count=[%8d], tid=[%6lu] / type=[%d]: %s\n",
+                        count, (unsigned long) RgfGetTID(), invocationType, "LoadPackage()");
+        break;
+    case 4:
+        fprintf(stderr, "|--> arrived in _jniRexxRunProgram() -----------------> count=[%8d], tid=[%6lu] / type=[%d]: %s\n",
+                        count, (unsigned long) RgfGetTID(), invocationType, "LoadPackageFromData()");
+        break;
+    default:
+        fprintf(stderr, "|--> arrived in _jniRexxRunProgram() -----------------> count=[%8d], tid=[%6lu] / type=[%d]: %s\n",
+                        count, (unsigned long) RgfGetTID(), invocationType, "UNKNOWN - PANIC !");
+    }
     fflush(stderr);
 #endif
 
@@ -8338,6 +8410,14 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     fprintf(stderr, "--------------> ooRexx->AttachThread() - jniRexxRunProgram tid=[%lu] ... ", (unsigned long) tid); fflush(stderr);
 #endif
 
+#if defined (INFO_ATTACH_THREAD)        // rgf, 2017-10-04
+    fprintf(stderr, "            ... _jniRexxRunProgram()                    count=[%8d], tid=[%6lu], rii_ID=[%p]->AttachThread(): about...\n",
+                    count, (unsigned long) RgfGetTID(), instance );
+    fflush(stderr);
+#endif
+
+
+
     // rgf, 2013-10-07: no need to do a rtc->ReleaseLocalReference(ro) as these references get released upon rtc->DetachThread() !
     if (!instance->AttachThread(&rtc))          // get a ThreadContext
     {
@@ -8370,6 +8450,14 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     fprintf(stderr, "AttachThread() done. --------------> tid=[%lu] \n", (unsigned long) tid); fflush(stderr);
 #endif
 
+#if defined (INFO_ATTACH_THREAD)        // rgf, 2017-08-19
+    fprintf(stderr, "            ... _jniRexxRunProgram(),                   count=[%8d], tid=[%6lu], rii_ID=[%p]->AttachThread(): done, rtc=[%p].\n",
+                    count, (unsigned long) RgfGetTID(), instance, rtc );
+    fflush(stderr);
+#endif
+
+
+
         // set fileName
     char *c_fileName=(char *) JNU_GetStringNativeChars(env, j_fileName);    // convert to native string
     char *c_programData=NULL;
@@ -8390,8 +8478,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     case 1:     // CallProgram()
 
 #if defined (INFO_REXX_RUN_PROGRAM)        // rgf, 2017-08-19
-    fprintf(stderr, "            ... _jniRexxRunProgram(): about to run ...................... tid=[%6lu], rii_ID=[%p]->[%p]%s, %s(\"%s\")\n",
-                           (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>"),
+    fprintf(stderr, "            ... _jniRexxRunProgram()-CallProgram(...),  count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]: %s(\"%s\")\n",
+                           count, (unsigned long) RgfGetTID(), instance, rtc,
                     "CallProgram", c_fileName); fflush(stderr);
 #endif
         result_obj=rtc->CallProgram(c_fileName, ra);    // run the program from file
@@ -8401,8 +8489,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     case 3:     // LoadPackage()
 
 #if defined (INFO_REXX_RUN_PROGRAM)
-    fprintf(stderr, "            ... _jniRexxRunProgram(): about to run ...................... tid=[%6lu], rii_ID=[%p]->[%p]%s, %s(\"%s\")\n",
-                           (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>"),
+    fprintf(stderr, "            ... _jniRexxRunProgram()-LoadPackage(...),  count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]: %s(\"%s\")\n",
+                           count, (unsigned long) RgfGetTID(), instance, rtc,
                     "LoadPackage", c_fileName); fflush(stderr);
 #endif
         result_obj=rtc->LoadPackage(c_fileName);        // load & run the program
@@ -8424,8 +8512,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
             if (invocationType==2)
             {
 #if defined (INFO_REXX_RUN_PROGRAM)
-    fprintf(stderr, "            ... _jniRexxRunProgram(): about to run ...................... tid=[%6lu], rii_ID=[%p]->[%p]%s, %s(\"%s\", \"%.25s\"...)\n",
-                           (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>"),
+    fprintf(stderr, "            ... _jniRexxRunProgram()-NewRoutine(...),   count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]: %s(\"%s\", \"%.25s\"...)\n",
+                           count, (unsigned long) RgfGetTID(), instance, rtc,
                     "NewRoutine", c_fileName, c_programData); fflush(stderr);
 #endif
 
@@ -8437,9 +8525,9 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
                 }
 
 #if defined (INFO_REXX_RUN_PROGRAM)
-    fprintf(stderr, "            ... _jniRexxRunProgram(): about to run ...................... tid=[%6lu], rii_ID=[%p]->[%p]%s, %s(\"%s\", \"%.25s\"...)\n",
-                           (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>"),
-                    "CallRoutine", c_fileName, c_programData); fflush(stderr);
+    fprintf(stderr, "            ... _jniRexxRunProgram()-CallRoutine(...),  count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]: %s(...)\n",
+                           count, (unsigned long) RgfGetTID(), instance, rtc,
+                    "CallRoutine"); fflush(stderr);
 #endif
                 result_obj=rtc->CallRoutine(rro, ra);   // call the program
             }
@@ -8447,8 +8535,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
             else   // invocationType==4
             {
 #if defined (INFO_REXX_RUN_PROGRAM)
-    fprintf(stderr, "            ... _jniRexxRunProgram(): about to run ...................... tid=[%6lu], rii_ID=[%p]->[%p]%s, %s(\"%s\", \"%.25s\"...)\n",
-                           (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>"),
+    fprintf(stderr, "    ... _jniRexxRunProgram()-LoadPackageFromData(...),  count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]: %s(\"%s\", \"%.25s\"...)\n",
+                           count, (unsigned long) RgfGetTID(), instance, rtc,
                     "LoadPackageFromData", c_fileName, c_programData); fflush(stderr);
 
 #endif
@@ -8460,8 +8548,12 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     RexxFreeMemory(c_programData);  // make sure we free the allocated memory
 
 #if defined (INFO_REXX_RUN_PROGRAM)
-    fprintf(stderr, "..._jniRexxRunProgram(...): rtc->CheckCondition()=[%d] /////  tid=[%lu] \n",
-                    (int) rtc->CheckCondition(), (unsigned long) tid);
+    fprintf(stderr, "            ... _jniRexxRunProgram(): CheckCondition(), count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]->CheckCondition() -> [%d] ...)\n",
+                           count, (unsigned long) RgfGetTID(), instance,
+                           rtc, (int) rtc->CheckCondition()
+            );
+                    fflush(stderr);
+
     fflush(stderr);
 #endif
 
@@ -8472,7 +8564,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
         char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/routine/jniRexxRunProgram(), error 9");
 
 #if defined (INFO_REXX_RUN_PROGRAM)
-    fprintf(stderr, "..._jniRexxRunProgram(...): BEFORE RgfCreateRexxException4Java(...) tid=[%lu]\n", (unsigned long) tid);
+    fprintf(stderr, "            ... _jniRexxRunProgram(...): BEFORE RgfCreateRexxException4Java(...) count=[%8d], tid=[%lu]\n", count, (unsigned long) tid);
     fflush(stderr);
 #endif
         jthrowable j_rexxException=RgfCreateRexxException4Java(env, raj,
@@ -8486,7 +8578,18 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxRunProgram tid=[%lu]... ", (unsigned long) tid); fflush(stderr);
 #endif
 
+#if defined (INFO_DETACH_THREAD)
+    fprintf(stderr, "            ... _jniRexxRunProgram(), RexxCondition! count=[%8d]:  tid=[%6lu], rii_ID=[%p], rtc=[%p]->DetachThread(), about...\n",
+                           count, (unsigned long) RgfGetTID(), instance, rtc); fflush(stderr);
+#endif
+
         rtc->DetachThread();
+
+#if defined (INFO_DETACH_THREAD)
+    fprintf(stderr, "|<---           _jniRexxRunProgram(), RexxCondition!  count=[%8d]:  tid=[%6lu], rii_ID=[%p], rtc=[%p]->DetachThread(), done.\n\n",
+                           count, (unsigned long) RgfGetTID(), instance, rtc); fflush(stderr);
+#endif
+
 
 #if defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "DetachThread() done. <-------------- tid=[%lu] \n", (unsigned long) tid); fflush(stderr);
@@ -8494,7 +8597,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
 
         env->Throw(j_rexxException);  // throw the exception in the JVM
 
-#if defined(DEBUG_JNI) || defined (INFO_REXX_RUN_PROGRAM)
+#if defined(DEBUG_JNI)
     fprintf(stderr, "<-- returning: .._jniRexxRunProgram(...): tid=[%lu], Rexx runtime error occurred, throwing Java exception!\n\tmsg=[%.256s]\n",
                        (unsigned long) tid, msg);
     fflush(stderr);
@@ -8504,9 +8607,14 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
         return NULL;
     }
 
-#if defined(DEBUG_JNI) || defined (INFO_REXX_RUN_PROGRAM)
+#if defined(DEBUG_JNI)
     fprintf(stderr, "<-- returning from: .._jniRexxRunProgram(...), tid=[%lu], normal execution\n", (unsigned long) tid);
     fflush(stderr);
+#endif
+
+#if defined (INFO_REXX_RUN_PROGRAM)
+    fprintf(stderr, "      returning _jniRexxRunProgram(): ................. count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]] | result_obj=[%p]\n",
+                           count, (unsigned long) RgfGetTID(), instance, rtc, result_obj); fflush(stderr);
 #endif
 
     jobject jresult=RgfProcessReturnValue4Java(env, raj, rtc, result_obj, NULL);
@@ -8515,7 +8623,17 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxRunProgram tid=[%lu] ... ", (unsigned long) tid); fflush(stderr);
 #endif
 
+#if defined (INFO_DETACH_THREAD)
+    fprintf(stderr, "            ... _jniRexxRunProgram(),                   count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]->DetachThread(), about...\n",
+                           count, (unsigned long) RgfGetTID(), instance, rtc); fflush(stderr);
+#endif
+
     rtc->DetachThread();
+
+#if defined (INFO_DETACH_THREAD)
+    fprintf(stderr, "|<------------- _jniRexxRunProgram(),                   count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]->DetachThread(), done.\n\n",
+                           count, (unsigned long) RgfGetTID(), instance, rtc); fflush(stderr);
+#endif
 
 #if defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "DetachThread() done. <-------------- tid=[%lu] \n", (unsigned long) tid); fflush(stderr);
@@ -8621,9 +8739,16 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 #if defined (INFO_SEND_MESSAGE_TO_REXX_OBJECT)        // rgf, 2017-08-19
     static int count=0;
 
-    // rgf, 2017-08-19: it seems that the following call makes rtc->AttachThread() stable !
-    fprintf(stderr, "---> arrived in _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p]->[%p]%s\n",
-                    ++count, (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>") );
+    if (instance!=tmpInstance)
+    {
+        fprintf(stderr, "---> arrived in _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p] <> rii_ID=[%p] (NOT OK!)\n",
+                        ++count, (unsigned long) RgfGetTID(), instance, tmpInstance);
+    }
+    else
+    {
+        fprintf(stderr, "---> arrived in _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p]\n",
+                        ++count, (unsigned long) RgfGetTID(), instance );
+    }
     fflush(stderr);
 #endif
 
@@ -8654,9 +8779,22 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
        return NULL;
     }
 
+#if defined (INFO_ATTACH_THREAD)        // rgf, 2017-10-04
+    fprintf(stderr, "            ... _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p]->AttachThread(): about...\n",
+                    count, (unsigned long) RgfGetTID(), instance );
+    fflush(stderr);
+#endif
+
     // rgf, 2013-10-07: no need to do a rtc->ReleaseLocalReference(ro) as these references get released upon rtc->DetachThread() !
     if (!instance->AttachThread(&rtc))          // get a ThreadContext
     {
+#if defined (INFO_ATTACH_THREAD)        // rgf, 2017-08-19
+    fprintf(stderr, "            ... _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p]->AttachThread(): PANIC, did not work!\n",
+                    count, (unsigned long) RgfGetTID(), instance);
+    fflush(stderr);
+#endif
+
+
         char *msg=new char[1024];
         snprintf(msg, 1024, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 3: could not AttachThread() to Rexx interpreter instance with the ID '%.256s'", DLLNAME, c_rii_ID);
 
@@ -8672,6 +8810,13 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         RexxFreeMemory(c_rii_ID);       // make sure we free the allocated memory
         return NULL;
     }
+
+#if defined (INFO_ATTACH_THREAD)        // rgf, 2017-08-19
+    fprintf(stderr, "            ... _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p]->AttachThread(): done, rtc=[%p].\n",
+                    count, (unsigned long) RgfGetTID(), instance, rtc );
+    fflush(stderr);
+#endif
+
 
         // get Rexx object
     char *c_obj_ID=(char *) JNU_GetStringNativeChars(env, j_obj_ID);    // convert to native string
@@ -8757,20 +8902,27 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
         if (j_args==NULL)              // no args: hence message with a slotDir or without arguments altogether?
         {
+
+#if defined (INFO_SEND_MESSAGE_TO_REXX_OBJECT)        // rgf, 2017-08-19
+                // 2017-10-05: in case ObjectToStringValue() would block, show object pointer first
+    fprintf(stderr, "       -------> _jniRexxSendMessageToRexxObject(), send!count=[%8d], tid=[%6lu], rii_ID=[%p], rtc=[%p]: 1a. [%p]~%s\n",
+                             count, (unsigned long) RgfGetTID(), instance, rtc
+                             , ro, c_msg
+                             );
+    fflush(stderr);
+    fprintf(stderr, "       -------> _jniRexxSendMessageToRexxObject(), send!count=[%8d], tid=[%6lu], rii_ID=[%p], rtc=[%p]: 1b. [%s]~%s\n",
+                             count, (unsigned long) RgfGetTID(), instance, rtc
+                             , rtc->ObjectToStringValue(ro), c_msg
+                             );
+    fflush(stderr);
+#endif
+
             if (slotDir==NULL)
             {
                 result_obj=rtc->SendMessage0(ro, c_msg);   // no arguments, no slotArgument
             }
             else    // supply the slotDir
             {
-
-#if defined (INFO_SEND_MESSAGE_TO_REXX_OBJECT)        // rgf, 2017-08-19
-    fprintf(stderr, "            ... _jniRexxSendMessageToRexxObject(), about to send ........ tid=[%6lu], rii_ID=[%p]->[%p]%s: [%s]~%s\n",
-                             (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>")
-                             , rtc->ObjectToStringValue(ro), c_msg
-                             );
-    fflush(stderr);
-#endif
                 result_obj=rtc->SendMessage1(ro, c_msg, slotDir);   // no arguments; but supply callback directory
             }
         }
@@ -8786,13 +8938,16 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     fflush(stderr);
 #endif
 
-#if defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
-   fprintf(stderr, "...jniRexxSendMessageToRexxObject(): BEFORE SendMessage(), ro=[%p] [%.64s], c_msg=[%.256s], ra=[%p], size=[%lu]...\n",ro, rtc->CString(rxStrObj), c_msg, ra, rtc->ArraySize(ra));fflush(stderr);
-#endif
 
 #if defined (INFO_SEND_MESSAGE_TO_REXX_OBJECT)        // rgf, 2017-08-19
-    fprintf(stderr, "            ... _jniRexxSendMessageToRexxObject(), about to send ........ tid=[%6lu], rii_ID=[%p]->[%p]%s: [%s]~%s(...)\n",
-                             (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>")
+                // 2017-10-05: in case ObjectToStringValue() would block, show object pointer first
+    fprintf(stderr, "       -------> _jniRexxSendMessageToRexxObject(), send!count=[%8d], tid=[%6lu], rii_ID=[%p], rtc=[%p]: 2b. [%p]~%s\n",
+                             count, (unsigned long) RgfGetTID(), instance, rtc
+                             , ro, c_msg
+                             );
+    fflush(stderr);
+    fprintf(stderr, "       -------> _jniRexxSendMessageToRexxObject(), send!count=[%8d], tid=[%6lu], rii_ID=[%p], rtc=[%p]: 2b. [%s]~%s(...)\n",
+                             count, (unsigned long) RgfGetTID(), instance, rtc
                              , ( rtc->IsArray(ro) ? "an Array" : rtc->ObjectToStringValue(ro) )
                              , c_msg
                              );
@@ -8800,11 +8955,14 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 #endif
 
             result_obj=rtc->SendMessage(ro, c_msg, ra); // with arguments
-
-#if defined (DEBUG_SEND_MESSAGE_TO_REXX_OBJECT)
-   fprintf(stderr, "...jniRexxSendMessageToRexxObject(): AFTER SendMessage(),...\n");fflush(stderr);
-#endif
         }
+#if defined (INFO_SEND_MESSAGE_TO_REXX_OBJECT)        // rgf, 2017-08-19
+    fprintf(stderr, "       <------- _jniRexxSendMessageToRexxObject(), retu!count=[%8d], tid=[%6lu], rii_ID=[%p], rtc=[%p]: result_obj=[%p]\n",
+                             count, (unsigned long) RgfGetTID(), instance, rtc, result_obj);
+    fflush(stderr);
+#endif
+
+
     }
 
     if (c_msg!=NULL)                    // did we use it, if so, free allocated memory
@@ -8826,7 +8984,22 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
                                                              REASON_EXECUTION_ERROR,   // reason
                                                              msg   // message
                                                         );
+
+#if defined (INFO_DETACH_THREAD)        // rgf, 2017-08-19
+    fprintf(stderr, "            ... _jniRexxSendMessageToRexxObject(), CheckCondition!     count=[%8d], tid=[%6lu], rtc=[%p]->DetachThread(): about...\n",
+                    count, (unsigned long) RgfGetTID(), rtc );
+    fflush(stderr);
+#endif
+
         rtc->DetachThread();
+
+#if defined (INFO_DETACH_THREAD)        // rgf, 2017-08-19
+    fprintf(stderr, "            ... _jniRexxSendMessageToRexxObject(), CheckCondition!     count=[%8d], tid=[%6lu], rtc=[%p]->DetachThread(): done.\n",
+                    count, (unsigned long) RgfGetTID(), rtc );
+    fflush(stderr);
+#endif
+
+
 
 #if defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "done. <--------------\n"); fflush(stderr);
@@ -8853,7 +9026,20 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     fprintf(stderr, "<-------------- ooRexx->DetachThread() - jniRexxSendMessageToRexxObject... "); fflush(stderr);
 #endif
 
+#if defined (INFO_DETACH_THREAD)        // rgf, 2017-08-19
+    fprintf(stderr, "            ... _jniRexxSendMessageToRexxObject(),      count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]->DetachThread(), about...\n",
+                           count, (unsigned long) RgfGetTID(), instance, rtc); fflush(stderr);
+    fflush(stderr);
+#endif
+
     rtc->DetachThread();
+
+#if defined (INFO_DETACH_THREAD)        // rgf, 2017-08-19
+    fprintf(stderr, "<-------------- _jniRexxSendMessageToRexxObject(),      count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]->DetachThread(): done.\n\n",
+                           count, (unsigned long) RgfGetTID(), instance, rtc); fflush(stderr);
+    fflush(stderr);
+#endif
+
 
 #if defined (DEBUG_REXX_ATTACH)
     fprintf(stderr, "done. <--------------\n"); fflush(stderr);
@@ -8898,8 +9084,19 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltI
 
 #if defined (INFO_HALT_RII)        // rgf, 2017-08-19
     static int countRII=0;
-    fprintf(stderr, "<--- arrived in _jniRexxHaltInterpreterInstance,        count=[%8d], tid=[%6lu], rii_ID=[%p]->[%p]%s\n",
-                    ++countRII, (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>") );
+
+    if (instance!=tmpInstance)
+    {
+        fprintf(stderr, "---> arrived in _jniRexxHaltInterpreterInstance,        count=[%8d], tid=[%6lu], rii_ID=[%p] <> rii_ID=[%p] (NOT OK!)\n",
+                        ++countRII, (unsigned long) RgfGetTID(), instance, tmpInstance);
+    }
+    else
+    {
+        fprintf(stderr, "---> arrived in _jniRexxHaltInterpreterInstance,        count=[%8d], tid=[%6lu], rii_ID=[%p]\n",
+                        ++countRII, (unsigned long) RgfGetTID(), instance );
+    }
+
+
     fflush(stderr);
 #endif
 
@@ -8949,6 +9146,13 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltI
 #endif
 
         instance->Halt();           // signal HALT to all interpreter threads; a void
+
+#if defined (INFO_HALT_RII)        // rgf, 2017-08-19
+    fprintf(stderr, "... done:  _jniRexxHaltInterpreterInstance,        count=[%8d], tid=[%6lu], rii_ID=[%p]\n",
+                    countRII, (unsigned long) RgfGetTID(), instance );
+    fflush(stderr);
+#endif
+
     }
 
 
@@ -8994,9 +9198,20 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
 
 #if defined (INFO_TERMINATE_RII)        // rgf, 2017-08-19
     static int countRII=0;
-    fprintf(stderr, "<--- arrived in _jniRexxTerminateInterpreterInstance(), count=[%8d], tid=[%6lu], rii_ID=[%p]->[%p]%s\n",
-                    ++countRII, (unsigned long) RgfGetTID(), instance, tmpInstance, (instance==tmpInstance ? "" : " <>") );
-    fflush(stderr);
+
+    if (instance!=tmpInstance)
+    {
+        fprintf(stderr, "\n===> PROBLEM in _jniRexxTerminateInterpreterInstance(),   count=[%8d], tid=[%6lu], rii_ID=[%p] <> rii_ID=[%p] (NOT OK!)\n",
+                        ++countRII, (unsigned long) RgfGetTID(), instance, tmpInstance);
+        fflush(stderr);
+    }
+    else
+    {
+        fprintf(stderr, "\n===> arrived in _jniRexxTerminateInterpreterInstance(), count=[%8d], tid=[%6lu], rii_ID=[%p]\n",
+                        ++countRII, (unsigned long) RgfGetTID(), instance);
+        fflush(stderr);
+    }
+
 #endif
 
 #if defined (DEBUG_TERMINATE_INTERPRETER)
@@ -9120,6 +9335,12 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
 #endif
 
     tmpInstance->Terminate();    // wait until all interpreter threads terminated
+
+#if defined (INFO_TERMINATE_RII)        // rgf, 2017-08-19
+    fprintf(stderr, "<============== _jniRexxTerminateInterpreterInstance(), count=[%8d], tid=[%6lu], rii_ID=[%p]\n\n",
+                    countRII, (unsigned long) RgfGetTID(), instance);
+    fflush(stderr);
+#endif
 
 #if defined (DEBUG_TERMINATE_INTERPRETER)
     fprintf(stderr, "(4b) .._jniRexxTerminateInterpreterInstance(...): AFTER Terminate(), thisTid=[%lu], tmpInstance=[%p]\n", (unsigned long) thisTid, tmpInstance);
