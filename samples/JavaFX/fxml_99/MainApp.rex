@@ -8,6 +8,7 @@
             2017-01-02, demo bringing up printer dialog (to choose different printer, to set page properties,
                         to cancel printing)
             2017-02-03, only runs, if ooRexx is 5.0 or higher
+            2017-09-26, rgf, use Platform.exit to let blocked main Rexx thread regain control
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -949,7 +950,9 @@ jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch 
 
  /* Closes the application. */
 ::method handleExit
-  .java.lang.System~exit(0)   -- the Java System class is always available by its environment name
+
+  bsf.loadClass("javafx.application.Platform")~exit   -- unload JavaFX, but let Rexx continue in main thread
+  -- .java.lang.System~exit(0)   -- the Java System class is always available by its environment name
 
 
 

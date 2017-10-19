@@ -40,7 +40,7 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
-/* changes: author Rony G. Flatscher (2016)
+/* changes: - author Rony G. Flatscher (2016)
             - the toJSON-methods got renamed from "parse" to "process"
 
             - package name translated into uppercase, now: "JSON.CLS"; reason: allows
@@ -66,6 +66,10 @@
 
             - added class attribute "version" in the form: major*100+minor || "." || yyyymmdd
               to class JSON and JsonBoolean
+
+            - authors: Adrian Baginski (slight changes Rony G. Flatscher), summer of 2017
+
+               - added minify(), toMinifiedJson()
 
    references: - JSON RFC, as of July 2006: <http://tools.ietf.org/html/rfc-4627>
 
@@ -113,7 +117,7 @@ end
 
 ::attribute version get class
   use strict arg           -- no argument allowed!
-  return "100.20160804"    -- version in the form: major*100+minor || "." || yyyymmdd
+  return "100.20170920"    -- version in the form: major*100+minor || "." || yyyymmdd
 
 /** Determines the encoding by inspecting the first four bytes of a JSON string, cf.
 *   cf. <https://www.ietf.org/rfc/rfc4627.txt>
@@ -726,7 +730,7 @@ parseError: raise propagate
   use arg jsonString
 
   jsonString=.mutableBuffer~new(jsonString)
-  jsonString~~changeStr("0d0a"x," ")~~changeStr("0a"x, " ") -- replace CR-LF, LF with blank
+  jsonString~translate( ,"0d0a"x)  -- replace CR and LF with blank
 
   currentPos = 1
   skipDeletingStr = .false

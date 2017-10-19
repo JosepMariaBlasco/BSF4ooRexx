@@ -37,6 +37,9 @@ import org.apache.bsf.*;   // BSF support
                               and returns that value
         - 2017-09-22, ---rgf: getLanguageVersion() directly employs a BSF Rexx engine, making sure
                               that BSF.CLS gets required
+
+	- 2017-09-23, ---rgf: getLanguageVersion() explicitly terminates the Rexx engine after 
+			      retrieving the Rexx version 			      
 */
 
 
@@ -55,7 +58,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     final public static RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY=new RexxScriptEngineFactory();
 
     final private static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
-    final private static String       ENGINE_VERSION   ="100.20170922";
+    final private static String       ENGINE_VERSION   ="100.20170923";
     final private static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
                                                                 "rxj", "rexxj", "jrexx",
                                                                 "rxo" );
@@ -112,6 +115,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
                 String rexxCode="parse version v \n return v \n ::requires BSF.CLS";    // get Rexx version
                 LANGUAGE_VERSION=(String) bsfRexxEngine.apply("RexxScriptEngineFactory.java",
                                                               0, 0, rexxCode, null, null);
+		bsfRexxEngine.terminate();   // do not use this Rexx interpreter instance anymore
             }
             catch (Exception exc)
             {

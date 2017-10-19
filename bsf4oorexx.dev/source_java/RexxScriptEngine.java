@@ -43,6 +43,11 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
    Changes:
 
+        2017-10-09, ---rgf, renamed "DispatchToToPublicRoutines" to "DispatchToPublicRoutines" (removing one "To")
+
+        2017-10-08, ---rgf, make sure that the static method dumpScriptContext(sc) will supply
+                            an appropriate header for non-standard scopes
+
         2017-09-22, ---rgf, make sure that in the constructor the RexxScriptEngine does not get
                             used to execute Rexx scripts, such that it is still possible to configure
                             the (to be created) Rexx interpreter instance
@@ -131,7 +136,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20170922
+ * @version 100.20171009
  * @since  2015-05-11
  *
  */
@@ -414,12 +419,12 @@ if (bDebug==true) {exc.printStackTrace(); }
         "/* say '/// --> /// in rexxRoutineWrapperCode - prolog... arg()='arg()                             */          \n" +
         "                                                                                                               \n" +
         "    /* create and return dispatcher object                                                         */          \n" +
-        "return .DispatchToToPublicRoutines~new(rexxScript, rexxPackage, scriptContext)                                 \n" +
+        "return .DispatchToPublicRoutines~new(rexxScript, rexxPackage, scriptContext)                                   \n" +
         "                                                                                                               \n" +
         "::requires BSF.CLS                              /* get Java camouflaging support                   */          \n" +
         "                                                                                                               \n" +
         "    /* dispatcher class for Invocable' <T> T getInterface(Class<T> clasz)                          */          \n" +
-        "::class 'DispatchToToPublicRoutines'                                                                           \n" +
+        "::class 'DispatchToPublicRoutines'                                                                             \n" +
         "                                                                                                               \n" +
         "::method init              /* constructor                                                          */          \n" +
         "  expose rexxScriptObject rexxScriptPackage jsr223ScriptContext                                                \n" +
@@ -1221,6 +1226,7 @@ if (bDebug==true) {exc.printStackTrace();}
         Object arrArgV[];
         try
         {
+// TODO: rgf, 2017-10-09: after BetaTesting make sure that neither the RexxScriptEngine, nor the RexxCompiledScript get supplied to the Rexx script!
             arrArgV=RexxCompiledScript.createArgV(args, sc, this, null);  // supply default context; no access to RexxCompiledScript
         }
         catch (BSFException exc)
@@ -1257,7 +1263,7 @@ if (bDebug==true) {exc.printStackTrace();}
             else if (scope==ScriptContext.ENGINE_SCOPE) { System.err.println(" --> ENGINE_SCOPE"); }
             else
             {
-                System.err.println();
+                System.err.println(System.err.println(" --> Scope with number ["+scope+"] -->");
             }
 
             Bindings bind=sc.getBindings(scope);
