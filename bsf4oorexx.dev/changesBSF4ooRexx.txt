@@ -1,3 +1,171 @@
+-------------------------------------- 2017-10-15 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - BsfQueryRegisteredFunctions(): return external Rexx function names BSFGetRIID() and
+    BSFGetRTC()
+
+-------------------------------------- 2017-10-09 ----------------------------------
+
+- RexxScriptEngine.java:
+
+  - renamed "DispatchToToPublicRoutines" to "DispatchToPublicRoutines" (removing one "To")
+
+-------------------------------------- 2017-10-08 ----------------------------------
+
+- RexxScriptEngine.java:
+
+  - make sure that the static method dumpScriptContext(sc) will supply
+    an appropriate header for non-standard scopes
+
+
+-------------------------------------- 2017-10-05 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - new BSFGetRTC():  allow Rexx to retrieve the Rexx thread context pointer as a
+    string for debugging purposes
+
+-------------------------------------- 2017-09-25 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - new BSFGetRIID(): allow Rexx to retrieve the Rexx instance ID (the instance pointer
+    as string) for debugging purposes
+
+-------------------------------------- 2017-09-23 ----------------------------------
+
+- RexxScriptEngineFactory.java:
+
+  - getLanguageVersion() explicitly terminates the Rexx engine after
+    retrieving the Rexx version
+
+-------------------------------------- 2017-09-22 ----------------------------------
+
+- RexxScriptEngine.java:
+
+  - make sure that in the constructor the RexxScriptEngine does not get
+    used to execute Rexx scripts, such that it is still possible to configure
+    the (to be created) Rexx interpreter instance
+
+- RexxScriptEngineFactory.java:
+
+  - getLanguageVersion() directly employs a BSF Rexx engine, making sure
+    that BSF.CLS gets required
+
+-------------------------------------- 2017-09-14 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - BsfJavaException(): allow for omitting first argument; if omitted, then
+    defaulting to option "CHECK" which returns .true, if a Java exception is
+    pending, .false else
+
+-------------------------------------- 2017-09-11 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - BsfJavaException(): corrected leftover quick test that deleted the msg buffer,
+    which caused an illegal pointer to be used thereafter
+
+-------------------------------------- 2017-08-27 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - added undocumented function BsfApplyHotFixCrash(), which will be
+    removed; it allows to activate the "HotFix" in SendMessage() from Java
+    and runProgram from Java which yields the thread before attaching to
+    Rexx; this may help to overcome some crashes in the current ooRexx 5 beta;
+    usage: bsfApplyHotFixCrash( | .true | false); if no argument, the current
+    setting will be returned
+
+-------------------------------------- 2017-08-23 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - continue tidying up and refactoring to make code easier legible
+
+    - remove "RGF_INFO_1", "RGF_INFO", "RGF_BIT", "RGF_BIT2", "DEBUG3", "DEBUG40",
+      "RGF_ATTACH", "RGF_DETACH", "DEBUG_JAVA_ATTACH_DETACH"
+    - introduced "DEBUG_CREATE_REXX_EXCEPTION"
+    - renamed "DEBUG_LOADER_UNLOADER" to "DEBUG_BSF_LOADER_UNLOADER",
+      "DEBUG_RGF_ATTACH_NEW" to "DEBUG_JAVA_ATTACH"
+    - remove unused "DEBUG_SHOW_STRUCTURES", "RGF_MUTEX4RXSIOTRC", "RGF_INVALID_ROUTINE",
+      "DEBUG_THREADS", "DEBUG_RGF_PROCESS_J_ARGS_UNO"
+    - remove TID2NODE-related strctures, not needed anymore
+    - replaced SNPRINTF with function snprinf(), now that MSC includes it as well under that name
+    - removed MSC_VER "#pragma warning(disable:4100)"
+
+-------------------------------------- 2017-08-21 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - allow (temporarily) to disable HOT_FIX_CRASH for testing purposes: RexxRoutine "BsfApplyHotFixCrash()"
+
+-------------------------------------- 2017-08-20 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - continue tidying up and refactoring to make code easier legible
+
+    - remove definition "CONFIG_REXX_HANDLERS_AS_INTERFACES" as we have been using
+      Java interfaces only
+    - remove definitions DEBUG40_NIXI, DEBUG_RGF_PROBES, USE_OREXX, USE_REXXTRANS,
+      RGF_TRUE
+
+-------------------------------------- 2017-08-19 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - continue tidying up and refactoring to make code easier legible
+
+    - added INFO_* statements for easying debugging calls from Java to Rexx to
+      help trace down cause of Rexx crashes
+    - added HOT_FIX_CRASH definition: sleeping/relinquisghing the thread before
+      doing a Rexx AttachThread() significantly reduces crashes, cf. new function
+      "hotfix_relinquish_thread()"; trying to remove the crashes by experimenting
+      with the "rgf_multihreaded" test units to determine number of relinquishes
+      needed to stabilize; still occassionally/rarely hangs occur
+
+-------------------------------------- 2017-08-18 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - start tidying up and refactoring to make code easier legible (has become a "cemetery" of all versions
+    of bsf4rexx and bsf4oorexx in the past 16 years)
+
+    - rename "const char *" (and PSZ) -> CSTRING; removed PSZ definition
+    - removed trailing '\0' in format string "%s\n%s\0"
+    - rename typedef "VOID" to "void", "PVOID" to "POINTER" (rexx.h), "TRUE" to "1"
+    - remove outdated typedefs like VOID, PVOID, TRUE, APIRET, PFN, REXXPFN, PINT,
+      TID and the like
+    - replacing "TID" with "thread_id_t", removed typdef for TID and UNIX/WINDOWS conditionals
+    - replaced RgfAllocateMemory() with RexxAllocateMemory() and RgfFreeMemory() with
+      RexxFreeMemory(); removed obsolete RgfAllocateMemory() and RgfFreeMemory()
+    - remove RGF_USE_MUTEX define for Windows, just use it (forgo critical section variant)
+    - remove DEBUG_RAISE_CONDITION
+
+-------------------------------------- 2017-08-15 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - BSFCreateRexxProxy(): use "R[EXXOBJECT]" instead of "R[EXX]" to self-document how
+    the first argument will be  used if of type .string, .method or .array, which
+    by default will be used for the code to carry out for the dynamically created
+    unknown method; make sure that now JavaProxy is attempted if third argument
+    is "R[EXXOBJECT]"
+
+
+-------------------------------------- 2017-08-14 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - BSFCreateRexxProxy(): if first argument is a Rexx string, method or array and
+    the third argument is "R[EXX]", then the first argument is proxied as is (allowing
+    Java to send it all ooRexx messages) and not used as the code for a dynamically
+    created UNKNOWN method that gets proxied by the invoked "BSF_OnTheFly.cls" program
+
+---------------------------------------------------------------------------------------------------------------------------------
 
 -------------------------------------- 2017-08-13 ----------------------------------
 

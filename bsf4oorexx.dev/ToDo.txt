@@ -1,3 +1,22 @@
+----
+
+2017-10-22, rgf:
+
+        - Java 9: Java 9 introduced incompatibilities with earlier versions of
+                  Java, which need to be addressed in the next version of
+                  BSF4ooRexx
+
+        - .local: all Rexx programs/packages must move their entries from
+                  .local to .environment; reason: Rexx objects executed in
+                  different Rexx interpreter instances will have different
+                  .local objects available; afftected e.g. BSF.CLS, UNO.CLS,
+                  rgf_util2.rex
+
+        - RexxScriptEngine: ? add finalize() in which BSFRexxEngine.terminate() gets
+                  invoked ?
+
+----
+
 2017-01-22, rgf:
 
         - Janino development has occurred, is up-to-date, which is great

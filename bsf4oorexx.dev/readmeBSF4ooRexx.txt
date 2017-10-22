@@ -1,4 +1,4 @@
-BSF4ooRexx, 4.52                          15 Aug 2016 (Beta)
+BSF4ooRexx, 6.00                          22 Oct 2017 (Beta)
 =================================================================================
 
 This is a package that creates a bridge between ooRexx and Java. For that
@@ -6,9 +6,16 @@ reason Java must be installed on your machine as well, which is easy and
 a one click away e.g. from <http://www.java.com>. See box below for an
 important information.
 
+PLEASE NOTE: this version of BSF4ooRexx is for Java 1.6/6, 1.7/7 or 1.8/8;
+
+    (as Java 9 is not fully backwardly compatible with earlier versions
+    of Java in the reflection area, BSF4ooRexx will need to be updated
+    to adjust for these incompatibilities sometimes in the near future)
+
+
 *IMPORTANT* !
 
-    *AFTER DOWNLOADING* the installation zip-archive (e.g. BSF4ooRexx_install_v452-20160815-beta.zip),
+    *AFTER DOWNLOADING* the installation zip-archive (e.g. BSF4ooRexx_install_v600-20171022-beta.zip
     but *BEFORE UNZIPPING* make sure that no "security" attributes are attached to it.
 
     On *WINDOWS*: right mouse click on the zip-file and choose "Unblock" from the
@@ -19,12 +26,6 @@ important information.
                   occur, when using the new .NET support, as the Windows
                   unzip utility would mark all unzipped files as a security risk.]
 
-*******************************************************************************
-
-HINT: after unzipping the zip-archive you can get additional installation information
-      beyond this readme file by placing your browser to the file:
-
-         bsf4oorexx/information/0_startHere.html
 
 
 *******************************************************************************
@@ -36,6 +37,16 @@ HINT: after unzipping the zip-archive you can get additional installation inform
 *      -> consult after unzipping:  bsf4oorexx/information/0_startHere.html   *
 *                                                                             *
 *******************************************************************************
+
+
+===============================================================================
+
+HINT: after unzipping the zip-archive you can get additional installation information
+      beyond this readme file by placing your browser to the file:
+
+         bsf4oorexx/information/0_startHere.html
+
+
 
 0) If there is a previous version of BSF4Rexx or BSF4ooRexx installed on your
    system, please deinstall it first!
@@ -60,7 +71,7 @@ HINT: after unzipping the zip-archive you can get additional installation inform
    - the setup program named "install.cmd" (Windows) or "install.sh"
     (Linux, MacOSX), e.g. by double-clicking the installation scripts
     or opening a console/terminal changing to the above location and
-    enter "install.cmd" or "install.sh" manually which will cause
+    enter "install.cmd" or "sh install.sh" manually which will cause
     elevation to Administrator/uperuser/sudo
 
     (you may need to run from the console/terminal as lately some installations

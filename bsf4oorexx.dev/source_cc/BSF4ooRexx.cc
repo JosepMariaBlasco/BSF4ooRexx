@@ -37,7 +37,7 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
-    6.0.0   2017-10-15, rgf: - return external Rexx function names BSFGetRIID() and BSFGetRTC()
+    6.0.0   2017-10-15, rgf: - BsfQueryRegisteredFunctions(): return external Rexx function names BSFGetRIID() and BSFGetRTC()
 
     6.0.0   2017-10-05, rgf: - new BSFGetRTC():  allow Rexx to retrieve the Rexx thread context pointer as a string for debugging purposes
 
@@ -109,7 +109,7 @@ remarks:
                                unknown method; make sure that now JavaProxy is attempted if third argument
                                is "R[EXXOBJECT]"
 
-    6.0.0   2017-08-14, rgf: - if first argument is a Rexx string, method or array and the third argument is
+    6.0.0   2017-08-14, rgf: - BSFCreateRexxProxy(): if first argument is a Rexx string, method or array and the third argument is
                                "R[EXX]", then the first argument is proxied as is (allowing Java to send
                                it all ooRexx messages) and not used as the code for a dynamically created UNKNOWN
                                method that gets proxied by the invoked "BSF_OnTheFly.cls" program
