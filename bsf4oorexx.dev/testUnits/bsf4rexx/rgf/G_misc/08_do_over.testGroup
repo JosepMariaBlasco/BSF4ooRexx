@@ -1,0 +1,98 @@
+#!/usr/bin/rexx
+/*
+   name:             rexx_testBsfIsA.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2017-10-23
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4Rexx 6.0: do...over automatically for Java arrays, Enumerations, Iterators
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testDoOver)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+
+::class "testDoOver" subclass ooTestCase public
+
+::method setup
+   /* Unit tests for the older interface may have turned off the prefixing of the return values, if so, restore it. */
+  if bsf("bsfPrefixReturnValue")=0 then
+     call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+
+::method "test_01_do_over_java_array"
+
+    jarr=.bsf~bsf.createJavaArrayOf("java.lang.String", "1_one", .nil , "3_three", "4_four")
+
+    self~assertEquals(4,jarr~size)  -- Java array has a capacity==size of 4
+    rexxArr=.array~new
+    do val over jarr       -- iterate over Java array
+       rexxArr~append(val)
+    end
+    self~assertEquals(4,rexxArr~items)
+    self~assertSameList(.array~of("1_one", .nil , "3_three", "4_four"), rexxArr)
+-- say "at end of: test_01" "/ self~assertCount:" self~assertCount
+
+
+::method "test_02_do_over_Hashmap_using_Iterator"
+
+    ht=.bsf~new("java.util.Hashtable")
+    ht~put(1, "1_one")
+    ht~put(3, "3_three")
+    ht~put(4, "4_four")
+
+    rexxArr=.array~new
+    do key over ht      -- iterate over Hashtable, key of Iterator will be used
+       rexxArr~append(ht~get(key))
+    end
+    self~assertEquals(3,rexxArr~items)
+    self~assertSameList(.array~of("1_one", "3_three", "4_four"), rexxArr~sort)
+
+-- say "at end of: test_02" "/ self~assertCount:" self~assertCount
+
+
+::method "test_03_do_over_Hashmap_using_Enumeration"
+
+    ht=.bsf~new("java.util.Hashtable")
+    ht~put(1, "1_one")
+    ht~put(3, "3_three")
+    ht~put(4, "4_four")
+
+    rexxArr=.array~new
+    do key over ht~keys    -- iterate over Hashtable, key of Iterator will be used
+       rexxArr~append(key)
+    end
+    self~assertEquals(3,rexxArr~items)
+    self~assertSameList(.array~of("1", "3", "4"), rexxArr~sort)
+
+-- say "at end of: test_03" "/ self~assertCount:" self~assertCount
+
+::method "test_04_do_over_Hashmap_using_Set_iterator"
+
+    ht=.bsf~new("java.util.Hashtable")
+    ht~put(1, "1_one")
+    ht~put(3, "3_three")
+    ht~put(4, "4_four")
+
+    rexxArr=.array~new
+    do key over ht~keySet~iterator     -- iterate over Hashtable, key of Iterator will be used
+       rexxArr~append(key)
+    end
+    self~assertEquals(3,rexxArr~items)
+    self~assertSameList(.array~of("1", "3", "4"), rexxArr~sort)
+
+-- say "at end of: test_04" "/ self~assertCount:" self~assertCount
+
+
