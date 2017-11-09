@@ -655,7 +655,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20171022" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20171104" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4772,7 +4772,8 @@ syntax:
 /**
 * @return returns <code>.true</code>, if running on the GUI thread ("JavaFX Application Thread"), <code>.false</code> else
 */
-::method isGuiThread     class
+-- ::method isGuiThread     class
+::method isFxApplicationThread     class
   expose PlatformClz
 
   if PlatformClz=.nil then self~setup  -- make sure attributes are initialized
@@ -4816,7 +4817,7 @@ syntax:
 syntax:
   guiMsg~errorCondition=condition("o") -- supply error condition object
   guiMsg~hasError=.true    -- indicate we had an error
-  guiMsg~completed=.true    -- communicate that processing has completed in this case as well
+  guiMsg~completed=.true   -- communicate that processing has completed in this case as well
 
 -- TODO: remove the following debug statements
 .stderr~say("---> SOD (start of debug), line #" .line)

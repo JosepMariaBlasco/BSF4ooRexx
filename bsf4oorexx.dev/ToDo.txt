@@ -1,5 +1,26 @@
 ----
 
+2017-10-23, rgf:
+
+        - resolving constructor, fields, methods reflectively should follow the same rules
+
+        - resolving constructors: check whether argument implements interface that a constructor
+          argument explicitly mandates; e.g. Java-Array as an argument to ArrayList(Java-Array)
+          does not resolve currently; maybe because the reflection code does deploy an incomplete
+          algorithm;
+
+        - maybe defining two external classes that carry out reflection <=1.8/8 and one
+          >= 9 for constructors, fields, methods;
+
+        - check whether an omitted value is really null-string and not .nil for Java (one has
+          to explicitly list .nil, which should not be necessary)
+
+         jarr=.bsf~bsf.createJavaArrayOf("java.lang.String", "1_one", , "3_three", "4_four")
+         do val over jarr       -- iterate over Java array
+                ... will yield "" for second (.nil) item
+         end
+----
+
 2017-10-22, rgf:
 
         - Java 9: Java 9 introduced incompatibilities with earlier versions of

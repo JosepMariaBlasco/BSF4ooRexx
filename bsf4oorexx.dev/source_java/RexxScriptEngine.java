@@ -15,6 +15,8 @@ import java.util.TimeZone;
 import java.util.List;
 import java.util.Vector;
 
+import java.net.URL;         // rgf, 20171104: FXML-invocation has 'location' attribute of type URL
+
 import org.apache.bsf.BSFManager;           // BSF support
 import org.apache.bsf.BSFException;         // BSF support
 
@@ -42,6 +44,11 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+
+        2017-11-04, ---rgf, if missing filename for eval(): check whether ScriptContext Bindings have
+                            an entry "location" of type java.net.URL; if so, then assume that the
+                            execution comes from a JavaFX FXML file so use that location file as part
+                            of the artificially created filename to ease debugging
 
         2017-10-09, ---rgf, renamed "DispatchToToPublicRoutines" to "DispatchToPublicRoutines" (removing one "To")
 
@@ -779,7 +786,18 @@ if (bDebug)
             String filename=(String) sc.getAttribute(ScriptEngine.FILENAME);
             if (filename==null)     // no filename given
             {
-                filename="filename_created_by_"+this.toString().replace('.','_').replace('@','-')+"_at_"+getGMTFormattedDate4Filename()+".rex";
+                // rgf, 2017-11-04: maybe executed because defined in a FXML file (set up and executed by FXMLLoader),
+                //                  if so "location" is a URL to the FXML file, use its name to indicate where the
+                //                  invocation of the Rexx code comes from
+                Object location=sc.getAttribute("location");
+                if (location instanceof URL)
+                {
+                    filename="rexx_invoked_via_["+((URL) location).getFile()+"]_at_"+getGMTFormattedDate4Filename()+".rex";
+                }
+                else    // create a debuggable filename that includes this RexxScriptEngine instance and date/time information
+                {
+                    filename="filename_created_by_"+this.toString().replace('.','_').replace('@','-')+"_at_"+getGMTFormattedDate4Filename()+".rex";
+                }
             }
 
             CompiledScript rcs=compile(script, filename);   // create and get the compiled (tokenized) form
@@ -1263,7 +1281,7 @@ if (bDebug==true) {exc.printStackTrace();}
             else if (scope==ScriptContext.ENGINE_SCOPE) { System.err.println(" --> ENGINE_SCOPE"); }
             else
             {
-                System.err.println(System.err.println(" --> Scope with number ["+scope+"] -->");
+                System.err.println(" --> Scope with number ["+scope+"] -->");
             }
 
             Bindings bind=sc.getBindings(scope);
