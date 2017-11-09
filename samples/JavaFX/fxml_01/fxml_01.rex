@@ -1,6 +1,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2016-12-06
+   changed: 2017-11-09, rgf: adapted to Rexx symposium 2017 article
 
    purpose: this is a simple the Rexx GUI application (taking advantage of JavaFX)
             where the GUI elements are defined in a FXML file ("FXML_01_Document.fxml"),
@@ -20,42 +21,32 @@
 */
 
 
-   -- create Rexx object that will control the FXML set up
-rexxHandler=.rxDocHandler~new
-
-   -- instantiate the abstract JavaFX class, the abstract "start" method will be served by rexxHandler
-rxApp=BsfCreateRexxProxy(rexxHandler,,"javafx.application.Application")
-
-   -- launch the application, invoke "start" and then stay up until the application closes
-rxApp~launch(rxApp~getClass, .nil)     -- need to use this version of launch in order to work
-
+rxApp=.RexxApplication~new -- create Rexx object that will control the FXML set up
+jrxApp=BSFCreateRexxProxy(rxApp, ,"javafx.application.Application")
+jrxApp~launch(jrxApp~getClass, .nil)    -- launch the application, invokes "start"
 
 ::requires "BSF.CLS"    -- get Java support
 
-/* implements the abstract method "start" for the Java class javafx.application.Application
-   (BSF4ooRexx also supplies another (trailing) slotDir (a Rexx Directory) argument, as "start" is
-   invoked from Java)
-*/
-::class RxDocHandler
+-- Rexx class defines "javafx.application.Application" abstract method "start"
+::class RexxApplication -- implements the abstract class "javafx.application.Application"
 
-   /* loads the fxml document defining the GUI elements, sets up a scene for it and shows it */
-::method start    -- will be invoked by the "launch" method
-  use arg stage   -- we get the stage to use for our UI
-
-  stage~setTitle("Hello JavaFX from ooRexx!")   -- we could use stage~title="..." instead!
+::method start          -- Rexx method "start" implements the abstract method
+  use arg primaryStage  -- fetch the primary stage (window)
+  primaryStage~setTitle("Hello JavaFX from ooRexx! (Green Version)")
 
    -- create an URL for the FMXLDocument.fxml file (hence the protocol "file:")
-  rootDocUrl=.bsf~new("java.net.URL", "file:FXML_01_Document.fxml")
-  root=bsf.loadClass("javafx.fxml.FXMLLoader")~load( rootDocUrl  )   -- load the fxml document
+  fxmlUrl=.bsf~new("java.net.URL", "file:fxml_01.fxml")
+   -- use FXMLLoader to load the FXML and create the GUI graph from its definitions:
+  rootNode=bsf.loadClass("javafx.fxml.FXMLLoader")~load(fxmlUrl)
 
-  scene=.bsf~new("javafx.scene.Scene", root)    -- create a scene for our document
-  stage~setScene(scene)                         -- set the stage to our scene
-  stage~show                                    -- show the stage (and thereby our scene)
+  scene=.bsf~new("javafx.scene.Scene", rootNode)    -- create a scene for our document
+  primaryStage~setScene(scene)  -- set the stage to our scene
+  primaryStage~show             -- show the stage (and thereby our scene)
 
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016 Rony G. Flatscher
+         Copyright 2016-2017 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

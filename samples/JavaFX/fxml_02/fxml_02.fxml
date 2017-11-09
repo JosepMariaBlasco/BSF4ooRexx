@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<!-- comment: this file can be displayed and edited with the JavaFX SceneBuilder, e.g. from
+              <http://gluonhq.com/labs/scene-builder/>; however note that as of fall 2016
+              (SceneBuilder 2.0) there are bugs present that may remove text-field values
+              that start with a $ character, so you need to fill them back in with a plain
+              text editor! -->
+
+<!-- processing instruction (PI) defines the Java script engine named 'rexx'
+     to be used to execute programs (fx:script or in event attributes) -->
+
+<?language rexx?>
+
+<AnchorPane id="AnchorPane" fx:id="idRoot" prefHeight="240.0" prefWidth="480.0"
+            styleClass="root" stylesheets="@fxml_02.css"
+            xmlns:fx="http://javafx.com/fxml/1">
+
+    <!-- defines entries for ScriptContext bindings, public routine 'klickButton' -->
+    <fx:script source="fxml_02_controller.rex" />
+
+    <!-- comment: define the JavaFx controls that make up the GUI, all controls that possess a fx:id
+                  attribute are stored by their id in the ScriptContext's GLOBAL_SCOPE -->
+
+    <children>
+        <Label fx:id="idLabelRexxStarted" alignment="CENTER" layoutX="50.0"
+               layoutY="26.0"                minHeight="16" minWidth="69"
+               prefHeight="16.0" prefWidth="380.0" styleClass="rexxStarted"
+               stylesheets="@fxml_02.css" text="$rexxStarted" />
+
+        <Button fx:id="idButton" layoutX="210.0" layoutY="137.0" onAction=
+                  "slotDir=arg(arg()) /* last argument added by BSF4ooRexx */;
+                   say ' /// onAction eventHandler calling routine ''klickButton'' \\\';
+                   call klickButton slotDir /* now process the event */; "
+           text="%clickMe" />
+
+        <Label fx:id="idLabelYear" layoutX="50.0" layoutY="175.0" minHeight="16"
+               minWidth="20" style="-fx-background-color:palegoldenrod;" text="%year" />
+
+        <Label fx:id="idLabel" layoutX="95.0" layoutY="175.0" minHeight="16"
+               minWidth="49" prefHeight="16.0" prefWidth="335.0"
+               style="-fx-background-color: honeydew;" />
+
+        <Label fx:id="idLabelRexxInfo" alignment="CENTER" layoutX="50.0" layoutY="200.0"
+               minHeight="16.0" minWidth="49.0" prefHeight="16.0" prefWidth="380.0"
+               style="-fx-background-color: skyblue; -fx-cursor: wait;
+                      -fx-font-family: serif; -fx-font-weight: lighter;"
+               text="${rexxInfo}" />
+
+        <!-- comment: "${rexxInfo}" will cause continuous fetching of the value of the attribute
+                      "rexxInfo" from the ScriptContext's Bindings;
+                      note: SceneBuilder as of 2016-11-22 cannot handle the text attribute's
+                      value: "${rexxInfo}", displays a warning icon and does not display this entry!
+                      -->
+    </children>
+</AnchorPane>

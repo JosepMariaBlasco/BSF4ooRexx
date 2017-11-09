@@ -9,6 +9,8 @@
                         to cancel printing)
             2017-02-03, only runs, if ooRexx is 5.0 or higher
             2017-09-26, rgf, use Platform.exit to let blocked main Rexx thread regain control
+            2017-11-08, rgf, if Preferences "filePath" does not exist, remove that preference, such
+                        that on next run dummy data gets created
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -124,15 +126,25 @@ jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch 
    -- do we have a file save already, such that a "filePath" preference was set at the user's root node?
   prefs=bsf.importClass("java.util.prefs.Preferences")~userRoot   -- get the user's root preference node, tutorial part # 5
   personFilePath=prefs~get("filePath", .nil) -- get filePath preference, if any
+
   if personFilePath<>.nil then
   do
      if sysFileExists(personFilePath) then
+     do
         self~loadPersonDataFromFile(personfilePath)
-     else   -- if file does not exist, do not show it
+        say "loading person data from:" pp(personfilePath)
+     end
+     else   -- if file does not exist, do not show it and remove preference
+     do
+        say "preference address book file" pp(personFilePath) "does not exist!"
         personFilePath=.nil
+        say "-> removing preference" pp("filePath")
+        prefs~remove("filePath")
+     end
   end
   else   -- temporarily make sure we have (debug) data available to us
   do
+     say "no" pp("filePath") "preference found, creating dummy data..."
          -- this creates ooRexx Person objects that get stored as Java RexxProxy objects, to be used for the TableView
      personData~add(.person~new("Hans", "Muster"))
      personData~add(.person~new("Ruth", "Mueller"))

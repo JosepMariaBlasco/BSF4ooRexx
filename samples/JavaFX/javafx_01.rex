@@ -1,6 +1,7 @@
 /*
    author:  Rony G. Flatscher
    date:    2016-12-06
+   changed: 2017-11-09, rgf: adapted to Rexx symposium 2017 article
 
    purpose: this is the standalone (FXML-less) version of the Rexx GUI application (taking advantage of JavaFX)
             in the fxml_01/ directory, i.e. the GUI elements are created in Rexx code only
@@ -16,82 +17,71 @@
 
 */
 
-   -- create Rexx object that will control the FXML set up
-rexxHandler=.RexxAppHandler~new
-
-   -- instantiate the abstract JavaFX class, the abstract "start" method will be served by rexxHandler
-rxApp=BSFCreateRexxProxy(rexxHandler, ,"javafx.application.Application")
-
-   -- launch the application, invoke "start" and then stay up until the application closes
-rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and-groovy-exception/> or <http://stackoverflow.com/questions/16636883/javafx-anonymous-application-class>, etc.
-
+rxApp=.RexxApplication~new  -- create Rexx object that will control the FXML set up
+   -- rxApp will be used for "javafx.application.Application"
+jrxApp=BSFCreateRexxProxy(rxApp, ,"javafx.application.Application")
+jrxApp~launch(jrxApp~getClass, .nil)    -- launch the application, invokes "start"
 
 ::requires "BSF.CLS"    -- get Java support
 
-::class RexxAppHandler  -- the Rexx handler for javafx.application.Application
+-- Rexx class defines "javafx.application.Application" abstract method "start"
+::class RexxApplication -- implements the abstract class "javafx.application.Application"
+::method start          -- Rexx method "start" implements the abstract method
+  use arg primaryStage  -- fetch the primary stage (window)
+  primaryStage~setTitle("Hello JavaFX from ooRexx! (Blue Version)")
 
-::method start          -- will be called by JavaFX, allows to setup everything
-  use arg primaryStage
+  -- get Java class objects to ease access to their constants (static fields)
+  colorClz=bsf.loadClass("javafx.scene.paint.Color") -- JavaFX colors
+  cdClz=bsf.loadClass("javafx.scene.control.ContentDisplay") -- ContentDisplay constants
+  alClz=bsf.loadClass("javafx.geometry.Pos")      -- alignment constants (an Enum class)
 
-  primaryStage~setTitle("Hello JavaFX from ooRexx!")  -- we could use primaryStage~title="..." instead!
-
-  colorClz=bsf.loadClass("javafx.scene.paint.Color")           -- get access to the JavaFX colors
-  cdClz=bsf.loadClass("javafx.scene.control.ContentDisplay")   -- get access to ContentDisplay constants
-  alClz=bsf.loadClass("javafx.geometry.Pos")                   -- get access to alignment constants (an Enum class)
-
-
-  root=.bsf~new("javafx.scene.layout.AnchorPane")   -- create the root node
-  root~prefHeight=200
-  root~prefWidth=400
-
+  root=.bsf~new("javafx.scene.layout.AnchorPane") -- create the root node
+  root~prefHeight=200           -- or: root~setPrefHeight(200)
+  root~prefWidth=400            -- or: root~setPrefWidth(400)
       -- define the Label
   lbl=.bsf~new("javafx.scene.control.Label")
-  lbl~textFill=colorClz~BLUE
-  lbl~setLayoutX(76)
-  lbl~setLayoutY(138)
-  lbl~prefHeight="16.0"
-  lbl~prefWidth="248.0"
-  lbl~contentDisplay=cdClz~CENTER         -- center ContentDisplay
-  lbl~alignment=alClz~valueOf("CENTER")   -- center align
-
-      -- define and add the Button
+  lbl~textFill=colorClz~BLUE    -- or: lbl~setTextFill(colorClz~BLUE)
+  lbl~setLayoutX(76)            -- or: lbl~layoutX=76
+  lbl~setLayoutY(138)           -- or: lbl~layoutY=138
+  lbl~prefHeight="16.0"         -- or: lbl~setPrefHeight("16.0")
+  lbl~prefWidth="248.0"         -- or: lbl~setPrefWidth("248.0")
+  lbl~contentDisplay=cdClz~CENTER       -- or: lbl~setContentDisplay (cdClz~CENTER)
+  lbl~alignment=alClz~valueOf("CENTER") -- or: lbl~setAlignment(alClz~valueOf("CENTER"))
+      -- define and add the Button, assign values as if we deal with Rexx attributes
   btn=.bsf~new("javafx.scene.control.Button")
-  btn~textFill=colorClz~BLUE
-  btn~layoutX=170       -- assign as if it was a Rexx attribute
-  btn~layoutY=89        -- assign as if it was a Rexx attribute
-  btn~text="Click Me!"  -- assign as if it was a Rexx attribute
-      -- create a RexxButtonHandler, wrap it up as a Java RexxProxy implementing all methods of "javafx.event.EventHandler":
-  bh=BSFCreateRexxProxy(.RexxButtonHandler~new(lbl), ,"javafx.event.EventHandler")
-  btn~setOnAction(bh)  -- let this instance's Java RexxProxy handle the event
-
-      -- add the button to
+  btn~textFill=colorClz~BLUE    -- or: btn~setTextFill(colorClz~BLUE)
+  btn~layoutX=170               -- or: btn~setLayoutX(170)
+  btn~layoutY=89                -- or: btn~setLayoutY(89)
+  btn~text="Click Me!"          -- or: btn~setText("Click Me!")
+      -- create a Rexx ButtonHandler, wrap it up as a Java RexxProxy
+  rh=.RexxButtonHandler~new(lbl)-- create Rexx object, supply it the label "lbl"
+  jrh=BSFCreateRexxProxy(rh, ,"javafx.event.EventHandler")
+  btn~setOnAction(jrh)          -- forwards "handle" message to Rexx object
+      -- add the button and label to the AnchorPane object
   root~getChildren~~add(btn)~~add(lbl)
-
-      -- put the scene on the stage (using AnchorPane's preferred height and width)
+      -- put the scene on the stage
   primaryStage~setScene(.bsf~new("javafx.scene.Scene", root))
-  primaryStage~show
+  primaryStage~show -- show the stage (window) with the scene
 
    -- Rexx class which handles the button presses
-::class RexxButtonHandler
-::method init
-  expose label       -- define an attribute
-  use arg label      -- save reference to javafx.scene.control.Label
+::class RexxButtonHandler   -- implements "javafx.event.EventHandler" interface
+::method init       -- Rexx constructor method
+  expose label      -- allow direct access to ooRexx attribute
+  use arg label     -- save reference to javafx.scene.control.Label
 
-::method handle      -- will be invoked by the Java side
-  expose label
-  say .dateTime~new": arrived in code defined for Button's setOnAction method, i.e. the 'handle' method"
-
-  say '... current value of 'pp(label)': label~getText='pp(label~text)  ;
-  label~text="Clicked at:" .dateTime~new  -- set the label
-
-  say .dateTime~new': returning from the event handler' ;
+::method handle     -- will be invoked by the Java side
+  expose label      -- allow direct access to ooRexx attribute, not used in this example
+  -- use arg event, slotDir    -- expected arguments
+  now=.dateTime~new -- time of invocation
+  say now": arrived in method 'handle' ..."
+  say '... current value of label='pp(label~getText)
+  label~text="Clicked at:" now         -- set text property
+  say '...     new value of label='pp(label~getText)
   say
-
-
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016 Rony G. Flatscher
+         Copyright 2016-2017 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

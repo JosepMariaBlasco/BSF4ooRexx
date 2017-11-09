@@ -1,6 +1,8 @@
+   /* usage: fxml_02.rex [de] ... "de" will cause fxml_02_de.properties to be used */
 /*
    author:  Rony G. Flatscher
    date:    2016-12-06
+   changed: 2017-11-09, rgf: adapted to Rexx symposium 2017 article
 
    purpose: this is a simple the Rexx GUI application (taking advantage of JavaFX)
             where the GUI elements are defined in a FXML file ("FXML_02_Document.fxml"),
@@ -27,55 +29,49 @@
    /* only "de" has an effect and will use the German translation for the */
 parse arg locale .
 
-   -- create Rexx object that will control the FXML set up
-if locale<>"" then rexxHandler=.rxDocHandler~new(locale)
-              else rexxHandler=.rxDocHandler~new
+   -- create Rexx object that will control the FXML set up with or without local
+if locale<>"" then rxApp=.rexxApplication~new(locale)
+              else rxApp=.rexxApplication~new
 
-   -- instantiate the abstract JavaFX class, the abstract "start" method will be served by rexxHandler
-rxApp=BsfCreateRexxProxy(rexxHandler,,"javafx.application.Application")
-
-   -- launch the application, invoke "start" and then stay up until the application closes
-rxApp~launch(rxApp~getClass, .nil)     -- need to use this version of launch in order to work
-say center(" after rxApp~launch ", 70, "-")
+   -- instantiate the abstract JavaFX class, abstract "start" method implemented in Rexx
+jrxApp=BsfCreateRexxProxy(rxApp,,"javafx.application.Application")
+   -- launch the application, which will invoke the methdos "init" followed by "start"
+jrxApp~launch(jrxApp~getClass, .nil)    -- need to use this version of launch in order to work
+say center(" after jrxApp~launch ", 70, "-")
 
 ::requires "BSF.CLS"    -- get Java support
 
-/* implements the abstract method "start" for the Java class javafx.application.Application
-   (BSF4ooRexx also supplies another (trailing) slotDir (a Rexx Directory) argument, as "start" is
-   invoked from Java)
-*/
-::class RxDocHandler
+/* implements the abstract method "start" of javafx.application.Application */
+::class RexxApplication
 
-::method init  -- constructor to fetch a locale string ("de" for German, file "fxml_01_de.properties"), if any
-  expose locale
-  use strict arg locale="en"
+::method init   -- constructor to fetch the locale ("de": "fxml_01_de.properties")
+  expose locale -- get direct access to attribute
+  use strict arg locale="en"    -- if omitted use "fxml_01_en.properties"
 
-   /* loads the fxml document defining the GUI elements, sets up a scene for it and shows it */
-::method start    -- will be invoked by the "launch" method
-  expose locale
-  use arg stage   -- we get the stage to use for our UI
+   /* loads the FXML file (doing translations), sets up a scene for it and shows it */
+::method start  -- implementation in Rexx
+  expose locale -- get direct access to attribute
+  use arg stage -- we get the stage to use for our UI
 
-   -- create an URL for the FMXLDocument.fxml file (hence the protocol "file:")
-  rootDocUrl=.bsf~new("java.net.URL", "file:FXML_02_Document.fxml")
-  jLocale=.bsf~new("java.util.Locale", locale)
-  jRB=bsf.importClass("java.util.ResourceBundle")~getBundle("FXML_02", jLocale)
+   -- create a file URL for fxml_02.fxml file (hence the protocol "file:")
+  fxmlUrl=.bsf~new("java.net.URL", "file:fxml_02.fxml")
+  jLocale=.bsf~new("java.util.Locale", locale)  -- get the desired Locale
+  jRB=bsf.importClass("java.util.ResourceBundle")~getBundle("fxml_02", jLocale)
 
-  root=bsf.loadClass("javafx.fxml.FXMLLoader")~load(rootDocUrl, jRB) -- load the fxml document
-
-  scene=.bsf~new("javafx.scene.Scene", root)    -- create a scene for our document
-  stage~setScene(scene)                         -- set the stage to our scene
-  scene~getStyleSheets~add("fxml_02.css")       -- use this CSS to style the UI
-
-  img=.bsf~new("javafx.scene.image.Image", "oorexx_032.png")
-  stage~getIcons~add(img)                       -- set application icon
-  stage~show                                    -- show the stage (and thereby our scene)
+  rootNode=bsf.loadClass("javafx.fxml.FXMLLoader")~load(fxmlUrl, jRB)
+  scene=.bsf~new("javafx.scene.Scene", rootNode)    -- create a scene from the tree
+  stage~setScene(scene)     -- set our scene on stage
+  stage~title="A Crazy FXML Rexx Application"   -- set the title for the stage
+  img=.bsf~new("javafx.scene.image.Image", "oorexx_032.png")    -- create Image
+  stage~getIcons~add(img)   -- use image as the application icon
+  stage~show                -- show the stage with the scene
 
 
 
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016 Rony G. Flatscher
+         Copyright 2016-2017 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.
