@@ -31,6 +31,11 @@ the support for .NET/CLR (Common Language Runtime) on the Windows version of BSF
         20150810_Raffel-Manuel-ooRexx-Net-architecture.pdf
         20160723_Baginski-Adrian-ooRexx-Net-Cookbook.pdf
 
+From the 28th International Rexx Symposium (2017):
+
+        201711-RexxScript-Article.pdf    (javax.script implementation for ooRexx)
+        201711-ooRexx-JavaFX-Article.pdf (introduction to JavaFX using RexxScript)
+
 To learn about the installation possibilities (32-bit vs. 64-bit on Windows, Linux and MacOSX),
 view the following file in your browser:
 
@@ -42,4 +47,4 @@ Starting with 2016-08-15, the Javadocs for Apache's BSF and BSF4ooRexx can be fo
         docs.bsf4oorexx/index.html
 
 
-Rony G. Flatscher, as of 2012-05-26, 2016-08-15
+Rony G. Flatscher, as of 2012-05-26, 2016-08-15, 2017-11-17
