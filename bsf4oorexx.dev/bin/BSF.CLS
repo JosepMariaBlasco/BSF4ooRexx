@@ -12,6 +12,13 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+
+         2017-11-19, ---rgf, - changed BSF.OutputStream: methods are unguarded, using guard on/off, if
+                               attribute's values get changed; this inhibits a hang on Windows, where
+                               special Windows message handling (for OLE support) may cause nested
+                               re-entrent AttachThread() that may yield hangs in that class SAY method,
+                               if SAY is used for debug statements
+
          2017-08-23, ---rgf, - changed logic in of "runLaterLatest" in class "FXGuiThread": before queueing
                                the message all queued messages by the same name to the same target will be
                                removed from the queue; this way only the latest message will be sent
@@ -655,7 +662,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20171104" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20171119" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3947,9 +3954,9 @@ wrong_args:
 
 /* Allows to use a java.io.PrintStream or a java.io.Writer object as an ooRexx output stream. */
 ::class "BSF.OutputStream" subclass outputStream public
-::attribute javaOutputObject        -- allow direct access to output stream object
-::attribute isWriter                -- allow direct access
-::attribute prefix                  -- prefix string to be output before executing a LINEOUT
+::attribute javaOutputObject  -- allow direct access to output stream object
+::attribute isWriter          -- allow direct access
+::attribute prefix            -- prefix string to be output before executing a LINEOUT
 
 ::method init
   expose javaOutputObject isWriter prefix bPrefixPrinted
@@ -3965,7 +3972,7 @@ syntax:
   raise propagate
 
 
-::method charOut
+::method charOut unguarded
   expose javaOutputObject isWriter prefix bPrefixPrinted
   signal on syntax
   use strict arg chars, start=1, bSkipPrefix=.false
@@ -3984,7 +3991,9 @@ syntax:
         else
            javaOutputObject~print(prefix)
 
+        guard on
         bPrefixPrinted=.true              -- on subsequent charOuts do not write prefix anymore
+        guard off
      end
 
      mb~changeStr("0A"x, "0A"x||prefix)   -- add the prefix after the LF char
@@ -4002,7 +4011,7 @@ syntax:
   raise propagate
 
 
-::method lineOut
+::method lineOut unguarded
   expose javaOutputObject isWriter prefix bPrefixPrinted
   use strict arg chars=""
 
@@ -4027,10 +4036,12 @@ syntax:
      javaOutputObject~println(mb~string)
   end
   javaOutputObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
+  guard on
   bPrefixPrinted=.false          -- a new line for which the prefix was not printed yet
+  guard off
 
 
-::method say                     -- in ooRexx file streams a synonym for lineOut
+::method say     unguarded                -- in ooRexx file streams a synonym for lineOut
   forward message "lineout"
 
 
@@ -4772,8 +4783,7 @@ syntax:
 /**
 * @return returns <code>.true</code>, if running on the GUI thread ("JavaFX Application Thread"), <code>.false</code> else
 */
--- ::method isGuiThread     class
-::method isFxApplicationThread     class
+::method isGuiThread     class
   expose PlatformClz
 
   if PlatformClz=.nil then self~setup  -- make sure attributes are initialized
@@ -4817,7 +4827,7 @@ syntax:
 syntax:
   guiMsg~errorCondition=condition("o") -- supply error condition object
   guiMsg~hasError=.true    -- indicate we had an error
-  guiMsg~completed=.true   -- communicate that processing has completed in this case as well
+  guiMsg~completed=.true    -- communicate that processing has completed in this case as well
 
 -- TODO: remove the following debug statements
 .stderr~say("---> SOD (start of debug), line #" .line)
