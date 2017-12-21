@@ -12,6 +12,16 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2017-11-21, ---rgf, - make sure that in .FXGuiThread class "isGuiThread", "runLater" and
+                               "runLaterLatest" are unguarded, but "run" is guarded; this avoids
+                               hangs on Windows, reported as <https://sourceforge.net/p/oorexx/bugs/1505/>
+
+         2017-11-20, ---rgf, - further testing <https://sourceforge.net/p/oorexx/bugs/1505/> indicates
+                               that ungaurding the BSF.OutputStream would probably not fix a three-way-
+                               deadlock, which is caused by SAY-debug statements in BSF.CLS in the
+                               context of RexxScript usage; this can be remedied by not using SAY-statements
+                               in BSF.CLS, but in case of thangs replace them with ".stdout~say(...)"
+                               statements
 
          2017-11-19, ---rgf, - changed BSF.OutputStream: methods are unguarded, using guard on/off, if
                                attribute's values get changed; this inhibits a hang on Windows, where
@@ -662,7 +672,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20171119" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20171121" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3972,7 +3982,7 @@ syntax:
   raise propagate
 
 
-::method charOut unguarded
+::method charOut
   expose javaOutputObject isWriter prefix bPrefixPrinted
   signal on syntax
   use strict arg chars, start=1, bSkipPrefix=.false
@@ -3991,9 +4001,7 @@ syntax:
         else
            javaOutputObject~print(prefix)
 
-        guard on
         bPrefixPrinted=.true              -- on subsequent charOuts do not write prefix anymore
-        guard off
      end
 
      mb~changeStr("0A"x, "0A"x||prefix)   -- add the prefix after the LF char
@@ -4011,7 +4019,7 @@ syntax:
   raise propagate
 
 
-::method lineOut unguarded
+::method lineOut     -- a true synonym for SAY in this implementation (even if no data to display are supplied)
   expose javaOutputObject isWriter prefix bPrefixPrinted
   use strict arg chars=""
 
@@ -4036,12 +4044,10 @@ syntax:
      javaOutputObject~println(mb~string)
   end
   javaOutputObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
-  guard on
   bPrefixPrinted=.false          -- a new line for which the prefix was not printed yet
-  guard off
 
 
-::method say     unguarded                -- in ooRexx file streams a synonym for lineOut
+::method say      -- in ooRexx file streams a synonym for lineOut
   forward message "lineout"
 
 
@@ -4783,10 +4789,13 @@ syntax:
 /**
 * @return returns <code>.true</code>, if running on the GUI thread ("JavaFX Application Thread"), <code>.false</code> else
 */
-::method isGuiThread     class
+::method isGuiThread     class unguarded
   expose PlatformClz
 
+  guard on
   if PlatformClz=.nil then self~setup  -- make sure attributes are initialized
+  guard off
+
   return PlatformClz~isFxApplicationThread
 
 
@@ -4902,18 +4911,21 @@ syntax:
 *                     fetching a possible result, determining whether an error occurred and
 *                     inspecting it)
 */
-::method runLater          class
+::method runLater          class unguarded
   expose fxQueue waitingToRun PlatformClz runnable
   use strict arg target, messageName, ...
 
   signal on syntax
-
+  guard on
   if PlatformClz=.nil then self~setup  -- make sure attributes are initialized
+  guard off
   guiMsg=self~createGuiMessage(arg(1,"array"))
   fxQueue~queue(guiMsg)
   if waitingToRun=.false then -- "runLater" not invoked yet?
   do
+     guard on
      waitingToRun=.true
+     guard off
      PlatformClz~runLater(runnable)
   end
   return guiMsg            -- allows caller to get a hold of a possible return value
@@ -4942,12 +4954,14 @@ syntax:
 *                     fetching a possible result, determining whether an error occurred and
 *                     inspecting it)
 */
-::method runLaterLatest    class
+::method runLaterLatest    class unguarded
   expose fxQueue waitingToRun PlatformClz runnable
   use strict arg target, messageName, ...
 
   signal on syntax
+  guard on
   if PlatformClz=.nil then self~setup  -- make sure attributes are initialized
+  guard off
 
   guiMsg=self~createGuiMessage(arg(1,"array"))
       -- remove all occurrences of messages with the same messagename and the same target
@@ -4964,7 +4978,9 @@ syntax:
 
   if waitingToRun=.false then -- "runLater" not invoked yet?
   do
+     guard on
      waitingToRun=.true
+     guard off
      PlatformClz~runLater(runnable)
   end
   return guiMsg            -- allows caller to get a hold of a possible return value
