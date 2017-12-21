@@ -269,6 +269,9 @@ if (bDebug==true)
         Object arrArgV[];
         try
         {
+
+// TODO: rgf, 2017-10-09: after BetaTesting make sure that neither the RexxScriptEngine, nor the RexxCompiledScript get supplied to the Rexx script!
+
             arrArgV=createArgV((Object[])sc.getAttribute(ScriptEngine.ARGV), sc, rse, this);
         }
         catch (BSFException exc)
@@ -471,6 +474,7 @@ if (bDebug==true)
             }
 
                 // get the public routine, prepare arguments, invoke it
+// TODO: rgf, 2017-10-09: after BetaTesting make sure that neither the RexxScriptEngine, nor the RexxCompiledScript get supplied to the Rexx script!
             Object arrArgV[]=createArgV(args, rse.getContext(), rse, this);    // supply default context
             RexxProxy routine=(RexxProxy) publicRoutines.sendMessage1("ENTRY",name);    // get routine
             return routine.sendMessage1("CALLWITH",arrArgV);
@@ -675,6 +679,10 @@ if (bDebug==true)
     */
     static Object[] createArgV(Object[] args, ScriptContext sc, RexxScriptEngine rse, RexxCompiledScript rcs) throws ScriptException, BSFException
     {
+
+// TODO: rgf, 2017-10-09: after BetaTesting make sure that neither the RexxScriptEngine, nor the RexxCompiledScript get supplied to the Rexx script!
+//                        maybe make this controllable via the RexxScriptEngine for the Java host programmer ?
+
         int argsLength= (args!=null ? args.length : 0);
         Object arrArgV[]=new Object[argsLength+1];
         int i=0;

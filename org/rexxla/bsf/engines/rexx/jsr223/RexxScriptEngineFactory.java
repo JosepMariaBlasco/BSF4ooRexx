@@ -35,11 +35,12 @@ import org.apache.bsf.*;   // BSF support
         - 2016-12-21, ---rgf: getLanguageVersion() now gets the "parse version" string from the used
                               ooRexx interpreter, saves it in LANGUAGE_VERSION (now package private)
                               and returns that value
+
         - 2017-09-22, ---rgf: getLanguageVersion() directly employs a BSF Rexx engine, making sure
                               that BSF.CLS gets required
 
-	- 2017-09-23, ---rgf: getLanguageVersion() explicitly terminates the Rexx engine after 
-			      retrieving the Rexx version 			      
+	- 2017-09-23, ---rgf: getLanguageVersion() explicitly terminates the Rexx engine after
+			      retrieving the Rexx version
 */
 
 

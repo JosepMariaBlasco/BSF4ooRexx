@@ -15,6 +15,17 @@
    license:    - Apache License 2.0 (AL 2.0)
 */
 
+parse version "_" v "."
+if v<5 then
+do
+   parse version v
+   parse source  . . pgm
+   .error~say(pp(pgm)" needs ooRexx 5.0 or higher, found:" pp(v))
+   .bsf.dialog~messageBox(pp(pgm)" needs ooRexx 5.0 or higher," "0a"x || "found:" pp(v), -
+                          "Wrong version of ooRexx", "error")
+   exit -1
+end
+
 
 /* Create a directory in the global Rexx .environment named MY.APP, such that we can store/retrieve
    objects that we need globally (over all Rexx programs):

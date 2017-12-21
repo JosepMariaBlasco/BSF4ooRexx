@@ -15,6 +15,8 @@ import java.util.TimeZone;
 import java.util.List;
 import java.util.Vector;
 
+import java.net.URL;         // rgf, 20171104: FXML-invocation has 'location' attribute of type URL
+
 import org.apache.bsf.BSFManager;           // BSF support
 import org.apache.bsf.BSFException;         // BSF support
 
@@ -42,6 +44,11 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+
+        2017-10-09, ---rgf, renamed "DispatchToToPublicRoutines" to "DispatchToPublicRoutines" (removing one "To")
+
+        2017-10-08, ---rgf, make sure that the static method dumpScriptContext(sc) will supply
+                            an appropriate header for non-standard scopes
 
         2017-09-22, ---rgf, make sure that in the constructor the RexxScriptEngine does not get
                             used to execute Rexx scripts, such that it is still possible to configure
@@ -131,7 +138,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20170922
+ * @version 100.20171009
  * @since  2015-05-11
  *
  */
@@ -414,12 +421,12 @@ if (bDebug==true) {exc.printStackTrace(); }
         "/* say '/// --> /// in rexxRoutineWrapperCode - prolog... arg()='arg()                             */          \n" +
         "                                                                                                               \n" +
         "    /* create and return dispatcher object                                                         */          \n" +
-        "return .DispatchToToPublicRoutines~new(rexxScript, rexxPackage, scriptContext)                                 \n" +
+        "return .DispatchToPublicRoutines~new(rexxScript, rexxPackage, scriptContext)                                   \n" +
         "                                                                                                               \n" +
         "::requires BSF.CLS                              /* get Java camouflaging support                   */          \n" +
         "                                                                                                               \n" +
         "    /* dispatcher class for Invocable' <T> T getInterface(Class<T> clasz)                          */          \n" +
-        "::class 'DispatchToToPublicRoutines'                                                                           \n" +
+        "::class 'DispatchToPublicRoutines'                                                                             \n" +
         "                                                                                                               \n" +
         "::method init              /* constructor                                                          */          \n" +
         "  expose rexxScriptObject rexxScriptPackage jsr223ScriptContext                                                \n" +
@@ -774,7 +781,18 @@ if (bDebug)
             String filename=(String) sc.getAttribute(ScriptEngine.FILENAME);
             if (filename==null)     // no filename given
             {
-                filename="filename_created_by_"+this.toString().replace('.','_').replace('@','-')+"_at_"+getGMTFormattedDate4Filename()+".rex";
+                // rgf, 2017-11-04: maybe executed because defined in a FXML file (set up and executed by FXMLLoader),
+                //                  if so "location" is a URL to the FXML file, use its name to indicate where the
+                //                  invocation of the Rexx code comes from
+                Object location=sc.getAttribute("location");
+                if (location instanceof URL)
+                {
+                    filename="rexx_invoked_via_["+((URL) location).getFile()+"]_at_"+getGMTFormattedDate4Filename()+".rex";
+                }
+                else    // create a debuggable filename that includes this RexxScriptEngine instance and date/time information
+                {
+                    filename="filename_created_by_"+this.toString().replace('.','_').replace('@','-')+"_at_"+getGMTFormattedDate4Filename()+".rex";
+                }
             }
 
             CompiledScript rcs=compile(script, filename);   // create and get the compiled (tokenized) form
@@ -1221,6 +1239,7 @@ if (bDebug==true) {exc.printStackTrace();}
         Object arrArgV[];
         try
         {
+// TODO: rgf, 2017-10-09: after BetaTesting make sure that neither the RexxScriptEngine, nor the RexxCompiledScript get supplied to the Rexx script!
             arrArgV=RexxCompiledScript.createArgV(args, sc, this, null);  // supply default context; no access to RexxCompiledScript
         }
         catch (BSFException exc)
@@ -1257,7 +1276,7 @@ if (bDebug==true) {exc.printStackTrace();}
             else if (scope==ScriptContext.ENGINE_SCOPE) { System.err.println(" --> ENGINE_SCOPE"); }
             else
             {
-                System.err.println();
+                System.err.println(" --> Scope with number ["+scope+"] -->");
             }
 
             Bindings bind=sc.getBindings(scope);
