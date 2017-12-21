@@ -37,7 +37,11 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
-    6.0.0   2017-10-15, rgf: - BsfQueryRegisteredFunctions(): return external Rexx function names BSFGetRIID() and BSFGetRTC()
+    6.0.0   2017-11-19, rgf: - added a counter to BSF() and also tid on debug outputs to become able
+                               in a multithreaded execution to identify the debug output
+
+    6.0.0   2017-10-15, rgf: - BsfQueryRegisteredFunctions(): return external Rexx function names
+                               BSFGetRIID() and BSFGetRTC()
 
     6.0.0   2017-10-05, rgf: - new BSFGetRTC():  allow Rexx to retrieve the Rexx thread context pointer as a string for debugging purposes
 
@@ -738,6 +742,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
     #define INFO_DETACH_THREAD  // rgf, 2017-10-04
     #define INFO_SEND_MESSAGE_TO_REXX_OBJECT // rgf, 2017-08-19
     #define INFO_REXX_RUN_PROGRAM   // rgf, 2017-08-19
+//     #define DEBUG_BSF_FUNCTION  // rgf, 2017-11-19
 #endif
 
 
@@ -6345,7 +6350,9 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
     char *msg=new char[4096];       // error message buffer
 
 #if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_BSF_FUNCTION)
-    fprintf(stderr, "*** BSF() 1, tid=[%lu], ", (unsigned long) tid);
+    static int countBSF=0;
+    countBSF++;
+    fprintf(stderr, "*** BSF() 1, tid=[%lu]/countBSF=[%d], ", (unsigned long) tid, countBSF);
     fflush(stderr);
 #endif
 
@@ -6388,7 +6395,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
 
 
 #if defined (DEBUG_REXX_PROXY_BSF) || defined (DEBUG_BSF_FUNCTION)
-    fprintf(stderr, "--- BSF() 1, tid=[%lu], numArgs=[%lu]", (unsigned long) tid, numArgs);fflush(stderr);
+    fprintf(stderr, "--- BSF() 1, tid=[%lu]/countBSF=[%d], numArgs=[%lu]", (unsigned long) tid, countBSF, numArgs);fflush(stderr);
     if (numArgs>0)
     {
 
@@ -6397,14 +6404,24 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
     for (size_t i=0; i<numArgs; i++)
     {
        RexxObjectPtr tmpObj=context->ArrayAt(argArray, i+1);
-       fprintf(stderr, "\ti=%lu, tmpObj: %%lu=%lu %%p=%p", i+1, (unsigned long) tmpObj, tmpObj);
+
+       fprintf(stderr, "\tBSF() 1, tid=[%lu]/countBSF=[%d] | i=%lu, tmpObj: %%lu=%lu %%p=%p, %%s=[%.256s]",
+                              (unsigned long) tid, countBSF,
+                              i+1,
+                              (unsigned long) tmpObj,
+                              tmpObj,
+                              ( tmpObj==NULL ? "<null>"
+                                             : context->CString(context->ObjectToString(tmpObj))
+                              )
+              );
        fflush(stderr);
 
        int tind=RgfValue4JavaIndicator(context->threadContext, tmpObj);
-       fprintf(stderr, ", typeIndicator=%d\n", tind);
+       fprintf(stderr, ", typeIndicator=%d | BSF() 1, tid=[%lu]/countBSF=[%d]\n", tind, (unsigned long) tid, countBSF);
        fflush(stderr);
     }
 
+/* ---- rgf, 20171119
         for (size_t i=0; i<numArgs; i++)   // iterate over all Rexx arguments
         {
             RexxObjectPtr tmpObj=context->ArrayAt(argArray, i+1);
@@ -6413,8 +6430,10 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
             fprintf(stderr, "[%.256s]", (tind<0?"<null>":context->CString(tmpObj))); fflush(stderr);
             // fprintf(stderr, " | [%u]=[%.256s]", i+1, context->CString(context->ArrayAt(argArray, i+1)));
         }
+---- */
+
     }
-    fprintf(stderr, " ---\n");
+    fprintf(stderr, " --- tid=[%lu]/countBSF=[%d]\n", (unsigned long) tid, countBSF);
     fflush(stderr);
 #endif
 
@@ -6510,7 +6529,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
         }
 
 #if defined (DEBUG_BSF_FUNCTION)
-    fprintf(stderr, "*** *** DEBUG_BSF_FUNCTION: BSF() 4 - <==> (BEFORE -> CallObjectMethod(), tid=[%lu] ... ", (unsigned long) tid);
+    fprintf(stderr, "*** *** DEBUG_BSF_FUNCTION: BSF() 4 - <==> (BEFORE -> CallObjectMethod(), tid=[%lu]/countBSF=[%d] ... ", (unsigned long) tid, countBSF);
     fflush(stderr);
 
 
@@ -6548,7 +6567,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
                                  jarr);
 
 #if defined (DEBUG_BSF_FUNCTION)
-    fprintf(stderr, "*** *** DEBUG_BSF_FUNCTION: BSF() 5 - <==> (AFTER  -> CallObjectMethod(), tid=[%lu], j_returnValue=[%p] ...)\n", (unsigned long) tid, j_returnValue);
+    fprintf(stderr, "*** *** DEBUG_BSF_FUNCTION: BSF() 5 - <==> (AFTER  -> CallObjectMethod(), tid=[%lu]/countBSF=[%d], j_returnValue=[%p] ...)\n", (unsigned long) tid, countBSF, j_returnValue);
     fflush(stderr);
 #endif
 
@@ -6597,7 +6616,10 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
             RgfReleaseLock();
 
 #if defined (DEBUG_BSF_FUNCTION)
-    fprintf(stderr, "<-- BSF(), upon return to Rexx, Java returned NULL, we return \"\", context->CheckCondition()=[%d] (all o.k., should be 0)\n", (int) context->CheckCondition());
+    fprintf(stderr, "<-- BSF() 6, tid=[%lu]/countBSF=[%d], upon return to Rexx, Java returned NULL, we return \"\", context->CheckCondition()=[%d] (all o.k., should be 0)\n\n",
+                                (unsigned long) tid,  countBSF,
+                                (int) context->CheckCondition()
+                                );
     fflush(stderr);
 #endif
 
@@ -6613,7 +6635,13 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
         RgfReleaseLock();
 
 #if defined (DEBUG_BSF_FUNCTION)
-    fprintf(stderr, "<-- BSF(), upon return to Rexx with a result from Java, context->CheckCondition()=[%d] (all o.k., should be 0)\n", (int) context->CheckCondition());
+    fprintf(stderr, "<-- BSF() 6, tid=[%lu]/countBSF=[%d], upon return to Rexx with a result from Java, context->CheckCondition()=[%d] (all o.k., should be 0), result=[%.256s]\n\n",
+                            (unsigned long) tid, countBSF,
+                            (int) context->CheckCondition(),
+                            ( result==NULL ? "<null>"
+                                           : context->CString(context->ObjectToString(result))
+                            )
+                            );
     fflush(stderr);
 #endif
 
@@ -8744,18 +8772,28 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
 #if defined (INFO_SEND_MESSAGE_TO_REXX_OBJECT)        // rgf, 2017-08-19
     static int count=0;
+    {
+        // 2017-11-13, rgf: show Rexx-related values here in case AttachThread() blocks, such that we can see the message name beforehand
 
-    if (instance!=tmpInstance)
-    {
-        fprintf(stderr, "---> arrived in _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p] <> rii_ID=[%p] (NOT OK!)\n",
-                        ++count, (unsigned long) RgfGetTID(), instance, tmpInstance);
+        char *c_rgf_msg   =(char *) JNU_GetStringNativeChars(env, j_messageName);   // convert to native string
+        char *c_rgf_obj_ID=(char *) JNU_GetStringNativeChars(env, j_obj_ID);        // convert to native string
+
+        if (instance!=tmpInstance)
+        {
+            fprintf(stderr, "\n-------------->\n---> arrived in _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p] <> rii_ID=[%p] (NOT OK!) | rii_id=[%s]~%s\n",
+                            ++count, (unsigned long) RgfGetTID(), instance, tmpInstance, c_rgf_obj_ID, c_rgf_msg);
+        }
+        else
+        {
+            fprintf(stderr, "\n-------------->\n---> arrived in _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p] | rii_id=[%s]~%s\n",
+                            ++count, (unsigned long) RgfGetTID(), instance, c_rgf_obj_ID, c_rgf_msg );
+        }
+        fflush(stderr);
+
+        RexxFreeMemory(c_rgf_msg);          // make sure we free the allocated memory
+        RexxFreeMemory(c_rgf_obj_ID);       // make sure we free the allocated memory
     }
-    else
-    {
-        fprintf(stderr, "---> arrived in _jniRexxSendMessageToRexxObject(),      count=[%8d], tid=[%6lu], rii_ID=[%p]\n",
-                        ++count, (unsigned long) RgfGetTID(), instance );
-    }
-    fflush(stderr);
+
 #endif
 
 
@@ -8947,7 +8985,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
 #if defined (INFO_SEND_MESSAGE_TO_REXX_OBJECT)        // rgf, 2017-08-19
                 // 2017-10-05: in case ObjectToStringValue() would block, show object pointer first
-    fprintf(stderr, "       -------> _jniRexxSendMessageToRexxObject(), send!count=[%8d], tid=[%6lu], rii_ID=[%p], rtc=[%p]: 2b. [%p]~%s\n",
+    fprintf(stderr, "       -------> _jniRexxSendMessageToRexxObject(), send!count=[%8d], tid=[%6lu], rii_ID=[%p], rtc=[%p]: 2a. [%p]~%s\n",
                              count, (unsigned long) RgfGetTID(), instance, rtc
                              , ro, c_msg
                              );
@@ -9041,7 +9079,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     rtc->DetachThread();
 
 #if defined (INFO_DETACH_THREAD)        // rgf, 2017-08-19
-    fprintf(stderr, "<-------------- _jniRexxSendMessageToRexxObject(),      count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]->DetachThread(): done.\n\n",
+    fprintf(stderr, "<-------------- _jniRexxSendMessageToRexxObject(),      count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]->DetachThread(): done.\n<--------------\n\n",
                            count, (unsigned long) RgfGetTID(), instance, rtc); fflush(stderr);
     fflush(stderr);
 #endif
