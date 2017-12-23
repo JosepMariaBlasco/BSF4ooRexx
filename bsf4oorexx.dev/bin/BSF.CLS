@@ -12,6 +12,13 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2017-12-23, ---rgf, - define a public class "Slot.Argument" here instead of native code (BSF4ooRexx.cc
+                               and placing the class object in .environment); this class will be used to
+                               add useful, but optional information which get added as a trailing (a "slot")
+                               argument on callbacks from Java to Rexx objects
+                             - relocated .local~bsf4rexx to new class "BSF4REXX" serving as a proxy for the
+                               bsf4rexx-directory, making this important directory independent of .local
+
          2017-11-21, ---rgf, - make sure that in .FXGuiThread class "isGuiThread", "runLater" and
                                "runLaterLatest" are unguarded, but "run" is guarded; this avoids
                                hangs on Windows, reported as <https://sourceforge.net/p/oorexx/bugs/1505/>
@@ -672,7 +679,7 @@
 
    call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
 
-   .bsf4rexx~version="600.20171121" -- set version (date distribution got created)
+   .bsf4rexx~version="600.20171223" -- set version (date distribution got created)
    .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
    .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
    .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -680,7 +687,9 @@
 
    .bsf.dialog~setDefaultComponent  -- Initialize the default component object (cannot be done in class' constructor)
 
-   .local~bsf=.bsf      -- save .BSF in .local as well, to make it findable in callback situations
+-- rgf, 2017-12-23   .local~bsf=.bsf      -- save .BSF in .local as well, to make it findable in callback situations
+   .environment~bsf=.bsf            -- moving from .local, leaving in .environment in order for FindClass() to find it
+   .environment~slot.argument=.slot.argument -- putting in .environment to allow FindClass() to find it
 
    call getAndSetPathToIcons
 
@@ -773,12 +782,28 @@ syntax:
 /* Starting with 2014-10-05 we again make the .bsf4rexx directory available via .local,
    adding the aliases, "b4r" and "bsf4oorexx" for it.
 */
+/* Starting with 2017-12-23 we introduce the public class "BSF4REXX" again, serving
+   as a proxy for the "bsf4rexx" directory which is located in .local; unfortunately,
+   in a multi-Rexx-engine environment a Rexx object might execute in another Rexx
+   interpreter instance (RII) where a different .local is then used, which might not
+   have the entry! This solution will work independently of RII.
+*/
 ::routine initialize.BSF.dir
+  if .bsf4rexx~bsf.dir~isA(.directory) then return -- already set up!
+
   -- bsf.dir=.bsf4rexx~dir        -- get .BSF's directory object
   bsf.dir=.directory~new      -- create a directory for BSF4ooRexx programs
+  .bsf4rexx~bsf.dir=bsf.dir   -- assign the directory object to the class attribute "bsf.dir"
+
+/*
   .local~bsf4rexx  =bsf.dir   -- create an entry in .local for it
+
+      -- TODO: rgf, 20171223: check whether assumption holds, if not supply two classes modelled after class "BSF4REXX"
+      -- assume that no one is using the following two entries
+
   .local~b4r       =bsf.dir   -- create an entry in .local for it
   .local~bsf4oorexx=bsf.dir   -- create an entry in .local for it
+*/
    /*
       pre-registered classes (in the BSF-registry) to make it easier to
       indicate the most important Java class-objects from the ooRexx side;
@@ -841,7 +866,7 @@ syntax:
   do i=1 to arr~items
       -- make these classes accessible as if they were ooRexx classes
       jClassName=arr[i]
-     bsf.dir~setEntry(jClassName, .bsf~bsf.import(jClassName)) -- will also place in .local
+     bsf.dir~setEntry(jClassName, .bsf~bsf.import(jClassName)) -- will also place in .environment (instead of .local since 20171223)
   end
 
   do key over .list~of("line.separator", "file.separator", "path.separator", "file.encoding")
@@ -849,9 +874,6 @@ syntax:
   end
 
   return
-
-
-
 
 
 -- box primitive datatypes into their Java classes counterparts
@@ -1171,6 +1193,33 @@ any:
 
 
 
+
+/* *************************************************************
+   Class:       "BSF4REXX"
+   ************************************************************* */
+/** Serves as a pseudo directory, will always be available as part of the package. Since: 20171223 (removing dependency on .local)
+*   - the attribute 'bsf.dir' can be set only once
+*/
+::class BSF4REXX public
+::method    init class
+  expose bsf.dir
+  bsf.dir=.nil
+
+::attribute bsf.dir get class
+
+::attribute bsf.dir set class
+  expose bsf.dir
+  if bsf.dir<>.nil then return      -- already assigned, do not accept another one
+  use arg bsf.dir
+
+::method unknown     class    -- forward any unknown messages to the attribute
+  expose bsf.dir
+  forward message (arg(1)) to (bsf.dir) arguments (arg(2))
+
+
+
+
+
 /* *************************************************************
    Class:       IBM's "Bean Scripting Framework"
    Purpose:     the proxy super-class for the Java classes
@@ -1292,7 +1341,10 @@ any:
 
   -- save the new BSF proxy class in .local to make it available as any other ooRexx class
   if bNoClassName then className=java_path   --- use the Java class name on the ooRexx side as well
-  .local~setentry(className, new_class) -- put new ooRexx proxy class into the local environment
+
+-- rgf, 20171223
+  -- .local~setentry(className, new_class) -- put new ooRexx proxy class into the local environment
+  .environment~setentry(className, new_class) -- put new ooRexx proxy class into the local environment
 
   return new_class
 
@@ -3528,10 +3580,10 @@ Button Return Values    -1  Dialog CLOSE
    signal on syntax
 
       -- get the Java class that controls the creation of the extended Java class
-   jPJCT=.bsf4rexx~entry("ProxiedJavaClassTool")
+   clzName="org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool"
+   jPJCT=.bsf4rexx~entry(clzName)
    if jPJCT=.nil then
    do
-       clzName="org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool"
        jPJCT=bsf.loadClass(clzName)
        .bsf4rexx~setEntry(clzName, jPJCT)
    end
@@ -5089,4 +5141,11 @@ syntax:
 ::attribute result            set
   expose result
   use strict arg result
+
+
+/** This class gets instantiated either by native or Java code and contains additional, but optional,
+*   entries when sending a message to a Rexx object (a callback from native/Java code to Rexx)
+*/
+::class "Slot.Argument" subclass Directory public
+
 

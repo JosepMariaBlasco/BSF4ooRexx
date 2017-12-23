@@ -37,6 +37,14 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
+    6.0.0   2017-12-23, rgf: implementing <https://sourceforge.net/p/bsf4oorexx/feature-requests/15/>:
+                             - remove rgfGetEntryFromLocal(), rgfGetEntryFromEnvironment(): not needed anymore
+                             - remove creation of "Slot.Argument" from native code, define as public class in BSF.CLS and
+                               use that one for adding a trailing slot argument for messages from Java to Rexx objects
+                               with optional context information
+                             - corrected error message in external Rexx routine BSF(), which erroneously was numbered 3 and
+                               referred to BSFCreateRexxProxy
+
     6.0.0   2017-11-19, rgf: - added a counter to BSF() and also tid on debug outputs to become able
                                in a multithreaded execution to identify the debug output
 
@@ -746,6 +754,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 #endif
 
 
+
 // #define DEBUG_SOME_OPTIONS
 #if defined DEBUG_SOME_OPTIONS
     // rgf, 2017-07-16
@@ -906,11 +915,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20171016 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20171223 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20171016 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20171223 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20171016 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20171223 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -923,11 +932,6 @@ thread_id_t  RgfGetTID();
 // globals, rgf, 2008-08-01
 JavaVM    *currentJVM=NULL;     // JVM to use
 int       bsfInvokedBy = 0;     // 0=noJVM, 1=byJava, 2=byRexx
-
-// 2017-04-15, rgf: when adding a slotDir argument on calls from Java to Rexx, use this class instead of .Directory
-//                  to store the entries, such that Rexx programmers can easily determine by the class name whether
-//                  the last argument is a slotDir argument or not
-RexxClassObject rcoSlotArgumentClass=NULL;   // the loader function will create the slot.argument class and save it
 
     // ---rgf, 2006-11-19: define boolean and maximum length for Java's event trace
 int       bShowErrorString = 1;         // default to showing (dumping) Java traceback in case of an error
@@ -1535,27 +1539,6 @@ inline PSTRUCT_RII RgfGetRexxInterpreterInstanceStructFromList(RexxInstance *ri)
   // some helpful inline functions
 
     // if not a RexxThreadContext available, use: "context->threadContext" instead
-
-
-// ----------------------------------------------------------------------------
-    // return entry in .local, if avaialble or .nil instead
-inline RexxObjectPtr rgfGetEntryFromLocal (RexxThreadContext *rtc, CSTRING entry)
-{
-    RexxObjectPtr rop1=rtc->GetLocalEnvironment();
-    RexxObjectPtr rop2=rtc->SendMessage0(rop1, entry);
-    rtc->ReleaseLocalReference(rop1);
-    return rop2;
-}
-
-// ----------------------------------------------------------------------------
-    // return entry in .environment, if avaialble or .nil instead
-inline RexxObjectPtr rgfGetEntryFromEnvironment (RexxThreadContext *rtc, CSTRING entry)
-{
-    RexxObjectPtr rop1=rtc->GetGlobalEnvironment();
-    RexxObjectPtr rop2=rtc->SendMessage0(rop1, entry);
-    rtc->ReleaseLocalReference(rop1);
-    return rop2;
-}
 
 
 // ----------------------------------------------------------------------------
@@ -2787,6 +2770,20 @@ inline int RgfValue4JavaIndicator(RexxThreadContext *rtc, RexxObjectPtr robj)   
         return -2;  // indicate .nil
     }
 
+/* --- rgf, 2017-12-23: FindClass() only environment sequence, FindPackageClass() package plus environment sequence
+#if defined(DEBUG_BSF_FUNCTION) || defined(DEBUG2)
+    fprintf(stderr, "\n... <<<          (RgfValue4JavaIndicator): robj=[%p], str=[%s]; robj~class~string=[%s]; robj~IsOfType(\"BSF\")=[%i]; rtc->FindClass(\"BSF\")=[%p]; robj~IsOfType(\"STRING\")=[%i]",
+                    robj,
+                    rtc->ObjectToStringValue(robj),
+                    rtc->ObjectToStringValue(rtc->SendMessage0(robj,"CLASS")),
+                    (int) (rtc->IsOfType(robj, "BSF")),
+                    rtc->FindClass("BSF"),
+                    (int) (rtc->IsOfType(robj, "STRING"))
+           );
+    fflush(stderr);
+#endif
+--- */
+
     if (rtc->IsOfType(robj, "STRING"))
     {
 
@@ -2919,8 +2916,8 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
     }
 
         // determine whether BSF.CLS got loaded
-    RexxObjectPtr clzBSF=rgfGetEntryFromLocal (rtc, "BSF");  // .local~BSF
-    logical_t  bClzBsf=(clzBSF!=rtc->Nil());    // determine whether we have .BSF available
+    RexxObjectPtr clzBSF =rtc->FindClass("BSF");    // get BSF class
+    logical_t     bClzBsf=(clzBSF!=NULL);           // determine whether we have .BSF available
 
     if (!bClzBsf && bLoadBSF)       // if BSF.CLS was not required yet, require it now!
     {
@@ -2954,8 +2951,8 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
 
     }
 #endif
-        clzBSF=rgfGetEntryFromLocal (rtc, "BSF");  // .local~BSF
-        bClzBsf=(clzBSF!=rtc->Nil());
+        clzBSF =rtc->FindClass("BSF");  // get BSF class
+        bClzBsf=(clzBSF!=NULL);         // determine whether we have .BSF available
     }
 
 #if defined(DEBUG_RGF_PROCESS_J_ARG1)
@@ -3139,8 +3136,8 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
     fflush(stderr);
 #endif
 
-    RexxObjectPtr clzBSF=rgfGetEntryFromLocal (rtc, "BSF");  // .local~BSF
-    logical_t  bClzBsf=(clzBSF!=rtc->Nil());    // determine whether we have .BSF available
+    RexxObjectPtr clzBSF=rtc->FindClass("BSF"); // get BSF class
+    logical_t    bClzBsf=(clzBSF!=NULL);        // determine whether we have .BSF available
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS )
    fprintf(stderr, "**** //1// bClzBsf=[%lu], rtc->Nil()=[%p], clzBSF=[%p]\n", bClzBsf, rtc->Nil(), clzBSF);
@@ -3188,8 +3185,8 @@ if (rtc->CheckCondition())
 }
 #endif
 
-        clzBSF=rgfGetEntryFromLocal (rtc, "BSF");  // .local~BSF
-        bClzBsf=(clzBSF!=rtc->Nil());
+        clzBSF =rtc->FindClass("BSF");  // get BSF class
+        bClzBsf=(clzBSF!=NULL);         // determine whether we have .BSF available
     }
 
 
@@ -4200,9 +4197,9 @@ inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (
     RexxStringObject r_beanName = rtc->String(c_beanName);    // create Rexx string
     param->env->ReleaseStringUTFChars(j_beanName, c_beanName);      // release
 
-    RexxObjectPtr bsfClz=rgfGetEntryFromLocal (rtc, "BSF"); // get .BSF, if available
+    RexxObjectPtr bsfClz=rtc->FindClass("BSF"); // get .BSF, if available
     RexxObjectPtr rJavaThrowable=NULL;
-    if (bsfClz!=rtc->Nil())  // class found, do a bsf.wrap() on the beanName
+    if (bsfClz!=NULL)   // class found, do a bsf.wrap() on the beanName
     {
         rJavaThrowable=rtc->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_REFERENCE object
     }
@@ -4228,7 +4225,7 @@ inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (
 
        // --- raise exception
     rtc->RaiseException(Rexx_Error_Incorrect_call_user_defined, ra);
-    rtc->ReleaseLocalReference(ra);
+//    rtc->ReleaseLocalReference(ra);   // ---rgf, 20171223: seemed to have caused an exception in ooRexx!
 
     return rso;            // return error string, such that caller can decide to set it to the environment as well
 }
@@ -5822,7 +5819,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
                                   NULL              // initial value
                                   );
 
-        RexxObjectPtr bsfClz=rgfGetEntryFromLocal (context->threadContext, "BSF"); // get .BSF, if available
+        RexxObjectPtr bsfClz=context->FindClass("BSF"); // get .BSF, if available
 
             // fill the Java argument array with the passed in objects
         for (size_t i=0; i<numArgs; i++)   // iterate over all Rexx arguments
@@ -5847,7 +5844,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
                 {
                     RexxStringObject rso=NULL;
 
-                    if (bsfClz!=context->Nil() && context->IsInstanceOf(tmpObj, (RexxClassObject) bsfClz))
+                    if (bsfClz!=NULL && context->IsInstanceOf(tmpObj, (RexxClassObject) bsfClz))
                     {
                         rso=(RexxStringObject) context->SendMessage0(tmpObj, "OBJECTNAME"); // get beanName
                     }
@@ -6240,8 +6237,8 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
                     param.env->ReleaseStringUTFChars(j_beanName, c_beanName);         // release
                     param.env->DeleteLocalRef(j_beanName);
 
-                    RexxObjectPtr bsfClz=rgfGetEntryFromLocal (context->threadContext, "BSF"); // get .BSF, if available
-                    if (bsfClz!=context->Nil())  // class found, do a bsf.wrap() on the beanName
+                    RexxObjectPtr bsfClz=context->FindClass("BSF"); // get .BSF, if available
+                    if (bsfClz!=NULL)  // class found, do a bsf.wrap() on the beanName
                     {
                         result_Obj=context->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_REFERENCE object
                     }
@@ -6365,7 +6362,7 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
     {
         context->RaiseException1(Rexx_Error_Incorrect_call_user_defined,
                                  createAttachErrorMessageRSONew
-                                 (context, "routine/BsfCreateRexxProxy(), error 3", &param)
+                                 (context, "routine/Bsf(), error 1", &param)
                                  );
         RgfReleaseLock();
         delete[] msg;
@@ -6416,9 +6413,35 @@ RexxRoutine1(RexxObjectPtr, BSF, ARGLIST, argArray)    // 20090505, ---rgf, only
               );
        fflush(stderr);
 
+/* --- rgf, 20171223
+       // FindClass(): searches environment sequence; FindPackageClass() searches package plus environment sequence
+       // RgfValue4JavaIndicator() checks RexxObject and returns:
+       //             -2 for .nil,
+       //             -1 for NULL,
+       //             >=0 a RexxObject:
+       //                   0 any RexxObject that is not one of:
+       //                     1 for a RexxString or
+       //                     2 for a beanname (Java object resides in BSF registry)
        int tind=RgfValue4JavaIndicator(context->threadContext, tmpObj);
        fprintf(stderr, ", typeIndicator=%d | BSF() 1, tid=[%lu]/countBSF=[%d]\n", tind, (unsigned long) tid, countBSF);
        fflush(stderr);
+
+       RexxObjectPtr ctxt=context->GetCallerContext();
+       RexxObjectPtr pkg =context->SendMessage0(ctxt, "PACKAGE");
+       RexxObjectPtr clzBSF=context->SendMessage1(pkg, "FINDPUBLICCLASS", context->NewStringFromAsciiz("BSF"));
+       RexxObjectPtr findClzBSF=context->FindClass("BSF");
+
+       fprintf(stderr, "\n\t ... ->| ctxt=[%p], pkg=[%p], clzBSF=[%p], str=[%s]; tmpObj=[%s] isA(\"BSF\")=[%i]; FindClass(\"BSF\")=[%p], str=[%s] \n",
+                       ctxt, pkg, clzBSF,
+                       context->ObjectToStringValue(clzBSF),
+                       context->ObjectToStringValue(tmpObj),
+                       (int) (context->IsOfType(tmpObj, "BSF")),
+                       findClzBSF,
+                       (findClzBSF==NULL ? "<null>" : context->ObjectToStringValue(findClzBSF))
+               );
+       fflush(stderr);
+--- */
+
     }
 
 /* ---- rgf, 20171119
@@ -6730,7 +6753,7 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, OPTIONAL_CSTRING, option, OPTIONAL
 
 
     char *c_beanNameOrMsg   =NULL;  // the beanName of the exceptionProxy
-    RexxObjectPtr bsfClz=rgfGetEntryFromLocal (context->threadContext, "BSF"); // get .BSF, if available
+    RexxObjectPtr bsfClz=context->FindClass("BSF"); // get .BSF, if available
 
     if (flag==1)        // throw exception in Java, needs second argument
     {
@@ -6745,7 +6768,7 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, OPTIONAL_CSTRING, option, OPTIONAL
         // check argument, get beanName as a "char *" ------------------------------------------------------
         RexxStringObject rso=NULL;  // RexxStringObject
 
-        if (bsfClz!=context->Nil() && context->IsInstanceOf(exceptionInfo, (RexxClassObject) bsfClz))
+        if (bsfClz!=NULL && context->IsInstanceOf(exceptionInfo, (RexxClassObject) bsfClz))
         {
             rso=(RexxStringObject) context->SendMessage0(exceptionInfo, "OBJECTNAME"); // get beanName
         }
@@ -6884,7 +6907,7 @@ RexxRoutine2(RexxObjectPtr, BsfJavaException, OPTIONAL_CSTRING, option, OPTIONAL
 
             param.env->DeleteLocalRef(j_beanName);
 
-            if (bsfClz!=context->Nil())  // class found, do a bsf.wrap() on the beanName
+            if (bsfClz!=NULL)  // class found, do a bsf.wrap() on the beanName
             {
                 result_Obj=context->SendMessage1(bsfClz, "BSF.WRAP", r_beanName);  // run bsf.wrap(), may return a BSF_REFERENCE object
             }
@@ -7605,29 +7628,6 @@ void RexxEntry bsfLoader (RexxThreadContext *rtc)
 #endif
 
     rgfInitLocks();        // Initialize critical section
-
-    // rgf, 2017-04-15: create slot.argument (subclass of directory) and save it in GlobalEnvironment
-        // create a subclass from .Directory, name it Slot.Argument
-    rcoSlotArgumentClass = (RexxClassObject) rtc->SendMessage1(rtc->FindClass("DIRECTORY"), "SUBCLASS", rtc->CString("Slot.Argument"));
-
-#ifdef DEBUG_BSF_LOADER_UNLOADER
-    fprintf(stderr, "/// in bsfLoader(), rcoSlotArgumentClass=[%p]\n", rcoSlotArgumentClass); fflush(stderr);
-    fprintf(stderr, "/// in bsfLoader(); rcoSlotArgumentClass~string=[%s]\n", rtc->CString( rtc->SendMessage0(rcoSlotArgumentClass,"STRING") ));
-#endif
-
-    // save in global directory (".environment")
-    rtc->DirectoryPut( rtc->GetGlobalEnvironment(), rcoSlotArgumentClass, "SLOT.ARGUMENT");
-
-#ifdef DEBUG_BSF_LOADER_UNLOADER
-    fprintf(stderr, "/// in bsfLoader(), now fetching rcoSlotArgumentClass from .ENVIRONMENT ...\n");
-    // RexxObjectPtr rop = rtc->SendMessage1(rtc->GetGlobalEnvironment(), "ENTRY", newClzName);
-    RexxObjectPtr rop = rtc->DirectoryAt(rtc->GetGlobalEnvironment(), "SLOT.ARGUMENT");
-    fprintf(stderr, "/// in bsfLoader(), rcoSlotArgumentClass=[%p]\n", rcoSlotArgumentClass); fflush(stderr);
-    fprintf(stderr, "/// in bsfLoader(); .environment~slot.argument=[%p]\n", rop);
-    fprintf(stderr, "/// in bsfLoader(); .environment~slot.argument~string=[%s]\n", rtc->CString( rtc->SendMessage0(rop,"STRING") ));
-    fflush(stderr);
-#endif
-
 
 #if defined (INFO_PRIMODAL_RII)        // rgf, 2017-10-04
     fprintf(stderr, "===> ===> ===>\n===> bsfLoader(): PRIMODAL REXX INTERPRETER INSTANCE (RII), PRIMODAL RII: tid=[%6lu], rii_ID=[%p], rtc=[%p] <===\n<=== <=== <===\n\n",
@@ -8879,7 +8879,34 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         (j_methodDescription!=NULL))      // build slotArgument (an ooRexx directory object) ?
     {
         // rgf, 2017-04-15, use new rcoSlotArgumentClass (a subclass of directory to allow unambiguous testing)
-        slotDir=(RexxDirectoryObject) rtc->SendMessage0(rcoSlotArgumentClass, "NEW");    // create "SLOT.ARGUMENT" instance, ooRexx directory object
+        // TODO: rgf, 2017-12-23: use FindClass() as now Slot.Argument class is defined in BSF.CLS; if not found, require BSF.CLS and use it then
+        RexxObjectPtr clzSlotArgument=rtc->FindClass("Slot.Argument");  // defined in BSF.CLS since 20171223
+        if (clzSlotArgument==NULL)      // oops, not there? require BSF.CLS
+        {
+            clzSlotArgument=rtc->FindClass("Slot.Argument");
+            if (clzSlotArgument==NULL)      // still not there?
+            {
+                char *msg=new char[1024];
+                snprintf(msg, 1024, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 4: public Rexx class 'Slot.Argument' from 'BSF.CLS' not found, cannot create slot argument; Rexx class Slot.Argument=[%p], BSF=[%p]", DLLNAME, rtc->FindClass("Slot.Argument"), rtc->FindClass("BSF"));
+
+                jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
+                                                                     NULL, // rtc,
+                                                                     NULL, // conditionObject
+                                                                     REASON_EXECUTION_ERROR,   // reason
+                                                                     msg   // message
+                                                                );
+                delete[] msg;
+                env->Throw(j_rexxException);  // throw the exception in the JVM
+
+                RexxFreeMemory(c_rii_ID);       // make sure we free the allocated memory
+                RexxFreeMemory(c_msg   );       // make sure we free the allocated memory
+                RexxFreeMemory(c_obj_ID);       // make sure we free the allocated memory
+                return NULL;
+            }
+
+        }
+
+        slotDir=(RexxDirectoryObject) rtc->SendMessage0(clzSlotArgument, "NEW");    // create "SLOT.ARGUMENT" instance, ooRexx directory object
 
         if (j_userData_ID!=NULL)    // userData is given, hence create directory containing it (will get supplied as last argument)
         {
@@ -8896,8 +8923,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             RexxObjectPtr ro_methodObject=rtc->String(c_methodObjectBean);  // turn native string into a RexxString
             RexxFreeMemory(c_methodObjectBean);     // make sure we free the allocated memory
 
-            RexxObjectPtr clzBSF=rgfGetEntryFromLocal (rtc, "BSF");
-            if (clzBSF != rtc->Nil() ) // BSF.CLS got loaded ?
+            RexxObjectPtr clzBSF=rtc->FindClass("BSF");
+            if (clzBSF != NULL ) // BSF.CLS got loaded ?
             {
                 // 20161220, rgf: RexxEngine.java does increase the refCount (faster) as the .BSF unknown method will do an unregisterBean as well
                 ro_methodObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", ro_methodObject);
@@ -8914,8 +8941,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
                 RexxObjectPtr ro_javaObject=rtc->String(c_javaObjectBean);  // turn native string into a RexxString
                 RexxFreeMemory(c_javaObjectBean);     // make sure we free the allocated memory
 
-                RexxObjectPtr clzBSF=rgfGetEntryFromLocal (rtc, "BSF"); // BSF.CLS available, if so, wrap it up as a BSF proxy
-                if (clzBSF != rtc->Nil() ) // BSF.CLS got loaded ?
+                RexxObjectPtr clzBSF=rtc->FindClass("BSF"); // BSF.CLS available, if so, wrap it up as a BSF proxy
+                if (clzBSF != NULL ) // BSF.CLS got loaded ?
                 {
                     // 20161220, rgf: RexxEngine.java does increase the refCount (faster) as the .BSF unknown method will do an unregisterBean as well
                     ro_javaObject=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", ro_javaObject);
@@ -9021,7 +9048,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     if (rtc->CheckCondition())      // a Rexx condition raised?
     {
         RexxDirectoryObject condObj=rtc->GetConditionInfo();
-        char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/routine/jniRexxSendMessageToRexxObject(), error 4");
+        char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "/routine/jniRexxSendMessageToRexxObject(), error 5");
         jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
                                                              rtc, // rtc,
                                                              condObj, // conditionObject

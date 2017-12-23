@@ -2,7 +2,8 @@
 /*
    name:             EventListener testGroup
    author:           Michael Lex
-   version:          1.0.0
+   version:          1.0.1
+   changed:          2017-12-23: make sure we do not have RexxAndJava return prefixes for the values (procedural interface only, no BSF.CLS)
 */
 /*
 
@@ -34,8 +35,12 @@ return testResult
 
 ::class "EventListener.testGroup" subclass ooTestCase public
 
+::method setup       -- make sure we run in non-prefix mode -- rgf, 20171223
+ -- say "---> EventListener.testGruop, setup(): bsf('bsfPrefixValue') ->" bsf("bsfPrefixReturnValue")
+ call bsf "bsfPrefixReturnValue", .false  -- procedural version, make sure no prefix
+ .local~ver = 4
+
 ::method "test_1"
-	.local~ver = 4
 
 	e=BSF("postEventText", "eventtest")
 	self~assertEquals(e, "eventtest")

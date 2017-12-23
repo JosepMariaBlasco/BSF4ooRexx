@@ -34,9 +34,16 @@ return testResult
 
 ::class "bsfPrefixReturnValue.testGroup" subclass ooTestCase public
 
-::method "test_1"
-	.local~ver = 4
+::method setup
+  expose initialPrefixValue
+  .local~ver = 4
+	initialPrefixValue=BSF("bsfPrefixReturnValue", 0)
 
+::method tearDown
+  expose initialPrefixValue
+  call bsf 'bsfPrefixReturnValue', initialPrefixValue
+
+::method "test_1"
 	pre=BSF("bsfPrefixReturnValue", 0)
 	self~assertEquals(pre, 0)
 

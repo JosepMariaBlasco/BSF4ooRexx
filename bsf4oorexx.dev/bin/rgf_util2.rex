@@ -99,6 +99,10 @@
                   2017-08-05, - ppCondition2(): if a RexxException is found, recurse ppCondition2() with it
                                 to show embedded Java exceptions that have caused it (possible if Rexx code
                                 gets run from Java)
+                  2017-12-21, - use .environment instead of .local to store important constant values
+                                (this way it does not matter if the package gets employed in a different
+                                Rexx interpreter instance)
+                              - changed version style
 
 
       purpose:    set of 3.2 utilities to ease programming of 3.2.0, e.g. offer sort2()- and
@@ -113,8 +117,7 @@
 
                   - create routines "leftWord([-]n)", "rightWord([-]n)"
 
-      license:    Choice of
-                  ASF 2.0, <http://www.apache.org/licenses/LICENSE-2.0>:
+      license:    ASF 2.0, <http://www.apache.org/licenses/LICENSE-2.0>:
                   --------------- cut here ----------------
                      Copyright 2008-2017 Rony G. Flatscher
 
@@ -131,17 +134,17 @@
                      limitations under the License.
                   --------------- cut here ----------------
 
-      version:    1.0.9
+      version:    110.20171221
 */
 
-.local~rgf.non.printable=xrange("00"x,"1F"x)||"FF"x
-.local~rgf.alpha.low="abcdefghijklmnopqrstuvwxyz"
-.local~rgf.alpha.upper =.rgf.alpha.low~upper
-.local~rgf.alpha    =.rgf.alpha.low || .rgf.alpha.upper
-.local~rgf.digits   ="0123456789"
-.local~rgf.alphanumeric=.rgf.alpha  || .rgf.digits
+.environment~rgf.non.printable=xrange("00"x,"1F"x)||"FF"x
+.environment~rgf.alpha.low="abcdefghijklmnopqrstuvwxyz"
+.environment~rgf.alpha.upper =.rgf.alpha.low~upper
+.environment~rgf.alpha    =.rgf.alpha.low || .rgf.alpha.upper
+.environment~rgf.digits   ="0123456789"
+.environment~rgf.alphanumeric=.rgf.alpha  || .rgf.digits
 
-.local~rgf.symbol.chars=".!_?"
+.environment~rgf.symbol.chars=".!_?"
 
 
    -- 2008-02-19, rgf:   abbrev      info, string [, n-length]
