@@ -18,6 +18,10 @@
                                argument on callbacks from Java to Rexx objects
                              - relocated .local~bsf4rexx to new class "BSF4REXX" serving as a proxy for the
                                bsf4rexx-directory, making this important directory independent of .local
+                             - removed ".local~ooRexx.version", not used anywhere
+                             - bsf.import() now saves the class objects in .environment instead of .local
+                             - explicitly adding .BSF and .Slot.Argument to .environment in order for FindClass()
+                               to find them (in all contexts)
 
          2017-11-21, ---rgf, - make sure that in .FXGuiThread class "isGuiThread", "runLater" and
                                "runLaterLatest" are unguarded, but "run" is guarded; this avoids
@@ -673,25 +677,21 @@
 -- .stderr~say("BSF::prolog - after setting BSF.RII_ID in .local:" .bsf.rii_id)
    end
 
+   if initialize.bsf.dir() then     -- setup .bsfrexx
+   do
+      .bsf4rexx~version="600.20171223" -- set version (date distribution got created)
+      .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
+      .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
+      .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
+      .bsf4rexx~opSys3 =opsys~left(3)~upper  -- save operating system name's first two letters in uppercase
 
-   parse version "_" v "("          -- get ooRexx version, 2008-08-31, rgf
-   .local~ooRexx.version=v          -- get and save ooRexx's version
+      .bsf.dialog~setDefaultComponent  -- Initialize the default component object (cannot be done in class' constructor)
 
-   call initialize.BSF.dir          -- set up .bsf4rexx and its synonym .b4r
+      .environment~bsf=.bsf            -- moved from .local to .environment in order for FindClass() to find it
+      .environment~slot.argument=.slot.argument -- putting in .environment to allow FindClass() to find it
 
-   .bsf4rexx~version="600.20171223" -- set version (date distribution got created)
-   .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
-   .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
-   .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
-   .bsf4rexx~opSys3 =opsys~left(3)~upper  -- save operating system name's first two letters in uppercase
-
-   .bsf.dialog~setDefaultComponent  -- Initialize the default component object (cannot be done in class' constructor)
-
--- rgf, 2017-12-23   .local~bsf=.bsf      -- save .BSF in .local as well, to make it findable in callback situations
-   .environment~bsf=.bsf            -- moving from .local, leaving in .environment in order for FindClass() to find it
-   .environment~slot.argument=.slot.argument -- putting in .environment to allow FindClass() to find it
-
-   call getAndSetPathToIcons
+      call getAndSetPathToIcons
+   end
 
    call BSfShowErrorMessage .false  -- turn off displaying the Java exception message (leftover from the very early BSF4Rexx days)
 
@@ -789,7 +789,7 @@ syntax:
    have the entry! This solution will work independently of RII.
 */
 ::routine initialize.BSF.dir
-  if .bsf4rexx~bsf.dir~isA(.directory) then return -- already set up!
+  if .bsf4rexx~bsf.dir~isA(.directory) then return .false -- already set up!
 
   -- bsf.dir=.bsf4rexx~dir        -- get .BSF's directory object
   bsf.dir=.directory~new      -- create a directory for BSF4ooRexx programs
@@ -873,7 +873,7 @@ syntax:
      bsf.dir~setEntry(key,bsf.dir~java.lang.System~getProperty(key))
   end
 
-  return
+  return .true    -- indicate we created and populated .bsf4rexx
 
 
 -- box primitive datatypes into their Java classes counterparts
@@ -2997,8 +2997,8 @@ any:
 
   self~bUseCache= (bNoCache<>.false)    -- default to use ooRexx directory as cache
 
-  if .local~hasentry(JavaClassName) then        -- if Java class exists already in the local environment, use it
-     self~JavaClassObject=.local~entry(JavaClassName)
+  if .environment~hasentry(JavaClassName) then        -- if Java class exists already in the local environment, use it
+     self~JavaClassObject=.environment~entry(JavaClassName)
   else                                          -- load Java class and save the class object (string reference)
      self~JavaClassObject=bsf.loadClass(JavaClassName)
 
@@ -3940,7 +3940,7 @@ syntax:
   byteArray1=bsf.createJavaArray("byte.class",1)   -- Java byte array with capacity of one
   charArray1=bsf.createJavaArray("char.class",1)   -- Java char array with capacity of one
 
-  if \.local~hasEntry("java.io.Reader") then
+  if \.environment~hasEntry("java.io.Reader") then
      call bsf.import "java.io.Reader"  -- load Java class and store it as "JAVA.IO.READER" in .local
   isReader=.java.io.Reader~isInstance(javaInputObject)
 
@@ -4025,7 +4025,7 @@ wrong_args:
   signal on syntax
   use strict arg javaOutputObject, prefix=.nil
 
-  if \.local~hasEntry("java.io.Writer") then
+  if \.environment~hasEntry("java.io.Writer") then
      call bsf.import "java.io.Writer"  -- load Java class and store it as "JAVA.IO.Writer" in .local
   isWriter=.java.io.Writer~isInstance(javaOutputObject)
   bPrefixPrinted=.false             -- indicates whether the prefix was printed already (in charout-scenarios)
