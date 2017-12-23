@@ -1,7 +1,13 @@
 @echo off
 rem run the bsf4rexx-testGroups
 
-rexx testOORexx -R ..\bsf4rexx\lex -s
-rexx testOORexx -R ..\bsf4rexx\rgf -s
+rem rexx testOORexx -R ..\bsf4rexx\lex -s
+rem rexx testOORexx -R ..\bsf4rexx\rgf -s
+
+echo all tests from %cd%\bsf4rexx\lex ...
+rexx testOORexx -R %cd%\bsf4rexx\lex -s
+
+echo all tests from %cd%\bsf4rexx\rgf ...
+rexx testOORexx -R %cd%\bsf4rexx\rgf -s
 
 

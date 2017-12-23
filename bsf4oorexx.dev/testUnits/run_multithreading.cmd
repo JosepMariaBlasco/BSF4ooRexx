@@ -1,4 +1,7 @@
 @echo off
 rem run the bsf4rexx-testGroups
-rexx testOORexx -R ..\bsf4rexx\rgf_multithreading -s
+rem rexx testOORexx -R ..\bsf4rexx\rgf_multithreading -s
+
+echo all tests from %cd%\bsf4rexx\rgf_multithreading ...
+rexx testOORexx -R %cd%\bsf4rexx\rgf_multithreading -s
 

@@ -56,13 +56,14 @@ return testResult
 
 /*
       -- very light burden: to let Linux-based systems run all multithreading tests successfully
+      -- (remark: use ulimit to increase limits on Linux)
       --   28 threads: nrJavaThreads=3;nrRexxThreads=7;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
     nrJavaThreads=3
     nrRexxThreads=7
 */
 
 
-      -- normal burden:
+      -- normal burden: (default)
       --   712 threads: nrJavaThreads=23;nrRexxThreads=29;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
     nrJavaThreads=23
     nrRexxThreads=29
