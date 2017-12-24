@@ -1,0 +1,194 @@
+.toor {
+  -fx-base: #272822;
+  -fx-fill: white;
+}
+
+.virtualized-scroll-pane {
+  -fx-stroke: #47493E;
+}
+
+/*.paragraph-box*/
+.code-area .paragraph-box:has-caret {
+    -fx-background-color: #47493E;
+}
+
+
+
+.caret {
+   -fx-stroke: white;
+}
+
+.paragraph-box {
+  -fx-font-family: "Consolas", monospace;
+  -fx-background-color: #272822;
+}
+
+
+.code-area, .styled-text-area {
+  -fx-background-color: #272822;
+  -fx-fill: white;
+}
+
+.toor .ikonli-font-icon {
+  -fx-fill:white;
+}
+
+/* [output area colors] */
+.error {
+    -fx-fill: #fc3232;
+    -fx-font-family: sans-serif;
+}
+.input {
+    -fx-fill: #f0c0c0;
+    -fx-background-color: #1d1d1d;
+    -fx-font-family: sans-serif;
+    -fx-font-style: italic;
+}
+.output {
+    -fx-fill: white;
+}
+.traceoutput {
+    -fx-fill: #4286f4;
+}
+.debuginput {
+    -fx-fill: #4286f4;
+    -fx-background-color: #1d1d1d;
+    -fx-font-family: sans-serif;
+    -fx-font-style: italic;
+}
+
+/* [Syntax Highlighting] */
+.code-area .text {
+  -fx-fill: white;
+}
+.code-area {
+  -fx-highlight-fill: #9d550f;
+}
+
+
+.code-area .do,
+.code-area .say,
+.code-area .pull,
+.code-area .drop,
+.code-area .end,
+.code-area .to,
+.code-area .by,
+.code-area .trace,
+.code-area .loop,
+.code-area .while,
+.code-area .if,
+.code-area .then,
+.code-area .else,
+.code-area .return,
+.code-area .over,
+.code-area .call
+{
+  -fx-fill: #FA1E6F;
+}
+
+/*
+.code-area .posix {
+  -fx-fill: white;
+}
+*/
+
+.code-area .bif {
+    -fx-font-weight: bold;
+}
+.code-area .string_literal {
+  -fx-fill: #E6DC6D;
+}
+.code-area .integer_literal,
+.code-area .true,
+.code-area .nil,
+.code-area .false
+{
+  -fx-fill: #A878F7;
+}
+
+/*
+.code-area .identifier{
+  -fx-fill: white;
+}
+*/
+.code-area .func_identifier{
+  -fx-fill: #F29101;
+}
+
+.code-area .env_identifier
+{
+   -fx-fill: #A0DE07;
+}
+
+.code-area .directive,
+.code-area .use,
+.code-area .strict,
+.code-area .arg,
+.code-area .routine,
+.code-area .method,
+.code-area .class,
+.code-area .attribute,
+.code-area .requires,
+.code-area .expose,
+.code-area .public,
+.code-area .self,
+.code-area .parse
+{
+  -fx-fill: #5AC9DF;
+}
+
+.code-area .eol_comment,
+.code-area .block_comment,
+.code-area .doc_comment {
+  -fx-fill: #909393;
+}
+
+
+.code-area .lineno {
+  -fx-background-color: #47493E;
+  -fx-border-style: hidden solid solid hidden;
+  -fx-border-color: #252620;
+}
+
+.code-area .lineno .text {
+  -fx-fill: #C0C0C0;
+}
+
+.tree-cell .arrow  {
+    -fx-text-fill: #C0C0C0;
+}
+
+.tree-view {
+  -fx-background-color: #47493E;
+}
+.tree-cell{
+  -fx-background-color: #47493E;
+  -fx-text-fill: white;
+}
+
+.tree-cell:hover{
+  -fx-background-color: #272822;
+}
+
+
+.statusBar {
+  -fx-background-color: #272822;
+  -fx-border-style:solid hidden hidden hidden;
+  -fx-border-color:#C0C0C0;
+}
+.statusBar .label, #labelMatches {
+  -fx-text-fill:white;
+}
+
+
+#searchBar {
+  -fx-background-color: #47493E;
+}
+
+#searchBar .buttonSearchClose .ikonli-font-icon,
+#searchBar .buttonSearchUp .ikonli-font-icon,
+#searchBar .buttonSearchDown .ikonli-font-icon
+ {
+  -fx-icon-color: white;
+  -fx-cursor: pointer;
+}

@@ -1,0 +1,427 @@
+.local~failedPseudoClass = bsf.import("javafx.css.PseudoClass")~getPseudoClass("failed")
+
+::routine runApp public
+    use arg slotDir
+    args = .nil
+    .appRunning~set(.true)      -- disable "run App" menu items
+    /* first of all, save the code in a backup file */
+    scriptContext = slotDir~scriptContext         -- todo: necessary?
+    Code = .TabManager~getInputArea~getText
+    tmpFilepath = .TabManager~alreadySavedFile
+    if \SysIsFile(tmpFilePath) then
+       tmpFilepath = Directory() || .seperator || "backupRxjFile" || time()~changeStr(":","") || ".rxj"
+    else      -- valid filepath
+       tmpFilepath ||= "_backup.rxj"
+    tmpStream = .stream~new(tmpFilepath)
+    tmpStream~open("write replace")
+    loop codeLine over Code
+      tmpStream~lineOut(codeLine)
+    end
+    tmpStream~close
+    tgtOutput=.my.app~ooRexxTryFX.fxml~Output   -- get "Output" TextArea object
+    tgtInput=.my.app~ooRexxTryFX.fxml~Input
+    tgtOutput~replaceText("")  -- delete content of output area
+    --tgtInput~setText("")
+    if slotDir~runWithArgs = .true then do
+      .StatusBarManager~setMessage("waiting for arguments", "LOADING")
+      savedArgs = .TabManager~getSavedArgs
+      userInput = .userInput~new("line", savedArgs)
+      args = userInput~getUserInput
+      .TabManager~saveArgs(args)
+    end
+    .StatusBarManager~setMessage("Running ...", "LOADING")
+    timeStart = .dateTime~new
+-- rgf: hier k?nnte in Zukunft entschieden werden, welche RexxEngine zur Ausf?hrung benutzt werden soll
+    /*fxRexxEngine = .FXRexxEngine~latestFXRexxEngine   -- if a RexxEngine is available it can be retrieved
+    say "fxRexxEngine" fxRexxEngine
+    if fxRexxEngine = .nil then do     -- no RexxEngine created so far, create one
+         -- usage                  (input,output,error,debugInput,traceOutput)*/
+       fxRexxEngine = .FXRexxEngine~new(tgtInput, tgtOutput, tgtOutput, tgtInput, tgtOutput)
+    /*   .local~fx.RexxEngine = fxRexxEngine     -- diese soll die Default-RexxEngine sein (.fx.RexxEngine)
+    end
+    */
+    et = .ExecuteThread~new(fxRexxEngine~rexxEngine, Code, args)
+    task = bsfCreateRexxProxy(et,,"javafx.concurrent.Task")
+    .java.lang.Thread~new(task)~bsf.dispatch("start")              -- Run code in separate thread
+  --guard on when et~done
+  redo:
+  if et~done then do
+    timeEnd = .dateTime~new
+    elapsed = timeStart - timeEnd
+    .StatusBarManager~setTempMessage("Execution time" elapsed~seconds "seconds")
+  end
+  else if et~error then do
+    options = .stringTable~new
+    options~time = 15
+    options~type = "ERROR"
+    .StatusBarManager~setTempMessage("An Error occured", options)
+  end
+  else do
+    call sysSleep .3      -- wait 1/3 of a second before checking for completion again
+    call redo
+  end
+  .appRunning~set(.false)
+  call SysFileDelete tmpFilepath
+
+/* --------------------------------------------------------------------------------------------------- */
+
+
+::class ExecuteThread
+::attribute res               -- attribute will receive the return value from the Rexx program; fetch it after "done" got .true
+::attribute busy              -- indicates whether Rexx program is executing on separate thread
+::attribute done              -- indicate that Rexx script ran
+::attribute error
+::method init
+   expose rexxEngine Code args busy done error
+   use strict arg rexxEngine, Code, args=.nil
+   res=.nil                   -- set res attribute explicitly to .nil
+   done=.false                -- indicate that Rexx program was not run/is not finished
+   busy=.false                -- indicate Rexx program not running (yet)
+   error=.false
+
+::method call
+   expose rexxEngine Code args res busy done error
+   say "execution started"
+   busy = .true                 -- indicate Rexx program is running
+   signal on syntax
+   /* create args vector */
+   v = .bsf~new("java.util.Vector")
+   if args <> .nil then         -- .nil does not have a makeArray method
+     loop argument over args~makeArray(" ")
+       v~add(argument)
+     end
+   res=rexxEngine~apply("code",0,0,Code,.nil,v) --java.lang.String source, int lineNo, int columnNo, java.lang.Object funcBody, java.util.Vector paramNames, java.util.Vector arguments)
+   say pp("busy" busy) pp("done" done)
+   busy=.false                -- indicate Rexx program is not running anymore
+   done=.true                 -- indicate that Rexx program has run and is finished, save to fetch result "res"
+   say self", method" pp(.context~name)", received Rexx result:" pp(res)
+   return
+
+    syntax:
+       co = condition("object")
+       --errorMsg = ppCondition2(co)
+       errorMsg = co~errorText || .endOfLine
+       loop with index idx item line over co~message~makeArray
+         if idx > 1 then        -- do not include the first line to the printed error message, because it always references an error occurred in bsf4ooRexx */
+           errorMsg ||= line .endOfLine
+       end
+       error = .true
+       .Platform~runLater(bsfCreateRexxProxy(.errorPrinter~new(errorMsg),,"java.lang.Runnable"))
+       --exit -1
+
+
+::class errorPrinter
+::method init
+  expose errorMsg
+  use arg errorMsg
+::method run
+  expose errorMsg
+  fxTextArea = .my.app~ooRexxTryFX.fxml~Output
+  from = fxTextArea~getLength
+  fxTextArea~appendText(errorMsg)
+  to = min(from + errorMsg~length, fxTextArea~getLength)
+  fxTextArea~setStyleClass(from, to, "error")
+
+/* --------------------------------------------------------------------------------------------------- */
+
+::routine saveFile public
+    use arg slotDir
+    filepath = .TabManager~alreadySavedFile
+    select
+      when SysIsFileDirectory(filepath) then do     -- in case "Create new file" was clicked
+        slotDir~dirPath = filepath || "newfile.rxj"
+        skipDialog = .false
+      end
+      when filepath = .nil then
+        skipDialog = .false
+      otherwise
+        skipDialog = .true                                    /* if a file was previously selected to open or save, use it to save it the new content into that file, therefore skipping the file selection dialog */
+    end
+   call saveFileAs slotDir, skipDialog
+
+/* --------------------------------------------------------------------------------------------------- */
+
+::routine saveFileAs public
+  use arg slotDir, skipDialog = .false    -- fetch the slotDir argument (BSF4ooRexx adds this as the last argument at the Java side)
+  scriptContext = slotDir~scriptContext   -- get the entry "SCRIPTCONTEXT"
+
+  Code = .TabManager~getInputArea~getText
+  alreadySavedFile = slotDir~dirPath
+  if \SysFileExists(alreadySavedFile) then
+    alreadySavedFile = .TabManager~alreadySavedFile
+
+  if \skipDialog then
+    file = .FileManager~saveDialog(alreadySavedFile)             -- show the save dialog
+  else
+    file = .bsf~new("java.io.File", alreadySavedFile)
+
+  if file \= .nil then do
+    filepath = file~toString
+    .FileManager~saveFile(filepath, Code)
+    .TabManager~saveFilepath(filepath)                                     -- save the file to eventually skip the dialog next time
+    .OpenRecentMenuManager~updateMenu(filepath)
+    options = .stringTable~new
+    options~type = "SUCCESS"
+    .StatusBarManager~setTempMessage(filepath "successfully saved!",options)
+  end
+
+/* --------------------------------------------------------------------------------------------------- */
+
+::routine loadFile public
+    use arg slotDir
+    scriptContext = slotDir~scriptContext
+    if slotDir~userData <> .nil then do
+      userData = slotDir~userData
+      if userData~useCurrentFile <> .nil then do                       -- called by "Application" -> "Reload"
+        savedFilepath = .TabManager~alreadySavedFile
+        if savedFilepath = .nil then do
+          .StatusBarManager~setMessage("Reloading not possible", "ERROR")
+          return                                 -- leave the method, reloading not possible
+        end
+        file = .bsf~new("java.io.File", savedFilepath)
+      end
+      else if userData~useSpecificFile <> .nil then do
+        filepath = userData~useSpecificFile
+        file = .bsf~new("java.io.File", filepath)
+      end
+    end
+    else                                                               -- need to open a filechooser dialog
+      file = .FileManager~openDialog(.TabManager~alreadySavedFile)
+
+    if file \= .nil then do
+        Tab = .TabManager~newTab                                                  -- always open the file in a new tab
+        filepath = file~toString                                            -- cast the "File" obj to a "String", thereby extracting the filepath
+        loadedCode = .FileManager~openFile(filepath)
+        codeArea = .TabManager~getInputArea
+        codeArea~replaceText(loadedCode)
+        codeArea~getUndoManager~forgetHistory
+        .TabManager~saveFilepath(filepath)
+        tooltip = .bsf~new("javafx.scene.control.Tooltip", filepath)
+        .TabManager~getCurrentTab~~setText( filespec("name", filepath) ) ~~setTooltip(tooltip)     -- set a tooltip and text to the tab
+        .OpenRecentMenuManager~updateMenu(filepath)
+        options = .stringTable~new
+        options~type = "SUCCESS"
+        .StatusBarManager~setTempMessage(filepath " successfully opened!", options)
+    end
+
+/* --------------------------------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------------------------------- */
+::routine closeAllTabs public
+  loop i=1 to .TabManager~allTabs~size
+    .TabManager~closeTab
+  end
+
+/** this routine will save all tabs which have a known filepath, so they were opened or saved before */
+::routine saveAll public
+  allTabs = .TabManager~allTabs
+  alreadySavedFilepaths = .TabManager~alreadySavedFilepaths
+  saveCounter = 0
+	savedFilepaths = .array~new			-- needed for the return value for preferencesController :: savePreferences routine
+  loop with index idx item tab over allTabs
+    filepath = alreadySavedFilepaths~at(idx)
+    if filepath <> .nil then do
+      .FileManager~saveFile(filepath, tab~content~content~getText)
+			savedFilepaths~append(filepath)
+      tab~setGraphic(.nil)
+      saveCounter += 1
+    end
+  end
+  .StatusBarManager~setMessage(saveCounter "files were saved", "SUCCESS")
+	return savedFilepaths
+
+
+::routine zoom public
+  use arg mode
+  select case mode
+    when in then
+      .my.app~codeAreaFontSize += 1
+    when out then
+      .my.app~codeAreaFontSize -= 1
+  end
+  .my.app~preferences~~setProperty("codeAreaFontSize", .my.app~codeAreaFontSize)~~save(.prefPath)
+  /* this font size will apply for all new opened files but not for the already opened ones, hence we need to update them too */
+  loop Tab over .TabManager~allTabs
+   codeArea = .TabManager~getInputArea(Tab)
+   codeArea~setStyle("-fx-font-size:" .my.app~codeAreaFontSize || "pt")
+  end
+
+
+/* this routine will walk the filetree using a recursive loop and the private routine down below and save all expanded directories in the preferences, then close the application */
+::routine closeApp public
+  .FileTreeManager~savePaths
+  .Platform~exit
+  
+  
+::routine openPreferences public
+	stage = .bsf~new("javafx.stage.Stage")
+	.my.app~preferencesStage = stage
+	/* before loading the preferences fxml file, set an environmental variable which will cause put_FXID_objects_into.my.app.rex to save the fx:id key in the .my.app~preferences.fxml directory as-is, not translating everything to upper case
+	we will need that later on to find the corresponding propertie in the preferences file
+	for further information see put_FXID_objects_into.my.app.rex line 
+	*/
+	.my.app~keepCapitalizationInDirKey = .true
+	preferencesFXMLUrl = .my.app~appClzLdr~findResource("resources/fxml/preferences.fxml")
+	preferencesFXML = .my.app~fxmlLoader~load( preferencesFXMLUrl )
+	stage~setScene(.bsf~new("javafx.scene.Scene", preferencesFXML))
+	stage~setTitle("Preferences")
+	bsf4oorexxImage = .bsf~new("javafx.scene.image.Image","resources/images/bsf4oorexx_032.png")
+    stage~getIcons~add(bsf4oorexxImage)         -- set application icon
+	/* now, load default values to the input fields inside the preferences stage */
+	loop with index inputName item inputField over .my.app~preferences.fxml
+		correspondingPropertyValue = .my.app~preferences[inputName]
+		select
+			when inputField~string~contains("TextField") then
+				inputField~text = correspondingPropertyValue
+			when inputField~string~contains("CheckBox") then
+				inputField~selected = (correspondingPropertyValue=.true)~?(.true,.false)
+			when inputField~string~contains("ChoiceBox") then
+				inputField~value = correspondingPropertyValue
+			when inputField~string~contains("ColorPicker") then
+				inputField~value = .fx.Paint~valueOf(correspondingPropertyValue)
+			otherwise nop
+		end
+	end
+	stage~show
+	.my.app~keepCapitalizationInDirKey = .false			-- turn this off again to prevent errors when loading a new fxml file and accessing its objects through .my.app Directive
+
+
+::routine showAbout public
+  use arg slotDir
+  parse version "REXX-"v .
+  alert = .fx.Alert~new(.fx.Alert.Type~information)
+  alert~setTitle("About ooRexxTryFX")
+  alert~setHeaderText("ooRexxTryFX Version" .my.app~preferences["Version"])
+  content = "ooRexx Version:" v .endOfLine
+  content ||= "bsf4ooRexx Version:" .bsf4rexx~version .endOfLine
+  System = bsf.import("java.lang.System")
+  content ||= "Java Version:" System~getProperty("java.version") || "," System~getProperty("sun.arch.data.model") || "-bit" .endOfLine
+  content ||= "Syntax Highlighting Version:" .my.app~preferences["syntaxHighlightingVersion"] .endOfLine
+  content ||= "Date of creation: November 2017" .endOfLine
+  content ||= "Author: Adrian Baginski <abaginski@live.de>"
+  alert~setContentText(content)
+  alert~showAndWait
+
+
+::routine openThemeCSS public
+  use arg slotDir
+  -- todo:
+
+
+::routine undo public
+  .TabManager~getInputArea~undo
+
+::routine redo public
+  .TabManager~getInputArea~redo
+
+::class showSearchBar public
+::method run
+  searchbar = .my.app~ooRexxTryFX.fxml~searchBar
+  searchbar~~setManaged(.true) -
+           ~~setVisible(.true)
+  textfield = .my.app~ooRexxTryFX.fxml~fieldSearch
+  searchBarKeyPressedHandler = bsfCreateRexxProxy(.searchBarKeyPressed~new,,.javafx.event.EventHandler)
+  searchFieldKeyPressedHandler = bsfCreateRexxProxy(.searchFieldKeyPressed~new,,.javafx.event.EventHandler)
+  textfield~~setText("") -
+           ~~setOnKeyPressed(searchFieldKeyPressedHandler)
+  --         ~~requestFocus -
+  .local~lastSearchedText = ""
+  .local~currentIndex = 0
+  .local~allPos = .array~new
+  .my.app~ooRexxTryFX.fxml~labelMatches~text = ""
+  userData = .directory~new
+  userData~node = textfield
+  .my.app~mainScene~addEventFilter(bsf.import("javafx.scene.input.KeyEvent")~KEY_PRESSED, searchBarKeyPressedHandler)
+  .Platform~runLater(bsfCreateRexxProxy(.focusRequestExecutor~new,userData,.java.lang.Runnable))
+
+::routine closeSearchBar public
+  .my.app~ooRexxTryFX.fxml~searchBar~~setManaged(.false) ~~setVisible(.false)
+  .TabManager~getInputArea~requestFocus
+
+::routine showReplaceBar public
+  call showSearchBar
+
+
+::routine doSearch
+  use arg searchText
+  if searchText = "" then exit
+  codeArea = .TabManager~getInputArea
+  code = codeArea~getText
+  lastPos = 0
+  .local~lastSearchedText = searchText
+  .local~allPos = .array~new
+  .local~currentIndex = 0
+  loop forever
+    lastPos = code~caselessPos(searchText, lastPos+1)
+    if lastPos <> 0 then
+      .allPos~append(lastPos)
+    else leave
+  end
+  if .allPos~items > 0 then do
+    call doHighlightNext
+    .my.app~ooRexxTryFX.fxml~fieldSearch~pseudoClassStateChanged(.failedPseudoClass, .false)
+  end
+  else do
+    .my.app~ooRexxTryFX.fxml~fieldSearch~pseudoClassStateChanged(.failedPseudoClass, .true)
+    .my.app~ooRexxTryFX.fxml~labelMatches~text = ""
+  end
+
+::routine doHighlightCurrent
+  if .currentIndex > .allPos~items then
+    .local~currentIndex = 1
+  else if .currentIndex <= 0 then
+    .local~currentIndex = .allPos~items
+  from = .allPos[.currentIndex] - 1       -- 0 based for java's IndexRange class
+  to = from + .lastSearchedText~length
+  codeArea = .TabManager~getInputArea
+  codeArea~~selectRange(from, to) -
+          ~~displaceCaret(from) -         -- move the view to the line number of the caret
+          ~~requestFollowCaret
+  .my.app~ooRexxTryFX.fxml~labelMatches~text = .currentIndex "of" .allPos~items "matches"
+  --userData = .directory~new
+  --userData~from = from
+  --userData~to = to
+  --.Platform~runLater(bsfCreateRexxProxy(.doHighlightLater~new,userData,.java.lang.Runnable))
+
+::routine doHighlightNext public
+  .local~currentIndex += 1
+  call doHighlightCurrent
+
+::routine doHighlightPrev public
+  .local~currentIndex -= 1
+  call doHighlightCurrent
+
+::class doHighlightLater
+::method run
+  use arg slotDir
+  userData = slotDir~userData
+  .TabManager~getInputArea~selectRange(userData~from, userData~to)
+  .my.app~ooRexxTryFX.fxml~labelMatches~text = .currentIndex "out of" .allPos~items "matches"
+
+
+
+::class searchBarKeyPressed
+::method handle
+  use arg keyEvent
+  keyCode = keyEvent~getCode
+  if keyCode~equals(.KeyCode~ESCAPE) then
+    call closeSearchBar
+
+::class searchFieldKeyPressed
+::method handle
+  use arg keyEvent
+  keyCode = keyEvent~getCode
+  if keyCode~equals(.KeyCode~ENTER) then do
+    searchedText = keyEvent~target~getText
+    if searchedText = .lastSearchedText then     -- after searching press enter to get the next/previous result, instead of searching again with the same text
+      if keyEvent~isShiftDown then
+        call doHighlightPrev
+      else
+        call doHighlightNext
+    else
+      call doSearch searchedText
+  end
+
+::requires "rgf_util2.rex"
+::requires "ooRexx/FXRexxEngine.rxj" -- needed for the class ".UserInput"
+::requires "ooRexx/TabManager.rxj"   -- needed for the focusRequestExecutor class

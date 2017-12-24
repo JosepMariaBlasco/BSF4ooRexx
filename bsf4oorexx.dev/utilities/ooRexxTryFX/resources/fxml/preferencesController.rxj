@@ -1,0 +1,193 @@
+::routine savePreferences public	
+	/* save the preferences in the preferences properties object */
+	loop with index inputName item inputField over .my.app~preferences.fxml
+		if .my.app~preferences[inputName] <> .nil then
+      select
+        when inputField~string~contains("TextField") then
+          .my.app~preferences[inputName] = inputField~text
+        when inputField~string~contains("CheckBox") then
+          .my.app~preferences[inputName] = inputField~isSelected
+        when inputField~string~contains("ChoiceBox") then
+          .my.app~preferences[inputName] = inputField~value
+        when inputField~string~contains("ColorPicker")  then
+          .my.app~preferences[inputName] = inputField~getValue~toString
+        otherwise nop
+      end
+	end
+	.my.app~preferences~save(.prefPath)				-- persistantly save the preferences
+	/* now ask the user if he wishes to apply the changes now */
+	alert = .fx.Alert~new(.fx.Alert.Type~confirmation)   -- create a confirmation alert
+	alert~setTitle("Apply")
+	alert~setHeaderText(.nil)
+	alert~setContentText("Some of these changes need a restart of ooRexxTryFX in order to be applied." .endOfLine || "All known documents will be automatically saved." .endOfLine || "Do you wish to restart now?")
+	call closePreferences
+	pressedButton = alert~showAndWait                    -- show the confirmation dialog
+	if pressedButton~get~toString = .fx.ButtonType~OK~toString then do -- close the app only if "OK" was clicked
+			savedFilepaths = saveAll()				-- save all documents
+			args = savedFilepaths~makeString("Line", " ")
+			.my.app~primaryStage~hide
+			rexx .s args
+	end				
+	.StatusbarManager~setMessage("Preferences saved", "SUCCESS")
+	
+::routine closePreferences public
+	.my.app~preferencesStage~hide
+
+::routine enablePlugin public
+    use arg slotDir
+    scriptContext = slotDir~scriptContext
+    caller = scriptContext~getAttribute("event")~target
+    if caller~isSelected then do
+        /* the user wants to enable syntax highlighting */
+        /* first: check, if the necessary JARs are present */
+        aseik.plugin = SysIsFile(.appDirectory || "java/ooRexxPlugin4IntelliJ.jar")
+        aseik.adapter = SysIsFile(.appDirectory || "java/ooRexxStandaloneAdapter.jar")
+        if \aseik.plugin | \aseik.adapter then do
+            /* in case the jars are not present we need to download them */
+            /* let's ask the user if he wants that (free space, internet connection) */
+            alert = .fx.Alert~new(.fx.Alert.Type~confirmation)   -- create a confirmation alert
+            alert~setTitle("Download dependencies")
+            alert~setHeaderText(.nil)
+            alert~setContentText("Syntax Highlighting for ooRexx needs to be downloaded from the Web in order to use it." .endOfLine || "Download size: 18 MB" .endOfLine || "Do you wish to start the Download now?")
+            pressedButton = alert~showAndWait                    -- show the confirmation dialog
+            if pressedButton~get~toString = .fx.ButtonType~OK~toString then do
+                .local~Gui = .GuiUpdater~new(caller) ~~prepare
+                baseDir = .my.app~preferences["baseDir"]
+                version = getLatestVersion(baseDir)
+                .my.app~preferences["syntaxHighlightingVersion"] = version
+                .my.app~preferences~save(.prefPath)
+                downloadURLs = baseDir || version || "/ooRexxPlugin4IntelliJ.jar", -
+                               baseDir || version || "/ooRexxStandaloneAdapter.jar"
+                downloadHelper = bsfCreateRexxProxy(.DownloadHelper~new(downloadURLs),,.java.lang.Runnable)
+                .java.lang.Thread~new(downloadHelper)~bsf.dispatch("start")
+            end
+            else
+                caller~selected = .false            -- uncheck the checkbox for now
+        end
+    end
+
+::routine getLatestVersion
+  use arg baseDir
+  html = .bsf~new("java.util.Scanner", .bsf~new("java.net.URL", baseDir)~openStream, "UTF-8")~useDelimiter("\\A")~next
+  Pattern = bsf.import("java.util.regex.Pattern")
+  Matcher = Pattern~compile('href="(?<v>\d+)"')~matcher(html)
+  versions = .array~new
+  loop while Matcher~find
+    versions~append(Matcher~group("v"))
+  end
+  return versions~sort~at(versions~items)      -- return the highest found version number
+
+
+/* this class acts as a Thread and performs the task of downloading and unzipping with help of UnzipUtility */
+::class DownloadHelper
+::method init
+  expose downloadURLs
+  use arg downloadURLs
+
+
+::method run
+  expose downloadURLs
+  totalURLs = downloadURLs~items
+  .Gui~updateLabel("preparing to download ...")
+  destinationDirectory = .appDirectory || "java/"
+  loop downloadURL over downloadURLs
+    url = .bsf~new("java.net.URL", downloadURL)
+    urlConnection = url~openConnection
+    fileSize = urlConnection~getContentLength
+    inputStream = urlConnection~getInputStream
+    filename =  filespec("Name", downloadURL)
+    destinationPath = destinationDirectory || filename
+    outputStream = .bsf~new("java.io.BufferedOutputStream", .bsf~new("java.io.FileOutputStream", destinationPath))
+    bufferSize = 4096
+    buffer = bsf.createJavaArray("byte.class", bufferSize)
+    .Gui~updateLabel("downloading ...")
+    readBytes = inputStream~read(buffer)
+    increment = (bufferSize / filesize) / totalURLs
+    loop while readBytes <> -1
+      outputStream~write(buffer, 0, readBytes)
+      readBytes = inputStream~read(buffer)
+      .Gui~incrementProgressBy(increment)
+    end
+    outputStream~close
+  end
+  .Gui~~updateLabel("Finalizing") ~~finalize
+
+
+::class GuiUpdater
+::attribute progress
+::attribute text
+::attribute lastUpdated
+::method init
+  expose checkbox progress text lastUpdated
+  use arg checkbox
+  progress = 0.0
+  text = ""
+  lastUpdated = .dateTime~new
+
+::method prepare
+  expose progressBar textLabel checkbox okButton
+  progressBarClass = bsf.loadClass("javafx.scene.control.ProgressBar")
+  progressBar = progressBarClass~newInstance ~~setPrefWidth(175.0) ~~setProgress(0.0)
+  textLabel = checkbox~getParent~getChildren~get(1)
+  checkbox~getParent~getChildren~~remove(3,4)~~add(progressBar) -- remove the checkbox and add the progressbar to the parent panel
+  okButton = .my.app~preferences.fxml["okButton"]
+  okButton~disable = .true            -- disable the save button, just to be sure to not mess up things
+  .local~downloadProgress = 0.0
+
+::method updateProgress
+  expose progressBar progress
+  use strict arg progress
+  userData = .directory~new
+  userData~progress = progress
+  .Platform~runLater(bsfCreateRexxProxy(self,userData,.java.lang.Runnable))
+
+::method incrementProgressBy
+  expose progressBar progress lastUpdated
+  use strict arg increment
+  .local~downloadProgress += increment
+  now = .dateTime~new
+  diff = lastUpdated - now
+  if diff~seconds > 0 then do
+    lastUpdated = now
+    userData = .directory~new
+    userData~progress = .downloadProgress
+    .Platform~runLater(bsfCreateRexxProxy(self,userData,.java.lang.Runnable))
+  end
+
+::method updateLabel
+  expose textLabel text
+  use strict arg text
+  userData = .directory~new
+  userData~text = text
+  .Platform~runLater(bsfCreateRexxProxy(self,userData,.java.lang.Runnable))
+
+::method finalize
+  userData = .directory~new
+  userData~finalize = .true
+  .Platform~runLater(bsfCreateRexxProxy(self,userData,.java.lang.Runnable))
+
+::method run
+  expose progressBar progress textLabel text okButton lastUpdated
+  use arg slotDir
+  userData = slotDir~userData
+  select
+    when userData~hasEntry("TEXT") then
+        textLabel~setText(userData~text)
+    when userData~hasEntry("PROGRESS") then do
+        progressBar~setProgress(userData~progress)
+    end
+    when userData~hasEntry("FINALIZE") then do
+      checkbox = .bsf~new("javafx.scene.control.CheckBox") ~~setPrefWidth(175.0)
+      checkbox~selected = .true
+      checkbox~disable = .true
+      .my.app~preferences["enablePlugin"] = .true
+      .my.app~preferences~save(.prefPath)
+      progressBar~getParent~getChildren~~remove(3,4) ~~add(checkbox) -- remove the progressbar and add the checkbox to the parent panel
+      okButton~disable = .false
+      self~updateLabel("ooRexx Syntax Highlighting :")
+    end
+    otherwise nop
+  end
+
+
+::requires "./resources/fxml/ooRexxTryFXController.rxj"

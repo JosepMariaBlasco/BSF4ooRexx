@@ -1,0 +1,299 @@
+parse source .environment~os . .environment~s
+parse version v .
+
+/* add all jars from the java directory to the classpath to make use of the provided classes */
+appDirectory = filespec("Location", absoluteFilepath)   -- determine path to this Rexx program
+javaFolder   = appDirectory || "java" || .file~separator
+call addJarsFromDirToClasspath javaFolder
+/* exit this program if the return value of the latest routine call returned "true" */
+if result = .true then exit
+
+.environment~setEntry("WindowsNT", (.os = "WindowsNT")~?(.true, .false))
+.environment~setEntry("seperator", (.WindowsNT)~?("\", "/"))
+
+if v < "REXX-ooRexx_5" then do
+  say "[error] ooRexxTryFX requires ooRexx Version 5"
+  exit
+end
+.environment~setEntry("my.app", .stringTable~new)
+.environment~appDirectory = filespec("Location", .s)   -- determine path to this Rexx program
+"cd" .appDirectory
+.environment~java.lang.Runnable = bsf.import("java.lang.Runnable")
+.environment~java.lang.Thread = bsf.import("java.lang.Thread")
+.environment~javafx.concurrent.Task = bsf.import("javafx.concurrent.Task")
+.environment~javafx.event.EventHandler = bsf.import("javafx.event.EventHandler")
+.environment~Executor = bsf.import("java.util.concurrent.Executors")~newSingleThreadExecutor
+.environment~fx.Paint = bsf.import("javafx.scene.paint.Paint")
+.environment~fx.Alert = bsf.import("javafx.scene.control.Alert")
+.environment~fx.Alert.Type = bsf.import("javafx.scene.control.Alert$AlertType")
+.environment~fx.ButtonType = bsf.import("javafx.scene.control.ButtonType")
+.environment~Platform = bsf.import("javafx.application.Platform")
+.environment~keyCode = bsf.import("javafx.scene.input.KeyCode")
+.environment~setEntry("prefPath", "resources/config/preferences.conf")
+.environment~setEntry("styles", .stringTable~new)
+.environment~setEntry("ooRexxTryFX", .ooRexxTryFX~new)
+
+/* load preferences */
+.my.app~preferences = .properties~load(.prefPath) /* load the entries of the file "preferences.conf" into a directive */
+.my.app~isPluginActive   = .my.app~preferences["enablePlugin"]
+.my.app~codeAreaFontSize = .my.app~preferences["codeAreaFontSize"]    /* save the font size in an environmental variable outside the config file */
+
+clzUrls = bsf.createJavaArray("java.net.URL", 3)        -- create a java array with space for 3 items
+clzUrls[1] = .bsf~new("java.io.File", .appDirectory)~toURI~toURL                    -- url to base directory
+if .my.app~isPluginActive then do
+  clzUrls[2] = .bsf~new("java.io.File", .appDirectory || "java" || .file~separator || "ooRexxPlugin4IntelliJ.jar")~toURI~toURL
+  clzUrls[3] = .bsf~new("java.io.File", .appDirectory || "java" || .file~separator || "ooRexxStandaloneAdapter.jar")~toURI~toURL
+end
+.my.app~appClzLdr = .bsf~new("java.net.URLClassLoader", clzUrls) -- load the FXMLLoader class, save it for multiple usages
+
+.my.app~fxmlLoader = bsf.loadClass("javafx.fxml.FXMLLoader")
+.my.app~rexxHandler = .rxDocHandler~new
+rxApp = BsfCreateRexxProxy(.my.app~rexxHandler,,"javafx.application.Application")
+.my.app~rxApp = rxApp
+.my.app~preloaderHandler = .preloaderHandler~new
+preloader = BsfCreateRexxProxy(.my.app~preloaderHandler,,"javafx.application.Preloader")
+.my.app~preloader = preloader
+
+   -- launch the application, invoke "start" and then stay up until the application closes
+LauncherImpl = bsf.import("com.sun.javafx.application.LauncherImpl")
+signal on syntax
+LauncherImpl~launchApplication(rxApp~getClass, preloader~getClass, .nil)     /* this method first starts the Preloader class, then the Application class
+                                                                               * the third arguments provides a list of arguments */
+exit 0
+syntax:
+  co = condition("object")
+  say ppCondition2(co)
+  exit -1
+
+
+::requires "ooRexx/TabManager.rxj"
+::requires "ooRexx/OpenRecentMenuManager.rxj"
+::requires "ooRexx/FileTreeManager.rxj"
+::requires "ooRexx/RexxEventHandler.rxj"
+::requires "ooRexx/StatusBarManager.rxj"
+::requires "ooRexx/FileManager.rxj"
+
+
+::class preloaderHandler
+   /* loads the fxml document defining the GUI elements, sets up a scene for it and shows it */
+::method start    -- will be invoked by the "launch" method
+  use arg preloaderStage  -- we get the primary stage to use for our UI
+  .my.app~preloaderStage = preloaderStage
+  preloaderStage~initStyle(bsf.import("javafx.stage.StageStyle")~UNDECORATED) -- hide the border and its controls like "close" and "maximise"
+  preloaderFXMLUrl = .my.app~appClzLdr~findResource("resources/fxml/preloader.fxml")
+  preloaderFXML    = .my.app~fxmlLoader~load( preloaderFXMLUrl )   -- load the fxml document
+  preloaderScene   = .bsf~new("javafx.scene.Scene", preloaderFXML)
+  preloaderStage~setScene(preloaderScene)   -- set the stage to our scene
+  preloaderStage~setAlwaysOnTop(.true)      -- overlay primary stage if needed
+  preloaderStage~show
+
+/* implements the abstract method "start" for the Java class javafx.application.Application
+   (BSF4ooRexx also supplies another (trailing) slotDir (a Rexx Directory) argument, as "start" is
+   invoked from Java)
+*/
+::class RxDocHandler
+   /* loads the fxml document defining the GUI elements, sets up a scene for it and shows it */
+::method start    -- will be invoked by the "launch" method
+  expose primaryStage
+  use arg primaryStage  -- we get the primary stage to use for our UI
+  .my.app~primaryStage = primaryStage -- save the primary stage in our directory
+   -- use application's URLClassloader to find the resource (returns a URL)
+  mainSceneFXMLUrl = .my.app~appClzLdr~findResource("resources/fxml/ooRexxTryFX.fxml")
+  mainSceneFXML    = .my.app~fxmlLoader~load( mainSceneFXMLUrl )   -- load the fxml document
+  .environment~TabManager            = .TabManagerClass~new                  -- create a new TabManager instance from "resources/TabManager.rxj"
+  .environment~OpenRecentMenuManager = .OpenRecentMenuManager~new       -- call the responsible class to fill the "OpenRecent" Menu with items
+  .environment~FileTreeManager       = .FileTreeManager~new
+  .environment~StatusBarManager      = .StatusBarManager~new
+  .environment~FileManager           = .FileManager~new
+  .environment~vSplitPane            = .my.app~ooRexxTryFX.fxml~SplitPane
+  .environment~vDivider              = .environment~vSplitPane~getDividers~get(0)
+   -- create a scene from the FXML DOM and assign it to the primaryStage
+  .my.app~mainScene = .bsf~new("javafx.scene.Scene", mainSceneFXML)     -- create a scene for our document
+  .my.app~mainScene~getStylesheets~~add("resources/stylesheets/ooRexxTryFX.css") -
+                                  ~~add("resources/stylesheets/theme_" || .my.app~preferences["theme"] || ".css")
+  .my.app~mainScene~setOnDragOver(bsfCreateRexxProxy(self,,.javafx.event.EventHandler))
+  .my.app~mainScene~setOnDragDropped(bsfCreateRexxProxy(self,,.javafx.event.EventHandler))
+  -- .my.app~ooRexxTryFX.fxml~Input~~setVisible(.false) ~~setManaged(.false)                     -- hide the input area, which is used for "pull" operations
+  -- .my.app~ooRexxTryFX.fxml~Output~setEditable(.false)                   -- do not allow to change the output area
+  /* bind the execution buttons to an observable value */
+  .environment~appRunning = .bsf~new("javafx.beans.property.SimpleBooleanProperty", .false)
+  .my.app~ooRexxTryFX.fxml~runAppWithArgsMenuItem~disableProperty ~~unbind ~~bind(.appRunning)
+  .my.app~ooRexxTryFX.fxml~runAppMenuItem~disableProperty         ~~unbind ~~bind(.appRunning)
+  .my.app~ooRexxTryFX.fxml~Output~setStyle("-fx-font-size:" .my.app~preferences["outputAreaFontSize"] || "pt")
+  EventStream = .my.app~ooRexxTryFX.fxml~Output~totalHeightEstimateProperty~changes
+  EventStream~subscribe(bsfCreateRexxProxy(.Subscriber~new,,"java.util.function.Consumer"))
+  primaryStage~setScene(.my.app~mainScene)   -- set the stage to our scene
+  primaryStage~setTitle("[Untitled 0] ooRexxTryFX")
+  bsf4oorexxImage = .bsf~new("javafx.scene.image.Image","resources/images/bsf4oorexx_032.png")
+  primaryStage~getIcons~add(bsf4oorexxImage)         -- set application icon
+  /* apply some preferences */
+  primaryStage~setMaximized(.my.app~preferences["maximized"])
+  primaryStage~setHeight(.my.app~preferences["height"])
+  primaryStage~setWidth(.my.app~preferences["width"])
+
+  /* set the divider position */
+  if .my.app~preferences~getProperty("fileTreePosition") <> "disabled" then do
+		divider = .my.app~ooRexxTryFX.fxml~hSplitPane~getDividers~get(0)
+		divider~setPosition(.my.app~preferences["hSplitPaneDiverPosition"])
+  end
+  /* add event listeners to save user preferences on-the-fly */
+  jChangeListener = bsfCreateRexxProxy(.ChangeListener~new,,"javafx.beans.value.ChangeListener")
+  if divider~isA(.bsf) then
+	divider~positionProperty      ~addListener(jChangeListener)
+  primaryStage~heightProperty   ~addListener(jChangeListener)
+  primaryStage~widthProperty    ~addListener(jChangeListener)
+  primaryStage~maximizedProperty~addListener(jChangeListener)
+  primaryStage~setOnCloseRequest(bsfCreateRexxProxy(.closeAppHandler~new,,.javafx.event.EventHandler))
+
+  /* loop over the argument list to retrieve filepaths and open them */
+  loop argument over .SysCArgs~makeString~makeArray
+    if SysIsFile(argument) then do
+			/* out: too slow!
+      userData = .directory~new
+      userData~argument = argument
+      .environment~StatusBarManager~setMessage("Loading Files ...", "LOADING")
+      .Platform~runLater(bsfCreateRexxProxy(.FileOpener~new,userData,.java.lang.Runnable)) */
+      .openFile~new(argument) ~~handle          -- use the slotDir argument to retrieve the file to be opened
+      closeInitTab = .true
+    end
+  end
+	if closeInitTab = .true then
+		.environment~TabManager~closeInitTab
+
+  say .endOfLine -
+      "*-----------------------------------------------------------------------------*" .endOfLine -
+      "| This console is only used for input regarding the Rexx Utility SysGetKey(). |" .endOfLine -
+      "*-----------------------------------------------------------------------------*" .endOfLine -
+			
+  /* load filetree status */
+  if .my.app~preferences["expandedFileTreePaths"]~length > 2 & .my.app~preferences["fileTreePosition"] <> "disabled" then do           -- the integer 2 is random: there is no filepath with 0 or 1 chars to be expanded and it eliminates all zero-meaning properties like [] or 0
+     .environment~StatusBarManager~setMessage("Loading File Tree ...")
+     .Platform~runLater(bsfCreateRexxProxy(.FileTreeOpener~new,,.java.lang.Runnable))
+     /*.java.lang.Thread~new(bsfCreateRexxProxy(.FileTreeOpener~new,,"javafx.concurrent.Task")) -
+                      ~bsf.dispatch("start") */
+  end
+  else
+     .my.app~preloaderStage~close       -- close the preloader screen
+  primaryStage~show                          -- show the stage (and thereby our scene)
+
+	
+  /* ---------------------------------------------------------------------------------------------------- */
+
+
+
+::method handle
+  use arg DragEvent
+  if DragEvent~getEventType~getName = "DRAG_OVER" then do
+	  if DragEvent~getDragboard~hasFiles then do
+			TransferModes = bsf.loadClass("javafx.scene.input.TransferMode") -- get access to enum TransferMode
+			DragEvent~acceptTransferModes(TransferModes~any) -- allow transfering files
+	  end
+  end
+  else do -- eventtype "DRAG_DROPPED"
+	  files = DragEvent~getDragboard~getFiles -- get the list of dragged files
+	  file = files~get(0) -- use the first file, drop the rest if there are any
+	  .OpenFile~new(file~getPath)~~handle
+  end
+
+  
+/** ooRexxTryFX API */
+::class ooRexxTryFX
+::method openFile
+	use arg filePath
+  .openFile~new(filepath) ~~handle    
+	return .nil
+	
+::method closeApp
+	.my.app~preloaderStage~close
+	
+
+::class FileTreeOpener
+/* this class is called by Platform.runLater to update the gui thread when it is ready */
+::method run
+  paths = .my.app~preferences["expandedFileTreePaths"]~makeArray(";")
+  loop path over paths
+    .environment~FileTreeManager~openPath(path)
+  end
+
+::method unknown
+    say arg(1) self~class
+
+
+::class closeAppHandler
+::method handle
+  .Executor~shutdown
+  call closeApp             -- located in the controller file
+
+
+::class ChangeListener
+/* this method gets invoked when the user changes either the width or the height of the stage, maximized status or the divider Position of the horizontal split pane
+ * it changes the property and saves it in the config file */
+::method init
+  expose primaryStage
+  primaryStage = .my.app~primaryStage
+
+::method changed
+  expose primaryStage
+  use arg property, oldValue, newValue
+  if property~getName="maximized" & oldValue=1 & newValue=0 then do
+    primaryStage~setHeight(.my.app~preferences["defaultHeight"])
+    primaryStage~setWidth(.my.app~preferences["defaultWidth"])
+    primaryStage~centerOnScreen
+  end
+  propertyName = (property~getName="position" & newValue>=0 & newValue<=1)~?("hSplitPaneDiverPosition", property~getName)
+  .my.app~preferences~setProperty(propertyName, newValue)
+  .my.app~preferences~save(.prefPath)
+
+
+
+
+/* this class monitors the output area - if its height changes, this class will know and adjust accordingly */
+/* TODO: decide if the user even wants that feature by looking into the preferences */
+::class Subscriber
+::method accept
+  use arg change
+  estimatedOutputHeight = change~getNewValue
+  if estimatedOutputHeight <> .nil then
+    if estimatedOutputHeight > 0 then do
+      vSplitPaneHeight  = .vSplitPane~getHeight
+      desiredDividerPosition = 1 - (estimatedOutputHeight / (vSplitPaneHeight - .my.app~ooRexxTryFX.fxml~Input~getHeight))
+      if desiredDividerPosition < 0.4 then
+         desiredDividerPosition = 0.4               -- hardcode a bare minimum of 40% of the screen for the coding area
+      .vDivider~setPosition(desiredDividerPosition)
+    end
+	
+	
+/**
+ * Inserts the Java archives from the "java" directory to the classpath and restarts this application
+ * to make the classes of those libraries accessible
+ *
+ * @param javaDir - The absolute filepath to the directory which holds the required Java archives
+ */
+::routine addJarsFromDirToClasspath
+  use strict arg javaDir
+  if \SysFileExists(javaDir) then
+    raise syntax 40.900 array("The supplied argument" javaDir "is not a valid directory!")
+  pathExtension = ""
+  /* use a Built-In Function (BIF) to retrieve all jars from the java directory */
+  call SysFileTree javaDir, "jars", "F"   -- search for files in java/ and save as a .stem in `jars`
+  loop i = 1 to jars.0              -- the 0th entry of a stem holds the number of items
+    parse var jars.i . . . . jar    -- remove the first 4 bits of information (date, time, size, access control)
+    extension = filespec("extension", jar)      -- fetch the extension of the file
+    if extension = "jar" then do
+      pathExtension ||= jar~strip
+      pathExtension ||= .file~pathSeparator       -- the pathseperator of the File class holds ";" or ":" depending on the OS
+    end
+  end
+  /* get the current value of the CLASSPATH environment variable */
+  classpath = value("CLASSPATH",,"ENVIRONMENT")
+  /* look for our jar files in the classpath */
+  if classpath~pos(pathExtension) = 0 then do
+    newClasspath = classpath || .file~pathSeparator || pathExtension    -- append our paths to be looked up last
+    call value "CLASSPATH", newClasspath, "ENVIRONMENT"   -- change the classpath
+    /* run the Application again making use of the new classpath */
+		program = "ooRexxTryFX.rxj" .SysCArgs~makeString
+		rexx program 			-- this statement will be sent directly to the terminal/console, which will invoke "rexxj"
+    /* change PATH back to original and return "true" to exit the application */
+    call value "CLASSPATH", classpath, "ENVIRONMENT"
+    return .true
+  end

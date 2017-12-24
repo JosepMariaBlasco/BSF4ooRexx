@@ -1,0 +1,55 @@
+::class SyntaxHighlighter public
+::method init /* moving those imports into the init method will load them after the splash screen and that's good, because the user will then know, that he is waiting for something instead of looking at an empty screen */
+  call bsf.import "java.util.Optional"   , "Optional"
+  call bsf.import "java.util.Collections", "Collections"
+
+::method test           /* called by "filter()" method in the TabManager Class */
+  use arg ch
+  return \ch~getInserted~equals(ch~getRemoved)
+
+::method get
+  expose code
+  code = .TabManager~getInputArea~getText
+  .local~task = bsfCreateRexxProxy(self,,.javafx.concurrent.Task)     -- execute the task in this class
+  .Executor~execute(.task)
+  return .task
+
+/* called by the supplyTask method - Supplier Interface - Task Class in the TabManager class */
+::method call
+  expose code
+  Highlighter = .my.app~appClzLdr~loadClass("org.ooRexxTryFX.Highlighter")
+  return Highlighter~computeHighlighting(code)
+	
+/* called by java.util.Function (filterMap Method), prevents NullPointerExceptions */
+::method apply
+  use arg res
+  if res~isSuccess then return .Optional~of(res~get)
+  else                  return .Optional~empty
+
+/* called by the subscribe Method to apply the changes if there are any */
+::method accept
+  use arg StyleSpans
+  codeArea = .TabManager~getInputArea
+  userData = .directory~new
+  userData~spans = styleSpans
+  userData~codeArea = codeArea
+  .Platform~runLater(bsfCreateRexxProxy(.styleSpansApplier~new,userData,.java.lang.Runnable))
+  Tab = .TabManager~getCurrentTab
+  if Tab~getGraphic = .nil & codeArea~getUndoManager~isUndoAvailable then -- only show the save icon if new content is available
+    Tab~setGraphic(.bsf~new("javafx.scene.image.ImageView", "resources/images/icon_savefile_15.png"))
+
+
+::method unknown
+  say "[information] unhandled call {"arg(1)"} in class" self~class
+
+::class styleSpansApplier
+::method run
+  use arg slotDir
+  userData = slotDir~userData
+  StyleSpans = userData~spans
+  codeArea = userData~codeArea
+  if StyleSpans~length = codeArea~getText~length then
+    codeArea~setStyleSpans(0, StyleSpans)		-- apply the StyleSpans built in the "call" method
+
+::requires "BSF.CLS"        -- get Java Support
+::requires "rgf_util2.rex"

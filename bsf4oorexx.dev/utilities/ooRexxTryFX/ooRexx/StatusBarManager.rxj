@@ -1,0 +1,53 @@
+::class StatusBarManager public
+::method init
+  expose statusBar label statusIcon defaultOptions
+  statusBar = .my.app~ooRexxTryFX.fxml~StatusBar
+  label = statusBar~getChildren~get(0)
+  statusIcon = .my.app~ooRexxTryFX.fxml~statusIcon
+  defaultOptions = .stringTable~new
+  defaultOptions~time = 5
+  defaultOptions~msgAfter = "Ready"
+  defaultOptions~type = "DEFAULT"
+
+
+::method unknown
+  say "[info] unhandled call {"arg(1)"}"
+
+
+::method setMessage
+  expose label statusIcon
+  use arg msg, type="DEFAULT"
+  label~setText(msg)
+  select case type
+    when "SUCCESS" then
+		/* TODO: Replace with FontIcon */
+      /* Image(java.lang.String url, double requestedWidth, double requestedHeight, boolean preserveRatio, boolean smooth) */
+      statusIcon~setImage(.bsf~new("javafx.scene.image.Image", "resources/images/success.png", 17.0, 17.0, 1, 1))
+    when "ERROR" then
+      statusIcon~setImage(.bsf~new("org.kordamp.ikonli.javafx.FontIcon", "oct-alert"))
+    when "INFO" then
+      statusIcon~setImage(.bsf~new("org.kordamp.ikonli.javafx.FontIcon", "oct-light-bulb"))
+    when "LOADING" then
+      statusIcon~setImage(.bsf~new("javafx.scene.image.Image", "resources/images/ajax-loader.gif", 17.0, 17.0, 1, 1))
+    otherwise
+      statusIcon~setImage(.nil)
+  end
+
+
+::method setTempMessage
+  expose defaultOptions
+  use arg msg, options
+  if \options~isA(.stringTable) then            /* apply default values if needed */
+      options = defaultOptions
+  time = options~hasItem(time)~?(options~time, defaultOptions~time)
+  msgAfter = options~hasItem(msgAfter)~?(options~msgAfter, defaultOptions~msgAfter)
+  type = options~hasItem(type)~?(options~type, defaultOptions~type)
+  self~setMessage(msg,type)
+  if \time~datatype("Number") then
+    say "[error]" time "is not a time span"
+  else
+    call SysSleep time
+  self~setMessage(msgAfter)
+
+
+::requires bsf.cls

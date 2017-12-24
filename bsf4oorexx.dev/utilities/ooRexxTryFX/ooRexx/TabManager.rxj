@@ -1,0 +1,295 @@
+::class TabManagerClass public
+::attribute allTabs                             -- the controller routine "closeAllTabs" uses this attribute
+::attribute alreadySavedFilepaths
+::attribute savedArgs
+::method init
+/* variable initialisation */
+  expose allTabs TabPane alreadySavedFilepaths tabCounter savedArgs
+  call bsf.import "org.fxmisc.richtext.model.NavigationActions$SelectionPolicy", "NavigationActions.SelectionPolicy"
+  call bsf.import "org.fxmisc.richtext.model.TwoDimensional$Bias", "TwoDimensional.Bias"
+  tabCounter = 0
+  TabPane = .my.app~ooRexxTryFX.fxml~TabPane
+  TabPane~getSelectionModel~selectedItemProperty~addListener(bsfCreateRexxProxy(.ChangeListener~new,,"javafx.beans.value.ChangeListener"))
+  allTabs = .array~new
+  alreadySavedFilepaths = .array~new
+  savedArgs = .array~new
+  /* load a code area to the tab */
+  self~newTab             -- create the first Tab
+
+::method newTab
+  expose allTabs TabPane tabCounter
+  Tab = .bsf~new("javafx.scene.control.Tab", "Untitled" tabCounter)
+  tabCounter += 1
+  TabPane~getTabs~add(Tab)
+  TabPane~getSelectionModel~select(Tab)
+  allTabs~insert(Tab)
+
+  codeArea = .bsf~new("org.fxmisc.richtext.CodeArea") -- "trace i; do i=1 to 55; say 55/i; end;") -- trace ?R; pull v; say v") --SAY ((12+4)*5+4)/0 -- "trace i; parse pull tmp; say tmp"
+  virtualizedScrollPane = .bsf~new("org.fxmisc.flowless.VirtualizedScrollPane", codeArea)
+  anchorPane = .bsf~new("javafx.scene.layout.AnchorPane")       -- this anchorPane allows the codeArea to stretch
+  anchorPane~~setBottomAnchor(codeArea,0)~~setRightAnchor(codeArea,0)~~setTopAnchor(codeArea,0)~~setLeftAnchor(codeArea,0)
+  Tab~setContent( virtualizedScrollPane  ) -- attach the fxml document to the current pane
+  Tab~setOnCloseRequest( bsfCreateRexxProxy(.RexxEventHandler~new,,.javafx.event.EventHandler) )
+
+  codeArea~setStyle("-fx-font-size:" .my.app~preferences["codeAreaFontSize"] || "pt")
+  codeArea~setWrapText(.my.app~preferences["autoLineBreak"])
+  /* handle scroll events to change the font size when the user scrolls with the mousewheel and control up */
+  scrollEvent = bsf.import("javafx.scene.input.ScrollEvent")
+  rp = bsfCreateRexxProxy(.RexxEventHandler~new,,"javafx.event.EventHandler")
+  codeArea~addEventFilter(scrollEvent~SCROLL, rp)
+  LineNumberFactory = bsf.import("org.fxmisc.richtext.LineNumberFactory")
+  codeArea~setParagraphGraphicFactory(LineNumberFactory~get(codeArea))    -- add line numbers to each row
+  if .my.app~isPluginActive then do		-- apply syntax highlighting if the classes are provided
+    .bsf~new("org.ooRexxTryFX.Highlighter", codeArea)
+	/* disabled, because unstable:
+	rexxHandler=.SyntaxHighlighter~new   -- Rexx-Objekt anlegen
+    jRexxHandler=bsfCreateRexxProxy(rexxHandler, , "java.util.function.Predicate", -
+                                                   "java.util.function.Consumer", -
+                                                   "java.util.function.Supplier", -
+                                                   "java.util.function.Function")
+    codeArea~plainTextChanges -                     -- follow plain text changes as a java8 Stream
+            ~filter(jRexxHandler) -
+            ~successionEnds(bsf.import("java.time.Duration")~ofMillis(100)) -
+            ~supplyTask(jRexxHandler) -				-- compute highlighting with a javafx Task in a seperate Thread
+            ~awaitLatest(codeArea~plainTextChanges) -
+            ~filterMap(jRexxHandler) -
+            ~subscribe(jRexxHandler)                -- apply highlighting
+	*/
+  end
+  -- for testing:
+  -- codeArea~replaceText("trace i".endOfLine"do i=1 to 10 by 2".endOfLine"say i".endOfLine"end".endOfLine"1/0")
+  codeArea~getUndoManager~forgetHistory
+
+  codeArea~~setOnKeyTyped(bsfCreateRexxProxy(self,,.javafx.event.EventHandler)) -
+          ~~setOnKeyPressed(bsfCreateRexxProxy(self,,.javafx.event.EventHandler))
+  .my.app~ooRexxTryFX.fxml~undoMenuItem~disableProperty~~unbind ~~bind(codeArea~undoAvailableProperty~not)    -- "not" inverts a boolean property
+  .my.app~ooRexxTryFX.fxml~redoMenuItem~disableProperty~~unbind ~~bind(codeArea~redoAvailableProperty~not)
+  userData = .directory~new
+  userData~node = codeArea
+  .Platform~runLater(bsfCreateRexxProxy(.focusRequestExecutor~new,userData,.java.lang.Runnable))
+  return Tab
+
+
+::method unknown
+    say self~class
+    say ">unknown method:"arg() arg(1)
+
+::method handle
+  use arg event
+     /* as of 2017-04-18 there is an unwanted feature in the javafx control "TextFlow" which hardcodes the width of a tab that of 8 whitespaces, see https://stackoverflow.com/questions/27585668/setting-the-tab-spacing-size-visualization-for-a-javafx-textarea and https://bugs.openjdk.java.net/browse/JDK-8130738
+  so that's why we need to convert every tab to a number of spaces manually.. */
+  keyCode = event~getCode
+  keyText = event~getCharacter
+  codeArea = event~getTarget
+  if keyCode~equals(.KeyCode~TAB) & .my.app~preferences["indentUsingSpaces"] then do
+    TabInSpaces = .my.app~preferences["TabInSpaces"]
+    codeArea~deletePreviousChar				-- remove the tab character
+    codeArea~replaceSelection(" "~copies(TabInSpaces))
+  end
+  else if keyCode~equals(.KeyCode~ENTER) then do            /* propagate the indentation to the next line */
+    if codeArea~getCurrentParagraph > 0 then do
+      prevLine = codeArea~getParagraph(codeArea~getCurrentParagraph-1)          -- the line does not include the linefeed character
+      if prevLine~length > 0 then do
+          loop i=0 to prevLine~length-1
+            if prevLine~charAt(i) \= " " then
+              leave
+          end
+          if i > 0 then
+            codeArea~replaceSelection(" "~copies(i))
+      end
+    end
+  end
+  else if keyText = '"' && keyText = "'" then
+    call autoComplete keyText
+  else if keyText = '(' then
+    call autoComplete keyText, ')'
+  else if keyText = '[' then
+    call autoComplete keyText, ']'
+  else if keyText = '{' then
+    call autoComplete keyText, '}'
+  else if keyCode~equals(.KeyCode~D) & event~isShortcutDown then do
+    /* ctrl+d: duplicate line(s) */
+    selection = codeArea~getSelection
+    codeArea~displaceCaret(selection~getStart)
+    firstLineOfSelection = codeArea~getCurrentParagraph
+    endOfSelection = selection~getEnd
+    insertedText = .endOfLine
+    currentParagraph = firstLineOfSelection
+    selectedText = codeArea~getSelectedText
+    numSelectedLines = selectedText~countStr("0a"x)
+    if selection~length = 0 then
+      codeArea~selectParagraph
+    selectedText = codeArea~getSelectedText
+    i = 0
+    loop line over selectedText
+      paragraph = codeArea~getParagraph(currentParagraph)
+      insertedText ||= paragraph~getText
+      if i <> numSelectedLines then do
+        insertedText ||= .endOfLine
+        currentParagraph += 1
+      end
+      i += 1
+    end
+    codeArea~insertText(currentParagraph, codeArea~getParagraph(currentParagraph)~length, insertedText)
+  end
+  else if keyCode~equals(.KeyCode~number_sign) & event~isShortcutDown then do
+    /* ctrl+# for commenting lines */
+    selection = codeArea~getSelection
+    codeArea~displaceCaret(selection~getStart)
+    firstLineOfSelection = codeArea~getCurrentParagraph
+    endOfSelection = selection~getEnd
+    currentParagraph = firstLineOfSelection
+    selectedText = codeArea~getSelectedText
+    numSelectedLines = selectedText~countStr("0a"x)
+    if selection~length = 0 then
+      codeArea~selectParagraph
+    selectedText = codeArea~getSelectedText
+    i = 0
+    loop line over selectedText
+      paragraph = codeArea~getParagraph(currentParagraph)
+      leadingSpaces = 0
+      minuses = 0
+      invert = .false
+      loop ch over paragraph~getText~makeArray("")
+        if ch = " " then
+          leadingSpaces += 1
+        else if ch = "-" then
+          minuses += 1
+        if minuses = 2 then do
+          invert = .true
+          leave
+        end
+      end
+
+      paragraph~setText(" "~copies(leadingSpaces) || "--" paragraph~getText)
+
+      if i <> numSelectedLines then do
+        currentParagraph += 1
+      end
+      i += 1
+    end
+    codeArea~replaceSelection(currentParagraph, codeArea~getParagraph(currentParagraph)~length, insertedText)
+  end
+  return
+
+  autoComplete: procedure expose codeArea
+    use arg openChar, closeChar
+    closeChar = (closeChar<>"CLOSECHAR")~?(closeChar, openChar)     -- use openChar as closeChar if not set
+    openPos = codeArea~getCaretPosition
+    closePos = openPos + 1
+    if closePos <= codeArea~getLength then                         -- prevent indexOutOfBounds exception
+      nextChar = codeArea~getText(openPos, closePos)
+    if nextChar = closeChar then
+      codeArea~deleteNextChar
+    else if .string~space~makeArray(" ")~hasItem(nextChar) then
+      codeArea~~insertText(openPos, closeChar) ~~moveTo(openPos) -- moves the caret between openChar and closeChar
+
+
+::method closeTab
+  expose allTabs TabPane tabCounter
+  Tabs = TabPane~getTabs                 -- of type ObservableList<Tab>
+  Tab = self~getCurrentTab               -- get a reference to that Tab
+  Tabs~remove(Tab)                       -- remove the tab from the tab pane
+  index = allTabs~index(Tab)
+  allTabs~delete(index)                  -- remove the tab from our directory
+  tabCounter -= 1                        -- decrement tab counter
+  if Tabs~size = 0 then do
+    /* if the last tab was closed, open a new blank one */
+    self~newTab
+  end
+
+
+::method getInputArea
+  use arg Tab
+  if \Tab~isA(.bsf) then
+     Tab = self~getCurrentTab
+  virtualizedScrollPane = Tab~content
+  codeArea = virtualizedScrollPane~content
+  return codeArea
+
+/**
+ ** this method returns a reference of the current tab
+ **/
+::method getCurrentTab
+  expose allTabs
+  currentTabIndex = self~getTabIndex()
+  Tab = allTabs~at( currentTabIndex + 1 )
+  return Tab
+
+/**
+ ** this method checks if there is a path assigned for this tab to skip open/save file chooser dialogs
+ ** returns the path or a .nil object
+ **/
+::method alreadySavedFile
+  expose allTabs alreadySavedFilepaths
+  currentTabIndex = self~getTabIndex()
+  alreadySavedFilepath = alreadySavedFilepaths~at( currentTabIndex + 1 )
+  return alreadySavedFilepath
+
+
+::method saveFilepath
+  expose allTabs alreadySavedFilepaths
+  use arg filepath
+  currentTabIndex = self~getTabIndex()
+  alreadySavedFilepaths~put(filepath, currentTabIndex + 1)
+
+/**
+ * this methods get and set the value of arguments used for each tab
+ */
+::method getSavedArgs
+  expose allTabs savedArgs
+  currentTabIndex = self~getTabIndex()
+  currentArgs = savedArgs~at( currentTabIndex + 1 )
+  return currentArgs
+
+::method saveArgs
+  expose allTabs savedArgs
+  use arg args
+  currentTabIndex = self~getTabIndex()
+  savedArgs~put(args, currentTabIndex + 1)
+
+
+/**
+ ** this method returns the 0-based index of the current tab
+ **/
+::method getTabIndex
+  expose TabPane
+  SelectionModel = TabPane~getSelectionModel
+  TabIndex = SelectionModel~getSelectedIndex
+  return TabIndex
+
+/**
+ ** this method is called when arguments are passed to the main application. After opening new files as tabs we need to eliminate the first inital tab with no content
+ ** therefore we will focus on the first tab and call the `closeTab` method on it, which is already implemented
+ **/
+::method closeInitTab
+  expose TabPane --allTabs
+  TabPane~getSelectionModel~selectFirst--select(allTabs[1])
+  self~closeTab
+
+
+
+
+::class ChangeListener /* this class monitors tab changes */
+::method changed
+  use arg property, oldValue, newValue
+  if newValue <> .nil then do
+    .my.app~primaryStage~setTitle(pp(newValue~getText) "| ooRexxTryFX")
+    virtualizedScrollPane = newValue~getContent
+    if virtualizedScrollPane <> .nil then do      -- it's nil when creating a new tab (this method gets invoked before creating child nodes, e.g. the code area does not exist yet
+      codeArea = virtualizedScrollPane~getContent
+      .my.app~ooRexxTryFX.fxml~undoMenuItem~disableProperty~~unbind ~~bind(codeArea~undoAvailableProperty~not)
+      .my.app~ooRexxTryFX.fxml~redoMenuItem~disableProperty~~unbind ~~bind(codeArea~redoAvailableProperty~not)
+    end
+  end
+
+
+::class focusRequestExecutor public
+::method run
+  use arg slotDir
+  slotDir~userData~node~requestFocus
+
+
+::requires "BSF.CLS"    -- get Java Support
+::requires "ooRexx/RexxEventHandler.rxj"
+::requires "ooRexx/SyntaxHighlighter.rxj"

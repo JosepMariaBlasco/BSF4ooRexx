@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Class-Path: ooRexxPlugin4IntelliJ.jar ooRexxStandaloneAdapter.jar rich
+ textfx-0.7-M5-custom.jar
+
