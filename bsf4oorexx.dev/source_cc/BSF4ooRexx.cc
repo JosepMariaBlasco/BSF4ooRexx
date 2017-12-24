@@ -37,6 +37,9 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
+    6.0.0   2017-12-24, rgf:
+                             - putting and removing LOCAL_PRIMODAL_TID ("BSF.PRIMODALTID") in/from .environment instead of .local
+
     6.0.0   2017-12-23, rgf: implementing <https://sourceforge.net/p/bsf4oorexx/feature-requests/15/>:
                              - remove rgfGetEntryFromLocal(), rgfGetEntryFromEnvironment(): not needed anymore
                              - remove creation of "Slot.Argument" from native code, define as public class in BSF.CLS and
@@ -840,7 +843,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 #define CONFIG_REXX_EXIT_HANDLER_SIGNATURE    "(Ljava/lang/Object;II[Ljava/lang/Object;)I"
 
     // rgf, 2014-03-30, name of entry into .local for primodal TID (will allow one to attach even if no TID is known to the Rexx programmer)
-#define LOCAL_PRIMODAL_TID                    "BSF.PRIMODALTID"
+#define PRIMODAL_TID                          "BSF.PRIMODALTID"
 
 #include "oorexxapi.h"
 
@@ -915,11 +918,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20171223 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20171224 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20171223 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20171224 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20171223 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20171224 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -5219,7 +5222,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 
     // rgf, 20140330: add TID to .local to save the primodal TID for this Rexx interpreter instance
     {
-        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+        RexxDirectoryObject globalDir = context->GetGlobalEnvironment();   // get .environment
         thread_id_t              tid = RgfGetTID();
 
         char *strTid=new char[RGF_TID_STRING_WIDTH];
@@ -5230,7 +5233,7 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
     fflush(stderr);
 #endif
 
-        context->DirectoryPut(localDir, context->String(strTid), LOCAL_PRIMODAL_TID);
+        context->DirectoryPut(globalDir, context->String(strTid), PRIMODAL_TID);
         delete[] strTid;
     }
 
@@ -5320,7 +5323,7 @@ RexxRoutine0(RexxStringObject, BsfUnloadJava)  // 20090505, ---rgf, only a stub 
 
     // rgf, 20140330: remove primodal TID entry in .local for this Rexx interpreter instance
     {
-        RexxDirectoryObject localDir = context->GetLocalEnvironment();   // get .local
+        RexxDirectoryObject globalDir = context->GetGlobalEnvironment();   // get .environment
 
 #ifdef DEBUG
     thread_id_t tid=RgfGetTID();
@@ -5334,7 +5337,7 @@ RexxRoutine0(RexxStringObject, BsfUnloadJava)  // 20090505, ---rgf, only a stub 
     delete[] strTid;
 #endif
 
-        context->DirectoryRemove(localDir, LOCAL_PRIMODAL_TID); // remove entry in .local, not useful anymore
+        context->DirectoryRemove(globalDir, PRIMODAL_TID); // remove entry in .local, not useful anymore
     }
 
 
@@ -5996,7 +5999,7 @@ RexxRoutine2(RexxObjectPtr, BsfRexxProxy, RexxObjectPtr, proxy, OPTIONAL_CSTRING
     {
         fprintf(stderr, "*** *** BsfRexxProxy(): [1] 'flag=1' - rrid=[%p], flag=[%d], condition? [%d], BSF~string=[%s], proxy~string=[%s] ... \n",
                         context->threadContext->instance, (int) flag, (int) context->CheckCondition(),
-                        context->ObjectToStringValue(context->DirectoryAt(context->GetLocalEnvironment(), "BSF")),
+                        context->ObjectToStringValue(context->DirectoryAt(context->GetGlobalEnvironment(), "BSF")),
                         context->ObjectToStringValue(proxy)
                         );
         fflush(stderr);
@@ -8082,9 +8085,9 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     fflush(stderr);
 #endif
 
-            RexxDirectoryObject localDir = threadContext->GetLocalEnvironment();   // get .local
-            threadContext->DirectoryPut(localDir, threadContext->String(strTid), LOCAL_PRIMODAL_TID);
-            threadContext->ReleaseLocalReference(localDir);
+            RexxDirectoryObject globalDir = threadContext->GetGlobalEnvironment();   // get .local
+            threadContext->DirectoryPut(globalDir, threadContext->String(strTid), PRIMODAL_TID);
+            threadContext->ReleaseLocalReference(globalDir);
 
             delete[] strTid;
         }
