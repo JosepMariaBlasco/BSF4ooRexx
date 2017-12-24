@@ -46,6 +46,9 @@ import org.apache.bsf.BSFException;
   */
 
 /*
+    2017-12-24, rgf, - corrected documentation: .local may go away, if its Rexx interpreter instance
+                       got terminated and its .local garbage collected
+
     2016-11-05, rgf, - oops, overlooked that the test program did it from Rexx, now we make sure we
                        use Janino instead of ASM by setting to Janino in the static block
 
@@ -231,9 +234,8 @@ public class RexxProxy implements InvocationHandler
 
 
     /** The string value of the RexxInstance C++ pointer. The RexxProxy object can only be deployed via
-     *  the RexxInstance in which it got created; this assures that the appropriate .local is referencable, and
-     *  the RexxProxy's package object remains valid w.r.t. to its public routines and classes that may
-     *  depend on entries in .local as well.
+     *  the RexxInstance in which it got created; note: if the original Rexx interpreter instance was
+     *  terminated in between its .local directory got garbage collected.
      */
     protected String rexxInterpreterID=null;
 

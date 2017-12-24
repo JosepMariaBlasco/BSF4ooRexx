@@ -45,6 +45,11 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
    Changes:
 
+        2017-11-04, ---rgf, if missing filename for eval(): check whether ScriptContext Bindings have
+                            an entry "location" of type java.net.URL; if so, then assume that the
+                            execution comes from a JavaFX FXML file so use that location file as part
+                            of the artificially created filename to ease debugging
+
         2017-10-09, ---rgf, renamed "DispatchToToPublicRoutines" to "DispatchToPublicRoutines" (removing one "To")
 
         2017-10-08, ---rgf, make sure that the static method dumpScriptContext(sc) will supply
