@@ -2,7 +2,11 @@
 /*
    name:             invoke testGroup
    author:           Michael Lex
-   version:          1.0.0
+   version:          1.0.1
+
+   changed:          rgf, 2018-01-01:
+                     - make sure we use procedural APIs only; while running this test return values
+                       are not expected to be prefixed
 */
 /*
 
@@ -34,9 +38,23 @@ return testResult
 
 ::class "invoke.testGroup" subclass ooTestCase public
 
-::method "test_1"
-	.local~ver = 4
 
+::method setup
+  expose initialPrefixValue
+  .local~ver = 4              -- indicate BSF4ooRexx major version >= 4
+  if \VAR(initialPrefixValue) then
+  do
+	initialPrefixValue=BSF("bsfPrefixReturnValue")  -- fetch current setting
+   if initialPrefixValue~left(3)="<S>" then initialPrefixValue=substr(initialprefixValue,4)
+  end
+  call BSF "bsfPrefixReturnValue", 0      -- no "<O>" or "<S>" prefixes
+
+::method tearDown
+  expose initialPrefixValue
+  call bsf 'bsfPrefixReturnValue', initialPrefixValue -- reset setting
+
+
+::method "test_1"
 	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
 	self~expectSyntax(errorCode)
 	s=BSF("loadClass", "foo")

@@ -2,7 +2,8 @@
 /*
    name:             BsfInvokedBy testGroup
    author:           Michael Lex
-   version:          1.0.0
+   version:          1.0.1
+   changed:          rgf, 2018-01-01: "setup" method added
 */
 /*
 
@@ -34,9 +35,11 @@ return testResult
 
 ::class "BsfInvokedBy.testGroup" subclass ooTestCase public
 
-::method "test_1"
-	.local~ver = 4
+::method setup
+  .local~ver = 4              -- indicate BSF4ooRexx major version >= 4
 
+
+::method "test_1"
 	r=BsfInvokedBy()
 	self~assertEquals(r, 2)
 

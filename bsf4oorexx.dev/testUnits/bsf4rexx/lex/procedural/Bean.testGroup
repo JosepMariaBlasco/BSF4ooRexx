@@ -2,7 +2,10 @@
 /*
    name:             Bean testGroup
    author:           Michael Lex
-   changed:          ---rgf, 2011-02-12: allow this test to run in "java.awt.headless=true"-mode
+   changed:
+                     rgf, 2018-01-01: "setup" method added
+                     rgf, 2011-02-12: allow this test to run in "java.awt.headless=true"-mode
+
    version:          1.0.1
 */
 /*
@@ -35,9 +38,22 @@ return testResult
 
 ::class "Bean.testGroup" subclass ooTestCase public
 
-::method "test_1"
-	.local~ver = 4
+::method setup
+  expose initialPrefixValue
+  .local~ver = 4              -- indicate BSF4ooRexx major version >= 4
+  if \VAR(initialPrefixValue) then
+  do
+	initialPrefixValue=BSF("bsfPrefixReturnValue")  -- fetch current setting
+   if initialPrefixValue~left(3)="<S>" then initialPrefixValue=substr(initialprefixValue,4)
+  end
 
+::method tearDown
+  expose initialPrefixValue
+  call bsf 'bsfPrefixReturnValue', initialPrefixValue -- make sure we have the original setting before leaving
+  call BSF "setRexxNullString", ".NIL"    -- make sure we reset to default
+
+
+::method "test_1"
 	show_msg = BsfShowErrorMessage(0)
 	.bsf~bsf.import("java.lang.String","JString")
 	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1

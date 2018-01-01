@@ -2,7 +2,12 @@
 /*
    name:             Array testGroup
    author:           Michael Lex
-   version:          1.0.0
+   version:          1.0.1
+   changed:          rgf, 2018-01-01:
+                     - make sure we use procedural APIs only; while running this test return values
+                       are not expected to be prefixed
+                     - arrayPut() and arrayAt() use the C/Java array index rules, where the first element is at
+                       position 0
 */
 /*
 
@@ -34,12 +39,26 @@ return testResult
 
 ::class "Array.testGroup" subclass ooTestCase public
 
-::method "test_1"
-	.local~ver = 4
+::method setup
+  expose initialPrefixValue
+  .local~ver = 4              -- indicate BSF4ooRexx major version >= 4
+  if \VAR(initialPrefixValue) then
+  do
+	initialPrefixValue=BSF("bsfPrefixReturnValue")  -- fetch current setting
+   if initialPrefixValue~left(3)="<S>" then initialPrefixValue=substr(initialprefixValue,4)
+  end
+  call BSF "bsfPrefixReturnValue", 0      -- no "<O>" or "<S>" prefixes
 
+::method tearDown
+  expose initialPrefixValue
+  call bsf 'bsfPrefixReturnValue', initialPrefixValue -- reset setting
+
+
+::method "test_1"
 	arr=bsf.createArray("int.class", 5)
 	r=BSF("arrayPut", arr, 12345, 2)
-	self~assertEquals(arr[3], 12345)
+	-- self~assertEquals(arr[3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345)
 
 ::method "test_2"
 	show_msg = BsfShowErrorMessage(0)
@@ -51,37 +70,44 @@ return testResult
 ::method "test_3"
 	arr=bsf.createArray("int.class", 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2)
-	self~assertEquals(arr[3,3], 12345)
+	-- self~assertEquals(arr[3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 12345)
 
 ::method "test_4"
 	arr=bsf.createArray("int.class", 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 12345)
 
 ::method "test_5"
 	arr=bsf.createArray("int.class", 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 12345)
 
 ::method "test_6"
 	arr=bsf.createArray("int.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_7"
 	arr=bsf.createArray("int.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_8"
 	arr=bsf.createArray("int.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_9"
 	arr=bsf.createArray("int.class", 128623)
 	r=BSF("arrayPut", arr, 12345, 54321)
-	self~assertEquals(arr[54322], 12345)
+	-- self~assertEquals(arr[54322], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 12345)
 
 ::method "test_10"
 	show_msg = BsfShowErrorMessage(0)
@@ -105,17 +131,20 @@ return testResult
 ::method "test_13"
 	arr=bsf.createArray("int.class", 5)
 	r=BSF("arrayPut", arr, -12345, 2)
-	self~assertEquals(arr[3], -12345)
+	-- self~assertEquals(arr[3], -12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), -12345)
 
 ::method "test_14"
 	arr=bsf.createArray("int.class", 5)
 	r=BSF("arrayPut", arr, 2147483647, 2)
-	self~assertEquals(arr[3], 2147483647)
+	-- self~assertEquals(arr[3], 2147483647)
+	self~assertEquals(BSF("arrayAt", arr, 2), 2147483647)
 
 ::method "test_15"
 	arr=bsf.createArray("int.class", 5)
 	r=BSF("arrayPut", arr, '-2147483648', 2)
-	self~assertEquals(arr[3], '-2147483648')
+	-- self~assertEquals(arr[3], '-2147483648')
+	self~assertEquals(BSF("arrayAt", arr, 2), -2147483648)
 
 ::method "test_16"
 	arr=bsf.createArray("int.class", 5)
@@ -180,7 +209,8 @@ return testResult
 ::method "test_26"
 	arr=bsf.createArray("String.class", 128623)
 	r=BSF("arrayPut", arr, 12345, 54321)
-	self~assertEquals(arr[54322], 12345)
+	-- self~assertEquals(arr[54322], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 12345)
 
 ::method "test_27"
 	show_msg = BsfShowErrorMessage(0)
@@ -204,37 +234,47 @@ return testResult
 ::method "test_30"
 	arr=bsf.createArray("String.class", 5)
 	r=BSF("arrayPut", arr, -12345, 2)
-	self~assertEquals(arr[3], -12345)
+	-- self~assertEquals(arr[3], -12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), -12345)
 
 ::method "test_31"
 	arr=bsf.createArray("String.class", 5)
 	r=BSF("arrayPut", arr, "foo", 2)
-	self~assertEquals(arr[3], "foo")
+	-- self~assertEquals(arr[3], "foo")
+	self~assertEquals(BSF("arrayAt", arr, 2), "foo")
 
 ::method "test_32"
 	arr=bsf.createArray("String.class", 5)
 	r=BSF("arrayPut", arr, "foo", 2)
-	self~assertNotEquals(arr[3], "bar")
+	-- self~assertNotEquals(arr[3], "bar")
+	self~assertEquals(BSF("arrayAt", arr, 2), "foo")
+	self~assertNotEquals(BSF("arrayAt", arr, 2), "bar")
 
 ::method "test_33"
 	arr=bsf.createArray("String.class", 5)
 	r=BSF("arrayPut", arr, '"', 2)
-	self~assertEquals(arr[3], '"')
+	-- self~assertEquals(arr[3], '"')
+	self~assertEquals(BSF("arrayAt", arr, 2), '"')
 
 ::method "test_34"
 	arr=bsf.createArray("String.class", 5)
 	r=BSF("arrayPut", arr, "'", 2)
-	self~assertEquals(arr[3], "'")
+	-- self~assertEquals(arr[3], "'")
+	self~assertEquals(BSF("arrayAt", arr, 2), "'")
 
 ::method "test_35"
 	arr=bsf.createArray("String.class", 5)
 	r=BSF("arrayPut", arr, "AAAaaa", 2)
-	self~assertEquals(arr[3], "AAAaaa")
+	-- self~assertEquals(arr[3], "AAAaaa")
+	self~assertEquals(BSF("arrayAt", arr, 2), "AAAaaa")
 
+
+-- rgf, 2018-01-01: note, only the string "true" will yield a Java boolean truth value!
 ::method "test_36"
 	arr=bsf.createArray("boolean.class", 128623)
 	r=BSF("arrayPut", arr, .true, 54321)
-	self~assertEquals(arr[54322], .false)
+	-- self~assertEquals(arr[54322], .false)
+	self~assertEquals(BSF("arrayAt", arr, 54321), .false)
 
 ::method "test_37"
 	show_msg = BsfShowErrorMessage(0)
@@ -258,28 +298,36 @@ return testResult
 ::method "test_40"
 	arr=bsf.createArray("boolean.class", 5)
 	r=BSF("arrayPut", arr, .false, 2)
-	self~assertEquals(arr[3], .false)
+	-- self~assertEquals(arr[3], .false)
+	self~assertEquals(BSF("arrayAt", arr, 2), .false)
 
 ::method "test_41"
 	arr=bsf.createArray("boolean.class", 5)
 	r=BSF("arrayPut", arr, .true, 2)
-	self~assertEquals(arr[3], .false)
+	-- self~assertEquals(arr[3], .false)
+	self~assertEquals(BSF("arrayAt", arr, 2), .false)
+
+	r=BSF("arrayPut", arr, "true", 3)      -- rgf, 2018-01-01: only "true" will yield a true value on the Java side
+	self~assertEquals(BSF("arrayAt", arr, 3), .true)
 
 ::method "test_42"
 	arr=bsf.createArray("boolean.class", 5)
 	r=BSF("arrayPut", arr, 0, 2)
-	self~assertEquals(arr[3], 0)
+	-- self~assertEquals(arr[3], 0)
+	self~assertEquals(BSF("arrayAt", arr, 2), 0)
 
 ::method "test_43"
 	arr=bsf.createArray("boolean.class", 5)
 	r=BSF("arrayPut", arr, 2, 2)
-	self~assertEquals(arr[3], .false)
+	-- self~assertEquals(arr[3], .false)
+	self~assertEquals(BSF("arrayAt", arr, 2), .false)
 
 ::method "test_44"
 	show_msg = BsfShowErrorMessage(0)
 	arr=bsf.createArray("boolean.class", 5)
 	r=BSF("arrayPut", arr, "foo", 2)
-	self~assertEquals(arr[3], .false)
+	-- self~assertEquals(arr[3], .false)
+	self~assertEquals(BSF("arrayAt", arr, 2), .false)
 
 ::method "test_45"
 	arr=bsf.createArray("boolean.class", 5)
@@ -290,7 +338,8 @@ return testResult
 ::method "test_46"
 	arr=bsf.createArray("byte.class", 5)
 	r=BSF("arrayPut", arr, 123, 2)
-	self~assertEquals(arr[3], 123)
+	-- self~assertEquals(arr[3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2), 123)
 
 ::method "test_47"
 	show_msg = BsfShowErrorMessage(0)
@@ -302,37 +351,44 @@ return testResult
 ::method "test_48"
 	arr=bsf.createArray("byte.class", 5, 5)
 	r=BSF("arrayPut", arr, 123, 2, 2)
-	self~assertEquals(arr[3,3], 123)
+	-- self~assertEquals(arr[3,3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 123)
 
 ::method "test_49"
 	arr=bsf.createArray("byte.class", 5, 5, 5)
 	r=BSF("arrayPut", arr, 123, 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 123)
+	-- self~assertEquals(arr[3,3,3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 123)
 
 ::method "test_50"
 	arr=bsf.createArray("byte.class", 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 123, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 123)
+	-- self~assertEquals(arr[3,3,3,3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 123)
 
 ::method "test_51"
 	arr=bsf.createArray("byte.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 123, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 123)
+	-- self~assertEquals(arr[3,3,3,3,3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 123)
 
 ::method "test_52"
 	arr=bsf.createArray("byte.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 123, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 123)
+	-- self~assertEquals(arr[3,3,3,3,3,3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 123)
 
 ::method "test_53"
 	arr=bsf.createArray("byte.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 123, 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 123)
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 123)
 
 ::method "test_54"
 	arr=bsf.createArray("byte.class", 128623)
 	r=BSF("arrayPut", arr, 123, 54321)
-	self~assertEquals(arr[54322], 123)
+	-- self~assertEquals(arr[54322], 123)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 123)
 
 ::method "test_55"
 	show_msg = BsfShowErrorMessage(0)
@@ -356,17 +412,20 @@ return testResult
 ::method "test_58"
 	arr=bsf.createArray("byte.class", 5)
 	r=BSF("arrayPut", arr, -123, 2)
-	self~assertEquals(arr[3], -123)
+	-- self~assertEquals(arr[3], -123)
+	self~assertEquals(BSF("arrayAt", arr, 2), -123)
 
 ::method "test_59"
 	arr=bsf.createArray("byte.class", 5)
 	r=BSF("arrayPut", arr, 127, 2)
-	self~assertEquals(arr[3], 127)
+	-- self~assertEquals(arr[3], 127)
+	self~assertEquals(BSF("arrayAt", arr, 2), 127)
 
 ::method "test_60"
 	arr=bsf.createArray("byte.class", 5)
 	r=BSF("arrayPut", arr, -128, 2)
-	self~assertEquals(arr[3], -128)
+	-- self~assertEquals(arr[3], -128)
+	self~assertEquals(BSF("arrayAt", arr, 2), -128)
 
 ::method "test_61"
 	arr=bsf.createArray("byte.class", 5)
@@ -402,7 +461,8 @@ return testResult
 ::method "test_66"
 	arr=bsf.createArray("char.class", 5)
 	r=BSF("arrayPut", arr, 'a', 2)
-	self~assertEquals(arr[3], 'a')
+	-- self~assertEquals(arr[3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2), 'a')
 
 ::method "test_67"
 	show_msg = BsfShowErrorMessage(0)
@@ -414,37 +474,44 @@ return testResult
 ::method "test_68"
 	arr=bsf.createArray("char.class", 5, 5)
 	r=BSF("arrayPut", arr, 'a', 2, 2)
-	self~assertEquals(arr[3,3], 'a')
+	-- self~assertEquals(arr[3,3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 'a')
 
 ::method "test_69"
 	arr=bsf.createArray("char.class", 5, 5, 5)
 	r=BSF("arrayPut", arr, 'a', 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 'a')
+	-- self~assertEquals(arr[3,3,3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 'a')
 
 ::method "test_70"
 	arr=bsf.createArray("char.class", 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 'a', 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 'a')
+	-- self~assertEquals(arr[3,3,3,3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 'a')
 
 ::method "test_71"
 	arr=bsf.createArray("char.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 'a', 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 'a')
+	-- self~assertEquals(arr[3,3,3,3,3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 'a')
 
 ::method "test_72"
 	arr=bsf.createArray("char.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 'a', 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 'a')
+	-- self~assertEquals(arr[3,3,3,3,3,3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 'a')
 
 ::method "test_73"
 	arr=bsf.createArray("char.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 'a', 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 'a')
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 'a')
 
 ::method "test_74"
 	arr=bsf.createArray("char.class", 128623)
 	r=BSF("arrayPut", arr, 'a', 54321)
-	self~assertEquals(arr[54322], 'a')
+	-- self~assertEquals(arr[54322], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 54321), 'a')
 
 ::method "test_75"
 	show_msg = BsfShowErrorMessage(0)
@@ -468,18 +535,21 @@ return testResult
 ::method "test_78"
 	arr=bsf.createArray("char.class", 5)
 	r=BSF("arrayPut", arr, '1', 2)
-	self~assertEquals(arr[3], '1')
+	-- self~assertEquals(arr[3], '1')
+	self~assertEquals(BSF("arrayAt", arr, 2), '1')
 
 ::method "test_79"
 	arr=bsf.createArray("char.class", 5)
 	r=BSF("arrayPut", arr, '"', 2)
-	self~assertEquals(arr[3], '"')
+	-- self~assertEquals(arr[3], '"')
+	self~assertEquals(BSF("arrayAt", arr, 2), '"')
 
 ::method "test_80"
 	show_msg = BsfShowErrorMessage(0)
 	arr=bsf.createArray("char.class", 5)
 	r=BSF("arrayPut", arr, "foo", 2)
-	self~assertEquals(arr[3], 'f')
+	-- self~assertEquals(arr[3], 'f')
+	self~assertEquals(BSF("arrayAt", arr, 2), 'f')
 
 ::method "test_81"
 	arr=bsf.createArray("char.class", 5)
@@ -490,7 +560,8 @@ return testResult
 ::method "test_82"
 	arr=bsf.createArray("short.class", 5)
 	r=BSF("arrayPut", arr, 12345, 2)
-	self~assertEquals(arr[3], 12345)
+	-- self~assertEquals(arr[3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345)
 
 ::method "test_83"
 	show_msg = BsfShowErrorMessage(0)
@@ -502,37 +573,44 @@ return testResult
 ::method "test_84"
 	arr=bsf.createArray("short.class", 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2)
-	self~assertEquals(arr[3,3], 12345)
+	-- self~assertEquals(arr[3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 12345)
 
 ::method "test_85"
 	arr=bsf.createArray("short.class", 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 12345)
 
 ::method "test_86"
 	arr=bsf.createArray("short.class", 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 12345)
 
 ::method "test_87"
 	arr=bsf.createArray("short.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_88"
 	arr=bsf.createArray("short.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_89"
 	arr=bsf.createArray("short.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_90"
 	arr=bsf.createArray("short.class", 128623)
 	r=BSF("arrayPut", arr, 12345, 54321)
-	self~assertEquals(arr[54322], 12345)
+	-- self~assertEquals(arr[54322], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 12345)
 
 ::method "test_91"
 	show_msg = BsfShowErrorMessage(0)
@@ -556,17 +634,20 @@ return testResult
 ::method "test_94"
 	arr=bsf.createArray("short.class", 5)
 	r=BSF("arrayPut", arr, -12345, 2)
-	self~assertEquals(arr[3], -12345)
+	-- self~assertEquals(arr[3], -12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), -12345)
 
 ::method "test_95"
 	arr=bsf.createArray("short.class", 5)
 	r=BSF("arrayPut", arr, 32767, 2)
-	self~assertEquals(arr[3], 32767)
+	-- self~assertEquals(arr[3], 32767)
+	self~assertEquals(BSF("arrayAt", arr, 2), 32767)
 
 ::method "test_96"
 	arr=bsf.createArray("short.class", 5)
 	r=BSF("arrayPut", arr, -32767, 2)
-	self~assertEquals(arr[3], -32767)
+	-- self~assertEquals(arr[3], -32767)
+	self~assertEquals(BSF("arrayAt", arr, 2), -32767)
 
 ::method "test_97"
 	arr=bsf.createArray("short.class", 5)
@@ -577,7 +658,8 @@ return testResult
 ::method "test_98"
 	arr=bsf.createArray("short.class", 5)
 	r=BSF("arrayPut", arr, -32768, 2)
-	self~assertEquals(arr[3], -32768)
+	-- self~assertEquals(arr[3], -32768)
+	self~assertEquals(BSF("arrayAt", arr, 2), -32768)
 
 ::method "test_99"
 	arr=bsf.createArray("short.class", 5)
@@ -601,7 +683,8 @@ return testResult
 ::method "test_102"
 	arr=bsf.createArray("long.class", 5)
 	r=BSF("arrayPut", arr, 12345, 2)
-	self~assertEquals(arr[3], 12345)
+	-- self~assertEquals(arr[3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345)
 
 ::method "test_103"
 	show_msg = BsfShowErrorMessage(0)
@@ -613,37 +696,44 @@ return testResult
 ::method "test_104"
 	arr=bsf.createArray("long.class", 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2)
-	self~assertEquals(arr[3,3], 12345)
+	-- self~assertEquals(arr[3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 12345)
 
 ::method "test_105"
 	arr=bsf.createArray("long.class", 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 12345)
 
 ::method "test_106"
 	arr=bsf.createArray("long.class", 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 12345)
 
 ::method "test_107"
 	arr=bsf.createArray("long.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_108"
 	arr=bsf.createArray("long.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_109"
 	arr=bsf.createArray("long.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345, 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_110"
 	arr=bsf.createArray("long.class", 128623)
 	r=BSF("arrayPut", arr, 12345, 54321)
-	self~assertEquals(arr[54322], 12345)
+	-- self~assertEquals(arr[54322], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 12345)
 
 ::method "test_111"
 	show_msg = BsfShowErrorMessage(0)
@@ -667,17 +757,20 @@ return testResult
 ::method "test_114"
 	arr=bsf.createArray("long.class", 5)
 	r=BSF("arrayPut", arr, -12345, 2)
-	self~assertEquals(arr[3], -12345)
+	-- self~assertEquals(arr[3], -12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), -12345)
 
 ::method "test_115"
 	arr=bsf.createArray("long.class", 5)
 	r=BSF("arrayPut", arr, 9223372036854775807, 2)
-	self~assertEquals(arr[3], 9223372036854775807)
+	-- self~assertEquals(arr[3], 9223372036854775807)
+	self~assertEquals(BSF("arrayAt", arr, 2), 9223372036854775807)
 
 ::method "test_116"
 	arr=bsf.createArray("long.class", 5)
 	r=BSF("arrayPut", arr, '-9223372036854775808', 2)
-	self~assertEquals(arr[3], '-9223372036854775808')
+	-- self~assertEquals(arr[3], '-9223372036854775808')
+	self~assertEquals(BSF("arrayAt", arr, 2), '-9223372036854775808')
 
 ::method "test_117"
 	arr=bsf.createArray("long.class", 5)
@@ -709,7 +802,8 @@ return testResult
 ::method "test_121"
 	arr=bsf.createArray("float.class", 5)
 	r=BSF("arrayPut", arr, 12345.123, 2)
-	self~assertEquals(arr[3], 12345.123)
+	-- self~assertEquals(arr[3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345.123)
 
 ::method "test_122"
 	show_msg = BsfShowErrorMessage(0)
@@ -721,37 +815,44 @@ return testResult
 ::method "test_123"
 	arr=bsf.createArray("float.class", 5, 5)
 	r=BSF("arrayPut", arr, 12345.123, 2, 2)
-	self~assertEquals(arr[3,3], 12345.123)
+	-- self~assertEquals(arr[3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 12345.123)
 
 ::method "test_124"
 	arr=bsf.createArray("float.class", 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 12345.123)
 
 ::method "test_125"
 	arr=bsf.createArray("float.class", 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 12345.123)
 
 ::method "test_126"
 	arr=bsf.createArray("float.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 12345.123)
 
 ::method "test_127"
 	arr=bsf.createArray("float.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 12345.123)
 
 ::method "test_128"
 	arr=bsf.createArray("float.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 12345.123)
 
 ::method "test_129"
 	arr=bsf.createArray("float.class", 128623)
 	r=BSF("arrayPut", arr, 12345.123, 54321)
-	self~assertEquals(arr[54322], 12345.123)
+	-- self~assertEquals(arr[54322], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 12345.123)
 
 ::method "test_130"
 	show_msg = BsfShowErrorMessage(0)
@@ -775,7 +876,8 @@ return testResult
 ::method "test_133"
 	arr=bsf.createArray("float.class", 5)
 	r=BSF("arrayPut", arr, '-12345.123', 2)
-	self~assertEquals(arr[3], '-12345.123')
+	-- self~assertEquals(arr[3], '-12345.123')
+	self~assertEquals(BSF("arrayAt", arr, 2), '-12345.123')
 
 ::method "test_134"
 	show_msg = BsfShowErrorMessage(0)
@@ -793,27 +895,32 @@ return testResult
 ::method "test_136"
 	arr=bsf.createArray("float.class", 5)
 	r=BSF("arrayPut", arr, 3.14E5, 2)
-	self~assertEquals(arr[3], 314000.0)
+	-- self~assertEquals(arr[3], 314000.0)
+	self~assertEquals(BSF("arrayAt", arr, 2), 314000.0)
 
 ::method "test_137"
 	arr=bsf.createArray("float.class", 5)
 	r=BSF("arrayPut", arr, 3.14E5, 2)
-	self~assertEquals(arr[3], 3.14E5)
+	-- self~assertEquals(arr[3], 3.14E5)
+	self~assertEquals(BSF("arrayAt", arr, 2), 3.14E5)
 
 ::method "test_138"
 	arr=bsf.createArray("float.class", 5)
 	r=BSF("arrayPut", arr, 3.14E5F, 2)
-	self~assertEquals(arr[3], 3.14E5)
+	-- self~assertEquals(arr[3], 3.14E5)
+	self~assertEquals(BSF("arrayAt", arr, 2), 3.14E5)
 
 ::method "test_139"
 	arr=bsf.createArray("float.class", 5)
 	r=BSF("arrayPut", arr, 314000.0, 2)
-	self~assertEquals(arr[3], 3.14E5)
+	-- self~assertEquals(arr[3], 3.14E5)
+	self~assertEquals(BSF("arrayAt", arr, 2), 3.14E5)
 
 ::method "test_140"
 	arr=bsf.createArray("double.class", 5)
 	r=BSF("arrayPut", arr, 12345.123, 2)
-	self~assertEquals(arr[3], 12345.123)
+	-- self~assertEquals(arr[3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345.123)
 
 ::method "test_141"
 	show_msg = BsfShowErrorMessage(0)
@@ -825,37 +932,44 @@ return testResult
 ::method "test_142"
 	arr=bsf.createArray("double.class", 5, 5)
 	r=BSF("arrayPut", arr, 12345.123, 2, 2)
-	self~assertEquals(arr[3,3], 12345.123)
+	-- self~assertEquals(arr[3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 12345.123)
 
 ::method "test_143"
 	arr=bsf.createArray("double.class", 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 12345.123)
 
 ::method "test_144"
 	arr=bsf.createArray("double.class", 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 12345.123)
 
 ::method "test_145"
 	arr=bsf.createArray("double.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 12345.123)
 
 ::method "test_146"
 	arr=bsf.createArray("double.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 12345.123)
 
 ::method "test_147"
 	arr=bsf.createArray("double.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPut", arr, 12345.123, 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 12345.123)
 
 ::method "test_148"
 	arr=bsf.createArray("double.class", 128623)
 	r=BSF("arrayPut", arr, 12345.123, 54321)
-	self~assertEquals(arr[54322], 12345.123)
+	-- self~assertEquals(arr[54322], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 12345.123)
 
 ::method "test_149"
 	show_msg = BsfShowErrorMessage(0)
@@ -879,7 +993,8 @@ return testResult
 ::method "test_152"
 	arr=bsf.createArray("double.class", 5)
 	r=BSF("arrayPut", arr, -12345.123, 2)
-	self~assertEquals(arr[3], -12345.123)
+	-- self~assertEquals(arr[3], -12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2), -12345.123)
 
 ::method "test_153"
 	show_msg = BsfShowErrorMessage(0)
@@ -897,22 +1012,26 @@ return testResult
 ::method "test_155"
 	arr=bsf.createArray("double.class", 5)
 	r=BSF("arrayPut", arr, 3.14E5, 2)
-	self~assertEquals(arr[3], 314000.0)
+	-- self~assertEquals(arr[3], 314000.0)
+	self~assertEquals(BSF("arrayAt", arr, 2), 314000.0)
 
 ::method "test_156"
 	arr=bsf.createArray("double.class", 5)
 	r=BSF("arrayPut", arr, 3.14E5, 2)
-	self~assertEquals(arr[3], 3.14E5)
+	-- self~assertEquals(arr[3], 3.14E5)
+	self~assertEquals(BSF("arrayAt", arr, 2), 3.14E5)
 
 ::method "test_157"
 	arr=bsf.createArray("double.class", 5)
 	r=BSF("arrayPut", arr, 3.14E5F, 2)
-	self~assertEquals(arr[3], 3.14E5)
+	-- self~assertEquals(arr[3], 3.14E5)
+	self~assertEquals(BSF("arrayAt", arr, 2), 3.14E5)
 
 ::method "test_158"
 	arr=bsf.createArray("double.class", 5)
 	r=BSF("arrayPut", arr, 314000.0, 2)
-	self~assertEquals(arr[3], 3.14E5)
+	-- self~assertEquals(arr[3], 3.14E5)
+	self~assertEquals(BSF("arrayAt", arr, 2), 3.14E5)
 
 ::method "test_159"
 	show_msg = BsfShowErrorMessage(0)
@@ -935,7 +1054,8 @@ return testResult
 ::method "test_162"
 	arr=bsf.createArray("int.class", 5)
 	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2)
-	self~assertEquals(arr[3], 12345)
+	-- self~assertEquals(arr[3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345)
 
 ::method "test_163"
 	show_msg = BsfShowErrorMessage(0)
@@ -947,37 +1067,44 @@ return testResult
 ::method "test_164"
 	arr=bsf.createArray("int.class", 5, 5)
 	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2, 2)
-	self~assertEquals(arr[3,3], 12345)
+	-- self~assertEquals(arr[3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 12345)
 
 ::method "test_165"
 	arr=bsf.createArray("int.class", 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 12345)
 
 ::method "test_166"
 	arr=bsf.createArray("int.class", 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 12345)
 
 ::method "test_167"
 	arr=bsf.createArray("int.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_168"
 	arr=bsf.createArray("int.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_169"
 	arr=bsf.createArray("int.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "int.class", 12345, 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_170"
 	arr=bsf.createArray("int.class", 128623)
 	r=BSF("arrayPutStrict", arr, "int.class", 12345, 54321)
-	self~assertEquals(arr[54322], 12345)
+	-- self~assertEquals(arr[54322], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 12345)
 
 ::method "test_171"
 	arr=bsf.createArray("int.class", 0)
@@ -989,17 +1116,20 @@ return testResult
 ::method "test_172"
 	arr=bsf.createArray("int.class", 5)
 	r=BSF("arrayPutStrict", arr, "int.class", -12345, 2)
-	self~assertEquals(arr[3], -12345)
+	-- self~assertEquals(arr[3], -12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), -12345)
 
 ::method "test_173"
 	arr=bsf.createArray("int.class", 5)
 	r=BSF("arrayPutStrict", arr, "int.class", 2147483647, 2)
-	self~assertEquals(arr[3], 2147483647)
+	-- self~assertEquals(arr[3], 2147483647)
+	self~assertEquals(BSF("arrayAt", arr, 2), 2147483647)
 
 ::method "test_174"
 	arr=bsf.createArray("int.class", 5)
 	r=BSF("arrayPutStrict", arr, "int.class", '-2147483648', 2)
-	self~assertEquals(arr[3], '-2147483648')
+	-- self~assertEquals(arr[3], '-2147483648')
+	self~assertEquals(BSF("arrayAt", arr, 2), '-2147483648')
 
 ::method "test_175"
 	arr=bsf.createArray("int.class", 5)
@@ -1059,7 +1189,8 @@ return testResult
 ::method "test_184"
 	arr=bsf.createArray("String.class", 128623)
 	r=BSF("arrayPutStrict", arr, "String.class", 12345, 54321)
-	self~assertEquals(arr[54322], 12345)
+	-- self~assertEquals(arr[54322], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 12345)
 
 ::method "test_185"
 	arr=bsf.createArray("String.class", 0)
@@ -1071,33 +1202,41 @@ return testResult
 ::method "test_186"
 	arr=bsf.createArray("String.class", 5)
 	r=BSF("arrayPutStrict", arr, "String.class", -12345, 2)
-	self~assertEquals(arr[3], -12345)
+	-- self~assertEquals(arr[3], -12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), -12345)
 
 ::method "test_187"
 	arr=bsf.createArray("String.class", 5)
 	r=BSF("arrayPutStrict", arr, "String.class", "foo", 2)
-	self~assertEquals(arr[3], "foo")
+	-- self~assertEquals(arr[3], "foo")
+	self~assertEquals(BSF("arrayAt", arr, 2), "foo")
 
 ::method "test_188"
 	arr=bsf.createArray("String.class", 5)
 	r=BSF("arrayPutStrict", arr, "String.class", "foo", 2)
-	self~assertNotEquals(arr[3], "bar")
+	-- self~assertNotEquals(arr[3], "bar")
+	self~assertEquals(BSF("arrayAt", arr, 2), "foo")
+	self~assertNotEquals(BSF("arrayAt", arr, 2), "bar")
 
 ::method "test_189"
 	arr=bsf.createArray("String.class", 5)
 	r=BSF("arrayPutStrict", arr, "String.class", '"', 2)
-	self~assertEquals(arr[3], '"')
+	-- self~assertEquals(arr[3], '"')
+	self~assertEquals(BSF("arrayAt", arr, 2), '"')
 
 ::method "test_190"
 	arr=bsf.createArray("String.class", 5)
 	r=BSF("arrayPutStrict", arr, "String.class", "'", 2)
-	self~assertEquals(arr[3], "'")
+	-- self~assertEquals(arr[3], "'")
+	self~assertEquals(BSF("arrayAt", arr, 2), "'")
 
 ::method "test_191"
 	arr=bsf.createArray("String.class", 5)
 	r=BSF("arrayPutStrict", arr, "String.class", "AAAaaa", 2)
-	self~assertEquals(arr[3], "AAAaaa")
+	-- self~assertEquals(arr[3], "AAAaaa")
+	self~assertEquals(BSF("arrayAt", arr, 2), "AAAaaa")
 
+-- rgf, 2018-01-01: note, only the string "true" will yield a Java boolean truth value!
 ::method "test_192"
 	arr=bsf.createArray("boolean.class", 0)
 	show_msg = BsfShowErrorMessage(0)
@@ -1108,23 +1247,27 @@ return testResult
 ::method "test_193"
 	arr=bsf.createArray("boolean.class", 5)
 	r=BSF("arrayPutStrict", arr, "boolean.class", .false, 2)
-	self~assertEquals(arr[3], .false)
+	-- self~assertEquals(arr[3], .false)
+	self~assertEquals(BSF("arrayAt", arr, 2), .false)
 
 ::method "test_194"
 	arr=bsf.createArray("boolean.class", 5)
 	r=BSF("arrayPutStrict", arr, "boolean.class", 0, 2)
-	self~assertEquals(arr[3], 0)
+	-- self~assertEquals(arr[3], 0)
+	self~assertEquals(BSF("arrayAt", arr, 2), 0)
 
 ::method "test_195"
 	arr=bsf.createArray("boolean.class", 5)
 	r=BSF("arrayPutStrict", arr, "boolean.class", 2, 2)
-	self~assertEquals(arr[3], .false)
+	-- self~assertEquals(arr[3], .false)
+	self~assertEquals(BSF("arrayAt", arr, 2), .false)
 
 ::method "test_196"
 	show_msg = BsfShowErrorMessage(0)
 	arr=bsf.createArray("boolean.class", 5)
 	r=BSF("arrayPutStrict", arr, "boolean.class", "foo", 2)
-	self~assertEquals(arr[3], .false)
+	-- self~assertEquals(arr[3], .false)
+	self~assertEquals(BSF("arrayAt", arr, 2), .false)
 
 ::method "test_197"
 	arr=bsf.createArray("boolean.class", 5)
@@ -1135,7 +1278,8 @@ return testResult
 ::method "test_198"
 	arr=bsf.createArray("byte.class", 5)
 	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2)
-	self~assertEquals(arr[3], 123)
+	-- self~assertEquals(arr[3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2), 123)
 
 ::method "test_199"
 	show_msg = BsfShowErrorMessage(0)
@@ -1147,37 +1291,44 @@ return testResult
 ::method "test_200"
 	arr=bsf.createArray("byte.class", 5, 5)
 	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2, 2)
-	self~assertEquals(arr[3,3], 123)
+	-- self~assertEquals(arr[3,3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 123)
 
 ::method "test_201"
 	arr=bsf.createArray("byte.class", 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 123)
+	-- self~assertEquals(arr[3,3,3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 123)
 
 ::method "test_202"
 	arr=bsf.createArray("byte.class", 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 123)
+	-- self~assertEquals(arr[3,3,3,3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 123)
 
 ::method "test_203"
 	arr=bsf.createArray("byte.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 123)
+	-- self~assertEquals(arr[3,3,3,3,3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 123)
 
 ::method "test_204"
 	arr=bsf.createArray("byte.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 123)
+	-- self~assertEquals(arr[3,3,3,3,3,3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 123)
 
 ::method "test_205"
 	arr=bsf.createArray("byte.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "byte.class", 123, 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 123)
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 123)
 
 ::method "test_206"
 	arr=bsf.createArray("byte.class", 128623)
 	r=BSF("arrayPutStrict", arr, "byte.class", 123, 54321)
-	self~assertEquals(arr[54322], 123)
+	-- self~assertEquals(arr[54322], 123)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 123)
 
 ::method "test_207"
 	arr=bsf.createArray("byte.class", 0)
@@ -1189,17 +1340,20 @@ return testResult
 ::method "test_208"
 	arr=bsf.createArray("byte.class", 5)
 	r=BSF("arrayPutStrict", arr, "byte.class", -123, 2)
-	self~assertEquals(arr[3], -123)
+	-- self~assertEquals(arr[3], -123)
+	self~assertEquals(BSF("arrayAt", arr, 2), -123)
 
 ::method "test_209"
 	arr=bsf.createArray("byte.class", 5)
 	r=BSF("arrayPutStrict", arr, "byte.class", 127, 2)
-	self~assertEquals(arr[3], 127)
+	-- self~assertEquals(arr[3], 127)
+	self~assertEquals(BSF("arrayAt", arr, 2), 127)
 
 ::method "test_210"
 	arr=bsf.createArray("byte.class", 5)
 	r=BSF("arrayPutStrict", arr, "byte.class", -128, 2)
-	self~assertEquals(arr[3], -128)
+	-- self~assertEquals(arr[3], -128)
+	self~assertEquals(BSF("arrayAt", arr, 2), -128)
 
 ::method "test_211"
 	arr=bsf.createArray("byte.class", 5)
@@ -1235,7 +1389,8 @@ return testResult
 ::method "test_216"
 	arr=bsf.createArray("char.class", 5)
 	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2)
-	self~assertEquals(arr[3], 'a')
+	-- self~assertEquals(arr[3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2), 'a')
 
 ::method "test_217"
 	show_msg = BsfShowErrorMessage(0)
@@ -1247,37 +1402,44 @@ return testResult
 ::method "test_218"
 	arr=bsf.createArray("char.class", 5, 5)
 	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2, 2)
-	self~assertEquals(arr[3,3], 'a')
+	-- self~assertEquals(arr[3,3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 'a')
 
 ::method "test_219"
 	arr=bsf.createArray("char.class", 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 'a')
+	-- self~assertEquals(arr[3,3,3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 'a')
 
 ::method "test_220"
 	arr=bsf.createArray("char.class", 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 'a')
+	-- self~assertEquals(arr[3,3,3,3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 'a')
 
 ::method "test_221"
 	arr=bsf.createArray("char.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 'a')
+	-- self~assertEquals(arr[3,3,3,3,3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 'a')
 
 ::method "test_222"
 	arr=bsf.createArray("char.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 'a')
+	-- self~assertEquals(arr[3,3,3,3,3,3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 'a')
 
 ::method "test_223"
 	arr=bsf.createArray("char.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "char.class", 'a', 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 'a')
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 'a')
 
 ::method "test_224"
 	arr=bsf.createArray("char.class", 128623)
 	r=BSF("arrayPutStrict", arr, "char.class", 'a', 54321)
-	self~assertEquals(arr[54322], 'a')
+	-- self~assertEquals(arr[54322], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 54321), 'a')
 
 ::method "test_225"
 	arr=bsf.createArray("char.class", 0)
@@ -1289,18 +1451,21 @@ return testResult
 ::method "test_226"
 	arr=bsf.createArray("char.class", 5)
 	r=BSF("arrayPutStrict", arr, "char.class", '1', 2)
-	self~assertEquals(arr[3], '1')
+	-- self~assertEquals(arr[3], '1')
+	self~assertEquals(BSF("arrayAt", arr, 2), '1')
 
 ::method "test_227"
 	arr=bsf.createArray("char.class", 5)
 	r=BSF("arrayPutStrict", arr, "char.class", '"', 2)
-	self~assertEquals(arr[3], '"')
+	-- self~assertEquals(arr[3], '"')
+	self~assertEquals(BSF("arrayAt", arr, 2), '"')
 
 ::method "test_228"
 	show_msg = BsfShowErrorMessage(0)
 	arr=bsf.createArray("char.class", 5)
 	r=BSF("arrayPutStrict", arr, "char.class", "foo", 2)
-	self~assertEquals(arr[3], 'f')
+	-- self~assertEquals(arr[3], 'f')
+	self~assertEquals(BSF("arrayAt", arr, 2), 'f')
 
 ::method "test_229"
 	arr=bsf.createArray("char.class", 5)
@@ -1311,7 +1476,8 @@ return testResult
 ::method "test_230"
 	arr=bsf.createArray("short.class", 5)
 	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2)
-	self~assertEquals(arr[3], 12345)
+	-- self~assertEquals(arr[3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345)
 
 ::method "test_231"
 	show_msg = BsfShowErrorMessage(0)
@@ -1323,37 +1489,44 @@ return testResult
 ::method "test_232"
 	arr=bsf.createArray("short.class", 5, 5)
 	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2, 2)
-	self~assertEquals(arr[3,3], 12345)
+	-- self~assertEquals(arr[3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 12345)
 
 ::method "test_233"
 	arr=bsf.createArray("short.class", 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 12345)
 
 ::method "test_234"
 	arr=bsf.createArray("short.class", 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 12345)
 
 ::method "test_235"
 	arr=bsf.createArray("short.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_236"
 	arr=bsf.createArray("short.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_237"
 	arr=bsf.createArray("short.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "short.class", 12345, 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_238"
 	arr=bsf.createArray("short.class", 128623)
 	r=BSF("arrayPutStrict", arr, "short.class", 12345, 54321)
-	self~assertEquals(arr[54322], 12345)
+	-- self~assertEquals(arr[54322], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 12345)
 
 ::method "test_239"
 	arr=bsf.createArray("short.class", 0)
@@ -1365,17 +1538,20 @@ return testResult
 ::method "test_240"
 	arr=bsf.createArray("short.class", 5)
 	r=BSF("arrayPutStrict", arr, "short.class", -12345, 2)
-	self~assertEquals(arr[3], -12345)
+	-- self~assertEquals(arr[3], -12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), -12345)
 
 ::method "test_241"
 	arr=bsf.createArray("short.class", 5)
 	r=BSF("arrayPutStrict", arr, "short.class", 32767, 2)
-	self~assertEquals(arr[3], 32767)
+	-- self~assertEquals(arr[3], 32767)
+	self~assertEquals(BSF("arrayAt", arr, 2), 32767)
 
 ::method "test_242"
 	arr=bsf.createArray("short.class", 5)
 	r=BSF("arrayPutStrict", arr, "short.class", -32767, 2)
-	self~assertEquals(arr[3], -32767)
+	-- self~assertEquals(arr[3], -32767)
+	self~assertEquals(BSF("arrayAt", arr, 2), -32767)
 
 ::method "test_243"
 	arr=bsf.createArray("short.class", 5)
@@ -1386,7 +1562,8 @@ return testResult
 ::method "test_244"
 	arr=bsf.createArray("short.class", 5)
 	r=BSF("arrayPutStrict", arr, "short.class", -32768, 2)
-	self~assertEquals(arr[3], -32768)
+	-- self~assertEquals(arr[3], -32768)
+	self~assertEquals(BSF("arrayAt", arr, 2), -32768)
 
 ::method "test_245"
 	arr=bsf.createArray("short.class", 5)
@@ -1410,7 +1587,8 @@ return testResult
 ::method "test_248"
 	arr=bsf.createArray("long.class", 5)
 	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2)
-	self~assertEquals(arr[3], 12345)
+	-- self~assertEquals(arr[3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345)
 
 ::method "test_249"
 	show_msg = BsfShowErrorMessage(0)
@@ -1422,37 +1600,44 @@ return testResult
 ::method "test_250"
 	arr=bsf.createArray("long.class", 5, 5)
 	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2, 2)
-	self~assertEquals(arr[3,3], 12345)
+	-- self~assertEquals(arr[3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 12345)
 
 ::method "test_251"
 	arr=bsf.createArray("long.class", 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 12345)
 
 ::method "test_252"
 	arr=bsf.createArray("long.class", 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 12345)
 
 ::method "test_253"
 	arr=bsf.createArray("long.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_254"
 	arr=bsf.createArray("long.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_255"
 	arr=bsf.createArray("long.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "long.class", 12345, 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 12345)
 
 ::method "test_256"
 	arr=bsf.createArray("long.class", 128623)
 	r=BSF("arrayPutStrict", arr, "long.class", 12345, 54321)
-	self~assertEquals(arr[54322], 12345)
+	-- self~assertEquals(arr[54322], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 12345)
 
 ::method "test_257"
 	arr=bsf.createArray("long.class", 0)
@@ -1464,17 +1649,20 @@ return testResult
 ::method "test_258"
 	arr=bsf.createArray("long.class", 5)
 	r=BSF("arrayPutStrict", arr, "long.class", -12345, 2)
-	self~assertEquals(arr[3], -12345)
+	-- self~assertEquals(arr[3], -12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), -12345)
 
 ::method "test_259"
 	arr=bsf.createArray("long.class", 5)
 	r=BSF("arrayPutStrict", arr, "long.class", 9223372036854775807, 2)
-	self~assertEquals(arr[3], 9223372036854775807)
+	-- self~assertEquals(arr[3], 9223372036854775807)
+	self~assertEquals(BSF("arrayAt", arr, 2), 9223372036854775807)
 
 ::method "test_260"
 	arr=bsf.createArray("long.class", 5)
 	r=BSF("arrayPutStrict", arr, "long.class", '-9223372036854775808', 2)
-	self~assertEquals(arr[3], '-9223372036854775808')
+	-- self~assertEquals(arr[3], '-9223372036854775808')
+	self~assertEquals(BSF("arrayAt", arr, 2), '-9223372036854775808')
 
 ::method "test_261"
 	arr=bsf.createArray("long.class", 5)
@@ -1506,7 +1694,8 @@ return testResult
 ::method "test_265"
 	arr=bsf.createArray("float.class", 5)
 	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2)
-	self~assertEquals(arr[3], 12345.123)
+	-- self~assertEquals(arr[3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345.123)
 
 ::method "test_266"
 	show_msg = BsfShowErrorMessage(0)
@@ -1518,37 +1707,44 @@ return testResult
 ::method "test_267"
 	arr=bsf.createArray("float.class", 5, 5)
 	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2, 2)
-	self~assertEquals(arr[3,3], 12345.123)
+	-- self~assertEquals(arr[3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 12345.123)
 
 ::method "test_268"
 	arr=bsf.createArray("float.class", 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 12345.123)
 
 ::method "test_269"
 	arr=bsf.createArray("float.class", 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 12345.123)
 
 ::method "test_270"
 	arr=bsf.createArray("float.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 12345.123)
 
 ::method "test_271"
 	arr=bsf.createArray("float.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 12345.123)
 
 ::method "test_272"
 	arr=bsf.createArray("float.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 12345.123)
 
 ::method "test_273"
 	arr=bsf.createArray("float.class", 128623)
 	r=BSF("arrayPutStrict", arr, "float.class", 12345.123, 54321)
-	self~assertEquals(arr[54322], 12345.123)
+	-- self~assertEquals(arr[54322], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 12345.123)
 
 ::method "test_274"
 	arr=bsf.createArray("float.class", 0)
@@ -1560,7 +1756,8 @@ return testResult
 ::method "test_275"
 	arr=bsf.createArray("float.class", 5)
 	r=BSF("arrayPutStrict", arr, "float.class", '-12345.123', 2)
-	self~assertEquals(arr[3], '-12345.123')
+	-- self~assertEquals(arr[3], '-12345.123')
+	self~assertEquals(BSF("arrayAt", arr, 2), -12345.123)
 
 ::method "test_276"
 	show_msg = BsfShowErrorMessage(0)
@@ -1578,27 +1775,32 @@ return testResult
 ::method "test_278"
 	arr=bsf.createArray("float.class", 5)
 	r=BSF("arrayPutStrict", arr, "float.class", 3.14E5, 2)
-	self~assertEquals(arr[3], 314000.0)
+	-- self~assertEquals(arr[3], 314000.0)
+	self~assertEquals(BSF("arrayAt", arr, 2), 314000.0)
 
 ::method "test_279"
 	arr=bsf.createArray("float.class", 5)
 	r=BSF("arrayPutStrict", arr, "float.class", 3.14E5, 2)
-	self~assertEquals(arr[3], 3.14E5)
+	-- self~assertEquals(arr[3], 3.14E5)
+	self~assertEquals(BSF("arrayAt", arr, 2), 3.14E5)
 
 ::method "test_280"
 	arr=bsf.createArray("float.class", 5)
 	r=BSF("arrayPutStrict", arr, "float.class", 3.14E5F, 2)
-	self~assertEquals(arr[3], 3.14E5)
+	-- self~assertEquals(arr[3], 3.14E5)
+	self~assertEquals(BSF("arrayAt", arr, 2), 3.14E5)
 
 ::method "test_281"
 	arr=bsf.createArray("float.class", 5)
 	r=BSF("arrayPutStrict", arr, "float.class", 314000.0, 2)
-	self~assertEquals(arr[3], 3.14E5)
+	-- self~assertEquals(arr[3], 3.14E5)
+	self~assertEquals(BSF("arrayAt", arr, 2), 3.14E5)
 
 ::method "test_282"
 	arr=bsf.createArray("double.class", 5)
 	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2)
-	self~assertEquals(arr[3], 12345.123)
+	-- self~assertEquals(arr[3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345.123)
 
 ::method "test_283"
 	show_msg = BsfShowErrorMessage(0)
@@ -1610,37 +1812,44 @@ return testResult
 ::method "test_284"
 	arr=bsf.createArray("double.class", 5, 5)
 	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2, 2)
-	self~assertEquals(arr[3,3], 12345.123)
+	-- self~assertEquals(arr[3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2), 12345.123)
 
 ::method "test_285"
 	arr=bsf.createArray("double.class", 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2, 2, 2)
-	self~assertEquals(arr[3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2), 12345.123)
 
 ::method "test_286"
 	arr=bsf.createArray("double.class", 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2), 12345.123)
 
 ::method "test_287"
 	arr=bsf.createArray("double.class", 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2), 12345.123)
 
 ::method "test_288"
 	arr=bsf.createArray("double.class", 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2), 12345.123)
 
 ::method "test_289"
 	arr=bsf.createArray("double.class", 5, 5, 5, 5, 5, 5, 5)
 	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 2, 2, 2, 2, 2, 2, 2)
-	self~assertEquals(arr[3,3,3,3,3,3,3], 12345.123)
+	-- self~assertEquals(arr[3,3,3,3,3,3,3], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2, 2, 2, 2, 2, 2, 2), 12345.123)
 
 ::method "test_290"
 	arr=bsf.createArray("double.class", 128623)
 	r=BSF("arrayPutStrict", arr, "double.class", 12345.123, 54321)
-	self~assertEquals(arr[54322], 12345.123)
+	-- self~assertEquals(arr[54322], 12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 54321), 12345.123)
 
 ::method "test_291"
 	arr=bsf.createArray("double.class", 0)
@@ -1652,7 +1861,8 @@ return testResult
 ::method "test_292"
 	arr=bsf.createArray("double.class", 5)
 	r=BSF("arrayPutStrict", arr, "double.class", -12345.123, 2)
-	self~assertEquals(arr[3], -12345.123)
+	-- self~assertEquals(arr[3], -12345.123)
+	self~assertEquals(BSF("arrayAt", arr, 2), -12345.123)
 
 ::method "test_293"
 	show_msg = BsfShowErrorMessage(0)
@@ -1670,22 +1880,26 @@ return testResult
 ::method "test_295"
 	arr=bsf.createArray("double.class", 5)
 	r=BSF("arrayPutStrict", arr, "double.class", 3.14E5, 2)
-	self~assertEquals(arr[3], 314000.0)
+	-- self~assertEquals(arr[3], 314000.0)
+	self~assertEquals(BSF("arrayAt", arr, 2), 314000.0)
 
 ::method "test_296"
 	arr=bsf.createArray("double.class", 5)
 	r=BSF("arrayPutStrict", arr, "double.class", 3.14E5, 2)
-	self~assertEquals(arr[3], 3.14E5)
+	-- self~assertEquals(arr[3], 3.14E5)
+	self~assertEquals(BSF("arrayAt", arr, 2), 3.14E5)
 
 ::method "test_297"
 	arr=bsf.createArray("double.class", 5)
 	r=BSF("arrayPutStrict", arr, "double.class", 3.14E5F, 2)
-	self~assertEquals(arr[3], 3.14E5)
+	-- self~assertEquals(arr[3], 3.14E5)
+	self~assertEquals(BSF("arrayAt", arr, 2), 3.14E5)
 
 ::method "test_298"
 	arr=bsf.createArray("double.class", 5)
 	r=BSF("arrayPutStrict", arr, "double.class", 314000.0, 2)
-	self~assertEquals(arr[3], 3.14E5)
+	-- self~assertEquals(arr[3], 3.14E5)
+	self~assertEquals(BSF("arrayAt", arr, 2), 3.14E5)
 
 ::method "test_299"
 	show_msg = BsfShowErrorMessage(0)
@@ -1696,42 +1910,51 @@ return testResult
 ::method "test_300"
 	arr=bsf.createArray(.bsf4rexx~int, 5)
 	r=BSF("arrayPut", arr, 12345, 2)
-	self~assertEquals(arr[3], 12345)
+	-- self~assertEquals(arr[3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345)
 
 ::method "test_301"
 	arr=bsf.createArray(.bsf4rexx~byte, 5)
 	r=BSF("arrayPut", arr, 123, 2)
-	self~assertEquals(arr[3], 123)
+	-- self~assertEquals(arr[3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2), 123)
 
 ::method "test_302"
 	arr=bsf.createArray(.bsf4rexx~char, 5)
 	r=BSF("arrayPut", arr, 'a', 2)
-	self~assertEquals(arr[3], 'a')
+	-- self~assertEquals(arr[3], 'a')
+	self~assertEquals(BSF("arrayAt", arr, 2), 'a')
 
 ::method "test_303"
 	arr=bsf.createArray(.bsf4rexx~double, 5)
 	r=BSF("arrayPut", arr, 12345, 2)
-	self~assertEquals(arr[3], 12345)
+	-- self~assertEquals(arr[3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345)
 
 ::method "test_304"
 	arr=bsf.createArray(.bsf4rexx~float, 5)
 	r=BSF("arrayPut", arr, 12345, 2)
-	self~assertEquals(arr[3], 12345)
+	-- self~assertEquals(arr[3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345)
 
 ::method "test_305"
 	arr=bsf.createArray(.bsf4rexx~long, 5)
 	r=BSF("arrayPut", arr, 12345, 2)
-	self~assertEquals(arr[3], 12345)
+	-- self~assertEquals(arr[3], 12345)
+	self~assertEquals(BSF("arrayAt", arr, 2), 12345)
 
 ::method "test_306"
 	arr=bsf.createArray(.bsf4rexx~short, 5)
 	r=BSF("arrayPut", arr, 123, 2)
-	self~assertEquals(arr[3], 123)
+	-- self~assertEquals(arr[3], 123)
+	self~assertEquals(BSF("arrayAt", arr, 2), 123)
 
+-- rgf, 2018-01-01: note, only the string "true" will yield a Java boolean truth value!
 ::method "test_307"
 	arr=bsf.createArray(.bsf4rexx~boolean, 5)
 	r=BSF("arrayPut", arr, .false, 2)
-	self~assertEquals(arr[3], .false)
+	-- self~assertEquals(arr[3], .false)
+	self~assertEquals(BSF("arrayAt", arr, 2), .false)
 
 ::method "test_308"
 	arr=bsf.createArray("int.class", 5)
