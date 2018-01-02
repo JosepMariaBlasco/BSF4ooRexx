@@ -22,7 +22,7 @@ import org.apache.bsf.util.type.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2017 Rony G. Flatscher
+ *    Copyright (C) 2001-2018 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2017-04-04
+  * @version 6.0.0, 2018-01-01
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -59,6 +59,9 @@ TODO: (maybe)
 */
 
  /*
+     2018-01-01, ---rgf, - fixed a bug in ARRAY_PUT: only use the type convertor, if convFromRexx() returns
+                           a string value and the component type is primitive, otherwise use the Object
+                           value convFromRexx() returned
 
      2017-04-04, ---rgf, - removed debug-output in registerBean4JNI()
 
@@ -449,7 +452,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20170617";
+    static final public String version = "600.20180101";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -2849,8 +2852,8 @@ if (bDebug) System.err.println("ARRAY_PUT_STRICT:  args[2]=["+args[2]+"], "+"arg
 
                    Class cl=arrayObj.getClass(),
                          ct=aw.componentType;
-
-                   if (o_nv!=null && ct.isPrimitive() )      // if not null, determine component type of array
+                   // rgf, 2018-01-01: only use a type convertor if convFromRexx returned a string
+                   if (o_nv!=null && o_nv instanceof String && ct.isPrimitive() )      // if not null, determine component type of array
                    {
                        TypeConvertor tc = glob_tcr.lookup(String.class, ct);
                        o_nv=tc.convert(String.class, ct, o_nv);
@@ -6307,6 +6310,7 @@ if (bDebug && bean==null)
 {
     System.err.println("//*...*// attempt #2: lookupBean(beanName=["+beanName+"],boolean): bean=["+bean+"] \\\\...\\\\");
 }
+
         }
 
 if (bDebug==true)
