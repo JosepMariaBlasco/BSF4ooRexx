@@ -1,6 +1,11 @@
 /*
+
+   2018-01-02, rgf: fetch BSFManager to allow doing a lookupBean() with its help;
+                    BSF4ooRexx does not anymore consult the BSFManager declared
+                    beans automatically anymore
+
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2006 Rony G. Flatscher
+       Copyright (C) 2001-2018 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -14,6 +19,7 @@
        See the License for the specific language governing permissions and
        limitations under the License.
     -----------------------------------------------------------------------------
+
 */
 
 /*********************************************************
@@ -46,7 +52,8 @@ end
 
 
 /* *** Place everything in the frame            */
-frame = .bsf~bsf.lookupBean("frame")
+-- frame = .bsf~bsf.lookupBean("frame")
+frame = bsf.wrap(bsf('getBSFManager'))~lookupBean('frame') -- rgf, 20180102
 frame~~setTitle("Object Rexx Calc") ~~resize(130, 200)
 frame~~add("North", res) ~~add("Center", panel) ~~validate ~~show
 frame~bsf.addEventListener("window", "windowClosing", "call bsf 'exit'")

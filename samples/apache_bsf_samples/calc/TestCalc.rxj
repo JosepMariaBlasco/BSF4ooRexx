@@ -16,8 +16,12 @@ the static method where the extensionmap is defined:
                     "new" and "newStrict" which better describe the semantics of
                     these subfunctions
 
+   2018-01-02, rgf: fetch BSFManager to allow doing a lookupBean() with its help;
+                    BSF4ooRexx does not anymore consult the BSFManager declared
+                    beans automatically anymore
+
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2001-2008 Rony G. Flatscher
+       Copyright (C) 2001-2018 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -71,7 +75,8 @@ end
 
 
 /* *** Place everything in the frame            */
-frame = bsf("lookupBean", "frame")     /* get access to the frame */
+-- frame = bsf("lookupBean", "frame")     /* get access to the frame */
+frame = bsf('invoke', bsf('getBSFManager'), 'lookupBean', 'frame') -- rgf, 20180102
 
 call bsf "invoke", frame, "setTitle", "Rexx Calc"
 call bsf "invoke", frame, "resize", 130, 200
