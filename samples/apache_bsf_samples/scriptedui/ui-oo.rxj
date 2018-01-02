@@ -1,8 +1,14 @@
 /* to be put: "samples/scriptedui/ui-oo.rxj", ---rgf, 2003-05-10    */
 /* pick up the center panel bean, Object Rexx program modelled after ui.nrx */
 /*
+
+
+   2018-01-02, rgf: fetch BSFManager to allow doing a lookupBean() with its help;
+                    BSF4ooRexx does not anymore consult the BSFManager declared
+                    beans automatically anymore
+
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2003-2006 Rony G. Flatscher
+       Copyright (C) 2003-2018 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -18,8 +24,9 @@
     -----------------------------------------------------------------------------
 */
 
-p = .bsf~bsf.lookupBean("centerPanel")  -- reference the entry in BSF registry, put there by
-                                    -- the Java program "ScriptedUI.class"
+-- reference the entry in BSF registry, put there by the Java program "ScriptedUI.class"
+-- p = .bsf~bsf.lookupBean("centerPanel")
+p = bsf.wrap(bsf('getBSFManager'))~lookupBean('centerPanel') -- rgf, 20180102
 
 /* set the layout manager to border */
 p~setLayout(.bsf~new("java.awt.BorderLayout"))
