@@ -2,6 +2,10 @@
    author:  Rony G. Flatscher
    date:    2016-12-06
 
+   changed: 2018-02-03, rgf: the JavaFX Builder infrastructure got deprecated in JavaFX 8 and its classes
+                             (like LabelBuilder) removed in JavaFX 9 (cf.<http://mail.openjdk.java.net/pipermail/openjfx-dev/2013-March/006725.html>);
+                             using ooRexx cascading messages instead, which is always available :)
+
    purpose: this is the standalone (FXML-less) version of the Rexx GUI application (taking advantage of JavaFX)
             in the fxml_02/ directory, i.e. the GUI elements are created in Rexx code only
 
@@ -54,7 +58,8 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
   colorClz=bsf.loadClass("javafx.scene.paint.Color")           -- get access to the JavaFX colors
   cdClz=bsf.loadClass("javafx.scene.control.ContentDisplay")   -- get access to ContentDisplay constants (an Enum class)
   alClz=bsf.loadClass("javafx.geometry.Pos")                   -- get access to alignment constants (an Enum class)
-  lblBuilderClz=bsf.loadClass("javafx.scene.control.LabelBuilder")   -- get the LabelBuilder class object
+--  lblBuilderClz=bsf.loadClass("javafx.scene.control.LabelBuilder")   -- get the LabelBuilder class object
+  lblClz=bsf.import("javafx.scene.control.Label", "FX.Label")   -- import class under the name ".FX.Label"
 
    -- a Rexx directory which contains all data needed in our event handler (cf. RexxButtonHandler Rexx class below)
   userData=.directory~new
@@ -85,7 +90,8 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
         text="$rexxStarted" />
 */
       -- define the first Label
-  lbl=.bsf~new("javafx.scene.control.Label")
+  -- lbl=.bsf~new("javafx.scene.control.Label")
+  lbl=.fx.label~new
   lbl~setId("rexxStarted")
   lbl~setAlignment(alClz~valueOf("CENTER"))  -- center align, alternatively: "alClz~CENTER"
   lbl~setLayoutX(50)
@@ -136,6 +142,7 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
 */
    -- now using a LabelBuilder instead; NOTE: no "set" prefix, just use the property/field names;
    -- cf. <http://blog.netopyr.com/2012/01/24/advantages-of-javafx-builders/>
+/*
   lblBuilder=lblBuilderClz~create
   lblBuilder   ~id("year") -
                ~textFill(colorClz~BLUE) -
@@ -147,12 +154,24 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
                ~text(.my.fx~resourceBundle~getString("year"))
   lbl=lblBuilder~build  -- now create the new Label from this data
   rootChildren~add(lbl) -- add this Label control
+*/
+---
+  lbl=.fx.label~new~~setId("year")                                     -
+                   ~~setTextFill(colorClz~BLUE)                        -
+                   ~~setLayoutX(50)                                    -
+                   ~~setLayoutY(175)                                   -
+                   ~~setMinHeight(16)                                  -
+                   ~~setMinWidth(20)                                   -
+                   ~~setStyle("-fx-background-color: palegoldenrod;")  -
+                   ~~setText(.my.fx~resourceBundle~getString("year"))
+  rootChildren~add(lbl)       -- add this Label control
 
 -------------------------------------------------------------------
 /* Label definition in FXML, cf. "fxml_2/FXML_02_Document.fxml":
 
         <Label fx:id="label" layoutX="95.0" layoutY="175.0" minHeight="16" minWidth="49" prefHeight="16.0" prefWidth="335.0" style="-fx-background-color: honeydew;" />
 */
+/*
    lblBuilder  ~id("label") ,    /* skipping ~textFill(colorClz~BLUE) as already set */
                ~layoutX(95) ,
                ~layoutY(175) ,   /* skipping ~minHeight(16) as already set */
@@ -165,12 +184,30 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
   lbl=lblBuilder~build  -- now create the new Label from this data
   rootChildren~add(lbl) -- add this Label control
   userData~label=lbl    -- put it into our userData Rexx directory
+*/
+---
+  lbl=.fx.label~new~~setId("label")                                    -
+                   ~~setTextFill(colorClz~BLUE)                        -
+                   ~~setLayoutX(95)                                    -
+                   ~~setLayoutY(175)                                   -
+                   ~~setMinHeight(16)                                  -
+                   ~~setMinWidth(49)                                   -
+                   ~~setPrefHeight(16)                                 -
+                   ~~setPrefWidth(335)                                 -
+                   ~~setStyle("-fx-background-color: honeydew;")       -
+                   ~~setText("")
+
+  rootChildren~add(lbl)       -- add this Label control
+  userData~label=lbl    -- put it into our userData Rexx directory
+
+
 
 -------------------------------------------------------------------
 /* Label definition in FXML, cf. "fxml_2/FXML_02_Document.fxml":
 
         <Label fx:id="labelRexxInfo" alignment="CENTER" layoutX="50.0" layoutY="200.0" minHeight="16.0" minWidth="49.0" prefHeight="16.0" prefWidth="380.0" style="-fx-background-color: skyblue; -fx-cursor: wait; -fx-font-family: serif; -fx-font-weight: lighter;" text="${rexxInfo}" />
 */
+/*
    lblBuilder  ~id("labelRexxInfo") ,  /* skipping ~textFill(colorClz~BLUE) as already set */
                ~alignment(alClz~CENTER) -
                ~layoutX(50) ,
@@ -181,6 +218,22 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
 
   lbl=lblBuilder~build  -- now create the new Label from this data
   rootChildren~add(lbl) -- add this Label control
+  userData~rexxInfo=lbl -- put it into our userData Rexx directory
+*/
+---
+
+  lbl=.fx.label~new~~setId("labelRexxInfo")                            -
+                   ~~setTextFill(colorClz~BLUE)                        -
+                   ~~setAlignment(alClz~CENTER)                        -
+                   ~~setLayoutX(50)                                    -
+                   ~~setLayoutY(200)                                   -
+                   ~~setMinHeight(16)                                  -
+                   ~~setMinWidth(49)                                   -
+                   ~~setPrefHeight(16)                                 -
+                   ~~setPrefWidth(380)                                 -
+                   ~~setStyle("-fx-background-color: skyblue; -fx-cursor: wait; -fx-font-family: serif; -fx-font-weight: lighter;")
+
+  rootChildren~add(lbl)       -- add this Label control
   userData~rexxInfo=lbl -- put it into our userData Rexx directory
 
 -------------------------------------------------------------------
@@ -229,7 +282,7 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016 Rony G. Flatscher
+         Copyright 2016-2018 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.
