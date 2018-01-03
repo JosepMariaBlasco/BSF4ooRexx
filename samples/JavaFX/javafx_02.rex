@@ -58,7 +58,6 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
   colorClz=bsf.loadClass("javafx.scene.paint.Color")           -- get access to the JavaFX colors
   cdClz=bsf.loadClass("javafx.scene.control.ContentDisplay")   -- get access to ContentDisplay constants (an Enum class)
   alClz=bsf.loadClass("javafx.geometry.Pos")                   -- get access to alignment constants (an Enum class)
---  lblBuilderClz=bsf.loadClass("javafx.scene.control.LabelBuilder")   -- get the LabelBuilder class object
   lblClz=bsf.import("javafx.scene.control.Label", "FX.Label")   -- import class under the name ".FX.Label"
 
    -- a Rexx directory which contains all data needed in our event handler (cf. RexxButtonHandler Rexx class below)
@@ -90,7 +89,6 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
         text="$rexxStarted" />
 */
       -- define the first Label
-  -- lbl=.bsf~new("javafx.scene.control.Label")
   lbl=.fx.label~new
   lbl~setId("rexxStarted")
   lbl~setAlignment(alClz~valueOf("CENTER"))  -- center align, alternatively: "alClz~CENTER"
@@ -140,22 +138,7 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
 
         <Label fx:id="year" layoutX="50.0" layoutY="175.0" minHeight="16" minWidth="20" style="-fx-background-color: palegoldenrod;" text="%year" />
 */
-   -- now using a LabelBuilder instead; NOTE: no "set" prefix, just use the property/field names;
-   -- cf. <http://blog.netopyr.com/2012/01/24/advantages-of-javafx-builders/>
-/*
-  lblBuilder=lblBuilderClz~create
-  lblBuilder   ~id("year") -
-               ~textFill(colorClz~BLUE) -
-               ~layoutX(50) -
-               ~layoutY(175) -
-               ~minHeight(16) -
-               ~minWidth(20) -
-               ~style("-fx-background-color: palegoldenrod;") -
-               ~text(.my.fx~resourceBundle~getString("year"))
-  lbl=lblBuilder~build  -- now create the new Label from this data
-  rootChildren~add(lbl) -- add this Label control
-*/
----
+   -- now using cascading messages
   lbl=.fx.label~new~~setId("year")                                     -
                    ~~setTextFill(colorClz~BLUE)                        -
                    ~~setLayoutX(50)                                    -
@@ -171,21 +154,6 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
 
         <Label fx:id="label" layoutX="95.0" layoutY="175.0" minHeight="16" minWidth="49" prefHeight="16.0" prefWidth="335.0" style="-fx-background-color: honeydew;" />
 */
-/*
-   lblBuilder  ~id("label") ,    /* skipping ~textFill(colorClz~BLUE) as already set */
-               ~layoutX(95) ,
-               ~layoutY(175) ,   /* skipping ~minHeight(16) as already set */
-               ~minWidth(49) ,
-               ~prefHeight(16) ,
-               ~prefWidth(335),
-               ~style("-fx-background-color: honeydew;") ,  --
-               ~text("")
-
-  lbl=lblBuilder~build  -- now create the new Label from this data
-  rootChildren~add(lbl) -- add this Label control
-  userData~label=lbl    -- put it into our userData Rexx directory
-*/
----
   lbl=.fx.label~new~~setId("label")                                    -
                    ~~setTextFill(colorClz~BLUE)                        -
                    ~~setLayoutX(95)                                    -
@@ -207,21 +175,6 @@ rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and
 
         <Label fx:id="labelRexxInfo" alignment="CENTER" layoutX="50.0" layoutY="200.0" minHeight="16.0" minWidth="49.0" prefHeight="16.0" prefWidth="380.0" style="-fx-background-color: skyblue; -fx-cursor: wait; -fx-font-family: serif; -fx-font-weight: lighter;" text="${rexxInfo}" />
 */
-/*
-   lblBuilder  ~id("labelRexxInfo") ,  /* skipping ~textFill(colorClz~BLUE) as already set */
-               ~alignment(alClz~CENTER) -
-               ~layoutX(50) ,
-               ~layoutY(200) -   /* skipping ~minHeight(16) as already set */
-               ~minWidth(49) ,   /* skipping ~prefHeight(16) as already set */
-               ~prefWidth(380) - /* skipping ~text("") as already set      */
-               ~style("-fx-background-color: skyblue; -fx-cursor: wait; -fx-font-family: serif; -fx-font-weight: lighter;")
-
-  lbl=lblBuilder~build  -- now create the new Label from this data
-  rootChildren~add(lbl) -- add this Label control
-  userData~rexxInfo=lbl -- put it into our userData Rexx directory
-*/
----
-
   lbl=.fx.label~new~~setId("labelRexxInfo")                            -
                    ~~setTextFill(colorClz~BLUE)                        -
                    ~~setAlignment(alClz~CENTER)                        -
