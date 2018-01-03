@@ -2,6 +2,7 @@
    author:     Adrian Baginski
 
    date:       2017-03-01
+   changed:    2018-01-03, rgf: added signal handler in prolog code using ppCondition2() form "rgf_util2.rex"
 
    purpose:    - demonstrates usage of custom libraries
                - shows table view handling
@@ -58,10 +59,18 @@ rxApp = BsfCreateRexxProxy(.my.app~rexxHandler,,"javafx.application.Application"
 
 .my.app~rxApp = rxApp
 
+signal on syntax           -- activate handling of syntax condition
    -- launch the application, invoke "start" and then stay up until the application closes
 rxApp~launch(rxApp~getClass, .nil)     -- need to use this version of launch in order to work
 exit
 
+syntax:
+  co=condition('o')        -- get condition object
+  say ppCondition2(co)
+  exit -1
+
+
+::requires "rgf_util2.rex"    -- get access to public routien ppCondition2()
 ::requires "BSF.CLS"    -- get Java support
 
 /* implements the abstract method "start" for the Java class javafx.application.Application
