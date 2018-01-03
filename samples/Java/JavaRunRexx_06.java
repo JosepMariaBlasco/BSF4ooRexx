@@ -7,13 +7,14 @@
                 and public classes
 
     Changed:    2014-07-11, ---rgf: demonstrate redirecting ooRexx standard streams to Java
+                2018-01-03, ---rgf: make sure code argument is submitted as a Rexx array
 
     Needs:      ooRexx 4.0, BSF4ooRexx
 
     License:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2014 Rony G. Flatscher
+       Copyright (C) 2014-2018 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -44,9 +45,9 @@ public class JavaRunRexx_06
         BSFEngine  rexxEngine=mgr.loadScriptingEngine("rexx");  // load the Rexx engine
 
             // create a Rexx routine (not using any other context)
-        String createRoutine           ="return .routine~new(arg(1),arg(2))";
+        String createRoutine           ="return .routine~new(arg(1),arg(2)~makearray)";
             // create a Rexx routine, using context of third argument
-        String createRoutineWithContext="return .routine~new(arg(1),arg(2),arg(3))";
+        String createRoutineWithContext="return .routine~new(arg(1),arg(2)~makearray,arg(3))";
 
             // require BSF.CLS, which will cause an entry in .local named BSF, controlling argument conversion between Java and Rexx
         System.out.println("--- 1 (Java): require BSF.CLS and keep routine in order to be able to access its package,\n" +
