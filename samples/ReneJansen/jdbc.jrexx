@@ -11,6 +11,7 @@
                - 20140915, rgf: added DataSource access to RDBMS, which works also, when BSF4ooRexx
                                 is installed in java.ext.dirs directory, which would not work with
                                 the DriverManager variant in Java 1.7/7
+               - 20180103, rgf: corrected HSQL statements (obviously the DataSource interface was never exercised)
    license:    Apache License 2.0
 */
 
@@ -56,10 +57,10 @@ select
      end
      else -- use implemented javax.sql.DataSource interface instead
      do
-        ds=.bsf~new('org.hsqldb.jdbc.JDBCDataSource')
+        ds=.bsf~new('org.hsqldb.jdbc.jdbcDataSource')
         ds~user    ='sa'       -- same as: ds~setUser('sa')
         ds~password=''         -- same as: ds~setPassword('')
-        ds~setDatabaseName("RexxTestDB-hsql")
+        ds~setDatabase("jdbc:hsqldb:mem:aname")    -- cf. <https://www.javatips.net/api/org.hsqldb.jdbc.jdbcdatasource> as of 20180103
      end
   end
 
