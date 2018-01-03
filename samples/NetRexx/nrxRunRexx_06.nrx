@@ -4,9 +4,9 @@ mgr=org.apache.bsf.BSFManager()
 rexxEngine=mgr.loadScriptingEngine("rexx")
 
     -- create a Rexx routine (not using any other context)
-createRoutine           ="return .routine~new(arg(1),arg(2))"
+createRoutine           ="return .routine~new(arg(1),arg(2)~makearray)"
     -- create a Rexx routine, using context of third argument
-createRoutineWithContext="return .routine~new(arg(1),arg(2),arg(3))"
+createRoutineWithContext="return .routine~new(arg(1),arg(2)~makearray,arg(3))"
 
     -- require BSF.CLS, which will cause an entry in .local named BSF, controlling argument conversion between Java and Rexx
 say "--- 1 (NetRexx): require BSF.CLS and keep routine in order to be able to access its package," -
