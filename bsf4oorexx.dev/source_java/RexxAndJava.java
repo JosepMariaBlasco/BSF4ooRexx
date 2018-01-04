@@ -37,7 +37,7 @@ import org.apache.bsf.util.type.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2018-01-01
+  * @version 6.0.0, 2018-01-04
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -59,6 +59,14 @@ TODO: (maybe)
 */
 
  /*
+
+     2018-01-04, ---rgf, - ARRAY_PUT with Boolean/boolean component type will now behave like SET PROPERTY_VALUE
+                           and SET_FIELD_VALUE:
+                           if Rexx string is "1" (.true) then Boolean.TRUE will be used, otherwise the
+                           type convertor will create the Boolean value (which means that a Rexx string
+                           value named "true" will yield Boolean.TRUE as well, otherwise BOOLEAN.FALSE,
+                           which follows from using java.lang.Boolean.valueOf(String))
+
      2018-01-01, ---rgf, - fixed a bug in ARRAY_PUT: only use the type convertor, if convFromRexx() returns
                            a string value and the component type is primitive, otherwise use the Object
                            value convFromRexx() returned
@@ -452,7 +460,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20180101";
+    static final public String version = "600.20180104";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -2855,8 +2863,17 @@ if (bDebug) System.err.println("ARRAY_PUT_STRICT:  args[2]=["+args[2]+"], "+"arg
                    // rgf, 2018-01-01: only use a type convertor if convFromRexx returned a string
                    if (o_nv!=null && o_nv instanceof String && ct.isPrimitive() )      // if not null, determine component type of array
                    {
-                       TypeConvertor tc = glob_tcr.lookup(String.class, ct);
-                       o_nv=tc.convert(String.class, ct, o_nv);
+                       // rgf, 20180104: special case Boolean values: behave like SET_FIELD, where only
+                       if ( (ct==boolean.class || ct==Boolean.class) && ((String) o_nv).equals("1") )
+                       {
+                           o_nv=Boolean.TRUE;
+                       }
+                       else     // use corresponding type convertor
+                       {
+                           TypeConvertor tc = glob_tcr.lookup(String.class, ct);
+                           o_nv=tc.convert(String.class, ct, o_nv);
+                       }
+
                    }
 
                    firstIdx=3;          // first argument with index-information for arrayPut()

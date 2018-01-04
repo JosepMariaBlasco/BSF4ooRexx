@@ -270,9 +270,28 @@ return testResult
 
 
 -- rgf, 2018-01-01: note, only the string "true" will yield a Java boolean truth value!
+-- rgf, 2018-01-04: changed RexxAndJava to consistently behave w.r.t. Booleans: now "1" and "true" will be regarded as Boolean.TRUE
 ::method "test_36"
 	arr=bsf.createArray("boolean.class", 128623)
 	r=BSF("arrayPut", arr, .true, 54321)
+	-- self~assertEquals(arr[54322], .false)
+	self~assertEquals(BSF("arrayAt", arr, 54321), .true)
+
+::method "test_36b"
+	arr=bsf.createArray("boolean.class", 128623)
+	r=BSF("arrayPut", arr, "true", 54321)
+	-- self~assertEquals(arr[54322], .false)
+	self~assertEquals(BSF("arrayAt", arr, 54321), .true)
+
+::method "test_36c"
+	arr=bsf.createArray("boolean.class", 128623)
+	r=BSF("arrayPut", arr, .false, 54321)
+	-- self~assertEquals(arr[54322], .false)
+	self~assertEquals(BSF("arrayAt", arr, 54321), .false)
+
+::method "test_36d"
+	arr=bsf.createArray("boolean.class", 128623)
+	r=BSF("arrayPut", arr, "", 54321)
 	-- self~assertEquals(arr[54322], .false)
 	self~assertEquals(BSF("arrayAt", arr, 54321), .false)
 
@@ -303,12 +322,18 @@ return testResult
 
 ::method "test_41"
 	arr=bsf.createArray("boolean.class", 5)
-	r=BSF("arrayPut", arr, .true, 2)
+	r=BSF("arrayPut", arr, .true, 2)       -- rgf, 2018-01-04: also Rexx TRUE value (.true, "1") will yield Boolean.TRUE
 	-- self~assertEquals(arr[3], .false)
-	self~assertEquals(BSF("arrayAt", arr, 2), .false)
+	self~assertEquals(BSF("arrayAt", arr, 2), .true)
 
 	r=BSF("arrayPut", arr, "true", 3)      -- rgf, 2018-01-01: only "true" will yield a true value on the Java side
 	self~assertEquals(BSF("arrayAt", arr, 3), .true)
+
+	r=BSF("arrayPut", arr, .false, 3)
+	self~assertEquals(BSF("arrayAt", arr, 3), .false)
+
+	r=BSF("arrayPut", arr, ""    , 3)
+	self~assertEquals(BSF("arrayAt", arr, 3), .false)
 
 ::method "test_42"
 	arr=bsf.createArray("boolean.class", 5)
