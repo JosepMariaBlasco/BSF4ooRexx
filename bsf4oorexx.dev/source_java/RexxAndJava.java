@@ -59,6 +59,27 @@ TODO: (maybe)
 */
 
  /*
+     2018-01-05, ---rgf: turn utility methods into static:
+
+
+                        RexxAndJava.java
+
+                        -    static Object [] coerceArgs(Object [] funcArgs, Class [] paramTypes)
+                        -    static protected String makeString4Rexx(Object o)  // changed 2003-01-06 from "makeResultString()" to "makeString4Rexx()"
+                        -    static public String makeBeanName(Object o)
+                        -    static protected String registerBean(String beanName, Object object)
+                        -    static protected Object lookupBean(String beanName)
+                        -    static int spilloverCounter=0;
+
+                        Need to supply RexxAndJava object/instance (named "rajo") to now static methods:
+
+                            Need to supply "bTerminated" to now static method:
+                            -    static protected String registerBean(String beanName, Object object)
+                            Need to supply or change "this" to RexxAndJava.class to now static method:
+                            -    static protected Object lookupBean(String beanName)
+                            -    static protected String registerBean(String beanName, Object object)
+                            -    static public String makeBeanName(RexxAndJava rajo, Object o)
+
 
      2018-01-04, ---rgf, - ARRAY_PUT with Boolean/boolean component type will now behave like SET PROPERTY_VALUE
                            and SET_FIELD_VALUE:
@@ -460,7 +481,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20180104";
+    static final public String version = "600.20180105";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -546,7 +567,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
      * @since 2012-11-01
      * @author Rony G. Flatscher
      */
-    int spilloverCounter=0;
+    static int spilloverCounter=0;
 
 
 
@@ -2531,7 +2552,7 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
                       }
 
                       Object bean = null;
-                      bean=lookupBean(args[1]);
+                      bean=lookupBean(this, args[1]);
 
                       if(bean==null)
                       {
@@ -2548,7 +2569,7 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
                                                        0, 0, args[4]);
                           // return "1";   // return .true
 // RgfMsgBox("BSF4ooRexx subfunction "+'"'+args[0]+'"'+" everything o.k., about to return .true.", '1');
-                          return makeString4Rexx("1");   // return .true
+                          return makeString4Rexx(this, "1");   // return .true
                       }
                       catch (BSFException e)
                       {
@@ -2640,7 +2661,7 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
                    }
                }
 
-               return makeString4Rexx(arr);     // return the single dimensioned array object
+               return makeString4Rexx(this, arr);     // return the single dimensioned array object
            }
 
 
@@ -2730,7 +2751,7 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
                }
 
                Object arr=Array.newInstance( componentType, indices); // create the array object
-               return makeString4Rexx(arr);     // return the array object
+               return makeString4Rexx(this, arr);     // return the array object
            }
 
 
@@ -2794,7 +2815,7 @@ if (bDebug)
 
 
                Object arrayObj = null;
-               arrayObj=lookupBean(args[1]);
+               arrayObj=lookupBean(this, args[1]);
 
                if (arrayObj == null)
                {
@@ -2818,7 +2839,7 @@ if (bDebug)
                        throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                             "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" class object of 'componentType' not found!", cnfe);
                    }
-                   return makeString4Rexx(aw);  // return ArrayWrapper instance
+                   return makeString4Rexx(this, aw);  // return ArrayWrapper instance
                }
 
 
@@ -2936,7 +2957,7 @@ if (bDebug) System.err.println("ARRAY_PUT_STRICT:  args[2]=["+args[2]+"], "+"arg
                if (choice==ARRAY_AT)
                {
 if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+"]...");
-                   return makeString4Rexx(aw.get(indices)); // get the element and return it to Rexx
+                   return makeString4Rexx(this, aw.get(indices)); // get the element and return it to Rexx
                }
                else
                {
@@ -2964,10 +2985,10 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
                       }
                       Object arrayObj = null;
 
-                      arrayObj=lookupBean(args[1]);
+                      arrayObj=lookupBean(this, args[1]);
 
                       int    num      = Array.getLength( arrayObj ) ;
-                      return makeString4Rexx ( new Integer(num) );
+                      return makeString4Rexx ( this, new Integer(num) );
                   }
         // ==================================================================
 
@@ -3002,7 +3023,7 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
 
                       }
                       // return "SHUTDOWN, REXX !";  // indicate to Rexx what to do ... ;)
-                      return makeString4Rexx("SHUTDOWN, REXX !");
+                      return makeString4Rexx(this,"SHUTDOWN, REXX !");
                   }
         // ==================================================================
 
@@ -3018,7 +3039,7 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
                        throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                 "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" does not expect any argument!");
                    }
-                   return makeString4Rexx(this.mgr);    // return the BSFManager instance
+                   return makeString4Rexx(this,this.mgr);    // return the BSFManager instance
                }
 
       // ==================================================================
@@ -3035,7 +3056,7 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
                        throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                 "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" does not expect any argument!");
                    }
-                   return makeString4Rexx(this);    // return this instance
+                   return makeString4Rexx(this,this);    // return this instance
                }
 
       // ==================================================================
@@ -3052,7 +3073,7 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
                        throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                 "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" does not expect any argument!");
                    }
-                   return makeString4Rexx(this.getRexxEngine());    // return this instance
+                   return makeString4Rexx(this, this.getRexxEngine());    // return this instance
                }
 
          // ==================================================================
@@ -3127,7 +3148,7 @@ if (iDebugLevel>0)
                      }
 
                      Object o = null;
-                     o=lookupBean(args[1]);
+                     o=lookupBean(this, args[1]);
 
                      if (o==null)
                      {
@@ -3155,7 +3176,7 @@ if (iDebugLevel>0)
 if (iDebugLevel>1) System.err.println("---> searching for fieldName (not case sensitively...)");
 
                                  Object tmpBean = null;
-                                 tmpBean=lookupBean(args[1]);
+                                 tmpBean=lookupBean(this, args[1]);
 
                                  if(tmpBean==null)
                                  {
@@ -3292,12 +3313,12 @@ if (bDebug)
                                 )
                              {
                                  // register result as a bean and return it
-                                  String beanName = makeBeanName(bean.value);
-                                  return registerBean(beanName, bean.value);
+                                  String beanName = makeBeanName(this, bean.value);
+                                  return registerBean(this, beanName, bean.value);
                              }
 
                              // not a String nor NetRexx object to be returned
-                             return makeString4Rexx(bean.value);             // return whatever we got
+                             return makeString4Rexx(this, bean.value);             // return whatever we got
                          }
 
 
@@ -3377,7 +3398,7 @@ if (bDebug)
 
                              // return received value-string (don't know why, but keeping it for back-compatibility, --rgf, 2003-05-10
                              // return args[args.length-1];
-                             return makeString4Rexx(args[args.length-1]);
+                             return makeString4Rexx(this, args[args.length-1]);
                          }
                          catch (Exception e)
                          {
@@ -3444,7 +3465,7 @@ if (bDebug)
 
                         // rgf, 2005-05-06 begin
                       Object tmpBean = null;
-                      tmpBean=lookupBean(args[1]);
+                      tmpBean=lookupBean(this, args[1]);
 
                       if(tmpBean==null)
                       {
@@ -3534,8 +3555,8 @@ if (bDebug)
                                  )
                              {
                                  // register result as a bean and return it
-                                  String beanName = makeBeanName(result);
-                                  return registerBean(beanName, result);
+                                  String beanName = makeBeanName(this, result);
+                                  return registerBean(this, beanName, result);
                              }
 
 
@@ -3547,12 +3568,12 @@ if (bDebug)
                                 )
                              {
                                  // register result as a bean and return it
-                                  String beanName = makeBeanName(result);
-                                  return registerBean(beanName, result);
+                                  String beanName = makeBeanName(this, result);
+                                  return registerBean(this, beanName, result);
                              }
 
 
-                             return makeString4Rexx(result);
+                             return makeString4Rexx(this, result);
                          }
                       }
 
@@ -3602,7 +3623,7 @@ if (bDebug)
                           }
 
                           Object bean = null;
-                          bean=lookupBean(args[1]);
+                          bean=lookupBean(this, args[1]);
 
                           if(bean==null)
                           {
@@ -3755,11 +3776,11 @@ if (bDebug) // ---rgf, 2006-07-29
                                               {
 // System.err.println("RAJ: TSK # 1");
                                                   // register result as a bean and return it
-                                                   String beanName = makeBeanName(result);
-                                                   return registerBean(beanName, result);
+                                                   String beanName = makeBeanName(this, result);
+                                                   return registerBean(this, beanName, result);
                                               }
 
-                                              return makeString4Rexx(result);
+                                              return makeString4Rexx(this, result);
                                           }
                                           catch (Exception e)
                                           {
@@ -3971,7 +3992,7 @@ if (bDebug) System.err.println("'invoke': AFTER, AFTER, trying '"+STRING_GET_FIE
                               if (args[2].equalsIgnoreCase("MAKEARRAY") || args[2].equalsIgnoreCase("SUPPLIER"))
                               {
                                   boolean bMakeArray=args[2].equalsIgnoreCase("MAKEARRAY"); // MAKEARRAY or SUPPLIER ?
-                                  bean=lookupBean(args[1]);
+                                  bean=lookupBean(this, args[1]);
 
                                   Object result=null;
                                   String rexxCreateArray   ="return .array~new                          \n" +
@@ -4118,8 +4139,8 @@ if (bDebug)  System.err.println("in ... # i: SUPPLIER branch...");
                                   if (result!=null)     // bingo, register and return
                                   {
                                       // register result as a bean and return it
-                                       String beanName = makeBeanName(result);
-                                       return registerBean(beanName, result);
+                                       String beanName = makeBeanName(this, result);
+                                       return registerBean(this, beanName, result);
                                   }
                               }
 /* */
@@ -4189,7 +4210,7 @@ if (bDebug) System.err.println("invokeStrict: beanName=["+args[1]+"], function: 
                                   "'"+args[0]+"', beanName, function [, argType, arg]... )");
                       }
                       Object bean = null;
-                      bean=lookupBean(args[1]);
+                      bean=lookupBean(this, args[1]);
 
                       if(bean==null)
                       {
@@ -4340,11 +4361,11 @@ if (bDebug) System.err.println("                   result=["+result+"]");
                                                   )
                                               {
                                                   // register result as a bean and return it
-                                                   String beanName = makeBeanName(result);
-                                                   return registerBean(beanName, result);
+                                                   String beanName = makeBeanName(this, result);
+                                                   return registerBean(this, beanName, result);
                                               }
 
-                                              return makeString4Rexx(result);
+                                              return makeString4Rexx(this, result);
                                           }
                                           catch (Exception e)
                                           {
@@ -4815,7 +4836,7 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
                       }
 
                       Object javaObject=null;
-                      javaObject=lookupBean(args[1]);
+                      javaObject=lookupBean(this, args[1]);
 
                       if (javaObject==null)     // not in BSFRegistry, use string object directly
                       {
@@ -4826,7 +4847,7 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
                       }
 
                       Object javaClass = null;
-                      javaClass=lookupBean(args[2]);
+                      javaClass=lookupBean(this, args[2]);
 
                       if(javaClass==null)       // not in BSFRegistry, try to laod class
                       {
@@ -4848,7 +4869,7 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
                           }
                       }
                         // carry out the test and return .true or .false accordingly
-                      return makeString4Rexx( ((Class)javaClass).isInstance(javaObject) ? "1" : "0" );
+                      return makeString4Rexx(this, ((Class)javaClass).isInstance(javaObject) ? "1" : "0" );
                   }
 
 
@@ -4873,7 +4894,7 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
 
                       if (args.length==1)   // no argument given, return
                       {
-                          return makeString4Rexx( RAJ_VERSION );
+                          return makeString4Rexx(this, RAJ_VERSION );
                       }
 
                         // get argument in uppercase
@@ -4881,7 +4902,7 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
                       if (uCase.startsWith("AL"))           // ALl
                       {
                           String conc=" ";
-                          return makeString4Rexx(
+                          return makeString4Rexx(this,
                               pkgName         +".ArrayWrapper "      +ArrayWrapper.version       +conc+
                               "org.apache.bsf"+".BSFManager "        +mgr.getVersion()           +conc+
                               pkgName         +".EnumerationWrapper "+EnumerationWrapper.version +conc+
@@ -4893,31 +4914,31 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
                       }
                       else if (uCase.startsWith("AR"))
                       {
-                          return makeString4Rexx(pkgName+".ArrayWrapper "+ArrayWrapper.version);
+                          return makeString4Rexx(this, pkgName+".ArrayWrapper "+ArrayWrapper.version);
                       }
                       else if (uCase.startsWith("B"))
                       {
-                          return makeString4Rexx("org.apache.bsf"+".BSFManager "+mgr.getVersion());
+                          return makeString4Rexx(this, "org.apache.bsf"+".BSFManager "+mgr.getVersion());
                       }
                       else if (uCase.startsWith("E"))
                       {
-                          return makeString4Rexx(pkgName+".EnumerationWrapper "+EnumerationWrapper.version);
+                          return makeString4Rexx(this, pkgName+".EnumerationWrapper "+EnumerationWrapper.version);
                       }
                       else if (uCase.startsWith("J"))
                       {
-                          return makeString4Rexx(pkgName+".Java4Rexx "+Java4Rexx.version);
+                          return makeString4Rexx(this, pkgName+".Java4Rexx "+Java4Rexx.version);
                       }
                       else if (uCase.startsWith("REXXA"))
                       {
-                          return makeString4Rexx(pkgName+".RexxAndJava "+RexxAndJava.version);
+                          return makeString4Rexx(this, pkgName+".RexxAndJava "+RexxAndJava.version);
                       }
                       else if (uCase.startsWith("REXXE"))
                       {
-                          return makeString4Rexx(pkgName+".RexxEngine "+RexxEngine.version);
+                          return makeString4Rexx(this, pkgName+".RexxEngine "+RexxEngine.version);
                       }
                       else if (uCase.startsWith("S"))
                       {
-                          return makeString4Rexx(pkgName+".Supplier "  +Supplier.version);
+                          return makeString4Rexx(this, pkgName+".Supplier "  +Supplier.version);
                       }
 
                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -4947,11 +4968,11 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
                    }
 
                    Object tmp = null;
-                   tmp=lookupBean(args[1]);
+                   tmp=lookupBean(this, args[1]);
 
                    if (tmp!=null)
                    {
-                      return makeString4Rexx(tmp);
+                      return makeString4Rexx(this, tmp);
                    }
                }
           break;
@@ -5006,7 +5027,7 @@ if (bDebug) System.out.println("we're in troubles! thread=["+Thread.currentThrea
 
                        if (tmp!=null)
                        {
-                          return makeString4Rexx(tmp);
+                          return makeString4Rexx(this, tmp);
                        }
                    }
               break;
@@ -5088,7 +5109,7 @@ if (bDebug)
 
                       try
                          {
-                            return makeString4Rexx(eventTextList.get(maxWait));
+                            return makeString4Rexx(this, eventTextList.get(maxWait));
                          }
                       catch (java.lang.InterruptedException e)
                          {
@@ -5125,7 +5146,7 @@ if (bDebug)
                       }
                       eventTextList.put((Object) args[1], priority);
                       // return args[1];
-                      return makeString4Rexx(args[1]);
+                      return makeString4Rexx(this, args[1]);
                   }
         // ==================================================================
 
@@ -5170,10 +5191,10 @@ if (bDebug)
                           if (beanName==null || beanName.equals(""))
                           {  // need to create a unique beanName
                              // beanName=""+ bean.getClass().getName() + '@' + Integer.toHexString( bean.hashCode() );
-                             beanName=makeBeanName(bean);
+                             beanName=makeBeanName(this, bean);
                           }
 
-                          return registerBean(beanName, bean);   // will use <O> indicator
+                          return registerBean(this, beanName, bean);   // will use <O> indicator
 
                       }
                       catch (BSFException e)
@@ -5216,7 +5237,7 @@ if (bDebug)
 if (bDebug)
 {
     {
-System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], r.lB["+lookupBean(args[2])+"], cFR=["+convFromRexx(args[2])+"]");
+System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], r.lB["+lookupBean(this, args[2])+"], cFR=["+convFromRexx(args[2])+"]");
     }
 }
 
@@ -5378,10 +5399,10 @@ System.err.println("REGISTER_BEAN: args[2]=["+args[2]+"], r.lB["+lookupBean(args
                       if (beanName==null || beanName.equals(""))
                       {  // need to create a unique beanName
                          // beanName=""+ bean.getClass().getName() + '@' + Integer.toHexString( bean.hashCode() );
-                         beanName=makeBeanName(bean);
+                         beanName=makeBeanName(this, bean);
                       }
 
-                      return registerBean(beanName, bean);   // will use <O> indicator
+                      return registerBean(this, beanName, bean);   // will use <O> indicator
                   }
         // ==================================================================
 
@@ -5413,7 +5434,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                                 // return beanName (index value), indicate that this is now a mere string
                               return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+args[1];
                           }
-                          return makeString4Rexx(null);     // return .NIL
+                          return makeString4Rexx(this, null);     // return .NIL
                       }
                   }
         // ==================================================================
@@ -5435,7 +5456,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                       }
                       null4Rexx=args[1];        // set new value
                       // return args[1];
-                      return makeString4Rexx(args[1]);
+                      return makeString4Rexx(this, args[1]);
                   }
         // ==================================================================
 
@@ -5474,7 +5495,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                            }
                        }
 
-                       return makeString4Rexx( new Boolean(bsfPrefixReturnValue) );
+                       return makeString4Rexx( this, new Boolean(bsfPrefixReturnValue) );
 
                    }
         // ==================================================================
@@ -5511,7 +5532,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                       }
                   }
 
-                  return makeString4Rexx( new Boolean(carryOutSystemExit) );
+                  return makeString4Rexx( this, new Boolean(carryOutSystemExit) );
 
               }
    // ==================================================================
@@ -5573,7 +5594,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                {
 
                    Object enumObj = null;
-                   enumObj=lookupBean(args[1]);
+                   enumObj=lookupBean(this, args[1]);
 
                    if (enumObj == null)
                    {
@@ -5586,7 +5607,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                        throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                 "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" object ["+args[1]+"] does not have the 'Enumeration' interface implemented!");
                    }
-                   return makeString4Rexx( new EnumerationWrapper( (Enumeration) enumObj) ); // wrap the object and return it to Rexx
+                   return makeString4Rexx(this, new EnumerationWrapper( (Enumeration) enumObj) ); // wrap the object and return it to Rexx
                }
 
 
@@ -5610,7 +5631,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                        }
 
                         // now halt given thread
-                       return makeString4Rexx(""+jniRexxSetHalt(args[1]));
+                       return makeString4Rexx(this, ""+jniRexxSetHalt(args[1]));
                    }
 
 
@@ -5657,7 +5678,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                        res=jniProcEnvironment(SET_ENVIRONMENT_VARIABLE, args[1], args.length==2 ? null : args[2]);
                    }
 
-                   return makeString4Rexx( res );           // wrap the object and return it to Rexx
+                   return makeString4Rexx( this, res );           // wrap the object and return it to Rexx
                }
 
 
@@ -5747,7 +5768,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                            ;
 
                         // now halt given thread
-                       return makeString4Rexx(""+kudos);
+                       return makeString4Rexx(this, ""+kudos);
                    }
 
       // ==================================================================
@@ -5766,7 +5787,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                                 "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" does not expect any argument!");
                    }
 
-                   return makeString4Rexx(get_rii_ID());    // return this instance
+                   return makeString4Rexx(this, get_rii_ID());    // return this instance
                }
 
 
@@ -5806,7 +5827,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
 //                           synchronized (bean)
                        {
                            bean.refCount+=1;                      // increase refcount
-                           str= makeString4Rexx(bean.refCount);   // return new refcount for the bean
+                           str= makeString4Rexx(this, bean.refCount);   // return new refcount for the bean
                        }
 
 if (bDebugRefCounter)
@@ -5839,7 +5860,7 @@ System.err.println("//++// increaseRefCounter/(registerBean), RAJBean: "+bean+" 
        }
         // ==================================================================
 
-        return makeString4Rexx(null);
+        return makeString4Rexx(this, null);
     }
 
 
@@ -5948,7 +5969,7 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], val
                             if (value.equals("")) return null;
 
                             Object tmp;
-                            tmp=lookupBean(value);
+                            tmp=lookupBean(this, value);
 
                             if (tmp==null){
                                 throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -6078,7 +6099,7 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], val
          // Is this a reference to a Java object in the BSF registry?
          // If so, return Java object
          Object tmp=null;
-         tmp=lookupBean(value);
+         tmp=lookupBean(this, value);
 
          if (tmp==null) return value;
 
@@ -6094,7 +6115,7 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], val
      * <!-- (rgf, 2003-05-08) -->
      *  @return an array with the coerced arguments, if successful, <code>null</code> else.
      */
-    Object [] coerceArgs(Object [] funcArgs, Class [] paramTypes)
+    static Object [] coerceArgs(Object [] funcArgs, Class [] paramTypes)
     {
         int k,
             nrArgs=funcArgs.length;
@@ -6305,11 +6326,11 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
      *
      * @since 2012-02-19
      */
-    protected Object lookupBean(String beanName)
+    static protected Object lookupBean(RexxAndJava rajo, String beanName)
     {
         final boolean bDebug=false;
 
-if (bDebug) System.err.println(this+".lookupBean():     beanName=["+beanName+"]");
+if (bDebug) System.err.println(rajo+".lookupBean():     beanName=["+beanName+"]");
 
         RAJBean bean=rajRegistry.get(beanName);
 
@@ -6318,7 +6339,7 @@ if (bDebug && bean==null)
 System.err.println("//*...*// attempt #1: lookupBean(beanName=["+beanName+"]): NOT FOUND! \\\\...\\\\");
 }
             // bean not found, maybe still has prefix ?
-        if (bean==null && bsfPrefixReturnValue && beanName.startsWith(OBJECT_INDICATOR_PREFIX))
+        if (bean==null && rajo.bsfPrefixReturnValue && beanName.startsWith(OBJECT_INDICATOR_PREFIX))
         {
             String name=beanName.substring(3);  // remove prefix from bean
             bean=rajRegistry.get(name);         // try to get now
@@ -6363,7 +6384,7 @@ if (bDebug) System.err.println(this+".lookupBean4JNI(): beanName=["+beanName+"],
             return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
         }
 
-        return lookupBean(beanName);
+        return lookupBean(this, beanName);
     }
 
 
@@ -6387,7 +6408,7 @@ System.err.println(this+":  registerBean4JNI(object=["+object+"]): object.getCla
 if (bDebugRefCounter==true)
 System.err.println(this+":  registerBean4JNI(object=["+object+"]): object.getClass()->["+(object==null? null : object.getClass())+"]");
 
-        return registerBean(makeBeanName(object), object);
+        return registerBean(this, makeBeanName(this, object), object);
     }
 
 
@@ -6402,18 +6423,18 @@ System.err.println(this+":  registerBean4JNI(object=["+object+"]): object.getCla
       *
       *  @return returns the beanName
       */
-    protected String registerBean(String beanName, Object object)
+    static protected String registerBean(RexxAndJava rajo, String beanName, Object object)
     {
 
-        if (bTerminated==true)
+        if (rajo.bTerminated==true)
         {
-            return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
+            return (rajo.bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
         }
 
 final boolean bDebug=false;
 if (bDebug)
 {
-    System.err.print(this+".registerBean(beanName=["+beanName+"], object=["+object+"]: ");
+    System.err.print(rajo+".registerBean(beanName=["+beanName+"], object=["+object+"]: ");
 }
 
         RAJBean bean = rajRegistry.get( beanName );  // already registered?
@@ -6450,7 +6471,7 @@ if (bDebugRefCounter)
         }
     }
 }
-        return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+beanName;   // if so, return beanName
+        return (rajo.bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+beanName;   // if so, return beanName
 
     }
 
@@ -6603,7 +6624,7 @@ if (bDebugRefCounter)
       *           under it and return the bean name. If <code>null</code>,
       *           then the string of {@link #null4Rexx} is returned to Rexx.
       */
-    protected String makeString4Rexx(Object o)  // changed 2003-01-06 from "makeResultString()" to "makeString4Rexx()"
+    static protected String makeString4Rexx(RexxAndJava rajo, Object o)  // changed 2003-01-06 from "makeResultString()" to "makeString4Rexx()"
     {
         final boolean bDebug=  // true;     // if true, show debug infos
                                false;
@@ -6616,7 +6637,7 @@ if (bDebug)
 
        if (o==null)
        {
-          return (bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
+          return (rajo.bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+null4Rexx;                     // return the Rexx-String representing "null"
        }
 
        Class cl = o.getClass();
@@ -6630,12 +6651,12 @@ if (bDebug)
        {
 
 if (bDebug) System.err.println("makeString4Rexx(): TSK # 1");
-          return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+((String) o);
+          return (rajo.bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+((String) o);
        }
 
        else if (cl==Boolean.class )
        {
-          return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+( ((Boolean) o).booleanValue() ? "1" : "0");
+          return (rajo.bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+( ((Boolean) o).booleanValue() ? "1" : "0");
        }
 
        else if (    cl.isPrimitive() ||
@@ -6645,19 +6666,30 @@ if (bDebug) System.err.println("makeString4Rexx(): TSK # 1");
                 cl==Byte.class       || cl==Short.class
                )
        {
-          return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+o.toString();  // o.k.
+          return (rajo.bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+o.toString();  // o.k.
        }
 
          // are we returning a netrexx.lang.Rexx instance, if so, use its String value
         if (nlR_class!=null && cl==nlR_class) {
-            return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+o.toString();
+            return (rajo.bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+o.toString();
         }
 
                 // an Object, register it as a bean, so it becomes
                 // possible to refer to from Rexx as well
 
-       String beanName = makeBeanName(o);
-       return registerBean(beanName, o);
+       String beanName = makeBeanName(rajo, o);
+       return registerBean(rajo, beanName, o);
+    }
+
+
+
+    // rgf, 2018-01-05: consequence of making utility methods static
+    /** This method will be fetched and excercised from native code.
+     */
+
+    private String makeString4Rexx(Object o)  // changed 2003-01-06 from "makeResultString()" to "makeString4Rexx()"
+    {
+        return makeString4Rexx(this,o);
     }
 
 
@@ -6669,7 +6701,7 @@ if (bDebug) System.err.println("makeString4Rexx(): TSK # 1");
       *  @return  <code>null</code>, if the argument was <code>null</code>,
      *            else a String, identifying (uniquely) the object for use with the BSF registry
       */
-    public String makeBeanName(Object o)
+    static public String makeBeanName(RexxAndJava rajo, Object o)
     {
         final boolean bDebug=  // true;   // if true, show debug infos
                               false;
@@ -6687,7 +6719,7 @@ if (bDebug) System.err.println("makeString4Rexx(): TSK # 1");
 
             // rgf, 2012-11-01: handle case where System.identityHashCode() returns duplicates
         Object olb=null;
-        olb=lookupBean(beanName);
+        olb=lookupBean(rajo, beanName);
 
         if (olb!=null && o!=olb)   // oops, we got a duplicate identityHashCode for the same class!
         {   // make it into an identifier (unique) string
