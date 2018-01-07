@@ -26,7 +26,7 @@ import org.apache.bsf.BSFException;
  *
 
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2009-2017 Rony G. Flatscher
+ *    Copyright (C) 2009-2018 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -41,11 +41,16 @@ import org.apache.bsf.BSFException;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 1.0.2, 2009-05-03, 2009-06-27, 2009-07-11, 2009-07-31, 2010-04-16, 2016-11-04
+  * @version 1.0.3, 2009-05-03, 2009-06-27, 2009-07-11, 2009-07-31, 2010-04-16, 2016-11-04, 2018-01-07
   * @author Rony G. Flatscher (<a href="http://www.wu.ac.at">WU/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu.ac.at/english">http://www.wu.ac.at/english</a>)
   */
 
 /*
+    2018-01-07, rgf  - remove deprecation warning of the Java 9 compiler, if there is a Java 6 compliant,
+                       non-deprecated alternative; note: the deprecation warning on "finalize" will not
+                       be honored as this is intentional as it is the only means to allow garbage collection
+                       on the Rexx side as well, when Java Rexx peers get out of scope
+
     2017-12-24, rgf, - corrected documentation: .local may go away, if its Rexx interpreter instance
                        got terminated and its .local garbage collected
 
@@ -123,7 +128,7 @@ public class RexxProxy implements InvocationHandler
 {
 
      /** Version information on this class. */
-    static final public String version="102.20161105";
+    static final public String version="103.20180107";
 
 
     // rgf, 2010-04-16 --->
@@ -214,7 +219,8 @@ public class RexxProxy implements InvocationHandler
 
     protected Integer proxyHashCode(Object proxy)
     {
-    	return new Integer(System.identityHashCode(proxy));
+    	// return new Integer(System.identityHashCode(proxy));
+    	return Integer.valueOf(System.identityHashCode(proxy));
     }
 
     protected Boolean proxyEquals(Object proxy, Object other)
@@ -794,7 +800,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.invoke(jO, mN, mD, args): 
 
     /** Finalize method will unregister Rexx object from the JNI registry.
      */
-    public void finalize ()
+    @SuppressWarnings( "deprecation" ) public void finalize ()  // method needed to maintain native Rexx side
     {
 // boolean bDebug=true;
         if (bDebug)

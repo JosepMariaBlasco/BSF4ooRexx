@@ -5,6 +5,7 @@ import javax.swing.JOptionPane;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.StringTokenizer;
 
 import java.util.*;
 import java.io.*;
@@ -59,6 +60,14 @@ TODO: (maybe)
 */
 
  /*
+
+     2018-01-07, ---rgf - make sure access to rajRegistry is synchronized where values might get changed
+
+     2018-01-06, ---rgf: remove deprecation warning of the Java 9 compiler, if there is a Java 6 compliant,
+                         non-deprecated alternative; note: the deprecation warning on "finalize" will not
+                         be honored as this is intentional as it is the only means to allow garbage collection
+                         on the Rexx side as well, when Java Rexx peers get out of scope
+
      2018-01-05, ---rgf: turn utility methods into static:
 
 
@@ -70,6 +79,10 @@ TODO: (maybe)
                         -    static protected String registerBean(String beanName, Object object)
                         -    static protected Object lookupBean(String beanName)
                         -    static int spilloverCounter=0;
+
+                        - added new instance method for native code compatibility:
+
+                             private String makeString4Rexx(Object o)
 
                         Need to supply RexxAndJava object/instance (named "rajo") to now static methods:
 
@@ -478,6 +491,18 @@ class RexxAndJava {
 final static boolean bDebugRefCounter=false; // true; // false;
 final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new ConcurrentHashMap<String,RAJBean>();
 
+    /* Allows to refer to the RexxResolve class that gets employed (depends on the version of Java).
+    *
+    * @since BSF4ooRexx 6.0 (2018-01-05)
+    */
+    static RexxReflectInterface rxReflector=null;
+
+    /** Stores the Java runtime version as an int, where Java 1.6 gets stored as 6 and so on.
+    *
+    * @since BSF4ooRexx 6.0 (2018-01-05)
+    */
+    static final int javaRuntimeVersion;
+
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
@@ -621,6 +646,9 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
      */
     static private ConcurrentHashMap<String,RAJBean> rajRegistry=new ConcurrentHashMap<String,RAJBean>();;
 
+    /** Lock used when adding, removing Java objects or changing their reference counters. */
+    final static private Object lockRajRegistry=new Object();
+
 
 
     /** Load the DLL, which allows interfacing Java with Rexx or Object Rexx, determines
@@ -737,7 +765,31 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
             glob_tcr.register (String.class, Object.class, tc); // rgf, 2005-07-30
         }
 
-    }
+
+            // 20180105, rgf: determine Java runtime version in use
+        int jVersion=6;     // default to Java 6
+        try {
+            String[] st=System.getProperty("java.specification.version").split("\\.");
+            jVersion=Integer.valueOf((st[0].equals("1") ? st[1] : st[0]));   // extract and assign Java version
+        }
+        catch (Throwable t) {}
+        javaRuntimeVersion=jVersion;    // assign version to static final field
+
+        switch (javaRuntimeVersion)     // set RexxReflect class object to use
+        {
+            case 8: // TODO: handle default and static Interface methods
+
+            case 9: // TODO: only use classes, if their module is open to the Java object's class for which reflection takes place
+                     rxReflector=new RexxReflectJava9();
+                     break;
+            default: rxReflector=new RexxReflect() ;        // default to Java 6 related reflection
+        }
+
+// System.err.println(RexxAndJava.class+" (static block) javaRuntimeVersion="+javaRuntimeVersion);
+// System.err.println(RexxAndJava.class+" (static block) rxReflector       ="+rxReflector);
+// try { System.err.println(rxReflector.reflectMethod()); } catch (Throwable t) {}
+
+    }   // end of static block
 
 
     /** Returns an unmodifiable version of the {@link rajRegistry} Map (for debugging purposes).
@@ -762,11 +814,11 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
 
 
 
-    /** Finalize method that makes sure that terminate() gets invoked.
+    /** Finalize method that makes sure that terminate() on Rexx engine gets invoked.
      *
      *  @since 2015-08-03
      */
-    public void finalize ()
+    @SuppressWarnings( "deprecation" ) public void finalize ()      // method needed to maintain native Rexx side
     {
         final boolean bDebug= false;
                               // true;
@@ -823,7 +875,7 @@ System.err.println("*** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -
       * @return returns always 0. (Just there to allow future return codes, if necessary.)
     @deprecated
       */
-    protected native int jniRexxWaitForTermination ( );
+    @Deprecated protected native int jniRexxWaitForTermination ( );
 
     /** This native method indicates whether the Object Rexx interpreter is still running or not.
       * This is necessary for ooRexx 3.x.
@@ -831,7 +883,7 @@ System.err.println("*** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -
       * @return returns always 0. (Just there to allow future return codes, if necessary.)
     @deprecated
       */
-    protected native int jniRexxDidRexxTerminate ( );
+    @Deprecated protected native int jniRexxDidRexxTerminate ( );
 
 
     /** This native method returns the current thread id as seen by
@@ -2746,7 +2798,7 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
                    int i=0, j=firstIdx;
                    for ( ; j<args.length; i++, j++)
                    {
-                       indices[i]=new Integer(args[j]).intValue();
+                       indices[i]=Integer.parseInt(args[j]);
                    }
                }
 
@@ -2936,7 +2988,7 @@ if (bDebug) System.err.println("ARRAY_PUT_STRICT:  args[2]=["+args[2]+"], "+"arg
                    int i=0, j=firstIdx;
                    for ( ; j<args.length; i++, j++)
                    {
-                       indices[i]=new Integer(args[j]).intValue();
+                       indices[i]=Integer.parseInt(args[j]);
                    }
                }
 
@@ -2988,7 +3040,8 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
                       arrayObj=lookupBean(this, args[1]);
 
                       int    num      = Array.getLength( arrayObj ) ;
-                      return makeString4Rexx ( this, new Integer(num) );
+                      // return makeString4Rexx ( this, new Integer(num) );
+                      return makeString4Rexx ( this, Integer.valueOf(num) );
                   }
         // ==================================================================
 
@@ -3274,7 +3327,7 @@ if (bDebug) System.err.println("Trying 'GET"+args[2]+"' ? : " + ! (args[2].toUpp
                          else        // get a property
                          {
                             if ( args.length>=4 && args[3]!=null && (!args[3].equals("")) )
-                                     index=new Integer(args[3]);            // get Integer from String
+                                     index=Integer.parseInt(args[3]);            // get Integer from String
 
                             bean=ReflectionUtils.getProperty(o, args[2], index);
                          }
@@ -5495,7 +5548,8 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                            }
                        }
 
-                       return makeString4Rexx( this, new Boolean(bsfPrefixReturnValue) );
+                       // return makeString4Rexx( this, new Boolean(bsfPrefixReturnValue) );
+                       return makeString4Rexx( this, (bsfPrefixReturnValue ? Boolean.TRUE : Boolean.FALSE) );
 
                    }
         // ==================================================================
@@ -5532,7 +5586,8 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                       }
                   }
 
-                  return makeString4Rexx( this, new Boolean(carryOutSystemExit) );
+                  // return makeString4Rexx( this, new Boolean(carryOutSystemExit) );
+                  return makeString4Rexx( this, (carryOutSystemExit ? Boolean.TRUE : Boolean.FALSE) );
 
               }
    // ==================================================================
@@ -5816,22 +5871,21 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM R
                    String beanName=args[1];
 
                    String str="";
-                   RAJBean bean=rajRegistry.get(beanName);   // get bean
-//                       synchronized (bean)
+
+                   synchronized (lockRajRegistry)
                    {
-                       if (bean==null)       // no bean stored by that name
+                       RAJBean bean=rajRegistry.get(beanName);   // get bean
                        {
-                           throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": beanName ["+beanName+"] not in registry, cannot increase refCounter!");
-                       }
-//                           synchronized (bean)
-                       {
+                           if (bean==null)       // no bean stored by that name
+                           {
+                               throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                        "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": beanName ["+beanName+"] not in registry, cannot increase refCounter!");
+                           }
+
                            bean.refCount+=1;                      // increase refcount
                            str= makeString4Rexx(this, bean.refCount);   // return new refcount for the bean
-                       }
 
 if (bDebugRefCounter)
-
 {
      if (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null)
      {
@@ -5843,6 +5897,8 @@ System.err.println("//++// increaseRefCounter/(registerBean), RAJBean: "+bean+" 
         }
      }
 }
+                       }
+
                    }
 
                    return str;
@@ -5960,7 +6016,8 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], val
                                          return value;
 
                                case 'H':    // Short
-                                         return new Short( value );
+                                         // return new Short( value );
+                                         return Short.valueOf( value );
 
                                default:  break;     // unknown type
                             }
@@ -5978,7 +6035,8 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], val
 
                             return tmp;
 
-                 case 'I':  return new Integer      (value);
+                 // case 'I':  return new Integer      (value);
+                 case 'I':  return Integer.valueOf(value);
                  case 'C':
                             // char/Character - deal with the special case that an empty string is supplied, probably
                             //                  because programmer supplied 0x00 on the Rexx side which gets transformed
@@ -5989,13 +6047,16 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], val
 
     if (bDebug)
     {
-        Character res=new Character((char)0);
+        // Character res=new Character((char)0);
+        Character res=Character.valueOf((char)0);
         System.out.println("RexxAndJava.convFromRexx(): new Character: res=["+res+"], Integer.toHexString()=["+Integer.toHexString(res.charValue())+"]");
     }
-                                return new Character((char)0);       // create 0x00 char
+                                // return new Character((char)0);       // create 0x00 char
+                                return Character.valueOf((char)0);       // create 0x00 char
                             }
 
-                            return new Character    (value.charAt(0));
+                            // return new Character    (value.charAt(0));
+                            return Character.valueOf(value.charAt(0));
 
                  case 'B':  // need second character
                             if (type.length() == 1) break;    // leave switch
@@ -6010,15 +6071,19 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], val
                                          return Boolean.FALSE;
 
                                case 'Y':    // Byte
-                                         return new Byte( value );
+                                         // return new Byte( value );
+                                         return Byte.valueOf( value );
 
                                default:  break;     // unknown type
                             }
 
 
-                 case 'F':  return new Float        (value);
-                 case 'L':  return new Long         (value);
-                 case 'D':  return new Double       (value);
+                 // case 'F':  return new Float        (value);
+                 case 'F':  return Float.valueOf (value);
+                 // case 'L':  return new Long         (value);
+                 case 'L':  return Long.valueOf  (value);
+                 // case 'D':  return new Double       (value);
+                 case 'D':  return Double.valueOf(value);
 
              }
          }
@@ -6055,9 +6120,13 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], val
          switch (type.charAt(0))    // turn type into a char
          {
 
-             case 'S':  return new Short( value );   // Short
-             case 'I':  return new Integer      (value);
-             case 'C':  return new Character    (value.charAt(0));
+             case 'S':  // return new Short( value );   // Short
+                        return Short.valueOf( value );  // Short
+
+             // case 'I':  return new Integer      (value);
+             case 'I':  return Integer.valueOf(value);
+             // case 'C':  return new Character    (value.charAt(0));
+             case 'C':  return Character.valueOf(value.charAt(0));
 
              case 'Z':    // Boolean
                         // return new Boolean( value.equals("1") || value.equalsIgnoreCase("true") );
@@ -6067,11 +6136,15 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], val
                         }
                         return Boolean.FALSE;
 
-             case 'B':  return new Byte( value );   // Byte
+             // case 'B':  return new Byte( value );   // Byte
+             case 'B':  return Byte.valueOf (value);   // Byte
 
-             case 'F':  return new Float        (value);
-             case 'J':  return new Long         (value);
-             case 'D':  return new Double       (value);
+             // case 'F':  return new Float        (value);
+             case 'F':  return Float.valueOf(value);
+             // case 'J':  return new Long         (value);
+             case 'J':  return Long.valueOf (value);
+             // case 'D':  return new Double       (value);
+             case 'D':  return Double.valueOf(value);
          }
          throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
              "unknown return type ["+type+"], with value ["+value+"] (expecting the internal Java type indicator for primitives)");
@@ -6437,18 +6510,20 @@ if (bDebug)
     System.err.print(rajo+".registerBean(beanName=["+beanName+"], object=["+object+"]: ");
 }
 
-        RAJBean bean = rajRegistry.get( beanName );  // already registered?
-        if (bean==null)                  // we need to create the bean
+        synchronized (lockRajRegistry)
         {
-            bean=new RAJBean(beanName, object);
-            rajRegistry.put(beanName, bean);
+            RAJBean bean = rajRegistry.get( beanName );  // already registered?
+            if (bean==null)                  // we need to create the bean
+            {
+                bean=new RAJBean(beanName, object);
+                rajRegistry.put(beanName, bean);
 if (bDebug) System.err.print("did not exist, CREATED!");
-        }
-        else    // exists already, increase refCounter
-        {
-            bean.refCount+=1;
+            }
+            else    // exists already, increase refCounter
+            {
+                bean.refCount+=1;
 if (bDebug) System.err.print("existed alread, refCount increased");
-        }
+            }
 
 if (bDebug) System.err.println(" -> bean.refCount=["+bean.refCount+"]");
 
@@ -6471,6 +6546,8 @@ if (bDebugRefCounter)
         }
     }
 }
+
+        }
         return (rajo.bsfPrefixReturnValue ? OBJECT_INDICATOR_PREFIX : "")+beanName;   // if so, return beanName
 
     }
@@ -6492,17 +6569,22 @@ if (bDebug)
 {
     System.err.println("RAJ.-RAW-rawRegisterBean(beanName=["+beanName+"], object=["+object+"]: ");
 }
-        RAJBean bean = rajRegistry.get( beanName );  // already registered?
-        if (bean==null)                  // we need to create the bean
+        RAJBean bean = null;
+        synchronized (lockRajRegistry)
         {
-            bean=new RAJBean(beanName, object);
-            rajRegistry.put(beanName, bean);
+            bean=rajRegistry.get( beanName );  // already registered?
+            if (bean==null)                  // we need to create the bean
+            {
+                bean=new RAJBean(beanName, object);
+                rajRegistry.put(beanName, bean);
+            }
+            else    // exists already, replace Java object in bean with the supplied one, increase refCounter
+            {
+                bean.javaObject=object;
+                bean.refCount+=1;
+            }
         }
-        else    // exists already, replace Java object in bean with the supplied one, increase refCounter
-        {
-            bean.javaObject=object;
-            bean.refCount+=1;
-        }
+
 
 if (bDebugRefCounter) // && bean.refCount>3)
 {
@@ -6550,25 +6632,27 @@ if (bDebug) // testing; TODO: remove
     System.err.println("RAJ:   ===> RexxAndJava.unregisterBean(beanName="+beanName+")");
 }
 
-            RAJBean bean=rajRegistry.get(beanName);
 
+            synchronized (lockRajRegistry)
+            {
+                RAJBean bean = rajRegistry.get( beanName );
 // if (bDebugRefCounter && (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null))
 if (bDebugRefCounter && rajRegistryToWatch.get(beanName)!=null)
 System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), bean.refCount=["+bean.refCount+"]  ...");
 
-            // bean not found, maybe still has prefix ?
-            if (bean==null && bsfPrefixReturnValue && beanName.startsWith(OBJECT_INDICATOR_PREFIX))
-            {
-                beanName=beanName.substring(3);  // remove prefix from bean
-                bean=rajRegistry.get(beanName);
-            }
+                // bean not found, maybe still has prefix ?
+                if (bean==null && bsfPrefixReturnValue && beanName.startsWith(OBJECT_INDICATOR_PREFIX))
+                {
+                    beanName=beanName.substring(3);  // remove prefix from bean
+                    bean=rajRegistry.get(beanName);
+                }
 
-            if (bean==null)
-            {
+                if (bean==null)
+                {
 if (bDebugRefCounter) System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), not in registry anymore!");
 
-                return false;
-            }
+                    return false;
+                }
 
 if (bDebugRefCounter)
 {
@@ -6578,9 +6662,9 @@ if (bDebugRefCounter)
     System.err.println("//--// RAJ.unregisterBean(), decreasing refCount! bean=["+bean+"], new refCount=["+(bean.refCount-1)+"] \\\\--\\\\");
     }
 }
-            bean.refCount-=1;       // reduce counter
-            if (bean.refCount==0)   // dropped to 0, remove bean
-            {
+                bean.refCount-=1;       // reduce counter
+                if (bean.refCount==0)   // dropped to 0, remove bean
+                {
 
 if (bDebugRefCounter)
 {
@@ -6605,7 +6689,8 @@ if (bDebugRefCounter)
     }
 }
 
-                rajRegistry.remove(beanName);
+                    rajRegistry.remove(beanName);
+                }
             }
 
             return true;
@@ -6686,8 +6771,7 @@ if (bDebug) System.err.println("makeString4Rexx(): TSK # 1");
     // rgf, 2018-01-05: consequence of making utility methods static
     /** This method will be fetched and excercised from native code.
      */
-
-    private String makeString4Rexx(Object o)  // changed 2003-01-06 from "makeResultString()" to "makeString4Rexx()"
+    private String makeString4Rexx(Object o)
     {
         return makeString4Rexx(this,o);
     }
