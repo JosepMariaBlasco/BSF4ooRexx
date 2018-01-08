@@ -14,6 +14,7 @@ import org.apache.bsf.*;
 import org.apache.bsf.util.*;
 import org.apache.bsf.util.type.*;
 
+import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 /**
   * This class manages the calls from Rexx or Object Rexx into Java.
@@ -57,11 +58,17 @@ TODO: (maybe)
                        all interfaces a class implements and look for default methods, which have as
                        their modifiers: public+non-abstract+non-static; rgf, 2016-12-08: so far there has been
                        no need to do it the old way (performance comparable)
+
+    - 2018-01-08, rgf: - rework the static int constants into an Enum class with a String constructor method
 */
 
  /*
 
+     2018-01-08, ---rgf, - changed switch to use new InvocationType enum
+
      2018-01-07, ---rgf - make sure access to rajRegistry is synchronized where values might get changed
+                        - changed static private int constants (indicating the desired function from Rexx)
+                          to package private to allow RexxReflect* classes access them
 
      2018-01-06, ---rgf: remove deprecation warning of the Java 9 compiler, if there is a Java 6 compliant,
                          non-deprecated alternative; note: the deprecation warning on "finalize" will not
@@ -491,6 +498,10 @@ class RexxAndJava {
 final static boolean bDebugRefCounter=false; // true; // false;
 final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new ConcurrentHashMap<String,RAJBean>();
 
+// TODO: rgf, 20180106, remove after debugging RexxReflect
+final static boolean bRgfUseNewRexxReflect=false; // true;        // if true, use new RexxReflect class
+
+
     /* Allows to refer to the RexxResolve class that gets employed (depends on the version of Java).
     *
     * @since BSF4ooRexx 6.0 (2018-01-05)
@@ -506,7 +517,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20180105";
+    static final public String version = "600.20180108";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -782,7 +793,10 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
             case 9: // TODO: only use classes, if their module is open to the Java object's class for which reflection takes place
                      rxReflector=new RexxReflectJava9();
                      break;
-            default: rxReflector=new RexxReflect() ;        // default to Java 6 related reflection
+
+                     // TODO: test whether using the 9-version compiled to 1.6 can be run on 1.6; if so
+                     //       rename RexxReflectJava9.java to RexxReflect.java
+            default: rxReflector=new RexxReflectJava9() ;        // default to Java 6 related reflection
         }
 
 // System.err.println(RexxAndJava.class+" (static block) javaRuntimeVersion="+javaRuntimeVersion);
@@ -825,7 +839,7 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
         if (bDebug)
         {
             System.err.println(this+": in finalize(), this=["+this+"], rii_ID=["+rii_ID+"]...");
-System.err.println("*** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** ");
+System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -  *** ");
         }
         terminate();        // make sure we terminate and carry out any clean-up
     }
@@ -1123,71 +1137,73 @@ System.err.println("*** - FINALIZE -  *** *** - FINALIZE -  *** *** - FINALIZE -
      * */
     protected native int jniInitialize4Rexx() ;
 
+
+/* ---> rgf, 20180108
         // define the constants for the desired function
-private static final int           ADD_EVENT_LISTENER          =  1  ;
-private static final int           ARRAY_AT                    =  2  ;
-private static final int           ARRAY_LENGTH                =  3  ;
-private static final int           ARRAY_PUT                   =  4  ;
-private static final int           ARRAY_PUT_STRICT            =  5  ;
-private static final int           CREATE_ARRAY_OBJECT         =  6  ;
-private static final int           EXIT                        =  7  ;
-private static final int           GET_FIELD_VALUE             =  8  ;
-private static final int           GET_FIELD_VALUE_STRICT      =  9  ;    // 2005-05-06, ---rgf
-private static final int           GET_PROPERTY_VALUE          =  10 ;
-private static final int           GET_STATIC_VALUE            =  11 ;
-private static final int           GET_STATIC_VALUE_STRICT     =  12 ;
-private static final int           GET_VERSION                 =  13 ;
-private static final int           INVOKE                      =  14 ;
-private static final int           INVOKE_STRICT               =  15 ;
-private static final int           LOOKUP_BEAN                 =  16 ;
-private static final int           POLL_EVENT_TEXT             =  17 ;
-private static final int           POST_EVENT_TEXT             =  18 ;
-private static final int           REGISTER_BEAN               =  19 ;
-private static final int           NEW                         =  19 ;    // 2005-06-17, ---rgf: synonym for REGISTER_BEAN, hence same value
-private static final int           REGISTER_BEAN_STRICT        =  20 ;
-private static final int           NEW_STRICT                  =  20 ;    // 2005-06-17, ---rgf: synonym for REGISTER_BEAN_STRICT, hence same value
-private static final int           SET_FIELD_VALUE             =  21 ;
-private static final int           SET_FIELD_VALUE_STRICT      =  22 ;
-private static final int           SET_PROPERTY_VALUE          =  23 ;
-private static final int           SET_PROPERTY_VALUE_STRICT   =  24 ;
-private static final int           SET_REXX_NULL_STRING        =  25 ;
-private static final int           SLEEP                       =  26 ;
-private static final int           UNREGISTER_BEAN             =  27 ;
-private static final int           WRAP_ARRAY_OBJECT           =  28 ;
-private static final int           WRAP_ENUMERATION_OBJECT     =  29 ;
-private static final int           LOAD_CLASS                  =  30 ;   // 2006-01-05, ---rgf: new subfunction to get a thread-context loaded class
+static final int           ADD_EVENT_LISTENER          =  1  ;
+static final int           ARRAY_AT                    =  2  ;
+static final int           ARRAY_LENGTH                =  3  ;
+static final int           ARRAY_PUT                   =  4  ;
+static final int           ARRAY_PUT_STRICT            =  5  ;
+static final int           CREATE_ARRAY_OBJECT         =  6  ;
+static final int           EXIT                        =  7  ;
+static final int           GET_FIELD_VALUE             =  8  ;
+static final int           GET_FIELD_VALUE_STRICT      =  9  ;    // 2005-05-06, ---rgf
+static final int           GET_PROPERTY_VALUE          =  10 ;
+static final int           GET_STATIC_VALUE            =  11 ;
+static final int           GET_STATIC_VALUE_STRICT     =  12 ;
+static final int           GET_VERSION                 =  13 ;
+static final int           INVOKE                      =  14 ;
+static final int           INVOKE_STRICT               =  15 ;
+static final int           LOOKUP_BEAN                 =  16 ;
+static final int           POLL_EVENT_TEXT             =  17 ;
+static final int           POST_EVENT_TEXT             =  18 ;
+static final int           REGISTER_BEAN               =  19 ;
+static final int           NEW                         =  19 ;    // 2005-06-17, ---rgf: synonym for REGISTER_BEAN, hence same value
+static final int           REGISTER_BEAN_STRICT        =  20 ;
+static final int           NEW_STRICT                  =  20 ;    // 2005-06-17, ---rgf: synonym for REGISTER_BEAN_STRICT, hence same value
+static final int           SET_FIELD_VALUE             =  21 ;
+static final int           SET_FIELD_VALUE_STRICT      =  22 ;
+static final int           SET_PROPERTY_VALUE          =  23 ;
+static final int           SET_PROPERTY_VALUE_STRICT   =  24 ;
+static final int           SET_REXX_NULL_STRING        =  25 ;
+static final int           SLEEP                       =  26 ;
+static final int           UNREGISTER_BEAN             =  27 ;
+static final int           WRAP_ARRAY_OBJECT           =  28 ;
+static final int           WRAP_ENUMERATION_OBJECT     =  29 ;
+static final int           LOAD_CLASS                  =  30 ;   // 2006-01-05, ---rgf: new subfunction to get a thread-context loaded class
 
 // removed: 2009-06-07: use BsfCreateRexxProxy() instead
-// private static final int           ADD_EVENT_LISTENER_2        =  31 ;   // 2006-02-24, ---rgf: allows for retrieving event objects
+// static final int           ADD_EVENT_LISTENER_2        =  31 ;   // 2006-02-24, ---rgf: allows for retrieving event objects
 
-private static final int           GET_BSF_MANAGER             =  32 ;   // 2006-12-08, ---rgf
-private static final int           BSF_PREFIX_RETURN_VALUE     =  33 ;   // 2008-06-22, ---rgf
-private static final int           RAW_REGISTER_BEAN           =  34 ;   // 2008-08-28, ---rgf
-private static final int           REXX_HALT                   =  35 ;   // 2009-04-02, ---rgf
-private static final int           CREATE_ARRAY_OBJECT_OF      =  36 ;   // 2009-07-30, ---rgf
-private static final int           GET_REXX_AND_JAVA           =  37 ;   // 2009-10-02, ---rgf
-private static final int           GET_REXX_ENGINE             =  38 ;   // 2009-10-07, ---rgf
+static final int           GET_BSF_MANAGER             =  32 ;   // 2006-12-08, ---rgf
+static final int           BSF_PREFIX_RETURN_VALUE     =  33 ;   // 2008-06-22, ---rgf
+static final int           RAW_REGISTER_BEAN           =  34 ;   // 2008-08-28, ---rgf
+static final int           REXX_HALT                   =  35 ;   // 2009-04-02, ---rgf
+static final int           CREATE_ARRAY_OBJECT_OF      =  36 ;   // 2009-07-30, ---rgf
+static final int           GET_REXX_AND_JAVA           =  37 ;   // 2009-10-02, ---rgf
+static final int           GET_REXX_ENGINE             =  38 ;   // 2009-10-07, ---rgf
 
-private static final int           KUDOS                       =  39 ;   // 2009-10-17, ---rgf
+static final int           KUDOS                       =  39 ;   // 2009-10-17, ---rgf
 
-private static final int           IS_INSTANCE                 =  40 ;   // 2010-02-20, ---rgf
+static final int           IS_INSTANCE                 =  40 ;   // 2010-02-20, ---rgf
 
-private static final int           CARRY_OUT_SYSTEM_EXIT       =  41 ;   // 2011-02-23, ---rgf
+static final int           CARRY_OUT_SYSTEM_EXIT       =  41 ;   // 2011-02-23, ---rgf
 
-private static final int           ENV_GET                     =  42;    // 2014-03-29, ---rgf
-private static final int           ENV_SET                     =  43;    // 2014-03-29, ---rgf
+static final int           ENV_GET                     =  42;    // 2014-03-29, ---rgf
+static final int           ENV_SET                     =  43;    // 2014-03-29, ---rgf
 
-private static final int           INVOKE_JSO                  =  44;    // 2014-10-02, ---rgf
-private static final int           INVOKE_STRICT_JSO           =  45;    // 2014-10-04, ---rgf
-private static final int           GET_FIELD_VALUE_JSO         =  46;    // 2014-10-04, ---rgf
-private static final int           GET_FIELD_VALUE_STRICT_JSO  =  47;    // 2014-10-04, ---rgf
-private static final int           GET_PROPERTY_VALUE_JSO      =  48;    // 2014-10-04, ---rgf
+static final int           INVOKE_JSO                  =  44;    // 2014-10-02, ---rgf
+static final int           INVOKE_STRICT_JSO           =  45;    // 2014-10-04, ---rgf
+static final int           GET_FIELD_VALUE_JSO         =  46;    // 2014-10-04, ---rgf
+static final int           GET_FIELD_VALUE_STRICT_JSO  =  47;    // 2014-10-04, ---rgf
+static final int           GET_PROPERTY_VALUE_JSO      =  48;    // 2014-10-04, ---rgf
 
-private static final int           GET_STATIC_VALUE_JSO        =  49 ;   // 2014-10-04, ---rgf
-private static final int           GET_STATIC_VALUE_STRICT_JSO =  50 ;   // 2014-10-04, ---rgf
+static final int           GET_STATIC_VALUE_JSO        =  49 ;   // 2014-10-04, ---rgf
+static final int           GET_STATIC_VALUE_STRICT_JSO =  50 ;   // 2014-10-04, ---rgf
 
-private static final int           GET_RII_ID                  =  51 ;   // 2015-08-01, ---rgf
-private static final int           INCREASE_REF_COUNTER        =  52 ;   // 2015-08-04, ---rgf
+static final int           GET_RII_ID                  =  51 ;   // 2015-08-01, ---rgf
+static final int           INCREASE_REF_COUNTER        =  52 ;   // 2015-08-04, ---rgf
 
 
         // define the constant strings for the function names passed from Rexx
@@ -1255,6 +1271,8 @@ private static final String STRING_ENV_SET                        =  "setEnv";  
 
 private static final String STRING_GET_RII_ID                     =  "get_RII_id";           // 2015-08-01, ---rgf
 private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRefCounter";   // 2015-08-04, ---rgf
+
+<--- */
 
 
     /** Entry point for Rexx calls into Java. This method carries out
@@ -2457,11 +2475,14 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
 
 */
 
+        InvocationType choice=getInvocationType(args[0]);   // get invocation type
+
         // RexxAndJava got terminated, cannot use it anymore, do not serve it anymore
         if (bTerminated==true &&
               ( args==null ? true :              // args is null: allow ignoring this invocation
                     ( args.length==0 ? true :    // no args:  allow ignoring this invocation
-                        ( ! args[0].equalsIgnoreCase( STRING_UNREGISTER_BEAN))     // if not "unregisterBean": allow ignoring this invocaton
+                      ( ! (choice==UNREGISTER_BEAN) )     // if not "unregisterBean": allow ignoring this invocaton
+        //              ( ! args[0].equalsIgnoreCase( STRING_UNREGISTER_BEAN))     // if not "unregisterBean": allow ignoring this invocaton
                     )
                )
             )
@@ -2497,6 +2518,10 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
        // determine which function to invoke
 
        boolean bStrongTyping=false; // set to true, if Java types preceed the individual Rexx arguments
+
+
+
+/* ---->  rgf, 20180108
        int choice = 0;
 
             if (args[0].equalsIgnoreCase( STRING_INVOKE                         )) choice = INVOKE                       ;
@@ -2580,6 +2605,7 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
        else if (args[0].equalsIgnoreCase( STRING_GET_RII_ID                     )) choice = GET_RII_ID                   ;  // 20150801, rgf
        else if (args[0].equalsIgnoreCase( STRING_INCREASE_REF_COUNTER           )) choice = INCREASE_REF_COUNTER         ;  // 20150804, rgf
 
+---> */
 
         // ==================================================================
         // ==================================================================
@@ -3211,6 +3237,63 @@ if (iDebugLevel>0)
 
                      try
                      {
+
+                         // rgf, 20180106
+                         if (bRgfUseNewRexxReflect &&
+                               ( choice==GET_FIELD_VALUE     || choice==GET_FIELD_VALUE_STRICT     ||
+                                 choice==GET_FIELD_VALUE_JSO || choice==GET_FIELD_VALUE_STRICT_JSO ||
+                                 choice==SET_FIELD_VALUE     || choice==SET_FIELD_VALUE_STRICT
+                               )
+                         )
+                         {
+
+                             Object result=null;
+
+                             // determine whether a STRICT variant is desired
+                             boolean bStrictInvocation=(choice==GET_FIELD_VALUE_STRICT     ||
+                                                       choice==GET_FIELD_VALUE_STRICT_JSO ||
+                                                       choice==SET_FIELD_VALUE_STRICT     );
+
+                             switch (choice)
+                             {
+                                 case GET_FIELD_VALUE           :
+                                 case GET_FIELD_VALUE_JSO       :
+                                 case GET_FIELD_VALUE_STRICT    :
+                                 case GET_FIELD_VALUE_STRICT_JSO:
+                                     result=rxReflector.reflectField(this, choice, bStrictInvocation, o, fieldName, null, false);
+
+                                     switch (choice)
+                                     {
+                                         case GET_FIELD_VALUE_JSO:
+                                         case GET_FIELD_VALUE_STRICT_JSO:
+                                             // special processing: return JSO (Java String Object), not the String value:
+                                              String beanName = makeBeanName(this, result);     // create a Rexx name
+                                              return registerBean(this, beanName, result);      // register JSO and return beanName
+                                     }
+                                     break;
+
+                                 case SET_FIELD_VALUE           :
+                                     result=rxReflector.reflectField(this, choice, bStrictInvocation, o, fieldName, args[3], true); // coerce args[3] (a Rexx string)
+                                     break;
+
+                                 case SET_FIELD_VALUE_STRICT    :
+                                     Object newValue=args[3];  // assume we only have the value (which is a string value at this stage)
+                                     if (args.length==5)
+                                     {
+                                         newValue=convFromRexx(args[3], args[4]);  // convert using the supplied type indicator!
+                                     }
+
+                                            // indicate if value type was not supplied by Rexx by supplying 'null'
+                                     result= (args.length==4 ? rxReflector.reflectField(this, choice, bStrictInvocation, o, fieldName, newValue, true )
+                                                             : rxReflector.reflectField(this, choice, bStrictInvocation, o, fieldName, newValue, false)
+                                           );
+                                     return makeString4Rexx(this, result);
+                             }
+                             return makeString4Rexx(this, result);
+                         }
+
+
+
                          Bean    bean  = null;
                          Integer index = null;
 
@@ -3297,7 +3380,7 @@ if (bDebug) System.err.println("Trying 'SET"+args[2]+"' ? : " + ! (args[2].toUpp
                                          if (! (args[2].toUpperCase()).startsWith("SET") )
                                          {
                                              String tmpArg[]={
-                                                 STRING_INVOKE , // subfunction "INVOKE"
+                                                 INVOKE.upperCase, // STRING_INVOKE , // subfunction "INVOKE"
                                                  args[1],        // beanName
                                                  "SET"+args[2],  // methName ==> fieldName ?
                                                  args[3]         // argument
@@ -3312,7 +3395,7 @@ if (bDebug) System.err.println("Trying 'GET"+args[2]+"' ? : " + ! (args[2].toUpp
                                          if (! (args[2].toUpperCase()).startsWith("GET") )
                                          {
                                              String tmpArg[]={
-                                                 STRING_INVOKE , // subfunction "INVOKE"
+                                                 INVOKE.upperCase, // STRING_INVOKE , // subfunction "INVOKE"
                                                  args[1],        // beanName
                                                  "GET"+args[2]   // methName ==> fieldName ?
                                                  } ;
@@ -3378,10 +3461,11 @@ if (bDebug)
                          // this section sets fields/properties
                          try         // now set the field/property to the new value
                          {
-                             if (glob_tcr == null) // no TypeConvertorRegistry instance yet?
-                             {
-                                glob_tcr=new TypeConvertorRegistry();        // create an instance
-                             }
+                             // rgf, 20180106: glob_tcr will be initialized at all times (moved to static in 2016)
+                             // if (glob_tcr == null) // no TypeConvertorRegistry instance yet?
+                             // {
+                             //   glob_tcr=new TypeConvertorRegistry();        // create an instance
+                             // }
 
                              if (choice==SET_FIELD_VALUE || choice==SET_FIELD_VALUE_STRICT)    // normal field
                              {
@@ -4016,12 +4100,12 @@ System.err.println("\t\t\ti="+i+", pCl=["+pCl+"], fCl=["+fCl+"]");
 
                                       String tmpArg[]={
                                           choice==INVOKE_JSO ?
-                                                  STRING_GET_FIELD_VALUE_JSO :
-                                                  STRING_GET_FIELD_VALUE ,
+                                                 GET_FIELD_VALUE_JSO.upperCase : // STRING_GET_FIELD_VALUE_JSO :
+                                                 GET_FIELD_VALUE.upperCase     , // STRING_GET_FIELD_VALUE ,
                                           args[1],        // beanName
                                           args[2]         // methName ==> fieldName ?
                                           } ;
-if (bDebug) System.err.println("'invoke': trying '"+STRING_GET_FIELD_VALUE+"'...");
+if (bDebug) System.err.println("'invoke': trying '"+GET_FIELD_VALUE.mixedCase+"'...");
 
 // System.err.println("RAJ: INVOKE_JSO? args[0]=["+args[0]+"], but not found, now trying to find field using ["+tmpArg[0]+","+tmpArg[1]+","+tmpArg[2]);
 
@@ -4033,7 +4117,7 @@ if (bDebug) System.err.println("'invoke': trying '"+STRING_GET_FIELD_VALUE+"'...
 
 /* */
 
-if (bDebug) System.err.println("'invoke': AFTER, AFTER, trying '"+STRING_GET_FIELD_VALUE+"', args[2]=["+args[2]+"]...");
+if (bDebug) System.err.println("'invoke': AFTER, AFTER, trying '"+GET_FIELD_VALUE.mixedCase+"', args[2]=["+args[2]+"]...");
 
                               // 2016-11-06, rgf: add MAKEARRAY and SUPPLIER support; if bean has one of the
                               //             interfaces java.util.Enumeration, java.lang.Iterable, java.util.Iterator,
@@ -6162,7 +6246,7 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=["+type+"], val
      * @return the Java <code>object</code> stored in the BSF registry, <code>null</code> else
      **/
     // 20090514, ---rgf, turn to package scope
-    protected Object convFromRexx(String value) throws BSFException
+    Object convFromRexx(String value) throws BSFException
     {
          if (value==null) return null;
 
