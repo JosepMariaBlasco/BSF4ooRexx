@@ -37,8 +37,9 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
-    6.0.0   2017-12-24, rgf:
-                             - putting and removing LOCAL_PRIMODAL_TID ("BSF.PRIMODALTID") in/from .environment instead of .local
+    6.0.0   2018-01-13, rgf: - allow in addition a Routine object in BsfCreateRexxProxy as first argument
+
+    6.0.0   2017-12-24, rgf: - putting and removing LOCAL_PRIMODAL_TID ("BSF.PRIMODALTID") in/from .environment instead of .local
 
     6.0.0   2017-12-23, rgf: implementing <https://sourceforge.net/p/bsf4oorexx/feature-requests/15/>:
                              - remove rgfGetEntryFromLocal(), rgfGetEntryFromEnvironment(): not needed anymore
@@ -918,11 +919,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20171224 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180113 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20171224 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180113 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20171224 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180113 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -5742,7 +5743,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
     // with it directly: this allows implementing Java interfaces and abstract classes in Rexx (and even
     // extend Java classes with Rexx classes)
     logical_t bCreateJavaProxy=true;    // by default create a JavaProxy, if more than two arguments are given
-    if (context->IsOfType(r_obj, "STRING") || context->IsOfType(r_obj, "METHOD")  || context->IsOfType(r_obj, "ARRAY") )  // a string object in hand? If so, it's the code to be run!
+    if (context->IsOfType(r_obj, "STRING") || context->IsOfType(r_obj, "METHOD")  || context->IsOfType(r_obj, "ROUTINE")  || context->IsOfType(r_obj, "ARRAY") )  // a string object in hand? If so, it's the code to be run!
     {
         logical_t bUseArg1ForRexxCode=true;      // use argument as Rexx code for BSF_OnTheFly.rex
         RexxObjectPtr arg3=context->ArrayAt(argArray,3);    // get third argument if any
