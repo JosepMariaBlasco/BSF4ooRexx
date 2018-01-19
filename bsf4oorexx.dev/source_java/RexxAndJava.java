@@ -59,10 +59,20 @@ TODO: (maybe)
                        their modifiers: public+non-abstract+non-static; rgf, 2016-12-08: so far there has been
                        no need to do it the old way (performance comparable)
 
-    - 2018-01-08, rgf: - rework the static int constants into an Enum class with a String constructor method
+
+
 */
 
  /*
+
+     2081-01-19, rgf: - define four JNI methods named jniForceConstructorNewInstance,
+                        jniForceFieldGet, jniForceFieldSet, jniForceMethodInvoke (these "force"
+                        JNI routines are means of last resort, if Java 9 or later is not
+                        allowing to access protected members in superclasses via reflection
+                        unlike all the previous versions of Java)
+
+     2018-01-09, ---rgf, - renamed GET_STATIC_VALUE* to GET_STATIC_FIELD_VALUE*
+                         - removed 'private' modifier from: Object convFromRexx(String type, String value) throws BSFException
 
      2018-01-08, ---rgf, - changed switch to use new InvocationType enum
 
@@ -517,7 +527,7 @@ final static boolean bRgfUseNewRexxReflect=false; // true;        // if true, us
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20180108";
+    static final public String version = "600.20180119";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -1128,6 +1138,17 @@ System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FIN
      protected native Object  jniNil0                 (String rii_ID);
      protected native long    jniInterpreterVersion0  (String rii_ID);
      protected native long    jniLanguageLevel0       (String rii_ID);
+
+        // rgf, 2018-01-19: if Java 9 does not get enhanced to allow for the BSF4ooRexx kind of reflection
+        //                  we use a last resort means to still be able to do it like in all previous versions
+        //                  of Java (but adhering as much as possible to the rules of the java 9 module system
+
+     native Object            jniForceConstructorNewInstance(Constructor cobj, Object ... initArgs);
+
+     native Object            jniForceFieldGet              (Field fobj      , Object obj);
+     native void              jniForceFieldSet              (Field fobj      , Object obj, Object value);
+
+     native Object            jniForceMethodInvoke          (Method mob      , Object ... methArgs);
 
 
 
@@ -3226,6 +3247,53 @@ if (iDebugLevel>0)
                                      +" usage: value=BSF("+args[0]+", beanName, " +tmp+" ).");
                      }
 
+
+
+// 201801: new reflection logic
+// TODO:   decide whether to implement the PROPERTY-stuff as a synonym for FIELD, otherwise we need to let the PROPERTY-stuff execute
+if (javaRuntimeVersion>=9)
+{
+    final boolean bDebug1=false; // true;
+
+    Object result;
+    RexxReflectUtil rru=new RexxReflectUtil(this, choice, args);
+
+    if (bDebug1) System.err.println("---rgf-debug: "+rru+": "+rru.debugString());
+
+    try
+    {
+        result=rxReflector.reflect(rru);
+    }
+    catch (Exception e)
+    {
+       throw new BSFException (BSFException.REASON_EXECUTION_ERROR,
+                  "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": exception while accessing field"
+                     +" ["+args[2]+"] in object ["+args[1]+"]"
+                     +"\n, exception thrown: ["+e.toString()+"]"
+                 , e
+                 );
+    }
+
+    if (rru.bFound)
+    {
+        if (rru.bReturnJSO)     // we need to return a JSO (Java String object), not the String value
+        {
+                // register result as a bean and return it
+                 String beanName = makeBeanName(this, result);
+                 return registerBean(this, beanName, result);
+        }
+
+        return makeString4Rexx(this, result);   // return whatever we have
+    }
+
+    // no matching Field object found
+    throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+             "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": cannot find field ["+args[2]+"] in object ["+args[1]+"]");
+
+}
+
+
+
                      Object o = null;
                      o=lookupBean(this, args[1]);
 
@@ -3238,6 +3306,7 @@ if (iDebugLevel>0)
                      try
                      {
 
+/* --->
                          // rgf, 20180106
                          if (bRgfUseNewRexxReflect &&
                                ( choice==GET_FIELD_VALUE     || choice==GET_FIELD_VALUE_STRICT     ||
@@ -3291,7 +3360,7 @@ if (iDebugLevel>0)
                              }
                              return makeString4Rexx(this, result);
                          }
-
+<--- */
 
 
                          Bean    bean  = null;
@@ -3570,10 +3639,10 @@ if (bDebug)
                   }
         // ==================================================================
 
-          case GET_STATIC_VALUE             :
-          case GET_STATIC_VALUE_JSO         :   // rgf, 2014-10-04
-          case GET_STATIC_VALUE_STRICT      :   // rgf, 2005-05-06
-          case GET_STATIC_VALUE_STRICT_JSO :   // rgf, 2014-10-04
+          case GET_STATIC_FIELD_VALUE             :
+          case GET_STATIC_FIELD_VALUE_JSO         :   // rgf, 2014-10-04
+          case GET_STATIC_FIELD_VALUE_STRICT      :   // rgf, 2005-05-06
+          case GET_STATIC_FIELD_VALUE_STRICT_JSO :   // rgf, 2014-10-04
                   {
                   /* ********************************************************
                    * call BSF 'getStaticValue', className, fieldName
@@ -3642,7 +3711,7 @@ if (bDebug)
                         // rgf, 2005-05-06 end
 
                           // rgf, 2005-05-06
-                      if (choice==GET_STATIC_VALUE || choice==GET_STATIC_VALUE_JSO) // try to get field from case-INsensitive name
+                      if (choice==GET_STATIC_FIELD_VALUE || choice==GET_STATIC_FIELD_VALUE_JSO) // try to get field from case-INsensitive name
                       {
                                 // determine correct case of method name
                           Field[] fa = cl.getFields();
@@ -3697,8 +3766,8 @@ if (bDebug)
                              }
 
 
-                             if ( ( choice==GET_STATIC_VALUE_JSO        ||
-                                  choice==GET_STATIC_VALUE_STRICT_JSO
+                             if ( ( choice==GET_STATIC_FIELD_VALUE_JSO        ||
+                                  choice==GET_STATIC_FIELD_VALUE_STRICT_JSO
                                  ) &&
                                  result != null &&
                                  ( result instanceof String || (nlR_class!=null && result.getClass()==nlR_class) )
@@ -6075,7 +6144,7 @@ System.err.println("//++// increaseRefCounter/(registerBean), RAJBean: "+bean+" 
       *
       * @return  the converted value.
       */
-    private Object convFromRexx(String type, String value) throws BSFException
+    Object convFromRexx(String type, String value) throws BSFException
     {
         final boolean bDebug=  // true;   // if true, show debug infos
                                false;
@@ -6488,6 +6557,8 @@ if (bDebug) System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 
         final boolean bDebug=false;
 
 if (bDebug) System.err.println(rajo+".lookupBean():     beanName=["+beanName+"]");
+
+// TODO: 20180109, synchronize get?
 
         RAJBean bean=rajRegistry.get(beanName);
 

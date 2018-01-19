@@ -37,6 +37,12 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
+    6.0.0   2081-01-19, rgf: - implement the four JNI methods named jniForceConstructorNewInstance,
+                               jniForceFieldGet, jniForceFieldSet, jniForceMethodInvoke (these "force"
+                               JNI routines are means of last resort, if Java 9 or later is not
+                               allowing to access protected members in superclasses via reflection
+                               unlike all the previous versions of Java)
+
     6.0.0   2018-01-13, rgf: - allow in addition a Routine object in BsfCreateRexxProxy as first argument
 
     6.0.0   2017-12-24, rgf: - putting and removing LOCAL_PRIMODAL_TID ("BSF.PRIMODALTID") in/from .environment instead of .local
@@ -919,11 +925,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20180113 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180119 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20180113 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180119 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20180113 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180119 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -2326,6 +2332,13 @@ typedef struct _STRUCT_JVM {
                                                         // public RexxCommandHandler getCommandHandler(String name)
     jmethodID                   mid_RexxConfiguration_getCommandHandler;
 
+    // rgf, 2018-01-19
+    jmethodID                   mid_Java_Lang_Reflect_Constructor_newInstance;
+    jmethodID                   mid_Java_Lang_Reflect_Field_get;
+    jmethodID                   mid_Java_Lang_Reflect_Field_set;
+    jmethodID                   mid_Java_Lang_Reflect_Method_invoke;
+
+
 } STRUCT_JVM;
 
 typedef STRUCT_JVM *PSTRUCT_JVM;                    // pointer to structure
@@ -2421,6 +2434,12 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
         // public RexxCommandHandler getCommandHandler(String name)
     struct_JVM->mid_RexxConfiguration_getCommandHandler=env->GetMethodID(tmpClz, "getCommandHandler", "(Ljava/lang/String;)Lorg/rexxla/bsf/engines/rexx/RexxCommandHandler;")  ;
 
+    // rgf, 2018-01-19
+    struct_JVM->mid_Java_Lang_Reflect_Constructor_newInstance=env->GetMethodID( tmpClz, "newInstance", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;" );
+    struct_JVM->mid_Java_Lang_Reflect_Field_get              =env->GetMethodID( tmpClz, "get"        , "(Ljava/lang/Object;)Ljava/lang/Object;" );
+    struct_JVM->mid_Java_Lang_Reflect_Field_set              =env->GetMethodID( tmpClz, "set"        , "(Ljava/lang/Object;Ljava/lang/Object;)" );
+    struct_JVM->mid_Java_Lang_Reflect_Method_invoke          =env->GetMethodID( tmpClz, "invoke"     , "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;" );
+
         // create global references for these important objects
     struct_JVM->clz_Object       =(jclass)  env->NewGlobalRef(struct_JVM->clz_Object);
     struct_JVM->clz_RexxAndJava  =(jclass)  env->NewGlobalRef(struct_JVM->clz_RexxAndJava);
@@ -2485,6 +2504,12 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
    fprintf(stderr, "\tclz_RexxConfiguration =[%p]\n", struct_JVM->clz_RexxConfiguration);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxConfiguration_getExitHandler   =[%p]\n",   struct_JVM->mid_RexxConfiguration_getExitHandler);
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxConfiguration_getCommandHandler=[%p]\n",   struct_JVM->mid_RexxConfiguration_getCommandHandler);
+
+   fprintf(stderr, "\n--- 2018-01-19, rgf:\n");
+   fprintf(stderr, "\t\tstruct_JVM->mid_Java_Lang_Reflect_Constructor_newInstance=[%p]\n",   struct_JVM->mid_Java_Lang_Reflect_Constructor_newInstance);
+   fprintf(stderr, "\t\tstruct_JVM->mid_Java_Lang_Reflect_Field_get              =[%p]\n",   struct_JVM->mid_Java_Lang_Reflect_Field_get              );
+   fprintf(stderr, "\t\tstruct_JVM->mid_Java_Lang_Reflect_Field_set              =[%p]\n",   struct_JVM->mid_Java_Lang_Reflect_Field_set              );
+   fprintf(stderr, "\t\tstruct_JVM->mid_Java_Lang_Reflect_Method_invoke          =[%p]\n",   struct_JVM->mid_Java_Lang_Reflect_Method_invoke          );
 
    fprintf(stderr, "---\n");
    fflush(stderr);
@@ -12546,6 +12571,56 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
 }
 
 
+
+
+// ----------------------------------------------------------------------------------------------
+
+// rgf, 2018-01-19: the "force" JNI routines are means of last resort, if Java 9 or later is not
+//                  allowing to access protected members in superclasses via reflection
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniForceConstructorNewInstance
+ * Signature: (Ljava/lang/reflect/Constructor;[Ljava/lang/Object;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceConstructorNewInstance
+  (JNIEnv *env, jobject rajo, jobject cobj, jobjectArray initArgs)
+{
+    return env->CallObjectMethod(rajo, defaultJVM->mid_Java_Lang_Reflect_Constructor_newInstance, initArgs);
+}
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniForceFieldGet
+ * Signature: (Ljava/lang/reflect/Field;Ljava/lang/Object;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceFieldGet
+  (JNIEnv *env, jobject rajo, jobject fobj, jobject obj)
+{
+    return env->CallObjectMethod(rajo, defaultJVM->mid_Java_Lang_Reflect_Field_get, obj);
+}
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniForceFieldSet
+ * Signature: (Ljava/lang/reflect/Field;Ljava/lang/Object;Ljava/lang/Object;)V
+ */
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceFieldSet
+  (JNIEnv *env, jobject rajo, jobject fobj, jobject obj, jobject value)
+{
+    env->CallObjectMethod(rajo, defaultJVM->mid_Java_Lang_Reflect_Field_set, obj, value);
+}
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniForceMethodInvoke
+ * Signature: (Ljava/lang/reflect/Method;[Ljava/lang/Object;)Ljava/lang/Object;
+ */
+JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceMethodInvoke
+  (JNIEnv *env, jobject rajo, jobject mobj, jobjectArray methArgs)
+{
+    return env->CallObjectMethod(rajo, defaultJVM->mid_Java_Lang_Reflect_Method_invoke, methArgs);
+}
 
 
 
