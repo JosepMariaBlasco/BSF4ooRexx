@@ -1142,16 +1142,10 @@ System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FIN
         // rgf, 2018-01-19: if Java 9 does not get enhanced to allow for the BSF4ooRexx kind of reflection
         //                  we use a last resort means to still be able to do it like in all previous versions
         //                  of Java (but adhering as much as possible to the rules of the java 9 module system
-
-     native Object            jniForceConstructorNewInstance(Constructor cobj, Object ... initArgs);
-
-     native Object            jniForceFieldGet              (Field fobj      , Object obj);
-     native void              jniForceFieldSet              (Field fobj      , Object obj, Object value);
-
-     native Object            jniForceMethodInvoke          (Method mob      , Object ... methArgs);
-
-
-
+     native Object            jniForceConstructorNewInstance(Constructor constructor_object, Object ... initArgs);
+     native Object            jniForceFieldGet              (Field             field_object, Object obj);
+     native void              jniForceFieldSet              (Field             field_object, Object obj, Object value);
+     native Object            jniForceMethodInvoke          (Method           method_object, Object ... methArgs);
 
 
     /**  rgf, 2003-01-15, used for allowing the BSF4ooRexx-DLL to get at *env, *obj and then to mid etc.

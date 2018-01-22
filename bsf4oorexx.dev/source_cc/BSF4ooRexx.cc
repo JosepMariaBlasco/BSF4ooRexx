@@ -764,6 +764,8 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 #endif
 
 
+#define RGF_JENV_OBJECTS    // rgf, 20180122: debug new JNI methods
+
 
 // #define DEBUG_SOME_OPTIONS
 #if defined DEBUG_SOME_OPTIONS
@@ -2435,9 +2437,12 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
     struct_JVM->mid_RexxConfiguration_getCommandHandler=env->GetMethodID(tmpClz, "getCommandHandler", "(Ljava/lang/String;)Lorg/rexxla/bsf/engines/rexx/RexxCommandHandler;")  ;
 
     // rgf, 2018-01-19
-    struct_JVM->mid_Java_Lang_Reflect_Constructor_newInstance=env->GetMethodID( tmpClz, "newInstance", "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;" );
+    tmpClz                    =env->FindClass("java/lang/reflect/Constructor");
+    struct_JVM->mid_Java_Lang_Reflect_Constructor_newInstance=env->GetMethodID( tmpClz, "newInstance", "([Ljava/lang/Object;)Ljava/lang/Object;" );
+    tmpClz                    =env->FindClass("java/lang/reflect/Field");
     struct_JVM->mid_Java_Lang_Reflect_Field_get              =env->GetMethodID( tmpClz, "get"        , "(Ljava/lang/Object;)Ljava/lang/Object;" );
-    struct_JVM->mid_Java_Lang_Reflect_Field_set              =env->GetMethodID( tmpClz, "set"        , "(Ljava/lang/Object;Ljava/lang/Object;)" );
+    struct_JVM->mid_Java_Lang_Reflect_Field_set              =env->GetMethodID( tmpClz, "set"        , "(Ljava/lang/Object;Ljava/lang/Object;)V" );
+    tmpClz                    =env->FindClass("java/lang/reflect/Method");
     struct_JVM->mid_Java_Lang_Reflect_Method_invoke          =env->GetMethodID( tmpClz, "invoke"     , "(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;" );
 
         // create global references for these important objects
@@ -12584,9 +12589,9 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
  * Signature: (Ljava/lang/reflect/Constructor;[Ljava/lang/Object;)Ljava/lang/Object;
  */
 JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceConstructorNewInstance
-  (JNIEnv *env, jobject rajo, jobject cobj, jobjectArray initArgs)
+  (JNIEnv *env, jobject rajo, jobject constructor_obj, jobjectArray initArgs)
 {
-    return env->CallObjectMethod(rajo, defaultJVM->mid_Java_Lang_Reflect_Constructor_newInstance, initArgs);
+    return env->CallObjectMethod(constructor_obj, defaultJVM->mid_Java_Lang_Reflect_Constructor_newInstance, initArgs);
 }
 
 /*
@@ -12595,9 +12600,9 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceC
  * Signature: (Ljava/lang/reflect/Field;Ljava/lang/Object;)Ljava/lang/Object;
  */
 JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceFieldGet
-  (JNIEnv *env, jobject rajo, jobject fobj, jobject obj)
+  (JNIEnv *env, jobject rajo, jobject field_obj, jobject obj)
 {
-    return env->CallObjectMethod(rajo, defaultJVM->mid_Java_Lang_Reflect_Field_get, obj);
+    return env->CallObjectMethod(field_obj,       defaultJVM->mid_Java_Lang_Reflect_Field_get, obj);
 }
 
 /*
@@ -12606,9 +12611,9 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceF
  * Signature: (Ljava/lang/reflect/Field;Ljava/lang/Object;Ljava/lang/Object;)V
  */
 JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceFieldSet
-  (JNIEnv *env, jobject rajo, jobject fobj, jobject obj, jobject value)
+  (JNIEnv *env, jobject rajo, jobject field_obj, jobject obj, jobject new_value)
 {
-    env->CallObjectMethod(rajo, defaultJVM->mid_Java_Lang_Reflect_Field_set, obj, value);
+    env->CallObjectMethod(field_obj,              defaultJVM->mid_Java_Lang_Reflect_Field_set, obj, new_value);
 }
 
 /*
@@ -12617,9 +12622,9 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceFiel
  * Signature: (Ljava/lang/reflect/Method;[Ljava/lang/Object;)Ljava/lang/Object;
  */
 JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceMethodInvoke
-  (JNIEnv *env, jobject rajo, jobject mobj, jobjectArray methArgs)
+  (JNIEnv *env, jobject rajo, jobject method_obj, jobjectArray methArgs)
 {
-    return env->CallObjectMethod(rajo, defaultJVM->mid_Java_Lang_Reflect_Method_invoke, methArgs);
+    return env->CallObjectMethod(method_obj,      defaultJVM->mid_Java_Lang_Reflect_Method_invoke, methArgs);
 }
 
 
