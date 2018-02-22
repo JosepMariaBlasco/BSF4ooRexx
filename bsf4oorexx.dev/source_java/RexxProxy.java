@@ -10,6 +10,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.apache.bsf.BSFException;
 
@@ -389,7 +390,11 @@ if (bDebug==true)
      */
     public Object sendMessage (String messageName, Object[] args) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage(m,args): m=["+messageName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+if (bDebug)
+{
+    System.err.println("////// ---> RexxProxy.sendMessage(m,args): m=["+messageName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+    System.err.println("////// ---> RexxProxy.sendMessage(m,args):        Arrays.deepToString(args)=\""+Arrays.deepToString(args)+"\"");
+}
 
         return this.rexxEngine.call(this, messageName, args);
     }
@@ -506,7 +511,12 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(m,arg1,arg2,a
      */
     public Object sendMessage (RexxEngine re, String messageName, Object[] args) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage(re,m,args): re=["+re+"], m=["+messageName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+if (bDebug)
+{
+
+    System.err.println("////// ---> RexxProxy.sendMessage(re,m,args): re=["+re+"], m=["+messageName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+    System.err.println("////// ---> RexxProxy.sendMessage(re,m,args):                     Arrays.deepToString(args)=\""+Arrays.deepToString(args)+"\"");
+}
 
         return (re==null ? this.rexxEngine : re).call(this, messageName, args);
     }
@@ -520,7 +530,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage(re,m,args): re
      */
     public Object sendMessage0 (RexxEngine re, String messageName) throws BSFException
     {
-// if (bDebug)
+if (bDebug)
 System.err.println("////// ---> RexxProxy.sendMessage0(re,m): re=["+re+"], m=["+messageName+"]...");
 
         return (re==null ? this.rexxEngine : re).call(this, messageName, null);
@@ -633,7 +643,11 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(re,m,arg1,arg
      */
     public Object sendMessage (RexxAndJava raj, String messageName, Object[] args) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage(raj,m, args): raj=["+raj+"], m=["+messageName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+if (bDebug)
+{
+    System.err.println("////// ---> RexxProxy.sendMessage(raj,m,args): raj=["+raj+"], m=["+messageName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+    System.err.println("////// ---> RexxProxy.sendMessage(raj,m,args):                       Arrays.deepToString(args)=\""+Arrays.deepToString(args)+"\"");
+}
 
         return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, args);
     }

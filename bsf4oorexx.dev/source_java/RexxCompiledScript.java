@@ -1,4 +1,6 @@
 package org.rexxla.bsf.engines.rexx.jsr223;
+
+import java.util.Arrays;
 import java.util.Vector;
 import javax.script.*;
 
@@ -289,7 +291,14 @@ if (bDebug==true)
         {
             rse.updateRexxEngine(sc);   // make sure BSF.CLS support in JNI available; .input, .output, .error set accordingly
 
-            return rexxScriptObject.sendMessage1("CALLWITH", arrArgV);  // execute routine object
+//            return rexxScriptObject.sendMessage1("CALLWITH", arrArgV);  // execute routine object
+
+            return rexxScriptObject.sendMessage("CALLWITH", arrArgV);  // execute routine object
+/*
+// rgf, 2018-02-12: for debugging
+System.err.println("RexxCompiledScript.eval(): sendMessage(\"CALLWITH\", arrArgV="+Arrays.deepToString(arrArgV)+")");
+            return rexxScriptObject.sendMessage("CALLWITH", arrArgV);  // execute routine object
+*/
         }
         catch (BSFException exc)
         {
@@ -476,11 +485,21 @@ if (bDebug==true)
                 // get the public routine, prepare arguments, invoke it
 // TODO: rgf, 2017-10-09: after BetaTesting make sure that neither the RexxScriptEngine, nor the RexxCompiledScript get supplied to the Rexx script!
             Object arrArgV[]=createArgV(args, rse.getContext(), rse, this);    // supply default context
+
+if (bDebug) System.err.println("RexxCompiledScript.invokeFunction(): sendMessage(\"CALLWITH\", arrArgV="+Arrays.deepToString(arrArgV)+")");
+
             RexxProxy routine=(RexxProxy) publicRoutines.sendMessage1("ENTRY",name);    // get routine
-            return routine.sendMessage1("CALLWITH",arrArgV);
+
+// rgf, 2018-02-12: war sendMessage1()! ?   -- fand SCRIPTCONTEXT nicht!
+            return routine.sendMessage1("CALLWITH",arrArgV);    // the argument for a Rexx Routine object must be a single array object!
         }
         catch (Exception exc)
         {
+if (bDebug)
+{
+    System.err.println(this+".invokeFunction(\""+name+"\", args=\""+Arrays.deepToString(args)+"]\", Exception: \""+exc+"\"");
+    exc.printStackTrace();
+}
             throw createScriptException(exc);       // create ScriptException and throw it
         }
     }

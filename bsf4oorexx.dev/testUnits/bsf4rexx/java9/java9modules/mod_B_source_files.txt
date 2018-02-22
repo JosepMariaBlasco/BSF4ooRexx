@@ -1,0 +1,5 @@
+F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java9\java9modules\src\mod_B\module-info.java
+F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java9\java9modules\src\mod_B\mtest2\Class02A.java
+F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java9\java9modules\src\mod_B\mtest2\Class02B.java
+F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java9\java9modules\src\mod_B\mtest2\I02A.java
+F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java9\java9modules\src\mod_B\mtest2\I02B.java

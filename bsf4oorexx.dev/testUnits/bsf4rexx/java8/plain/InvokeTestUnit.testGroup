@@ -1,0 +1,306 @@
+#!/usr/bin/rexx
+/*
+   name:             invoke testGroup
+   author:           Michael Lex
+   version:          1.0.1
+
+   changed:          rgf, 2018-01-01:
+                     - make sure we use procedural APIs only; while running this test return values
+                       are not expected to be prefixed
+*/
+
+ if .bsf4rexx~java.major.version<8 then return   -- we need at least Java 1.8/8 due to static and dynamic interface methods
+                              -- the Java class files got compiled to Java 1.8/8 and cannot run on earlier JRE
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.invoke.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "invoke.testGroup" subclass ooTestCase public
+
+::method setup
+  expose initialPrefixValue bEcho
+  -- bEcho=.true        -- execute SAY-statements
+  bEcho=.false       -- execute SAY-statements
+
+  if \VAR(initialPrefixValue) then
+  do
+	initialPrefixValue=BSF("bsfPrefixReturnValue")  -- fetch current setting
+   if initialPrefixValue~left(3)="<S>" then initialPrefixValue=substr(initialprefixValue,4)
+  end
+  call BSF "bsfPrefixReturnValue", 0      -- no "<O>" or "<S>" prefixes
+
+::method tearDown
+  expose initialPrefixValue
+  call bsf 'bsfPrefixReturnValue', initialPrefixValue -- reset setting
+
+
+
+/* --- o.k. already
+
+o.k. already --- */
+
+::method "test_01_invoke_Test2"
+   expose bEcho
+
+	beanName=BSF("new", , "java8.plain.Test2")
+
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+      self~assertEquals(bsf('invoke', beanname, "test2info"      ), "test2info"      )
+      self~assertEquals(bsf('invoke', beanname, "test2infoStatic"), "test2infoStatic")
+
+      self~assertEquals(bsf('invoke', beanname, "TEST2INFO"      ), "test2info"      )
+      self~assertEquals(bsf('invoke', beanname, "TEST2INFOSTATIC"), "test2infoStatic")
+
+      self~assertEquals(bsf('invokeStrict', beanname, "test2info"      ), "test2info"      )
+      self~assertEquals(bsf('invokeStrict', beanname, "test2infoStatic"), "test2infoStatic")
+
+      -- test using methods from root class java.lang.Object
+      self~assertEquals(bsf('invoke',       beanName, "toString"), beanName)
+      self~assertEquals(bsf('invokeStrict', beanName, "toString"), beanName)
+      self~assertEquals(bsf('invoke',       beanName, "TOSTRING"), beanName)
+
+      if bEcho=.true then say "---//\\--- enf of loop #" i "elapsed time:" time("R") "---//\\---"
+   end
+
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+      self~assertEquals(bsf('invoke', beanname, "test1info"      ), "test1info"      )
+      self~assertEquals(bsf('invoke', beanname, "test1infoStatic"), "test1infoStatic")
+
+      self~assertEquals(bsf('invoke', beanname, "TEST1INFO"      ), "test1info"      )
+      self~assertEquals(bsf('invoke', beanname, "TEST1INFOSTATIC"), "test1infoStatic")
+
+      self~assertEquals(bsf('invokeStrict', beanname, "test1info"      ), "test1info"      )
+      self~assertEquals(bsf('invokeStrict', beanname, "test1infoStatic"), "test1infoStatic")
+
+      if bEcho=.true then say "---//\\--- enf of loop #" i "elapsed time:" time("R") "---//\\---"
+   end
+
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+      self~assertEquals(bsf('invoke',       beanname, "interface1defaultMethod"), "interface1default")
+      self~assertEquals(bsf('invoke',       beanname, "INTERFACE1DEFAULTMETHOD"), "interface1default")
+      self~assertEquals(bsf('invokeStrict', beanname, "interface1defaultMethod"), "interface1default")
+
+      self~assertEquals(bsf('invoke',       beanname, "interface2defaultMethod"), "interface2default")
+      self~assertEquals(bsf('invoke',       beanname, "INTERFACE2DEFAULTMETHOD"), "interface2default")
+      self~assertEquals(bsf('invokeStrict', beanname, "interface2defaultMethod"), "interface2default")
+
+      self~assertEquals(bsf('invoke',       beanname, "interface3defaultMethod"), "interface3default")
+      self~assertEquals(bsf('invoke',       beanname, "INTERFACE3DEFAULTMETHOD"), "interface3default")
+      self~assertEquals(bsf('invokeStrict', beanname, "interface3defaultMethod"), "interface3default")
+
+      if bEcho=.true then say "---//\\--- enf of loop #" i "elapsed time:" time("R") "---//\\---"
+   end
+
+
+	if1Clz=bsf.loadClass("java8.plain.Interface1")
+	if2Clz=bsf.loadClass("java8.plain.Interface2")
+	if3Clz=bsf.loadClass("java8.plain.Interface3")
+
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+      self~assertEquals(bsf('invoke',       if1Clz, "interface1staticMethod"), "interface1static")
+      self~assertEquals(bsf('invoke',       if1Clz, "INTERFACE1staticMETHOD"), "interface1static")
+      self~assertEquals(bsf('invokeStrict', if1Clz, "interface1staticMethod"), "interface1static")
+
+      self~assertEquals(bsf('invoke',       if2Clz, "interface2staticMethod"), "interface2static")
+      self~assertEquals(bsf('invoke',       if2Clz, "INTERFACE2staticMETHOD"), "interface2static")
+      self~assertEquals(bsf('invokeStrict', if2Clz, "interface2staticMethod"), "interface2static")
+
+      self~assertEquals(bsf('invoke',       if3Clz, "interface3staticMethod"), "interface3static->interface2static->interface1static")
+      self~assertEquals(bsf('invoke',       if3Clz, "INTERFACE3staticMETHOD"), "interface3static->interface2static->interface1static")
+      self~assertEquals(bsf('invokeStrict', if3Clz, "interface3staticMethod"), "interface3static->interface2static->interface1static")
+
+      if bEcho=.true then say "---//\\--- enf of loop #" i "elapsed time:" time("R") "---//\\---"
+   end
+
+
+
+::method "test_02_invoke_Interface1_static"
+	if1Clz=bsf.loadClass("java8.plain.Interface1")
+
+   do i=1 to 10
+      self~assertEquals(bsf('invoke', if1Clz, "i1sm_returning_arg", "oha"      ), "oha" )
+   end
+
+
+::method "test_03_invoke_in_Class_objects_static_methods"
+   expose bEcho
+
+   clzName = "java8.plain.Test2"
+   clzTest2=bsf("loadClass", clzName)
+
+/*
+tmpStr=""
+if clzTest2~isA(.bsf) then tmpStr="~toString="pp(clzTest2~toString)
+say
+say "//// ooRexx: clzTest2="pp(clzTest2) "~class="pp(clzTest2~class) tmpStr
+say
+*/
+
+	beanName=BSF("new", , "java8.plain.Test2")
+	if1Clz=bsf.loadClass("java8.plain.Interface1")
+
+   do i=1 to 10
+      self~assertEquals(bsf('invoke', clzTest2, "test2infoStatic"             ), "test2infoStatic"  )
+      self~assertEquals(bsf('invoke', clzTest2, "test1infoStatic"             ), "test1infoStatic"  )
+      self~assertEquals(bsf('invoke', if1Clz,   "interface1staticMethod"      ), "interface1static" )
+      self~assertEquals(bsf('invoke', if1Clz,   "i1sm_returning_arg", "oha"   ), "oha"              )
+
+      -- special case: test usage of java.lang.Object methods for a class object
+      self~assertEquals(bsf('invoke', clzTest2, "toString"                    ), "class" clzName    )
+
+      if bEcho=.true then say "---//\\--- enf of loop #" i "elapsed time:" time("R") "---//\\---"
+   end
+
+
+::method "test_04_invoke_like_ooRexx_attributes"
+   expose bEcho
+
+   clzName = "java8.plain.Test2"
+   clzTest2=bsf("loadClass", clzName)
+
+	beanName=BSF("new", , "java8.plain.Test2")
+
+   do i=1 to 10
+      self~assertEquals(.true, bsf('invoke', beanName, "eins"       ) )
+      self~assertEquals(.true, bsf('invoke', beanName, "staticEins" ) )
+      self~assertEquals(.true, bsf('invoke', clzTest2, "staticEins" ) )
+
+         -- setter semantics
+      call bsf 'invoke', beanName, "eins", .false
+      self~assertEquals(.false, bsf('invoke', beanName, "eins"      ) )
+      call bsf 'invoke', beanName, "eins", "true"
+      self~assertEquals(.true, bsf('invoke', beanName, "eins"       ) )
+
+      call bsf 'invoke', beanName, "staticEins", .false
+      self~assertEquals(.false, bsf('invoke', beanName, "staticEins") )
+      call bsf 'invoke', beanName, "staticEins", "true"
+      self~assertEquals(.true, bsf('invoke', beanName, "staticEins" ) )
+
+      -- via class object
+      call bsf 'invoke', clzTest2, "staticEins", .false
+      self~assertEquals(.false, bsf('invoke', clzTest2, "staticEins") )
+      call bsf 'invoke', clzTest2, "staticEins", "true"
+      self~assertEquals(.true, bsf('invoke', clzTest2, "staticEins" ) )
+
+      if bEcho=.true then say "---//\\--- enf of loop #" i "elapsed time:" time("R") "---//\\---"
+   end
+
+
+::method "test_05_invoke_like_ooRexx_attributes_using_SET_AND_GET_prefix"
+   expose bEcho
+
+   clzName = "java8.plain.Test2"
+   clzTest2=bsf("loadClass", clzName)
+
+	beanName=BSF("new", , "java8.plain.Test2")
+
+   do i=1 to 10
+      self~assertEquals(bsf('invoke', beanName, "zwei"                        ), .true              )
+      self~assertEquals(bsf('invoke', beanName, "staticZwei"                  ), .true              )
+      self~assertEquals(bsf('invoke', clzTest2, "staticZwei"                  ), .true              )
+
+         -- setter semantics
+      call bsf 'invoke', beanName, "zwei", .false
+      self~assertEquals(bsf('invoke', beanName, "zwei"                        ), .false             )
+      call bsf 'invoke', beanName, "zwei", "true"
+      self~assertEquals(bsf('invoke', beanName, "zwei"                        ), .true              )
+
+      call bsf 'invoke', beanName, "staticZwei", .false
+      self~assertEquals(bsf('invoke', beanName, "staticZwei"                  ), .false             )
+      call bsf 'invoke', beanName, "staticZwei", "true"
+      self~assertEquals(bsf('invoke', beanName, "staticZwei"                  ), .true              )
+
+      -- via class object
+      call bsf 'invoke', clzTest2, "staticZwei", .false
+      self~assertEquals(bsf('invoke', clzTest2, "staticZwei"                  ), .false             )
+      call bsf 'invoke', clzTest2, "staticZwei", "true"
+      self~assertEquals(bsf('invoke', clzTest2, "staticZwei"                  ), .true              )
+
+      if bEcho=.true then say "---//\\--- enf of loop #" i "elapsed time:" time("R") "---//\\---"
+   end
+
+
+::method "test_06_invoke_like_ooRexx_attributes_using_SET_AND_IS_prefix"
+   expose bEcho
+
+   clzName = "java8.plain.Test2"
+   clzTest2=bsf("loadClass", clzName)
+
+	beanName=BSF("new", , "java8.plain.Test2")
+
+   do i=1 to 10
+      self~assertEquals(bsf('invoke', beanName, "drei"                        ), .true              )
+      self~assertEquals(bsf('invoke', beanName, "staticDrei"                  ), .true              )
+      self~assertEquals(bsf('invoke', clzTest2, "staticDrei"                  ), .true              )
+
+         -- setter semantics
+      call bsf 'invoke', beanName, "drei", .false
+      self~assertEquals(bsf('invoke', beanName, "drei"                        ), .false             )
+      call bsf 'invoke', beanName, "drei", "true"
+      self~assertEquals(bsf('invoke', beanName, "drei"                        ), .true              )
+
+      call bsf 'invoke', beanName, "staticDrei", .false
+      self~assertEquals(bsf('invoke', beanName, "staticDrei"                  ), .false             )
+      call bsf 'invoke', beanName, "staticDrei", "true"
+      self~assertEquals(bsf('invoke', beanName, "staticDrei"                  ), .true              )
+
+      -- via class object
+      call bsf 'invoke', clzTest2, "staticDrei", .false
+      self~assertEquals(bsf('invoke', clzTest2, "staticDrei"                  ), .false             )
+      call bsf 'invoke', clzTest2, "staticDrei", "true"
+      self~assertEquals(bsf('invoke', clzTest2, "staticDrei"                  ), .true              )
+
+      if bEcho=.true then say "---//\\--- enf of loop #" i "elapsed time:" time("R") "---//\\---"
+   end
+
+
+::method "test_07_invoke_like_ooRexx_attributes_using_SET_AND_HAS_prefix"
+   expose bEcho
+
+   clzName = "java8.plain.Test2"
+   clzTest2=bsf("loadClass", clzName)
+
+	beanName=BSF("new", , "java8.plain.Test2")
+
+   do i=1 to 10
+      self~assertEquals(bsf('invoke', beanName, "vier"                        ), .true              )
+      self~assertEquals(bsf('invoke', beanName, "staticVier"                  ), .true              )
+      self~assertEquals(bsf('invoke', clzTest2, "staticVier"                  ), .true              )
+
+         -- setter semantics
+      call bsf 'invoke', beanName, "vier", .false
+      self~assertEquals(bsf('invoke', beanName, "vier"                        ), .false             )
+      call bsf 'invoke', beanName, "vier", "true"
+      self~assertEquals(bsf('invoke', beanName, "vier"                        ), .true              )
+
+      call bsf 'invoke', beanName, "staticVier", .false
+      self~assertEquals(bsf('invoke', beanName, "staticVier"                  ), .false             )
+      call bsf 'invoke', beanName, "staticVier", "true"
+      self~assertEquals(bsf('invoke', beanName, "staticVier"                  ), .true              )
+
+      -- via class object
+      call bsf 'invoke', clzTest2, "staticVier", .false
+      self~assertEquals(bsf('invoke', clzTest2, "staticVier"                  ), .false             )
+      call bsf 'invoke', clzTest2, "staticVier", "true"
+      self~assertEquals(bsf('invoke', clzTest2, "staticVier"                  ), .true              )
+
+      if bEcho=.true then say "---//\\--- enf of loop #" i "elapsed time:" time("R") "---//\\---"
+   end
+
+

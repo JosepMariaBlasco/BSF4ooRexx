@@ -1,0 +1,526 @@
+#!/usr/bin/rexx
+/*
+   name:             FieldValue testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+
+   changed:          rgf, 2018-01-01:
+                     - make sure we use procedural APIs only; while running this test return values
+                       are not expected to be prefixed
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.FieldValue.testGroup)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+::class "FieldValue.testGroup" subclass ooTestCase public
+
+::method setup
+  expose initialPrefixValue bEcho
+  -- bEcho=.true        -- execute SAY-statements
+  bEcho=.false       -- execute SAY-statements
+
+  if \VAR(initialPrefixValue) then
+  do
+	initialPrefixValue=BSF("bsfPrefixReturnValue")  -- fetch current setting
+   if initialPrefixValue~left(3)="<S>" then initialPrefixValue=substr(initialprefixValue,4)
+  end
+  call BSF "bsfPrefixReturnValue", 0      -- no "<O>" or "<S>" prefixes
+
+::method tearDown
+  expose initialPrefixValue
+  call bsf 'bsfPrefixReturnValue', initialPrefixValue -- reset setting
+
+
+
+/* --- o.k. already
+
+o.k. already --- */
+
+::method "test_01_getFieldValue"
+   expose bEcho
+	n=BSF("new", "myt2", "java6.plain.Test2")
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getFieldValue", "myt2", "INT_T2_obj") -- instance field
+   	self~assertEquals(203, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+   do i=1 to 10
+   	f=BSF("getFieldValue", "myt2", "int_t2_obj") -- instance field
+   	self~assertEquals(203, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+
+::method "test_02_getFieldValueStrict"
+   expose bEcho
+	beanName=BSF("new", , "java6.plain.Test2")
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getFieldValueStrict", beanName, "INT_T2_obj") -- instance field
+   	self~assertEquals(203, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+	self~expectSyntax(40.900)
+   self~assertEquals(202, BSF("getFieldValueStrict", beanName, "int_t2_obj"))  -- private static field
+
+
+
+::method "test_03_getFieldValue"
+   expose bEcho
+	beanName=BSF("new", "myTest2", "java6.plain.Test2")
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	self~assertEquals(101, BSF("getFieldValue", beanName, "INT_T1"))  -- static field
+   	self~assertEquals(111, BSF("getFieldValue", beanName, "INT_i1"))  -- static field (interface)
+   	self~assertEquals( 22, BSF("getFieldValue", beanName, "INT_i2"))  -- static field (interface)
+   	self~assertEquals(201, BSF("getFieldValue", beanName, "INT_T2"))  -- static field
+
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+   /*
+   F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java6\plain>java -cp ..\..;.             UseTest2
+   class UseTest2 in main() method...
+   obj1.STRING_i1=ISTRING_11 (static)
+   obj1.STRING_i2=ISTRING_22 (static)
+   obj1.STRING_i3=ISTRING_33 (static)
+   obj1.INT_T1   =101
+   obj1.INT_i1   =111
+   obj1.INT_i2   =22
+   obj1.INT_T2   =201
+   class java6.plain.Test1: getField("INT_i2")=public static final int java6.plain.Interface2.INT_i2, declared in: interface java6.plain.Interface2
+   class java6.plain.Test1: getDeclaredField("INT_i3")=private static int java6.plain.Test2.INT_i3
+   */
+
+
+
+::method "test_04_getFieldValue_exception"
+   expose bEcho
+	beanName=BSF("new", "myTest2", "java6.plain.Test2")
+   -- rgf, 2018-02-15: will now find the field in Interface3 via inheritance resolution (ignoring non-public fields on the way)
+   self~assertEquals(33, BSF("getFieldValue", beanName, "INT_i3"))  -- field from Interface3, not the static private field in Test2 !
+
+
+::method "test_06a_getStaticValue_via_class_name"
+   expose bEcho
+
+   javaClassName="java6.plain.Test2"
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getStaticValue", javaClassName, "INT_T2") -- instance field
+   	self~assertEquals(201, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+   javaClassName="java6.plain.Interface1"
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getStaticValue", javaClassName, "INT_i1") -- instance field
+   	self~assertEquals(11, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+   javaClassName="java6.plain.Interface2"
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getStaticValue", javaClassName, "INT_i2") -- instance field
+   	self~assertEquals(22, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+   javaClassName="java6.plain.Interface3"
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getStaticValue", javaClassName, "INT_i3") -- instance field
+   	self~assertEquals(33, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+
+
+::method "test_06b_getStaticValue_via_class_object"
+   expose bEcho
+
+   jclz=bsf.loadClass("java6.plain.Test2")
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getStaticValue", jclz, "INT_T2") -- instance field
+   	self~assertEquals(201, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+   jclz=bsf.loadClass("java6.plain.Interface1")
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getStaticValue", jclz, "INT_i1") -- instance field
+   	self~assertEquals(11, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+   jclz=bsf.loadClass("java6.plain.Interface2")
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getStaticValue", jclz, "INT_i2") -- instance field
+   	self~assertEquals(22, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+   jclz=bsf.loadClass("java6.plain.Interface3")
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getStaticValue", jclz, "INT_i3") -- instance field
+   	self~assertEquals(33, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+::method "test_07a_getStaticValueStrict_via_class_name"
+   expose bEcho
+
+   javaClassName="java6.plain.Test2"
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getStaticValueStrict", javaClassName, "INT_T2") -- instance field
+   	self~assertEquals(201, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+	self~expectSyntax(40.900)     -- beanName does not exist in repository
+   self~assertEquals(BSF("getFieldValueStrict", nixinoxi, "int_t2"),201)  -- private static field
+
+
+
+::method "test_07b_getStaticValueStrict_via_class_object_STRICT"
+   expose bEcho
+
+   jclz=bsf.loadClass("java6.plain.Test2")
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getStaticValueStrict", jclz, "INT_T2") -- instance field
+   	self~assertEquals(201, f)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+
+	self~expectSyntax(40.900)     -- beanName does not exist in repository
+   self~assertEquals(BSF("getFieldValueStrict", nixinoxi, "int_t2"),201)  -- private static field
+
+
+
+::method "test_08a_JSO"
+   expose bEcho
+
+	jobj=BSF("new", "myt2", "java6.plain.Test2")
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+   	f=BSF("getFieldValueJSO", jobj, "STRING_T1") -- instance field
+   	self~assertTrue(abbrev(f,"java.lang.String@"))
+      str=bsf("invoke", f, "toString")
+      self~assertEquals("TSTRING_101 (instance)", str)
+
+   	f=BSF("getFieldValueJSO", jobj, "string_t1") -- instance field
+   	self~assertTrue(abbrev(f,"java.lang.String@"))
+      str=bsf("invoke", f, "toString")
+      self~assertEquals("TSTRING_101 (instance)", str)
+
+
+   	f=BSF("getFieldValueStrictJSO", jobj, "STRING_T1") -- instance field
+   	self~assertTrue(abbrev(f,"java.lang.String@"))
+      str=bsf("invoke", f, "toString")
+      self~assertEquals("TSTRING_101 (instance)", str)
+
+         -- class object access:
+   	f=BSF("getStaticValueJSO", "java6.plain.Interface1", "STRING_i1") -- instance field
+   	self~assertTrue(abbrev(f,"java.lang.String@"))
+      str=bsf("invoke", f, "toString")
+      self~assertEquals("ISTRING_11 (static)", str)
+
+   	f=BSF("getStaticValueJSO", "java6.plain.Interface1", "string_i1") -- instance field
+   	self~assertTrue(abbrev(f,"java.lang.String@"))
+      str=bsf("invoke", f, "toString")
+      self~assertEquals("ISTRING_11 (static)", str)
+
+   	f=BSF("getStaticValueStrictJSO", "java6.plain.Interface3", "STRING_i1") -- instance field
+   	self~assertTrue(abbrev(f,"java.lang.String@"))
+      str=bsf("invoke", f, "toString")
+      self~assertEquals("ISTRING_11 (static)", str)
+
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+   -- non-existing field:
+	self~expectSyntax(40.900)
+   f=BSF("getStaticValueJSO", "java6.plain.Interface1", "nixinoxi, nixinoxii") -- instance field
+
+
+
+
+::method "test_09_setFieldValue"
+   expose bEcho
+
+	beanName=BSF("new", "myTest2", "java6.plain.Test2")
+   if bEcho=.true then call time 'reset'
+
+/*
+   F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java6\plain>java -cp ..\..;.             UseTest2
+class UseTest2 in main() method...
+obj1.STRING_i1 =ISTRING_11 (static)
+obj1.STRING_i2 =ISTRING_22 (static)
+obj1.STRING_i3 =ISTRING_33 (static)
+obj1.INT_T1    =101
+obj1.INT_i1    =111
+obj1.INT_i2    =22
+
+obj1.INT_T2    =201 (static)
+obj1.INT_T2    =291 (static)
+
+obj1.INT_T2_obj=203
+obj1.INT_T2_obj=294
+
+obj1.INT_T1    =101 (static)
+obj1.INT_T1    =191 (static)
+
+obj1.INT_i1    =111
+obj1.INT_i1    =191
+*/
+
+   do i=1 to 10
+      -- static fields
+         -- Test2
+      newVal=-123
+      call BSF "setFieldValue", beanName, "INT_T2", newVal      -- static field
+   	currVal=BSF("getFieldValue", beanName, "INT_T2")
+      self~assertEquals(newVal,currVal)
+
+      newVal*=2
+      call BSF "setFieldValueStrict", beanName, "INT_T2", newVal      -- static field
+   	currVal=BSF("getFieldValueStrict", beanName, "INT_T2")
+      self~assertEquals(newVal,currVal)
+
+      newVal*=2
+      call BSF "setFieldValue", beanName, "int_t2", newVal      -- static field
+   	currVal=BSF("getFieldValue", beanName, "int_t2")
+      self~assertEquals(newVal,currVal)
+
+      -- mix with getStaticValue()
+      call BSF "setFieldValue", beanName, "INT_T2", newVal      -- static field
+   	currVal=BSF("getStaticValue", beanName, "INT_T2")
+      self~assertEquals(newVal,currVal)
+
+      newVal*=2
+      call BSF "setFieldValueStrict", beanName, "INT_T2", newVal      -- static field
+   	currVal=BSF("getStaticValueStrict", beanName, "INT_T2")
+      self~assertEquals(newVal,currVal)
+
+      newVal*=2
+      call BSF "setFieldValue", beanName, "int_t2", newVal      -- static field
+   	currVal=BSF("getStaticValue", beanName, "int_t2")
+      self~assertEquals(newVal,currVal)
+
+         -- Test1
+      newVal=-123
+      call BSF "setFieldValue", beanName, "INT_T1", newVal      -- static field
+   	currVal=BSF("getFieldValue", beanName, "INT_T1")
+      self~assertEquals(newVal,currVal)
+
+      newVal*=2
+      call BSF "setFieldValueStrict", beanName, "INT_T1", newVal      -- static field
+   	currVal=BSF("getFieldValueStrict", beanName, "INT_T1")
+      self~assertEquals(newVal,currVal)
+
+      newVal*=2
+      call BSF "setFieldValue", beanName, "int_t1", newVal      -- static field
+   	currVal=BSF("getFieldValue", beanName, "int_t1")
+      self~assertEquals(newVal,currVal)
+
+      -- mix with getStaticValue()
+      call BSF "setFieldValue", beanName, "INT_T1", newVal      -- static field
+   	currVal=BSF("getStaticValue", beanName, "INT_T1")
+      self~assertEquals(newVal,currVal)
+
+      newVal*=2
+      call BSF "setFieldValueStrict", beanName, "INT_T1", newVal      -- static field
+   	currVal=BSF("getStaticValueStrict", beanName, "INT_T1")
+      self~assertEquals(newVal,currVal)
+
+      newVal*=2
+      call BSF "setFieldValue", beanName, "int_t1", newVal      -- static field
+   	currVal=BSF("getStaticValue", beanName, "int_t1")
+      self~assertEquals(newVal,currVal)
+
+      -- instance fields only
+         -- Test2
+      newVal=-123
+      call BSF "setFieldValue", beanName, "INT_T2_obj", newVal
+   	currVal=BSF("getFieldValue", beanName, "INT_T2_obj")
+      self~assertEquals(newVal,currVal)
+
+      newVal*=2
+      call BSF "setFieldValueStrict", beanName, "INT_T2_obj", newVal
+   	currVal=BSF("getFieldValueStrict", beanName, "INT_T2_obj")
+      self~assertEquals(newVal,currVal)
+
+      newVal*=2
+      call BSF "setFieldValue", beanName, "int_t2_OBJ", newVal
+   	currVal=BSF("getFieldValue", beanName, "int_t2_OBJ")
+      self~assertEquals(newVal,currVal)
+
+
+         -- Test1
+      newVal=-123
+      call BSF "setFieldValue", beanName, "INT_i1", newVal
+   	currVal=BSF("getFieldValue", beanName, "INT_i1")
+      self~assertEquals(newVal,currVal)
+
+      newVal*=2
+      call BSF "setFieldValueStrict", beanName, "INT_i1", newVal
+   	currVal=BSF("getFieldValueStrict", beanName, "INT_i1")
+      self~assertEquals(newVal,currVal)
+
+      newVal*=2
+      call BSF "setFieldValue", beanName, "int_i1", newVal
+   	currVal=BSF("getFieldValue", beanName, "int_i1")
+      self~assertEquals(newVal,currVal)
+
+
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+
+
+
+::method "test_10_getSetBooleanFieldValue"
+   expose bEcho
+	beanName=BSF("new", , "java6.plain.Test2")
+   if bEcho=.true then call time 'reset'
+
+   do i=1 to 10      -- instance fields
+      newVal=.true
+      call BSF "setFieldValue",    beanName, "bool_1", newVal
+   	currVal=BSF("getFieldValue", beanName, "bool_1")
+      self~assertEquals(newVal,currVal)
+
+      newVal="true"
+      call BSF "setFieldValue",    beanName, "bool_1", newVal
+   	currVal=BSF("getFieldValue", beanName, "bool_1")
+      self~assertEquals(1,currVal)
+
+      newVal="true"        -- change boolean value to opposite
+      call BSF "setFieldValue",    beanName, "Boolean_1", newVal
+   	currVal=BSF("getFieldValue", beanName, "Boolean_1")
+      self~assertEquals(1,currVal)
+
+      newVal=\currVal      -- change boolean value to opposite
+      call BSF "setFieldValue",    beanName, "Boolean_1", newVal
+   	currVal=BSF("getFieldValue", beanName, "Boolean_1")
+      self~assertEquals(newVal,currVal)
+   end
+
+
+   do i=1 to 10      -- static fields
+      newVal=.true
+      call BSF "setFieldValue",     beanName, "bool_static_1", newVal
+   	currVal=BSF("getStaticValue", beanName, "bool_static_1")
+      self~assertEquals(newVal,currVal)
+
+      newVal=\currVal      -- change boolean value to opposite
+      call BSF "setFieldValue",     beanName, "Boolean_static_1", newVal
+   	currVal=BSF("getStaticValue", beanName, "Boolean_static_1")
+      self~assertEquals(newVal,currVal)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+
+::method "test_11_getSetBooleanFieldValue"
+   expose bEcho
+	beanName=BSF("new", , "java6.plain.Test2")
+   if bEcho=.true then call time 'reset'
+
+   do i=1 to 10
+      newVal=.true
+      call BSF "setFieldValue",    beanName, "eins", newVal
+   	currVal=BSF("getFieldValue", beanName, "staticEins")
+      self~assertEquals(newVal,currVal)
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+
+
+-- 2018-01-10: rgf, add get and set on private fields, which should cause the search for
+--                  public respective getter and setter methods
+
+::method "test_12_getSet_private_fields_via_their_setter_and_getter_methods"
+   expose bEcho
+   className="java6.plain.Test2"
+	beanName=BSF("new", , className)
+   clzTest2=bsf("loadClass", className)
+
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+      newVal=.true
+      call BSF "setFieldValue",    beanName, "zwei", newVal
+   	currVal=BSF("getFieldValue", beanName, "zwei")
+      self~assertEquals(newVal,currVal)
+
+      currVal=\currVal;
+      call BSF "setFieldValue",    beanName, "staticZwei", newVal
+   	currVal=BSF("getFieldValue", beanName, "staticZwei")
+
+      currVal=\currVal;
+      call BSF "setFieldValue",     beanName, "staticZwei", newVal
+   	currVal=BSF("getStaticValue", clzTest2, "staticZwei")
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+      newVal=.true
+      call BSF "setFieldValue",    beanName, "drei", newVal
+   	currVal=BSF("getFieldValue", beanName, "drei")
+      self~assertEquals(newVal,currVal)
+
+      currVal=\currVal;
+      call BSF "setFieldValue",    beanName, "staticDrei", newVal
+   	currVal=BSF("getFieldValue", beanName, "staticDrei")
+
+      currVal=\currVal;
+      call BSF "setFieldValue",     beanName, "staticDrei", newVal
+   	currVal=BSF("getStaticValue", clzTest2, "staticDrei")
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+
+
+
+
+   if bEcho=.true then call time 'reset'
+   do i=1 to 10
+      newVal=.true
+      call BSF "setFieldValue",    beanName, "vier", newVal
+   	currVal=BSF("getFieldValue", beanName, "vier")
+      self~assertEquals(newVal,currVal)
+
+      currVal=\currVal;
+      call BSF "setFieldValue",    beanName, "staticVier", newVal
+   	currVal=BSF("getFieldValue", beanName, "staticVier")
+
+      currVal=\currVal;
+      call BSF "setFieldValue",     beanName, "staticVier", newVal
+   	currVal=BSF("getStaticValue", clzTest2, "staticVier")
+      if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
+   end
+

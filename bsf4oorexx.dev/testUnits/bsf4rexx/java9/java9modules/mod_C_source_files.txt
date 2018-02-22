@@ -1,0 +1,3 @@
+F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java9\java9modules\src\mod_C\module-info.java
+F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java9\java9modules\src\mod_C\mtest3\Class03A.java
+F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java9\java9modules\src\mod_C\mtest3\Class03B.java

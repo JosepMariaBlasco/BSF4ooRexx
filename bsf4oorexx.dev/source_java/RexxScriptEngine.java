@@ -1255,6 +1255,7 @@ if (bDebug==true) {exc.printStackTrace();}
         try {
                 // make sure BSF.CLS support in JNI available; .input, .output, .error set accordingly
             updateRexxEngine(sc);
+// System.err.println("RexxScriptEngine.invokeMethod(): sendMessage(\""+name+"\", arrArgV="+java.util.Arrays.deepToString(arrArgV)+")");
             return ((RexxProxy) thiz).sendMessage(name,arrArgV);
         }
         catch (Exception exc)

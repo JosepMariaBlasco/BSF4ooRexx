@@ -3,6 +3,7 @@
    name:             Array testGroup
    author:           Michael Lex
    version:          1.0.0
+   changed:          2018-01-05, rgf: adjust Test_41 for BSF4ooRexx now handling Rexx truth value "1" (.true) as Java true as well
 */
 /*
 
@@ -251,7 +252,7 @@ return testResult
 ::method "test_41"
 	arr=.bsf~bsf.createArray(.bsf4rexx~boolean, 5)
 	arr[3]=.true
-	self~assertEquals(arr[3], .false)
+	self~assertEquals(arr[3], .true)
 
 ::method "test_42"
 	arr=.bsf~bsf.createArray(.bsf4rexx~boolean, 5)

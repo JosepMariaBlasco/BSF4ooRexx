@@ -70,7 +70,7 @@ REXX_HOME = F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\source_cc\rexxapi.win\wi
 # if no JAVA_HOME defined in environment, define it manually
 JAVA_HOME       = c:\Program Files (x86)\Java\jdk1.8.0_77
 
-INC_PATH	=  .;$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32
+INC_PATH	=  .;$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;java_include\win_include_8\include;java_include\win_include_8\include\win32;
 INCLUDE = $(INCLUDE);$(INC_PATH)
 OP_SYS          = -DWINDOWS
 

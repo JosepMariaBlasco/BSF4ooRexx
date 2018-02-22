@@ -32,6 +32,9 @@ java org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool TestAbstract Caesar
                        - changed "bss" to the self documenting name "bShowSource"
     2017-06-17, rgf:   - if the context class loader is null, make sure that the SimpleCompiler's parent class loader
                          gets set; this version uses the class loader for ProxiedJavaClassTool.
+    2018-02-19, rgf:   - when creating interface methods, make sure that only abstract interface methods get proxied;
+                         starting with Java 1.8/8 there are concrete interface methods possible (static and default interface
+                         methods)
 */
 
 import java.lang.reflect.*;
@@ -89,7 +92,7 @@ public class ProxiedJavaClassTool
     public static boolean bShowSource= false; // true; // if set to .true, the generated source is printed to stderr
 
      /** Version information on this class. */
-    static final public String version="103.20170617";
+    static final public String version="104.20180219";
 
     /** Allow using this class from the command line to create an extended Java class and displaying the generated source.
      *  Example: <br>
@@ -397,6 +400,11 @@ if (bDebug==true)
 
 // ---------------------------------------------------------------------------
 
+        if (bShowSource)    // show the source before compiling
+        {
+            System.err.println("/// ProxiedJavaClassTool.createProxiedJavaClass(...) ---> begin of generated code for class: ["+newClzName+"], now: ["+fullNewClzName+"]\n"+sb.toString()+"\n<--- end of generated code \\\\\\");
+        }
+
         if (bTiming==true) crtSrcEndTime=System.currentTimeMillis(); // System.nanoTime(); // System.currentTimeMillis();
 
 
@@ -427,11 +435,6 @@ if (bDebug==true)
         {
             e.printStackTrace();
             throw new BSFException (BSFException.REASON_OTHER_ERROR, e.toString(), e);
-        }
-
-        if (bShowSource)
-        {
-            System.err.println("/// ProxiedJavaClassTool.createProxiedJavaClass(...) ---> begin of generated code for class: ["+newClzName+"], now: ["+fullNewClzName+"]\n"+sb.toString()+"\n<--- end of generated code \\\\\\");
         }
 
         if (bTiming==true)
@@ -944,6 +947,13 @@ if (bDebug==true) System.err.println("createConstructors(), END. <--");
         {
             Method m=declMethods[i];
             if (bDebug==true) System.err.println("createInterfaceMethods(): declMethods, i=["+i+"], m=["+m.toString()+"]");
+
+            // rgf, 2018-02-19: if interface method is default or static (starting with Java 1.8/8), then ignore
+            if (!Modifier.isAbstract(m.getModifiers())) // only process abstract interface methods
+            {
+                if (bDebug==true) System.err.println("createInterfaceMethods(): skipping concrete interface method, i=["+i+"], m=["+m.toString()+"]");
+                continue;
+            }
 
             if (tmpClz!=null)      // an abstract class supplied
             {

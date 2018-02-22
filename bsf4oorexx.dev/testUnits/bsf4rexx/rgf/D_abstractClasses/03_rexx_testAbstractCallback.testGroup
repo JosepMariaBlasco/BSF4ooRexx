@@ -263,10 +263,8 @@ return testResult
           constr0=c
        else if paramTypes~items=2 then
           constr1=c
-       else
+       else if paramTypes~items=17 then
           constrMany=c
-
---       say "paramTypes~items="pp(paramTypes~items)": c~toString="pp(c~toString)
     end
 
       -- constructor expects a RexxProxy as very first argument
@@ -317,7 +315,7 @@ return testResult
                                boxLong,  boxLong,  -
                                boxFloat, boxFloat, -
                                boxDouble,boxDouble )
---    say "argArray~items:" pp(argArray~items)
+
     o3=constrMany~newInstance(argArray)   -- use constructor with original one argument
 
       -- check whether field values were changed correctly

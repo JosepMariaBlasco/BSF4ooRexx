@@ -12,6 +12,9 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-02-20, ---rgf, - added new bsf4rexx-entries "java.version", "java.major.version" and
+                               "java.minor.version"
+
          2017-12-23, ---rgf, - define a public class "Slot.Argument" here instead of native code (BSF4ooRexx.cc
                                and placing the class object in .environment); this class will be used to
                                add useful, but optional information which get added as a trailing (a "slot")
@@ -626,8 +629,10 @@
    .local~revision.id    ="$Id: BSF.CLS 927 2010-12-26 17:34:19Z Administrator $"
 */
 
--- .stderr~say("BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ... ")
+parse source s
 
+-- .stderr~say("BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ...")
+-- .stderr~say("BSF.CLS - parse source:" pp(s) "- editing it for new release, since Monday, 2018-02-19...")
 -- say "... BSF.CLS ... prolog code ..."  ".bsf.rii_ID:" pp(.bsf.rii_ID)  ".bsf.primodalTID="pp(.bsf.primodalTID)  "TID:" pp(BsfGetTid()) "created in RII:" pp(rii_id)
 
    signal on syntax
@@ -679,7 +684,7 @@
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20171223" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180222" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -702,6 +707,7 @@
 syntax:
    raise propagate
 
+::requires "rgf_util2.rex"    -- 20180106, rgf, temporarily because of BSF's unknown usage
 
 ::requires "BSF4ooRexx" library
 
@@ -711,7 +717,12 @@ syntax:
       be explicitly called should solve the problem.
    */
 ::routine makeBSF4ooRexxLookLikeMacOSX public
-   if .bsf4rexx~opsys="MACOSX" then
+      -- TODO: rgf, 20180109 - starting with Java 9 Apple's Java classes are not accessible anymore;
+      --                       the documentation points to use java.awt.Desktop instead
+   if .bsf4rexx~opsys<>"MACOSX" then return  -- this is for Macs only
+
+
+   if .bsf4rexx~java.major.version<9 then
    do
       .java.lang.system~setProperty('apple.laf.useScreenMenuBar','true') -- just used on Macs: use Apple's menu dock, for JFrame-menus insteadof the window's menu bar
            -- by default hide "About" and "Preferences" menu in Apple's menu bar
@@ -872,6 +883,21 @@ syntax:
   do key over .list~of("line.separator", "file.separator", "path.separator", "file.encoding")
      bsf.dir~setEntry(key,bsf.dir~java.lang.System~getProperty(key))
   end
+
+  -- 2018-02-20, rgf: add "java.version",  "java.major.version" and "java.minor.version"
+  javaVersion=bsf.dir~entry("java.lang.System")~getProperty("java.version")
+  bsf.dir~setEntry("java.version",javaVersion)
+  -- make sure this gets run only on Java 1.8/8 or higher; up to Java 9 "java.version" returned 1.6, 1.7 or 1.8, then 9.0
+  parse var javaVersion major "." minor "." rest
+  if major=1 then          -- 1.6, 1.7, 1.8?
+  do
+      major=minor
+      minor=rest
+  end
+  bsf.dir~setEntry("java.major.version", major)
+  bsf.dir~setEntry("java.minor.version", minor )
+
+-- say .line": BSF.CLS - java.version="pp(bsf.dir~java.version) "java.major.version="pp(bsf.dir~java.major.version) "java.minor.version="pp(bsf.dir~java.minor.version)
 
   return .true    -- indicate we created and populated .bsf4rexx
 
@@ -1121,6 +1147,7 @@ any:
 
       -- parse the string returned by the Java side, it will have either "<S>" (string) or "<O>" (Java object) prepended;
    parse arg indicator +3 data, bIncr
+-- say .line ": BSF.CLS - bsf.wrap, arg(1)="pp(arg(1)) "indicator="pp(indicator) "data="pp(data) "bIncr="pp(bIncr)
 
    if indicator="<S>" then          -- genuine string
    do
@@ -1457,7 +1484,7 @@ any:
 --                        shutting down!
 ::METHOD uninit
   expose rii_id      -- Rexx interpreter instance that created this ooRexx instance
-  signal on syntax name any         -- trap any exceptions
+  signal on syntax name any         -- trap any conditions
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
   return BSF("unregisterBean", self~objectname)~substr(4)
@@ -1468,14 +1495,25 @@ any:
       and it is not possible to interact with Java anymore, hence the native code will
       raise an appropriate condition (not being able to attach to Java)
     */
-any:
+any:  -- intercept and thereby clear any condition
+/*
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
+  errMsg=""
   if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
+  do
+     errMsg=BSF_ERROR_MESSAGE
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
+  end
+*/
 
-  raise propagate  -- raise the exception in caller/invoker on the Rexx side
+-- for debugging only:
+--  .error~say( .line "BSF.CLS -" self":uninit -" pp(self~objectName)"~uninit - created on rii_id="pp(rii_id)", an (ignorable) error occurred" pp(BSF_ERROR_MESSAGE) )
+
+-- rgf, 2018-02-22: do not re-raise this condition, this is an UNINIT method and gets therefore ignored  !
+--  raise propagate  -- raise the exception in caller/invoker on the Rexx side
+
 
 
 /* -------------------------------------------------------------
@@ -1587,11 +1625,15 @@ any:
 
 
 any:
+  co =condition('o')
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
   if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
+
+-- say "BSF.unknown(), condition occurred! self="pp(self)":" ppCondition2(co)
+
 
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
@@ -2267,14 +2309,21 @@ any:
    -- the Rexx and the Java side
 ::METHOD     bsf.setRexxNullString         class
   parse arg newValue
-  .bsf~bsf.null_string = newValue                  -- set class attribute to the new value
   signal on syntax name any
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
   if arg()>1 then    -- 2009-06-26, hint by Mr. Lex (author of testunits for BSF4Rexx)
      raise syntax 40.900 array ("BSF.CLS/class BSF/class method bsf.setRexxNullString, error 1: too many arguments (maximum: 1, found: "arg()")")
 
-
+   -- rgf, 2018-02-19: rearrange
+  .bsf~bsf.null_string = bsf.wrap(bsf("setRexxNullString", newValue))                  -- set class attribute to the new value
+  return .bsf~bsf.null_string
+/*
+-- original until 2018-02-19
+  .bsf~bsf.null_string = newValue                  -- set class attribute to the new value
   return bsf.wrap(bsf("setRexxNullString", newValue))    -- set the Java side to the new value
+*/
+
+
 
 any:
    /* if a Java error, then the Java error message/stack trace is stored in the

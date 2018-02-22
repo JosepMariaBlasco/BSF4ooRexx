@@ -37,7 +37,12 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
-    6.0.0   2081-01-19, rgf: - implement the four JNI methods named jniForceConstructorNewInstance,
+    6.0.0   2018-02-19, rgf: - remove the JNI methods jniForceConstructorNewInstance, jniForceFieldGet,
+                               jniForceFieldSet, jniForceMethodInvoke as they cannot be used to force the
+                               intended operations on Java 9; as the problem got solved by rewriting the
+                               reflection part in Java, these methods are not needed and get removed
+
+    6.0.0   2018-01-19, rgf: - implement the four JNI methods named jniForceConstructorNewInstance,
                                jniForceFieldGet, jniForceFieldSet, jniForceMethodInvoke (these "force"
                                JNI routines are means of last resort, if Java 9 or later is not
                                allowing to access protected members in superclasses via reflection
@@ -720,7 +725,7 @@ remarks:
   *  LICENSE:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright 2001-2017 Rony G. Flatscher
+       Copyright 2001-2018 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -764,7 +769,7 @@ extern "C" {            // make sure no C++ name mangling comes into the way
 #endif
 
 
-#define RGF_JENV_OBJECTS    // rgf, 20180122: debug new JNI methods
+// #define RGF_JENV_OBJECTS    // rgf, 20180122: debug new JNI methods, show whether MIDs were retrieved successfully
 
 
 // #define DEBUG_SOME_OPTIONS
@@ -927,11 +932,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20180119 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180222 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20180119 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180222 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20180119 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180222 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -8913,31 +8918,25 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         (j_methodDescription!=NULL))      // build slotArgument (an ooRexx directory object) ?
     {
         // rgf, 2017-04-15, use new rcoSlotArgumentClass (a subclass of directory to allow unambiguous testing)
-        // TODO: rgf, 2017-12-23: use FindClass() as now Slot.Argument class is defined in BSF.CLS; if not found, require BSF.CLS and use it then
-        RexxObjectPtr clzSlotArgument=rtc->FindClass("Slot.Argument");  // defined in BSF.CLS since 20171223
-        if (clzSlotArgument==NULL)      // oops, not there? require BSF.CLS
+        RexxObjectPtr clzSlotArgument=rtc->FindClass("Slot.Argument");  // defined in BSF.CLS since 20171223, stored in .environment too
+        if (clzSlotArgument==NULL)      // oops, not there?
         {
-            clzSlotArgument=rtc->FindClass("Slot.Argument");
-            if (clzSlotArgument==NULL)      // still not there?
-            {
-                char *msg=new char[1024];
-                snprintf(msg, 1024, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 4: public Rexx class 'Slot.Argument' from 'BSF.CLS' not found, cannot create slot argument; Rexx class Slot.Argument=[%p], BSF=[%p]", DLLNAME, rtc->FindClass("Slot.Argument"), rtc->FindClass("BSF"));
+            char *msg=new char[1024];
+            snprintf(msg, 1024, "%.16s/routine/jniRexxSendMessageToRexxObject(), error 4: public Rexx class 'Slot.Argument' from 'BSF.CLS' not found, cannot create slot argument; Rexx class Slot.Argument=[%p], BSF=[%p]", DLLNAME, rtc->FindClass("Slot.Argument"), rtc->FindClass("BSF"));
 
-                jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
-                                                                     NULL, // rtc,
-                                                                     NULL, // conditionObject
-                                                                     REASON_EXECUTION_ERROR,   // reason
-                                                                     msg   // message
-                                                                );
-                delete[] msg;
-                env->Throw(j_rexxException);  // throw the exception in the JVM
+            jthrowable j_rexxException=RgfCreateRexxException4Java(env, jobj,
+                                                                 NULL, // rtc,
+                                                                 NULL, // conditionObject
+                                                                 REASON_EXECUTION_ERROR,   // reason
+                                                                 msg   // message
+                                                            );
+            delete[] msg;
+            env->Throw(j_rexxException);  // throw the exception in the JVM
 
-                RexxFreeMemory(c_rii_ID);       // make sure we free the allocated memory
-                RexxFreeMemory(c_msg   );       // make sure we free the allocated memory
-                RexxFreeMemory(c_obj_ID);       // make sure we free the allocated memory
-                return NULL;
-            }
-
+            RexxFreeMemory(c_rii_ID);       // make sure we free the allocated memory
+            RexxFreeMemory(c_msg   );       // make sure we free the allocated memory
+            RexxFreeMemory(c_obj_ID);       // make sure we free the allocated memory
+            return NULL;
         }
 
         slotDir=(RexxDirectoryObject) rtc->SendMessage0(clzSlotArgument, "NEW");    // create "SLOT.ARGUMENT" instance, ooRexx directory object
@@ -12575,57 +12574,6 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
     return res;
 }
 
-
-
-
-// ----------------------------------------------------------------------------------------------
-
-// rgf, 2018-01-19: the "force" JNI routines are means of last resort, if Java 9 or later is not
-//                  allowing to access protected members in superclasses via reflection
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniForceConstructorNewInstance
- * Signature: (Ljava/lang/reflect/Constructor;[Ljava/lang/Object;)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceConstructorNewInstance
-  (JNIEnv *env, jobject rajo, jobject constructor_obj, jobjectArray initArgs)
-{
-    return env->CallObjectMethod(constructor_obj, defaultJVM->mid_Java_Lang_Reflect_Constructor_newInstance, initArgs);
-}
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniForceFieldGet
- * Signature: (Ljava/lang/reflect/Field;Ljava/lang/Object;)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceFieldGet
-  (JNIEnv *env, jobject rajo, jobject field_obj, jobject obj)
-{
-    return env->CallObjectMethod(field_obj,       defaultJVM->mid_Java_Lang_Reflect_Field_get, obj);
-}
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniForceFieldSet
- * Signature: (Ljava/lang/reflect/Field;Ljava/lang/Object;Ljava/lang/Object;)V
- */
-JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceFieldSet
-  (JNIEnv *env, jobject rajo, jobject field_obj, jobject obj, jobject new_value)
-{
-    env->CallObjectMethod(field_obj,              defaultJVM->mid_Java_Lang_Reflect_Field_set, obj, new_value);
-}
-
-/*
- * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
- * Method:    jniForceMethodInvoke
- * Signature: (Ljava/lang/reflect/Method;[Ljava/lang/Object;)Ljava/lang/Object;
- */
-JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniForceMethodInvoke
-  (JNIEnv *env, jobject rajo, jobject method_obj, jobjectArray methArgs)
-{
-    return env->CallObjectMethod(method_obj,      defaultJVM->mid_Java_Lang_Reflect_Method_invoke, methArgs);
-}
 
 
 
