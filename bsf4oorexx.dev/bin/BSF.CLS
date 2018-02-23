@@ -12,6 +12,14 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+
+         2018-02-23, ---rgf, - UNINITs now use the new "BsfUninit4JavaBean(beanName)" function which is
+                               able to be executed on an ooRexx created Rexx interpreter that has no
+                               connection to a Java RexxAndJava object established
+                             - routine "makeBSF4ooRexxLookLikeMacOSX": for Java 9 add Java 9 support
+                               to add an icon to the dock; also make sure that the routine will not
+                               stop running programs on MacOSX, if a syntax condition arises
+
          2018-02-20, ---rgf, - added new bsf4rexx-entries "java.version", "java.major.version" and
                                "java.minor.version"
 
@@ -684,7 +692,7 @@ parse source s
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180222" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180223" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -717,10 +725,10 @@ syntax:
       be explicitly called should solve the problem.
    */
 ::routine makeBSF4ooRexxLookLikeMacOSX public
-      -- TODO: rgf, 20180109 - starting with Java 9 Apple's Java classes are not accessible anymore;
-      --                       the documentation points to use java.awt.Desktop instead
+
    if .bsf4rexx~opsys<>"MACOSX" then return  -- this is for Macs only
 
+   signal on syntax        -- make sure we do not stop MacOSX apps
 
    if .bsf4rexx~java.major.version<9 then
    do
@@ -733,6 +741,22 @@ syntax:
       if .bsf4rexx~hasEntry("bsf4oorexx_256") then
          app~setDockIconImage(.bsf~new("javax.swing.ImageIcon",.bsf4rexx~bsf4oorexx_256)~getImage)
    end
+
+      -- starting with Java 9 (fall 2017) the java.awt.Taskbar and java.awt.Desktop classes have (new) support
+      -- that works on MacOSX as well
+   else
+   do
+      taskbar=bsf.loadClass("java.awt.TaskBar")~getTaskbar
+      .bsf4rexx~apple_application=app
+      if .bsf4rexx~hasEntry("bsf4oorexx_256") then
+         taskbar~setIconImage(.bsf~new("javax.swing.ImageIcon",.bsf4rexx~bsf4oorexx_256)~getImage)
+   end
+   return
+
+syntax:
+   co=condition("o") -- get condition object
+   .error~say("BSF.CLS, line" .line": MacOSX support to add dock icon caused an exeption:" pp(co~message))
+
 
 
 ::routine getAndSetPathToIcons	-- rgf, 2011-02-21: find path to icons, if found save icons
@@ -1482,37 +1506,26 @@ any:
 --                        means to attach to Java; will leave it that way (a Rexx condition gets raised that
 --                        does not bring down the garbage collector), as this condition means that Rexx is
 --                        shutting down!
+-- 2018-02-23, rgf: not returning anything from UNINIT; make sure we deregister the Java object even in the
+--                  the case that a RexxAndJava object does not exist (TODO: BsfUnregisterJavaObject)
 ::METHOD uninit
   expose rii_id      -- Rexx interpreter instance that created this ooRexx instance
-  signal on syntax name any         -- trap any conditions
-  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
-  return BSF("unregisterBean", self~objectname)~substr(4)
+  signal on syntax name syntax1     -- trap any syntax conditions
+  -- say .line pp(self) "BSF::UNINIT - self~objectName="pp(self~objectName) "about to do an 'unregisterBean', self~objectName"
+--  call BSF "unregisterBean", self~objectname    -- reduce reference count for the proxied Java object
 
-   /* 2015-08-04, rgf:
-      one likely condition is that ooRexx' garbage collector upon shutting down may
-      create a RII for running pending ooRexx uninits; such a RII will have its own .local
-      and it is not possible to interact with Java anymore, hence the native code will
-      raise an appropriate condition (not being able to attach to Java)
-    */
-any:  -- intercept and thereby clear any condition
-/*
-   /* if a Java error, then the Java error message/stack trace is stored in the
-      current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
-      this error message available to the caller it is stored in the .local environment */
-  errMsg=""
-  if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
-  do
-     errMsg=BSF_ERROR_MESSAGE
-     .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
-  end
-*/
+ call BsfUninit4JavaBean self~objectname     -- new since 2018-02-23
+  return
 
--- for debugging only:
---  .error~say( .line "BSF.CLS -" self":uninit -" pp(self~objectName)"~uninit - created on rii_id="pp(rii_id)", an (ignorable) error occurred" pp(BSF_ERROR_MESSAGE) )
+syntax1:  -- intercept and thereby clear any condition
+  .error~say( .line "BSF.CLS -" self":uninit -" pp(self~objectName)"~uninit - created on rii_id="pp(rii_id)", an (ignorable) error occurred" pp(BSF_ERROR_MESSAGE) )
+  -- a last attempt
+--  co=condition("o"); say .line "BSF::UNINIT - SYNTAX1 :" ppCondition2(co)
 
--- rgf, 2018-02-22: do not re-raise this condition, this is an UNINIT method and gets therefore ignored  !
---  raise propagate  -- raise the exception in caller/invoker on the Rexx side
+--  call BsfUninit4JavaBean self~objectname  -- new since 2018-02-23
+
+
 
 
 
@@ -2457,8 +2470,27 @@ any:
 ::method uninit      -- rgf, 20120604: make sure we also unregister the index array to avoid a memory leak
   expose indexArray
 
-  call bsf 'unregisterBean', indexArray
+  signal on syntax name syntax1
+--  call bsf 'unregisterBean', indexArray
+  call BsfUninit4JavaBean indexArray         -- new since 2018-02-23
+
+--  say pp(self) "BSF_ARRAY_REFERENCE::UNINIT - 2 - AFTER    (unregisterBean,indexArray="pp(indexArray)") now refCount:" pp(result) "about: self~uninit:super ..."
+  signal on syntax name syntax2
   self~uninit:super  -- now let superclass clean up
+  return
+
+syntax1:    -- call unregisterBean, indexArray caused a syntax condition
+  say .line "BSF_ARRAY_REFERENCE::UNINIT - SYNTAX1 ..., about to do a: call BsfUninit4JavaBean indexArray"
+  signal on syntax name syntax2
+  call bsf 'unregisterBean', indexArray
+--  call BsfUninit4JavaBean indexArray       -- new since 2018-02-23
+
+  self~uninit:super  -- now let superclass clean up
+  return
+
+syntax2:    -- just clear condition
+  say .line "BSF_ARRAY_REFERENCE::UNINIT - SYNTAX2 ..., dummy, just to clear condition"
+
 
 
 ::METHOD dimension
@@ -2468,7 +2500,6 @@ any:
 
   if VAR( dimensions ) = .false then self~getData  -- no data available, get it
   return dimensions[arg(1)]                     -- return entries in this dimension
-
 
 
       -- get the needed information from ArrayWrapper, make it available with Object Rexx attributes
