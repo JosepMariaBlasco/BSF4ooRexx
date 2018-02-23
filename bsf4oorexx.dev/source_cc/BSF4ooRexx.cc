@@ -37,6 +37,15 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
+    6.0.0   2018-02-23, rgf: - new function "BsfUninit4JavaBean(beanName)": called from UNINIT code in BSF,
+                               version uses RexxAndJava class object, therefore the Rexx interpreter instance
+                               used for uninits does not have a need for a peer RexxAndJava instance (ooRexx
+                               uninits may be run on a newly created Rexx interpreter instance that is not
+                               linked to Java otherwise)
+
+                             - unregisterBean[4JNI] now return -1 for not registered, or remaining leftCount
+                               (0=removed from registry)
+
     6.0.0   2018-02-19, rgf: - remove the JNI methods jniForceConstructorNewInstance, jniForceFieldGet,
                                jniForceFieldSet, jniForceMethodInvoke as they cannot be used to force the
                                intended operations on Java 9; as the problem got solved by rewriting the
@@ -932,11 +941,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20180222 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180223 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20180222 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180223 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20180222 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180223 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -2300,6 +2309,7 @@ typedef struct _STRUCT_JVM {
     jclass                      clz_Object;         // java.lang.Object class object
 
     jclass                      clz_RexxAndJava;    // org.rexxla.bsf.engines.rexx.RexxAndJava
+    jmethodID                   mid_RexxAndJava_unregisterBean4JNI;     // 20180223, static method !
     jmethodID                   mid_RexxAndJava_convFromJNI;
     jmethodID                   mid_RexxAndJava_convFromRexx;
     jmethodID                   mid_RexxAndJava_getRexxEngine;
@@ -2384,6 +2394,10 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
         // get MID for the interface method in rajo
     tmpClz=env->FindClass("org/rexxla/bsf/engines/rexx/RexxAndJava");    // get class object
     struct_JVM->clz_RexxAndJava     =tmpClz;
+
+    // 20180223, static method !
+    struct_JVM->mid_RexxAndJava_unregisterBean4JNI =env->GetStaticMethodID( tmpClz, "unregisterBean4JNI",  "(Ljava/lang/String;)I");
+
     struct_JVM->mid_RexxAndJava_convFromJNI        =env->GetMethodID( tmpClz, "convFromJNI",         "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
     struct_JVM->mid_RexxAndJava_convFromRexx       =env->GetMethodID( tmpClz, "convFromRexx",        "(Ljava/lang/String;)Ljava/lang/Object;");
     struct_JVM->mid_RexxAndJava_getRexxEngine      =env->GetMethodID( tmpClz, "getRexxEngine",       "()Lorg/apache/bsf/BSFEngine;");
@@ -2391,7 +2405,7 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
     struct_JVM->mid_RexxAndJava_javaCallFromBSF    =env->GetMethodID( tmpClz, "javaCallBSF",         "([Ljava/lang/String;)Ljava/lang/String;" );
     struct_JVM->mid_RexxAndJava_lookupBean4JNI     =env->GetMethodID( tmpClz, "lookupBean4JNI",      "(Ljava/lang/String;)Ljava/lang/Object;" );
     struct_JVM->mid_RexxAndJava_registerBean4JNI   =env->GetMethodID( tmpClz, "registerBean4JNI",    "(Ljava/lang/Object;)Ljava/lang/String;" );
-    struct_JVM->mid_RexxAndJava_unregisterBean     =env->GetMethodID( tmpClz, "unregisterBean",      "(Ljava/lang/String;)Z");
+    struct_JVM->mid_RexxAndJava_unregisterBean     =env->GetMethodID( tmpClz, "unregisterBean",      "(Ljava/lang/String;)I");
     struct_JVM->mid_RexxAndJava_makeString4Rexx    =env->GetMethodID( tmpClz, "makeString4Rexx",     "(Ljava/lang/Object;)Ljava/lang/String;");
 
 // 2012-03-11, rgf: get static field (type class) "nlR_class", may be NULL, if no NetRexx available
@@ -2478,6 +2492,9 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
    fprintf(stderr, "\tclz_Object       =[%p]\n", struct_JVM->clz_Object);
 
    fprintf(stderr, "\tclz_RexxAndJava  =[%p]\n", struct_JVM->clz_RexxAndJava);
+
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_unregisterBean4JNI =[%p]\n", struct_JVM->mid_RexxAndJava_unregisterBean4JNI);
+
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_convFromJNI        =[%p]\n", struct_JVM->mid_RexxAndJava_convFromJNI      );
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_convFromRexx       =[%p]\n", struct_JVM->mid_RexxAndJava_convFromRexx     );
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_getRexxEngine      =[%p]\n", struct_JVM->mid_RexxAndJava_getRexxEngine    );
@@ -2629,12 +2646,12 @@ inline jstring RgfStoreRexxProxyInBsfRegistry(JNIEnv *env, jobject rajo, jobject
 
 
     // allows to unregister a bean from the BSFRegistry
-inline jboolean RgfUnregisterBean(JNIEnv *env, jobject rajo, jobject beanName)
+inline jint RgfUnregisterBean(JNIEnv *env, jobject rajo, jobject beanName)
 {
-    jboolean bRes=env->CallBooleanMethod(rajo,
+    jint refCount=env->CallBooleanMethod(rajo,
                                   defaultJVM->mid_RexxAndJava_unregisterBean,
                                   beanName);
-    return bRes;
+    return refCount;
 }
 
 
@@ -4077,7 +4094,8 @@ CSTRING ApiFncTable[]=      // if invoked via Rexx, these are the functions we r
     "BsfQueryRegisteredFunctions" ,
     "BsfRawBytes"                 , // ---rgf, 2010-02-10
     "BsfRexxProxy"                , // ---rgf, 2009-09-12
-    "BsfShowErrorMessage"         ,  // rgf, 2006-11-19
+    "BsfShowErrorMessage"         , // rgf, 2006-11-19
+    "BsfUninit4JavaBean"          , // ---rgf, 2018-02-23
 
 #ifdef ALLOW_LOADING_JVM    //   ---rgf, 2005-08-23, #idef'ed - not for OS2 and not for Macintosh
     "BsfUnloadJava"               , // ---rgf, 2005-06-02, JNI would not unload
@@ -4107,6 +4125,7 @@ CSTRING ApiFncTable4Java[]=      // if invoked via Java, these are the functions
     "BsfRawBytes"                 , // ---rgf, 2010-02-10
     "BsfRexxProxy"                , // ---rgf, 2009-09-12
     "BsfShowErrorMessage"         ,  // rgf, 2006-11-19
+    "BsfUninit4JavaBean"          , // ---rgf, 2018-02-23
 //    "BsfUnloadJava"               , // ---rgf, 2005-06-02, JNI would not unload
     "BsfVersion"
 };
@@ -4254,9 +4273,9 @@ inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (
 
         // --- make sure we remove local locks
     param->env->DeleteLocalRef(jo);
-    param->env->DeleteLocalRef(joc);
-    param->env->DeleteLocalRef(jobj);
-    param->env->DeleteLocalRef(j_beanName);
+    param->env->DeleteLocalRef(joc);       // rgf, 2018-02-23: crash in JVM 8 ! ?
+    param->env->DeleteLocalRef(jobj);      // rgf, 2018-02-23: crash in JVM 8 ! ?
+    param->env->DeleteLocalRef(j_beanName);  // rgf, 2018-02-23: crash in JVM 8 ! ?
 
     rtc->ReleaseLocalReference(rJavaThrowable);
     rtc->ReleaseLocalReference(bsfClz);
@@ -5970,7 +5989,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
     RexxFreeMemory(c_bsfRegistryKey);
 
     param.env->DeleteLocalRef(j_rexxProxy);
-    param.env->DeleteLocalRef(j_bsfRegistryKey);
+    param.env->DeleteLocalRef(j_bsfRegistryKey);    // 2018-02-23, crash in JVM 8 ! ?
 
     RgfAcquireLock();
     environmentDetachFromNew(&param);
@@ -6286,8 +6305,8 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
                         result_Obj=r_beanName;
                     }
                 }
-                param.env->DeleteLocalRef(jba);
             }
+            param.env->DeleteLocalRef(jba);     // rgf, 2018-02-23, causes crash in JVM 8 ! ?
         }
     }
     else                        // [B -> RexxString
@@ -6351,8 +6370,8 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
                     RexxFreeMemory(buf);
                 }
             }
-            param.env->DeleteLocalRef(jba);
         }
+        param.env->DeleteLocalRef(jba);         // rgf, 2018-02-23, causes crash in JVM 8 ! ?
     }
 
 
@@ -7220,6 +7239,66 @@ RexxRoutine3( RexxObjectPtr, BsfContextVariables, OPTIONAL_CSTRING, argSwitch, O
 
 
 
+// ---------------------------------------------------------------------------------------
+    // ---rgf, 2018-02-22: run UNINIT directly against the RexxAndJava class object
+RexxRoutine1(size_t, BsfUninit4JavaBean, RexxObjectPtr, bean)
+{
+    size_t refCount=-1;
+
+// fprintf(stderr, "BsfUninit4JavaBean(), bean=[%p] ", bean); fflush(stderr);
+
+    if (bean==NULL)
+    {
+        return refCount;
+    }
+
+    RexxStringObject rso=context->ObjectToString(bean);
+
+// fprintf(stderr, "| rso=[%s] ", context->CString(rso)); fflush(stderr);
+
+
+    JNIEnv *jenv=NULL;
+
+        // is this thread already attached ? If so reuse it, but do not detach
+    // RgfAcquireLock();
+    logical_t needToAttach=((defaultJVM->jvm->GetEnv((void **)&jenv, USE_DEFINED_JNI_VERSION))==JNI_EDETACHED);
+
+    if (needToAttach)
+    {
+        // nope, not yet attached, attach, but detach before leaving this routine
+        if ( (defaultJVM->jvm->AttachCurrentThread((void **) &jenv, (void *) &defaultJavaVMAttachArgs)) != JNI_OK) // attach to JVM
+        {
+            // RgfReleaseLock();   // release the lock
+            return -99;         // JNI attach error, return prematurely, indicate by returning -99
+        }
+    }
+    // RgfReleaseLock();   // release the lock
+
+    if (jenv==NULL)         // attaching did not work!
+    {
+        return -99;
+    }
+
+    jstring jstrBeanName=JNU_CreateJavaString(jenv, context->threadContext, rso);
+    refCount=jenv->CallStaticBooleanMethod(defaultJVM->clz_RexxAndJava,
+                                 defaultJVM->mid_RexxAndJava_unregisterBean4JNI,
+                                 jstrBeanName);
+
+    jenv->DeleteLocalRef(jstrBeanName);
+
+    if (needToAttach)   // we were not attached, hence we did an AttachCurrentThread such that we need to release it
+    {
+        // RgfAcquireLock();
+        defaultJVM->jvm->DetachCurrentThread();
+        // RgfReleaseLock();   // release the lock
+    }
+
+// fprintf(stderr, " success, returning true!\n"); fflush(stderr);
+
+    return refCount;        // returns false, if unsuccessful, true else
+}
+
+
 
 
 
@@ -7772,6 +7851,8 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
 #ifdef HOT_FIX_CRASH     // allow hot fix do be disabled! (HOT_FIX_CRASH is meant as a temporary fix for the JavaFX GUI-thread crashes only)
         REXX_TYPED_ROUTINE( BsfApplyHotFixCrash         , BsfApplyHotFixCrash         ),    // rgf, 2017-08-21: temporarily allows controlling applying the hot fix
 #endif
+
+        REXX_TYPED_ROUTINE( BsfUninit4JavaBean          , BsfUninit4JavaBean          ),    // rgf, 2018-02-23
 
         REXX_LAST_ROUTINE()
     };

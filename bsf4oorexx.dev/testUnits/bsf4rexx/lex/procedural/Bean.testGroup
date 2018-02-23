@@ -3,6 +3,7 @@
    name:             Bean testGroup
    author:           Michael Lex
    changed:
+                     rgf, 2018-02-23: adjusted unregisterBean tests to cater for the new return value, which is an int of reference counts
                      rgf, 2018-01-01: "setup" method added
                      rgf, 2011-02-12: allow this test to run in "java.awt.headless=true"-mode
 
@@ -96,10 +97,11 @@ return testResult
 */
         .bsf~bsf.import("java.awt.Dimension", "JaD")
         fd=.JaD~newStrict("int", 1, "int", 2)
-	r=BSF("setRexxNullString", "newnullstring")
+-- 	r=BSF("setRexxNullString", "newnullstring")
 	var=bsf.unregisterBean(fd)
 	var=bsf.unregisterBean(fd)
-	self~assertEquals(var, "newnullstring")
+-- 	self~assertEquals(var, "newnullstring")
+	self~assertEquals(-1, var)
 
 ::method "test_6"
 /*
@@ -111,9 +113,10 @@ return testResult
 */
         .bsf~bsf.import("java.awt.Dimension", "JaD")
         fd=.JaD~newStrict("int", 1, "int", 2)
-	r=BSF("setRexxNullString", "newnullstring")
+--	r=BSF("setRexxNullString", "newnullstring")
 	var=bsf.unregisterBean("a_not_existing_bean")
-	self~assertEquals(var, "newnullstring")
+--	self~assertEquals(var, "newnullstring")
+	self~assertEquals(-1, var)
 
 
 ::method "test_7"
@@ -164,11 +167,12 @@ return testResult
 	self~assertEquals(var, "newnullstring")
 */
         .bsf~bsf.import("java.awt.Dimension", "JaD")
-	r=BSF("setRexxNullString", "newnullstring")
+--	r=BSF("setRexxNullString", "newnullstring")
         fd=.JaD~new(1,2)
 	var=bsf.unregisterBean(fd)
 	var=bsf.unregisterBean(fd)
-	self~assertEquals(var, "newnullstring")
+--	self~assertEquals(var, "newnullstring")
+	self~assertEquals(-1, var)
 
 
 ::method "test_13"
@@ -180,10 +184,11 @@ return testResult
 	self~assertEquals(var, "newnullstring")
 */
         .bsf~bsf.import("java.awt.Dimension", "JaD")
-	r=BSF("setRexxNullString", "newnullstring")
+--	r=BSF("setRexxNullString", "newnullstring")
         fd=.JaD~new(1,2)
 	var=bsf.unregisterBean("a_not_existing_bean")
-	self~assertEquals(var, "newnullstring")
+--	self~assertEquals(var, "newnullstring")
+	self~assertEquals(-1, var)
 
 
 ::method "test_14"
@@ -197,8 +202,4 @@ return testResult
 	cls=BSF("loadclass", "java.awt.TextField")
 	ftf=BSF("rawRegisterBean", "jatf", cls)
 	self~assertNotNull(ftf)
-
-
-
-return
 

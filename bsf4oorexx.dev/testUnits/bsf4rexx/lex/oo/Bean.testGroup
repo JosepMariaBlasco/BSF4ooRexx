@@ -2,7 +2,10 @@
 /*
    name:             Bean testGroup
    author:           Michael Lex
-   changed:          ---rgf, 2011-02-12: allow this test to run in "java.awt.headless=true"-mode
+   changed:
+                     ---rgf, 2018-02-23: adjusted unregisterBean tests to cater for the new return value, which is an int of reference counts
+                     ---rgf, 2011-02-12: allow this test to run in "java.awt.headless=true"-mode
+
    version:          1.0.1
 */
 /*
@@ -81,7 +84,8 @@ return testResult
         fd=.JaD~newStrict("int", 1, "int", 2)
 	var=bsf.unregisterBean(fd)
 	var=bsf.unregisterBean(fd)
-	self~assertEquals(var, ".NIL")
+--	self~assertEquals(var, ".NIL")
+	self~assertEquals(-1, var)
 
 ::method "test_6"
 /*
@@ -93,7 +97,8 @@ return testResult
         .bsf~bsf.import("java.awt.Dimension", "JaD")
         fd=.JaD~newStrict("int", 1, "int", 2)
 	var=bsf.unregisterBean("a_not_existing_bean")
-	self~assertEquals(var, ".NIL")
+--	self~assertEquals(var, ".NIL")
+	self~assertEquals(-1, var)
 
 
 ::method "test_7"
@@ -143,9 +148,10 @@ return testResult
 */
         .bsf~bsf.import("java.awt.Dimension", "JaD")
         fd=.JaD~new(1,2)
+   -- make sure bean is removed from registry
 	var=bsf.unregisterBean(fd)
 	var=bsf.unregisterBean(fd)
-	self~assertEquals(var, ".NIL")
+	self~assertEquals(-1, var)
 
 
 
@@ -159,7 +165,7 @@ return testResult
         .bsf~bsf.import("java.awt.Dimension", "JaD")
         fd=.JaD~new(1,2)
 	var=bsf.unregisterBean("a_not_existing_bean")
-	self~assertEquals(var, ".NIL")
+	self~assertEquals(-1, var)
 
 
 ::method "test_14"
@@ -173,6 +179,4 @@ return testResult
 	cls=BSF("loadclass", "java.awt.TextField")
 	ftf=BSF("rawRegisterBean", "jatf", cls)
 	self~assertNotNull(ftf)
-
-return
 

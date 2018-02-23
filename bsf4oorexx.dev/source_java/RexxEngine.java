@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 6.0.0, 20161120
+  * @version 6.0.0, 20180223
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,8 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2018-02-23, ---rgf, - changed logic in unregisterBean() to adapt to change in RexxAndJava.unregisterBean return type (now int)
 
     2018-01-05, ---rgf, - adapt RexxAndJava method invocations where methods got turned into static ones (e.g. registerBean)
 
@@ -164,7 +166,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20180105";
+    static final public String version = "600.20180223";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -1451,8 +1453,11 @@ if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterprete
             throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
         }
 */
-        return rexxInterface.unregisterBean(beanName);
+        return (rexxInterface.unregisterBean(beanName)>=0); // rgf, 2018-02-23: now returns remaining refCount or -1, if not found
     }
+
+
+
 
 
     /** Allow lookup of BSFRegistry entries.

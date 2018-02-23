@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2018-02-22
+  * @version 6.0.0, 2018-02-23
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -54,6 +54,15 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+
+     2018-02-22, rgf: - added static method "unregisterBean4JNI" to allow native code to decrease
+                        the reference counter of the proxied Java object
+
+                      - unregisterBean now returns the value of the reference counter or -1, if
+                        not registered
+
+                      - added method "getBeanRefCount" which returns the current value of the reference
+                        counter or -1, if not registerd
 
      2018-02-22, rgf: - added number argument to BSF-subfunction "rexxReflectObject" which allows
                         for forcing e.g. to use RexxReflectJava6 even on much higher Java runtime
@@ -535,7 +544,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20180222";
+    static final public String version = "600.20180223";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -4095,25 +4104,24 @@ if (bDebug)
                    *********************************************************/
                       {
                           final boolean bDebug= // true;    // if true, show debug infos
-                                                 false;
+                                                false;
 
                             // 2015-08-03, rgf
                           if (args.length!=2)
                           {
+if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): PANIC ! args.length!=2, instead: ["+(args==null? null : args.length)+"]!");
                               throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                        "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: call BSF " +
-                                  "'"+args[0]+"', beanName");
+                                  "'"+args[0]+"', beanName; received Rexx arguments=\""+Arrays.deepToString(args)+"\"");
                           }
 
+if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): a) about to unregister=["+args[1]+"]");
 
-if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): about to unregister=["+args[1]+"]");
-                          if (unregisterBean(args[1]))  // bean got unregistered (removed)!
-                          {
-if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): REMOVED FROM REGISTRY! ["+args[1]+"]");
-                                // return beanName (index value), indicate that this is now a mere string
-                              return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+args[1];
-                          }
-                          return makeString4Rexx(this, null);     // return .NIL
+                          int intRefCount=unregisterBean(args[1]);  // 2018-02-23, rgf: changed to return refCount
+
+if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): b) unregister=["+args[1]+"], left refCount="+intRefCount);
+
+                          return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+intRefCount;
                       }
                   }
         // ==================================================================
@@ -4588,6 +4596,28 @@ System.err.println("//++// increaseRefCounter/(registerBean), RAJBean: "+bean+" 
                        return makeString4Rexx( this, rxReflector ); // wrap the RexxReflect object and return it to Rexx
                    }
 
+               }
+
+           case GET_BEAN_REFCOUNT :         // 2018-02-23, debugging aid
+               {
+               /* ********************************************************
+                * call BSF 'getBeanRefCount', beanName
+                *
+                * - beanName: the bean to unregister
+                *
+                * - returns the current reference count or -1, if not in registry
+                *
+                *********************************************************/
+                   if (args.length!=2)
+                   {
+                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: call BSF " +
+                           "'"+args[0]+"', beanName; received Rexx arguments=\""+Arrays.deepToString(args)+"\"");
+                   }
+
+                   int intRefCount=getBeanRefCount(args[1]);    // get reference count for the bean
+
+                   return (bsfPrefixReturnValue ? STRING_INDICATOR_PREFIX : "")+intRefCount;
                }
 
 
@@ -5302,14 +5332,45 @@ if (bDebugRefCounter) // && bean.refCount>3)
     }
 
 
+
+    /** This method allows for fetching the current reference count for the supplied bean.
+      *
+      *  @param beanName name of the Bean for which the current reference count should be returned
+      *
+      *  @return returns number of reference counts left (&quot;-1&quot not in registry,
+     *           &quot;0&quot& removed from registry)
+      */
+    private static int getBeanRefCount(String beanName )
+    {
+        final boolean bDebug= // true;
+                              false;
+
+if (bDebug==true) System.err.println("RAJ:   ===> RexxAndJava.getBeanRefCount("+beanName+") ...");
+
+        RAJBean bean = null;
+
+        synchronized (lockRajRegistry)
+        {
+            bean = rajRegistry.get( beanName );
+            if (bean==null)     // not in registry
+            {
+                return -1;
+            }
+        }
+        return bean.refCount;
+    }
+
+
     /** This method allows for unregistering Beans, taking into account reference counters.
-      * Only if the reference counter is 0, will the given Bean be unregistered. (2003-01-06, ---rgf)
+      * Only if the reference counter is 0, will the given Bean be unregistered.
       *
       *  @param beanName name of the Bean to be unregistered
       *
-      *  @return returns <code>true</code>, if the Bean exists, <code>false</code> else.
+      *  @return returns number of reference counts left (&quot;-1&quot not in registry,
+     *           &quot;0&quot& removed from registry)
       */
-    protected boolean unregisterBean(String beanName )
+    // protected boolean unregisterBean(String beanName )
+    protected int unregisterBean(String beanName )
     {
 
         final boolean bDebug= // true;
@@ -5338,10 +5399,11 @@ if (bDebug) // testing; TODO: remove
 {
     System.err.println("RAJ:   ===> RexxAndJava.unregisterBean(beanName="+beanName+")");
 }
+            RAJBean bean = null;
 
             synchronized (lockRajRegistry)
             {
-                RAJBean bean = rajRegistry.get( beanName );
+                bean = rajRegistry.get( beanName );
 // if (bDebugRefCounter && (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null))
 if (bDebugRefCounter && rajRegistryToWatch.get(beanName)!=null)
 System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), bean.refCount=["+bean.refCount+"]  ...");
@@ -5357,7 +5419,8 @@ System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), bean.r
                 {
 if (bDebugRefCounter) System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), not in registry anymore!");
 
-                    return false;
+                    // return false;
+                    return -1;      // indicate not in registry
                 }
 
 if (bDebugRefCounter)
@@ -5399,7 +5462,83 @@ if (bDebugRefCounter)
                 }
             }
 
-            return true;
+            // return true;
+            return bean.refCount;       // return current reference counts
+    }
+
+
+
+
+    /** This method allows for unregistering Beans from native code. Its code is a copy of {@link unregisterBean(String beanName ).
+      *
+      *  @param beanName name of the Bean to be unregistered
+      *
+      *  @return returns number of reference counts left (&quot;-1&quot not in registry,
+     *           &quot;0&quot& removed from registry)
+      */
+    private static int unregisterBean4JNI(String beanName )
+    {
+        final boolean bDebug= // true;
+                              false;
+
+if (bDebug==true)
+System.err.println("RAJ:   ===> RexxAndJava.unregisterBean4JNI("+beanName+") ...");
+
+        RAJBean bean = null;
+
+        synchronized (lockRajRegistry)
+        {
+            bean = rajRegistry.get( beanName );
+// if (bDebugRefCounter && (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null))
+if (bDebugRefCounter && rajRegistryToWatch.get(beanName)!=null)
+System.err.println("RAJ:   ===> RexxAndJava.unregisterBean4JNI("+beanName+"), bean.refCount=["+bean.refCount+"]  ...");
+
+            if (bean==null)
+            {
+if (bDebugRefCounter) System.err.println("RAJ:   ===> RexxAndJava.unregisterBean4JNI("+beanName+"), not in registry anymore!");
+
+                return -1;
+            }
+
+if (bDebugRefCounter)
+{
+    // if (bean.refCount>3 || rajRegistryToWatch.get(beanName)!=null)
+    if (rajRegistryToWatch.get(beanName)!=null)
+    {
+        System.err.println("//--// RAJ.unregisterBean(), decreasing refCount! bean=["+bean+"], new refCount=["+(bean.refCount-1)+"] \\\\--\\\\");
+    }
+}
+            bean.refCount-=1;       // reduce counter
+            if (bean.refCount==0)   // dropped to 0, remove bean
+            {
+
+if (bDebugRefCounter)
+{
+    if (rajRegistryToWatch.get(beanName)!=null)
+    {
+        String str=" ";
+
+        if (bean.javaObject instanceof RexxProxy)
+        {
+            try {
+                str="["+((RexxProxy) bean.javaObject).sendMessage0("STRING")+"] ";
+            }
+            catch (Exception exc)
+            {}
+        }
+        System.err.println("//--// RAJ.unregisterBean(), REMOVING FROM REGISTRY! beanName=["+beanName+"], bean.refCount=["+bean.refCount+"] "+str+"\\\\--\\\\");
+        rajRegistryToWatch.remove(beanName);
+    }
+    else    // TODO: 20161220, rgf: temporaryly show all removals!
+    {
+        System.err.println("//--// RAJ.unregisterBean(), REMOVING FROM REGISTRY! beanName=["+beanName+"], bean.refCount=["+bean.refCount+"] \\\\--\\\\");
+    }
+}
+
+                rajRegistry.remove(beanName);
+            }
+        }
+        return bean.refCount;
     }
 
 

@@ -106,8 +106,11 @@ enum InvocationType {
     SET_REXX_NULL_STRING        ( "setRexxNullString"        ) , //=  25
     SLEEP                       ( "sleep"                    ) , //=  26
 
-    REXX_REFLECT_OBJECT         ( "rexxReflectObject"        ) ; //=  27 // rgf, 2018-02-17: return current rexxReflectObject; allows
+    REXX_REFLECT_OBJECT         ( "rexxReflectObject"        ) , //=  27 // rgf, 2018-02-17: return current rexxReflectObject; allows
                                                                          // querying & setting useCaching, useReflectInvoke, useUnreflect
+    GET_BEAN_REFCOUNT           ( "getBeanRefCount"          )   //=  28 // rgf, 2018-02-23: returns current refCount or -1 if not in registry
+                                                               ;
+
 
     /**  HashMap that allows to retrieve the enum type given a string, irrespectible of the case the string was supplied.
      *   Cf. {@link static public InvocationType getInvocationType(String mixedCase)}.
