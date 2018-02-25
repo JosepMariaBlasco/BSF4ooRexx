@@ -44,6 +44,8 @@
             TRUE = '.TRUE'
             ATTRIBUTE = 'ATTRIBUTE'
             ANNOTATE = 'ANNOTATE'
+            CASE = 'CASE'
+            CASELESS = 'CASELESS'
             CLASS = 'CLASS'
             CONSTANT = 'CONSTANT'
             METHOD = 'METHOD'
@@ -314,15 +316,15 @@
 }
 
 
-file ::= shebang? (new_line | instruction)* (directive)*
+package ::= shebang? (new_line | instruction)* (directive)*
 
 shebang ::= SHEBANG_LINE
 
 private meta paren ::= <<p>> | (LPAREN (<<paren  <<p>>>>| <<p>>) RPAREN)
 
 environment_id ::= ENV_IDENTIFIER | ENV_ENVIRONMENT | ENV_LOCAL
-id ::= (namespace_prefix (new_line* !assignments_and_keywords))? (identifier | environment_id | keyword_list)
-keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) | (EXIST) | (CREATE) | (COUNT) | (SUPER) | (PACKAGE) | (ABSTRACT) | (ANNOTATE) | (ATTRIBUTE) | (CLASS) | (CONDITION) | (DIGITS) | (EXTERNAL) | (FORM) | (FUZZ) | (GET) | (GUARDED) | (INHERIT) | (LIBRARY) | (METACLASS) | (MIXINCLASS) | (NAMESPACE) | (NOPROLOG) | (PRIVATE) | (PROLOG) | (PROTECTED) | (PUBLIC) | (RESOURCE) | (RESOURCE_DATA) | (SET) | (SUBCLASS) | (TRACE) | (UNGUARDED) | (UNPROTECTED) | (ADDRESS) | (ARG) | (CALL) | (DO) | (DROP) | (EXIT) | (EXPOSE) | (FORWARD) | (GUARD) | (IF) | (INTERPRET) | (ITERATE) | (LEAVE) | (LOOP) | (NOP) | (NUMERIC) | (OPTIONS) | (PARSE) | (PROCEDURE) | (PULL) | (PUSH) | (QUEUE) | (RAISE) | (REPLY) | (RETURN) | (SAY) | (SELECT) | (SIGNAL) | (TRACE) | (USE) | (SELF) | (ADDITIONAL) | (ANY) | (ARG) | (ARGUMENTS) | (ARRAY) | (BY) | (CASELESS) | (CLASS) | (COMMANDS) | (CONTINUE) | (DESCRIPTION) | (DIGIT) | (DROP) | (ELSE) | (END) | (ENGINEERING) | (ERROR) | (EXIT) | (EXPOSE) | (FAILURE) | (FOR) | (FOREVER) | (FORM) | (FUZZ) | (HALT) | (INTERMEDIATES) | (LABEL) | (LABELS) | (LINEIN) | (LINEOUT) | (LOSTDIGITS) | (LOWER) | (MESSAGE) | (NAME) | (NOMETHOD) | (NORMAL) | (NOSTRING) | (NOTREADY) | (NOVALUE) | (OFF) | (ON) | (OTHERWISE) | (OVER) | (PROPAGATE) | (PULL) | (RESULTS) | (RETURN) | (SCIENTIFIC) | (SOURCE) | (STRICT) | (SYNTAX) | (THEN) | (TO) | (UNTIL) | (UPPER) | (USER) | (VALUE) | (VAR) | (VERSION) | (WHEN) | (WHILE) | (WITH) | (ITEM) | (INDEX)
+id ::= (SELF TILDE)? (namespace_prefix (new_line* !assignments_and_keywords))? (identifier | environment_id | keyword_list)
+keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) | (EXIST) | (CREATE) | (CASE) | (COUNT) | (SUPER) | (PACKAGE) | (ABSTRACT) | (ANNOTATE) | (ATTRIBUTE) | (CLASS) | (CONDITION) | (DIGITS) | (EXTERNAL) | (FORM) | (FUZZ) | (GET) | (GUARDED) | (INHERIT) | (LIBRARY) | (METACLASS) | (MIXINCLASS) | (NAMESPACE) | (NOPROLOG) | (PRIVATE) | (PROLOG) | (PROTECTED) | (PUBLIC) | (RESOURCE) | (RESOURCE_DATA) | (SET) | (SUBCLASS) | (TRACE) | (UNGUARDED) | (UNPROTECTED) | (ADDRESS) | (ARG) | (CALL) | (DO) | (DROP) | (EXIT) | (EXPOSE) | (FORWARD) | (GUARD) | (IF) | (INTERPRET) | (ITERATE) | (LEAVE) | (LOOP) | (NOP) | (NUMERIC) | (OPTIONS) | (PARSE) | (PROCEDURE) | (PULL) | (PUSH) | (QUEUE) | (RAISE) | (REPLY) | (RETURN) | (SAY) | (SELECT) | (SIGNAL) | (TRACE) | (USE) | (SELF) | (ADDITIONAL) | (ANY) | (ARG) | (ARGUMENTS) | (ARRAY) | (BY) | (CASELESS) | (CLASS) | (COMMANDS) | (CONTINUE) | (DESCRIPTION) | (DIGIT) | (DROP) | (ELSE) | (END) | (ENGINEERING) | (ERROR) | (EXIT) | (EXPOSE) | (FAILURE) | (FOR) | (FOREVER) | (FORM) | (FUZZ) | (HALT) | (INTERMEDIATES) | (LABEL) | (LABELS) | (LINEIN) | (LINEOUT) | (LOSTDIGITS) | (LOWER) | (MESSAGE) | (NAME) | (NOMETHOD) | (NORMAL) | (NOSTRING) | (NOTREADY) | (NOVALUE) | (OFF) | (ON) | (OTHERWISE) | (OVER) | (PROPAGATE) | (PULL) | (RESULTS) | (RETURN) | (SCIENTIFIC) | (SOURCE) | (STRICT) | (SYNTAX) | (THEN) | (TO) | (UNTIL) | (UPPER) | (USER) | (VALUE) | (VAR) | (VERSION) | (WHEN) | (WHILE) | (WITH) | (ITEM) | (INDEX)
 
 private assignments_and_keywords ::= ( assignment |  <<excluding_expr keyword_list>> | (keyword_instruction) )
 instruction ::= (SEMICOLON | label_instruction | ((assignments_and_keywords | (!END keyword_list))  instruction_terminator))
@@ -340,7 +342,7 @@ namespace_prefix ::= (identifier | keyword_list) COLON
 private lit ::= string_lit | number_lit
 
 string_lit ::= STRING_LITERAL | BINARY_STRING_LITERAL | HEX_STRING_LITERAL
-number_lit ::= INTEGER_LITERAL | FLOAT_LITERAL | bool_lit
+number_lit ::= (MINUS? (INTEGER_LITERAL | FLOAT_LITERAL)) | bool_lit
 bool_lit ::= FALSE | TRUE
 
 id_with_lit ::= id | lit
@@ -406,7 +408,7 @@ private mul_op ::= (MUL MUL)|MUL|(DIV DIV)| DIV|INTDIV
 private meta primary ::=  (  message_term | literal_expr | <<ref_expr <<p>>>> | function_call  | paren_expr )
 
  meta paren_expr ::= MINUS? '(' expr ')' {pin=2}
- meta ref_expr ::= (namespace_prefix (new_line* !assignments_and_keywords))? MINUS? (identifier | environment_id | (!<<p>> keyword_list) ) // ID
+ meta ref_expr ::= (namespace_prefix (new_line* !assignments_and_keywords))? MINUS? (function_call | identifier | environment_id | (!<<p>> keyword_list) ) // ID
 literal_expr ::= string_lit | negative_numeric_expr | numeric_expr | bool_lit |  NIL
 numeric_expr ::= PLUS? (INTEGER_LITERAL | FLOAT_LITERAL)
 negative_numeric_expr ::= MINUS (INTEGER_LITERAL | FLOAT_LITERAL)
@@ -424,6 +426,11 @@ label_instruction ::= (symbol_or_string | keyword_list) COLON (keyword_procedure
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Directives
 ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+directive_access_private ::= (PRIVATE)
+directive_access_public ::= PUBLIC
+directive_access ::= directive_access_private | directive_access_public
+
 directive_start ::= (COLON COLON)
 
 directive ::= !directive_resource_end directive_exclusive_end
@@ -436,84 +443,100 @@ private directive_recover_rule ::= !(directive_start)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 directive_annotate ::= ANNOTATE
-    (directive_annotate_attribute|directive_annotate_class | directive_annotate_constant | directive_annotate_method | directive_annotate_package | directive_annotate_routine)
+    directive_annotate_reference
      directive_annotate_data+ instruction_terminator{implements = "org.oorexx.ide.lang.core.DirectiveHeader"  pin = 1}
-directive_annotate_attribute ::= (ATTRIBUTE id) {pin = 1}
-directive_annotate_class ::=  (CLASS id)  {pin = 1}
-directive_annotate_constant ::= (CONSTANT id) {pin = 1}
-directive_annotate_method ::= (METHOD id) {pin = 1}
+directive_annotate_reference ::= (directive_annotate_attribute|directive_annotate_class | directive_annotate_constant | directive_annotate_method | directive_annotate_package | directive_annotate_routine)
+directive_annotate_attribute ::= (ATTRIBUTE directive_annotate_reference_name) {pin = 1}
+directive_annotate_class ::=  (CLASS directive_annotate_reference_name)  {pin = 1}
+directive_annotate_constant ::= (CONSTANT directive_annotate_reference_name) {pin = 1}
+directive_annotate_method ::= (METHOD directive_annotate_reference_name) {pin = 1}
 directive_annotate_package ::= PACKAGE
-directive_annotate_routine ::= (ROUTINE id) {pin = 1}
-directive_annotate_data ::= id lit {pin = 1}
+directive_annotate_routine ::= (ROUTINE directive_annotate_reference_name) {pin = 1}
+directive_annotate_reference_name ::= id
+directive_annotate_data ::= directive_annotate_name directive_annotate_value
+directive_annotate_name ::= id {pin = 1}
+directive_annotate_value ::= lit {pin = 1}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ::Attribute
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 directive_attribute ::= ATTRIBUTE symbol_or_string (directive_attribute_get_set | directive_attribute_class
-| directive_attribute_public_private | directive_attribute_guard_unguarded
+| directive_attribute_access | directive_attribute_guard_unguarded
 | directive_attribute_unprotected_protected
 | directive_attribute_abstract_delegate_external)* instruction_terminator directive_attribute_body? {implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
 
 directive_attribute_get_set ::= GET | SET {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_attribute_class ::= CLASS {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-directive_attribute_public_private ::= PUBLIC | (PRIVATE) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+directive_attribute_access ::= directive_access {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_attribute_guard_unguarded ::= GUARDED | UNGUARDED {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_attribute_unprotected_protected ::= UNPROTECTED | PROTECTED {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-directive_attribute_abstract_delegate_external ::= ABSTRACT | (DELEGATE symbol_or_string) | (EXTERNAL string_lit) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+directive_attribute_abstract_delegate_external ::= directive_attribute_abstract | directive_attribute_delegate | directive_attribute_external {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+directive_attribute_abstract ::= ABSTRACT
+directive_attribute_external ::= (EXTERNAL string_lit){pin = 1}
+directive_attribute_delegate ::= (DELEGATE symbol_or_string){pin = 1}
 directive_attribute_body ::= (keyword_expose instruction_terminator)? (!keyword_expose instruction)*
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ::Class
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-directive_class ::= CLASS symbol_or_string (directive_class_metaclass | directive_class_public_private | directive_class_mixinclass_subclass | directive_class_abstract)* directive_class_inherit? instruction_terminator
+directive_class ::= CLASS directive_class_name (directive_class_metaclass | directive_class_access | directive_class_mixinclass_subclass | directive_class_abstract)* directive_class_inherit? instruction_terminator
                                 directive_class_body? {implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
 
-directive_class_metaclass ::= METACLASS symbol_or_string {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin = 1}
-directive_class_public_private ::= PUBLIC | (PRIVATE) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+directive_class_metaclass ::= METACLASS directive_class_metaclass_name {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin = 1}
+directive_class_access ::= directive_access {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_class_mixinclass_subclass ::=  directive_class_mixinclass | directive_class_subclass  {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-directive_class_mixinclass ::= (MIXINCLASS symbol_or_string){pin = 1}
-directive_class_subclass ::= (SUBCLASS symbol_or_string){pin = 1}
+directive_class_mixinclass ::= (MIXINCLASS directive_class_mixinclass_name){pin = 1}
+directive_class_subclass ::= (SUBCLASS directive_class_subclass_name){pin = 1}
 directive_class_abstract ::= ABSTRACT {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-directive_class_inherit ::= (INHERIT symbol_or_string+) {pin = 1}
+directive_class_inherit ::= (INHERIT directive_class_inherit_name+) {pin = 1}
 
 directive_class_body ::= (!(directive_start (directive_class | directive_requires | directive_routine | directive_options)) directive)*
-
+directive_class_name ::= symbol_or_string
+directive_class_metaclass_name ::= symbol_or_string
+directive_class_mixinclass_name ::= symbol_or_string
+directive_class_subclass_name ::= symbol_or_string
+directive_class_inherit_name ::= symbol_or_string
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ::Constant
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-directive_constant ::= CONSTANT symbol_or_string lit? instruction_terminator{implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
+directive_constant ::= CONSTANT symbol_or_string directive_constant_value instruction_terminator{implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
+directive_constant_value ::= lit?
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ::Method
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-directive_method ::= METHOD symbol_or_string (directive_method_attribute | directive_method_class | directive_method_public_private | directive_method_guarded_unguarded | directive_method_unprotected_protected | directive_method_abstract_delegate_external)* instruction_terminator
+directive_method ::= METHOD directive_method_name (directive_method_attribute | directive_method_class | directive_method_access | directive_method_guarded_unguarded | directive_method_unprotected_protected | directive_method_abstract_delegate_external)* instruction_terminator
             directive_method_body? {implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin=1}
 directive_method_attribute ::= ATTRIBUTE {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin=1}
 directive_method_class ::= CLASS {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-directive_method_public_private ::= PUBLIC | ((PRIVATE)) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+directive_method_access ::= directive_access {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_method_guarded_unguarded ::= GUARDED | UNGUARDED {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_method_unprotected_protected ::= UNPROTECTED | PROTECTED {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-directive_method_abstract_delegate_external ::= ABSTRACT | directive_method_delegate | directive_method_external {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+directive_method_abstract_delegate_external ::= directive_method_abstract | directive_method_external | directive_method_delegate {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+directive_method_abstract ::= ABSTRACT
+directive_method_external ::= (EXTERNAL string_lit){pin = 1}
 directive_method_delegate ::= (DELEGATE symbol_or_string){pin = 1}
-directive_method_external ::= (EXTERNAL symbol_or_string){pin = 1}
 directive_method_body ::= (keyword_expose instruction_terminator)? (!keyword_expose instruction)*
+directive_method_name ::= symbol_or_string
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ::Options
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-directive_options ::= OPTIONS
-((DIGITS number_lit) | (FORM (ENGINEERING | SCIENTIFIC)) | (FUZZ id) |
-(NOVALUE (CONDITION | ERROR)) | PROLOG | NOPROLOG | (TRACE id))* instruction_terminator {implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
+directive_options ::= OPTIONS directive_options_key_value_pair* instruction_terminator {implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
+
+directive_options_key_value_pair ::= ((DIGITS INTEGER_LITERAL) | (FORM (ENGINEERING | SCIENTIFIC)) | (FUZZ id) |
+                                     (NOVALUE (CONDITION | ERROR)) | PROLOG | NOPROLOG | (TRACE id))
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ::Requires
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-directive_requires::= REQUIRES (id | STRING_LITERAL) (LIBRARY | (NAMESPACE id))? instruction_terminator {implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
+directive_requires::= REQUIRES directive_requires_path instruction_terminator {implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
+directive_requires_path ::= (id | STRING_LITERAL) (LIBRARY | (NAMESPACE id))?
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ::Resource
@@ -529,8 +552,8 @@ private external directive_resource_data_ext_call ::= directive_resource_data_ex
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ::Routine
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-directive_routine ::= ROUTINE symbol_or_string (directive_routine_private_public | directive_routine_external)* instruction_terminator directive_routine_body{implements = "org.oorexx.ide.lang.core.DirectiveHeader"  pin = 1}
-directive_routine_private_public ::= ((PRIVATE)) | PUBLIC {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+directive_routine ::= ROUTINE symbol_or_string (directive_routine_private_public | directive_routine_external)* instruction_terminator directive_routine_body?{implements = "org.oorexx.ide.lang.core.DirectiveHeader"  pin = 1}
+directive_routine_private_public ::= directive_access {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_routine_external ::= (EXTERNAL symbol_or_string) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"  pin = 1}
 
 directive_routine_body ::= (!keyword_expose instruction)+ | instruction_terminator
@@ -633,7 +656,9 @@ keyword_forward_array ::= ("ARRAY(" expr RPAREN) | (ARRAY LPAREN expr RPAREN) {i
 
 keyword_forward_message ::= (MESSAGE <<excluding_expr (ARGUMENTS | CONTINUE | CLASS | TO)>>) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin = 1}
 keyword_forward_class ::= (CLASS <<excluding_expr (MESSAGE | CONTINUE | ARGUMENTS | TO)>>) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin = 1}
-keyword_forward_to ::= (TO <<excluding_expr (MESSAGE | CONTINUE | CLASS | ARGUMENTS)>>) {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin = 1}
+keyword_forward_to ::= ( (TO string_lit ) | ("TO(" <<excluding_expr (MESSAGE | CONTINUE | CLASS | ARGUMENTS)>> RPAREN) | (TO LPAREN <<excluding_expr (MESSAGE | CONTINUE | CLASS | ARGUMENTS)>> RPAREN ))
+
+{implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Guard
@@ -761,7 +786,7 @@ keyword_select ::= SELECT keyword_select_1 instruction_terminator (keyword_selec
 
 private keyword_select_1 ::= (keyword_select_case | keyword_select_label)*
 keyword_select_label ::= LABEL symbol_or_string {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-keyword_select_case ::= CASE <<excluding_expr (WHEN | OTHERWISE)>> {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+keyword_select_case ::= CASE <<excluding_expr (WHEN | OTHERWISE | LABEL)>> {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 
 keyword_select_when ::= WHEN <<excluding_expr THEN>> instruction_terminator? THEN instruction_terminator? instruction
 keyword_select_otherwise ::= OTHERWISE instruction_terminator? instruction*

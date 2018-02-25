@@ -406,6 +406,7 @@ DEC_LITERAL = [0-9] [0-9_]*
     "ARGUMENTS"                      { return ARGUMENTS; }
     "ARRAY"                      { return ARRAY; }
     "BY"                      { return BY; }
+    "CASE" {return CASE;}
     "CASELESS"                      { return CASELESS; }
     "CLASS"                      { return CLASS; }
     "COMMANDS"                      { return COMMANDS; }

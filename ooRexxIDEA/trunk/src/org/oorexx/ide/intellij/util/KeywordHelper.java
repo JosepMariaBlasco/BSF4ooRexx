@@ -16,6 +16,8 @@ public class KeywordHelper {
                         "DELEGATE",
                         "ATTRIBUTE",
                         "CLASS",
+                        "CASE",
+                        "CASELESS",
                         "CONDITION",
                         "DIGITS",
                         "EXTERNAL",
