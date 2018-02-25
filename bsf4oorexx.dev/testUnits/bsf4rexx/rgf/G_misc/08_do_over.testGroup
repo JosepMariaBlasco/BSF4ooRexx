@@ -33,16 +33,14 @@ return testResult
 
 
 ::method "test_01_do_over_java_array"
-
     jarr=.bsf~bsf.createJavaArrayOf("java.lang.String", "1_one", .nil , "3_three", "4_four")
-
     self~assertEquals(4,jarr~size)  -- Java array has a capacity==size of 4
     rexxArr=.array~new
-    do val over jarr       -- iterate over Java array
+    do val over jarr       -- iterate over Java array, null will not be in MAKEARRAY result!
        rexxArr~append(val)
     end
-    self~assertEquals(4,rexxArr~items)
-    self~assertSameList(.array~of("1_one", .nil , "3_three", "4_four"), rexxArr)
+    self~assertEquals(3,rexxArr~items)
+    self~assertSameList(.array~of("1_one", "3_three", "4_four"), rexxArr) -- null will not be in result
 -- say "at end of: test_01" "/ self~assertCount:" self~assertCount
 
 

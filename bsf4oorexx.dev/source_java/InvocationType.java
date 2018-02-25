@@ -108,8 +108,9 @@ enum InvocationType {
 
     REXX_REFLECT_OBJECT         ( "rexxReflectObject"        ) , //=  27 // rgf, 2018-02-17: return current rexxReflectObject; allows
                                                                          // querying & setting useCaching, useReflectInvoke, useUnreflect
-    GET_BEAN_REFCOUNT           ( "getBeanRefCount"          )   //=  28 // rgf, 2018-02-23: returns current refCount or -1 if not in registry
-                                                               ;
+    GET_BEAN_REFCOUNT           ( "getBeanRefCount"          ) , //=  28 // rgf, 2018-02-23: returns current refCount or -1 if not in registry
+    TEST_PING                   ( "testPing"                 )   //=  29 // rgf, 2018-02-25: just returns: allows to test and time calls to the bridge
+                               ;
 
 
     /**  HashMap that allows to retrieve the enum type given a string, irrespectible of the case the string was supplied.

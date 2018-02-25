@@ -37,6 +37,9 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
+    6.0.0   2018-02-24, rgf: - new external Rexx routine "BsfTestPing" which only returns; allows to test
+                               and time calling external Rexx functions from Rexx scripts
+
     6.0.0   2018-02-23, rgf: - new function "BsfUninit4JavaBean(beanName)": called from UNINIT code in BSF,
                                version uses RexxAndJava class object, therefore the Rexx interpreter instance
                                used for uninits does not have a need for a peer RexxAndJava instance (ooRexx
@@ -941,11 +944,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20180223 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180224 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20180223 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180224 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20180223 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180224 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -7300,6 +7303,13 @@ RexxRoutine1(size_t, BsfUninit4JavaBean, RexxObjectPtr, bean)
 
 
 
+// ---------------------------------------------------------------------------------------
+    // ---rgf, 2018-02-24: a test routine to allow measuring various invocation times of a native function from Rexx
+RexxRoutine0(RexxObjectPtr, BsfTestPing)
+{
+    return NULL;
+}
+
 
 
 
@@ -7853,6 +7863,7 @@ void RexxEntry bsfUnloader (RexxThreadContext * rtc)
 #endif
 
         REXX_TYPED_ROUTINE( BsfUninit4JavaBean          , BsfUninit4JavaBean          ),    // rgf, 2018-02-23
+        REXX_TYPED_ROUTINE( BsfTestPing                 , BsfTestPing                 ),    // rgf, 2018-02-24
 
         REXX_LAST_ROUTINE()
     };

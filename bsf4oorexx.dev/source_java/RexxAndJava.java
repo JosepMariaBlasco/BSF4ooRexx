@@ -4621,6 +4621,26 @@ System.err.println("//++// increaseRefCounter/(registerBean), RAJBean: "+bean+" 
                }
 
 
+           case TEST_PING         :         // 2018-02-25, debugging (test and timing) aid
+               {
+               /* ********************************************************
+                * call BSF 'testPing'
+                *
+                * - beanName: the bean to unregister
+                *
+                *
+                *********************************************************/
+                   if (args.length!=1)
+                   {
+                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: \"call BSF " +
+                           "'"+args[0]+"'\" (no arguments); received Rexx arguments=\""+Arrays.deepToString(args)+"\"");
+                   }
+
+                   return makeString4Rexx(this, null);  // we return null (in this case: nothing)
+               }
+
+
 
 
         // ==================================================================

@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* <a href="http://www.ooRexx.org>Object Rexx</a> convenience class for making IBM's and
    Apache's Bean Scripting Framework (BSF) available in an OO-style as well: Java classes and
    Java objects appear as Object Rexx classes and objects and one can send Object Rexx
@@ -12,6 +12,16 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-02-25, ---rgf, - finished rework of using rBSF/.routines~xBSF and the like
+                             - now the class methods and routines bsf.createArrayOf/bsf.createJavaArrayOf
+                               behave the same by not proxying .uno_reference objects (if OOo/AOO support
+                               is active); reason being that .UNO objects will forward unknown messages
+                               to their embedded BSF object peer
+                             - tidying up
+
+         2018-02-24, ---rgf, - fetch the most used native routines to have them incorporated into .routines,
+                               change INTERPRET to call/callWith messages to those routines, which in total
+                               should speed up the bridge quite a bit (approximately at least 10 times)
 
          2018-02-23, ---rgf, - UNINITs now use the new "BsfUninit4JavaBean(beanName)" function which is
                                able to be executed on an ooRexx created Rexx interpreter that has no
@@ -591,7 +601,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20170823)
+   version:     6.00 (20180824)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -600,7 +610,7 @@
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2001-2017 Rony G. Flatscher
+   Copyright 2001-2018 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -618,7 +628,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2001-2017 Rony G. Flatscher
+   Copyright 2001-2018 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -637,11 +647,16 @@
    .local~revision.id    ="$Id: BSF.CLS 927 2010-12-26 17:34:19Z Administrator $"
 */
 
+bDebug=.false -- .true
+
 parse source s
 
--- .stderr~say("BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ...")
--- .stderr~say("BSF.CLS - parse source:" pp(s) "- editing it for new release, since Monday, 2018-02-19...")
--- say "... BSF.CLS ... prolog code ..."  ".bsf.rii_ID:" pp(.bsf.rii_ID)  ".bsf.primodalTID="pp(.bsf.primodalTID)  "TID:" pp(BsfGetTid()) "created in RII:" pp(rii_id)
+if bDebug=.true then
+do
+   .stderr~say("BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ...")
+   .stderr~say("BSF.CLS - parse source:" pp(s) "- editing it for new release, since Monday, 2018-02-19...")
+   .stderr~say("... BSF.CLS ... prolog code ..."  ".bsf.rii_ID:" pp(.bsf.rii_ID)  ".bsf.primodalTID="pp(.bsf.primodalTID)  "TID:" pp(BsfGetTid()) "created in RII:" pp(rii_id))
+end
 
    signal on syntax
    parse version v .
@@ -660,7 +675,6 @@ parse source s
 
    if BsfInvokedBy()=0 then   -- JVM not yet loaded
    do
---      call BsfLoadJava
          -- process Java runtime args, if any
       jso=value('BSF4Rexx_JavaStartupOptions', ,"ENVIRONMENT")
 
@@ -669,12 +683,7 @@ parse source s
 
       arr=parseJavaOptions(jso)
       stmt=createJavaLoadStatement(arr)      -- create the BsfLoadJava-statement
-/*
-      if jso<>"" then      -- environment variable set, if so, show its value
-         say "BSF.CLS: ... using environment variable 'BSF4Rexx_JavaStartupOptions' to configure Java:" pp(jso) "..."
-*/
       interpret stmt       -- carry out the statement in the string
-
    end
 
    -- since 2008-06-22 (rgf) this forces RexxAndJava to prepend type indicators!
@@ -686,13 +695,13 @@ parse source s
       --                  make sure that this function is called after Java got loaded (if Rexx had to load Java)
    if \.local~hasEntry("BSF.RII_ID") then
    do
-      .local~bsf.rii_id=bsf('get_rii_id') ~substr(4)
+      .local~bsf.rii_id=.routines~xBsf~call('get_rii_id') ~substr(4)
 -- .stderr~say("BSF::prolog - after setting BSF.RII_ID in .local:" .bsf.rii_id)
    end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180223" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180225" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -709,7 +718,7 @@ parse source s
    call BSfShowErrorMessage .false  -- turn off displaying the Java exception message (leftover from the very early BSF4Rexx days)
 
 -- numeric digits 20 -- otherwise d2x may cause an error which is swallowed in destructors (uninit methods), but ends them
--- .stderr~say("BSF.CLS - about to leave the PROLOG code, tid="pp(bsfGetTID()) ".bsf.rii_ID="pp(.bsf.rii_ID) ".bsf.primodalTID="pp(.bsf.primodalTID)  ".local~identityHash~d2x="pp(.local~identityHash~d2x(18)) ".bsf~identityhash~d2x="pp(.bsf~identityhash~d2x(18)) "<=== "~copies(5))
+ -- .stderr~say("BSF.CLS - about to leave the PROLOG code, tid="pp(bsfGetTID()) ".bsf.rii_ID="pp(.bsf.rii_ID) ".bsf.primodalTID="pp(.bsf.primodalTID)  ".local~identityHash~d2x="pp(.local~identityHash~d2x(16)) ".bsf~identityhash~d2x="pp(.bsf~identityhash~d2x(16)) "<=== "~copies(5))
    return
 
 syntax:
@@ -719,6 +728,27 @@ syntax:
 
 ::requires "BSF4ooRexx" library
 
+
+/* ================================================================================================= */
+/* ================================================================================================= */
+/* 2018-02-14, rgf: incorporate the native routines in the local .routines directory and invoke the routines
+ *                  using call and callWith messages as this is about ten times faster according to tests
+*/
+::routine xBSF                   PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BSF                 "
+::routine xBsfCreateRexxProxy    PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfCreateRexxProxy  "
+::routine xBsfRexxProxy          PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfRexxProxy        "
+::routine xBsfUninit4JavaBean    PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfUninit4JavaBean  "
+::routine xBsfRawBytes           PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfRawBytes         "
+::routine xBsfContextVariables   PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfContextVariables "
+::routine xBsfGetRIID            PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfGetRIID          "
+::routine xBsfGetRTC             PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfGetRTC           "
+::routine xBsfGetTID             PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfGetTID           "
+::routine xBsfTestPing           PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfTestPing         "
+
+
+
+
+/* ================================================================================================= */
    /* ooRexx macros in AOO 4.x on MacOSX do not run, as this setup code uses an awt class which
       must nor run on the main thread on MacOSX. As a result ooRexx macros on AOO 4.x cause a
       runtime exception and do not run. Moving the initialization into a routine that needs to
@@ -742,6 +772,7 @@ syntax:
          app~setDockIconImage(.bsf~new("javax.swing.ImageIcon",.bsf4rexx~bsf4oorexx_256)~getImage)
    end
 
+-- TODO: testing, also remove menu items?
       -- starting with Java 9 (fall 2017) the java.awt.Taskbar and java.awt.Desktop classes have (new) support
       -- that works on MacOSX as well
    else
@@ -755,10 +786,11 @@ syntax:
 
 syntax:
    co=condition("o") -- get condition object
-   .error~say("BSF.CLS, line" .line": MacOSX support to add dock icon caused an exeption:" pp(co~message))
+   .error~say("BSF.CLS, line" .line": MacOSX support attempting to add dock icon caused an exeption:" pp(co~message))
 
 
 
+/* ================================================================================================= */
 ::routine getAndSetPathToIcons	-- rgf, 2011-02-21: find path to icons, if found save icons
   opsys=.bsf4rexx~opsys~left(1)     -- get first letter of operating system (L=Linux, M=MacOSX, W=Windows, ...)
 
@@ -810,6 +842,7 @@ syntax:
 
 
 
+/* ================================================================================================= */
 /* Initialize BSF.DIR which is stored with the BSF class object, such that
    each interpreter instance is separated from each other w.r.t. the objects
    stored in there.
@@ -880,9 +913,9 @@ syntax:
       "void",             'void.class'         ,,   -- primitive
       "Void.class",       'Void.class'         )    -- a Java Object class
 
-  do i=1 to arr~items by 2    -- pre-registered classes (see above)
+   do i=1 to arr~items by 2    -- pre-registered classes (see above)
      bsf.dir~setentry(arr[i], .bsf_reference~new(arr[i+1], .true))
-  end
+   end
 
       -- Java classes for "String" and those representing the primitive datatypes
       -- creates ooRexx proxy classes
@@ -898,15 +931,15 @@ syntax:
       'java.lang.Short'             ,,   -- a Java Object class
       'java.lang.System'            )    -- a Java Object class
 
-  do i=1 to arr~items
+   do i=1 to arr~items
       -- make these classes accessible as if they were ooRexx classes
       jClassName=arr[i]
-     bsf.dir~setEntry(jClassName, .bsf~bsf.import(jClassName)) -- will also place in .environment (instead of .local since 20171223)
-  end
+      bsf.dir~setEntry(jClassName, .bsf~bsf.import(jClassName)) -- will also place in .environment (instead of .local since 20171223)
+   end
 
-  do key over .list~of("line.separator", "file.separator", "path.separator", "file.encoding")
-     bsf.dir~setEntry(key,bsf.dir~java.lang.System~getProperty(key))
-  end
+   do key over .list~of("line.separator", "file.separator", "path.separator", "file.encoding")
+      bsf.dir~setEntry(key,bsf.dir~java.lang.System~getProperty(key))
+   end
 
   -- 2018-02-20, rgf: add "java.version",  "java.major.version" and "java.minor.version"
   javaVersion=bsf.dir~entry("java.lang.System")~getProperty("java.version")
@@ -921,11 +954,12 @@ syntax:
   bsf.dir~setEntry("java.major.version", major)
   bsf.dir~setEntry("java.minor.version", minor )
 
--- say .line": BSF.CLS - java.version="pp(bsf.dir~java.version) "java.major.version="pp(bsf.dir~java.major.version) "java.minor.version="pp(bsf.dir~java.minor.version)
+--  say .line": BSF.CLS - java.version="pp(bsf.dir~java.version) "java.major.version="pp(bsf.dir~java.major.version) "java.minor.version="pp(bsf.dir~java.minor.version)
 
   return .true    -- indicate we created and populated .bsf4rexx
 
 
+/* ================================================================================================= */
 -- box primitive datatypes into their Java classes counterparts
 -- BOolean, BYte, C, D, F, I, L, SHort, STring
 
@@ -964,6 +998,7 @@ syntax:
    raise propagate
 
 
+/* ================================================================================================= */
 -- unbox primitive datatype from their Java class counterpart, where they are embedded
 -- BOolean, BYte, C, D, F, I, L, SHort, STring
 ::routine unbox public
@@ -981,6 +1016,7 @@ syntax:
    return o~toString -- Java string representation suffices for ooRexx
 
 
+/* ================================================================================================= */
 ::routine createJavaLoadStatement public
   use arg a
   tmpArgs=.mutableBuffer~new
@@ -991,9 +1027,11 @@ syntax:
 
   return "CALL BsfLoadJava" tmpArgs~string
 
+/* ================================================================================================= */
 ::routine  escapeQuotes
      return '"'||changestr('"', arg(1), '""')||'"'
 
+/* ================================================================================================= */
 /*
    parse Java startup options which can be given via the operating system environment
    variable named 'BSF4Rexx.JavaStartupOptions'; returns an array with each option
@@ -1071,35 +1109,19 @@ syntax:
 
 
 
-
-
-
-/* -------------------------------------------------------------
-   routine which turns an array into an argument string as expected
-   by the Java side, starting with the indicated element
-   ------------------------------------------------------------- */
-::ROUTINE makeArgString
-   use arg args
-
-   tmpString    = ""
-   do i=1 to args~items
-      if args[i]=.nil then
-         tmpString = tmpString ', "' || .bsf~bsf.null_string || '"'
-      else
-         tmpString = tmpString ', "' || args[i] || '"'
-   END
-   return tmpString
-
-
+/* ================================================================================================= */
 /* -------------------------------------------------------------
    routine which mimicks C/Java's "x ? a : b;"
    if arg(1) is true, returns second argument, else third
    ------------------------------------------------------------- */
-::ROUTINE choose
-   if arg(1)=.true then return arg(2)
-                   else return arg(3)
+   /* VBasic-like iif() function: if arg(1) is .true, then return arg(2), else arg(3)  */
+::routine iif  public
+  if arg(1)=.true then return arg(2)
+  return arg(3)
 
 
+
+/* ================================================================================================= */
 /* -------------------------------------------------------------
    floating class method meant for attaching to imported Java
    classes (for which an Object Rexx proxy class is created)
@@ -1115,28 +1137,20 @@ syntax:
 
         -- create an instance of javaClass and register it with BSF,
         -- leave beanName empty, this way we get a unique name from Java
-
    if args~class = .array then tmpArr=args            -- array of arguments
                           else tmpArr=arg(1, "Array") -- create an array from arguments
 
-   -- code = 'beanName=BSF( "registerBeanStrict", , "' || self~bsf.FullJavaClassName || '"'
-   code = 'beanName=BSF( "newStrict", , "' || self~bsf.FullJavaClassName || '"'
-   do i=1 to tmpArr~items
-      a.i=choose(tmpArr[i]=.nil, .bsf~bsf.null_string, tmpArr[i])
-      code=code ", a."i
-   end
-   code=code ") ~substr(4)"  -- skip indicator string
-
-  signal on syntax name any         -- trap any exceptions
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  interpret code        /* execute the code, calling bsf() with 'registerBean'  */
+
+  arr=.array~of("newStrict", .nil, self~bsf.FullJavaClassName) ~appendAll(tmpArr)
+  beanName=self~rBsf~callWith(arr) ~substr(4)
 
         -- assign beanName to object, use the Java supplied name
   instance~ObjectName=beanName
-
   return instance
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1146,6 +1160,7 @@ any:
 
 
 
+/* ================================================================================================= */
 /* -------------------------------------------------------------
    routine which checks whether data returned from the Java side
    represents a Java object; if so, an Object Rexx proxy is created
@@ -1201,50 +1216,9 @@ any:
 
 
 
-/* -------------------------------------------------------------
-   routine which checks whether data returned from the Java side
-   represents a Java object; if so, an Object Rexx proxy is created
-   and returned, else the received string value
-   ------------------------------------------------------------- */
-::ROUTINE bsf.wrap_original_old -- public
-   parse arg data
 
-   if data=.bsf~bsf.null_string then return .nil
-
-        /* if an object was returned, it has been registered on the Java side;
-           therefore reuse, if possible or, create an Object Rexx proxy of it;
-           first check whether the name was constructed on the Java side        */
-  if pos("@", data)>0 then      -- is this a beanName, created by Java?
-  do
-     -- parse var data before '@' after
-     parse var data before '@' after "_" after2
-     if before <> "" then
-     do
-        if datatype(after, "X") then    -- o.k. second part a hexadecimal value?
-        do
-           if pos(" ", after)=0 then    -- o.k. no space there?
-           do
-              -- create an Object Rexx proxy object for the Java object
-
-              dimension = verify(data, "[")-1  -- is it a Java array?
-              -- if dimension>0 & dimension<6 then
-              if dimension>0 then   -- rgf, 2003-02-09, no upper limit anymore
-              do
-                 return .bsf_array_reference~new(data, dimension) -- return a BSF_ARRAY proxy
-              end
-
-              return .bsf_reference~new(data)   -- return a BSF_REFERENCE prox
-           end
-        end
-     end
-  end
-
-  return data           -- assume the string of a primitive type
-
-
-
-
-
+/* ================================================================================================= */
+/* ================================================================================================= */
 /* *************************************************************
    Class:       "BSF4REXX"
    ************************************************************* */
@@ -1252,57 +1226,69 @@ any:
 *   - the attribute 'bsf.dir' can be set only once
 */
 ::class BSF4REXX public
+
+/* ------------------------------------------------------------------------------------------------- */
 ::method    init class
   expose bsf.dir
   bsf.dir=.nil
 
+/* ------------------------------------------------------------------------------------------------- */
 ::attribute bsf.dir get class
 
+/* ------------------------------------------------------------------------------------------------- */
 ::attribute bsf.dir set class
   expose bsf.dir
   if bsf.dir<>.nil then return      -- already assigned, do not accept another one
   use arg bsf.dir
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method unknown     class    -- forward any unknown messages to the attribute
   expose bsf.dir
   forward message (arg(1)) to (bsf.dir) arguments (arg(2))
 
 
 
-
-
+/* ================================================================================================= */
 /* *************************************************************
    Class:       IBM's "Bean Scripting Framework"
    Purpose:     the proxy super-class for the Java classes
    ************************************************************* */
 ::CLASS BSF PUBLIC
 
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    class method which merely initializes the class attribute "bsf.null_string"
    to its default value
    ------------------------------------------------------------- */
 ::METHOD init           CLASS
   -- EXPOSE bsf.null_string bsf.FullJavaClassName bsf.JavaClassObjectProxies bsf.JavaClassObjects dir
-  EXPOSE bsf.null_string bsf.FullJavaClassName
-
+  EXPOSE bsf.null_string bsf.FullJavaClassName rBSF rBsfUninit4JavaBean rBsfRexxProxy
 
   bsf.null_string=".NIL"
   bsf.FullJavaClassName=.nil     -- this is an Object Rexx path, hence no fully
                          -- qualified Java class available
 
-/* 20100508, rgf
-  bsf.JavaClassObjectProxies=.directory~new
-  bsf.JavaClassObjects      =.directory~new
-  dir                   =.directory~new
-*/
+   -- get the routine objects (of the native routines) and cache them in class attributes; rgf, 20180224
+  rBSF               =.routines~xBSF
+  rBsfUninit4JavaBean=.routines~xBsfUninit4JavaBean
+  rBsfRexxProxy      =.routines~xBsfRexxProxy
 
+/* ------------------------------------------------------------------------------------------------- */
+::ATTRIBUTE rBSF                 CLASS
+/* ------------------------------------------------------------------------------------------------- */
+::ATTRIBUTE rBsfUninit4JavaBean  CLASS
+/* ------------------------------------------------------------------------------------------------- */
+::ATTRIBUTE rBsfRexxProxy        CLASS
+
+
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    class method to allow invoking static methods via ooRexx
    ------------------------------------------------------------- */
 ::method unknown class unguarded
   expose bsf.jco  -- 2010-05-08, rgf
 
-  signal on syntax name any
+  signal on syntax
   if self~bsf.FullJavaClassName=.nil then   -- no fully qualified Java class ("path") given ?
   do
       -- Object "object" does not understand message "message"
@@ -1318,15 +1304,17 @@ any:
   forward to (bsf.jco) MESSAGE (arg(1)) ARGUMENTS (arg(2))  -- 2010-05-08, rgf
 
 
-any:
+syntax:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method bsf.jco attribute class private -- contains the BSF proxy to the Java Class Object (JCO) in
                                          -- the BSF registry, such that it does not get garbage collected!
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /* Utility method to allow storing the jco-object in an attribute as well as the full Java class name
  * this class represents.
 
@@ -1342,6 +1330,7 @@ any:
   return .true
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    class method allows for creating an ooRexx proxy class for a Java class
    which is made available to this process by placing it (optionally) into the
@@ -1362,7 +1351,7 @@ any:
 
   bNoClassName=(arg(2, "Omitted") | className="" | .nil=className)
 
-  signal on syntax name any
+  signal on syntax
 
   if arg()>3 then
      raise syntax 40.900 array ("BSF.CLS/class BSF/class method bsf.import, error 1: too many arguments (maximum: 3, found: "arg()")")
@@ -1399,10 +1388,11 @@ any:
 
   return new_class
 
-any:
+syntax:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    a synonym for bsf.import(), remove code, forward to class method BSF.IMPORT
    ------------------------------------------------------------- */
@@ -1410,7 +1400,7 @@ any:
   FORWARD MESSAGE ("BSF.IMPORT")
 
 
-
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    allows to retrieve the fully qualified Java class name, if a
    Java class got imported (encapsulated in an Object Rexx class
@@ -1426,6 +1416,7 @@ any:
      self~bsf.FullJavaClassName=java_path    -- save fully qualified Java class name
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    allows to retrieve the fully qualified Java class name, if a
    Java class got imported (encapsulated in an Object Rexx class
@@ -1441,27 +1432,31 @@ any:
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    class attribute method stores and allows access to the string
    which is used to indicate "null" for the Java side; upon return
    of values from Java, a Java "null" will be represented via
    Object Rexx' .nil object
    ------------------------------------------------------------- */
--- ::METHOD bsf.null_string    unguarded ATTRIBUTE CLASS  --- rgf, 20090523
 ::ATTRIBUTE bsf.null_string get unguarded CLASS
+/* ------------------------------------------------------------------------------------------------- */
 ::ATTRIBUTE bsf.null_string set CLASS
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::attribute rii_id  set private  -- stores the RII (Rexx interpreter instance) id that created the instance
+/* ------------------------------------------------------------------------------------------------- */
 ::attribute rii_id  get -- rgf, 2016-11-27, stores the RII (Rexx interpreter instance) id that created the instance
 
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    method to construct an instance (a "bean"); arguments are
    passed to BSF which uses them to create the bean instance
    from the given Java class
    ------------------------------------------------------------- */
 ::METHOD init
-  expose rii_id      -- RII (Rexx interpreter nstance) where the bean gets stored in the BSF registry
+  expose rii_id                    -- RII (Rexx interpreter nstance) where the bean gets stored in the BSF registry
   USE ARG javaClass, args
 
   rii_id=.bsf.rii_id -- save the RII that created this bean as its BSFManager's BSF registry is used to store its peer
@@ -1472,22 +1467,15 @@ any:
    if args~class = .array then tmpArr=args            -- array of arguments
                           else tmpArr=arg(2, "Array") -- create an array from arguments
 
-   code = 'beanName=BSF( "new", , "' || javaClass || '"' -- synonym for "registerBean"
-   do i=1 to tmpArr~items
-      a.i=choose(tmpArr[i]=.nil, .bsf~bsf.null_string, tmpArr[i])
-      code=code ", a."i
-   end
-   code=code ") ~substr(4)"         -- get rid of type indicator "<?>", where "?" is either "O" or "S"
-
-  signal on syntax name any         -- trap any exceptions
-  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  interpret code        /* execute the code, calling bsf() with 'registerBean'  */
+   -- 2018-02-24, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  arr=.array~of("new", .nil, javaClass)~appendAll(tmpArr)
+  beanName=self~class~rBSF~callWith(arr)~substr(4)
 
         -- assign beanName to object, use the Java supplied name
   self~ObjectName=beanName
-  return self
+  return
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1495,6 +1483,8 @@ any:
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
+
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    destructor method (called by Object Rexx when object gets
    destroyed) to unregister the bean from the BSF registry; this
@@ -1509,26 +1499,19 @@ any:
 -- 2018-02-23, rgf: not returning anything from UNINIT; make sure we deregister the Java object even in the
 --                  the case that a RexxAndJava object does not exist (TODO: BsfUnregisterJavaObject)
 ::METHOD uninit
-  expose rii_id      -- Rexx interpreter instance that created this ooRexx instance
+  expose rii_id
 
   signal on syntax name syntax1     -- trap any syntax conditions
-  -- say .line pp(self) "BSF::UNINIT - self~objectName="pp(self~objectName) "about to do an 'unregisterBean', self~objectName"
---  call BSF "unregisterBean", self~objectname    -- reduce reference count for the proxied Java object
-
- call BsfUninit4JavaBean self~objectname     -- new since 2018-02-23
+  self~class~rBsfUninit4JavaBean~call(self~objectname)   -- use routine object
   return
 
 syntax1:  -- intercept and thereby clear any condition
-  .error~say( .line "BSF.CLS -" self":uninit -" pp(self~objectName)"~uninit - created on rii_id="pp(rii_id)", an (ignorable) error occurred" pp(BSF_ERROR_MESSAGE) )
-  -- a last attempt
---  co=condition("o"); say .line "BSF::UNINIT - SYNTAX1 :" ppCondition2(co)
-
---  call BsfUninit4JavaBean self~objectname  -- new since 2018-02-23
+   co=condition('o')
+  .error~say( .line "BSF.CLS -" self":uninit -" pp(self~objectName)"~uninit - created on rii_id="pp(rii_id)", an (ignorable) error occurred" pp(BSF_ERROR_MESSAGE) pp(co~message) )
 
 
 
-
-
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    dispatch method, which the programmers should use if they desire to
    directly dispatch a method on the Java side; this way they are not
@@ -1539,9 +1522,10 @@ syntax1:  -- intercept and thereby clear any condition
    ------------------------------------------------------------- */
 ::METHOD bsf.dispatch
   use ARG methodName
--- .error~say( "BSF.DISPATCH: methodName="pp(methodName) )
   forward message ("BSF.INVOKE")
 
+
+/* ------------------------------------------------------------------------------------------------- */
 /* 2016-11-06, ---rgf
    On ooRexx 5.0.0 beta the DO...OVER only works if the receiving object has a MAKEARRAY method and does
    not relay on the UNKNOWN method at all. For this reason we need to have a MAKEARRAY method present in
@@ -1561,7 +1545,7 @@ syntax1:  -- intercept and thereby clear any condition
        res=self~bsf.dispatch("MAKEARRAY")    -- send the message directly to the Java object
 
        if res~objectName~abbrev("org.rexxla.bsf.engines.rexx.RexxProxy@") then -- if a proxied Rexx object, return Rexx object
-          return BsfRexxProxy(res,"o") -- get the proxied Rexx object, should be the Rexx array object
+          return self~class~rBsfRexxProxy~call(res,"o") -- get the proxied Rexx object, should be the Rexx array object
        else
           return res
    end
@@ -1570,6 +1554,7 @@ syntax1:  -- intercept and thereby clear any condition
    forward message ("unknown") array("MAKEARRAY", arg(1,"array"))
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /* 2016-11-06, ---rgf
    Intercept supplier message as returned value might be a RexxProxy which we need to extract the
    Rexx object from.
@@ -1580,7 +1565,7 @@ syntax1:  -- intercept and thereby clear any condition
    do
        res=self~bsf.dispatch("SUPPLIER")     -- send the message directly to the Java object
        if res~objectName~abbrev("org.rexxla.bsf.engines.rexx.RexxProxy@") then -- if a proxied Rexx object, return Rexx object
-          return BsfRexxProxy(res,"o") -- get the proxied Rexx object, should be the Rexx supplier object
+          return self~class~rBsfRexxProxy~call(res,"o") -- get the proxied Rexx object, should be the Rexx supplier object
        else
           return res
    end
@@ -1590,7 +1575,7 @@ syntax1:  -- intercept and thereby clear any condition
 
 
 
-
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    unknown method (gets called by Object Rexx whenever an unknown
    message was sent to an instance of this class); forwards the
@@ -1599,7 +1584,7 @@ syntax1:  -- intercept and thereby clear any condition
 ::METHOD unknown  unguarded
   USE ARG name, args
 
-  signal on syntax name any         -- trap any exceptions
+  signal on syntax               -- trap any exceptions
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
   if args~class=.array then
@@ -1615,44 +1600,33 @@ syntax1:  -- intercept and thereby clear any condition
      end
   end
 
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
   objName=self~objectName
-  code = 'res=BSF( "invoke", "'||objName||'",'  '"' || name || '"'
-
-  -- if adressing a RexxProxy using a variant of "sendMessage" make sure it uses this instance
-  -- of the RexxEngine and the RexxAndJava interface, otherwise in multithreaded execution environments
-  -- problems may occur, as a RexxProxy by default would use the RexxEngine that created it originally
+  arr=.array~of("invoke", objName, name)
+      -- if this is a RexxProxy and a message directed at it, use the current RexxAndJava instance to carry it out
   if objName~abbrev("org.rexxla.bsf.engines.rexx.RexxProxy@"), -
      "SENDMESSAGE0 SENDMESSAGE1 SENDMESSAGE2 SENDMESSAGE3 SENDMESSAGE4 SENDMESSAGE5 SENDMESSAGE"~caselessWordPos(name)>0 then
   do
-      code=code ', "' || bsf.wrap(bsf('getRexxAndJava')) || '"'      -- make sure this call
--- say "///---/// BSF.CLS - a RexxProxy, adapted the code fragment to -->" pp(code) "\\\---\\\"
+     arr~append( bsf.wrap(self~class~rBSF~call('getRexxAndJava')))   -- TODO: a need to increase refCounter?
   end
+  arr~appendAll(args)                              -- add arguments, if any
 
-  do i=1 to args~items
-     a.i=choose(args[i]=.nil, .bsf~bsf.null_string, args[i])
-     code=code ", a."i
-  end
-
-  interpret code ")"       -- execute this dynamically created Rexx string
-  return bsf.wrap(res)
+  return bsf.wrap(self~class~rBSF~callWith(arr))   -- process result and return it
 
 
-any:
-  co =condition('o')
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
   if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
 
--- say "BSF.unknown(), condition occurred! self="pp(self)":" ppCondition2(co)
-
-
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    the following methods implement the individual BSF-calls as
    methods, allowing for invoking them in the OO style with the
@@ -1676,11 +1650,11 @@ any:
 ::METHOD bsf.addEventListener  /* add event listener to the Java object*/
    use arg eventSetName, filter, text
 
-   signal on syntax name any
+   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-   return BSF( "addEventListener", self~objectname, eventSetName, filter, text )~substr(4)
+   return self~class~rBSF~call( "addEventListener", self~objectname, eventSetName, filter, text )~substr(4)
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1690,33 +1664,29 @@ any:
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.exit              /* exit Rexx                    */
    FORWARD MESSAGE ("BSF.EXIT") TO (self~class)
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.invoke
    parse arg methodName
    -- create UNKNOWN format (first argument is unknown method name)
    return self~unknown(methodName, arg(2, 'A'))
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method bsf.invokeJSO  -- rgf, 20141003: return a reference to a Java or NetRexx object
   USE ARG name          -- name of method to be invoked
   args=arg(2, 'A')
 
-   code = 'call BSF "invokeJSO", "' || self~objectname || '", "' || name || '"'
-   do i=1 to args~items
-      a.i=choose(args[i]=.nil, .bsf~bsf.null_string, args[i])
-      code=code ", a."i
-   end
+  signal on syntax
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  arr=.array~of("invokeJSO", self~objectname , name)~appendAll(args)
+  return bsf.wrap(self~class~rBSF~callWith(arr))
 
-  signal on syntax name any         -- trap any exceptions
-  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  interpret code        -- execute this dynamically created Rexx string
-  if var("RESULT") then return bsf.wrap(result)   -- check whether primitive type or Java object
-                   else return .nil                      -- nothing came back, i.e. Java returned a true "null"
-
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1725,23 +1695,17 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.invokeStrict
   USE ARG name          -- name of method to be invoked
   args=arg(2, 'A')
 
-   code = 'call BSF "invokeStrict", "' || self~objectname || '", "' || name || '"'
-   do i=1 to args~items
-      a.i=choose(args[i]=.nil, .bsf~bsf.null_string, args[i])
-      code=code ", a."i
-   end
+  signal on syntax
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  arr=.array~of("invokeStrict", self~objectname , name)~appendAll(args)
+  return bsf.wrap(self~class~rBSF~callWith(arr))
 
-  signal on syntax name any         -- trap any exceptions
-  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  interpret code        -- execute this dynamically created Rexx string
-  if var("RESULT") then return bsf.wrap(result)   -- check whether primitive type or Java object
-                   else return .nil                      -- nothing came back, i.e. Java returned a true "null"
-
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1750,24 +1714,17 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
-
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.invokeStrictJSO  -- rgf, 20141004: return a reference to a Java or NetRexx object
   USE ARG name          -- name of method to be invoked
   args=arg(2, 'A')
 
-   code = 'call BSF "invokeStrictJSO", "' || self~objectname || '", "' || name || '"'
-   do i=1 to args~items
-      a.i=choose(args[i]=.nil, .bsf~bsf.null_string, args[i])
-      code=code ", a."i
-   end
+  signal on syntax
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  arr=.array~of("invokeStrictJSO", self~objectname , name)~appendAll(args)
+  return bsf.wrap(self~class~rBSF~callWith(arr))
 
-  signal on syntax name any         -- trap any exceptions
-  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  interpret code        -- execute this dynamically created Rexx string
-  if var("RESULT") then return bsf.wrap(result)    -- check whether primitive type or Java object
-                   else return .nil                -- nothing came back, i.e. Java returned a true "null"
-
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1776,13 +1733,14 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.getFieldValue
-   parse arg fieldName
-   signal on syntax name any
-  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-   return bsf.wrap( bsf("getFieldValue", self~objectname, fieldName) )
+   use strict arg fieldName
+   signal on syntax
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  return bsf.wrap(self~class~rBSF~call("getFieldValue", self~objectname , fieldName))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1790,13 +1748,15 @@ any:
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
+
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.getFieldValueJSO -- rgf, 2014-10-04
-   parse arg fieldName
-   signal on syntax name any
-  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-   return bsf.wrap( bsf("getFieldValueJSO", self~objectname, fieldName) )
+   use strict arg fieldName
+   signal on syntax
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  return bsf.wrap(self~class~rBSF~call("getFieldValueJSO", self~objectname , fieldName))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1805,17 +1765,17 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.getFieldValueStrict -- case-sensitive fieldName !
-   parse arg fieldName
-   signal on syntax name any
+   -- parse arg fieldName
+   use strict arg fieldName
+
+   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  return bsf.wrap(self~class~rBSF~call("getFieldValueStrict", self~objectname , fieldName))
 
-  if arg()>1 then    -- 2009-06-26, hint by Mr. Lex (author of testunits for BSF4Rexx)
-     raise syntax 40.900 array ("BSF.CLS/class BSF/method bsf.getFieldValueStrict, error 1: too many arguments (maximum: 1, found: "arg()")")
-
-   return bsf.wrap( bsf("getFieldValueStrict", self~objectname, fieldName) )
-
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1824,17 +1784,15 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.getFieldValueStrictJSO -- rgf, 2014-10-04, case-sensitive fieldName !
-   parse arg fieldName
-   signal on syntax name any
+   use strict arg fieldName
+   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  return bsf.wrap(self~class~rBSF~call("getFieldValueStrictJSO", self~objectname , fieldName))
 
-  if arg()>1 then    -- 2009-06-26, hint by Mr. Lex (author of testunits for BSF4Rexx)
-     raise syntax 40.900 array ("BSF.CLS/class BSF/method bsf.getFieldValueStrict, error 1: too many arguments (maximum: 1, found: "arg()")")
-
-   return bsf.wrap( bsf("getFieldValueStrictJSO", self~objectname, fieldName) )
-
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1843,18 +1801,15 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.setFieldValue
-   parse arg fieldName
-
-   code="res=bsf('setFieldValue', '" || self~objectname || "', '" || fieldName || "'" ,
-                 ", arg(2) )"
-
-   signal on syntax name any        -- trap any exceptions
+   use strict arg fieldName, newValue
+   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-   interpret code
-   return bsf.wrap(res)
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  return bsf.wrap(self~class~rBSF~call("setFieldValue", self~objectname , fieldName, newValue))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1863,18 +1818,17 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.setFieldValueStrict
-  parse arg fieldName
+  use strict arg fieldName, x, ...     -- at least two arguments a must
 
-  code="res=bsf('setFieldValueStrict', '" || self~objectname || "', '" || fieldName || "'" ,
-                ", arg(2)" choose(arg()>2, ", arg(3)", "") ")"
-
-  signal on syntax name any        -- trap any exceptions
+   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  interpret code
-  return bsf.wrap(res)
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  arr=.array~of("setFieldValueStrict", self~objectname , fieldName)~appendAll(arg(2,"A"))
+  return bsf.wrap(self~class~rBSF~callWith(arr))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1883,14 +1837,15 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.getPropertyValue
   parse arg propertyName, index
   if arg(2, "Omitted") then index = "" -- no index given, set to empty string
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return bsf.wrap( bsf("getPropertyValue", self~objectname, propertyName, index))
+  return bsf.wrap( self~class~rBSF~call("getPropertyValue", self~objectname, propertyName, index))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1899,14 +1854,15 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.getPropertyValueJSO    -- rgf, 2014-10-04
   parse arg propertyName, index
   if arg(2, "Omitted") then index = "" -- no index given, set to empty string
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return bsf.wrap( bsf("getPropertyValueJSO", self~objectname, propertyName, index))
+  return bsf.wrap( self~class~rBSF~call("getPropertyValueJSO", self~objectname, propertyName, index))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1915,6 +1871,7 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.setPropertyValue
   parse arg propertyName, index
   if arg(2, "Omitted") then index = "" -- no index given, set to empty string
@@ -1923,17 +1880,17 @@ any:
 
   tmpArr=arg(3, 'Array')
   do i=1 to tmpArr~items
-     a.i=choose(tmpArr[i]=.nil, .bsf~bsf.null_string, tmpArr[i])
+     a.i=iif(tmpArr[i]=.nil, .bsf~bsf.null_string, tmpArr[i])
      code=code ", a."i
   end
   code=code ")"
 
-  signal on syntax name any         -- trap any exceptions
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
   interpret code
   return bsf.wrap(res)
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1942,6 +1899,7 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.setPropertyValueStrict
   parse arg propertyName, index
   if arg(2, "Omitted") then index = "" -- no index given, set to empty string
@@ -1950,37 +1908,35 @@ any:
                 index || "'"
   tmpArr=arg(3, 'Array')
   do i=1 to tmpArr~items
-     a.i=choose(tmpArr[i]=.nil, .bsf~bsf.null_string, tmpArr[i])
+     a.i=iif(tmpArr[i]=.nil, .bsf~bsf.null_string, tmpArr[i])
      code=code ", a."i
   end
   code=code ") "
 
-  signal on syntax name any         -- trap any exceptions
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
   interpret code
   return bsf.wrap(res)
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
   if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
-
-
 
 
 -- rgf, 2010-02-20
 ::METHOD bsf.isA
-  -- use strict arg javaClass
-  parse arg javaClass
+  use strict arg javaClass
 
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return bsf.wrap( bsf("isA", self~objectName, javaClass))
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  return bsf.wrap(self~class~rBSF~call("isA", self~objectname , javaClass))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -1990,25 +1946,27 @@ any:
 
 
 
-
-
+/* ------------------------------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------------------------------- */
 --   class  methods
 
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    class method shuts down the Java Virtual Machine (JVM), which started
    this instance of Rexx, this causes Rexx to be shut down as well; the
    Java side waits "waitTime" msecs before terminating the JVM
    ------------------------------------------------------------- */
 ::METHOD bsf.exit class
+  expose rBSF
   use arg exitValue, waitTime
 
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  if \datatype(exitValue, "Whole Number") then return BSF("exit")~substr(4)
-  if \datatype(waitTime,  "W"           ) then return BSF("exit", exitValue)~substr(4)
-  return BSF("exit", exitValue, waitTime)~substr(4)
+  if \datatype(exitValue, "Whole Number") then return rBSF~call("exit")~substr(4)
+  if \datatype(waitTime,  "W"           ) then return rBSF~call("exit", exitValue)~substr(4)
+  return rBSF~call("exit", exitValue, waitTime)~substr(4)
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2016,21 +1974,24 @@ any:
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
+
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    class method to have Java sleep for us "sleepTime" seconds; resolution
    to a msec is calculated, although the Java side may deviate up to 15/100 secs
    (we are not talking realtime here ;)
    ------------------------------------------------------------- */
 ::METHOD bsf.sleep class
+  expose rBSF
   use arg sleepTime
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
   if arg()>1 then    -- 2009-06-26, hint by Mr. Lex (author of testunits for BSF4Rexx)
      raise syntax 40.900 array ("BSF.CLS/class BSF/class method bsf.sleep, error 1: too many arguments (maximum: 1, found: "arg()")")
 
-  return BSF("sleep", sleepTime)~substr(4)
+  return rBSF~call("sleep", sleepTime)~substr(4)
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2038,13 +1999,18 @@ any:
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
+
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.loadClass                 class
+  expose rBSF
   parse arg JavaClassName
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return bsf.wrap( bsf("loadClass", JavaClassName) )
 
-any:
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  return bsf.wrap(rBSF~call("loadClass", javaClassName))
+
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2052,13 +2018,17 @@ any:
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
+
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.lookupBean                class
+  expose rBSF
   parse arg beanName
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return bsf.wrap( bsf("lookupBean", beanName) )
+   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
+  return bsf.wrap(rBSF~call("lookupBean", beanName))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2066,18 +2036,21 @@ any:
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
+
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.pollEventText             class
+  expose rBSF
   parse arg timeOut
 
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
   if arg()>1 then    -- 2009-06-27, hint by Mr. Lex (author of testunits for BSF4Rexx)
      raise syntax 40.900 array ("BSF.CLS/class BSF/class method bsf.pollEventText, error 1: too many arguments (maximum: 1, found: "arg()")")
 
-  if \datatype(timeOut, "Whole") then return bsf.wrap(bsf("pollEventText"))
-  return bsf.wrap(bsf("pollEventText", timeout))    -- with timeout
+  if \datatype(timeOut, "Whole") then return bsf.wrap(rBSF~call("pollEventText"))
+  return bsf.wrap(rBSF~call("pollEventText", timeout))    -- with timeout
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2085,13 +2058,16 @@ any:
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
+
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.getStaticValue            class
+  expose rBSF
   parse arg className, fieldName
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return bsf.wrap( bsf("getStaticValue", className, fieldName))
+  return bsf.wrap( rBSF~call("getStaticValue", className, fieldName))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2100,13 +2076,15 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.getStaticValueJSO         class   -- rgf, 2014-10-04
+  expose rBSF
   parse arg className, fieldName
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return bsf.wrap( bsf("getStaticValueJSO", className, fieldName))
+  return bsf.wrap( rBSF~call("getStaticValueJSO", className, fieldName))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2115,13 +2093,15 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.getStaticValueStrict      class
+  expose rBSF
   parse arg className, fieldName
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return bsf.wrap( bsf("getStaticValueStrict", className, fieldName))
+  return bsf.wrap( rBsf~call("getStaticValueStrict", className, fieldName))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2130,13 +2110,15 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.getStaticValueStrictJSO   class   -- rgf, 2014-10-04
+  expose rBSF
   parse arg className, fieldName
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return bsf.wrap( bsf("getStaticValueStrictJSO", className, fieldName))
+  return bsf.wrap( rBsf~call("getStaticValueStrictJSO", className, fieldName))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2145,19 +2127,20 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
-
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.postEventText              class
+  expose rBSF
   parse arg eventText, priority
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
   if arg()>2 then    -- 2009-06-26, hint by Mr. Lex (author of testunits for BSF4Rexx)
      raise syntax 40.900 array ("BSF.CLS/class BSF/class method bsf.postEventText, error 1: too many arguments (maximum: 2, found: "arg()")")
 
-  if arg()=1 then return bsf.wrap(bsf("postEventText", eventText))
-  return bsf.wrap(bsf("postEventText", eventText, priority))
+  if arg()=1 then return bsf.wrap(rBsf~call("postEventText", eventText))
+  return bsf.wrap(rBsf~call("postEventText", eventText, priority))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2165,13 +2148,16 @@ any:
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
+
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.wrapArray                  unguarded class
+  expose rBSF
   parse arg beanName
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return bsf.wrap( bsf("wrapArray", beanName) )
+  return bsf.wrap( rBsf~call("wrapArray", beanName) )
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2180,20 +2166,16 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.createArray                class
-  signal on syntax name any
+  expose rBSF
+
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
+  arr=.array~of("createArray")~appendAll(arg(1,"A"))
+  return bsf.wrap(rBsf~callWith(arr))
 
-  tmp="return bsf.wrap(bsf('createArray' "
-  do i=1 to arg()
-     tmp=tmp ", """ || arg(i) || """"
-  end
-
-  tmp=tmp"))"
-
-  interpret tmp     -- now carry out the Rexx statement
-
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2202,7 +2184,7 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
-
+/* ------------------------------------------------------------------------------------------------- */
 /* Create single dimensioned Java array, taking the first argument as componentType
    (either a Java class object or as a fully qualified Java class name). All (optional)
    following arguments are being taking as is.
@@ -2210,35 +2192,28 @@ any:
              reliefing the programmers to do so
 */
 ::METHOD     bsf.createArrayOf              class  -- rgf, 2009-07-30
-  signal on syntax name any
+  expose rBSF rBsfCreateRexxProxy
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
-  tmp="return bsf.wrap(bsf('createArrayOf'"
-  bUnoProxy=.uno_proxy~isA(.class)     -- determine whether we have UNO (OpenOffice) support available
-
+  bUnoProxy=.uno_proxy~isA(.class)     -- is UNO (AOO) support loaded?
+  tmpArr=.array~new
   do i=1 to arg()
      a=arg(i)
+      -- make sure we leave .UNO_PROXY objects unwrapped
+     if bUnoProxy then aBSF=a~isA(.uno_proxy)
+                  else aBSF=.false
 
-     bBoxRP=.false  -- wrap Rexx object as a RexxProxy ?
-     if i>1, \a~isA(.string), \a~isA(.bsf), a<>.nil then
-     do
-        bBoxRP=.true
-        if bUnoProxy then  -- we have .UNO-support there
-        do
-           if a~isA(.uno_proxy) then bBoxRP=.false   -- do not
-        end
-     end
-
-     if bBoxRP then    -- plain Rexx object, box it into a RexxProxy
-        tmp=tmp ", """ || BsfCreateRexxProxy(a) || """"
+     if i>1, \a~isA(.string), \a~isA(.bsf), \aBSF, a<>.nil then
+         tmpArr~append(rBsfCreateRexxProxy~call(a))   -- make Rexx object available to Java
      else
-        tmp=tmp ", " escapeQuotes(a)
+         tmpArr~append(a)
   end
-  tmp=tmp"))"
 
-  interpret tmp     -- now carry out the Rexx statement
+  arr=.array~of('createArrayOf')~appendAll(tmpArr)
+  return bsf.wrap( rBSF~callWith(arr))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2247,70 +2222,29 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.createJavaArray                class          -- rgf, 2009-09-10
-  signal on syntax name any
-  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-
-  tmp="return bsf.wrap(bsf('createJavaArray' "
-  do i=1 to arg()
-     tmp=tmp ", """ || arg(i) || """"
-  end
-
-  tmp=tmp"))"
-
-  interpret tmp     -- now carry out the Rexx statement
-
-any:
-   /* if a Java error, then the Java error message/stack trace is stored in the
-      current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
-      this error message available to the caller it is stored in the .local environment */
-  if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
-     .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
-  raise propagate  -- raise the exception in caller/invoker on the Rexx side
+  forward message (bsf.createArray)
 
 
-
+/* ------------------------------------------------------------------------------------------------- */
 /* Create single dimensioned Java array, taking the first argument as componentType
    (either a Java class object or as a fully qualified Java class name). All (optional)
    following arguments are being taking
 */
 ::METHOD     bsf.createJavaArrayOf              class  -- rgf, 2009-09-10
-  signal on syntax name any
-  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-
-  tmp="return bsf.wrap(bsf('createJavaArrayOf'"
-
-  do i=1 to arg()
-     a=arg(i)
-     if i>1, \a~isA(.string), \a~isA(.bsf), a<>.nil then
-     do
-        tmp=tmp ", """ || BsfCreateRexxProxy(a) || """"
-     end
-     else
-        tmp=tmp ", " escapeQuotes(a)
-  end
-  tmp=tmp"))"
-
-  interpret tmp     -- now carry out the Rexx statement
-
-any:
-   /* if a Java error, then the Java error message/stack trace is stored in the
-      current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
-      this error message available to the caller it is stored in the .local environment */
-  if var("BSF_ERROR_MESSAGE") then  -- was a variable by this name set?
-     .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
-  raise propagate  -- raise the exception in caller/invoker on the Rexx side
+  forward message (bsf.createArrayOf)
 
 
-
-
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.wrapEnumeration            class
+  expose rBSF
   parse arg beanName
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return bsf.wrap( bsf("wrapEnumeration", beanName) )
+  return bsf.wrap( rBsf~call("wrapEnumeration", beanName) )
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2318,27 +2252,23 @@ any:
      .local~bsf_error_message=BSF_ERROR_MESSAGE -- save Java error message
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
+
+/* ------------------------------------------------------------------------------------------------- */
    -- set the string which from now on represents the Java "null" on both sides,
-   -- the Rexx and the Java side
+   -- the Rexx and the Java side; this was very important for classical Rexx and Regina
 ::METHOD     bsf.setRexxNullString         class
+  expose rBSF
   parse arg newValue
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
   if arg()>1 then    -- 2009-06-26, hint by Mr. Lex (author of testunits for BSF4Rexx)
      raise syntax 40.900 array ("BSF.CLS/class BSF/class method bsf.setRexxNullString, error 1: too many arguments (maximum: 1, found: "arg()")")
 
    -- rgf, 2018-02-19: rearrange
-  .bsf~bsf.null_string = bsf.wrap(bsf("setRexxNullString", newValue))                  -- set class attribute to the new value
+  .bsf~bsf.null_string = bsf.wrap(rBSF~call("setRexxNullString", newValue))                  -- set class attribute to the new value
   return .bsf~bsf.null_string
-/*
--- original until 2018-02-19
-  .bsf~bsf.null_string = newValue                  -- set class attribute to the new value
-  return bsf.wrap(bsf("setRexxNullString", newValue))    -- set the Java side to the new value
-*/
 
-
-
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2347,14 +2277,15 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
-
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.haltThread class
+  expose rBSF
   use strict arg tid
 
-  signal on syntax name any
-  return bsf.wrap(bsf("haltThread", tid)) -- set the Java side to the new value
+  signal on syntax
+  return bsf.wrap(rBSF~call("haltThread", tid)) -- set the Java side to the new value
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2363,6 +2294,7 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /* This class method will be used by native code (BSF4ooRexx.cc).
 */
    -- 2015-07-21, rgf: honor new argument "bIncr", if set to .true, then the reference counter
@@ -2375,6 +2307,8 @@ any:
 
 
 
+/* ================================================================================================= */
+/* ================================================================================================= */
 /* *************************************************************
    Class:       BSF_REFERENCE
    Purpose:     the proxy class for objects returned by the Java side;
@@ -2386,6 +2320,7 @@ any:
    ************************************************************* */
 ::CLASS BSF_REFERENCE subclass BSF
 
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    method to construct an instance (a "bean"); as the object was returned
    from the Java side, just remember its name, but do not call BSF's init
@@ -2411,13 +2346,15 @@ any:
 
 
 
-
+/* ================================================================================================= */
+/* ================================================================================================= */
 /* *************************************************************
    Class:       BSF_ARRAY
    Purpose:     the proxy class for array objects returned by the Java side
    ************************************************************* */
 ::CLASS BSF_ARRAY_REFERENCE     subclass BSF
 
+/* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
    method to construct an instance (a "bean"); as the object was returned
    from the Java side, just remember its name, but do not call BSF's init
@@ -2432,33 +2369,33 @@ any:
      ...jniRexxSendMessageToRexxObject(), both will supply .true as a new second arg]
    ------------------------------------------------------------- */
 ::METHOD init
-  expose items dimension indexArray   -- set access to object variable
+  expose items dimension indexArray    -- direct access to object variable
   use arg beanName, dimension, bIncr=.false  -- assign "dimension" directly to exposed object variable
 
   self~rii_id=.bsf.rii_id    -- remember RII that created this instance
   self~ObjectName=beanName
   items=-1                     -- set and indicate, that not calculated as of yet
 
-  signal on syntax name any
+  rBSF=self~class~rBSF
+
+  signal on syntax name syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-     -- "indexArray" allows for indexing at's and put's with a Java int array
-     -- use exact signature
+   -- "indexArray" allows for indexing at's and put's with a Java int array, use exact signature
 
    -- set up "indexArray" attribute to match dimension and capacity of the base Java array
    -- wrapping up occurs in the statement after the next, hence no bsf.wrap() !
    -- "<O>" will be removed, such that plain bean-name is assigned to 'indexArray'
-  indexArray=bsf("invokeStrict", .bsf4rexx~array.class, -
-                                 "newInstance", "o",    -
-                                 .bsf4rexx~int, "int", dimension)~substr(4)
+  -- just extract the beanName
+  indexArray=rBsf~call("invokeStrict", .bsf4rexx~array.class, "newInstance", "o", .bsf4rexx~int, "int", dimension)~substr(4)
   indexArray=.bsf_array_proxy~new(indexArray, 1, dimension)
 
    -- rgf, 2015-07-21: increment BSF registry counter for this Java object, such that running UNINIT does not remove Java object from BSF registry
   if bIncr=.true then
-     call bsf 'increaseRefCounter', beanName   -- increment BSF registry reference counter
+     rBsf~call('increaseRefCounter',beanName)
 
   return
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2467,23 +2404,21 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method uninit      -- rgf, 20120604: make sure we also unregister the index array to avoid a memory leak
   expose indexArray
 
   signal on syntax name syntax1
---  call bsf 'unregisterBean', indexArray
-  call BsfUninit4JavaBean indexArray         -- new since 2018-02-23
+  self~class~rBsfUninit4JavaBean~call(indexArray)
 
---  say pp(self) "BSF_ARRAY_REFERENCE::UNINIT - 2 - AFTER    (unregisterBean,indexArray="pp(indexArray)") now refCount:" pp(result) "about: self~uninit:super ..."
   signal on syntax name syntax2
   self~uninit:super  -- now let superclass clean up
   return
 
 syntax1:    -- call unregisterBean, indexArray caused a syntax condition
-  say .line "BSF_ARRAY_REFERENCE::UNINIT - SYNTAX1 ..., about to do a: call BsfUninit4JavaBean indexArray"
+  say .line "BSF_ARRAY_REFERENCE::UNINIT - SYNTAX1 ..., now about to do a: call BSF 'unregisterBean', indexArray"
   signal on syntax name syntax2
-  call bsf 'unregisterBean', indexArray
---  call BsfUninit4JavaBean indexArray       -- new since 2018-02-23
+  self~class~rBsf~call('unregisterBean', indexArray)
 
   self~uninit:super  -- now let superclass clean up
   return
@@ -2493,6 +2428,7 @@ syntax2:    -- just clear condition
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD dimension
   expose dimension dimensions
 
@@ -2502,24 +2438,27 @@ syntax2:    -- just clear condition
   return dimensions[arg(1)]                     -- return entries in this dimension
 
 
+/* ------------------------------------------------------------------------------------------------- */
       -- get the needed information from ArrayWrapper, make it available with Object Rexx attributes
 ::METHOD getData private
   expose dimensions items
 
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-      -- get the array wrapper of this array
-  aw    =bsf.wrap(bsf('wrapArray', self~objectname))
-  items =bsf('getFieldValue', aw, 'items') ~substr(4)       -- get calculated 'items' value
-  dimArr=bsf.wrap(bsf('getFieldValue', aw, 'sizeOfDimension')) -- get the Java array containing the dimensions
+
+  rBSF=self~class~rBsf        -- fetch BSF routine object from .BSF
+
+  aw    =bsf.wrap(rBsf~call('wrapArray', self~objectname))           -- get the array wrapper of this array
+  items =rBsf~call('getFieldValue', aw, 'items') ~substr(4)          -- get calculated 'items' value
+  dimArr=bsf.wrap(rBsf~call('getFieldValue', aw, 'sizeOfDimension')) -- get the Java array containing the dimensions
 
   dimensions=.array~new                         -- create an Object Rexx array
-  do i=1 to bsf('arrayLength', dimArr)~substr(4)          -- get length of 'dimensions' array
-     dimensions[i]=bsf.wrap(bsf('arrayAt', dimArr, i-1))  -- use Java indexing (starting with '0')
+  do i=1 to rBsf~call('arrayLength', dimArr)~substr(4)          -- get length of 'dimensions' array
+     dimensions[i]=bsf.wrap(rBsf~call('arrayAt', dimArr, i-1))  -- use Java indexing (starting with '0')
   end
   return
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2528,6 +2467,7 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ------------------------------------------------------------------------------------------------- */
   -- Note: This array-proxy is "1"-based (not 0-based as Java), because Object Rexx arrays
   -- are "1", based, therefore subscript adjustments are necessary, before calling the Java side
   -- The indices can be given individually in comma-separated form or in form of a Rexx array
@@ -2535,9 +2475,10 @@ any:
    expose indexArray  dimension
    use arg tmpArr
 
-   signal on syntax name any
-  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
+   signal on syntax
+   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
+   rBSF=self~class~rBsf          -- fetch BSF routine object from .BSF
 
    if tmpArr~class<>.array then  -- if second argument is not an array, create one
       tmpArr=arg(1, "Array")     -- get arguments as an array
@@ -2552,18 +2493,18 @@ any:
    end
 
    do i=1 to tmpArr~items        -- adjust indices to Java-style (0-based indices)
-      call bsf "arrayPut", indexArray, tmpArr[i]-1, i-1
+      rBsf~call("arrayPut", indexArray, tmpArr[i]-1, i-1)
    end
 
    -- 2015-05-10: special AT processing: if an element is a RexxProxy then replace it
    --             with its contained Rexx object; needed for JSR223-eval() implementation
-   entry=bsf('arrayAt', self~objectName, indexArray)   -- get entry from Java array
+   entry=rBsf~call('arrayAt', self~objectName, indexArray)   -- get entry from Java array
    res=bsf.wrap(entry)
    if pos("<O>org.rexxla.bsf.engines.rexx.RexxProxy@",entry)>0 then   -- a RexxProxy in hand?
-      res=BsfRexxProxy(res,"o")  -- special AT processing: replace RexxProxy with its contained Rexx object
+      res=self~class~rBsfRexxProxy~call(res,"o")  -- special AT processing: replace RexxProxy with its contained Rexx object
    return res
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2574,12 +2515,13 @@ any:
 syntax: raise propagate /* propagate dimension/subscript exception */
 
 
+/* ------------------------------------------------------------------------------------------------- */
   -- allow for referring to array elements as if it was an Object Rexx array
 ::METHOD "[]"
   FORWARD MESSAGE ("AT")        -- synonym for "AT", use its implementation
 
 
-
+/* ------------------------------------------------------------------------------------------------- */
   -- Note: This array-proxy is "1"-based (not 0-based as Java), because Object Rexx arrays
   -- are "1", based, therefore subscript adjustments are necessary, before calling the Java side
   -- The indices can be given individually in comma-separated form or in form of a Rexx array
@@ -2587,9 +2529,10 @@ syntax: raise propagate /* propagate dimension/subscript exception */
   expose indexArray dimension
   use arg value, tmpArr
 
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  if value=.nil then value=.bsf~bsf.null_string -- indicate to the Java side a "null"
+
+  rBSF=self~class~rBsf          -- fetch BSF routine object from .BSF
 
   if tmpArr~class<>.array then  -- if second argument is not an array, create one
      tmpArr=arg(2, "Array")     -- get rest of arguments as an array
@@ -2605,13 +2548,13 @@ syntax: raise propagate /* propagate dimension/subscript exception */
 
   do i=1 to tmpArr~items        -- adjust indices to Java-style (0-based indices)
      -- call bsf "arrayPutStrict", indexArray, "int", tmpArr[i]-1, i-1
-     call bsf "arrayPut", indexArray, tmpArr[i]-1, i-1
+     rBsf~call("arrayPut", indexArray, tmpArr[i]-1, i-1)
   end
 
-  call bsf 'arrayPut', self~objectName, value, indexArray
+  rBsf~call('arrayPut', self~objectName, value, indexArray)
   return
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2622,6 +2565,7 @@ any:
 syntax: raise propagate /* propagate dimension/subscript exception */
 
 
+/* ------------------------------------------------------------------------------------------------- */
   -- Note: This array-proxy is "1"-based (not 0-based as Java), because Object Rexx arrays
   -- are "1", based, therefore subscript adjustments are necessary, before calling the Java side
   -- The indices can be given individually in comma-separated form or in form of a Rexx array
@@ -2629,9 +2573,10 @@ syntax: raise propagate /* propagate dimension/subscript exception */
   expose indexArray dimension
   use arg type, value, tmpArr
 
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  if value=.nil then value=.bsf~bsf.null_string -- indicate to the Java side a "null"
+
+  rBSF=self~class~rBsf          -- fetch BSF routine object from .BSF
 
   if tmpArr~class<>.array then  -- if second argument is not an array, create one
      tmpArr=arg(3, "Array")     -- get rest of arguments as an array
@@ -2646,13 +2591,13 @@ syntax: raise propagate /* propagate dimension/subscript exception */
   end
 
   do i=1 to tmpArr~items        -- adjust indices to Java-style (0-based indices)
-     call bsf "arrayPut", indexArray, tmpArr[i]-1, i-1
+     rBsf~call("arrayPut", indexArray, tmpArr[i]-1, i-1)
   end
 
-  call bsf 'arrayPutStrict', self~objectName, type, value, indexArray
+  rBsf~call('arrayPutStrict', self~objectName, type, value, indexArray)
   return
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2664,6 +2609,7 @@ any:
 syntax: raise propagate /* propagate dimension/subscript exception */
 
 
+/* ------------------------------------------------------------------------------------------------- */
   -- allow for referring to array elements as if it was an Object Rexx array;
   -- using this syntax variant has the following implication: the valueType and the
   -- value itself must be given as *one* string value; the first word is the valueType
@@ -2672,6 +2618,7 @@ syntax: raise propagate /* propagate dimension/subscript exception */
   FORWARD MESSAGE ("PUT") -- let the PUT-method do the work, 2003-05-10
 
 
+/* ------------------------------------------------------------------------------------------------- */
 -- calculates (once) and returns number of individual elements in array
 ::METHOD items
   expose items  -- set access to object variable
@@ -2679,22 +2626,27 @@ syntax: raise propagate /* propagate dimension/subscript exception */
   return items
 
 
+/* ------------------------------------------------------------------------------------------------- */
 -- Java arrays have a fixed size and their storage is pre-allocated: return same value as method items
 ::METHOD size
   return self~items
 
 
+/* ------------------------------------------------------------------------------------------------- */
 -- this method creates a supplier method
 ::METHOD  SUPPLIER
 
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  aw=bsf.wrap(bsf('wrapArray', self~objectname))
+
+  rBSF=self~class~rBsf          -- fetch BSF routine object from .BSF
+
+  aw=bsf.wrap(rBsf~call('wrapArray', self~objectname))
    -- wrap up the Supplier object, such that it will be kept in the BSF registry as long
    -- as the Object Rexx BSF proxy exists
-  return bsf.wrap( bsf('invoke', aw, 'supplier', .true) )
+  return bsf.wrap( rBsf~call('invoke', aw, 'supplier', .true) )
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2703,32 +2655,33 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
-
+/* ------------------------------------------------------------------------------------------------- */
 -- this method is needed by "DO ... OVER" ad it requires a native Rexx array object!
 ::METHOD MAKEARRAY
 
--- .error~say( "BSF.CLS: BSF_ARRAY_REFERENCE::MAKEARRAY():" pp(self~objectName)"@"pp(self~identityHash))
-
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  aw=bsf.wrap(bsf('wrapArray', self~objectname) )   -- wrap up the array
-  arr=bsf.wrap(bsf('invoke', aw, 'makearray', .false, .false)) -- get
-  arr=bsf.wrap(bsf('arrayAt', arr, 0))              -- get the appropriate Java array
+
+  rBSF=self~class~rBsf          -- fetch BSF routine object from .BSF
+
+  aw=bsf.wrap(rBsf~call('wrapArray', self~objectname) )   -- wrap up the array
+  arr=bsf.wrap(rBsf~call('invoke', aw, 'makearray', .false, .false)) -- get
+  arr=bsf.wrap(rBsf~call('arrayAt', arr, 0))              -- get the appropriate Java array
 
   rexxArr=.array~new
-  do i=1 to bsf('arrayLength', arr)~substr(4)         -- get length of 'dimensions' array
+  do i=1 to rBsf~call('arrayLength', arr)~substr(4)         -- get length of 'dimensions' array
      -- rexxArr[i]=bsf.wrap(bsf('arrayAt', arr, i-1))  -- use Java indexing (starting with '0')
      -- 2015-05-10: special MAKEARRAY processing: if an element is a RexxProxy then replace it
      --             with its contained Rexx object; needed for JSR223-eval() implementation
-     entry=bsf('arrayAt', arr, i-1)
+     entry=rBsf~call('arrayAt', arr, i-1)
      rexxArr[i]=bsf.wrap(entry)  -- use Java indexing (starting with '0')
      if pos("<O>org.rexxla.bsf.engines.rexx.RexxProxy@",entry)>0 then   -- a RexxProxy in hand?
-        rexxArr[i]=BsfRexxProxy(rexxArr[i],"o") -- special MAKEARRAY processing: replace RexxProxy with its contained Rexx object
+        rexxArr[i]=self~class~rBsfRexxProxy~call(rexxArr[i],"o") -- special MAKEARRAY processing: replace RexxProxy with its contained Rexx object
 
   end
   return rexxArr
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2738,12 +2691,14 @@ any:
 
 
 
-
+/* ================================================================================================= */
+/* ================================================================================================= */
    -- wraps the given Java object and allows for using the array methods on it;
    -- if the reference is not used anymore, it will *not* cause the Java object to be de-registered
    -- used in the initialisation of "BSF_ARRAY" to get primitive int array (for the dimensions) without initialising them as standalone BSF-arrays
    --
 ::CLASS BSF_ARRAY_PROXY SUBCLASS BSF_ARRAY_REFERENCE
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD init
   use arg beanName, dimension, items         -- name of Java object as registered in the BSF registry
   self~rii_id=.bsf.rii_id    -- remember RII that created this instance
@@ -2752,15 +2707,18 @@ any:
   self~dimension =dimension
   self~items     =items
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method dimension attribute
+/* ------------------------------------------------------------------------------------------------- */
 ::method items     attribute
 
+/* ------------------------------------------------------------------------------------------------- */
 ::METHOD uninit            -- intercept destructor message, don't remove BSF registry entry
 
   NOP
 
 
-
+/* ================================================================================================= */
 ::routine bsf.import                         public
    USE ARG java_path, className4LocalDir
 
@@ -2774,6 +2732,8 @@ any:
 syntax:
    raise propagate
 
+
+/* ================================================================================================= */
 ::routine bsf.importClass                    public
    USE ARG java_path, className4LocalDir
 
@@ -2788,21 +2748,26 @@ syntax:
    raise propagate
 
 
+/* ================================================================================================= */
 ::routine bsf.loadClass                      public
    parse arg JavaClassName
-   return bsf.wrap( bsf("loadClass", JavaClassName) )
+   return bsf.wrap( .routines~xBSF~call("loadClass", JavaClassName) )
 
 
 
+/* ================================================================================================= */
 ::routine bsf.lookupBean                     public
    parse arg beanName
-   return bsf.wrap( bsf("lookupBean", beanName) )
+   return bsf.wrap( .routines~xBSF~call("lookupBean", beanName) )
 
+
+/* ================================================================================================= */
 ::routine bsf.unregisterBean                 public
   parse arg beanName
-  return bsf("unregisterBean", beanName)~substr(4)
+  return .routines~xBSF~call("unregisterBean", beanName)~substr(4)
 
 
+/* ================================================================================================= */
 ::routine bsf.pollEventText                  public
    parse arg timeOut
    signal on syntax
@@ -2816,6 +2781,7 @@ syntax:
    raise propagate
 
 
+/* ================================================================================================= */
 ::routine bsf.postEventText                  public
    parse arg eventText, priority
 
@@ -2830,62 +2796,63 @@ syntax:
    raise propagate
 
 
+/* ================================================================================================= */
 ::routine bsf.getStaticValue                 public
    parse arg className, fieldName
-   signal on syntax name any
-   return bsf.wrap( bsf("getStaticValue", className, fieldName))
-any: raise propagate
+   signal on syntax
+   return bsf.wrap( .routines~xBSF~call("getStaticValue", className, fieldName))
+syntax: raise propagate
 
 
+/* ================================================================================================= */
 ::routine bsf.getStaticValueJSO              public
    parse arg className, fieldName
-   signal on syntax name any
-   return bsf.wrap( bsf("getStaticValueJSO", className, fieldName))
-any: raise propagate
+   signal on syntax
+   return bsf.wrap( .routines~xBSF~call("getStaticValueJSO", className, fieldName))
+syntax: raise propagate
 
 
+/* ================================================================================================= */
 ::routine bsf.getStaticValueStrict           public
    parse arg className, fieldName
-   signal on syntax name any
-   return bsf.wrap( bsf("getStaticValueStrict", className, fieldName))
-any: raise propagate
+   signal on syntax
+   return bsf.wrap( .routines~xBSF~call("getStaticValueStrict", className, fieldName))
+syntax: raise propagate
 
 
+/* ================================================================================================= */
 ::routine bsf.getStaticValueStrictJSO        public
    parse arg className, fieldName
-   signal on syntax name any
-   return bsf.wrap( bsf("getStaticValueStrictJSO", className, fieldName))
-any: raise propagate
+   signal on syntax
+   return bsf.wrap( .routines~xBSF~call("getStaticValueStrictJSO", className, fieldName))
+syntax: raise propagate
 
 
+/* ================================================================================================= */
 ::routine bsf.getConstant                    public
   parse arg className, fieldName
-  signal on syntax name any
-  return bsf.wrap( bsf("getStaticValueStrict", className, fieldName))
-any: raise propagate
+  signal on syntax
+  return bsf.wrap( .routines~xBSF~call("getStaticValueStrict", className, fieldName))
+syntax: raise propagate
 
+
+/* ================================================================================================= */
 ::routine bsf.getConstantJSO                public
   parse arg className, fieldName
-  signal on syntax name any
-  return bsf.wrap( bsf("getStaticValueStrictJSO", className, fieldName))
-any: raise propagate
+  signal on syntax
+  return bsf.wrap( .routines~xBSF~call("getStaticValueStrictJSO", className, fieldName))
+syntax: raise propagate
 
 
-
-
+/* ================================================================================================= */
 ::ROUTINE bsf.createArray                    public
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
-  tmp="return bsf.wrap(bsf('createArray' "
-  do i=1 to arg()
-     tmp=tmp ", """ || arg(i) || """"
-  end
-  tmp=tmp"))"
+  arr=.array~of('createArray')~appendAll(arg(1,'A'))
+  return bsf.wrap( .routines~xBSF~callWith(arr))
 
-  interpret tmp     -- now carry out the Rexx statement
-
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2894,30 +2861,35 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
-
+/* ================================================================================================= */
 /* Create single dimensioned Java array, taking the first argument as componentType
    (either a Java class object or as a fully qualified Java class name). All (optional)
    following arguments are being taking
 */
 ::ROUTINE bsf.createArrayOf                  public -- rgf, 2009-07-30
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
-  tmp="return bsf.wrap(bsf('createArrayOf'"
-
+  -- code from class method:
+  bUnoProxy=.uno_proxy~isA(.class)     -- is UNO (AOO) support loaded?
+  tmpArr=.array~new
+  rBsfCreateRexxProxy=.routines~xBsfCreateRexxProxy   -- fetch routine Object
   do i=1 to arg()
      a=arg(i)
-     if i>1, \a~isA(.string), \a~isA(.bsf), a<>.nil then
-        tmp=tmp ", """ || BsfCreateRexxProxy(a) || """"
+      -- make sure we leave .UNO_PROXY objects unwrapped
+     if bUnoProxy then aBSF=a~isA(.uno_proxy)
+                  else aBSF=.false
+
+     if i>1, \a~isA(.string), \a~isA(.bsf), \aBSF, a<>.nil then
+         tmpArr~append(rBsfCreateRexxProxy~call(a))   -- make Rexx object available to Java
      else
-        tmp=tmp ", """ || a || """"
+         tmpArr~append(a)
   end
 
-  tmp=tmp"))"
+  arr=.array~of('createArrayOf')~appendAll(tmpArr)
+  return bsf.wrap( .routines~xBSF~callWith(arr))
 
-  interpret tmp     -- now carry out the Rexx statement
-
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2926,19 +2898,15 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
+/* ================================================================================================= */
 ::ROUTINE bsf.createJavaArray                public         -- rgf, 2009-09-10
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
-  tmp="return bsf.wrap(bsf('createJavaArray' "
-  do i=1 to arg()
-     tmp=tmp ", """ || arg(i) || """"
-  end
-  tmp=tmp"))"
+  arr=.array~of('createJavaArray')~appendAll(arg(1,'A'))
+  return bsf.wrap( .routines~xBSF~callWith(arr))
 
-  interpret tmp     -- now carry out the Rexx statement
-
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2947,30 +2915,34 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
-
+/* ================================================================================================= */
 /* Create single dimensioned Java array, taking the first argument as componentType
    (either a Java class object or as a fully qualified Java class name). All (optional)
    following arguments are being taking
 */
 ::ROUTINE bsf.createJavaArrayOf              public -- rgf, 2009-09-10
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
-  tmp="return bsf.wrap(bsf('createJavaArrayOf'"
+  bUnoProxy=.uno_proxy~isA(.class)     -- is UNO (AOO) support loaded?
+  tmpArr=.array~new
+  rBsfCreateRexxProxy=.routines~xBsfCreateRexxProxy   -- fetch routine Object
   do i=1 to arg()
      a=arg(i)
-     if i>1, \a~isA(.string), \a~isA(.bsf), a<>.nil then
-     do
-        tmp=tmp ", """ || BsfCreateRexxProxy(a) || """"
-     end
+      -- make sure we leave .UNO_PROXY objects unwrapped
+     if bUnoProxy then aBSF=a~isA(.uno_proxy)
+                  else aBSF=.false
+
+     if i>1, \a~isA(.string), \a~isA(.bsf), \aBSF, a<>.nil then
+         tmpArr~append(rBsfCreateRexxProxy~call(a))   -- make Rexx object available to Java
      else
-        tmp=tmp ", " escapeQuotes(a)
+         tmpArr~append(a)
   end
-  tmp=tmp"))"
 
-  interpret tmp     -- now carry out the Rexx statement
+  arr=.array~of('createJavaArrayOf')~appendAll(tmpArr)
+  return bsf.wrap( .routines~xBSF~callWith(arr))
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -2980,18 +2952,19 @@ any:
 
 
 
+/* ================================================================================================= */
 /* Routine for subfunction "version", rgf, 2008-07-09 */
 ::routine bsf.version public
    use strict arg kind=""
 
-   signal on syntax name any
+   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
   if kind="" then
-     return BSF( "version")~substr(4)
+     return .routines~xBSF~call( "version")~substr(4)
   else
-     return BSF( "version", kind)~substr(4)
+     return .routines~xBSF~call( "version", kind)~substr(4)
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -3000,15 +2973,16 @@ any:
   raise propagate
 
 
+/* ================================================================================================= */
 /* Routine for subfunction "haltThread", rgf, 2009-04-04 */
 ::routine bsf.haltThread public
    use strict arg tid
 
-   signal on syntax name any
+   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return BSF("haltThread", tid)~substr(4) -- remove type indicator
+  return .routines~xBSF~call("haltThread", tid)~substr(4) -- remove type indicator
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -3018,6 +2992,7 @@ any:
 
 
 
+/* ================================================================================================= */
 /* 2010-02-20: allow testing whether a Java object is an instance of a given
                Java class (either the class object or a string); returns
                .true (1) or .false (0)
@@ -3025,11 +3000,11 @@ any:
 ::routine bsf.isA public
   use strict arg javaObject, javaClass
 
-   signal on syntax name any
+   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  return BSF("isA", javaObject, javaClass)~substr(4)   -- remove type indicator
+  return .routines~xBSF~call("isA", javaObject, javaClass)~substr(4)   -- remove type indicator
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -3039,6 +3014,7 @@ any:
 
 
 
+/* ================================================================================================= */
 /* 2010-05-11: extract and return slotDir argument, which is always the last argument in
                the supplied arg-array; this way it is easy to get the slotDir back in
                a one liner
@@ -3046,17 +3022,18 @@ any:
 ::routine bsf.getSlotDir public
   use strict arg argArray
 
-  signal on syntax name any
+  signal on syntax
   slotDir=argArray~at(argArray~last)   -- slotDir is always last item in argument array
   if \slotDir~isA(.slotArgument) then
      raise syntax 88.900 array ('Last item in "argumentArray" must be of type ""SlotArgument"" (a Directory or a StringTable), found: "'slotDir'"')
   return slotDir
 
-any:
+syntax:
   raise propagate
 
 
 
+/* ================================================================================================= */
    /* Create and return an Object Rexx directory representing all static fields of the
     * given Java class or Java interface.
    */
@@ -3064,14 +3041,32 @@ any:
   parse arg JavaClassName, bNoCache
   return .JavaStaticFields.Directory~new(JavaClassName, bNoCache)
 
+
+
+/* ================================================================================================= */
+/* ================================================================================================= */
 /*  This allows to wrap any Java class or interface as a directory of fields. This way
     Java field constants can be easily addressed/used via BSF. Any looked up Java constant
     field will be stored in the directory, speeding up future look-ups.
 */
 ::class  "JavaStaticFields.Directory"  subclass directory
+
+/* ------------------------------------------------------------------------------------------------- */
+::METHOD init           CLASS
+  EXPOSE rBSF rBsfUninit4JavaBean rBsfRexxProxy
+   -- get the routine objects (of the native routines) and cache them in class attributes; rgf, 20180224
+  rBSF               =.routines~xBSF
+
+/* ------------------------------------------------------------------------------------------------- */
+::ATTRIBUTE rBSF        CLASS
+
+/* ------------------------------------------------------------------------------------------------- */
 ::method JavaClassName   attribute -- memorize name of Java class
+/* ------------------------------------------------------------------------------------------------- */
 ::method JavaClassObject attribute -- memorize Java class object
+/* ------------------------------------------------------------------------------------------------- */
 ::method bUseCache       attribute -- memorize Java class object
+/* ------------------------------------------------------------------------------------------------- */
 ::method init
   parse arg JavaClassName, bNoCache
 
@@ -3085,13 +3080,14 @@ any:
   self~JavaClassName=JavaClassName        -- save the Java class name
 
 
+/* ------------------------------------------------------------------------------------------------- */
   -- this method will be used to deal with UNKNOWN messages; it will retrieve the unknown message name
   -- as a fieldName into the Java class object stored with this class
 ::method unknown private  unguarded
   expose JavaClassObject bUseCache
   parse arg fieldName .
 
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
   isPutMessage=(right(fieldName,1)='=')
@@ -3099,7 +3095,7 @@ any:
   do
      parse arg fieldName '='        -- get fieldName only
      newVal=arg(2)[1]               -- second argument (an array), first entry
-     val=bsf.wrap(bsf("setFieldValue", JavaClassObject, fieldName, newVal))
+     val=bsf.wrap(self~class~rBsf~call("setFieldValue", JavaClassObject, fieldName, newVal))
      self~setentry(fieldName, newVal)  -- save the value in the directory (= update cache)
      return newVal                  -- return the looked up value
   end
@@ -3111,13 +3107,13 @@ any:
      end
 
          -- not yet cached, save it in directory object
-     val=bsf.wrap(bsf("getStaticValue", JavaClassObject, fieldName))
+     val=bsf.wrap(self~class~rBsf~call("getStaticValue", JavaClassObject, fieldName))
      self~setentry(fieldName, val)  -- save the value in the directory
      return val                     -- return the looked up value
   end
   return
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -3126,7 +3122,7 @@ any:
   raise propagate  -- raise the exception in caller/invoker on the Rexx side
 
 
-
+/* ------------------------------------------------------------------------------------------------- */
 ::method "[]"                       -- getter method
   forward message ("AT")
 
@@ -3134,19 +3130,19 @@ any:
   expose JavaClassObject bUseCache
   parse arg fieldName
 
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
   if bUseCache & self~hasindex(fieldName) then  -- already in directory, if so return cached value
   do
      return self~at:super(fieldName)
   end
       -- not yet cached, save it in directory object
-  val=bsf.wrap(bsf("getStaticValueStrict", JavaClassObject, fieldName))
+  val=bsf.wrap(self~class~rBsf~call("getStaticValueStrict", JavaClassObject, fieldName))
   self~put:super(val, fieldName)    -- save the value in the directory
 
   return val                        -- return the looked up value
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -3156,26 +3152,29 @@ any:
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method "[]="                      -- setter method
   forward message ("PUT")
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method entry                      -- getter method, use uppercased name as index
   parse upper arg index
   forward message ("AT") array (index)
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method PUT                        -- set static field, honor case of letters
   expose JavaClassObject
   use arg newVal, fieldName
 
-  signal on syntax name any
+  signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  val=bsf.wrap(bsf("setFieldValueStrict", JavaClassObject, fieldName, newVal))
+  val=bsf.wrap(self~class~rBsf~call("setFieldValueStrict", JavaClassObject, fieldName, newVal))
   self~put:super(newVal, fieldName) -- save the value in the directory (= update cache)
   return newVal                     -- return the looked up value
 
-any:
+syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
       current scope with a variable named "BSF_ERROR_MESSAGE"; in order to make
       this error message available to the caller it is stored in the .local environment */
@@ -3185,21 +3184,18 @@ any:
 
 
 
+/* ================================================================================================= */
    /* cheap man's "pretty print": encloses string value in square brackets */
 ::routine pp   public
   return "[" || arg(1)~string || "]"
 
 
-   /* VBasic-like iif() function: if arg(1) is .true, then return arg(2), else arg(3)  */
-::routine iif  public
-  if arg(1)=.true then return arg(2)
-  return arg(3)
 
 
 
 
-
-
+/* ================================================================================================= */
+/* ================================================================================================= */
 /* name:    BSF_UTIL.CLS
    authors: Lee Peedin, Rony G. Flatscher
    date:    2006-03-11
@@ -3303,8 +3299,10 @@ Button Return Values    -1  Dialog CLOSE
 
 ::class bsf.dialog public
 
+/* ------------------------------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------------------------------- */
 /* class methods        */
-
+/* ------------------------------------------------------------------------------------------------- */
 ::method init class
   expose dlgConstants javaDialogClass defaultInstance
    -- initialize attributes to .nil
@@ -3313,6 +3311,7 @@ Button Return Values    -1  Dialog CLOSE
   defaultInstance = .nil
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method getMessageType class    -- determine full name of message type using first character
   parse arg messageType .
 
@@ -3328,6 +3327,7 @@ Button Return Values    -1  Dialog CLOSE
   defaultInstance=self~new(.nil) -- use .nil as default component
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method javaDialogClass class   -- the Java class object proxy for creating dialogs
   expose javaDialogClass
 
@@ -3337,6 +3337,7 @@ Button Return Values    -1  Dialog CLOSE
   return javaDialogClass
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method dlgConstants class      -- defines all the dialog constants needed
   expose dlgConstants
 
@@ -3382,6 +3383,7 @@ Button Return Values    -1  Dialog CLOSE
   return dlgConstants
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method unknown class     -- forward all unknown class messages to the defaultInstance
   expose defaultInstance
   use arg methodName, arrArgs
@@ -3390,14 +3392,18 @@ Button Return Values    -1  Dialog CLOSE
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------------------------------- */
 /* instance methods     */
-
+/* ------------------------------------------------------------------------------------------------- */
 ::method component attribute     -- the Java component for which the dialog should execute; will be modal for it!
+/* ------------------------------------------------------------------------------------------------- */
 ::method init
   expose component
   use arg component              -- get component and save it
 
 
+/* ------------------------------------------------------------------------------------------------- */
    -- method to make it simple to invoke a dialog with push buttons as options
    -- implementation uses javax.swing.JOptionPane
 ::method dialogBox
@@ -3470,7 +3476,7 @@ Button Return Values    -1  Dialog CLOSE
   return -99  -- return impossible value
 
 
-
+/* ------------------------------------------------------------------------------------------------- */
 /*
    -- method to make it simple to invoke a dialog with input field or drop-down list to choose from
    -- implementation uses javax.swing.JOptionPane
@@ -3566,6 +3572,7 @@ Button Return Values    -1  Dialog CLOSE
   return javaDialogClass~new~showInputDialog(component,message,title,swingMessageType, icon, javaArr, defaultValue)
 
 
+/* ------------------------------------------------------------------------------------------------- */
    -- class method to make it simple to invoke the desired functionality
    -- implementation uses javax.swing.JOptionPane
 ::method messageBox
@@ -3604,6 +3611,9 @@ Button Return Values    -1  Dialog CLOSE
 
 
 
+
+/* ================================================================================================= */
+/* ================================================================================================= */
 /** This routine will create a new Java class on the fly, which extends the supplied Java class
 *   and implements the supplied methodNames. The returned Java class implements all constructors
 *   of the base class and for each a version which accepts as its first parameter a
@@ -3653,7 +3663,7 @@ Button Return Values    -1  Dialog CLOSE
 * @since 2010-04-18, 2014-08-31, 2017-03-09
 */
 
--- TODO: class name can be followed with blank-delimited interface class names
+-- class name can be followed with blank-delimited interface class names that also are regarded to be implemented
 ::routine bsf.createProxyClass public
    use strict arg javaClzToProxy, newName=.nil, methName="", ...
 
@@ -3737,6 +3747,7 @@ syntax: raise propagate
 
 
 
+/* ================================================================================================= */
 /* rgf, 2012-02-11: add, but do not document as of yet; originally developped for the
                     DBUS4ooRexx package which mandates UTF-8 strings (and checks them) */
    /* ---------------------------------------------------------------------------------------- */
@@ -3752,13 +3763,8 @@ syntax: raise propagate
   parse arg str
   return BsfRawBytes(.java.lang.String~new(str)~getBytes("UTF-8"))
 
- /*
-/* DEPRECATED, 2015-07-05, ---rgf */
-::routine stringToUtf8 public    -- needs BSF4ooRexx
-  parse arg str
-  return BsfRawBytes(.java.lang.String~new(str)~getBytes("UTF-8"))
-*/
 
+/* ================================================================================================= */
    /* ---------------------------------------------------------------------------------------- */
 /** The received Java object's string value is rendered to a Rexx string according to 'file.encoding's
 *   codepage.
@@ -3776,17 +3782,8 @@ syntax: raise propagate
   else   -- a Rexx string? -- turn UTF-8 encoded Rexx string into Java string, recode the Java string using 'file.encoding's codepage and return it as a Rexx string
      return BsfRawBytes(.java.lang.String~new(bsfRawBytes(str),"UTF-8")~getBytes)
 
-/*
-/* DEPRECATED, 2015-07-05, ---rgf */
-::routine utf8ToString public    -- needs BSF4ooRexx
-  use arg str
 
-  if str~isA(.bsf) then    -- any Java object, use its String value
-     return str~toString   -- this will do the translation from UTF-8 to file.encoding codepage
-  else   -- a Rexx string? -- turn UTF-8 encoded Rexx string into Java string, recode the Java string using 'file.encoding's codepage and return it as a Rexx string
-     return BsfRawBytes(.java.lang.String~new(bsfRawBytes(str),"UTF-8")~getBytes)
-*/
-
+/* ================================================================================================= */
    /* ---------------------------------------------------------------------------------------- */
 /** The received Rexx string consists of UTF-8 characters for which a Java string object gets
 *  created and returned, independent of the file.encoding codepage setting.
@@ -3799,13 +3796,8 @@ syntax: raise propagate
    parse arg str
    return .java.lang.String~new(BSFRawBytes(str),"UTF-8")
 
-/*
-/* DEPRECATED, 2015-07-05, ---rgf */
-::routine utf8stringAsJSO public
-   parse arg str
-   return .java.lang.String~new(BSFRawBytes(str),"UTF-8")
-*/
 
+/* ================================================================================================= */
    /* ---------------------------------------------------------------------------------------- */
 /** The received Java String object (JSO) is rendered as an UTF-8 Rexx string, independent
 *   of the file.encoding codepage setting.
@@ -3829,26 +3821,8 @@ syntax: raise propagate
 syntax:
    raise propagate
 
-/*
-/* DEPRECATED, 2015-07-05, ---rgf */
-::routine JSOasUtf8string public
-   use arg obj
 
-   if obj~isA(.bsf) then      -- a Rexx proxy (to a Java object) in hand?
-   do
-      if obj~bsf.isA(.java.lang.String)=.false then   -- need to get String value from object?
-         obj=obj~bsf.invokeJSO('toString')            -- fetch String value as a Java String object (JSO)
-
-      return BSFRawBytes(obj~getBytes("UTF-8"))       -- render String value to a Rexx string and return it
-   end
-
-   raise syntax 40.900 array ("BSF.CLS/routine/JSOasUtf8string(): wrong argument, must be a Java String object (JSO) or a Java object which String value (result of sending it the 'toString' message) will be processed upon. Instead, received an ooRexx object.")
-
-syntax:
-   raise propagate
-*/
-
-
+/* ================================================================================================= */
    /* ---------------------------------------------------------------------------------------- */
    -- as of ooRexx 4.1.1 the following scenario may occur: Rexx starts Java and Java calls
    -- back into ooRexx; this may take place even after the Rexx program ended and as a result the
@@ -3859,7 +3833,7 @@ syntax:
    -- the Java RexxEngine, such that the Java side will become able to realize that callbacks
    -- to Rexx are not safe anymore
 ::routine BSF.terminateRexxEngine public
-  re=bsf.wrap(bsf('getRexxEngine'))
+  re=bsf.wrap(.routines~rBsf~call('getRexxEngine'))
   re~terminate                -- terminate Rexx interpreter instance to inhibit callbacks from Java
 
   signal on syntax            -- if terminated, we now get a syntax error by BSF()
@@ -3869,6 +3843,7 @@ syntax:
 
 
 
+/* ================================================================================================= */
 /* rgf, 2014-07-06 */
 
 /** Routine to allow redirecting ooRexx standard monitors (.input, .output, .error,
@@ -4008,12 +3983,18 @@ syntax:
 
 
 
+/* ================================================================================================= */
+/* ================================================================================================= */
 /* Allows to use a java.io.InputStream or a java.io.Reader object as an ooRexx input stream. */
 ::class "BSF.InputStream"  subclass inputStream  public
+/* ------------------------------------------------------------------------------------------------- */
 ::attribute javaInputObject         -- allow direct access to input stream object
+/* ------------------------------------------------------------------------------------------------- */
 ::attribute isReader                -- allow direct access
+/* ------------------------------------------------------------------------------------------------- */
 ::attribute prefix                  -- prefix string to be output before executing a LINEIN, writes directly to System.err to bypass outputting any other prefixes
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method init                       -- constructor that takes the Java InputStream object
   expose javaInputObject byteArray1 charArray1 isReader prefix
   use strict arg javaInputObject, prefix=.nil
@@ -4025,6 +4006,7 @@ syntax:
   isReader=.java.io.Reader~isInstance(javaInputObject)
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method charIn
   expose javaInputObject byteArray1 charArray1 isReader
   signal on syntax name wrong_args
@@ -4066,6 +4048,7 @@ wrong_args:
    raise propagate
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method chars
   expose javaInputObject isReader
   if isReader then
@@ -4074,6 +4057,7 @@ wrong_args:
      return javaInputObject~available
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method lineIn
    expose prefix
 
@@ -4094,12 +4078,18 @@ wrong_args:
    end
 
 
+/* ================================================================================================= */
+/* ================================================================================================= */
 /* Allows to use a java.io.PrintStream or a java.io.Writer object as an ooRexx output stream. */
 ::class "BSF.OutputStream" subclass outputStream public
+/* ------------------------------------------------------------------------------------------------- */
 ::attribute javaOutputObject  -- allow direct access to output stream object
+/* ------------------------------------------------------------------------------------------------- */
 ::attribute isWriter          -- allow direct access
+/* ------------------------------------------------------------------------------------------------- */
 ::attribute prefix            -- prefix string to be output before executing a LINEOUT
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method init
   expose javaOutputObject isWriter prefix bPrefixPrinted
   signal on syntax
@@ -4114,6 +4104,7 @@ syntax:
   raise propagate
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method charOut
   expose javaOutputObject isWriter prefix bPrefixPrinted
   signal on syntax
@@ -4151,6 +4142,7 @@ syntax:
   raise propagate
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method lineOut     -- a true synonym for SAY in this implementation (even if no data to display are supplied)
   expose javaOutputObject isWriter prefix bPrefixPrinted
   use strict arg chars=""
@@ -4190,12 +4182,17 @@ syntax:
 */
 ::class JSR223 public
 
+/* ------------------------------------------------------------------------------------------------- */
 ::constant ENGINE_SCOPE 100   -- numeric value for javax.script.ScriptContext.ENGINE_SCOPE
+/* ------------------------------------------------------------------------------------------------- */
 ::constant GLOBAL_SCOPE 200   -- numeric value for javax.script.ScriptContext.GLOBAL_SCOPE
 
+/* ------------------------------------------------------------------------------------------------- */
 ::attribute showWarnings class   -- .true or .false
+/* ------------------------------------------------------------------------------------------------- */
 ::attribute showDebugs   class   -- .true or .false
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method init class
   expose tableOut tableIn showWarnings
    -- define input and output table for TRANSLATE()-BIF
@@ -4204,6 +4201,7 @@ syntax:
   showWarnings=.true
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /** Class method that returns the requested Binding from the ScriptContext.
 *
 * @param scriptContext the javax.script.ScriptContext
@@ -4223,6 +4221,7 @@ syntax:
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /* rgf, 2016-10-26: make sure the entry names can be used as Rexx variable names; if name starts with a dot,
    prepend name with a question mark, otherwise it would be an environment symbol in ooRexx */
 
@@ -4247,6 +4246,7 @@ syntax:
   return newName
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /** Class method that creates and returns a Rexx directory object off the supplied <code>ScriptContext</code>
 *   which is meant to be used with the external Rexx function <code>BSFContextVariables()</code> to set
 *   and drop context variables. Dots in the Java supplied variable names get replaced by underscores
@@ -4338,6 +4338,7 @@ syntax:           -- propagate the syntax condition to caller
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /** Class method that returns the requested attribute from the ScriptContext.
 *
 * @param scriptContext the javax.script.ScriptContext
@@ -4413,6 +4414,7 @@ syntax: raise propagate    -- raise in caller
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /** Class method that returns the requested Binding from the ScriptContext.
 *
 * @param scriptContext the javax.script.ScriptContext
@@ -4447,6 +4449,7 @@ syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /** Utility method for the methods get() and set() to parse the attributes (optionally with scopes)
 *   supplied from a Rexx script annotation. This method will start parsing that string from the position
 *   indicated by <code>startPos</code>
@@ -4554,8 +4557,7 @@ syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext
 
 
 
-
-
+/* ------------------------------------------------------------------------------------------------- */
 /** This method will be used by the Rexx injection code in Rexx scripts if the Rexx script annotation
 *   <code>@GET<code> or <code>@GET(quoted list of blank delimited attribute names)<code> is contained
 *   in Rexx block comments.
@@ -4697,6 +4699,7 @@ syntax:
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /** This method will be used by the Rexx injection code in Rexx scripts if the Rexx script annotation
 *   <code>@SET(quoted list of blank delimited attribute names)<code> is contained in Rexx block comments.
 *   <p>
@@ -4884,6 +4887,8 @@ syntax:
 
 
 
+
+/* ================================================================================================= */
 /* ================================================================================================= */
 
 -- rgf, 2017-08-04/05, create a possibility that eases interaction with
@@ -4904,11 +4909,13 @@ syntax:
 */
 ::class "FxGUIThread"  public
 
+/* ------------------------------------------------------------------------------------------------- */
 /** Constructor class method. */
 ::method init             class
   expose PlatformClz
   PlatformClz=.nil
 
+/* ------------------------------------------------------------------------------------------------- */
 /** Private class method to set up and initilaize the infrastructure.
 */
 ::method setup             class private
@@ -4918,6 +4925,7 @@ syntax:
   PlatformClz=bsf.loadClass("javafx.application.Platform")
   waitingToRun=.false
 
+/* ------------------------------------------------------------------------------------------------- */
 /**
 * @return returns <code>.true</code>, if running on the GUI thread ("JavaFX Application Thread"), <code>.false</code> else
 */
@@ -4931,6 +4939,7 @@ syntax:
   return PlatformClz~isFxApplicationThread
 
 
+/* ------------------------------------------------------------------------------------------------- */
 ::method run               class       -- this method will be invoked by Java at a later time
   expose fxQueue PlatformClz waitingToRun
 -- say self": arrived at  :" pp(.dateTime~new)
@@ -4945,6 +4954,8 @@ syntax:
   waitingToRun=.false   -- indicate that no runLater is pending!
 -- say self": returning at:" pp(.dateTime~new)
 
+
+/* ------------------------------------------------------------------------------------------------- */
 /** Private static method that processes the supplied GUIMessage.
 */
 ::method process           class private
@@ -4981,6 +4992,7 @@ syntax:
   return
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /** Private static method that allows simple creation of a GUIMessage from the supplied array of arguments.
 *   @param args the argument array where index 1 stores the target object, index 2 the message name; optonally
 *               index 3 indicates whether the arguments are supplied individually or in index 4 as an array already
@@ -5025,6 +5037,7 @@ syntax:
   raise propagate
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /** This class method allows to define a Rexx message with its arguments that should
 *   be processed on the GUI thread. Each invocation will create a new <code>GUIMessage</code>
 *   from the supplied arguments and returns it for further inspection in addition to queuing
@@ -5066,6 +5079,7 @@ syntax:
   raise propagate
 
 
+/* ------------------------------------------------------------------------------------------------- */
    -- method replaces existing target: this way only the latest sent message will get executed!
 /** This class method allows to define a Rexx message with its arguments that should
 *   be processed on the GUI thread. Each invocation will create a new <code>GUIMessage</code>
@@ -5123,7 +5137,7 @@ syntax:
 
 
 /* ================================================================================================= */
-
+/* ================================================================================================= */
 
 /** This is a private class modelled after ooRexx <code>Message</code> class and is used in the
     methods of the BSF4ooRexx class <code>FxGUIThread</code>. It allows for inspecting the
@@ -5133,6 +5147,7 @@ syntax:
 */
 ::class "GUIMessage"    PRIVATE -- class to represent a message (including a future result) to be run on the GUI thread
 
+/* ------------------------------------------------------------------------------------------------- */
 /** Constructor method.
 *
 *  @param target the object to receive the message on the GUI thread
@@ -5161,21 +5176,27 @@ syntax:
 
 
 
+/* ------------------------------------------------------------------------------------------------- */
 /** If <code>.true</code> then <code>errorCondition</code> will hold the Rexx condition object.
  @return returns <code>.true</code>, if an error has occurred while running this message, <code>.false</code> else
 */
 ::attribute hasError
 
+
+/* ------------------------------------------------------------------------------------------------- */
 /** If an error occurred while running (executing) the message the error condition object will be made available
     via this attribute.
  @return returns the Rexx condition object or <code>.nil</code>, if none
 */
 ::attribute errorCondition
 
-/**
- @return returns <code>.true</code>, if this message has a result, <code>.false</code> else
+/* ------------------------------------------------------------------------------------------------- */
+/** @return returns <code>.true</code>, if this message has a result, <code>.false</code> else
 */
 ::attribute hasResult
+
+
+/* ------------------------------------------------------------------------------------------------- */
 /** If the message eas run and has completed and returns a result, this attrbitue makes it available.
 
  @return returns <code>.true</code>, if this message has completed without an error, <code>.false</code> else
@@ -5183,26 +5204,23 @@ syntax:
 ::attribute completed
 
 
-/**
- @return returns the target object which receives the message
-*/
+/* ------------------------------------------------------------------------------------------------- */
+/** @return returns the target object which receives the message */
 ::attribute target            get
 
-/**
- @return returns the message name that gets sent
-*/
+/* ------------------------------------------------------------------------------------------------- */
+/** @return returns the message name that gets sent */
 ::attribute messageName       get
 
-/**
- @return returns <code>.true</code>, if this message has arguments, <code>.false</code> else
-*/
+/* ------------------------------------------------------------------------------------------------- */
+/** @return returns <code>.true</code>, if this message has arguments, <code>.false</code> else */
 ::attribute hasArguments
 
-/**
- @return returns an array of message arguments
-*/
+/* ------------------------------------------------------------------------------------------------- */
+/** @return returns an array of message arguments */
 ::attribute arguments         get
 
+/* ------------------------------------------------------------------------------------------------- */
 /** Returns the result of running the message. This method will block (wait) until the message
    has been sent and completed (or having an error while executing), before returning the
    <code>result</code>. You can check the attribute <code>completed</code> to determine
@@ -5217,12 +5235,14 @@ syntax:
   guard on when completed=.true | hasError=.true
   return result
 
+/* ------------------------------------------------------------------------------------------------- */
 /** Setter method allowing setting result. */
 ::attribute result            set
   expose result
   use strict arg result
 
 
+/* ================================================================================================= */
 /** This class gets instantiated either by native or Java code and contains additional, but optional,
 *   entries when sending a message to a Rexx object (a callback from native/Java code to Rexx)
 */

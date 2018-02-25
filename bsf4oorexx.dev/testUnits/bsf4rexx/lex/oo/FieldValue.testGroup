@@ -120,8 +120,11 @@ return testResult
 	show_msg=BsfShowErrorMessage(0)
 	.bsf~bsf.import("java.awt.Dimension", "jad")
 	ftf=.jad~new
+/* rgf, 2018-02-25
 	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
 	self~expectSyntax(errorCode)
+*/
+	self~expectSyntax(93.902)
 	f=ftf~bsf.getFieldValueStrict("width", "foo")
 
 ::method "test_13"
