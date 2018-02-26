@@ -9,8 +9,6 @@ extern "C" {
 #endif
 #undef org_rexxla_bsf_engines_rexx_RexxAndJava_bDebugRefCounter
 #define org_rexxla_bsf_engines_rexx_RexxAndJava_bDebugRefCounter 0L
-#undef org_rexxla_bsf_engines_rexx_RexxAndJava_bRgfUseNewRexxReflect
-#define org_rexxla_bsf_engines_rexx_RexxAndJava_bRgfUseNewRexxReflect 0L
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
  * Method:    jniSetupNativeJVMPointer
@@ -322,6 +320,14 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpre
  */
 JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguageLevel0
   (JNIEnv *, jobject, jstring);
+
+/*
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniTestPing
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniTestPing
+  (JNIEnv *, jobject);
 
 /*
  * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava

@@ -12,6 +12,8 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-02-26, ---rgf, - make INTERPRET-free
+                             - removed routine "createJavaLoadStatement"
          2018-02-25, ---rgf, - finished rework of using rBSF/.routines~xBSF and the like
                              - now the class methods and routines bsf.createArrayOf/bsf.createJavaArrayOf
                                behave the same by not proxying .uno_reference objects (if OOo/AOO support
@@ -601,7 +603,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20180824)
+   version:     6.00 (20180826)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -682,12 +684,11 @@ end
          jso=(jso "-Djava.awt.headless=true")~strip   -- make sure that Java hints at the cause of the problem
 
       arr=parseJavaOptions(jso)
-      stmt=createJavaLoadStatement(arr)      -- create the BsfLoadJava-statement
-      interpret stmt       -- carry out the statement in the string
+      .routines["XBSFLOADJAVA"]~callWith(arr)
    end
 
    -- since 2008-06-22 (rgf) this forces RexxAndJava to prepend type indicators!
-   call bsf "bsfPrefixReturnValue", .true    -- now "<O>" (object) or "<S>" (string) get prepended to the returned value
+   .routines["XBSF"]~call("bsfPrefixReturnValue", .true) -- now "<O>" (object) or "<S>" (string) get prepended to the returned value
 
    -------------------------------------------------------------------------------------------------
 
@@ -701,7 +702,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180225" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180226" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -738,12 +739,18 @@ syntax:
 ::routine xBsfCreateRexxProxy    PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfCreateRexxProxy  "
 ::routine xBsfRexxProxy          PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfRexxProxy        "
 ::routine xBsfUninit4JavaBean    PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfUninit4JavaBean  "
+::routine xBsfLoadJava           PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfLoadJava         "
+
+/*
+rBSF rBsfUninit4JavaBean rBsfRexxProxy
+
 ::routine xBsfRawBytes           PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfRawBytes         "
 ::routine xBsfContextVariables   PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfContextVariables "
 ::routine xBsfGetRIID            PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfGetRIID          "
 ::routine xBsfGetRTC             PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfGetRTC           "
 ::routine xBsfGetTID             PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfGetTID           "
 ::routine xBsfTestPing           PUBLIC   EXTERNAL "LIBRARY BSF4ooRexx BsfTestPing         "
+*/
 
 
 
@@ -1017,17 +1024,6 @@ syntax:
 
 
 /* ================================================================================================= */
-::routine createJavaLoadStatement public
-  use arg a
-  tmpArgs=.mutableBuffer~new
-  do i=1 to a~items
-     if i>1 then tmpArgs~append(", ")
-     tmpArgs~append(escapeQuotes(a~at(i)))
-  end
-
-  return "CALL BsfLoadJava" tmpArgs~string
-
-/* ================================================================================================= */
 ::routine  escapeQuotes
      return '"'||changestr('"', arg(1), '""')||'"'
 
@@ -1262,16 +1258,17 @@ syntax:
    ------------------------------------------------------------- */
 ::METHOD init           CLASS
   -- EXPOSE bsf.null_string bsf.FullJavaClassName bsf.JavaClassObjectProxies bsf.JavaClassObjects dir
-  EXPOSE bsf.null_string bsf.FullJavaClassName rBSF rBsfUninit4JavaBean rBsfRexxProxy
+  EXPOSE bsf.null_string bsf.FullJavaClassName rBSF rBsfUninit4JavaBean rBsfRexxProxy rBsfCreateRexxProxy
 
   bsf.null_string=".NIL"
   bsf.FullJavaClassName=.nil     -- this is an Object Rexx path, hence no fully
                          -- qualified Java class available
 
    -- get the routine objects (of the native routines) and cache them in class attributes; rgf, 20180224
-  rBSF               =.routines~xBSF
-  rBsfUninit4JavaBean=.routines~xBsfUninit4JavaBean
-  rBsfRexxProxy      =.routines~xBsfRexxProxy
+  rBSF               =.routines["XBSF"               ]
+  rBsfUninit4JavaBean=.routines["XBSFUNINIT4JAVABEAN"]
+  rBsfRexxProxy      =.routines["XBSFREXXPROXY"      ]
+  rBsfCreateRexxProxy=.routines["RBSFCREATEREXXPROXY"]
 
 /* ------------------------------------------------------------------------------------------------- */
 ::ATTRIBUTE rBSF                 CLASS
@@ -1279,6 +1276,8 @@ syntax:
 ::ATTRIBUTE rBsfUninit4JavaBean  CLASS
 /* ------------------------------------------------------------------------------------------------- */
 ::ATTRIBUTE rBsfRexxProxy        CLASS
+/* ------------------------------------------------------------------------------------------------- */
+::ATTRIBUTE rBsfCreateRexxProxy  CLASS
 
 
 /* ------------------------------------------------------------------------------------------------- */
@@ -1874,21 +1873,11 @@ syntax:
 /* ------------------------------------------------------------------------------------------------- */
 ::METHOD bsf.setPropertyValue
   parse arg propertyName, index
-  if arg(2, "Omitted") then index = "" -- no index given, set to empty string
-
-  code="res=bsf('setPropertyValue', '" || self~objectname || "', '" || propertyName || "', '" || index || "'"
-
-  tmpArr=arg(3, 'Array')
-  do i=1 to tmpArr~items
-     a.i=iif(tmpArr[i]=.nil, .bsf~bsf.null_string, tmpArr[i])
-     code=code ", a."i
-  end
-  code=code ")"
 
   signal on syntax
-  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  interpret code
-  return bsf.wrap(res)
+  if arg(2, "Omitted") then index = "" -- no index given, set to empty string
+  arr=.array~of('setPropertyValue', self~objectname, propertyName, index)~appendAll(arg(3,"a"))
+  return bsf.wrap(self~class~rBsf~callWith(arr) )
 
 syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
@@ -1904,19 +1893,10 @@ syntax:
   parse arg propertyName, index
   if arg(2, "Omitted") then index = "" -- no index given, set to empty string
 
-  code="res=bsf('setPropertyValueStrict', '" || self~objectname || "', '" || propertyName || "', '" ||,
-                index || "'"
-  tmpArr=arg(3, 'Array')
-  do i=1 to tmpArr~items
-     a.i=iif(tmpArr[i]=.nil, .bsf~bsf.null_string, tmpArr[i])
-     code=code ", a."i
-  end
-  code=code ") "
-
   signal on syntax
-  .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  interpret code
-  return bsf.wrap(res)
+  if arg(2, "Omitted") then index = "" -- no index given, set to empty string
+  arr=.array~of('setPropertyValueStrict', self~objectname, propertyName, index)~appendAll(arg(3,"a"))
+  return bsf.wrap(self~class~rBsf~callWith(arr) )
 
 syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
@@ -4921,7 +4901,7 @@ syntax:
 ::method setup             class private
   expose fxQueue runnable PlatformClz waitingToRun
   fxQueue=.queue~new         -- fxQueue: all queued messages will be dispatched
-  runnable=BsfCreateRexxProxy(self, , "java.lang.Runnable") -- allow this class object to be used as a Runnable
+  runnable=.routines["RBSFCREATEREXXPROXY"]~call(self, .nil, "java.lang.Runnable") -- allow this class object to be used as a Runnable
   PlatformClz=bsf.loadClass("javafx.application.Platform")
   waitingToRun=.false
 

@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2018-02-23
+  * @version 6.0.0, 2018-02-26
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -54,6 +54,9 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+
+     2018-02-26, rgf: - added native jniTestPing() method to allow for testing/debugging calls
+                        via JNI to the native layer
 
      2018-02-22, rgf: - added static method "unregisterBean4JNI" to allow native code to decrease
                         the reference counter of the proxied Java object
@@ -544,7 +547,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20180223";
+    static final public String version = "600.20180226";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -1244,6 +1247,13 @@ System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FIN
      protected native Object  jniNil0                 (String rii_ID);
      protected native long    jniInterpreterVersion0  (String rii_ID);
      protected native long    jniLanguageLevel0       (String rii_ID);
+
+     // rgf, 2018-02-26 --------- for testing and debugging purposes
+     protected native void    jniTestPing             ();   // allows Java to call into BSF4ooRexx.cc and to return immediately
+     static void              javaTestPing            ()    // allows native code to call into Java and to return immediately (for debugging and testing)
+     {
+         return;
+     }
 
 
     /**  rgf, 2003-01-15, used for allowing the BSF4ooRexx-DLL to get at *env, *obj and then to mid etc.
@@ -4624,22 +4634,84 @@ System.err.println("//++// increaseRefCounter/(registerBean), RAJBean: "+bean+" 
            case TEST_PING         :         // 2018-02-25, debugging (test and timing) aid
                {
                /* ********************************************************
-                * call BSF 'testPing'
+                * call BSF 'testPing' [, repetitions[, RexxProxy, messageName]
                 *
-                * - beanName: the bean to unregister
+                * - repetitions: optional, if no RexxProxy and messageName given, the number of repetitions to call jniTestPing()
                 *
+                * - RexxProxy:   if given, repetitions and messageName must be given as well; denotes the Rexx object
+                *                to send the message repetitions times
+
+                * - messageName: the Rexx message to send to the RexxProxy
                 *
                 *********************************************************/
-                   if (args.length!=1)
+                   if (args.length>4 || args.length==3)
                    {
                        throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                 "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: \"call BSF " +
-                           "'"+args[0]+"'\" (no arguments); received Rexx arguments=\""+Arrays.deepToString(args)+"\"");
+                           "'"+args[0]+"' [, repetitions [, RexxProxy, messageName]]\"); received Rexx arguments=\""+Arrays.deepToString(args)+"\"");
                    }
 
+                   if (args.length==1)      // just return, invocations get measured
+                   {
+                       return makeString4Rexx(this, null);  // we return null (in this case: nothing)
+                   }
+
+                   int repetitions=-1;
+                   NumberFormatException nfe=null;
+                   try {
+                       repetitions=Integer.parseInt(args[1]);   // fetch integer value
+                   } catch (NumberFormatException e)
+                   {
+                       nfe=e;       // save Throwable
+                   }
+
+                   if (nfe!=null || repetitions<1)
+                   {
+                       String info="BSF4ooRexx subfunction "+'"'+args[0]+'"'+": argument # 2 must be a positive, whole number, received=\""+args[1]+"\""
+                                   +"usage: \"call BSF '"+args[0]+"' [, repetitions [, RexxProxy, messageName]]\")"
+                                   +"; received Rexx arguments=\""+Arrays.deepToString(args)+"\"";
+
+                       if (nfe!=null)
+                       {
+                           throw new BSFException (BSFException.REASON_INVALID_ARGUMENT, info, nfe);    // supply Exception object
+                       }
+                       else
+                       {
+                           throw new BSFException (BSFException.REASON_INVALID_ARGUMENT, info);
+                       }
+                   }
+
+                   if (args.length==2)      // o.k., only calls into jniTestPing() desired, carry them out
+                   {
+                       for (int i=0; i<repetitions; i++)
+                       {
+                           jniTestPing();   // call into native code
+                       }
+                       return makeString4Rexx(this, null);  // we return null (in this case: nothing)
+                   }
+
+                   RexxProxy rp=(RexxProxy) lookupBean(this, args[2]);  // fetch RexxProxy object
+                   if (rp==null)            // not found
+                   {
+                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": unknown argument # 3 \""+args[3]+"\" (this RexxProxy not found in registry); usage: \"call BSF " +
+                           "'"+args[0]+"' [, repetitions [, RexxProxy, messageName]]\"); received Rexx arguments=\""+Arrays.deepToString(args)+"\"");
+                   }
+
+                   String messageName=args[3];
+                   if (messageName==null)
+                   {
+                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": argument # 4 must not be null (the message to send to the Rexx object wrapped in the supplied RexxProxy object);"
+                                       +"usage: \"call BSF '"+args[0]+"' [, repetitions [, RexxProxy, messageName]]\"); received Rexx arguments=\""+Arrays.deepToString(args)+"\"");
+                   }
+                        // send the Rexx message to the Rexx object
+                   for (int i=0; i<repetitions; i++)
+                   {
+                       rp.sendMessage0(messageName);
+                   }
                    return makeString4Rexx(this, null);  // we return null (in this case: nothing)
                }
-
 
 
 

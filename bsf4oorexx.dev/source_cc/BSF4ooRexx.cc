@@ -944,11 +944,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20180224 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180226 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20180224 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180226 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20180224 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180226 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -2313,6 +2313,7 @@ typedef struct _STRUCT_JVM {
 
     jclass                      clz_RexxAndJava;    // org.rexxla.bsf.engines.rexx.RexxAndJava
     jmethodID                   mid_RexxAndJava_unregisterBean4JNI;     // 20180223, static method !
+    jmethodID                   mid_RexxAndJava_javaTestPing;           // 20180226, rgf
     jmethodID                   mid_RexxAndJava_convFromJNI;
     jmethodID                   mid_RexxAndJava_convFromRexx;
     jmethodID                   mid_RexxAndJava_getRexxEngine;
@@ -2322,6 +2323,7 @@ typedef struct _STRUCT_JVM {
     jmethodID                   mid_RexxAndJava_makeString4Rexx;        // 20091012, rgf
     jmethodID                   mid_RexxAndJava_registerBean4JNI;       // 20091018, rgf
     jmethodID                   mid_RexxAndJava_unregisterBean;
+
 
 #if defined (CONFIG_HANDLE_NETREXX_AS_STRING_4_REXX)
     jclass                      clz_NetRexx;            // "netrexx/lang/Rexx", 20120311, rgf
@@ -2400,6 +2402,7 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
 
     // 20180223, static method !
     struct_JVM->mid_RexxAndJava_unregisterBean4JNI =env->GetStaticMethodID( tmpClz, "unregisterBean4JNI",  "(Ljava/lang/String;)I");
+    struct_JVM->mid_RexxAndJava_javaTestPing       =env->GetStaticMethodID( tmpClz, "javaTestPing",        "()V");
 
     struct_JVM->mid_RexxAndJava_convFromJNI        =env->GetMethodID( tmpClz, "convFromJNI",         "(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/Object;");
     struct_JVM->mid_RexxAndJava_convFromRexx       =env->GetMethodID( tmpClz, "convFromRexx",        "(Ljava/lang/String;)Ljava/lang/Object;");
@@ -2497,6 +2500,7 @@ inline void init_STRUCT_JVM(JNIEnv *env, PSTRUCT_JVM struct_JVM, JavaVM *jvm)
    fprintf(stderr, "\tclz_RexxAndJava  =[%p]\n", struct_JVM->clz_RexxAndJava);
 
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_unregisterBean4JNI =[%p]\n", struct_JVM->mid_RexxAndJava_unregisterBean4JNI);
+   fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_javaTestPing       =[%p]\n", struct_JVM->mid_RexxAndJava_javaTestPing     );
 
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_convFromJNI        =[%p]\n", struct_JVM->mid_RexxAndJava_convFromJNI      );
    fprintf(stderr, "\t\tstruct_JVM->mid_RexxAndJava_convFromRexx       =[%p]\n", struct_JVM->mid_RexxAndJava_convFromRexx     );
@@ -7263,7 +7267,6 @@ RexxRoutine1(size_t, BsfUninit4JavaBean, RexxObjectPtr, bean)
     JNIEnv *jenv=NULL;
 
         // is this thread already attached ? If so reuse it, but do not detach
-    // RgfAcquireLock();
     logical_t needToAttach=((defaultJVM->jvm->GetEnv((void **)&jenv, USE_DEFINED_JNI_VERSION))==JNI_EDETACHED);
 
     if (needToAttach)
@@ -7271,11 +7274,9 @@ RexxRoutine1(size_t, BsfUninit4JavaBean, RexxObjectPtr, bean)
         // nope, not yet attached, attach, but detach before leaving this routine
         if ( (defaultJVM->jvm->AttachCurrentThread((void **) &jenv, (void *) &defaultJavaVMAttachArgs)) != JNI_OK) // attach to JVM
         {
-            // RgfReleaseLock();   // release the lock
             return -99;         // JNI attach error, return prematurely, indicate by returning -99
         }
     }
-    // RgfReleaseLock();   // release the lock
 
     if (jenv==NULL)         // attaching did not work!
     {
@@ -7291,9 +7292,7 @@ RexxRoutine1(size_t, BsfUninit4JavaBean, RexxObjectPtr, bean)
 
     if (needToAttach)   // we were not attached, hence we did an AttachCurrentThread such that we need to release it
     {
-        // RgfAcquireLock();
         defaultJVM->jvm->DetachCurrentThread();
-        // RgfReleaseLock();   // release the lock
     }
 
 // fprintf(stderr, " success, returning true!\n"); fflush(stderr);
@@ -7305,9 +7304,50 @@ RexxRoutine1(size_t, BsfUninit4JavaBean, RexxObjectPtr, bean)
 
 // ---------------------------------------------------------------------------------------
     // ---rgf, 2018-02-24: a test routine to allow measuring various invocation times of a native function from Rexx
-RexxRoutine0(RexxObjectPtr, BsfTestPing)
+RexxRoutine1(RexxObjectPtr, BsfTestPing, OPTIONAL_size_t,  repetitions)
 {
+    if (argumentOmitted(1) || repetitions==0)
+    {
+        return NULL;
+    }
+
+// fprintf(stderr, "BsfTestPing(), bean=[%p] ", bean); fflush(stderr);
+
+    JNIEnv *jenv=NULL;
+
+        // is this thread already attached ? If so reuse it, but do not detach
+    logical_t needToAttach=((defaultJVM->jvm->GetEnv((void **)&jenv, USE_DEFINED_JNI_VERSION))==JNI_EDETACHED);
+
+    if (needToAttach)
+    {
+        // nope, not yet attached, attach, but detach before leaving this routine
+        if ( (defaultJVM->jvm->AttachCurrentThread((void **) &jenv, (void *) &defaultJavaVMAttachArgs)) != JNI_OK) // attach to JVM
+        {
+            fprintf(stderr, "BSF4ooRexx.BsfTestPing([repetitions=[%d]]), cannot attach to Java!\n",repetitions);
+            return context->String("-99");         // JNI attach error, return prematurely, indicate by returning -99
+        }
+    }
+
+    if (jenv==NULL)         // attaching did not work!
+    {
+        fprintf(stderr, "BSF4ooRexx.BsfTestPing([repetitions=[%d]]), cannot attach to Java!\n",repetitions);
+        return context->String("-99");
+    }
+
+    for (size_t i=0; i<repetitions; i++)    // now call into Java
+    {
+        jenv->CallStaticVoidMethod(defaultJVM->clz_RexxAndJava, defaultJVM->mid_RexxAndJava_javaTestPing);
+    }
+
+    if (needToAttach)   // we were not attached, hence we did an AttachCurrentThread such that we need to release it
+    {
+        defaultJVM->jvm->DetachCurrentThread();
+    }
+
+// fprintf(stderr, " success!\n"); fflush(stderr);
+
     return NULL;
+
 }
 
 
@@ -12664,6 +12704,19 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
     rtc->DetachThread();
 
     return res;
+}
+
+
+// ----------------------------------------------------------------------------------------------
+/*  -- rgf, 2018-02-26: just for testing/debugging calls from Java to native code
+ * Class:     org_rexxla_bsf_engines_rexx_RexxAndJava
+ * Method:    jniTestPing
+ * Signature: ()V
+ */
+JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniTestPing
+  (JNIEnv *, jobject)
+{
+    return;
 }
 
 
