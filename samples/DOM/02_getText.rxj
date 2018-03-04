@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    name:       02_getText.rex
    purpose:    - demonstrate how to use DOM from Rexx to extract the text of an XML document from Rexx,

@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* elpFrame.rxj
 -- changed:         2009-10-17, rgf, renamed extension to '.rxj'
                     2010-05-15, rgf, - adapting example to take full advantage of BSF4ooRexx

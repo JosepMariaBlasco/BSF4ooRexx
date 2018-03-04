@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* this is the Rexx program that does the work and interacts
    with GUI elements using using .FxGUIThread~runLater() to
    make sure that the "JavaFX Application Thread" gets used;

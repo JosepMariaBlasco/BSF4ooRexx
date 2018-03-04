@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* Rexx program to test access to the class 'datergf.DateTimeRGF', which is contained
    in the "bsf-rexx-engine.jar" archive; the documentation of the bsf4rexx
    Date/Time classes can be found in the archive "docs_bsf4rexx.zip"

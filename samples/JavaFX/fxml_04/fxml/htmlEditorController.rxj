@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
  /*
   * note "AlertType" is public "inner" enum class, i.e. it is defined within the class "Alert", hence
   * the JavaDocs refer to "AlertType" as "Alert.AlertType": however the Java compiler produces the

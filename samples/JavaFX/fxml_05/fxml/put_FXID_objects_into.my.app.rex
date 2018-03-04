@@ -1,6 +1,7 @@
+#!/usr/bin/env rexx
 /*    author:     Rony G. Flatscher
       date:       2016-11-26, 2017-11-04
-      purpose:    generic ooRexx program which stores the GLOBAL_SCOPE entries in .local as a directory
+      purpose:    generic ooRexx program which stores the GLOBAL_SCOPE entries in .environment as a directory
                   with the name of the FXML-file it got invoked from;
 
       explanation: this program is invoked by the JavaFX FXMLLoader when loading a FXML document and

@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited and extended by Rony G. Flatscher, 2010-07-15/16/17/20 */
 /* Example 07: create a writer document and insert a TextTable into it and edit it */
 

@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:    3-030_info2html.rxj
    author:  Rony G. Flatscher

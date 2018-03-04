@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* File:        01-helloworld-clr.rexp
  * Description: Simple output of "Hello World" via .NET classes.
  * Shows:       - Import of static classes

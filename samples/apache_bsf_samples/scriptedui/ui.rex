@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* pick up the center panel bean, Object Rexx program modelled after ui.nrx */
 /*
 

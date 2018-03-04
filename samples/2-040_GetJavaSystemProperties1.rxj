@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:      2-040_GetJavaSystemProperties1.rxj
 

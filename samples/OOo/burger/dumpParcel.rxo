@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 -- rgf, 2010-08-23: script to create the entries for index.html exploiting the wrok
 --                  done already for "parcel-descriptor.xml"
 

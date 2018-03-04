@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, edited and extended by Rony G. Flatscher, 2010-07-15/17 */
 /* Example 3b: open an existing HTML document and print it at the default printer */
 

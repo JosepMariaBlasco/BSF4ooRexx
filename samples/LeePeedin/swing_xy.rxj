@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* swing_xy.rxj */
 /*
 This demonstration was written in ooRexx by Lee Peedin

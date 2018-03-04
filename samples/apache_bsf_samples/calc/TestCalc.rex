@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
 
    2018-01-02, rgf: fetch BSFManager to allow doing a lookupBean() with its help;

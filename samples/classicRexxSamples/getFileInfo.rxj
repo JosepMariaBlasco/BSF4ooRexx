@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* rgf, 2005-06-18, demo to show how one can use Java as a huge external function library */
 /*
 

@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_200601>, edited by Rony G. Flatscher, 2010-07-12 */
 /* Pre-requisite: p.84 of the Bachelor Thesis:
    "First one has to import the Thunderbird address book into OpenOffice.org. For this open

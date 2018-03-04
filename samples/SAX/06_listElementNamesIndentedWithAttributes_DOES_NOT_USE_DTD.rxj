@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    name:       06_listElementNamesIndentedWithAttributes_DOES_NO_TUSE_DTD.rex
    purpose:    - demonstrate how to ignore any defined external DTD's, using a Rexx implementation

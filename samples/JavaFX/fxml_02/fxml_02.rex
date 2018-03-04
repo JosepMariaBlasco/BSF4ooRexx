@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
    /* usage: fxml_02.rex [de] ... "de" will cause fxml_02_de.properties to be used */
 /*
    author:  Rony G. Flatscher

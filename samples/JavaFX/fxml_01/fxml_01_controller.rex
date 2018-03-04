@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* This routine will be called from the Rexx code defined in the Button element in
    with the fx:id="button" the "onAction" attribute in the FXML Button definition */
 ::routine buttonClicked public

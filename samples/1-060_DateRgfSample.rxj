@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:      1-060_DateRgfSample.rxj
    author:    Rony G. Flatscher

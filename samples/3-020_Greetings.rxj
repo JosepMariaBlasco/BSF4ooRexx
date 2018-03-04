@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    Name:    "3-020_Greetings.rxj"
 

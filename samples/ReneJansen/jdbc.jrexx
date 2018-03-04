@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    author:     Rene Vincent Jansen ("rvj"), 2006-11
    purpose:    demonstrate how to use JDBC using three different RDBMS

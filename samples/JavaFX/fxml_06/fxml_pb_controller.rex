@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* called by FXMLLoader on the "FX Application Thread" */
 
 /* initialize JavaFX objects, define public routines for event handling */

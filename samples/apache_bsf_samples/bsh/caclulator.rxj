@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* A silly little calculator implemented in Rexx using
    Java components for the UI. 2001-05-02, 2003-01-23, ---rgf, 2003-05-10
    ("bsf\samples\bsh\calculator.js" served as an example)

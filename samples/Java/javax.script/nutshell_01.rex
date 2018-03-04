@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    Rexx companion script that gets loaded and evaluated by Nutshell_01_Eval.java:
    changed: 2017-02-09, rgf: doing a bsf.loadClass() for interface class ScriptEngine instead of

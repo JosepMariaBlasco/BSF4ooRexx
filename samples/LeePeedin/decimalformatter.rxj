@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
 This demonstration was written in ooRexx by Lee Peedin
 using BSF4ooRexx, created and distributed by Dr. Rony Flatscher.

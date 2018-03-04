@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 ::routine fillTable public
     use arg slotDir
 

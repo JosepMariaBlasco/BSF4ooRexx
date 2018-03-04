@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
     name:      4-040_PrintFile.rxj
     purpose:   show viewing and printing Java and Rexx files

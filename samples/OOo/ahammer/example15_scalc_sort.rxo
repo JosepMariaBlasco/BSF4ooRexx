@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_07>, created by Rony G. Flatscher,
    replacing Mr. Ahammer's example, 2010-07-17/18/20 */
 /* Example: sort a cell range by columns and by rows, demonstrate how to copy sorted result,

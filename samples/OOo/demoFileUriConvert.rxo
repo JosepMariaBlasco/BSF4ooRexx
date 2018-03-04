@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* rgf: ooRexx example after Ariel Constenla-Haile's example as posted on 2008-05-13T10:05:35-03:00 on dev@api.openoffice.org
 
    20100530: restructured code to take advantage of the ooRexx .local environment

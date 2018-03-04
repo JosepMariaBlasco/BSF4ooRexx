@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
 -- 2017-02-11, Rony G. Flatscher: this is the Rexx equivilent fo the Java program "RunScript.java"
 

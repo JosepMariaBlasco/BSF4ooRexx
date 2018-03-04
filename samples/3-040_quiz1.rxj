@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:       3-040_quiz1.rxj
    author:     Rony G. Flatscher

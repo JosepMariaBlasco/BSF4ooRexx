@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
     name:      Snippet108.rxj
     purpose:   Transcribe the swt Java example 'Snippet108' to classic Rexx (Regina) using BSF4Rexx

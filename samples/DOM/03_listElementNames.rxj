@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    name:       03_listElementNames.rex
    purpose:    - demonstrate how to use DOM from Rexx to extract the element nodes and dump them

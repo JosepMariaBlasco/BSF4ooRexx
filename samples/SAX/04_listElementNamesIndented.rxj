@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    name:       04_listElementNamesIndented.rex
    purpose:    - demonstrate how to implement a SAX content handler in Rexx, this version

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
     slotDir=arg(arg())      -- last argument is the slotDir argument, added by BSF4ooRexx
     started=.dateTime~new   -- get current date and time
     parse source s          -- get the source information and show it

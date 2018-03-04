@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* to be put: "samples/scriptedui/ui-oo.rxj", ---rgf, 2003-05-10    */
 /* pick up the center panel bean, Object Rexx program modelled after ui.nrx */
 /*

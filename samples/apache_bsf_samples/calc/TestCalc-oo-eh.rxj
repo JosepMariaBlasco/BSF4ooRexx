@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* to be placed in "samples/calc/TestCalc-oo.rxj"; Object Rexx version
 
 add the following line to "samples/calc/TestCalc.java" in

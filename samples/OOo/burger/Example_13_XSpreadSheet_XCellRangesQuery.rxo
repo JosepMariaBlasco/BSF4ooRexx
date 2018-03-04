@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_200601>, edited and extended by Rony G. Flatscher, 2010-07-10/20 */
 
 use arg slotArg   /* fetch the "slotArg", a java.util.Hashtable object which contains invocation

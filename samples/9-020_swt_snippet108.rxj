@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
     name:      9-020_swt_snippet108.rxj
     purpose:   Transcribe the swt Java example 'Snippet108' to ooRexx using BSF4Rexx

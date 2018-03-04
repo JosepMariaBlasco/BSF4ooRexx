@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    author:  Rony G. Flatscher
    date:    2016-12-06

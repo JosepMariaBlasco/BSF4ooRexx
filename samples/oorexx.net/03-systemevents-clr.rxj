@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* File:        03-systemevents-clr.rexp
  * Description: Reacts to a Windows system event, namely a change of the systems clock.
  * Shows:       - Import of static classes

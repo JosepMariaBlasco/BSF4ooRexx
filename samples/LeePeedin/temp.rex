@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* ---rgf, 2003-04-07, idea from OS/2 where I did use the WPS for the same purpose ! */
 
 windir=value("windir",,"ENVIRONMENT")  /* get windows directory   */

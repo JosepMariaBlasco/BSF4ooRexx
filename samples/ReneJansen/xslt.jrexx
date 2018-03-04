@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* rexx */
 
 FileOutputStream   = .bsf~bsf.import("java.io.FileOutputStream")

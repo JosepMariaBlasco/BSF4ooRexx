@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    author:  Rony G. Flatscher
    date:    2016-12-08
@@ -11,6 +12,7 @@
             2017-09-26, rgf, use Platform.exit to let blocked main Rexx thread regain control
             2017-11-08, rgf, if Preferences "filePath" does not exist, remove that preference, such
                         that on next run dummy data gets created
+            2018-03-04, rgf, corrected and optimized code in class "BirthdayStatisticsController"
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -65,6 +67,20 @@ do
    exit -1
 end
 
+-- rgf, 20180218: test purposes, make sure we use MethoHandles
+rrj=bsf.wrap(bsf("rexxReflectObject"))
+say "rrj:" pp(rrj)
+say "setting useReflectInvoke=.false (now exclusively uses MethodHandles), rrj="pp(rrj)
+-- rrj~useReflectInvoke=.false   -- use MethodHandle invocations
+-- rrj~useUnreflect    =.true
+-- rrj~useCaching      =.false
+-- rrj~debugLevel      =99
+say "    useCaching      ="pp(rrj~useCaching      )
+say "    useReflectInvoke="pp(rrj~useReflectInvoke)
+say "    useUnreflect    ="pp(rrj~useUnreflect    )
+say "    debugLevel      ="pp(rrj~debugLevel      )
+say "-"~copies(100)
+
 
 .environment~my.app=.directory~new  -- directory to contain objects relevant to this application
 .my.app~bDebug=.false               /* if set to .true, "put_FXID_objects_into.my.app.rex" will show
@@ -92,8 +108,22 @@ end
    -- instantiate the abstract JavaFX class, the abstract "start" method will be served by rexxApp
 jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
 
+signal on syntax
    -- launch the application, invoke "start" and then stay up until the application closes
 jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch in order to work
+exit
+
+syntax:
+   co=condition("object")
+   say ppCondition2(co)
+   say "---"
+   jexc=co~additional~at(2)
+   say "jexc="pp(jexc) "jexc~isA(.bsf)="pp(jexc~isA(.bsf))
+   if jexc~isA(.bsf) then jexc~printStackTrace
+   say "-"~center(" done. ", 100, "-")
+
+
+::requires "rgf_util2.rex"
 
 
 ::requires "BSF.CLS"          -- get Java support
@@ -988,11 +1018,10 @@ jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch 
   -- Get an array with the English month names.
   dfsClz=bsf.loadClass("java.text.DateFormatSymbols")
   locClz=bsf.loadClass("java.util.Locale")
-  months = dfsClz~getInstance(locClz~ENGLISH)~getMonths
-  --  Convert it to a list and add it to an ObservableList of months.
-  monthNames=.fx.FXCollections~observableArrayList ~~addAll(bsf.loadClass("java.util.Arrays")~asList(months))
+  monthNames = dfsClz~getInstance(locClz~ENGLISH)~getMonths    -- returns an array
+  listOfMonthNames=.fx.FXCollections~observableArrayList ~~addAll(monthNames)
   barChart~title="Birthday Month Distributions"
-  xAxis~setCategories(monthNames)
+  xAxis~setCategories(listOfMonthNames)
 
 
 /*  Sets the persons to show the statistics for. */
@@ -1000,7 +1029,8 @@ jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch 
   expose barChart
 
   use arg persons
-  monthCounter=bsf.createJavaArray("int.class", 12)
+  -- monthCounter=bsf.createJavaArray("int.class", 12)   -- create Java array
+  monthCounter=.array~new(12)~~fill(0)
   do p over persons
      parse value p~birthDay with "-" month "-"
      monthCounter[month]+=1
@@ -1019,7 +1049,7 @@ jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch 
   seriesData=series~getData
   do i=1 to monthCounter~size
       -- force number by boxing montCounter value to int
-     monthData=.bsf~new("javafx.scene.chart.XYChart$Data", monthNames~get(i-1), box("i",monthCounter[i]))
+     monthData=.bsf~new("javafx.scene.chart.XYChart$Data", monthNames[i], box("int",monthCounter[i]))
      seriesData~add(monthData)
   end
   return series

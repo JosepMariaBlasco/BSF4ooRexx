@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:    9-010_RunJavaClass.rxj
    author:  Jack Woehr, <http://www.well.com/%7Ejax/rcfb/rexx.html>

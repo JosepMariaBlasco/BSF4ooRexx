@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:    4-030_demoJSO.rxj
    purpose: - demonstrate how to retrieve a reference to the Java string object ("JSO") that method

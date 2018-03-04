@@ -1,7 +1,7 @@
+#!/usr/bin/env rexx
 /* to be put: "samples/scriptedui/ui-oo.rxj", ---rgf, 2003-05-10    */
 /* pick up the center panel bean, Object Rexx program modelled after ui.nrx */
 /*
-
 
    2018-01-02, rgf: fetch BSFManager to allow doing a lookupBean() with its help;
                     BSF4ooRexx does not anymore consult the BSFManager declared

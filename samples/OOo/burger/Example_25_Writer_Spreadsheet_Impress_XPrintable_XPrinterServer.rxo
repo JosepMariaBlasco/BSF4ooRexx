@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* Cf. <http://wi.wu-wien.ac.at/rgf/diplomarbeiten/index.htm#bakk_200601>, edited and extended by Rony G. Flatscher, 2010-07-12/13/14/20 */
 /* Cf. <http://wiki.services.openoffice.org/wiki/Documentation/DevGuide/Drawings/Printing_Drawing_Documents> */
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
 -- 2017-02-09, Rony G. Flatscher: this is the Rexx equivilent fo the Java program "Nutshell_02_Eval.java"
 ------------------------ Apache Version 2.0 license -------------------------

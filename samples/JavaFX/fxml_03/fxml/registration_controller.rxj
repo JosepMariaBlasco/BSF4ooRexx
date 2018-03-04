@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 use arg slotDir         -- fetch the slotDir argument (BSF4ooRexx adds this as the last argument at the Java side)
 scriptContext = slotDir~scriptContext -- get the ScriptContext from the slotDir (last) argument
 
