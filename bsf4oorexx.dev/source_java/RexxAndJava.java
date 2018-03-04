@@ -897,7 +897,7 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
 
 
 // TODO: remove, forcing RRJ6 to be used and tested
-rrjClassName="org.rexxla.bsf.engines.rexx.RexxReflectJava6";
+// rrjClassName="org.rexxla.bsf.engines.rexx.RexxReflectJava6";
 
         // now reflectively load and instantiate the RexxReflectJavaX class and cast object to rxReflect
         try {

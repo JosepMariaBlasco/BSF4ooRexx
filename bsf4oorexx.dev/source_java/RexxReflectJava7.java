@@ -66,7 +66,7 @@ class RexxReflectJava7 implements RexxReflectInterface
      *  {@link java.lang.reflect.Field}, {@link java.lang.reflect.Constructor) <code>invoke</code> methods will get used,
      *  else the corresponding <code>MethodHandle</code>'s <code>invoke</code> method.
     */
-    public boolean useReflectInvoke=true;   // use java.lang.reflect object to invoke? if false, use MethodHandles instead
+    public boolean useReflectInvoke=false; // true;   // use java.lang.reflect object to invoke? if false, use MethodHandles instead
 
     /** If <code>true</code> then use {@link java.lang.invoke.MethodHandles.Lookup} method <code>unreflect</code>, otherwise
      *  use the corresponding <code>find</code>* methods.
@@ -452,7 +452,7 @@ System.out.println("... ... reflectField(): UNKNOWN CACHE ENTRY !! :( ["+cfm.ro.
                     if (rru.success)     // found, return
                     {
 if (debugLevel>1)
-System.err.println("... reflectField():  WOW: found cached Field/MethodHandle (\""+rru.keyMemberName+"\") and could execute it appropriately! : ["+cfm.mh.toString()+"], result=["+rru.result+"]");
+System.err.println("... reflectField():  WOW: found cached Field/MethodHandle (field name: \""+rru.keyMemberName+"\") and could execute it appropriately! : ["+cfm.mh.toString()+"], result=["+rru.result+"]");
                         return;
                     }
 
@@ -531,7 +531,7 @@ if (bDebug) System.out.println("... reflectField(): ---> no appropriate cache fo
                                  of boolean/Boolean getters also "isXXX()" and "hasXXX()"
             */
 
-if (bDebug) System.err.println("... reflectField(): no field found, still trying hard ;) ...");
+if (bDebug) System.err.println("... reflectField(): no field ["+rru.keyMemberName+"] found, still trying hard ;) ...");
 
             // Rexx might have supplied a private field: search for an appropriate getter or setter method and use that instead
             RexxReflectUtil tmpRru=rru.copy();          // create a copy of the current RexxReflectUtil
@@ -546,6 +546,8 @@ if (bDebug) System.err.println("... reflectField(): no field found, still trying
             {
                 tmpRru.bFieldGet        = false;
                 tmpRru.memberName       = "SET"+rru.keyMemberName;  // create name of appropriate setter method
+
+if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], now trying method name ["+tmpRru.memberName+"] ...");
                 reflectMethod(tmpRru);
             }
 
@@ -556,6 +558,8 @@ if (bDebug) System.err.println("... reflectField(): no field found, still trying
     //                  - isXXX | hasXXX, if no argument (Booleans may have "is" or "has" instead of "get" as prefix to getter name)
             {
                 tmpRru.memberName       = "GET"+rru.keyMemberName;  // try getter method first
+
+if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], now trying method name ["+tmpRru.memberName+"] ...");
                 reflectMethod(tmpRru);
                 if (tmpRru.success)          // found & processed, return
                 {
@@ -565,6 +569,7 @@ if (bDebug) System.err.println("... reflectField(): no field found, still trying
                 };
 
                 tmpRru.memberName       = "IS" +rru.keyMemberName;  // try another getter method for Booleans
+if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], now trying method name ["+tmpRru.memberName+"] ...");
                 reflectMethod(tmpRru);
                 if (tmpRru.success)          // found & processed, return
                 {
@@ -574,6 +579,7 @@ if (bDebug) System.err.println("... reflectField(): no field found, still trying
                 };
 
                 tmpRru.memberName       = "HAS"+rru.keyMemberName;  // try another getter method for Booleans
+if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], now trying method name ["+tmpRru.memberName+"] ...");
                 reflectMethod(tmpRru);
             }
 
@@ -726,6 +732,9 @@ if (debugLevel>0) System.err.println("// // :( RexxReflectJava7.processField(), 
             }
         }
 
+if (debugLevel>0) System.err.println("// // :( RexxReflectJava7.processField(), mh.isVarargsCollector()=["+mh.isVarargsCollector()+"]"
+                                         +" <--- tmpField=["+tmpField.toString()+"]");
+
 
         Object  newValue=null;
         Class  tmpFieldType=null;
@@ -870,6 +879,9 @@ if (bDebug)
                     {
                         strInfo="GET";
                         rru.result=mh.invoke(rru.bean); // supply bean
+
+                        // o.k. rru.result=mh.invokeWithArguments( rru.bean );    // no argument for a static setter
+                        // rru.result=mh.invokeWithArguments( (Object []) new Object[]{rru.bean});    // no argument for a static setter
                     }
                 }
                 else    // setter MethodHandle
@@ -877,19 +889,22 @@ if (bDebug)
                     if (bStaticField)
                     {
                         strInfo="SET (STATIC)";
-                        mh.invoke(newValue);    // no argument for a static getter
+                        mh.invoke(newValue);    // no argument for a static setter
+                        // does not work? mh.invokeWithArguments( (Object []) new Object[]{newValue});    // no argument for a static setter
                     }
                     else
                     {
                         strInfo="SET";
                         mh.invoke(rru.bean, newValue);  // supply bean
+                        // does not work? mh.invokeWithArguments( (Object []) new Object[]{rru.bean, newValue});    // no argument for a static setter
                     }
                 }
 
             }
             catch (Throwable t)
             {
-if (debugLevel>0) System.err.println("// // :( -> RexxReflectJava7.processField(): MethodHandle "+strInfo+" invocation caused \""+t+"\", not a candidate, returning");
+if (debugLevel>0)
+System.err.println("// // :( -> RexxReflectJava7.processField(): MethodHandle "+strInfo+" invocation caused \""+t+"\", not a candidate, returning");
                rru.throwable=t;    // save Throwable to allow passing it back as a cause
                return;              // not successful :(
             }
@@ -899,7 +914,12 @@ if (debugLevel>0) System.err.println("// // :( -> RexxReflectJava7.processField(
 if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.processField(): bean=\""+rru.bean+"\", ["
                                                 +rru.choice+"] invocation using ["
                                                 +(useReflectInvoke ? "java.lang.reflect.Field" : "MethodHandle")
-                                                +"] successful, rru.result=\""+rru.result+"\"");
+                                                +"] successful, rru.result=\""+rru.result+"\""
+                                                +(rru.result==null ? "" : " .toString()=\""+rru.result.toString()+"\"")
+                                                +(rru.bFieldGet==true ? "" : " - newValue=\""+newValue+"\""
+                                                      +( newValue==null ? "" : " .toString()=\""+newValue.toString()+"\"")
+                                                  )
+                                                );
 
         if (useCaching)    // add Method object and corresponding MethodHandle to cache
         {
@@ -995,7 +1015,7 @@ if (bDebug) System.err.println("...invokeFieldGet(): cfm="+cfm+" | rru.choice=["
                     rru.result=cfm.mh.invoke();         // no argument for a static getter
                 }
             }
-            else // instance
+            else // instance get
             {
                 if (useReflectInvoke)      // use java.lang.reflect object
                 {
@@ -1011,6 +1031,7 @@ if (bDebug) System.err.println("...invokeFieldGet(): cfm="+cfm+" | rru.choice=["
                 else    // use MethodHandle
                 {
                     rru.result=cfm.mh.invoke(rru.bean); // supply bean
+                    // does not work ? rru.result=cfm.mh.invokeWithArguments( new Object[]{rru.bean});    // no argument for a static setter
                 }
             }
         }
@@ -1026,7 +1047,9 @@ if (debugLevel>3) System.err.println("// // :( -> RexxReflectJava7.invokeFieldGe
 if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.invokeFieldGet(): bean=\""+rru.bean+"\",["
                                                 +rru.choice+"] invocation using ["
                                                 +(useReflectInvoke ? "java.lang.reflect.Field" : "MethodHandle")
-                                                +"] successful, rru.result=\""+rru.result+"\"");
+                                                +"] successful, rru.result=\""+rru.result+"\""
+                                                +(rru.result==null ? "" : " .toString()=\""+rru.result.toString()+"\"")
+                                                );
 
     }
 
@@ -1046,9 +1069,9 @@ if (bDebug)
     System.err.println("                       : cfm.mh.type().parameterArray()=["+Arrays.deepToString(cfm.mh.type().parameterArray())+"]");
 }
 
+        Object newValue=rru.funcArgs[0];        // get new value to set the Field to; convFromRexx already carried out!
         try     // invoke field set operation
         {
-            Object newValue=rru.funcArgs[0];        // get new value to set the Field to; convFromRexx already carried out!
             Class tmpFieldType=null;
 
             if (    newValue != null                // newValue can be null, a Java object (from the registry)  or a string
@@ -1073,7 +1096,18 @@ if (bDebug)
                 }
                 else    // use MethodHandle
                 {
+/*
+                    if (newValue.getClass().isArray())
+                    {
+                        cfm.mh.invoke((Object []) newValue);            // set static field
+                    }
+                    else
+                    {
+                        cfm.mh.invoke(newValue);            // set static field
+                    }
+*/
                     cfm.mh.invoke(newValue);            // set static field
+                    // does not work ? cfm.mh.invokeWithArguments( (Object []) new Object[]{newValue});    // no argument for a static setter
                 }
             }
             else  // instance
@@ -1092,6 +1126,7 @@ if (bDebug)
                 else    // use MethodHandle
                 {
                     cfm.mh.invoke(rru.bean, newValue); // supply bean to set field for
+                    // does not work ? cfm.mh.invokeWithArguments( (Object []) new Object[]{rru.bean, newValue});    // no argument for a static setter
                 }
             }
         }
@@ -1104,7 +1139,10 @@ if (debugLevel>3) System.err.println("// // :( -> RexxReflectJava7.invokeFieldSe
 if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.invokeFieldSet(): bean=\""+rru.bean+"\",["
                                                 +rru.choice+"] invocation using ["
                                                 +(useReflectInvoke ? "java.lang.reflect.Field" : "MethodHandle")
-                                                +"] successful");
+                                                +"] successful"
+                                                +"newValue=\""+newValue+"\""
+                                                +(newValue==null ? "" : " \".toString()=\""+newValue.toString()+"\"")
+                                             );
 
         rru.success=true;        // we could successfully carry out the get operation!
     }
@@ -1125,6 +1163,7 @@ if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.invokeFieldSe
      */
     void reflectMethod(RexxReflectUtil rru) throws BSFException
     {
+
 if (bDebug) System.out.println("... reflectMethod(): arrived, cachedMethods.containsKey("+rru.beanClz+"): \""+cachedMethods.containsKey(rru.beanClz)+"\"");
 
         // let us first check, whether we have a usable cache entry already
@@ -1172,7 +1211,9 @@ if (bDebug) System.out.println("... ... reflectMethod(): from cache, using \"inv
                     if (rru.success)     // found, return
                     {
 if (debugLevel>1)
-System.err.println("... reflectMethod(): WOW, found cached Method/MethodHandle for method named \""+rru.keyMemberName+"\" and could execute it appropriately! : ["+cfm.mh.toString()+"], result=["+rru.result+"]");
+System.err.println("... reflectMethod(): WOW, found cached Method/MethodHandle (method name=\""+rru.keyMemberName+"\") and could execute it appropriately! : ["+cfm.mh.toString()+"], result=["+rru.result+"]"
+                           +(rru.result==null ? "" : " .toString()=\""+rru.result.toString()+"\"")
+                         );
                         return; //  rru.result;
                     }
                 }
@@ -1250,7 +1291,7 @@ if (bDebug) System.out.println("... reflectMethod(): ---> no appropriate cache f
         {
             // ============================= try a few other helpers ======================================
 if (bDebug)
-System.err.println("... reflectMethod(): no method found, still trying hard ;) ...");
+System.err.println("... reflectMethod(): no method ["+rru.keyMemberName+"] found, still trying hard ;) ...");
 
             /* ooRexx-semantics: if method is named MAKEARRAY or SUPPLIER and no argument is supplied,
                                  and if the Java object implements one of ne of the interfaces
@@ -1281,8 +1322,11 @@ System.err.println("... reflectMethod(): no method found, still trying hard ;) .
             //              - setter: setXXX, if one argument, cf. RexxAndJava, line # 3458
             if (rru.funcArgs.length==1)     // maybe a setXXX ?
             {
+
                 tmpRru.bFieldGet        = false;
                 tmpRru.memberName       = rru.keyMemberName;  // field name
+if (bDebug)
+System.err.println("... reflectMethod(): trying field GET, bFieldGet=[false], taking method name as field name ["+tmpRru.memberName+"] ...");
 
                 reflectField(tmpRru);
                 if (tmpRru.success)          // found & processed, return
@@ -1307,6 +1351,10 @@ System.err.println("... reflectMethod(): no method found, still trying hard ;) .
                 // method is actually for an ooRexx attribute message?
                 tmpRru.bFieldGet        = true;
                 tmpRru.memberName       = rru.keyMemberName;  // field name
+
+if (bDebug)
+System.err.println("... reflectMethod(): trying field GET, bFieldGet=[true], taking method name as field name ["+tmpRru.memberName+"] ...");
+
                 reflectField(tmpRru);
                 if (tmpRru.success)          // found & processed, return
                 {
@@ -1328,6 +1376,10 @@ System.err.println("... reflectMethod(): no method found, still trying hard ;) .
 
 
                 tmpRru.memberName       = "GET"+rru.keyMemberName;  // try getter method
+
+if (bDebug)
+System.err.println("... reflectMethod(): trying method, using method name ["+tmpRru.memberName+"] ...");
+
                 reflectMethod(tmpRru);
                 if (tmpRru.success)          // found & processed, return
                 {
@@ -1337,6 +1389,9 @@ System.err.println("... reflectMethod(): no method found, still trying hard ;) .
                 };
 
                 tmpRru.memberName       = "IS" +rru.keyMemberName;  // try another getter method for Booleans
+
+if (bDebug)
+System.err.println("... reflectMethod(): trying method, using method name ["+tmpRru.memberName+"] ...");
                 reflectMethod(tmpRru);
                 if (tmpRru.success)          // found & processed, return
                 {
@@ -1351,6 +1406,10 @@ System.err.println("... reflectMethod(): no method found, still trying hard ;) .
         System.err.println("... reflectMethod(): ---> GETTER: reflectField("+tmpRru.memberName+") ...");
         System.err.println("                                  using tmpRru: "+tmpRru.debugString());
     }
+
+if (bDebug)
+System.err.println("... reflectMethod(): trying method, using method name ["+tmpRru.memberName+"] ...");
+
                 reflectMethod(tmpRru);
             }
 
@@ -1554,6 +1613,10 @@ System.err.println("// // :( RexxReflectJava7.processMethod(), thisLookup=\""+th
             }
         }
 
+
+if (debugLevel>0) System.err.println("// // :( RexxReflectJava7.processMethod(), mh.isVarargsCollector()=["+mh.isVarargsCollector()+"]"
+                                         +" <--- tmpMethod=["+tmpMethod.toString()+"]");
+
             // invoke the method
         if (useReflectInvoke)     // use java.lang.reflect.Method to invoke; same arguments for static and instance invocations
         {
@@ -1611,7 +1674,7 @@ System.err.println("// // :( RexxReflectJava7.processMethod(), thisLookup=\""+th
             if (bStaticMethod)     // a static method in hand
             {
                     try {
-                        rru.result=mh.invokeWithArguments(coercedArgs);
+                        rru.result=mh.invokeWithArguments( (Object []) coercedArgs);
                     }
                     catch (Throwable t)
                     {
@@ -1627,9 +1690,13 @@ if (bDebug) System.err.println("// // // RexxReflectJava7.processMethod(), STATI
             }
             else    // instance Method
             {
-if (bDebug) System.err.println("// // // RexxReflectJava7.processMethod(): INSTANCE, mh.bindTo(\""+rru.bean+"\"/\""+rru.bean.getClass().toString()+"\").invokeWithArguments(...)");
+// if (bDebug) System.err.println("// // // RexxReflectJava7.processMethod(): INSTANCE, mh.bindTo(\""+rru.bean+"\"/\""+rru.bean.getClass().toString()+"\").invokeWithArguments(...)");
+if (bDebug) System.err.println("// // // RexxReflectJava7.processMethod(): INSTANCE, mh.invokeWithArguments( new Object [] {\""+rru.bean+"\"/\""+rru.bean.getClass().toString()+"\", coercedArgs}) ...");
                     try {
-                        rru.result=mh.bindTo(rru.bean).invokeWithArguments(coercedArgs); // bind to bean, invoke method
+                        rru.result=mh.bindTo(rru.bean).invokeWithArguments( (Object []) coercedArgs); // bind to bean, invoke method
+
+                        // does not work, causes "WrongMethodTypeException": rru.result=mh.invokeWithArguments( (Object []) new Object [] {rru.bean, coercedArgs}); // bind to bean, invoke method
+
                     }
                     catch (Throwable t)
                     {
@@ -1768,7 +1835,7 @@ if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.invokeMethod(
                 }
                 else
                 {
-                    rru.result=cfm.mh.invokeWithArguments(coercedArgs);
+                    rru.result=cfm.mh.invokeWithArguments( (Object []) coercedArgs);
                 }
             }
             else
@@ -1776,10 +1843,12 @@ if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.invokeMethod(
                 if (coercedArgs.length==0)
                 {
                     rru.result=cfm.mh.bindTo(rru.bean).invoke();  // bind to bean, invoke method
+                    // does not work ? rru.result=cfm.mh.invokeWithArguments( (Object []) new Object [] {rru.bean}); // bind to bean, invoke method
                 }
                 else
                 {
-                    rru.result=cfm.mh.bindTo(rru.bean).invokeWithArguments(coercedArgs); // bind to bean, invoke method
+                    rru.result=cfm.mh.bindTo(rru.bean).invokeWithArguments( (Object []) coercedArgs); // bind to bean, invoke method
+                    // does not work ? rru.result=cfm.mh.invokeWithArguments( (Object []) new Object [] {rru.bean, coercedArgs}); // bind to bean, invoke method
                 }
             }
         }
@@ -2005,7 +2074,7 @@ if (debugLevel>0) System.err.println("// // :( RexxReflectJava7.processConstruct
             else    // invoke via MethodHandle
             {
                 tmpStr="mh.invokeWithArguments(...)";
-                rru.result=mh.invokeWithArguments(coercedArgs); // invoke constructor
+                rru.result=mh.invokeWithArguments((Object []) coercedArgs); // invoke constructor
             }
         }
 
@@ -2117,7 +2186,7 @@ if (bDebug) System.err.println("...invokeConstructor(): cc=["+cc+"] | rru.choice
             }
             else    // invoke via MethodHandle
             {
-                rru.result=cc.mh.invokeWithArguments(coercedArgs); // invoke constructor
+                rru.result=cc.mh.invokeWithArguments((Object []) coercedArgs); // invoke constructor
             }
         }
         catch (Throwable t)
