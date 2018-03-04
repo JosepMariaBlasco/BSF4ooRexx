@@ -36,6 +36,8 @@ remarks:
                              - TODO: remove dead (commented) code
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
+    6.0.0   2018-03-04, rgf: - bsfDoUnregisterRexxObject: set default to "true", such that unregistering Rexx
+                               objects takes place in all cases
 
     6.0.0   2018-02-24, rgf: - new external Rexx routine "BsfTestPing" which only returns; allows to test
                                and time calling external Rexx functions from Rexx scripts
@@ -944,11 +946,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20180226 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180304 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20180226 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180304 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20180226 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180304 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -972,7 +974,7 @@ int       bShowErrorString = 1;         // default to showing (dumping) Java tra
     //             occurred while running with the beta version of ooRexx 5.0);
     //             to be backwardly compatible, we default to false;
     //             cf. external Rexx function BsfDoUnregisterRexxObject([0|1])
-logical_t bsfDoUnregisterRexxObject=false;
+logical_t bsfDoUnregisterRexxObject=true; // false;
 
 
 
@@ -2214,7 +2216,7 @@ inline RexxObjectPtr RgfGetProxyObject(RexxThreadContext *rtc, RexxStringObject 
 
 
     if (obj==NULL) {                    // no entry as nothing returned !
-fprintf(stderr, "*** PANIC! PANIC! PANIC! RgfGetProxyObject(...), proxy object with obj_id=[%s] NOT FOUND !!!\n",
+fprintf(stderr, "*** UNEXPECTED! UNEXPECTED! UNEXPECTED! RgfGetProxyObject(...), proxy object with obj_id=[%s] NOT FOUND !!!\n",
                 rtc->CString(rtc->SendMessage0(obj_id        , "STRING")) );
 fflush(stderr);
 
@@ -5523,7 +5525,7 @@ RexxRoutine1(RexxStemObject, BsfQueryAllFunctions, OPTIONAL_RexxStemObject, stem
 // ---------------------------------------------------------------------------------------
     /***********************************************************************************************************/
     /* Queries or sets the logical value of the globalc variable bsfDoUnregisterRexxObject (since 2016-12-20). */
-    /* If set to .true (default), then in the case that Rexx started Java the routine                          */
+    /* If set to .true, then in the case that Rexx started Java the routine                                    */
     /* Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregisterRexxObject will not carry out                 */
     /* RgfRemoveProxyObject(c_obj_ID); this may be needed, if there are errors caused by Rexx shutting down    */
     /* while Java still uses jniUnregisterRexxObject (cf. RexxProxy.java).                                     */
@@ -9707,7 +9709,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregiste
 
 if (result==-1)
 {
-    fprintf(stderr, "*** PANIC, PANIC, PANIC: while removing obj_ID=[%s], Rexx object could not be found in BSF4ooRexx registry! PANIC, PANIC, PANIC ***\n",
+    fprintf(stderr, "*** UNEXPECTED, UNEXPECTED, UNEXPECTED: while removing obj_ID=[%s], Rexx object could not be found in BSF4ooRexx registry! UNEXPECTED, UNEXPECTED, UNEXPECTED ***\n",
                      c_obj_ID);
     fflush(stderr);
 }
