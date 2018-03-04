@@ -28,7 +28,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2017 Rony G. Flatscher
+   Copyright 2015-2018 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -44,6 +44,9 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+
+        2018-03-04, ---rgf, added method "removeHashBang(String script)" which blanks out the
+                            first Rexx script line, if it starts with a Unix hashbang (#!)
 
         2017-11-04, ---rgf, if missing filename for eval(): check whether ScriptContext Bindings have
                             an entry "location" of type java.net.URL; if so, then assume that the
@@ -143,7 +146,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20171009
+ * @version 100.20180304
  * @since  2015-05-11
  *
  */
@@ -867,7 +870,7 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
             throw new ScriptException( new NullPointerException("Received \"String script\" argument null"));
         }
 
-        String     tmpScriptSource=script;  // the script that will get compiled (tokenized), maybe edited (code injected)
+        String     tmpScriptSource=removeHashBang(script);  // the script that will get compiled (tokenized), maybe edited (code injected)
         boolean    bGotScriptEdited=false;  // true, if Rexx script got edited via injections
 
 
@@ -1063,6 +1066,33 @@ if (bDebug==true) {exc.printStackTrace();}
         }
 
         return currentScript;            // save in cache, from now on all Invocable methods can be carried out via this ScriptEngine as well
+    }
+
+
+    /** Blanks out the very first line if it leads in with a Unixh hashbang (#!) line.
+     *
+     * @param script the Rexx script to process
+     * @return the original script, if no hashbang line, else the script where the very first line is blanked out
+     *
+     */
+    String removeHashBang(String script)
+    {
+        if (script.startsWith("#!"))    // starts with a hashbang line!
+        {
+            int eofFirstLine=-1;        // first CR or LF, if any
+            // blank out
+            char charArr[]=script.toCharArray();
+            for (int i=0; i<charArr.length; i++)
+            {
+                if (charArr[i]==0x0d || charArr[i]==0x0a)
+                {
+                    break;
+                }
+                charArr[i]=' ';         // blank out
+            }
+            script=new String(charArr); // create String
+        }
+        return script;
     }
 
 // -----------------------------------------------------------------------------------------------------
