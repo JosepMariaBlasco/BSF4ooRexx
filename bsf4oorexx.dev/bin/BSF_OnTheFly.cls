@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    name:       BSF.OnTheFly.cls
    author:     Rony G. Flatscher

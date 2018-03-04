@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    author:  Rony G. Flatscher
    date:    2005-04-18/19/20

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
     author:    Rony G. Flatscher, copyright 2008
     date:      2007-12-29, 2008-01-04

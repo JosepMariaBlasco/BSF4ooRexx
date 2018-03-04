@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:    UNO_CREATE_INTERFACE_LIST.RXO
    purpose: create an ooRexx program that defines and returns a list of OOo XInterfaces

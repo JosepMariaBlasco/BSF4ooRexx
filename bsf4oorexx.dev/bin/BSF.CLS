@@ -603,7 +603,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20180826)
+   version:     6.00 (20180828)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -702,7 +702,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180226" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180228" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1501,7 +1501,8 @@ syntax:
   expose rii_id
 
   signal on syntax name syntax1     -- trap any syntax conditions
-  self~class~rBsfUninit4JavaBean~call(self~objectname)   -- use routine object
+  res=self~class~rBsfUninit4JavaBean~call(self~objectname)   -- use routine object
+  if res<0 then .error~say(.line "BSF.CLS - BSF::UNINIT: "pp(self~objectName) "was not found in registry...")
   return
 
 syntax1:  -- intercept and thereby clear any condition
@@ -1606,7 +1607,7 @@ syntax1:  -- intercept and thereby clear any condition
   if objName~abbrev("org.rexxla.bsf.engines.rexx.RexxProxy@"), -
      "SENDMESSAGE0 SENDMESSAGE1 SENDMESSAGE2 SENDMESSAGE3 SENDMESSAGE4 SENDMESSAGE5 SENDMESSAGE"~caselessWordPos(name)>0 then
   do
-     arr~append( bsf.wrap(self~class~rBSF~call('getRexxAndJava')))   -- TODO: a need to increase refCounter?
+     arr~append( bsf.wrap(self~class~rBSF~call('getRexxAndJava')))
   end
   arr~appendAll(args)                              -- add arguments, if any
 
@@ -2241,7 +2242,7 @@ syntax:
   parse arg newValue
   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  if arg()>1 then    -- 2009-06-26, hint by Mr. Lex (author of testunits for BSF4Rexx)
+  if arg()<>1 then   -- 2009-06-26, hint by Mr. Lex (author of testunits for BSF4Rexx)
      raise syntax 40.900 array ("BSF.CLS/class BSF/class method bsf.setRexxNullString, error 1: too many arguments (maximum: 1, found: "arg()")")
 
    -- rgf, 2018-02-19: rearrange
@@ -2389,7 +2390,9 @@ syntax:
   expose indexArray
 
   signal on syntax name syntax1
-  self~class~rBsfUninit4JavaBean~call(indexArray)
+  res=self~class~rBsfUninit4JavaBean~call(indexArray)
+
+  if res<0 then .error~say(.line "BSF.CLS - BSF::UNINIT: indexArray="pp(indexArray) "was not found in registry...")
 
   signal on syntax name syntax2
   self~uninit:super  -- now let superclass clean up

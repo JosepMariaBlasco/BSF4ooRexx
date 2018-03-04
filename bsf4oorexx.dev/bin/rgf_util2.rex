@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
       url to documentation and reference card (as of 2010-05-14):
                   http://wi.wu.ac.at/rgf/rexx/orx20/

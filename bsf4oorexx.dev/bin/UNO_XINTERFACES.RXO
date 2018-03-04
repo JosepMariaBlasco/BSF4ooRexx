@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* 
    name:     UNO_XINTERFACES.RXO
    purpose:  define the list of OOo interface classes
