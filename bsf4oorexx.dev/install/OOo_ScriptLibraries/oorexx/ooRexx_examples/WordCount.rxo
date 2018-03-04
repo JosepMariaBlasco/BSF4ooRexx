@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* Modelled after the BeanShell example supplied by OOo.
    Rony G. Flatscher, 2010-06-12, WU, Wien/Vienna, Austria
 */

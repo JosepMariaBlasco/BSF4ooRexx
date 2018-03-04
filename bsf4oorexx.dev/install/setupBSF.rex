@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    Name:    setupBSF.rex
    Purpose: set up BSF4Rexx such, that it can be used easily (attempt to serve users

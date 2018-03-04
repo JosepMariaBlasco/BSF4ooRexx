@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    Name:    terminateOOo.rex
    Purpose: terminate all open OOo documents (may be vetoed)

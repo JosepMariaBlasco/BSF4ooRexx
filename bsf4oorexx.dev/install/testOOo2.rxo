@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    Name:    testOOo2.rex
    Purpose: test whether OpenOffice.org can be automated via ooRexx,

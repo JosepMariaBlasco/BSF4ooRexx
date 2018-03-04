@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    Name:    setupFileAssociations.rex
    Purpose: creates files to set up and remove file associations

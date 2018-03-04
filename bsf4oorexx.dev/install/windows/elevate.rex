@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*  author:     Gil Barmwater
     name:       elevate.rex
     purpose:    allow a command to be run elevated under Windows XP or higher

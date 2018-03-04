@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 -- try to get a script context, will be .nil, if script was not invoked by OOo
 xScriptContext = uno.getScriptContext()
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    Name:    kickoff.rex
    Author:  Rony G. Flatscher

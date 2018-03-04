@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    Name:    rexxpaws.rex
    Purpose: Linux replacement for Windows' "rexxpaws.exe" which pauses at the end of execution of a Rexx script

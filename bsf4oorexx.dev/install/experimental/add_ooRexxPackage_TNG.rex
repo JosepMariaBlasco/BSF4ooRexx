@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* UNPUBLISHED APIs, changed with OOo 2.2 and yet has changed again !
 */
 

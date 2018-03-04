@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    Name:    setupOOo.rex
    Purpose: create a shell script which sets the environment variable CLASSPATH
