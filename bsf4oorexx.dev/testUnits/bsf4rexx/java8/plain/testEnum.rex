@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 clz=bsf.loadClass("java8.plain.TestEnum")
 say "clz         ="pp(clz)
 say "clz~toString="pp(clz~toString)

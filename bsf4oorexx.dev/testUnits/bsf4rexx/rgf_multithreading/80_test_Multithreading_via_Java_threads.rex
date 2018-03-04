@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* author:     Rony G. Flatscher
    date:       2009-09-10, 2009-10-10, 2009-10-11, 2009-10-16
    license:    ASF 2.0 (Apache) or CPL 1.0

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 signal on syntax
 -- o=.bsf~new("mtest3.Class03B")             -- create Java object
 o=.bsf~new("mtest3.Class03A")             -- create Java object

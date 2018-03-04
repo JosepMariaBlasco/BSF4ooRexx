@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 signal on syntax
 
 tab="09"x               -- define tab-character

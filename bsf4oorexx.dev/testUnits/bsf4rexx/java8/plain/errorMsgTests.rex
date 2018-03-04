@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 -- signal on syntax
 
 dim=.bsf~new("java.awt.Dimension", 100, 300)

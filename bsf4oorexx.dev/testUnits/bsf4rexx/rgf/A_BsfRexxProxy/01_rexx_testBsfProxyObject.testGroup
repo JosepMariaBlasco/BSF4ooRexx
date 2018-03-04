@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:             rexx_testBsfRexxProxy1.testGroup
    author:           Rony G. Flatscher
@@ -45,7 +45,17 @@ return testResult
     ro2=BsfRexxProxy(rpo)  -- get Rexx object from proxy
     self~assertSame(ro, ro2)
 
+
+/*
+say .line "assertNull(rpo)" pp(rpo)
+say .line "assertNull(rpo), pp(rpo~sendMessage0(""STRING"")):" pp(rpo~sendMessage0("STRING"))
+say .line "assertNull(rpo), pp(rpo~sendMessage0(""GETREXXOBJECTID"")):" pp(rpo~sendMessage0("GETREXXOBJECTID"))
+*/
+
     ud2=BsfRexxProxy(rpo, "userData")
+
+-- say .line "assertNull(ud2)" pp(ud2)
+
     self~assertNull(ud2)   -- no userData created
 
     rc2=BsfRexxProxy(rpo, "refCount")
@@ -82,19 +92,19 @@ return testResult
 
 ::method "test_03_error"
     self~expectSyntax(40.900)
-    call bsfRexxProxy(nixi)
+    call bsfRexxProxy nixi
 
 ::method "test_04_error"
     self~expectSyntax(40.900)
-    call bsfRexxProxy(.nil)
+    call bsfRexxProxy .nil
 
 ::method "test_05_error"
     self~expectSyntax(40.900)
-    call bsfRexxProxy(.object)
+    call bsfRexxProxy .object
 
 ::method "test_06_error"
     self~expectSyntax(40.900)
-    call bsfRexxProxy(.array~new)
+    call bsfRexxProxy .array~new
 
 
 /* ==================================================================================== */

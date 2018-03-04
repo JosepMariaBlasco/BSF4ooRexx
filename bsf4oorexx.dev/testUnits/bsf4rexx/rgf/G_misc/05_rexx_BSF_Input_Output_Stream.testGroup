@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:             05_rexx_BSF_Input_Output_Stream.testGroup
    author:           Rony G. Flatscher

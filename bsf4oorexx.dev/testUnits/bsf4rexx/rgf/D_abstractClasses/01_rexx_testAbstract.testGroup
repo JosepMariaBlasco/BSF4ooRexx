@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:             rexx_testAbstract1.testGroup
    author:           Rony G. Flatscher

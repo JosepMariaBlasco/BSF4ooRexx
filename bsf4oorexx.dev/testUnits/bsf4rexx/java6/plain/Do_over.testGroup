@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:             rexx_testBsfIsA.testGroup
    author:           Rony G. Flatscher
@@ -42,8 +42,8 @@ return testResult
       do val over jarr       -- iterate over Java array
          rexxArr~append(val)
       end
-      self~assertEquals(4,rexxArr~items)
-      self~assertSameList(.array~of("1_one", .nil , "3_three", "4_four"), rexxArr)
+      self~assertEquals(3,rexxArr~items)  -- the do...over version of used MAKEARRAY will not contain the .nil entries!
+      self~assertSameList(.array~of("1_one", "3_three", "4_four"), rexxArr)
    end
 -- say "at end of: test_01" "/ self~assertCount:" self~assertCount
 

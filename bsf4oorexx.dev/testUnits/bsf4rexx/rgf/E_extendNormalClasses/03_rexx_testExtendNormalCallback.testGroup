@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:             rexx_testNormalTest1.testGroup
    author:           Rony G. Flatscher
@@ -403,7 +403,7 @@ return testResult
           constr0=c
        else if paramTypes~items=2 then
           constr1=c
-       else
+       else if paramTypes~items>2 then
           constrMany=c
 
 --       say "paramTypes~items="pp(paramTypes~items)": c~toString="pp(c~toString)
@@ -412,6 +412,7 @@ return testResult
       -- constructor expects a RexxProxy as very first argument
     argArray=bsf.createArrayOf("java.lang.Object", rpSolo)
     o1=constr0~newInstance(argArray)
+-- say .line "o1="pp(o1) "o~fld_o1:" pp(o1~fld_o1) ".nil="pp(.nil)
     self~assertEquals(.nil, o1~fld_o1)
 
     val="oha, Dackel!"

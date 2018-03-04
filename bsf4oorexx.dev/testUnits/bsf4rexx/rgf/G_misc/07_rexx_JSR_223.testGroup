@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:             07_rexx_JSR_223.testGroup
    author:           Rony G. Flatscher

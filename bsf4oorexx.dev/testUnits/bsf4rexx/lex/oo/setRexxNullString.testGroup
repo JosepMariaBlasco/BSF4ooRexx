@@ -1,8 +1,11 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:             setRexxNullString testGroup
    author:           Michael Lex
-   version:          1.0.0
+   version:          1.0.1
+   changed:          - 2018-02-28, rgf: - make sure we reset the rexxNullString to ".NIL",
+                                        - remove ooRexx version (3 vs. 4) dependent code, not needed anymore
+
 */
 /*
 
@@ -34,21 +37,21 @@ return testResult
 
 ::class "setRexxNullString.testGroup" subclass ooTestCase public
 
-::method "test_1"
-	.local~ver = 4
+::method setup
+  call BSF "setRexxNullString", ".NIL"    -- make sure we reset to default
 
+::method tearDown
+  call BSF "setRexxNullString", ".NIL"    -- make sure we reset to default
+
+::method "test_1"
 	nns=.bsf~bsf.setRexxNullString("newnullstring")
 	self~assertEquals(nns,"newnullstring")
 
 ::method "test_2"
-	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
-	self~expectSyntax(errorCode)
+	self~expectSyntax(40.900)
 	nns=.bsf~bsf.setRexxNullString("newnullstring", "foo")
-/*
+
 ::method "test_3"
-	IF .ver = 4 THEN errorCode=40.900; ELSE errorCode=40.1
-	self~expectSyntax(errorCode)
+	self~expectSyntax(40.900)
 	nns=.bsf~bsf.setRexxNullString()
-*/
-return
 

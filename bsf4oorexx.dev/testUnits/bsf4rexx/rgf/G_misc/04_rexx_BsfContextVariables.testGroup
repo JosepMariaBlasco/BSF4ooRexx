@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    name:             04_rexx_testBsfContextVariables.testGroup
    author:           Rony G. Flatscher
