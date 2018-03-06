@@ -1,0 +1,164 @@
+#!/usr/bin/env rexx
+/*
+   name:             rexx_testBsfIsA.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2018-03-05
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test bsf.compile(javaClzName,code)
+*/
+
+  parse version '_' v '.'       -- extract major version (::resource directive needs ooRexx >=5)
+  if v<5 then return .nil       -- do not run on earlier versions of ooRexx
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testBsf.Compile)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+
+::class "testBsf.Compile" subclass ooTestCase public
+
+::method setup
+   /* Unit tests for the older interface may have turned off the prefixing of the return values, if so, restore it. */
+  if bsf("bsfPrefixReturnValue")=0 then
+     call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+
+::method "test_01_rony.Oha.java"
+    code=.resources~rony.oha.java~toString
+    clzName=extractJavaClassName(code)
+    self~assertSame("rony.Oha1", clzName)
+    clz=bsf.compile("rony.Oha1", code)
+    self~assertNotNull(clz)
+    self~assertSame("oha1->aha<-1oha", clz~oha("aha"))
+
+    o=clz~new
+    self~assertTrue(o~isA(clz))
+    self~assertSame("oha1->aha<-1oha", o~oha("aha"))
+    self~assertSame("oha_1///aha\\\oha_1", o~instanceOha("aha"))
+
+
+::method "test_02_Oha.java"
+    code=.resources~oha.java~toString
+    clzName=extractJavaClassName(code)
+    self~assertSame("Oha2", clzName)
+    clz=bsf.compile("Oha2", .resources~oha.java)
+    self~assertNotNull(clz)
+    self~assertSame("oha2->aha<-2oha", clz~oha("aha"))
+
+    o=clz~new
+    self~assertTrue(o~isA(clz))
+    self~assertSame("oha2->aha<-2oha", o~oha("aha"))
+    self~assertSame("oha_2///aha\\\oha_2", o~instanceOha2("aha"))
+
+
+
+::method "test_03_Oha.java"
+    code=.resources~oha.java~toString
+    clzName=extractJavaClassName(code)
+    self~assertNotSame("rony.Oha1", clzName)
+    self~expectSyntax(40.900)
+    clz=bsf.compile("non-existent-package.Oha1", code)
+    self~assertNull(clz)        -- should never arrive here
+
+
+::method "test_04_non-public-Oha.java"
+    code=.resources~non_public.oha.java~toString
+    clzName=extractJavaClassName(code)
+    self~assertNotSame("Oha3", clzName)         -- extractJavaClassName() only extracts "public" . "class" clzName . "{"
+    self~expectSyntax(40.900)
+    clz=bsf.compile("Oha3", code)
+    self~assertNotNull(clz)
+    self~assertSame("oha3->aha<-3oha", clz~oha("aha"))   -- this will work
+
+
+::resource rony.oha.java     -- a Java class with a package name
+
+   package rony;
+
+   public
+   class
+   Oha1
+   extends
+   Object{
+       public static void main (String args[])
+       {
+           System.out.println(oha("hey, this is Oha.main()!"));
+       }
+
+       public static String oha(String o)
+       {
+           return "oha1->"+o+"<-1oha";
+       }
+
+       public String instanceOha(String o)             // Java instance method
+       {
+           return "oha_1///"+o+"\\\\\\oha_1";
+       }
+   }
+
+::END
+
+
+::resource oha.java     -- a Java class without a package name
+
+   public class Oha2{
+       public static String oha(String o)
+       {
+           return "oha2->"+o+"<-2oha";
+       }
+
+       public String instanceOha2(String o)             // Java instance method
+       {
+           return "oha_2///"+o+"\\\\\\oha_2";
+       }
+   }
+
+::END
+
+
+::resource non_public.oha.java  -- a non public Java class
+
+   class Oha3{
+       public static String oha(String o)
+       {
+           return "oha3->"+o+"<-3oha";
+       }
+
+       public String instanceOha3(String o)             // Java instance method
+       {
+           return "oha_3///"+o+"\\\\\\oha_3";
+       }
+   }
+
+::END
+
+
+
+   -- extracts the fully qualified class name from the Java source code; cater for all sorts of formatting of the unqualified class name
+::routine extractJavaClassName
+   parse arg code
+-- say "-"~copies(50)
+
+   parse var code "package" pkgName ";"
+   parse var code "public" . "class" clzName "{"
+-- say .line "clzName="pp(clzName)
+   -- replace contained CR-LF with blanks; remove leading/trailing blanks, get first word
+   clzName=clzName~translate("  ", "0d0a"x)~strip~word(1)
+-- say .line "clzName="pp(clzName)
+-- say
+   if pkgName="" then return clzName
+   return pkgName~strip"."clzName
+
+

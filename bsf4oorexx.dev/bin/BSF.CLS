@@ -12,6 +12,9 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-03-05, ---rgf, - new public routine "bsf.compile(javaClassName,code)" which returns the
+                               Java class object
+
          2018-02-26, ---rgf, - make INTERPRET-free
                              - removed routine "createJavaLoadStatement"
          2018-02-25, ---rgf, - finished rework of using rBSF/.routines~xBSF and the like
@@ -603,7 +606,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20180828)
+   version:     6.00 (20180305)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -702,7 +705,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180228" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180305" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -785,7 +788,7 @@ rBSF rBsfUninit4JavaBean rBsfRexxProxy
    else
    do
       taskbar=bsf.loadClass("java.awt.TaskBar")~getTaskbar
-      .bsf4rexx~apple_application=app
+      .bsf4rexx~apple_application=taskbar
       if .bsf4rexx~hasEntry("bsf4oorexx_256") then
          taskbar~setIconImage(.bsf~new("javax.swing.ImageIcon",.bsf4rexx~bsf4oorexx_256)~getImage)
    end
@@ -5230,5 +5233,64 @@ syntax:
 *   entries when sending a message to a Rexx object (a callback from native/Java code to Rexx)
 */
 ::class "Slot.Argument" subclass Directory public
+
+
+
+
+/* ================================================================================================= */
+/* rgf, 2018-03-05 */
+
+/** Routine that compiles a Java source file and returns the class object.
+
+   @param className  the fully qualified class name (package plus class name in source)
+   @param code       a mandatory string or array of strings representing the Java or NetRexx source code of a class
+   @return           the compiled Java class object
+*/
+
+-- TODO: support NetRexx compilations
+::routine bsf.compile   public
+   use strict arg className, code
+
+   signal on syntax
+   if code~isA(.array) then code=code~toString  -- turn string array into a string
+
+   sc=.bsf~new("org.codehaus.janino.SimpleCompiler")
+   clzLdr=.bsf~bsf.loadClass("java.lang.Thread")~currentThread~getContextClassLoader
+   if clzLdr=.nil then
+   do
+      clzLdr=bsf.wrap(bsf("getRexxAndJava"))~getClass~getClassLoader
+   end
+
+   sc~setParentClassLoader(clzLdr)
+   sc~cook(code)
+   newClass=sc~getClassLoader~loadClass(className)
+   newClass=.bsf~bsf.import(className, .nil, newClass)   -- do not place it into the environment
+   return newClass
+
+syntax:
+   extractedName=extractJavaClassName(code)
+
+   if extractedName="" then
+      .error~say(.line "BSF.CLS - bsf.compile(), hint: cannot extract className, maybe the Java class is not ""public"" ?")
+   else if className<>extractedName then
+   do
+      .error~say(.line "BSF.CLS - bsf.compile(), hint: submitted className ("""className""") <> extracted className ("""extractedName""")")
+   end
+   raise propagate
+
+
+   -- extracts the fully qualified class name from the Java source code; cater for all sorts of formatting of the unqualified class name
+extractJavaClassName: procedure
+   parse arg code
+
+   parse var code "package" pkgName ";"
+   parse var code "public" . "class" clzName "{"
+-- say .line "clzName="pp(clzName)
+   -- replace contained CR-LF with blanks; remove leading/trailing blanks, get first word
+   clzName=clzName~translate("  ", "0d0a"x)~strip~word(1)
+-- say .line "clzName="pp(clzName)
+
+   if pkgName="" then return clzName
+   return pkgName~strip"."clzName
 
 

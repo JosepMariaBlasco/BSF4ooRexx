@@ -1,0 +1,81 @@
+#!/usr/bin/env rexx
+/*
+   name:    9-030_compileJavaClassAndUseIt.rxj
+   author:  Rony G. Flatscher
+   purpose: Uses bsf.compile() to compile a Java class from a string or array of strings
+            and uses it immediately thereafter from ooRexx
+
+   date:    2018-03-06
+
+   usage:   rexx 9-030_compileJavaClassAndUseIt.rxj
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2018 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+
+parse version "_" v "."
+if v<5 then
+do
+   say "this program needs ooRexx 5.0 or later, aborting"
+   exit -1
+end
+   -- compile a Java program and fetch the returned Java class object
+clz=bsf.compile("rony.Oha", .resources~oha.java)
+say 'clz~oha("aha"):' pp(clz~oha("abc"))  -- use the static method "oha" from Rexx
+say "-"~copies(60)
+o=clz~new            -- create an instance of the Java object
+say 'o=clz~new     :' pp(o)
+say "o~oha('zyx')  :" pp(o~oha('zyx'))     -- invoke the instance method
+say "o~myInfo      :" pp(o~myInfo)  -- invoke the instance method
+say "-"~copies(60)
+say "now invoking the main method from ooRexx:"
+args=.bsf~bsf.createArrayOf("java.lang.String", "Hello", "from", "ooRexx!")
+o~main(args)         -- now invoke the Java class' main() method
+
+
+::requires "BSF.CLS" -- get Java support
+
+   -- source of a Java program, defining the class "rony.Oha" with two methods
+   -- - the static method "oha" and
+   -- - the instance method "myInfo"
+::RESOURCE Oha.java  -- source code of a Java class with a static method o()
+
+   package rony;
+   import  java.util.Arrays;
+
+   public class Oha {
+
+       public static void main (String args[])
+       {
+           System.out.println("rony.Oha.main(), received arguments: "+Arrays.deepToString(args));
+       }
+
+
+       public static String oha(String str) // Java static method
+       {
+           return "oha->"+str+"<-oha";
+       }
+
+       public String myInfo()             // Java instance method
+       {
+           return "oha///"+this.toString()+"\\\\\\oha";
+       }
+   }
+::END
+
