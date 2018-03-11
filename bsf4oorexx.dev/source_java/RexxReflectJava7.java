@@ -66,13 +66,39 @@ class RexxReflectJava7 implements RexxReflectInterface
      *  {@link java.lang.reflect.Field}, {@link java.lang.reflect.Constructor) <code>invoke</code> methods will get used,
      *  else the corresponding <code>MethodHandle</code>'s <code>invoke</code> method.
     */
+    // rgf, 2018-03-09: ooRexxTry.rxj does not work with MethodHandle.invokeWithArguments(), hence defaulting to core reflection
+    // public boolean useReflectInvoke=true;   // use java.lang.reflect object to invoke? if false, use MethodHandles instead
+    // rgf, 2018-03-09: for finding out further problems while beta-testing, we use MH.iwA()
     public boolean useReflectInvoke=false; // true;   // use java.lang.reflect object to invoke? if false, use MethodHandles instead
 
     /** If <code>true</code> then use {@link java.lang.invoke.MethodHandles.Lookup} method <code>unreflect</code>, otherwise
      *  use the corresponding <code>find</code>* methods.
      */
-    public boolean useUnreflect =false;     // use MethodHandle.Lookup.unreflect(...) to create MethodHandle from the java.lang.reflect object,
+    public boolean useUnreflect =true; // false;     // use MethodHandle.Lookup.unreflect(...) to create MethodHandle from the java.lang.reflect object,
                                             // otherwise use the MethodHandle.Lookup.findXXX(...) versions
+
+
+/* --- tests, rgf, 2018-03-11
+
+   public boolean useInvokeWithArguments=false; // true; // only supply the arguments, let MethodHandle do the rest
+
+  not really possible from a dynamic language which has no exact type information available to it (it would be
+  possible to come with the exact types via reflection, but why duplicate what Java does anyway in invoke() and invokeWithArguments() ?
+
+--------------------------------------------------------------------- example error (cf. WrongMethodTypeException below)
+                  ["BSF4ooRexx/routine/BSF(), error 3: Java exception occurred: [org.apache.bsf.BSFException: BSF4ooRexx subfunction ""getFieldValue"":
+" || "0A09"x || "bean:        [org.rexxla.bsf.engines.rexx.ArrayWrapper@dc24521] --> type: <org.rexxla.bsf.engines.rexx.ArrayWrapper>" || "0A09"x || "
+field:       [items] not found!" || "0A0A09"x || "-> check field name=[items] (caseless o.k., but correct spelling?)" || "0A"x || "]"]
+                [org.apache.bsf.BSFException@7e0b0338 id#_-8796059571921]
+                        --> exception: [org.apache.bsf.BSFException@7e0b0338 id#_-8796059571921]
+                        --> caused by: [java.lang.invoke.WrongMethodTypeException: expected (ArrayWrapper)int but found (Object)Object]
+---------------------------------------------------------------------
+
+
+    public boolean useInvokeExact=false;    // if useInvokeWithArguments==false, then this flag determines whether to use
+                                            // invoke() or invokeExact(), the latter inhibits MethodHandle to do its own
+                                            // type juggling/coercion
+-- */
 
     /** Allows for turning on and off debug output information.
      *  <dl>
@@ -95,6 +121,9 @@ class RexxReflectJava7 implements RexxReflectInterface
                                             // 2 ... show successful usage of cached entries ("WOW" output)
                                             // 3 ... show successful usages from cached entry with their return value, if any
                                             // 4 ... Throwable while invoking cached entry
+
+    /** Allows for showing successful invocations and their result. */
+    boolean bDebugSuccess=false;     // enable debug output on successful invocation of Constructor, Method or get/setField
 
 
     // publicLookup() works for public classes and its public members only; hence, if returning objects from this package
@@ -732,8 +761,7 @@ if (debugLevel>0) System.err.println("// // :( RexxReflectJava7.processField(), 
             }
         }
 
-if (debugLevel>0) System.err.println("// // :( RexxReflectJava7.processField(), mh.isVarargsCollector()=["+mh.isVarargsCollector()+"]"
-                                         +" <--- tmpField=["+tmpField.toString()+"]");
+if (debugLevel>0) System.err.println("// // :) RexxReflectJava7.processField(), tmpField=["+tmpField.toString()+"]");
 
 
         Object  newValue=null;
@@ -771,35 +799,9 @@ if (bDebug) System.err.println("// // // -> RexxReflectJava7.processField(): GET
                         rru.result=tmpField.get(rru.bean);  // get and return Field value
                     }
                 }
-
-/*
-                catch (IllegalAccessException iae)
-                {
-        if (debugLevel>0)
-        System.err.println("// // :( -> RexxReflectJava7.processField(): GET invocation for bean's =\""+rru.bean+"\" Field \""
-                                 +tmpField.getDeclaringClass().toString()+"\".\""+tmpField.toString()+"\""
-                                 +" caused \""+iae+"\", trying again after setAcessible");
-                    try
-                    {
-                        tmpField.setAccessible(true);
-                        rru.result=tmpField.get(rru.bean);  // get and return Field value
-                    }
-
-                    catch (Throwable t2)
-                    {
-        if (debugLevel>0)
-        System.err.println("// // :( -> RexxReflectJava7.processField(): GET invocation for bean's =\""+rru.bean+"\" Field \""
-                                     +tmpField.getDeclaringClass().toString()+"\".\""+tmpField.toString()+"\""
-                                     +" caused \""+t2+"\", giving up, not a candiate");
-                        rru.throwable=t2;       // save Throwable to allow passing it back as a cause
-                        return;
-                    }
-                }
-*/
-
                 catch (Throwable t1)
                 {
-        if (debugLevel>0)
+if (debugLevel>0)
         System.err.println("// // :( -> RexxReflectJava7.processField(): GET invocation for Field \""
                                  +tmpField.getDeclaringClass().toString()+"\".\""+tmpField.toString()+"\""
                                  +" caused \""+t1+"\", not a candidate, returning");
@@ -824,43 +826,16 @@ if (bDebug)
                     return;
                 }
 
-/*
-            catch (IllegalAccessException iae)
-            {
-    if (debugLevel>0)
-    System.err.println("// // :( -> RexxReflectJava7.processField(): SET invocation for bean's =\""+rru.bean+"\" Field \""
-                                 +tmpField.getDeclaringClass().toString()+"\".\""+tmpField.toString()+"\""
-                                 +" to the value=\""+newValue+"\""
-                                 +" caused \""+iae+"\", trying again after setAcessible");
-                try
+                catch (Throwable t1)
                 {
-                    tmpField.setAccessible(true);
-                    tmpField.set(rru.bean, newValue);  // set Field value
-                }
-
-                catch (Throwable t2)
-                {
-    if (debugLevel>0)
-    System.err.println("// // :( -> RexxReflectJava7.processField(): SET invocation for bean's =\""+rru.bean+"\" Field \""
-                                 +tmpField.getDeclaringClass().toString()+"\".\""+tmpField.toString()+"\""
-                                 +" to the valuu=\""+newValue+"\""
-                                 +" caused \""+t2+"\", giving up, not a candidate, returning");
-                    rru.throwable=t2;       // save Throwable to allow passing it back as a cause
+if (debugLevel>0)
+            System.err.println("// // :( -> RexxReflectJava7.processField(): SET invocation for bean's =\""+rru.bean+"\" Field \""
+                                         +tmpField.getDeclaringClass().toString()+"\".\""+tmpField.toString()+"\""
+                                         +" to the valeu=\""+newValue+"\""
+                                         +" caused \""+t1+"\", not a candidate, returning");
+                    rru.throwable=t1;       // save Throwable to allow passing it back as a cause
                     return;
                 }
-            }
-*/
-
-            catch (Throwable t1)
-            {
-    if (debugLevel>0)
-        System.err.println("// // :( -> RexxReflectJava7.processField(): SET invocation for bean's =\""+rru.bean+"\" Field \""
-                                     +tmpField.getDeclaringClass().toString()+"\".\""+tmpField.toString()+"\""
-                                     +" to the valeu=\""+newValue+"\""
-                                     +" caused \""+t1+"\", not a candidate, returning");
-                rru.throwable=t1;       // save Throwable to allow passing it back as a cause
-                return;
-            }
 
             }
         }
@@ -873,7 +848,9 @@ if (bDebug)
                     if (bStaticField)
                     {
                         strInfo="GET (STATIC)";
-                        rru.result=mh.invoke();         // no argument for a static getter
+                        rru.result=mh.invoke();         // no argument for a static getter ORIGINAL
+
+                        // rru.result=mh.invokeWithArguments((Object []) null);    // no receiver for a static getter ORIGINAL
                     }
                     else
                     {
@@ -881,7 +858,7 @@ if (bDebug)
                         rru.result=mh.invoke(rru.bean); // supply bean
 
                         // o.k. rru.result=mh.invokeWithArguments( rru.bean );    // no argument for a static setter
-                        // rru.result=mh.invokeWithArguments( (Object []) new Object[]{rru.bean});    // no argument for a static setter
+                        // rru.result=mh.invokeWithArguments( (Object []) new Object[]{rru.bean});    // receiver object
                     }
                 }
                 else    // setter MethodHandle
@@ -890,13 +867,18 @@ if (bDebug)
                     {
                         strInfo="SET (STATIC)";
                         mh.invoke(newValue);    // no argument for a static setter
+
                         // does not work? mh.invokeWithArguments( (Object []) new Object[]{newValue});    // no argument for a static setter
+
+                        // mh.invokeWithArguments( (Object []) new Object[]{newValue});    // no receiver object for a static setter
+
                     }
                     else
                     {
                         strInfo="SET";
                         mh.invoke(rru.bean, newValue);  // supply bean
                         // does not work? mh.invokeWithArguments( (Object []) new Object[]{rru.bean, newValue});    // no argument for a static setter
+                        // mh.invokeWithArguments( (Object []) new Object[]{rru.bean, newValue});    // no argument for a static setter
                     }
                 }
 
@@ -911,10 +893,12 @@ System.err.println("// // :( -> RexxReflectJava7.processField(): MethodHandle "+
         }
         rru.success=true;        // indicate we could carry out the desired operation
 
-if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.processField(): bean=\""+rru.bean+"\", ["
+if (debugLevel>2 || bDebugSuccess)
+             System.err.println("// // :) -> RexxReflectJava7.processField(): bean=\""+rru.bean+"\", ["
                                                 +rru.choice+"] invocation using ["
                                                 +(useReflectInvoke ? "java.lang.reflect.Field" : "MethodHandle")
-                                                +"] successful, rru.result=\""+rru.result+"\""
+                                                +"]" +" ["+tmpField.toString()+"]"
+                                                +" SUCCESSFUL, rru.result=\""+rru.result+"\""
                                                 +(rru.result==null ? "" : " .toString()=\""+rru.result.toString()+"\"")
                                                 +(rru.bFieldGet==true ? "" : " - newValue=\""+newValue+"\""
                                                       +( newValue==null ? "" : " .toString()=\""+newValue.toString()+"\"")
@@ -1044,7 +1028,7 @@ if (debugLevel>3) System.err.println("// // :( -> RexxReflectJava7.invokeFieldGe
 
         rru.success=true;        // we could successfully carry out the get operation!
 
-if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.invokeFieldGet(): bean=\""+rru.bean+"\",["
+if (debugLevel>2 || bDebugSuccess) System.err.println("// // :) -> RexxReflectJava7.invokeFieldGet(): bean=\""+rru.bean+"\",["
                                                 +rru.choice+"] invocation using ["
                                                 +(useReflectInvoke ? "java.lang.reflect.Field" : "MethodHandle")
                                                 +"] successful, rru.result=\""+rru.result+"\""
@@ -1096,16 +1080,6 @@ if (bDebug)
                 }
                 else    // use MethodHandle
                 {
-/*
-                    if (newValue.getClass().isArray())
-                    {
-                        cfm.mh.invoke((Object []) newValue);            // set static field
-                    }
-                    else
-                    {
-                        cfm.mh.invoke(newValue);            // set static field
-                    }
-*/
                     cfm.mh.invoke(newValue);            // set static field
                     // does not work ? cfm.mh.invokeWithArguments( (Object []) new Object[]{newValue});    // no argument for a static setter
                 }
@@ -1136,7 +1110,7 @@ if (debugLevel>3) System.err.println("// // :( -> RexxReflectJava7.invokeFieldSe
            rru.throwable=t;
            return;              // not successful :(
         }
-if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.invokeFieldSet(): bean=\""+rru.bean+"\",["
+if (debugLevel>2 || bDebugSuccess) System.err.println("// // :) -> RexxReflectJava7.invokeFieldSet(): bean=\""+rru.bean+"\",["
                                                 +rru.choice+"] invocation using ["
                                                 +(useReflectInvoke ? "java.lang.reflect.Field" : "MethodHandle")
                                                 +"] successful"
@@ -1164,7 +1138,25 @@ if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.invokeFieldSe
     void reflectMethod(RexxReflectUtil rru) throws BSFException
     {
 
-if (bDebug) System.out.println("... reflectMethod(): arrived, cachedMethods.containsKey("+rru.beanClz+"): \""+cachedMethods.containsKey(rru.beanClz)+"\"");
+if (bDebug)
+{
+    // to be removed, blank line to ease start of reflectMethod()
+    System.out.println("\n... reflectMethod(): arrived, bean="+rru.bean+", seeking method \""+rru.keyMemberName+"\""
+                       +"\n\trexxArgs=\""+Arrays.deepToString(rru.rexxArgs)+"\""
+                       +"\n\tfuncArgs=\""+Arrays.deepToString(rru.funcArgs)+"\""
+    );
+    System.out.println("\tType of each funcArgs element:");
+    for (int i=0; i<rru.funcArgs.length;i++)
+    {
+        System.out.println("\t\tfuncArgs["+i+"]: \""+rru.funcArgs[i]+"\" .getClass().toString() -> <"+
+                   ( rru.funcArgs[i]==null ? null : rru.funcArgs[i].getClass().toString() )
+                  +">");
+    }
+    System.out.println("*** los geht's... ***");
+}
+
+if (bDebug)
+System.out.println("... reflectMethod(): arrived, cachedMethods.containsKey("+rru.beanClz+"): \""+cachedMethods.containsKey(rru.beanClz)+"\"");
 
         // let us first check, whether we have a usable cache entry already
         if (useCaching && cachedMethods.containsKey(rru.beanClz))
@@ -1475,7 +1467,6 @@ if (bDebug) System.err.println("\\\\// RexxReflectJava7.getAndProcessMethodFromI
     {
         String methodName=tmpMethod.getName();
 
-
 if (bDebug)
 System.err.println("// // // RexxReflectJava7.processMethod(), ARRIVED: -> \""+rru.choice+"\", tmpMethod=\""+tmpMethod.toString()+"\": rru.memberName=\""+rru.memberName+"\" in object=[rru.rexxArgs[1]=\""+rru.rexxArgs[1]+"\"/rru.bean=\""+rru.bean+"\"]");
 
@@ -1538,7 +1529,7 @@ if (debugLevel>0)       // Rexx arguments could be coerced successfully, show ca
             {
                 Class tmpReturnType=tmpMethod.getReturnType();
 
-System.err.println("// // :) RexxReflectJava7.processMethod(), IS or HAS getter (\""+rru.keyMemberName+"\"), return type boolean, or Boolean?: \""+tmpReturnType.toString()+"\".");
+System.err.println("// // T? RexxReflectJava7.processMethod(), IS or HAS getter (\""+rru.keyMemberName+"\"), return type boolean, or Boolean?: \""+tmpReturnType.toString()+"\".");
                 if (! ( (tmpReturnType==boolean.class) || (tmpReturnType==Boolean.class)) )
                 {
 System.err.println("// // :( RexxReflectJava7.processMethod(), IS or HAS getter (\""+rru.keyMemberName+"\") not of type boolean, nor Boolean, instead: \""+tmpReturnType+"\", not eligible, returning");
@@ -1614,8 +1605,8 @@ System.err.println("// // :( RexxReflectJava7.processMethod(), thisLookup=\""+th
         }
 
 
-if (debugLevel>0) System.err.println("// // :( RexxReflectJava7.processMethod(), mh.isVarargsCollector()=["+mh.isVarargsCollector()+"]"
-                                         +" <--- tmpMethod=["+tmpMethod.toString()+"]");
+if (debugLevel>0)
+System.err.println("// // F? RexxReflectJava7.processMethod(), FOUND? try invoking - tmpMethod=["+tmpMethod.toString()+"], mh=["+mh+"]");
 
             // invoke the method
         if (useReflectInvoke)     // use java.lang.reflect.Method to invoke; same arguments for static and instance invocations
@@ -1658,7 +1649,7 @@ if (debugLevel>0) System.err.println("// // :( RexxReflectJava7.processMethod(),
 
             catch (Throwable t1)
             {
-    if (debugLevel>0)
+if (debugLevel>0)
     System.err.println("// // :( RexxReflectJava7.processMethod(), tmpMethod.invoke(...) for bean=\""+rru.bean+"\" Method \""
                         +tmpMethod.getDeclaringClass().toString()+"\".\""+tmpMethod.toString()+"\""
                         +" caused \""+t1+"\", not a candidate, returning");
@@ -1674,7 +1665,8 @@ if (debugLevel>0) System.err.println("// // :( RexxReflectJava7.processMethod(),
             if (bStaticMethod)     // a static method in hand
             {
                     try {
-                        rru.result=mh.invokeWithArguments( (Object []) coercedArgs);
+// System.err.println("// // // // :) RexxReflectJava7.processMethod(): STATIC, mh.invokeWithArguments(...), about to invoke, coercedArgs=\""+Arrays.deepToString(coercedArgs)+"\"");
+                        rru.result=mh.invokeWithArguments( (Object []) coercedArgs); // ORIGINAL
                     }
                     catch (Throwable t)
                     {
@@ -1684,24 +1676,28 @@ System.err.println("// // :( RexxReflectJava7.processMethod(): STATIC, mh.invoke
                         return;
                     }
 
-
 if (bDebug) System.err.println("// // // RexxReflectJava7.processMethod(), STATIC, mh.invokeWithArguments(...), rru.result=\""+rru.result+"\""+(rru.result==null ? "" : ".getClass()=\""+rru.result.getClass()+"\""));
 
             }
             else    // instance Method
             {
-// if (bDebug) System.err.println("// // // RexxReflectJava7.processMethod(): INSTANCE, mh.bindTo(\""+rru.bean+"\"/\""+rru.bean.getClass().toString()+"\").invokeWithArguments(...)");
-if (bDebug) System.err.println("// // // RexxReflectJava7.processMethod(): INSTANCE, mh.invokeWithArguments( new Object [] {\""+rru.bean+"\"/\""+rru.bean.getClass().toString()+"\", coercedArgs}) ...");
+// if (bDebug)
+// System.err.println("// // // RexxReflectJava7.processMethod(): INSTANCE, mh.bindTo(\""+rru.bean+"\"/\""+rru.bean.getClass().toString()+"\").invokeWithArguments(...),"
+if (bDebug)
+System.err.println("// // // RexxReflectJava7.processMethod(): INSTANCE, mh.bindTo(\""+rru.bean+"\").invokeWithArguments(...),"
+                               +"\n\t-> coercedArgs=\""+Arrays.deepToString(coercedArgs)+"\""
+                               +"\n\t-> Method     =\""+tmpMethod.toString()+"\""
+                               +"\n\t-> mh         =\""+mh.toString()+"\""
+                               );
                     try {
-                        rru.result=mh.bindTo(rru.bean).invokeWithArguments( (Object []) coercedArgs); // bind to bean, invoke method
-
+                        rru.result=mh.bindTo(rru.bean).invokeWithArguments( (Object []) coercedArgs); // bind to bean, invoke method ORIGINAL
                         // does not work, causes "WrongMethodTypeException": rru.result=mh.invokeWithArguments( (Object []) new Object [] {rru.bean, coercedArgs}); // bind to bean, invoke method
-
                     }
                     catch (Throwable t)
                     {
 if (debugLevel>0)
-System.err.println("// // :( RexxReflectJava7.processMethod(): INSTANCE, mh.invokeWithArguments(...) caused Throwable \""+t+"\"");
+System.err.println("// // :( RexxReflectJava7.processMethod(): INSTANCE, mh.invokeWithArguments(...) caused Throwable: \""+t+"\"");
+// System.err.println("// // :( RexxReflectJava7.processMethod(): .... t.getCause()=\""+t.getCause()+"\" -> t.getCause().toString()=\""+t.getCause().toString()+"\"");
                         rru.throwable=t;
                         return;
                     }
@@ -1711,10 +1707,12 @@ if (bDebug) System.err.println("// // // RexxReflectJava7.processMethod(), INSTA
 
         rru.success=true;    // if we arrive here, invocation was successful, so indicate that fact
 
-if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.processMethod(): bean=\""+rru.bean+"\",["
+if (debugLevel>2 || bDebugSuccess)
+System.err.println("// // :) -> RexxReflectJava7.processMethod(): bean=\""+rru.bean+"\",["
                                                 +rru.choice+"] invocation using ["
                                                 +(useReflectInvoke ? "java.lang.reflect.Method" : "MethodHandle")
-                                                +"] successful, rru.result=\""+rru.result+"\"");
+                                                +"]" +" ["+tmpMethod.toString()+"]"
+                                                +" SUCCESSFUL, rru.result=\""+rru.result+"\"");
 
 
         if (useCaching)    // add Method object and corresponding MethodHandle to cache
@@ -1813,7 +1811,7 @@ if (bDebug) System.err.println("...invokeMethod(): cfm.ro=\""+cfm.ro+"\".set(rru
                 else
                 {
 if (bDebug) System.err.println("...invokeMethod(): cfm.ro=\""+cfm.ro+"\".set(rru.bean=\""+rru.bean+"\", \""+coercedArgs+"\") ...");
-                    rru.result=((Method) cfm.ro).invoke(rru.bean,coercedArgs);
+                    rru.result=((Method) cfm.ro).invoke(rru.bean, (Object []) coercedArgs);
                 }
 if (bDebug) System.err.println("...invokeMethod(): cfm.ro=\""+cfm.ro+"\", rru.result=\""+rru.result+"\"");
 
@@ -1848,6 +1846,7 @@ if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.invokeMethod(
                 else
                 {
                     rru.result=cfm.mh.bindTo(rru.bean).invokeWithArguments( (Object []) coercedArgs); // bind to bean, invoke method
+
                     // does not work ? rru.result=cfm.mh.invokeWithArguments( (Object []) new Object [] {rru.bean, coercedArgs}); // bind to bean, invoke method
                 }
             }
@@ -1862,7 +1861,7 @@ if (debugLevel>3)  System.err.println("// // // :( -> RexxReflectJava7.invokeMet
         rru.success=true;        // we could successfully carry out the get operation!
 
 if (bDebug) System.err.println("...mhMethodGetInvoke(): rru.memberName=\""+rru.memberName+"\"(...),  rru.result=\""+rru.result+"\"");
-if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.invokeMethod(): bean=\""+rru.bean+"\",["
+if (debugLevel>2 || bDebugSuccess) System.err.println("// // :) -> RexxReflectJava7.invokeMethod(): bean=\""+rru.bean+"\",["
                                                 +rru.choice+"] invocation using ["
                                                 +(useReflectInvoke ? "java.lang.reflect.Method" : "MethodHandle")
                                                 +"] successful, rru.result=\""+rru.result+"\"");
@@ -1915,8 +1914,6 @@ System.err.println("... add2cachedFieldsOrMethods(): SUCCESS rru.memberName=["+r
         str2al =new ConcurrentHashMap();                // create and populate ConcurrentHashMap
         str2al.put(rru.keyMemberName,alOfCfm);
         cachedFieldsOrMethods.put(rru.beanClz,str2al);  // put new ConcurrentHashMap into cache
-
-
     }
 
 
@@ -2063,6 +2060,8 @@ if (debugLevel>0) System.err.println("// // :( RexxReflectJava7.processConstruct
              return;        // not an eligible Constructor
         }
 
+if (debugLevel>0) System.err.println("// // :) RexxReflectJava7.processConstructor(), tmpConstructor=["+tmpConstructor.toString()+"]");
+
             // invoke the constructor
         String tmpStr="";
         try {
@@ -2119,10 +2118,12 @@ if (debugLevel>0) System.err.println("// // :( RexxReflectJava7.processConstruct
 
 
         rru.success=true;    // if we arrive here, invocation was successful, so indicate that fact
-if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.processConstructor(): bean=\""+rru.bean+"\",["
+if (debugLevel>2 || bDebugSuccess)
+System.err.println("// // :) -> RexxReflectJava7.processConstructor(): bean=\""+rru.bean+"\",["
                                                 +rru.choice+"] invocation using ["
                                                 +(useReflectInvoke ? "java.lang.reflect.Constructor" : "MethodHandle")
-                                                +"] successful, rru.result=\""+rru.result+"\"");
+                                                +"]" +" ["+tmpConstructor.toString()+"]"
+                                                +" SUCCESSFUL, rru.result=\""+rru.result+"\"");
 
 
         if (useCaching)    // add Method object and corresponding MethodHandle to cache
@@ -2198,7 +2199,7 @@ if (debugLevel>3) System.err.println("// // // :( -> RexxReflectJava7.invokeCons
         }
         rru.success=true;        // we could successfully carry out the get operation!
 
-if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava7.invokeConstructor(): bean=\""+rru.bean+"\",["
+if (debugLevel>2 || bDebugSuccess) System.err.println("// // :) -> RexxReflectJava7.invokeConstructor(): bean=\""+rru.bean+"\",["
                                                 +rru.choice+"] invocation using ["
                                                 +(useReflectInvoke ? "java.lang.reflect.Constructor" : "MethodHandle")
                                                 +"] successful, rru.result=\""+rru.result+"\"");

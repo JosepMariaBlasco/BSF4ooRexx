@@ -350,4 +350,3 @@ xDesktop~terminate  -- try to terminate the OOo instance
       return sudoUser
    else
       return logName
-

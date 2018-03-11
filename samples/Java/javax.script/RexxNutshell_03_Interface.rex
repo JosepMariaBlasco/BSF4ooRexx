@@ -82,4 +82,3 @@ th~bsf.dispatch("start")   -- make sure the "start" message is sent to the Java 
 th~sleep(100)  -- should be enough time for the thread to end (after running the Rexx code)
 
 ::requires "BSF.CLS"    -- get Java support
-

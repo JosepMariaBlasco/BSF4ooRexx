@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 ::class SyntaxHighlighter public
 ::method init /* moving those imports into the init method will load them after the splash screen and that's good, because the user will then know, that he is waiting for something instead of looking at an empty screen */
   call bsf.import "java.util.Optional"   , "Optional"

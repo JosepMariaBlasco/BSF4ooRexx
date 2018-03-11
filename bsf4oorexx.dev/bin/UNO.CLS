@@ -2529,5 +2529,3 @@ syntax:
 
 syntax:
    raise propagate
-
-

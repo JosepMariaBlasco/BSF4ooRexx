@@ -199,4 +199,3 @@ Linux Version       Suse 10
      jtarea_01~setCaretPosition(start_pos-1)
      start_pos = text~caselessPos(pattern,end_pos) -- find next occurrence, if any
   end
-

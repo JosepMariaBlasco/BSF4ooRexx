@@ -84,5 +84,3 @@ call bsf "exit"         -- force Java to end
 ::method waitForExit          -- method blocks until attribute is set to .true
   expose closeApp
   guard on when closeApp=.true
-
-

@@ -115,4 +115,3 @@ impressComponent~XModifiable~setModified(.false) /* allow to close (abort) docum
    xDrawPagE~add(xTextShape)
    xTextShape~XText~setString("Slide #" slideNr)
    return
-

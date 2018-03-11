@@ -146,5 +146,3 @@ localVars_05: procedure                -- define five local variables
     dora=4
     emil=5
     return BsfContextVariables()
-
-

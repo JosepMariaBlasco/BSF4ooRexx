@@ -123,4 +123,3 @@ Linux Version       Suse 10
     use arg var,df,mask
     df~applyPattern(mask)
     .local~text = .text||.lf||var~left(18) 'Formatted' mask~right(29) '=' df~format(var)
-

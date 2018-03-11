@@ -46,4 +46,3 @@ end
 
 
 ::requires "BSF.CLS"    -- get Java support
-

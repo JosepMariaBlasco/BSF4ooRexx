@@ -50,4 +50,3 @@ return testResult
 	r=BSFVersion("foo")
 
 return
-

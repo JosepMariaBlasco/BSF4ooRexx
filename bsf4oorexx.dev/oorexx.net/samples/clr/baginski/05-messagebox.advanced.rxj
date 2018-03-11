@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        05-messagebox.advanced.rxj
  * Description: Shows multiple Message Boxes with different button setups
  * Shows:       - MessageBox with Yes, No and Cancel options

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        14-menu.rxj
  * Description: This application opens a form with a menu bar, a menu inside a menu and
                 a button at the bottom of the form.

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 ::class FileManager public
 /** the purpose of this class is to display file choosers and save/load files to a filepath */
 

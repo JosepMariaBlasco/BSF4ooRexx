@@ -86,4 +86,3 @@ xTextRows~getbyIndex(4)~xPropertySet~setPropertyValue("BackColor", box("int", "6
 xTextDocument~XModifiable~setModified(.false)   /* allow to close (abort) document without saving-dialog */
 
 ::requires UNO.cls    -- get UNO support
-

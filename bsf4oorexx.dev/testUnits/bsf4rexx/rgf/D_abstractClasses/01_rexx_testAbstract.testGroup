@@ -501,5 +501,3 @@ return testResult
      say "    " "#" i":" pp(meths[i]~toString)
   end
   say "----"
-
-

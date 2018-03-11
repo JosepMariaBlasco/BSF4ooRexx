@@ -150,4 +150,3 @@ return testResult
 	cls=BSF("loadclass", "java.awt.TextField")
 	ftf=BSF("rawRegisterBean", "jatf", cls)
 	self~assertNotNull(ftf)
-

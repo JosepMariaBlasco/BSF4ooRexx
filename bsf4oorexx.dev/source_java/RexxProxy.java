@@ -783,7 +783,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(raj,m,arg1,ar
 // if (bDebug) System.err.println("////// ---> RexxProxy.invoke(m, args): m=["+methodObject+"], TID=["+creationTID+"] args.length=["+(args==null ? null+"" : args.length+"")+"]...");
 if (bDebug) System.err.println("////// ---> RexxProxy.invoke(m, args): m=["+methodObject+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
 
-        return this.rexxEngine.call(this, methodObject, args);
+        return this.rexxEngine.call(this, methodObject, (Object[]) args);
     }
 
 
@@ -807,7 +807,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.invoke(jO, mN, mD, args): 
                           "], mName=["+methodName+"], mDescriptor=["+methodDescriptor+"], "+
                           "args.length=["+(args==null ? null+"" : args.length+"")+"]...");
 
-        return this.rexxEngine.call(this, javaObject, methodName, methodDescriptor, args);
+        return this.rexxEngine.call(this, javaObject, methodName, methodDescriptor, (Object[]) args);
     }
 
 
@@ -868,7 +868,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.invoke(jO, mN, mD, args): 
 
         // let our RexxProxy handle the callback: get the RexxProxy object and invoke the method on it
         // return ((RexxProxy) Proxy.getInvocationHandler(proxy)).invoke(method.getName(), args);
-        return ((RexxProxy) Proxy.getInvocationHandler(proxy)).invoke(method, args);
+        return ((RexxProxy) Proxy.getInvocationHandler(proxy)).invoke(method, (Object[]) args);
     }
 
 
@@ -1104,11 +1104,11 @@ if (bDebug) System.err.println("     added:                            o=["+o+"]
 
         if (bFirstElementIsInterface)
         {
-            return newJavaProxyInstance(al.toArray());      // now go ahead and invoke the public method and return the JavaProxy object
+            return newJavaProxyInstance((Object[]) al.toArray());      // now go ahead and invoke the public method and return the JavaProxy object
         }
         else
         {
-            return newExtendedProxyInstance(al.toArray());  // now extend the class, create an instance and return it
+            return newExtendedProxyInstance((Object[]) al.toArray());  // now extend the class, create an instance and return it
         }
     }
 

@@ -80,4 +80,3 @@ use arg name, text, height, width
 ::method waitForExit          -- method blocks until attribute is set to .true
   expose closeApp
   guard on when closeApp=.true
-

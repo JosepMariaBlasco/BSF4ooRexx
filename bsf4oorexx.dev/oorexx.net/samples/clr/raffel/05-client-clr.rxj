@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* File:        05-client-clr.rxj
  * Description: Creates a networking client which connects to a server listening on address 127.0.0.1
  *              (localhost) and port 2015. User input is sent to the server.

@@ -2,8 +2,8 @@
 /*
  * Janino - An embedded Java[TM] compiler
  *
- * Copyright (c) 2001-2010, Arno Unkrig
- * All rights reserved.
+ * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
+ * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -12,16 +12,16 @@
  *       following disclaimer.
  *    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
  *       following disclaimer in the documentation and/or other materials provided with the distribution.
- *    3. The name of the author may not be used to endorse or promote products derived from this software without
- *       specific prior written permission.
+ *    3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
- * THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package org.codehaus.janino;
@@ -53,9 +53,7 @@ class IClassLoader {
     // The following are constants, but cannot be declared FINAL, because they are only initialized by
     // "postConstruct()".
 
-    // CHECKSTYLE MemberName:OFF
-    // CHECKSTYLE AbbreviationAsWordInName:OFF
-    // CHECKSTYLE JavadocVariable:OFF
+    // SUPPRESS CHECKSTYLE MemberName|AbbreviationAsWordInName|JavadocVariable:57
 
     // Representations of commonly used classes.
     public IClass TYPE_java_lang_annotation_Retention;
@@ -88,6 +86,8 @@ class IClassLoader {
     public IMethod METH_java_lang_Enum__ordinal;
     public IMethod METH_java_lang_Iterable__iterator;
     public IMethod METH_java_lang_String__concat__java_lang_String;
+    public IMethod METH_java_lang_String__equals__java_lang_Object;
+    public IMethod METH_java_lang_String__hashCode;
     public IMethod METH_java_lang_String__valueOf__int;
     public IMethod METH_java_lang_String__valueOf__long;
     public IMethod METH_java_lang_String__valueOf__float;
@@ -107,12 +107,8 @@ class IClassLoader {
     public IMethod METH_java_util_Iterator__hasNext;
     public IMethod METH_java_util_Iterator__next;
 
-    // Representations of commonly used constrcutors.
+    // Representations of commonly used constructors.
     @Nullable public IConstructor CTOR_java_lang_StringBuilder__java_lang_String;
-
-    // CHECKSTYLE JavadocVariable:ON
-    // CHECKSTYLE AbbreviationAsWordInName:ON
-    // CHECKSTYLE MemberName:ON
 
     @SuppressWarnings("null")
     public
@@ -153,10 +149,12 @@ class IClassLoader {
             this.TYPE_java_io_Serializable           = this.requireType(Descriptor.JAVA_IO_SERIALIZABLE);
             this.TYPE_java_util_Iterator             = this.requireType(Descriptor.JAVA_UTIL_ITERATOR);
 
-            // SUPPRESS CHECKSTYLE LineLength:21
+            // SUPPRESS CHECKSTYLE LineLength:23
             this.METH_java_lang_Enum__ordinal                           = IClassLoader.requireMethod(this.TYPE_java_lang_Enum,          "ordinal");
             this.METH_java_lang_Iterable__iterator                      = IClassLoader.requireMethod(this.TYPE_java_lang_Iterable,      "iterator");
             this.METH_java_lang_String__concat__java_lang_String        = IClassLoader.requireMethod(this.TYPE_java_lang_String,        "concat",   this.TYPE_java_lang_String);
+            this.METH_java_lang_String__equals__java_lang_Object        = IClassLoader.requireMethod(this.TYPE_java_lang_String,        "equals",   this.TYPE_java_lang_Object);
+            this.METH_java_lang_String__hashCode                        = IClassLoader.requireMethod(this.TYPE_java_lang_String,        "hashCode");
             this.METH_java_lang_String__valueOf__int                    = IClassLoader.requireMethod(this.TYPE_java_lang_String,        "valueOf",  IClass.INT);
             this.METH_java_lang_String__valueOf__long                   = IClassLoader.requireMethod(this.TYPE_java_lang_String,        "valueOf",  IClass.LONG);
             this.METH_java_lang_String__valueOf__float                  = IClassLoader.requireMethod(this.TYPE_java_lang_String,        "valueOf",  IClass.FLOAT);
@@ -180,7 +178,7 @@ class IClassLoader {
             this.CTOR_java_lang_StringBuilder__java_lang_String = IClassLoader.requireConstructor(this.TYPE_java_lang_StringBuilder, this.TYPE_java_lang_String);
 
         } catch (Exception e) {
-            throw new JaninoRuntimeException("Cannot load simple types", e);
+            throw new InternalCompilerException("Cannot load simple types", e);
         }
     }
 
@@ -261,11 +259,12 @@ class IClassLoader {
             if (res != null) return res;
         }
 
-        // We need to synchronize here because "unloadableIClasses" and
-        // "loadedIClasses" are unsynchronized containers.
+        // We need to synchronize here because "unloadableIClasses" and "loadedIClasses" are unsynchronized
+        // containers. Also, "findIClass()" is not thread safe.
         IClass result;
 
         synchronized (this) {
+
             // Class could not be loaded before?
             if (this.unloadableIClasses.contains(fieldDescriptor)) return null;
 
@@ -288,18 +287,32 @@ class IClassLoader {
                 return arrayIClass;
             }
 
-            // Load the class through the {@link #findIClass(String)} method implemented by the
-            // derived class.
+            // Load the class through the {@link #findIClass(String)} method implemented by the derived class.
+            // By contract, {@link findIClass(String)} <em>must</em> invoke {@link #defineIClass(IClass)}!
             IClassLoader.LOGGER.log(Level.FINE, "About to call \"findIClass({0})\"", fieldDescriptor);
             result = this.findIClass(fieldDescriptor);
             if (result == null) {
+                if (this.loadedIClasses.containsKey(fieldDescriptor)) {
+                    throw new InternalCompilerException((
+                        "\"findIClass(\""
+                        + fieldDescriptor
+                        + "\")\" called \"defineIClass()\", but returned null!?"
+                    ));
+                }
                 this.unloadableIClasses.add(fieldDescriptor);
                 return null;
+            }
+            if (!this.loadedIClasses.containsKey(fieldDescriptor)) {
+                throw new InternalCompilerException((
+                    "\"findIClass(\""
+                    + fieldDescriptor
+                    + "\")\" did not call \"defineIClass()\"!?"
+                ));
             }
         }
 
         if (!result.getDescriptor().equalsIgnoreCase(fieldDescriptor)) {
-            throw new JaninoRuntimeException(
+            throw new InternalCompilerException(
                 "\"findIClass()\" returned \""
                 + result.getDescriptor()
                 + "\" instead of \""
@@ -313,8 +326,7 @@ class IClassLoader {
     }
 
     /**
-     * Finds a new {@link IClass} by descriptor; return {@code null} if a class for that {@code descriptor} could not
-     * be found.
+     * Finds a new {@link IClass} by descriptor and calls {@link #defineIClass(IClass)}.
      * <p>
      *   Similar {@link java.lang.ClassLoader#findClass(java.lang.String)}, this method must
      * </p>
@@ -328,7 +340,7 @@ class IClassLoader {
      * </p>
      * <ul>
      *   <li>{@code I} (Integer)</li>
-     *   <li>{@code Lpkg1/pkg2/Cls;} (Class declared in package)</li>
+     *   <li>{@code Lpkg1/pkg2/Clazz;} (Class declared in package)</li>
      *   <li>{@code Lpkg1/pkg2/Outer$Inner;} Member class</li>
      * </ul>
      * <p>
@@ -336,38 +348,35 @@ class IClassLoader {
      * </p>
      * <p>
      *   Notice that this method is never called from more than one thread at a time. In other words, implementations
-     *   of this method need not be synchronized.
+     *   of this method need not be thread-safe.
      * </p>
      *
-     * @return {@code null} if a class with that descriptor could not be found
-     * @throws ClassNotFoundException if an exception was raised while loading the class
+     * @return                        {@code null} if a class with that descriptor could not be found
+     * @throws ClassNotFoundException An exception was raised while loading the class
      */
     @Nullable protected abstract IClass
     findIClass(String descriptor) throws ClassNotFoundException;
 
     /**
-     * Defines an {@link IClass} in the context of this {@link IClassLoader}. If an {@link IClass} with that descriptor
-     * already exists, a {@link RuntimeException} is thrown.
+     * Defines an {@link IClass} in the context of this {@link IClassLoader}.
      * <p>
      *   This method should only be called from an implementation of {@link #findIClass(String)}.
      * </p>
      *
-     * @throws RuntimeException A different {@link IClass} object is already defined for this type
+     * @throws InternalCompilerException A different {@link IClass} object is already defined for this type
      */
     protected final void
     defineIClass(IClass iClass) {
         String descriptor = iClass.getDescriptor();
-
-        // Already defined?
-        IClass loadedIClass = (IClass) this.loadedIClasses.get(descriptor);
-        if (loadedIClass != null) {
-            if (loadedIClass == iClass) return;
-            throw new JaninoRuntimeException("Non-identical definition of IClass \"" + descriptor + "\"");
-        }
+        IClassLoader.LOGGER.log(Level.FINE, "{0}: Defined type \"{0}\"", descriptor);
 
         // Define.
-        IClassLoader.LOGGER.log(Level.FINE, "{0}: Defined type \"{0}\"", descriptor);
-        this.loadedIClasses.put(descriptor, iClass);
+        IClass prev = (IClass) this.loadedIClasses.put(descriptor, iClass);
+
+        // Previously defined?
+        if (prev != null) {
+            throw new InternalCompilerException("Non-identical definition of IClass \"" + descriptor + "\"");
+        }
     }
 
     /**

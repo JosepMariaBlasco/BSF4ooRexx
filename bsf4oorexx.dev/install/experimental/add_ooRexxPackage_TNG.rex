@@ -246,4 +246,3 @@ say arg(arg())~userData~mighty
 
 
 -- <<-------------------------------> OLD CODE (up to: 2007-07-07) - END ---- */
-

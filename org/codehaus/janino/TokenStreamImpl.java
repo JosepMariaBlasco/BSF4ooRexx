@@ -2,8 +2,8 @@
 /*
  * Janino - An embedded Java[TM] compiler
  *
- * Copyright (c) 2001-2010, Arno Unkrig
- * All rights reserved.
+ * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
+ * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -12,16 +12,16 @@
  *       following disclaimer.
  *    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
  *       following disclaimer in the documentation and/or other materials provided with the distribution.
- *    3. The name of the author may not be used to endorse or promote products derived from this software without
- *       specific prior written permission.
+ *    3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
- * THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package org.codehaus.janino;
@@ -52,12 +52,6 @@ class TokenStreamImpl implements TokenStream {
     private Token
     produceToken() throws CompileException, IOException {
 
-        if (this.pushback != null) {
-            Token result = this.pushback;
-            this.pushback = null;
-            return result;
-        }
-
         for (;;) {
             Token token = this.scanner.produce();
 
@@ -81,12 +75,11 @@ class TokenStreamImpl implements TokenStream {
             }
         }
     }
-    @Nullable private Token pushback;
 
     /**
-     * Gets the text of the doc comment (a.k.a. "JAVADOC comment") preceeding the next token.
+     * Gets the text of the doc comment (a.k.a. "JAVADOC comment") preceding the next token.
      *
-     * @return {@code null} if the next token is not preceeded by a doc comment
+     * @return {@code null} if the next token is not preceded by a doc comment
      */
     @Nullable public String
     doc() {
@@ -96,8 +89,6 @@ class TokenStreamImpl implements TokenStream {
     }
 
     @Nullable private Token nextToken, nextButOneToken;
-
-    // Token-level methods.
 
     @Override public Token
     peek() throws CompileException, IOException {
@@ -114,6 +105,31 @@ class TokenStreamImpl implements TokenStream {
         return this.nextButOneToken;
     }
 
+    @Override public boolean
+    peek(String suspected) throws CompileException, IOException {
+        return this.peek().value.equals(suspected);
+    }
+
+    @Override public int
+    peek(String... suspected) throws CompileException, IOException {
+        return TokenStreamImpl.indexOf(suspected, this.peek().value);
+    }
+
+    @Override public boolean
+    peek(TokenType suspected) throws CompileException, IOException {
+        return this.peek().type == suspected;
+    }
+
+    @Override public int
+    peek(TokenType... suspected) throws CompileException, IOException {
+        return TokenStreamImpl.indexOf(suspected, this.peek().type);
+    }
+
+    @Override public boolean
+    peekNextButOne(String suspected) throws CompileException, IOException {
+        return this.peekNextButOne().value.equals(suspected);
+    }
+
     @Override public Token
     read() throws CompileException, IOException {
 
@@ -127,28 +143,6 @@ class TokenStreamImpl implements TokenStream {
         return result;
     }
 
-    // Peek/read/peekRead convenience methods.
-
-    @Override public boolean
-    peek(String suspected) throws CompileException, IOException {
-        return this.peek().value.equals(suspected);
-    }
-
-    @Override public int
-    peek(String[] suspected) throws CompileException, IOException {
-        return TokenStreamImpl.indexOf(suspected, this.peek().value);
-    }
-
-    @Override public int
-    peek(TokenType[] suspected) throws CompileException, IOException {
-        return TokenStreamImpl.indexOf(suspected, this.peek().type);
-    }
-
-    @Override public boolean
-    peekNextButOne(String suspected) throws CompileException, IOException {
-        return this.peekNextButOne().value.equals(suspected);
-    }
-
     @Override public void
     read(String expected) throws CompileException, IOException {
         String s = this.read().value;
@@ -156,7 +150,7 @@ class TokenStreamImpl implements TokenStream {
     }
 
     @Override public int
-    read(String[] expected) throws CompileException, IOException {
+    read(String... expected) throws CompileException, IOException {
 
         Token t = this.read();
 
@@ -193,6 +187,34 @@ class TokenStreamImpl implements TokenStream {
         );
     }
 
+    @Override public String
+    read(TokenType expected) throws CompileException, IOException {
+
+        Token t = this.read();
+        if (t.type != expected) throw this.compileException(expected + " expected instead of '" + t.value + "'");
+
+        return t.value;
+    }
+
+    @Override public int
+    read(TokenType... expected) throws CompileException, IOException {
+
+        Token t = this.read();
+
+        TokenType type = t.type;
+
+        int idx = TokenStreamImpl.indexOf(expected, type);
+        if (idx != -1) return idx;
+
+        throw this.compileException(
+            "One of '"
+            + TokenStreamImpl.join(expected, " ")
+            + "' expected instead of '"
+            + type
+            + "'"
+        );
+    }
+
     @Override public boolean
     peekRead(String suspected) throws CompileException, IOException {
 
@@ -210,7 +232,7 @@ class TokenStreamImpl implements TokenStream {
     }
 
     @Override public int
-    peekRead(String[] suspected) throws CompileException, IOException {
+    peekRead(String... suspected) throws CompileException, IOException {
         if (this.nextToken != null) {
             int idx = TokenStreamImpl.indexOf(suspected, this.nextToken.value);
             if (idx == -1) return -1;
@@ -226,40 +248,40 @@ class TokenStreamImpl implements TokenStream {
     }
 
     @Override public boolean
-    peekEof() throws CompileException, IOException {
-        return this.peek().type == TokenType.END_OF_INPUT;
-    }
+    peekRead(TokenType suspected) throws CompileException, IOException {
 
-    @Override @Nullable public String
-    peekIdentifier() throws CompileException, IOException {
-        Token t = this.peek();
-        return t.type == TokenType.IDENTIFIER ? t.value : null;
-    }
-
-    @Override public boolean
-    peekLiteral() throws CompileException, IOException {
-        return this.peek(new TokenType[] {
-            TokenType.INTEGER_LITERAL, TokenType.FLOATING_POINT_LITERAL, TokenType.BOOLEAN_LITERAL,
-            TokenType.CHARACTER_LITERAL, TokenType.STRING_LITERAL, TokenType.NULL_LITERAL,
-        }) != -1;
-    }
-
-    @Override public String
-    readIdentifier() throws CompileException, IOException {
-        Token t = this.read();
-        if (t.type != TokenType.IDENTIFIER) {
-            throw this.compileException("Identifier expected instead of '" + t.value + "'");
+        if (this.nextToken != null) {
+            if (this.nextToken.type != suspected) return false;
+            this.nextToken       = this.nextButOneToken;
+            this.nextButOneToken = null;
+            return true;
         }
-        return t.value;
+
+        Token t = this.produceToken();
+        if (t.type == suspected) return true;
+
+        this.nextToken = t;
+        return false;
     }
 
-    @Override public String
-    readOperator() throws CompileException, IOException {
-        Token t = this.read();
-        if (t.type != TokenType.OPERATOR) {
-            throw this.compileException("Operator expected instead of '" + t.value + "'");
+    @Override public int
+    peekRead(TokenType... suspected) throws CompileException, IOException {
+
+        if (this.nextToken != null) {
+            int idx = TokenStreamImpl.indexOf(suspected, this.nextToken.type);
+            if (idx != -1) {
+                this.nextToken       = this.nextButOneToken;
+                this.nextButOneToken = null;
+            }
+            return idx;
         }
-        return t.value;
+
+        Token t   = this.produceToken();
+        int   idx = TokenStreamImpl.indexOf(suspected, t.type);
+        if (idx != -1) return idx;
+
+        this.nextToken = t;
+        return -1;
     }
 
     private static int
@@ -311,15 +333,15 @@ class TokenStreamImpl implements TokenStream {
     compileException(String message) { return new CompileException(message, this.scanner.location()); }
 
     private static String
-    join(@Nullable String[] sa, String separator) {
+    join(@Nullable Object[] oa, String glue) {
 
-        if (sa == null) return ("(null)");
+        if (oa == null) return ("(null)");
 
-        if (sa.length == 0) return ("(zero length array)");
-        StringBuilder sb = new StringBuilder(sa[0]);
-        for (int i = 1; i < sa.length; ++i) {
-            sb.append(separator).append(sa[i]);
-        }
+        if (oa.length == 0) return ("(zero length array)");
+
+        StringBuilder sb = new StringBuilder().append(oa[0]);
+        for (int i = 1; i < oa.length; ++i) sb.append(glue).append(oa[i]);
+
         return sb.toString();
     }
 }

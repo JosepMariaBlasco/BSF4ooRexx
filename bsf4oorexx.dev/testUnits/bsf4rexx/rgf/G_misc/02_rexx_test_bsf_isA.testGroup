@@ -66,5 +66,3 @@ return testResult
     self~expectSyntax(40.900)
     j=.bsf~new("java.lang.String", "hello, my beloved world!")
     self~assertFalse(bsf.isA(j,.nil))  -- .nil not a Java bean
-
-

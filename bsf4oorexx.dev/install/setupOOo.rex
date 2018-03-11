@@ -1479,4 +1479,3 @@ syntax2:                   -- no OOo-entry
   end
 
   return bitness
-

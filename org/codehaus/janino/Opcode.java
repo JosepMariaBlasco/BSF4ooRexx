@@ -2,8 +2,8 @@
 /*
  * Janino - An embedded Java[TM] compiler
  *
- * Copyright (c) 2001-2010, Arno Unkrig
- * All rights reserved.
+ * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
+ * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -12,16 +12,16 @@
  *       following disclaimer.
  *    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
  *       following disclaimer in the documentation and/or other materials provided with the distribution.
- *    3. The name of the author may not be used to endorse or promote products derived from this software without
- *       specific prior written permission.
+ *    3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
- * THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package org.codehaus.janino;
@@ -35,7 +35,7 @@ class Opcode {
 
     // Symbolic JVM opcodes, in alphabetical order.
 
-    // CHECKSTYLE JavadocVariable:OFF
+    // SUPPRESS CHECKSTYLE JavadocVariable:205
     public static final byte AALOAD          = 50;
     public static final byte AASTORE         = 83;
     public static final byte ACONST_NULL     = 1;
@@ -241,7 +241,6 @@ class Opcode {
     public static final byte SWAP            = 95;
     public static final byte TABLESWITCH     = (byte) 170;
     public static final byte WIDE            = (byte) 196;
-    // CHECKSTYLE JavadocVariable:ON
 
     // Constants for the "OPCODE_PROPERTIES" array.
 
@@ -451,22 +450,22 @@ class Opcode {
     public static final short IO_MASK = 7 * 4096;
 
     /**
-     * The local variable wiht index 0 is the opcode's implicit operand.
+     * The local variable with index 0 is the opcode's implicit operand.
      */
     public static final short IO_LV_0 = 1 * 4096;
 
     /**
-     * The local variable wiht index 1 is the opcode's implicit operand.
+     * The local variable with index 1 is the opcode's implicit operand.
      */
     public static final short IO_LV_1 = 2 * 4096;
 
     /**
-     * The local variable wiht index 2 is the opcode's implicit operand.
+     * The local variable with index 2 is the opcode's implicit operand.
      */
     public static final short IO_LV_2 = 3 * 4096;
 
     /**
-     * The local variable wiht index 3 is the opcode's implicit operand.
+     * The local variable with index 3 is the opcode's implicit operand.
      */
     public static final short IO_LV_3 = 4 * 4096;
 
@@ -480,7 +479,6 @@ class Opcode {
      * The <var>n</var>th element of this array describes the properties of the JVM opcode <var>n</var>.
      */
     public static final short[] OPCODE_PROPERTIES = {
-        // CHECKSTYLE WrapAndIndent:OFF
 /*  0*/ /*NOP*/             Opcode.SD_P0,
         /*ACONST_NULL*/     Opcode.SD_P1,
         /*ICONST_M1*/       Opcode.SD_P1,
@@ -699,7 +697,6 @@ class Opcode {
         Opcode.INVALID_OPCODE, Opcode.INVALID_OPCODE,
 /*250*/ Opcode.INVALID_OPCODE, Opcode.INVALID_OPCODE, Opcode.INVALID_OPCODE, Opcode.INVALID_OPCODE,
         Opcode.INVALID_OPCODE, Opcode.INVALID_OPCODE,
-        // CHECKSTYLE WrapAndIndent:ON
     };
 
     /**

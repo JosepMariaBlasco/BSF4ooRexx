@@ -148,4 +148,3 @@ Linux Version       Suse 10
         if result= "SHUTDOWN, REXX !" then leave      -- JVM will be shutdown in 1/10sec
     end
 ::requires bsf.cls
-

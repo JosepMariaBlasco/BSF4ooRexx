@@ -112,5 +112,3 @@ return .BSF.onTheFly~new("INITFROMREXX", code)
      return result
 
   return
-
-

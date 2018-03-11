@@ -271,6 +271,3 @@ newLine:
 return
 
 ::requires bsf.cls
-
-
-

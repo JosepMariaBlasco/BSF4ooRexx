@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        PROCESS.CLS
  * Class:       Process
  * Description: An ooRexx package with a Rexx class named "Process" to wrap the functionality

@@ -505,4 +505,3 @@ createMenu: procedure expose wsh
 
 ::routine qqEsc
   return '\"' || arg(1) || '\"'  -- escapte the enclosing quotes
-

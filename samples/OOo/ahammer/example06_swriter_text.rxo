@@ -120,4 +120,3 @@ xParagraphCursorProps~setPropertyValue("ParaAdjust", paraEnum~left)
 writerComponent~XModifiable~setModified(.false)
 
 ::requires UNO.CLS    -- get UNO support
-

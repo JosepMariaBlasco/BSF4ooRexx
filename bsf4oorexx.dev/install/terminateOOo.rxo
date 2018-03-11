@@ -35,4 +35,3 @@ if xDesktop~terminate then say "Termination successful."
                       else say "Termination *NOT* successful (got veto'ed)."
 
 ::requires UNO.CLS   /* directive to get the UNO support for ooRexx, defines utility classes, routines */
-

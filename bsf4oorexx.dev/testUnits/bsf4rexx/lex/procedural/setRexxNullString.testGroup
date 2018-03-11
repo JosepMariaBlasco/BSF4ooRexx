@@ -66,4 +66,3 @@ return testResult
 ::method "test_3"
 	self~expectSyntax(40.900)
 	nns=BSF("setRexxNullString", )   -- omitted argument
-

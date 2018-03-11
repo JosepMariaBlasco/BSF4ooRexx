@@ -175,4 +175,3 @@ return testResult
 	f=BSF("setFieldValueStrict", "jad", "foo", "long", 10)
 
 return
-

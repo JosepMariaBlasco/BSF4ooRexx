@@ -46,7 +46,3 @@ say "(Rexx-side) - after a TRACE OFF "
 
 
 ::requires "BSF.CLS"    -- get Java support
-
-
-
-

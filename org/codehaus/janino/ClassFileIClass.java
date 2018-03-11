@@ -2,8 +2,8 @@
 /*
  * Janino - An embedded Java[TM] compiler
  *
- * Copyright (c) 2001-2010, Arno Unkrig
- * All rights reserved.
+ * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
+ * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -12,16 +12,16 @@
  *       following disclaimer.
  *    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
  *       following disclaimer in the documentation and/or other materials provided with the distribution.
- *    3. The name of the author may not be used to endorse or promote products derived from this software without
- *       specific prior written permission.
+ *    3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
- * THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package org.codehaus.janino;
@@ -90,7 +90,7 @@ class ClassFileIClass extends IClass {
             try {
                 ii = this.resolveMethod(mi);
             } catch (ClassNotFoundException ex) {
-                throw new JaninoRuntimeException(ex.getMessage(), ex);
+                throw new InternalCompilerException(ex.getMessage(), ex);
             }
             if (ii instanceof IConstructor) iConstructors.add(ii);
         }
@@ -112,7 +112,7 @@ class ClassFileIClass extends IClass {
             try {
                 ii = this.resolveMethod(mi);
             } catch (ClassNotFoundException ex) {
-                throw new JaninoRuntimeException(ex.getMessage(), ex);
+                throw new InternalCompilerException(ex.getMessage(), ex);
             }
             if (ii instanceof IMethod) iMethods.add((IMethod) ii);
         }
@@ -127,7 +127,7 @@ class ClassFileIClass extends IClass {
             try {
                 ifs[i] = this.resolveField((ClassFile.FieldInfo) this.classFile.fieldInfos.get(i));
             } catch (ClassNotFoundException ex) {
-                throw new JaninoRuntimeException(ex.getMessage(), ex);
+                throw new InternalCompilerException(ex.getMessage(), ex);
             }
         }
         return ifs;
@@ -475,7 +475,7 @@ class ClassFileIClass extends IClass {
         try {
             iAnnotations = ClassFileIClass.this.toIAnnotations(methodInfo.getAnnotations(true));
         } catch (CompileException ce) {
-            throw new JaninoRuntimeException(ce.getMessage(), ce);
+            throw new InternalCompilerException(ce.getMessage(), ce);
         }
 
         if ("<init>".equals(name)) {
@@ -491,10 +491,10 @@ class ClassFileIClass extends IClass {
                     IClass outerIClass = ClassFileIClass.this.getOuterIClass();
                     if (outerIClass != null) {
                         if (parameterTypes.length < 1) {
-                            throw new JaninoRuntimeException("Inner class constructor lacks magic first parameter");
+                            throw new InternalCompilerException("Inner class constructor lacks magic first parameter");
                         }
                         if (parameterTypes[0] != outerIClass) {
-                            throw new JaninoRuntimeException(
+                            throw new InternalCompilerException(
                                 "Magic first parameter of inner class constructor has type \""
                                 + parameterTypes[0].toString()
                                 + "\" instead of that of its enclosing instance (\""
@@ -589,7 +589,7 @@ class ClassFileIClass extends IClass {
         try {
             iAnnotations = ClassFileIClass.this.toIAnnotations(fieldInfo.getAnnotations(true));
         } catch (CompileException ce) {
-            throw new JaninoRuntimeException(ce.getMessage(), ce);
+            throw new InternalCompilerException(ce.getMessage(), ce);
         }
 
         result = new IField() {

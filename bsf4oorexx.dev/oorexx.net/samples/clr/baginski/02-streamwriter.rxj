@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        02-streamwriter.rxj
  * Description: This application creates a new textfile in the same directory and writes some text into it
  * Shows:

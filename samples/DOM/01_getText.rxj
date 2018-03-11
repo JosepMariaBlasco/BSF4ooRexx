@@ -89,4 +89,3 @@ call followNode document
 ::method fatalError     /* "fatalsError" event                          */
   use arg exc
   .error~say("FATAL error:"  "line="exc~getLineNumber",col="exc~getColumnNumber":" pp(exc~getMessage))
-

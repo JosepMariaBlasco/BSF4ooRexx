@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 parse source .environment~os . .environment~s
 parse version v .
 

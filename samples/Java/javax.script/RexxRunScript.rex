@@ -282,4 +282,3 @@ syntax:
    say "       -t ... lists the available javax.script engines and tests evaluating their ""getOutputStatement(String)"" method"
    say "       -e  enginename filename [args...] ... uses ""enginename"" to evaluate ""filename"" supplying the arguments ""args..."""
    say "       filename [args...] ... the ""filename"" extension determines the script engine to evaluate it, supplying the arguments ""args..."""
-

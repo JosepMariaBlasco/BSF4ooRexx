@@ -52,4 +52,3 @@ end
       xPropSet=xSheetsIndexAccess~getByIndex(i)~XPropertySet
       xPropSet~setPropertyValue("IsVisible", box("bool",.false))
    end
-

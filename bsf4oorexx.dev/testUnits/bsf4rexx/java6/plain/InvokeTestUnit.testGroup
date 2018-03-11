@@ -262,5 +262,3 @@ say
 
       if bEcho=.true then say "---//\\--- enf of loop #" i "elapsed time:" time("R") "---//\\---"
    end
-
-

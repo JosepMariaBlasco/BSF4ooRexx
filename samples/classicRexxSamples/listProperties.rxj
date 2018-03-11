@@ -48,4 +48,3 @@ do while bsf('invoke', enum, 'hasMoreElements') /* loop over enumeration   */
    Say "         ["||bsf('invoke', properties, 'getProperty', key)"]"
    say
 end
-

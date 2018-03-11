@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 ::class TabManagerClass public
 ::attribute allTabs                             -- the controller routine "closeAllTabs" uses this attribute
 ::attribute alreadySavedFilepaths

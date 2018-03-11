@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    author:  Rony G. Flatscher
    date:    2006-07-08
@@ -339,4 +339,3 @@ end
      return arr[answer]         -- return chosen class name
   end
   return tmpName           -- this version has the right casing
-

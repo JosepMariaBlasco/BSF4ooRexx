@@ -136,4 +136,3 @@ ShowSize: procedure
    return
 
 ::requires BSF.CLS    -- include direct Object Rexx BSF support
-

@@ -340,4 +340,3 @@ end
      return arr[answer]         -- return chosen class name
   end
   return tmpName           -- this version has the right casing
-

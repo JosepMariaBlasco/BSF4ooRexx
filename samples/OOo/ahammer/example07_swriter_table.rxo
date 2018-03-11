@@ -97,4 +97,3 @@ writerComponent~XModifiable~setModified(.false)
 	xCellText~createTextCursor~XPropertySet~setPropertyValue("CharColor", box("int", "ff 00 00"x ~c2d))
 	xCellText~setString(text)
    return
-

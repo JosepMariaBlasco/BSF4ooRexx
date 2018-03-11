@@ -2,8 +2,8 @@
 /*
  * Janino - An embedded Java[TM] compiler
  *
- * Copyright (c) 2001-2010, Arno Unkrig
- * All rights reserved.
+ * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
+ * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -12,16 +12,16 @@
  *       following disclaimer.
  *    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
  *       following disclaimer in the documentation and/or other materials provided with the distribution.
- *    3. The name of the author may not be used to endorse or promote products derived from this software without
- *       specific prior written permission.
+ *    3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
- * THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package org.codehaus.janino;
@@ -54,7 +54,7 @@ import org.codehaus.janino.util.ClassFile.LineNumberTableAttribute.Entry;
 public
 class CodeContext {
 
-    private  static final Logger LOGGER = Logger.getLogger(CodeContext.class.getName());
+    private static final Logger LOGGER = Logger.getLogger(CodeContext.class.getName());
 
     private static final int     INITIAL_SIZE   = 128;
     private static final byte    UNEXAMINED     = -1;
@@ -78,8 +78,8 @@ class CodeContext {
     private final List<Java.LocalVariableSlot> allLocalVars = new ArrayList<Java.LocalVariableSlot>();
 
     /**
-     * Each List of Java.LocalVariableSlot is the local variables allocated for a block. They are pushed and poped onto
-     * the list together to make allocation of the next local variable slot easy.
+     * Each List of Java.LocalVariableSlot is the local variables allocated for a block. They are pushed and popped
+     * onto the list together to make allocation of the next local variable slot easy.
      */
     private final List<List<Java.LocalVariableSlot>> scopedVars = new ArrayList<List<Java.LocalVariableSlot>>();
 
@@ -140,9 +140,9 @@ class CodeContext {
      * </p>
      *
      * @param size Number of slots to use (1 or 2)
-     * @param name The variable name; if {@code null}, then the variable won't be written to the localvariabletable
+     * @param name The variable name; if {@code null}, then the variable won't be written to the LocalVariableTable
      * @param type The variable type; if the <var>name</var> is not null, then the type is needed to write to the
-     *             localvariabletable
+     *             LocalVariableTable
      */
     public Java.LocalVariableSlot
     allocateLocalVariable(short size, @Nullable String name, @Nullable IClass type) {
@@ -203,9 +203,7 @@ class CodeContext {
     }
 
     /**
-     * @param dos
      * @param lineNumberTableAttributeNameIndex 0 == don't generate a "LineNumberTable" attribute
-     * @throws IOException
      */
     protected void
     storeCodeAttributeBody(
@@ -234,12 +232,13 @@ class CodeContext {
                 if (o instanceof LineNumberOffset) {
 
                     int offset = o.offset;
-                    if (offset > 0xffff) throw new JaninoRuntimeException("LineNumberTable entry offset out of range");
+                    if (offset > 0xffff) {
+                        throw new InternalCompilerException("LineNumberTable entry offset out of range");
+                    }
 
-                    int lineNumber = ((LineNumberOffset) o).lineNumber;
-                    if (lineNumber > 0xffff) lineNumber = 0xffff;
+                    short lineNumber = ((LineNumberOffset) o).lineNumber;
 
-                    lnt.add(new ClassFile.LineNumberTableAttribute.Entry((short) offset, (short) lineNumber));
+                    lnt.add(new ClassFile.LineNumberTableAttribute.Entry((short) offset, lineNumber));
                 }
             }
             ClassFile.LineNumberTableAttribute.Entry[] lnte = (ClassFile.LineNumberTableAttribute.Entry[]) lnt.toArray(
@@ -315,9 +314,8 @@ class CodeContext {
 
     /**
      * Checks the code for consistency; updates the "maxStack" member.
-     * <p>
-     *   Notice: On inconsistencies, a "RuntimeException" is thrown (KLUDGE).
-     * </p>
+     *
+     * @throws InternalCompilerException The bytecode is inconsistent wrt/ the operand stack
      */
     public void
     flowAnalysis(String functionName) {
@@ -367,7 +365,7 @@ class CodeContext {
                     // Complete normally, so the .class file is created and can be examined.
                     return;
                 }
-                throw new JaninoRuntimeException(message);
+                throw new InternalCompilerException(message);
             }
 
             if (ss > this.maxStack) this.maxStack = ss;
@@ -392,7 +390,7 @@ class CodeContext {
 
             // Check current bytecode offset.
             if (offset < 0 || offset >= codeSize) {
-                throw new JaninoRuntimeException(functionName + ": Offset out of range");
+                throw new InternalCompilerException(functionName + ": Offset " + offset + " is out of range");
             }
 
             // Have we hit an area that has already been analyzed?
@@ -406,7 +404,7 @@ class CodeContext {
                     // Complete normally, so the .class file is created and can be examined.
                     return;
                 }
-                throw new JaninoRuntimeException(message);
+                throw new InternalCompilerException(message);
             }
             if (css != CodeContext.UNEXAMINED) {
                 String message = (
@@ -424,7 +422,7 @@ class CodeContext {
                     // Complete normally, so the .class file is created and can be examined.
                     return;
                 }
-                throw new JaninoRuntimeException(message);
+                throw new InternalCompilerException(message);
             }
             stackSizes[offset] = stackSize;
 
@@ -439,7 +437,7 @@ class CodeContext {
                 props = Opcode.OPCODE_PROPERTIES[0xff & opcode];
             }
             if (props == Opcode.INVALID_OPCODE) {
-                throw new JaninoRuntimeException(
+                throw new InternalCompilerException(
                     functionName
                     + ": Invalid opcode "
                     + (0xff & opcode)
@@ -495,7 +493,7 @@ class CodeContext {
                 break;
 
             default:
-                throw new JaninoRuntimeException(functionName + ": Invalid stack delta");
+                throw new InternalCompilerException(functionName + ": Invalid stack delta");
             }
 
             if (stackSize < 0) {
@@ -512,7 +510,7 @@ class CodeContext {
                     // Complete normally, so the .class file is created and can be examined.
                     return;
                 }
-                throw new JaninoRuntimeException(message);
+                throw new InternalCompilerException(message);
             }
 
             if (stackSize > CodeContext.MAX_STACK_SIZE) {
@@ -529,7 +527,7 @@ class CodeContext {
                     // Complete normally, so the .class file is created and can be examined.
                     return;
                 }
-                throw new JaninoRuntimeException(message);
+                throw new InternalCompilerException(message);
             }
 
             switch (props & Opcode.OP1_MASK) {
@@ -648,7 +646,7 @@ class CodeContext {
                 break;
 
             default:
-                throw new JaninoRuntimeException(functionName + ": Invalid OP1");
+                throw new InternalCompilerException(functionName + ": Invalid OP1");
             }
 
             switch (props & Opcode.OP2_MASK) {
@@ -666,7 +664,7 @@ class CodeContext {
                 break;
 
             default:
-                throw new JaninoRuntimeException(functionName + ": Invalid OP2");
+                throw new InternalCompilerException(functionName + ": Invalid OP2");
             }
 
             switch (props & Opcode.OP3_MASK) {
@@ -680,7 +678,7 @@ class CodeContext {
                 break;
 
             default:
-                throw new JaninoRuntimeException(functionName + ": Invalid OP3");
+                throw new InternalCompilerException(functionName + ": Invalid OP3");
             }
 
             Arrays.fill(stackSizes, offset + 1, operandOffset, CodeContext.INVALID_OFFSET);
@@ -782,7 +780,7 @@ class CodeContext {
     }
 
     /**
-     * Analyses the descriptor of the Fieldref and return its size.
+     * Analyzes the descriptor of the Fieldref and return its size.
      */
     private int
     determineFieldSize(short idx) {
@@ -793,7 +791,7 @@ class CodeContext {
     }
 
     /**
-     * Analyses the descriptor of the Methodref and returns the sum of the arguments' sizes minus the return value's
+     * Analyzes the descriptor of the Methodref and returns the sum of the arguments' sizes minus the return value's
      * size.
      */
     private int
@@ -806,7 +804,7 @@ class CodeContext {
         );
         String desc = nat.getDescriptor(this.classFile);
 
-        if (desc.charAt(0) != '(') throw new JaninoRuntimeException("Method descriptor does not start with \"(\"");
+        if (desc.charAt(0) != '(') throw new InternalCompilerException("Method descriptor does not start with \"(\"");
         int i   = 1;
         int res = 0;
         for (;;) {
@@ -823,7 +821,7 @@ class CodeContext {
                 res += 1;
                 while (desc.charAt(i) == '[') ++i;
                 if ("BCFISZDJ".indexOf(desc.charAt(i)) != -1) { ++i; break; }
-                if (desc.charAt(i) != 'L') throw new JaninoRuntimeException("Invalid char after \"[\"");
+                if (desc.charAt(i) != 'L') throw new InternalCompilerException("Invalid char after \"[\"");
                 ++i;
                 while (desc.charAt(i++) != ';');
                 break;
@@ -832,7 +830,7 @@ class CodeContext {
                 while (desc.charAt(i++) != ';');
                 break;
             default:
-                throw new JaninoRuntimeException("Invalid method descriptor");
+                throw new InternalCompilerException("Invalid method descriptor");
             }
         }
     }
@@ -844,12 +842,13 @@ class CodeContext {
      * @param b
      */
     public void
-    write(short lineNumber, byte[] b) {
+    write(int lineNumber, byte[] b) {
+
         if (b.length == 0) return;
 
-        int ico = this.currentInserter.offset;
-        this.makeSpace(lineNumber, b.length);
-        System.arraycopy(b, 0, this.code, ico, b.length);
+        // CAVEAT: "makeSpace()" may change "this.code", so make sure to call "makeSpace()" _before_ using "this.code"!
+        int o = this.makeSpace(lineNumber, b.length);
+        System.arraycopy(b, 0, this.code, o, b.length);
     }
 
     /**
@@ -862,10 +861,11 @@ class CodeContext {
      * @param b1
      */
     public void
-    write(short lineNumber, byte b1) {
-        int ico = this.currentInserter.offset;
-        this.makeSpace(lineNumber, 1);
-        this.code[ico] = b1;
+    write(int lineNumber, byte b1) {
+
+        // CAVEAT: "makeSpace()" may change "this.code", so make sure to call "makeSpace()" _before_ using "this.code"!
+        int o = this.makeSpace(lineNumber, 1);
+        this.code[o] = b1;
     }
 
     /**
@@ -875,15 +875,14 @@ class CodeContext {
      * </p>
      *
      * @param lineNumber The line number that corresponds to the byte code, or -1
-     * @param b1
-     * @param b2
      */
     public void
-    write(short lineNumber, byte b1, byte b2) {
-        int ico = this.currentInserter.offset;
-        this.makeSpace(lineNumber, 2);
-        this.code[ico++] = b1;
-        this.code[ico]   = b2;
+    write(int lineNumber, byte b1, byte b2) {
+
+        int o = this.makeSpace(lineNumber, 2);
+
+        this.code[o++] = b1;
+        this.code[o]   = b2;
     }
 
     /**
@@ -893,17 +892,15 @@ class CodeContext {
      * </p>
      *
      * @param lineNumber The line number that corresponds to the byte code, or -1
-     * @param b1
-     * @param b2
-     * @param b3
      */
     public void
-    write(short lineNumber, byte b1, byte b2, byte b3) {
-        int ico = this.currentInserter.offset;
-        this.makeSpace(lineNumber, 3);
-        this.code[ico++] = b1;
-        this.code[ico++] = b2;
-        this.code[ico]   = b3;
+    write(int lineNumber, byte b1, byte b2, byte b3) {
+
+        int o = this.makeSpace(lineNumber, 3);
+
+        this.code[o++] = b1;
+        this.code[o++] = b2;
+        this.code[o]   = b3;
     }
 
     /**
@@ -913,61 +910,80 @@ class CodeContext {
      * </p>
      *
      * @param lineNumber The line number that corresponds to the byte code, or -1
-     * @param b1
-     * @param b2
-     * @param b3
-     * @param b4
      */
     public void
-    write(short lineNumber, byte b1, byte b2, byte b3, byte b4) {
-        int ico = this.currentInserter.offset;
-        this.makeSpace(lineNumber, 4);
-        this.code[ico++] = b1;
-        this.code[ico++] = b2;
-        this.code[ico++] = b3;
-        this.code[ico]   = b4;
+    write(int lineNumber, byte b1, byte b2, byte b3, byte b4) {
+
+        int o = this.makeSpace(lineNumber, 4);
+
+        this.code[o++] = b1;
+        this.code[o++] = b2;
+        this.code[o++] = b3;
+        this.code[o]   = b4;
     }
 
     /**
-     * Adds space for <var>size</var> bytes at current offset. Creates {@link LineNumberOffset}s as necessary.
+     * Inserts <var>size</var> NUL bytes at the current inserter's offset, advances the current inserter's offset by
+     * <var>size</var>, creates {@link LineNumberOffset}s as necessary, and returns the current inserter's original
+     * offset (the offset of the first NUL byte that was inserted).
+     * <p>
+     *   Because the class file format does not support line numbers greater than 65535, these are treated as 65535.
+     * </p>
      *
-     * @param lineNumber The line number that corresponds to the byte code, or -1
-     * @param size       The size in bytes to inject
+     * @param lineNumber -1 indicates that no particular line in the source code corresponds to this offset
+     * @param size       The number of NUL bytes to inject
+     * @return           The offset of the first inserted byte
      */
-    public void
-    makeSpace(short lineNumber, int size) {
-        if (size == 0) return;
+    public int
+    makeSpace(int lineNumber, final int size) {
+
+        final int cio = this.currentInserter.offset;
+
+        if (size == 0) return cio;
 
         INSERT_LINE_NUMBER_OFFSET:
         if (lineNumber != -1) {
-            Offset o;
-            for (o = this.currentInserter.prev; o != this.beginning; o = o.prev) {
+
+            if (lineNumber > 0xffff) lineNumber = 0xffff;
+
+            // Find out whether the line number is different from the line number of the preceding insertion,
+            // and, if so, insert a LineNumberOffset object, which will later lead to a LineNumberTable entry.
+            for (Offset o = this.currentInserter.prev; o != this.beginning; o = o.prev) {
                 assert o != null;
                 if (o instanceof LineNumberOffset) {
-                    if (((LineNumberOffset) o).lineNumber == lineNumber) break INSERT_LINE_NUMBER_OFFSET;
+                    if ((((LineNumberOffset) o).lineNumber & 0xffff) == lineNumber) {
+                        break INSERT_LINE_NUMBER_OFFSET;
+                    }
                     break;
                 }
             }
-            LineNumberOffset lno = new LineNumberOffset(this.currentInserter.offset, lineNumber);
-            lno.prev = this.currentInserter.prev;
+
+            // Insert a LineNumberOffset _before_ the current inserter.
+            LineNumberOffset lno = new LineNumberOffset(cio, (short) lineNumber);
+
+            Offset cip = this.currentInserter.prev;
+            assert cip != null;
+
+            lno.prev = cip;
             lno.next = this.currentInserter;
 
-            this.currentInserter.prev.next = lno;
-            this.currentInserter.prev      = lno;
+            cip.next = lno;
+
+            this.currentInserter.prev = lno;
         }
 
-        int ico = this.currentInserter.offset;
         if (this.end.offset + size <= this.code.length) {
+
             // Optimization to avoid a trivial method call in the common case
-            if (ico != this.end.offset) {
-                System.arraycopy(this.code, ico, this.code, ico + size, this.end.offset - ico);
+            if (cio != this.end.offset) {
+                System.arraycopy(this.code, cio, this.code, cio + size, this.end.offset - cio);
             }
         } else {
             byte[] oldCode = this.code;
             //double size to avoid horrible performance, but don't grow over our limit
             int newSize = Math.max(Math.min(oldCode.length * 2, 0xffff), oldCode.length + size);
             if (newSize > 0xffff) {
-                throw new JaninoRuntimeException(
+                throw new InternalCompilerException(
                     "Code of method \""
                     + this.functionName
                     + "\" of class \""
@@ -976,24 +992,26 @@ class CodeContext {
                 );
             }
             this.code = new byte[newSize];
-            System.arraycopy(oldCode, 0, this.code, 0, ico);
-            System.arraycopy(oldCode, ico, this.code, ico + size, this.end.offset - ico);
+            System.arraycopy(oldCode, 0, this.code, 0, cio);
+            System.arraycopy(oldCode, cio, this.code, cio + size, this.end.offset - cio);
         }
-        Arrays.fill(this.code, ico, ico + size, (byte) 0);
+        Arrays.fill(this.code, cio, cio + size, (byte) 0);
         for (Offset o = this.currentInserter; o != null; o = o.next) o.offset += size;
+
+        return cio;
     }
 
     /**
      * @param lineNumber The line number that corresponds to the byte code, or -1
      */
     public void
-    writeShort(short lineNumber, int v) { this.write(lineNumber, (byte) (v >> 8), (byte) v); }
+    writeShort(int lineNumber, int v) { this.write(lineNumber, (byte) (v >> 8), (byte) v); }
 
     /**
      * @param lineNumber The line number that corresponds to the byte code, or -1
      */
     public void
-    writeBranch(short lineNumber, int opcode, final Offset dst) {
+    writeBranch(int lineNumber, int opcode, final Offset dst) {
         this.relocatables.add(new Branch(opcode, dst));
         this.write(lineNumber, (byte) opcode, (byte) -1, (byte) -1);
     }
@@ -1016,7 +1034,7 @@ class CodeContext {
         @Override public boolean
         relocate() {
             if (this.destination.offset == Offset.UNSET) {
-                throw new JaninoRuntimeException("Cannot relocate branch to unset destination offset");
+                throw new InternalCompilerException("Cannot relocate branch to unset destination offset");
             }
             int offset = this.destination.offset - this.source.offset;
 
@@ -1029,7 +1047,7 @@ class CodeContext {
                     // promotion to a wide instruction only requires 2 extra bytes
                     // everything else requires a new GOTO_W instruction after a negated if
                     CodeContext.this.makeSpace(
-                        (short) -1,
+                        -1,
                         this.opcode == Opcode.GOTO ? 2 : this.opcode == Opcode.JSR ? 2 : 5
                     );
                 }
@@ -1121,9 +1139,9 @@ class CodeContext {
      * Writes a four-byte offset (as it is used in TABLESWITCH and LOOKUPSWITCH) into this code context.
      */
     public void
-    writeOffset(short lineNumber, Offset src, final Offset dst) {
+    writeOffset(int lineNumber, Offset src, final Offset dst) {
         this.relocatables.add(new OffsetBranch(this.newOffset(), src, dst));
-        this.write(lineNumber, (byte) -1, (byte) -1, (byte) -1, (byte) -1);
+        this.makeSpace(lineNumber, 4);
     }
 
     private
@@ -1138,7 +1156,7 @@ class CodeContext {
         @Override public boolean
         relocate() {
             if (this.source.offset == Offset.UNSET || this.destination.offset == Offset.UNSET) {
-                throw new JaninoRuntimeException("Cannot relocate offset branch to unset destination offset");
+                throw new InternalCompilerException("Cannot relocate offset branch to unset destination offset");
             }
             int    offset = this.destination.offset - this.source.offset;
             byte[] ba     = new byte[] {
@@ -1185,7 +1203,9 @@ class CodeContext {
      */
     public void
     pushInserter(Inserter ins) {
-        if (ins.nextInserter != null) throw new JaninoRuntimeException("An Inserter can only be pushed once at a time");
+        if (ins.nextInserter != null) {
+            throw new InternalCompilerException("An Inserter can only be pushed once at a time");
+        }
         ins.nextInserter     = this.currentInserter;
         this.currentInserter = ins;
     }
@@ -1196,7 +1216,7 @@ class CodeContext {
     public void
     popInserter() {
         Inserter ni = this.currentInserter.nextInserter;
-        if (ni == null) throw new JaninoRuntimeException("Code inserter stack underflow");
+        if (ni == null) throw new InternalCompilerException("Code inserter stack underflow");
         this.currentInserter.nextInserter = null; // Mark it as "unpushed".
         this.currentInserter              = ni;
     }
@@ -1217,7 +1237,7 @@ class CodeContext {
         int offset = Offset.UNSET;
 
         /**
-         * Links to preceding and succeding offsets. Both are {@code null} <em>before</em> {@link #set()} is called,
+         * Links to preceding and succeeding offsets. Both are {@code null} <em>before</em> {@link #set()} is called,
          * and both are non-{@code null} <em>after</em> {@link #set()} has been called. This implies that {@link
          * #set()} must be invoked at most <em>once</em>.
          */
@@ -1233,14 +1253,22 @@ class CodeContext {
          */
         public void
         set() {
-            if (this.offset != Offset.UNSET) throw new JaninoRuntimeException("Cannot \"set()\" Offset more than once");
+            if (this.offset != Offset.UNSET) {
+                throw new InternalCompilerException("Cannot \"set()\" Offset more than once");
+            }
 
-            this.offset = CodeContext.this.currentInserter.offset;
+            Inserter ci = CodeContext.this.currentInserter;
 
-            this.prev      = CodeContext.this.currentInserter.prev;
-            this.next      = CodeContext.this.currentInserter;
-            this.prev.next = this;
-            this.next.prev = this;
+            this.offset = ci.offset;
+
+            Offset cip = ci.prev;
+            assert cip != null;
+
+            this.prev = cip;
+            this.next = ci;
+
+            cip.next = this;
+            ci.prev  = this;
         }
 
         /**
@@ -1291,14 +1319,18 @@ class CodeContext {
     }
 
     /**
-     * An {@link Offset} who#s sole purpose is to later create a 'LneNumberTable' attribute.
+     * An {@link Offset} who's sole purpose is to later create a 'LineNumberTable' attribute.
      */
     public
     class LineNumberOffset extends Offset {
-        private final int lineNumber;
 
+        private final short lineNumber;
+
+        /**
+         * @param lineNumber 1...65535
+         */
         public
-        LineNumberOffset(int offset, int lineNumber) {
+        LineNumberOffset(int offset, short lineNumber) {
             this.lineNumber = lineNumber;
             this.offset     = offset;
         }
@@ -1352,11 +1384,11 @@ class CodeContext {
 
         if (size == 0) return; // Short circuit.
 
-        // Shift down the bytecode past 'to'.
+        // Shift down the bytecode past "to".
         System.arraycopy(this.code, to.offset, this.code, from.offset, this.end.offset - to.offset);
 
-        // Invalidate all offsets between 'from' and 'to'.
-        // Remove all relocatables that originate between 'from' and 'to'.
+        // Invalidate all offsets between "from" and "to".
+        // Remove all relocatables that originate between "from" and "to".
         Set<Offset> invalidOffsets = new HashSet<Offset>();
         {
             Offset o = from.next;

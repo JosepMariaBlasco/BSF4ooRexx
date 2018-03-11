@@ -349,4 +349,3 @@ end
     self~assertSame(val_01, valJSO_01~toString)
     self~assertSame(val_02, valJSO_02~toString)
     self~assertSame(val_03, valJSO_03~toString)
-

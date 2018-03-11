@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* File:          05-server-clr.rxj
  * Description:   Creates a networking server which waits for connections on address 127.0.0.1
  *                (localhost) and port 2015. Any received data is written to standard output.

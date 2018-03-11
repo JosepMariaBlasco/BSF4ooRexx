@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        07-MAC.rxj
  * Description: This application generates a hash string of a message based on a secret key.
                 Then, it stores both message and hash into a textfile and opens it afterwards

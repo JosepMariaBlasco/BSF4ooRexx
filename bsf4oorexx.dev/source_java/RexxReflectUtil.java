@@ -39,7 +39,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.0, 2018-01-08-2018-02-18
+ * @version 1.0, 2018-01-08-2018-02-18, 2018-03-10
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -665,7 +665,9 @@ if (bDebug) System.err.println("in ... # i: SUPPLIER branch...");
 
     /** If reflection was not able to find an appropriate Field, Method or Constructor create an informative
      *  (Rexx-like &quot;human centric&quot;) message that should help the Rexx programmer to identify the
-     *  problem with the supplied name or arguments.
+     *  problem with the supplied name or arguments. In the case that Java exceptions were thrown while seeking
+     *  for the desired member, the last thrown exception will be supplied to the BSFException to allow the
+     *  programmer to get additional hints, if found members could not be used.
      *
      *  @throws a BSFException
      */
@@ -701,7 +703,7 @@ if (bDebug) System.err.println("in ... # i: SUPPLIER branch...");
 
                 if (idx<rexxArgs.length)    // both given, type and Rexx value
                 {
-                    dump.append("\", Rexx value=\""+truncString(this.rexxArgs[3+(i*distance)+1],45)+"\"]");
+                    dump.append("\", Rexx value=\""+truncString(this.rexxArgs[3+(i*distance)+1],65)+"\"]");
                 }
                 else
                 {
@@ -709,7 +711,7 @@ if (bDebug) System.err.println("in ... # i: SUPPLIER branch...");
                 }
             }
 
-            dump.append(" --> Java value=\""+ (truncString(""+this.funcArgs[i], 45)) +"\""
+            dump.append(" --> Java value=\""+ (truncString(""+this.funcArgs[i], 65)) +"\""
                                  +" type=<"+(funcArgs[i]==null ? null : funcArgs[i].getClass().getName())+">\n"
                         );
         }
@@ -728,7 +730,16 @@ if (bDebug) System.err.println("in ... # i: SUPPLIER branch...");
         {
             msg.append(this.rexxArgs[2]+"]");
         }
-        msg.append(" not found!");
+
+        if (reflectionType==REFLECT_METHOD)
+        {
+            msg.append(" not found or execution error!");
+        }
+        else
+        {
+            msg.append(" not found!");
+        }
+
 
         if (this.bStrict)
         {
@@ -763,7 +774,14 @@ if (bDebug) System.err.println("in ... # i: SUPPLIER branch...");
         }
 
             // now throw the BSFException
-        throw new BSFException(BSFException.REASON_INVALID_ARGUMENT, msg.toString());
+        if (throwable!=null)
+        {
+            throw new BSFException(BSFException.REASON_INVALID_ARGUMENT, msg.toString(), throwable);
+        }
+        else
+        {
+            throw new BSFException(BSFException.REASON_INVALID_ARGUMENT, msg.toString());
+        }
     }
 
 

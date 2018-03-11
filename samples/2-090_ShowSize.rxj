@@ -153,4 +153,3 @@ call BSF.terminateRexxEngine
    use arg userData
    size=userData~window~getSize
    userData~label~setText(size~width "/" size~height "at:" pp(time()) )
-

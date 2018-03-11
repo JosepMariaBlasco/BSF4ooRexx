@@ -520,5 +520,3 @@ end
   eb~put(re~argv,jargs)    -- add to engine scope's bindings
   re~eval(rexxCode)
 
-
-

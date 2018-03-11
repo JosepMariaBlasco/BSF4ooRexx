@@ -83,16 +83,23 @@ copy %javaSrc%\RexxExtendingClassLoader.java  %path2engine%
 
 @rem 2010-04-17
 copy %javaSrc%\ProxiedJavaClassTool.java      %path2engine%
-
-
 copy %javaSrc%\RexxDispatcher.java            %path2rexxlaBsf%
 
-
+copy %javaSrc%\RexxScriptEngine.java          %path2jsr223%
+copy %javaSrc%\RexxScriptEngineFactory.java   %path2jsr223%
+copy %javaSrc%\RexxCompiledScript.java        %path2jsr223%
 
 @rem 2018-01-05/08
+copy %javaSrc%\InvocationType.java            %path2engine%
+copy %javaSrc%\RexxReflectInterface.java      %path2engine%
+copy %javaSrc%\RexxReflectJava6.java          %path2engine%
+copy %javaSrc%\RexxReflectJava7.java          %path2engine%
+copy %javaSrc%\RexxReflectUtil.java           %path2engine%
 
-copy %javaSrc%\RexxReflect*                   %path2engine%
-copy %javaSrc%\InvocationT*                   %path2engine%
+
+
+
+@rem do the compilations
 
 javac %javacDefines% %javaBaseLine%        %javaSrc%\InvocationType.java        && copy %javaSrc%\InvocationT*                %path2engine%
 javac %javacDefines% %javaBaseLine%        %javaSrc%\RexxReflectJava6.java      && copy %javaSrc%\RexxReflectJava6*           %path2engine%
@@ -135,3 +142,4 @@ javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxScriptEngineFactory.java   
 javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxCompiledScript.java        && copy %javaSrc%\RexxCompiledScript*         %path2jsr223%
 
 endlocal
+

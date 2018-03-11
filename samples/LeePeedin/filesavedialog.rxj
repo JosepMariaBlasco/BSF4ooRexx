@@ -44,4 +44,3 @@ Linux Version       Suse 10
     flen = part1~length + 2
     call elpFrame 'Example of the JavaX FileSaveDialog', text, 2, flen
 ::requires 'elpFrame.rxj'
-

@@ -526,4 +526,3 @@ obj1.INT_i1    =191
    	currVal=BSF("getStaticValue", clzTest2, "staticVier")
       if bEcho=.true then say "--- enf of loop #" i "elapsed time:" time("R")
    end
-

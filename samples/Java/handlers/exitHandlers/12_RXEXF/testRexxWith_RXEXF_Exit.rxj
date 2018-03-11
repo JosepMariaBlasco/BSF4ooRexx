@@ -99,4 +99,3 @@ any:
 any:
    say "(Rexx-side) condition in test_not_found_error():"
    say ppCondition2(condition('o'))
-

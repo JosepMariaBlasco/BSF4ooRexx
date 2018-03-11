@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        15-text.to.speech.rxj
  * Description: This application explicitly loads an assembly ("System.Speech") to become able to use all of its
                 classes. It first reads a default text, then reads the content of

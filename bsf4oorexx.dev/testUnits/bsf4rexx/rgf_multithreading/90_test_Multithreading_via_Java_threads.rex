@@ -86,5 +86,3 @@ use arg rpTestUnit, rpArray, nrThreads, javaThreadName
   testUnit~assertTrue(BsfDetach(), "detaching from main TID:" TID", thread #" nr", thisTID="thisTID "running in Java thread named:" javaThreadName)
   counter~decrease
   return
-
-

@@ -105,4 +105,3 @@ writerComponent~XModifiable~setModified(.false) /* allow to close (abort) docume
   end
   bRdr~close                           /* close BufferedReader object   */
   return data
-

@@ -100,4 +100,3 @@ text~insertString( cursor, " That's all for now !!" , .false )
     cursor = tableText~createTextCursor
     cursor~XPropertySet~setPropertyValue( "CharColor", box("int", color ))
     tableText~setString( text )
-

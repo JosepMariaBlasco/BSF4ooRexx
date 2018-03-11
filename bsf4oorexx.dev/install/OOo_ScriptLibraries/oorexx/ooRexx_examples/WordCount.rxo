@@ -84,4 +84,3 @@ return 0
   use arg actionEvent, slotDir
   slotDir~userData~frame~setVisible(.false)  -- hide the frame
   slotDir~userData~frame~dispose    -- dispose of the frame
-

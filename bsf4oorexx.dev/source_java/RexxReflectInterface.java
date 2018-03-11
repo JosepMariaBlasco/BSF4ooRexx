@@ -48,7 +48,11 @@ import        java.lang.reflect.Modifier;
  *      </ul>
  *
  * <li>Java 1.7, a.k.a. Java 7: released 2011-07-28
- *      <a href="http://www.oracle.com/technetwork/java/javase/jdk7-relnotes-418459.html">new features</a> relevant to <em>BSF4ooRexx</em>: none, maybe MethodHandles
+ *      <a href="http://www.oracle.com/technetwork/java/javase/jdk7-relnotes-418459.html">new features</a> relevant to <em>BSF4ooRexx</em>:
+ *      <ul>
+ *      <li> introduction of java.lang.invoke (MethodHandle, etc.); however cannot be used to fully replace core reflection
+ *           invocations (java.lang.reflect)
+ *      </ul>
  *
  * <li>Java 1.8, a.k.a. Java 8: released 2014-03-18;
  *      <a href="http://www.oracle.com/technetwork/java/javase/8-whats-new-2157071.html">new features</a> relevant to <em>BSF4ooRexx</em>:

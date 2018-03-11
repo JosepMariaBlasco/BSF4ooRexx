@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        viewAll.rex
  * Description: This application runs all Rexx examples one by one using "rexxpaws.exe" which
  *              will stop at the end of each Rexx example such that the user can see the output

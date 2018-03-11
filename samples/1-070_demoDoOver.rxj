@@ -260,4 +260,3 @@ call demo_Enumeration tab, line  -- run the java.Util.Map demo
 
 
 ::requires bsf.cls
-

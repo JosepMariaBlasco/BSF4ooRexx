@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* Package:          CLR.CLS
  * Description:      ooRexx package (library) for making Microsoft's .NET Framework available in
                      ooRexx using jni4net: .NET classes and objects appear as ooRexx classes and
@@ -1658,5 +1658,3 @@ syntax2:                      -- oops, another condition got raised, inform the 
 ::routine pp.line private
   use strict arg lineNr
   return "line #" lineNr~right(4) "|"
-
-

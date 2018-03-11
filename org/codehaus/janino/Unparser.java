@@ -2,8 +2,8 @@
 /*
  * Janino - An embedded Java[TM] compiler
  *
- * Copyright (c) 2001-2010, Arno Unkrig
- * All rights reserved.
+ * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
+ * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -12,16 +12,16 @@
  *       following disclaimer.
  *    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
  *       following disclaimer in the documentation and/or other materials provided with the distribution.
- *    3. The name of the author may not be used to endorse or promote products derived from this software without
- *       specific prior written permission.
+ *    3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
- * THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package org.codehaus.janino;
@@ -620,9 +620,9 @@ class Unparser {
 
                 @Override @Nullable public Void
                 visitBinaryOperation(Java.BinaryOperation bo) {
-                    Unparser.this.unparseLhs(bo.lhs, bo.op);
-                    Unparser.this.pw.print(' ' + bo.op + ' ');
-                    Unparser.this.unparseRhs(bo.rhs, bo.op);
+                    Unparser.this.unparseLhs(bo.lhs, bo.operator);
+                    Unparser.this.pw.print(' ' + bo.operator + ' ');
+                    Unparser.this.unparseRhs(bo.rhs, bo.operator);
                     return null;
                 }
 
@@ -860,7 +860,7 @@ class Unparser {
     }
 
     /**
-     * Where the {@code visit...()} methods print their text. Noice that this {@link PrintWriter} does not print to
+     * Where the {@code visit...()} methods print their text. Notice that this {@link PrintWriter} does not print to
      * the output directly, but through an {@link AutoIndentWriter}.
      */
     protected final PrintWriter pw;
@@ -1128,7 +1128,7 @@ class Unparser {
      * {@code (a - b) - c}.
      */
     private static boolean
-    isLeftAssociate(String op) { return Unparser.LEFT_ASSOCIATIVE_OPERATORS.contains(op); }
+    isLeftAssociate(String operator) { return Unparser.LEFT_ASSOCIATIVE_OPERATORS.contains(operator); }
 
     /**
      * Returns a value
@@ -1143,7 +1143,7 @@ class Unparser {
         if (operand instanceof Java.BinaryOperation) {
             return (
                 Unparser.getOperatorPrecedence(operator)
-                - Unparser.getOperatorPrecedence(((Java.BinaryOperation) operand).op)
+                - Unparser.getOperatorPrecedence(((Java.BinaryOperation) operand).operator)
             );
         } else
         if (operand instanceof Java.UnaryOperation) {
@@ -1190,9 +1190,8 @@ class Unparser {
     private static final Set<String>          UNARY_OPERATORS             = new HashSet<String>();
     private static final Map<String, Integer> OPERATOR_PRECEDENCE         = new HashMap<String, Integer>();
     static {
-        Object[] ops = {
-            Unparser.RIGHT_ASSOCIATIVE_OPERATORS, "=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", ">>>=",
-                                                        "&=", "^=", "|=", // SUPPRESS CHECKSTYLE WrapAndIndent
+        Object[] operators = {
+            Unparser.RIGHT_ASSOCIATIVE_OPERATORS, "=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", ">>>=", "&=", "^=", "|=", // SUPPRESS CHECKSTYLE LineLength
             Unparser.RIGHT_ASSOCIATIVE_OPERATORS, "?:",
             Unparser.LEFT_ASSOCIATIVE_OPERATORS,  "||",
             Unparser.LEFT_ASSOCIATIVE_OPERATORS,  "&&",
@@ -1212,15 +1211,15 @@ class Unparser {
         };
         int precedence = 0;
         LOOP1: for (int i = 0;;) {
-            @SuppressWarnings("unchecked") final Set<String> s = (Set<String>) ops[i++];
+            @SuppressWarnings("unchecked") final Set<String> s = (Set<String>) operators[i++];
 
             precedence++;
             for (;;) {
-                if (i == ops.length) break LOOP1;
-                if (!(ops[i] instanceof String)) break;
-                String op = (String) ops[i++];
-                s.add(op);
-                Unparser.OPERATOR_PRECEDENCE.put(op, precedence);
+                if (i == operators.length) break LOOP1;
+                if (!(operators[i] instanceof String)) break;
+                String operator = (String) operators[i++];
+                s.add(operator);
+                Unparser.OPERATOR_PRECEDENCE.put(operator, precedence);
             }
         }
     }
@@ -1266,7 +1265,7 @@ class Unparser {
             }
         } else
         {
-            throw new JaninoRuntimeException(
+            throw new InternalCompilerException(
                 "Unexpected array initializer or rvalue class "
                 + aiorv.getClass().getName()
             );
@@ -1369,7 +1368,7 @@ class Unparser {
                 try {
                     line = br.readLine();
                 } catch (IOException e) {
-                    throw new JaninoRuntimeException(null, e);
+                    throw new InternalCompilerException(null, e);
                 }
                 if (line == null) break;
                 this.pw.println(line);

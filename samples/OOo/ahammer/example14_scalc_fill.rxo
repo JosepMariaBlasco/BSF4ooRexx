@@ -60,4 +60,3 @@ calcComponent~dispose
 ::routine getCellSeries /* return a XCellSeries matching supplied cell range */
   use arg xSheet, aRange
   return xSheet~XCellRange~getCellRangeByName(aRange)~XCellSeries
-

@@ -18,4 +18,3 @@ syntax:
 ::requires BSF.CLS   -- direct interpreter to load Java bridge
 
 ::requires "rgf_util2.rex"
-

@@ -3329,4 +3329,3 @@ listCollection: procedure
         mb~~append(indent) ~~append(pp2(idx)) ~~append(lf)
   end
   return mb~string
-

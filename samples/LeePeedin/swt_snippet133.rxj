@@ -337,4 +337,3 @@ newLine:
 ::method unknown     -- intercept unhandled events
   use arg methName, methArgs
   bsf.getSlotDir(methArgs)~userData~shell~dispose
-

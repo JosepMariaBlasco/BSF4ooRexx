@@ -128,5 +128,3 @@ syntax:
   say ppCondition2(condition('Object'))
 
   say "(REXX-side)" pp2(test) "(variable TEST should have been defined by the Java command handler)"
-
-

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*    author:     Rony G. Flatscher
       date:       2016-11-26
       purpose:    generic ooRexx program which stores the GLOBAL_SCOPE entries in .local as a directory

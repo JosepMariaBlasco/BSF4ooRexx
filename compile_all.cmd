@@ -6,7 +6,6 @@ rem TODO: for compiling the script provider need to add "ScriptFramework.jar" to
 rem          D:\Programme\OpenOffice 4\program\classes\ScriptFramework.jar
 rem       rgf, 2014-02-10
 
-
 goto end_01
 @echo setting environment to point to asm and janino explicitly ...
 @rem ATTENTION: must change into directory such that %cd% there points to the right location!
@@ -26,7 +25,11 @@ set OOO_pgms=D:\Programme\OpenOffice.org 3\program
 set PATH=%PATH%;%OOO_pgms%
 
 @REM  set CLASSPATH environment variable ...
-set CLASSPATH=.;%CLASSPATH%;D:\Programme\OpenOffice.org 3\program\;D:\Programme\OpenOffice.org 3\Basis\program\classes\unoil.jar;D:\Programme\OpenOffice.org 3\URE\java\ridl.jar;D:\Programme\OpenOffice.org 3\URE\java\jurt.jar;D:\Programme\OpenOffice.org 3\URE\java\juh.jar;D:\Programme\OpenOffice.org 3\Basis\program\classes\ScriptFramework.jar
+set ooo_classes=c:\Program Files (x86)\OpenOffice 4\program\classes
+set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_classes%\jurt.jar;%ooo_classes%\juh.jar;%ooo_classes%\ScriptFramework.jar
+@echo adding OOo to CLASSPATH (adjust to your installation)
+echo CLASSPATH=%CLASSPATH%
+
 
 @echo adding Xalan to CLASSPATH
 @rem set cp=-classpath "%CLASSPATH%;F:\download\java\junit\junit3.8.1\junit.jar;F:\download\java\Xalan\work\xalan.jar"
@@ -42,8 +45,12 @@ set cp
 @echo on
 pause
 
-@set source=1.4
-@set target=1.4
+@rem @set source=1.4
+@rem @set target=1.4
+
+@rem new baseline is Java 1.6/6.0
+@set source=1.6
+@set target=1.6
 
 javac %cp% -source %source% -target %target% org/apache/bsf/*.java
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    2017-04-03, rgf: initial creation of the public class "FXRexxEngine"
 
@@ -376,4 +377,3 @@
 
   fxTextArea~setEstimatedScrollY(99999)  -- scroll to end
 -- .stdout~say(self"::run, line#" pp(.line) .dateTime~new  "<--" "tid="pp(bsfGetTID()) ".P~FXAppThread?="pp(.Platform~isFXApplicationThread) "counter="pp(counter) "about to return from run()! <--" )
-

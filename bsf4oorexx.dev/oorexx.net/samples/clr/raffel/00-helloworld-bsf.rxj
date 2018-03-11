@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* File:          00-helloworl-bsf.rxj
  * Description:   Simple output of "Hello World" via the Java "java.lang.System" class.
  * Shows:         - Import of a Java class

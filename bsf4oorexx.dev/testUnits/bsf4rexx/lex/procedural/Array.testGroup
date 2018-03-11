@@ -2025,4 +2025,3 @@ return testResult
 	arr=bsf.createArray("short", 5)
 
 return
-

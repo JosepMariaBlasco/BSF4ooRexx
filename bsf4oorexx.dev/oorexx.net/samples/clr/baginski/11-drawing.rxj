@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        11-drawing.rxj
  * Description: This application loads an image from the "images" subfolder,
                 outputs a few of its properties and then resizes the image to 50%

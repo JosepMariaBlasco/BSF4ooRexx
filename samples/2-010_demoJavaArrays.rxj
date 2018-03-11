@@ -133,4 +133,3 @@ say
 
 
 ::requires BSF.CLS    -- get access to the BSF-supporting Object Rexx classes
-

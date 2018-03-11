@@ -92,5 +92,3 @@ return testResult
     self~assertSameList(.array~of("1", "3", "4"), rexxArr~sort)
 
 -- say "at end of: test_04" "/ self~assertCount:" self~assertCount
-
-

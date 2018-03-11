@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        03-streamreader.rxj
  * Description: This application opens a file and reads from it using different techniques
  * Shows:

@@ -125,5 +125,3 @@ say "Now exiting Rexx."
 ::method MouseReleased
   use arg eventObject
   say .DateTime~new pp(eventObject~toString)
-
-

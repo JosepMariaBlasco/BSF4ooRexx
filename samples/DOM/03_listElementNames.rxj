@@ -76,4 +76,3 @@ end
   exception=argArray[1] /* retrieve SAXException argument               */
                         /* display error message                        */
   .error~say(methName":"  "line="exception~getLineNumber",col="exception~getColumnNumber":" pp(exception~getMessage))
-

@@ -67,6 +67,7 @@ do
    exit -1
 end
 
+/* --- for debugging new reflection of BSF4ooRexx, needs to be removed from GA version
 -- rgf, 20180218: test purposes, make sure we use MethoHandles
 rrj=bsf.wrap(bsf("rexxReflectObject"))
 say "rrj:" pp(rrj)
@@ -74,13 +75,13 @@ say "setting useReflectInvoke=.false (now exclusively uses MethodHandles), rrj="
 -- rrj~useReflectInvoke=.false   -- use MethodHandle invocations
 -- rrj~useUnreflect    =.true
 -- rrj~useCaching      =.false
--- rrj~debugLevel      =99
+-- rrj~debugLevel      =4
 say "    useCaching      ="pp(rrj~useCaching      )
 say "    useReflectInvoke="pp(rrj~useReflectInvoke)
 say "    useUnreflect    ="pp(rrj~useUnreflect    )
 say "    debugLevel      ="pp(rrj~debugLevel      )
 say "-"~copies(100)
-
+- -- */
 
 .environment~my.app=.directory~new  -- directory to contain objects relevant to this application
 .my.app~bDebug=.false               /* if set to .true, "put_FXID_objects_into.my.app.rex" will show
@@ -123,8 +124,8 @@ syntax:
    say "-"~center(" done. ", 100, "-")
 
 
-::requires "rgf_util2.rex"
-
+::requires "rgf_util2.rex"    -- get access to public routine ppCondition() which pretty prints
+                              -- the information in a condition object to ease debugging
 
 ::requires "BSF.CLS"          -- get Java support
 ::requires "json-rgf.cls"     -- get JSON support for ooRexx (to load and store person data)

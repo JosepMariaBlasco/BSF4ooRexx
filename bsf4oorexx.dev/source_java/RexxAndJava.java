@@ -3655,13 +3655,14 @@ if (bDebug)
                         return makeString4Rexx(this, rru.result);   // return whatever we have
                     }
 
-                    // no matching Method object found
+                    // no matching Method object found or execution error
                     if (rru.throwable != null)
                     {
+System.err.println(this+": rru.throwable="+rru.throwable);
                         throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                  "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": "+
                                  "\n\tbean:   ["+rru.bean+"] type: ["+rru.beanClz+"]"+
-                                 "\n\tmethod: ["+args[2]+"] not found!",
+                                 "\n\tmethod: ["+args[2]+"] not found or execution error!",
                                 rru.throwable);       // supply the Throwable from trying to invoke while searching for a Method
                     }
                     throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -5509,7 +5510,8 @@ System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), bean.r
 
                 if (bean==null)
                 {
-if (bDebugRefCounter) System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), not in registry anymore!");
+if (bDebugRefCounter)
+System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), not in registry anymore!");
 
                     // return false;
                     return -1;      // indicate not in registry
@@ -5551,6 +5553,8 @@ if (bDebugRefCounter)
 }
 
                     rajRegistry.remove(beanName);
+if (bDebugRefCounter)
+System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), now REMOVED from registry!");
                 }
             }
 

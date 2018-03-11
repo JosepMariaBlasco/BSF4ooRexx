@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        13-loadfile.rxj
  * Description: This application opens a Windows form with a textarea and a
  *              "load" button to load a text file via a dialog and display its

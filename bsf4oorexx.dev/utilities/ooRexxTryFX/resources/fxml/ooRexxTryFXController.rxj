@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 .local~failedPseudoClass = bsf.import("javafx.css.PseudoClass")~getPseudoClass("failed")
 
 ::routine runApp public

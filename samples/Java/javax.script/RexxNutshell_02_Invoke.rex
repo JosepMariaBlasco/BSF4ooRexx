@@ -68,4 +68,3 @@ args=bsf.createJavaArrayOf("java.lang.Object", "eins", "zwei", "drei")
 .error~~say("---")~~say
 
 ::requires "BSF.CLS"    -- get Java support
-

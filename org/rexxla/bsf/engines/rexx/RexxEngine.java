@@ -14,7 +14,7 @@ import java.lang.reflect.Method;
   * using the RexxSAA interface.
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2016 Rony G. Flatscher
+ *    Copyright (C) 2001-2018 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 6.0.0, 20161120
+  * @version 6.0.0, 20180223
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,10 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2018-02-23, ---rgf, - changed logic in unregisterBean() to adapt to change in RexxAndJava.unregisterBean return type (now int)
+
+    2018-01-05, ---rgf, - adapt RexxAndJava method invocations where methods got turned into static ones (e.g. registerBean)
 
     2016-12-20, ---rgf, - methods that supply a Java methodObject or javaObject via jniRexxSendMessageToRexxObject,
                           will now increase the respective bean's refCount by one as the native C++ method
@@ -162,7 +166,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20161120";
+    static final public String version = "600.20180223";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -648,15 +652,18 @@ if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ==
 
         String name=methodObject.getName();         // get method name (will be used as message)
 
-        String methodObjectBean=rexxInterface.makeString4Rexx(methodObject);    // create beanName
+        // String methodObjectBean=rexxInterface.makeString4Rexx(methodObject);    // create beanName
+        String methodObjectBean=RexxAndJava.makeString4Rexx(rexxInterface, methodObject);    // create beanName
         // 20161220, rgf: increase refCount by one as the C++ method will use wrap.bsf() such that .bsf uninit will run and do a unregisterBean
         if (rexxInterface.bsfPrefixReturnValue==true)
         {
-            rexxInterface.registerBean(methodObjectBean.substring(3), methodObject);    // remove "<O>" prefix
+            // rexxInterface.registerBean(methodObjectBean.substring(3), methodObject);    // remove "<O>" prefix
+            RexxAndJava.registerBean(rexxInterface, methodObjectBean.substring(3), methodObject);    // remove "<O>" prefix
         }
         else
         {
-            rexxInterface.registerBean(methodObjectBean, methodObject);
+            // rexxInterface.registerBean(methodObjectBean, methodObject);
+            RexxAndJava.registerBean(rexxInterface, methodObjectBean, methodObject);
         }
 
 
@@ -838,15 +845,18 @@ if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ==
         }
 
 
-        String javaObjectBean=rexxInterface.makeString4Rexx(javaObject);
+        // String javaObjectBean=rexxInterface.makeString4Rexx(javaObject);
+        String javaObjectBean=RexxAndJava.makeString4Rexx(rexxInterface, javaObject);
         // 20161220, rgf: increase refCount by one as the C++ method will use wrap.bsf() such that .bsf uninit will run and do a unregisterBean
         if (rexxInterface.bsfPrefixReturnValue==true)
         {
-            rexxInterface.registerBean(javaObjectBean.substring(3), javaObject);    // remove "<O>" prefix
+            // rexxInterface.registerBean(javaObjectBean.substring(3), javaObject);    // remove "<O>" prefix
+            RexxAndJava.registerBean(rexxInterface, javaObjectBean.substring(3), javaObject);    // remove "<O>" prefix
         }
         else
         {
-            rexxInterface.registerBean(javaObjectBean, javaObject);
+            // rexxInterface.registerBean(javaObjectBean, javaObject);
+            RexxAndJava.registerBean(rexxInterface, javaObjectBean, javaObject);
         }
 
         // String editedArgs[] = new String [ (args!= null ? args.length : 0) ];
@@ -1066,7 +1076,8 @@ if (bDebug) System.err.println(this+" ===> RexxEngine(), creating RII: after  ==
 
             String key=
                 RexxAndJava.EVENT_LISTENER_ARGUMENTS_LEADIN +
-                rexxInterface.makeString4Rexx(params)         +
+                // rexxInterface.makeString4Rexx(params)         +
+                RexxAndJava.makeString4Rexx(rexxInterface, params)         +
                 RexxAndJava.EVENT_LISTENER_ARGUMENTS_LEADOUT;
 
 // System.err.println("}-}-} RexxEngine.eval(), source=["+source+"]\n\tscript=["+script+"]");
@@ -1213,7 +1224,8 @@ if (bDebug) System.err.println(this+" <=== <=== <=== RexxEngine.apply() - before
             // the string indicator "<S>", if "bsfPrefixReturnValue" is set to "true"
             if (((String)o).startsWith(rexxInterface.OBJECT_INDICATOR_PREFIX))
             {
-                res[1] = rexxInterface.makeString4Rexx( o );
+                // res[1] = rexxInterface.makeString4Rexx( o );
+                res[1] = RexxAndJava.makeString4Rexx( rexxInterface, o );
             }
             return res;
         }
@@ -1245,7 +1257,8 @@ if (bDebug)
 }
 
         res[0] = Boolean.TRUE;          // a bean will be created for this
-        res[1] = rexxInterface.makeString4Rexx( o );  // create Bean, return beanName (proxy for received Java object)
+        // res[1] = rexxInterface.makeString4Rexx( o );  // create Bean, return beanName (proxy for received Java object)
+        res[1] = RexxAndJava.makeString4Rexx( rexxInterface, o );  // create Bean, return beanName (proxy for received Java object)
 
 if (bDebug)
 {
@@ -1392,7 +1405,8 @@ if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterprete
         {
             throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
         }
-        return rexxInterface.registerBean(rexxInterface.makeString4Rexx(object), object);
+        // return rexxInterface.registerBean(rexxInterface.makeString4Rexx(object), object);
+        return RexxAndJava.registerBean(rexxInterface, RexxAndJava.makeString4Rexx(rexxInterface, object), object);
     }
 
 
@@ -1414,7 +1428,8 @@ if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterprete
         {
             throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
         }
-        return rexxInterface.registerBean(beanName, object);
+        // return rexxInterface.registerBean(beanName, object);
+        return RexxAndJava.registerBean(rexxInterface, beanName, object);
     }
 
 
@@ -1438,8 +1453,11 @@ if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterprete
             throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
         }
 */
-        return rexxInterface.unregisterBean(beanName);
+        return (rexxInterface.unregisterBean(beanName)>=0); // rgf, 2018-02-23: now returns remaining refCount or -1, if not found
     }
+
+
+
 
 
     /** Allow lookup of BSFRegistry entries.
@@ -1455,7 +1473,8 @@ if (bDebug) System.err.println("RexxEngine().halt(): AFTER jniRexxHaltInterprete
         {
             throw new RexxException("RexxEngine "+this+" got terminated, cannot be used anymore.");
         }
-        return rexxInterface.lookupBean(beanName);
+        // return rexxInterface.lookupBean(beanName);
+        return RexxAndJava.lookupBean(rexxInterface, beanName);
     }
 
     /* 2014-03-30: ---rgf, no documentation generated, a last resort means to get and set the process environment via Java using JNI.

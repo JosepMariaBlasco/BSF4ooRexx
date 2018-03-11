@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* File:          01-helloworld-clr.rxj
  * Description:   Simple output of "Hello World" via .NET/CLR classes.
  * Shows:         - Import of a .Net/CLR class

@@ -60,4 +60,3 @@ say "New document saved to" pp(uno.convertFromUrl(url))
 
 ::routine makeUrl /* a function for creating the URL for the file existing in the current folder */
   return  uno.convertToURL(stream(arg(1), "c", "query exists"))
-

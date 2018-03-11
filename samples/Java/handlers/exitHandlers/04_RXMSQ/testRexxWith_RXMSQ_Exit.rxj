@@ -47,4 +47,3 @@ say "(Rexx-side) AFTER setting new queue name it is now set to:" pp(RxQueue("GET
 
 
 ::requires "BSF.CLS"    -- get Java support
-

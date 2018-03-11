@@ -110,4 +110,3 @@ say "Now exiting Rexx."
 ::CLASS "awtFrame" SUBCLASS bsf
 ::METHOD init
   self~init:super('java.awt.Frame', ARG(1, 'A'))
-

@@ -1250,7 +1250,3 @@ syntax2:
 syntax3:
   say "showDir(): syntax error, cannot dump 'dir' (probably path to 'rgf_util2.rex' not set up yet) ..."
   return
-
-
-
-

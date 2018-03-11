@@ -113,4 +113,3 @@ clear:
    return
 
 ::requires BSF.CLS    -- add Object Rexx proxy support
-

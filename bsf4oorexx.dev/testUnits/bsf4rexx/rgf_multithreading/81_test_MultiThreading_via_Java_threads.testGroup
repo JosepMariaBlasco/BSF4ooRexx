@@ -91,5 +91,3 @@ return testResult
   tmpStr=charin(longFn, 1, chars(longFn))       -- read entire file
   call stream longFn, "C", "close"              -- make sure file is closed
   return tmpStr
-
-

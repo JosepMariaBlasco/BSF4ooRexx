@@ -269,4 +269,3 @@ Windows Version     Microsoft Windows XP [Version 5.1.2600]
      userData~backgroundColor=backgroundColor   -- save new color
      userData~text~setBackground(backgroundColor)
   end
-

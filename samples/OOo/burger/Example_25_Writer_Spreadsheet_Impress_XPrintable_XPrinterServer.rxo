@@ -145,4 +145,3 @@ syntax:     /* if running on OOo installations that have that service not yet de
    choice = .bsf.dialog~dialogBox(msg, title, "Question", "YesNo")
    if choice=0 then return defaultPrinter
                else return .nil
-

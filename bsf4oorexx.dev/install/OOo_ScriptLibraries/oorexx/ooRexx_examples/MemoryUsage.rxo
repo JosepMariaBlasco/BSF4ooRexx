@@ -88,4 +88,3 @@ return 0
 
     propset = xChart~getTitle~XPropertySet
     propset~setPropertyValue("String", "JVM Memory Usage");
-

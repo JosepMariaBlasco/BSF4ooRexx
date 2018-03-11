@@ -46,4 +46,3 @@ f=p~getParent
 f~setTitle("Hello from Object REXX (title reset from Object Rexx)")
 
 ::requires BSF.CLS    -- get Object Rexx wrapper support for BSF
-

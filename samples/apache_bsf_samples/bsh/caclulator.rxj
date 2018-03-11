@@ -109,4 +109,3 @@ doMath:
    if n2 = 0 then call bsf "invoke", quo, "setText", "DIVISION by 0 !!"
              else call bsf "invoke", quo, "setText", n1/n2
    return
-

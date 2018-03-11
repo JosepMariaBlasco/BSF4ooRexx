@@ -138,4 +138,3 @@ say "   http://www.RexxLA.org"
 say "   http://www.ooRexx.org"
 
 ::requires BSF.CLS            -- get the direct Object Rexx BSF support
-

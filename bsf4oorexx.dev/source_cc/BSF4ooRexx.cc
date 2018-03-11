@@ -946,11 +946,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20180304 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180306 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20180304 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180306 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20180304 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180306 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -7325,14 +7325,14 @@ RexxRoutine1(RexxObjectPtr, BsfTestPing, OPTIONAL_size_t,  repetitions)
         // nope, not yet attached, attach, but detach before leaving this routine
         if ( (defaultJVM->jvm->AttachCurrentThread((void **) &jenv, (void *) &defaultJavaVMAttachArgs)) != JNI_OK) // attach to JVM
         {
-            fprintf(stderr, "BSF4ooRexx.BsfTestPing([repetitions=[%d]]), cannot attach to Java!\n",repetitions);
+            fprintf(stderr, "BSF4ooRexx.BsfTestPing([repetitions=[%lu]]), cannot attach to Java!\n",repetitions);
             return context->String("-99");         // JNI attach error, return prematurely, indicate by returning -99
         }
     }
 
     if (jenv==NULL)         // attaching did not work!
     {
-        fprintf(stderr, "BSF4ooRexx.BsfTestPing([repetitions=[%d]]), cannot attach to Java!\n",repetitions);
+        fprintf(stderr, "BSF4ooRexx.BsfTestPing([repetitions=[%lu]]), cannot attach to Java!\n",repetitions);
         return context->String("-99");
     }
 

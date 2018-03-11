@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        04-messagebox.rxj
  * Description: Shows a Message Box with a title and a text
  * Shows:       - MessageBox.Show method with title and a text

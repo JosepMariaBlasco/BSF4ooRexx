@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* File:          04-forms-clr.rxj
  * Description:   Creates a Windows form with a progress bar and a start button which, when clicked,
  *                starts a new thread to increase the progress bar and animates the button.

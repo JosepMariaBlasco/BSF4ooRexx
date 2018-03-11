@@ -59,7 +59,7 @@ Alternatively use the command-line version:
 
 Step [1] Download the archive "BSF4ooRexx_install.zip" and unzip it
 
-Step [2] Open the folder "bsf4oorexx/installation/linux"
+Step [2] Open the folder "bsf4oorexx/install/linux"
 
 Step [3] Double-click on or execute the program "install.sh"
 

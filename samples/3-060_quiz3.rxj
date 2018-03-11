@@ -394,4 +394,3 @@ if .verbose>0 then say self": actionPerformed(actionEvent)"
 if .verbose>1 then say pp(actionEvent~toString)
   slotDir~userData~quiz~wait=.false -- unblock main thread waiting on quiz'
 if .verbose>0 then say "<---"
-

@@ -130,4 +130,3 @@ parser~parse(xmlFileName)
   charArray=.bsf~new("java.lang.String", "<!-- empty external DTD -->")~toCharArray
   reader=.bsf~new("java.io.CharArrayReader", charArray)  /* create a Reader object  */
   return .bsf~new("org.xml.sax.InputSource", reader)     /* create an InputSource   */
-

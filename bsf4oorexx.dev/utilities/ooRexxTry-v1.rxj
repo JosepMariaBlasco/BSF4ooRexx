@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* Name:    ooRexxTry.rxj
    Purpose: GUI supported testing of ooRexx and Bsf4ooRexx enhanced Java support
    Author:  Markus Moldaschl
@@ -127,6 +127,11 @@
 /* SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.               */
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
+
+
+-- rgf, 2018-03-09: with the new reflection logic, using MethodHandle seems to not be stable with Java 1.8/8u162,
+--                  hence making sure that we use the classic, still efficient core reflection invocations
+bsf.wrap(bsf("rexxReflectObject"))~useReflectInvoke=.true
 
 call makeBSF4ooRexxLookLikeMacOSX   -- make sure that on MacOSX the application looks like a Mac application
 

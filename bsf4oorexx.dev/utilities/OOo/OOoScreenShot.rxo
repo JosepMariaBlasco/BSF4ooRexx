@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /*
    name:    OOoScreenShot.rxo
    purpose: allow taking screenshots, even of OOo components or document windows
@@ -504,4 +505,3 @@ or
    Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
    -----------------------------------------------------------------------------
 */
-

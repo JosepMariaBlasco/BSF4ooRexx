@@ -139,4 +139,3 @@ Linux Version       Suse 10
     call elpFrame 'Example of the Java GregorianCalendar Class', text, 25, 70
 
 ::requires 'elpFrame.rxj'
-

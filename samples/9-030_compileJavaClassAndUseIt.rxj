@@ -28,7 +28,6 @@
     -----------------------------------------------------------------------------
 */
 
-
 parse version "_" v "."
 if v<5 then
 do
@@ -39,22 +38,25 @@ end
 clz=bsf.compile("rony.Oha", .resources~oha.java)
 say 'clz~oha("aha"):' pp(clz~oha("abc"))  -- use the static method "oha" from Rexx
 say "-"~copies(60)
-o=clz~new            -- create an instance of the Java object
+
+o=clz~new            -- create an instance of the Java class
 say 'o=clz~new     :' pp(o)
-say "o~oha('zyx')  :" pp(o~oha('zyx'))     -- invoke the instance method
-say "o~myInfo      :" pp(o~myInfo)  -- invoke the instance method
+say "o~oha('zyx')  :" pp(o~oha('zyx')) -- invoke the class method "oha"
+say "o~myInfo      :" pp(o~myInfo)     -- invoke the instance method "myInfo"
 say "-"~copies(60)
+
 say "now invoking the main method from ooRexx:"
 args=.bsf~bsf.createArrayOf("java.lang.String", "Hello", "from", "ooRexx!")
-o~main(args)         -- now invoke the Java class' main() method
+o~main(args)                           -- invoke the class method "main"
 
 
 ::requires "BSF.CLS" -- get Java support
 
-   -- source of a Java program, defining the class "rony.Oha" with two methods
+   -- source of a Java program, defining the class "rony.Oha" with three methods
+   -- - the static method "main" and
    -- - the static method "oha" and
    -- - the instance method "myInfo"
-::RESOURCE Oha.java  -- source code of a Java class with a static method o()
+::RESOURCE Oha.java  -- Java source code, defining a class "rony.Oha"
 
    package rony;
    import  java.util.Arrays;
@@ -66,7 +68,6 @@ o~main(args)         -- now invoke the Java class' main() method
            System.out.println("rony.Oha.main(), received arguments: "+Arrays.deepToString(args));
        }
 
-
        public static String oha(String str) // Java static method
        {
            return "oha->"+str+"<-oha";
@@ -74,8 +75,7 @@ o~main(args)         -- now invoke the Java class' main() method
 
        public String myInfo()             // Java instance method
        {
-           return "oha///"+this.toString()+"\\\\\\oha";
+           return "oha///"+this+"\\\\\\oha";
        }
    }
 ::END
-

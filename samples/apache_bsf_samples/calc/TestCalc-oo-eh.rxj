@@ -181,4 +181,3 @@ call bsf "exit"         -- force Java to exit
   userData~nextOp=key
   res~setText(mem)
   userData~autoClear=1          /* set to true          */
-

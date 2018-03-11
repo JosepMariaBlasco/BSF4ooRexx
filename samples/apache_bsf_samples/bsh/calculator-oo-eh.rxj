@@ -133,4 +133,3 @@ getField: procedure
 
 ::method focusLost            -- event method (from WindowListener)
   forward message (actionPerformed) -- let method "actionPerformed" do the work
-

@@ -10,6 +10,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.apache.bsf.BSFException;
 
@@ -26,7 +27,7 @@ import org.apache.bsf.BSFException;
  *
 
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2009-2017 Rony G. Flatscher
+ *    Copyright (C) 2009-2018 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -41,11 +42,16 @@ import org.apache.bsf.BSFException;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 1.0.2, 2009-05-03, 2009-06-27, 2009-07-11, 2009-07-31, 2010-04-16, 2016-11-04
+  * @version 1.0.3, 2009-05-03, 2009-06-27, 2009-07-11, 2009-07-31, 2010-04-16, 2016-11-04, 2018-01-07
   * @author Rony G. Flatscher (<a href="http://www.wu.ac.at">WU/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu.ac.at/english">http://www.wu.ac.at/english</a>)
   */
 
 /*
+    2018-01-07, rgf  - remove deprecation warning of the Java 9 compiler, if there is a Java 6 compliant,
+                       non-deprecated alternative; note: the deprecation warning on "finalize" will not
+                       be honored as this is intentional as it is the only means to allow garbage collection
+                       on the Rexx side as well, when Java Rexx peers get out of scope
+
     2017-12-24, rgf, - corrected documentation: .local may go away, if its Rexx interpreter instance
                        got terminated and its .local garbage collected
 
@@ -123,7 +129,7 @@ public class RexxProxy implements InvocationHandler
 {
 
      /** Version information on this class. */
-    static final public String version="102.20161105";
+    static final public String version="103.20180107";
 
 
     // rgf, 2010-04-16 --->
@@ -214,7 +220,8 @@ public class RexxProxy implements InvocationHandler
 
     protected Integer proxyHashCode(Object proxy)
     {
-    	return new Integer(System.identityHashCode(proxy));
+    	// return new Integer(System.identityHashCode(proxy));
+    	return Integer.valueOf(System.identityHashCode(proxy));
     }
 
     protected Boolean proxyEquals(Object proxy, Object other)
@@ -383,7 +390,11 @@ if (bDebug==true)
      */
     public Object sendMessage (String messageName, Object[] args) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage(m,args): m=["+messageName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+if (bDebug)
+{
+    System.err.println("////// ---> RexxProxy.sendMessage(m,args): m=["+messageName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+    System.err.println("////// ---> RexxProxy.sendMessage(m,args):        Arrays.deepToString(args)=\""+Arrays.deepToString(args)+"\"");
+}
 
         return this.rexxEngine.call(this, messageName, args);
     }
@@ -500,7 +511,12 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(m,arg1,arg2,a
      */
     public Object sendMessage (RexxEngine re, String messageName, Object[] args) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage(re,m,args): re=["+re+"], m=["+messageName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+if (bDebug)
+{
+
+    System.err.println("////// ---> RexxProxy.sendMessage(re,m,args): re=["+re+"], m=["+messageName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+    System.err.println("////// ---> RexxProxy.sendMessage(re,m,args):                     Arrays.deepToString(args)=\""+Arrays.deepToString(args)+"\"");
+}
 
         return (re==null ? this.rexxEngine : re).call(this, messageName, args);
     }
@@ -514,7 +530,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage(re,m,args): re
      */
     public Object sendMessage0 (RexxEngine re, String messageName) throws BSFException
     {
-// if (bDebug)
+if (bDebug)
 System.err.println("////// ---> RexxProxy.sendMessage0(re,m): re=["+re+"], m=["+messageName+"]...");
 
         return (re==null ? this.rexxEngine : re).call(this, messageName, null);
@@ -627,7 +643,11 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(re,m,arg1,arg
      */
     public Object sendMessage (RexxAndJava raj, String messageName, Object[] args) throws BSFException
     {
-if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage(raj,m, args): raj=["+raj+"], m=["+messageName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+if (bDebug)
+{
+    System.err.println("////// ---> RexxProxy.sendMessage(raj,m,args): raj=["+raj+"], m=["+messageName+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
+    System.err.println("////// ---> RexxProxy.sendMessage(raj,m,args):                       Arrays.deepToString(args)=\""+Arrays.deepToString(args)+"\"");
+}
 
         return (raj==null ? this.rexxEngine : raj.getRexxEngine()).call(this, messageName, args);
     }
@@ -763,7 +783,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.sendMessage5(raj,m,arg1,ar
 // if (bDebug) System.err.println("////// ---> RexxProxy.invoke(m, args): m=["+methodObject+"], TID=["+creationTID+"] args.length=["+(args==null ? null+"" : args.length+"")+"]...");
 if (bDebug) System.err.println("////// ---> RexxProxy.invoke(m, args): m=["+methodObject+"], args.length=["+(args==null ? null+"" : args.length+"")+"]...");
 
-        return this.rexxEngine.call(this, methodObject, args);
+        return this.rexxEngine.call(this, methodObject, (Object[]) args);
     }
 
 
@@ -787,14 +807,14 @@ if (bDebug) System.err.println("////// ---> RexxProxy.invoke(jO, mN, mD, args): 
                           "], mName=["+methodName+"], mDescriptor=["+methodDescriptor+"], "+
                           "args.length=["+(args==null ? null+"" : args.length+"")+"]...");
 
-        return this.rexxEngine.call(this, javaObject, methodName, methodDescriptor, args);
+        return this.rexxEngine.call(this, javaObject, methodName, methodDescriptor, (Object[]) args);
     }
 
 
 
     /** Finalize method will unregister Rexx object from the JNI registry.
      */
-    public void finalize ()
+    @SuppressWarnings( "deprecation" ) public void finalize ()  // method needed to maintain native Rexx side
     {
 // boolean bDebug=true;
         if (bDebug)
@@ -848,7 +868,7 @@ if (bDebug) System.err.println("////// ---> RexxProxy.invoke(jO, mN, mD, args): 
 
         // let our RexxProxy handle the callback: get the RexxProxy object and invoke the method on it
         // return ((RexxProxy) Proxy.getInvocationHandler(proxy)).invoke(method.getName(), args);
-        return ((RexxProxy) Proxy.getInvocationHandler(proxy)).invoke(method, args);
+        return ((RexxProxy) Proxy.getInvocationHandler(proxy)).invoke(method, (Object[]) args);
     }
 
 
@@ -1084,11 +1104,11 @@ if (bDebug) System.err.println("     added:                            o=["+o+"]
 
         if (bFirstElementIsInterface)
         {
-            return newJavaProxyInstance(al.toArray());      // now go ahead and invoke the public method and return the JavaProxy object
+            return newJavaProxyInstance((Object[]) al.toArray());      // now go ahead and invoke the public method and return the JavaProxy object
         }
         else
         {
-            return newExtendedProxyInstance(al.toArray());  // now extend the class, create an instance and return it
+            return newExtendedProxyInstance((Object[]) al.toArray());  // now extend the class, create an instance and return it
         }
     }
 

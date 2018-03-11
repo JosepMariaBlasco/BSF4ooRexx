@@ -305,4 +305,3 @@ printLongString: procedure          /* this procedure carries out the printing  
       if res then return .true
   end
   return .false
-

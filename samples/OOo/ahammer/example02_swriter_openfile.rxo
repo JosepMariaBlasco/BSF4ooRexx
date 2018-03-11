@@ -25,4 +25,3 @@ props[1]=uno.createProperty("ReadOnly", javaTrue)  /* create and assign Property
 xComponentLoader~loadComponentFromURL(url, "_blank", 0, props)
 
 ::requires UNO.CLS    -- get UNO support
-

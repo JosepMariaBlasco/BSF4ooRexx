@@ -6,6 +6,8 @@
    author:    Rony G. Flatscher
    date:      2014-05-18
    changed:   2015-05-01, ---rgf - remove superfluous word "String" from the beginning of the string assigned to "wordstring"
+              2018-03-09, ---rgf - adjust for MethodHandle.invoke() for Java 8 and 9
+                                 - take advantage of new .bsf4rexx entry "java.major.version" to ease testing for right Java version
 
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
 
@@ -14,7 +16,7 @@
 
    license:   Apache Version 2.0 license
     ------------------------ Apache Version 2.0 license (AL2.0)-------------------------
-       Copyright (C) 2014-2015 Rony G. Flatscher
+       Copyright (C) 2014-2018 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -30,42 +32,40 @@
     -----------------------------------------------------------------------------
 
 */
-javaVersion=.java.lang.System~getProperty("java.version")
-if javaVersion < "1.8" then
+
+if .bsf4rexx~java.major.version < 8 then
 do
-   say "Need Java 1.8 or higher, installed version too low ("javaVersion"), aborting ..."
+   say "Need Java 1.8/8 or higher, installed version too low ("javaVersion"), aborting ..."
    exit -1
 end
 
--- make a string of words with a couple containing the letter 'k'
+   -- make a string of words with a couple containing the letter 'k'
 wordstring="Just a bunch of words to test for killer items containing a k"
    -- turn Rexx-string into a Java-string: this allows us to use Java's String methods
 refWordString=.bsf~new("java.lang.String", wordstring)
 
--- convert the string into a Java List (a Collection):
-alist=bsf.loadClass("java.util.Arrays")~asList(refWordString~split(" "))
+   -- convert the string into a Java List (a Collection):
+arrWords=refWordString~split(" ")   -- get Java array of words
 
--- create a RexxProxy of our Worker class which implements the two functional interface
--- methods that we use
+   -- get utility class to help us with creating streams off array objects
+clzArrays=bsf.loadClass("java.util.Arrays")
+
+   -- create a RexxProxy of our Worker class which implements the two functional interface methods that we use
 rexxWorker=BsfCreateRexxProxy(.worker~new, , "java.util.function.Predicate", "java.util.function.Consumer")
 
--- now run a filter stream operation on the list
--- (the filter just selects words containing the letter 'k')
-
-sa=alist~stream~filter(rexxWorker)~toArray   -- "filter" employs the Predicate interface
+   -- now run a filter stream operation on the list
+   -- first create a stream, then run the "filter" (a Predicate function), create array from result
+sa=clzArrays~stream(arrWords) ~filter(rexxWorker)~toArray
 
 -- print the results for verification:
-
 loop y over sa
-    say y
-    end
-
+  say y
+end
 say "-----------------------"
 
-    -- now run a foreach operation on a stream
---     the consumer here just prints inputs with some surrounding brackets
+   -- now run a foreach operation on a stream
+clzArrays~stream(arrWords) ~foreach(rexxWorker)
 
-alist~stream~foreach(rexxWorker)             -- "forEach" employs the Consumer interface
 
 ::requires BSF.CLS   -- get Java-support
 
@@ -73,10 +73,11 @@ alist~stream~foreach(rexxWorker)             -- "forEach" employs the Consumer i
 
    -- implements the interface java.util.function.Predicate
 ::method test     -- will return .true for strings containing 'k', .false else
-  use arg s
-  return s~caselessPos('k')>0
+  use arg s       -- fetch the argument (from Java)
+  return s~caselessPos('k')>0 -- return result
 
    -- implements the interface java.util.function.Consumer
 ::method accept   -- will show each string
-  use arg s
-  say ">>"s"<<"
+  use arg s       -- fetch the argument (from Java)
+  say ">>"s"<<"   -- enclose value in angle brackets
+

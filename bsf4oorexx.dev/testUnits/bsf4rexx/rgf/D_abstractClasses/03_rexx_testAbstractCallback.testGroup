@@ -871,4 +871,3 @@ dumpDir: procedure
      tmpBag~put(el~getName)      -- save name in Bag (removes duplicates)
   end
   return tmpBag
-

@@ -31,5 +31,3 @@ say "                  RXINI and RXTER counters cannot match."
 
 
 ::requires "BSF.CLS"    -- get Java support
-
-

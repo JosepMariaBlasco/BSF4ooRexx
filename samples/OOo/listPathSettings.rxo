@@ -90,4 +90,3 @@ convertPathUrl: procedure
       arr~append(uno.convertFromUrl(before))
    end
    return arr
-

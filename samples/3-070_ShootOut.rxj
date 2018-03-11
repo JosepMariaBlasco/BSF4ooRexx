@@ -205,4 +205,3 @@ call BSF.terminateRexxEngine
 ::method actionPerformed
   use arg eventObject, slotDir
   call answer slotDir~userData
-

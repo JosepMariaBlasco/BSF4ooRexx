@@ -60,4 +60,3 @@ do until len=-1
       call bsf "unregisterBean", stringObject      /* remove the String Object from the Java repository */
    end
 end
-

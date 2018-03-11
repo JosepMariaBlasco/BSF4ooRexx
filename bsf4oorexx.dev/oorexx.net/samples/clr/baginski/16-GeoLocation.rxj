@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        16-GeoLocation.rxj
  * Description: This application explicitly loads an assembly ("System.Device") to become able
                 to use all of its classes. It then accesses the location data of the

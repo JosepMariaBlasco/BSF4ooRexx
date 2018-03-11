@@ -143,5 +143,3 @@ end
   isClosing=.true
 
 ::method unknown           /* intercept all other messages to do nothing   */
-
-

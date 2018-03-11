@@ -464,5 +464,3 @@ return testResult
   return i-1
 
 ::method close                      -- do nothing
-
-

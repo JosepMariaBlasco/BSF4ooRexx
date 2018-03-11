@@ -2,8 +2,8 @@
 /*
  * Janino - An embedded Java[TM] compiler
  *
- * Copyright (c) 2001-2010, Arno Unkrig
- * All rights reserved.
+ * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
+ * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -12,16 +12,16 @@
  *       following disclaimer.
  *    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
  *       following disclaimer in the documentation and/or other materials provided with the distribution.
- *    3. The name of the author may not be used to endorse or promote products derived from this software without
- *       specific prior written permission.
+ *    3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
- * THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package org.codehaus.janino;
@@ -41,7 +41,7 @@ import org.codehaus.commons.nullanalysis.Nullable;
  * <ul>
  *   <li>{@code I} Integer
  *   <li>{@code [I} Array of integer
- *   <li>{@code Lpkg1/pkg2/Cls;} Class
+ *   <li>{@code Lpkg1/pkg2/Clazz;} Class
  *   <li>{@code Lpkg1/pkg2/Outer$Inner;} Member class
  * </ul>
  */
@@ -69,12 +69,12 @@ class Descriptor {
 
     /**
      * @return                        The descriptor of the component of the array type <var>d</var>
-     * @throws JaninoRuntimeException <var>d</var> does not describe an array type
+     * @throws InternalCompilerException <var>d</var> does not describe an array type
      */
     public static String
     getComponentDescriptor(String d) {
         if (d.charAt(0) != '[') {
-            throw new JaninoRuntimeException(
+            throw new InternalCompilerException(
                 "Cannot determine component descriptor from non-array descriptor \""
                 + d
                 + "\""
@@ -92,7 +92,7 @@ class Descriptor {
         if (d.equals(Descriptor.VOID)) return 0;
         if (Descriptor.hasSize1(d)) return 1;
         if (Descriptor.hasSize2(d)) return 2;
-        throw new JaninoRuntimeException("No size defined for type \"" + Descriptor.toString(d) + "\"");
+        throw new InternalCompilerException("No size defined for type \"" + Descriptor.toString(d) + "\"");
     }
 
     /**
@@ -128,7 +128,7 @@ class Descriptor {
                 if (idx != 1) sb.append(", ");
                 idx = Descriptor.toString(d, idx, sb);
             }
-            if (idx >= d.length()) throw new JaninoRuntimeException("Invalid descriptor \"" + d + "\"");
+            if (idx >= d.length()) throw new InternalCompilerException("Invalid descriptor \"" + d + "\"");
             sb.append(") => ");
             ++idx;
         }
@@ -142,12 +142,12 @@ class Descriptor {
             ++dimensions;
             ++idx;
         }
-        if (idx >= d.length()) throw new JaninoRuntimeException("Invalid descriptor \"" + d + "\"");
+        if (idx >= d.length()) throw new InternalCompilerException("Invalid descriptor \"" + d + "\"");
         switch (d.charAt(idx)) {
         case 'L':
             {
                 int idx2 = d.indexOf(';', idx);
-                if (idx2 == -1) throw new JaninoRuntimeException("Invalid descriptor \"" + d + "\"");
+                if (idx2 == -1) throw new InternalCompilerException("Invalid descriptor \"" + d + "\"");
                 sb.append(d.substring(idx + 1, idx2).replace('/', '.'));
                 idx = idx2;
             }
@@ -180,7 +180,7 @@ class Descriptor {
             sb.append("boolean");
             break;
         default:
-            throw new JaninoRuntimeException("Invalid descriptor \"" + d + "\"");
+            throw new InternalCompilerException("Invalid descriptor \"" + d + "\"");
         }
         for (; dimensions > 0; --dimensions) sb.append("[]");
         return idx + 1;
@@ -226,7 +226,7 @@ class Descriptor {
             // Array type -- convert "[Ljava/lang/String;" to "[Ljava.lang.String;".
             return d.replace('/', '.');
         }
-        throw new JaninoRuntimeException("(Invalid field descriptor \"" + d + "\")");
+        throw new InternalCompilerException("(Invalid field descriptor \"" + d + "\")");
     }
 
     /**
@@ -235,7 +235,7 @@ class Descriptor {
     public static String
     toInternalForm(String d) {
         if (d.charAt(0) != 'L') {
-            throw new JaninoRuntimeException(
+            throw new InternalCompilerException(
                 "Attempt to convert non-class descriptor \""
                 + d
                 + "\" into internal form"
@@ -263,7 +263,7 @@ class Descriptor {
     @Nullable public static String
     getPackageName(String d) {
         if (d.charAt(0) != 'L') {
-            throw new JaninoRuntimeException("Attempt to get package name of non-class descriptor \"" + d + "\"");
+            throw new InternalCompilerException("Attempt to get package name of non-class descriptor \"" + d + "\"");
         }
         int idx = d.lastIndexOf('/');
         return idx == -1 ? null : d.substring(1, idx).replace('/', '.');

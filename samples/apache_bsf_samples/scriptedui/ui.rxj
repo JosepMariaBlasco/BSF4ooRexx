@@ -49,5 +49,3 @@ call bsf "invoke", p, "setBackground", bsf("getStaticValue", "java.awt.Color", "
 /* configure the frame that p is in */
 f = bsf("invoke", p, "getParent")
 call bsf "invoke", f, "setTitle", "Hello from REXX (title reset from Rexx)"
-
-

@@ -87,5 +87,3 @@ failure:
 error:
   say "(Rexx-side) testError():"
   say ppCondition2(condition("object"))
-
-

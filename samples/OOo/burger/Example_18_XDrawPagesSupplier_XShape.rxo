@@ -100,4 +100,3 @@ xShape1~xText~setString("This text scrolls through the 'RectangleShape'...")
 drawComponent~XModifiable~setModified(.false)   /* allow to close (abort) document without saving-dialog */
 
 ::requires UNO.CLS   -- load UNO support for OpenOffice.org
-

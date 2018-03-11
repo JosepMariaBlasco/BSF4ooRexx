@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 ::routine savePreferences public	
 	/* save the preferences in the preferences properties object */
 	loop with index inputName item inputField over .my.app~preferences.fxml

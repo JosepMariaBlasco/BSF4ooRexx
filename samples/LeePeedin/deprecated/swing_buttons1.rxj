@@ -166,6 +166,3 @@ return
     use arg eventObject
     keyCode=eventObject~keyCode
     return keyCode = 27
-
-
-

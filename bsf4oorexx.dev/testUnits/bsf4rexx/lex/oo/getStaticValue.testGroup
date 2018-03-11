@@ -81,4 +81,3 @@ return testResult
 	m=bsf.getStaticValue("java.lang.Integer", "foo")
 
 return
-

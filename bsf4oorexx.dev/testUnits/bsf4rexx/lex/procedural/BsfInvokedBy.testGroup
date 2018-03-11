@@ -49,4 +49,3 @@ return testResult
 	r=BsfInvokedBy("foo")
 
 return
-

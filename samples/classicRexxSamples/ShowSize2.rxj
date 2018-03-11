@@ -127,4 +127,3 @@ ShowSize: procedure
    parse var string "width=" width ",height=" height "]"
    call BSF 'invoke', 'Label', "setText", "(" width "/" height ")"
    return
-

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 -- try to get a script context, will be .nil, if script was not invoked by OOo
 xDesktop = UNO.createDesktop()~XDesktop   -- create Desktop object, query XDesktop interface
 

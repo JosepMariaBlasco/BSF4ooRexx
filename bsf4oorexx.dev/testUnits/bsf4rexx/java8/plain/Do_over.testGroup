@@ -25,6 +25,7 @@ return testResult
 
 ::requires "ooTest.frm"     -- load the ooRexxUnit classes
 ::requires BSF.CLS
+-- ::requires "rgf_util2.rex"
 
 
 ::class "testDoOver" subclass ooTestCase public
@@ -36,6 +37,11 @@ return testResult
 
 
 ::method "test_01_do_over_java_array"
+--   signal on syntax
+
+--   bsf.wrap(bsf("rexxReflectObject"))~useInvokeExact=.true
+--   bsf.wrap(bsf("rexxReflectObject"))~useUnreflect=.true
+-- bsf.wrap(bsf("rexxReflectObject"))~useReflectInvoke=.true
 
    do i=1 to 10      -- repeat to test for caching methods
       jarr=.bsf~bsf.createJavaArrayOf("java.lang.String", "1_one", .nil , "3_three", "4_four")
@@ -49,6 +55,17 @@ return testResult
       self~assertSameList(.array~of("1_one", "3_three", "4_four"), rexxArr)
    end
 -- say "at end of: test_01" "/ self~assertCount:" self~assertCount
+   return
+syntax:
+   say "--->"
+   co=condition("object")
+   say "---> --->"
+   say .line ppCondition2(co)
+   say "<--- <---"
+   exc=co~additional[2]
+   if exc~isA(.bsf) then exc~printStackTrace
+   say "<---"
+   raise propagate
 
 
 ::method "test_02_do_over_Hashmap_using_Iterator"
@@ -148,4 +165,3 @@ return testResult
    return
 
 -- say "at end of: test_05" "/ self~assertCount:" self~assertCount
-

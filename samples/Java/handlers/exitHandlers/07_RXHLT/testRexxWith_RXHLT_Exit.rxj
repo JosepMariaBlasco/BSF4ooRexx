@@ -41,4 +41,3 @@ say "(Rexx-side) - this should not be executed by Rexx due to the HALT condition
 halt:
   say "(Rexx-side) in routine TEST, HALT-signal handler"
   return
-

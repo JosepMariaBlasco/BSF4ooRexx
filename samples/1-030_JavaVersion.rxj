@@ -54,4 +54,3 @@ say "java.version:" .bsf4rexx ~System.class ~getProperty('java.version')
        limitations under the License.
     -----------------------------------------------------------------------------
 */
-

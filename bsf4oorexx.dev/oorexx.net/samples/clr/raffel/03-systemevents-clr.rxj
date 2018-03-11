@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* File:          03-systemevents-clr.rxj
  * Description:   Listens to a Windows system event, namely the change of the systems clock value.
  * Shows:         - Import of static classes

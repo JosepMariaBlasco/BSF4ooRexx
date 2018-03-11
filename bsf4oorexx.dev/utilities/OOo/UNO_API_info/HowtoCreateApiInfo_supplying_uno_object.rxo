@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 desktop          = UNO.createDesktop()
 xDesktop         = desktop~XDesktop
 xComponentLoader = xDesktop~XComponentLoader

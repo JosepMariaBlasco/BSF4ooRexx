@@ -24,13 +24,18 @@ call e:\java\scriptJars\addEngines2cp.cmd
 @REM  setup CLASSPATH environment variable (rgf, 20101231) ...
 @echo adding junit and Xalan to CLASSPATH
 set CLASSPATH=.;%CLASSPATH%;%cd%\jars\Xalan\junit.jar;%cd%\jars\Xalan\xalan.jar
+
 @echo adding OOo to CLASSPATH
-set CLASSPATH=%CLASSPATH%;D:\Programme\OpenOffice.org 3\program\;D:\Programme\OpenOffice.org 3\Basis\program\classes\unoil.jar;D:\Programme\OpenOffice.org 3\URE\java\ridl.jar;D:\Programme\OpenOffice.org 3\URE\java\jurt.jar;D:\Programme\OpenOffice.org 3\URE\java\juh.jar;D:\Programme\OpenOffice.org 3\Basis\program\classes\ScriptFramework.jar
+set ooo_classes=c:\Program Files (x86)\OpenOffice 4\program\classes
+set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_classes%\jurt.jar;%ooo_classes%\juh.jar;%ooo_classes%\ScriptFramework.jar
 
 
-set releaseDate=20171224
-set runDate=20171224
-set doc_date=20171224
+@echo adding javax.servlet.jsp and javax.servlet.http to CLASSPATH
+set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
+
+set releaseDate=20180309
+set runDate=20180309
+set doc_date=20180309
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -69,7 +74,8 @@ del BSF4ooRexx-apache-bsf.jar BSF4ooRexx-apache-bsf-source.jar bsf-*.jar
 @rem rgf, 20090815 jar cvMf %bsfJarNameBin% org/apache/bsf org/apache/taglibs
 jar cvMf %bsfJarNameBin% org/apache/bsf org/apache/taglibs org/objectweb/ org/codehaus/ org/rexxla/ org/oorexx/
 jar uf   %bsfJarNameBin% META-INF/
-pause
+@echo done - %bsfJarNameBin%
+@rem pause
 
 zip -d %bsfJarNameBin% "*.svn*" "*bkp*" "*tmp*"
 
@@ -78,12 +84,15 @@ rem rgf, 20070917, not needed, we have BSF4ooRexx-apache-bsf-source.jar instead
 rem copy %bsfJarNameBin% %bsfJarNameSource%
 
 @rem now remove sources from bin
-zip -d %bsfJarNameBin% "*.java" "*.txt" "*.cmd" "*~" "*bkp*" "*tmp*"
+zip -d  %bsfJarNameBin% "*.java" "*.txt" "*.cmd" "*~" "*bkp*" "*tmp*"
 zip -9  %bsfJarNameBin% ApacheLicense2.0.txt
 zip -9  %bsfJarNameBin% asm_LICENSE.TXT
 zip -9  %bsfJarNameBin% janino_LICENSE.TXT
 zip -9  %bsfJarNameBin% xdg-utils_freedesktop_org_LICENSE.txt
 zip -9  %bsfJarNameBin% jni4net-MIT-LICENSE.txt
+
+@echo deleted sources - done - %bsfJarNameBin%
+pause
 
 @rem remove compiled classes from source
 rem zip -d %bsfJarNameSource% "*.class"  "*~"
@@ -95,7 +104,9 @@ call createScriptProviderForooRexx.cmd
 @echo creating BSF Rexx engine jar file, containing the OOo support and datergf...
 jar cvMf bsf-rexx-engine.jar org/rexxla/ org/oorexx/
 jar uf   bsf-rexx-engine.jar META-INF/
-pause
+
+@echo done - createScriptProviderForooRexx -  bsf-rexx-engine.jar
+rem pause
 rem zip -d bsf-rexx-engine.jar "*.svn*" "*.html" "*.css" "*.txt"
 zip -d bsf-rexx-engine.jar "*.svn*"
 zip -d bsf-rexx-engine.jar "*.css"
@@ -306,10 +317,12 @@ del bsf4oorexx\*diff
 
 @echo creating utilities directory and populating it ...
 md bsf4oorexx\utilities
+md bsf4oorexx\utilities\ooRexxTryFX
 md bsf4oorexx\utilities\OOo
 md bsf4oorexx\utilities\OOo\UNO_API_info
 
 xcopy %path2dev%\utilities\*                       bsf4oorexx\utilities\
+xcopy %path2dev%\utilities\ooRexxTryFX             bsf4oorexx\utilities\ooRexxTryFX\  /s/e/i/r/k/y
 xcopy %path2dev%\utilities\OOo\*                   bsf4oorexx\utilities\OOo\
 xcopy %path2dev%\utilities\OOo\UNO_API_info\*      bsf4oorexx\utilities\OOo\UNO_API_info\
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* this class is supposed to handle all events in this app */
 ::class RexxEventHandler public
 ::method init

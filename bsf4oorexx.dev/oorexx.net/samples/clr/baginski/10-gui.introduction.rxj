@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        10-gui.introduction.rxj
  * Description: This application opens a Windows Form including a label with text and
                 determining its system menu icon.

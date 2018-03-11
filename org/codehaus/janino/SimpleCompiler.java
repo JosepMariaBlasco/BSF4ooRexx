@@ -2,8 +2,8 @@
 /*
  * Janino - An embedded Java[TM] compiler
  *
- * Copyright (c) 2001-2010, Arno Unkrig
- * All rights reserved.
+ * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
+ * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -12,16 +12,16 @@
  *       following disclaimer.
  *    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
  *       following disclaimer in the documentation and/or other materials provided with the distribution.
- *    3. The name of the author may not be used to endorse or promote products derived from this software without
- *       specific prior written permission.
+ *    3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
- * THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package org.codehaus.janino;
@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.lang.reflect.Method;
 import java.security.AccessController;
+import java.security.Permissions;
 import java.security.PrivilegedAction;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,6 +44,7 @@ import org.codehaus.commons.compiler.ErrorHandler;
 import org.codehaus.commons.compiler.ICookable;
 import org.codehaus.commons.compiler.ISimpleCompiler;
 import org.codehaus.commons.compiler.Location;
+import org.codehaus.commons.compiler.Sandbox;
 import org.codehaus.commons.compiler.WarningHandler;
 import org.codehaus.commons.nullanalysis.Nullable;
 import org.codehaus.janino.Java.Type;
@@ -71,6 +73,8 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
     private boolean debugSource = Boolean.getBoolean(ICookable.SYSTEM_PROPERTY_SOURCE_DEBUGGING_ENABLE);
     private boolean debugLines  = this.debugSource;
     private boolean debugVars   = this.debugSource;
+
+    @Nullable private Permissions permissions;
 
     public static void // SUPPRESS CHECKSTYLE JavadocMethod
     main(String[] args) throws Exception {
@@ -105,8 +109,8 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
         Class<?> c = cl.loadClass(className);
 
         // Invoke the "public static main(String[])" method.
-        Method m = c.getMethod("main", new Class[] { String[].class });
-        m.invoke(null, new Object[] { arguments });
+        Method m = c.getMethod("main", String[].class);
+        m.invoke(null, (Object) arguments);
     }
 
     /**
@@ -201,7 +205,7 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
     }
 
     /**
-     * Scans, parses and ompiles a given compilation unit from the given scanner. After completion, {@link
+     * Scans, parses and compiles a given compilation unit from the given scanner. After completion, {@link
      * #getClassLoader()} returns a {@link ClassLoader} that allows for access to the compiled classes.
      */
     public void
@@ -210,15 +214,72 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
     }
 
     /**
-     * Cooks this compilation unit directly.
-     *
-     * @see  Cookable#cook(Reader)
+     * Cooks this compilation unit directly and invokes {@link #cook(ClassFile[])}.
      */
     public void
     cook(Java.CompilationUnit compilationUnit) throws CompileException {
 
-        // Compile the classes and load them.
-        this.compileToClassLoader(compilationUnit);
+        SimpleCompiler.LOGGER.entering(null, "cook", compilationUnit);
+
+        ClassFile[] classFiles;
+
+        IClassLoader icl = (this.classLoaderIClassLoader = new ClassLoaderIClassLoader(this.parentClassLoader));
+        try {
+
+            // Compile compilation unit to class files.
+            UnitCompiler unitCompiler = new UnitCompiler(compilationUnit, icl);
+            unitCompiler.setCompileErrorHandler(this.optionalCompileErrorHandler);
+            unitCompiler.setWarningHandler(this.optionalWarningHandler);
+
+            classFiles = unitCompiler.compileUnit(this.debugSource, this.debugLines, this.debugVars);
+        } finally {
+            this.classLoaderIClassLoader = null;
+        }
+
+        this.cook(classFiles);
+    }
+
+    /**
+     * Serializes the given <var>classFiles</var> as bytecode, stores them in a map, and then invokes {@link
+     * #cook(Map)}.
+     */
+    public void
+    cook(ClassFile[] classFiles) {
+
+        // Convert the class files to bytes and store them in a Map.
+        final Map<String /*className*/, byte[] /*bytecode*/> classes = new HashMap<String, byte[]>();
+        for (ClassFile cf : classFiles) {
+            classes.put(cf.getThisClassName(), cf.toByteArray());
+        }
+
+        this.cook(classes);
+    }
+
+    /**
+     * Creates a {@link ClassLoader} that loads the given <var>classes</var> (lazily), and makes that class loader
+     * available through {@link #getClassLoader()}.
+     *
+     * @param classes Maps fully qualified classes names to bytecodes
+     */
+    public void
+    cook(final Map<String /*className*/, byte[] /*bytecode*/> classes) {
+
+        // Create a ClassLoader that loads the generated classes.
+        ClassLoader cl = (ClassLoader) AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
+
+            @Override public ClassLoader
+            run() {
+                return new ByteArrayClassLoader(
+                    classes,                              // classes
+                    SimpleCompiler.this.parentClassLoader // parent
+                );
+            }
+        });
+
+        // Apply any configured permissions.
+        if (this.permissions != null) Sandbox.confine(cl, this.permissions);
+
+        this.result = cl;
     }
 
     @Override public ClassLoader
@@ -228,6 +289,12 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
         }
         return this.assertCooked();
     }
+
+    @Override public void
+    setPermissions(Permissions permissions) { this.permissions = permissions;  }
+
+    @Override public void
+    setNoPermissions() { this.setPermissions(new Permissions()); }
 
     /**
      * Two {@link SimpleCompiler}s are regarded equal iff
@@ -276,29 +343,6 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
     protected Java.Type
     classToType(final Location location, final Class<?> clazz) {
 
-//        IClass iClass;
-//        synchronized (this.classes) {
-//            iClass = (IClass) this.classes.get(clazz);
-//            if (iClass == null) {
-//                if (clazz.isPrimitive()) {
-//                    if (clazz == byte.class)    { iClass = IClass.BYTE;    } else
-//                    if (clazz == short.class)   { iClass = IClass.SHORT;   } else
-//                    if (clazz == int.class)     { iClass = IClass.INT;     } else
-//                    if (clazz == long.class)    { iClass = IClass.LONG;    } else
-//                    if (clazz == float.class)   { iClass = IClass.FLOAT;   } else
-//                    if (clazz == double.class)  { iClass = IClass.DOUBLE;  } else
-//                    if (clazz == char.class)    { iClass = IClass.CHAR;    } else
-//                    if (clazz == boolean.class) { iClass = IClass.BOOLEAN; } else
-//                    if (clazz == void.class)    { iClass = IClass.VOID;    } else
-//                    { throw new AssertionError(clazz); }
-//                } else {
-//                    iClass = new ReflectionIClass(clazz, null);
-//                }
-//                this.classes.put(clazz, iClass);
-//            }
-//        }
-//        return new Java.SimpleType(location, iClass);
-
         // Can't use a SimpleType here because the classLoaderIClassLoader is not yet set up. Instead, create a
         // Type that lazily creates a delegate Type at COMPILE TIME.
         return new Java.Type(location) {
@@ -327,10 +371,10 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
                         Descriptor.fromClassName(clazz.getName())
                     );
                 } catch (ClassNotFoundException ex) {
-                    throw new JaninoRuntimeException("Loading IClass \"" + clazz.getName() + "\": " + ex);
+                    throw new InternalCompilerException("Loading IClass \"" + clazz.getName() + "\": " + ex);
                 }
                 if (iClass == null) {
-                    throw new JaninoRuntimeException(
+                    throw new InternalCompilerException(
                         "Cannot load class '"
                         + clazz.getName()
                         + "' through the parent loader"
@@ -344,24 +388,24 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
                     IClass ct = iClass2.getComponentType();
                     if (ct == null) {
                         if (class2.getComponentType() != null) {
-                            throw new JaninoRuntimeException("Array type/class inconsistency");
+                            throw new InternalCompilerException("Array type/class inconsistency");
                         }
                         break;
                     }
                     iClass2 = ct;
                     class2  = class2.getComponentType();
-                    if (class2 == null) throw new JaninoRuntimeException("Array type/class inconsistency");
+                    if (class2 == null) throw new InternalCompilerException("Array type/class inconsistency");
                 }
                 if (class2.isPrimitive()) {
                     if (!iClass2.isPrimitive()) {
-                        throw new JaninoRuntimeException("Primitive type/class inconsistency");
+                        throw new InternalCompilerException("Primitive type/class inconsistency");
                     }
                 } else {
                     if (iClass2.isPrimitive()) {
-                        throw new JaninoRuntimeException("Primitive type/class inconsistency");
+                        throw new InternalCompilerException("Primitive type/class inconsistency");
                     }
                     if (((ReflectionIClass) iClass2).getClazz() != class2) {
-                        throw new JaninoRuntimeException(
+                        throw new InternalCompilerException(
                             "Class '"
                             + class2.getName()
                             + "' was loaded through a different loader"
@@ -373,7 +417,6 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
             }
         };
     }
-//    private final Map<Class, IClass> classes = new HashMap();
 
     /**
      * Converts an array of {@link Class}es into an array of{@link Java.Type}s.
@@ -399,40 +442,9 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
      */
     protected final ClassLoader
     compileToClassLoader(Java.CompilationUnit compilationUnit) throws CompileException {
-        SimpleCompiler.LOGGER.entering(null, "compileToClassLoader", compilationUnit);
-
         assert this.classLoaderIClassLoader == null;
-
-        this.classLoaderIClassLoader = new ClassLoaderIClassLoader(this.parentClassLoader);
-        try {
-
-            // Compile compilation unit to class files.
-            UnitCompiler unitCompiler = new UnitCompiler(compilationUnit, this.classLoaderIClassLoader);
-            unitCompiler.setCompileErrorHandler(this.optionalCompileErrorHandler);
-            unitCompiler.setWarningHandler(this.optionalWarningHandler);
-            ClassFile[] classFiles = unitCompiler.compileUnit(this.debugSource, this.debugLines, this.debugVars);
-
-            // Convert the class files to bytes and store them in a Map.
-            final Map<String /*className*/, byte[] /*bytecode*/> classes = new HashMap<String, byte[]>();
-            for (ClassFile cf : classFiles) {
-                classes.put(cf.getThisClassName(), cf.toByteArray());
-            }
-
-            // Create a ClassLoader that loads the generated classes.
-            this.result = (ClassLoader) AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
-
-                @Override public ClassLoader
-                run() {
-                    return new ByteArrayClassLoader(
-                        classes,                              // classes
-                        SimpleCompiler.this.parentClassLoader // parent
-                    );
-                }
-            });
-            return this.assertCooked();
-        } finally {
-            this.classLoaderIClassLoader = null;
-        }
+        this.cook(compilationUnit);
+        return this.assertCooked();
     }
 
     /**
@@ -440,7 +452,10 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
      */
     private ClassLoader
     assertCooked() {
-        if (this.result != null) return this.result;
-        throw new IllegalStateException("Must only be called after \"cook()\"");
+
+        ClassLoader cl = this.result;
+        if (cl == null) throw new IllegalStateException("Must only be called after \"cook()\"");
+
+        return cl;
     }
 }

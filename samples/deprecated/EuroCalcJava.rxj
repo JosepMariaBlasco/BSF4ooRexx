@@ -350,4 +350,3 @@ setup_java_awt_gui : procedure expose euro.
   return
 
 ::requires BSF.CLS    -- bsf.import Object Rexx (syntax) support
-

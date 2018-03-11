@@ -29,4 +29,3 @@
   msg=.FXGuiThread~runLater(clzAction, "setIdle")
   res=msg~result  -- this blocks until message was executed
   return
-

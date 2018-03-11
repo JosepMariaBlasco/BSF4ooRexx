@@ -102,4 +102,3 @@ convertPathUrl: procedure
   service="com.sun.star.ucb.FileContentProvider"
   xMCf = xContext~getServiceManager   -- retrieve XMultiComponentFactory
   .local~xFileConverter=xMCF~createInstanceWithContext(service,xContext) ~XFileIdentifierConverter
-

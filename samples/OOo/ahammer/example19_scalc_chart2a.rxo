@@ -89,4 +89,3 @@ syntax:  /* Rexx condition handler */
 
 
 ::requires UNO.CLS    -- get UNO support
-

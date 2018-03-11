@@ -83,4 +83,3 @@ xText~insertString(xText~getEnd, "The inset (inner distance to border) is: 2,5 c
 drawComponent~XModifiable~setModified(.false)
 
 ::requires UNO.CLS    -- get UNO support
-

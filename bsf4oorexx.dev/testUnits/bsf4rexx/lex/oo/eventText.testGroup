@@ -110,4 +110,3 @@ return testResult
 	self~assertEquals(r, "eventtest")
 
 return
-

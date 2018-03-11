@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /*
    Name:    "rgfScreenShot.cls"
    Author:  Rony G. Flatscher
@@ -164,4 +164,3 @@ any:     /* an exception occurred, return .nil     */
 
 any:     /* if an exception gets raised, indicate failure   */
   return ""                         /* indicate we could not save the image   */
-

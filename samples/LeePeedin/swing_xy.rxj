@@ -223,4 +223,3 @@ Linux Version       Suse 10
 
   x_field~setText(x)
   y_field~setText(y)
-

@@ -54,4 +54,3 @@ return testResult
 ::method "test_3"
 	self~expectSyntax(40.900)
 	nns=.bsf~bsf.setRexxNullString()
-

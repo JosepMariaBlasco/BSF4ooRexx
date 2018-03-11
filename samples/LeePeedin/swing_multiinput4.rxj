@@ -609,4 +609,3 @@ Linux Version       Suse 10
 
   if check_age(userData) then
      eventObject~source~setBackground(userData~normalBG)
-

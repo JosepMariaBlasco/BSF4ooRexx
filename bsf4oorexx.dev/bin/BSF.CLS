@@ -5292,5 +5292,3 @@ extractJavaClassName: procedure
 
    if pkgName="" then return clzName
    return pkgName~strip"."clzName
-
-

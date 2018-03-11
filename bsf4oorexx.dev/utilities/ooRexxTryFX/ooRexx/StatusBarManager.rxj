@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 ::class StatusBarManager public
 ::method init
   expose statusBar label statusIcon defaultOptions

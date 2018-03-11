@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 ::class OpenRecentMenuManager public
   /* this method will load the 5 latest files to the open recent menu */
 ::method init

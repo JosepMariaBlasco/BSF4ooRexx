@@ -100,4 +100,3 @@ name=mail~uno.getInterfaceName           /* get the UNO interface name */
 say ppd(uno.getDefinition(name))         /* get and display definition */
 
 ::requires UNO.CLS   -- load UNO support for OpenOffice.org
-

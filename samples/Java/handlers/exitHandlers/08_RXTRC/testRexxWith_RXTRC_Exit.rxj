@@ -38,4 +38,3 @@ say "(Rexx-side) hi, #4 - after dropping 'traceVar', which turns OFF tracing, 't
 say
 
 ::requires "BSF.CLS"    -- get Java support
-

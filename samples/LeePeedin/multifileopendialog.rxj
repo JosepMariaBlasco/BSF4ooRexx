@@ -38,4 +38,3 @@ Linux Version       Suse 10
     call elpFrame 'Example of the Java StringTokenizer Class', text, 10, 74
 
 ::requires 'elpFrame.rxj'
-

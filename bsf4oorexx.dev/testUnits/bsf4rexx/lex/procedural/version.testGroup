@@ -94,4 +94,3 @@ return testResult
 	self~AssertNotNull(bsf("version","S"))
 
 return
-

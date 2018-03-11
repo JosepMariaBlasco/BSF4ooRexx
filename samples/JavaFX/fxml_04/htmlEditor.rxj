@@ -118,5 +118,3 @@ rxApp~launch(rxApp~getClass, .nil)     -- need to use this version of launch in 
 ::method run         -- Platform.runLater() will run this in the JavaFX application thread
    -- re-request the focus for this control
   .my.app~htmlEditor.fxml~htmlEditor~requestFocus
-
-

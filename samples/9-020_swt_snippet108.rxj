@@ -99,4 +99,3 @@ display~dispose
 ::method modifyText
   use arg eventObject, slotDir
   say "So far you have entered:" pp(eventObject~source~getText)
-

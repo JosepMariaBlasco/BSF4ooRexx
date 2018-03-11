@@ -100,4 +100,3 @@ drawComponent~XModifiable~setModified(.false) /* allow to close (abort) document
 
 
 ::requires UNO.CLS   -- load UNO support for OpenOffice.org
-

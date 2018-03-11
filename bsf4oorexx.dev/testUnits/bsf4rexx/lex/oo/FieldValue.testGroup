@@ -188,4 +188,3 @@ return testResult
 	f=ftf~bsf.setFieldValueStrict("foo", "long", 10)
 
 return
-

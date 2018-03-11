@@ -183,4 +183,3 @@ exit
 
   guard on when bExitProgram=.true  -- control variable "bExitProgram"
   -- say self": waitForExit, lock released, returning ..."
-

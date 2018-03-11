@@ -377,5 +377,3 @@ return testResult
 ::method unknown
   use arg methName, argArray
   raise syntax 93.900 array (self~string": UNKNOWN method" pp(methName)", arrived unexpectedly in OTHERWISE !")
-
-

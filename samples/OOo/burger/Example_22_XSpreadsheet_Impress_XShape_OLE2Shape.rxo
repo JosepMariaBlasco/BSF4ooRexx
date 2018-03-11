@@ -62,4 +62,3 @@ xChartDocument~XModifiable~setModified(.false)   /* clear modified flag in xChar
 impressComponent~XModifiable~setModified(.false) /* clear modified flag in impressComponent */
 
 ::requires UNO.CLS   -- load UNO support for OpenOffice.org
-

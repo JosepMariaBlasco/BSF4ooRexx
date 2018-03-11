@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* Name:    ooRexxTry.rxj
    Purpose: GUI supported testing of ooRexx and Bsf4ooRexx enhanced Java support
    Author:  Markus Moldaschl
@@ -165,6 +165,12 @@
 *                   these variables have to be set to true or false in code
 */
 
+
+-- rgf, 2018-03-09: with the new reflection logic, using MethodHandle seems to not be stable with Java 1.8/8u162,
+--                  hence making sure that we use the classic, still efficient core reflection invocations
+bsf.wrap(bsf("rexxReflectObject"))~useReflectInvoke=.true
+
+signal on syntax
 userData = .directory~new                   -- Directory to certain objects
 .local~mm.dir = .directory~new              -- locally accessable directory
 .local~mm.dir~bpanel94 = 94
@@ -269,6 +275,15 @@ else
 userData~rexxCloseEH~waitforExit   -- wait until we are allowed to end the program
 
 call SysSleep .3          -- let Java's RexxProxy finalizations find a running Rexx instance
+return
+
+syntax:
+  co=condition("object")   -- get condition object
+  say ppCondition2(co)
+
+
+::requires "rgf_util2.rex"
+
 
 /**
 * name: AboutDialog
@@ -289,6 +304,7 @@ call SysSleep .3          -- let Java's RexxProxy finalizations find a running R
 * special java classes:
 *    gridbag is a layout manager
 */
+
 
 ::class AboutDialog
 ::method actionPerformed

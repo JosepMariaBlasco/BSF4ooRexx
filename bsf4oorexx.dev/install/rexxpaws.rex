@@ -95,4 +95,3 @@ end:
 ::routine ppIndex
   use arg pp, minWidth=4
   return "[" || pp~right(max(minWidth,length(pp))) || "]"
-

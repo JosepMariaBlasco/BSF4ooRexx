@@ -100,4 +100,3 @@ end
 calcComponent~XModifiable~setModified(.false)   /* allow to close (abort) document without saving-dialog */
 
 ::requires UNO.CLS   -- load UNO support for OpenOffice.org
-

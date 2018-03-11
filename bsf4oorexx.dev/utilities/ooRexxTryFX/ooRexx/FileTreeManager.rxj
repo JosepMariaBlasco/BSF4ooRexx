@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 ::class FileTreeManager public
 ::method init
   expose filetree root disabled

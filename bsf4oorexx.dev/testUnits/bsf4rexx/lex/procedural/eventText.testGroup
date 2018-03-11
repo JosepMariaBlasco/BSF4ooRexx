@@ -118,4 +118,3 @@ return testResult
 	e=BSF("pollEventText", 1, 1, 1, 1, 1, 1, "foo")
 
 return
-

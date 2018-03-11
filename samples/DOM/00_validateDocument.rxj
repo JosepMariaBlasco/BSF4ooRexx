@@ -84,4 +84,3 @@ say pp(xmlFileName)": valid?" pp(eh~valid) /* get and show "valid" attribute   *
 
   .error~say(strip(tmpStr)":" pp(exception~getMessage))
   valid=.false          /* document is not valid                        */
-

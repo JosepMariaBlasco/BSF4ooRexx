@@ -1,4 +1,4 @@
-#!/usr/bin/rexx
+#!/usr/bin/env rexx
 /* File:          02-eventlog-clr.rxj
  * Description:   Reads the "Application" log of the current machine and outputs every entry. Uses the
  *                "System.Media.SystemSounds" class to emit a beep for every written message.

@@ -1,3 +1,4 @@
+#!/usr/bin/env rexx
 /* File:        04-process.demonstration.rxj
  * Description: This application demonstrates object-oriented process handling.
  * Shows:

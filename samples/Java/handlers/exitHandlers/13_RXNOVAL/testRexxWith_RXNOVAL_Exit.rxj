@@ -34,7 +34,3 @@ say
 say "(Rexx-side) - 2b - rgfVar=["rgfVar"]"
 
 ::requires "BSF.CLS"    -- get Java support
-
-
-
-

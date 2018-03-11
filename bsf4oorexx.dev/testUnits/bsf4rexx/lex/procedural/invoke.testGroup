@@ -113,4 +113,3 @@ return testResult
 	self~assertEquals(r, 2)
 
 return
-

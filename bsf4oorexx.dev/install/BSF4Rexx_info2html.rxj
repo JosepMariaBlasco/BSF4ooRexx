@@ -261,5 +261,3 @@ sort_java_props: procedure expose jprops.
    END
 
    RETURN
-
-

@@ -69,4 +69,3 @@ say "(You may want to re-run this script to see the startup speed improvement!)"
 
 
 ::requires UNO.CLS   /* directive to get the UNO support for ooRexx, defines utility classes, routines */
-
