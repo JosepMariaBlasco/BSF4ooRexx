@@ -2,12 +2,12 @@ Manifest-Version: 1.0
 RegistrationClassName: com.sun.star.script.framework.provider.oorexx.S
  criptProviderForooRexx
 Created-By: Rony G. Flatscher WU Wien Austria Europe
-Built-By: Rony G Flatscher 20100726 WU Wien Austria Europe
+Built-By: Rony G Flatscher 20180312 WU Wien Austria Europe
 Name: org/oorexx/uno
 Specification-Title: ooRexx to/from UNO Bridge
-Specification-Version: 4.04
+Specification-Version: 6.00
 Specification-Vendor: Rony G. Flatscher
 Implementation-Title: org.oorexx.uno-via-bsf4oorexx
-Implementation-Version: 4.04
+Implementation-Version: 6.00
 Implementation-Vendor: Rony G. Flatscher
 

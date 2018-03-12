@@ -143,7 +143,7 @@ public class ScriptEditorForooRexx
     private static ScriptEditorForooRexx theScriptEditorForooRexx;
 
     // global list of ScriptEditors, key is URL of file being edited
-    private static Map BEING_EDITED = new HashMap();
+    private static Map <URL,ScriptEditorForooRexx> BEING_EDITED = new HashMap <URL,ScriptEditorForooRexx> ();
 
     // template for new ooRexx scripts
     private static String OOSTEMPLATE;
@@ -388,9 +388,9 @@ public class ScriptEditorForooRexx
             // 20070920, rgf: use supplied class loader
             Class c = cl.loadClass("org.openoffice.netbeans.editor.NetBeansSourceView");
 
-            Class[] types = new Class[] { ScriptSourceModel.class };
+            Class<?>[] types = new Class<?>[] { ScriptSourceModel.class };
 
-            java.lang.reflect.Constructor ctor = c.getConstructor(types);
+            java.lang.reflect.Constructor<?> ctor = ((Class<?>) c).getConstructor(  (Class<?>[]) types);
 
             if (ctor != null) {
                 Object[] args = new Object[] { this.model };

@@ -2,10 +2,22 @@
 setlocal
 set tmprgf=ScriptProviderForooRexx
 
+@echo adding OOo to CLASSPATH
+set ooo_classes=c:\Program Files (x86)\OpenOffice 4\program\classes
+set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_classes%\jurt.jar;%ooo_classes%\juh.jar;%ooo_classes%\ScriptFramework.jar
+
+@echo compiling ScriptProvider4ooRexx
+javac -source 1.6 -target 1.6 com/sun/star/script/framework/provider/oorexx/*.java
+@pause
+
+
 rem create OOo-Macro-Package which will contain everything, including BSF itself
 @echo creating %tmprgf%.jar
 
 @del  %tmprgf%.jar
+
+rem echo jar cvmf %tmprgf%Manifest.mf %tmprgf%.jar Apache* com/sun/star/script/ org/apache/bsf/ org/oorexx/ org/rexxla/ org/apache/taglibs org/objectweb/ org/codehaus/
+rem pause
 
 jar cvmf %tmprgf%Manifest.mf %tmprgf%.jar Apache* com/sun/star/script/ org/apache/bsf/ org/oorexx/ org/rexxla/ org/apache/taglibs org/objectweb/ org/codehaus/
 @ rem jar cvf %tmprgf%.jar Apache* com/sun/star/script/ org/apache/bsf/ org/oorexx/ org/rexxla/
@@ -23,11 +35,14 @@ zip -d %tmprgf%.jar "*diff*"
 zip -d %tmprgf%.jar "*bkp*"
 zip -d %tmprgf%.jar "*test*"
 zip -d %tmprgf%.jar "*temp*"
+zip %tmprgf%.jar com/sun/star/script/framework/provider/oorexx/template.rxo
+
 zip -d %tmprgf%.jar "*tmp*"
 @rem zip -d %tmprgf%.jar "*txt"
-zip -d %tmprgf%.jar com/sun/star/script/framework/provider/oorexx/*.txt
+zip -d %tmprgf%.jar "com/sun/star/script/framework/provider/oorexx/*.txt"
+zip -d %tmprgf%.jar "com/sun/star/script/framework/provider/oorexx/beanshell/*"
+zip -d %tmprgf%.jar "com/sun/star/script/framework/provider/oorexx/experimental/*"
 @rem now re-add the deleted 'template.rxo'
-zip %tmprgf%.jar com/sun/star/script/framework/provider/oorexx/template.rxo
 zip -d %tmprgf%.jar "*tmp*"
 zip -d %tmprgf%.jar "*work.tmp*"
 zip -d %tmprgf%.jar "*patch*"
@@ -36,6 +51,8 @@ zip -d %tmprgf%.jar "*/bkp/*"
 zip -d %tmprgf%.jar "*bkp*"
 zip -d %tmprgf%.jar "*.java"
 zip -d %tmprgf%.jar "*~"
+zip -d %tmprgf%.jar "*_.swo"
+zip -d %tmprgf%.jar "*.swp"
 
 rem create source package
 del %tmprgf%-source.jar
@@ -44,6 +61,10 @@ zip %tmprgf%-source.jar com/sun/star/script/framework/provider/oorexx/*
 zip -d %tmprgf%-source.jar "*.class"
 zip -d %tmprgf%-source.jar "*bkp*"
 zip -d %tmprgf%-source.jar "*~"
+zip -d %tmprgf%-source.jar "com/sun/star/script/framework/provider/oorexx/*.txt"
+zip -d %tmprgf%-source.jar "com/sun/star/script/framework/provider/oorexx/beanshell/*"
+zip -d %tmprgf%-source.jar "com/sun/star/script/framework/provider/oorexx/experimental/*"
+zip -d %tmprgf%-source.jar "*.swp"
 
 rem 20100725, rgf: use the now official OOo file extension ".oxt" instead of ".jar"
 copy /y %tmprgf%.jar %tmprgf%.oxt
@@ -60,18 +81,28 @@ cd bsf4oorexx.dev\ScriptProviderForooRexxPackage
 jar vuf ../../%tmprgf%.oxt *
 @rem pause
 zip -d ../../%tmprgf%.oxt "*.svn*"
+zip -d ../../%tmprgf%.oxt "*.swp"
 @rem zip ../../%tmprgf%.oxt META-INF/*
 endlocal
 
 
 rem to compile:
 rem    add path to "ScriptFramework.jar", eg.
-rem    set CLASSPATH=%CLASSPATH%;D:\Programme\OpenOffice.org 3\Basis\program\classes\ScriptFramework.jar
-rem    set CLASSPATH=%CLASSpATH%;D:\Programme\OpenOffice 4\program\classes\ScriptFramework.jar
-
-rem    compile using Java 1.4 class file format
-rem    javac -source 1.4 -target 1.4 *.java
 
 rem    if using bDebug, then generics are needed, hence use:
 rem    javac -source 1.5 -target 1.5 *.java
+
+rem since 2017-12, baseline is Java 1.6/6
+rem    add path to "ScriptFramework.jar", eg.
+rem    set CLASSPATH=%CLASSPATH%;c:\Program Files (x86)\OpenOffice 4\program\classes\ScriptFramework.jar
+rem    javac -source 1.6 -target 1.6 *.java
+
+rem 2018-03-12, rgf: it seems that the oxt must contain the jar as jar and not exploded! :(
+
+zip -d %tmprgf%.oxt "org*"
+zip -d %tmprgf%.oxt "com*"
+@rem add jar file
+jar vuf %tmprgf%.oxt %tmprgf%.jar
+
+
 

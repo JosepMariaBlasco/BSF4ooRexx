@@ -182,6 +182,8 @@
                           be initialized at all)
 
 
+
+
 */
 
 package com.sun.star.script.framework.provider.oorexx;
@@ -594,7 +596,7 @@ public class ScriptProviderForooRexx
 
 
 
-    /* *
+    /**
      * Writes the service information into the given registry key.
      * This method is called by the <code>JavaLoader</code>
      * <p>
@@ -603,7 +605,7 @@ public class ScriptProviderForooRexx
      * @return         returns true if the operation succeeded
      * @see            com.sun.star.comp.loader.JavaLoader
      */
-/* --->  2014-03-25, rgf: still needed, although beanshell on AOO 4.1 does not have it (anymore?)
+/* --->  2014-03-25, 2018-03-12, rgf: still needed, although beanshell on AOO 4.1 does not have it (anymore?)
 */
     public static boolean __writeRegistryServiceInfo( XRegistryKey regKey )
     {
@@ -626,58 +628,8 @@ public class ScriptProviderForooRexx
     }
 
 
-// TODO: 2014-03-27, remove alltogether, does not allow ooRexx to see newly added PATH ! :-(
-/* --->
-    // 2014-03-27, rgf, cf. <http://stackoverflow.com/questions/318239/how-do-i-set-environment-variables-from-java>
-    protected static void setEnv(Map<String, String> newenv) throws BSFException
-    {
-      try
-        {
-            Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
-            Field theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment");
-            theEnvironmentField.setAccessible(true);
-            Map<String, String> env = (Map<String, String>) theEnvironmentField.get(null);
-            env.putAll(newenv);
-            Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment");
-            theCaseInsensitiveEnvironmentField.setAccessible(true);
-            Map<String, String> cienv = (Map<String, String>)     theCaseInsensitiveEnvironmentField.get(null);
-            cienv.putAll(newenv);
-        }
-        catch (NoSuchFieldException e)
-        {
-          try {
-            Class[] classes = Collections.class.getDeclaredClasses();
-            Map<String, String> env = System.getenv();
-            for(Class cl : classes) {
-                if("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
-                    Field field = cl.getDeclaredField("m");
-                    field.setAccessible(true);
-                    Object obj = field.get(env);
-                    Map<String, String> map = (Map<String, String>) obj;
-                    map.clear();
-                    map.putAll(newenv);
-                }
-            }
-          } catch (Exception e2) {
-            // e2.printStackTrace();
-            // throw e2;
-
-            throw new BSFException("setEnv(...), e2-exception: "+e2.toString());
-
-          }
-        } catch (Exception e1) {
-            // e1.printStackTrace();
-            // throw e1;
-            throw new BSFException("setEnv(...), e1-exception: "+e1.toString());
-        }
-    }
-<--- */
-
-
-
-/* ---> */
-
 }   // end of ScriptProviderForooRexx
+
 
 class ScriptImpl implements XScript
 {
@@ -813,7 +765,7 @@ class ScriptImpl implements XScript
             throws ScriptFrameworkErrorException,
                 InvocationTargetException
         {
-            Hashtable slotArgument=new Hashtable(); // rgf, 2009-10-31: slot for passing useful data
+            Hashtable <String,Object> slotArgument=new Hashtable<String,Object>(); // rgf, 2009-10-31: slot for passing useful data
 
             slotArgument.put(ScriptProviderForooRexx.OOREXX_SCRIPT_PARAMS, aParams );
 
@@ -873,7 +825,7 @@ class ScriptImpl implements XScript
             BSFManager mgr = null;                          // rgf, 2009-10-31
             // BSFManager mgr = new BSFManager();           // rgf, 2005-07-08
             // Vector     args= new Vector(aParams.length);    // rgf, 2005-07-08/2009-02-06
-            Vector     args= new Vector(aParams.length+1);  // rgf, 2009-10-31
+            Vector <Object>    args= new Vector <Object> (aParams.length+1);  // rgf, 2009-10-31
             // debug:
             // Vector     args= new Vector(aParams.length+1);    // rgf, 2005-07-08/2009-02-06
 

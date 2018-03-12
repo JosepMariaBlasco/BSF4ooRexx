@@ -161,8 +161,8 @@ public class ScriptSourceModel {
             // args.addElement(xScriptcontext);    // rgf, 2005-07-08 make XScriptContext available to script
                                                 // rgf, 2005-07-08
 
-            Hashtable slotArgument=new Hashtable(); // rgf, 2009-10-31: slot for passing useful data
-            Vector args=new Vector();               // rgf, 2009-10-31
+            Hashtable <String,Object>slotArgument=new Hashtable <String,Object> (); // rgf, 2009-10-31: slot for passing useful data
+            Vector <Object>args=new Vector <Object> ();               // rgf, 2009-10-31
             args.add(slotArgument);                 // add the slotArgument object to args Vector
 
 

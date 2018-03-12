@@ -1,5 +1,5 @@
------------------ 2014-04-04 ------------
-BSF4ooRexx support for AOO, release version "450.20140404"
+----------------- 2018-03-12 ------------
+BSF4ooRexx support for AOO, release version "600.20180312"
 
 - This release includes the AOO update mechanism
 

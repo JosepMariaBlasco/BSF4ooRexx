@@ -102,8 +102,10 @@ copy %javaSrc%\RexxReflectUtil.java           %path2engine%
 @rem do the compilations
 
 javac %javacDefines% %javaBaseLine%        %javaSrc%\InvocationType.java        && copy %javaSrc%\InvocationT*                %path2engine%
+javac %javacDefines% %javaBaseLine%        %javaSrc%\RexxReflectInterface.java  && copy %javaSrc%\RexxReflectInterface*       %path2engine%
 javac %javacDefines% %javaBaseLine%        %javaSrc%\RexxReflectJava6.java      && copy %javaSrc%\RexxReflectJava6*           %path2engine%
 javac %java7%                              %javaSrc%\RexxReflectJava7.java      && copy %javaSrc%\RexxReflectJava7*           %path2engine%
+javac %javacDefines% %javaBaseLine%        %javaSrc%\RexxReflectUtil.java       && copy %javaSrc%\RexxReflectUtil*            %path2engine%
 
 
 @rem 2010-04-17

@@ -12,6 +12,11 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-03-12, ---rgf, - bsf.compile(): if the source of a syntax error is related to the supplied
+                               Java class name a new syntax condition is raised with an error message hinting
+                               at two possible causes to help the programmer; otherwise the raised syntax
+                               gets propagated
+
          2018-03-05, ---rgf, - new public routine "bsf.compile(javaClassName,code)" which returns the
                                Java class object
 
@@ -606,7 +611,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20180305)
+   version:     6.00 (20180312)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -705,7 +710,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180305" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180312" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -5268,15 +5273,17 @@ syntax:
    return newClass
 
 syntax:
-   extractedName=extractJavaClassName(code)
-
+   extractedName=extractJavaClassName(code)     -- extract Java class name from source code
+   errMsg=""
    if extractedName="" then
-      .error~say(.line "BSF.CLS - bsf.compile(), hint: cannot extract className, maybe the Java class is not ""public"" ?")
+      errMsg = "BSF.CLS/routine/bsf.compile(), hint: cannot extract className, maybe the Java class is not ""public"" ?"
    else if className<>extractedName then
    do
-      .error~say(.line "BSF.CLS - bsf.compile(), hint: submitted className ("""className""") <> extracted className ("""extractedName""")")
+      errMsg = "BSF.CLS/routine/bsf.compile(), hint: supplied class name" pp(className) "does not match the first found public class name" pp(extracedName) "in the source file"
    end
-   raise propagate
+
+   if errMsg="" then raise propagate
+   raise syntax 40.900 array (errMsg)
 
 
    -- extracts the fully qualified class name from the Java source code; cater for all sorts of formatting of the unqualified class name
