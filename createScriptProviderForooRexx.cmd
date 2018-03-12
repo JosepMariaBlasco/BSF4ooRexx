@@ -8,7 +8,7 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 
 @echo compiling ScriptProvider4ooRexx
 javac -source 1.6 -target 1.6 com/sun/star/script/framework/provider/oorexx/*.java
-@pause
+@rem pause
 
 
 rem create OOo-Macro-Package which will contain everything, including BSF itself
