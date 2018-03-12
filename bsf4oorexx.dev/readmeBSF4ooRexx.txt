@@ -1,4 +1,4 @@
-BSF4ooRexx, 6.00                          22 Oct 2017 (Beta)
+BSF4ooRexx, 6.00                          12 Mar 2018 (Beta)
 =================================================================================
 
 This is a package that creates a bridge between ooRexx and Java. For that
@@ -6,16 +6,13 @@ reason Java must be installed on your machine as well, which is easy and
 a one click away e.g. from <http://www.java.com>. See box below for an
 important information.
 
-PLEASE NOTE: this version of BSF4ooRexx is for Java 1.6/6, 1.7/7 or 1.8/8;
-
-    (as Java 9 is not fully backwardly compatible with earlier versions
-    of Java in the reflection area, BSF4ooRexx will need to be updated
-    to adjust for these incompatibilities sometimes in the near future)
+PLEASE NOTE: this version of BSF4ooRexx is for Java 1.6/6, 1.7/7, 1.8/8
+             and Java 9.0 (NEW!);
 
 
 *IMPORTANT* !
 
-    *AFTER DOWNLOADING* the installation zip-archive (e.g. BSF4ooRexx_install_v600-20171022-beta.zip
+    *AFTER DOWNLOADING* the installation zip-archive (e.g.  BSF4ooRexx_install_v600-20180312-beta.zip)
     but *BEFORE UNZIPPING* make sure that no "security" attributes are attached to it.
 
     On *WINDOWS*: right mouse click on the zip-file and choose "Unblock" from the

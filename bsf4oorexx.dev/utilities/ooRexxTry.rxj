@@ -85,6 +85,8 @@
                                for outputting error messages by this app) to prepend the "REXXerr>"
                                string
 
+            2018-03-02, rgf: - adjusted for Java 9 and java.awt.Taskbar, remove pre Java 9 specials
+
 
 */
 
@@ -194,7 +196,13 @@ pngFn=filespec("Location",s) || .bsf4rexx~file.separator || 'ooRexxTry.png'
 if .bsf4rexx~opsys="MACOSX" then  -- on MacOSX display the standard ooRexx4OOo logo
 do
   call makeBSF4ooRexxLookLikeMacOSX   -- make sure that on MacOSX the application looks like a Mac application
- .bsf4rexx~apple_application~setDockIconImage(.bsf~new("javax.swing.ImageIcon",pngFn)~getImage)
+
+  -- update icon
+  if .bsf4rexx~java.major.version<9 then
+      .bsf4rexx~apple_application~setDockIconImage(.bsf~new("javax.swing.ImageIcon",pngFn)~getImage)
+  else  -- using new java.awt.Taskbar
+      .bsf4rexx~apple_application~setIconImage(.bsf~new("javax.swing.ImageIcon",pngFn)~getImage)
+
 end
 
 .mm.dir~isdebug = false
@@ -1234,7 +1242,7 @@ RunSyntax:
     --Create a Java RexxProxy for controlling the closing of the application
     rexxCloseEH =.RexxCloseAppEventHandler~new  -- Rexx event handler
     -- Create Java RexxProxy for the Rexx event handler
-    if .bsf4rexx~opsys="MACOSX" then
+    if .bsf4rexx~java.major.version<9, .bsf4rexx~opsys="MACOSX" then
     do
          -- create a RexxProxy for our Rexx event handler
        rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , .java.awt.event.ActionListener, "java.awt.event.WindowListener", "com.apple.eawt.ApplicationListener")

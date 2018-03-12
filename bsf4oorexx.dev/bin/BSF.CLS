@@ -16,6 +16,7 @@
                                Java class name a new syntax condition is raised with an error message hinting
                                at two possible causes to help the programmer; otherwise the raised syntax
                                gets propagated
+                             - corrected typo ("java.awt.Taskbar") for Java 9 usage
 
          2018-03-05, ---rgf, - new public routine "bsf.compile(javaClassName,code)" which returns the
                                Java class object
@@ -792,7 +793,7 @@ rBSF rBsfUninit4JavaBean rBsfRexxProxy
       -- that works on MacOSX as well
    else
    do
-      taskbar=bsf.loadClass("java.awt.TaskBar")~getTaskbar
+      taskbar=bsf.loadClass("java.awt.Taskbar")~getTaskbar
       .bsf4rexx~apple_application=taskbar
       if .bsf4rexx~hasEntry("bsf4oorexx_256") then
          taskbar~setIconImage(.bsf~new("javax.swing.ImageIcon",.bsf4rexx~bsf4oorexx_256)~getImage)
