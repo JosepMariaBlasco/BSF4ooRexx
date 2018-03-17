@@ -30,6 +30,9 @@ all platforms and can be downloaded from its homepage at
     <dt><em><a href="images">images  &lt;directory&gt; </a></em>
     <dd>Bitmap files used in the application
 
+    <dt><em><a href="jar">jar  &lt;directory&gt; </a></em>
+    <dd>The directory that contains the third party &quot;controlfx&quot; jar files
+
 </dl>
 
 <p style="font-size: smaller;">
@@ -38,13 +41,19 @@ The following files and Rexx packages (Rexx programs) are used in this applicati
 
 <dl>
 
-    <dt> <a href="controlsfx-8.40.12.jar">controlsfx-8.40.12.jar</a>
+    <dt> <a href="jar/controlsfx-8.40.14.jar">jar/controlsfx-8.40.14.jar</a>
     <dd> The Java archive containing all free and opensource JavaFX controls from the
-         ControlsFX project as of 2017-03-22. This file needs to be present on the
-         Java <code>CLASSPATH</code> environment variable in order for Java to find
+         ControlsFX project as of 2017-09-24 for Java 8. This file needs to be present on the
+         Java <code>CLASSPATH</code> environment variable in order for the Java runtime to find
          its contained Java classes.
 
-    <dt> <a href="license.txt">license.txt</a>
+    <dt> <a href="jar/controlsfx-9.0.0.jar">jar/controlsfx-9.0.0.jar</a>
+    <dd> The Java archive containing all free and opensource JavaFX controls from the
+         ControlsFX project as of 2017-09-24 for Java 9 and later. This file needs to be present on the
+         Java <code>CLASSPATH</code> environment variable in order for the Java runtime to find
+         its contained Java classes.
+
+    <dt> <a href="jar/license.txt">jar/license.txt</a>
     <dd> The license for the ControlsFX Java archive.
 
 
@@ -53,15 +62,30 @@ The following files and Rexx packages (Rexx programs) are used in this applicati
          It also supplies links to the ControlsFX web site and links to the description of the
          free and opensource JavaFX controls used from that project.
 
-    <dt> <a href="run.cmd">run.cmd</a>
-    <dd> This is the Windows script to run this Rexx application. It is needed to add the ControlsFX
-         jar file to the Java <code>CLASSPATH</code> environment variable, such that Java becomes
-         able to find the ControlsFX Java classes that are used in this application.
+    <dt> <a href="run_on_java_8.cmd">run_on_java_8.cmd</a>
+    <dd> This is the Windows batch file to run this Rexx application on Java 8.
+         It adds the Java 8 version of the ControlsFX jar file to the Java <code>CLASSPATH</code>
+         environment variable, such that the Java runtime becomes able to find the ControlsFX Java
+         classes that are demonstrated with this application.
 
-    <dt> <a href="run.sh">run.sh</a>
-    <dd> This is the Unix (Linux, MacOSX) script to run this Rexx application. It is needed to add
-         the ControlsFX jar file to the Java <code>CLASSPATH</code> environment variable, such that
-         Java becomes able to find the ControlsFX Java classes that are used in this application.
+    <dt> <a href="run_on_java_8.sh">run_on_java_8.sh</a>
+    <dd> This is the Unix (Linux, MacOSX) shell script to run this Rexx application on Java 8.
+         It adds the Java 8 version of the ControlsFX jar file to the Java <code>CLASSPATH</code>
+         environment variable, such that the Java runtime becomes able to find the ControlsFX Java
+         classes that are demonstrated with this application.
+
+    <dt> <a href="run_on_java_9_or_later..cmd">run_on_java_8.cmd</a>
+    <dd> This is the Windows batch file to run this Rexx application on Java 9 or later.
+         It adds the Java 9 version of the ControlsFX jar file to the Java <code>CLASSPATH</code>
+         environment variable, such that the Java runtime becomes able to find the ControlsFX Java
+         classes that are demonstrated with this application.
+
+    <dt> <a href="run_on_java_9_or_later..sh">run_on_java_8.sh</a>
+    <dd> This is the Unix (Linux, MacOSX) shell script to run this Rexx application on Java 9 or later.
+         It adds the Java 9 version of the ControlsFX jar file to the Java <code>CLASSPATH</code>
+         environment variable, such that the Java runtime becomes able to find the ControlsFX Java
+         classes that are demonstrated with this application.
+
 
     <dt> <a href="staff.rxj">staff.rxj</a>, use the <code>run.cmd</code> (Windows) or <code>run.sh</code> (Linux,
          MacOSX) to execute this Rexx program
@@ -101,6 +125,6 @@ The following files and Rexx packages (Rexx programs) are used in this applicati
 <p>
 <hr>
 <p style="font-size: smaller;">
-Rony G. Flatscher, 2017-03-22, Wien/Vienna, Austria, Europe
+Rony G. Flatscher, 2017-03-22, 2018-03-17, Wien/Vienna, Austria, Europe
 </body>
 

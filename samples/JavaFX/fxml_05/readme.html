@@ -7,12 +7,12 @@
     <p>This Nutshell example exploits a third party shared library called
        <a href="http://fxexperience.com/controlsfx/">"ControlsFX"</a>, which is an open source
        project that aims to provide additional high quality <a href="https://controlsfx.bitbucket.io/">GUI controls</a> to JavaFX.&nbsp;
-       You can find the ControlsFX license agreement here: <a href="license.txt"
-       target="_blank">license.txt</a>.
+       You can find the ControlsFX license agreement here: <a href="jar/license.txt" target="_blank">license.txt</a>.
 
     </p>
     <p>You can get the latest version of ControlsFX here: <a href="http://fxexperience.com/controlsfx/" target="_blank">http://fxexperience.com/controlsfx/</a>.
-    This example (<i>staff</i>) uses ControlsFX version 8.40.12 (as of 2017-03-21) and demonstrates the usage of the following JavaFX GUI classes:
+    As of 2017-09-24 this nutshell example (<i>staff</i>) uses ControlsFX version 8.40.14 for Java 1.8/8 and version 9.0.0 for Java 9 and later.
+    This example demonstrates the usage of the following JavaFX GUI classes:
 
     </p>
     <p></p>
@@ -36,15 +36,32 @@
 
     <p>This application consists of a TableView with predefined data. You can change the data by clicking on items of the BreadCrumbBar located at the top right corner of the window. By activating the TableRowExpanderColumn marked with a "+" in the table a Rating bar shows up to rate each employee. Every user interaction in the <i>staff</i> nutshell example is followed either by the MaskerPane appearing or a Notification.
     </p>
-    <p>To start this Application, the JAR File &quot;controlsfx-8.40.12.jar&quot; located in the
-        application directory has to be included in the Java environmental variable "CLASSPATH". Luckily, the
-        <i>staff</i> application provides a way to do this on-the-fly using one of the following shell files:
+    <p>To start this Application, the JAR file &quot;controlsfx-8.40.14.jar&quot; (Java 8) or
+       &quot;controlsfx-9.0.0.jar&quot; (Java 9 or later), both located in the
+        &quot;jar&auto; subdirectory, has to be added to the Java environmental variable <code>CLASSPATH</code> in order for
+        the Java runtime to find its classes.
+
+        The <i>staff</i> application provides a way to do this on-the-fly using one of the following shell files:
     </p>
     <p></p>
+
     <ul>
-        <li><code><a href="run.cmd">run.cmd</a></code> for Windows 
+        <li> running the ooRexx application on Java 8:
+            <ul>
+                <li><code><a href="run_on_java_8.cmd">run_on_java_8.cmd</a></code> for Windows
+                </li>
+                <li><code><a href="run_on_java_8.sh">run_on_java_8.sh</a></code> for Linux and MacOS
+                </li>
+            </ul>
         </li>
-        <li><code><a href="run.sh">run.sh</a></code> for Linux and MacOS 
+
+        <li> running the ooRexx application on Java 9 or later:
+            <ul>
+                <li><code><a href="run_on_java_9_or_later.cmd">run_on_java_9_or_later.cmd</a></code> for Windows
+                </li>
+                <li><code><a href="run_on_java_9_or_later.sh">run_on_java_9_or_later.sh</a></code> for Linux and MacOS
+                </li>
+            </ul>
         </li>
     </ul>
 
@@ -55,10 +72,18 @@
         <dd>
           <table>
               <tr><td>
-                    <pre><a href="controlsfx-8.40.12.jar">controlsfx-8.40.12.jar</a></pre>
+                    <pre><a href="jar/controlsfx-8.40.14.jar">jar/controlsfx-8.40.14.jar</a></pre>
                   </td>
                   <td>
-                    Java archive containing the ControlsFX JavaFX GUI controls.
+                    Java archive containing the ControlsFX JavaFX GUI controls for Java 8.
+                  </td>
+              </tr>
+
+              <tr><td>
+                    <pre><a href="jar/controlsfx-9.0.0.jar">jar/controlsfx-9.0.0.jar</a></pre>
+                  </td>
+                  <td>
+                    Java archive containing the ControlsFX JavaFX GUI controls for Java 9 or later.
                   </td>
               </tr>
 
@@ -103,10 +128,19 @@
               </tr>
 
               <tr><td>
-                    <pre><a href="license.txt">license.txt</a></pre>
+                    <pre><a href="jar/license.txt">jar/license.txt</a></pre>
                   </td>
                   <td>
                     ControlFX license.
+                  </td>
+              </tr>
+
+
+              <tr><td>
+                    <pre><a href="index.html">index.html</a></pre>
+                  </td>
+                  <td>
+                    The standard BSF4ooRexx sample description file.
                   </td>
               </tr>
 
@@ -119,22 +153,45 @@
               </tr>
 
               <tr><td>
-                    <pre><a href="run.cmd">run.cmd</a></pre>
+                    <pre><a href="run_on_java_8.cmd">run_on_java_8.cmd</a></pre>
                   </td>
                   <td>
-                    The Windows script to start the application by adding temporarily the JAR file to the CLASSPATH
-                    environment variable, such that Java becomes able to find and load the ControlFX JavaFX GUI Java classes.
+                    The Windows script to start the application by adding temporarily the JAR file to the <code>CLASSPATH</code>
+                    environment variable, such that the Java runtime becomes able to find and load the ControlFX JavaFX GUI Java classes.
+                    Uses the Java 8 version of the controlfx Java archive.
                   </td>
               </tr>
 
               <tr><td>
-                    <pre><a href="run.sh">run.sh</a></pre>
+                    <pre><a href="run_on_java_8.sh">run_on_java_8.sh</a></pre>
                   </td>
                   <td>
-                    The Unix script to start the application by adding temporarily the JAR file to the CLASSPATH
-                    environment variable, such that Java becomes able to find and load the ControlFX JavaFX GUI Java classes.
+                    The Unix (Linux, MacOSX) script to start the application by adding temporarily the JAR file to the <code>CLASSPATH</code>
+                    environment variable, such that the Java runtime becomes able to find and load the ControlFX JavaFX GUI Java classes.
+                    Uses the Java 8 version of the controlfx Java archive.
                   </td>
               </tr>
+
+              <tr><td>
+                    <pre><a href="run_on_java_9_or_later.cmd">run_on_java_9_or_later.cmd</a></pre>
+                  </td>
+                  <td>
+                    The Windows script to start the application by adding temporarily the JAR file to the <code>CLASSPATH</code>
+                    environment variable, such that the Java runtime becomes able to find and load the ControlFX JavaFX GUI Java classes.
+                    Uses the Java 9 version of the controlfx Java archive, which is expected to work with future versions of Java as well.
+                  </td>
+              </tr>
+
+              <tr><td>
+                    <pre><a href="run_on_java_9_or_later.sh">run_on_java_9_or_later.sh</a></pre>
+                  </td>
+                  <td>
+                    The Unix (Linux, MacOSX) script to start the application by adding temporarily the JAR file to the <code>CLASSPATH</code>
+                    environment variable, such that the Java runtime becomes able to find and load the ControlFX JavaFX GUI Java classes.
+                    Uses the Java 9 version of the controlfx Java archive, which is expected to work with future versions of Java as well.
+                  </td>
+              </tr>
+
 
               <tr><td>
                     <pre><a href="staff.rxj">staff.rxj</a></pre>
@@ -150,7 +207,7 @@
 
     <p><br>
 	<p><a href="http://gluonhq.com/products/scene-builder/" target="_blank">SceneBuilder</a> is an open-source tool for creating and modifying FXML files. It is also possible to inject third party java archives that import additional components to SceneBuilder. Simply go to the left side pane called "Library" and open the "Library Manager" by clicking on the gearwheel symbol as shown in the Screenshot below. Using this form you can add various JavaFX components from jar files and make them persistently available to your JavaFX application in SceneBuilder. After importing components, they are instantly available for use.</p>
-	
+
 	<img src="images/SceneBuilder.png" title="Importing a JAR in SceneBuilder" />
 	<br>
 	<p>
@@ -162,15 +219,7 @@
     </p>
     <p>Date of Creation: 2017-03-20
     </p>
-    <p></p>
-    <p>
-        <br>
-    </p>
-    <p>
-        <br>
-    </p>
-    <br>
-    <div id="desiredCaretPosition"></div>
+    <p>Updated 2018-03-17 by Rony G. Flatscher</p>
 </body>
 
 </html>
