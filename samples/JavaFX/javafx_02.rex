@@ -7,6 +7,9 @@
                              (like LabelBuilder) removed in JavaFX 9 (cf.<http://mail.openjdk.java.net/pipermail/openjfx-dev/2013-March/006725.html>);
                              using ooRexx cascading messages instead, which is always available :)
 
+            2018-03-24, rgf: - make sure that we change into the directory of this program
+                             - make sure that directory "FXML_02" is lowercase for Unix systems
+
    purpose: this is the standalone (FXML-less) version of the Rexx GUI application (taking advantage of JavaFX)
             in the fxml_02/ directory, i.e. the GUI elements are created in Rexx code only
 
@@ -21,21 +24,27 @@
 
 */
 
+   -- change directory to program location such that relatively addressed resources can be found
+parse source  . . pgm
+call directory filespec('L', pgm)   -- change to the directory where the program resides
+
 .local~my.fx=.directory~new   -- to contain objects for easying the coupling of the different parts of this application
 .my.fx~rexxStarted=.dateTime~new~string   -- save the date and time this program started
 
 resources="fxml_02"    -- location of our resources (css, properties files, images)
    -- forward slashes ("WWW convention") suffice for both, Unix and Windows systems
-.my.fx~properties=resources || "/FXML_02"         -- Properties base file name
+.my.fx~properties=resources || "/fxml_02"         -- Properties base file name
 .my.fx~appIcon   =resources || "/oorexx_032.png"  -- application icon
 .my.fx~bkgPicture=resources || "/bsf4oorexx_032.png" -- background picture for AnchorPane
 .my.fx~styleSheet=resources || "/fxml_02.css"     -- stylesheet to use
+
+signal on syntax
 
 parse arg locale                 -- parse command line arguments, if any
 if locale="" then locale="en"    -- default to English
 jLocale=.bsf~new("java.util.Locale", locale) -- get Locale object
    -- let ResourceBundle choose which properties file to load and use:
-.my.fx~resourceBundle=bsf.importClass("java.util.ResourceBundle")~getBundle(resources"/FXML_02", jLocale)
+.my.fx~resourceBundle=bsf.importClass("java.util.ResourceBundle")~getBundle(resources"/fxml_02", jLocale)
 
    -- create Rexx object that will control the FXML set up
 rexxHandler=.RexxAppHandler~new
@@ -45,9 +54,18 @@ rxApp=BSFCreateRexxProxy(rexxHandler, ,"javafx.application.Application")
 
    -- launch the application, invoke "start" and then stay up until the application closes
 rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and-groovy-exception/> or <http://stackoverflow.com/questions/16636883/javafx-anonymous-application-class>, etc.
+exit
+
+syntax:
+  co=condition("obj")
+  say ppCondition2(co)
+  say
+  raise propagate
+  exit -1
 
 
 ::requires "BSF.CLS"    -- get Java support
+::requires "rgf_util2.rex"    -- get access to ppCondition2()
 
 ::class RexxAppHandler  -- the Rexx handler for javafx.application.Application
 

@@ -3,6 +3,7 @@
    author:  Rony G. Flatscher
    date:    2016-12-06
    changed: 2017-11-09, rgf: adapted to Rexx symposium 2017 article
+            2018-03-24, rgf: make sure that we change into the directory of this program
 
    purpose: this is a simple the Rexx GUI application (taking advantage of JavaFX)
             where the GUI elements are defined in a FXML file ("FXML_01_Document.fxml"),
@@ -21,6 +22,9 @@
 
 */
 
+   -- change directory to program location such that relatively addressed resources can be found
+parse source  . . pgm
+call directory filespec('L', pgm)   -- change to the directory where the program resides
 
 rxApp=.RexxApplication~new -- create Rexx object that will control the FXML set up
 jrxApp=BSFCreateRexxProxy(rxApp, ,"javafx.application.Application")

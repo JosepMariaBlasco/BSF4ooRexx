@@ -4,6 +4,7 @@
    author:  Rony G. Flatscher
    date:    2016-12-06
    changed: 2017-11-09, rgf: adapted to Rexx symposium 2017 article
+            2018-03-24, rgf: make sure that we change into the directory of this program
 
    purpose: this is a simple the Rexx GUI application (taking advantage of JavaFX)
             where the GUI elements are defined in a FXML file ("FXML_02_Document.fxml"),
@@ -26,6 +27,10 @@
    needs: ooRexx 4.1 or higher, and BSF4ooRexx 6.00 or highter
 
 */
+
+   -- change directory to program location such that relatively addressed resources can be found
+parse source  . . pgm
+call directory filespec('L', pgm)   -- change to the directory where the program resides
 
    /* only "de" has an effect and will use the German translation for the */
 parse arg locale .

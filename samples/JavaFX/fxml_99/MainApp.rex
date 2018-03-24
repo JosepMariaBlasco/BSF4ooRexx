@@ -13,6 +13,8 @@
             2017-11-08, rgf, if Preferences "filePath" does not exist, remove that preference, such
                         that on next run dummy data gets created
             2018-03-04, rgf, corrected and optimized code in class "BirthdayStatisticsController"
+            2018-03-24, rgf, - added "file:" protocol to "address_book_128.png"
+                             - make sure that we change into the directory of this program
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -57,15 +59,17 @@
 
    -- make sure we run this program only, if ooRexx 5.0 or higher (ooRexx 4.2.0 exhibits a runtime error)
 parse version "_" v "."
+parse source  . . pgm
 if v<5 then
 do
    parse version v
-   parse source  . . pgm
    .error~say(pp(pgm)" needs ooRexx 5.0 or higher, found:" pp(v))
    .bsf.dialog~messageBox(pp(pgm)" needs ooRexx 5.0 or higher," "0a"x || "found:" pp(v), -
                           "Wrong version of ooRexx", "error")
    exit -1
 end
+   -- change directory to program location such that relatively addressed resources can be found
+call directory filespec('L', pgm)   -- change to the directory where the program resides
 
 /* --- for debugging new reflection of BSF4ooRexx, needs to be removed from GA version
 -- rgf, 20180218: test purposes, make sure we use MethoHandles
@@ -220,7 +224,7 @@ syntax:
   primaryStage~setScene(scene)      -- set the stage to our scene
 
    -- add application icon
-  img=.bsf~new("javafx.scene.image.Image", "address_book_128.png")
+  img=.bsf~new("javafx.scene.image.Image", "file:address_book_128.png")
   primaryStage~getIcons~add(img)
 
    -- load PersonOverview.fxml, place it into the rootLayout, create the Rexx object controlling the PersonOverview form

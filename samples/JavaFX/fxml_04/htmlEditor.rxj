@@ -4,6 +4,8 @@
 
    date:       2017-02-28
 
+   changed:    2018-03-24, rgf: make sure that we change into the directory of this program
+
    purpose:    - shows how to switch between predefined themes
                - demonstrates how to prevent the window from closing
 
@@ -23,6 +25,9 @@
    license:    - Apache License 2.0 (AL 2.0)
 */
 
+   -- change directory to program location such that relatively addressed resources can be found
+parse source  . . pgm
+call directory filespec('L', pgm)   -- change to the directory where the program resides
 
 /* Create a directory in the global Rexx .environment named MY.APP, such that we can store/retrieve
    objects that we need globally (over all Rexx programs):

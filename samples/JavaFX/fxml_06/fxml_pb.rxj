@@ -4,6 +4,8 @@
 
    date:       2017-11-19
 
+   changed:    2018-03-24, rgf: make sure that we change into the directory of this program
+
    purpose:    - demonstrate how JavaFX controls can be updated from another thread
                  than the mandatory "JavaFX Application Thread" in ooRexx; the solution
                  is to use the new .FXGuiThread~runLater[Latest] methods (cf. worker.rex)
@@ -16,16 +18,19 @@
    license:    - Apache License 2.0 (AL 2.0)
 */
 
+parse source  . . pgm
 parse version "_" v "."
 if v<5 then
 do
    parse version v
-   parse source  . . pgm
    .error~say(pp(pgm)" needs ooRexx 5.0 or higher, found:" pp(v))
    .bsf.dialog~messageBox(pp(pgm)" needs ooRexx 5.0 or higher," "0a"x || "found:" pp(v), -
                           "Wrong version of ooRexx", "error")
    exit -1
 end
+
+   -- change directory to program location such that relatively addressed resources can be found
+call directory filespec('L', pgm)   -- change to the directory where the program resides
 
 
 /* Create a directory in the global Rexx .environment named MY.APP, such that we can store/retrieve

@@ -4,6 +4,8 @@
 
    date:       2017-02-17
 
+   changed:    2018-03-24, rgf: make sure that we change into the directory of this program
+
    purpose:    - show how versatile and easy JavaFX can be
                - demonstrate how to use resources in subdirectories (loading files using an URLClassLoader)
 
@@ -16,6 +18,9 @@
    license:    - Apache License 2.0 (AL 2.0)
 */
 
+   -- change directory to program location such that relatively addressed resources can be found
+parse source  . . pgm
+call directory filespec('L', pgm)   -- change to the directory where the program resides
 
 /* Create a directory in the global Rexx .environment named MY.APP, such that we can store/retrieve
    objects that we need globally (over all Rexx programs):
@@ -25,6 +30,7 @@
      symbol naming the entry (its index), hence .MY.APP will allow us to retrieve
      that directory from any Rexx program
 */
+
 .environment~setEntry("my.app", .directory~new)
 
    -- determine our location and create an URLClassLoader to find resources relative to it
