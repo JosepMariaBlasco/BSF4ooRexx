@@ -37,7 +37,7 @@ TGT_LIB_DIR     = ./lib
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk-amd64
 
 # 2016-04-05
-JDK_BASE = /opt/ibm/java-s390x-60
+JDK_BASE = /opt/ibm/java-s390x-80
 
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 
@@ -72,7 +72,8 @@ CFLAGS		=  -fPIC -c -O3 -D__cplusplus -DUNIX -m$(BITNESS) -DBSF4REXX_$(BITNESS)_
 CFLAGS_ORX      = -DUSE_OREXX
 
 # LINK_FLAGS      = -shared -rdynamic -lpthread $(JDK_BASE)/jre/lib/i386/client/libjvm.so -lc  -lm
-LINK_FLAGS      = --export-dynamic -shared -rdynamic -lpthread $(JDK_BASE)/jre/bin/classic/libjvm.so -lc  -lm
+# LINK_FLAGS      = --export-dynamic -shared -rdynamic -lpthread $(JDK_BASE)/jre/bin/classic/libjvm.so -lc  -lm
+LINK_FLAGS      =  -shared -rdynamic -lpthread $(JDK_BASE)/jre/lib/s390x/j9vm/libjvm.so -lc  -lm
 
 # rgf, 2017-01-26: "-lrexxutil" not needed
 # LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil

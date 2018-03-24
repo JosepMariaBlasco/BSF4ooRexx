@@ -87,6 +87,8 @@
 
             2018-03-02, rgf: - adjusted for Java 9 and java.awt.Taskbar, remove pre Java 9 specials
 
+            2018-03-20, rgf: - output path, Java, Rexx and BSF.CLS versions in command line window as well
+
 
 */
 
@@ -207,7 +209,10 @@ end
 
 .mm.dir~isdebug = false
 -- .mm.dir~isdebug = true -- XXX redirecting of says output
-
+say
+say "path to this file:" pp(s)
+say
+say createVersionStringToDisplay()
 say
 say "*-----------------------------------------------------------------------------*"
 say "| This console is only used for input regarding the Rexx Utility SysGetKey(). |"
@@ -5772,11 +5777,14 @@ say str
     .local~mm.dir~preferred_path = getHomeDir()
 
     --    .local~mm.dir~title          = 'ooRexxTry'       -- Title to use for the dialogs
+/*
     parse version "-" name "_" ver "("
 
     strJavaVersion="Java" .java.lang.System~getProperty("java.version")"," -
                        .java.lang.System~getProperty("sun.arch.data.model")"-bit"
     .mm.dir~title='ooRexxTry' pp(name ver", BSF" .bsf4rexx~version"," strJavaVersion )
+*/
+    .mm.dir~title=createVersionStringToDisplay()
 
 
     PARSE SOURCE version +1                     -- Get the first letter of operation system name
@@ -6347,3 +6355,11 @@ exit
 exit
 
 /* GLEITNER routines end */
+
+::routine createVersionStringToDisplay
+    parse version "-" name "_" ver "("
+
+    strJavaVersion="Java" .java.lang.System~getProperty("java.version")"," -
+                       .java.lang.System~getProperty("sun.arch.data.model")"-bit"
+    return 'ooRexxTry' pp(name ver", BSF" .bsf4rexx~version"," strJavaVersion )
+

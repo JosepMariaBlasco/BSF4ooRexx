@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2018-02-26
+  * @version 6.0.0, 2018-03-22
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -54,6 +54,8 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2018-03-22, rgf: - made sure that the NetRexx toString() method is fetched if the class
+                        loading works in the catch part
 
      2018-02-26, rgf: - added native jniTestPing() method to allow for testing/debugging calls
                         via JNI to the native layer
@@ -547,7 +549,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20180226";
+    static final public String version = "600.20180322";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -787,6 +789,7 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
             try {
                 // uses defined class loader of current class
                 nlR_class = Class.forName("netrexx.lang.Rexx");
+                nlR_toString=nlR_class.getMethod("toString", (Class[]) null);     // get NetRexx toString() Method object
             }
             catch (Exception e0){
                 ;

@@ -11,7 +11,25 @@
 
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
+   TODO:
+         2018-03-21, ---rgf, - on ooRexx 5.0 starting with <http://sourceforge.net/p/oorexx/code-0/11375>
+                               significant speed improvements by caching lookups of external functions,
+                               classes and environment symbols are achieved, even better then the ones
+                               implemented in this version of BSF4ooRexx; the BSF4ooRexx speed improvements
+                               will help ooRexx 4.2 users so they remain in place until most users are
+                               using ooRexx 5.0 at which time the speed improvements should be removed
+                               (in essence making external functions available via routine directives and
+                               caching their routine objects)
+
+                             - when demanding ooRexx 5.0 a sminimal version, then relocate entries (originally
+                               in .local like .BSF, .Slot.Argument et.al.) from .environment to package~local
+                               (introduced with 5.0); change .slot.argument to TextTable (new in 5.0) as
+                               well as bsf4rexx type
+
+
    date:
+         2018-03-15, ---rgf, - correct type while fetching XBsfCreateRexxProxy() from .routines
+
          2018-03-12, ---rgf, - bsf.compile(): if the source of a syntax error is related to the supplied
                                Java class name a new syntax condition is raised with an error message hinting
                                at two possible causes to help the programmer; otherwise the raised syntax
@@ -23,6 +41,7 @@
 
          2018-02-26, ---rgf, - make INTERPRET-free
                              - removed routine "createJavaLoadStatement"
+
          2018-02-25, ---rgf, - finished rework of using rBSF/.routines~xBSF and the like
                              - now the class methods and routines bsf.createArrayOf/bsf.createJavaArrayOf
                                behave the same by not proxying .uno_reference objects (if OOo/AOO support
@@ -612,7 +631,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20180312)
+   version:     6.00 (20180321)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -711,7 +730,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180312" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180324" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1277,7 +1296,7 @@ syntax:
   rBSF               =.routines["XBSF"               ]
   rBsfUninit4JavaBean=.routines["XBSFUNINIT4JAVABEAN"]
   rBsfRexxProxy      =.routines["XBSFREXXPROXY"      ]
-  rBsfCreateRexxProxy=.routines["RBSFCREATEREXXPROXY"]
+  rBsfCreateRexxProxy=.routines["XBSFCREATEREXXPROXY"]
 
 /* ------------------------------------------------------------------------------------------------- */
 ::ATTRIBUTE rBSF                 CLASS
@@ -4913,7 +4932,7 @@ syntax:
 ::method setup             class private
   expose fxQueue runnable PlatformClz waitingToRun
   fxQueue=.queue~new         -- fxQueue: all queued messages will be dispatched
-  runnable=.routines["RBSFCREATEREXXPROXY"]~call(self, .nil, "java.lang.Runnable") -- allow this class object to be used as a Runnable
+  runnable=.routines["XBSFCREATEREXXPROXY"]~call(self, .nil, "java.lang.Runnable") -- allow this class object to be used as a Runnable
   PlatformClz=bsf.loadClass("javafx.application.Platform")
   waitingToRun=.false
 

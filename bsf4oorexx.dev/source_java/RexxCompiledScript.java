@@ -686,7 +686,7 @@ if (bDebug==true)
      *  method sends a <code>MAKEARRAY</code> message which will compact the Java array by removing <code>null</code>
      *  values (behaviour of {@link ArrayWrapper} to mimickry the ooRexx <code>Array MAKEARRAY</code> behaviour
      *  as close as possible
-     *  (ooRexx arrays are capapble of distinguishing whether an entry is empty or is explicitly set
+     *  (ooRexx arrays are capable of distinguishing whether an entry is empty (NULL) or is explicitly set
      *  to <code>.nil</code>). To keep the argument array intact when there are Java array entries with the
      *  value <code>null</code> a {@link RexxProxy} for the ooRexx <code>.nil</code> object is used for replacement.
      *  the Rexx code fetching such an argument needs to unwrap the contained ooRexx <code>.nil</code> object using
@@ -696,11 +696,14 @@ if (bDebug==true)
      *  @param sc ScriptContext to be appended to the arguments for the Rexx script
      *  @return an Object array containing all arguments to be passed on to the Rexx script
     */
+
+// TODO: rgf, 2018-03-15, CALLWITH does not send MAKEARRAY message automatically, does it? If not, then supplying getNil() is not necessary!
+
     static Object[] createArgV(Object[] args, ScriptContext sc, RexxScriptEngine rse, RexxCompiledScript rcs) throws ScriptException, BSFException
     {
 
-// TODO: rgf, 2017-10-09: after BetaTesting make sure that neither the RexxScriptEngine, nor the RexxCompiledScript get supplied to the Rexx script!
-//                        maybe make this controllable via the RexxScriptEngine for the Java host programmer ?
+// TODO: rgf, 2017-10-09: after BetaTesting make sure that neither the RexxScriptEngine, nor the RexxCompiledScript get supplied to
+//                        the Rexx script! (maybe make this controllable via the RexxScriptEngine for the Java host programmer ?)
 
         int argsLength= (args!=null ? args.length : 0);
         Object arrArgV[]=new Object[argsLength+1];
@@ -715,16 +718,17 @@ if (bDebug)
 
         if (args!=null && args.length>0)    // if ARGV array is given and has entries, then create argument vector
         {
-            Object rexxNil=rse.getNil();
+            // Object rexxNil=rse.getNil();
             for (i=0; i<args.length; i++)            // loop over arguments
             {
 if (bDebug)
 {
     System.err.println("\t===> createArgV(), args["+i+"]=["+args[i]+"]");
 }
-
-                Object o=args[i];
-                arrArgV[i]=( o==null ? rexxNil : o );
+                // rgf, 2018-03-15: really necessary ?
+                // Object o=args[i];
+                // arrArgV[i]=( o==null ? rexxNil : o );    // maybe not really needed, think it over! ;)
+                arrArgV[i]=o; // forgoes getNil(), so possible to remove it? ---rgf, 2018-03-15
             }
         }
 

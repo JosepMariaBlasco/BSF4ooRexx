@@ -1,3 +1,437 @@
+
+-------------------------------------- 2018-03-08 ----------------------------------
+
+- BSF.CLS:
+
+  - correct type while fetching XBsfCreateRexxProxy() from .routines
+
+  - bsf.compile(): if the source of a syntax error is related to the supplied
+    Java class name a new syntax condition is raised with an error message hinting
+    at two possible causes to help the programmer; otherwise the raised syntax
+    gets propagated
+
+  - corrected typo ("java.awt.Taskbar") for Java 9 usage
+
+-------------------------------------- 2018-03-08 ----------------------------------
+
+- all Rexx programs:
+
+  - added or replaced existing hashbang line with "#!/usr/bin/etc rexx" which works
+    on all Unix machines and allows flexible locations for the ooRexx interpreter
+
+- RexxReflectUtil.java
+
+  - finalized implementation that gets used by RexxReflect?.java
+
+-------------------------------------- 2018-03-05 ----------------------------------
+
+- BSF.CLS:
+
+  - new public routine "bsf.compile(javaClassName,code)" which returns the
+    Java class object
+
+- BSF4ooRexx.cc:
+
+  - bsfDoUnregisterRexxObject: set default to "true", such that unregistering Rexx
+    objects takes place in all cases
+
+- RexxScriptEngine.java:
+
+  - added method "removeHashBang(String script)" which blanks out the
+    first Rexx script line, if it starts with a Unix hashbang (#!)
+
+-------------------------------------- 2018-02-26 ----------------------------------
+
+- RexxAndJava.java:
+
+  - added native jniTestPing() method to allow for testing/debugging calls
+    via JNI to the native layer
+
+- BSF.CLS:
+
+  - make INTERPRET-free
+
+  - removed routine "createJavaLoadStatement"
+
+-------------------------------------- 2018-02-25 ----------------------------------
+
+- BSF.CLS:
+
+  - finished rework of using rBSF/.routines~xBSF and the like
+
+  - now the class methods and routines bsf.createArrayOf/bsf.createJavaArrayOf
+    behave the same by not proxying .uno_reference objects (if OOo/AOO support
+    is active); reason being that .UNO objects will forward unknown messages
+    to their embedded BSF object peer
+
+  - tidying up
+
+-------------------------------------- 2018-02-24 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - new external Rexx routine "BsfTestPing" which only returns; allows to test
+    and time calling external Rexx functions from Rexx scripts
+
+- BSF.CLS:
+
+  - fetch the most used native routines to have them incorporated into .routines,
+    change INTERPRET to call/callWith messages to those routines, which in total
+    should speed up the bridge quite a bit (approximately at least 10 times)
+
+-------------------------------------- 2018-02-23 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - new function "BsfUninit4JavaBean(beanName)": called from UNINIT code in BSF,
+    version uses RexxAndJava class object, therefore the Rexx interpreter instance
+    used for uninits does not have a need for a peer RexxAndJava instance (ooRexx
+    uninits may be run on a newly created Rexx interpreter instance that is not
+    linked to Java otherwise)
+
+  - unregisterBean[4JNI] now return -1 for not registered, or remaining leftCount
+    (0=removed from registry)
+
+- RexxEngine.java:
+
+  - changed logic in unregisterBean() to adapt to change in RexxAndJava.unregisterBean
+    return type (now int)
+
+- BSF.CLS:
+
+  - UNINITs now use the new "BsfUninit4JavaBean(beanName)" function which is
+    able to be executed on an ooRexx created Rexx interpreter that has no
+    connection to a Java RexxAndJava object established
+
+  - routine "makeBSF4ooRexxLookLikeMacOSX": for Java 9 add Java 9 support
+    to add an icon to the dock; also make sure that the routine will not
+    stop running programs on MacOSX, if a syntax condition arises
+
+
+-------------------------------------- 2018-02-22 ----------------------------------
+
+- RexxAndJava.java:
+
+   - added static method "unregisterBean4JNI" to allow native code to decrease
+     the reference counter of the proxied Java object
+
+   - unregisterBean now returns the value of the reference counter or -1, if
+     not registered
+
+   - added method "getBeanRefCount" which returns the current value of the reference
+     counter or -1, if not registerd
+
+   - added number argument to BSF-subfunction "rexxReflectObject" which allows
+     for forcing e.g. to use RexxReflectJava6 even on much higher Java runtime
+     environments (argument "6") for testing purposes and as a last resort
+     fallback
+
+- RexxReflect6.java:
+
+  - new class for core reflection, i.e. taking advantage of java.lang.reflect package,
+    used for Java 1.6 deployment, works flawlessly an later versions of Java as well
+
+- RexxReflect7.java:
+
+  - new class for core reflection, meant for for Java 1.7 and later as it
+    takes advantage of the java.lang.invoke package introduced with Java 1.7
+
+
+-------------------------------------- 2018-02-20 ----------------------------------
+
+- BSF.CLS:
+
+  - added new bsf4rexx-entries "java.version", "java.major.version" and
+    "java.minor.version"
+
+- BSF4ooRexx.cc:
+
+  - remove the JNI methods jniForceConstructorNewInstance, jniForceFieldGet,
+    jniForceFieldSet, jniForceMethodInvoke as they cannot be used to force the
+    intended operations on Java 9; as the problem got solved by rewriting the
+    reflection part in Java, these methods are not needed and get removed
+
+- RexxAndJava.java:
+
+  - remove the jni methods jniForceConstructorNewInstance, jniForceFieldGet,
+    jniForceFieldSet, jniForceMethodInvoke as they cannot be used to force the
+    intended operations on Java 9; as the problem got solved by rewriting the
+    reflection part, these methods are not needed and get removed
+
+  - deprecated use of PROPERTY and EVENT subfucntions; first invocation will
+    show a deprecation warning
+
+- ProxiedJavaClassTool.java
+
+  - when creating interface methods, make sure that only abstract interface methods get proxied;
+    starting with Java 1.8/8 there are concrete interface methods possible (static and default interface
+    methods)
+
+-------------------------------------- 2018-02-17 ----------------------------------
+
+- RexxAndJava.java:
+
+  - new reflection logic added: "RexxReflect6.java" is for the Java 1.6/6 baseline
+    and Java 1.7/7; "RexxReflect7.java" compilable against Java 1.7/7, but will
+    be deployed against 1.8/8 (which has been tested to be reliable) and higher
+
+  - new subfunction "rexxReflectObject": will return the current RexxReflectJava* object in
+    use; allows querying and setting fundamental behaviour via the boolean attributes
+    "useCaching" on RexxReflectJava{6|7}, and on RexxReflectJava7 in addition the attributes
+    "useReflectInvoke" and "useUnreflect"
+
+-------------------------------------- 2018-02-07 ----------------------------------
+
+- RexxAndJava.java:
+
+  - allow from Rexx .true, "true", .false, "false" for boolean/Boolean, anything
+    else will return null
+
+-------------------------------------- 2018-01-19 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - implement the four JNI methods named jniForceConstructorNewInstance,
+    jniForceFieldGet, jniForceFieldSet, jniForceMethodInvoke (these "force"
+    JNI routines are means of last resort, if Java 9 or later is not
+    allowing to access protected members in superclasses via reflection
+    unlike all the previous versions of Java)
+
+  RexxAndJava.java
+
+  - define four JNI methods named jniForceConstructorNewInstance,
+    jniForceFieldGet, jniForceFieldSet, jniForceMethodInvoke (these "force"
+    JNI routines are means of last resort, if Java 9 or later is not
+    allowing to access protected members in superclasses via reflection
+    unlike all the previous versions of Java)
+
+
+-------------------------------------- 2018-01-13 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - allow in addition a Routine object in BsfCreateRexxProxy as first argument
+
+- BSF_OnTheFly.cls:
+
+  - changed the code to make it even easier for Rexx programmers to implement Rexx lambda
+    functions: BsfCretatRexxProxy now allows as the first argument a String, an array of
+    Strings, a Method object or a Routine object that implements the single function;
+    the Rexx code in all of these variants will receive the Java argument(s), if any,
+    in the same order as Java has sent them; it is possible to learn more about the
+    Java invocation by inspecting the trailing slot.argument (a Rexx directory)
+
+
+-------------------------------------- 2018-01-09 ----------------------------------
+
+- RexxAndJava.java:
+
+   - renamed GET_STATIC_VALUE* to GET_STATIC_FIELD_VALUE*
+
+   - removed 'private' modifier from: Object convFromRexx(String type, String value) throws BSFException
+
+-------------------------------------- 2018-01-08 ----------------------------------
+
+- InvocationType.java
+
+  - new enum class for easying rewriting the reflection infrastructure to support
+    Java 9 and later
+
+
+- RexxAndJava.java:
+
+  - changed switch to use new InvocationType enum class
+
+-------------------------------------- 2018-01-07 ----------------------------------
+
+- RexxAndJava.java:
+
+   - make sure access to rajRegistry is synchronized where values might get changed
+
+   - changed static private int constants (indicating the desired function from Rexx)
+     to package private to allow RexxReflect* classes access them
+
+- RexxProxy.java:
+
+  - remove deprecation warning of the Java 9 compiler, if there is a Java 6 compliant,
+    non-deprecated alternative; note: the deprecation warning on "finalize" will not
+    be honored as this is intentional as it is the only means to allow garbage collection
+    on the Rexx side as well, when Java Rexx peers get out of scope
+
+
+-------------------------------------- 2018-01-06 ----------------------------------
+
+- RexxAndJava.java:
+
+  - remove deprecation warning of the Java 9 compiler, if there is a Java 6 compliant,
+    non-deprecated alternative; note: the deprecation warning on "finalize" will not
+    be honored as this is intentional as it is the only means to allow garbage collection
+    on the Rexx side as well, when Java Rexx peers get out of scope
+
+-------------------------------------- 2018-01-05 ----------------------------------
+
+- RexxAndJava.java:
+
+  - turn utility methods into static:
+
+    -    static Object [] coerceArgs(Object [] funcArgs, Class [] paramTypes)
+    -    static protected String makeString4Rexx(Object o)  // changed 2003-01-06 from "makeResultString()" to "makeString4Rexx()"
+    -    static public String makeBeanName(Object o)
+    -    static protected String registerBean(String beanName, Object object)
+    -    static protected Object lookupBean(String beanName)
+    -    static int spilloverCounter=0;
+
+    - added new instance method for native code compatibility:
+
+         private String makeString4Rexx(Object o)
+
+    Need to supply RexxAndJava object/instance (named "rajo") to now static methods:
+
+        Need to supply "bTerminated" to now static method:
+        -    static protected String registerBean(String beanName, Object object)
+        Need to supply or change "this" to RexxAndJava.class to now static method:
+        -    static protected Object lookupBean(String beanName)
+        -    static protected String registerBean(String beanName, Object object)
+        -    static public String makeBeanName(RexxAndJava rajo, Object o)
+
+- RexxEngine.java:
+
+  - adapt RexxAndJava method invocations where methods got turned into static ones (e.g. registerBean)
+
+
+- RexxReflectInterface.java:
+
+  - new class defining the interface to be implemented by the new RexxReflect*.java classes
+
+
+-------------------------------------- 2018-01-04 ----------------------------------
+
+- RexxAndJava.java:
+
+  - ARRAY_PUT with Boolean/boolean component type will now behave like SET PROPERTY_VALUE
+    and SET_FIELD_VALUE:
+    if Rexx string is "1" (.true) then Boolean.TRUE will be used, otherwise the
+    type convertor will create the Boolean value (which means that a Rexx string
+    value named "true" will yield Boolean.TRUE as well, otherwise BOOLEAN.FALSE,
+    which follows from using java.lang.Boolean.valueOf(String))
+
+
+
+-------------------------------------- 2018-01-01 ----------------------------------
+
+- RexxAndJava.java:
+
+  - fixed a bug in ARRAY_PUT: only use the type convertor, if convFromRexx() returns
+    a string value and the component type is primitive, otherwise use the Object
+    value convFromRexx() returned
+
+-------------------------------------- 2017-12-24 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - putting and removing LOCAL_PRIMODAL_TID ("BSF.PRIMODALTID") in/from .environment instead of .local
+
+
+- RexxProxy.java:
+
+  - corrected documentation: .local may go away, if its Rexx interpreter instance
+    got terminated and its .local garbage collected
+
+
+-------------------------------------- 2017-12-23 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - implementing <https://sourceforge.net/p/bsf4oorexx/feature-requests/15/>:
+
+    - remove rgfGetEntryFromLocal(), rgfGetEntryFromEnvironment(): not needed anymore
+
+    - remove creation of "Slot.Argument" from native code, define as public class in BSF.CLS and
+      use that one for adding a trailing slot argument for messages from Java to Rexx objects
+      with optional context information
+
+    - corrected error message in external Rexx routine BSF(), which erroneously was numbered 3 and
+      referred to BSFCreateRexxProxy
+
+
+- BSF.CLS:
+
+    - define a public class "Slot.Argument" here instead of native code (BSF4ooRexx.cc
+      and placing the class object in .environment); this class will be used to
+      add useful, but optional information which get added as a trailing (a "slot")
+      argument on callbacks from Java to Rexx objects
+
+    - relocated .local~bsf4rexx to new class "BSF4REXX" serving as a proxy for the
+      bsf4rexx-directory, making this important directory independent of .local
+
+    - removed ".local~ooRexx.version", not used anywhere
+
+    - bsf.import() now saves the class objects in .environment instead of .local
+
+    - explicitly adding .BSF and .Slot.Argument to .environment in order for FindClass()
+      to find them (in all contexts)
+
+-------------------------------------- 2017-12-21 ----------------------------------
+
+- rgf_util2.rex:
+
+  - use .environment instead of .local to store important constant values
+    (this way it does not matter if the package gets employed in a different
+    Rexx interpreter instance)
+
+  - changed version style
+
+- BSF_OnTheFly.cls:
+
+  - corrected comment, changed test for empty or .nil code, changed version style
+
+-------------------------------------- 2017-11-21 ----------------------------------
+
+- BSF.CLS:
+
+  - make sure that in .FXGuiThread class "isGuiThread", "runLater" and
+    "runLaterLatest" are unguarded, but "run" is guarded; this avoids
+    hangs on Windows, reported as <https://sourceforge.net/p/oorexx/bugs/1505/>
+
+-------------------------------------- 2017-11-20 ----------------------------------
+
+- BSF.CLS:
+
+  - further testing <https://sourceforge.net/p/oorexx/bugs/1505/> indicates
+    that unguarding the BSF.OutputStream would probably not fix a three-way-
+    deadlock, which is caused by SAY-debug statements in BSF.CLS in the
+    context of RexxScript usage; this can be remedied by not using SAY-statements
+    in BSF.CLS, but in case of thangs replace them with ".stdout~say(...)"
+    statements
+
+-------------------------------------- 2017-11-19 ----------------------------------
+
+- BSF.CLS:
+
+  - changed BSF.OutputStream: methods are unguarded, using guard on/off, if
+    attribute's values get changed; this inhibits a hang on Windows, where
+    special Windows message handling (for OLE support) may cause nested
+    re-entrent AttachThread() that may yield hangs in that class SAY method,
+    if SAY is used for debug statements
+
+-------------------------------------- 2017-11-17 ----------------------------------
+
+- BSF4ooRexx.cc:
+
+  - added a counter to BSF() and also tid on debug outputs to become able
+    in a multithreaded execution to identify the debug output
+
+
+-------------------------------------- 2017-11-04 ----------------------------------
+
+- RexxScriptEngine.java:
+
+  - if missing filename for eval(): check whether ScriptContext Bindings have
+    an entry "location" of type java.net.URL; if so, then assume that the
+    execution comes from a JavaFX FXML file so use that location file as part
+    of the artificially created filename to ease debugging
+
+
 -------------------------------------- 2017-10-15 ----------------------------------
 
 - BSF4ooRexx.cc:
@@ -110,6 +544,7 @@
 
     - remove definition "CONFIG_REXX_HANDLERS_AS_INTERFACES" as we have been using
       Java interfaces only
+
     - remove definitions DEBUG40_NIXI, DEBUG_RGF_PROBES, USE_OREXX, USE_REXXTRANS,
       RGF_TRUE
 
@@ -3859,5 +4294,4 @@ changes of 2005-06-05, 2005-06-06 version, --rgf
 
 -------------------------------------- 2005-06-05 ----------------------------------
 starting with 2005-06-05, brief infos about changes are recorded in here, ---rgf
-
 

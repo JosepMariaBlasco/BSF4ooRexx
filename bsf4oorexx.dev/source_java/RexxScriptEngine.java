@@ -297,6 +297,7 @@ public class RexxScriptEngine extends AbstractScriptEngine implements Compilable
      *  @return a <code>RexxProxy</code> referring to the ooRexx <code>.nil</code> object
      */
     public Object getNil()
+    // private Object getNil()
     {
         if (nil==null)
         {
