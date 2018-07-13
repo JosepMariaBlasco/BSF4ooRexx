@@ -11,23 +11,24 @@
 
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
-   TODO:
-         2018-03-21, ---rgf, - on ooRexx 5.0 starting with <http://sourceforge.net/p/oorexx/code-0/11375>
-                               significant speed improvements by caching lookups of external functions,
-                               classes and environment symbols are achieved, even better then the ones
-                               implemented in this version of BSF4ooRexx; the BSF4ooRexx speed improvements
-                               will help ooRexx 4.2 users so they remain in place until most users are
-                               using ooRexx 5.0 at which time the speed improvements should be removed
-                               (in essence making external functions available via routine directives and
-                               caching their routine objects)
-
-                             - when demanding ooRexx 5.0 a sminimal version, then relocate entries (originally
-                               in .local like .BSF, .Slot.Argument et.al.) from .environment to package~local
-                               (introduced with 5.0); change .slot.argument to TextTable (new in 5.0) as
-                               well as bsf4rexx type
-
-
    date:
+         2018-07-13, ---rgf, - added class "AwtGuiThread" as the awt/swing counterpart to "FxGuiThread" class
+                               having the same protocol (same methods and behaviour, just adapted to awt/swing)
+                             - corrected routine "BSF.terminateRexxEngine": .routines~rBsf with .routines~xBsf
+
+         2018-06-07, ---rgf, - added method "util.setmethod" to class BSF_REFERENCE to allow setting methods
+                               (with "float" scope) to individual instances; needed for decorating UNO.CLS
+                               UNO_ENUM instances (adding methods 'toString', 'name' and 'value')
+
+         2018-06-04, ---rgf, - added public routine bsf.iconv public(str,fromCp,toCp) to allow recoding
+                               of a Rexx string
+
+         2018-04-03, ---rgf, - adjust for ooRexx 4.1.3 restrictions (development and tests occurred
+                               on the *much* better ooRexx 5.0.0)
+                               - Array's appendAll is not documented, but operational, however does
+                                 not return the receiver: cater for it using cascading messages instead
+                               - .debugInput and .traceOutput may not exist
+
          2018-03-15, ---rgf, - correct type while fetching XBsfCreateRexxProxy() from .routines
 
          2018-03-12, ---rgf, - bsf.compile(): if the source of a syntax error is related to the supplied
@@ -41,7 +42,6 @@
 
          2018-02-26, ---rgf, - make INTERPRET-free
                              - removed routine "createJavaLoadStatement"
-
          2018-02-25, ---rgf, - finished rework of using rBSF/.routines~xBSF and the like
                              - now the class methods and routines bsf.createArrayOf/bsf.createJavaArrayOf
                                behave the same by not proxying .uno_reference objects (if OOo/AOO support
@@ -631,7 +631,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20180321)
+   version:     6.00 (20180713)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -730,7 +730,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180324" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180713" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -753,7 +753,7 @@ end
 syntax:
    raise propagate
 
-::requires "rgf_util2.rex"    -- 20180106, rgf, temporarily because of BSF's unknown usage
+-- ::requires "rgf_util2.rex"    -- 20180106, rgf, temporarily because of BSF's unknown usage
 
 ::requires "BSF4ooRexx" library
 
@@ -1167,7 +1167,7 @@ syntax:
   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
-  arr=.array~of("newStrict", .nil, self~bsf.FullJavaClassName) ~appendAll(tmpArr)
+  arr=.array~of("newStrict", .nil, self~bsf.FullJavaClassName) ~~appendAll(tmpArr)
   beanName=self~rBsf~callWith(arr) ~substr(4)
 
         -- assign beanName to object, use the Java supplied name
@@ -1495,7 +1495,7 @@ syntax:
                           else tmpArr=arg(2, "Array") -- create an array from arguments
 
    -- 2018-02-24, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
-  arr=.array~of("new", .nil, javaClass)~appendAll(tmpArr)
+  arr=.array~of("new", .nil, javaClass)~~appendAll(tmpArr)
   beanName=self~class~rBSF~callWith(arr)~substr(4)
 
         -- assign beanName to object, use the Java supplied name
@@ -1556,7 +1556,7 @@ syntax1:  -- intercept and thereby clear any condition
 /* ------------------------------------------------------------------------------------------------- */
 /* 2016-11-06, ---rgf
    On ooRexx 5.0.0 beta the DO...OVER only works if the receiving object has a MAKEARRAY method and does
-   not relay on the UNKNOWN method at all. For this reason we need to have a MAKEARRAY method present in
+   not rely on the UNKNOWN method at all. For this reason we need to have a MAKEARRAY method present in
    the BSF class: starting with basing BSF4ooRexx on Java 1.6/6.0 in November 2016, all Java objects
    implementing java.lang.Iterable, java.util.Enumeration, java.util.Collection, java.util.Iterator or java.util.Map
    will get a "virtual ooRexx" MAKEARRAY and SUPPLIER method, returning an ooRexx array or an ooRexx supplier.
@@ -1711,7 +1711,7 @@ syntax:
 
   signal on syntax
    -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
-  arr=.array~of("invokeJSO", self~objectname , name)~appendAll(args)
+  arr=.array~of("invokeJSO", self~objectname , name)~~appendAll(args)
   return bsf.wrap(self~class~rBSF~callWith(arr))
 
 syntax:
@@ -1730,7 +1730,7 @@ syntax:
 
   signal on syntax
    -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
-  arr=.array~of("invokeStrict", self~objectname , name)~appendAll(args)
+  arr=.array~of("invokeStrict", self~objectname , name)~~appendAll(args)
   return bsf.wrap(self~class~rBSF~callWith(arr))
 
 syntax:
@@ -1749,7 +1749,7 @@ syntax:
 
   signal on syntax
    -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
-  arr=.array~of("invokeStrictJSO", self~objectname , name)~appendAll(args)
+  arr=.array~of("invokeStrictJSO", self~objectname , name)~~appendAll(args)
   return bsf.wrap(self~class~rBSF~callWith(arr))
 
 syntax:
@@ -1853,7 +1853,7 @@ syntax:
    signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
    -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
-  arr=.array~of("setFieldValueStrict", self~objectname , fieldName)~appendAll(arg(2,"A"))
+  arr=.array~of("setFieldValueStrict", self~objectname , fieldName)~~appendAll(arg(2,"A"))
   return bsf.wrap(self~class~rBSF~callWith(arr))
 
 syntax:
@@ -1905,7 +1905,7 @@ syntax:
 
   signal on syntax
   if arg(2, "Omitted") then index = "" -- no index given, set to empty string
-  arr=.array~of('setPropertyValue', self~objectname, propertyName, index)~appendAll(arg(3,"a"))
+  arr=.array~of('setPropertyValue', self~objectname, propertyName, index)~~appendAll(arg(3,"a"))
   return bsf.wrap(self~class~rBsf~callWith(arr) )
 
 syntax:
@@ -1924,7 +1924,7 @@ syntax:
 
   signal on syntax
   if arg(2, "Omitted") then index = "" -- no index given, set to empty string
-  arr=.array~of('setPropertyValueStrict', self~objectname, propertyName, index)~appendAll(arg(3,"a"))
+  arr=.array~of('setPropertyValueStrict', self~objectname, propertyName, index)~~appendAll(arg(3,"a"))
   return bsf.wrap(self~class~rBsf~callWith(arr) )
 
 syntax:
@@ -2181,7 +2181,7 @@ syntax:
 
   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
-  arr=.array~of("createArray")~appendAll(arg(1,"A"))
+  arr=.array~of("createArray")~~appendAll(arg(1,"A"))
   return bsf.wrap(rBsf~callWith(arr))
 
 syntax:
@@ -2219,7 +2219,7 @@ syntax:
          tmpArr~append(a)
   end
 
-  arr=.array~of('createArrayOf')~appendAll(tmpArr)
+  arr=.array~of('createArrayOf')~~appendAll(tmpArr)
   return bsf.wrap( rBSF~callWith(arr))
 
 syntax:
@@ -2352,6 +2352,9 @@ syntax:
   if bIncr=.true then
       call bsf 'increaseRefCounter', beanName   -- increment BSF registry reference counter
 
+
+::METHOD util.setmethod    -- rgf, 20180607: allow individually to set methods (e.g. for UNO_ENUM in UNO.CLS)
+  forward message ("setmethod")
 
 
 
@@ -2860,7 +2863,7 @@ syntax: raise propagate
   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
-  arr=.array~of('createArray')~appendAll(arg(1,'A'))
+  arr=.array~of('createArray')~~appendAll(arg(1,'A'))
   return bsf.wrap( .routines~xBSF~callWith(arr))
 
 syntax:
@@ -2897,7 +2900,7 @@ syntax:
          tmpArr~append(a)
   end
 
-  arr=.array~of('createArrayOf')~appendAll(tmpArr)
+  arr=.array~of('createArrayOf')~~appendAll(tmpArr)
   return bsf.wrap( .routines~xBSF~callWith(arr))
 
 syntax:
@@ -2914,7 +2917,7 @@ syntax:
   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
-  arr=.array~of('createJavaArray')~appendAll(arg(1,'A'))
+  arr=.array~of('createJavaArray')~~appendAll(arg(1,'A'))
   return bsf.wrap( .routines~xBSF~callWith(arr))
 
 syntax:
@@ -2950,7 +2953,7 @@ syntax:
          tmpArr~append(a)
   end
 
-  arr=.array~of('createJavaArrayOf')~appendAll(tmpArr)
+  arr=.array~of('createJavaArrayOf')~~appendAll(tmpArr)
   return bsf.wrap( .routines~xBSF~callWith(arr))
 
 syntax:
@@ -3064,7 +3067,7 @@ syntax:
 
 /* ------------------------------------------------------------------------------------------------- */
 ::METHOD init           CLASS
-  EXPOSE rBSF rBsfUninit4JavaBean rBsfRexxProxy
+  EXPOSE rBSF
    -- get the routine objects (of the native routines) and cache them in class attributes; rgf, 20180224
   rBSF               =.routines~xBSF
 
@@ -3844,7 +3847,7 @@ syntax:
    -- the Java RexxEngine, such that the Java side will become able to realize that callbacks
    -- to Rexx are not safe anymore
 ::routine BSF.terminateRexxEngine public
-  re=bsf.wrap(.routines~rBsf~call('getRexxEngine'))
+  re=bsf.wrap(.routines~xBsf~call('getRexxEngine'))
   re~terminate                -- terminate Rexx interpreter instance to inhibit callbacks from Java
 
   signal on syntax            -- if terminated, we now get a syntax error by BSF()
@@ -3964,10 +3967,11 @@ syntax:
         else
            .DebugInput~destination(.input)    -- redirect to .input object, whatever it is
      end
+
+     debIn=.debugInput~current   -- fetch current monitored object
+     if debIn~isA(.bsf.InputStream), debIn~prefix=.nil then       -- only set the prefix string, if not yet set
+        debIn~prefix="REXXdbgIn?>"
   end
-  debIn=.debugInput~current   -- fetch current monitored object
-  if debIn~isA(.bsf.InputStream), debIn~prefix=.nil then       -- only set the prefix string, if not yet set
-     debIn~prefix="REXXdbgIn?>"
 
    ---------------------- .traceOutput ----------------------
   if .local~hasEntry("TraceOutput") then   -- ooRexx<4.2 does not have this
@@ -3987,11 +3991,12 @@ syntax:
         else
            .TraceOutput~destination(.error)  -- redirect to .error object, whatever it is
      end
-  end
-  trcOut=.traceOutput~current -- fetch current monitored object
-  if trcOut~isA(.bsf.OutputStream), trcOut~prefix=.nil then  -- only set the prefix string, if not yet set
-     trcOut~prefix="REXXtrc>"
 
+     trcOut=.traceOutput~current -- fetch current monitored object
+     if trcOut~isA(.bsf.OutputStream), trcOut~prefix=.nil then  -- only set the prefix string, if not yet set
+        trcOut~prefix="REXXtrc>"
+
+  end
 
 
 /* ================================================================================================= */
@@ -5319,3 +5324,279 @@ extractJavaClassName: procedure
 
    if pkgName="" then return clzName
    return pkgName~strip"."clzName
+
+
+
+/* ================================================================================================= */
+/* ================================================================================================= */
+
+/* ------------------------------------------------------------------------ */
+/** Routine that recodes a Rexx string in the given <em>fromCp</em> codepage into a Rexx string in the
+    given <em>toCp</em> codepage. The names of the character sets used for encoding are documented e.g.
+    in <https://docs.oracle.com/javase/8/docs/api/java/nio/charset/Charset.html>. Examples for such
+    names are &quot;Cp850&quot;, &quot;Cp1251&quot;, &quot;UTF-16&quot;.
+
+   @param str        Rexx string encoded in the <em>fromCp</em> codepage
+   @param fromCp     the character set encoding used for <em>str</em>
+   @param toCp       the character set encoding to be used the recoded Rexx string that gets returned
+   @return           the recoded Rexx string
+*/
+::routine bsf.iconv public    -- cf. <https://docs.oracle.com/javase/8/docs/api/java/nio/charset/Charset.html>
+  use strict arg str, fromCp, toCp
+  signal on syntax
+   -- create Java String using Rexx string encoded in the fromCP codepage
+  jstr=.java.lang.String~new(bsfRawBytes(str),fromCp)
+   -- get Java byte array in desired toCp codepage and return it as Rexx string (encoded in toCp)
+  return bsfRawBytes(jstr~getBytes(toCp))
+syntax:
+  raise propagate
+
+
+
+/* ================================================================================================= */
+/* ================================================================================================= */
+
+-- rgf, 2018-07-13, create an awt/swing version of the .FXGuiThread class; this code actually
+--                  is an adapted copy of FXGuiThread; for both Classes a common superclass could
+--                  be created, which would refactor the common code
+
+/* ================================================================================================= */
+
+/** This class is meant to help ooRexx programmers to simplify interactions with the awt/swing
+    GUI. If Rexx code is invoked by the GUI maintenance code, that Rexx code will already
+    execute on the GUI thread (called "event dispatch thread" a.k.a. "awt thread") and can successfully
+    interact with the GUI and the elements. However, if Rexx code on a non-GUI-thread wishes
+    to interact with the GUI, this would hang the GUI (single threaded implementations are
+    typical for GUIs). Rather, such an interaction must occur on the GUI thread.
+    <p>The class methods <code>awtRunLater</code> and <code>awtRunLaterLatest</code> allow
+    Rexx programmers to send Rexx messages later, when running in the GUI thread.
+
+    @since 2017-08-05
+*/
+::class "AwtGUIThread"  public
+
+/* ------------------------------------------------------------------------------------------------- */
+/** Constructor class method. */
+::method init             class
+  expose SwingUtilitiesClz
+  SwingUtilitiesClz=.nil
+
+/* ------------------------------------------------------------------------------------------------- */
+/** Private class method to set up and initilaize the infrastructure.
+*/
+::method setup             class private
+  expose awtQueue runnable SwingUtilitiesClz waitingToRun
+  awtQueue=.queue~new         -- awtQueue: all queued messages will be dispatched
+  runnable=.routines["XBSFCREATEREXXPROXY"]~call(self, .nil, "java.lang.Runnable") -- allow this class object to be used as a Runnable
+  SwingUtilitiesClz=bsf.loadClass("javax.swing.SwingUtilities")
+  waitingToRun=.false
+
+/* ------------------------------------------------------------------------------------------------- */
+/**
+* @return returns <code>.true</code>, if running on the GUI thread ("event dispatch thread" a.k.a. "awt Thread"), <code>.false</code> else
+*/
+::method isGuiThread     class unguarded
+  expose SwingUtilitiesClz
+
+  guard on
+  if SwingUtilitiesClz=.nil then self~setup  -- make sure attributes are initialized
+  guard off
+
+  return SwingUtilitiesClz~isEventDispatchThread
+
+
+/* ------------------------------------------------------------------------------------------------- */
+::method run               class       -- this method will be invoked by Java at a later time
+  expose awtQueue SwingUtilitiesClz waitingToRun
+-- say self": arrived at  :" pp(.dateTime~new)
+
+  if SwingUtilitiesClz~isEventDispatchThread then  -- only execute, if we are running on the GUI thread!
+  do
+      -- process queued GuiMessages
+     do while awtQueue~items>0
+        self~process(awtQueue~pull)     -- fetch item from head of the queue
+     end
+  end
+  waitingToRun=.false   -- indicate that no runLater is pending!
+-- say self": returning at:" pp(.dateTime~new)
+
+
+/* ------------------------------------------------------------------------------------------------- */
+/** Private static method that processes the supplied GUIMessage.
+*/
+::method process           class private
+  expose SwingUtilitiesClz
+  use strict arg guiMsg
+
+  signal on syntax      -- intercept errors
+  if guiMsg~hasArguments then -- create and send messages
+     .message~new(guiMsg~target, guiMsg~messageName, "Array", guiMsg~arguments)~send
+  else
+     .message~new(guiMsg~target, guiMsg~messageName)~send
+
+  if var("RESULT") then    -- was a result returned?
+  do
+     guiMsg~result=result   -- save result
+     guiMsg~hasResult=.true -- indicate we have a result
+  end
+  guiMsg~completed=.true    -- communicate that processing has completed
+  return
+
+syntax:
+  guiMsg~errorCondition=condition("o") -- supply error condition object
+  guiMsg~hasError=.true    -- indicate we had an error
+  guiMsg~completed=.true    -- communicate that processing has completed in this case as well
+
+-- TODO: remove the following debug statements
+.stderr~say("---> SOD (start of debug), line #" .line)
+.stderr~say(self":process, error" pp(condition("C")) "in" pp(guiMsg~target) "~" pp(guiMsg~messageName))
+.stderr~say
+.context~package~addPackage(.package~new("rgf_util2.rex"))  -- do a dynamic requires
+.stderr~say(ppCondition2(guiMsg~errorCondition))   -- show condition formatted in full
+.stderr~say("<--- EOD (end of debug), line #" .line)
+
+  return
+
+
+/* ------------------------------------------------------------------------------------------------- */
+/** Private static method that allows simple creation of a GUIMessage from the supplied array of arguments.
+*   @param args the argument array where index 1 stores the target object, index 2 the message name; optonally
+*               index 3 indicates whether the arguments are supplied individually or in index 4 as an array already
+*
+*   @return returns a <code>GUIMessage</code> instance
+*/
+::method createGUIMessage  class private
+  use strict arg args      -- an array
+
+  signal on syntax
+  target     =args[1]
+  messageName=args[2]
+  if args~items>2 then     -- message arguments supplied
+  do
+     argType=args[3]~left(1)~upper   -- must be "Individual" or "Array"
+     select
+        when argType="I" then msgArgs=args~section(4) -- turn individual arguments into an array
+
+        when argType="A" then -- fourth argument is an array of arguments already
+             do
+                if args~items>4 then     -- too many arguments!
+                   raise syntax 88.922 array ("4")
+
+                if \args[4]~isA(.array) then    -- wrong type
+                   raise syntax 88.923 array ("message", "4", args[4])
+
+                msgArgs=args[4]
+             end
+
+        otherwise             -- we have a problem here!
+           raise syntax 93.915 array ("IA", args[3])
+     end
+     guiMsg=.GuiMessage~new(target, messageName, msgArgs)
+  end
+  else
+  do
+     guiMsg=.GuiMessage~new(target, messageName)
+  end
+  return guiMsg
+
+syntax:
+  raise propagate
+
+
+/* ------------------------------------------------------------------------------------------------- */
+/** This class method allows to define a Rexx message with its arguments that should
+*   be processed on the GUI thread. Each invocation will create a new <code>GUIMessage</code>
+*   from the supplied arguments and returns it for further inspection in addition to queuing
+*   it for later execution on the GUI thread. This method remembers the order of invocations
+*   and makes sure that each GUI message will be executed in that order.
+*
+*   @param target the target object to receive a message on the GUI thread
+*   @param messageName the message name to send to the target on the GUI thread
+*   @param indicator  optional; indicates with &quot;I&quot; (Indivdual) that the arguments
+*                     are listed individually, &quot;A&quot; (Array) indicates that the fourth
+*                     argument is an array containing the arguments to supply with the
+*                     message on the GUI thread
+*
+*   @return GUIMessage a GUI message object (modelled after ooRexx' <code>Message</code> class
+*                     that allows one to inspect the state of the message (process completed,
+*                     fetching a possible result, determining whether an error occurred and
+*                     inspecting it)
+*/
+::method runLater          class unguarded
+  expose awtQueue waitingToRun SwingUtilitiesClz runnable
+  use strict arg target, messageName, ...
+
+  signal on syntax
+  guard on
+  if SwingUtilitiesClz=.nil then self~setup  -- make sure attributes are initialized
+  guard off
+  guiMsg=self~createGuiMessage(arg(1,"array"))
+  awtQueue~queue(guiMsg)
+  if waitingToRun=.false then -- "runLater" not invoked yet?
+  do
+     guard on
+     waitingToRun=.true
+     guard off
+     SwingUtilitiesClz~invokeLater(runnable)
+  end
+  return guiMsg            -- allows caller to get a hold of a possible return value
+
+syntax:
+  raise propagate
+
+
+/* ------------------------------------------------------------------------------------------------- */
+   -- method replaces existing target: this way only the latest sent message will get executed!
+/** This class method allows to define a Rexx message with its arguments that should
+*   be processed on the GUI thread. Each invocation will create a new <code>GUIMessage</code>
+*   from the supplied arguments and returns it for further inspection in addition to queueing
+*   it for later execution on the GUI thread. Unlike <code>runLater</code> this method will
+*   first remove any queued messages with the same target and the same message name, before
+*   queueing this message.
+*
+*   @param target the target object to receive a message on the GUI thread
+*   @param messageName the message name to send to the target on the GUI thread
+*   @param indicator  optional; indicates with &quot;I&quot; (Indivdual) that the arguments
+*                     are listed individually, &quot;A&quot; (Array) indicates that the fourth
+*                     argument is an array containing the arguments to supply with the
+*                     message on the GUI thread
+*
+*   @return GUIMessage a GUI message object (modelled after ooRexx' <code>Message</code> class
+*                     that allows one to inspect the state of the message (process completed,
+*                     fetching a possible result, determining whether an error occurred and
+*                     inspecting it)
+*/
+::method runLaterLatest    class unguarded
+  expose awtQueue waitingToRun SwingUtilitiesClz runnable
+  use strict arg target, messageName, ...
+
+  signal on syntax
+  guard on
+  if SwingUtilitiesClz=.nil then self~setup  -- make sure attributes are initialized
+  guard off
+
+  guiMsg=self~createGuiMessage(arg(1,"array"))
+      -- remove all occurrences of messages with the same messagename and the same target
+  idx=awtQueue~first           -- get index of the first item in the queue, if any
+  do while idx<>.nil          -- a valid index in hand ?
+     tmpItem=awtQueue~at(idx)  -- fetch item, a GuiMessage
+         -- same target, same messagename?
+     if tmpItem~target=target, tmpItem~messageName~caselessEquals(messagename) then
+        awtQueue~delete(idx)   -- delete the guiMsg object
+
+     idx=awtQueue~next(idx)    -- get index of next item in the queue
+  end
+  awtQueue~queue(guiMsg)       -- now enqueue current (latest) guiMsg
+
+  if waitingToRun=.false then -- "runLater" not invoked yet?
+  do
+     guard on
+     waitingToRun=.true
+     guard off
+     SwingUtilitiesClz~invokeLater(runnable)
+  end
+  return guiMsg            -- allows caller to get a hold of a possible return value
+
+syntax:
+  raise propagate
+

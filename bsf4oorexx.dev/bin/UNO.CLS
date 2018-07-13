@@ -6,6 +6,20 @@
    last change: $Revision: 803 $ $Author: Administrator $ $Date: 2010-07-24 19:09:19 +0200 (Sat, 24 Jul 2010) $
 
    changed:
+
+            2018-06-07, ---rgf, - added method "util.setmethods" to class UNO_ENUM to allow setting methods
+                                  (with "float" scope) to individual instances; needed for decorating
+                                  UNO_ENUM instances (adding methods 'toString', 'name' and 'value')
+
+            2018-06-06, ---rgf: - change to UNO_ENUM class: not placing the enum objects into the
+                                  directory anymore (cf. comment 2010-07-15) caused the loss of the
+                                  enhanced methods (eg. "name", "value"); this solution will request
+                                  a new Enum object from UNO each time (inhibiting the DisposedException),
+                                  but enhance the returned .BSF_Reference object with the methods defined
+                                  in the new class attribute 'dirMethods' and return that instead; this
+                                  way the pre-2010-07-15 behaviour of Enum instances having the methods
+                                  "name" and "value" is reinstated
+
             2011-02-21, ---rgf, - Apple MacOSX-support added for displaying correct default icon in dock
             2010-07-24, ---rgf, - made the routine uno.determineScriptLocation() script language independent
 
@@ -274,7 +288,7 @@
             2006-01-03, ---rgf, corrected inline documentation
 
 
-   version: 1.3.6
+   version: 1.3.7
    name:    UNO.CLS
    purpose: allow interfacing with UNO components (via Java), tested with OpenOffice.org, v1.1.x and up
    needs:   BSF4Rexx, BSF.CLS, UNO_XINTERFACES.RXO
@@ -282,7 +296,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2005-2011 Rony G. Flatscher
+       Copyright (C) 2005-2018 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -318,7 +332,7 @@ call bsfShowErrorMessage .false
 .uno~nil=.uno~any~void        -- if using in comparisons, then use "uno.areSame(unoObject, .uno~nil))"
 .uno~nil_name=.uno~any~objectname   -- index name of entry in BSFRegistry on the Java side
 
-.uno~version="136.20110221"      -- set version number
+.uno~version="137.20180607"      -- set version number
 
    -- XPropertySet-behaviour with getPropertyValue and setPropertyValue
 .uno~xPropertySetAutoCase=.true  -- if prop name not found pick a matching case, if possible
@@ -1390,16 +1404,50 @@ any:
                - this implementation will return that Java object, enhanced with methods
                  that allow retrieving the name and the value (which is used for the required
                  string value)
-               - there will be an additional entry "DEFAULT_VALUE" created
+               - there will be an additional entry "DEFAULT_ENUM_VALUE" created
                - Java-UNO expects enumeration values to be Java objects, which
                  are stored with the constant fields of the Java class representing
                  the UNOIDL-ENUM; this implementation is able to return the enum field name
                  representing the Java enum object;
                - sending the enum name or its numeric value will return the
                  appropriate Java-enum-object
+               - to avoid DisposedExceptions for the enum values, each time an enum instance
+                 is requested, it will be fetched from UNO transparently (hence using .directory
+                 method objects to carry out that task) and enhanced with the methods
+                 'name', 'value', 'obj' (the BSF_Reference object), 'string'; rgf, 2018-06-06
 
    ************************************************************* */
 ::CLASS UNO_ENUM SUBCLASS UNO_DIRLIKE PUBLIC
+/* 2018-06-06, rgf: not placing the enum objects into the directory anymore (cf. comment 2010-07-15)
+        caused the loss of the enhanced methods (eg. "name", "value"); this
+        solution will request a new Enum object from UNO, but enhance the returned .BSF_Reference
+        object with the methods defined in the new class attribute 'dirMethods' and return that
+        enhanced object; this way the pre-2010-07-15 behaviour is reinstated and yet, no
+        DisposedException should be caused;
+*/
+::attribute dirMethods CLASS    -- rgf, 20180606: methods for enhanced
+::method init     class
+  expose dirMethods
+   -- define the methods an UNO_ENUM instance should get enhanced with
+  dirMethods=.directory~new
+
+  dirMethods~util.setup="expose  name value;             " - -- allow to fetch "name" and "value"
+                        "use arg name, value;            "
+
+  dirMethods~name      ="expose name;   return name;     "  -- access name
+  dirMethods~value     ="expose value;  return value;    "  -- access value
+
+  dirMethods~toString  ="expose name value; return self~objectName'['name'='value']'"  -- creates string value to indicate object
+
+::method util.setMethods class      -- rgf, 20180607: set methods to instance, initialize method's attributes
+  expose dirMethods
+  use arg obj, nam, val
+  do idx over dirMethods
+     obj~util.setMethod(idx, dirMethods[idx], "FLOAT")   -- make sure attributes are in a separate scope
+  end
+  obj~util.setup(nam, val)
+  return obj
+
 
 /* Sets up the directory entries for this UNO_ENUM, will be invoked via UNO_DIRLIKE's constructor. */
 ::method setup    private   -- check and setup directory object
@@ -1413,55 +1461,35 @@ any:
   enumDirectory=self~unoDirectory
   enumQueue    =self~unoNameQueue
 
-   -- define the methods each enum Java object should gain in addition
-   meths=.directory~new
-   meths~init       ="expose obj name value;               " -  -- constructor
-                     "use arg obj, name, value;            " -
-                     "self~objectname=obj~objectname       "    -- use BSFRegistry's index as objectname
+  tmpArr=self~unoidl_definition~makearray(" ")        -- split string at blank character
+  parse value tmpArr[1] with . "|" . "|" defVal rest  -- ENUM: default value, CONSTANTS: typeClass
 
-   meths~name       ="expose name;           return name"               -- access name
-   meths~value      ="expose value;          return value"              -- access value
-
-      -- create typical STRING name for instance
-   tmpStr="a"
-   if pos(unoidl_name~left(1), "aeiouAEIOU")>0 then   -- starts with vowel?
-      tmpStr="an"
-   tmpStr=tmpStr unoidl_name
-
-   meths~makestring ="expose name value;     return '"tmpStr"['name'='value']'"       -- creates required string value
-   meths~unknown    ="expose obj;            forward to (obj)"          -- forward to object
-
-  tmpArr=self~unoidl_definition~makearray(" ")  -- split string at blank character
-
-  parse value tmpArr[1] with . "|" . "|" defVal rest   -- ENUM: default value, CONSTANTS: typeClass
-
-  -- enumDirectory~default_Value=defVal    -- save default value
   enumQueue~queue("DEFAULT_ENUM_VALUE")
 
   do i=2 to tmpArr~items                        -- iterate over ENUM values
-     parse value tmpArr[i] with name "|" val
+     parse value tmpArr[i] with nam "|" val
        -- with UNO_ENUM use the Java object which is created by the Java UNO language binding
        -- and *not* the defined integer value
-     o=bsf.getConstant(unoidl_name, name)       -- get the representing Java object
-     o=.object~enhanced(meths, o, name, val)    -- create an enhanced version of it
-
      /* rgf, 2010-07-15: make sure we always query the field value, otherwise it may be the case that
         Java UNO frees the bridge to UNO such that the cached Java object representing the UNO_ENUM value
         will throw a java_remote_bridge "com.sun.star.lang.DisposedException": */
-     methCode='return bsf.getConstant("'unoidl_name'", "'name'")'
-     enumDirectory~setMethod(name, methCode)
-     enumDirectory~setMethod(val,  methCode)
 
---     enumDirectory~setentry(name, o)            -- save numeric value in directory
---     enumDirectory~setentry(val,  o)            -- save numeric value in directory
+     /* rgf, 20180606: not placing the enum objects into the directory anymore (cf. comment 2010-07-15)
+        caused the loss of the enhanced methods (eg. "name", "value", "makestring"); instead each time
+        an enum value gets requested the UNO Enumeration object will be requested as well and now enhanced
+        with the methods 'obj' (returns .BSF object), 'name', 'value', 'string', and 'unknown' (forwarding
+        unknown messages to the .BSF object)
+        */
+     -- methCode='return .object~enhanced(.uno_enum~dirMethods, bsf.getConstant("'unoidl_name'", "'nam'"), "'nam'", "'val'" )'
+     methCode='return .uno_enum~util.setMethods(bsf.getConstant("'unoidl_name'", "'nam'"), "'nam'", "'val'" )'
+     enumDirectory~setMethod(nam, methCode)     -- save method by Enum name; will lookup and return ENUM object at time of invocation
+     enumDirectory~setMethod(val, methCode)     -- save method by Enum value; will lookup and return ENUM object at time of invocation
 
-     enumQueue~queue(name)                      -- queue enum-name
+     enumQueue~queue(nam)                       -- queue enum-name
      if val=defVal then                         -- default value in hand?
      do
-        enumDirectory~setMethod("DEFAULT_ENUM_VALUE", methCode)    -- save default value in directory
---        enumDirectory~setentry("DEFAULT_ENUM_VALUE", o)    -- save default value in directory
+        enumDirectory~setMethod("DEFAULT_ENUM_VALUE", methCode)    -- save default value method in directory
      end
-
   end
   return .true                                  -- everything worked out o.k.
 
