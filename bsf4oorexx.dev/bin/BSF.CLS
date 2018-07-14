@@ -12,6 +12,11 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-07-14, ---rgf, - refactoring the GUI related utility classes "FxGuiThread" and "AwtGuiThread" into
+                               a common private abstract class "AbstractGUIThread" defining abstract attribute
+                               and methods to be implemented by the refactored subclasses "FxGuiThread" and
+                               "AwtGuiThread"
+
          2018-07-13, ---rgf, - added class "AwtGuiThread" as the awt/swing counterpart to "FxGuiThread" class
                                having the same protocol (same methods and behaviour, just adapted to awt/swing)
                              - corrected routine "BSF.terminateRexxEngine": .routines~rBsf with .routines~xBsf
@@ -631,7 +636,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20180713)
+   version:     6.00 (20180714)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -730,7 +735,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180713" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180714" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4901,81 +4906,42 @@ syntax:
    raise propagate   -- neither a .RexxContext with a / nor a ScriptContext supplied as first argument
 
 
-
-
-
 /* ================================================================================================= */
 /* ================================================================================================= */
 
--- rgf, 2017-08-04/05, create a possibility that eases interaction with
--- the JavaFX GUI objects from Rexx programs in non-GUI-threads, classes "FxGUIThread" and "GUIMessage"
+/** This abstract class implements the protocol and common methods for the awt/swing and JavaFX
+    utility classes that allow one to interact with the GUI objects on the awt/JavaFX thread.
+    <br>
 
-/* ================================================================================================= */
-
-/** This class is meant to help ooRexx programmers to simplify interactions with the JavaFX
-    GUI. If Rexx code is invoked by the GUI maintenance code, that Rexx code will already
-    execute on the GUI thread (called "JavaFX Applicaton Thread" on JavaFX) and can successfully
+    If Rexx code is invoked by the GUI maintenance code in form of callbacks, that Rexx code
+    will already execute on the GUI thread and can successfully
     interact with the GUI and the elements. However, if Rexx code on a non-GUI-thread wishes
     to interact with the GUI, this would hang the GUI (single threaded implementations are
     typical for GUIs). Rather, such an interaction must occur on the GUI thread.
     <p>The class methods <code>fxRunLater</code> and <code>fxRunLaterLatest</code> allow
     Rexx programmers to send Rexx messages later, when running in the GUI thread.
 
-    @since 2017-08-05
+    @since 2017-08-14
 */
-::class "FxGUIThread"  public
+::class AbstractGUIThread private
+::method init  abstract    -- do not allow any instances to be created
 
-/* ------------------------------------------------------------------------------------------------- */
-/** Constructor class method. */
-::method init             class
-  expose PlatformClz
-  PlatformClz=.nil
+-- ::method    init              class abstract    -- sets JavaUtilityClass to .nil
 
-/* ------------------------------------------------------------------------------------------------- */
-/** Private class method to set up and initilaize the infrastructure.
-*/
-::method setup             class private
-  expose fxQueue runnable PlatformClz waitingToRun
-  fxQueue=.queue~new         -- fxQueue: all queued messages will be dispatched
-  runnable=.routines["XBSFCREATEREXXPROXY"]~call(self, .nil, "java.lang.Runnable") -- allow this class object to be used as a Runnable
-  PlatformClz=bsf.loadClass("javafx.application.Platform")
-  waitingToRun=.false
+::attribute JavaGuiUtilityClz get class abstract   -- javafx.application.Platform or javax.swing.SwingUtilitities
+::attribute msgQueue         class abstract     -- force creation of attribute in subclass; queues GUIMessages
+::attribute runnable         class abstract     -- force creation of attribute in subclass; Java Proxy of Rexx class itself
+::attribute waitingToRun     class abstract     -- force creation of attribute in subclass; determines
 
-/* ------------------------------------------------------------------------------------------------- */
-/**
-* @return returns <code>.true</code>, if running on the GUI thread ("JavaFX Application Thread"), <code>.false</code> else
-*/
-::method isGuiThread     class unguarded
-  expose PlatformClz
-
-  guard on
-  if PlatformClz=.nil then self~setup  -- make sure attributes are initialized
-  guard off
-
-  return PlatformClz~isFxApplicationThread
-
-
-/* ------------------------------------------------------------------------------------------------- */
-::method run               class       -- this method will be invoked by Java at a later time
-  expose fxQueue PlatformClz waitingToRun
--- say self": arrived at  :" pp(.dateTime~new)
-
-  if PlatformClz~isFxApplicationThread then  -- only execute, if we are running on the GUI thread!
-  do
-      -- process queued GuiMessages
-     do while fxQueue~items>0
-        self~process(fxQueue~pull)     -- fetch item from head of the queue
-     end
-  end
-  waitingToRun=.false   -- indicate that no runLater is pending!
--- say self": returning at:" pp(.dateTime~new)
+::method    setup            class private abstract   -- setup class attributes
+::method    isGuiThread      class unguarded abstract -- determines if current thread is GUI thread
+::method    invokeOnGuiThread class private abstract  -- use the appropriate Java utility class method
 
 
 /* ------------------------------------------------------------------------------------------------- */
 /** Private static method that processes the supplied GUIMessage.
 */
 ::method process           class private
-  expose PlatformClz
   use strict arg guiMsg
 
   signal on syntax      -- intercept errors
@@ -5053,6 +5019,26 @@ syntax:
   raise propagate
 
 
+
+/* ------------------------------------------------------------------------------------------------- */
+::method run               class       -- this method will be invoked by Java at a later time
+  -- expose fxQueue PlatformClz waitingToRun
+-- say self": arrived at  :" pp(.dateTime~new)
+  msgQueue=self~msgQueue      -- get message queue
+
+  if self~isGuiThread then   -- only execute, if we are running on the GUI thread!
+  do
+      -- process queued GuiMessages
+     do while msgQueue~items>0
+        self~process(msgQueue~pull)    -- fetch item from head of the queue
+     end
+  end
+  self~waitingToRun=.false   -- indicate that no runLater is pending!
+-- say self": returning at:" pp(.dateTime~new)
+
+
+
+
 /* ------------------------------------------------------------------------------------------------- */
 /** This class method allows to define a Rexx message with its arguments that should
 *   be processed on the GUI thread. Each invocation will create a new <code>GUIMessage</code>
@@ -5073,26 +5059,28 @@ syntax:
 *                     inspecting it)
 */
 ::method runLater          class unguarded
-  expose fxQueue waitingToRun PlatformClz runnable
+  -- expose msgQueue waitingToRun JavaGuiUtilityClz runnable
   use strict arg target, messageName, ...
 
   signal on syntax
   guard on
-  if PlatformClz=.nil then self~setup  -- make sure attributes are initialized
+  if self~JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
   guard off
   guiMsg=self~createGuiMessage(arg(1,"array"))
-  fxQueue~queue(guiMsg)
-  if waitingToRun=.false then -- "runLater" not invoked yet?
+  self~msgQueue~queue(guiMsg)
+  if self~waitingToRun=.false then -- "runLater" not invoked yet?
   do
      guard on
-     waitingToRun=.true
+     self~waitingToRun=.true
      guard off
-     PlatformClz~runLater(runnable)
+     -- JavaGuiUtilityClz~invokeLater(runnable)
+     self~invokeOnGuiThread   -- make sure Java will dispatch Rexx message on GUI thread
   end
   return guiMsg            -- allows caller to get a hold of a possible return value
 
 syntax:
   raise propagate
+
 
 
 /* ------------------------------------------------------------------------------------------------- */
@@ -5117,38 +5105,168 @@ syntax:
 *                     inspecting it)
 */
 ::method runLaterLatest    class unguarded
-  expose fxQueue waitingToRun PlatformClz runnable
+--   expose msgQueue waitingToRun JavaGuiUtilityClz runnable
   use strict arg target, messageName, ...
 
   signal on syntax
   guard on
-  if PlatformClz=.nil then self~setup  -- make sure attributes are initialized
+  if self~JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
   guard off
 
   guiMsg=self~createGuiMessage(arg(1,"array"))
       -- remove all occurrences of messages with the same messagename and the same target
-  idx=fxQueue~first           -- get index of the first item in the queue, if any
+  msgQueue=self~msgQueue      -- get message queue
+  idx=msgQueue~first          -- get index of the first item in the queue, if any
   do while idx<>.nil          -- a valid index in hand ?
-     tmpItem=fxQueue~at(idx)  -- fetch item, a GuiMessage
+     tmpItem=msgQueue~at(idx)  -- fetch item, a GuiMessage
          -- same target, same messagename?
      if tmpItem~target=target, tmpItem~messageName~caselessEquals(messagename) then
-        fxQueue~delete(idx)   -- delete the guiMsg object
+        msgQueue~delete(idx)   -- delete the guiMsg object
 
-     idx=fxQueue~next(idx)    -- get index of next item in the queue
+     idx=msgQueue~next(idx)    -- get index of next item in the queue
   end
-  fxQueue~queue(guiMsg)       -- now enqueue current (latest) guiMsg
+  msgQueue~queue(guiMsg)       -- now enqueue current (latest) guiMsg
 
-  if waitingToRun=.false then -- "runLater" not invoked yet?
+  if self~waitingToRun=.false then -- "runLater" not invoked yet?
   do
      guard on
-     waitingToRun=.true
+     self~waitingToRun=.true
      guard off
-     PlatformClz~runLater(runnable)
+     -- JavaGuiUtilityClz~invokeLater(runnable)
+     self~invokeOnGuiThread   -- make sure Java will dispatch Rexx message on GUI thread
   end
   return guiMsg            -- allows caller to get a hold of a possible return value
 
 syntax:
   raise propagate
+
+
+
+/* ================================================================================================= */
+/* ================================================================================================= */
+
+-- rgf, 2017-08-04/05, create a possibility that eases interaction with
+-- the JavaFX GUI objects from Rexx programs in non-GUI-threads, classes "FxGUIThread" and "GUIMessage"
+-- rgf, 2018-07-14, refactored
+
+/** This class is meant to help ooRexx programmers to simplify interactions with the JavaFX
+    GUI. If Rexx code is invoked by the GUI maintenance code, that Rexx code will already
+    execute on the GUI thread (called "JavaFX Applicaton Thread" on JavaFX) and can successfully
+    interact with the GUI and the elements. However, if Rexx code on a non-GUI-thread wishes
+    to interact with the GUI, this would hang the GUI (single threaded implementations are
+    typical for GUIs). Rather, such an interaction must occur on the GUI thread.
+    <p>The class methods <code>fxRunLater</code> and <code>fxRunLaterLatest</code> allow
+    Rexx programmers to send Rexx messages later, when running in the GUI thread.
+
+    @since 2017-08-05
+*/
+::class "FxGUIThread"  subclass AbstractGUIThread public
+
+/* ------------------------------------------------------------------------------------------------- */
+/** Constructor class method. */
+::method init             class
+  expose JavaGuiUtilityClz          -- class attribute for this class object!
+  JavaGuiUtilityClz=.nil
+
+
+::attribute msgQueue          get class
+::attribute runnable          get class
+::attribute JavaGuiUtilityClz get class
+::attribute waitingToRun          class
+
+
+/* ------------------------------------------------------------------------------------------------- */
+/** Private class method to set up and initilaize the infrastructure.
+*/
+::method setup             class private
+  expose msgQueue runnable JavaGuiUtilityClz waitingToRun
+  msgQueue=.queue~new         -- msgQueue: all queued messages will be dispatched
+  runnable=.routines["XBSFCREATEREXXPROXY"]~call(self, .nil, "java.lang.Runnable") -- allow this class object to be used as a Runnable
+  JavaGuiUtilityClz=bsf.loadClass("javafx.application.Platform")
+  waitingToRun=.false
+
+
+/* ------------------------------------------------------------------------------------------------- */
+/**
+* @return returns <code>.true</code>, if running on the GUI thread ("JavaFX Application Thread"), <code>.false</code> else
+*/
+::method isGuiThread     class unguarded
+  expose JavaGuiUtilityClz
+
+  guard on
+  if JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
+  guard off
+  return JavaGuiUtilityClz~isFxApplicationThread
+
+
+/**
+*   Will cause the <code>runnable</code> (this Rexx class wrapped as a java.lang.Runnable object) to execute later on the GUI thread.
+*/
+::method invokeOnGuiThread    class       -- make sure Java will dispatch Rexx message on GUI thread
+  expose JavaGuiUtilityClz runnable
+  JavaGuiUtilityClz~runLater(runnable)    -- JavaFX version
+
+
+
+/* ================================================================================================= */
+/* ================================================================================================= */
+-- rgf, 2018-07-14, refactored
+
+/** This class is meant to help ooRexx programmers to simplify interactions with the awt/swing
+    GUI. If Rexx code is invoked by the GUI maintenance code, that Rexx code will already
+    execute on the GUI thread (called "event dispatch thread" a.k.a. "awt thread") and can successfully
+    interact with the GUI and the elements. However, if Rexx code on a non-GUI-thread wishes
+    to interact with the GUI, this would hang the GUI (single threaded implementations are
+    typical for GUIs). Rather, such an interaction must occur on the GUI thread.
+    <p>The class methods <code>awtRunLater</code> and <code>awtRunLaterLatest</code> allow
+    Rexx programmers to send Rexx messages later, when running in the GUI thread.
+
+    @since 2018-07-14
+*/
+::class "AwtGUIThread"  subclass AbstractGUIThread public
+
+/* ------------------------------------------------------------------------------------------------- */
+/** Constructor class method. */
+::method init             class
+  expose JavaGuiUtilityClz          -- class attribute for this class object!
+  JavaGuiUtilityClz=.nil
+
+
+::attribute msgQueue          get class
+::attribute runnable          get class
+::attribute JavaGuiUtilityClz get class
+::attribute waitingToRun          class
+
+/* ------------------------------------------------------------------------------------------------- */
+/** Private class method to set up and initilaize the infrastructure.
+*/
+::method setup             class private
+  expose msgQueue runnable JavaGuiUtilityClz waitingToRun
+  msgQueue=.queue~new         -- msgQueue: all queued messages will be dispatched
+  runnable=.routines["XBSFCREATEREXXPROXY"]~call(self, .nil, "java.lang.Runnable") -- allow this class object to be used as a Runnable
+  JavaGuiUtilityClz=bsf.loadClass("javax.swing.SwingUtilities")
+  waitingToRun=.false
+
+/* ------------------------------------------------------------------------------------------------- */
+/**
+* @return returns <code>.true</code>, if running on the GUI thread ("event dispatch thread" a.k.a. "awt Thread"), <code>.false</code> else
+*/
+::method isGuiThread     class unguarded
+  expose JavaGuiUtilityClz
+
+  guard on
+  if JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
+  guard off
+
+  return JavaGuiUtilityClz~isEventDispatchThread   -- awt/swing version
+
+
+/**
+*   Will cause the <code>runnable</code> (this Rexx class wrapped as a java.lang.Runnable object) to execute later on the GUI thread.
+*/
+::method invokeOnGuiThread    class       -- make sure Java will dispatch Rexx message on GUI thread
+  expose JavaGuiUtilityClz runnable
+  JavaGuiUtilityClz~invokeLater(runnable) -- awt/swing version
 
 
 
@@ -5351,252 +5469,4 @@ extractJavaClassName: procedure
 syntax:
   raise propagate
 
-
-
-/* ================================================================================================= */
-/* ================================================================================================= */
-
--- rgf, 2018-07-13, create an awt/swing version of the .FXGuiThread class; this code actually
---                  is an adapted copy of FXGuiThread; for both Classes a common superclass could
---                  be created, which would refactor the common code
-
-/* ================================================================================================= */
-
-/** This class is meant to help ooRexx programmers to simplify interactions with the awt/swing
-    GUI. If Rexx code is invoked by the GUI maintenance code, that Rexx code will already
-    execute on the GUI thread (called "event dispatch thread" a.k.a. "awt thread") and can successfully
-    interact with the GUI and the elements. However, if Rexx code on a non-GUI-thread wishes
-    to interact with the GUI, this would hang the GUI (single threaded implementations are
-    typical for GUIs). Rather, such an interaction must occur on the GUI thread.
-    <p>The class methods <code>awtRunLater</code> and <code>awtRunLaterLatest</code> allow
-    Rexx programmers to send Rexx messages later, when running in the GUI thread.
-
-    @since 2017-08-05
-*/
-::class "AwtGUIThread"  public
-
-/* ------------------------------------------------------------------------------------------------- */
-/** Constructor class method. */
-::method init             class
-  expose SwingUtilitiesClz
-  SwingUtilitiesClz=.nil
-
-/* ------------------------------------------------------------------------------------------------- */
-/** Private class method to set up and initilaize the infrastructure.
-*/
-::method setup             class private
-  expose awtQueue runnable SwingUtilitiesClz waitingToRun
-  awtQueue=.queue~new         -- awtQueue: all queued messages will be dispatched
-  runnable=.routines["XBSFCREATEREXXPROXY"]~call(self, .nil, "java.lang.Runnable") -- allow this class object to be used as a Runnable
-  SwingUtilitiesClz=bsf.loadClass("javax.swing.SwingUtilities")
-  waitingToRun=.false
-
-/* ------------------------------------------------------------------------------------------------- */
-/**
-* @return returns <code>.true</code>, if running on the GUI thread ("event dispatch thread" a.k.a. "awt Thread"), <code>.false</code> else
-*/
-::method isGuiThread     class unguarded
-  expose SwingUtilitiesClz
-
-  guard on
-  if SwingUtilitiesClz=.nil then self~setup  -- make sure attributes are initialized
-  guard off
-
-  return SwingUtilitiesClz~isEventDispatchThread
-
-
-/* ------------------------------------------------------------------------------------------------- */
-::method run               class       -- this method will be invoked by Java at a later time
-  expose awtQueue SwingUtilitiesClz waitingToRun
--- say self": arrived at  :" pp(.dateTime~new)
-
-  if SwingUtilitiesClz~isEventDispatchThread then  -- only execute, if we are running on the GUI thread!
-  do
-      -- process queued GuiMessages
-     do while awtQueue~items>0
-        self~process(awtQueue~pull)     -- fetch item from head of the queue
-     end
-  end
-  waitingToRun=.false   -- indicate that no runLater is pending!
--- say self": returning at:" pp(.dateTime~new)
-
-
-/* ------------------------------------------------------------------------------------------------- */
-/** Private static method that processes the supplied GUIMessage.
-*/
-::method process           class private
-  expose SwingUtilitiesClz
-  use strict arg guiMsg
-
-  signal on syntax      -- intercept errors
-  if guiMsg~hasArguments then -- create and send messages
-     .message~new(guiMsg~target, guiMsg~messageName, "Array", guiMsg~arguments)~send
-  else
-     .message~new(guiMsg~target, guiMsg~messageName)~send
-
-  if var("RESULT") then    -- was a result returned?
-  do
-     guiMsg~result=result   -- save result
-     guiMsg~hasResult=.true -- indicate we have a result
-  end
-  guiMsg~completed=.true    -- communicate that processing has completed
-  return
-
-syntax:
-  guiMsg~errorCondition=condition("o") -- supply error condition object
-  guiMsg~hasError=.true    -- indicate we had an error
-  guiMsg~completed=.true    -- communicate that processing has completed in this case as well
-
--- TODO: remove the following debug statements
-.stderr~say("---> SOD (start of debug), line #" .line)
-.stderr~say(self":process, error" pp(condition("C")) "in" pp(guiMsg~target) "~" pp(guiMsg~messageName))
-.stderr~say
-.context~package~addPackage(.package~new("rgf_util2.rex"))  -- do a dynamic requires
-.stderr~say(ppCondition2(guiMsg~errorCondition))   -- show condition formatted in full
-.stderr~say("<--- EOD (end of debug), line #" .line)
-
-  return
-
-
-/* ------------------------------------------------------------------------------------------------- */
-/** Private static method that allows simple creation of a GUIMessage from the supplied array of arguments.
-*   @param args the argument array where index 1 stores the target object, index 2 the message name; optonally
-*               index 3 indicates whether the arguments are supplied individually or in index 4 as an array already
-*
-*   @return returns a <code>GUIMessage</code> instance
-*/
-::method createGUIMessage  class private
-  use strict arg args      -- an array
-
-  signal on syntax
-  target     =args[1]
-  messageName=args[2]
-  if args~items>2 then     -- message arguments supplied
-  do
-     argType=args[3]~left(1)~upper   -- must be "Individual" or "Array"
-     select
-        when argType="I" then msgArgs=args~section(4) -- turn individual arguments into an array
-
-        when argType="A" then -- fourth argument is an array of arguments already
-             do
-                if args~items>4 then     -- too many arguments!
-                   raise syntax 88.922 array ("4")
-
-                if \args[4]~isA(.array) then    -- wrong type
-                   raise syntax 88.923 array ("message", "4", args[4])
-
-                msgArgs=args[4]
-             end
-
-        otherwise             -- we have a problem here!
-           raise syntax 93.915 array ("IA", args[3])
-     end
-     guiMsg=.GuiMessage~new(target, messageName, msgArgs)
-  end
-  else
-  do
-     guiMsg=.GuiMessage~new(target, messageName)
-  end
-  return guiMsg
-
-syntax:
-  raise propagate
-
-
-/* ------------------------------------------------------------------------------------------------- */
-/** This class method allows to define a Rexx message with its arguments that should
-*   be processed on the GUI thread. Each invocation will create a new <code>GUIMessage</code>
-*   from the supplied arguments and returns it for further inspection in addition to queuing
-*   it for later execution on the GUI thread. This method remembers the order of invocations
-*   and makes sure that each GUI message will be executed in that order.
-*
-*   @param target the target object to receive a message on the GUI thread
-*   @param messageName the message name to send to the target on the GUI thread
-*   @param indicator  optional; indicates with &quot;I&quot; (Indivdual) that the arguments
-*                     are listed individually, &quot;A&quot; (Array) indicates that the fourth
-*                     argument is an array containing the arguments to supply with the
-*                     message on the GUI thread
-*
-*   @return GUIMessage a GUI message object (modelled after ooRexx' <code>Message</code> class
-*                     that allows one to inspect the state of the message (process completed,
-*                     fetching a possible result, determining whether an error occurred and
-*                     inspecting it)
-*/
-::method runLater          class unguarded
-  expose awtQueue waitingToRun SwingUtilitiesClz runnable
-  use strict arg target, messageName, ...
-
-  signal on syntax
-  guard on
-  if SwingUtilitiesClz=.nil then self~setup  -- make sure attributes are initialized
-  guard off
-  guiMsg=self~createGuiMessage(arg(1,"array"))
-  awtQueue~queue(guiMsg)
-  if waitingToRun=.false then -- "runLater" not invoked yet?
-  do
-     guard on
-     waitingToRun=.true
-     guard off
-     SwingUtilitiesClz~invokeLater(runnable)
-  end
-  return guiMsg            -- allows caller to get a hold of a possible return value
-
-syntax:
-  raise propagate
-
-
-/* ------------------------------------------------------------------------------------------------- */
-   -- method replaces existing target: this way only the latest sent message will get executed!
-/** This class method allows to define a Rexx message with its arguments that should
-*   be processed on the GUI thread. Each invocation will create a new <code>GUIMessage</code>
-*   from the supplied arguments and returns it for further inspection in addition to queueing
-*   it for later execution on the GUI thread. Unlike <code>runLater</code> this method will
-*   first remove any queued messages with the same target and the same message name, before
-*   queueing this message.
-*
-*   @param target the target object to receive a message on the GUI thread
-*   @param messageName the message name to send to the target on the GUI thread
-*   @param indicator  optional; indicates with &quot;I&quot; (Indivdual) that the arguments
-*                     are listed individually, &quot;A&quot; (Array) indicates that the fourth
-*                     argument is an array containing the arguments to supply with the
-*                     message on the GUI thread
-*
-*   @return GUIMessage a GUI message object (modelled after ooRexx' <code>Message</code> class
-*                     that allows one to inspect the state of the message (process completed,
-*                     fetching a possible result, determining whether an error occurred and
-*                     inspecting it)
-*/
-::method runLaterLatest    class unguarded
-  expose awtQueue waitingToRun SwingUtilitiesClz runnable
-  use strict arg target, messageName, ...
-
-  signal on syntax
-  guard on
-  if SwingUtilitiesClz=.nil then self~setup  -- make sure attributes are initialized
-  guard off
-
-  guiMsg=self~createGuiMessage(arg(1,"array"))
-      -- remove all occurrences of messages with the same messagename and the same target
-  idx=awtQueue~first           -- get index of the first item in the queue, if any
-  do while idx<>.nil          -- a valid index in hand ?
-     tmpItem=awtQueue~at(idx)  -- fetch item, a GuiMessage
-         -- same target, same messagename?
-     if tmpItem~target=target, tmpItem~messageName~caselessEquals(messagename) then
-        awtQueue~delete(idx)   -- delete the guiMsg object
-
-     idx=awtQueue~next(idx)    -- get index of next item in the queue
-  end
-  awtQueue~queue(guiMsg)       -- now enqueue current (latest) guiMsg
-
-  if waitingToRun=.false then -- "runLater" not invoked yet?
-  do
-     guard on
-     waitingToRun=.true
-     guard off
-     SwingUtilitiesClz~invokeLater(runnable)
-  end
-  return guiMsg            -- allows caller to get a hold of a possible return value
-
-syntax:
-  raise propagate
 
