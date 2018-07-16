@@ -1059,7 +1059,6 @@ syntax:
   end
   return series
 
-
 /* =================================================================================== */
 /* for tutorial part 6: define the BirthdayStatisticsController
 

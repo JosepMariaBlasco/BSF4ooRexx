@@ -1,0 +1,272 @@
+#!/usr/bin/env rexx
+/*
+   Name:       javafx_dialog_demo.rxj
+   author:     Rony G. Flatscher
+   date:       2018-07-15
+   purpose:    demonstrate using the JavaFX dialog classes that got introduced with JavaFX 8u40,
+               cf. <http://code.makery.ch/blog/javafx-dialogs-official/>
+               these ooRexx examples are the ooRexx equivalents of the above code examples
+
+   note:       this is a standalone demonstration program that uses JavaFX which must be
+               initialized prior to using JavaFX dialogs, otherwise a "java.lang.IllegalStateException:
+               Toolkit not initialized" error will occur; there are two possible options:
+               - one is to create a "javafx.application.Application" and run the demo from
+                 its 'start' method
+               - the other one is to initialize the Java class "javafx.embed.swing.JFXPanel" and
+                 dispatch the JavaFX dialog code on the FX Application Thread by using BSF's class
+                 .FxGuiThread and its method 'runLater'
+
+   changes:    ---
+   last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
+
+   changed:
+               ---
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2018 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
+
+signal on syntax     -- if something goes wrong on the Java side, this will give us the Java exception chain
+
+   -- import some JavaFX classes that we need to use
+call bsf.import "javafx.scene.control.Alert"          , "fxAlert"
+call bsf.import "javafx.scene.control.Alert$AlertType", "fxAlertType"  -- nested enumeration class, hence "$" instead of "."
+call bsf.import "javafx.scene.control.ButtonType"     , "fxButtonType"
+call bsf.import "javafx.scene.control.ChoiceDialog"   , "fxChoiceDialog"
+call bsf.import "javafx.scene.control.Dialog"         , "fxDialog"
+call bsf.import "javafx.scene.control.Label"          , "fxLabel"
+call bsf.import "javafx.scene.control.TextArea"       , "fxTextArea"
+call bsf.import "javafx.scene.control.TextInputDialog", "fxTextInputDialog"
+
+call bsf.import "javafx.stage.StageStyle"             , "fxStageStyle"
+call bsf.import "javafx.application.Platform"         , "fxPlatform"
+
+call bsf.import "javafx.scene.layout.Priority"        , "fxPriority"
+call bsf.import "javafx.scene.layout.GridPane"        , "fxGridPane"
+
+say 'This demo uses JavaFX dialogs, so the JavaFX Toolkit needs to be initialized!'
+say
+say 'Use from within (1) JavaFX Application or from (2) awt/swing (JFXPanel)?'
+parse pull input .
+
+if input=1 then      -- run from within JavaFX Application
+do
+   rxApp=.dummyFXApplication~new          -- create Rexx object that will control the FXML set up
+   jrxApp=BSFCreateRexxProxy(rxApp, ,"javafx.application.Application")
+   jrxApp~launch(jrxApp~getClass, .nil)   -- launch the application, invokes "start"
+end
+
+else if input=2 then -- run from awt/swing, hence need to use class .FxGuiThread
+do
+   say 'Creating an instance of the Java class "javafx.embed.swing.JFXPanel":'
+   fxPanel = .bsf~new("javafx.embed.swing.JFXPanel")
+   say 'now JavaFX is initialized and we may take advantage of the JavaFX dialogs from the'
+   say 'FX Application Thread (using method ''runLater'' in the BSF class ''FxGuiThread'').'
+   msg=.FxGUIthread~runLater(.demoJavaFXDialogs, "showOff") -- dispatch on FX Application thread
+   res=msg~result      -- wait
+end
+
+else
+do
+   say "you entered:" pp(input)", valid values are '1' or '2'"
+   exit -1
+end
+say "done."
+exit
+
+syntax:
+   co=condition("object")     -- get all condition information
+   say ppCondition2(co)
+   exit -1
+
+-- ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+say "Demonstrating .bsf.dialog~messageBox(...):"
+/* arguments: message, title, messageType */
+.bsf.dialog~messageBox("This is an informal message")
+.bsf.dialog~messageBox("This is an informal message", "A title text")
+.bsf.dialog~messageBox("This is an informal message", "A title text", "info")
+.bsf.dialog~messageBox("This is an error message",    "A title text", "error")
+say "---"
+
+say "Demonstrating .bsf.dialog~dialogBox(...):"
+/* arguments: message, title, messageType, optionType, icon, textOfButtons, defaultButton */
+res=.bsf.dialog~dialogBox("Shall we delete?", , "question",  "YesNoCancel")
+say "dialogBox: you picked button #" res
+
+txtButtons=.list~of("Tickle Alice", "Tickle Berta", "Tickle Cindy")
+defButton ="Tickle Berta"
+res=.bsf.dialog~dialogBox("Please pick a button", , "question", , , txtButtons, defButton)
+say "dialogBox: you picked button #" res
+say "---"
+
+
+say "Demonstrating .bsf.dialog~inputBox(...):"
+/* arguments: message, title, messageType, icon, textOfOptions, defaultValue */
+res=.bsf.dialog~inputBox("Enter something!")
+say "inputBox: you entered" pp(res)
+
+txtOptions=.list~of("Tickle Alice", "Tickle Berta", "Tickle Cindy")
+defaultTxtOption="Tickle Berta"
+res=.bsf.dialog~inputBox("Pick something!", "Choice Dialog", "plain", , txtOptions, defaultTxtOption)
+say "inputBox: you picked" pp(res)
+-- \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+
+::requires BSF.CLS
+::requires "rgf_util2.rex"    -- get access to the public routine "ppCondition2()"
+
+
+
+/* =========================================================================== */
+/* =========================================================================== */
+   -- this Rexx class implements the abstract method "start" of "javafx.application.Application"
+   -- that does nothing; using this dummy application still causes JavaFX to initialize, which
+   -- is needed if using standalone JavaFX dialogs
+
+/** This Rexx class implements the abstract method 'start' of "javafx.application.Application"
+ *  which will get invoked on the FX Applicataion Thread. It merely invokes the 'showOff'
+ *  method of the Rexx class .demoJavaFXDialogs and then causes the application to be closed
+ *  via the Java "javafx.application.Platform" class.
+*/
+::class dummyFXApplication
+/* =========================================================================== */
+::method start             -- will run on the FX Application Thread so directly interacting with JavaFX controls is o.k.
+  use arg stage, slotDir   -- just to document the arguments; we do not need them for this purpose
+
+  say "--> START method of 'dummyFXApplication' running on the FX Application Thread"
+  say
+  .demoJavaFxDialogs~showOff  -- demo some of the JavaFX Dialogs
+  .fxPlatform~exit          -- close this JavaFX Application
+  say
+  say "<-- START method of 'dummyFXApplication': about to return from the START method."
+
+
+/* =========================================================================== */
+/* =========================================================================== */
+/** The methods of this Rexx class need to be invoked on the FX Application Thread
+*   as they demonstrate some of the JavaFX Dialog classes.
+*/
+::class demoJavaFXDialogs
+
+/* =========================================================================== */
+::method showOff class        -- this method must be invoked on the FX Application Thread
+
+   say "-"~copies(100)
+  say "Demonstrating some of the standard JavaFX Dialogs (since JavaFX 8u40) ..."
+  say
+  self~demoInformationDialog
+  self~demoInformationDialogWithTextArea
+
+/* =========================================================================== */
+::method demoInformationDialog class      -- demonstrate the information Alert dialog
+   say
+   say "Information Dialog with title, header and content"
+   say
+   say "type: INFORMATION (cf. icon)"
+   alert=.fxAlert~new(.fxAlertType~INFORMATION)    -- create Alert dialog
+   alert~title      ="Information Dialog (see icon)"
+   alert~headerText ="This is a header text available in FX dialogs"
+   alert~contentText="This is the information message, created at" pp(.dateTime~new)
+   res=alert~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
+   say "   'alert~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
+
+   say "type: ERROR (cf. icon)"
+   alert=.fxAlert~new(.fxAlertType~ERROR)          -- create Alert dialog
+   alert~title      ="Error Dialog (see icon)"
+   alert~headerText ="This is a header text available in FX dialogs"
+   alert~contentText="This is the error message, created at" pp(.dateTime~new)
+   res=alert~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
+   say "   'alert~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
+
+   say "type: CONFIRMATION (cf. icon, two buttons)"
+   alert=.fxAlert~new(.fxAlertType~CONFIRMATION)   -- create Alert dialog
+   alert~title      ="Confirmation Dialog (see icon, two buttons)"
+   alert~headerText ="This is a header text available in FX dialogs"
+   alert~contentText="This is the confirmation message, created at" pp(.dateTime~new)
+   res=alert~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
+   say "   'alert~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
+   val=res~get             -- gets the ButtonType object from the result
+   ok=.fxButtonType~ok     -- gets the ButtonType object from the ButtonType class
+   -- val and ok may be different ooRexx objects, although referring to the same Java object;
+   -- if val and ok represent the same ButtonType then their ButtonType text is the same:
+   if val~getText=ok~getText then
+      say "   --> you pressed the OK button!"
+   else
+      say "   --> you pressed the CANCEL button!"
+
+   say "type: WARNING (cf. icon)"
+   alert=.fxAlert~new(.fxAlertType~WARNING)        -- create Alert dialog
+   alert~title      ="Warning Dialog (see icon)"
+   alert~headerText ="This is a header text available in FX dialogs"
+   alert~contentText="This is the warning message, created at" pp(.dateTime~new)
+   res=alert~showAndWait    -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
+   say "   'alert~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
+
+   say "-"~copies(79)
+
+
+/* =========================================================================== */
+::method demoInformationDialogWithTextArea class      -- demonstrate the information Alert dialog
+   say
+   say "Error Dialog with title, header and content"
+   say
+   say "type: ERROR (cf. icon)"
+   signal on syntax
+   rexxCode="say 'hello, world'",                                                     -
+            "say 'this is a Rexx program that causes a syntax exception on purpose'", -
+            "a=1/0    -- a divide by 0 runtime error"
+   interpret rexxCode~toString(, ';')
+   exit
+
+syntax:
+   co=condition("object")        -- get the condition object (a Rexx directory)
+   coText=ppCondition2(co)       -- format condition object as a string
+
+   alert=.fxAlert~new(.fxAlertType~ERROR)          -- create Alert dialog
+   alert~title      ="Rexx Condition Raised"
+   alert~headerText ="This is how a Rexx condition could be displayed."
+   alert~contentText="A divide by 0 condition formatted with ppCondition2() ..." pp(.dateTime~new)
+
+   label=.fxLabel~new("The Rexx condition was:")
+
+   textArea=.fxTextArea~new(coText) -- assign Rexx condition text
+   textArea~editable =.false     -- instead of textArea~setEditable(.false)
+   textArea~wrapText =.true      -- instead of textArea~wrapText(.true)
+
+   max_value=bsf.importClass("java.lang.Double")~MAX_VALUE
+   textArea~maxWidth =max_value  -- instead of textArea~setMaxWidth(max_value)
+   textArea~maxHeight=max_value  -- instead of textArea~setMaxHeight(max_value)
+   .fxGridPane~setVgrow(textArea, .fxPriority~always)
+   .fxGridPane~setHgrow(textArea, .fxPriority~always)
+
+   expContent=.fxGridPane~new
+   expContent~setMaxWidth(max_value)
+   expContent~add(label,   0,0)
+   expContent~add(textArea,0,1)
+
+   -- instead of: alert~getDialogPane~setExpandableContent(expContent)
+   dialogPane=alert~dialogPane
+   dialogPane~expandableContent=expContent
+   dialogPane~setPrefWidth(600)  -- make it wider to not clip the lines if opening drop-down
+
+   res=alert~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
+   say "   'alert~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
+   say "-"~copies(79)
+   return
+
+
