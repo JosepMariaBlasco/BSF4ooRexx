@@ -43,28 +43,36 @@
 
 signal on syntax     -- if something goes wrong on the Java side, this will give us the Java exception chain
 
-   -- import some JavaFX classes that we need to use
+   -- import some JavaFX classes that we need to use, supply environment name to use for easier retrieval
+call bsf.import "javafx.application.Platform"         , "fxPlatform"
+
 call bsf.import "javafx.scene.control.Alert"          , "fxAlert"
-call bsf.import "javafx.scene.control.Alert$AlertType", "fxAlertType"  -- nested enumeration class, hence "$" instead of "."
+call bsf.import "javafx.scene.control.Alert$AlertType", "fxAlertType"         -- nested enumeration class, hence "$" instead of "."
 call bsf.import "javafx.scene.control.ButtonType"     , "fxButtonType"
+call bsf.import "javafx.scene.control.ButtonBar$ButtonData", "fxButtonData"   -- nested enumeration class, hence "$" instead of "."
 call bsf.import "javafx.scene.control.ChoiceDialog"   , "fxChoiceDialog"
 call bsf.import "javafx.scene.control.Dialog"         , "fxDialog"
 call bsf.import "javafx.scene.control.Label"          , "fxLabel"
 call bsf.import "javafx.scene.control.TextArea"       , "fxTextArea"
+call bsf.import "javafx.scene.control.TextField"      , "fxTextField"
 call bsf.import "javafx.scene.control.TextInputDialog", "fxTextInputDialog"
 
-call bsf.import "javafx.stage.StageStyle"             , "fxStageStyle"
-call bsf.import "javafx.application.Platform"         , "fxPlatform"
+call bsf.import "javafx.scene.image.ImageView"        , "fxImageView"
 
 call bsf.import "javafx.scene.layout.Priority"        , "fxPriority"
 call bsf.import "javafx.scene.layout.GridPane"        , "fxGridPane"
+
+call bsf.import "javafx.stage.StageStyle"             , "fxStageStyle"
+
+call bsf.import "java.util.Optional"                  , "jOptional"
+
 
 say 'This demo uses JavaFX dialogs, so the JavaFX Toolkit needs to be initialized!'
 say
 say 'Use from within (1) JavaFX Application or from (2) awt/swing (JFXPanel)?'
 parse pull input .
 
-if input=1 then      -- run from within JavaFX Application
+if input=1 then      -- run from within a JavaFX Application
 do
    rxApp=.dummyFXApplication~new          -- create Rexx object that will control the FXML set up
    jrxApp=BSFCreateRexxProxy(rxApp, ,"javafx.application.Application")
@@ -77,8 +85,8 @@ do
    fxPanel = .bsf~new("javafx.embed.swing.JFXPanel")
    say 'now JavaFX is initialized and we may take advantage of the JavaFX dialogs from the'
    say 'FX Application Thread (using method ''runLater'' in the BSF class ''FxGuiThread'').'
-   msg=.FxGUIthread~runLater(.demoJavaFXDialogs, "showOff") -- dispatch on FX Application thread
-   res=msg~result      -- wait
+   msg=.FxGUIthread~runLater(.demoJavaFXDialogs, "showOff") -- dispatch on the FX Application thread
+   res=msg~result      -- wait until msg was processed
 end
 
 else
@@ -169,8 +177,14 @@ say "inputBox: you picked" pp(res)
    say "-"~copies(100)
   say "Demonstrating some of the standard JavaFX Dialogs (since JavaFX 8u40) ..."
   say
+/* temporarily commented out:
+*/
   self~demoInformationDialog
   self~demoInformationDialogWithTextArea
+  self~demoDialogBoxes
+  self~demoTextInputDialog
+  self~demoChoiceDialog
+  self~demoCustomizedDialog
 
 /* =========================================================================== */
 ::method demoInformationDialog class      -- demonstrate the information Alert dialog
@@ -179,7 +193,7 @@ say "inputBox: you picked" pp(res)
    say
    say "type: INFORMATION (cf. icon)"
    alert=.fxAlert~new(.fxAlertType~INFORMATION)    -- create Alert dialog
-   alert~title      ="Information Dialog (see icon)"
+   alert~title      ="Information Dialog (see icon) from ooRexx"
    alert~headerText ="This is a header text available in FX dialogs"
    alert~contentText="This is the information message, created at" pp(.dateTime~new)
    res=alert~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
@@ -187,15 +201,15 @@ say "inputBox: you picked" pp(res)
 
    say "type: ERROR (cf. icon)"
    alert=.fxAlert~new(.fxAlertType~ERROR)          -- create Alert dialog
-   alert~title      ="Error Dialog (see icon)"
+   alert~title      ="Error Dialog (see icon) from ooRexx"
    alert~headerText ="This is a header text available in FX dialogs"
    alert~contentText="This is the error message, created at" pp(.dateTime~new)
    res=alert~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
    say "   'alert~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
 
    say "type: CONFIRMATION (cf. icon, two buttons)"
-   alert=.fxAlert~new(.fxAlertType~CONFIRMATION)   -- create Alert dialog
-   alert~title      ="Confirmation Dialog (see icon, two buttons)"
+   alert=.fxAlert~new(.fxAlertType~CONFIRMATION)   -- create Alert dialog: has OK and CANCEL button
+   alert~title      ="Confirmation Dialog (see icon, two buttons) from ooRexx"
    alert~headerText ="This is a header text available in FX dialogs"
    alert~contentText="This is the confirmation message, created at" pp(.dateTime~new)
    res=alert~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
@@ -211,7 +225,7 @@ say "inputBox: you picked" pp(res)
 
    say "type: WARNING (cf. icon)"
    alert=.fxAlert~new(.fxAlertType~WARNING)        -- create Alert dialog
-   alert~title      ="Warning Dialog (see icon)"
+   alert~title      ="Warning Dialog (see icon) from ooRexx"
    alert~headerText ="This is a header text available in FX dialogs"
    alert~contentText="This is the warning message, created at" pp(.dateTime~new)
    res=alert~showAndWait    -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
@@ -238,7 +252,7 @@ syntax:
    coText=ppCondition2(co)       -- format condition object as a string
 
    alert=.fxAlert~new(.fxAlertType~ERROR)          -- create Alert dialog
-   alert~title      ="Rexx Condition Raised"
+   alert~title      ="Rexx Condition Raised (from ooRexx)"
    alert~headerText ="This is how a Rexx condition could be displayed."
    alert~contentText="A divide by 0 condition formatted with ppCondition2() ..." pp(.dateTime~new)
 
@@ -269,4 +283,165 @@ syntax:
    say "-"~copies(79)
    return
 
+
+/* =========================================================================== */
+::method demoDialogBoxes class      -- demonstrate the information Alert dialog
+   say
+   say "Dialogs with title, header and content"
+   say
+   say "type: CONFIRMATION (cf. icon)"
+   alert=.fxAlert~new(.fxAlertType~CONFIRMATION)   -- create Alert dialog: has OK and CANCEL button
+   alert~title      ="Confirmation Dialog (see icon) from ooRexx"
+   alert~headerText ="An important question!"
+   alert~contentText="Shall we delete?, created at" pp(.dateTime~new)
+   res=alert~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
+   say "   'alert~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
+
+   say
+   say "type: CONFIRMATION (cf. icon) with many buttons"
+   alert=.fxAlert~new(.fxAlertType~CONFIRMATION)   -- create Alert dialog: has OK and CANCEL button
+   alert~title      ="Tickling Confirmation Dialog (see icon) from ooRexx"
+   alert~headerText ="Please pick a button"
+   alert~contentText="Choose person to tickle, created at" pp(.dateTime~new)
+
+      -- define and assign buttons
+   jarrBT=bsf.createJavaArray(.fxButtonType, 4)
+   jarrBT[1]=.fxButtonType~new("Tickle Alice")     -- ButtonData: OTHER
+   jarrBT[2]=.fxButtonType~new("Tickle Berta")     -- ButtonData: OTHER
+   jarrBT[3]=.fxButtonType~new("Tickle Cindy")     -- ButtonData: OTHER
+   jarrBT[4]=.fxButtonType~new("Cancel", .fxButtonData~CANCEL_CLOSE) -- create a CANCEL_CLOSE ButtonData type
+   alert~buttonTypes~setAll(jarrBT)    -- alert.getButtonTypes().setAll(...)
+   res=alert~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
+   say "   'alert~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
+   say "   button's text="pp(res~get~text)   -- get value from Optional, a ButtonType, query its text
+
+   say "-"~copies(79)
+
+
+/* =========================================================================== */
+::method demoTextInputDialog class     -- demonstrate the information Alert dialog
+   say
+   say "TextInputDialog with title, header and content, an ImageView; supplying default text"
+   say
+   say "type: javafx.scene.control.TextInputDialog"
+   defText="Isn't BSF4ooRexx (ooRexx+Java) great? ;)"
+   dialog=.fxTextInputDialog~new(defText) -- create TextInputDialog: has OK and CANCEL button
+   dialog~graphic=.fxImageView~new("file:bsf4oorexx_256.png")
+   dialog~title      ="TextInputDialog from ooRexx"
+   dialog~headerText ="This dialog returns the text you enter; created at" pp(.dateTime~new)
+   dialog~contentText="Please enter something:"
+   res=dialog~showAndWait     -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
+   say "   'dialog~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
+   if res~isPresent then say "   res~get="pp(res~get)
+                    else say "   no result present! (ESCAPE pressed?)"
+   say "-"~copies(79)
+
+
+/* =========================================================================== */
+::method demoChoiceDialog class     -- demonstrate the information Alert dialog
+   say
+   say "ChoiceDialog with title, header and content, an ImageView"
+   say
+   say "type: javafx.scene.control.ChoiceDialog"
+      -- create a Java array of type String with the choices to supply
+   jarrChoices=bsf.createJavaArrayOf(.java.lang.String, "Tickle Alice", "Tickle Berta", "Tickle Cindy")
+   defChoice  ="Tickle Berta"
+   dialog=.fxChoiceDialog~new(defChoice, jarrChoices)  -- create ChoiceDialog: has OK and CANCEL button
+   -- dialog~graphic=.fxImageView~new("file:oorexx4ooo_128.png")
+      -- this time we resize it to 128 pixel
+   dialog~graphic=.fxImageView~new("file:oorexx4ooo_256.png")~~setFitWidth(128)~~setPreserveRatio(.true)~~setSmooth(.true)
+   dialog~title      ="ChoiceDialog from ooRexx"
+
+   lf="0a"x    -- insert line breaks in headerText
+   dialog~headerText ="This dialog returns the text of" lf"the selected choice;" lf"created at" pp(.dateTime~new)
+   dialog~contentText="Please pick a choice:"
+   res=dialog~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
+   say "   'dialog~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
+   if res~isPresent then say "   res~get="pp(res~get)
+                    else say "   no result present! (ESCAPE pressed?)"
+   say "-"~copies(79)
+
+
+/* =========================================================================== */
+::method demoCustomizedDialog class     -- demonstrate the information Alert dialog
+   say
+   say "Customized Dialog with title, header and content, an ImageView, a TextField, a PasswordField"
+   say
+   say "type: javafx.scene.control.ChoiceDialog"
+
+   dialog=.fxDialog~new   -- create a Dialog and customize it: has OK and CANCEL button
+      -- this time we resize it to 64 pixel
+   dialog~graphic=.fxImageView~new("file:oorexx_256.png")~~setFitWidth(64)~~setPreserveRatio(.true)~~setSmooth(.true)
+   dialog~title      ="Customized Dialog from ooRexx"
+   dialog~headerText ="This dialog is meant for logins"
+   dialogPane=dialog~dialogPane
+
+      -- define and assign buttons
+   loginButtonType=.fxButtonType~new("Login", .fxButtonData~OK_DONE) -- use as the default push button
+   jarrBT=bsf.createJavaArrayOf(.fxButtonType, loginButtonType, .fxButtonType~new("Cancel",.fxButtonData~CANCEL_CLOSE) )
+   dialogPane~buttonTypes~setAll(jarrBT)    -- dialog.getButtonTypes().setAll(...)
+
+      -- get loginButtonType node, disable it (should only be enabled, if username TextField has a value)
+   loginButtonNode=dialogPane~lookupButton(loginButtonType) ~~setDisable(.true)
+
+      -- define grid and the fields and labels it should contain
+   grid=.fxGridPane~new ~~setHGap(10) ~~setVGap(10) ~~setPadding(.bsf~new("javafx.geometry.Insets", 20,150,10,10))
+
+   userName=.fxTextField~new("Username")
+   grid~add(.fxLabel~new("Username:"), 0, 0)
+   grid~add(userName,                  1, 0)
+
+   password=.bsf~new("javafx.scene.control.PasswordField", "Password")
+   grid~add(.fxLabel~new("Password:"), 0, 1)
+   grid~add(password,                  1, 1)
+
+      -- create a Rexx directory add the JavaFX objects to it, which we need to access on callbacks
+   rexxDir=.directory~new
+   rexxDir~loginButtonNode=loginButtonNode
+   rexxDir~loginButtonType=loginButtonType
+   rexxDir~username       =username
+   rexxDir~password       =password
+      -- wrap Rexx object into a Java proxy, denoting the Java interfaces the Rexx object supports
+      -- the second argument is a Rexx value (a Rexx directory) which will be contained in the slotDir
+      -- directory under the name "rexxDir"
+   jobj=bsfCreateRexxProxy(.demoCustomizedDialogListener~new,rexxDir,"javafx.beans.value.ChangeListener","javafx.util.Callback")
+   userName~textProperty~addListener(jobj)   -- add it as listener, gets invoked if field gets edited
+   dialog~setResultConverter(jobj)           -- add it as result converter; determines return value
+
+   dialogPane~content=grid
+
+      -- use the BSF Rexx class .fxGuiThread to have the Rexx message dispatched on the FX Application Thread later
+   .fxGuiThread~runLater(userName, "requestFocus") -- place focus into the userName TextField
+
+
+   res=dialog~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
+   say "   'dialog~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
+   if res~isPresent then say "   res~get="pp(res~get)
+                    else say "   no result present! (ESCAPE pressed?)"
+   say "-"~copies(79)
+
+-- this class is needed for changing the state of the Login-button in the "demoCustomizedDialog" method above
+::class demoCustomizedDialogListener
+
+-- javafx.beans.value.ChangeListener<T>: void changed(ObservableValue<? extends T> observable, T oldValue, T newValue)
+::method changed              -- whenever the userName TextField gets edited
+  use arg observable, oldValue, newValue, slotDir
+  say self"::changed: observable="pp(observable) "oldValue="pp(oldValue) "newValue="pp(newValue) "slotDir="pp(slotDir)
+
+     -- fetch the loginButtonNode and set its disabled state accordingly
+  slotDir~userData~loginButtonNode ~setDisable(newValue="")
+
+-- javafx.util.Callback<P,R>: R call(P param): used by the Dialog's "ResultConverter"
+::method call
+  use arg param, slotDir
+  say self"::changed: param="pp(param) "slotDir="pp(slotDir)
+
+  rexxDir=slotDir~userData    -- fetch the Rexx directory we supplied from the slotDir directory (supplied by BSF4ooRexx)
+
+  if param~text==rexxDir~loginButtonType~text then
+  do
+     pair=.bsf~new("javafx.util.Pair", rexxDir~username~getText, rexxDir~password~getText)
+     return .jOptional~of(pair)     -- return Optional
+  end
+  return .nil
 
