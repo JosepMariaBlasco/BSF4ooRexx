@@ -14,7 +14,8 @@
                  its 'start' method
                - the other one is to initialize the Java class "javafx.embed.swing.JFXPanel" and
                  dispatch the JavaFX dialog code on the FX Application Thread by using BSF's class
-                 .FxGuiThread and its method 'runLater'
+                 .FxGuiThread and its method 'runLater'; in this mode it is possible that focusing
+                 via .FxGuiThread is overriden by awt/swing (and therefore not working correctly)
 
    changes:    ---
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
@@ -64,16 +65,15 @@ call bsf.import "javafx.scene.layout.GridPane"        , "fxGridPane"
 
 call bsf.import "javafx.stage.StageStyle"             , "fxStageStyle"
 
-call bsf.import "java.util.Optional"                  , "jOptional"
-
-
 say 'This demo uses JavaFX dialogs, so the JavaFX Toolkit needs to be initialized!'
 say
-say 'Use from within (1) JavaFX Application or from (2) awt/swing (JFXPanel)?'
+say 'Use from within (1) JavaFX Application (default) or from (2) awt/swing (JFXPanel)?'
 parse pull input .
-
-if input=1 then      -- run from within a JavaFX Application
+.local~bUseJFXPanel=.false    -- by default use javafx.application.Application
+if input=1 | input="" then    -- run from within a JavaFX Application
 do
+   say "(1) -> using the JavaFX toolkit initialized via 'javafx.application.Application'..."
+   say
    rxApp=.dummyFXApplication~new          -- create Rexx object that will control the FXML set up
    jrxApp=BSFCreateRexxProxy(rxApp, ,"javafx.application.Application")
    jrxApp~launch(jrxApp~getClass, .nil)   -- launch the application, invokes "start"
@@ -81,10 +81,14 @@ end
 
 else if input=2 then -- run from awt/swing, hence need to use class .FxGuiThread
 do
+   say "(2) -> using the JavaFX toolkit initialized via 'javafx.embed.swing.JFXPanel'..."
+   say
    say 'Creating an instance of the Java class "javafx.embed.swing.JFXPanel":'
    fxPanel = .bsf~new("javafx.embed.swing.JFXPanel")
+   .local~bUseJFXPanel=.true     -- indicate that this run uses JFXPanel
    say 'now JavaFX is initialized and we may take advantage of the JavaFX dialogs from the'
    say 'FX Application Thread (using method ''runLater'' in the BSF class ''FxGuiThread'').'
+   say
    msg=.FxGUIthread~runLater(.demoJavaFXDialogs, "showOff") -- dispatch on the FX Application thread
    res=msg~result      -- wait until msg was processed
 end
@@ -412,7 +416,8 @@ syntax:
 
       -- use the BSF Rexx class .fxGuiThread to have the Rexx message dispatched on the FX Application Thread later
    .fxGuiThread~runLater(userName, "requestFocus") -- place focus into the userName TextField
-
+   if .bUseJFXPanel=.true then
+      say "HINT: focusing on the 'userName' TextField might not work correctly in JFXPanel-mode!"
 
    res=dialog~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
    say "   'dialog~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
@@ -439,9 +444,7 @@ syntax:
   rexxDir=slotDir~userData    -- fetch the Rexx directory we supplied from the slotDir directory (supplied by BSF4ooRexx)
 
   if param~text==rexxDir~loginButtonType~text then
-  do
-     pair=.bsf~new("javafx.util.Pair", rexxDir~username~getText, rexxDir~password~getText)
-     return .jOptional~of(pair)     -- return Optional
-  end
+     return .bsf~new("javafx.util.Pair", rexxDir~username~getText, rexxDir~password~getText)
+
   return .nil
 
