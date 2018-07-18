@@ -2,7 +2,7 @@
 /*
    Name:       javafx_dialog_demo.rxj
    author:     Rony G. Flatscher
-   date:       2018-07-15
+   date:       2018-07-18
    purpose:    demonstrate using the JavaFX dialog classes that got introduced with JavaFX 8u40,
                cf. <http://code.makery.ch/blog/javafx-dialogs-official/>
                these ooRexx examples are the ooRexx equivalents of the above code examples
@@ -44,6 +44,10 @@
 
 signal on syntax     -- if something goes wrong on the Java side, this will give us the Java exception chain
 
+ -- change to the directory where the program resides (we have relative paths to png-files in this program)
+parse source  . . pgm               -- get full path to our program
+call directory filespec('L', pgm)   -- change locally to the directory this program resides
+
    -- import some JavaFX classes that we need to use, supply environment name to use for easier retrieval
 call bsf.import "javafx.application.Platform"         , "fxPlatform"
 
@@ -65,6 +69,7 @@ call bsf.import "javafx.scene.layout.GridPane"        , "fxGridPane"
 
 call bsf.import "javafx.stage.StageStyle"             , "fxStageStyle"
 
+   -- start interaction with user
 say 'This demo uses JavaFX dialogs, so the JavaFX Toolkit needs to be initialized!'
 say
 say 'Use from within (1) JavaFX Application (default) or from (2) awt/swing (JFXPanel)?'
@@ -103,40 +108,9 @@ exit
 
 syntax:
    co=condition("object")     -- get all condition information
-   say ppCondition2(co)
+   say ppCondition2(co)       -- ppCondition2() will show us the chain of Java exceptions, if any
    exit -1
 
--- ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-say "Demonstrating .bsf.dialog~messageBox(...):"
-/* arguments: message, title, messageType */
-.bsf.dialog~messageBox("This is an informal message")
-.bsf.dialog~messageBox("This is an informal message", "A title text")
-.bsf.dialog~messageBox("This is an informal message", "A title text", "info")
-.bsf.dialog~messageBox("This is an error message",    "A title text", "error")
-say "---"
-
-say "Demonstrating .bsf.dialog~dialogBox(...):"
-/* arguments: message, title, messageType, optionType, icon, textOfButtons, defaultButton */
-res=.bsf.dialog~dialogBox("Shall we delete?", , "question",  "YesNoCancel")
-say "dialogBox: you picked button #" res
-
-txtButtons=.list~of("Tickle Alice", "Tickle Berta", "Tickle Cindy")
-defButton ="Tickle Berta"
-res=.bsf.dialog~dialogBox("Please pick a button", , "question", , , txtButtons, defButton)
-say "dialogBox: you picked button #" res
-say "---"
-
-
-say "Demonstrating .bsf.dialog~inputBox(...):"
-/* arguments: message, title, messageType, icon, textOfOptions, defaultValue */
-res=.bsf.dialog~inputBox("Enter something!")
-say "inputBox: you entered" pp(res)
-
-txtOptions=.list~of("Tickle Alice", "Tickle Berta", "Tickle Cindy")
-defaultTxtOption="Tickle Berta"
-res=.bsf.dialog~inputBox("Pick something!", "Choice Dialog", "plain", , txtOptions, defaultTxtOption)
-say "inputBox: you picked" pp(res)
--- \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 
 
 ::requires BSF.CLS
@@ -244,9 +218,12 @@ say "inputBox: you picked" pp(res)
    say "Error Dialog with title, header and content"
    say
    say "type: ERROR (cf. icon)"
+   say
+   say "** causing a Rexx error condition, which can be looked at"
+   say
    signal on syntax
-   rexxCode="say 'hello, world'",                                                     -
-            "say 'this is a Rexx program that causes a syntax exception on purpose'", -
+   rexxCode="say '   >>> from an interpreted Rexx program: hello, world'",                                                     -
+            "say '   >>> this running Rexx program causes a syntax exception on purpose'", -
             "a=1/0    -- a divide by 0 runtime error"
    interpret rexxCode~toString(, ';')
    exit
@@ -281,6 +258,9 @@ syntax:
    dialogPane=alert~dialogPane
    dialogPane~expandableContent=expContent
    dialogPane~setPrefWidth(600)  -- make it wider to not clip the lines if opening drop-down
+
+   say
+   say "** to see the Rexx condition text click the <down> button or the text 'Show Details'!"
 
    res=alert~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
    say "   'alert~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
@@ -351,7 +331,6 @@ syntax:
    jarrChoices=bsf.createJavaArrayOf(.java.lang.String, "Tickle Alice", "Tickle Berta", "Tickle Cindy")
    defChoice  ="Tickle Berta"
    dialog=.fxChoiceDialog~new(defChoice, jarrChoices)  -- create ChoiceDialog: has OK and CANCEL button
-   -- dialog~graphic=.fxImageView~new("file:oorexx4ooo_128.png")
       -- this time we resize it to 128 pixel
    dialog~graphic=.fxImageView~new("file:oorexx4ooo_256.png")~~setFitWidth(128)~~setPreserveRatio(.true)~~setSmooth(.true)
    dialog~title      ="ChoiceDialog from ooRexx"
@@ -374,11 +353,19 @@ syntax:
    say "type: javafx.scene.control.ChoiceDialog"
 
    dialog=.fxDialog~new   -- create a Dialog and customize it: has OK and CANCEL button
-      -- this time we resize it to 64 pixel
-   dialog~graphic=.fxImageView~new("file:oorexx_256.png")~~setFitWidth(64)~~setPreserveRatio(.true)~~setSmooth(.true)
+   dialogPane=dialog~dialogPane
+
+   image=.bsf~new("javafx.scene.image.Image", "oorexx_256.png")
+   dialogPane~scene~window~icons~add(image)  -- make it a system menu icon (upper left-hand corner)
+   say
+   say "note: custom icon in the upper left hand corner of the dialog"
+
+      -- this time we resize the ImageView to 64 pixel
+   imageView=.fxImageView~new(image)~~setFitWidth(64)~~setPreserveRatio(.true)~~setSmooth(.true)
+
+   dialog~graphic=imageView
    dialog~title      ="Customized Dialog from ooRexx"
    dialog~headerText ="This dialog is meant for logins"
-   dialogPane=dialog~dialogPane
 
       -- define and assign buttons
    loginButtonType=.fxButtonType~new("Login", .fxButtonData~OK_DONE) -- use as the default push button
@@ -391,11 +378,13 @@ syntax:
       -- define grid and the fields and labels it should contain
    grid=.fxGridPane~new ~~setHGap(10) ~~setVGap(10) ~~setPadding(.bsf~new("javafx.geometry.Insets", 20,150,10,10))
 
-   userName=.fxTextField~new("Username")
+   userName=.fxTextField~new
+   userName~promptText="Username"      -- will be displayed in light grey when field is empty
    grid~add(.fxLabel~new("Username:"), 0, 0)
    grid~add(userName,                  1, 0)
 
-   password=.bsf~new("javafx.scene.control.PasswordField", "Password")
+   password=.bsf~new("javafx.scene.control.PasswordField")
+   password~promptText="Password"      -- will be displayed in light grey when field is empty
    grid~add(.fxLabel~new("Password:"), 0, 1)
    grid~add(password,                  1, 1)
 
@@ -410,28 +399,49 @@ syntax:
       -- directory under the name "rexxDir"
    jobj=bsfCreateRexxProxy(.demoCustomizedDialogListener~new,rexxDir,"javafx.beans.value.ChangeListener","javafx.util.Callback")
    userName~textProperty~addListener(jobj)   -- add it as listener, gets invoked if field gets edited
-   dialog~setResultConverter(jobj)           -- add it as result converter; determines return value
+   dialog~setResultConverter(jobj)           -- add it as result converter which defines the return value of the Dialog
 
    dialogPane~content=grid
 
       -- use the BSF Rexx class .fxGuiThread to have the Rexx message dispatched on the FX Application Thread later
    .fxGuiThread~runLater(userName, "requestFocus") -- place focus into the userName TextField
    if .bUseJFXPanel=.true then
+   do
       say "HINT: focusing on the 'userName' TextField might not work correctly in JFXPanel-mode!"
+--      .fxGuiThread~runLater(userName, "selectAll") -- select all
+   end
 
    res=dialog~showAndWait      -- show the dialog, wait until user closes it, returns a java.util.Optional (isPresent(), get(), ...)
    say "   'dialog~showAndWait' returned res="pp(res)"; res~toString="pp(res~toString)
-   if res~isPresent then say "   res~get="pp(res~get)
-                    else say "   no result present! (ESCAPE pressed?)"
+   if res~isPresent then
+   do
+       usernamePassword=res~get
+       say "   Username="pp(usernamePassword~key)", Password="pp(usernamePassword~value)
+   end
+   else
+       say "   no result present! (ESCAPE pressed?)"
    say "-"~copies(79)
 
--- this class is needed for changing the state of the Login-button in the "demoCustomizedDialog" method above
+
+/* This class is needed for changing the state of the Login-button in the "demoCustomizedDialog" method above.
+   It implements two different functional methods:
+
+   - 'changed(observable,oldValue,newValue)' from the functional interface 'javafx.beans.value.ChangeListener' and
+   - 'call(param)' from the functional interface 'javafx.util.Callback'.
+
+   Boxing a Rexx instance of this class using 'BsfCreateRexxProxy()' into a Java object, one can supply
+   the two functional interface classes.
+
+   The trailing argument named 'slotDir' (a subclass of the Rexx directory class named 'Slot.Argument')
+   gets supplied by BSF4ooRexx and contains information about the Java method invocation and may
+   contain an entry 'USERDATA' storing the second argument to 'BsfCreateRexxProxy()', if that was given.
+*/
 ::class demoCustomizedDialogListener
 
 -- javafx.beans.value.ChangeListener<T>: void changed(ObservableValue<? extends T> observable, T oldValue, T newValue)
 ::method changed              -- whenever the userName TextField gets edited
   use arg observable, oldValue, newValue, slotDir
-  say self"::changed: observable="pp(observable) "oldValue="pp(oldValue) "newValue="pp(newValue) "slotDir="pp(slotDir)
+  say "/1/" self"::changed: observable="pp(observable) "oldValue="pp(oldValue) "newValue="pp(newValue) "slotDir="pp(slotDir)
 
      -- fetch the loginButtonNode and set its disabled state accordingly
   slotDir~userData~loginButtonNode ~setDisable(newValue="")
@@ -439,8 +449,7 @@ syntax:
 -- javafx.util.Callback<P,R>: R call(P param): used by the Dialog's "ResultConverter"
 ::method call
   use arg param, slotDir
-  say self"::changed: param="pp(param) "slotDir="pp(slotDir)
-
+  say "\2\" self"::call:    param="pp(param) "slotDir="pp(slotDir)
   rexxDir=slotDir~userData    -- fetch the Rexx directory we supplied from the slotDir directory (supplied by BSF4ooRexx)
 
   if param~text==rexxDir~loginButtonType~text then

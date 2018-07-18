@@ -9,6 +9,8 @@
 
    usage:   rexx 9-030_compileJavaClassAndUseIt.rxj
 
+   needs:   ooRexx 5.0 or higher
+
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
