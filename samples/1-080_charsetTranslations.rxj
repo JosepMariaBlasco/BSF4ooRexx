@@ -1,0 +1,117 @@
+#!/usr/bin/env rexx
+/*
+   name:    1-080_charsetTranslations.rxj
+   invoke:  rexx 1-080_charsetTranslations.rxj
+
+             "rexx 1-080_charsetTranslations.rxj"
+              ... Rexx script will demonstrate the public Rexx routine "bsf.iconv(string,fromCharset,toCharset)",
+                  which allows one to translate a Rexx string from one charset/encoding to another
+
+              or
+
+             "rexxj2 1-080_charsetTranslations.rxj"      (Windows)
+             "rexxj2.sh 1-080_charsetTranslations.rxj"   (Unix)
+              ... Java will load Rexx and execute the Rexx script, which uses Java classes
+
+   purpose: this program demonstrates charset/codepage translations of strings using the BSF.CLS
+            public routine "bsf.iconv(string,inCharset,outCharset)" introduced in July 2018;
+            in this case each string consists of one German umlaut or the German sharp-s
+            translated to different charsets; all names of Charsets are allowed that are
+            supported by Java! Cf. e.g. <https://docs.oracle.com/javase/8/docs/api/java/nio/charset/Charset.html> or
+            <https://docs.oracle.com/javase/8/docs/technotes/guides/intl/encoding.doc.html> or
+            lookup the Java documentation for the Java class "java.nio.charset.Charset"
+
+   date:    2018-07-19
+
+   author:  Rony G. Flatscher
+
+
+   last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
+
+
+   license(s): see end of this file
+*/
+
+signal on syntax     -- in case an unsopperted charset/codepage name gets supplied, show the Java error message
+
+propName="sun.stdout.encoding"
+stdoutCS=.java.lang.System~getProperty(propName)
+
+if stdoutCS=.nil then
+do
+   propName="file.encoding"
+   stdoutCS=.java.lang.System~getProperty(propName)
+end
+
+if stdoutCs="MacRoman", .bsf4rexx~opsys3="MAC" then
+do
+   stdoutCs="UTF8"
+   propName="overridden-to-UTF8"
+end
+
+say "Current charset/codepage/"propName "used for standard output:" pp(stdoutCS)
+say
+
+   -- German umlauts and German sharp-s encoded in 8859-1/Cp1252 hexadecimal code values
+inCS="ISO8859_1"     -- charset/codepage the following strings (containing single characters)
+chars=.array~of("c4"x, -   -- ISO8859_1 encoded umlaut-A character
+                "e4"x, -   -- ISO8859_1 encoded umlaut-a character
+                "d6"x, -   -- ISO8859_1 encoded umlaut-O character
+                "f6"x, -   -- ISO8859_1 encoded umlaut-o character
+                "dc"x, -   -- ISO8859_1 encoded umlaut-U character
+                "fc"x, -   -- ISO8859_1 encoded umlaut-u character
+                "df"x )    -- ISO8859_1 encoded sharp-s character
+
+   -- names of the German characters
+titles=.array~of("umlaut-A", "umlaut-a", "umlaut-O", "umlaut-o", "umlaut-U", "umlaut-u", "sharp-s")
+   -- codepages to translate to
+toCharsets=.array~of("Cp850", "Cp1252", "ISO8859_1", "UTF_16", "MacRoman", "UTF_16BE", "UTF_16LE", "UTF8", "ASCII")
+
+tab="09"x
+do i=1 to chars~items
+   title=titles[i]
+   char=chars[i]
+   charStdoutCS=bsf.iconv(char,inCS,stdoutCS)
+   say pp(title) "using current stdout charset/codepage" pp(stdoutCS)":" pp(charStdoutCS) "->" ppX(charStdoutCS)
+   say
+   do outCS over toCharsets
+      encChar=bsf.iconv(char,inCS,outCS)
+      say tab outCS~left(10)":" (ppX(encChar)" ")~left(16,'.') "displays:" pp(encChar)
+   end
+   say
+end
+exit
+
+syntax:
+  co=condition('object')
+  say ppCondition2(co)
+  exit -1
+
+
+::requires "BSF.CLS" -- get Java support
+::requires "rgf_util2.rex"
+
+::routine ppX        -- "pretty print": return received argument as a valid Rexx hexadecimal string literal
+  return '"' || arg(1)~c2x || '"x'
+
+
+/*
+
+   license:
+
+    ------------------------ Apache Version 2.0 license -------------------------
+       Copyright (C) 2018 Rony G. Flatscher
+
+       Licensed under the Apache License, Version 2.0 (the "License");
+       you may not use this file except in compliance with the License.
+       You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+       See the License for the specific language governing permissions and
+       limitations under the License.
+    -----------------------------------------------------------------------------
+*/
