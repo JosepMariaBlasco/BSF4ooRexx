@@ -10,36 +10,48 @@
             from a non-GUI thread using the methods of the public class .FxGuiThread defined
             in BSF.CLS
 
+            Note: GUIs are usually implemented single threaded and managed on a separate
+                  thread, usually named "GUI thread" or "awt thread" in the case of awt/swing
+                  or "FX Application Thread" in the case of JavaFX.
+
+                  After building the GUI proper interactions with the GUI objects is only
+                  allowed on the GUI thread, otherweise unpredictable results may occur, from
+                  hangs to exceptions!
+
+                  Usually the GUI objects get callbacks assigned to them, e.g. for Button
+                  objects, which will be called on the GUI thread and as such it is safe
+                  for such Rexx code to directly interact with the GUI objects.
+
+                  However, sometimes it may become necessary to interact with GUI objects
+                  from code that does never run on the GUI thread (e.g. a long lasting
+                  process that updates the GUI to give the user feedback about its state).
+                  For such use cases GUI systems usually have a means on board which allows
+                  for registering code that will be dispatched the next time the GUI manager
+                  works on the GUI thread after having serviced all GUI events.
+
+                  The ooRexx class *.AwtGuiThread* defined in BSF.CLS is the Rexx means for
+                  allowing such deferred, later execution of Rexx messages on the GUI thread
+                  for *awt/swing GUI objects*, allowing the invoked Rexx code to directly interact
+                  with GUI objects.
+
+                  The method runLater(...) and runLaterLatest(...) expect the same arguments
+                  as the ooRexx fundamental class .Message expects and returns a GUIMessage
+                  object that possesses the same methods as the ooRexx .Message class.
+
+                  The time between invoking runLater() or runLaterLatest() and having them
+                  dispatched on the GUI thread is usually a very small fraction of a second,
+                  which the user usually does not notice (it appears to them to execute
+                  immediately). runLaterLatest() differs from runLater(), in that it removes
+                  duplicate messages to the same target.
+
    license: Apache License 2.0 (see at bottom)
 
    invoke:
 
-         rexx javafx_01.rex
-         rexxj.{cmd|sh} javafx_01.rex
+         rexx javafx_update_GUI-from-non-GUI-thread.rxj
+         rexxj.{cmd|sh} javafx_update_GUI-from-non-GUI-thread.rxj
 
    needs: ooRexx 4.1 or higher, and BSF4ooRexx 6.00 or highter
-
-*/
-
-
--- >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-/*
-   Name:    "2-080_ShowCount.rxj"
-
-   Invoke:  "rexx Showcount.rxj"
-                or
-            "rexxj Showcount.rxj" (Windows)
-                or
-            "rexxj.sh Showcount.rxj" (Unix)
-
-   Purpose:  creates a simple window (Frame) with a Label and a Button. ... ??? ...
-             the number of times the button was pressed
-
-   Date:     2018-07-19
-
-   Changed: ---
-
-   license:
 
     ------------------------ Apache Version 2.0 license -------------------------
        Copyright (C) 2018 Rony G. Flatscher
@@ -65,22 +77,16 @@ If arg(1)='?' Then Do
   Exit
 End
 
-
-   -- Create a userData directory
--- userData=.directory~new    -- a directory which will be passed to Rexx with the event
-
    --  create a framed Java window, set a title text
 win=.bsf~new("java.awt.Frame", "Demo Howto Update An awt/swing GUI from A Non-GUI Thread")
-
    -- create a Java label, set it to show the text centered
 lab=.bsf~new("java.awt.Label", " "~copies(160))
 lab~setAlignment(lab~center)  -- set alignment to center
 
-   -- create a Java push button
+   -- create a Java push button and label it
 .local~btn.StartText="Start a Rexx Thread!"
 .local~btn.StopText ="Stop the Rexx Thread!"
 but=.bsf~new("java.awt.Button", .btn.StartText)
-
 
    -- Create a Java RexxProxy for controlling the closing of the application
 rEH =.RexxEventHandler~new(lab)  -- Rexx event handler
@@ -94,20 +100,31 @@ but~addActionListener(jEH)     -- add boxed (RexxProxy) event handler
 win ~~add("Center", lab) ~~add("South", but) -- add the label and the button to the frame
 win ~~pack                    -- now calculate all widget dimensions
 
+   -- position in center of screen
+screenSize=win~toolkit~screenSize
+winSize   =win~size
+say "screenSize:" pp(screenSize~toString)
+say "winSize   :" pp(winSize   ~toString)
+xPos=trunc((screenSize~width  - winSize~width)/2)
+yPos=trunc((screenSize~height - winSize~height)/2)
+say "xPos="pp(xPos) "yPos="pp(yPos)
+win~setLocation(xPos,yPos)
+
 win ~~setVisible(.true) ~~toFront   -- make frame visible and move it to the front
 
-rEH~waitForExit                  -- wait until we are allowed to end the program
+rEH~waitForExit               -- wait for the GUI to get closed by the user
 .some_rexx_class~stopRexxThread=.true  -- have Rexx thread stop updating the label!
 
 -- if Java was loaded by Rexx, then terminate Java's RexxEngine to inhibit callbacks from Java
-call BSF.terminateRexxEngine
+-- call BSF.terminateRexxEngine
 
 
 ::requires BSF.CLS      -- get Java support
 
 
 /* ------------------------------------------------------------------------ */
-   -- Rexx class which handles the button presses
+   -- Rexx class which handles the button press and Window closing events and
+   -- allows to block the main thread
 ::class RexxEventHandler
 ::method init        -- Rexx constructor method
   expose closeApp label
@@ -116,46 +133,46 @@ call BSF.terminateRexxEngine
 
 ::attribute closeApp          -- indicates whether app should be closed
 
-::method unknown              -- intercept unhandled events, do nothing
-
-::method windowClosing        -- event method (from WindowListener)
+::method waitForExit    -- method blocks until attribute is set to .true
   expose closeApp
-
-  closeApp=.true              -- indicate that the app should close
-
-::method waitForExit          -- method blocks until attribute is set to .true
-  expose closeApp
-
   guard on when closeApp=.true
 
-
-::method actionPerformed   -- will be invoked by the Java side
+---------------------------------------------------------
+::method actionPerformed   -- "java.awt.event.ActionListener" method, will be invoked by the Java side
   expose label closeApp    -- allow direct access to ooRexx attribute, not used in this example
-
-  if closeApp=.true then return  -- do nothing, if we are supposed to end everything
+  if closeApp=.true then return  -- do nothing, if we are supposed to close the app
 
   use arg event, slotDir   -- expected arguments
   btn=event~source         -- get Button object
   if btn~label=.btn.StartText then
   do
-     btn~label=.btn.StopText
-     .some_rexx_class~update_gui_from_rexx_thread(label)
+     say self"::actionPerformed - starting Rexx thread"
+     btn~label=.btn.StopText  -- relabel the button
+     .some_rexx_class~update_gui_from_rexx_thread(label) -- start non-GUI Rexx thread
   end
   else
   do
+     say self"::actionPerformed - stopping Rexx thread"
      .some_rexx_class~stopRexxThread=.true   -- have Rexx thread stop updating the label!
-     call sysSleep .01
-     btn~label=.btn.StartText
+     call sysSleep .01        -- give it some time to stop (not really necessary)
+     btn~label=.btn.StartText -- relabel the button
   end
   return
 
+---------------------------------------------------------
+  -- the following methods implement the "java.awt.event.WindowListener" methods,
+  -- the ooRexx "unknown" method intercepts all WindowListener method invocations
+  -- that we are not interested in handling (otherwise Rexx will raise a runtime
+  -- error 'object does not understand message'
+::method unknown        -- intercept unhandled events, do nothing
 
-::requires "BSF.CLS"    -- get Java support
+::method windowClosing  -- event method (from WindowListener)
+  expose closeApp
+     say self"::windowClosing - unset lock 'closeApp=.true'"
+  closeApp=.true        -- indicate that the app should close
 
-::requires "rgf_util2.rex"    -- to get access to ppCondition2()
 
-
-
+/* ------------------------------------------------------------------------ */
 ::class SOME_REXX_CLASS
 ::attribute stopRexxThread CLASS UNGUARDED   -- allow concurrent interactions with attribute
 
@@ -171,31 +188,9 @@ call BSF.terminateRexxEngine
      .AwtGuiThread~runLaterLatest(label, "setText", "i", .dateTime~new": value from non-GUI Rexx thread" pp(tid))
      call SysSleep .0001   -- sleep a bit
   end
+  say self"::updateGuiFromRexxThread - now stopping executing on thread id:" tid
   .AwtGuiThread~runLater(label, "setText", "i", "") -- set Label's text to empty string
-
-
-
-/* ------------------------------------------------------------------------ */
-/* Rexx event handler to set "close app" indicator */
-::class RexxCloseAppEventHandler
-::method init        -- constructor
-  expose closeApp
-  closeApp  = .false   -- if set to .true, then it is safe to close the app
-
-::attribute closeApp          -- indicates whether app should be closed
-
-::method unknown              -- intercept unhandled events, do nothing
-
-::method windowClosing        -- event method (from WindowListener)
-  expose closeApp
-  closeApp=.true              -- indicate that the app should close
-
-::method waitForExit          -- method blocks until attribute is set to .true
-  expose closeApp
-  guard on when closeApp=.true
-
-
-
+  say
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------

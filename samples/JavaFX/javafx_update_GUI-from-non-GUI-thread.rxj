@@ -10,6 +10,42 @@
             from a non-GUI thread using the methods of the public class .FxGuiThread defined
             in BSF.CLS
 
+
+            Note: GUIs are usually implemented single threaded and managed on a separate
+                  thread, usually named "GUI thread" or "awt thread" in the case of awt/swing
+                  or "FX Application Thread" in the case of JavaFX.
+
+                  After building the GUI proper interactions with the GUI objects is only
+                  allowed on the GUI thread, otherweise unpredictable results may occur, from
+                  hangs to exceptions!
+
+                  Usually the GUI objects get callbacks assigned to them, e.g. for Button
+                  objects, which will be called on the GUI thread and as such it is safe
+                  for such Rexx code to directly interact with the GUI objects.
+
+                  However, sometimes it may become necessary to interact with GUI objects
+                  from code that does never run on the GUI thread (e.g. a long lasting
+                  process that updates the GUI to give the user feedback about its state).
+                  For such use cases GUI systems usually have a means on board which allows
+                  for registering code that will be dispatched the next time the GUI manager
+                  works on the GUI thread after having serviced all GUI events.
+
+                  The ooRexx class *.FxGuiThread* defined in BSF.CLS is the Rexx means for
+                  allowing such deferred, later execution of Rexx messages on the GUI thread
+                  for *JavaFX GUI objects*, allowing the invoked Rexx code to directly interact
+                  with GUI objects.
+
+                  The method runLater(...) and runLaterLatest(...) expect the same arguments
+                  as the ooRexx fundamental class .Message expects and returns a GUIMessage
+                  object that possesses the same methods as the ooRexx .Message class.
+
+                  The time between invoking runLater() or runLaterLatest() and having them
+                  dispatched on the GUI thread is usually a very small fraction of a second,
+                  which the user usually does not notice (it appears to them to execute
+                  immediately). runLaterLatest() differs from runLater(), in that it removes
+                  duplicate messages to the same target.
+
+
    license: Apache License 2.0 (see at bottom)
 
    invoke:
@@ -85,6 +121,7 @@ syntax:
   primaryStage~setScene(.bsf~new("javafx.scene.Scene", root))
   primaryStage~show -- show the stage (window) with the scene
 
+/* ------------------------------------------------------------------------ */
    -- Rexx class which handles the button presses
 ::class RexxButtonHandler   -- implements "javafx.event.EventHandler" interface
 ::method init       -- Rexx constructor method
@@ -95,24 +132,23 @@ syntax:
   expose label      -- allow direct access to ooRexx attribute, not used in this example
   use arg event, slotDir    -- expected arguments
 
-  now=.dateTime~new -- time of invocation
-  say now": arrived in method 'handle'"
-  say now": event~text="pp(event~source~text) "event~isDisable="pp(event~source~isDisable)
   btn=event~source
   if btn~text=.btn.StartText then
   do
+     say self"::handle - starting Rexx thread"
      btn~text=.btn.StopText
      .some_rexx_class~update_gui_from_rexx_thread(label)
   end
   else
   do
+     say self"::handle - stopping Rexx thread"
      .some_rexx_class~stopRexxThread=.true   -- have Rexx thread stop updating the label!
      call sysSleep .01
      btn~text=.btn.StartText
   end
 
 
-
+/* ------------------------------------------------------------------------ */
 ::class SOME_REXX_CLASS
 ::attribute stopRexxThread CLASS UNGUARDED   -- allow concurrent interactions with attribute
 
@@ -129,9 +165,7 @@ syntax:
      call SysSleep .0001   -- sleep a bit
   end
   .FxGuiThread~runLater(label, "setText", "i", "") -- set Label's text to empty string
-
-
-
+  say
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
