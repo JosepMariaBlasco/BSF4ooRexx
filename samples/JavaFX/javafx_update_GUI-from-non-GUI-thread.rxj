@@ -87,7 +87,7 @@ syntax:
 
   root=.bsf~new("javafx.scene.layout.AnchorPane") -- create the root node
   root~prefHeight=200           -- or: root~setPrefHeight(200)
-  root~prefWidth=640            -- or: root~setPrefWidth(400)
+  root~prefWidth=800            -- or: root~setPrefWidth(400)
 
       -- define the Label
   font=.bsf~new("javafx.scene.text.Font", "Courier", 12)
@@ -98,7 +98,7 @@ syntax:
   lbl~setLayoutX(20)            -- or: lbl~layoutX=76
   lbl~setLayoutY(138)           -- or: lbl~layoutY=138
   lbl~prefHeight="16.0"         -- or: lbl~setPrefHeight("16.0")
-  lbl~prefWidth="600.0"         -- or: lbl~setPrefWidth("248.0")
+  lbl~prefWidth="780.0"         -- or: lbl~setPrefWidth("680.0")
   lbl~contentDisplay=cdClz~CENTER       -- or: lbl~setContentDisplay (cdClz~CENTER)
   lbl~alignment=alClz~valueOf("CENTER") -- or: lbl~setAlignment(alClz~valueOf("CENTER"))
 
@@ -107,7 +107,7 @@ syntax:
   .local~btn.StopText ="Stop the Rexx Thread!"
   btn=.bsf~new("javafx.scene.control.Button")
   btn~textFill=colorClz~NAVY    -- or: btn~setTextFill(colorClz~NAVY)
-  btn~layoutX=250               -- or: btn~setLayoutX(135)
+  btn~layoutX=330               -- or: btn~setLayoutX(135)
   btn~layoutY=89                -- or: btn~setLayoutY(89)
   btn~text=.btn.StartText       -- or: btn~setText(.btn.StartText)
 
@@ -160,12 +160,38 @@ syntax:
   tid=bsfGetTid()
   say self"::updateGuiFromRexxThread - now running on thread:" tid
   stopRexxThread=.false
-  loop while stopRexxThread<>.true
-     .FxGuiThread~runLaterLatest(label, "setText", "i", .dateTime~new": value from non-GUI Rexx thread" pp(tid))
+  startDateTime=.dateTime~new    -- take start date and time
+  loop i=1 while stopRexxThread<>.true
+     now=.dateTime~new           -- take current date and time
+     duration=now-startDateTime  -- calculation duration
+
+     if duration~totalMicroseconds=0 then -- in the beginning ooRexx could be too fast :)
+        loopSec=""
+     else      -- show loops per seconds
+        loopsSec=", loops/sec="pp(myFormat(format((i/duration~totalMicroseconds)*1000000,,0)))
+
+     -- str=now"," (now-startDateTime)", loop #" myFormat(i)": value from non-GUI Rexx thread" pp(tid)
+     str=now || loopsSec", loop #" myFormat(i)": value from non-GUI Rexx thread" pp(tid)
+
+     .FxGuiThread~runLaterLatest(label, "setText", "i", str)
      call SysSleep .0001   -- sleep a bit
   end
+  say self"::updateGuiFromRexxThread - now stopping executing on thread:" tid
   .FxGuiThread~runLater(label, "setText", "i", "") -- set Label's text to empty string
   say
+
+::routine myFormat   -- format a number American style, i.e. inject comma to indicate a thousand group
+  parse arg num
+  if num~length<4 then return num
+
+  res=""
+  revNum=num~reverse
+  do while revNum<>""
+     parse var revNum group +3 revNum
+     res=res","group
+  end
+  return res~strip~reverse
+
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------

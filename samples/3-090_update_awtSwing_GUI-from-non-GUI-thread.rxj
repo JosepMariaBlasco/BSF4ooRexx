@@ -79,7 +79,7 @@ End
 
    --  create a framed Java window, set a title text
 win=.bsf~new("java.awt.Frame", "Demo Howto Update An awt/swing GUI from A Non-GUI Thread")
-win~setPreferredSize(.bsf~new("java.awt.Dimension", 640, 200))
+win~setPreferredSize(.bsf~new("java.awt.Dimension", 800, 200))
 
    -- create a Java label, set it to show the text centered
 lab=.bsf~new("java.awt.Label", " "~copies(160))
@@ -114,7 +114,7 @@ win~setLocation(xPos,yPos)
 
 win ~~setVisible(.true) ~~toFront   -- make frame visible and move it to the front
 
-rEH~waitForExit               -- wait for the GUI to get closed by the user
+rEH~waitForExit         -- wait for the GUI to get closed by the user
 .some_rexx_class~stopRexxThread=.true  -- have Rexx thread stop updating the label!
 
 
@@ -167,7 +167,7 @@ rEH~waitForExit               -- wait for the GUI to get closed by the user
 
 ::method windowClosing  -- event method (from WindowListener)
   expose closeApp
-     say self"::windowClosing - unset lock 'closeApp=.true'"
+     say self"::windowClosing - release lock ('closeApp=.true') which will allow a blocked 'waitForExit' method to resume and return"
   closeApp=.true        -- indicate that the app should close
 
 
@@ -183,13 +183,37 @@ rEH~waitForExit               -- wait for the GUI to get closed by the user
   tid=bsfGetTid()
   say self"::updateGuiFromRexxThread - now running on thread:" tid
   stopRexxThread=.false
-  loop while stopRexxThread<>.true
-     .AwtGuiThread~runLaterLatest(label, "setText", "i", .dateTime~new": value from non-GUI Rexx thread" pp(tid))
+  startDateTime=.dateTime~new    -- take start date and time
+  loop i=1 while stopRexxThread<>.true
+     now=.dateTime~new           -- take current date and time
+     duration=now-startDateTime  -- calculation duration
+
+     if duration~totalMicroseconds=0 then -- in the beginning ooRexx could be too fast :)
+        loopSec=""
+     else      -- show loops per seconds
+        loopsSec=", loops/sec="pp(myFormat(format((i/duration~totalMicroseconds)*1000000,,0)))
+
+     -- str=now"," (now-startDateTime)", loop #" myFormat(i)": value from non-GUI Rexx thread" pp(tid)
+     str=now || loopsSec", loop #" myFormat(i)": value from non-GUI Rexx thread" pp(tid)
+
+     .AwtGuiThread~runLaterLatest(label, "setText", "i", str)
      call SysSleep .0001   -- sleep a bit
   end
   say self"::updateGuiFromRexxThread - now stopping executing on thread:" tid
   .AwtGuiThread~runLater(label, "setText", "i", "") -- set Label's text to empty string
   say
+
+::routine myFormat   -- format a number American style, i.e. inject comma to indicate a thousand group
+  parse arg num
+  if num~length<4 then return num
+
+  res=""
+  revNum=num~reverse
+  do while revNum<>""
+     parse var revNum group +3 revNum
+     res=res","group
+  end
+  return res~strip~reverse
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
