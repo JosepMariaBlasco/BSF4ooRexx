@@ -725,10 +725,7 @@ if (bDebug)
 {
     System.err.println("\t===> createArgV(), args["+i+"]=["+args[i]+"]");
 }
-                // rgf, 2018-03-15: really necessary ?
-                // Object o=args[i];
-                // arrArgV[i]=( o==null ? rexxNil : o );    // maybe not really needed, think it over! ;)
-                arrArgV[i]=o; // forgoes getNil(), so possible to remove it? ---rgf, 2018-03-15
+                arrArgV[i]=args[i];
             }
         }
 

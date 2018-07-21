@@ -7,6 +7,10 @@
    Date:    2006-01-07
    Version: 1.32
    Changed:
+
+            2018-06-13, ---rgf, - create_RexxJ_Script: the CLASSPATH may get too large for
+                                  the (Windows) command line, and Jvaa honors the CLASSPATH
+                                  environment variable, so no need to explicitly state it
             2017-08-13, ---rgf, - corrected determining MacOSX
             2017-05-09, ---rgf, - add cmd.ePath2JavaDLL to info-output if set or on Windows or MacOSX
             2017-02-14, ---rgf, - Linux: carry out a separate ldconfig with the directory to which
@@ -1413,7 +1417,10 @@ create_REXXJ_Script: procedure expose j. cmd. path.
      tmpStr1=tmpStr1 || "%BSF4REXX_HOME%"  || cmd.eQuote
   end
 
-  tmpStr2="-classpath" cmd.eQuote || iif(cmd.eIsUnix=1, "$CLASSPATH", "%CLASSPATH%") || cmd.eQuote
+  -- rgf, 20180614: the CLASSPATH may get too large for the (Windows) command line, and Jvaa
+  --                honors the CLASSPATH environment variable, so no need to explicitly state it
+  -- tmpStr2="-classpath" cmd.eQuote || iif(cmd.eIsUnix=1, "$CLASSPATH", "%CLASSPATH%") || cmd.eQuote
+  tmpStr2=""      -- do not supply CLASSSPATH via the command line (may break on Windows)
 
   tmpStr3= iif(cmd.eIsUnix=1, "$BSF4Rexx_JavaStartupOptions", "%BSF4Rexx_JavaStartupOptions%")
 

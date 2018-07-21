@@ -323,10 +323,11 @@ if (bDebug==true) System.err.println(this+".getLocalEnvrionment(), before doing 
 
     /** Get the ooRexx <code>.nil</code> object.
      *
-     *  @return a <code>RexxProxy</code> representint the ooRexx <code>.nil</code> sentinel object
+     *  @return a <code>RexxProxy</code> representing the ooRexx <code>.nil</code> sentinel object
      *  @since 2015-05-09
      */
     public Object getNil()
+    // Object getNil()
     {
         if (rii_ID==null)   // Rexx interpreter instance (RII) not yet created, create it!
         {

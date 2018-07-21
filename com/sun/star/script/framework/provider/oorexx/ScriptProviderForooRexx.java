@@ -181,8 +181,11 @@
                           (process environment not set correctly, so PATH missing, such that ooRexx cannot
                           be initialized at all)
 
-
-
+            2016-06-14, ---rgf
+                        - LO introduced incompatibility by removing a method and changing the signature of
+                          the remaining method in class ClassLoaderFactory; therefore using reflective load
+                          and invocation to allow it running on both systems unchanged in method
+                          ScriptImpl.invoke()
 
 */
 
@@ -269,7 +272,7 @@ public class ScriptProviderForooRexx
 
     static final String OOREXX_XSCRIPTCONTEXT_KEY = "OOo.xScriptContext";
     static final String OOREXX_VERSION_KEY        = "OOo.ooRexxScriptProvider.version";
-    static final String OOREXX_VERSION_VALUE      = "109.20140408";       // 20070921
+    static final String OOREXX_VERSION_VALUE      = "110.20180615";       // 20070921
     static final String OOREXX_FILENAME           = "OOo.fileName";       // 20070920
     static final String OOREXX_SCRIPTMETADATA     = "OOo.ScriptMetaData"; // 20070920
 
@@ -287,6 +290,7 @@ public class ScriptProviderForooRexx
      *  and ScriptSourceModel.java.
      */
     static protected BSFManager bsfManager = null;  // 2009-10-30, rgf
+
 
     /* * Returns the BSFManager object stored in the {@link #bsfManager} field.
      *  If the BSFManager object has not been created yet,
@@ -640,6 +644,8 @@ class ScriptImpl implements XScript
     private static Method mSC_createContext=null;   // "createContext" method object to use
     private static int    mSC_argc=0;               // argc=3 on pre OOo 3x, 4 else
 
+    private static Method methGetUrlClassLoader=null;
+
     // get and save appropriate (OOo 2.x or 3.x) ScriptProvider.createContext(...) method object;
     // used in private makeScriptContext() method
     static {
@@ -780,37 +786,81 @@ class ScriptImpl implements XScript
             ClassLoader cl = null;
             URL sourceUrl = null;
             try {
+/* rgf, 2018-06-12: temporarily to debug LO's error
+showErrorMessage("ScriptProviderforooRexx: ClassLoaderFactory.class=["+ClassLoaderFactory.class+"],\nmetaData=["+metaData+"]"
+                               + "\naParams="+java.util.Arrays.deepToString(aParams)
+                               );
+*/
+
+/*  LO introduced incompatibility by removing a method and changing the signature of the remaining
+    method in class ClassLoaderFactory; therefore using reflective load and invocation to allow it
+    running on both systems unchanged (rgf, 2018-06-14)
+
+AOO definitions:
+
+public class com.sun.star.script.framework.provider.ClassLoaderFactory {
+  public static java.lang.ClassLoader getURLClassLoader(com.sun.star.script.framework.container.ScriptMetaData)
+                throws com.sun.star.script.framework.provider.NoSuitableClassLoaderException,
+                       java.net.MalformedURLException;
+
+  public static java.lang.ClassLoader getURLClassLoader(java.lang.ClassLoader, java.net.URL[])
+                throws com.sun.star.script.framework.provider.NoSuitableClassLoaderException;
+}
+
+-------------------------------------------------------
+LibreOffice 5/6 definitios (removed one method, removed throws clause on remaining mehtod):
+
+public class com.sun.star.script.framework.provider.ClassLoaderFactory {
+  public static java.net.URLClassLoader getURLClassLoader(com.sun.star.script.framework.container.ScriptMetaData);
+}
+
+*/
+
+
+/* ---> rgf, 2018-06-14: if compiled against AOO, LO does not work and vice versa
                 cl = ClassLoaderFactory.getURLClassLoader( metaData );
                 sourceUrl = metaData.getSourceURL();
-            }
-            catch ( java.net.MalformedURLException mfu )
-            {
+<--- */
+                // allows to be run on both, AOO and LO (see comments above)
+                if (methGetUrlClassLoader==null)    // Method object not yet fetched
+                {
+                        // try to reflectively load the method and execute it; works on both, AOO and LO
+                    Class clfClz=Class.forName("com.sun.star.script.framework.provider.ClassLoaderFactory");
+                    Class smdClz=Class.forName("com.sun.star.script.framework.container.ScriptMetaData");
+                    methGetUrlClassLoader =clfClz.getMethod("getURLClassLoader", new Class<?>[]{smdClz}  );
+                }
 
+
+                cl=(ClassLoader) methGetUrlClassLoader.invoke(null,  new Object  []{metaData});
+
+                // cl        =tmpCL;
+                sourceUrl = metaData.getSourceURL();
+
+/* --->
+                ScriptImpl.showErrorMessage("rgf - bingo l # 801 - \n\n"
+                                            +"\n"+"cl    ="+cl+ " "+cl.toString()
+                                            +"\nsourceUrl="+sourceUrl
+                                            +"\n\nnunmehr:\n"
+                                            +"\n"+"clfClz="+clfClz +" \n    "+clfClz.toString()
+                                            +"\n"+"smdClz="+smdClz +" \n    "+smdClz.toString()
+                                            +"\n"+"meth  ="+meth   +" \n    "+meth  .toString()
+                                            +"\n"+"tmpCL ="+tmpCL  +" \n    "+tmpCL .toString()
+                );
+<--- */
+
+            }
+            catch (Exception exc)   // try to appease AOO which mandates intercepting/throwing NoSuitableClassLoaderException
+            {
                 if (bDebug==true)   // 2014-03-24, rgf
                 {
-                    String s="ScriptProviderForooRexx.ScriptImpl.invoke(...)-java.net.MalformedURLException mfu:\n"+getThrowableInfos(mfu);
+                    String s="ScriptProviderForooRexx.ScriptImpl.invoke(...)-Exception exc:\n"+getThrowableInfos(exc);
                     ScriptImpl.copy2clipboard(s);
                     ScriptImpl.showErrorMessage(s);
                 }
 
                 // Framework error
                 throw new ScriptFrameworkErrorException(
-                    mfu.getMessage(), null,
-                    metaData.getLanguageName(), metaData.getLanguage(),
-                    ScriptFrameworkErrorType.UNKNOWN );
-            }
-            catch ( NoSuitableClassLoaderException nsc )
-            {
-                if (bDebug==true)   // 2014-03-24, rgf
-                {
-                    String s="ScriptProviderForooRexx.ScriptImpl.invoke(...)-NoSuitableClassLoaderException nsc:\n"+getThrowableInfos(nsc);
-                    ScriptImpl.copy2clipboard(s);
-                    ScriptImpl.showErrorMessage(s);
-                }
-
-                // Framework error
-                throw new ScriptFrameworkErrorException(
-                    nsc.getMessage(), null,
+                    exc.getMessage(), null,
                     metaData.getLanguageName(), metaData.getLanguage(),
                     ScriptFrameworkErrorType.UNKNOWN );
             }

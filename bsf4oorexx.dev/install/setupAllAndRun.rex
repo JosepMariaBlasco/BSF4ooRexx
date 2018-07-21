@@ -76,6 +76,8 @@
             2017-02-14, rgf   - getRexxBitness(): compare casselessly with "Address Mode"
 
             2017-08-13, rgf   - make sure to honor "DARWIN" instead of "MACOSX"
+            2018-06-13, rgf   - show line number where signal got invoked in "sayWasInstallationSuccessful";
+                                make sure variable "text" has a value
 
    remark:  ---
 
@@ -1033,6 +1035,7 @@ any:                 -- something went wrong while executing the program
 
   cmd cmd.eRedirect2LogFile               -- let the shell run the command
 
+  text=""
   do while queued()
      parse pull text
      if cmd.eBLogFile=.true then cmd.eLogFile~say(text)
@@ -1043,7 +1046,7 @@ any:                 -- something went wrong while executing the program
   return .false   -- indicate failure
 
 any:                 -- something went wrong while executing the program
-  cmd.eLogFile~say("-> sayWhetherInstallationWasSuccessful(): condition ["condition("C")"] raised when executing '"testScript"'")
+  cmd.eLogFile~say("-> sayWhetherInstallationWasSuccessful(): condition ["condition("C")"] raised in line ["sigl"] when executing '"testScript"'")
   return .false      -- indicate error
 
 

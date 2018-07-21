@@ -88,12 +88,15 @@
             2018-03-02, rgf: - adjusted for Java 9 and java.awt.Taskbar, remove pre Java 9 specials
 
             2018-03-20, rgf: - output path, Java, Rexx and BSF.CLS versions in command line window as well
+                             - new routine createVersionStringToDisplay()
+
+            2018-06-15, rgf: - add "java.version.date" from Java 10 to routine createVersionStringToDisplay()
 
 
 */
 
 /*----------------------------------------------------------------------------*/
-/*  Copyright 2011 Markus Moldaschl, 2011-2014 Rony G. Flatscher,             */
+/*  Copyright 2011 Markus Moldaschl, 2011-2018 Rony G. Flatscher,             */
 /*            2012-2014 Gerald Leitner                                        */
 /*                                                                            */
 /*  Licensed under the Apache License, Version 2.0 (the "License");           */
@@ -6357,9 +6360,15 @@ exit
 /* GLEITNER routines end */
 
 ::routine createVersionStringToDisplay
-    parse version "-" name "_" ver "("
+    parse version "-" name "_" ver "(" . . date
+    orxVersion=name ver "("date")"
 
-    strJavaVersion="Java" .java.lang.System~getProperty("java.version")"," -
-                       .java.lang.System~getProperty("sun.arch.data.model")"-bit"
-    return 'ooRexxTry' pp(name ver", BSF" .bsf4rexx~version"," strJavaVersion )
+    javaVersion    =.java.lang.System~getProperty("java.version")
+    javaVersionDate=.java.lang.System~getProperty("java.version.date")  -- since Java 10 (spring 2018)
+    if javaVersionDate<>.nil then
+       javaVersion=javaVersion "(released:" javaVersionDate")"
+
+    javaVersion="Java" javaVersion"," .java.lang.System~getProperty("sun.arch.data.model")"-bit"
+
+    return 'ooRexxTry' pp(orxVersion "/ BSF" .bsf4rexx~version "/" javaVersion )
 

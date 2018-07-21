@@ -6,6 +6,8 @@
    date:             2015-07-02, 2015-07-05
    changed:          2017-08-16, rgf: adjust tests to changes done to bsf.redirectTo, which has become more versatile
                                       in the case of standard monitor redirection(s) to Java streams or Java reader/writers
+                     2018-04-03, rgf: adjust tests to run on ooRexx 4.1.3 which does not have .debugInput and .traceOutput
+                                      yet
 
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF.CLS' routine BSF.RedirectTo
@@ -139,42 +141,60 @@ return testResult
     self~assertSame(   .input      ~current, someObjIn)
     self~assertNotSame(.output     ~current, someObjIn)
     self~assertNotSame(.error      ~current, someObjIn)
-    self~assertNotSame(.debugInput ~current, someObjIn)
-    self~assertNotSame(.traceOutput~current, someObjIn)
+
+    if .local~hasEntry("DebugInput") then
+    do
+       self~assertNotSame(.debugInput ~current, someObjIn)
+       self~assertNotSame(.traceOutput~current, someObjIn)
+    end
 
     call bsf.redirectTo "Rexx"   -- make sure we reset local environment streams
     call bsf.redirectTo "Java", , someObjOut       -- test redirecting .output to Java
     self~assertNotSame(.input      ~current, someObjOut)
     self~assertSame(   .output     ~current, someObjOut)
     self~assertNotSame(.error      ~current, someObjOut)
-    self~assertNotSame(.debugInput ~current, someObjOut)
-    self~assertNotSame(.traceOutput~current, someObjOut)
+
+    if .local~hasEntry("DebugInput") then
+    do
+       self~assertNotSame(.debugInput ~current, someObjOut)
+       self~assertNotSame(.traceOutput~current, someObjOut)
+    end
 
     call bsf.redirectTo "Rexx"   -- make sure we reset local environment streams
     call bsf.redirectTo "Java", , , someObjOut     -- test redirecting .error to Java
     self~assertNotSame(.input      ~current, someObjOut)
     self~assertNotSame(.output     ~current, someObjOut)
     self~assertSame(   .error      ~current, someObjOut)
-    self~assertNotSame(.debugInput ~current, someObjOut)
-    self~assertNotSame(.traceOutput~current, someObjOut)
+
+    if .local~hasEntry("DebugInput") then
+    do
+       self~assertNotSame(.debugInput ~current, someObjOut)
+       self~assertNotSame(.traceOutput~current, someObjOut)
+    end
 
     call bsf.redirectTo "Rexx"   -- make sure we reset local environment streams
     call bsf.redirectTo "Java", , , , someObjIn    -- test redirecting .input to Java
     self~assertNotSame(.input      ~current, someObjIn)
     self~assertNotSame(.output     ~current, someObjIn)
     self~assertNotSame(.error      ~current, someObjIn)
-    self~assertSame(   .debugInput ~current, someObjIn)
-    self~assertNotSame(.traceOutput~current, someObjIn)
+
+    if .local~hasEntry("DebugInput") then
+    do
+       self~assertSame(   .debugInput ~current, someObjIn)
+       self~assertNotSame(.traceOutput~current, someObjIn)
+    end
 
     call bsf.redirectTo "Rexx"   -- make sure we reset local environment streams
     call bsf.redirectTo "Java", , , , , someObjOut
     self~assertNotSame(.input      ~current, someObjOut)
     self~assertNotSame(.output     ~current, someObjOut)
     self~assertNotSame(.error      ~current, someObjOut)
-    self~assertNotSame(.debugInput ~current, someObjOut)
-    self~assertSame(   .traceOutput~current, someObjOut)
 
-
+    if .local~hasEntry("DebugInput") then
+    do
+       self~assertNotSame(.debugInput ~current, someObjOut)
+       self~assertSame(   .traceOutput~current, someObjOut)
+    end
 
     --- now with setting to Rexx standard streams
     call bsf.redirectTo "Rexx"   -- make sure we reset local environment streams
@@ -182,37 +202,58 @@ return testResult
     self~assertSame(   .input      ~current, someObj)
     self~assertNotSame(.output     ~current, someObj)
     self~assertNotSame(.error      ~current, someObj)
-    self~assertNotSame(.debugInput ~current, someObj)
-    self~assertNotSame(.traceOutput~current, someObj)
+
+    if .local~hasEntry("DebugInput") then
+    do
+       self~assertNotSame(.debugInput ~current, someObj)
+       self~assertNotSame(.traceOutput~current, someObj)
+    end
 
     call bsf.redirectTo "Rexx"   -- make sure we reset local environment streams
     call bsf.redirectTo "Rexx", , someObj
     self~assertNotSame(.input      ~current, someObj)
     self~assertSame(   .output     ~current, someObj)
     self~assertNotSame(.error      ~current, someObj)
-    self~assertNotSame(.debugInput ~current, someObj)
-    self~assertNotSame(.traceOutput~current, someObj)
+
+    if .local~hasEntry("DebugInput") then
+    do
+       self~assertNotSame(.debugInput ~current, someObj)
+       self~assertNotSame(.traceOutput~current, someObj)
+    end
 
     call bsf.redirectTo "Rexx"   -- make sure we reset local environment streams
     call bsf.redirectTo "Rexx", , , someObj
     self~assertNotSame(.input      ~current, someObj)
     self~assertNotSame(.output     ~current, someObj)
     self~assertSame(   .error      ~current, someObj)
-    self~assertNotSame(.debugInput ~current, someObj)
-    self~assertNotSame(.traceOutput~current, someObj)
+
+    if .local~hasEntry("DebugInput") then
+    do
+       self~assertNotSame(.debugInput ~current, someObj)
+       self~assertNotSame(.traceOutput~current, someObj)
+    end
 
     call bsf.redirectTo "Rexx"   -- make sure we reset local environment streams
     call bsf.redirectTo "Rexx", , , , someObj
     self~assertNotSame(.input      ~current, someObj)
     self~assertNotSame(.output     ~current, someObj)
     self~assertNotSame(.error      ~current, someObj)
-    self~assertSame(   .debugInput ~current, someObj)
-    self~assertNotSame(.traceOutput~current, someObj)
+
+    if .local~hasEntry("DebugInput") then
+    do
+       self~assertSame(   .debugInput ~current, someObj)
+       self~assertNotSame(.traceOutput~current, someObj)
+    end
 
     call bsf.redirectTo "Rexx"   -- make sure we reset local environment streams
     call bsf.redirectTo "Rexx", , , , , someObj
     self~assertNotSame(.input      ~current, someObj)
     self~assertNotSame(.output     ~current, someObj)
     self~assertNotSame(.error      ~current, someObj)
-    self~assertNotSame(.debugInput ~current, someObj)
-    self~assertSame(   .traceOutput~current, someObj)
+
+    if .local~hasEntry("DebugInput") then
+    do
+       self~assertNotSame(.debugInput ~current, someObj)
+       self~assertSame(   .traceOutput~current, someObj)
+    end
+

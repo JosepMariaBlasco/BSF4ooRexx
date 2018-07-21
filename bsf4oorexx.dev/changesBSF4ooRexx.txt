@@ -1,9 +1,86 @@
 
--------------------------------------- 2018-03-08 ----------------------------------
+-------------------------------------- 2018-07-19 ----------------------------------
+
+- added samples\javafx\javafx_update_GUI-from-non-GUI-thread.rxj
+
+  - this JavaFX GUI application demonstrates how to update a GUI object (a Label)
+    from a non-GUI thread using the methods of the public class .FxGuiThread defined
+    in BSF.CLS
+
+- added samples\javafx_update_GUI-from-non-GUI-thread.rxj
+
+   - this awt/swt GUI application demonstrates how to update a GUI object (a Label)
+     from a non-GUI thread using the methods of the public class .AwtGuiThread defined
+     in BSF.CLS
+
+- added samples\1-080_charsetTranslations.rxj
+
+   - this program demonstrates charset/codepage translations of strings using
+     the BSF.CLS public routine "bsf.iconv(string,inCharset,outCharset)"
+
+-------------------------------------- 2018-07-18 ----------------------------------
+
+- added samples\javafx\javafx_dialog_demo.rxj
+
+  - demonstrate using the JavaFX dialog classes that got introduced with JavaFX 8u40,
+    cf. <http://code.makery.ch/blog/javafx-dialogs-official/>
+
+-------------------------------------- 2018-07-14 ----------------------------------
+
+- BSF.CLS:
+
+  - refactoring the GUI related utility classes "FxGuiThread" and "AwtGuiThread" into
+    a common private abstract class "AbstractGUIThread" defining abstract attribute
+    and methods to be implemented by the refactored subclasses "FxGuiThread" and
+    "AwtGuiThread"
+
+-------------------------------------- 2018-07-13 ----------------------------------
+
+- BSF.CLS:
+
+  - added class "AwtGuiThread" as the awt/swing counterpart to "FxGuiThread" class
+    having the same protocol (same methods and behaviour, just adapted to awt/swing)
+
+  - corrected routine "BSF.terminateRexxEngine": .routines~rBsf with .routines~xBsf
+
+
+-------------------------------------- 2018-06-07 ----------------------------------
+
+- BSF.CLS:
+
+  - added method "util.setmethod" to class BSF_REFERENCE to allow setting methods
+    (with "float" scope) to individual instances; needed for decorating UNO.CLS
+    UNO_ENUM instances (adding methods 'toString', 'name' and 'value')
+
+
+-------------------------------------- 2018-06-04 ----------------------------------
+
+- BSF.CLS:
+
+  - added public routine bsf.iconv public(str,fromCp,toCp) to allow recoding of a Rexx string
+
+
+-------------------------------------- 2018-04-03 ----------------------------------
+
+- BSF.CLS:
+
+  - adjust for ooRexx 4.1.3 restrictions (development and tests occurred
+    on the *much* better ooRexx 5.0.0)
+
+    - Array's appendAll is not documented, but operational, however does
+      not return the receiver: cater for it using cascading messages instead
+
+    - .debugInput and .traceOutput may not exist
+
+-------------------------------------- 2018-03-15 ----------------------------------
 
 - BSF.CLS:
 
   - correct type while fetching XBsfCreateRexxProxy() from .routines
+
+-------------------------------------- 2018-03-12 ----------------------------------
+
+- BSF.CLS:
 
   - bsf.compile(): if the source of a syntax error is related to the supplied
     Java class name a new syntax condition is raised with an error message hinting
@@ -22,6 +99,12 @@
 - RexxReflectUtil.java
 
   - finalized implementation that gets used by RexxReflect?.java
+
+-------------------------------------- 2018-03-06 ----------------------------------
+
+- samples\9-030_compileJavaClassAndUseIt.rxj
+
+  - new sample demonstrating the use of bsf.compile(); requires ooRexx 5.0 or higher
 
 -------------------------------------- 2018-03-05 ----------------------------------
 

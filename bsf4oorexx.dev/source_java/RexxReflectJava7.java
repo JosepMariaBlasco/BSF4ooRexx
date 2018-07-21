@@ -22,6 +22,15 @@ import static org.rexxla.bsf.engines.rexx.RexxReflectUtil.ReflectionType.*;
 
 import        java.lang.reflect.Modifier;
 
+/*
+    concluded: 2018-02-22, ---rgf (version 1.0)
+
+    changes:
+        2018-06-11, --rgf: - employing "mh=mh.asFixedArity();" to make sure that MH invocations behave
+                             the same as with comp.lang.reflect invocations for any varargs-argument;
+                             solution as per Peter Levart's advice, cf. e-Mails of 2018-06-10/11 in
+                             <mlvm-dev@openjdk.java.net>
+*/
 
 /**
  * This class carries out reflections for Java starting with version 1.8/8. It uses the
@@ -47,7 +56,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.0, 2018-02-22
+ * @version 1.01, 2018-06-11
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -760,6 +769,7 @@ if (debugLevel>0) System.err.println("// // :( RexxReflectJava7.processField(), 
                return; //  null;    // not successful :(
             }
         }
+        mh=mh.asFixedArity(); // rgf, 2018-06-11 as per Peter Levart's advice, cf. e-Mails of 2018-06-10/11 in <mlvm-dev@openjdk.java.net>
 
 if (debugLevel>0) System.err.println("// // :) RexxReflectJava7.processField(), tmpField=["+tmpField.toString()+"]");
 
@@ -1603,6 +1613,7 @@ System.err.println("// // :( RexxReflectJava7.processMethod(), thisLookup=\""+th
                 return;     // not an eligible Method
             }
         }
+        mh=mh.asFixedArity(); // rgf, 2018-06-11 as per Peter Levart's advice, cf. e-Mails of 2018-06-10/11 in <mlvm-dev@openjdk.java.net>
 
 
 if (debugLevel>0)
@@ -2050,6 +2061,8 @@ if (debugLevel>0)       // Rexx arguments could be coerced successfully, show ca
                 MethodType mt = MethodType.methodType(void.class, parameterTypes);
                 mh=thisLookup.findConstructor(tmpConstructor.getDeclaringClass(), mt);
             }
+
+            mh=mh.asFixedArity(); // rgf, 2018-06-11 as per Peter Levart's advice, cf. e-Mails of 2018-06-10/11 in <mlvm-dev@openjdk.java.net>
         }
         catch (Throwable t)
         {

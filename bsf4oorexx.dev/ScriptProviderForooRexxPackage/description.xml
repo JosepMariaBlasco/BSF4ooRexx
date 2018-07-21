@@ -3,12 +3,13 @@
 xmlns:d="http://openoffice.org/extensions/description/2006"
 xmlns:xlink="http://www.w3.org/1999/xlink">
 
-  <version value="600.20180312"/>
+  <version value="600.20180612"/>
 
   <identifier value="org.oorexx.uno.ScriptProviderForooRexx.package"/>
 
   <dependencies>
-    <OpenOffice.org-minimal-version value="2.0" d:name="OpenOffice.org 2.0"/>
+      <!-- rgf, 20180612 - changing all values from "2.0" to "4.0", cf. <https://wiki.documentfoundation.org/Development/Extension_Development> -->
+    <OpenOffice.org-minimal-version value="4.0" d:name="OpenOffice.org 4.0"/>
   </dependencies>
 
   <update-information>
@@ -34,7 +35,7 @@ xmlns:xlink="http://www.w3.org/1999/xlink">
   </release-notes>
 
   <display-name>
-    <name lang="de">ooRexx - Skriptsprachenunterstuetzung</name>
+    <name lang="de">ooRexx - Skriptsprachenunterstützung</name>
     <name lang="en">ooRexx - Scripting Language Support</name>
   </display-name>
 

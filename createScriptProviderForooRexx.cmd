@@ -1,14 +1,45 @@
+@echo off
 @rem 2007-01-31, 2007-02-02, 2007-10-17, 2008-07-12, 2010-07-25, 2014-05-25 ---rgf
 setlocal
 set tmprgf=ScriptProviderForooRexx
 
 @echo adding OOo to CLASSPATH
+
+:aoo
+if not exist "c:\Program Files (x86)\OpenOffice 4\program\classes" goto libreoffice5
 set ooo_classes=c:\Program Files (x86)\OpenOffice 4\program\classes
-set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_classes%\jurt.jar;%ooo_classes%\juh.jar;%ooo_classes%\ScriptFramework.jar
+echo using AOO jar files ...
+goto goahead
+
+:libreoffice5
+if not exist "C:\Program Files\LibreOffice 5\program\classes" goto libreoffice
+set ooo_classes=C:\Program Files\LibreOffice 5\program\classes
+echo using LibreOffice 5 jar files ...
+goto goahead
+
+rem Libreoffice 6 does not have version indicator in directory name
+:libreoffice
+set ooo_classes=C:\Program Files\LibreOffice\program\classes
+echo using LibreOffice jar files ...
+
+:goahead
+
+echo rgf ooo_classes=%ooo_classes%
+
+rem set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_classes%\jurt.jar;%ooo_classes%\juh.jar;%ooo_classes%\ScriptFramework.jar
+
+set CLASSPATH=.;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_classes%\jurt.jar;%ooo_classes%\juh.jar;%ooo_classes%\ScriptFramework.jar
+
+echo rgf CLASSPATH=%CLASSPATH%
 
 @echo compiling ScriptProvider4ooRexx
+javap com.sun.star.script.framework.provider.ClassLoaderFactory
+@echo .
+javap com.sun.star.script.framework.container.ScriptMetaData
+@echo ...
 javac -source 1.6 -target 1.6 com/sun/star/script/framework/provider/oorexx/*.java
-@rem pause
+@rem
+pause
 
 
 rem create OOo-Macro-Package which will contain everything, including BSF itself

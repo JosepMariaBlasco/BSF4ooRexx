@@ -607,22 +607,18 @@ if (bDebug==true) {exc.printStackTrace();}
      *         <code>entryValue</code>
      */
     String rexxCreateRoutineAndPackageCode=
-           "parse arg name, script                      /* fetch script code            */    ;" +
-           "                                                                                  ;" +
-           "if script~isA(.array) then                  /* argument already an array    */    ;" +
-           "   r=.routine~new(name, script)             /* create routine object        */    ;" +
-           "else                                                                              ;" +
-           "   r=.routine~new(name, script~makeArray)   /* create routine object        */    ;" +
-           "                                                                                  ;" +
-           "p=r~package                                 /* get its package              */    ;" +
-           "                                                                                  ;" +
-           "   /* return Rexx objects in a Java array to ease access in the Java code   */    ;" +
-             // note, no continuation char as everything is in the same single line
-           "return bsf.createJavaArrayOf('java.lang.Object',                                   " +
-           "                               r ,          /* Rexx routine object          */     " +
-           "                               p )          /* Rexx package object          */    ;" +
-           "                                                                                  ;" +
-           "::requires BSF.CLS                                                                ;" ;
+           "parse arg name, script                      /* fetch script code            */    ; " +
+           "                                                                                  ; " +
+           "if script~isA(.array) then                  /* argument already an array    */    ; " +
+           "   r=.routine~new(name, script)             /* create routine object        */    ; " +
+           "else                                                                              ; " +
+           "   r=.routine~new(name, script~makeArray)   /* create routine object        */    ; " +
+           "                                                                                  ; " +
+           "p=r~package                                 /* get its package              */    ; " +
+           "   /* return Rexx objects in a Java array to ease access in the Java code   */    ; " +
+           "return bsf.createJavaArrayOf('java.lang.Object', r, p)                            ; " +
+           "                                                                                  ; " +
+           "::requires BSF.CLS                                                                ; " ;
 
     /** <code>RexxProxy</code> for the Rexx routine created by the Rexx code stored in {@link rexxCreateRoutineAndPackageCode}. */
     private RexxProxy rexxCreateRoutineAndPackage=null;

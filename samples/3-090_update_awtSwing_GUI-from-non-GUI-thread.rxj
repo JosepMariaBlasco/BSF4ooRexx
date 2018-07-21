@@ -193,11 +193,9 @@ rEH~waitForExit         -- wait for the GUI to get closed by the user
      else      -- show loops per seconds
         loopsSec=", loops/sec="pp(myFormat(format((i/duration~totalMicroseconds)*1000000,,0)))
 
-     -- str=now"," (now-startDateTime)", loop #" myFormat(i)": value from non-GUI Rexx thread" pp(tid)
      str=now || loopsSec", loop #" myFormat(i)": value from non-GUI Rexx thread" pp(tid)
-
      .AwtGuiThread~runLaterLatest(label, "setText", "i", str)
-     call SysSleep .0001   -- sleep a bit
+     call SysSleep .0001   -- sleep a bit, relinquishes the Rexx thread
   end
   say self"::updateGuiFromRexxThread - now stopping executing on thread:" tid
   .AwtGuiThread~runLater(label, "setText", "i", "") -- set Label's text to empty string

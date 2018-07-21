@@ -735,7 +735,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180714" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180721" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4926,16 +4926,14 @@ syntax:
 ::class AbstractGUIThread private
 ::method init  abstract    -- do not allow any instances to be created
 
--- ::method    init              class abstract    -- sets JavaUtilityClass to .nil
-
 ::attribute JavaGuiUtilityClz get class abstract   -- javafx.application.Platform or javax.swing.SwingUtilitities
-::attribute msgQueue         class abstract     -- force creation of attribute in subclass; queues GUIMessages
-::attribute runnable         class abstract     -- force creation of attribute in subclass; Java Proxy of Rexx class itself
-::attribute waitingToRun     class abstract     -- force creation of attribute in subclass; determines
+::attribute msgQueue              class abstract   -- force creation of attribute in subclass; queues GUIMessages
+::attribute runnable              class abstract   -- force creation of attribute in subclass; Java Proxy of Rexx class itself
+::attribute waitingToRun          class abstract   -- force creation of attribute in subclass; determines
 
-::method    setup            class private abstract   -- setup class attributes
-::method    isGuiThread      class unguarded abstract -- determines if current thread is GUI thread
-::method    invokeOnGuiThread class private abstract  -- use the appropriate Java utility class method
+::method    setup                 class private abstract    -- setup class attributes
+::method    isGuiThread           class unguarded abstract  -- determines if current thread is GUI thread
+::method    invokeOnGuiThread     class private abstract    -- use the appropriate Java utility class method
 
 
 /* ------------------------------------------------------------------------------------------------- */
@@ -4961,8 +4959,9 @@ syntax:
 syntax:
   guiMsg~errorCondition=condition("o") -- supply error condition object
   guiMsg~hasError=.true    -- indicate we had an error
-  guiMsg~completed=.true    -- communicate that processing has completed in this case as well
+  guiMsg~completed=.true   -- communicate that processing has completed in this case as well
 
+/*
 -- TODO: remove the following debug statements
 .stderr~say("---> SOD (start of debug), line #" .line)
 .stderr~say(self":process, error" pp(condition("C")) "in" pp(guiMsg~target) "~" pp(guiMsg~messageName))
@@ -4970,6 +4969,7 @@ syntax:
 .context~package~addPackage(.package~new("rgf_util2.rex"))  -- do a dynamic requires
 .stderr~say(ppCondition2(guiMsg~errorCondition))   -- show condition formatted in full
 .stderr~say("<--- EOD (end of debug), line #" .line)
+*/
 
   return
 
@@ -5451,7 +5451,9 @@ extractJavaClassName: procedure
 /* ------------------------------------------------------------------------ */
 /** Routine that recodes a Rexx string in the given <em>fromCp</em> codepage into a Rexx string in the
     given <em>toCp</em> codepage. The names of the character sets used for encoding are documented e.g.
-    in <https://docs.oracle.com/javase/8/docs/api/java/nio/charset/Charset.html>. Examples for such
+    in <https://docs.oracle.com/javase/8/docs/api/java/nio/charset/Charset.html> or
+    <https://docs.oracle.com/javase/8/docs/technotes/guides/intl/encoding.doc.html>.
+    Examples for such
     names are &quot;Cp850&quot;, &quot;Cp1251&quot;, &quot;UTF-16&quot;.
 
    @param str        Rexx string encoded in the <em>fromCp</em> codepage
