@@ -2,12 +2,12 @@
 /*
    author:  Rony G. Flatscher
 
-   name:    javafx_update_GUI-from-non-GUI-thread.rxj
+   name:    3-090_update_awtSwing_GUI-from-non-GUI-thread.rxj
 
    date:    2018-07-19
 
-   purpose: this JavaFX GUI application demonstrates how to update a GUI object (a Label)
-            from a non-GUI thread using the methods of the public class .FxGuiThread defined
+   purpose: this awt/swt GUI application demonstrates how to update a GUI object (a Label)
+            from a non-GUI thread using the methods of the public class .AwtGuiThread defined
             in BSF.CLS
 
             Note: GUIs are usually implemented single threaded and managed on a separate
@@ -48,8 +48,8 @@
 
    invoke:
 
-         rexx javafx_update_GUI-from-non-GUI-thread.rxj
-         rexxj.{cmd|sh} javafx_update_GUI-from-non-GUI-thread.rxj
+         rexx 3-090_update_awtSwing_GUI-from-non-GUI-thread.rxj
+         rexxj.{cmd|sh} 3-090_update_awtSwing_GUI-from-non-GUI-thread.rxj
 
    needs: ooRexx 4.1 or higher, and BSF4ooRexx 6.00 or highter
 
@@ -79,6 +79,8 @@ End
 
    --  create a framed Java window, set a title text
 win=.bsf~new("java.awt.Frame", "Demo Howto Update An awt/swing GUI from A Non-GUI Thread")
+win~setPreferredSize(.bsf~new("java.awt.Dimension", 640, 200))
+
    -- create a Java label, set it to show the text centered
 lab=.bsf~new("java.awt.Label", " "~copies(160))
 lab~setAlignment(lab~center)  -- set alignment to center
@@ -114,9 +116,6 @@ win ~~setVisible(.true) ~~toFront   -- make frame visible and move it to the fro
 
 rEH~waitForExit               -- wait for the GUI to get closed by the user
 .some_rexx_class~stopRexxThread=.true  -- have Rexx thread stop updating the label!
-
--- if Java was loaded by Rexx, then terminate Java's RexxEngine to inhibit callbacks from Java
--- call BSF.terminateRexxEngine
 
 
 ::requires BSF.CLS      -- get Java support
@@ -182,13 +181,13 @@ rEH~waitForExit               -- wait for the GUI to get closed by the user
   say self"::updateGuiFromRexxThread - just arrived, GUI thread:" bsfGetTid()
   reply
   tid=bsfGetTid()
-  say self"::updateGuiFromRexxThread - now running on thread id:" tid
+  say self"::updateGuiFromRexxThread - now running on thread:" tid
   stopRexxThread=.false
   loop while stopRexxThread<>.true
      .AwtGuiThread~runLaterLatest(label, "setText", "i", .dateTime~new": value from non-GUI Rexx thread" pp(tid))
      call SysSleep .0001   -- sleep a bit
   end
-  say self"::updateGuiFromRexxThread - now stopping executing on thread id:" tid
+  say self"::updateGuiFromRexxThread - now stopping executing on thread:" tid
   .AwtGuiThread~runLater(label, "setText", "i", "") -- set Label's text to empty string
   say
 

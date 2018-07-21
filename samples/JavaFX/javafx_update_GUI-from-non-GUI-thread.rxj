@@ -50,8 +50,8 @@
 
    invoke:
 
-         rexx javafx_01.rex
-         rexxj.{cmd|sh} javafx_01.rex
+         rexx javafx_update_GUI-from-non-GUI-thread.rxj
+         rexxj.{cmd|sh} javafx_update_GUI-from-non-GUI-thread.rxj
 
    needs: ooRexx 4.1 or higher, and BSF4ooRexx 6.00 or highter
 
@@ -158,7 +158,7 @@ syntax:
   say self"::updateGuiFromRexxThread - just arrived, GUI thread:" bsfGetTid()
   reply
   tid=bsfGetTid()
-  say self"::updateGuiFromRexxThread - now running on thread id:" tid
+  say self"::updateGuiFromRexxThread - now running on thread:" tid
   stopRexxThread=.false
   loop while stopRexxThread<>.true
      .FxGuiThread~runLaterLatest(label, "setText", "i", .dateTime~new": value from non-GUI Rexx thread" pp(tid))
