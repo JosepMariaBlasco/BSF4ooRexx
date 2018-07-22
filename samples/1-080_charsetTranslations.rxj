@@ -23,6 +23,12 @@
 
    date:    2018-07-19
 
+   changed: 2018-07-22, rgf:
+               - using dash in UTF charset names (instead of underline),
+               - added UTF-32*, "IBM-273" (IBM EBCIDC Austria, Germany)
+               - removed override for MacOSX as not necessary ('file.encoding'
+                 is used on Terminal output)
+
    author:  Rony G. Flatscher
 
 
@@ -37,19 +43,13 @@ signal on syntax     -- in case an unsopperted charset/codepage name gets suppli
 propName="sun.stdout.encoding"
 stdoutCS=.java.lang.System~getProperty(propName)
 
-if stdoutCS=.nil then
+if stdoutCS=.nil then         -- property does not exist, use value of 'file.encoding' instead
 do
    propName="file.encoding"
    stdoutCS=.java.lang.System~getProperty(propName)
 end
 
-if stdoutCs="MacRoman", .bsf4rexx~opsys3="MAC" then
-do
-   stdoutCs="UTF8"
-   propName="overridden-to-UTF8"
-end
-
-say "Current charset/codepage/"propName "used for standard output:" pp(stdoutCS)
+say "Current charset/codepage (Java property '"propName"') used for standard output, i.e. '"stdoutCS"'"
 say
 
    -- German umlauts and German sharp-s encoded in 8859-1/Cp1252 hexadecimal code values
@@ -65,18 +65,21 @@ chars=.array~of("c4"x, -   -- ISO8859_1 encoded umlaut-A character
    -- names of the German characters
 titles=.array~of("umlaut-A", "umlaut-a", "umlaut-O", "umlaut-o", "umlaut-U", "umlaut-u", "sharp-s")
    -- codepages to translate to
-toCharsets=.array~of("Cp850", "Cp1252", "ISO8859_1", "UTF_16", "MacRoman", "UTF_16BE", "UTF_16LE", "UTF8", "ASCII")
+toCharsets=.array~of("Cp850", "Cp1252", "ISO8859_1", "MacRoman", "ASCII",  -  -- 8-bit
+                     "IBM-273", "UTF-8",                                   -  -- 8-bit
+                     "UTF-16", "UTF-16BE", "UTF-16LE",                     -  -- 16-bit (BOM in UTF-16)
+                     "UTF-32", "UTF-32BE", "UTF-32LE")                        -- 32-bit
 
 tab="09"x
 do i=1 to chars~items
    title=titles[i]
    char=chars[i]
    charStdoutCS=bsf.iconv(char,inCS,stdoutCS)
-   say pp(title) "using current stdout charset/codepage" pp(stdoutCS)":" pp(charStdoutCS) "->" ppX(charStdoutCS)
+   say pp(title) "using charset/codepage (Java property '"propName"'='"stdoutCS"'): '"charStdoutCS"' ->" ppX(charStdoutCS)
    say
    do outCS over toCharsets
       encChar=bsf.iconv(char,inCS,outCS)
-      say tab outCS~left(10)":" (ppX(encChar)" ")~left(16,'.') "displays:" pp(encChar)
+      say tab outCS~left(10)":" (ppX(encChar)" ")~left(14,'.') "displays:" pp(encChar)
    end
    say
 end
