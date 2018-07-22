@@ -17,7 +17,8 @@
                  .FxGuiThread and its method 'runLater'; in this mode it is possible that focusing
                  via .FxGuiThread is overriden by awt/swing (and therefore not working correctly)
 
-   changes:    ---
+   changes:    2018-07-22, prepended file name in creating Image with "file:" to allow it to find
+               the bitmap in the current directory
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
 
    changed:
@@ -355,7 +356,7 @@ syntax:
    dialog=.fxDialog~new   -- create a Dialog and customize it: has OK and CANCEL button
    dialogPane=dialog~dialogPane
 
-   image=.bsf~new("javafx.scene.image.Image", "oorexx_256.png")
+   image=.bsf~new("javafx.scene.image.Image", "file:oorexx_256.png")
    dialogPane~scene~window~icons~add(image)  -- make it a system menu icon (upper left-hand corner)
    say
    say "note: custom icon in the upper left hand corner of the dialog"

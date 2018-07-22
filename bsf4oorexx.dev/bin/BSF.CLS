@@ -12,6 +12,10 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-07-22, ---rgf, - removed "unguarded" from AbstractGuiThread, FxGuiThread and AwtGuiThread methods
+                               as refactoring removed deadlock potential (attributes are now in subclasses
+                               and get fetched with getters if needed in AbstractGuiThread methods)
+
          2018-07-14, ---rgf, - refactoring the GUI related utility classes "FxGuiThread" and "AwtGuiThread" into
                                a common private abstract class "AbstractGUIThread" defining abstract attribute
                                and methods to be implemented by the refactored subclasses "FxGuiThread" and
@@ -636,7 +640,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20180714)
+   version:     6.00 (20180722)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -735,7 +739,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180721" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180722" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4932,7 +4936,7 @@ syntax:
 ::attribute waitingToRun          class abstract   -- force creation of attribute in subclass; determines
 
 ::method    setup                 class private abstract    -- setup class attributes
-::method    isGuiThread           class unguarded abstract  -- determines if current thread is GUI thread
+::method    isGuiThread           class abstract   -- determines if current thread is GUI thread
 ::method    invokeOnGuiThread     class private abstract    -- use the appropriate Java utility class method
 
 
@@ -5058,22 +5062,16 @@ syntax:
 *                     fetching a possible result, determining whether an error occurred and
 *                     inspecting it)
 */
-::method runLater          class unguarded
-  -- expose msgQueue waitingToRun JavaGuiUtilityClz runnable
+::method runLater          class
   use strict arg target, messageName, ...
 
   signal on syntax
-  guard on
   if self~JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
-  guard off
   guiMsg=self~createGuiMessage(arg(1,"array"))
   self~msgQueue~queue(guiMsg)
   if self~waitingToRun=.false then -- "runLater" not invoked yet?
   do
-     guard on
      self~waitingToRun=.true
-     guard off
-     -- JavaGuiUtilityClz~invokeLater(runnable)
      self~invokeOnGuiThread   -- make sure Java will dispatch Rexx message on GUI thread
   end
   return guiMsg            -- allows caller to get a hold of a possible return value
@@ -5104,14 +5102,11 @@ syntax:
 *                     fetching a possible result, determining whether an error occurred and
 *                     inspecting it)
 */
-::method runLaterLatest    class unguarded
---   expose msgQueue waitingToRun JavaGuiUtilityClz runnable
+::method runLaterLatest    class
   use strict arg target, messageName, ...
 
   signal on syntax
-  guard on
   if self~JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
-  guard off
 
   guiMsg=self~createGuiMessage(arg(1,"array"))
       -- remove all occurrences of messages with the same messagename and the same target
@@ -5129,10 +5124,7 @@ syntax:
 
   if self~waitingToRun=.false then -- "runLater" not invoked yet?
   do
-     guard on
      self~waitingToRun=.true
-     guard off
-     -- JavaGuiUtilityClz~invokeLater(runnable)
      self~invokeOnGuiThread   -- make sure Java will dispatch Rexx message on GUI thread
   end
   return guiMsg            -- allows caller to get a hold of a possible return value
@@ -5190,12 +5182,9 @@ syntax:
 /**
 * @return returns <code>.true</code>, if running on the GUI thread ("JavaFX Application Thread"), <code>.false</code> else
 */
-::method isGuiThread     class unguarded
+::method isGuiThread     class
   expose JavaGuiUtilityClz
-
-  guard on
   if JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
-  guard off
   return JavaGuiUtilityClz~isFxApplicationThread
 
 
@@ -5251,13 +5240,9 @@ syntax:
 /**
 * @return returns <code>.true</code>, if running on the GUI thread ("event dispatch thread" a.k.a. "awt Thread"), <code>.false</code> else
 */
-::method isGuiThread     class unguarded
+::method isGuiThread     class
   expose JavaGuiUtilityClz
-
-  guard on
   if JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
-  guard off
-
   return JavaGuiUtilityClz~isEventDispatchThread   -- awt/swing version
 
 
@@ -5331,7 +5316,7 @@ syntax:
 
 
 /* ------------------------------------------------------------------------------------------------- */
-/** If the message eas run and has completed and returns a result, this attrbitue makes it available.
+/** If the message has run and has completed and returns a result, this attrbitue makes it available.
 
  @return returns <code>.true</code>, if this message has completed without an error, <code>.false</code> else
 */
