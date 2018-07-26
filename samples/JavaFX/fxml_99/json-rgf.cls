@@ -102,7 +102,8 @@ end
 *   (Rexx programmers can do Unicode related processing e.g. by taking advantage of Java via the
 *   <a href="https://sourceforge.net/projects/bsf4oorexx/">BSF4ooRexx</a>
 *   package. The routines <code>getEncoding()</code> and <code>getJsonBOM()</code> are implemented
-*   in this package to support such an endeavor.)
+*   in this package to support such an endeavor. Starting with 20180721 BSF.CLS supplies the public
+*   routine 'bsf.iconv(string,fromCharset,toCharset)' which can be used for charset translations.
 *
 * @author Brandon W. Cherry (original author)
 * @author Rony G. Flatscher (adapted code to ooRexx 4.2.0 and 5.0.0)

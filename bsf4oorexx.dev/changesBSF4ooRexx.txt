@@ -1,3 +1,28 @@
+-------------------------------------- 2018-07-23 ----------------------------------
+
+- samples\1-080_charsetTranslations.rxj:
+
+  - reinserted override for MacOSX, still necessary: output in Terminal needs to be in "UTF-8",
+    Java "file.encoding" may be "MacRoman"
+
+-------------------------------------- 2018-07-22 ----------------------------------
+
+- BSF.CLS:
+
+  - removed "unguarded" from AbstractGuiThread, FxGuiThread and AwtGuiThread methods
+    as refactoring removed deadlock potential (attributes are now in subclasses
+    and get fetched with getters if needed in AbstractGuiThread methods)
+
+- samples\1-080_charsetTranslations.rxj:
+
+  - using dash in UTF charset names (instead of underline),
+  - added UTF-32*, "IBM-273" (IBM EBCIDC Austria, Germany)
+  - removed override for MacOSX as not necessary ('file.encoding' is used on Terminal output)
+
+- samples\JavaFX\javafx_dialog_demo.rxj:
+
+  - prepended file name in creating Image with "file:" to allow it to find
+    the bitmap in the current directory
 
 -------------------------------------- 2018-07-19 ----------------------------------
 

@@ -26,8 +26,10 @@
    changed: 2018-07-22, rgf:
                - using dash in UTF charset names (instead of underline),
                - added UTF-32*, "IBM-273" (IBM EBCIDC Austria, Germany)
-               - removed override for MacOSX as not necessary ('file.encoding'
-                 is used on Terminal output)
+               - removed override for MacOSX as not necessary ('file.encoding' is used on Terminal output)
+            2018-07-23, rgf:
+               - reinserted override for MacOSX, still necessary: output in Terminal needs to be in "UTF-8",
+                 Java "file.encoding" may be "MacRoman"
 
    author:  Rony G. Flatscher
 
@@ -49,7 +51,21 @@ do
    stdoutCS=.java.lang.System~getProperty(propName)
 end
 
-say "Current charset/codepage (Java property '"propName"') used for standard output, i.e. '"stdoutCS"'"
+-- on MacOSX: 'file.encoding' may return MacRoman whereas in the Terminal 'UTF-8' is expected
+if stdoutCS="MacRoman" then
+do
+   propName="overriding (Terminal expects UTF-8)"
+   stdoutCS="UTF-8"
+   infoString="Current charset/codepage (overriding Java property on MacOSX) used for standard out: '"stdoutCS"'"
+   leadinString="using charset/codepage (overriding Java property on MacOSX) '"stdoutCS"' for standard output, hence:"
+end
+else
+do
+   infoString="Current charset/codepage (Java property '"propName"') used for standard output: '"stdoutCS"'"
+   leadinString="using charset/codepage (Java property '"propName"') '"stdoutCS"' for standard output, hence:"
+end
+
+say infoString
 say
 
    -- German umlauts and German sharp-s encoded in 8859-1/Cp1252 hexadecimal code values
@@ -60,10 +76,11 @@ chars=.array~of("c4"x, -   -- ISO8859_1 encoded umlaut-A character
                 "f6"x, -   -- ISO8859_1 encoded umlaut-o character
                 "dc"x, -   -- ISO8859_1 encoded umlaut-U character
                 "fc"x, -   -- ISO8859_1 encoded umlaut-u character
-                "df"x )    -- ISO8859_1 encoded sharp-s character
+                "df"x, -   -- ISO8859_1 encoded sharp-s character
+                "fcdf"x )  -- ISO8859_1 encoded sharp-s character
 
    -- names of the German characters
-titles=.array~of("umlaut-A", "umlaut-a", "umlaut-O", "umlaut-o", "umlaut-U", "umlaut-u", "sharp-s")
+titles=.array~of("umlaut-A", "umlaut-a", "umlaut-O", "umlaut-o", "umlaut-U", "umlaut-u", "sharp-s", "umlaut-u || sharp-s")
    -- codepages to translate to
 toCharsets=.array~of("Cp850", "Cp1252", "ISO8859_1", "MacRoman", "ASCII",  -  -- 8-bit
                      "IBM-273", "UTF-8",                                   -  -- 8-bit
@@ -75,11 +92,11 @@ do i=1 to chars~items
    title=titles[i]
    char=chars[i]
    charStdoutCS=bsf.iconv(char,inCS,stdoutCS)
-   say pp(title) "using charset/codepage (Java property '"propName"'='"stdoutCS"'): '"charStdoutCS"' ->" ppX(charStdoutCS)
+   say pp(title) leadinString "'"charStdoutCS"' ->" ppX(charStdoutCS)
    say
    do outCS over toCharsets
       encChar=bsf.iconv(char,inCS,outCS)
-      say tab outCS~left(10)":" (ppX(encChar)" ")~left(14,'.') "displays:" pp(encChar)
+      say tab outCS~left(10)":" (ppX(encChar)" ")~left(22,'.') "displays:" pp(encChar)
    end
    say
 end
