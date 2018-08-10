@@ -1,4 +1,4 @@
-2009-06-22, 2010-08-22, 2010-12-27, 2017-04-14, ---rgf
+2009-06-22, 2010-08-22, 2010-12-27, 2017-04-14, 2018-08-10, ---rgf
 
 Created a set of examples that demonstrate the new callback functionality of BSF4ooRexx 4.0
 by using the Java SAX classes.
@@ -7,7 +7,7 @@ Run and look up the Rexx code and study the comments.
 
 Usage:
 
-        xyz.rxj www.rexxla.org.htm
+        xyz.rxj www.rexxla.org.xhtml
 
         where "xyz.rxj" is one of:
                 01_getText.rxj
@@ -28,7 +28,7 @@ File list:
         06_listElementNamesIndentedWithAttributes_DOES_NOT_USE_DTD.rxj
         07_listElemen
         DTD/
-        www.rexxla.org.htm
+        www.rexxla.org.xhtml
 
 Note 1) the directory DTD is necessary as SAX will look it up for the DTD definition and
         additional support files
