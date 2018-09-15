@@ -4,12 +4,36 @@
 
    date:       2017-03-01
 
-   changed:    2018-01-03, rgf: added signal handler in prolog code using ppCondition2() form "rgf_util2.rex"
+   changed:    2018-01-03, rgf: added signal handler in prolog code using ppCondition2() from "rgf_util2.rex"
                2018-03-24, rgf: make sure that we change into the directory of this program
+               2018-09-15, rgf: - set the Java thread context class loader to make the startup directory
+                                 and the appropriate jar-files available:
 
+                                 - with the modularization introduced in Java 9 the JavaFX 8 library
+                                   "jar\controlsfx-8.40.14.jar" would not work anymore; the replacement
+                                   version of this JavaFX library for Java 9 and higher ("jar\controlsfx-9.0.0.jar")
+                                   would not work on Java 8;
+
+                                 - the routine "makeResourcesAvailable" will determine the Java version and use
+                                   an URLClassLoader in order to supply the URLs for the appropriate
+                                   "controlsfx*jar" file and the directory this program resides; this URLClassLoader
+                                   will use the current Thread's context class loader as its parent and then will
+                                   be used as the new Thread context class loader
+
+                               - use the unqualified class name of the imported "javafx.beans.property.*" classes
+                                 as the Rexx class name
+
+                               - removed the switching to the directory where the Rexx program resided, not
+                                 necessary because of the customized URLClassLoader that adds that directory
+                                 as URL to be looked up (removed change done at 2018-03-24)
 
    purpose:    - demonstrates usage of custom libraries
                - shows table view handling
+               - demonstrates switching stylesheets to dramatically change the UI
+               - demonstrates how to individually style displayed items
+               - demonstrates how to create a custom URLClassLoader to point Java to the needed URLs where
+                 the resources needed by this program are located; this customized URLClassLoader will be
+                 used as the Thread context class loader
 
    needs:      need to change into the directory where this file resides and start the application
                from there (otherwise JavaFX/Java-related operations may go astray as they address
@@ -20,9 +44,6 @@
    license:    - Apache License 2.0 (AL 2.0)
 */
 
-   -- change directory to program location such that relatively addressed resources can be found
-parse source  . . pgm
-call directory filespec('L', pgm)   -- change to the directory where the program resides
 
 /* Create a directory in the global Rexx .environment named MY.APP, such that we can store/retrieve
    objects that we need globally (over all Rexx programs):
@@ -33,15 +54,18 @@ call directory filespec('L', pgm)   -- change to the directory where the program
      that directory from any Rexx program
 */
 .environment~setEntry("my.app", .directory~new)
-/* java class imports */
-call bsf.import "javafx.collections.FXCollections", "fx.FXCollections"
-call bsf.import "org.controlsfx.control.Notifications", "fx.Notification"
-call bsf.import "javafx.util.Callback", "Callback"
+call makeResourcesAvailable      -- make the correct jar-file available to Java
 
-/* set up environment */
-.environment~SimpleStringProperty = bsf.import("javafx.beans.property.SimpleStringProperty")
-.environment~SimpleBooleanProperty = bsf.import("javafx.beans.property.SimpleBooleanProperty")
-.environment~SimpleIntegerProperty = bsf.import("javafx.beans.property.SimpleIntegerProperty")
+/* java class imports */
+call bsf.import "javafx.collections.FXCollections",            "fx.FXCollections"
+call bsf.import "org.controlsfx.control.Notifications",        "fx.Notification"
+call bsf.import "javafx.util.Callback",                        "Callback"
+
+/* set up environment, import Java classes use unqualified class name as the Rexx class name */
+call bsf.import "javafx.beans.property.SimpleStringProperty",  "SimpleStringProperty"
+call bsf.import "javafx.beans.property.SimpleBooleanProperty", "SimpleBooleanProperty"
+call bsf.import "javafx.beans.property.SimpleIntegerProperty", "SimpleIntegerProperty"
+
 .environment~notificationDarkStyle = .false
 
    -- determine our location and create an URLClassLoader to find resources relative to it
@@ -51,9 +75,6 @@ parse source . . s
    -- use a java.io.File to to get an URL for the file
 jfile = .bsf~new("java.io.File",.local~appDirectory)
 urlAppDir = jfile~toUri~toUrl
-
-   -- create the URLClassLoader using the appDirectory for resolving resources via it
-.my.app~appClzLdr = .bsf~new("java.net.URLClassLoader", bsf.createJavaArrayOf("java.net.URL", urlAppDir))
 
    -- load the FXMLLoader class, save it for multiple usages
 .my.app~fxmlLoader = bsf.loadClass("javafx.fxml.FXMLLoader")
@@ -73,21 +94,25 @@ exit
 
 syntax:
   co=condition('o')        -- get condition object
-  say ppCondition2(co)
+  say ppCondition2(co)     -- show extensive information about exception to ease debugging JavaFX programs
   exit -1
 
 
-::requires "rgf_util2.rex"    -- get access to public routien ppCondition2()
-::requires "BSF.CLS"    -- get Java support
+::requires "rgf_util2.rex" -- get access to public routien ppCondition2()
+::requires "BSF.CLS"       -- get Java support
 
+  /***************************************************************************************/
 /* implements the abstract method "start" for the Java class javafx.application.Application
    (BSF4ooRexx also supplies another (trailing) slotDir (a Rexx Directory) argument, as "start" is
    invoked from Java)
 */
 ::class RxDocHandler
+
 ::attribute mainScene
 ::attribute maskerPane
 ::attribute maskerPaneContainer
+
+  /* ------------------------------------------------------------------------------ */
 ::method start    -- will be invoked by the "launch" method
   use arg primaryStage  -- we get the primary stage to use for our UI
    /* loads the fxml document defining the GUI elements, sets up a scene for it and shows it */
@@ -153,33 +178,33 @@ syntax:
 
   primaryStage~show                          -- show the stage
 
-  /***************************************************************************************/
-
+  /* ------------------------------------------------------------------------------ */
 ::method changed                    -- used by ChangeListener attached to the ToggleSwitch Object
   expose mainScene maskerPane maskerPaneContainer         -- attributes from this class
   use arg o, oldValue, newValue
   signal on syntax name failure
-  maskerPaneContainer~setVisible(.true)           -- display the masker pane
+  maskerPaneContainer~setVisible(.true)      -- display the masker pane
   if newValue = .true then do
-      mainScene~getStylesheets~add("css/style.css")               -- add CSS to stylesheets on
-      .my.app~staff.fxml~ToggleSwitch~setText("turn off CSS")     -- change the label of the toggle switch class
+      mainScene~getStylesheets~add("css/style.css")   -- add CSS to stylesheets on
+      .my.app~staff.fxml~ToggleSwitch~setText("turn off CSS")  -- change the label of the toggle switch class
       notificationText = "You have successfully attached a Stylesheet"
-      .environment~notificationDarkStyle = .true                  -- set this value .true to display all notifications in a predefined dark style
+      .environment~notificationDarkStyle = .true      -- set this value .true to display all notifications in a predefined dark style
   end
   else do
-      mainScene~getStylesheets~clear                              -- remove all stylesheets
+      mainScene~getStylesheets~clear         -- remove all stylesheets
       .my.app~staff.fxml~ToggleSwitch~setText("turn on CSS")
       notificationText = "You have successfully removed the Stylesheet"
       .environment~notificationDarkStyle = .false
   end
-  call SysSleep .5             -- enjoy the masker pane
+  call SysSleep .5             -- enjoy the masker pane (wait animation)
+
   notification = .fx.Notification~create
   notification~title("Stylesheet")
   notification~text(notificationText)
   if .environment~notificationDarkStyle then
       notification~darkStyle
-  notification~showInformation                -- display the notification
-  maskerPaneContainer~setVisible(.false)      -- hide the masker pane
+  notification~showInformation               -- display the notification
+  maskerPaneContainer~setVisible(.false)     -- hide the masker pane
   return
 
   failure:
@@ -187,8 +212,9 @@ syntax:
 
 
   /***************************************************************************************/
-
 ::class expander
+
+  /* ------------------------------------------------------------------------------ */
 ::method call
   use arg o
   ratingValueReference = BsfRexxProxy(o~getValue)~send("rating") -- get a reference of the rating property of each person
@@ -214,6 +240,7 @@ syntax:
   rating~addEventHandler(eventtype~MOUSE_CLICKED, eventhandler)
   return hbox
 
+  /* ------------------------------------------------------------------------------ */
 ::method handle
   use arg event, slotDir
   .my.app~staff.fxml~maskerPaneContainer~setVisible(.true)
@@ -227,18 +254,23 @@ syntax:
   notification~text("You rated this person" actualRatingFrom1to10 "out of 10")
   if .environment~notificationDarkStyle then
       notification~darkStyle
-  call SysSleep .5                            -- enjoy the masker pane
+  call SysSleep .5                        -- enjoy the masker pane (wait animation)
+
   .my.app~staff.fxml~maskerPaneContainer~setVisible(.false)
-  notification~showInformation                -- show the notification
+  notification~showInformation            -- show the notification
+
 
   /***************************************************************************************/
-
 ::class Staff
+
 ::attribute staffList
+
+  /* ------------------------------------------------------------------------------ */
 ::method init
   expose staffList
   staffList = .fx.FXCollections~observableArrayList               -- define the staffList as an observable array list
 
+  /* ------------------------------------------------------------------------------ */
 ::method addPerson
   expose staffList
   use arg Person
@@ -247,46 +279,56 @@ syntax:
   else
       .error~say(Person "is not a Person") -- ouptut to error stream
 
+  /* ------------------------------------------------------------------------------ */
 ::method createAndAddPerson
   use arg strfirstName, strlastName, strinstitute, stravailable = .false
   self~addPerson( .Person~new(strfirstName, strlastName, strinstitute, stravailable) )
 
-  /***************************************************************************************/
 
+  /***************************************************************************************/
 ::class Person
+
 ::attribute firstName
 ::attribute lastName
 ::attribute institute
 ::attribute available
 ::attribute rating
+
+  /* ------------------------------------------------------------------------------ */
 ::method init
   expose firstName lastName institute available rating
   use arg firstNameInput, lastNameInput, instituteInput, availableInput = .false, ratingInput = 5
-  firstName = .environment~SimpleStringProperty~new(firstNameInput)
-  lastName = .environment~SimpleStringProperty~new(lastNameInput)
-  institute = .environment~SimpleStringProperty~new(instituteInput)
-  available = .environment~SimpleBooleanProperty~new(availableInput)
-  rating = .environment~SimpleIntegerProperty~new(ratingInput)
+
+  firstName = .SimpleStringProperty ~new(firstNameInput)
+  lastName  = .SimpleStringProperty ~new(lastNameInput)
+  institute = .SimpleStringProperty ~new(instituteInput)
+  available = .SimpleBooleanProperty~new(availableInput)
+  rating    = .SimpleIntegerProperty~new(ratingInput)
+
 
 /* =================================================================================== */
-/* implements javafx.util.Callback<P,R>(P o) for PropertyValueFactory */
-
 /* This class allows instances that remember the message to be sent to person instances to
    return the property of the attribute that should be shown in the table cell.
 */
 ::class PropertyValueFactory
+
+  /* ------------------------------------------------------------------------------ */
 ::method init
   expose  propName   -- name of property getter method
   use strict arg propName
 
+  /* ------------------------------------------------------------------------------ */
 ::method call
   expose propName
   use arg o          -- an observable value for the ooRexx person object boxed in a Java RexxProxy object
   return BsfRexxProxy(o~getValue)~send(propName)
 
+
+/* =================================================================================== */
    -- This Rexx class needs to extend the "javafx.scene.control.TableCell" class and override the "updateItem" method
 ::class RexxTableCell   -- implements the cell renderer
 
+  /* ------------------------------------------------------------------------------ */
 ::method updateItem     -- implements "javafx.scene.control.TableCell.updateItem(Object item, boolean bEmpty)"
   use arg item, bEmpty, slotDir
   jSelf=slotDir~JavaObject    -- get the Java peer object
@@ -313,16 +355,88 @@ syntax:
   end
 
 
+/* =================================================================================== */
+/* implements javafx.util.Callback<P,R>(P o) for PropertyValueFactory */
 ::class rexxCallback    -- Rexx class implementing "javafx.util.Callback"'s "call" method
+
 ::attribute clzOoRexxTableCell class get  -- a class attribute
+
+  /* ------------------------------------------------------------------------------ */
 ::method init class     -- the Rexx constructor at the class level: create and memorize a proxy class for "javfx.scene.control.TableCell"
   expose clzOoRexxTableCell
    -- let Rexx implement the "updateItem" method from "javafx.scene.control.Cell" (a superclass of "TableCell"),
    -- create and return a subclass of "TableCell" allowing a RexxProxy to implement the method "updateItem"
   clzOoRexxTableCell=bsf.createProxyClass("javafx.scene.control.TableCell", "ooRexxTableCell", "javafx.scene.control.Cell updateItem")
 
+  /* ------------------------------------------------------------------------------ */
 ::method call           -- implements "javafx.util.Callback.call(Object o)": in this case an instance of a TableCell (or a subclass of it) must be returned!
   use arg obj, slotDir
                -- create the TableCell handler, supply a RexxTableCell object to carry out "updateItem"
   rexxCellHandler=self~class~clzOoRexxTableCell~new(.rexxTableCell~new)
   return rexxCellHandler
+
+
+/* =================================================================================== */
+/** The module system introduced with Java 9 causes some JavaFX 7 and JavaFX 8 libraries to break.
+    Usually replacement JavaFX 9 and higher libraries would not run under Java 7 and 8, such that
+    our program needs to configure Java to use the correct libraries, depending on the Java version
+    in use.
+
+    This routine will determine which Java is running and create an approriate URLClassLoader
+    containing the Java URLs to look for resources and appropriate Java classes. Setting the
+    Thread context class loader to our custom URLClassLoader will allow JavaFX and the Rexx
+    program to load the correct resources and Java classes, depending on the runtime Java version.
+*/
+::routine makeResourcesAvailable -- determine Java version and create a URLClass
+   bDebug=.true                     -- if .true show some debug output
+   if bDebug then
+   do
+      say "java.version:      " .bsf4rexx~java.version
+      say "java.major.version:" .bsf4rexx~java.major.version
+      say "java.minor.version:" .bsf4rexx~java.minor.version
+   end
+   ------------------------------------------------------------------------------
+
+   java8jar="jar/controlsfx-8.40.14.jar"  -- Java 8 JavaFX library
+   java9jar="jar/controlsfx-9.0.0.jar"    -- Java 9 or higher JavaFX library
+
+   ------------------------------------------------------------------------------
+   jclzClassLoader=bsf.loadClass("java.lang.ClassLoader") -- load the Java class
+
+      -- get the current Thread's context class loader to our class loader
+   currentThread=bsf.loadClass("java.lang.Thread")~currentThread -- get current Java Thread
+   ctxtCL=currentThread~getContextClassLoader   -- get current context class loader, use it as parent
+   if bDebug=.true then say "current context class loader:" pp(ctxtCL)
+
+   if .bsf4rexx~java.major.version<9 then -- use the Java 8 system (application) class loader as parent
+   do
+      urlJarName=.bsf~new("java.io.File", java8jar)~toURI~toUrl   -- URL to JavaFX 8 library
+      if ctxtCL=.nil then                 -- no context class loader set?
+         ctxtCL=jclzClassLoader~getSystemClassLoader  -- up to Java 1.8/8: use this as parent class loader
+   end
+   else     -- use the Java 9 platform class loader as parent; this replacement will work on later versions of Java as well
+   do
+      urlJarName=.bsf~new("java.io.File", java9jar)~toURI~toUrl   -- URL to JavaFX 9 and higher library
+      if ctxtCL=.nil then                 -- no context class loader set?
+         ctxtCL=jclzClassLoader~getPlatformClassLoader   -- Java 9 or later: use this as parent class loader
+   end
+
+   ------------------------------------------------------------------------------
+      -- get directory this Rexx program resides in as a URL to be looked up via the URL class loader
+   parse source  . . path2thisProgram        -- get full path to this Rexx program
+      -- get a Java File object for its path (the directory this program resides in)
+   jfile = .bsf~new("java.io.File",filespec('L',path2thisProgram))
+   urlAppDir = jfile~toUri~toUrl          -- create a Java URL for this location
+
+   jclzUrl=bsf.loadClass("java.net.URL")  -- load the Java class
+   urls=bsf.createJavaArrayOf(jclzUrl, urlAppDir, urlJarName)     -- array of URLs
+   myClzLoader=.bsf~new("java.net.URLClassLoader", urls, ctxtCL)  -- create the URLClassLoader
+   currentThread~setContextClassLoader(myClzLoader)   -- set this as the current Java context class loader
+   .my.app~appClzLdr = myClzLoader        -- make our customized class loader available to the Rexx application
+
+   ------------------------------------------------------------------------------
+   if bDebug=.true then
+   do
+      say "new context class loader:    " pp(myClzLoader~toString)
+      say "-"~copies(99)
+   end
