@@ -12,6 +12,20 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-09-15, ---rgf, - add ".bsf4rexx~bsf.cls.fullPath" and ".bsf4rexx~bsf.cls.path" to allow querying
+                               the location of this BSF.CLS from other Rexx programs easily
+
+                             - new public routine "bsf.contextClassLoader [urlOrDirOrFileName | urlCollection]" that allows
+                               to define the Thread's context class loader to find classes and resources in
+                               the supplied urlOrDirOrFileName | urlCollection
+
+                             - to ease the support for "bsf.contextClassLoader" the following Java classes:
+                               'java.lang.ClassLoader', 'java.lang.Thread', 'java.io.File',
+                               'java.net.URL', 'java.net.URLClassLoader'
+
+         2018-09-14, ---rgf, - restructured routines bsf.import() and its synonym bsf.importClass() to match
+                               arguments with class BSF's class method bsf.import()
+
          2018-07-22, ---rgf, - removed "unguarded" from AbstractGuiThread, FxGuiThread and AwtGuiThread methods
                                as refactoring removed deadlock potential (attributes are now in subclasses
                                and get fetched with getters if needed in AbstractGuiThread methods)
@@ -688,10 +702,9 @@
 
 bDebug=.false -- .true
 
-parse source s
-
 if bDebug=.true then
 do
+   parse source s
    .stderr~say("BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ... BSF.CLS - arrived in PROLOG code ...")
    .stderr~say("BSF.CLS - parse source:" pp(s) "- editing it for new release, since Monday, 2018-02-19...")
    .stderr~say("... BSF.CLS ... prolog code ..."  ".bsf.rii_ID:" pp(.bsf.rii_ID)  ".bsf.primodalTID="pp(.bsf.primodalTID)  "TID:" pp(BsfGetTid()) "created in RII:" pp(rii_id))
@@ -708,7 +721,7 @@ end
        raise syntax 3.900 array (errString)
    end
 
-   parse source opsys .       -- get name of operating system, rgf, 2010-02-20
+   parse source opsys . thisFullPath      -- get name of operating system, rgf, 2010-02-20
 
    if opsys="DARWIN" then opsys="MACOSX"
 
@@ -739,11 +752,14 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180726" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180915" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
       .bsf4rexx~opSys3 =opsys~left(3)~upper  -- save operating system name's first two letters in uppercase
+
+      .bsf4rexx~bsf.cls.fullPath=thisFullPath      -- allows to query the full path for this BSF.CLS from other Rexx programs
+      .bsf4rexx~bsf.cls.location=filespec("l",thisFullPath) -- allows to query the location for this BSF.CLS from other Rexx programs
 
       .bsf.dialog~setDefaultComponent  -- Initialize the default component object (cannot be done in class' constructor)
 
@@ -973,7 +989,12 @@ syntax:
       'java.lang.Integer'           ,,   -- a Java Object class
       'java.lang.Long'              ,,   -- a Java Object class
       'java.lang.Short'             ,,   -- a Java Object class
-      'java.lang.System'            )    -- a Java Object class
+      'java.lang.System'            ,,   -- a Java Object class
+      'java.lang.ClassLoader'       ,,   -- a Java Object class, for supporting routine bsf.contextClassLoader
+      'java.lang.Thread'            ,,   -- a Java Object class, for supporting routine bsf.contextClassLoader
+      'java.io.File'                ,,   -- a Java Object class, for supporting routine bsf.contextClassLoader
+      'java.net.URL'                ,,   -- a Java Object class, for supporting routine bsf.contextClassLoader
+      'java.net.URLClassLoader'     )    -- a Java Object class, for supporting routine bsf.contextClassLoader
 
    do i=1 to arr~items
       -- make these classes accessible as if they were ooRexx classes
@@ -1383,18 +1404,14 @@ syntax:
            Rexx programmers
    ------------------------------------------------------------- */
 ::METHOD bsf.import class
-  USE ARG java_path, classname=.nil, extendedJavaClz=.nil   -- 2005-06-05, changed argument sequence
+  signal on syntax
+  USE STRICT ARG java_path, classname=.nil, extendedJavaClz=.nil  -- 2018-09-14 changed to STRICT
 
   bNoClassName=(arg(2, "Omitted") | className="" | .nil=className)
 
-  signal on syntax
-
-  if arg()>3 then
-     raise syntax 40.900 array ("BSF.CLS/class BSF/class method bsf.import, error 1: too many arguments (maximum: 3, found: "arg()")")
-
-  if extendedJavaClz=.nil then   -- let Java create the class object, which we can refer to
+  if extendedJavaClz=.nil then      -- let Java create the class object, which we can refer to
      jco=bsf.loadClass(java_path)   -- get Java class object (can be a BSF_Reference !)
-  else                           -- use the passed Java class object
+  else                              -- use the passed Java class object
      jco=extendedJavaClz
 
       -- now create proxy class object
@@ -1413,7 +1430,7 @@ syntax:
   method_txt = 'self~init:super("' || jco~string || '", ARG(1,"A"))'
   new_class~define('init', method_txt)  -- define the constructor instance method "INIT"
 
-  if .nil=arg(2) then return new_class
+  if .nil=arg(2) then return new_class    -- if arg(2) is explicitly .nil, then do not store in Rexx environment, just return class
 
   -- save the new BSF proxy class in .local to make it available as any other ooRexx class
   if bNoClassName then className=java_path   --- use the Java class name on the ooRexx side as well
@@ -2743,14 +2760,12 @@ syntax:
 
 /* ================================================================================================= */
 ::routine bsf.import                         public
-   USE ARG java_path, className4LocalDir
-
    signal on syntax
-   if arg()>2 then    -- 2009-06-26, hint by Mr. Lex (author of testunits for BSF4Rexx)
-      raise syntax 40.900 array ("BSF.CLS/routine/bsf.import(), error 1: too many arguments (maximum: 2, found: "arg()")")
+   USE strict ARG java_path, className4LocalDir=.nil, extendedJavaClz=.nil
+      -- if second argument is omitted, then allow BSF::bsf.import to determine that it got omitted as well
+   if arg(2,"omitted") then return .bsf~bsf.import(java_path, , extendedJavaClz)
 
-   if arg()=1 then return .bsf~bsf.import(java_path)
-   return .bsf~bsf.import(java_path, className4LocalDir)
+   return .bsf~bsf.import(java_path, className4LocalDir, extendedJavaClz)
 
 syntax:
    raise propagate
@@ -2758,14 +2773,14 @@ syntax:
 
 /* ================================================================================================= */
 ::routine bsf.importClass                    public
-   USE ARG java_path, className4LocalDir
-
    signal on syntax
-   if arg()>2 then    -- 2009-06-26, hint by Mr. Lex (author of testunits for BSF4Rexx)
-      raise syntax 40.900 array ("BSF.CLS/routine/bsf.import(), error 1: too many arguments (maximum: 2, found: "arg()")")
+   USE strict ARG java_path, className4LocalDir=.nil, extendedJavaClz=.nil
 
-   if arg()=1 then return .bsf~bsf.importClass(java_path)
-   return .bsf~bsf.import(java_path, className4LocalDir)
+      -- if second argument is omitted, then allow BSF::bsf.import to determine that it got omitted as well
+   if arg(2,"omitted") then return .bsf~bsf.import(java_path, , extendedJavaClz)
+
+   return .bsf~bsf.import(java_path, className4LocalDir, extendedJavaClz)
+
 
 syntax:
    raise propagate
@@ -5456,4 +5471,73 @@ extractJavaClassName: procedure
 syntax:
   raise propagate
 
+
+/* ================================================================================================= */
+/* ================================================================================================= */
+
+/* ------------------------------------------------------------------------ */
+/** Routine that interfaces with the Thread's context class loader. If no arguments are given
+    the current Thread's context class loader gets returned. Otherwise the argument may be
+    a string denoting a directory or a file, a java.io.File object, a java.net.URL object or
+    an array of these kinds of values, for which a new java.net.URLClassLoader gets created
+    which will be used to set the Thread's context class loader using the old context class loader
+    as its parent.
+
+    If a context class loader does not exist yet, the method
+    java.lang.ClassLoader.getSystemClassLoader will be used on Java 1.6/6, 1.7/7 and 1.8/8, otherwise
+    (Java 9 or higher) java.lang.ClassLoader.getPlatformClassLoader which then gets used as the
+    parent of the new java.net.URLClassLoader.
+
+   @param urlArg     optional, either a string denoting a directory or a file or a URL,
+                     a java.net.URL object or an array of these kinds of values
+
+   @return           the Thread's current class loader
+*/
+::routine bsf.contextClassLoader public
+  use strict arg urlArg=.nil
+
+  currentThread=.java.lang.Thread~currentThread
+  currentCCL   =currentThread~getContextClassLoader
+
+  if url=.nil then      -- just return current context class loader
+     return currentCCL
+
+  if \ urlArg~isA(.collection) then urlArg=.array~of(urlArg)   -- turn single argument into an array
+
+  -- process arguments, turn them into java.net.URL array
+  arrUrls=bsf.createJavaArray(.java.net.URL, urlArg~size)      -- create Java array to hold the URL objects
+  signal on syntax
+  do i=1 to urlArg~size
+     if val~isA(.bsf) then arrUrls[i]=url[i] -- assume Java object is java.net.URL otherwise error gets reported
+     else
+     do
+         -- support for URL-encoded string, expected to be composed as "protocol:data", cater for old Windows drive letters
+         val=urlArg[i]
+         parse var val protocol ":" data
+         if data<>"", protocol~length>1 then  -- assume a string containing an URL
+            arrUrls[i]=.java.net.URL~new(val)   -- create URL object and store it
+         else  -- assume a directory or a file
+            arrUrls[i]=.java.io.File~new(val)~toUri~toURL
+     end
+  end
+  drop val     -- remove VAL such that exception handler will not attempt to show its value
+
+  -- create URLClassLoader (possible enhancement: we could subclass it to allow access to e.g. addURL() and findClass())
+  if currentCCL=.nil then  -- no context class loader as of yet, get the system or platform class loader instead
+  do
+     if .bsf4rexx~java.major.version<9 then -- use the Java 8 system (application) class loader as parent
+        currentCCL=jclzClassLoader~getSystemClassLoader     -- up to Java 1.8/8: use this as parent class loader
+     else
+        currentCCL=jclzClassLoader~getPlatformClassLoader   -- Java 9 or later: use this as parent class loader
+  end
+   -- create new URL class loader, use it to set the current Thread's context class loader
+  newURLClassLoader=.java.net.URLClassLoader~new(arrUrls, currentCCL)
+  currentThread~setContextClassLoader(newURLClassLoader)
+  return newURLClassLoader
+
+
+syntax:
+  if var("VAL") then .error~say("BSF.CLS - routine BSF.contextClassLoader(): argument #" i "("val") caused syntax error")
+
+  raise propagate
 

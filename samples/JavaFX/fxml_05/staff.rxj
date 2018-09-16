@@ -26,6 +26,8 @@
                                - removed the switching to the directory where the Rexx program resided, not
                                  necessary because of the customized URLClassLoader that adds that directory
                                  as URL to be looked up (removed change done at 2018-03-24)
+               2018-09-16, rgf: - remove routine "makeResourcesAvailable", instead use the new public routine
+                                  "bsf.contextClassLoader(urls)"
 
    purpose:    - demonstrates usage of custom libraries
                - shows table view handling
@@ -45,6 +47,7 @@
 */
 
 
+
 /* Create a directory in the global Rexx .environment named MY.APP, such that we can store/retrieve
    objects that we need globally (over all Rexx programs):
 
@@ -54,7 +57,21 @@
      that directory from any Rexx program
 */
 .environment~setEntry("my.app", .directory~new)
-call makeResourcesAvailable      -- make the correct jar-file available to Java
+
+   -- get location of this program as Java is supposed to search for resources there!
+parse source . . fullPath
+say "executing" pp(fullPath) "using Java version:" pp(.bsf4rexx~java.version)
+homeDir=filespec('Location',fullPath)     -- get and save its location
+
+if .bsf4rexx~java.major.version<9 then
+   jarName="jar/controlsfx-8.40.14.jar"   -- Java 8 JavaFX library
+else
+   jarName="jar/controlsfx-9.0.0.jar"     -- Java 9 and higher JavaFX library
+
+   -- create and use a URLClassLoader as the new context class loader which is able to find our
+   -- customized resources from the supplied array (home directory, Java-dependent jar-file);
+   -- make our customized context class loader available to the Rexx application
+.my.app~appClzLdr = bsf.contextClassLoader(.array~of(homeDir,jarName))
 
 /* java class imports */
 call bsf.import "javafx.collections.FXCollections",            "fx.FXCollections"
@@ -67,14 +84,6 @@ call bsf.import "javafx.beans.property.SimpleBooleanProperty", "SimpleBooleanPro
 call bsf.import "javafx.beans.property.SimpleIntegerProperty", "SimpleIntegerProperty"
 
 .environment~notificationDarkStyle = .false
-
-   -- determine our location and create an URLClassLoader to find resources relative to it
-parse source . . s
-.local~appDirectory = filespec("Location", s)   -- determine path to this Rexx program
-
-   -- use a java.io.File to to get an URL for the file
-jfile = .bsf~new("java.io.File",.local~appDirectory)
-urlAppDir = jfile~toUri~toUrl
 
    -- load the FXMLLoader class, save it for multiple usages
 .my.app~fxmlLoader = bsf.loadClass("javafx.fxml.FXMLLoader")
@@ -375,68 +384,3 @@ syntax:
   rexxCellHandler=self~class~clzOoRexxTableCell~new(.rexxTableCell~new)
   return rexxCellHandler
 
-
-/* =================================================================================== */
-/** The module system introduced with Java 9 causes some JavaFX 7 and JavaFX 8 libraries to break.
-    Usually replacement JavaFX 9 and higher libraries would not run under Java 7 and 8, such that
-    our program needs to configure Java to use the correct libraries, depending on the Java version
-    in use.
-
-    This routine will determine which Java is running and create an approriate URLClassLoader
-    containing the Java URLs to look for resources and appropriate Java classes. Setting the
-    Thread context class loader to our custom URLClassLoader will allow JavaFX and the Rexx
-    program to load the correct resources and Java classes, depending on the runtime Java version.
-*/
-::routine makeResourcesAvailable -- determine Java version and create a URLClass
-   bDebug=.true                     -- if .true show some debug output
-   if bDebug then
-   do
-      say "java.version:      " .bsf4rexx~java.version
-      say "java.major.version:" .bsf4rexx~java.major.version
-      say "java.minor.version:" .bsf4rexx~java.minor.version
-   end
-   ------------------------------------------------------------------------------
-
-   java8jar="jar/controlsfx-8.40.14.jar"  -- Java 8 JavaFX library
-   java9jar="jar/controlsfx-9.0.0.jar"    -- Java 9 or higher JavaFX library
-
-   ------------------------------------------------------------------------------
-   jclzClassLoader=bsf.loadClass("java.lang.ClassLoader") -- load the Java class
-
-      -- get the current Thread's context class loader to our class loader
-   currentThread=bsf.loadClass("java.lang.Thread")~currentThread -- get current Java Thread
-   ctxtCL=currentThread~getContextClassLoader   -- get current context class loader, use it as parent
-   if bDebug=.true then say "current context class loader:" pp(ctxtCL)
-
-   if .bsf4rexx~java.major.version<9 then -- use the Java 8 system (application) class loader as parent
-   do
-      urlJarName=.bsf~new("java.io.File", java8jar)~toURI~toUrl   -- URL to JavaFX 8 library
-      if ctxtCL=.nil then                 -- no context class loader set?
-         ctxtCL=jclzClassLoader~getSystemClassLoader  -- up to Java 1.8/8: use this as parent class loader
-   end
-   else     -- use the Java 9 platform class loader as parent; this replacement will work on later versions of Java as well
-   do
-      urlJarName=.bsf~new("java.io.File", java9jar)~toURI~toUrl   -- URL to JavaFX 9 and higher library
-      if ctxtCL=.nil then                 -- no context class loader set?
-         ctxtCL=jclzClassLoader~getPlatformClassLoader   -- Java 9 or later: use this as parent class loader
-   end
-
-   ------------------------------------------------------------------------------
-      -- get directory this Rexx program resides in as a URL to be looked up via the URL class loader
-   parse source  . . path2thisProgram        -- get full path to this Rexx program
-      -- get a Java File object for its path (the directory this program resides in)
-   jfile = .bsf~new("java.io.File",filespec('L',path2thisProgram))
-   urlAppDir = jfile~toUri~toUrl          -- create a Java URL for this location
-
-   jclzUrl=bsf.loadClass("java.net.URL")  -- load the Java class
-   urls=bsf.createJavaArrayOf(jclzUrl, urlAppDir, urlJarName)     -- array of URLs
-   myClzLoader=.bsf~new("java.net.URLClassLoader", urls, ctxtCL)  -- create the URLClassLoader
-   currentThread~setContextClassLoader(myClzLoader)   -- set this as the current Java context class loader
-   .my.app~appClzLdr = myClzLoader        -- make our customized class loader available to the Rexx application
-
-   ------------------------------------------------------------------------------
-   if bDebug=.true then
-   do
-      say "new context class loader:    " pp(myClzLoader~toString)
-      say "-"~copies(99)
-   end
