@@ -12,7 +12,7 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
-         2018-09-15, ---rgf, - add ".bsf4rexx~bsf.cls.fullPath" and ".bsf4rexx~bsf.cls.path" to allow querying
+         2018-09-16, ---rgf, - add ".bsf4rexx~bsf.cls.fullPath" and ".bsf4rexx~bsf.cls.location" to allow querying
                                the location of this BSF.CLS from other Rexx programs easily
 
                              - new public routine "bsf.contextClassLoader [urlOrDirOrFileName | urlCollection]" that allows
