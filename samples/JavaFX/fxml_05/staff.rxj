@@ -28,6 +28,8 @@
                                  as URL to be looked up (removed change done at 2018-03-24)
                2018-09-16, rgf: - remove routine "makeResourcesAvailable", instead use the new public routine
                                   "bsf.contextClassLoader(urls)"
+               2018-09-18, rgf: - taking advantage of change in bsf.contextClassLoader() now allowing a plain
+                                  list of URLs (no need to explicitly create an array of these values)
 
    purpose:    - demonstrates usage of custom libraries
                - shows table view handling
@@ -71,7 +73,7 @@ else
    -- create and use a URLClassLoader as the new context class loader which is able to find our
    -- customized resources from the supplied array (home directory, Java-dependent jar-file);
    -- make our customized context class loader available to the Rexx application
-.my.app~appClzLdr = bsf.contextClassLoader(.array~of(homeDir,jarName))
+.my.app~appClzLdr = bsf.contextClassLoader(homeDir,jarName)
 
 /* java class imports */
 call bsf.import "javafx.collections.FXCollections",            "fx.FXCollections"

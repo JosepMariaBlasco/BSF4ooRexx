@@ -12,6 +12,9 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-09-18, ---rgf, - routine bsf.contextClassLoader() now also accepts a list of URL strings/objects beside
+                               a single array object of URL strings/objects
+
          2018-09-16, ---rgf, - add ".bsf4rexx~bsf.cls.fullPath" and ".bsf4rexx~bsf.cls.location" to allow querying
                                the location of this BSF.CLS from other Rexx programs easily
 
@@ -752,7 +755,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180915" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20180918" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -5488,21 +5491,24 @@ syntax:
     (Java 9 or higher) java.lang.ClassLoader.getPlatformClassLoader which then gets used as the
     parent of the new java.net.URLClassLoader.
 
-   @param urlArg     optional, either a string denoting a directory or a file or a URL,
-                     a java.net.URL object or an array of these kinds of values
+   @param urlArg     optional, either a list of strings denoting a directory or a file or a URL,
+                     a java.net.URL object, alternatively a single array of these kinds of values
 
    @return           the Thread's current class loader
 */
 ::routine bsf.contextClassLoader public
-  use strict arg urlArg=.nil
+  use arg urlArg=.nil
 
-  currentThread=.java.lang.Thread~currentThread
-  currentCCL   =currentThread~getContextClassLoader
+  currentThread=.java.lang.Thread~currentThread       -- get current Thread object
+  currentCCL   =currentThread~getContextClassLoader   -- get this Thread's context class loader, if any
 
-  if url=.nil then      -- just return current context class loader
+  if arg()=0 then    -- no arguments given, just return current context class loader
      return currentCCL
 
-  if \ urlArg~isA(.collection) then urlArg=.array~of(urlArg)   -- turn single argument into an array
+  if arg()=1 & urlArg~isA(.array) then
+     urlArg=urlArg         -- use single array argument
+  else
+     urlArg=arg(1,"Array") -- turn arguments into an array
 
   -- process arguments, turn them into java.net.URL array
   arrUrls=bsf.createJavaArray(.java.net.URL, urlArg~size)      -- create Java array to hold the URL objects
