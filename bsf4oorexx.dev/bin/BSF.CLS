@@ -5505,10 +5505,8 @@ syntax:
   if arg()=0 then    -- no arguments given, just return current context class loader
      return currentCCL
 
-  if arg()=1 & urlArg~isA(.array) then
-     urlArg=urlArg         -- use single array argument
-  else
-     urlArg=arg(1,"Array") -- turn arguments into an array
+  if arg()>1 | \urlArg~isA(.array) then
+     urlArg=arg(1,"Array") -- turn argument(s) into an array
 
   -- process arguments, turn them into java.net.URL array
   arrUrls=bsf.createJavaArray(.java.net.URL, urlArg~size)      -- create Java array to hold the URL objects
