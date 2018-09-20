@@ -30,6 +30,7 @@
                                   "bsf.contextClassLoader(urls)"
                2018-09-18, rgf: - taking advantage of change in bsf.contextClassLoader() now allowing a plain
                                   list of URLs (no need to explicitly create an array of these values)
+               2018-09-20, rgf: - use absolute paths to jar files, such that the program executes from any directory
 
    purpose:    - demonstrates usage of custom libraries
                - shows table view handling
@@ -66,9 +67,9 @@ say "executing" pp(fullPath) "using Java version:" pp(.bsf4rexx~java.version)
 homeDir=filespec('Location',fullPath)     -- get and save its location
 
 if .bsf4rexx~java.major.version<9 then
-   jarName="jar/controlsfx-8.40.14.jar"   -- Java 8 JavaFX library
+   jarName=homeDir"jar/controlsfx-8.40.14.jar"   -- Java 8 JavaFX library
 else
-   jarName="jar/controlsfx-9.0.0.jar"     -- Java 9 and higher JavaFX library
+   jarName=homeDir"jar/controlsfx-9.0.0.jar"     -- Java 9 and higher JavaFX library
 
    -- create and use a URLClassLoader as the new context class loader which is able to find our
    -- customized resources from the supplied array (home directory, Java-dependent jar-file);
