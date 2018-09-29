@@ -36,6 +36,15 @@ remarks:
                              - TODO: remove dead (commented) code
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
+
+    6-ß-ß   2018-09-29, rgf: - RexxAllocateMemory() and RexxFreeMemory() got employed in the original BSF4Rexx
+                               version that could run on other Rexx interpreters like Regina as well; BSF4ooRexx (two 'oo')
+                               was created with ooRexx 4.0 that introduced new APIs that allowed new features to
+                               be implemented; replacing the two APIs with malloc() and free() should remove overhead
+
+    6.0.0   2018-09-21, rgf: - RgfProcessJArgs(): make sure that ReleaseLocalReference(clzBSF) gets executed
+                               only if clzBSF is not NULL (older test units may have that condition)
+
     6.0.0   2018-03-04, rgf: - bsfDoUnregisterRexxObject: set default to "true", such that unregistering Rexx
                                objects takes place in all cases
 
@@ -754,6 +763,9 @@ remarks:
        limitations under the License.
     -----------------------------------------------------------------------------
 
+// TODO: if requiring ooRexx 5.0 as the minimum level:
+    -- add jni function to return package's 'local' directory (gives access to package local)
+    -- add ability to add Java envrionment handler at runtime (not only on Rexx interpreter creation time)
 */
 
 
@@ -946,11 +958,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20180306 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180929 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20180306 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180929 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20180306 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20180929 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -1203,7 +1215,7 @@ inline void RgfAddRexxInterpreterInstanceToList(RexxThreadContext *rtc, jobject 
 
     RexxInstance *ri=rtc->instance;
 
-    PSTRUCT_RII newNode=(PSTRUCT_RII) RexxAllocateMemory(size_STRUCT_RII);
+    PSTRUCT_RII newNode=(PSTRUCT_RII) malloc(size_STRUCT_RII);
     memset(newNode,0,size_STRUCT_RII);
 
     newNode->instance=ri;           // save RexxInstance
@@ -1400,16 +1412,16 @@ inline RexxInstance * RgfRemoveRexxInterpreterInstanceFromList(RexxInstance *ri)
     {
 
 #if defined (DEBUG_RII_LIST)
-    fprintf(stderr, "beFor 'RexxFreeMemory(oldNode)': oldNode=[%p], oldNode->instance=[%p], oldNode->next=[%p] ...\n",
+    fprintf(stderr, "beFor 'free(oldNode)': oldNode=[%p], oldNode->instance=[%p], oldNode->next=[%p] ...\n",
                                                      oldNode, oldNode->instance, oldNode->next);
     fflush(stderr);
     RgfDumpRexxInstanceList();
 #endif
 
-        RexxFreeMemory(oldNode);
+        free(oldNode);
 
 #if defined (DEBUG_RII_LIST)
-    fprintf(stderr, "naCh  'RexxFreeMemory(oldNode)' ...\n"); fflush(stderr);
+    fprintf(stderr, "naCh  'free(oldNode)' ...\n"); fflush(stderr);
     RgfDumpRexxInstanceList();
 #endif
 
@@ -2636,7 +2648,7 @@ inline jstring RgfStoreRexxProxyInBsfRegistry(JNIEnv *env, jobject rajo, jobject
         {
             j_keyValueWithoutPrefix=env->NewStringUTF((char *) c_keyValue+3);
         }
-        RexxFreeMemory(c_keyValue);     // free memory
+        free(c_keyValue);     // free memory
 
             // save generated beanname with RexxProxy
         env->CallObjectMethod(proxy,
@@ -3011,7 +3023,7 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
                 // make a Java error message out of it
     #if defined (DEBUG_RGF_PROCESS_J_ARG1)
            fprintf(stderr, "... RgfJavaObject2RexxObject(...): riid=[%p], condition()=[%s].\n", riid, msg);fflush(stderr);
-           RexxFreeMemory(msg);
+           free(msg);
     #endif
 
     }
@@ -3050,7 +3062,7 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
         // res=RgfGetProxyObject(rtc, rtc->String(tmpStr));  // get Rexx object
 
         env->DeleteLocalRef(j_obj_ID);
-        RexxFreeMemory(tmpStr);             // make sure we free the allocated memory
+        free(tmpStr);             // make sure we free the allocated memory
         return res;
     }
 
@@ -3156,12 +3168,16 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
 
     jint len          = (j_args==NULL ? 0 : env->GetArrayLength(j_args));
 
-    RexxInstance *riid=rtc->instance;
+    RexxInstance *riid=rtc->instance;      // only for debugging to be able to suppley the Rexx interpreter instance ID
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS)
     fprintf(stderr, "RgfProcessJArgs(...): riid=[%p], len=[%d] + [%d]; ExceptionCheck()=[%d]...\n", riid, (int) len, (slotDir==NULL ? 0 : 1), (int) env->ExceptionCheck()   );fflush(stderr);
 #endif
     RexxArrayObject ra=rtc->NewArray(len+ (slotDir==NULL ? 0 : 1) );
+
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #1 !!!\n"); fflush(stderr);}
+
 
     if (j_args==NULL && slotDir==NULL)  // return empty arg, if no args, nor slotDir given
     {
@@ -3202,6 +3218,9 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
 #endif
 
     RexxObjectPtr clzBSF=rtc->FindClass("BSF"); // get BSF class
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #2 !!!\n"); fflush(stderr);}
+
     logical_t    bClzBsf=(clzBSF!=NULL);        // determine whether we have .BSF available
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS )
@@ -3227,35 +3246,51 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
 #endif
 
         RexxRoutineObject rro=rtc->NewRoutine("FROM_BSF4ooRexx_DLL", "::requires BSF.CLS", 18);
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #3 !!!\n"); fflush(stderr);}
+
         if (rro!=NULL)      // object got created, let us run it
         {
             RexxObjectPtr result_obj=NULL;
             result_obj=rtc->CallRoutine(rro, ra);   // call the program
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #4 !!!\n"); fflush(stderr);}
+
 //            rtc->ReleaseLocalReference(result_obj);
             rtc->ReleaseLocalReference(rro);
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #5 !!!\n"); fflush(stderr);}
         }
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #6 !!!\n"); fflush(stderr);}
+
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS)
 if (rtc->CheckCondition())
 {
    RexxDirectoryObject condObj=rtc->GetConditionInfo();
+
+
    char * msg=RgfCreateRexxlikeErrorInfo (rtc, condObj, "RgfProcessJArgs(), DEBUG_RGF_PROCESS_J_ARGS, error 789");
             // make a Java error message out of it
 #if defined (DEBUG_RGF_PROCESS_J_ARGS)
 
    fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], condition()=[%s].\n", riid, msg);fflush(stderr);
-   RexxFreeMemory(msg);
+   free(msg);
 #endif
 
 }
 #endif
 
         clzBSF =rtc->FindClass("BSF");  // get BSF class
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #7 !!!\n"); fflush(stderr);}
+
         bClzBsf=(clzBSF!=NULL);         // determine whether we have .BSF available
     }
 
 
-#if defined (RGF_UNO_WRAP)
+#if defined (RGF_UNO_WRAP)     // TODO: remove altogether as not needed?
     logical_t  bClzUno  =false;
     RexxObjectPtr clzUNO=NULL;
 
@@ -3322,6 +3357,8 @@ if (rtc->CheckCondition())
     fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], arg#=[%d]: jobj==NULL, using .nil\n", riid, i);fflush(stderr);
 #endif
             robj=rtc->Nil();                // use .nil
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #8 !!!\n"); fflush(stderr);}
         }
 
         // a Rexx proxy? use the embedded Rexx object
@@ -3343,8 +3380,14 @@ if (rtc->CheckCondition())
 #endif
 
             robj=RgfGetProxyObject(rtc, rtc->String(tmpStr));  // get Rexx object
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #9 !!!\n"); fflush(stderr);}
+
             env->DeleteLocalRef(j_obj_ID);
-            RexxFreeMemory(tmpStr);             // make sure we free the allocated memory
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #10 !!!\n"); fflush(stderr);}
+
+            free(tmpStr);             // make sure we free the allocated memory
         }
 
         else // 2012-02-09, rgf: either a Java string, possibly denoting a bean, or a Java object
@@ -3360,6 +3403,7 @@ if (rtc->CheckCondition())
     fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], arg#=[%d]: a Java String!\n", riid, i);fflush(stderr);
 #endif
                 robj=JNU_GetStringNativeCharsReturningRexxStringObject(env, (jstring) jobj, rtc);
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #10-B !!!\n"); fflush(stderr);}
 
             }
 
@@ -3391,22 +3435,33 @@ if (rtc->CheckCondition())
                     // get char* beanName, do a bsf.wrap() if available; return that result
                 CSTRING c_beanName    = env->GetStringUTFChars(j_beanName, JNI_FALSE);
                 robj=       rtc->String(c_beanName);    // create Rexx string
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #11 !!!\n"); fflush(stderr);}
+
                 env->ReleaseStringUTFChars(j_beanName, c_beanName);      // release
+
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #12 !!!\n"); fflush(stderr);}
                 env->DeleteLocalRef(j_beanName);
             }
 
             if (bClzBsf)    // .local~bsf available, use its bsf.wrap class method
             {
                     // try to wrap it up as a Rexx proxy;
-                    // blocked; unguarded class method; probably rtc->SetGuardOff() would have worked as well
-                RexxStringObject rso=(RexxStringObject) rtc->SendMessage2(clzBSF,
+                    // let BSF.CLS' bsf.wrap() return either a plain Rexx string or a .BSF proxy to a Java object
+                RexxObjectPtr rop=rtc->SendMessage2(clzBSF,
                                       "BSF.WRAP",
                                       robj,
                                       (bIncr==1 ? rtc->True() : rtc->False())
                                      );
 
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #13 !!!\n"); fflush(stderr);}
+
                 rtc->ReleaseLocalReference(robj);
-                robj=(RexxStringObject) rso;
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #14 !!!\n"); fflush(stderr);}
+
+                robj=rop;
                 // robj=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", robj); // try to wrap it up as a Rexx proxy
             }
 
@@ -3418,7 +3473,13 @@ if (rtc->CheckCondition())
 
             // set array entry
         rtc->ArrayPut(ra, robj, i+1);
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #15 !!!\n"); fflush(stderr);}
+
         rtc->ReleaseLocalReference(robj);
+
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #16 !!!\n"); fflush(stderr);}
+
         env->DeleteLocalRef(jobj);
     }
 
@@ -3430,6 +3491,7 @@ if (rtc->CheckCondition())
 #endif
 
         rtc->ArrayPut(ra, slotDir, len+1);        // always save slot Directroy as last argument
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #17 !!!\n"); fflush(stderr);}
     }
 
 
@@ -3439,7 +3501,9 @@ if (rtc->CheckCondition())
     fprintf(stderr, "\triid=[%p], ---> ra~items=[%lu]\n",riid, rtc->ArrayItems(ra));fflush(stderr);
 #endif
 
-    rtc->ReleaseLocalReference(clzBSF);
+// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #18 !!!\n"); fflush(stderr);}
+
+    if (!clzBSF) rtc->ReleaseLocalReference(clzBSF);    // rgf, 20180920: should not be NULL anymore, just to be sure test for NULL ...
     return ra;
 }
 
@@ -3493,8 +3557,8 @@ inline char * RgfCreateRexxlikeErrorInfo (RexxThreadContext *rtc, RexxDirectoryO
     RexxCondition cond;
     rtc->DecodeConditionInfo(condObj, &cond);
 
-    // char *msg=(char *)RexxAllocateMemory(1024);
-    char *msg=(char *)RexxAllocateMemory( 4096 );
+    // char *msg=(char *)malloc(1024);
+    char *msg=(char *)malloc( 4096 );
     msg[0]=0;
 
         // format message according to exception type
@@ -3913,7 +3977,7 @@ char *JNU_GetStringNativeChars(JNIEnv *env, jstring jstr)  // JNIEnv *env, jstri
     if ( env->ExceptionCheck()==JNI_FALSE )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
     {
         jint len = env->GetArrayLength(jba);
-        result   = (char *)RexxAllocateMemory(len + 1);
+        result   = (char *)malloc(len + 1);
         if (result == NULL)
         {
             env->DeleteLocalRef(jba);
@@ -3950,7 +4014,7 @@ void JNU_JavaString2pRxString(JNIEnv *env, jstring jstr, PRXSTRING rxstr)  // JN
         jint len = env->GetArrayLength(jba);
         rxstr->strptr   =result;
 
-        result   = (char *)RexxAllocateMemory(len + 1);
+        result   = (char *)malloc(len + 1);
         // TODO: check for memory problem (result==NULL) and raise an error ?
 
         if (result != NULL)
@@ -3984,7 +4048,7 @@ RexxObjectPtr JNU_GetStringNativeCharsReturningRexxStringObject(JNIEnv *env, jst
     {
         jint len = env->GetArrayLength(jba);
 
-        result   = (char *)RexxAllocateMemory(len + 1);
+        result   = (char *)malloc(len + 1);
         if (result == NULL)
         {
             JNU_ThrowByName(env, "java/lang/OutOfMemoryError", 0);
@@ -3995,7 +4059,7 @@ RexxObjectPtr JNU_GetStringNativeCharsReturningRexxStringObject(JNIEnv *env, jst
         result[len] = 0; /* NULL-terminate */
 
         rop=context->NewString(result, len);  // get Rexx object off it
-        RexxFreeMemory(result);        // make sure memory is freed
+        free(result);        // make sure memory is freed
     }
     else    // a Java exception occurred
     {
@@ -4237,11 +4301,11 @@ inline RexxStringObject RgfCreateRexxSyntaxConditionWithJavaThrowable (
 
        // ---> create full error message for Rexx
     size_t sz=rtc->StringLength(rso);   // get needed string length
-    char * tmp=(char *) RexxAllocateMemory(sz+256);
+    char * tmp=(char *) malloc(sz+256);
 
     snprintf( tmp, sz+256, errorStringPattern, DLLNAME, rtc->StringData(rso));
     rso=rtc->String(tmp);      // turn into a RexxString
-    RexxFreeMemory(tmp);
+    free(tmp);
 
        // use Rexx{Call|Exit}Context to set context variable
     if (isCallContext==0)
@@ -5204,10 +5268,10 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
         size_t sz=context->StringLength(rso);   // get needed string length, default msg2 buffer is 4 KB
         if (sz>4000)
         {
-            char * tmp=(char *) RexxAllocateMemory(sz+256);
+            char * tmp=(char *) malloc(sz+256);
             snprintf( tmp, sz+256, "%.16s/routine/BsfLoadJava(), error 7.991: running static method 'Java4Rexx.createInterface4Rexx()' caused Java exception: [%s]", DLLNAME, context->StringData(rso));
             rso=context->String(tmp);           // turn into a RexxString
-            RexxFreeMemory(tmp);
+            free(tmp);
         }
         else
         {
@@ -5259,10 +5323,10 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
         size_t sz=context->StringLength(rso);   // get needed string length, default msg2 buffer is 4 KB
         if (sz>4000)
         {
-            char * tmp=(char *) RexxAllocateMemory(sz+256);
+            char * tmp=(char *) malloc(sz+256);
             snprintf( tmp, sz+256, "%.16s/routine/BsfLoadJava(), error 7.992: running static method 'Java4Rexx.set_rii_ids()' caused Java exception: [%s]", DLLNAME, context->StringData(rso));
             rso=context->String(tmp);           // turn into a RexxString
-            RexxFreeMemory(tmp);
+            free(tmp);
         }
         else
         {
@@ -5835,7 +5899,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
 
                     // now raise new exception
                 context->RaiseException1(Rexx_Error_Incorrect_call_user_defined, context->String(tmpMsg));
-                RexxFreeMemory(tmpMsg);        // free memory
+                free(tmpMsg);        // free memory
                 delete [] tmpStr;
                 delete [] c_rii_ID;
                 delete [] msg;
@@ -5995,7 +6059,7 @@ RexxRoutine1(RexxObjectPtr, BsfCreateRexxProxy, ARGLIST, argArray)    // 2009050
         }
     }
 
-    RexxFreeMemory(c_bsfRegistryKey);
+    free(c_bsfRegistryKey);
 
     param.env->DeleteLocalRef(j_rexxProxy);
     param.env->DeleteLocalRef(j_bsfRegistryKey);    // 2018-02-23, crash in JVM 8 ! ?
@@ -6096,7 +6160,7 @@ RexxRoutine2(RexxObjectPtr, BsfRexxProxy, RexxObjectPtr, proxy, OPTIONAL_CSTRING
             RexxDirectoryObject condObj=context->GetConditionInfo();
             char * msg=RgfCreateRexxlikeErrorInfo (context->threadContext, condObj, "");
             snprintf( cond_msg, 2048, " [underlying Rexx condition: '%.1536s']", msg);
-            RexxFreeMemory(msg);
+            free(msg);
 
             context->ClearCondition();
         }
@@ -6369,14 +6433,14 @@ RexxRoutine2(RexxObjectPtr, BsfRawBytes, RexxObjectPtr, data, OPTIONAL_size_t, l
                 }
                 else            // get bytes in Java array, create a Rexx string of it
                 {
-                    char *buf=(char *) RexxAllocateMemory( len );
+                    char *buf=(char *) malloc( len );
                     param.env->GetByteArrayRegion(jba, 0, (jsize) len, (jbyte *) buf);
 
                     if ( ! param.env->ExceptionCheck() )    // lighter (jboolean: JNI_TRUE, if pending exception), does not create exception object
                     {
                         result_Obj=context->NewString(buf, len);
                     }
-                    RexxFreeMemory(buf);
+                    free(buf);
                 }
             }
         }
@@ -8034,7 +8098,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 
         // allocate necessary memory for RexxOption items
     long sizeOptions=countOptions*sizeof(RexxOption);
-    RexxOption *options=(RexxOption *) RexxAllocateMemory(sizeOptions);
+    RexxOption *options=(RexxOption *) malloc(sizeOptions);
     memset(options,0,sizeOptions);
 
     char *c_rii_ID=new char[RGF_POINTER_STRING_WIDTH];
@@ -8135,7 +8199,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     {
             // allocate necessary memory for RexxContextExits
         long tmpSize=(nr_direct_exits+1)*sizeof(RexxContextExit);
-        exits=(RexxContextExit *) RexxAllocateMemory(tmpSize);
+        exits=(RexxContextExit *) malloc(tmpSize);
         memset(exits,0,tmpSize);
 
         jint * tmpArrExits=env->GetIntArrayElements(j_direct_exits,NULL);
@@ -8168,7 +8232,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
     {
             // allocate necessary memory for RexxContextEnvironment
         long tmpSize=(nr_direct_environments+1)*sizeof(RexxContextEnvironment);
-        environments=(RexxContextEnvironment *) RexxAllocateMemory(tmpSize);
+        environments=(RexxContextEnvironment *) malloc(tmpSize);
         memset(environments,0,tmpSize);
 
         for (int i=0; i<nr_direct_environments; i++)
@@ -8293,41 +8357,41 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
         // free memory allocated in this routine
     if ( j_initial_address_environment!=NULL )
     {
-       RexxFreeMemory((void *)c_initial_address_environment);
+       free((void *)c_initial_address_environment);
        env->DeleteLocalRef(j_initial_address_environment);
     }
 
     if ( j_external_call_extensions   !=NULL )
     {
-        RexxFreeMemory((void *)c_external_call_extensions);
+        free((void *)c_external_call_extensions);
         env->DeleteLocalRef(j_external_call_extensions);
     }
 
     if ( j_external_call_path         !=NULL )
     {
-        RexxFreeMemory((void *)c_external_call_path);
+        free((void *)c_external_call_path);
         env->DeleteLocalRef(j_external_call_path);
     }
 
-    if ( exits!=NULL ) {RexxFreeMemory(exits);}
+    if ( exits!=NULL ) {free(exits);}
 
     if ( environments!=NULL)
     {
         for (int i=0;i<nr_direct_environments;i++) {
-            RexxFreeMemory((void *)environments[i].name);
+            free((void *)environments[i].name);
         }
-        RexxFreeMemory(environments);
+        free(environments);
     }
 
         // delete required library names, if any
     for (int i=2; i<(countOptions-1);i++) {
         if ( options[i].option==LOAD_REQUIRED_LIBRARY )
         {
-            RexxFreeMemory((void *)options[i].optionName);
+            free((void *)options[i].optionName);
         }
     }
 
-    RexxFreeMemory(options);
+    free(options);
 
 #if defined(DEBUG_JNI) || defined (RGF_JNI) ||  defined (DEBUG_CREATE_HALT_TERMINATE) || defined (DEBUG_JNI_ENTRY) || defined (RGF_COMMAND_HANDLER)
     fprintf(stderr, "<-- returning from: .._jniRexxCreateInterpreterInstance(...), thisTid=[%lu], c_rii_ID=[%.256s]\n",
@@ -8459,7 +8523,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
                                     (unsigned long) tid, j_rii_ID, c_rii_ID, instance);
     fflush(stderr);
 #endif
-    RexxFreeMemory(c_rii_ID);
+    free(c_rii_ID);
 
 #if defined(DEBUG_JNI)
 {
@@ -8751,8 +8815,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
             }
     }
 
-    RexxFreeMemory(c_fileName);     // make sure we free the allocated memory
-    RexxFreeMemory(c_programData);  // make sure we free the allocated memory
+    free(c_fileName);     // make sure we free the allocated memory
+    free(c_programData);  // make sure we free the allocated memory
 
 #if defined (INFO_REXX_RUN_PROGRAM)
     fprintf(stderr, "            ... _jniRexxRunProgram(): CheckCondition(), count=[%8d]: tid=[%6lu], rii_ID=[%p], rtc=[%p]->CheckCondition() -> [%d] ...)\n",
@@ -8810,7 +8874,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxRu
     fflush(stderr);
 #endif
 
-        RexxFreeMemory(msg);
+        free(msg);
         return NULL;
     }
 
@@ -8963,8 +9027,8 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         }
         fflush(stderr);
 
-        RexxFreeMemory(c_rgf_msg);          // make sure we free the allocated memory
-        RexxFreeMemory(c_rgf_obj_ID);       // make sure we free the allocated memory
+        free(c_rgf_msg);          // make sure we free the allocated memory
+        free(c_rgf_obj_ID);       // make sure we free the allocated memory
     }
 
 #endif
@@ -8992,7 +9056,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
        delete[] msg;
        env->Throw(j_rexxException);  // throw the exception in the JVM
 
-       RexxFreeMemory(c_rii_ID);        // make sure we free the allocated memory
+       free(c_rii_ID);        // make sure we free the allocated memory
        return NULL;
     }
 
@@ -9024,7 +9088,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
         delete[] msg;
         env->Throw(j_rexxException);  // throw the exception in the JVM
 
-        RexxFreeMemory(c_rii_ID);       // make sure we free the allocated memory
+        free(c_rii_ID);       // make sure we free the allocated memory
         return NULL;
     }
 
@@ -9067,9 +9131,9 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             delete[] msg;
             env->Throw(j_rexxException);  // throw the exception in the JVM
 
-            RexxFreeMemory(c_rii_ID);       // make sure we free the allocated memory
-            RexxFreeMemory(c_msg   );       // make sure we free the allocated memory
-            RexxFreeMemory(c_obj_ID);       // make sure we free the allocated memory
+            free(c_rii_ID);       // make sure we free the allocated memory
+            free(c_msg   );       // make sure we free the allocated memory
+            free(c_obj_ID);       // make sure we free the allocated memory
             return NULL;
         }
 
@@ -9081,14 +9145,14 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             rso=rtc->String(c_userData_ID);
             RexxObjectPtr ro_userData=RgfGetProxyObject(rtc, rso);  // get userData Rexx object
             rtc->DirectoryPut(slotDir, ro_userData, "USERDATA");            // make userData available
-            RexxFreeMemory(c_userData_ID);      // make sure we free the allocated memory
+            free(c_userData_ID);      // make sure we free the allocated memory
         }
 
         if (j_methodObjectBean!=NULL)    // userData is given, hence create directory containing it (will get supplied as last argument)
         {
             char *c_methodObjectBean=(char *) JNU_GetStringNativeChars(env, j_methodObjectBean);    // convert to native string
             RexxObjectPtr ro_methodObject=rtc->String(c_methodObjectBean);  // turn native string into a RexxString
-            RexxFreeMemory(c_methodObjectBean);     // make sure we free the allocated memory
+            free(c_methodObjectBean);     // make sure we free the allocated memory
 
             RexxObjectPtr clzBSF=rtc->FindClass("BSF");
             if (clzBSF != NULL ) // BSF.CLS got loaded ?
@@ -9106,7 +9170,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
             {
                 char *c_javaObjectBean=(char *) JNU_GetStringNativeChars(env, j_javaObjectBean);    // convert to native string
                 RexxObjectPtr ro_javaObject=rtc->String(c_javaObjectBean);  // turn native string into a RexxString
-                RexxFreeMemory(c_javaObjectBean);     // make sure we free the allocated memory
+                free(c_javaObjectBean);     // make sure we free the allocated memory
 
                 RexxObjectPtr clzBSF=rtc->FindClass("BSF"); // BSF.CLS available, if so, wrap it up as a BSF proxy
                 if (clzBSF != NULL ) // BSF.CLS got loaded ?
@@ -9124,7 +9188,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
                 RexxStringObject rso=rtc->String(c_msgDesc);
                 rtc->DirectoryPut(slotDir, rso, "METHODDESCRIPTOR");   // make original method name available
 
-                RexxFreeMemory(c_msgDesc);      // make sure we free the allocated memory
+                free(c_msgDesc);      // make sure we free the allocated memory
             }
 
             RexxStringObject rso=rtc->String(c_msg);
@@ -9205,11 +9269,11 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
 
     if (c_msg!=NULL)                    // did we use it, if so, free allocated memory
     {
-        RexxFreeMemory(c_msg);          // make sure we free the allocated memory
+        free(c_msg);          // make sure we free the allocated memory
     }
 
-    RexxFreeMemory(c_rii_ID);           // make sure we free the allocated memory
-    RexxFreeMemory(c_obj_ID);           // make sure we free the allocated memory
+    free(c_rii_ID);           // make sure we free the allocated memory
+    free(c_obj_ID);           // make sure we free the allocated memory
 
     // check for exception; if so, create RexxException, supply condition object as a RexxProxy; clear exception in thread
     if (rtc->CheckCondition())      // a Rexx condition raised?
@@ -9249,7 +9313,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
     fprintf(stderr, "<-- returning: ...jniRexxSendMessageToRexxObject(...): thisTid=[%lu], Rexx runtime error occurred, throwing Java exception!\n\tmsg=[%.256s]\n",(unsigned long) tid, msg);fflush(stderr);
 #endif
 
-        RexxFreeMemory(msg);
+        free(msg);
         return NULL;
     }
 
@@ -9316,7 +9380,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxHaltI
 
     c_rii_ID=(char *) JNU_GetStringNativeChars(env, j_rii_ID);  // convert to native string
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
-    RexxFreeMemory(c_rii_ID);               // make sure we free the allocated memory
+    free(c_rii_ID);               // make sure we free the allocated memory
 
     tmpInstance=RgfGetRexxInterpreterInstanceFromList(instance);    // try to get given Rexx Interpreter instance
 
@@ -9485,7 +9549,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
     fflush(stderr);
 #endif
 
-        RexxFreeMemory(c_rii_ID);               // make sure we free the allocated memory
+        free(c_rii_ID);               // make sure we free the allocated memory
         return (jint) -1;
     }
 
@@ -9602,7 +9666,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxTermi
 
     }
 
-    RexxFreeMemory(c_rii_ID);               // make sure we free the allocated memory
+    free(c_rii_ID);               // make sure we free the allocated memory
 
 #if defined(DEBUG_JNI) || defined (DEBUG_TERMINATE_INTERPRETER)
 
@@ -9701,7 +9765,7 @@ JNIEXPORT jint JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniUnregiste
     {
         // make a copy of the Java string containing the Rexx script to be executed
         CSTRING       str=env->GetStringUTFChars(obj_ID, JNI_FALSE);
-        char    *c_obj_ID =(char *) RexxAllocateMemory(strlen(str)+1) ; // allocate memory
+        char    *c_obj_ID =(char *) malloc(strlen(str)+1) ; // allocate memory
         strcpy(c_obj_ID, str);                      // copy data from JNI area
         env->ReleaseStringUTFChars(obj_ID, str);    // release str
 
@@ -9714,7 +9778,7 @@ if (result==-1)
     fflush(stderr);
 }
 
-        RexxFreeMemory(c_obj_ID) ;                  // free the memory again
+        free(c_obj_ID) ;                  // free the memory again
     }
 
 #if defined(DEBUG_JNI) || defined (DEBUG_REXX_PROXY) || defined (DEBUG_UNREGISTER_REXX_OBJECT)
@@ -10738,7 +10802,7 @@ int REXXENTRY rexx_exit_handler_entry (RexxExitContext *context, int exitNumber,
                             {
                                 pb->rxmsq_size=size;
                             }
-                            RexxFreeMemory(c_result);
+                            free(c_result);
                         }
                     }
                 }
@@ -11344,7 +11408,7 @@ inline void * rgfUnwrapPointer (JNIEnv *env, jstring j_encoded_pointer)
 #endif
 
     RgfString2Pointer(c_pointer, raw_pointer);  // get pointer from string
-    RexxFreeMemory(c_pointer);
+    free(c_pointer);
     return raw_pointer;
 }
 
@@ -11550,7 +11614,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetCon
         rop_result=context->String(c_variableName);
     }
 
-    RexxFreeMemory(c_variableName);
+    free(c_variableName);
 
     jobject jresult=RgfProcessReturnValue4Java(env, rajo,
                                                context->threadContext,  // supply threadContext
@@ -11598,7 +11662,7 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContex
 
     context->SetContextVariable(c_variableName, rop_value);
 
-    RexxFreeMemory(c_variableName);
+    free(c_variableName);
 
 #if defined (DEBUG_JNI)
     fprintf(stderr, "==> ==> --> rop_value=[%s]\n", context->ObjectToStringValue(rop_value));
@@ -11766,7 +11830,7 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniDropConte
 
     char * c_variableName=(char *) JNU_GetStringNativeChars(env, j_variableName);   // convert to native string
     context->DropContextVariable(c_variableName);
-    RexxFreeMemory(c_variableName);
+    free(c_variableName);
 
 #if defined (DEBUG_JNI)
     fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniDropContextVariable <== <==\n");
@@ -11797,7 +11861,7 @@ JNIEXPORT void JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContex
 
     char * c_variableName=(char *) JNU_GetStringNativeChars(env, j_variableName);   // convert to native string
     context->SetContextVariable(c_variableName, context->Nil());
-    RexxFreeMemory(c_variableName);
+    free(c_variableName);
 
 #if defined (DEBUG_JNI)
     fprintf(stderr, "==> ==> 2/ Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniSetContextVariableToNil <== <==\n");
@@ -12063,11 +12127,11 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniProcEn
 #endif
 
         // make sure we free memory
-    RexxFreeMemory(c_EnvName);
+    free(c_EnvName);
 
     if (c_NewValue!=NULL)
     {
-        RexxFreeMemory(c_NewValue);
+        free(c_NewValue);
     }
 
 
@@ -12116,7 +12180,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetLoc
 #endif
 
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
-    RexxFreeMemory(c_rii_ID);
+    free(c_rii_ID);
 
     RexxThreadContext   *rtc=NULL;
     RexxObjectPtr result_obj;           // Rexx object returned from Rexx, NULL[OBJECT], if none
@@ -12194,7 +12258,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetLoc
     fflush(stderr);
 #endif
 
-        RexxFreeMemory(msg);
+        free(msg);
         return NULL;
     }
 
@@ -12242,7 +12306,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlo
 #endif
 
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
-    RexxFreeMemory(c_rii_ID);
+    free(c_rii_ID);
 
     RexxThreadContext   *rtc=NULL;
     RexxObjectPtr result_obj;           // Rexx object returned from Rexx, NULL[OBJECT], if none
@@ -12320,7 +12384,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniGetGlo
     fflush(stderr);
 #endif
 
-        RexxFreeMemory(msg);
+        free(msg);
         return NULL;
     }
 
@@ -12368,7 +12432,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniNil0
 #endif
 
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
-    RexxFreeMemory(c_rii_ID);
+    free(c_rii_ID);
 
     RexxThreadContext   *rtc=NULL;
     RexxObjectPtr result_obj;           // Rexx object returned from Rexx, NULL[OBJECT], if none
@@ -12446,7 +12510,7 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniNil0
     fflush(stderr);
 #endif
 
-        RexxFreeMemory(msg);
+        free(msg);
         return NULL;
     }
 
@@ -12493,7 +12557,7 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpre
 #endif
 
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
-    RexxFreeMemory(c_rii_ID);
+    free(c_rii_ID);
 
     RexxThreadContext   *rtc=NULL;
 
@@ -12570,7 +12634,7 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniInterpre
     fflush(stderr);
 #endif
 
-        RexxFreeMemory(msg);
+        free(msg);
         return 0; // return NULL;
     }
 
@@ -12616,7 +12680,7 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
 #endif
 
     RgfString2Pointer(c_rii_ID, instance);  // get pointer from string
-    RexxFreeMemory(c_rii_ID);
+    free(c_rii_ID);
 
     RexxThreadContext   *rtc=NULL;
 
@@ -12693,7 +12757,7 @@ JNIEXPORT jlong JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniLanguage
     fflush(stderr);
 #endif
 
-        RexxFreeMemory(msg);
+        free(msg);
         return 0; // return NULL;
     }
 
