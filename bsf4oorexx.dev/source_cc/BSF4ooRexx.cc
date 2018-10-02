@@ -37,6 +37,10 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
+    6.0.0   2018-10-02, rgf: - fixed sublte bug in RgfProcessJArgs(): only do a ReleaseLocalReference(), if
+                               bsf.wrap() returns a new Rexx object, otherwise ooRexx crashes may develop
+                               as wrong Rexx object pointers get used!
+
     6-ß-ß   2018-09-29, rgf: - RexxAllocateMemory() and RexxFreeMemory() got employed in the original BSF4Rexx
                                version that could run on other Rexx interpreters like Regina as well; BSF4ooRexx (two 'oo')
                                was created with ooRexx 4.0 that introduced new APIs that allowed new features to
@@ -958,11 +962,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20180929 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20181002 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20180929 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20181002 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20180929 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20181002 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -3167,17 +3171,12 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
 #endif
 
     jint len          = (j_args==NULL ? 0 : env->GetArrayLength(j_args));
-
     RexxInstance *riid=rtc->instance;      // only for debugging to be able to suppley the Rexx interpreter instance ID
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS)
     fprintf(stderr, "RgfProcessJArgs(...): riid=[%p], len=[%d] + [%d]; ExceptionCheck()=[%d]...\n", riid, (int) len, (slotDir==NULL ? 0 : 1), (int) env->ExceptionCheck()   );fflush(stderr);
 #endif
     RexxArrayObject ra=rtc->NewArray(len+ (slotDir==NULL ? 0 : 1) );
-
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #1 !!!\n"); fflush(stderr);}
-
 
     if (j_args==NULL && slotDir==NULL)  // return empty arg, if no args, nor slotDir given
     {
@@ -3187,7 +3186,6 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
 
         return ra;      // for jniRexxRunProgram; TODO: really necessary or returning NULL/OBJECT sufficient already?
     }
-
 
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS )
@@ -3218,9 +3216,6 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
 #endif
 
     RexxObjectPtr clzBSF=rtc->FindClass("BSF"); // get BSF class
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #2 !!!\n"); fflush(stderr);}
-
     logical_t    bClzBsf=(clzBSF!=NULL);        // determine whether we have .BSF available
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS )
@@ -3247,22 +3242,12 @@ inline RexxArrayObject RgfProcessJArgs (JNIEnv *env, RexxThreadContext *rtc,
 
         RexxRoutineObject rro=rtc->NewRoutine("FROM_BSF4ooRexx_DLL", "::requires BSF.CLS", 18);
 
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #3 !!!\n"); fflush(stderr);}
-
         if (rro!=NULL)      // object got created, let us run it
         {
             RexxObjectPtr result_obj=NULL;
             result_obj=rtc->CallRoutine(rro, ra);   // call the program
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #4 !!!\n"); fflush(stderr);}
-
-//            rtc->ReleaseLocalReference(result_obj);
             rtc->ReleaseLocalReference(rro);
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #5 !!!\n"); fflush(stderr);}
         }
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #6 !!!\n"); fflush(stderr);}
 
 
 #if defined(DEBUG_RGF_PROCESS_J_ARGS)
@@ -3283,9 +3268,6 @@ if (rtc->CheckCondition())
 #endif
 
         clzBSF =rtc->FindClass("BSF");  // get BSF class
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #7 !!!\n"); fflush(stderr);}
-
         bClzBsf=(clzBSF!=NULL);         // determine whether we have .BSF available
     }
 
@@ -3357,8 +3339,6 @@ if (rtc->CheckCondition())
     fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], arg#=[%d]: jobj==NULL, using .nil\n", riid, i);fflush(stderr);
 #endif
             robj=rtc->Nil();                // use .nil
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #8 !!!\n"); fflush(stderr);}
         }
 
         // a Rexx proxy? use the embedded Rexx object
@@ -3380,13 +3360,7 @@ if (rtc->CheckCondition())
 #endif
 
             robj=RgfGetProxyObject(rtc, rtc->String(tmpStr));  // get Rexx object
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #9 !!!\n"); fflush(stderr);}
-
             env->DeleteLocalRef(j_obj_ID);
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #10 !!!\n"); fflush(stderr);}
-
             free(tmpStr);             // make sure we free the allocated memory
         }
 
@@ -3403,8 +3377,6 @@ if (rtc->CheckCondition())
     fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], arg#=[%d]: a Java String!\n", riid, i);fflush(stderr);
 #endif
                 robj=JNU_GetStringNativeCharsReturningRexxStringObject(env, (jstring) jobj, rtc);
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #10-B !!!\n"); fflush(stderr);}
-
             }
 
             else // a Java object, process it via RexxAndJava
@@ -3426,7 +3398,6 @@ if (rtc->CheckCondition())
     fprintf(stderr, "... RgfProcessJArgs(...): !! \trajo was null, now set to: [%p]\n", rajo);
 #endif
                 }
-
                     // create a bean of the Java object
                 jstring j_beanName = (jstring) env->CallObjectMethod(rajo,
                                                    defaultJVM->mid_RexxAndJava_registerBean4JNI,
@@ -3435,13 +3406,7 @@ if (rtc->CheckCondition())
                     // get char* beanName, do a bsf.wrap() if available; return that result
                 CSTRING c_beanName    = env->GetStringUTFChars(j_beanName, JNI_FALSE);
                 robj=       rtc->String(c_beanName);    // create Rexx string
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #11 !!!\n"); fflush(stderr);}
-
                 env->ReleaseStringUTFChars(j_beanName, c_beanName);      // release
-
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #12 !!!\n"); fflush(stderr);}
                 env->DeleteLocalRef(j_beanName);
             }
 
@@ -3455,14 +3420,13 @@ if (rtc->CheckCondition())
                                       (bIncr==1 ? rtc->True() : rtc->False())
                                      );
 
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #13 !!!\n"); fflush(stderr);}
-
-                rtc->ReleaseLocalReference(robj);
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #14 !!!\n"); fflush(stderr);}
-
+                // rgf, 2018-10-02: only do a ReleaseLocalReference(), if returned Rexx object is another object!
+                //                  otherwise "mysterious" errors can occur (e.g. crashes in the BSF4ooRexx multithread stress tests)
+                if (rop!=robj)  // bsf.wrap() returned the same RexxStringObject (no lead-in in Java string then)
+                {
+                    rtc->ReleaseLocalReference(robj);
+                }
                 robj=rop;
-                // robj=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", robj); // try to wrap it up as a Rexx proxy
             }
 
 #if defined(DEBUG_RGF_PROCESS_J_ARG1)
@@ -3473,25 +3437,17 @@ if (rtc->CheckCondition())
 
             // set array entry
         rtc->ArrayPut(ra, robj, i+1);
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #15 !!!\n"); fflush(stderr);}
-
         rtc->ReleaseLocalReference(robj);
-
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #16 !!!\n"); fflush(stderr);}
-
         env->DeleteLocalRef(jobj);
     }
 
     if (slotDir!=NULL)  // was a slotDir supplied ?
     {
-
 #if defined(DEBUG_RGF_PROCESS_J_ARGS)
     fprintf(stderr, "... RgfProcessJArgs(...): riid=[%p], adding slotDir=[%.256s], len=[%d]\n", riid, rtc->ObjectToStringValue(slotDir), (int) len);fflush(stderr);
 #endif
 
         rtc->ArrayPut(ra, slotDir, len+1);        // always save slot Directroy as last argument
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #17 !!!\n"); fflush(stderr);}
     }
 
 
@@ -3501,9 +3457,7 @@ if (rtc->CheckCondition())
     fprintf(stderr, "\triid=[%p], ---> ra~items=[%lu]\n",riid, rtc->ArrayItems(ra));fflush(stderr);
 #endif
 
-// if (rtc->CheckCondition()) { fprintf(stderr, "RgfProcessJArgs(): PANIC -> CONDITION(), location #18 !!!\n"); fflush(stderr);}
-
-    if (!clzBSF) rtc->ReleaseLocalReference(clzBSF);    // rgf, 20180920: should not be NULL anymore, just to be sure test for NULL ...
+    rtc->ReleaseLocalReference(clzBSF);    // rgf, 20180920: should not be NULL anymore, just to be sure test for NULL ...
     return ra;
 }
 
