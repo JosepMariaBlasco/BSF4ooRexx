@@ -1008,6 +1008,7 @@ return testResult
        self~assertTrue(pos("_String_Method from Java", jo~  static_String_method("aha"))>0, "static_String_method")
 
 tmpRes=jo~void_Method
+/* rgf, 20181002: remove debug output
 say .line "tmpRes="pp(tmpRes) "~class="pp(tmpRes~class) "tmpRes~isA(.bsf)="pp(tmpRes~isA(.bsf))
 if tmpRes~isA(.bsf) then
 do
@@ -1015,6 +1016,7 @@ do
    say .line "... tmpRes~getClass         ="pp(tmpRes~getClass)
    say .line "... tmpRes~getClass~toString="pp(tmpRes~getClass~toString)
 end
+*/
 
        self~assertNull(jo~void_Method)       -- 2009-09-06: no slotDir created: fixed, rgf
 
