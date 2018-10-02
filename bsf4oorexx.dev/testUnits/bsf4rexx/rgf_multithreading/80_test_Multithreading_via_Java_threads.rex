@@ -8,14 +8,13 @@
 
 use arg rpTestUnit, rpArray, nrThreads, javaThreadName
 
-signal on syntax
-
     tid=bsfGetTID()              -- get this TID
 
           -- save this thread's TID
     argArray=bsf.createJavaArrayOf("java.lang.Object", tid)
     -- rpArray~sendMessage("APPEND", argArray)
-    rpArray~"APPEND"(argArray)
+    -- rpArray~"APPEND"(argArray)
+    rpArray~APPEND(argArray)
 
     rexxArray=.array~new         -- create a new rexxArray for this controller's threads
 
@@ -30,13 +29,14 @@ signal on syntax
     maxTimeToWait=1+nrThreads*1.5/10
     call time "Reset"            -- reset timer
     loop while counter~value>0, time("elapsed")<maxTimeToWait  -- until no more threads, or over 10seconds
-       call sysSleep .001              -- yield
+       call sysSleep .00001              -- yield
     end
 
     rpTestUnit~assertEquals(0, counter~value, "active thread counter in Java thread:" javaThreadName)
 
       -- this controller created 'nrThreads' threads, check it
     rpTestUnit~assertEquals(nrThreads, rexxArray~items, "total number of threads:" javaThreadName)
+    return
 
 
 ::requires BSF.CLS

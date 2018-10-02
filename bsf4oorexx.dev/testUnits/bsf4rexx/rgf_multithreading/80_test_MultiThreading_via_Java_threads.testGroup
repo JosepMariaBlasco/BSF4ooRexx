@@ -8,9 +8,13 @@
                   - adjust code for new (more versatile) support for BSFRexxProxy(), where supplying
                     Rexx objects to Java will be automagically wrapped as BSFRexxProxy() and getting
                     a BSFRexxProxy() from Java will automagically be unwrapped
+
                   - added class RGF_WORKER to serve as a proxy for the assertable instance of the
                     test method; otherwise leads to deadlocks if that object gets messages sent from
                     different threads
+
+               2018-10-02, rgf
+                  - added "extreme stress test" with 100 Java threads and 100 Rexx threads
    license:    ASF 2.0 (Apache Software License)
    purpose:    test BSF4Rexx 4.0 new external BsfRexxProxy() method
    hint:       RexxProxy objects are Java objects and allow Java to interface with Rexx objects;
@@ -18,8 +22,8 @@
                the RexxProxy method "invoke(String methodName, Object[] args)"; any Rexx object
                that gets returned will be wrapped up as a RexxProxy as well;
 
-               2015-06-26, rgf: the Rexx object support has been enhanced such that BSFRexxProxy()
-                                will transparently be unwrapped if passed from Java to ooRexx
+               2015-06-26, rgf: CHANGE: the Rexx object support has been enhanced such that BSFRexxProxy()
+                                will transparently be unwrapped if passed from Java to ooRexx as an argument
 */
 
   parse source . . fileSpec;
@@ -54,10 +58,10 @@ return testResult
     arr~append(tid)              -- save main thread's TID
     rpArr=BsfCreateRexxProxy(arr)-- create a Java RexxProxy for the array
 
-/*
       -- very light burden: to let Linux-based systems run all multithreading tests successfully
       -- (remark: use ulimit to increase limits on Linux)
       --   28 threads: nrJavaThreads=3;nrRexxThreads=7;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+/*
     nrJavaThreads=3
     nrRexxThreads=7
 */
@@ -70,12 +74,20 @@ return testResult
 /*
 */
 
-/*
       -- heavy burden:
       -- 2,601 threads: nrJavaThreads=50;nrRexxThreads=50;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+/*
     nrJavaThreads=50
     nrRexxThreads=50
 */
+
+      -- extreme burden: added 2018-10-02, rgf: after fix in BSF4ooRexx even this heavy stress runs stable
+      -- 10,201 threads: nrJavaThreads=50;nrRexxThreads=50;say "total threads:" (1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads)))
+/*
+    nrJavaThreads=100
+    nrRexxThreads=100
+*/
+
 
 /*
       -- light burden:
@@ -88,6 +100,8 @@ return testResult
     rexxCode=getRexxCode("80_test_Multithreading_via_Java_threads.rex")
     javaClz=bsf.import("rgf_multithreading.TestNestedEngines_80")
 
+
+-- TODO: rgf, 2018-09-29: 'bm' not needed anymore; remove it?
     bm=bsf.wrap(bsf("getBsfManager"))     -- get this Rexx instance's BSFManager object
 
       -- 20150626, rgf: use this instance to carry out the assertions: in ooRexx 4.* this will cause
@@ -96,6 +110,15 @@ return testResult
       -- proxy solves the problem, hence introducing and using class RGF_WORKER
       --20150812, rgf: in the meantime in OOREXXUNIT.CLS the TestCase methods STRING and GETNAME
       --               got defined to be unguarded in order to not block in a multithreading environment
+
+/* rgf, 201809-201810 for debugging
+-- BEGIN: to be removed
+now=.dateTime~new
+parse source s; say pp(now) pp(s)
+say pp(now) "nrJavaThreads="pp(nrJavaThreads) "nrRexxThreads="pp(nrRexxThreads) "---> total" pp(1+(nrJavaThreads+nrJavaThreads*(1+nrRexxThreads))) "threads"
+-- "pause"
+-- END:   to be removed
+*/
 
     -- jo=javaClz~new(bm, .rgf_worker~new(self), nrJavaThreads, nrRexxThreads, rexxCode, arr)
     jo=javaClz~new(bm, .rgf_worker~new(self), nrJavaThreads, nrRexxThreads, rexxCode, arr)

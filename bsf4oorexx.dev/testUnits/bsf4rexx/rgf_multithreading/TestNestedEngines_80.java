@@ -17,6 +17,7 @@ import java.util.Vector;
  * @author   Rony G. Flatscher, 2001-04-27, 2007-09-10, 2009-09-11
  */
 public class TestNestedEngines_80 {
+// TODO: rgf, 2018-09-29: 'bm' not needed anymore; remove it?
     static BSFManager  bm=null;             // BSFManager of the Rexx instance that invoked this Java program
     static RexxProxy   testUnit=null;       // to allow assertions
     static int         nrJavaThreads=0;     // determine number of Java threads
@@ -26,7 +27,7 @@ public class TestNestedEngines_80 {
 
     static final boolean bDebug=false;
 
-
+// TODO: rgf, 2018-09-29: 'bm' not needed anymore; remove it?
     public TestNestedEngines_80(BSFManager bm, RexxProxy testUnit, int nrJavaThreads, int nrRexxThreads, String rexxCode, RexxProxy rpArray)
     {
             // save arguments in attributes
@@ -126,7 +127,7 @@ public class TestNestedEngines_80 {
 
 // System.out.println("Java -> run():  Rexxcode for threadName["+threadName+"]:\n"+"/-->/"+(rexxCode.replaceAll("@threadName", (""+threadName))+"\\<--\\").substring(0,100));
 
-
+// TODO: rgf 20181002; replaceAll() still needed?
                 result=rexx.apply ("rexx", 0, 0,
                                    rexxCode.replaceAll("@threadName", (""+threadName)),
                                    null,

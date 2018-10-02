@@ -1,1 +1,1 @@
-javac -source 1.4 -target 1.4 *.java
+javac -source 1.6 -target 1.6 *.java
