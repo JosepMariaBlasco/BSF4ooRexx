@@ -37,7 +37,11 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
-    6.0.0   2018-10-02, rgf: - fixed sublte bug in RgfProcessJArgs(): only do a ReleaseLocalReference(), if
+    6.0.0   2018-10-07, rgf: - fixed subtle bug in RgfJavaObject2RexxObject(): only do a ReleaseLocalReference(), if
+                               bsf.wrap() returns a new Rexx object, otherwise ooRexx crashes may develop
+                               as wrong Rexx object pointers get used!
+
+    6.0.0   2018-10-02, rgf: - fixed subtle bug in RgfProcessJArgs(): only do a ReleaseLocalReference(), if
                                bsf.wrap() returns a new Rexx object, otherwise ooRexx crashes may develop
                                as wrong Rexx object pointers get used!
 
@@ -962,11 +966,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20181002 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20181007 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20181002 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20181007 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20181002 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20181007 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -3005,8 +3009,6 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
 #if defined(DEBUG_RGF_PROCESS_J_ARG1)
    fprintf(stderr, "... RgfJavaObject2RexxObject(...): riid=[%p], about to require BSF.CLS rtc->CheckCondition()=[%d], RUNTIME (PRE-)LOADING OF BSF.CLS ! | [1] ...\n", riid, (int) rtc->CheckCondition());fflush(stderr);
 #endif
-        rtc->ReleaseLocalReference(clzBSF);
-
         RexxObjectPtr result_obj=NULL;
         // RexxRoutineObject rro=rtc->NewRoutine("FROM_BSF4ooRexx_DLL", "::requires BSF.CLS", 18);
         char code[]="::requires BSF.CLS";
@@ -3130,7 +3132,10 @@ inline RexxObjectPtr RgfJavaObject2RexxObject (JNIEnv *env, jobject rajo,     //
             // blocked; unguarded class method; probably rtc->SetGuardOff() would have worked as well
         RexxObjectPtr rop=res;
         res=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", rop); // try to wrap it up as a Rexx proxy
-        rtc->ReleaseLocalReference(rop);
+        if (res!=rop)       // 2018-10-07, rgf: if the returned Rexx object is different, release the local reference for rop
+        {
+            rtc->ReleaseLocalReference(rop);
+        }
         // res=(RexxStringObject) rtc->SendMessage1(clzBSF, "BSF.WRAP", res); // try to wrap it up as a Rexx proxy
     }
 
