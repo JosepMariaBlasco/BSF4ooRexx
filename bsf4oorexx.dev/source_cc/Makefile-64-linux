@@ -39,11 +39,11 @@ TGT_LIB_DIR     = ./lib
 # JDK_BASE = /usr/lib/jvm/java-6-sun
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk-amd64
 
-# 2015-07-27
-# JDK_BASE = /usr/lib/jvm/java-6-oracle
+# 2015-07-27, 2018-10-02
+JDK_BASE = /usr/lib/jvm/java-6-oracle
 
 # 2016-10-15, rgf
-JDK_BASE = /usr/lib/jvm/java-6-openjdk
+# JDK_BASE = /usr/lib/jvm/java-6-openjdk
 
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 

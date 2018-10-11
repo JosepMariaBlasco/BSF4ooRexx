@@ -1,0 +1,136 @@
+# make -f Makefile-32-linux rebuild
+#-------------------------------------------------------------------------
+# Makefile-32-linux: makefile to build libBSF4ooRexx.so-32-x86
+#
+# ooRexx 4.x, 2005-06-07, 2009-09-08, 2017-01-08
+#
+# make -f Makefile-32-linux [ all | clean | clean_dll | rebuild ]
+#-------------------------------------------------------------------------
+
+# ------------------------ Apache Version 2.0 license -------------------------
+#    Copyright (C) 2001-2017 Rony G. Flatscher
+#
+#    Licensed under the Apache License, Version 2.0 (the "License");
+#    you may not use this file except in compliance with the License.
+#    You may obtain a copy of the License at
+#
+#        http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS,
+#    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#    See the License for the specific language governing permissions and
+#    limitations under the License.
+# -----------------------------------------------------------------------------
+
+
+# -----------------------  Path Definitions  ----------------------------
+
+# build path to use
+# BLD_PATH = ~/tmp
+# BLD_PATH = .
+BLD_PATH = ./tmp
+
+# directory to copy generated lib to
+TGT_LIB_DIR     = ./lib
+
+# base directory of the Java JDK to use on this system
+# JDK_BASE = /usr/lib/jvm/java-6-openjdk
+
+# Mac-Virtualbox Ubuntut 11.04 desktop i386
+# JDK_BASE = /home/wu/jdk_rpm_bin/tmp/jdk1.6.0_10
+# JDK_BASE = /usr/lib/jvm/java-6-oracle
+# JDK_BASE = /usr/lib/jvm/java-6-openjdk
+# JDK_BASE = ./java_include/lin_include_6
+JDK_BASE = /usr/lib/jvm/jdk-8-oracle-arm32-vfp-hflt
+# rgf, 2017-04-05: force it to use the locally stored Java include files
+INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
+
+INC_PATH_ORX = -I/opt/ooRexx/include $(INC_PATH)
+
+LIB_PATH = -L. -L/usr/local/lib -L/usr/lib -L/opt/ooRexx/lib
+
+
+# --------------------------------------------------------
+# delete command to use
+del_cmd  = rm -f
+
+# copy command to use
+copy_cmd = cp
+
+# source file to compile
+BSF_SRC	= BSF4ooRexx.cc
+
+#
+# Compiler macros
+#
+# cc = gcc -fPIC
+cc = gcc
+link = gcc
+
+BITNESS         = 32
+# ARCH            = x86
+ARCH            = arm
+
+#
+# CFLAGS		= -fPIC -c -O3 -D__cplusplus -DUNIX -m$(BITNESS) -DBSF4REXX_$(BITNESS)_BIT
+CFLAGS          = -fPIC -c -O3 -D__cplusplus -DUNIX -DBSF4REXX_$(BITNESS)_BIT
+CFLAGS_ORX      = -DUSE_OREXX
+# TODO: 20170108, rgf: -ldl really needed ?
+LINK_FLAGS      = -shared -rdynamic -lpthread -lc  -lm -ldl
+
+# rgf, 2017-01-25: "-lrexxutil" not needed
+# LINK_ORX_FLAGS  = -lrexx -lrexxapi -lrexxutil
+LINK_ORX_FLAGS  = -lrexx -lrexxapi
+
+BSF_SONAME      = libBSF4ooRexx.so
+BSF_OBJ_ORX     = $(BLD_PATH)/BSF4ooRexx-$(BITNESS)-$(ARCH).o
+BSF_ORX_TARGET  = $(BLD_PATH)/$(BSF_SONAME)-$(BITNESS)-$(ARCH)
+BSF4REXX	= $(BLD_PATH)/$(BSF_SONAME)
+
+# *************************************************************************** #
+# Rules									      #
+# *************************************************************************** #
+# .cc.o:
+#	  $(cc) $(CFLAGS) -o$*.o $(INC_PATH) $(LIB_PATH) $*.cc
+
+#---------------------------------------------------------- Generate library
+
+orexx :                $(BSF_ORX_TARGET)
+#---------------------------------------------------------- END section
+
+# Object Rexx ----------------------------------------------
+$(BSF_ORX_TARGET) : $(BSF_SRC)
+	echo
+	echo Building $@ ...
+	echo
+
+	$(cc) $(CFLAGS) $(CFLAGS_ORX) -o$(BSF_OBJ_ORX) $(INC_PATH) $(INC_PATH_ORX) $(LIB_PATH) $(BSF_SRC)
+
+# rgf, 2017-01-26: "-m32" a.k.a. "-m$(BITNESS)" was needed to successfully link a 32-bit .o file on a 64-bit system
+#       $(link) -m$(BITNESS) -Wl,-soname,$(BSF_SONAME) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
+
+	$(link) -Wl,-soname,$(BSF_SONAME) -o $@ $(BSF_OBJ_ORX) $(LIB_PATH) $(LINK_FLAGS) $(LINK_ORX_FLAGS)
+
+	$(copy_cmd) $(BSF_ORX_TARGET) $(BSF4REXX)
+	$(copy_cmd) $(BSF_ORX_TARGET) $(TGT_LIB_DIR)
+
+
+#---------------------------------------------------------- END section
+# builds all
+rebuild: clean clean_dll orexx
+
+#---------------------------------------------------------- END section
+# just clean up the mess, just leave the dll
+clean:
+	- $(del_cmd) $(BLD_PATH)/*.o
+
+#---------------------------------------------------------- END section
+clean_dll:
+	- $(del_cmd) $(BLD_PATH)/*.so*
+
+
+# -------------------------------------------------------------------
+# builds all
+all: clean orexx
+
