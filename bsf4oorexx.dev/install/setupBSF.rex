@@ -5,9 +5,10 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.32
+   Version: 1.33
    Changed:
 
+            2018-10-11, ---rgf, - adjust installation for now supporting ARM-32 (Raspberry Pi)
             2018-06-13, ---rgf, - create_RexxJ_Script: the CLASSPATH may get too large for
                                   the (Windows) command line, and Jvaa honors the CLASSPATH
                                   environment variable, so no need to explicitly state it
@@ -550,11 +551,15 @@ do
          cmd.eBinDir="/usr/bin"        /* directory where executables reside     */
 
       select      -- determine location and name of library to use
-         when cmd.eBitness=32   then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-32-x86"
-         when cmd.eBitness=64   then
+         when cmd.eBitness=32   then
          do
-             if j.os.arch='s390x' then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-s390x"
-                                  else cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-amd64"
+            if j.os.arch='arm'  then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-32-arm"
+                                else cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-32-x86"
+         end
+         when cmd.eBitness=64    then
+         do
+            if j.os.arch='s390x' then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-s390x"
+                                 else cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-amd64"
          end
 
          when j.os.arch~caselessAbbrev('aix') then

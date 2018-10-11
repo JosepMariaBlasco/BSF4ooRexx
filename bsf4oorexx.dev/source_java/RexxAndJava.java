@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2018-03-22
+  * @version 6.0.0, 2018-10-11
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -54,6 +54,8 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2018-03-22, rgf: - added Igor Petrushin to 'kudos': ported BSF4ooRexx for Raspberry Pi to ARM-32
+
      2018-03-22, rgf: - made sure that the NetRexx toString() method is fetched if the class
                         loading works in the catch part
 
@@ -549,7 +551,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20180322";
+    static final public String version = "600.20181011";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -4446,6 +4448,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): b) unregister=
                            "Paar, Manuel"                           + "\n" +      // 2011-01-24, rgf
                            "Pachl, Walter"                          + "\n" +
                            "Peedin, Lee"                            + "\n" +
+                           "Perushin, Igor"                         + "\n" +    // 2018-10-11, rgf: created the ARM-32 version (for Raspberry Pi)!
                            "Pezerovic, Edin"                        + "\n" +
                            "Prem, Matthias"                         + "\n" +
                            "Raffel, Manuel"                         + "\n" +    // 2016-08-24, rgf: original author of .NET-support with CLR.CLS, oorexx.net.*
