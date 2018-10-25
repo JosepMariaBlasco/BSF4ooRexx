@@ -44,6 +44,10 @@
                   immediately). runLaterLatest() differs from runLater(), in that it removes
                   duplicate messages to the same target.
 
+   changes: 2018-09-29, rgf: - commented "call SysSleep 0.001" which should not be needed for ooRexx 5.0
+                             - if stopping, do not clear label anymore
+            2018-10-07, rgf: - if running on pre ooRexx 5.0 use SysSleep() in loop to help avoid hangs
+
    license: Apache License 2.0 (see at bottom)
 
    invoke:
@@ -76,6 +80,12 @@ If arg(1)='?' Then Do
   Say 'This program demonstrates how to update a GUI Label from a non-GUI Rexx thread'
   Exit
 End
+
+if .bsf4rexx~rexx.version<5 then -- pre ooRexx 5.0 expose problems with multithreading switching
+do
+   say "--> WARNING: this program will run stable with ooRexx 5.0 or higher only!"
+   say "             (You are running ooRexx version" pp(full)")";say
+end
 
    --  create a framed Java window, set a title text
 win=.bsf~new("java.awt.Frame", "Demo Howto Update An awt/swing GUI from A Non-GUI Thread")
@@ -153,7 +163,6 @@ rEH~waitForExit         -- wait for the GUI to get closed by the user
   do
      say self"::actionPerformed - stopping Rexx thread"
      .some_rexx_class~stopRexxThread=.true   -- have Rexx thread stop updating the label!
-     call sysSleep .01        -- give it some time to stop (not really necessary)
      btn~label=.btn.StartText -- relabel the button
   end
   return
@@ -182,6 +191,7 @@ rEH~waitForExit         -- wait for the GUI to get closed by the user
   reply
   tid=bsfGetTid()
   say self"::updateGuiFromRexxThread - now running on thread:" tid
+  rexxVersion=.bsf4rexx~rexx.version
   stopRexxThread=.false
   startDateTime=.dateTime~new    -- take start date and time
   loop i=1 while stopRexxThread<>.true
@@ -195,21 +205,26 @@ rEH~waitForExit         -- wait for the GUI to get closed by the user
 
      str=now || loopsSec", loop #" myFormat(i)": value from non-GUI Rexx thread" pp(tid)
      .AwtGuiThread~runLaterLatest(label, "setText", "i", str)
-     call SysSleep .0001   -- sleep a bit, relinquishes the Rexx thread
+     if rexxVersion<5 then    -- pre ooRexx versions prior to 5.0 exhibit multithreaded problems causing sometimes hangs
+       call SysSleep .00001   -- sleep a bit, relinquishes the Rexx thread; needed for pre ooRexx 5.0
   end
-  say self"::updateGuiFromRexxThread - now stopping executing on thread:" tid
-  .AwtGuiThread~runLater(label, "setText", "i", "") -- set Label's text to empty string
+  endDateTime=.dateTime~new
+  totalDuration=(endDateTime-startDateTime)
+  totalLoops=i-1
+  loopsSec="| total" "loops:" pp(myFormat(totalLoops)) "duration:" pp(totalDuration) -
+           "loops/sec="pp(myFormat(format((totalLoops/totalDuration~totalMicroseconds)*1000000,,0)))
+  say self"::updateGuiFromRexxThread - now stopping executing on thread:" tid loopsSec
   say
 
 ::routine myFormat   -- format a number American style, i.e. inject comma to indicate a thousand group
   parse arg num
   if num~length<4 then return num
-
   res=""
   revNum=num~reverse
   do while revNum<>""
      parse var revNum group +3 revNum
-     res=res","group
+     if res="" then res=group
+               else res=res","group
   end
   return res~strip~reverse
 

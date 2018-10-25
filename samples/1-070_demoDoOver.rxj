@@ -22,13 +22,14 @@
                      - SUPPLIER will supply as index the key and as item the value stored with the key
 
     Changed:    2016-12-21, rgf: make sure that "DO WITH" is run on ooRexx 5.0.0 or higher
+                2018-10-07, rgf: use new entry .bsf4rexx~rexx.version
 
     Needs:      BSF4ooRexx
 
     License:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2016 Rony G. Flatscher
+       Copyright (C) 2016-2018 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -46,9 +47,6 @@
 
 tab="09"x                  -- define the TAB character for indentation
 line="-"~copies(79)        -- define line
-
-parse version  "_" v "."
-.local~rexxVersion=v
 
 call demo_Enum        tab, line  -- run the java.lang.Enum demo
 call demo_Map         tab, line  -- run the java.Util.Map demo
@@ -77,7 +75,7 @@ call demo_Enumeration tab, line  -- run the java.Util.Map demo
    end
    say
 
-   if .rexxVersion>4 then  -- "DO WITH" was introduced with version 5.0.0
+   if .bsf4rexx~rexx.version>=5 then  -- "DO WITH" was introduced with version 5.0.0
    do
       say tab "iterating over all enum values using DO...OVER (sends MAKEARRAY message implicitly):"
       say
@@ -121,7 +119,7 @@ call demo_Enumeration tab, line  -- run the java.Util.Map demo
    end
    say
 
-   if .rexxVersion>4 then  -- "DO WITH" was introduced with version 5.0.0
+   if .bsf4rexx~rexx.version>=5 then  -- "DO WITH" was introduced with version 5.0.0
    do
       say tab "iterating over all key/value pairs using DO WITH...OVER (sends SUPPLIER message implicitly):"
       say
@@ -158,7 +156,7 @@ call demo_Enumeration tab, line  -- run the java.Util.Map demo
    end
    say
 
-   if .rexxVersion>4 then  -- "DO WITH" was introduced with version 5.0.0
+   if .bsf4rexx~rexx.version>=5 then  -- "DO WITH" was introduced with version 5.0.0
    do
       say tab "iterating over all values using DO WITH...OVER (sends SUPPLIER message implicitly):"
       say
@@ -201,7 +199,7 @@ call demo_Enumeration tab, line  -- run the java.Util.Map demo
    end
    say
 
-   if .rexxVersion>4 then  -- "DO WITH" was introduced with version 5.0.0
+   if .bsf4rexx~rexx.version>=5 then  -- "DO WITH" was introduced with version 5.0.0
    do
       say tab "now getting another Iterator from the ArrayList... (previous one got exhausted)"
       it=arrList~iterator
@@ -245,7 +243,7 @@ call demo_Enumeration tab, line  -- run the java.Util.Map demo
    end
    say
 
-   if .rexxVersion>4 then  -- "DO WITH" was introduced with version 5.0.0
+   if .bsf4rexx~rexx.version>=5 then  -- "DO WITH" was introduced with version 5.0.0
    do
       say tab "creating a StringTokenizer instance... (previous one got exhausted)"
       tokenized=.BSF~new("java.util.StringTokenizer", string)

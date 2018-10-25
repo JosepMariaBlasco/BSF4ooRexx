@@ -45,6 +45,9 @@
                   immediately). runLaterLatest() differs from runLater(), in that it removes
                   duplicate messages to the same target.
 
+   changes: 2018-09-29, rgf: - commented "call SysSleep 0.001" which should not be needed for ooRexx 5.0
+                             - if stopping, do not clear label anymore
+            2018-10-07, rgf: - if running on pre ooRexx 5.0 use SysSleep() in loop to help avoid hangs
 
    license: Apache License 2.0 (see at bottom)
 
@@ -56,6 +59,15 @@
    needs: ooRexx 4.1 or higher, and BSF4ooRexx 6.00 or highter
 
 */
+
+
+parse version full 1 "_" v "."    -- get major version number of ooRexx
+if v<5 then    -- pre ooRexx 5.0 expose problems with multithreading switching
+do
+   say "--> WARNING: this program will run stable with ooRexx 5.0 or higher only!"
+   say "             (You are running ooRexx version" pp(full)")";say
+end
+
 
 signal on syntax
 rxApp=.RexxApplication~new  -- create Rexx object that will control the FXML set up
@@ -159,6 +171,7 @@ syntax:
   reply
   tid=bsfGetTid()
   say self"::updateGuiFromRexxThread - now running on thread:" tid
+  rexxVersion=.bsf4rexx~rexx.version
   stopRexxThread=.false
   startDateTime=.dateTime~new    -- take start date and time
   loop i=1 while stopRexxThread<>.true
@@ -172,10 +185,15 @@ syntax:
 
      str=now || loopsSec", loop #" myFormat(i)": value from non-GUI Rexx thread" pp(tid)
      .FxGuiThread~runLaterLatest(label, "setText", "i", str)
-     call SysSleep .0001   -- sleep a bit, relinquishes the Rexx thread
+     if rexxVersion<5 then    -- pre ooRexx versions prior to 5.0 exhibit multithreaded problems causing sometimes hangs
+        call SysSleep 0.0001  -- sleep a bit, relinquishes the Rexx thread
   end
-  say self"::updateGuiFromRexxThread - now stopping executing on thread:" tid
-  .FxGuiThread~runLater(label, "setText", "i", "") -- set Label's text to empty string
+  endDateTime=.dateTime~new
+  totalDuration=(endDateTime-startDateTime)
+  totalLoops=i-1
+  loopsSec="| total" "loops:" pp(myFormat(totalLoops)) "duration:" pp(totalDuration) -
+           "loops/sec="pp(myFormat(format((totalLoops/totalDuration~totalMicroseconds)*1000000,,0)))
+  say self"::updateGuiFromRexxThread - now stopping executing on thread:" tid loopsSec
   say
 
 ::routine myFormat   -- format a number American style, i.e. inject comma to indicate a thousand group
@@ -186,7 +204,8 @@ syntax:
   revNum=num~reverse
   do while revNum<>""
      parse var revNum group +3 revNum
-     res=res","group
+     if res="" then res=group
+               else res=res","group
   end
   return res~strip~reverse
 

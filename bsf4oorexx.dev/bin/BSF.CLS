@@ -12,6 +12,17 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-10-25, ---rgf, - changed how "rexx.version" gets parsed and assembled; revision part is omitted,
+                               hence: major.minor
+
+         2018-10-24, ---rgf, - added method "runLaterPush" to class "AbstractGuiThread": this method works
+                               like "runLaterLatest", removing duplicate messages (addressed to the same object
+                               using the same message name) from the queue, but pushes the new GUIMessage to
+                               the queue; this way such a message will run before any other ones that are in
+                               the queue at the time of the push
+
+         2018-10-07, ---rgf, - add an entry "rexx.version" to .bsf4rexx
+
          2018-09-18, ---rgf, - routine bsf.contextClassLoader() now also accepts a list of URL strings/objects beside
                                a single array object of URL strings/objects
 
@@ -714,12 +725,14 @@ do
 end
 
    signal on syntax
-   parse version v .
-   minimumVersion="4.1.0"     -- minimum ooRexx version (same as BSF4ooRexx.cc)
-   if v < "REXX-ooRexx_"||minimumVersion then
+   parse version "_" major '.' minor '.' revision "(";   -- extract version parts
+   rexxVersion=major"."minor  -- create major/minor version number, ignore revisions
+
+   minimumVersion="4.1"     -- minimum ooRexx version (same as BSF4ooRexx.cc)
+   if rexxVersion < minimumVersion then
    do
        parse source s . name  -- extract name of this module
-       errString=name": needs ooRexx" minimumVersion "or higher"
+       errString=name": needs ooRexx" pp(minimumVersion) "or higher, current version:" pp(rexxVersion)
        .error~say(errString", aborting...")
        raise syntax 3.900 array (errString)
    end
@@ -755,11 +768,13 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20180918" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20181025" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
       .bsf4rexx~opSys3 =opsys~left(3)~upper  -- save operating system name's first two letters in uppercase
+
+      .bsf4rexx~rexx.version=rexxVersion  -- make Rexx version, e.g. "4.1", "5.0" etc available to the clients
 
       .bsf4rexx~bsf.cls.fullPath=thisFullPath      -- allows to query the full path for this BSF.CLS from other Rexx programs
       .bsf4rexx~bsf.cls.location=filespec("l",thisFullPath) -- allows to query the location for this BSF.CLS from other Rexx programs
@@ -5054,8 +5069,8 @@ syntax:
      do while msgQueue~items>0
         self~process(msgQueue~pull)    -- fetch item from head of the queue
      end
+     self~waitingToRun=.false   -- indicate that no runLater is pending!
   end
-  self~waitingToRun=.false   -- indicate that no runLater is pending!
 -- say self": returning at:" pp(.dateTime~new)
 
 
@@ -5126,7 +5141,89 @@ syntax:
   signal on syntax
   if self~JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
 
-  guiMsg=self~createGuiMessage(arg(1,"array"))
+  forward message "REMOVEMESSAGE" continue  -- remove all GUI messages of the same name targeted to the same object
+  guiMsg=result               -- fetch returned GUIMessage object
+  msgQueue=self~msgQueue      -- get message queue
+  msgQueue~queue(guiMsg)      -- now enqueue current (latest) guiMsg
+
+  if self~waitingToRun=.false then -- "runLater" not invoked yet?
+  do
+     self~waitingToRun=.true
+     self~invokeOnGuiThread   -- make sure Java will dispatch Rexx message on GUI thread
+  end
+  return guiMsg            -- allows caller to get a hold of a possible return value
+
+syntax:
+  raise propagate
+
+
+/* ------------------------------------------------------------------------------------------------- */
+   -- method replaces existing target: this way only the latest sent message will get executed!
+/** This class method allows to define a Rexx message with its arguments that should
+*   be processed on the GUI thread. Each invocation will create a new <code>GUIMessage</code>
+*   from the supplied arguments and returns it for further inspection in addition to pushing
+*   it for later execution on the GUI thread. Unlike <code>runLater</code> this method will
+*   first remove any queued messages with the same target and the same message name, before
+*   pushing this message. This may be useful if there is a need for interacting with a specific
+*   GUI object before all the other ones for which GUIMessage objects may be present.
+*
+*   @param target the target object to receive a message on the GUI thread
+*   @param messageName the message name to send to the target on the GUI thread
+*   @param indicator  optional; indicates with &quot;I&quot; (Indivdual) that the arguments
+*                     are listed individually, &quot;A&quot; (Array) indicates that the fourth
+*                     argument is an array containing the arguments to supply with the
+*                     message on the GUI thread
+*
+*   @return GUIMessage a GUI message object (modelled after ooRexx' <code>Message</code> class
+*                     that allows one to inspect the state of the message (process completed,
+*                     fetching a possible result, determining whether an error occurred and
+*                     inspecting it)
+*/
+::method runLaterPush   class    -- make sure this message is the first in the message queue, such that it gets executed first
+  use strict arg target, messageName, ...
+
+  signal on syntax
+  if self~JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
+  forward message "REMOVEMESSAGE" continue  -- remove all GUI messages of the same name targeted to the same object
+  guiMsg=result               -- fetch returned GUIMessage object
+  msgQueue=self~msgQueue      -- get message queue
+  msgQueue~push(guiMsg)       -- now enqueue current (latest) guiMsg
+
+  if self~waitingToRun=.false then -- "runLater" not invoked yet?
+  do
+     self~waitingToRun=.true
+     self~invokeOnGuiThread   -- make sure Java will dispatch Rexx message on GUI thread
+  end
+  return guiMsg            -- allows caller to get a hold of a possible return value
+
+syntax:
+  raise propagate
+
+
+/* ------------------------------------------------------------------------------------------------- */
+   -- method removes all GUI message objects
+/** This private class method removes all GUIMessage objects from the message queue that will be processed
+*   later when Java call backs on the GUI thread, that have the supplied target and the supplied
+*   message name.
+*
+*   @param target the target object to receive a message on the GUI thread
+*   @param messageName the message name to send to the target on the GUI thread
+*   @param indicator  optional; indicates with &quot;I&quot; (Indivdual) that the arguments
+*                     are listed individually, &quot;A&quot; (Array) indicates that the fourth
+*                     argument is an array containing the arguments to supply with the
+*                     message on the GUI thread
+*
+*   @return GUIMessage a GUI message object (modelled after ooRexx' <code>Message</code> class
+*                     that allows one to inspect the state of the message (process completed,
+*                     fetching a possible result, determining whether an error occurred and
+*                     inspecting it)
+*/
+::method removeMessage    class private
+  use strict arg target, messageName, ...
+
+  signal on syntax
+  if self~JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
+
       -- remove all occurrences of messages with the same messagename and the same target
   msgQueue=self~msgQueue      -- get message queue
   idx=msgQueue~first          -- get index of the first item in the queue, if any
@@ -5138,13 +5235,8 @@ syntax:
 
      idx=msgQueue~next(idx)    -- get index of next item in the queue
   end
-  msgQueue~queue(guiMsg)       -- now enqueue current (latest) guiMsg
 
-  if self~waitingToRun=.false then -- "runLater" not invoked yet?
-  do
-     self~waitingToRun=.true
-     self~invokeOnGuiThread   -- make sure Java will dispatch Rexx message on GUI thread
-  end
+  guiMsg=self~createGuiMessage(arg(1,"array"))  -- create and return GUI message object
   return guiMsg            -- allows caller to get a hold of a possible return value
 
 syntax:

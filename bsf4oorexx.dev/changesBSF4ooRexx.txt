@@ -1,3 +1,147 @@
+
+-------------------------------------- 2018-10-24 ----------------------------------
+- BSF.CLS
+
+  - added method "runLaterPush" to class "AbstractGuiThread": this method works
+    like "runLaterLatest", removing duplicate messages (addressed to the same object
+    using the same message name) from the queue, but pushes the new GUIMessage to
+    the queue; this way such a message will run before any other ones that are in
+    the queue at the time of the push
+
+-------------------------------------- 2018-10-11 ----------------------------------
+
+- new: bsf4oorexx.dev/source_cc/Makefile-32-linux-arm
+
+  - adapted for ARM-32 (Raspberry Pi) by Igor Petrushin
+
+- new: bsf4oorexx.dev/source_cc/lib/libBSF4ooRexx.so-32-arm
+
+  - binary ARM-32
+
+-------------------------------------- 2018-10-07 ----------------------------------
+
+- BSF4ooRexx.cc
+
+  - fixed subtle bug in RgfJavaObject2RexxObject(): only do a ReleaseLocalReference(), if
+    bsf.wrap() returns a new Rexx object, otherwise ooRexx crashes may develop
+    as wrong Rexx object pointers get used!
+
+- BSF.CLS
+
+  - add an entry "rexx.version" to .bsf4rexx
+
+-------------------------------------- 2018-10-02 ----------------------------------
+
+- BSF4ooRexx.cc
+
+  - fixed subtle bug in RgfProcessJArgs(): only do a ReleaseLocalReference(), if
+    bsf.wrap() returns a new Rexx object, otherwise ooRexx crashes may develop
+    as wrong Rexx object pointers get used!
+
+-------------------------------------- 2018-09-29 ----------------------------------
+
+- samples/3-090_update_awtSwing_GUI-from-non-GUI-thread.rxj
+
+  - commented "call SysSleep 0.001" which should not be needed for ooRexx 5.0
+
+  - if stopping, do not clear label anymore
+
+
+- samples/JavaFX/javafx_update_GUI-from-non-GUI-thread.rxj
+
+  - commented "call SysSleep 0.001" which should not be needed for ooRexx 5.0
+
+  - if stopping, do not clear label anymore
+
+- BSF4ooRexx.cc
+
+  - RexxAllocateMemory() and RexxFreeMemory() got employed in the original BSF4Rexx
+    version that could run on other Rexx interpreters like Regina as well; BSF4ooRexx (two 'oo')
+    was created with ooRexx 4.0 that introduced new APIs that allowed new features to
+    be implemented; replacing the two APIs with malloc() and free() should remove overhead
+
+-------------------------------------- 2018-09-21 ----------------------------------
+
+- BSF4ooRexx.cc
+
+  - RgfProcessJArgs(): make sure that ReleaseLocalReference(clzBSF) gets executed
+    only if clzBSF is not NULL (older test units may have that condition)
+
+-------------------------------------- 2018-09-20 ----------------------------------
+
+- samples/JavaFX/fxml_05/staff.rxj
+
+  - use absolute paths to jar files, such that the program executes from any directory
+
+-------------------------------------- 2018-09-18 ----------------------------------
+
+- rgf_util2.rex
+
+  - ppCondition2(): test whether the class .BSF (from BSF4ooRexx) is present before
+    using it in the isA(.bsf) test
+
+- BSF.CLS:
+
+    - routine bsf.contextClassLoader() now also accepts a list of URL strings/objects beside
+      a single array object of URL strings/objects
+
+- samples/JavaFX/fxml_05/staff.rxj
+
+  - taking advantage of change in bsf.contextClassLoader() now allowing a plain
+    list of URLs (no need to explicitly create an array of these values)
+
+-------------------------------------- 2018-09-16 ----------------------------------
+
+- BSF.CLS:
+
+   - add ".bsf4rexx~bsf.cls.fullPath" and ".bsf4rexx~bsf.cls.location" to allow querying
+     the location of this BSF.CLS from other Rexx programs easily
+
+   - new public routine "bsf.contextClassLoader [urlOrDirOrFileName | urlCollection]" that allows
+     to define the Thread's context class loader to find classes and resources in
+     the supplied urlOrDirOrFileName | urlCollection
+
+   - to ease the support for "bsf.contextClassLoader" the following Java classes:
+     'java.lang.ClassLoader', 'java.lang.Thread', 'java.io.File',
+     'java.net.URL', 'java.net.URLClassLoader'
+
+- samples/JavaFX/fxml_05/staff.rxj
+
+  - remove routine "makeResourcesAvailable", instead use the new public routine
+    "bsf.contextClassLoader(urls)"
+
+-------------------------------------- 2018-09-15 ----------------------------------
+
+- samples/JavaFX/fxml_05/staff.rxj
+
+  - set the Java thread context class loader to make the startup directory
+    and the appropriate jar-files available:
+
+    - with the modularization introduced in Java 9 the JavaFX 8 library
+      "jar\controlsfx-8.40.14.jar" would not work anymore; the replacement
+      version of this JavaFX library for Java 9 and higher ("jar\controlsfx-9.0.0.jar")
+      would not work on Java 8;
+
+    - the routine "makeResourcesAvailable" will determine the Java version and use
+      an URLClassLoader in order to supply the URLs for the appropriate
+      "controlsfx*jar" file and the directory this program resides; this URLClassLoader
+      will use the current Thread's context class loader as its parent and then will
+      be used as the new Thread context class loader
+
+  - use the unqualified class name of the imported "javafx.beans.property.*" classes
+    as the Rexx class name
+
+  - removed the switching to the directory where the Rexx program resided, not
+    necessary because of the customized URLClassLoader that adds that directory
+    as URL to be looked up (removed change done at 2018-03-24)
+
+-------------------------------------- 2018-09-14 ----------------------------------
+
+- BSF.CLS:
+
+  - restructured routines bsf.import() and its synonym bsf.importClass() to match
+    arguments with class BSF's class method bsf.import()
+
 -------------------------------------- 2018-07-23 ----------------------------------
 
 - samples\1-080_charsetTranslations.rxj:

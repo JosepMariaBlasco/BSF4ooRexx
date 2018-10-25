@@ -105,6 +105,9 @@
                                 Rexx interpreter instance)
                               - changed version style
 
+                  2018-09-30  - ppCondition2(): test whether the class .BSF (from BSF4ooRexx) is present before
+                                using it in the isA(.bsf) test
+
 
       purpose:    set of 3.2 utilities to ease programming of 3.2.0, e.g. offer sort2()- and
                   stableSort2()-BIFs that handle all kind of standard sorting needs, thereby
@@ -117,6 +120,8 @@
                     Easter Sunday (depending on the calendar in use)
 
                   - create routines "leftWord([-]n)", "rightWord([-]n)"
+
+                  - in ooRexx 5.0 a package has a ".local" directory that can be used to add the classes instead!
 
       license:    ASF 2.0, <http://www.apache.org/licenses/LICENSE-2.0>:
                   --------------- cut here ----------------
@@ -3222,6 +3227,8 @@ syntax: raise propagate
 
   mb=.MutableBuffer~new
 
+  bhasBSFClz=(.nil<>.context~package~findClass("BSF")) -- is BSF4ooRexx available?
+
   do idx over co~allindexes~sort
      entry=co[idx]
      mb~~append(indent1) ~~append(pp2(idx)~left(maxWidth)) ~~append("=") ~~append(pp2(entry)) ~~append(lf)
@@ -3234,7 +3241,8 @@ syntax: raise propagate
         mb ~~append(ppPackage2(entry, indent2, indent3, lf))
      end
 
-     if idx="ADDITIONAL", entry[2]~isA(.bsf) then -- rgf, 2017-04-01: if the additional array has a Java except object, show it and its causes
+
+     if idx="ADDITIONAL", bHasBsfClz, entry[2]~isA(.bsf) then -- rgf, 2017-04-01: if the additional array has a Java except object, show it and its causes
      do
          jexc=entry[2]
          do i=1 while jexc<>.nil

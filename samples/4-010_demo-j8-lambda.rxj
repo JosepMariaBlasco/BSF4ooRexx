@@ -8,6 +8,7 @@
    changed:   2015-05-01, ---rgf - remove superfluous word "String" from the beginning of the string assigned to "wordstring"
               2018-03-09, ---rgf - adjust for MethodHandle.invoke() for Java 8 and 9
                                  - take advantage of new .bsf4rexx entry "java.major.version" to ease testing for right Java version
+              2018-10-07, ---rgf - if the currently used Java version is too low, show the full version (property "java.version")
 
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
 
@@ -35,7 +36,7 @@
 
 if .bsf4rexx~java.major.version < 8 then
 do
-   say "Need Java 1.8/8 or higher, installed version too low ("javaVersion"), aborting ..."
+   say "Need Java [1.8/8] or higher, installed version" pp(.bsf4rexx~java.version) "too low, aborting ..."
    exit -1
 end
 
