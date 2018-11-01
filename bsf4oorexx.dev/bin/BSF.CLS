@@ -12,6 +12,11 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-11-01, ---rgf, - changed the routines BOX() and UNBOX() to adjust them to the new class
+                               RexxStrictArgument which allows to strictly pick the corresponding
+                               field, method or constructor candidates; the primitive types will
+                               now be forced to strictly pick primitive types in the signatures
+
          2018-10-25, ---rgf, - changed how "rexx.version" gets parsed and assembled; revision part is omitted,
                                hence: major.minor
 
@@ -768,7 +773,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20181025" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20181101" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1020,6 +1025,9 @@ syntax:
       bsf.dir~setEntry(jClassName, .bsf~bsf.import(jClassName)) -- will also place in .environment (instead of .local since 20171223)
    end
 
+   bsf.dir~setEntry(jClassName, .bsf~bsf.import("org.rexxla.bsf.engines.rexx.RexxStrictArgument",jRexxStrictArgument)) -- rgf, 2018-11-01
+
+
    do key over .list~of("line.separator", "file.separator", "path.separator", "file.encoding")
       bsf.dir~setEntry(key,bsf.dir~java.lang.System~getProperty(key))
    end
@@ -1045,50 +1053,82 @@ syntax:
 /* ================================================================================================= */
 -- box primitive datatypes into their Java classes counterparts
 -- BOolean, BYte, C, D, F, I, L, SHort, STring
+-- rgf, 20181101: using new class RexxStrictArgument instead of the Wrapper classes; allows also
+--                to force using supplied class objects explicitly when picking fields, methods, constructors
+--                either single argument, a Java object, or a Java class object (to cast to and to use) and Java object
 
-::routine box  public
-   parse upper arg type +2, val
+::routine box  public      -- new version using RexxStrictArgument, rgf, 2018-11-01
+  use strict arg oType, oVal=.nil
 
-   signal on syntax
-   select
-     when abbrev(type, "BO") then
-          do
-             if      val=.true  | val~caselessEquals("true")  then val="true"
-             else if val=.false | val~caselessEquals("false") then val="false"
-             else    -- raise a syntax error, in this case we expect a Boolean value!
+  if oType~isA(.string) then  -- if a string then a type indicator is expected
+  do
+      if arg(2,'Omitted') then
+         raise syntax 88.900 array ("BSF.CLS - BOX(): argument 'type' ("oType") is a string that is considered a type indicator, hence argument 'val' must be present")
+
+      parse upper arg type +2
+      val=oVal       -- save unedited version (case preserving for Byte, Character and String)
+
+      signal on syntax
+      select
+        when abbrev(type, "BO") then
              do
-                raise syntax 88.900 array ("BSF.CLS - BOX('Boolean', string): argument 'string' does not represent an acceptable Boolean value. Acceptable values are: '0', '1', '.true', '.false', and in addition 'true', 'false'. Received: '"val"'")
+                if      val=.true  | val~caselessEquals("true")  then val="true"
+                else if val=.false | val~caselessEquals("false") then val="false"
+                else    -- raise a syntax error, in this case we expect a Boolean value!
+                do
+                   raise syntax 88.900 array ("BSF.CLS - BOX('Boolean', string): argument 'string' does not represent an acceptable Boolean value. Acceptable values are: '0', '1', '.true', '.false', and in addition 'true', 'false'. Received: '"val"'")
+                end
+
+                return bsf.wrap(bsf('strictArg', type,val))
              end
 
-             return .java.lang.Boolean~new(val)
-          end
+        when abbrev(type, "BY") then return bsf.wrap(bsf('strictArg', type,val))
 
-     when abbrev(type, "BY") then return .java.lang.Byte~new(val)
+        when abbrev(type, "C")  then return bsf.wrap(bsf('strictArg', type,val))   -- use val verbatimly (retain mixed case)
+        when abbrev(type, "D")  then return bsf.wrap(bsf('strictArg', type,val))
 
-     when abbrev(type, "C")  then return .java.lang.Character~new(arg(2)) -- use val verbatimly (retain mixed case)
-     when abbrev(type, "D")  then return .java.lang.Double~new(val)
+        when abbrev(type, "F")  then return bsf.wrap(bsf('strictArg', type,val))
+        when abbrev(type, "I")  then return bsf.wrap(bsf('strictArg', type,val))
+        when abbrev(type, "L")  then return bsf.wrap(bsf('strictArg', type,val))
+        when abbrev(type, "SH") then return bsf.wrap(bsf('strictArg', type,val))
+        when abbrev(type, "ST") then return bsf.wrap(bsf('strictArg', type,val))   -- use val verbatimly (retain mixed case)
 
-     when abbrev(type, "F")  then return .java.lang.Float~new(val)
-     when abbrev(type, "I")  then return .java.lang.Integer~new(val)
-     when abbrev(type, "L")  then return .java.lang.Long~new(val)
-     when abbrev(type, "SH") then return .java.lang.Short~new(val)
-     when abbrev(type, "ST") then return .java.lang.String~new(arg(2))    -- use val verbatimly (retain mixed case)
+        otherwise return arg(2)
+      end
+  end
 
-     otherwise return arg(2)
-   end
+  if arg(2,'omitted') then return .jRexxStrictArgument~new(oType)   -- an object; use its class type for picking methods
+
+
+-- TODO: shall Rexx check whether oType is Java class object?
+  return .jRexxStrictArgument~new(oType,oVal)   -- will force the value to be used only if oType is matched exactly in the candidates
+
+  raise syntax 88.900 array ("BSF.CLS - BOX(): argument 'type' ("oType") must be a Java class object")
+
 
 syntax:
    raise propagate
 
 
+
 /* ================================================================================================= */
 -- unbox primitive datatype from their Java class counterpart, where they are embedded
 -- BOolean, BYte, C, D, F, I, L, SHort, STring
+-- new, rgf, 20181101: stay compatbile if Wrapper class objects are supplied
+--                     process new RexxStrictArgument objects
 ::routine unbox public
    use arg o
 
+   objName=o~objectName    -- name will contain the fully qualified Java class name
+   if pos("RexxStrictArgument@",objName)>0 then -- since 20181101 the default return type for box() for primitive values and Strings
+      return o~getValue4Rexx
+
+   if \o~isA(.bsf) then
+      raise syntax 88.900 array ("BSF.CLS - UNBOX(): argument ["o"] is not a Java object")
+
+   -- for backward compatibility
      -- extract class name from proxy's objectName (e.g. "java.lang.String@a3b0cdef")
-   parse upper value o~objectname with . "." . "." className "@" .
+   parse upper value objName with . "." . "." className "@" .
 
      -- if not a wrapper class return object unchanged
    if pos(className, "BOOLEAN BYTE CHARACTER DOUBLE FLOAT INTEGER LONG SHORT STRING")=0 then return o
@@ -1097,6 +1137,8 @@ syntax:
    if abbrev(className, "BO")  then return o~booleanValue
 
    return o~toString -- Java string representation suffices for ooRexx
+
+
 
 
 /* ================================================================================================= */

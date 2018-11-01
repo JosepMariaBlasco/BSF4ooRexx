@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2018-10-11
+  * @version 6.0.0, 2018-11-01
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -54,6 +54,12 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2018-11-01, rgf: - changed convFromRexx() and coerceArgs() to use the new class RexxStrictArgument that
+                        makes sure that only fields, methods and constructors get picked that strictly match
+                        the classObject of RexxStrictArgument
+                      - added new subfunction "strictArg" which will employ convFromRexx() and return a RexxStrictArgument;
+                        meant to be used by box() in BSF.CLS
+
      2018-03-22, rgf: - added Igor Petrushin to 'kudos': ported BSF4ooRexx for Raspberry Pi to ARM-32
 
      2018-03-22, rgf: - made sure that the NetRexx toString() method is fetched if the class
@@ -173,6 +179,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
                            object, to which the primitive int value was converted to already, could be used as
                            an argument). Now checking if argument must be primitive, so not to accept a parameter
                            of type Object.
+
 
      2016-11-27, ---rgf, - new central RAJRegistry with RAJBeans, global to all Rexx interpreter instances
                          - turning bsfPrefixReturnValue into static to become available in static methods
@@ -551,7 +558,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20181011";
+    static final public String version = "600.20181101";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -1266,7 +1273,7 @@ System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FIN
     protected native int jniInitialize4Rexx() ;
 
 
-/* ---> rgf, 20180108
+/* ---> rgf, 20180108 -
         // define the constants for the desired function
 static final int           ADD_EVENT_LISTENER          =  1  ;
 static final int           ARRAY_AT                    =  2  ;
@@ -2498,6 +2505,34 @@ private static final String STRING_INCREASE_REF_COUNTER           =  "increaseRe
                    instead (it is usually more exact).
 
 
+        <!-- -------------------------------------------------------- -->
+
+                   * value = BSF( 'strictArg', strType, strValue )
+     *
+        <tr class="TableHeadingColor"><!-- table row -->
+        <td> <code>&quot;strictArg&quot;</code>
+
+        <td colspan="2">Creates and returns an instance of RexxStrictArgument according
+                        to the supplied (primitive) type indicator <code>type</code> and <code>value</code>.
+
+        <tr class="TableRowColor"><!-- table row -->
+        <td>
+        <td align="right"> <code>type </code>
+        <td> Mandatory, one of
+                    &quot;<strong>BO</strong>olean&quot; (i.e. '0' or '1'),
+                    &quot;<strong>BY</strong>te&quot;,
+                    &quot;<strong>C</strong>har&quot;,
+                    &quot;<strong>D</strong>ouble&quot;,
+                    &quot;<strong>F</strong>loat&quot;,
+                    &quot;<strong>I</strong>nt&quot;,
+                    &quot;<strong>L</strong>ong&quot;,
+                    &quot;<strong>SH</strong>ort&quot;, and
+                    &quot;<strong>ST</strong>ring&quot;.
+
+        <tr class="TableRowColor"><!-- table row -->
+        <td>
+        <td align="right"> <code>value </code>
+        <td> Mandatory.
 
 
         <!-- -------------------------------------------------------- -->
@@ -3223,6 +3258,27 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
                   }
         // ==================================================================
 
+           case CREATE_STRICT_ARGUMENT :        // rgf, 2018-11-01
+               {
+                  /* ********************************************************
+                   * value = BSF( 'strictArg', strType, strValue )
+                   * returns an instance of RexxStrictArgument using convFromRexx
+                   *
+                   * - arrayObject:   array to be worked upon
+                   *
+                   *********************************************************/
+                      if (args.length!=3)
+                      {
+                          throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                   "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" invalid # of args; usage: value = BSF( " +
+                                  "'"+args[0]+"', type, value )");
+                      }
+                      Object rsa = convFromRexx(args[1],args[2]);
+
+                      return makeString4Rexx ( this, rsa );
+
+               }
+               // ==================================================================
 
 
           case EXIT               :
@@ -3656,6 +3712,7 @@ if (bDebug)
                                 catch (Exception e) {};
                             }
                         }
+// rgf, 20181030, temporarily: System.err.println("\n===> INVOKE... SUCCESSFUL, rru.debugString=["+rru.debugString()+"]\n<===\n" );
 
                         return makeString4Rexx(this, rru.result);   // return whatever we have
                     }
@@ -3663,7 +3720,7 @@ if (bDebug)
                     // no matching Method object found or execution error
                     if (rru.throwable != null)
                     {
-System.err.println(this+": rru.throwable="+rru.throwable);
+// rgf, 20181030, temporarily: System.err.println(this+": rru.throwable="+rru.throwable);
                         throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                  "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": "+
                                  "\n\tbean:   ["+rru.bean+"] type: ["+rru.beanClz+"]"+
@@ -4804,7 +4861,59 @@ System.err.println("//++// increaseRefCounter/(registerBean), RAJBean: "+bean+" 
       *
       * @return  the converted value.
       */
+
     Object convFromRexx(String type, String value) throws BSFException
+    {
+        final boolean bDebug=  // true;   // if true, show debug infos
+                               false;
+
+if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=\""+type+"\", value=\""+value+"\" value==null: \""+(value==null)+"\" null4Rexx=\""+null4Rexx+"\"");
+        if (value==null) return null;
+
+        if (type.length()>0)
+        {
+             if (value.equals(null4Rexx))   // Rexx-String indicating "null" ?
+                return null;
+
+             if (Character.toUpperCase(type.charAt(0))=='O' )   // if 'Object', just return the object from the registry
+             {
+                 // no object indicated, hence return null
+                 if (value.equals("")) return null;
+
+                 Object tmp;
+                 tmp=lookupBean(this, value);
+
+                 if (tmp==null){
+                     throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                         "Bean ["+value+"] not registered.");
+                 }
+
+                 return tmp;
+             }
+                // either strictly a String or a primitive type as indicated
+
+             // return new RexxStrictArgument(this, type, value);  // create a RexxStrictArgument with the corresponding primitive class object
+
+             Object res=new RexxStrictArgument(this, type, value);
+
+if (bDebug)
+System.err.println("RexxAndJava.convFromRexx(): type=\""+type+"\", value=\""+value+"\" value==null: \""+(value==null)+"\" null4Rexx=\""+null4Rexx+"\"; returning --> ["+res+"]");
+             return res;
+
+
+
+         }
+
+            // if we arrive here, we have a problem ...
+         throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+             "unknown argType \""+type+"\" or incompatible value \""+value+"\".");
+    }
+
+
+
+
+
+    Object convFromRexx_ori20181101(String type, String value) throws BSFException
     {
         final boolean bDebug=  // true;   // if true, show debug infos
                                false;
@@ -5028,6 +5137,25 @@ if (bDebug) System.err.println("\t\tfuncArgs[k]=\""+funcArgs[k]+"\" ---> \""+par
             {
 if (bDebug) System.err.println("\t           ) ---> k=\""+k+"\": null!");
                 coercedArgs[k]=null;
+            }
+
+                // rgf, 2018-11-01, special case that a strict argument type is requested
+            else if (funcArgs[k] instanceof RexxStrictArgument)
+            {
+                RexxStrictArgument rsa=(RexxStrictArgument) funcArgs[k];    // cast to proper class
+if (bDebug)
+   System.err.println("\t/-->/\tcoerceArgs(): RexxStrictArgument: paramTypes[k]=["+paramTypes[k]+", rsa=["+rsa
+                       +"]: clz==rsa.classObject =["+(paramTypes[k]==rsa.classObject)+"]");
+                if (paramTypes[k] != rsa.classObject)   // does not strictly equal the required class
+                {
+if (bDebug)
+   System.err.println("\t/-->/\tcoerceArgs(): RexxStrictArgument: paramTypes[k]=["+paramTypes[k]+" != rsa.classObject=["+rsa.classObject+"]");
+                    return null;    // indicate not successful
+                }
+                coercedArgs[k]=rsa.value;
+if (bDebug)
+System.err.println("\t/-->/\tcoercedArgs[k]: ["+coercedArgs[k]+"] <-- rsa.value=["+rsa.value+"]");
+                continue;
             }
 
                 // rgf, 2005-06-18, special case found: an interface is given, that is available for String as well!

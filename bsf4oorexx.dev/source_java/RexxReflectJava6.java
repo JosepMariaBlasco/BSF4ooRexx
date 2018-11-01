@@ -41,10 +41,17 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.0, 2018-02-22
+ * @version 1.01, 2018-02-22, 2018-11-01
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
+
+/*
+    2018-11-01, rgf:    - adjusting to new usage of RexxStrictArgument, which makes sure that its classObject
+                          is used to strictly compare signatures; is used in picking a strictly matching
+                          candidate field, method, constructor
+                        - remove access to RexxReflectUtil.bTryCoercions as that field is not used anymore
+*/
 
 
 class RexxReflectJava6 implements RexxReflectInterface
@@ -558,7 +565,7 @@ if (bDebug) System.err.println("         -> RexxReflectJava6.processField(): => 
             newValue =rru.funcArgs[0];        // get new value to set the Field to; convFromRexx already carried out!
             tmpFieldType=tmpField.getType();
                 // newValue can be null, a Java object (from the registry) or a string
-            if ( newValue != null && rru.bTryCoercions)
+            if ( newValue != null )
             {
                 newValue=rru.rajo.coerceArgs( new Object[]{newValue}, new Class[]{tmpFieldType})[0];   // coerce newValue appropriately
                 if (newValue==null)             // coercion did not work, not a proper argument for this Field, return
@@ -806,13 +813,11 @@ if (bDebug)
 
         try     // invoke field set operation
         {
-            Object newValue=rru.funcArgs[0];        // get new value to set the Field to; convFromRexx already carried out!
+            Object newValue=rru.funcArgs[0];    // get new value to set the Field to; convFromRexx already carried out!
             Class tmpFieldType=null;
 
-            if (    newValue != null                // newValue can be null, a Java object (from the registry)  or a string
-                 && rru.bTryCoercions )
+            if ( newValue != null )             // newValue can be null, a Java object (from the registry)  or a string
             {
-                // newValue=rru.rajo.coerceArgs( new Object[]{newValue}, new Class[]{tmpFieldType})[0];   // coerce newValue appropriately
                 newValue=rru.rajo.coerceArgs( new Object[]{newValue}, cfm.parameterTypes)[0];   // coerce newValue appropriately
             }
 
@@ -1187,10 +1192,7 @@ System.err.println("// // // RexxReflectJava6.processMethod(), parameterTypes.le
         }
 
             // coerce arguments?
-        Object [] coercedArgs= ( parameterTypes.length==0 ? rru.funcArgs
-                                                          : ( rru.bStrict ? rru.funcArgs // if bStrict, do not coerce arguments!
-                                                                          : rru.rajo.coerceArgs(rru.funcArgs,parameterTypes) )
-                          );
+        Object [] coercedArgs= ( parameterTypes.length==0 ? rru.funcArgs : rru.rajo.coerceArgs(rru.funcArgs,parameterTypes) );
 
 if (bDebug)
 {
@@ -1360,7 +1362,7 @@ if (bDebug) System.err.println("...invokeMethod(): cfm=["+cfm+"] | rru.choice=["
 
             // coerce arguments?
         Object [] coercedArgs;
-        if (rru.bStrict || parameterTypes.length==0)    // not expecting an argument or strict
+        if (parameterTypes.length==0)    // not expecting an argument or strict
         {
             coercedArgs=rru.funcArgs;       // empty Object array
         }
@@ -1562,10 +1564,7 @@ if (bDebug) System.err.println("// // // RexxReflectJava6.processConstructor(), 
         }
 
             // coerce arguments?
-        Object [] coercedArgs= ( parameterTypes.length==0 ? rru.funcArgs
-                                                          : ( rru.bStrict ? rru.funcArgs // if bStrict, do not coerce arguments!
-                                                                          : rru.rajo.coerceArgs(rru.funcArgs,parameterTypes) )
-                          );
+        Object [] coercedArgs= ( parameterTypes.length==0 ? rru.funcArgs : rru.rajo.coerceArgs(rru.funcArgs,parameterTypes) );
 
         if (coercedArgs==null)      // could not be coerced successfully, coerceArgs() returned null!
         {
@@ -1671,7 +1670,7 @@ if (bDebug) System.err.println("...invokeConstructor(): cc=["+cc+"] | rru.choice
             return;
         }
 
-        if (rru.bStrict || cc.parameterTypes.length==0)       // not expecting an argument (a static ConstructorHandle in hand then)
+        if (cc.parameterTypes.length==0)       // not expecting an argument (a static ConstructorHandle in hand then)
         {
             coercedArgs=rru.funcArgs;       // use rru.funcArgs
         }

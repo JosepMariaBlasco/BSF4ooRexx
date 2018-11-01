@@ -22,10 +22,15 @@ import java.util.HashMap;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.0, 2018-01-08
+ * @version 1.01, 2018-11-01
  * @since BSF4ooRexx 600
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
+
+
+ /*
+     2018-11-01, rgf: - added enum value "CREATE_STRICT_ARGUMENT"
+*/
 
 
 enum InvocationType {
@@ -47,6 +52,8 @@ enum InvocationType {
 
     LOAD_CLASS                  ( "loadClass"                ) , //=  30  2006-01-05, ---rgf: new subfunction to get a thread-context loaded class
     UNREGISTER_BEAN             ( "unregisterBean"           ) , //=  27
+
+    CREATE_STRICT_ARGUMENT      ( "strictArg"                ) , // rgf, 2018-11-01: create and return a RexxStrictArgument
 
 
     INCREASE_REF_COUNTER        ( "increaseRefCounter"       ) , //=  52  2015-08-04, ---rgf

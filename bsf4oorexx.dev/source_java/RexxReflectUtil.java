@@ -39,10 +39,15 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.0, 2018-01-08-2018-02-18, 2018-03-10
+ * @version 1.01, 2018-01-08-2018-02-18, 2018-03-10; 2018-10-31
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
+
+/* changes:
+            20181031, ---rgf: added field 'result' to debugString()'s output
+            20181101, ---rgf: removed field 'bTryCoercions', not used anymore, now that RexxStrictArgument in place
+*/
 
 
 class RexxReflectUtil
@@ -105,10 +110,6 @@ class RexxReflectUtil
      *  will be turned into a Rexx string.
     */
     boolean bReturnJSO    = false ;     // return a JSO (Java String Object reference instead of the String value)?
-    /** Determines whether the arguments should be coerced to supplied types. */
-    boolean bTryCoercions = false ;     // use type coercion to Java for the supplied Rexx values depending on the Method,
-                                        // Constructor or Field object in hand; cf.
-                                        // "static Object [] RexxAndJava.coerceArgs(Object [] funcArgs, Class [] paramTypes)"
 
     /** Determines whether a stored field cache entry is actually a method cache entry and vice versa, same for method cache entries. */
     boolean bOtherKind    = false ;     // if true: seeking setXXX, getXXX, isXXX, hasXXX fields for the supplied fieldName
@@ -233,12 +234,12 @@ if (bDebug)
         {
             case SET_FIELD_VALUE_STRICT     :
                    // if only the value was supplied, we take the first Field to which the value can be coerced to
-                 bTryCoercions=(   rexxArgs.length==4  ||
-                                 ( rexxArgs[3]==null || rexxArgs[4]==null )
-                 );
+                 boolean bCoerce=(   rexxArgs.length==4  ||
+                                   ( rexxArgs[3]==null || rexxArgs[4]==null )
+                                 );
 
                  // coerce Rexx arguments to Java objects according to the supplied type indicator
-                 if (bTryCoercions)      // convert value according to given strict type
+                 if (bCoerce)      // convert value according to given strict type
                  {
                      funcArgs=new Object[1];
                          // fifth argument missing or null ?
@@ -278,8 +279,6 @@ if (bDebug)
                 break;
 
             default:
-                bTryCoercions=true;     // use coercion to find matching reflected Method, Constructor or Field object
-
                     // resolve function-arguments if possible
                 funcArgs = (rexxArgs.length==3 ? emptyObjArr : new Object [(rexxArgs.length-3)] ) ;
                     // convert arguments to Java type, if possible
@@ -441,10 +440,8 @@ if ( bean != null && bean instanceof String && rexxArgs[1] != null && bean.equal
         newRru.bStatic       = this.bStatic        ;    // look for STATIC (field, method) only?
         newRru.bFieldGet     = this.bFieldGet      ;    // a get field invocation?
         newRru.bReturnJSO    = this.bReturnJSO     ;    // return a JSO (Java String Object reference instead of the String value)?
-        newRru.bTryCoercions = this. bTryCoercions ;    // use type coercion to Java for the supplied Rexx values depending on the Method,
-                                                        // Constructor or Field object in hand; cf.
-                                                        // "static Object [] RexxAndJava.coerceArgs(Object [] funcArgs, Class [] paramTypes)"
-        newRru.bOtherKind    = this.bOtherKind ;        // if true: seeking setXXX, getXXX, isXXX, hasXXX fields for the supplied fieldName
+
+        newRru.bOtherKind    = this.bOtherKind     ;    // if true: seeking setXXX, getXXX, isXXX, hasXXX fields for the supplied fieldName
                                                         // to mimickry ooRexx attributes; if a field found, store its MethodHandle in cachedFields instead
 
         newRru.bRecursing    = this.bRecursing     ;    // if true: in recursion state for setXXX, getXXX, isXXX, hasXXX fields for the supplied methodName
@@ -486,10 +483,10 @@ if ( bean != null && bean instanceof String && rexxArgs[1] != null && bean.equal
             +"\ttmpRexxArgs[]   =\""+tmpRexxArgs   +"\", tmpRexxArgs.length=\""+tmpRexxArgs.length+"\": "+Arrays.toString(tmpRexxArgs)+"\n"
             +"\tfuncArgs[]      =\""+funcArgs + (funcArgs==null ? (null+"\"") : "\", funcArgs.length   =\""+funcArgs.length+"\": "+Arrays.toString(funcArgs))+"\n"
             +"\tbReturnJSO      =\""+bReturnJSO    +"\"\n"
-            +"\tbTryCoercions   =\""+bTryCoercions +"\"\n"
-            +"\tthrowable       =\""+(throwable==null ? null : throwable.toString() +"\"\n"
+            +"\tthrowable       =\""+(throwable==null ? null : throwable.toString()) +"\"\n"
+            +"\tresult ******** =\""+result        +"\"\n"     // rgf, 20181030
             +"<---\n"
-            );
+            ;
     }
 
 
