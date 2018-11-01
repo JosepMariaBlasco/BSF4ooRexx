@@ -15,6 +15,10 @@
             2018-03-04, rgf, corrected and optimized code in class "BirthdayStatisticsController"
             2018-03-24, rgf, - added "file:" protocol to "address_book_128.png"
                              - make sure that we change into the directory of this program
+            2018-11-01, rgf, adjust for new behaviour of the BOX()-routine which now strictly
+                             only honor primitive class versions;
+                             - adjusted method "createMonthDataSeries" in class "BirthdayStatisticsController"
+                               accordingly
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -475,14 +479,19 @@ syntax:
 ::method handleDeletePerson   /* invoked when the user clicks the delete button   */
   expose personTable
 
+signal on syntax
   selectedIndex=personTable~getSelectionModel~getSelectedIndex
 
   if selectedIndex >= 0 then
   do
      -- IMPORTANT: we must use bsf.invokeStrict() to become able to give explicitly the argument's type as otherwise
      --            it may be possible that the wrong "remove(Object)" method is used instead of "remove(int)" (both
-     --            methods behave differntly)
-     personTable~getItems~bsf.invokeStrict("remove", "int", selectedIndex) -- we want the remove method with the primitive int argument!
+     --            methods behave differntly):
+     --
+     --     personTable~getItems~bsf.invokeStrict("remove", "int", selectedIndex) -- we want the remove method with the primitive int argument!
+
+     -- alternatively, use the BSF.CLS BOX() routine which makes sure that the remove method with the 'int' signature gets picked:
+     personTable~getItems~remove(box('int',selectedIndex))  -- 'selectedIndex' will now be used strictly as a primitive Java 'int' value!
   end
   else
   do
@@ -501,6 +510,12 @@ syntax:
         .bsf.dialog~messageBox("Please select a person in the table.", "No Selection", "warning")
       end
   end
+  return
+
+syntax:
+  co=condition('o')
+  call "rgf_util.rex"
+  say "MainApp.rex-handleDeletePerson:" ppCondition(co)
 
 
 /* for tutorial part 3: fill-in the Person's details */
@@ -1053,8 +1068,9 @@ syntax:
   series=.bsf~new("javafx.scene.chart.XYChart$Series")
   seriesData=series~getData
   do i=1 to monthCounter~size
-      -- force number by boxing montCounter value to int
-     monthData=.bsf~new("javafx.scene.chart.XYChart$Data", monthNames[i], box("int",monthCounter[i]))
+        -- force java.lang.Number by creating a java.lang.Integer; this way XYChart$Data is able to use the last argument correctly
+     intMonth=.java.lang.Integer~new(monthCounter[i])
+     monthData=.bsf~new("javafx.scene.chart.XYChart$Data", monthNames[i], intMonth)
      seriesData~add(monthData)
   end
   return series
@@ -1287,7 +1303,7 @@ syntax:     -- Rexx condition raised
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016-2017 Rony G. Flatscher
+         Copyright 2016-2018 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.
