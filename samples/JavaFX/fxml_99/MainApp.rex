@@ -19,6 +19,8 @@
                              only honor primitive class versions;
                              - adjusted method "createMonthDataSeries" in class "BirthdayStatisticsController"
                                accordingly
+            2018-11-02, rgf, adjust again to the new box.strictArg() routine that allows the original
+                             BOX() routine to remain unchanged
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -490,8 +492,8 @@ signal on syntax
      --
      --     personTable~getItems~bsf.invokeStrict("remove", "int", selectedIndex) -- we want the remove method with the primitive int argument!
 
-     -- alternatively, use the BSF.CLS BOX() routine which makes sure that the remove method with the 'int' signature gets picked:
-     personTable~getItems~remove(box('int',selectedIndex))  -- 'selectedIndex' will now be used strictly as a primitive Java 'int' value!
+     -- alternatively, use the BSF.CLS Box.strictArg() routine which makes sure that the remove method with the 'int' signature gets picked:
+     personTable~getItems~remove(box.strictArg('int',selectedIndex))  -- 'selectedIndex' will now be used strictly as a primitive Java 'int' value!
   end
   else
   do
