@@ -22,7 +22,7 @@ import org.apache.bsf.BSFException;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.0, 2018-11-01
+ * @version 1.0, 2018-11-01, 2018-11-02
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -99,7 +99,7 @@ public class RexxStrictArgument
 
             @param rajo the <code<RexxAndJava</code> object to use for testing against the Rexx string representation for <code>null</code>
 
-            @param primitive type, one of
+            @param type primitive type, one of
                         &quot;<strong>BO</strong>olean&quot; (i.e. '0' or '1'),
                         &quot;<strong>BY</strong>te&quot;,
                         &quot;<strong>C</strong>har&quot;,
@@ -110,10 +110,14 @@ public class RexxStrictArgument
                         &quot;<strong>SH</strong>ort&quot;, and
                         &quot;<strong>ST</strong>ring&quot;.
 
-            @param value the value from Rexx (a string) to be converted to the Java type
+            @param strValue the value to use for creating the desired type
+
+            @param bPrimitive if <code>true</code> the primitive class object, otherwise the primitive's wrapper class object should be used
+
+            @return value the value from Rexx (a string) to be converted to the Java type
 
      */
-    RexxStrictArgument (RexxAndJava rajo, String type, String strValue) throws BSFException // this one gets used via RexxAndJava only
+    RexxStrictArgument (RexxAndJava rajo, String type, String strValue, boolean bPrimitive) throws BSFException // this one gets used via RexxAndJava only
     {
          if (type!=null)        // only check further, if primitive type is given
          {
@@ -131,7 +135,7 @@ public class RexxStrictArgument
 
                                case 'H':    // short: Short value
                                          value      =Short.valueOf(strValue) ;
-                                         classObject=short.class;   // primitive class
+                                         classObject=( bPrimitive ? short.class : Short.class) ;   // primitive class
                                          return;
 
                                default:  break;     // unknown type
@@ -139,7 +143,7 @@ public class RexxStrictArgument
 
                  case 'I':  // int: Integer value
                            value      =Integer.valueOf(strValue);
-                           classObject=int.class;   // primitive class
+                           classObject=( bPrimitive ? int.class : Integer.class) ;   // primitive class
                            return;
 
                  case 'C':
@@ -147,7 +151,7 @@ public class RexxStrictArgument
                             //                  because programmer supplied 0x00 on the Rexx side which gets transformed
                             //                  to an empty string in JNI's NewStringUTF()
 
-                            classObject=char.class; // primitive class
+                            classObject=( bPrimitive ? char.class : Character.class) ; // primitive class
                             if (strValue==null || strValue.length()==0)  // 0x00 from the Rexx side or empty string: deal with as 0x00
                             {
                                 value = Character.valueOf((char)0);       // create 0x00 char
@@ -161,7 +165,7 @@ public class RexxStrictArgument
                             switch (Character.toUpperCase(type.charAt(1)))
                             {
                                case 'O':    // Boolean: anything but "1" or "true" is regarded to be false
-                                         classObject=boolean.class; // primitive class
+                                         classObject=( bPrimitive ? boolean.class : Boolean.class); // primitive class
                                          if (strValue!=null && (strValue.equals("1") || strValue.equalsIgnoreCase("true")))
                                              value=Boolean.TRUE;
                                          else
@@ -170,29 +174,29 @@ public class RexxStrictArgument
 
                                case 'Y':    // Byte
                                          value      =Byte.valueOf( strValue );
-                                         classObject=byte.class;    // primitive class
+                                         classObject=( bPrimitive ? byte.class : Byte.class );    // primitive class
                                          return;
 
                                default:  break;     // unknown type
                             }
 
                  case 'F':  value      =Float.valueOf(strValue);
-                            classObject=float.class;    // primitive class
+                            classObject=( bPrimitive ? float.class  : Float.class );    // primitive class
                             return;
 
                  case 'L':  value      =Long.valueOf(strValue) ;
-                            classObject=long.class;     // primitive class
+                            classObject=( bPrimitive ? long.class   : Long.class );     // primitive class
                             return;
 
                  case 'D':  value      =Double.valueOf(strValue);
-                            classObject=double.class;     // primitive class
+                            classObject=( bPrimitive ? double.class : Double.class );     // primitive class
                             return;
              }
          }
 
             // if we arrive here, we have a problem ...
          throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-             "unknown type ["+type+"] or incompatible strValue ["+strValue+"]");
+             "RexxStrictArgument: argument \"type\": unknown ["+type+"] or argument \"strValue\" ["+strValue+"] not compatible");
     }
 
     /** Return String representation, showing values of fields.
