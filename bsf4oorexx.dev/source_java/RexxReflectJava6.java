@@ -41,7 +41,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.01, 2018-02-22, 2018-11-01
+ * @version 1.02, 2018-02-22, 2018-11-01, 2018-11-03
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -51,6 +51,10 @@ import        java.lang.reflect.Modifier;
                           is used to strictly compare signatures; is used in picking a strictly matching
                           candidate field, method, constructor
                         - remove access to RexxReflectUtil.bTryCoercions as that field is not used anymore
+
+    2018-11-01, rgf:    - reflectMethod(): special handling for primitive classes needed, because a primitive
+                          class object does not have a superclass, so no instance methods can be invoked, which we want
+                          for ooRexx users; hence manually setting the superclass to the java.lang.Object class
 */
 
 
@@ -874,7 +878,8 @@ if (debugLevel>2) System.err.println("// // :) -> RexxReflectJava6.invokeFieldSe
      */
     void reflectMethod(RexxReflectUtil rru) throws BSFException
     {
-if (bDebug) System.out.println("... reflectMethod(): arrived, cachedMethods.containsKey("+rru.beanClz+"): \""+cachedMethods.containsKey(rru.beanClz)+"\"");
+if (bDebug)
+System.out.println("... reflectMethod(): arrived, cachedMethods.containsKey("+rru.beanClz+"): \""+cachedMethods.containsKey(rru.beanClz)+"\"");
 
         // let us first check, whether we have a usable cache entry already
         if (useCaching && cachedMethods.containsKey(rru.beanClz))
@@ -934,7 +939,8 @@ System.err.println("... reflectMethod(): WOW, found cached Method/MethodHandle f
                                         // two rounds (deviating to Class->Object) such that we also accept
                                         // instance methods for the class object
 
-if (bDebug) System.out.println("... reflectMethod(): ---> no appropriate cache found, starting reflection with rru.beanClz=\""+tmpClz+"\"");
+if (bDebug)
+System.out.println("... reflectMethod(): ---> no appropriate cache found, starting reflection with rru.beanClz=\""+tmpClz+"\"");
 
         while (rru.success==false)   // as long as we have not found a matching Method object, keep processing
         {
@@ -974,7 +980,11 @@ if (bDebug) System.out.println("... reflectMethod(): ---> no appropriate cache f
                 }
             }
 
-            tmpClz=tmpClz.getSuperclass();  // try next superclass
+            // 2018-11-03, rgf: special handling for primitive classes needed, because a primitive class object
+            //                  does not have a superclass, so no instance methods can be invoked, which we want
+            //                  for ooRexx users; hence manually setting the superclass to the java.lang.Object class
+            tmpClz=(tmpClz.isPrimitive() ? Object.class : tmpClz.getSuperclass());  // try next superclass
+
             if (tmpClz==null)               // no more superclass, we are done
             {
                 break;
@@ -982,6 +992,7 @@ if (bDebug) System.out.println("... reflectMethod(): ---> no appropriate cache f
 
             // special case: bean is a class, so if we arrive at Object, detour it to look up Class first and then Object,
             // accept instance methods for these two classes
+
             if (rru.bBeanIsClass && tmpClz==Object.class && !bLastTwoRuns4Clz)
             {
                 tmpClz=Class.class;         // deviate to process Class next

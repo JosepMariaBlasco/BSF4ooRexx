@@ -46,7 +46,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.02, 2018-11-01
+ * @version 1.03, 2018-11-01, 2018-11-03
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -64,6 +64,10 @@ import        java.lang.reflect.Modifier;
                               is used to strictly compare signatures; is used in picking a strictly matching
                               candidate field, method, constructor
                             - remove access to RexxReflectUtil.bTryCoercions as that field is not used anymore
+
+    2018-11-01, rgf:    - reflectMethod(): special handling for primitive classes needed, because a primitive
+                          class object does not have a superclass, so no instance methods can be invoked, which we want
+                          for ooRexx users; hence manually setting the superclass to the java.lang.Object class
 */
 
 
@@ -1271,7 +1275,13 @@ if (bDebug) System.out.println("... reflectMethod(): ---> no appropriate cache f
                 }
             }
 
-            tmpClz=tmpClz.getSuperclass();  // try next superclass
+
+            // 2018-11-03, rgf: special handling for primitive classes needed, because a primitive class object
+            //                  does not have a superclass, so no instance methods can be invoked, which we want
+            //                  for ooRexx users; hence manually setting the superclass to the java.lang.Object class
+            // tmpClz=tmpClz.getSuperclass();  // try next superclass
+            tmpClz=(tmpClz.isPrimitive() ? Object.class : tmpClz.getSuperclass());  // try next superclass
+
             if (tmpClz==null)               // no more superclass, we are done
             {
                 break;

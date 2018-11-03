@@ -198,11 +198,11 @@ if (bDebug)
 //     System.err.println(": rexxArgs=\""+Arrays.deepToString(rexxArgs)+"\"");
 }
                 }
+
+                // 2018-11-03, rgf: no special handling for the primitive classes here
                 bBeanIsClass=bean instanceof Class;     // did we receive a class object to work with?
                 beanClz   = (bBeanIsClass ? (Class) bean : bean.getClass() );
-
         }
-
 
         switch (choice)     // a static operation requeste?
         {
