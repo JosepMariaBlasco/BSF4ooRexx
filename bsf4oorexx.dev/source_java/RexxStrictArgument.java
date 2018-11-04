@@ -22,7 +22,7 @@ import org.apache.bsf.BSFException;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.0, 2018-11-01, 2018-11-02
+ * @version 1.0, 2018-11-01, 2018-11-04
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -86,7 +86,7 @@ public class RexxStrictArgument
         if ( !type.isAssignableFrom(value.getClass()) )
         {
             throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                     "RexxScriptArgument: argument \"value\"=["+value+"] (class=["+value.getClass()+"]) cannot be cast to argument \"type\"=["+type+"]");
+                     "RexxScriptArgument: argument \"value\"=["+value+"] (class=["+(value!=null ? value.getClass() : null)+"]) cannot be cast to argument \"type\"=["+type+"]");
         }
 
         classObject=type;       // now only this type gets used
@@ -107,6 +107,7 @@ public class RexxStrictArgument
                         &quot;<strong>F</strong>loat&quot;,
                         &quot;<strong>I</strong>nt&quot;,
                         &quot;<strong>L</strong>ong&quot;,
+                        &quot;<strong>O</strong>bject&quot;,
                         &quot;<strong>SH</strong>ort&quot;, and
                         &quot;<strong>ST</strong>ring&quot;.
 

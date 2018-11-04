@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2018-11-02
+  * @version 6.0.0, 2018-11-04
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -54,6 +54,9 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2018-11-03, rgf: - subfunction CREATE_STRICT_ARGUMENT: make it usable if not employing BSF.CLS
+                      - some tidying up
+
      2018-11-02, rgf: - adjust arrayPutStrict() to use RexxStrictArgument directly to wrap primitive value
 
      2018-11-01, rgf: - changed convFromRexx() and coerceArgs() to use the new class RexxStrictArgument that
@@ -560,7 +563,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20181102";
+    static final public String version = "600.20181104";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -3070,7 +3073,48 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" invalid # of args; usage: value = BSF( " +
                                   "'"+args[0]+"', type, value [, bPrimitive] )");
                       }
+                      // get objects from registry, if registered; determine whether .nil/null (if using without BSF.CLS)
+                      Object oType =convFromRexx(args[1]);
+                      Object oValue=convFromRexx(args[2]);
 
+                      if (oType==null && oValue==null)
+                      {
+                          throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                   "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" argument \"type\" must not be [null], if argument value is [null]");
+                      }
+
+                      if (oType==null)   // argument with value <null> to be strictly used for supplied type
+                      {
+                          return makeString4Rexx ( this, new RexxStrictArgument(oValue) );
+                      }
+/*
+                      else if (oValue==null) // a null that should be strictly used with the supplied type
+                      {
+                          if (! (oType instanceof Class) )
+                          {
+                              throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" argument \"type\" must be a java.lang.Class object, supplied bean name: ["+args[1]+"], which resolves to: ["+oType+"]");
+                          }
+
+                          return makeString4Rexx ( this, new RexxStrictArgument((Class)oType, oValue) );
+                      }
+*/
+                      else if (! (oType instanceof String) )
+                      {
+                          if (! (oType instanceof Class) )
+                          {
+                              throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+" argument \"type\" must be a java.lang.Class object, supplied bean name: ["+args[1]+"], which resolves to: ["+oType+"]");
+                          }
+                          return makeString4Rexx ( this, new RexxStrictArgument((Class)oType, oValue) );
+                      }
+
+                      if (Character.toUpperCase(args[1].charAt(0))=='O')   // "Object"? Use appropriate constructor.
+                      {
+                          return makeString4Rexx ( this, new RexxStrictArgument(oValue) );
+                      }
+
+                      // rexx indicator type version, all arguments are strings
                       boolean bPrimitive=true;      // default to true (set classObject to primitive class object)
                       if (args.length==4 && args[3]!=null)
                       {
@@ -3084,10 +3128,8 @@ if (bDebug)  System.err.println("ARRAY_AT(): aw.get(indices)=["+aw.get(indices)+
                           }
                       }
 
-                        // get and return RexxStrictArgument
-                      Object rsa = new RexxStrictArgument(this, args[1], args[2], bPrimitive);
-
-                      return makeString4Rexx ( this, rsa );
+                        // get and return RexxStrictArgument; make sure usable if not employing BSF.CLS
+                      return makeString4Rexx (this, new RexxStrictArgument(this, args[1], args[2], bPrimitive) );
 
                }
                // ==================================================================
@@ -4692,8 +4734,7 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=\""+type+"\", v
                  // no object indicated, hence return null
                  if (value.equals("")) return null;
 
-                 Object tmp;
-                 tmp=lookupBean(this, value);
+                 Object tmp=lookupBean(this, value);
 
                  if (tmp==null){
                      throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
@@ -4703,9 +4744,6 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=\""+type+"\", v
                  return tmp;
              }
                 // either strictly a String or a primitive type as indicated
-
-             // return new RexxStrictArgument(this, type, value);  // create a RexxStrictArgument with the corresponding primitive class object
-
              Object res=new RexxStrictArgument(this, type, value, true);
 
 if (bDebug)
@@ -4719,110 +4757,6 @@ System.err.println("RexxAndJava.convFromRexx(): type=\""+type+"\", value=\""+val
     }
 
 
-
-
-
-    Object convFromRexx_ori20181101(String type, String value) throws BSFException
-    {
-        final boolean bDebug=  // true;   // if true, show debug infos
-                               false;
-
-if (bDebug) System.err.println("RexxAndJava.convFromRexx(): type=\""+type+"\", value=\""+value+"\" value==null: \""+(value==null)+"\" null4Rexx=\""+null4Rexx+"\"");
-        if (value==null) return null;
-
-         if (value.equals(null4Rexx))   // Rexx-String indicating "null" ?
-            return null;
-
-
-         if (type.length()>0)
-         {
-             switch ( Character.toUpperCase(type.charAt(0)) )
-             {
-
-                 case 'S':
-                            if (type.length() == 1) break;    // leave switch
-                            switch (Character.toUpperCase(type.charAt(1)))
-                            {
-                               case 'T':    // String
-                                         return value;
-
-                               case 'H':    // Short
-                                         // return new Short( value );
-                                         return Short.valueOf( value );
-
-                               default:  break;     // unknown type
-                            }
-
-                 case 'O':  // no object indicated, hence return null
-                            if (value.equals("")) return null;
-
-                            Object tmp;
-                            tmp=lookupBean(this, value);
-
-                            if (tmp==null){
-                                throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                                    "Bean ["+value+"] not registered.");
-                            }
-
-                            return tmp;
-
-                 // case 'I':  return new Integer      (value);
-                 case 'I':  return Integer.valueOf(value);
-                 case 'C':
-                            // char/Character - deal with the special case that an empty string is supplied, probably
-                            //                  because programmer supplied 0x00 on the Rexx side which gets transformed
-                            //                  to an empty string in JNI's NewStringUTF()
-
-                            if (value==null || value.length()==0)  // 0x00 from the Rexx side or empty string: deal with as 0x00
-                            {
-
-    if (bDebug)
-    {
-        // Character res=new Character((char)0);
-        Character res=Character.valueOf((char)0);
-        System.out.println("RexxAndJava.convFromRexx(): new Character: res=\""+res+"\", Integer.toHexString()=\""+Integer.toHexString(res.charValue())+"\"");
-    }
-                                // return new Character((char)0);       // create 0x00 char
-                                return Character.valueOf((char)0);       // create 0x00 char
-                            }
-
-                            // return new Character    (value.charAt(0));
-                            return Character.valueOf(value.charAt(0));
-
-                 case 'B':  // need second character
-                            if (type.length() == 1) break;    // leave switch
-                            switch (Character.toUpperCase(type.charAt(1)))
-                            {
-                               case 'O':    // Boolean
-                                         // return new Boolean( value.equals("1") || value.equalsIgnoreCase("true") );
-                                         if (value.equals("1") || value.equalsIgnoreCase("true"))
-                                         {
-                                             return Boolean.TRUE;
-                                         }
-                                         return Boolean.FALSE;
-
-                               case 'Y':    // Byte
-                                         // return new Byte( value );
-                                         return Byte.valueOf( value );
-
-                               default:  break;     // unknown type
-                            }
-
-
-                 // case 'F':  return new Float        (value);
-                 case 'F':  return Float.valueOf (value);
-                 // case 'L':  return new Long         (value);
-                 case 'L':  return Long.valueOf  (value);
-                 // case 'D':  return new Double       (value);
-                 case 'D':  return Double.valueOf(value);
-
-             }
-         }
-
-            // if we arrive here, we have a problem ...
-         throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-             "unknown argType \""+type+"\" or incompatible value \""+value+"\".");
-    }
 
 
     /** Converts the string from the JNI to the indicated primitive/wrapper type, using

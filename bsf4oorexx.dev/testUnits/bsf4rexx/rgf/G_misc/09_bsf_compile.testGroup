@@ -2,10 +2,12 @@
 /*
    name:             rexx_testBsfIsA.testGroup
    author:           Rony G. Flatscher
-   version:          1.0.0
+   version:          1.0.1
    date:             2018-03-05
    license:          ASF 2.0 (Apache Software License)
    purpose:          test bsf.compile(javaClzName,code)
+
+   changes:          rgf, 2018-11-02: starting with Java 8 access to a non-public class will cause an error
 */
 
   parse version '_' v '.'       -- extract major version (::resource directive needs ooRexx >=5)
@@ -77,7 +79,10 @@ return testResult
     code=.resources~non_public.oha.java~toString
     clzName=extractJavaClassName(code)
     self~assertNotSame("Oha3", clzName)         -- extractJavaClassName() only extracts "public" . "class" clzName . "{"
-    self~expectSyntax(40.900)
+
+    if .bsf4rexx~java.major.version>7 then -- starting with Java 8 this syntax error will be raised, not with Java 6 or 7, rgf, 20181102
+       self~expectSyntax(40.900)
+
     clz=bsf.compile("Oha3", code)
     self~assertNotNull(clz)
     self~assertSame("oha3->aha<-3oha", clz~oha("aha"))   -- this will work

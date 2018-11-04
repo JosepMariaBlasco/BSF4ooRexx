@@ -3,12 +3,14 @@
    name:             Bean testGroup
    author:           Michael Lex
    changed:
-                     rgf, 2018-02-23: adjusted unregisterBean tests to cater for the new return value, which is an int of reference counts
-                     rgf, 2018-01-01: "setup" method added
                      rgf, 2011-02-12: allow this test to run in "java.awt.headless=true"-mode
+                     rgf, 2018-01-01: "setup" method added
+                     rgf, 2018-02-23: adjusted unregisterBean tests to cater for the new return value, which is an int of reference counts
                      rgf, 2018-02-28: remove version test (3/4)
+                     rgf, 2018-11-04: - rewrite all tests to use the procedural functions (i.e. no support from BSF.CLS!) only
+                                      - added test_30
 
-   version:          1.0.1
+   version:          1.0.2
 */
 /*
 
@@ -36,18 +38,28 @@ return testResult
 -- End of entry point.
 
 ::requires "ooTest.frm"     -- load the ooRexxUnit classes
-::requires BSF.CLS
 
 ::class "Bean.testGroup" subclass ooTestCase public
 
 ::method setup
   expose initialPrefixValue
+
+         /* load the BSF4Rexx functions and start a JVM, if necessary */
+   if rxFuncQuery("BSF") = 1 then   /* BSF() support not loaded yet ? */
+   do
+      call rxFuncAdd "BsfLoadFuncs", "BSF4ooRexx", "BsfLoadFuncs"
+      call BsfLoadFuncs          /* load all BSF*() functions  */
+      call BsfLoadJava           /* load Java                  */
+   end
+
   if \VAR(initialPrefixValue) then
   do
      initialPrefixValue=BSF("bsfPrefixReturnValue")  -- fetch current setting
      if initialPrefixValue~left(3)="<S>" then initialPrefixValue=substr(initialprefixValue,4)
   end
-  call BSF "setRexxNullString", ".NIL"    -- make sure we reset to default
+  call bsf "bsfPrefixReturnValue", 0   -- make sure no prefixes get prepended
+  call BSF "setRexxNullString", ".NIL" -- make sure we reset to default
+  call BsfShowErrorMessage 0           -- do not display error messages on stdout
 
 ::method tearDown
   expose initialPrefixValue
@@ -55,98 +67,114 @@ return testResult
   call BSF "setRexxNullString", ".NIL"    -- make sure we reset to default
 
 
-::method "test_1"
-	show_msg = BsfShowErrorMessage(0)
-	.bsf~bsf.import("java.lang.String","JString")
+::method "test_01"
 	self~expectSyntax(40.900)
-	s=.JString~newStrict("int", 5)
-
-::method "test_2"
-   .bsf~bsf.import("java.awt.Dimension", "JaD")
-   fd=.JaD~newStrict("int", 1, "int", 2)
-   self~assertEquals(1, fd~getWidth )
-   self~assertEquals(2, fd~getHeight)
+   s=bsf('newStrict', , 'java.lang.String', 'int', 5)
 
 
-::method "test_3"
-	show_msg = BsfShowErrorMessage(0)
-	.bsf~bsf.import("java.awt.TextField", "Jatf")
+::method "test_02.1"
+   fd=bsf('newStrict', , 'java.awt.Dimension', 'int', 1, 'int', 2)
+   w1=bsf('invokeStrict', fd, 'getWidth')
+   self~assertEquals(1, w1)
+   h1=bsf('invokeStrict', fd, 'getHeight')
+   self~assertEquals(2, h1)
+
+
+::method "todo test_02.2"
+   fd=bsf('new', , 'java.awt.Dimension', 1, 2)
+   w1=bsf('invoke', fd, 'getWidth')
+   self~assertEquals(1, w1)
+   h1=bsf('invoke', fd, 'getHeight')
+   self~assertEquals(2, h1)
+
+
+::method "test_03"
 	self~expectSyntax(40.900)
-	ftf=.Jatf~newStrict("int", 1, 2)
+   ftf=bsf('newStrict', , "java.awt.TextField", "int", 1, 2)
 
-::method "test_4"
-	show_msg = BsfShowErrorMessage(0)
-	.bsf~bsf.import("java.awt.TextField", "Jatf")
+::method "test_04"
 	self~expectSyntax(40.900)
-	ftf=.Jatf~newStrict("double", 5)
+   ftf=bsf('newStrict', , "java.awt.TextField", "double", 5)
 
-::method "test_5"
-   .bsf~bsf.import("java.awt.Dimension", "JaD")
-   fd=.JaD~newStrict("int", 1, "int", 2)
-	var=bsf.unregisterBean(fd)
-	var=bsf.unregisterBean(fd)
-	self~assertEquals(-1, var)
+::method "test_05"
+--   .bsf~bsf.import("java.awt.Dimension", "JaD")
+--   fd=.JaD~newStrict("int", 1, "int", 2)
 
-::method "test_6"
-   .bsf~bsf.import("java.awt.Dimension", "JaD")
-   fd=.JaD~newStrict("int", 1, "int", 2)
-	var=bsf.unregisterBean("a_not_existing_bean")
-	self~assertEquals(-1, var)
+   fd=bsf('new', ,'java.awt.Dimension', 1, 2)
+	refCount=bsf("unregisterBean",fd)
+	refCount=bsf("unregisterBean",fd)
+	self~assertEquals(-1, refCount)
+
+::method "test_06"
+	refCount=bsf("unregisterBean",non_existent_bean)
+	self~assertEquals(-1, refCount, "unregistering non-existent bean")
 
 
-::method "test_7"
-	show_msg = BsfShowErrorMessage(0)
-	.bsf~bsf.import("java.awt.TextField", "Jatf")
+::method "test_07"
 	self~expectSyntax(40.900)
-	ftf=.Jatf~newStrict("not_existing", 5)
+   call bsf 'newStrict', , 'non_existing_Java_class', 5
 
-::method "test_8"
-	rPRV=BSF("bsfPrefixReturnValue", 0)
+
+::method "test_08"
 	r=BSF("setRexxNullString", "newnullstring")
 	b=BSF("lookupBean", "not_there")
 	self~assertEquals("newnullstring", b)
-	r=BSF("bsfPrefixReturnValue", rPRV)
 
-::method "test_9"
-	show_msg = BsfShowErrorMessage(0)
-	.bsf~bsf.import("java.lang.String","JString")
-	self~expectSyntax(40.900)
-	s=.JString~new("foo", 5)
 
-::method "test_10"
-   .bsf~bsf.import("java.awt.Dimension", "JaD")
-   fd=.JaD~new(1,2)
-   self~assertEquals(fd~getWidth,1)
-   self~assertEquals(fd~getHeight,2)
 
 ::method "test_11"
-	show_msg = BsfShowErrorMessage(0)
-	.bsf~bsf.import("java.awt.TextField", "Jatf")
 	self~expectSyntax(40.900)
-	ftf=.Jatf~new("foo", 1, 2)
+   call bsf 'new', , 'java.awt.TextField', "foo", 1, 2
+
 
 ::method "test_12"
-   .bsf~bsf.import("java.awt.Dimension", "JaD")
-   fd=.JaD~new(1,2)
-	var=bsf.unregisterBean(fd)
-	var=bsf.unregisterBean(fd)
-	self~assertEquals(-1, var)
+   fd=bsf('registerBean', , 'java.awt.Dimension', 1, 2)   -- original name for subfunction "new", which is an alias
+	refCount=bsf("unregisterBean",fd)
+	refCount=bsf("unregisterBean",fd)
+	self~assertEquals(-1, refCount)
 
 
 ::method "test_13"
-   .bsf~bsf.import("java.awt.Dimension", "JaD")
-   fd=.JaD~new(1,2)
-	var=bsf.unregisterBean("a_not_existing_bean")
-	self~assertEquals(-1, var)
+	refCount=bsf("unregisterBean", a_not_existing_bean)
+	self~assertEquals(-1, refCount)
 
 
 ::method "test_14"
-	show_msg = BsfShowErrorMessage(0)
-	.bsf~bsf.import("java.lang.String","JString")
 	self~expectSyntax(40.900)
-	s=.JString~registerBeanStrict("int", 5)
+   call bsf 'registerBeanStrict', , 'int', 5    -- synonym for 'newStrict'
+
 
 ::method "test_27"
-	cls=BSF("loadclass", "java.awt.TextField")
-	ftf=BSF("rawRegisterBean", "jatf", cls)
-	self~assertNotNull(ftf)
+   clz=bsf('loadClass', 'java.awt.TextField')
+   ftf=bsf('rawRegisterBean', "oha", clz)
+   self~assertNotNull(ftf)
+   self~assertTrue(bsf('getBeanRefCount',clz)>0)
+   self~assertTrue(bsf('getBeanRefCount',ftf)>0)
+
+
+::method "test_30"   --- new, 20181104: really test the bean interface
+
+   beanName="maxUndMoritz"
+   fd=bsf('new', beanName , 'java.lang.Object') -- create an Object, store it under beanName in Java registry
+   self~assertEquals(beanName, fd)
+
+   self~assertEquals(1,bsf("getBeanRefCount",beanName))
+
+   do i=1 to 20                  -- will increase the ref count
+      a=bsf('lookupBean', beanName)
+      self~assertEquals(i,bsf("getBeanRefCount",a))
+   end
+
+   do i=20 to 1 by -1            -- will decrease the ref count
+      self~assertEquals(i-1,bsf("unregisterBean",a))
+   end
+   self~assertEquals(-1,bsf("unregisterBean", a))  -- not registered anymore
+   self~assertEquals(-1,bsf("getBeanRefCount",a))
+   self~assertEquals(-1,bsf("unregisterBean", a))  -- not registered anymore
+   self~assertEquals(-1,bsf("getBeanRefCount",a))
+
+   self~assertEquals( 0, bsf("unregisterBean",  beanName))
+   self~assertEquals(-1, bsf("getBeanRefCount", beanName))
+   self~assertEquals(-1, bsf("unregisterBean",  beanName))
+   self~assertEquals(-1, bsf("getBeanRefCount", beanName))
+

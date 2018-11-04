@@ -12,6 +12,10 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-11-02, ---rgf, - renamed 'runLaterPush' to 'runLaterLatestPush'
+                             - added 'runLaterPush' that pushes the message, but does not remove
+                               messages addressing the same object and message like 'runLaterLatestPush'
+
          2018-11-02, ---rgf, - leave original implementation of BOX() for backward compatibility, it
                                is semantically equivalent to the term in use for Java
                              - added a new public routine BOX.STRICTARG() which will box the values
@@ -681,7 +685,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20180726)
+   version:     6.00 (20181103)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -781,7 +785,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20181102" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20181103" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1033,7 +1037,7 @@ syntax:
       bsf.dir~setEntry(jClassName, .bsf~bsf.import(jClassName)) -- will also place in .environment (instead of .local since 20171223)
    end
 
-   bsf.dir~setEntry(jClassName, .bsf~bsf.import("org.rexxla.bsf.engines.rexx.RexxStrictArgument",jRexxStrictArgument)) -- rgf, 2018-11-01
+   bsf.dir~setEntry("REXXSTRICTARGUMENT", .bsf~bsf.import("org.rexxla.bsf.engines.rexx.RexxStrictArgument",.nil)) -- rgf, 2018-11-01
 
 
    do key over .list~of("line.separator", "file.separator", "path.separator", "file.encoding")
@@ -1073,9 +1077,7 @@ syntax:
              if      val=.true  | val~caselessEquals("true")  then val="true"
              else if val=.false | val~caselessEquals("false") then val="false"
              else    -- raise a syntax error, in this case we expect a Boolean value!
-             do
                 raise syntax 88.900 array ("BSF.CLS - BOX('Boolean', string): argument 'string' does not represent an acceptable Boolean value. Acceptable values are: '0', '1', '.true', '.false', and in addition 'true', 'false'. Received: '"val"'")
-             end
 
              return .java.lang.Boolean~new(val)
           end
@@ -1135,7 +1137,7 @@ syntax:
       if oVal=.nil then
           raise syntax 88.900 array ("BSF.CLS - box.strictArg(): if 'type' is [.nil], the argument 'val' must have a value different from [.nil]")
 
-      return .jRexxStrictArgument(oVal)      -- use oVal's type as strict class object
+      return .bsf4rexx~RexxStrictArgument~new(oVal)      -- use oVal's type as strict class object
   end
 
   if oType~isA(.string) then  -- if a string then a type indicator is expected
@@ -1169,7 +1171,7 @@ syntax:
         when abbrev(type, "I")  then return bsf.wrap(bsf('strictArg', type,val,bPrimitive))
         when abbrev(type, "L")  then return bsf.wrap(bsf('strictArg', type,val,bPrimitive))
 
-        when abbrev(type, "O" ) then return .jRexxStrictArgument(oVal)  -- use the object's type as strict class object
+        when abbrev(type, "O" ) then return .bsf4rexx~RexxStrictArgument~new(oVal) -- use the object's type as strict class object
 
         when abbrev(type, "SH") then return bsf.wrap(bsf('strictArg', type,val,bPrimitive))
         when abbrev(type, "ST") then return bsf.wrap(bsf('strictArg', type,val,bPrimitive))   -- use val verbatimly (retain mixed case)
@@ -1181,7 +1183,7 @@ syntax:
   end
 
    -- if oVal is .nil, then it will be strictly used for oType class objects in a signature
-  return .jRexxStrictArgument~new(oType,oVal)   -- will force the value to be used only if oType is matched exactly in the candidates
+  return .bsf4rexx~RexxStrictArgument~new(oType,oVal)   -- will force the value to be used only if oType is matched exactly in the candidates
 
 
 syntax:
@@ -5233,6 +5235,43 @@ syntax:
   raise propagate
 
 
+/* ------------------------------------------------------------------------------------------------- */
+/** This class method allows to define a Rexx message with its arguments that should
+*   be processed on the GUI thread. Each invocation will create a new <code>GUIMessage</code>
+*   from the supplied arguments and returns it for further inspection in addition to queuing
+*   it for later execution on the GUI thread. This method will push the message into the queue, such
+*   that it will run before any other messages that may have existed in the queue at that point in time.
+*
+*   @param target the target object to receive a message on the GUI thread
+*   @param messageName the message name to send to the target on the GUI thread
+*   @param indicator  optional; indicates with &quot;I&quot; (Indivdual) that the arguments
+*                     are listed individually, &quot;A&quot; (Array) indicates that the fourth
+*                     argument is an array containing the arguments to supply with the
+*                     message on the GUI thread
+*
+*   @return GUIMessage a GUI message object (modelled after ooRexx' <code>Message</code> class
+*                     that allows one to inspect the state of the message (process completed,
+*                     fetching a possible result, determining whether an error occurred and
+*                     inspecting it)
+*/
+::method runLaterPush      class
+  use strict arg target, messageName, ...
+
+  signal on syntax
+  if self~JavaGuiUtilityClz=.nil then self~setup  -- make sure attributes are initialized
+  guiMsg=self~createGuiMessage(arg(1,"array"))
+  self~msgQueue~push(guiMsg)  -- will become the first message in the queue
+  if self~waitingToRun=.false then -- "runLater" not invoked yet?
+  do
+     self~waitingToRun=.true
+     self~invokeOnGuiThread   -- make sure Java will dispatch Rexx message on GUI thread
+  end
+  return guiMsg            -- allows caller to get a hold of a possible return value
+
+syntax:
+  raise propagate
+
+
 
 /* ------------------------------------------------------------------------------------------------- */
    -- method replaces existing target: this way only the latest sent message will get executed!
@@ -5282,7 +5321,7 @@ syntax:
 /** This class method allows to define a Rexx message with its arguments that should
 *   be processed on the GUI thread. Each invocation will create a new <code>GUIMessage</code>
 *   from the supplied arguments and returns it for further inspection in addition to pushing
-*   it for later execution on the GUI thread. Unlike <code>runLater</code> this method will
+*   it for later execution on the GUI thread. This method will
 *   first remove any queued messages with the same target and the same message name, before
 *   pushing this message. This may be useful if there is a need for interacting with a specific
 *   GUI object before all the other ones for which GUIMessage objects may be present.
@@ -5299,7 +5338,7 @@ syntax:
 *                     fetching a possible result, determining whether an error occurred and
 *                     inspecting it)
 */
-::method runLaterPush   class    -- make sure this message is the first in the message queue, such that it gets executed first
+::method runLaterLatestPush   class    -- make sure this message is the first in the message queue, such that it gets executed first
   use strict arg target, messageName, ...
 
   signal on syntax

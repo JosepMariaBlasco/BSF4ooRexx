@@ -1,0 +1,189 @@
+#!/usr/bin/env rexx
+/*
+   name:             10_box_boxStrictArg.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2018-11-04
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test the BSF.CLS box() and box.strictArg() routines
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testBox_Box.strictArg)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+
+::class "testBox_Box.strictArg" subclass ooTestCase public
+
+::method setup
+   /* Unit tests for the older interface may have turned off the prefixing of the return values, if so, restore it. */
+  if bsf("bsfPrefixReturnValue")=0 then
+     call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+
+::method "test_01_plain_box_and_unbox"
+    strTypes=.array~of("Boolean", "Byte", "Character", "Double", "Float", "Integer", "Long", "Short", "String")
+    pkg="java.lang."
+    do type over strTypes
+
+        do i=0 to 1        -- these two values can be boxed into any
+           obj=box(type,i)
+           parse value obj~objectname with className "@" .
+           expectedClassName=pkg||type
+           self~assertEquals(expectedClassName, className, "box('"type"',"i")")
+
+           unboxedValue=unbox(obj)
+           self~assertEquals(i, unboxedValue, "box('"type"',"i"): unboxed value '"unboxedValue"' different; obj~toString='"obj~toString"'")
+
+        end
+    end
+
+    obj=.bsf~new("java.lang.Object")
+    self~assertEquals(obj, box("Object",obj), "object differs, although using the Rexx type indicator 'O'!")
+           -- self~assertTrue(i, "box('"type"',"i")")
+
+
+::method "test_02_plain_box_wrong_Boolean_value"
+   self~expectSyntax(88.900)
+   obj=box("Boolean", "nixi, noxi")
+
+::method "test_03_plain_box_wrong_Boolean_value"
+   self~expectSyntax(40.900)
+   obj=box("Float", "nixi, noxi")
+
+
+::method "test_05.1_box.strictArg_and_unbox"
+    strTypes=.array~of("boolean", "byte", "char", "double", "float", "int", "long", "short", "String")
+    do type over strTypes
+
+        do i=0 to 1        -- these two values can be boxed into any
+           obj=box.strictArg(type,i)
+
+           expectedClassName=type
+           className  =obj~getClassObject~getName
+
+           if type="String" then
+              expectedClassName="java.lang.String"
+
+           self~assertEquals(expectedClassName, className, "box.strictArg('"type"',"i")~value: unexpected class name '"className"'")
+
+           unboxedValue=unbox(obj)
+           self~assertEquals(i, unboxedValue, "box.strictArg('"type"',"i"): unboxed value '"unboxedValue"' different; obj~toString='"obj~toString"'")
+        end
+    end
+
+    obj=.bsf~new("java.lang.Object")
+    a1=box.strictArg("Object",obj)
+      -- the same Java object may be referenced by two different BSF proxy objects, hence using the objectname
+    self~assertEquals(obj~objectName, a1~value~objectName, "object differs, although using the Rexx type indicator 'O'!")
+
+
+::method "test_05.2_box.strictArg_and_unbox" -- this now checks for the wrapper classes
+    strTypes=.array~of("Boolean", "Byte", "Character", "Double", "Float", "Integer", "Long", "Short")
+    do type over strTypes
+
+        do i=0 to 1        -- these two values can be boxed into any
+                  -- ".false": do not use the primitive class object, instead use the appropriate Wrapper class object
+           obj=box.strictArg(type,i, .false)
+
+           expectedClassName="java.lang."type
+           className=obj~classObject~getName    -- primitive class: only type name in lowercase
+
+           self~assertEquals(expectedClassName, className, "box.strictArg('"type"',"i")~value: unexpected class name '"className"'")
+
+           unboxedValue=unbox(obj)
+           self~assertEquals(i, unboxedValue, "box.strictArg('"type"',"i", .false): unboxed value '"unboxedValue"' different; obj~toString='"obj~toString"'")
+        end
+    end
+
+
+
+::method "test_06_box.strictArg_clzType"
+    dimClz=bsf.import("java.awt.Dimension",.nil)   -- import class, do not store Rexx class object in .local
+    clzSC=dimClz~getSuperclass      -- java.awt.geom.Dimension2D
+    clzObject=clzSC~getSuperclass   -- java.lang.Object
+
+      -- test the strict versions
+    dim=dimClz~newStrict("int", 1, "int", 2)
+    self~assertEquals(1, dim~width)
+    self~assertEquals(2, dim~height)
+
+    w=dim~bsf.getFieldValueStrict("width")
+    self~assertEquals(1, w)
+    h=dim~bsf.getFieldValueStrict("height")
+    self~assertEquals(h, dim~height)
+
+    dim~bsf.setFieldValueStrict("width", 'int', 10)
+    self~assertEquals(10, dim~bsf.getFieldValueStrict("width"))
+    dim~bsf.setFieldValueStrict("height", 'int', 20)
+    self~assertEquals(20, dim~bsf.getFieldValueStrict("height"))
+
+    dim~bsf.invokeStrict('setSize', 'double', 100.1, 'double', 201.2)   -- will be rounded up!
+    self~assertEquals(101, dim~width)
+    self~assertEquals(202, dim~height)
+
+    dim~bsf.invokeStrict('setSize', 'int', 1000, 'int', 2000)   -- will be rounded up!
+    self~assertEquals(1000, dim~width)
+    self~assertEquals(2000, dim~height)
+
+     -- test RexxStrictArgument
+     rsa=box.strictArg( , dim)            -- leave out type information
+     rsaClz=.bsf4rexx~RexxStrictArgument  -- get Rexx class object for Java class
+     self~assertTrue(bsf.isA(rsa, rsaClz))
+     self~assertEquals(rsa~classObject~objectName, dimClz~objectName)
+
+     rsa=box.strictArg(clzSC, dim)     -- coerce to "java.awt.geom.Dimension2D"
+     self~assertTrue(bsf.isA(rsa, rsaClz))
+     self~assertEquals(rsa~classObject~objectName, clzSC~objectName)
+
+     rsa=box.strictArg(clzObject, dim) -- coerce to "java.lang.Object"
+     self~assertTrue(bsf.isA(rsa, rsaClz))
+     self~assertEquals(rsa~classObject~objectName, clzObject~objectName)
+
+     -- test typing .nil
+     rsa=box.strictArg(dimClz, .nil)
+     self~assertTrue(bsf.isA(rsa, rsaClz))
+     self~assertEquals(rsa~classObject~objectName, dimClz~objectName)
+     self~assertEquals(.nil, rsa~value)
+
+     rsa=box.strictArg(clzSC, .nil)
+     self~assertTrue(bsf.isA(rsa, rsaClz))
+     self~assertEquals(rsa~classObject~objectName, clzSC~objectName)
+     self~assertEquals(.nil, rsa~value)
+
+     rsa=box.strictArg(clzObject, .nil)
+     self~assertTrue(bsf.isA(rsa, rsaClz))
+     self~assertEquals(rsa~classObject~objectName, clzObject~objectName)
+     self~assertEquals(.nil, rsa~value)
+
+
+
+::method "test_10_box.strictArg_noArgs"
+   self~expectSyntax(40.3)
+   call box.strictArg
+
+::method "test_11_box.strictArg_type_value_nil"
+   self~expectSyntax(88.900)
+   obj=box.strictArg(.nil, .nil)
+
+::method "test_12_box.strictArg_wrong_Boolean_value"
+   self~expectSyntax(88.900)
+   obj=box.strictArg("Boolean", "nixi, noxi")
+
+::method "test_13_box.strictArg_illegal_string_type"
+   self~expectSyntax(88.900)
+   obj=box.strictArg("xyz", "nixi, noxi")
+
+
+

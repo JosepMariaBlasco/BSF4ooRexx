@@ -4,6 +4,10 @@
    license:    ASF 2.0 (Apache) or CPL 1.0
 
    purpose:    controller of the multithreaded execution of Rexx threads
+
+   changed:    adjust waiting time to account for super-massive tests (thousands of threads) in
+               order to not stop the tests prematurely
+
 */
 
 use arg rpTestUnit, rpArray, nrThreads, javaThreadName
@@ -26,7 +30,9 @@ use arg rpTestUnit, rpArray, nrThreads, javaThreadName
        .ThreadClz_using_RexxProxy_Array~new~work(rpTestUnit, tid, i, counter, rpArray, rexxArray, javaThreadName)
     end
 
-    maxTimeToWait=1+nrThreads*1.5/10
+      -- estimate maximum running time to leave enough time for super massive tests as of 20181104
+    maxTimeToWait=1+nrThreads * 1.5
+-- say "nrThreads="pp(nrThreads) "maxTimeToWait:" pp(maxTimeToWait)  "javaThreadName:" javaThreadName
     call time "Reset"            -- reset timer
     loop while counter~value>0, time("elapsed")<maxTimeToWait  -- until no more threads, or over 10seconds
        call sysSleep .00001              -- yield
