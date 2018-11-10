@@ -46,7 +46,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.03, 2018-11-01, 2018-11-03
+ * @version 1.03, 2018-11-01, 2018-11-03, 2018-11-09
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -65,9 +65,11 @@ import        java.lang.reflect.Modifier;
                               candidate field, method, constructor
                             - remove access to RexxReflectUtil.bTryCoercions as that field is not used anymore
 
-    2018-11-01, rgf:    - reflectMethod(): special handling for primitive classes needed, because a primitive
-                          class object does not have a superclass, so no instance methods can be invoked, which we want
-                          for ooRexx users; hence manually setting the superclass to the java.lang.Object class
+        2018-11-03, rgf:    - reflectMethod(): special handling for primitive classes needed, because a primitive
+                              class object does not have a superclass, so no instance methods can be invoked, which we want
+                              for ooRexx users; hence manually setting the superclass to the java.lang.Object class
+
+        2018-11-09, rgf:    - reflectMethod(): reorder logic for special handling of primitive and interface classes
 */
 
 
@@ -1239,6 +1241,8 @@ if (bDebug) System.out.println("... reflectMethod(): ---> no appropriate cache f
 
         while (rru.success==false)   // as long as we have not found a matching Method object, keep processing
         {
+// System.err.println("---> rrj7.reflectMethod():"+"tmpClz=["+tmpClz.getName()+"@"+tmpClz.hashCode()+"]"+", .toString()=["+tmpClz.toString()+"]"+", .isPrimitive=["+tmpClz.isPrimitive()+"]"+", .isInterface=["+tmpClz.isInterface()+"]"+", .getSuperclass=["+tmpClz.getSuperclass()+"]");
+
             Method tmpMethods[]=tmpClz.getDeclaredMethods();
             for (int i=0; i<tmpMethods.length; i++)
             {
@@ -1276,24 +1280,28 @@ if (bDebug) System.out.println("... reflectMethod(): ---> no appropriate cache f
             }
 
 
-            // 2018-11-03, rgf: special handling for primitive classes needed, because a primitive class object
-            //                  does not have a superclass, so no instance methods can be invoked, which we want
-            //                  for ooRexx users; hence manually setting the superclass to the java.lang.Object class
-            // tmpClz=tmpClz.getSuperclass();  // try next superclass
-            tmpClz=(tmpClz.isPrimitive() ? Object.class : tmpClz.getSuperclass());  // try next superclass
-
-            if (tmpClz==null)               // no more superclass, we are done
-            {
-                break;
-            }
-
-            // special case: bean is a class, so if we arrive at Object, detour it to look up Class first and then Object,
-            // accept instance methods for these two classes
+            // special case: bean is a class, so if we arrive at Object, detour to look up Class first and then Object,
+            // look for instance methods in these two classes
             if (rru.bBeanIsClass && tmpClz==Object.class && !bLastTwoRuns4Clz)
             {
                 tmpClz=Class.class;         // deviate to process Class next
                 bLastTwoRuns4Clz=true;      // now accept instance methods as well
             }
+
+// TODO: rgf, 2018-11-09: also add to reflectField() and reflectConstructor()! Interface has no Superclass, hence treat as primitive?
+            // 2018-11-03, rgf: special handling for primitive classes needed, because a primitive class object
+            //                  does not have a superclass, so no instance methods can be invoked, which we want
+            //                  for ooRexx users; hence manually setting the superclass to the java.lang.Object class
+            // 2018-11-09: rgf: also handle interface classes as getSuperclass() returns null for them as well
+            else
+            {
+                tmpClz=(tmpClz.isPrimitive() || tmpClz.isInterface() ? Object.class : tmpClz.getSuperclass());  // try next superclass
+                if (tmpClz==null)               // no more superclass, we are done
+                {
+                    break;
+                }
+            }
+
         }
 
         if (rru.bRecursing)     // we are already in try mode, return
@@ -1455,7 +1463,8 @@ System.err.println("... reflectMethod(): trying method, using method name ["+tmp
     {
         Object result;
 
-if (bDebug) System.err.println("\\\\// RexxReflectJava7.getAndProcessMethodFromInterface: tmpClz=["+tmpClz.toString()+"]");
+if (bDebug)
+System.err.println("\\\\// RexxReflectJava7.getAndProcessMethodFromInterface: tmpClz=["+tmpClz.toString()+"]");
         for (Method tmpMethod : tmpClz.getDeclaredMethods())
         {
             processMethod(tmpMethod, rru);
