@@ -1,0 +1,351 @@
+#!/usr/bin/env rexx
+/*
+   name:             11_box_boxStrictArg_with_Java_class.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2018-11-13
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test the BSF.CLS box() and box.strictArg() routines
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.test_box_boxStrictArg_with_Java)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+
+::class "test_box_boxStrictArg_with_Java" subclass ooTestCase public
+
+::method setup
+   /* Unit tests for the older interface may have turned off the prefixing of the return values, if so, restore it. */
+  if bsf("bsfPrefixReturnValue")=0 then
+     call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+  return    -- remove if wishing more info about the reflection configuration
+
+  pld=.context~package~local
+  if pld~hasentry("washere") then return
+  pld~wasHere=.true
+
+   -- /* --- for debugging new reflection of BSF4ooRexx, needs to be removed from GA version
+   parse source s
+   say .dateTime~new "- from:" pp(s)
+
+   -- rgf, 20180218: test purposes, make sure we use MethoHandles
+   rrj=bsf.wrap(bsf("rexxReflectObject"))
+   say "rrj:" pp(rrj)
+   say "setting useReflectInvoke=.false (now exclusively uses MethodHandles), rrj="pp(rrj)
+   -- rrj~useReflectInvoke=.false   -- use MethodHandle invocations
+   -- rrj~useUnreflect    =.true
+   -- rrj~useCaching      =.false
+   -- rrj~debugLevel      =4 -- 4
+   say "    useCaching      ="pp(rrj~useCaching      )
+   say "    useReflectInvoke="pp(rrj~useReflectInvoke)
+   say "    useUnreflect    ="pp(rrj~useUnreflect    )
+   say "    debugLevel      ="pp(rrj~debugLevel      )
+   say "-"~copies(100)
+   -- -- */
+
+
+
+::method "test_01_instance_fields_get"
+  o=.bsf~new("rgf.G_misc.o11_TestStrictArgs")
+
+  primitiveFields="i_bool","i_byte","i_char","i_short","i_int","i_float","i_long", -
+                  "i_Bool","i_Byte","i_Char","i_Short","i_Int","i_Float","i_Long"
+
+  fields    ="i_Object", "i_String"
+  fieldTypes=bsf.loadClass("java.lang.Object"), .java.lang.String
+
+  do fieldName over primitiveFields
+      self~assertEquals(0, o~bsf.getFieldValueStrict(fieldName), "bsf.getFieldValueStrict('"fieldName"')")
+  end
+
+  do i=1 to fields~items
+     fieldName=fields[i]
+     fieldType=fieldTypes[i]
+     value=o~bsf.getFieldValueStrict(fieldName)
+     self~assertTrue(bsf.isA(value,fieldType), "o~bsf.getFieldValueStrict("fieldName")=["value"]~isA("fieldType")")
+  end
+
+
+::method "test_02_static_fields_get"
+  o=.bsf~new("rgf.G_misc.o11_TestStrictArgs")
+
+  primitiveFields="static_bool","static_byte","static_char","static_short","static_int","static_float","static_long", -
+                  "static_Bool","static_Byte","static_Char","static_Short","static_Int","static_Float","static_Long"
+
+  fields    ="static_Object", "static_String"
+  fieldTypes=bsf.loadClass("java.lang.Object"), .java.lang.String
+
+  do fieldName over primitiveFields
+      self~assertEquals(0, o~bsf.getFieldValueStrict(fieldName), "bsf.getFieldValueStrict('"fieldName"')")
+  end
+
+  do i=1 to fields~items
+     fieldName=fields[i]
+     fieldType=fieldTypes[i]
+     value=o~bsf.getFieldValueStrict(fieldName)
+     self~assertTrue(bsf.isA(value,fieldType), "o~bsf.getFieldValueStrict("fieldName")=["value"]~isA("fieldType")")
+  end
+
+
+::method "test_03_instance_fields_set"
+  o=.bsf~new("rgf.G_misc.o11_TestStrictArgs")
+
+  primitiveFields="i_bool","i_byte","i_char","i_short","i_int","i_float","i_long", -
+                  "i_Bool","i_Byte","i_Char","i_Short","i_Int","i_Float","i_Long"
+
+   -- primitive versions
+  do fieldName over "i_bool","i_byte","i_char","i_short","i_int","i_float","i_long"
+      newVal=0
+      type  =fieldName~substr(3,2)
+-- say "fieldName="pp(fieldName) "newVal="pp(newVal) "type="pp(type)
+      o~bsf.setFieldValueStrict(fieldName,type,newVal)   -- set strictly
+      val=o~bsf.getFieldValueStrict(fieldName)           -- fetch value
+
+      self~assertEquals(newVal, val, "bsf.setFieldValueStrict('"fieldName"', '"type"','"newVal"')")
+  end
+
+   -- both, primitive and wrapper versions: o~bsf.setFieldValueStrict(fieldName,boxedVal)   -- set strictly
+  do i=1 to primitiveFields~items
+      fieldName=primitiveFields[i]
+      type=fieldName~substr(3,2)    -- first two letters are the Rexx indicator types for primitive values
+
+      if i<8 then -- primitive type
+      do
+         newVal=1
+         boxedVal=box.strictArg(type,newVal)          -- box as primitive type
+      end
+      else        -- wrapper type
+      do
+         newVal=0
+         boxedVal=box.strictArg(type,newVal,.false)   -- box with the appropriate wrapper class
+      end
+
+-- say "fieldName="pp(fieldName) "newVal="pp(newVal) "type="pp(type) "boxedVal="pp(boxedVal~toString)
+
+      o~bsf.setFieldValueStrict(fieldName,boxedVal)   -- set strictly
+      val=o~bsf.getFieldValueStrict(fieldName)           -- fetch value
+      self~assertEquals(newVal, val, "o~bsf.setFieldValueStrict('"fieldName", '"boxedVal~toString"'")
+  end
+-- say
+
+
+   -- both, primitive and wrapper versions: o~bsf.setFieldValue(fieldName,boxedVal)   -- set strictly
+  do i=1 to primitiveFields~items
+      fieldName=primitiveFields[i]
+      type=fieldName~substr(3,2)    -- first two letters are the Rexx indicator types for primitive values
+
+      if i<8 then -- primitive type
+      do
+         newVal=0
+         boxedVal=box.strictArg(type,newVal)          -- box as primitive type
+      end
+      else        -- wrapper type
+      do
+         newVal=1
+         boxedVal=box.strictArg(type,newVal,.false)   -- box with the appropriate wrapper class
+      end
+
+-- say "fieldName="pp(fieldName) "newVal="pp(newVal) "type="pp(type) "boxedVal="pp(boxedVal~toString)
+
+      o~bsf.setFieldValue(fieldName,boxedVal)   -- set strictly
+      val=o~bsf.getFieldValueStrict(fieldName)           -- fetch value
+      self~assertEquals(newVal, val, "o~bsf.setFieldValue('"fieldName", '"boxedVal~toString"'")
+  end
+-- say
+
+   -- both, primitive and wrapper versions: o~send(fieldName,boxedVal)
+  do i=1 to primitiveFields~items
+      fieldName=primitiveFields[i]
+      type=fieldName~substr(3,2)    -- first two letters are the Rexx indicator types for primitive values
+
+      if i<8 then -- primitive type
+      do
+         newVal=1
+         boxedVal=box.strictArg(type,newVal)          -- box as primitive type
+      end
+      else        -- wrapper type
+      do
+         newVal=0
+         boxedVal=box.strictArg(type,newVal,.false)   -- box with the appropriate wrapper class
+      end
+
+-- say "fieldName="pp(fieldName) "newVal="pp(newVal) "type="pp(type) "boxedVal="pp(boxedVal~toString)
+
+      o~send(fieldName,boxedVal)
+      val=o~bsf.getFieldValueStrict(fieldName)           -- fetch value
+      self~assertEquals(newVal, val, "o~send('"fieldName", '"newVal" [of type: '"type"']")
+  end
+
+
+  -- process java.lang.Object and java.lang.String
+  fields    ="i_Object", "i_String"
+  fieldTypes=bsf.loadClass("java.lang.Object"), .java.lang.String
+
+  do i=1 to fields~items
+     fieldName=fields[i]
+     fieldType=fieldTypes[i]
+     value=o~bsf.getFieldValueStrict(fieldName)
+     self~assertTrue(bsf.isA(value,fieldType), "o~bsf.getFieldValueStrict("fieldName")=["value"]~isA("fieldType")")
+  end
+
+
+
+
+::method "test_04_static_fields_set"
+  o=.bsf~new("rgf.G_misc.o11_TestStrictArgs")
+
+  primitiveFields="static_bool","static_byte","static_char","static_short","static_int","static_float","static_long", -
+                  "static_Bool","static_Byte","static_Char","static_Short","static_Int","static_Float","static_Long"
+
+   -- primitive versions
+  do fieldName over "static_bool","static_byte","static_char","static_short","static_int","static_float","static_long"
+      newVal=0
+      type  =fieldName~substr(8,2)
+-- say "fieldName="pp(fieldName) "newVal="pp(newVal) "type="pp(type)
+      o~bsf.setFieldValueStrict(fieldName,type,newVal)   -- set strictly
+      val=o~bsf.getFieldValueStrict(fieldName)           -- fetch value
+
+      self~assertEquals(newVal, val, "bsf.setFieldValueStrict('"fieldName"', '"type"','"newVal"')")
+  end
+
+   -- both, primitive and wrapper versions: o~bsf.setFieldValueStrict(fieldName,boxedVal)   -- set strictly
+  do i=1 to primitiveFields~items
+      fieldName=primitiveFields[i]
+      type=fieldName~substr(8,2)    -- first two letters are the Rexx indicator types for primitive values
+
+      if i<8 then -- primitive type
+      do
+         newVal=1
+         boxedVal=box.strictArg(type,newVal)          -- box as primitive type
+      end
+      else        -- wrapper type
+      do
+         newVal=0
+         boxedVal=box.strictArg(type,newVal,.false)   -- box with the appropriate wrapper class
+      end
+
+-- say "fieldName="pp(fieldName) "newVal="pp(newVal) "type="pp(type) "boxedVal="pp(boxedVal~toString)
+
+      o~bsf.setFieldValueStrict(fieldName,boxedVal)   -- set strictly
+      val=o~bsf.getFieldValueStrict(fieldName)           -- fetch value
+      self~assertEquals(newVal, val, "o~bsf.setFieldValueStrict('"fieldName", '"boxedVal~toString"'")
+  end
+-- say
+
+
+   -- both, primitive and wrapper versions: o~bsf.setFieldValue(fieldName,boxedVal)   -- set strictly
+  do i=1 to primitiveFields~items
+      fieldName=primitiveFields[i]
+      type=fieldName~substr(8,2)    -- first two letters are the Rexx indicator types for primitive values
+
+      if i<8 then -- primitive type
+      do
+         newVal=0
+         boxedVal=box.strictArg(type,newVal)          -- box as primitive type
+      end
+      else        -- wrapper type
+      do
+         newVal=1
+         boxedVal=box.strictArg(type,newVal,.false)   -- box with the appropriate wrapper class
+      end
+
+-- say "fieldName="pp(fieldName) "newVal="pp(newVal) "type="pp(type) "boxedVal="pp(boxedVal~toString)
+
+      o~bsf.setFieldValue(fieldName,boxedVal)   -- set strictly
+      val=o~bsf.getFieldValueStrict(fieldName)           -- fetch value
+      self~assertEquals(newVal, val, "o~bsf.setFieldValue('"fieldName", '"boxedVal~toString"'")
+  end
+-- say
+
+   -- both, primitive and wrapper versions: o~send(fieldName,boxedVal)
+  do i=1 to primitiveFields~items
+      fieldName=primitiveFields[i]
+      type=fieldName~substr(8,2)    -- first two letters are the Rexx indicator types for primitive values
+
+      if i<8 then -- primitive type
+      do
+         newVal=1
+         boxedVal=box.strictArg(type,newVal)          -- box as primitive type
+      end
+      else        -- wrapper type
+      do
+         newVal=0
+         boxedVal=box.strictArg(type,newVal,.false)   -- box with the appropriate wrapper class
+      end
+
+-- say "fieldName="pp(fieldName) "newVal="pp(newVal) "type="pp(type) "boxedVal="pp(boxedVal~toString)
+
+      o~send(fieldName,boxedVal)
+      val=o~bsf.getFieldValueStrict(fieldName)           -- fetch value
+      self~assertEquals(newVal, val, "o~send('"fieldName", '"newVal" [of type: '"type"']")
+  end
+
+
+  -- process java.lang.Object and java.lang.String
+  fields    ="static_Object", "static_String"
+  fieldTypes=bsf.loadClass("java.lang.Object"), .java.lang.String
+
+  do i=1 to fields~items
+     fieldName=fields[i]
+     fieldType=fieldTypes[i]
+     value=o~bsf.getFieldValueStrict(fieldName)
+     self~assertTrue(bsf.isA(value,fieldType), "o~bsf.getFieldValueStrict("fieldName")=["value"]~isA("fieldType")")
+  end
+
+
+
+::method "test_constructors"
+
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs")
+
+  primitiveFields="i_bool","i_byte","i_char","i_short","i_int","i_float","i_long", -
+                  "i_Bool","i_Byte","i_Char","i_Short","i_Int","i_Float","i_Long"
+
+  values          =.false , 1      , 2      , 3       , 4     , 5       , 6  ,     -
+                   .true , 11     , 12     , 13      , 14    , 15      , 16
+
+
+  fields    ="i_Object", "i_String"
+  stringValue="hello, world"
+  fieldValues=.bsf~new("java.lang.Object"), .bsf~new("java.lang.String", stringValue)
+
+  fieldTypes=bsf.loadClass("java.lang.Object"), .java.lang.String
+
+   -- constructor "B"
+  args_1 = values~copy~~append(fieldValues[2]) ~~append(fieldValues[1])
+  o=clzTest~sendWith("new", args_1)
+--  say "o="o~tostring
+
+  val_1 = "i_bool=false,i_Bool=true/i_byte=2,i_Byte=3/i_char=4,i_Char=5/i_short=6,i_Short=1/i_int=11,i_Int=12/i_float=13.0,i_Float=14.0/i_long=15,i_Long=16/i_String=[hello, world]/i_Object=[java.lang.Object"
+  str=o~toString  -- e.g.: rgf.G_misc.o11_TestStrictArgs@14621846[i_bool=false,i_Bool=true/i_byte=2,i_Byte=3/i_char=4,i_Char=5/i_short=6,i_Short=1/i_int=11,i_Int=12/i_float=13.0,i_Float=14.0/i_long=15,i_Long=16/i_String=[hello, world]/i_Object=[java.lang.Object@530c12]]
+  parse var str "[" val "@"   -- get the value part without the Object's hash part
+
+  self~assertEquals(val_1, val, "toString() yields the substring" pp(val_1) )
+  self~assertEquals(stringValue, o~i_string, "String object")
+
+   -- constructor "A"
+  args_2 = values~copy~~append(fieldValues[1]) ~~append(fieldValues[2])
+  o=clzTest~sendWith("new", args_2)
+--  say "o="o~tostring
+
+  val_2 = "i_bool=true,i_Bool=false/i_byte=3,i_Byte=2/i_char=5,i_Char=4/i_short=1,i_Short=6/i_int=12,i_Int=11/i_float=14.0,i_Float=13.0/i_long=16,i_Long=15/i_String=[hello, world]/i_Object=[java.lang.Object"
+  str=o~toString  -- e.g.: rgf.G_misc.o11_TestStrictArgs@14621846[i_bool=false,i_Bool=true/i_byte=2,i_Byte=3/i_char=4,i_Char=5/i_short=6,i_Short=1/i_int=11,i_Int=12/i_float=13.0,i_Float=14.0/i_long=15,i_Long=16/i_String=[hello, world]/i_Object=[java.lang.Object@530c12]]
+  parse var str "[" val "@"   -- get the value part without the Object's hash part
+
+  self~assertEquals(val_2, val, "toString() yields the substring" pp(val_2) )
+  self~assertEquals(stringValue, o~i_string, "String object")
+
+
