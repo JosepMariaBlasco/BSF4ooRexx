@@ -6,6 +6,7 @@
    date:             2018-11-13
    license:          ASF 2.0 (Apache Software License)
    purpose:          test the BSF.CLS box() and box.strictArg() routines
+   changes:          2018-11-20, rgf: add expected syntax failure tests; add tests against double/Double
 */
 
   parse source . . fileSpec;
@@ -61,8 +62,8 @@ return testResult
 ::method "test_01_instance_fields_get"
   o=.bsf~new("rgf.G_misc.o11_TestStrictArgs")
 
-  primitiveFields="i_bool","i_byte","i_char","i_short","i_int","i_float","i_long", -
-                  "i_Bool","i_Byte","i_Char","i_Short","i_Int","i_Float","i_Long"
+  primitiveFields="i_bool","i_byte","i_char","i_double","i_short","i_int","i_float","i_long", -
+                  "i_Bool","i_Byte","i_Char","i_Double","i_Short","i_Int","i_Float","i_Long"
 
   fields    ="i_Object", "i_String"
   fieldTypes=bsf.loadClass("java.lang.Object"), .java.lang.String
@@ -82,8 +83,8 @@ return testResult
 ::method "test_02_static_fields_get"
   o=.bsf~new("rgf.G_misc.o11_TestStrictArgs")
 
-  primitiveFields="static_bool","static_byte","static_char","static_short","static_int","static_float","static_long", -
-                  "static_Bool","static_Byte","static_Char","static_Short","static_Int","static_Float","static_Long"
+  primitiveFields="static_bool","static_byte","static_char","static_double","static_short","static_int","static_float","static_long", -
+                  "static_Bool","static_Byte","static_Char","static_Double","static_Short","static_Int","static_Float","static_Long"
 
   fields    ="static_Object", "static_String"
   fieldTypes=bsf.loadClass("java.lang.Object"), .java.lang.String
@@ -103,11 +104,11 @@ return testResult
 ::method "test_03_instance_fields_set"
   o=.bsf~new("rgf.G_misc.o11_TestStrictArgs")
 
-  primitiveFields="i_bool","i_byte","i_char","i_short","i_int","i_float","i_long", -
-                  "i_Bool","i_Byte","i_Char","i_Short","i_Int","i_Float","i_Long"
+  primitiveFields="i_bool","i_byte","i_char","i_double","i_short","i_int","i_float","i_long", -
+                  "i_Bool","i_Byte","i_Char","i_Double","i_Short","i_Int","i_Float","i_Long"
 
    -- primitive versions
-  do fieldName over "i_bool","i_byte","i_char","i_short","i_int","i_float","i_long"
+  do fieldName over "i_bool","i_byte","i_char","i_double","i_short","i_int","i_float","i_long"
       newVal=0
       type  =fieldName~substr(3,2)
 -- say "fieldName="pp(fieldName) "newVal="pp(newVal) "type="pp(type)
@@ -122,7 +123,7 @@ return testResult
       fieldName=primitiveFields[i]
       type=fieldName~substr(3,2)    -- first two letters are the Rexx indicator types for primitive values
 
-      if i<8 then -- primitive type
+      if i<9 then -- primitive type
       do
          newVal=1
          boxedVal=box.strictArg(type,newVal)          -- box as primitive type
@@ -147,7 +148,7 @@ return testResult
       fieldName=primitiveFields[i]
       type=fieldName~substr(3,2)    -- first two letters are the Rexx indicator types for primitive values
 
-      if i<8 then -- primitive type
+      if i<9 then -- primitive type
       do
          newVal=0
          boxedVal=box.strictArg(type,newVal)          -- box as primitive type
@@ -207,11 +208,11 @@ return testResult
 ::method "test_04_static_fields_set"
   o=.bsf~new("rgf.G_misc.o11_TestStrictArgs")
 
-  primitiveFields="static_bool","static_byte","static_char","static_short","static_int","static_float","static_long", -
-                  "static_Bool","static_Byte","static_Char","static_Short","static_Int","static_Float","static_Long"
+  primitiveFields="static_bool","static_byte","static_char","static_double","static_short","static_int","static_float","static_long", -
+                  "static_Bool","static_Byte","static_Char","static_Double","static_Short","static_Int","static_Float","static_Long"
 
    -- primitive versions
-  do fieldName over "static_bool","static_byte","static_char","static_short","static_int","static_float","static_long"
+  do fieldName over "static_bool","static_byte","static_char","static_double","static_short","static_int","static_float","static_long"
       newVal=0
       type  =fieldName~substr(8,2)
 -- say "fieldName="pp(fieldName) "newVal="pp(newVal) "type="pp(type)
@@ -221,12 +222,25 @@ return testResult
       self~assertEquals(newVal, val, "bsf.setFieldValueStrict('"fieldName"', '"type"','"newVal"')")
   end
 
+   -- primitive versions: getSTATICvalueStrict()
+  clz=bsf.importClass("rgf.G_misc.o11_TestStrictArgs",.nil)
+  do fieldName over "static_bool","static_byte","static_char","static_double","static_short","static_int","static_float","static_long"
+      newVal=0
+      type  =fieldName~substr(8,2)
+      clz~bsf.setFieldValueStrict(fieldName,type,newVal)   -- set strictly
+      val=clz~bsf.getStaticValueStrict(clz,fieldName)           -- fetch value
+      -- val=bsf.getStaticValueStrict(clz,fieldName)           -- fetch value (routine version)
+
+      self~assertEquals(newVal, val, "bsf.setFieldValueStrict('"fieldName"', '"type"','"newVal"')")
+  end
+
+
    -- both, primitive and wrapper versions: o~bsf.setFieldValueStrict(fieldName,boxedVal)   -- set strictly
   do i=1 to primitiveFields~items
       fieldName=primitiveFields[i]
       type=fieldName~substr(8,2)    -- first two letters are the Rexx indicator types for primitive values
 
-      if i<8 then -- primitive type
+      if i<9 then -- primitive type
       do
          newVal=1
          boxedVal=box.strictArg(type,newVal)          -- box as primitive type
@@ -251,7 +265,7 @@ return testResult
       fieldName=primitiveFields[i]
       type=fieldName~substr(8,2)    -- first two letters are the Rexx indicator types for primitive values
 
-      if i<8 then -- primitive type
+      if i<9 then -- primitive type
       do
          newVal=0
          boxedVal=box.strictArg(type,newVal)          -- box as primitive type
@@ -307,15 +321,15 @@ return testResult
 
 
 
-::method "test_constructors"
+::method "test_05_constructors"
 
-  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs")
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
 
-  primitiveFields="i_bool","i_byte","i_char","i_short","i_int","i_float","i_long", -
-                  "i_Bool","i_Byte","i_Char","i_Short","i_Int","i_Float","i_Long"
+  primitiveFields="i_bool","i_byte","i_char","i_double","i_short","i_int","i_float","i_long", -
+                  "i_Bool","i_Byte","i_Char","i_Double","i_Short","i_Int","i_Float","i_Long"
 
-  values          =.false , 1      , 2      , 3       , 4     , 5       , 6  ,     -
-                   .true , 11     , 12     , 13      , 14    , 15      , 16
+  values          =.false , 1      , 2      , 3  , 7     , 4     , 5       , 6  ,     -
+                   .true , 11     , 12     , 13  ,17    , 14    , 15      , 16
 
 
   fields    ="i_Object", "i_String"
@@ -329,7 +343,7 @@ return testResult
   o=clzTest~sendWith("new", args_1)
 --  say "o="o~tostring
 
-  val_1 = "i_bool=false,i_Bool=true/i_byte=2,i_Byte=3/i_char=4,i_Char=5/i_short=6,i_Short=1/i_int=11,i_Int=12/i_float=13.0,i_Float=14.0/i_long=15,i_Long=16/i_String=[hello, world]/i_Object=[java.lang.Object"
+  val_1=  "i_bool=false,i_Bool=true/i_byte=2,i_Byte=3/i_char=7,i_Char=4/i_double=5.0,i_Double=6.0/i_short=1,i_Short=11/i_int=12,i_Int=13/i_float=17.0,i_Float=14.0/i_long=15,i_Long=16/i_String=[hello, world]/i_Object=[java.lang.Object"
   str=o~toString  -- e.g.: rgf.G_misc.o11_TestStrictArgs@14621846[i_bool=false,i_Bool=true/i_byte=2,i_Byte=3/i_char=4,i_Char=5/i_short=6,i_Short=1/i_int=11,i_Int=12/i_float=13.0,i_Float=14.0/i_long=15,i_Long=16/i_String=[hello, world]/i_Object=[java.lang.Object@530c12]]
   parse var str "[" val "@"   -- get the value part without the Object's hash part
 
@@ -341,7 +355,7 @@ return testResult
   o=clzTest~sendWith("new", args_2)
 --  say "o="o~tostring
 
-  val_2 = "i_bool=true,i_Bool=false/i_byte=3,i_Byte=2/i_char=5,i_Char=4/i_short=1,i_Short=6/i_int=12,i_Int=11/i_float=14.0,i_Float=13.0/i_long=16,i_Long=15/i_String=[hello, world]/i_Object=[java.lang.Object"
+  val_2 = "i_bool=true,i_Bool=false/i_byte=3,i_Byte=2/i_char=4,i_Char=7/i_double=6.0,i_Double=5.0/i_short=11,i_Short=1/i_int=13,i_Int=12/i_float=14.0,i_Float=17.0/i_long=16,i_Long=15/i_String=[hello, world]/i_Object=[java.lang.Object"
   str=o~toString  -- e.g.: rgf.G_misc.o11_TestStrictArgs@14621846[i_bool=false,i_Bool=true/i_byte=2,i_Byte=3/i_char=4,i_Char=5/i_short=6,i_Short=1/i_int=11,i_Int=12/i_float=13.0,i_Float=14.0/i_long=15,i_Long=16/i_String=[hello, world]/i_Object=[java.lang.Object@530c12]]
   parse var str "[" val "@"   -- get the value part without the Object's hash part
 
@@ -349,3 +363,206 @@ return testResult
   self~assertEquals(stringValue, o~i_string, "String object")
 
 
+::method "test_10a_fail_static_bool"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("bool",.false, .true)   -- primitive variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_bool', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("bool",.true, .false)   -- wrapper variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_bool', boxedValue)
+
+
+::method "test_10b_fail_static_Bool"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("bool",.false, .false)  -- wrapper variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_Bool', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("bool",.true, .true)    -- primitive variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_Bool', boxedValue)
+
+
+::method "test_11a_fail_static_byte"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("byte",123, .true)   -- primitive variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_byte', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("byte",-124, .false)   -- wrapper variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_byte', boxedValue)
+
+
+::method "test_11b_fail_static_Byte"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("byte",123, .false)  -- wrapper variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_Byte', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("byte",-124, .true)    -- primitive variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_Byte', boxedValue)
+
+
+::method "test_12a_fail_static_char"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("char","39"x, .true)   -- primitive variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_char', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("char","30"x, .false)   -- wrapper variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_char', boxedValue)
+
+
+::method "test_12b_fail_static_Char"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("char","39"x, .false)  -- wrapper variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_Char', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("char","30"x, .true)    -- primitive variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_Char', boxedValue)
+
+
+::method "test_13a_fail_static_short"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("short",213, .true)   -- primitive variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_short', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("short",-213, .false)   -- wrapper variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_short', boxedValue)
+
+
+::method "test_13b_fail_static_Short"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("short",213, .false)  -- wrapper variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_Short', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("short",-213, .true)    -- primitive variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_Short', boxedValue)
+
+
+::method "test_14a_fail_static_int"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("int",987654, .true)   -- primitive variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_int', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("int",-987654, .false)   -- wrapper variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_int', boxedValue)
+
+
+::method "test_14b_fail_static_Int"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("int",987654, .false)  -- wrapper variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_Int', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("int",-987654, .true)    -- primitive variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_Int', boxedValue)
+
+
+::method "test_15a_fail_static_float"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("float",123.456, .true)   -- primitive variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_float', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("float",-123.456, .false)   -- wrapper variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_float', boxedValue)
+
+
+::method "test_15b_fail_static_Float"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("float",123.456, .false)  -- wrapper variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_Float', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("float",-123.456, .true)    -- primitive variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_Float', boxedValue)
+
+
+
+::method "test_16a_fail_static_long"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("long",987654, .true)   -- primitive variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_long', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("long",-987654, .false)   -- wrapper variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_long', boxedValue)
+
+
+::method "test_16b_fail_static_Long"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("long",987654, .false)  -- wrapper variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_Long', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("long",-987654, .true)    -- primitive variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_Long', boxedValue)
+
+
+
+::method "test_17a_fail_static_double"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("double",987123.456, .true)   -- primitive variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_double', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("double",-987123.456, .false)   -- wrapper variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_double', boxedValue)
+
+
+::method "test_17b_fail_static_Double"
+  clzTest=bsf.import("rgf.G_misc.o11_TestStrictArgs",.nil)
+
+  boxedValue=box.strictArg("double",987123.456, .false)  -- wrapper variant (should work in this case)
+  clzTest~bsf.setFieldValueStrict('static_Double', boxedValue)
+  self~assertTrue(.true)         -- increase assertion count as assignment took place
+
+  self~expectSyntax(40.900)
+  boxedValue=box.strictArg("double",-987123.456, .true)    -- primitive variant (should create syntax exception in this case)
+  clzTest~bsf.setFieldValueStrict('static_Double', boxedValue)
+
+
+
+
+
+/*
+
+  primitiveFields="static_bool","static_byte","static_char","static_short","static_int","static_float","static_long", -
+                  "static_Bool","static_Byte","static_Char","static_Short","static_Int","static_Float","static_Long"
+
+*/

@@ -1,4 +1,5 @@
 // ---rgf, 2018-11-10: Java class to allow testing the new RexxStrictArgument class and BSF.CLS box.strictArg() routine
+// ---rgf, 2018-11-20: added types 'double' and 'Double' as instance and static fields to be able to test them as well
 
 
 package rgf.G_misc;
@@ -17,6 +18,9 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
 
     public char         i_char  ='0';
     public Character    i_Char  ='0';
+
+    public double       i_double = 0;
+    public Double       i_Double = new Double(0);
 
     public short        i_short =0;
     public Short        i_Short =0;
@@ -45,6 +49,9 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
         public char         getI_char    () {  return     i_char  ;   }
         public Character    getI_Char    () {  return     i_Char  ;   }
 
+        public double       getI_double  () {  return     i_double  ;   }
+        public Double       getI_Double  () {  return     i_Double  ;   }
+
         public short        getI_short   () {  return     i_short ;   }
         public Short        getI_Short   () {  return     i_Short ;   }
 
@@ -70,6 +77,9 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
 
         public void     setI_char   ( char      tmp ) {  i_char    = tmp; }
         public void     setI_Char   ( Character tmp ) {  i_Char    = tmp; }
+
+        public void     setI_double ( double    tmp ) {  i_double  = tmp; }
+        public void     setI_Double ( Double    tmp ) {  i_Double  = tmp; }
 
         public void     setI_short  ( short     tmp ) {  i_short   = tmp; }
         public void     setI_Short  ( Short     tmp ) {  i_Short   = tmp; }
@@ -98,6 +108,9 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
         static public char         static_char  ='0';
         static public Character    static_Char  ='0';
 
+        static public double       static_double = 0;
+        static public Double       static_Double = new Double(0);
+
         static public short        static_short =0;
         static public Short        static_Short =0;
 
@@ -125,6 +138,9 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
         static public char         getStatic_char    () {  return     static_char  ;   }
         static public Character    getStatic_Char    () {  return     static_Char  ;   }
 
+        static public double       getStatic_double  () {  return     static_double  ; }
+        static public Double       getStatic_Double  () {  return     static_Double  ; }
+
         static public short        getStatic_short   () {  return     static_short ;   }
         static public Short        getStatic_Short   () {  return     static_Short ;   }
 
@@ -150,6 +166,9 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
 
         static public void     setStatic_char   ( char      tmp ) {  static_char    = tmp; }
         static public void     setStatic_Char   ( Character tmp ) {  static_Char    = tmp; }
+
+        static public void     setStatic_double ( double    tmp ) {  static_double  = tmp; }
+        static public void     setStatic_Double ( Double    tmp ) {  static_Double  = tmp; }
 
         static public void     setStatic_short  ( short     tmp ) {  static_short   = tmp; }
         static public void     setStatic_Short  ( Short     tmp ) {  static_Short   = tmp; }
@@ -183,6 +202,8 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
         Byte      tmp26 ,
         char      tmp3  ,
         Character tmp4  ,
+        double    tmp31 ,
+        Double    tmp41 ,
         short     tmp5  ,
         Short     tmp6  ,
         int       tmp7  ,
@@ -201,6 +222,8 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
             i_Byte    = tmp26;
             i_char    = tmp3;
             i_Char    = tmp4;
+            i_double  = tmp31;
+            i_Double  = tmp41;
             i_short   = tmp5;
             i_Short   = tmp6;
             i_int     = tmp7;
@@ -221,6 +244,8 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
         byte      tmp25 ,
         Character tmp4  ,
         char      tmp3  ,
+        Double    tmp41 ,
+        double    tmp31 ,
         Short     tmp6  ,
         short     tmp5  ,
         Integer   tmp8  ,
@@ -239,6 +264,8 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
             i_Byte    = tmp26;
             i_char    = tmp3;
             i_Char    = tmp4;
+            i_double  = tmp31;
+            i_Double  = tmp41;
             i_short   = tmp5;
             i_Short   = tmp6;
             i_int     = tmp7;
@@ -271,6 +298,8 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
         new Byte((byte) 0x0B),
         (char) 0x33,
         (char) 0x34,
+        123d,
+        new Double(123d),
         (short) 35,
         new Short((short) 36),
         37,
@@ -291,8 +320,12 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
     {
         return (this.getClass().getName()+"@"+this.hashCode()+"[i_bool="+i_bool+",i_Bool="+i_Bool
            +"/i_byte="+i_byte+",i_Byte="+i_Byte
-           +"/i_char="+i_char+",i_Char="+i_Char+"/i_short="+i_short+",i_Short="+i_Short
-           +"/i_int="+i_int+",i_Int="+i_Int+"/i_float="+i_float+",i_Float="+i_Float+"/i_long="+i_long+",i_Long="+i_Long
+           +"/i_char="+i_char+",i_Char="+i_Char
+           +"/i_double="+i_double+",i_Double="+i_Double
+           +"/i_short="+i_short+",i_Short="+i_Short
+           +"/i_int="+i_int+",i_Int="+i_Int
+           +"/i_float="+i_float+",i_Float="+i_Float
+           +"/i_long="+i_long+",i_Long="+i_Long
            +"/i_String=["+i_String+"]/i_Object=["+i_Object+"]]");
     }
 
@@ -300,8 +333,12 @@ public class o11_TestStrictArgs     // Class that uses all primitive, wrapper ty
     {
         return (o11_TestStrictArgs.class.getClass().getName()+"@"+o11_TestStrictArgs.class.hashCode()+"[static_bool="+static_bool+",static_Bool="+static_Bool
            +"/static_byte="+static_byte+",static_Byte="+static_Byte
-           +"/static_char="+static_char+",static_Char="+static_Char+"/static_short="+static_short+",static_Short="+static_Short
-           +"/static_int="+static_int+",static_Int="+static_Int+"/static_float="+static_float+",static_Float="+static_Float+"/static_long="+static_long+",static_Long="+static_Long
+           +"/static_char="+static_char+",static_Char="+static_Char
+           +"/static_double="+static_double+",static_Double="+static_Double
+           +"/static_short="+static_short+",static_Short="+static_Short
+           +"/static_int="+static_int+",static_Int="+static_Int
+           +"/static_float="+static_float+",static_Float="+static_Float
+           +"/static_long="+static_long+",static_Long="+static_Long
            +"/static_String=["+static_String+"]/static_Object=["+static_Object+"]]");
     }
 
