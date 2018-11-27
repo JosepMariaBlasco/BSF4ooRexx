@@ -12,6 +12,9 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2018-11-27, ---rgf, - add the Boolean truth objects named as "boolean.true" and "boolean.false"
+                               to the .bsf4rexx directory
+
          2018-11-02, ---rgf, - renamed 'runLaterPush' to 'runLaterLatestPush'
                              - added 'runLaterPush' that pushes the message, but does not remove
                                messages addressing the same object and message like 'runLaterLatestPush'
@@ -685,7 +688,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20181103)
+   version:     6.00 (20181127)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -785,7 +788,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20181103" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20181127" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1037,6 +1040,10 @@ syntax:
       bsf.dir~setEntry(jClassName, .bsf~bsf.import(jClassName)) -- will also place in .environment (instead of .local since 20171223)
    end
 
+   -- add Boolean.TRUE and Boolean.FALSE to help speed up lambda invocations (e.g. if it is clear that the apply() function should return a Boolean)
+   bsf.dir~boolean.true =.java.lang.Boolean~new("true")  -- this will save the Boolean object
+   bsf.dir~boolean.false=.java.lang.Boolean~new("false") -- this will save the Boolean object
+
    bsf.dir~setEntry("REXXSTRICTARGUMENT", .bsf~bsf.import("org.rexxla.bsf.engines.rexx.RexxStrictArgument",.nil)) -- rgf, 2018-11-01
 
 
@@ -1132,6 +1139,7 @@ syntax:
 ::routine box.strictArg  public      -- new version using RexxStrictArgument, rgf, 2018-11-01
   use strict arg oType=.nil, oVal, bPrimitive=.true
 
+  signal on syntax
   if oType=.nil then       -- use oVal's class strictly
   do
       if oVal=.nil then
@@ -1200,7 +1208,7 @@ syntax:
    use arg o
 
    objName=o~objectName    -- name will contain the fully qualified Java class name
-   if pos("RexxStrictArgument@",objName)>0 then -- since 20181101 the default return type for box() for primitive values and Strings
+   if pos("RexxStrictArgument@",objName)>0 then -- since 20181101
       return o~getValue4Rexx
 
    if \o~isA(.bsf) then
