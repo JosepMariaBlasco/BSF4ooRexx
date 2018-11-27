@@ -46,7 +46,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.03, 2018-11-01, 2018-11-03, 2018-11-09
+ * @version 1.04, 2018-11-01, 2018-11-03, 2018-11-09, 2018-11-13
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -55,11 +55,6 @@ import        java.lang.reflect.Modifier;
     concluded: 2018-02-22, ---rgf (version 1.0)
 
     changes:
-        2018-06-11, --rgf: - employing "mh=mh.asFixedArity();" to make sure that MH invocations behave
-                             the same as with comp.lang.reflect invocations for any varargs-argument;
-                             solution as per Peter Levart's advice, cf. e-Mails of 2018-06-10/11 in
-                             <mlvm-dev@openjdk.java.net>
-
         2018-11-01, rgf:    - adjusting to new usage of RexxStrictArgument, which makes sure that its classObject
                               is used to strictly compare signatures; is used in picking a strictly matching
                               candidate field, method, constructor
@@ -70,6 +65,15 @@ import        java.lang.reflect.Modifier;
                               for ooRexx users; hence manually setting the superclass to the java.lang.Object class
 
         2018-11-09, rgf:    - reflectMethod(): reorder logic for special handling of primitive and interface classes
+
+        2018-06-11, rgf:    - employing "mh=mh.asFixedArity();" to make sure that MH invocations behave
+                              the same as with comp.lang.reflect invocations for any varargs-argument;
+                              solution as per Peter Levart's advice, cf. e-Mails of 2018-06-10/11 in
+                              <mlvm-dev@openjdk.java.net>
+
+        2018-11-13, rgf:    - corrected bug in processField() when accessing first element in the
+                              returned value of coerceArgs(), which could also be the null value
+
 */
 
 
@@ -792,14 +796,16 @@ if (debugLevel>0) System.err.println("// // :) RexxReflectJava7.processField(), 
         {
             newValue =rru.funcArgs[0];        // get new value to set the Field to; convFromRexx already carried out!
             tmpFieldType=tmpField.getType();
+
                 // newValue can be null, a Java object (from the registry) or a string
             if ( newValue != null )
             {
-                newValue=rru.rajo.coerceArgs( new Object[]{newValue}, new Class[]{tmpFieldType})[0];   // coerce newValue appropriately
-                if (newValue==null)             // coercion did not work, not a proper argument for this Field, return
+                Object newValueArr[]=rru.rajo.coerceArgs( new Object[]{newValue}, new Class[]{tmpFieldType} );   // coerce newValue appropriately
+                if (newValueArr==null)             // coercion did not work, not a proper argument for this Field, return
                 {
                     return;
                 }
+                newValue=newValueArr[0];    // fetch value
             }
         }
 
@@ -1081,6 +1087,7 @@ if (bDebug)
 
             if ( newValue != null )         // newValue can be null, a Java object (from the registry)  or a string
             {
+                // TODO: if coerceArgs() returns null, we could create a more informative Throwable ("newValue could not be coerced to ParameterTypes[0]")
                 newValue=rru.rajo.coerceArgs( new Object[]{newValue}, cfm.parameterTypes)[0];   // coerce newValue appropriately
             }
 
@@ -1266,6 +1273,10 @@ if (bDebug) System.out.println("... reflectMethod(): ---> no appropriate cache f
                     return;
                 }
             }
+
+// TODO: 2018-11-24, rgf: default methods only resolved from interface class, if not implemented in any superclass
+//                        e.g. cf. <https://www.journaldev.com/2752/java-8-interface-changes-static-method-default-method>
+//
 
             if (rru.rajo.javaRuntimeVersion>=8)     // starting with Java 8 we have to consider default interface methods
             {

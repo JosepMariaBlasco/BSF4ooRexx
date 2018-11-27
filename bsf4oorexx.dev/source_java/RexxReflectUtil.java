@@ -353,6 +353,7 @@ if ( bean != null && bean instanceof String && rexxArgs[1] != null && bean.equal
     System.err.println(": rexxArgs=\""+Arrays.deepToString(rexxArgs)+"\"");
 }
 
+
     }
 
     // apply org.apache.bsf.util.EngineUtils.loadClass() comparable strategy: first Thread context ClassLoader, then this class' ClassLoader

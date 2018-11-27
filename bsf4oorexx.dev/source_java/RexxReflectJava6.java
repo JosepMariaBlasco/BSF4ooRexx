@@ -41,23 +41,25 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.02, 2018-02-22, 2018-11-01, 2018-11-03, 2018-11-09
+ * @version 1.03, 2018-02-22, 2018-11-01, 2018-11-03, 2018-11-09, 2018-11-13
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
 
 /*
-    2018-11-01, rgf:    - adjusting to new usage of RexxStrictArgument, which makes sure that its classObject
-                          is used to strictly compare signatures; is used in picking a strictly matching
-                          candidate field, method, constructor
-                        - remove access to RexxReflectUtil.bTryCoercions as that field is not used anymore
+        2018-11-01, rgf:    - adjusting to new usage of RexxStrictArgument, which makes sure that its classObject
+                              is used to strictly compare signatures; is used in picking a strictly matching
+                              candidate field, method, constructor
+                            - remove access to RexxReflectUtil.bTryCoercions as that field is not used anymore
 
-    2018-11-03, rgf:    - reflectMethod(): special handling for primitive classes needed, because a primitive
-                          class object does not have a superclass, so no instance methods can be invoked, which we want
-                          for ooRexx users; hence manually setting the superclass to the java.lang.Object class
+        2018-11-03, rgf:    - reflectMethod(): special handling for primitive classes needed, because a primitive
+                              class object does not have a superclass, so no instance methods can be invoked, which we want
+                              for ooRexx users; hence manually setting the superclass to the java.lang.Object class
 
-    2018-11-09, rgf:    - reflectMethod(): reorder logic for special handling of primitive and interface classes
+        2018-11-09, rgf:    - reflectMethod(): reorder logic for special handling of primitive and interface classes
 
+        2018-11-13, rgf:    - corrected bug in processField() when accessing first element in the
+                              returned value of coerceArgs(), which could also be the null value
 */
 
 
@@ -574,11 +576,13 @@ if (bDebug) System.err.println("         -> RexxReflectJava6.processField(): => 
                 // newValue can be null, a Java object (from the registry) or a string
             if ( newValue != null )
             {
-                newValue=rru.rajo.coerceArgs( new Object[]{newValue}, new Class[]{tmpFieldType})[0];   // coerce newValue appropriately
-                if (newValue==null)             // coercion did not work, not a proper argument for this Field, return
+                Object newValueArr[]=rru.rajo.coerceArgs( new Object[]{newValue}, new Class[]{tmpFieldType} );   // coerce newValue appropriately
+                if (newValueArr==null)             // coercion did not work, not a proper argument for this Field, return
                 {
                     return;
                 }
+                newValue=newValueArr[0];    // fetch value
+
             }
         }
 
@@ -825,6 +829,7 @@ if (bDebug)
 
             if ( newValue != null )             // newValue can be null, a Java object (from the registry)  or a string
             {
+                // TODO: if coerceArgs() returns null, we could create a more informative Throwable ("newValue could not be coerced to ParameterTypes[0]")
                 newValue=rru.rajo.coerceArgs( new Object[]{newValue}, cfm.parameterTypes)[0];   // coerce newValue appropriately
             }
 

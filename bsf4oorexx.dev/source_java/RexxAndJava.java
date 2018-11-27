@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2018-11-04
+  * @version 6.0.0, 2018-11-11
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -54,6 +54,8 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2018-11-11, rgf: - fixed IS_INSTANCE where an exception was raised, if a plain string got supplied
+
      2018-11-03, rgf: - subfunction CREATE_STRICT_ARGUMENT: make it usable if not employing BSF.CLS
                       - some tidying up
 
@@ -63,7 +65,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
                         makes sure that only fields, methods and constructors get picked that strictly match
                         the classObject of RexxStrictArgument
                       - added new subfunction "strictArg" which will employ convFromRexx() and return a RexxStrictArgument;
-                        meant to be used by box() in BSF.CLS
+                        meant to be used by box.strictArg() in BSF.CLS
 
      2018-03-22, rgf: - added Igor Petrushin to 'kudos': ported BSF4ooRexx for Raspberry Pi to ARM-32
 
@@ -3612,10 +3614,7 @@ if (bDebug)
 
                       if (javaObject==null)     // not in BSFRegistry, use string object directly
                       {
-                          throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                             "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": javaObject ["+args[1]+"]"+
-                             " cannot be retrieved from the BSFRegistry!"
-                             );
+                          javaObject=args[1];   // rgf, 20181111
                       }
 
                       Object javaClass = null;
@@ -4371,6 +4370,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): b) unregister=
                            "Sauer, Ralph"                           + "\n" +
                            "Schmid, Stefan"                         + "\n" +
                            "Scholz, Nicole"                         + "\n" +
+                           "Skelly, Bruce"                          + "\n" +    // help for the Mac installer that includes ooRexx since 2010
                            "Small, John"                            + "\n" +
                            "Sonnemans, Freddy"                      + "\n" +
                            "Spanberger, David"                      + "\n" +
@@ -4863,7 +4863,7 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): value=\""+value+"\",
             nrArgs=funcArgs.length;
 
         final boolean bDebug=  // true;
-                              false;
+                               false;
 
 if (bDebug) System.err.println("\n---   ---   ---   ---   ---");
 
@@ -4888,16 +4888,16 @@ if (bDebug) System.err.println("\t           ) ---> k=\""+k+"\": null!");
                 RexxStrictArgument rsa=(RexxStrictArgument) funcArgs[k];    // cast to proper class
 if (bDebug)
    System.err.println("\t/-->/\tcoerceArgs(): RexxStrictArgument: paramTypes[k]=["+paramTypes[k]+", rsa=["+rsa
-                       +"]: clz==rsa.classObject =["+(paramTypes[k]==rsa.classObject)+"]");
+                       +"]: paramTypes[k] ("+paramTypes[k].toString()+")==rsa.classObject =["+(paramTypes[k]==rsa.classObject)+"]");
                 if (paramTypes[k] != rsa.classObject)   // does not strictly equal the required class
                 {
 if (bDebug)
-   System.err.println("\t/-->/\tcoerceArgs(): RexxStrictArgument: paramTypes[k]=["+paramTypes[k]+" != rsa.classObject=["+rsa.classObject+"]");
+   System.err.println("\t/-->/\tcoerceArgs(): RexxStrictArgument: paramTypes[k]=["+paramTypes[k]+" != rsa.classObject=["+rsa.classObject+"] Not compatible, RETURNING NULL!");
                     return null;    // indicate not successful
                 }
                 coercedArgs[k]=rsa.value;
 if (bDebug)
-    System.err.println("\t/-->/\tcoercedArgs[k]: ["+coercedArgs[k]+"] <-- rsa.value=["+rsa.value+"]");
+    System.err.println("\t/-->/\tcoercedArgs[k]: ["+coercedArgs[k]+"] <-- rsa.value=["+rsa.value+"] SUCCESS!");
                 continue;
             }
 
@@ -4927,7 +4927,9 @@ if (bDebug)
             System.out.println("faw=\""+faw+"\", dimensions="+faw.dimensions+", componentType=\""+faw.componentType+"\"");
         }
         catch (Exception e)
-        {}
+        {
+if (bDebug) System.err.println("\t            exception while trying to display paramTypes and funcArgs: e.toString()=("+e.toString()+")");
+        }
 
     }
 }
@@ -4988,6 +4990,8 @@ if (bDebug) System.err.println("\t           ) ---> k="+k+": successful coercion
                     }
                     catch (Exception e)
                     {
+
+if (bDebug) System.err.println("\t            exception in NetRexx-branch: e.toString()=("+e.toString()+")");
                         ;
                     }
                 }
