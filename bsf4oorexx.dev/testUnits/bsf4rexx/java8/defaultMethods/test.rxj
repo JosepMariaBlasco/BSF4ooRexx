@@ -1,0 +1,122 @@
+parse source . . thisFile
+
+call dump_reflect_info
+say
+
+do i=1 to 4
+   rexxName=filespec("name",thisFile)"-"i
+   className="java8.defaultMethods.Test"i
+   say "Rexx program:" pp(rexxName) "testing Java class:" pp(className)
+   call test_static   rexxName, className
+   say copies("-",50)
+   call test_static_via_instance rexxName, className
+   say copies("-",50)
+   call test_instance rexxName, className
+   say copies("=",79)
+end
+
+say copies("-", 100)
+call dump_reflect_info
+
+::requires "BSF.CLS"
+
+
+::requires "rgf_util2.rex"
+
+::routine test_static
+  parse arg rexxName, className
+  signal on syntax
+  clz=bsf.loadClass(className)
+  say "  " .context~name rexxName": clz~toString="pp(clz~toString)
+  say "  " .context~name rexxName":" className"~staticMeth('from_"rexxName") ->" clz~staticMeth('from_'rexxName)
+  return
+syntax:
+  co=condition('object')
+  say "  " .context~name rexxName "- SYNTAX condition occurred!"
+  say ppCondition2(co)
+  call dump_java_stack co
+  say
+  if className<>"Interface" then
+  do
+     say "!!! ---> "~copies(10) "---> EXPERIMENT: try executing directly Interface's static method!"
+     say "  " .context~name rexxName "- SYNTAX condition occurred, recursing with 'Instance'" copies("<-- ",3)
+     call test_static rexxName, "java8.defaultMethods.Interface"
+     say "!!! <--- "~copies(10) "<--- EXPERIMENT: try executing directly Interface's static method!"
+     say
+  end
+
+
+
+::routine test_instance
+  parse arg rexxName, className
+  signal on syntax
+  t=.bsf~new(className)
+  say "  " .context~name rexxName": t="pp(t~toString)
+  say "  " .context~name rexxName":" "t~instanceMeth ->" t~instanceMeth
+  return
+syntax:
+  co=condition('object')
+  say "  " .context~name rexxName "- SYNTAX condition occurred!"
+  say ppCondition2(co)
+  call dump_java_stack co
+  say
+
+
+::routine test_static_via_instance
+  use arg rexxName, className
+  signal on syntax
+  t=.bsf~new(className)
+  -- clz=bsf.loadClass(className)
+  say "  " .context~name rexxName": t~toString="pp(t~toString)
+  say "  " .context~name rexxName":" "t~staticMeth('from_"rexxName") ->" t~staticMeth('from_'rexxName)
+  return
+syntax:
+  co=condition('object')
+  say "  " .context~name rexxName "- SYNTAX condition occurred!"
+  say ppCondition2(co)
+  call dump_java_stack co
+  say
+  if className<>"Interface" then
+  do
+     say "!!! ---> "~copies(10) "---> EXPERIMENT: try executing directly Interface's static method!"
+     say "  " .context~name rexxName "- SYNTAX condition occurred, recursing with 'Instance'" copies("<-- ",3)
+     call test_static rexxName, "java8.defaultMethods.Interface"
+     say "!!! <--- "~copies(10) "<--- EXPERIMENT: try executing directly Interface's static method!"
+     say
+  end
+
+
+
+
+::routine dump_java_stack
+  use arg co
+  jexc=co~additional~at(2)    -- get Java exception object
+
+  say "/--> "~copies(20) "jexc:" pp(jexc~toString)
+  jexc~printStackTrace
+  say "/<-- "~copies(20) "jexc:" pp(jexc~toString)
+
+
+
+
+::routine dump_reflect_info
+
+   -- for debugging new reflection of BSF4ooRexx, needs to be removed from GA version
+   -- rgf, 20180218: test purposes, make sure we use MethoHandles
+   say "java.version:" pp(.bsf4rexx~java.version)
+   say
+   rrj=bsf.wrap(bsf("rexxReflectObject"))
+   say "using RexxReflectObject" pp(rrj)
+   -- say "setting useReflectInvoke=.false (now exclusively uses MethodHandles), rrj="pp(rrj)
+   -- rrj~useReflectInvoke=.false   -- use MethodHandle invocations
+   -- rrj~useUnreflect    =.true
+   -- rrj~useCaching      =.false
+   -- rrj~debugLevel      =4
+   say "    useCaching      ="pp(rrj~useCaching      )
+   say "    useReflectInvoke="pp(rrj~useReflectInvoke) "(.false=MethodHandles, .true=reflective invocation)"
+   say "    useUnreflect    ="pp(rrj~useUnreflect    ) "(.true=use unreflect from java.lang.reflect object)"
+   say "    debugLevel      ="pp(rrj~debugLevel      )
+   say "-"~copies(100)
+
+
+

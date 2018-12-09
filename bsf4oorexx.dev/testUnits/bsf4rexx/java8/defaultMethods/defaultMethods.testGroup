@@ -1,0 +1,193 @@
+#!/usr/bin/env rexx
+/*
+   name:          defaultMethods.testGroup
+   author:        Rony G. Flatscher
+   version:       1.0.0
+   date:          2018-12-09
+
+   purpose:       test resolution of instance (dynamic) mehtods (IM)  and static (SM) Interface methods that got introduced with Java 8
+
+                  "Interface" ("I") class defines staticMeth (SM) and instanceMeth (IM); if IM gets invoked it will use
+                              the Interface's SM only! The SM can only be used if referring to the Interface class object
+
+                  "Base" ("B") classes define DM and/or IM
+                  "Test" ("T") classes do not define any DM or IM, but "implement" the "Interface"; they invoke DM or IM, and
+                         if the base class does not define SM will use I.SM
+
+                  Interface.class: DM IM
+
+                  B1    IM    SM | B2          SM | B3    IM       | B4             |
+                                 |                |                |                |
+                  T1             | T2             | T3          x) | T4          x) | x) invocation must be I.SM
+                  ---------------+----------------+----------------+----------------+-
+                     B1.IM B1.SM |     I.IM B2.SM |    B3.IM  I.SM |     I.IM  I.SM |
+                     B1.SM       |     I.SM       |                |     I.SM       |
+
+
+
+
+
+*/
+
+   -- make sure we have at least Java 8 available (static and default methods got introduced with Java 1.8/8)
+ if .bsf4rexx~java.major.version<8 then return
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testDefaultMethods)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+-- ::requires "rgf_util2.rex"
+
+
+::class "testDefaultMethods" subclass ooTestCase public
+
+::method init
+  expose pkgName
+  forward class (super) continue
+
+  pkgName="java8.defaultMethods."   -- package name of the Java classes we use in these test cases
+
+-------------- test the Base?.java classes --------------------
+::method "test_01_base"    -- test Base1 class
+  expose pkgName
+  clzName=pkgName"Base1"
+  clz=bsf.importClass(clzName)
+  self~assertEquals("|--///Base1.staticMeth(s=[])\\\--|", clz~staticMeth(""))
+
+  o  =clz~new
+  self~assertEquals("|--///Base1.staticMeth(s=[])\\\--|", o  ~staticMeth(""))
+  self~assertEquals("{Base1.instanceMeth<<<|--///Base1.staticMeth(s=[<Base1.instanceMeth()>])\\\--|>>>}", o  ~instanceMeth  )
+
+
+::method "test_02_base"    -- test Base2 class
+  expose pkgName
+  clzName=pkgName"Base2"
+  clz=bsf.importClass(clzName)
+  self~assertEquals("|--///Base2.staticMeth(s=[])\\\--|", clz~staticMeth(""))
+
+  o  =clz~new
+  self~assertEquals("|--///Base2.staticMeth(s=[])\\\--|", o  ~staticMeth(""))
+  -- expect error
+  self~expectSyntax(40.900)
+  o  ~instanceMeth         -- Base2 has no such method implemented!
+
+
+::method "test_03a_base"    -- test Base3 class
+  expose pkgName
+  clzName=pkgName"Base3"
+  clz=bsf.importClass(clzName)
+  o  =clz~new
+  self~assertEquals("<Base3.instanceMeth()>", o~instanceMeth)
+  -- expect error
+  self~expectSyntax(40.900)
+  o  ~staticMeth("")       -- Base3 has no such method implemented; try via instance
+
+
+::method "test_03b_base"   -- test Base3 class
+  expose pkgName
+  clzName=pkgName"Base3"
+  -- expect error
+  self~expectSyntax(40.900)
+  bsf.loadClass(clzName)~staticMeth("")
+
+
+::method "test_04a_base"    -- test Base4 class
+  expose pkgName
+  clzName=pkgName"Base4"
+  o  =.bsf~new(clzName)
+  -- expect error
+  self~expectSyntax(40.900)
+  o  ~instanceMeth         -- Base3 has no such method implemented!
+
+
+::method "test_04b_base"   -- test Base4 class
+  expose pkgName
+  clzName=pkgName"Base4"
+  self~expectSyntax(40.900)
+  bsf.loadClass(clzName)~staticMeth("")   -- Base3 has no such method implemented!
+
+
+-------------- test the Interface.java class --------------------
+
+::method "test_10_interface"
+  expose pkgName
+  clzName=pkgName"Interface"
+  clz=bsf.loadClass(clzName)
+
+  self~assertTrue(clz~isInterface)
+  self~assertEquals("|--///Interface.staticMeth(s=[])\\\--|", clz~staticMeth(""))
+
+
+-------------- test the Test?.java classes which implement Interface.java --------------------
+
+::method "test_21_test"    -- test Test1 class
+  expose pkgName
+  clzName=pkgName"Test1"
+  clz=bsf.importClass(clzName)
+  self~assertEquals("|--///Base1.staticMeth(s=[])\\\--|", clz~staticMeth(""))
+
+  o  =clz~new
+  self~assertEquals("|--///Base1.staticMeth(s=[])\\\--|", o  ~staticMeth(""))
+  self~assertEquals("{Base1.instanceMeth<<<|--///Base1.staticMeth(s=[<Base1.instanceMeth()>])\\\--|>>>}", o  ~instanceMeth  )
+
+
+::method "test_22_test"    -- test Test2 class
+  expose pkgName
+  clzName=pkgName"Test2"
+  clz=bsf.importClass(clzName)
+  self~assertEquals("|--///Base2.staticMeth(s=[])\\\--|", clz~staticMeth(""))
+
+  o  =clz~new
+  self~assertEquals("|--///Base2.staticMeth(s=[])\\\--|", o  ~staticMeth(""))
+
+  -- this triggers the default method in Interface
+  self~assertEquals("{Instance.instanceMeth<<<|--///Interface.staticMeth(s=[<Instance.instanceMeth()>])\\\--|>>>}", o~instanceMeth)
+
+
+::method "test_23a_test"    -- test Test3 class
+  expose pkgName
+  clzName=pkgName"Test3"
+  clz=bsf.importClass(clzName)
+  o  =clz~new
+  self~assertEquals("<Base3.instanceMeth()>", o~instanceMeth)
+  -- expect error
+  self~expectSyntax(40.900)
+  o  ~staticMeth("")       -- neither Base3 nor Test3 have no such method implemented; try via instance
+
+
+::method "test_23b_test"   -- test Test3 class
+  expose pkgName
+  clzName=pkgName"Test3"
+  -- expect error
+  self~expectSyntax(40.900)
+  bsf.loadClass(clzName)~staticMeth("")
+
+
+::method "test_24a_test"    -- test Test4 class
+  expose pkgName
+  clzName=pkgName"Test4"
+  o  =.bsf~new(clzName)
+
+  -- this triggers the default method in Interface
+  self~assertEquals("{Instance.instanceMeth<<<|--///Interface.staticMeth(s=[<Instance.instanceMeth()>])\\\--|>>>}", o~instanceMeth)
+
+  self~expectSyntax(40.900)
+  o~staticMeth("")                        -- neither Base4 nor Test4 have that method implemented!
+
+
+::method "test_24b_test"   -- test Test4 class
+  expose pkgName
+  clzName=pkgName"Test4"
+  self~expectSyntax(40.900)
+  bsf.loadClass(clzName)~staticMeth("")   -- neither Base4 nor Test4 have that method implemented!
+

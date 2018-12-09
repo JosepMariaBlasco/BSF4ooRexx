@@ -1,0 +1,310 @@
+java.version: [1.8.0_171]
+
+using RexxReflectObject [org.rexxla.bsf.engines.rexx.RexxReflectJava7@181eb93]
+    useCaching      =[1]
+    useReflectInvoke=[0] (.false=MethodHandles, .true=reflective invocation)
+    useUnreflect    =[1] (.true=use unreflect from java.lang.reflect object)
+    debugLevel      =[0]
+----------------------------------------------------------------------------------------------------
+
+Rexx program: [test.rxj-1] testing Java class: [java8.dynamic_static_interface_methods.Test1]
+   TEST_STATIC test.rxj-1: clz~toString=[class java8.dynamic_static_interface_methods.Test1]
+   TEST_STATIC test.rxj-1: java8.dynamic_static_interface_methods.Test1~staticMeth('from_test.rxj-1) -> |--///Base1.staticMeth(s=[from_test.rxj-1])\\\--|
+--------------------------------------------------
+   TEST_STATIC_VIA_INSTANCE test.rxj-1: t~toString=[java8.dynamic_static_interface_methods.Test1@11bc7ed]
+   TEST_STATIC_VIA_INSTANCE test.rxj-1: t~staticMeth('from_test.rxj-1) -> |--///Base1.staticMeth(s=[from_test.rxj-1])\\\--|
+--------------------------------------------------
+   TEST_INSTANCE test.rxj-1: t=[java8.dynamic_static_interface_methods.Test1@10dae81]
+   TEST_INSTANCE test.rxj-1: t~instanceMeth -> {Base1.instanceMeth<<<|--///Base1.staticMeth(s=[<Base1.instanceMeth()>])\\\--|>>>}
+===============================================================================
+Rexx program: [test.rxj-2] testing Java class: [java8.dynamic_static_interface_methods.Test2]
+   TEST_STATIC test.rxj-2: clz~toString=[class java8.dynamic_static_interface_methods.Test2]
+   TEST_STATIC test.rxj-2: java8.dynamic_static_interface_methods.Test2~staticMeth('from_test.rxj-2) -> |--///Base2.staticMeth(s=[from_test.rxj-2])\\\--|
+--------------------------------------------------
+   TEST_STATIC_VIA_INSTANCE test.rxj-2: t~toString=[java8.dynamic_static_interface_methods.Test2@80bfe8]
+   TEST_STATIC_VIA_INSTANCE test.rxj-2: t~staticMeth('from_test.rxj-2) -> |--///Base2.staticMeth(s=[from_test.rxj-2])\\\--|
+--------------------------------------------------
+   TEST_INSTANCE test.rxj-2: t=[java8.dynamic_static_interface_methods.Test2@a29884]
+   TEST_INSTANCE test.rxj-2: t~instanceMeth -> {Instance.instanceMeth<<<|--///Interface.staticMeth(s=[<Instance.instanceMeth()>])\\\--|>>>}
+===============================================================================
+Rexx program: [test.rxj-3] testing Java class: [java8.dynamic_static_interface_methods.Test3]
+   TEST_STATIC test.rxj-3: clz~toString=[class java8.dynamic_static_interface_methods.Test3]
+   TEST_STATIC test.rxj-3 - SYNTAX condition occurred!
+	[ADDITIONAL] =[an Array (2 items) id#_-39120657]
+		["BSF4ooRexx/routine/BSF(), error 3: Java exception occurred: [org.apache.bsf.BSFException: BSF4ooRexx subfunction ""invoke"": " || "0A09"x || "bean:        [class java8.dynamic_static_interface_methods.Test3] --> type: <java8.dynamic_static_interface_methods.Test3>" || "0A09"x || "method:      [STATICMETH] not found or execution error!" || "0A0A09"x || "-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)" || "0A09"x || "-> check supplied arguments (correct number, correct types?):" || "0A0909"x || "arg # 1: Rexx argument=[from_test.rxj-3] --> Java value=""from_test.rxj-3"" type=<java.lang.String>" || "0A"x || "]"]
+		[org.apache.bsf.BSFException@1fc0f2f id#_-39118641]
+			--> exception: [org.apache.bsf.BSFException@1fc0f2f id#_-39118641]
+	[CODE]       =[40.900]
+	[CONDITION]  =[SYNTAX]
+	[DESCRIPTION]=[]
+	[ERRORTEXT]  =[Incorrect call to routine.]
+	[INSTRUCTION]=[SIGNAL]
+	[MESSAGE]    =["BSF4ooRexx/routine/BSF(), error 3: Java exception occurred: [org.apache.bsf.BSFException: BSF4ooRexx subfunction ""invoke"": " || "0A09"x || "bean:        [class java8.dynamic_static_interface_methods.Test3] --> type: <java8.dynamic_static_interface_methods.Test3>" || "0A09"x || "method:      [STATICMETH] not found or execution error!" || "0A0A09"x || "-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)" || "0A09"x || "-> check supplied arguments (correct number, correct types?):" || "0A0909"x || "arg # 1: Rexx argument=[from_test.rxj-3] --> Java value=""from_test.rxj-3"" type=<java.lang.String>" || "0A"x || "]."]
+	[PACKAGE]    =[a Package id#_-36028721]
+	[POSITION]   =[31]
+	[PROGRAM]    =[F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java8\dynamic_static_interface_methods\test.rxj]
+	[PROPAGATED] =[1]
+	[RC]         =[40]
+	[STACKFRAMES]=[a List (5 items) id#_-39125665]
+		[       *-* Compiled routine "BSF". id#_-39126617]
+		[       *-* Compiled method "CALLWITH" with scope "Routine". id#_-39127393]
+		[  1817 *-* return bsf.wrap(self~class~rBSF~callWith(arr))   -- process result and return it id#_-39127913]
+		[    31 *-* say "  " .context~name rexxName":" className"~staticMeth('from_"rexxName") ->" clz~staticMeth('from_'rexxName) id#_-39128385]
+		[    10 *-*   call test_static   rexxName, className id#_-39128737]
+	[TRACEBACK]  =[a List (5 items) id#_-39125825]
+		[       *-* Compiled routine "BSF".]
+		[       *-* Compiled method "CALLWITH" with scope "Routine".]
+		[  1817 *-* return bsf.wrap(self~class~rBSF~callWith(arr))   -- process result and return it]
+		[    31 *-* say "  " .context~name rexxName":" className"~staticMeth('from_"rexxName") ->" clz~staticMeth('from_'rexxName)]
+		[    10 *-*   call test_static   rexxName, className]
+
+/--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /-->  jexc: [org.apache.bsf.BSFException: BSF4ooRexx subfunction "invoke": 
+	bean:        [class java8.dynamic_static_interface_methods.Test3] --> type: <java8.dynamic_static_interface_methods.Test3>
+	method:      [STATICMETH] not found or execution error!
+
+	-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)
+	-> check supplied arguments (correct number, correct types?):
+		arg # 1: Rexx argument=[from_test.rxj-3] --> Java value="from_test.rxj-3" type=<java.lang.String>
+]
+org.apache.bsf.BSFException: BSF4ooRexx subfunction "invoke": 
+	bean:        [class java8.dynamic_static_interface_methods.Test3] --> type: <java8.dynamic_static_interface_methods.Test3>
+	method:      [STATICMETH] not found or execution error!
+
+	-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)
+	-> check supplied arguments (correct number, correct types?):
+		arg # 1: Rexx argument=[from_test.rxj-3] --> Java value="from_test.rxj-3" type=<java.lang.String>
+
+	at org.rexxla.bsf.engines.rexx.RexxReflectUtil.throwNotFoundBSFException(RexxReflectUtil.java:781)
+	at org.rexxla.bsf.engines.rexx.RexxReflectJava7.reflectMethod(RexxReflectJava7.java:1458)
+	at org.rexxla.bsf.engines.rexx.RexxReflectJava7.reflect(RexxReflectJava7.java:426)
+	at org.rexxla.bsf.engines.rexx.RexxAndJava.javaCallBSF(RexxAndJava.java:3546)
+/<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<--  jexc: [org.apache.bsf.BSFException: BSF4ooRexx subfunction "invoke": 
+	bean:        [class java8.dynamic_static_interface_methods.Test3] --> type: <java8.dynamic_static_interface_methods.Test3>
+	method:      [STATICMETH] not found or execution error!
+
+	-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)
+	-> check supplied arguments (correct number, correct types?):
+		arg # 1: Rexx argument=[from_test.rxj-3] --> Java value="from_test.rxj-3" type=<java.lang.String>
+]
+
+!!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! --->  ---> EXPERIMENT: try executing directly Interface's static method!
+   TEST_STATIC test.rxj-3 - SYNTAX condition occurred, recursing with 'Instance' <-- <-- <-- 
+   TEST_STATIC test.rxj-3: clz~toString=[interface java8.dynamic_static_interface_methods.Interface]
+   TEST_STATIC test.rxj-3: java8.dynamic_static_interface_methods.Interface~staticMeth('from_test.rxj-3) -> |--///Interface.staticMeth(s=[from_test.rxj-3])\\\--|
+!!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <---  <--- EXPERIMENT: try executing directly Interface's static method!
+
+--------------------------------------------------
+   TEST_STATIC_VIA_INSTANCE test.rxj-3: t~toString=[java8.dynamic_static_interface_methods.Test3@1a71e93]
+   TEST_STATIC_VIA_INSTANCE test.rxj-3 - SYNTAX condition occurred!
+	[ADDITIONAL] =[an Array (2 items) id#_-39318161]
+		["BSF4ooRexx/routine/BSF(), error 3: Java exception occurred: [org.apache.bsf.BSFException: BSF4ooRexx subfunction ""invoke"": " || "0A09"x || "bean:        [java8.dynamic_static_interface_methods.Test3@1a71e93] --> type: <java8.dynamic_static_interface_methods.Test3>" || "0A09"x || "method:      [STATICMETH] not found or execution error!" || "0A0A09"x || "-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)" || "0A09"x || "-> check supplied arguments (correct number, correct types?):" || "0A0909"x || "arg # 1: Rexx argument=[from_test.rxj-3] --> Java value=""from_test.rxj-3"" type=<java.lang.String>" || "0A"x || "]"]
+		[org.apache.bsf.BSFException@6cbb7a id#_-39316145]
+			--> exception: [org.apache.bsf.BSFException@6cbb7a id#_-39316145]
+	[CODE]       =[40.900]
+	[CONDITION]  =[SYNTAX]
+	[DESCRIPTION]=[]
+	[ERRORTEXT]  =[Incorrect call to routine.]
+	[INSTRUCTION]=[SIGNAL]
+	[MESSAGE]    =["BSF4ooRexx/routine/BSF(), error 3: Java exception occurred: [org.apache.bsf.BSFException: BSF4ooRexx subfunction ""invoke"": " || "0A09"x || "bean:        [java8.dynamic_static_interface_methods.Test3@1a71e93] --> type: <java8.dynamic_static_interface_methods.Test3>" || "0A09"x || "method:      [STATICMETH] not found or execution error!" || "0A0A09"x || "-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)" || "0A09"x || "-> check supplied arguments (correct number, correct types?):" || "0A0909"x || "arg # 1: Rexx argument=[from_test.rxj-3] --> Java value=""from_test.rxj-3"" type=<java.lang.String>" || "0A"x || "]."]
+	[PACKAGE]    =[a Package id#_-36028721]
+	[POSITION]   =[71]
+	[PROGRAM]    =[F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java8\dynamic_static_interface_methods\test.rxj]
+	[PROPAGATED] =[1]
+	[RC]         =[40]
+	[STACKFRAMES]=[a List (5 items) id#_-39323177]
+		[       *-* Compiled routine "BSF". id#_-39324129]
+		[       *-* Compiled method "CALLWITH" with scope "Routine". id#_-39324905]
+		[  1817 *-* return bsf.wrap(self~class~rBSF~callWith(arr))   -- process result and return it id#_-39325425]
+		[    71 *-* say "  " .context~name rexxName":" "t~staticMeth('from_"rexxName") ->" t~staticMeth('from_'rexxName) id#_-39325881]
+		[    12 *-*   call test_static_via_instance rexxName, className id#_-39326257]
+	[TRACEBACK]  =[a List (5 items) id#_-39323337]
+		[       *-* Compiled routine "BSF".]
+		[       *-* Compiled method "CALLWITH" with scope "Routine".]
+		[  1817 *-* return bsf.wrap(self~class~rBSF~callWith(arr))   -- process result and return it]
+		[    71 *-* say "  " .context~name rexxName":" "t~staticMeth('from_"rexxName") ->" t~staticMeth('from_'rexxName)]
+		[    12 *-*   call test_static_via_instance rexxName, className]
+
+/--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /-->  jexc: [org.apache.bsf.BSFException: BSF4ooRexx subfunction "invoke": 
+	bean:        [java8.dynamic_static_interface_methods.Test3@1a71e93] --> type: <java8.dynamic_static_interface_methods.Test3>
+	method:      [STATICMETH] not found or execution error!
+
+	-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)
+	-> check supplied arguments (correct number, correct types?):
+		arg # 1: Rexx argument=[from_test.rxj-3] --> Java value="from_test.rxj-3" type=<java.lang.String>
+]
+org.apache.bsf.BSFException: BSF4ooRexx subfunction "invoke": 
+	bean:        [java8.dynamic_static_interface_methods.Test3@1a71e93] --> type: <java8.dynamic_static_interface_methods.Test3>
+	method:      [STATICMETH] not found or execution error!
+
+	-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)
+	-> check supplied arguments (correct number, correct types?):
+		arg # 1: Rexx argument=[from_test.rxj-3] --> Java value="from_test.rxj-3" type=<java.lang.String>
+
+	at org.rexxla.bsf.engines.rexx.RexxReflectUtil.throwNotFoundBSFException(RexxReflectUtil.java:781)
+	at org.rexxla.bsf.engines.rexx.RexxReflectJava7.reflectMethod(RexxReflectJava7.java:1458)
+	at org.rexxla.bsf.engines.rexx.RexxReflectJava7.reflect(RexxReflectJava7.java:426)
+	at org.rexxla.bsf.engines.rexx.RexxAndJava.javaCallBSF(RexxAndJava.java:3546)
+/<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<--  jexc: [org.apache.bsf.BSFException: BSF4ooRexx subfunction "invoke": 
+	bean:        [java8.dynamic_static_interface_methods.Test3@1a71e93] --> type: <java8.dynamic_static_interface_methods.Test3>
+	method:      [STATICMETH] not found or execution error!
+
+	-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)
+	-> check supplied arguments (correct number, correct types?):
+		arg # 1: Rexx argument=[from_test.rxj-3] --> Java value="from_test.rxj-3" type=<java.lang.String>
+]
+
+!!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! --->  ---> EXPERIMENT: try executing directly Interface's static method!
+   TEST_STATIC_VIA_INSTANCE test.rxj-3 - SYNTAX condition occurred, recursing with 'Instance' <-- <-- <-- 
+   TEST_STATIC test.rxj-3: clz~toString=[interface java8.dynamic_static_interface_methods.Interface]
+   TEST_STATIC test.rxj-3: java8.dynamic_static_interface_methods.Interface~staticMeth('from_test.rxj-3) -> |--///Interface.staticMeth(s=[from_test.rxj-3])\\\--|
+!!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <---  <--- EXPERIMENT: try executing directly Interface's static method!
+
+--------------------------------------------------
+   TEST_INSTANCE test.rxj-3: t=[java8.dynamic_static_interface_methods.Test3@3df479]
+   TEST_INSTANCE test.rxj-3: t~instanceMeth -> <Base3.instanceMeth()>
+===============================================================================
+Rexx program: [test.rxj-4] testing Java class: [java8.dynamic_static_interface_methods.Test4]
+   TEST_STATIC test.rxj-4: clz~toString=[class java8.dynamic_static_interface_methods.Test4]
+   TEST_STATIC test.rxj-4 - SYNTAX condition occurred!
+	[ADDITIONAL] =[an Array (2 items) id#_-39537849]
+		["BSF4ooRexx/routine/BSF(), error 3: Java exception occurred: [org.apache.bsf.BSFException: BSF4ooRexx subfunction ""invoke"": " || "0A09"x || "bean:        [class java8.dynamic_static_interface_methods.Test4] --> type: <java8.dynamic_static_interface_methods.Test4>" || "0A09"x || "method:      [STATICMETH] not found or execution error!" || "0A0A09"x || "-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)" || "0A09"x || "-> check supplied arguments (correct number, correct types?):" || "0A0909"x || "arg # 1: Rexx argument=[from_test.rxj-4] --> Java value=""from_test.rxj-4"" type=<java.lang.String>" || "0A"x || "]"]
+		[org.apache.bsf.BSFException@176fe71 id#_-39535833]
+			--> exception: [org.apache.bsf.BSFException@176fe71 id#_-39535833]
+	[CODE]       =[40.900]
+	[CONDITION]  =[SYNTAX]
+	[DESCRIPTION]=[]
+	[ERRORTEXT]  =[Incorrect call to routine.]
+	[INSTRUCTION]=[SIGNAL]
+	[MESSAGE]    =["BSF4ooRexx/routine/BSF(), error 3: Java exception occurred: [org.apache.bsf.BSFException: BSF4ooRexx subfunction ""invoke"": " || "0A09"x || "bean:        [class java8.dynamic_static_interface_methods.Test4] --> type: <java8.dynamic_static_interface_methods.Test4>" || "0A09"x || "method:      [STATICMETH] not found or execution error!" || "0A0A09"x || "-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)" || "0A09"x || "-> check supplied arguments (correct number, correct types?):" || "0A0909"x || "arg # 1: Rexx argument=[from_test.rxj-4] --> Java value=""from_test.rxj-4"" type=<java.lang.String>" || "0A"x || "]."]
+	[PACKAGE]    =[a Package id#_-36028721]
+	[POSITION]   =[31]
+	[PROGRAM]    =[F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java8\dynamic_static_interface_methods\test.rxj]
+	[PROPAGATED] =[1]
+	[RC]         =[40]
+	[STACKFRAMES]=[a List (5 items) id#_-39542857]
+		[       *-* Compiled routine "BSF". id#_-39543809]
+		[       *-* Compiled method "CALLWITH" with scope "Routine". id#_-39544585]
+		[  1817 *-* return bsf.wrap(self~class~rBSF~callWith(arr))   -- process result and return it id#_-39545105]
+		[    31 *-* say "  " .context~name rexxName":" className"~staticMeth('from_"rexxName") ->" clz~staticMeth('from_'rexxName) id#_-39545577]
+		[    10 *-*   call test_static   rexxName, className id#_-39545929]
+	[TRACEBACK]  =[a List (5 items) id#_-39543017]
+		[       *-* Compiled routine "BSF".]
+		[       *-* Compiled method "CALLWITH" with scope "Routine".]
+		[  1817 *-* return bsf.wrap(self~class~rBSF~callWith(arr))   -- process result and return it]
+		[    31 *-* say "  " .context~name rexxName":" className"~staticMeth('from_"rexxName") ->" clz~staticMeth('from_'rexxName)]
+		[    10 *-*   call test_static   rexxName, className]
+
+/--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /-->  jexc: [org.apache.bsf.BSFException: BSF4ooRexx subfunction "invoke": 
+	bean:        [class java8.dynamic_static_interface_methods.Test4] --> type: <java8.dynamic_static_interface_methods.Test4>
+	method:      [STATICMETH] not found or execution error!
+
+	-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)
+	-> check supplied arguments (correct number, correct types?):
+		arg # 1: Rexx argument=[from_test.rxj-4] --> Java value="from_test.rxj-4" type=<java.lang.String>
+]
+org.apache.bsf.BSFException: BSF4ooRexx subfunction "invoke": 
+	bean:        [class java8.dynamic_static_interface_methods.Test4] --> type: <java8.dynamic_static_interface_methods.Test4>
+	method:      [STATICMETH] not found or execution error!
+
+	-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)
+	-> check supplied arguments (correct number, correct types?):
+		arg # 1: Rexx argument=[from_test.rxj-4] --> Java value="from_test.rxj-4" type=<java.lang.String>
+
+	at org.rexxla.bsf.engines.rexx.RexxReflectUtil.throwNotFoundBSFException(RexxReflectUtil.java:781)
+	at org.rexxla.bsf.engines.rexx.RexxReflectJava7.reflectMethod(RexxReflectJava7.java:1458)
+	at org.rexxla.bsf.engines.rexx.RexxReflectJava7.reflect(RexxReflectJava7.java:426)
+	at org.rexxla.bsf.engines.rexx.RexxAndJava.javaCallBSF(RexxAndJava.java:3546)
+/<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<--  jexc: [org.apache.bsf.BSFException: BSF4ooRexx subfunction "invoke": 
+	bean:        [class java8.dynamic_static_interface_methods.Test4] --> type: <java8.dynamic_static_interface_methods.Test4>
+	method:      [STATICMETH] not found or execution error!
+
+	-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)
+	-> check supplied arguments (correct number, correct types?):
+		arg # 1: Rexx argument=[from_test.rxj-4] --> Java value="from_test.rxj-4" type=<java.lang.String>
+]
+
+!!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! --->  ---> EXPERIMENT: try executing directly Interface's static method!
+   TEST_STATIC test.rxj-4 - SYNTAX condition occurred, recursing with 'Instance' <-- <-- <-- 
+   TEST_STATIC test.rxj-4: clz~toString=[interface java8.dynamic_static_interface_methods.Interface]
+   TEST_STATIC test.rxj-4: java8.dynamic_static_interface_methods.Interface~staticMeth('from_test.rxj-4) -> |--///Interface.staticMeth(s=[from_test.rxj-4])\\\--|
+!!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <---  <--- EXPERIMENT: try executing directly Interface's static method!
+
+--------------------------------------------------
+   TEST_STATIC_VIA_INSTANCE test.rxj-4: t~toString=[java8.dynamic_static_interface_methods.Test4@fb509a]
+   TEST_STATIC_VIA_INSTANCE test.rxj-4 - SYNTAX condition occurred!
+	[ADDITIONAL] =[an Array (2 items) id#_-39734825]
+		["BSF4ooRexx/routine/BSF(), error 3: Java exception occurred: [org.apache.bsf.BSFException: BSF4ooRexx subfunction ""invoke"": " || "0A09"x || "bean:        [java8.dynamic_static_interface_methods.Test4@fb509a] --> type: <java8.dynamic_static_interface_methods.Test4>" || "0A09"x || "method:      [STATICMETH] not found or execution error!" || "0A0A09"x || "-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)" || "0A09"x || "-> check supplied arguments (correct number, correct types?):" || "0A0909"x || "arg # 1: Rexx argument=[from_test.rxj-4] --> Java value=""from_test.rxj-4"" type=<java.lang.String>" || "0A"x || "]"]
+		[org.apache.bsf.BSFException@ffa5d id#_-39732809]
+			--> exception: [org.apache.bsf.BSFException@ffa5d id#_-39732809]
+	[CODE]       =[40.900]
+	[CONDITION]  =[SYNTAX]
+	[DESCRIPTION]=[]
+	[ERRORTEXT]  =[Incorrect call to routine.]
+	[INSTRUCTION]=[SIGNAL]
+	[MESSAGE]    =["BSF4ooRexx/routine/BSF(), error 3: Java exception occurred: [org.apache.bsf.BSFException: BSF4ooRexx subfunction ""invoke"": " || "0A09"x || "bean:        [java8.dynamic_static_interface_methods.Test4@fb509a] --> type: <java8.dynamic_static_interface_methods.Test4>" || "0A09"x || "method:      [STATICMETH] not found or execution error!" || "0A0A09"x || "-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)" || "0A09"x || "-> check supplied arguments (correct number, correct types?):" || "0A0909"x || "arg # 1: Rexx argument=[from_test.rxj-4] --> Java value=""from_test.rxj-4"" type=<java.lang.String>" || "0A"x || "]."]
+	[PACKAGE]    =[a Package id#_-36028721]
+	[POSITION]   =[71]
+	[PROGRAM]    =[F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\testUnits\bsf4rexx\java8\dynamic_static_interface_methods\test.rxj]
+	[PROPAGATED] =[1]
+	[RC]         =[40]
+	[STACKFRAMES]=[a List (5 items) id#_-39739833]
+		[       *-* Compiled routine "BSF". id#_-39740785]
+		[       *-* Compiled method "CALLWITH" with scope "Routine". id#_-39741561]
+		[  1817 *-* return bsf.wrap(self~class~rBSF~callWith(arr))   -- process result and return it id#_-39742081]
+		[    71 *-* say "  " .context~name rexxName":" "t~staticMeth('from_"rexxName") ->" t~staticMeth('from_'rexxName) id#_-39742537]
+		[    12 *-*   call test_static_via_instance rexxName, className id#_-39742913]
+	[TRACEBACK]  =[a List (5 items) id#_-39739993]
+		[       *-* Compiled routine "BSF".]
+		[       *-* Compiled method "CALLWITH" with scope "Routine".]
+		[  1817 *-* return bsf.wrap(self~class~rBSF~callWith(arr))   -- process result and return it]
+		[    71 *-* say "  " .context~name rexxName":" "t~staticMeth('from_"rexxName") ->" t~staticMeth('from_'rexxName)]
+		[    12 *-*   call test_static_via_instance rexxName, className]
+
+/--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /--> /-->  jexc: [org.apache.bsf.BSFException: BSF4ooRexx subfunction "invoke": 
+	bean:        [java8.dynamic_static_interface_methods.Test4@fb509a] --> type: <java8.dynamic_static_interface_methods.Test4>
+	method:      [STATICMETH] not found or execution error!
+
+	-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)
+	-> check supplied arguments (correct number, correct types?):
+		arg # 1: Rexx argument=[from_test.rxj-4] --> Java value="from_test.rxj-4" type=<java.lang.String>
+]
+org.apache.bsf.BSFException: BSF4ooRexx subfunction "invoke": 
+	bean:        [java8.dynamic_static_interface_methods.Test4@fb509a] --> type: <java8.dynamic_static_interface_methods.Test4>
+	method:      [STATICMETH] not found or execution error!
+
+	-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)
+	-> check supplied arguments (correct number, correct types?):
+		arg # 1: Rexx argument=[from_test.rxj-4] --> Java value="from_test.rxj-4" type=<java.lang.String>
+
+	at org.rexxla.bsf.engines.rexx.RexxReflectUtil.throwNotFoundBSFException(RexxReflectUtil.java:781)
+	at org.rexxla.bsf.engines.rexx.RexxReflectJava7.reflectMethod(RexxReflectJava7.java:1458)
+	at org.rexxla.bsf.engines.rexx.RexxReflectJava7.reflect(RexxReflectJava7.java:426)
+	at org.rexxla.bsf.engines.rexx.RexxAndJava.javaCallBSF(RexxAndJava.java:3546)
+/<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<-- /<--  jexc: [org.apache.bsf.BSFException: BSF4ooRexx subfunction "invoke": 
+	bean:        [java8.dynamic_static_interface_methods.Test4@fb509a] --> type: <java8.dynamic_static_interface_methods.Test4>
+	method:      [STATICMETH] not found or execution error!
+
+	-> check method name=[STATICMETH] (caseless o.k., but correct spelling?)
+	-> check supplied arguments (correct number, correct types?):
+		arg # 1: Rexx argument=[from_test.rxj-4] --> Java value="from_test.rxj-4" type=<java.lang.String>
+]
+
+!!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! ---> !!! --->  ---> EXPERIMENT: try executing directly Interface's static method!
+   TEST_STATIC_VIA_INSTANCE test.rxj-4 - SYNTAX condition occurred, recursing with 'Instance' <-- <-- <-- 
+   TEST_STATIC test.rxj-4: clz~toString=[interface java8.dynamic_static_interface_methods.Interface]
+   TEST_STATIC test.rxj-4: java8.dynamic_static_interface_methods.Interface~staticMeth('from_test.rxj-4) -> |--///Interface.staticMeth(s=[from_test.rxj-4])\\\--|
+!!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <--- !!! <---  <--- EXPERIMENT: try executing directly Interface's static method!
+
+--------------------------------------------------
+   TEST_INSTANCE test.rxj-4: t=[java8.dynamic_static_interface_methods.Test4@117ae12]
+   TEST_INSTANCE test.rxj-4: t~instanceMeth -> {Instance.instanceMeth<<<|--///Interface.staticMeth(s=[<Instance.instanceMeth()>])\\\--|>>>}
+===============================================================================
+----------------------------------------------------------------------------------------------------
+java.version: [1.8.0_171]
+
+using RexxReflectObject [org.rexxla.bsf.engines.rexx.RexxReflectJava7@181eb93]
+    useCaching      =[1]
+    useReflectInvoke=[0] (.false=MethodHandles, .true=reflective invocation)
+    useUnreflect    =[1] (.true=use unreflect from java.lang.reflect object)
+    debugLevel      =[0]
+----------------------------------------------------------------------------------------------------

@@ -12,6 +12,8 @@
 
 use arg rpTestUnit, rpArray, nrThreads, javaThreadName
 
+-- say "===> nrThreads="pp(nrThreads) "javaThreadName:" javaThreadName
+
     tid=bsfGetTID()              -- get this TID
 
           -- save this thread's TID
@@ -31,12 +33,13 @@ use arg rpTestUnit, rpArray, nrThreads, javaThreadName
     end
 
       -- estimate maximum running time to leave enough time for super massive tests as of 20181104
-    maxTimeToWait=1+nrThreads * 1.5
--- say "nrThreads="pp(nrThreads) "maxTimeToWait:" pp(maxTimeToWait)  "javaThreadName:" javaThreadName
+    maxTimeToWait=1+nrThreads * 2 -- 1.5
+-- say "---> nrThreads="pp(nrThreads) "maxTimeToWait:" pp(maxTimeToWait)  "javaThreadName:" javaThreadName "| counter~value="pp(counter~value)
     call time "Reset"            -- reset timer
     loop while counter~value>0, time("elapsed")<maxTimeToWait  -- until no more threads, or over 10seconds
        call sysSleep .00001              -- yield
     end
+-- say "<--- nrThreads="pp(nrThreads) "time('elapsed')" pp(time('elapsed')) "<" "maxTimeToWait:" pp(maxTimeToWait)  "counter~value="pp(counter~value)
 
     rpTestUnit~assertEquals(0, counter~value, "active thread counter in Java thread:" javaThreadName)
 
@@ -76,6 +79,9 @@ use arg rpTestUnit, rpArray, nrThreads, javaThreadName
 
 ::method work
   use arg testUnit, TID, nr, counter, rpArray, rexxArray, javaThreadName
+
+signal on syntax
+
   reply                 -- return & create a new thread
 
   thisTID=BsfGetTID()
@@ -88,3 +94,10 @@ use arg rpTestUnit, rpArray, nrThreads, javaThreadName
   testUnit~assertTrue(BsfDetach(), "detaching from main TID:" TID", thread #" nr", thisTID="thisTID "running in Java thread named:" javaThreadName)
   counter~decrease
   return
+
+syntax:
+  -- say ">>> ---> >>> sigl="sigl "rc="rc
+  co=condition('object')
+  .context~package~addPackage(.package~new("rgf_util2.rex"))
+  say ">>> ---> >>> nr="pp(nr) "counter="pp(counter) "javaThreadName="pp(javaThreadName) ppCondition2(co)
+

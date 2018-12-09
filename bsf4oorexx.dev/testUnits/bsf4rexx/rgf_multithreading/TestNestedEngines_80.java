@@ -5,6 +5,7 @@
 package rgf_multithreading;
 
 import org.rexxla.bsf.engines.rexx.RexxEngine;
+import org.rexxla.bsf.engines.rexx.RexxException;   // rgf, 20181115
 import org.rexxla.bsf.engines.rexx.RexxProxy;
 
 import org.apache.bsf.*;    // BSF support
@@ -110,7 +111,7 @@ public class TestNestedEngines_80 {
 
                 // execute the Rexx script
 // System.err.println("Java -> run():  RexxStart, #1 making sure BSF.CLS is required, using apply(), threadName=["+threadName+"]");
-                Object result=rexx.apply ("rexx", 0, 0,
+                Object result=rexx.apply ("rexx_requires_bsf.cls", 0, 0,
                                           "::requires BSF.CLS",  // make sure BSF.CLS is loaded for processing arguments in next invocation
                                           null,
                                           null);
@@ -128,7 +129,7 @@ public class TestNestedEngines_80 {
 // System.out.println("Java -> run():  Rexxcode for threadName["+threadName+"]:\n"+"/-->/"+(rexxCode.replaceAll("@threadName", (""+threadName))+"\\<--\\").substring(0,100));
 
 // TODO: rgf 20181002; replaceAll() still needed?
-                result=rexx.apply ("rexx", 0, 0,
+                result=rexx.apply ("rexx_run_supplied_rexx_program", 0, 0,
                                    rexxCode.replaceAll("@threadName", (""+threadName)),
                                    null,
                                    args);
@@ -143,6 +144,34 @@ System.err.println("Java -> run(): after rexx.terminate() ! end, result=["+resul
             }
             catch (Throwable th) {
                 // this.th=th;         // save Throwable
+
+
+System.err.println("TestNestedEngines_80.run(): Throwable in ["+threadName+"]: ["+th.toString()+"]");
+/*
+                if (th instanceof RexxException)
+                {
+                    RexxProxy rp=((RexxException) th).getRexxConditionObject();
+                    String s="\t";
+                    try
+                    {
+                        s=s+"condition=["+rp.sendMessage0("CONDITION")+"]"
+                            +", position=["+rp.sendMessage0("POSITION")+"]"
+                            +", rc=["+rp.sendMessage0("RC")+"]"
+                            +", program=["+rp.sendMessage0("PROGRAM")+"]"
+                            +", description=["+rp.sendMessage0("DESCRIPTION")+"]"
+                            ;
+                    }
+                    catch (BSFException bse)
+                    {
+                        s=" -> OOPs BSFException \""+bse+"\" occurred while reading RexxConditionObject to get at further information!";
+                    }
+                    finally
+                    {
+                        System.err.println(s);
+                    }
+                }
+*/
+
                 tlThrowable.set(th);   // save Throwable
             }
         }
