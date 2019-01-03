@@ -1,16 +1,22 @@
 #!/usr/bin/env rexx
-/* ooRexx (http://www.ooRexx.org) template, version: 2012-10-23, Rony G. Flatscher */
+/* ooRexx (http://www.ooRexx.org) template, version: 2018-12-23, Rony G. Flatscher */
 
 /* The following ooRexx code realizes an OOo macro that can be run against each
    OOo document type. It demonstrates how to get the document object and determine
    of which type it is and act accordingly.
 
-   In addition it demonstrates how to intercept execution errors and position the
-   error indicator at the offending line, if invoked via the editor.
+   This program can also be executed as a standalone program from outside OOo (AOO or
+   LO) via the command line: in this case an empty swriter document gets created to allow
+   interacting with it by the rest of the code. To run from the commandline (if saved
+   in a file named "template.rxo"):
+
+       rexxj.sh template.rxo
+
+   In addition this ooRexx program demonstrates how to intercept execution errors and
+   position the error indicator at the offending line, if invoked via the editor.
 
    License: Apache Software Foundation (ASF) License 2.0
 */
-
 
 /*
       This is an ooRexx template script: just delete everything you do not need from
@@ -30,7 +36,7 @@
 signal on syntax                    /* in case of a syntax error jump to label "syntax:" below  */
 
 use arg slotArg   /* fetch the "slotArg", a java.util.Hashtable object which contains invocation
-                     information from OpenOffice.org, will always be the very last argument     */
+                     information from OOo (AOO or LO), will always be the very last argument    */
 
 scriptContext=uno.getScriptContext(slotArg)  /* get the xScriptContext object                   */
 if scriptContext<>.nil then                  /* o.k., we are invoked as a macro from OOo        */
@@ -48,44 +54,75 @@ do
 end
 
 
-/* replace the following part with your code (begin) ==>          */
-      /* demonstration of how to interact with different document types */
-      /* define some text:                                              */
-str="Hello world [".dateTime~new~string"], this is ooRexx (cf. <http://www.ooRexx.org>) speaking ! "
+/* ==> ==> replace the following part with your code (begin)            */
+         /* demonstration of how to interact with different document types */
+         /* define some text:                                              */
+   LF="0a"x
+   str="Hello world [".dateTime~new~string"], this is ooRexx (cf. <http://www.RexxLA.org>) speaking !" || LF
 
-if oDoc~uno.supportsService("TextDocument") then   /* a TextDcoument in hand?                   */
-do
-   xTextDoc=oDoc~XTextDocument               /* get the XTextDocument interface                 */
-   xTextDoc~getText~getEnd~setString(str)    /* add text at the end of the text document        */
-end
-else if oDoc~uno.supportsService("SpreadsheetDocument") then   /* a SpreadsheetDocument?        */
-do
-   xSheet = oDoc~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0)~XSpreadSheet
-   cell=uno.getCell(xSheet, "A1")            /* get cell object                                 */
-   -- or: cell=uno.getCell(xSheet, 0, 0)     /* co-ordinates as 0-based numbers                 */
-   text=cell~getFormula                      /* get unedited text                               */
-   -- or: text=cell~XText~getString          /* use the XText interface method "getString"      */
+   /* --> show some of the environment variables: */
+      str ||= "Infrastructure employed:" pp(.bsf4rexx~display.version)"." LF
+      str ||= "Operating system:" pp(sysVersion()) LF
 
-   if text<>"" then str=text str             /* add "str" to existing text                      */
+      curr_dir =directory()
+      str ||= "current directory="pp(curr_dir)". " || LF
 
-   call uno.setCell xSheet, "A1", str        /* set the text in the cell                        */
-   -- or: call uno.setCell xSheet, 0, 0, str /* co-ordinates as 0-based numbers                 */
-end
-else  /* an unknown document type, display its implemented service(s)   */
-do
-   LF="0a"x                                  /* LF (line-feed) character                        */
-   hint="- "                                 /* define a hint string (a dash and a blank)       */
+      if .bsf4rexx~opsys1="W" then
+         curr_user=value("USERNAME",,"ENVIRONMENT")
+      else
+         curr_user=value("USER"    ,,"ENVIRONMENT")
 
-   url=oDoc~getUrl                           /* get Document's name (an URL)                    */
-   if url<>"" then str=str LF || "Document URL/Name:" url LF LF
-   str=str LF LF "Implemented services:"
-      /* get blank delimited service names, prepend blank, then change blank to LF and the hint:*/
-   str=str LF || (" "oDoc~uno.getServiceNames)~changestr(" ", LF || hint) LF
+      str ||= "current user="pp(curr_user)". " || LF
 
-   title="Unknown Document Type Implementing the Following Service(s)"
-   .bsf.dialog~messageBox(str, title, "information")
-end
-/* <== replace the previous part with your code (end)   */
+      curr_path=value("PATH", ,ENVIRONMENT)
+      str ||= "current settings of environment variable PATH="pp(curr_path)"." LF
+      l=min(640,str~length)
+      strCoreInfo=str~left(l)"..."   -- keep the leftmost
+      str ||= "... and now parsing the individual paths:" LF
+      psep=.bsf4rexx~path.separator    /* fetch our operating system's path separator character    */
+      do while curr_path<>""
+         parse var curr_path path (psep) curr_path
+         str ||="      " || pp(path) LF
+      end
+      str ||= LF     -- add another paragraph
+   /* <-- end of fetching values from environment variables */
+
+
+   if oDoc~uno.supportsService("TextDocument") then   /* a TextDcoument in hand?                   */
+   do
+      xTextDoc=oDoc~XTextDocument               /* get the XTextDocument interface                 */
+      xTextDoc~getText~getEnd~setString(str)    /* add text at the end of the text document        */
+   end
+   else if oDoc~uno.supportsService("SpreadsheetDocument") then   /* a SpreadsheetDocument?        */
+   do
+      xSheet = oDoc~XSpreadSheetDocument~getSheets~XIndexAccess~getByIndex(0)~XSpreadSheet
+      do i=1 while str<>""                      /* place first line in "A1", second line in "A2"...*/
+         address="A" || i                       /* create address, e.g. "A1", "A2" ...             */
+         parse var str val (LF) str
+         cell=uno.getCell(xSheet, address)      /* fetch cell's current value, if any              */
+         currVal=cell~getFormula
+         if currVal<>"" then val=val "/|\" currVal
+         call uno.setCell xSheet, address, val
+      end
+   end
+   else  /* an unknown document type, display its implemented service(s) instead */
+   do
+      LF="0a"x                                  /* LF (line-feed) character                        */
+      hint="- "                                 /* define a hint string (a dash and a blank)       */
+
+      url=getUrl(oDoc, scriptContext, slotArg)  /* get Document's name, if any (a URL)             */
+      if url<>"" then str="Document URL/Name:" url
+                 else str="No URL/Name available! (Not loaded from file system?)"
+
+      str=str LF LF "Implemented services:"
+         /* get blank delimited service names, prepend blank, then change blank to LF and the hint:*/
+      str=str LF || (" "oDoc~uno.getServiceNames)~changestr(" ", LF || hint) LF
+      str ||= LF || "/// some information created with ooRexx for this run: \\\" LF LF || strCoreInfo
+
+      title="Unknown Document Type Implementing the Following Service(s)"
+      .bsf.dialog~messageBox(str, title, "information")
+   end
+/* <== <== replace the previous part with your code (end)   */
 
 return
 
@@ -100,7 +137,10 @@ syntax:    /* create and display condition/exception information in a popup dial
    tmpStr=""            -- set to empty string
    do idx over co~makeArray~sort /* sort the directory indexes and iterate over them */
       val=co[idx]       -- get the associated value from the condition object (a directory)
-      tmpStr=tmpStr || (idx || ":")~left(25) pp(val) LF
+      tmpStr=tmpStr || (idx || ":")~left(25)
+      if idx="PACKAGE" then tmpStr ||= pp(val~name)
+                       else tmpStr ||= pp(val)
+      tmpStr||=LF
 
       if val~hasmethod("items") then   -- a collection? show its content
       do item over val
@@ -130,6 +170,7 @@ syntax:    /* create and display condition/exception information in a popup dial
    call SysSleep 0.001  -- let Java awt/swing get its time to update
 
    .bsf.dialog~messageBox(tmpStr, "Runtime error #" co~code, "error") -- display the string
+   exit -1
 
 
 ::requires UNO.CLS   /* load UNO support (OpenOffice/LibreOffice) for ooRexx   */
@@ -145,7 +186,20 @@ syntax:    /* create and display condition/exception information in a popup dial
 any:
   return oDoc                                /* either not 3.0 or script context document to use*/
 
+::routine getUrl
+   use arg oDoc, scriptContext, slotArg
+   signal on syntax     /* if "getUrl" causes a syntax error, handle it                         */
+   return oDoc~getUrl   /* syntax condition, if document has not been retrieved from file system*/
 
+syntax:                 /* message "getUrl" caused a syntax condition                           */
+   if scriptContext<>.nil then
+   do
+      /* demonstrate: if invoked from the macro editor, then show/point to error line           */
+      scriptModel=uno.getScriptSourceModel(slotArg)
+      if scriptModel<>.nil then scriptModel~indicateErrorLine(sigl)
+      call SysSleep 0.001  -- let Java awt/swing get its time to update
+   end
+   return ""            -- return an empty string
 
 
 
@@ -160,3 +214,5 @@ any:
 
    ::requires UNO.CLS               /* make sure the UNO support for ooRexx is loaded  */
 */
+
+

@@ -187,9 +187,24 @@
                           and invocation to allow it running on both systems unchanged in method
                           ScriptImpl.invoke()
 
+            2019-01-03, ---rgf
+                        - corrected service name from "com.sun.star.script.ScriptProviderForooRexx"
+                          to "com.sun.star.script.provider.ScriptProviderForooRexx" (".provider." was missing!
+
+                        - MacOSX: make sure that the path fragment "/usr/local/bin" is included for ooRexx as
+                          on newer MacOS systems "/usr/bin" cannot be used anymore to install third party utilities,
+                          rather Apple suggests to use "/usr/local/bin" instead (we need ooRexx to find BSF.CLS,
+                          UNO.CLS, ...); also makes sure that PWD is set (defaults to Java system property "user.home")
+
 */
 
 package com.sun.star.script.framework.provider.oorexx;
+
+// TODO: remove, rgf, 20190103 -->
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.IOException;
+// <--
 
 
 import java.awt.datatransfer.*; // rgf, 2014-03-24
@@ -272,7 +287,7 @@ public class ScriptProviderForooRexx
 
     static final String OOREXX_XSCRIPTCONTEXT_KEY = "OOo.xScriptContext";
     static final String OOREXX_VERSION_KEY        = "OOo.ooRexxScriptProvider.version";
-    static final String OOREXX_VERSION_VALUE      = "110.20180615";       // 20070921
+    static final String OOREXX_VERSION_VALUE      = "111.20190103";       // 20070921
     static final String OOREXX_FILENAME           = "OOo.fileName";       // 20070920
     static final String OOREXX_SCRIPTMETADATA     = "OOo.ScriptMetaData"; // 20070920
 
@@ -313,28 +328,82 @@ public class ScriptProviderForooRexx
 
             // make sure that on AOO for MacOSX, PATH is set (maybe even PWD);
             // AOO 4.0.x does not set environment correctly due to using outdated putenv() on MacOSX
-            // supply default value for PATH, such that the ooRexx interpreter can start
-            if (System.getenv("PATH")==null)    // PATH not set, we have a serious problem (ooRexx cannot initialize!)
+            // supply default value for PATH, such that the ooRexx interpreter can start and make sure
+            // that "/usr/local/bin" is on the PATH to allow ooRexx to find BSF.CLS, UNO.CLS, ...
+            boolean onMacOS= System.getProperty("os.name").charAt(0)=='M';
+            String  currPATH=System.getenv("PATH");         // get current value for PATH, returns null, if not set
+
+
+// show PATH and PWD ---> TODO: remove!
+final boolean bDebugInfosToTmp=false;   // if false, should be removed alltogether by the Java compiler
+if (bDebugInfosToTmp)
+{
+
+
+
+    String s="\nScriptProviderForooRexx.getBSFManager(...), running on Mac OS; PATH and PWD in effect:\n"
+        +",\nPATH=["+System.getenv("PATH")+"]"
+        +",\nPWD=["+System.getenv("PWD")+"]"
+        +",\nCLASSPATH=["+System.getenv("CLASSPATH")+"]"
+        +",\nUSER=["+System.getenv("USER")+"]"
+        +",\nLOGNAME=["+System.getenv("LOGNAME")+"]"
+        +",\nSHELL=["+System.getenv("SHELL")+"]"
+        +",\nHOME=["+System.getenv("HOME")+"]"
+
+        +"\n---\n";
+    {
+        try
+        {
+            FileWriter fw = new FileWriter("/tmp/ScriptProviderForooRexx-debuginfo1.txt");
+            fw.append(s);
+            fw.close();
+        }
+        catch (IOException e) {}
+    }
+}
+// <--- TODO: remove!
+
+            if (currPATH==null || onMacOS ) // PATH not set, we have a serious problem (ooRexx cannot initialize!)
             {
-                if (System.getProperty("os.name").charAt(0)=='M')   // on MacOSX
+                if (onMacOS)    // make sure the ooRexx environment is set to allow ooRexx to find "BSF.CLS", "UNO.CLS", etc.
                 {
                     final int GETENV=1;
                     final int SETENV=2;
                     org.rexxla.bsf.engines.rexx.RexxEngine  re = (RexxEngine) bsfManager.loadScriptingEngine("rexx");
 
-                    if (re.procEnvironment(GETENV,"PATH",null)==null)    // PATH not set, then set it!
+                    // check PATH variable, define if needed, supplement if needed (we need "/usr/local/bin" on Mac PATH)
+                    if (currPATH==null)   // on MacOSX
                     {
-                        re.procEnvironment(SETENV, "PATH", "/usr/bin:/bin:/user/sbin:/sbin:/usr/local/bin");
+                        // rgf, 20190103: follow sequence on MacOS defined in: "/etc/paths"
+                        re.procEnvironment(SETENV, "PATH", "/usr/local/bin:/usr/bin:/bin:/user/sbin:/sbin");
                     }
 
-                    if (re.procEnvironment(GETENV, "PWD", null)==null)   // PWD not set, set it to user's home
+                    else    // 20190103, rgf: check whether "/usr/local/bin" is included in PATH, if not insert it at the head
                     {
-                        re.procEnvironment(SETENV, "PWD", System.getProperty("user.home"));
+                        if ( !currPATH.contains("/usr/local/bin") ) // not contained, add it!
+                        {
+                            re.procEnvironment(SETENV, "PATH", "/usr/local/bin:"+currPATH);
+
+                            if (bDebug==true)   // 2014-03-24, rgf
+                            {
+                                String s="ScriptProviderForooRexx.getBSFManager(...), MACOSX, set PATH to include \"/usr/local/bin\":\n"+
+                                         "PATH=["+re.procEnvironment(GETENV,"PATH",null)+"]\n"+
+                                         "PWD=["+re.procEnvironment(GETENV, "PWD", null)+"]";
+                                ;
+                                ScriptImpl.copy2clipboard(s);
+                                ScriptImpl.showErrorMessage(s);
+                            }
+                        }
+                    }
+
+                    if (re.procEnvironment(GETENV, "PWD", null)==null)   // PWD not set?
+                    {
+                        re.procEnvironment(SETENV, "PWD", System.getProperty("user.home")); // set it to user's home
                     }
 
                     if (bDebug==true)   // 2014-03-24, rgf
                     {
-                        String s="ScriptProviderForooRexx.getBSFManager(...), MACOSX, set PATH and PWD:\n"+
+                        String s="ScriptProviderForooRexx.getBSFManager(...), running on Mac OS; PATH and PWD in effect:\n"+
                                  "PATH=["+re.procEnvironment(GETENV,"PATH",null)+"]\n"+
                                  "PWD=["+re.procEnvironment(GETENV, "PWD", null)+"]";
 
@@ -342,6 +411,25 @@ public class ScriptProviderForooRexx
                         ScriptImpl.copy2clipboard(s);
                         ScriptImpl.showErrorMessage(s);
                     }
+
+// show PATH and PWD ---> TODO: remove!
+if (bDebugInfosToTmp)
+{
+    String s="\nScriptProviderForooRexx.getBSFManager(...), running on Mac OS; PATH and PWD in effect:\n"+
+             "PATH=["+re.procEnvironment(GETENV,"PATH",null)+"]\n"+
+             "PWD=["+re.procEnvironment(GETENV, "PWD", null)+"]";
+    {
+        try
+        {
+            FileWriter fw = new FileWriter("/tmp/ScriptProviderForooRexx-debuginfo2.txt");
+            fw.append(s);
+            fw.close();
+        }
+        catch (IOException e) {}
+    }
+}
+// <--- TODO: remove!
+
                 }
                 else    // raise an error, hinting at the problem!
                 {
@@ -387,6 +475,8 @@ public class ScriptProviderForooRexx
                 ScriptImpl.copy2clipboard(s);
                 ScriptImpl.showErrorMessage(s);
             }
+
+
 
             org.apache.bsf.BSFEngine eng=bsfManager.loadScriptingEngine("rexx");
 
@@ -590,7 +680,7 @@ public class ScriptProviderForooRexx
         {
             xSingleServiceFactory = FactoryHelper.getServiceFactory(
                 ScriptProviderForooRexx._ScriptProviderForooRexx.class,
-                "com.sun.star.script.ScriptProviderForooRexx",
+                "com.sun.star.script.provider.ScriptProviderForooRexx",
                 multiFactory,
                 regKey );
         }
