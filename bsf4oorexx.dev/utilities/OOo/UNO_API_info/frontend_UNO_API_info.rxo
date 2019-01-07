@@ -39,8 +39,11 @@
                - 2011-02-19, rgf, - using Toolkit's getMenuShortcutKeyMask to define menu short-cut key
                - 2011-02-21, rgf, - make sure to act upon the Apple application quit event
                                   - adding icon image to JFrames
+               - 2019-01-02, rgf, - adjust Apple for Java 9 or higher (the Apple Java classes for
+                                    desktop integration are not available anymore; one could use
+                                    java.awt.Taskbar and java.awt.Desktop in lieu)
 
-   version:    1.04
+   version:    1.05
 
    license:    AL 2.0 (Apache License 2.0, cf. <http://www.apache.org/licenses/LICENSE-2.0>)
 
@@ -95,13 +98,13 @@ call bsf.import "java.awt.event.WindowListener", "WindowListener"
 
 rexxCloseEH=.RexxCloseAppEventHandler~new -- create Rexx event handler
 
-if .bsf4rexx~opsys="MACOSX" then
+if .bsf4rexx~java.major.version<9, .bsf4rexx~opsys="MACOSX" then
 do
          -- create a RexxProxy for our Rexx event handler
    rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , .ActionListener, .WindowListener, "com.apple.eawt.ApplicationListener")
    .bsf4rexx~apple_application~addApplicationListener(rpCloseEH) -- CMD-Quit-callback (Apple)
 end
-else  -- not running under Apple
+else  -- not running under Apple or Java >= 9
 do
       -- create a RexxProxy for our Rexx event handler
    rpCloseEH=BsfCreateRexxProxy(rexxCloseEH, , .ActionListener, .WindowListener)

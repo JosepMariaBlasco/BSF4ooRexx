@@ -4,7 +4,7 @@
    Purpose: create a shell script which sets the environment variable CLASSPATH
             to point to the Java archives needed to drive/automate OpenOffice.org
    Author:  Rony G. Flatscher
-   Version: 1.20
+   Version: 1.21
    Date:    2006-01-04
    Changed:
             2006-01-16, ---rgf, make sure CLASSPATH is used in any case
@@ -83,6 +83,7 @@
                                 conducted on that platform
             2016-08-15, ---rgf, - Windows: change elevation to use Gil Barmwater's "elevate.rex" script instead (bitness agnostic)
             2017-08-13, ---rgf, - make sure to determine MACOSX correctly by honoring the new name DARWIN as well
+            2018-12-19, ---rgf, - adding "BSF_OnTheFly.cls rgf_util2.rex" to cmd.e4OOoPrograms (copying to LO/AOO program directory)
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
@@ -537,10 +538,12 @@ cmd.eSetCP=cmd.eSetCP || cmd.ePath.sep || cmd.eSetCPWithFullPath
 
 /* determine files to copy to "OOo/program": needed for macros, we can point PATH there too!  */
 if cmd.eIsMacOSX then  -- rgf, 2011-02-28, initially for MacOSX: do not copy dylib
-   cmd.e4OOoPrograms="BSF.CLS UNO.CLS UNO_XINTERFACES.RXO UNO_CREATE_INTERFACE_LIST.RXO UNO_API_info.rxo UNO_ReflectionUtil.cls"
+   cmd.e4OOoPrograms=         "BSF.CLS UNO.CLS UNO_XINTERFACES.RXO UNO_CREATE_INTERFACE_LIST.RXO UNO_API_info.rxo UNO_ReflectionUtil.cls"
 else
    cmd.e4OOoPrograms=cmd.eDLL "BSF.CLS UNO.CLS UNO_XINTERFACES.RXO UNO_CREATE_INTERFACE_LIST.RXO UNO_API_info.rxo UNO_ReflectionUtil.cls"
 
+
+cmd.e4OOoPrograms=cmd.e4OOoPrograms "BSF_OnTheFly.cls rgf_util2.rex"    -- rgf, 20181219: possibly needed
 
    /* create the scripts   */
 call createEnvironmentScript

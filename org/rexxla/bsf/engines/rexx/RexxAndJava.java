@@ -25,7 +25,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2018 Rony G. Flatscher
+ *    Copyright (C) 2001-2019 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2018-11-04
+  * @version 6.0.0, 2019-01-07
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -54,6 +54,11 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2019-02-07, rgf: - added subfunction "UNBOX": returns the unboxed value as a string or null, if not
+                        a wrapped object
+
+     2018-11-11, rgf: - fixed IS_INSTANCE where an exception was raised, if a plain string got supplied
+
      2018-11-03, rgf: - subfunction CREATE_STRICT_ARGUMENT: make it usable if not employing BSF.CLS
                       - some tidying up
 
@@ -63,7 +68,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
                         makes sure that only fields, methods and constructors get picked that strictly match
                         the classObject of RexxStrictArgument
                       - added new subfunction "strictArg" which will employ convFromRexx() and return a RexxStrictArgument;
-                        meant to be used by box() in BSF.CLS
+                        meant to be used by box.strictArg() in BSF.CLS
 
      2018-03-22, rgf: - added Igor Petrushin to 'kudos': ported BSF4ooRexx for Raspberry Pi to ARM-32
 
@@ -563,7 +568,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20181104";
+    static final public String version = "600.2010107";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -2411,6 +2416,19 @@ System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FIN
 
         <!-- -------------------------------------------------------- -->
         <tr class="TableHeadingColor"><!-- table row -->
+        <td> <code>&quot;unbox&quot;</code>
+
+        <td colspan="2">Fetches and returns a boxed value as a string, null else.
+
+        <tr class="TableRowColor"><!-- table row -->
+        <td>
+        <td align="right"> <code>beanName</code>
+        <td> Mandatory.
+
+
+
+        <!-- -------------------------------------------------------- -->
+        <tr class="TableHeadingColor"><!-- table row -->
         <td> <code>&quot;unregisterBean&quot; </code>
         <td colspan="2">Unregisters an object from the BSF manager's
                         object registry.
@@ -3612,10 +3630,7 @@ if (bDebug)
 
                       if (javaObject==null)     // not in BSFRegistry, use string object directly
                       {
-                          throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
-                             "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": javaObject ["+args[1]+"]"+
-                             " cannot be retrieved from the BSFRegistry!"
-                             );
+                          javaObject=args[1];   // rgf, 20181111
                       }
 
                       Object javaClass = null;
@@ -4021,6 +4036,58 @@ if (bDebug)
 
         // ==================================================================
 
+          case UNBOX :  // rgf, 2019-01-07
+                  {
+                  /* ********************************************************
+                   * call BSF 'unbox', beanName
+                   *
+                   * - beanName: the bean to unbox
+                   *
+                   * returns the unboxed value as a string or null, if value is not a boxed value
+                   *
+                   *********************************************************/
+                      final boolean bDebug= // true;    // if true, show debug infos
+                                           false;
+
+                      if (args.length!=2)
+                      {
+if (bDebug) System.err.println("RexxAndJava()::UNBOX(): PANIC ! args.length!=2, instead: ["+(args==null? null : args.length)+"]!");
+                              throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: call BSF " +
+                                  "'"+args[0]+"', beanName; received Rexx arguments=\""+Arrays.deepToString(args)+"\"");
+                      }
+
+                      Object obj=lookupBean(this, args[1]); // try to fetch Java object from registry
+
+                      if(obj==null)       // not in BSFRegistry, cannot be a boxed value then, return argument unchanged
+                      {
+                          return makeString4Rexx(this, null);   // indicate we have not unboxed the value
+                      }
+
+                      Class clz=obj.getClass();
+                      if (clz==Boolean.class)
+                      {
+                          return makeString4Rexx(this, ((Boolean)obj).booleanValue() ? "1" : "0" );   // return Rexx truth values (strings)
+                      }
+
+                      if (   clz==Integer.class
+                             || clz==Byte.class
+                             || clz==Float.class
+                             || clz==Long.class
+                             || clz==Double.class
+                             || clz==Short.class
+                             || clz==String.class
+                             || clz==Character.class
+                      )
+                      {
+                          return makeString4Rexx(this, obj.toString()); // return String value
+                      }
+
+                      return makeString4Rexx(this, null);   // indicate we have not unboxed the value
+                  }
+
+        // ==================================================================
+
           case UNREGISTER_BEAN    :
                   {
                   /* ********************************************************
@@ -4371,6 +4438,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): b) unregister=
                            "Sauer, Ralph"                           + "\n" +
                            "Schmid, Stefan"                         + "\n" +
                            "Scholz, Nicole"                         + "\n" +
+                           "Skelly, Bruce"                          + "\n" +    // help for the Mac installer that includes ooRexx since 2010
                            "Small, John"                            + "\n" +
                            "Sonnemans, Freddy"                      + "\n" +
                            "Spanberger, David"                      + "\n" +
@@ -4863,7 +4931,7 @@ if (bDebug) System.err.println("RexxAndJava.convFromRexx(): value=\""+value+"\",
             nrArgs=funcArgs.length;
 
         final boolean bDebug=  // true;
-                              false;
+                               false;
 
 if (bDebug) System.err.println("\n---   ---   ---   ---   ---");
 
@@ -4888,16 +4956,16 @@ if (bDebug) System.err.println("\t           ) ---> k=\""+k+"\": null!");
                 RexxStrictArgument rsa=(RexxStrictArgument) funcArgs[k];    // cast to proper class
 if (bDebug)
    System.err.println("\t/-->/\tcoerceArgs(): RexxStrictArgument: paramTypes[k]=["+paramTypes[k]+", rsa=["+rsa
-                       +"]: clz==rsa.classObject =["+(paramTypes[k]==rsa.classObject)+"]");
+                       +"]: paramTypes[k] ("+paramTypes[k].toString()+")==rsa.classObject =["+(paramTypes[k]==rsa.classObject)+"]");
                 if (paramTypes[k] != rsa.classObject)   // does not strictly equal the required class
                 {
 if (bDebug)
-   System.err.println("\t/-->/\tcoerceArgs(): RexxStrictArgument: paramTypes[k]=["+paramTypes[k]+" != rsa.classObject=["+rsa.classObject+"]");
+   System.err.println("\t/-->/\tcoerceArgs(): RexxStrictArgument: paramTypes[k]=["+paramTypes[k]+" != rsa.classObject=["+rsa.classObject+"] Not compatible, RETURNING NULL!");
                     return null;    // indicate not successful
                 }
                 coercedArgs[k]=rsa.value;
 if (bDebug)
-    System.err.println("\t/-->/\tcoercedArgs[k]: ["+coercedArgs[k]+"] <-- rsa.value=["+rsa.value+"]");
+    System.err.println("\t/-->/\tcoercedArgs[k]: ["+coercedArgs[k]+"] <-- rsa.value=["+rsa.value+"] SUCCESS!");
                 continue;
             }
 
@@ -4927,7 +4995,9 @@ if (bDebug)
             System.out.println("faw=\""+faw+"\", dimensions="+faw.dimensions+", componentType=\""+faw.componentType+"\"");
         }
         catch (Exception e)
-        {}
+        {
+if (bDebug) System.err.println("\t            exception while trying to display paramTypes and funcArgs: e.toString()=("+e.toString()+")");
+        }
 
     }
 }
@@ -4988,6 +5058,8 @@ if (bDebug) System.err.println("\t           ) ---> k="+k+": successful coercion
                     }
                     catch (Exception e)
                     {
+
+if (bDebug) System.err.println("\t            exception in NetRexx-branch: e.toString()=("+e.toString()+")");
                         ;
                     }
                 }

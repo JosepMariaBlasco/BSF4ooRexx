@@ -1,6 +1,40 @@
+---
+2019-01-07, rgf:
+        - AOO/LO installations on Windows and Linux: no need to copy *CLS files to AOO/LO
+          directory; they will be picked up via PATH
+
+        - if ooRexx 5.0 based:
+          - remove routine caching where possible (as RMG enhanced lookup times considerably)
+          - try to use .package~local to store BSF- and UNO-classes, if they remain locatable
+            by existing (also native!) code (should speed up lookup times)
+
+        - DONE: have a Java-implemented "unbox" subfunction that returns non-wrapped values as is;
+          adjust BSF.CLS unbox() routine accordingly
+
+
+---
+2019-01-04, rgf:
+        - on MacOS: add explicitly the menus "Install AOO support", "Uninstall AOO Support", "Install LO Support", "Uninstall LO Support";
+                    try to "unopkg add/remove --shared" without sudo (seems sudo installed extensions are not shown in the "Extensions"
+                    menu
+
+
+---
+
+2018-12-10, rgf:
+        - Revision: 11583; Date:     2018-12-08 23:04:15 +0000 (Sat, 08 Dec 2018):
+          "DEF-file not needed for exporting the loader function anymore"
+          -> remove DEF-file on Windows?
+
+        - when ooRexx 5.0 and up only:
+
+           - save classes in .package~local: still accessible for requirees then?
+           - use StringTable (faster) instead of Directory ?
+
+
 ----
 
-2017-10-23, rgf:
+DONE, 2017-10-23, rgf:
 
         - resolving constructor, fields, methods reflectively should follow the same rules
 
@@ -21,26 +55,9 @@
          end
 ----
 
-2017-10-22, rgf:
+DONE, 2017-01-22, rgf:
 
-        - Java 9: Java 9 introduced incompatibilities with earlier versions of
-                  Java, which need to be addressed in the next version of
-                  BSF4ooRexx
-
-        - .local: all Rexx programs/packages must move their entries from
-                  .local to .environment; reason: Rexx objects executed in
-                  different Rexx interpreter instances will have different
-                  .local objects available; afftected e.g. BSF.CLS, UNO.CLS,
-                  rgf_util2.rex
-
-        - RexxScriptEngine: ? add finalize() in which BSFRexxEngine.terminate() gets
-                  invoked ?
-
-----
-
-2017-01-22, rgf:
-
-        - Janino development has occurred, is up-to-date, which is great
+        - Janino development has occurred, is up-to-date, which is great; actually no lambdas (rgf, 20181210)
 
         - ad ASM on Android: it seems that creating at runtime does no good as the created
           class files need to be signed before becoming available for use (needs to be
@@ -48,19 +65,9 @@
           good
 
 
-2014, ---rgf:
-
-        - Re-change method resolution (but make sure that default interface methods of Java 8 get resolved)
-
-          - make sure that protected methods in superclasses get resolved, when method
-            is not available in current class
-
-        - Make sure that protected fields in superclasses get resolved, when field is not
-          available in current class
+DONE, 2014, ---rgf:
 
         - Supplier.java / also in ArrayWrapper.java?
-
-          - work on all Java collection patterns!
 
           - allow any collection to be wrapped as an array ?
 
@@ -81,13 +88,15 @@
 
 -----------------------------
 
-- check on AOO MacOSX:
+DONE, - check on AOO MacOSX:
 
         - oxt is installable for "user", but not for "shared" !
 
 2012-11-18, ---rgf
 
 -----------------------------
+COMMENT (2019-01-04): on Android no dynamic creation and usage of Java classes seems to be supported;
+                      Janino is much easier to program and - more important therefore - to maintain
 
 - remove Janino eventually and use asm exclusively; it's faster and has support for
   creating Android dex renderings on-the-fly of the Java byte code;
@@ -100,6 +109,7 @@
 
 -----------------------------
 
+DONE
 - adapt setupOOo.rex to honor the upcoming AOO 4.0 locations and Windows registry keys
 
         -------- Original Message --------
@@ -156,11 +166,3 @@
 2013-01-10, ---rgf
 
 
------------------------------
-
-- Rework all old samples
-        - they may be unaware of the new "<S|O>" prefixes
-        - replace deprecated bsf.addEventListener()
-        - maybe add bsf.terminateRexxEngine() where currently bsf.exit is used
-
-2013-01-19, ---rgf

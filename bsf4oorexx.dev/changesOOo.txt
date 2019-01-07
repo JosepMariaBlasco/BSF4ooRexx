@@ -1,3 +1,34 @@
+-------------------------------------- 2019-01-02 ----------------------------------
+
+- utilities\OOo\UNO_API_info\frontend_UNO_API_info.rxo
+
+  - make sure that on Apple, if running Java 9 or higher the proprietary Apple classes
+    for desktop integration do not get used anymore
+
+  - Apple AOO/LO installation scripts: adjusted to LO directory structure, as LO
+    does not use the OOO standard directory structure anymore; added needles in /etc/config
+    to allow deleting the BSF4ooRexx entries there upon uninstall
+
+-------------------------------------- 2018-12-23 ----------------------------------
+
+- template.rxo
+
+  - changed the code to create information about the most important runtime information
+    (".bsf4rexx~display.version", user, homedirectory, PATH settings)
+
+  - corrected bug in the case that the template macro gets run against an unsaved
+    document
+
+  - running the template.orx macro against a spreadsheet existing cell values
+    will be appended after the string " /|\ " to allow for identifying the original
+    values if a user mistakingly ran and saved it
+
+-------------------------------------- 2018-12-19 ----------------------------------
+
+- setupOOo.rex
+
+  - adding "BSF_OnTheFly.cls rgf_util2.rex" to cmd.e4OOoPrograms (copying to LO/AOO program directory)
+
 -------------------------------------- 2017-08-13 ----------------------------------
 
 - setupOOo.rex

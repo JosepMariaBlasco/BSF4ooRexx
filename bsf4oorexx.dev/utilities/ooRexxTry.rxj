@@ -92,7 +92,18 @@
 
             2018-06-15, rgf: - add "java.version.date" from Java 10 to routine createVersionStringToDisplay()
 
+            2018-12-23, rgf: - removed routine createVersionStringToDisplay() as it got moved to BSF.CLS,
+                               from now on using new entry ".bsf4rexx~display.version" instead
 
+            2018-12-30, rgf: - in case a Rexx condition was the cause display it in the Rexx style, otherwise
+                               use "rgf_util2.rex"'s ppCondition2() to show the full list of chained Java
+                               exceptions to allow user to identify the original cause of the Java exception
+
+                              - class "GUIErrorStream", method "lineout": make sure that after an explicit
+                                LF ("0a"x) the prefix "REXXerr>" gets inserted as well
+
+                              - class "CExitHandler", method "handleExit": make sure that after an explicit
+                                LF ("0a"x) the prefix ("REXXout>" or "REXXerr>") gets inserted as well
 */
 
 /*----------------------------------------------------------------------------*/
@@ -215,7 +226,8 @@ end
 say
 say "path to this file:" pp(s)
 say
-say createVersionStringToDisplay()
+-- say createVersionStringToDisplay()
+say 'ooRexxTry' pp(.bsf4rexx~display.version)
 say
 say "*-----------------------------------------------------------------------------*"
 say "| This console is only used for input regarding the Rexx Utility SysGetKey(). |"
@@ -937,7 +949,7 @@ return
     .mm.dir~code_version = .mm.dir~code_version + 1
 
     -- nice idea but not supported by java html window
-    -- htmlstring = "<A NAME="||.mm.dir~code_version||"></A><A HREF=#"||.mm.dir~code_version - 1||">PREV</A> <A HREF=#".mm.dir~code_version + 1||">NEXT</A>"
+       -- htmlstring = "<A NAME="||.mm.dir~code_version||"></A><A HREF=#"||.mm.dir~code_version - 1||">PREV</A> <A HREF=#".mm.dir~code_version + 1||">NEXT</A>"
 
     .mm.dir~hcque~setelem(TIME("L"),"X","CODE VERSION " .mm.dir~code_version .endOfLine)
     .mm.dir~hcque~setelem(TIME("L"),"C",.mm.dir~code_string .endOfLine)
@@ -977,9 +989,24 @@ return
 
 -- Syntax trap for errors in the code
 RunSyntax:
-    call ppCondition condition("o")
+    co=condition("object") -- get condition object
+    rexxCondition=.nil
+    exc=co~additional[2]   -- get current Java exception object
+    do while exc<>.nil
+       lastCond=exc        -- will store the very first Java exception in a chain
+       if exc~objectname~pos("RexxException@")>0 then -- try to find the original Rexx exception, if any
+           rexxCondition=exc
 
-     if \.mm.dir~silent then        -- Let the user know when code execution is complete
+       exc=exc~getCause    -- get previous Java exception, if any
+    end
+
+    -- if Rexx condition was the source of the Java exception (chain), then display the RexxCondition value
+    if rexxCondition<>.nil, lastCond~objectName=rexxCondition~objectName then
+       .error~say(rexxCondition~toString)
+    else -- Rexx exception (if any) was not the cause of the Java exception, hence expose user to full chain of exceptions
+       .error~say(ppCondition2(co))
+
+    if \.mm.dir~silent then        -- Let the user know when code execution is complete
         .java.awt.Toolkit~getDefaultToolkit~beep
     .mm.dir~frame~setCursor(.java.awt.Cursor~getDefaultCursor)
 
@@ -1942,7 +1969,7 @@ syntax:
 
     -- .mm.dir~hcque~setelem(TIME("L"),"E",output .endOfLine) /* G.LEITNER */
 
-    .mm.dir~errorsArea~append("REXXerr>"output)
+    .mm.dir~errorsArea~append("REXXerr>"output~changeStr("0a"x,"0a"x || "REXXerr>"))
     .mm.dir~errorsArea~append(.endOfLine)
     .mm.dir~errorsArea~setCaretPosition(.mm.dir~errorsArea~getDocument~getLength)
     if .mm.dir~enableErrorSocket & .mm.dir~clientConnected then .mm.dir~out~println("[.ERROR] "||output)
@@ -5458,8 +5485,8 @@ exit
   mark=substr("SEII",subFunction,1)    -- assign 1->"S" (stdout), 2->"E" (stderr), 3->"I" (stdin), 4->"I" (stdin)
 
   select
-     when subFunction=1 then .output~lineout("REXXout>"parmBlock[1]~string)   -- stdout
-     when subFunction=2 then .error ~lineout("REXXerr>"parmBlock[1]~string)   -- stderr
+     when subFunction=1 then .output~lineout("REXXout>"parmBlock[1]~string~changeStr("0a"x,"0a"x || "REXXout>"))   -- stdout
+     when subFunction=2 then .error ~lineout("REXXerr>"parmBlock[1]~string~changeStr("0a"x,"0a"x || "REXXerr>"))   -- stderr
      otherwise parmBlock[1]=.input~linein -- input (3, 4)
   end
 
@@ -5787,7 +5814,8 @@ say str
                        .java.lang.System~getProperty("sun.arch.data.model")"-bit"
     .mm.dir~title='ooRexxTry' pp(name ver", BSF" .bsf4rexx~version"," strJavaVersion )
 */
-    .mm.dir~title=createVersionStringToDisplay()
+--    .mm.dir~title=createVersionStringToDisplay()
+    .mm.dir~title='ooRexxTry' pp(.bsf4rexx~display.version)
 
 
     PARSE SOURCE version +1                     -- Get the first letter of operation system name
@@ -6359,16 +6387,5 @@ exit
 
 /* GLEITNER routines end */
 
-::routine createVersionStringToDisplay
-    parse version "-" name "_" ver "(" . . date
-    orxVersion=name ver "("date")"
 
-    javaVersion    =.java.lang.System~getProperty("java.version")
-    javaVersionDate=.java.lang.System~getProperty("java.version.date")  -- since Java 10 (spring 2018)
-    if javaVersionDate<>.nil then
-       javaVersion=javaVersion "(released:" javaVersionDate")"
-
-    javaVersion="Java" javaVersion"," .java.lang.System~getProperty("sun.arch.data.model")"-bit"
-
-    return 'ooRexxTry' pp(orxVersion "/ BSF" .bsf4rexx~version "/" javaVersion )
 

@@ -146,7 +146,7 @@ javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxScriptEngine*.java         
 javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxScriptEngineFactory.java   && copy %javaSrc%\RexxScriptEngineFactory*    %path2jsr223%
 javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxCompiledScript.java        && copy %javaSrc%\RexxCompiledScript*         %path2jsr223%
 
-@rem 2018-11-01
-javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxStrictArgument.java        && copy %javaSrc%\RexxStrictArgument*         %path2jsr223%
+@rem 2018-11-01, 2018-11-22
+javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxStrictArgument.java        && copy %javaSrc%\RexxStrictArgument*         %path2engine%
 endlocal
 

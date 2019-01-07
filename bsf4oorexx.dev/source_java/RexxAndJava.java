@@ -25,7 +25,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2018 Rony G. Flatscher
+ *    Copyright (C) 2001-2019 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2018-11-11
+  * @version 6.0.0, 2019-01-07
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -54,6 +54,9 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2019-02-07, rgf: - added subfunction "UNBOX": returns the unboxed value as a string or null, if not
+                        a wrapped object
+
      2018-11-11, rgf: - fixed IS_INSTANCE where an exception was raised, if a plain string got supplied
 
      2018-11-03, rgf: - subfunction CREATE_STRICT_ARGUMENT: make it usable if not employing BSF.CLS
@@ -565,7 +568,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20181104";
+    static final public String version = "600.2010107";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -2413,6 +2416,19 @@ System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FIN
 
         <!-- -------------------------------------------------------- -->
         <tr class="TableHeadingColor"><!-- table row -->
+        <td> <code>&quot;unbox&quot;</code>
+
+        <td colspan="2">Fetches and returns a boxed value as a string, null else.
+
+        <tr class="TableRowColor"><!-- table row -->
+        <td>
+        <td align="right"> <code>beanName</code>
+        <td> Mandatory.
+
+
+
+        <!-- -------------------------------------------------------- -->
+        <tr class="TableHeadingColor"><!-- table row -->
         <td> <code>&quot;unregisterBean&quot; </code>
         <td colspan="2">Unregisters an object from the BSF manager's
                         object registry.
@@ -4016,6 +4032,58 @@ if (bDebug)
                                "\n\tclass: ["+args[2]+"], no matching constructor found, cannot create the Java object"
                                );
 
+                  }
+
+        // ==================================================================
+
+          case UNBOX :  // rgf, 2019-01-07
+                  {
+                  /* ********************************************************
+                   * call BSF 'unbox', beanName
+                   *
+                   * - beanName: the bean to unbox
+                   *
+                   * returns the unboxed value as a string or null, if value is not a boxed value
+                   *
+                   *********************************************************/
+                      final boolean bDebug= // true;    // if true, show debug infos
+                                           false;
+
+                      if (args.length!=2)
+                      {
+if (bDebug) System.err.println("RexxAndJava()::UNBOX(): PANIC ! args.length!=2, instead: ["+(args==null? null : args.length)+"]!");
+                              throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                                       "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": invalid # of args; usage: call BSF " +
+                                  "'"+args[0]+"', beanName; received Rexx arguments=\""+Arrays.deepToString(args)+"\"");
+                      }
+
+                      Object obj=lookupBean(this, args[1]); // try to fetch Java object from registry
+
+                      if(obj==null)       // not in BSFRegistry, cannot be a boxed value then, return argument unchanged
+                      {
+                          return makeString4Rexx(this, null);   // indicate we have not unboxed the value
+                      }
+
+                      Class clz=obj.getClass();
+                      if (clz==Boolean.class)
+                      {
+                          return makeString4Rexx(this, ((Boolean)obj).booleanValue() ? "1" : "0" );   // return Rexx truth values (strings)
+                      }
+
+                      if (   clz==Integer.class
+                             || clz==Byte.class
+                             || clz==Float.class
+                             || clz==Long.class
+                             || clz==Double.class
+                             || clz==Short.class
+                             || clz==String.class
+                             || clz==Character.class
+                      )
+                      {
+                          return makeString4Rexx(this, obj.toString()); // return String value
+                      }
+
+                      return makeString4Rexx(this, null);   // indicate we have not unboxed the value
                   }
 
         // ==================================================================

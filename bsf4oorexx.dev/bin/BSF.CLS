@@ -12,8 +12,21 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2019-01-07, ---rgf, - change routine "unbox" to take advantage of new BSF subfunction "unbox" (which
+                               returns the unboxed value as a string or .nil, if value was not of a boxed/wrapped
+                               type); the routine "unbox" will return the supplied value, if that is not a Java
+                               boxed/wrapped value without raising an exception
+
+         2019-01-02, ---rgf, - change routine "unbox" to accept plain Rexx strings as well, in which
+                               case that value gets returned
+
+         2018-12-23, ---rgf, - new private routine "create_display.version_entry": encodes the
+                               currently employed versions of ooRexx, BSF.CLS and Java in a
+                               single string to ease debugging; fetch this value via .bsf4rexx~display.version
+
          2018-11-27, ---rgf, - add the Boolean truth objects named as "boolean.true" and "boolean.false"
-                               to the .bsf4rexx directory
+                               to the .bsf4rexx directory, such that they can be immediately used in
+                               Rexx implemented lambda function return values
 
          2018-11-02, ---rgf, - renamed 'runLaterPush' to 'runLaterLatestPush'
                              - added 'runLaterPush' that pushes the message, but does not remove
@@ -688,7 +701,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20181127)
+   version:     6.00 (20190107)
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -697,7 +710,7 @@
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2001-2018 Rony G. Flatscher
+   Copyright 2001-2019 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -715,7 +728,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2001-2018 Rony G. Flatscher
+   Copyright 2001-2019 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -788,7 +801,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20181127" -- set version (date distribution got created)
+      .bsf4rexx~version="600.20190107" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -806,6 +819,8 @@ end
 
       call getAndSetPathToIcons
    end
+
+   call create_display.version_entry      -- create the display version entry .bsf4rexx~display.version
 
    call BSfShowErrorMessage .false  -- turn off displaying the Java exception message (leftover from the very early BSF4Rexx days)
 
@@ -1207,12 +1222,31 @@ syntax:
 ::routine unbox public
    use arg o
 
+   if o~isA(.bsf) then           -- if a Java proxy
+   do
+      objName=o~objectName    -- name will contain the fully qualified Java class name
+      if pos("RexxStrictArgument@",objName)>0 then -- since 20181101
+         return o~getValue4Rexx
+
+      tmp=bsf.wrap(bsf("unbox",o))
+      if tmp=.nil then return o  -- not a boxed value return submitted value unchanged
+      return tmp                 -- return unboxed value
+   end
+   return o                      -- not a boxed value return submitted value unchanged
+
+
+::routine unbox_ori public
+   use arg o
+
    objName=o~objectName    -- name will contain the fully qualified Java class name
    if pos("RexxStrictArgument@",objName)>0 then -- since 20181101
       return o~getValue4Rexx
 
    if \o~isA(.bsf) then
-      raise syntax 88.900 array ("BSF.CLS - UNBOX(): argument ["o"] is not a Java object")
+   do
+      if o~isA(.string) then return o  -- if a plain Rexx string supplied, return it unchanged
+      raise syntax 88.900 array ("BSF.CLS - UNBOX(): argument ["o"] is not a Java object nor a plain Rexx string")
+   end
 
    -- for backward compatibility
      -- extract class name from proxy's objectName (e.g. "java.lang.String@a3b0cdef")
@@ -5803,4 +5837,29 @@ syntax:
   if var("VAL") then .error~say("BSF.CLS - routine BSF.contextClassLoader(): argument #" i "("val") caused syntax error")
 
   raise propagate
+
+
+
+/** Encodes the currently employed versions of ooRexx, BSF.CLS and Java in a single string to ease debugging.
+*/
+::routine create_display.version_entry
+    parse version "-" name "_" ver "(" . . date
+    orxVersion=name ver || getRevision() "("date")"
+
+    javaVersion    =.java.lang.System~getProperty("java.version")
+    javaVersionDate=.java.lang.System~getProperty("java.version.date")  -- since Java 10 (spring 2018)
+    if javaVersionDate<>.nil then
+       javaVersion=javaVersion "(released:" javaVersionDate")"
+
+    javaVersion="Java" javaVersion"," .java.lang.System~getProperty("sun.arch.data.model")"-bit"
+
+    .bsf4rexx~display.version=orxVersion "/ BSF" .bsf4rexx~version "/" javaVersion
+    return
+
+getRevision: procedure  -- starting with svn rev. 11639 (Dec 22, 2018) the source-code revision number is available
+    signal on syntax
+
+    return " r".rexxInfo~revision   -- get and return (e.g. svn) revision value
+syntax:
+    return ""
 

@@ -7,7 +7,7 @@ import java.util.HashMap;
  * This Enum defines the invocation types and their corresponding Rexx name.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2018 Rony G. Flatscher
+ *    Copyright (C) 2018-2019 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import java.util.HashMap;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.01, 2018-11-01
+ * @version 1.02, 2019-01-07
  * @since BSF4ooRexx 600
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -30,6 +30,7 @@ import java.util.HashMap;
 
  /*
      2018-11-01, rgf: - added enum value "CREATE_STRICT_ARGUMENT"
+     2019-01-07, rgf: - added enum value "UNBOX"
 */
 
 
@@ -60,6 +61,7 @@ enum InvocationType {
 
     SET_FIELD_VALUE             ( "setFieldValue"            ) , //=  21
 
+    UNBOX                       ( "unbox"                    ) , // 2019-01-07, rgf: unboxing a wrapped value
 
     INVOKE_JSO                  ( "invokeJSO"                ) , //=  44  2014-10-02, ---rgf
     GET_FIELD_VALUE_JSO         ( "getFieldValueJSO"         ) , //=  46  2014-10-04, ---rgf

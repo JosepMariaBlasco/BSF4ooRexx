@@ -4,7 +4,7 @@
    Purpose: creates files to set up and remove file associations
    Author:  Rony G. Flatscher
    Date:    2010-07-26/27/30/31, 2010-08-20
-   Version: 1.01
+   Version: 1.02
    Changes:
             2010-07-26, ---rgf, plain
             2010-12-08, ---rgf, changing application/x-rexx* -> text/x-rexx*
@@ -15,6 +15,9 @@
                                         have full write access to these files as well
             2011-06-08, ---rgf, - Unix: do not change group to "admin", e.g. Fedora Core may not have it
             2017-01-22, ---rgf, - add file extension ".frm" as a Rexx type
+            2018-12-21, ---rgf, - SysVersion() now returns the Windows version number with multiple dots, hence
+                                  getting integer value using '.' in the parse template rather than via an
+                                  arithmetic operation
 
    last svn check-in: $Revision: 640 $ $Author: rony $ $Date: 2010-04-17 22:25:38 +0200 (Sat, 17 Apr 2010) $
 
@@ -23,7 +26,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2010-2017 Rony G. Flatscher
+       Copyright (C) 2010-2018 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -69,8 +72,8 @@ do
    file.sep="\"               -- file separator
    dir~rexx_bin = "rexx.exe"                          -- name of executable
    dir~path.sep       = ";"   -- path separator
-   parse value SysVersion() with opSysName opSysVersion
-   dir~win.version=opSysVersion%1   -- 5=WinXP, 6=Vista, 7=Win7 ...
+   parse value SysVersion() with opSysName opSysVersion "." -- extract integer part of Windows' version number
+   dir~win.version=opSysVersion     -- 5=WinXP, 6=Vista, 7=Win7 ...
 end
 else                 -- Unix based
 do
