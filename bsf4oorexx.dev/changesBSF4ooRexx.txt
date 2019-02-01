@@ -1,3 +1,23 @@
+
+-------------------------------------- 2019-01-07 ----------------------------------
+
+- InvocationType.java
+
+  - added enum value "UNBOX"
+
+- RexxAndJava.java
+
+  - added subfunction "UNBOX": returns the unboxed value as a string or null, if not
+    a wrapped object
+
+- BSF.CLS
+
+  - change routine "unbox" to take advantage of new BSF subfunction "unbox" (which
+    returns the unboxed value as a string or .nil, if value was not of a boxed/wrapped
+    type); the routine "unbox" will return the supplied value, if that is not a Java
+    boxed/wrapped value without raising an exception
+
+
 -------------------------------------- 2019-01-02 ----------------------------------
 
 - BSF.CLS

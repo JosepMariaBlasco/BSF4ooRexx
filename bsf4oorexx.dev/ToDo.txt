@@ -1,4 +1,16 @@
 ---
+2019-01-28, rgf, with ooRexx 5.0:
+        - add external function to add command environment implemented in Java, using the new native C++ function
+                - context->AddCommandEnvironment(name, handler, DIRECT_COMMAND_ENVIRONMENT);
+                - context->AddCommandEnvironment(name, handler, REDIRECTING_COMMAND_ENVIRONMENT);
+                - example usage, cf. native code segment in <http://sourceforge.net/p/oorexx/code-0/11697>
+
+---
+2019-01-13, rgf, BSF4ooRexx.def, after ooRexx 5.0 goes GA:
+        - remove "EXPORTS RexxGetPackage" from Window's, not necessary anymore for ooRexx 5.0
+        - check whether all other entries are still needed for Windows (they are not for Linux and MacOS)
+
+---
 2019-01-07, rgf:
         - AOO/LO installations on Windows and Linux: no need to copy *CLS files to AOO/LO
           directory; they will be picked up via PATH

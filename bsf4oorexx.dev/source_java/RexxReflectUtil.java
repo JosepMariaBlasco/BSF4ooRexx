@@ -39,7 +39,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.01, 2018-01-08-2018-02-18, 2018-03-10; 2018-10-31
+ * @version 1.02, 2018-01-08-2018-02-18, 2018-03-10; 2018-10-31, 2019-02-01
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -47,6 +47,7 @@ import        java.lang.reflect.Modifier;
 /* changes:
             20181031, ---rgf: added field 'result' to debugString()'s output
             20181101, ---rgf: removed field 'bTryCoercions', not used anymore, now that RexxStrictArgument in place
+            20190201, ---rgf: made sure that an abstract class gets not instantiated (possible reflectively, if concrete default constructor)
 */
 
 
@@ -175,6 +176,13 @@ class RexxReflectUtil
                              "BSF4ooRexx subfunction "+'"'+rexxArgs[0]+'"'+": cannot load Java class with the name \""+rexxArgs[2]+"\"");
                 }
                 bBeanIsClass=true;      // indicate that bean is a class object
+// fix bug # 46 (https://sourceforge.net/p/bsf4oorexx/bugs/46/): make sure no abstract class gets instantiated
+                if ( (beanClz.getModifiers() & Modifier.ABSTRACT) != 0 )
+                {
+                    throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
+                             "BSF4ooRexx subfunction "+'"'+rexxArgs[0]+'"'+": Java class \""+rexxArgs[2]+"\" is abstract; cannot be instantiated");
+                }
+
                 break;
 
 

@@ -12,6 +12,10 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
+         2019-02-01, ---rgf, - propgate conditions in BSF's constructor method "init"
+                             - adapted BSF-version string to indicate minimum ooRexx level as well:
+                               minJavaVersion*100+minOoRexx*10 "." date-of-release
+
          2019-01-07, ---rgf, - change routine "unbox" to take advantage of new BSF subfunction "unbox" (which
                                returns the unboxed value as a string or .nil, if value was not of a boxed/wrapped
                                type); the routine "unbox" will return the supplied value, if that is not a Java
@@ -701,7 +705,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.00 (20190107)
+   version:     6.41 (20190201)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -801,7 +805,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="600.20190107" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20190201" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1698,6 +1702,8 @@ syntax:
 
         -- create an instance of javaClass and register it with BSF,
         -- leave beanName empty, this way we get a unique name from Java
+
+   signal on syntax           -- reraise condition in caller
 
    if args~class = .array then tmpArr=args            -- array of arguments
                           else tmpArr=arg(2, "Array") -- create an array from arguments

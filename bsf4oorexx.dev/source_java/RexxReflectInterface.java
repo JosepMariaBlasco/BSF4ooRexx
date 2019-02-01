@@ -72,7 +72,7 @@ import        java.lang.reflect.Modifier;
  */
 interface RexxReflectInterface
 {
-    /** Entry point to do carry out the reflection for locating appropriage {@link java.lang.Field}, {@link java.lang.Method} and
+    /** Entry point to carry out the reflection for locating appropriate {@link java.lang.Field}, {@link java.lang.Method} and
      *  {@link java.lang.Constructor} objects and invoke them.
      */
     void reflect(final RexxReflectUtil rru) throws BSFException;
@@ -85,7 +85,7 @@ interface RexxReflectInterface
     boolean isPublicLookup();
 
     /** Will set the current {@link MethodHandles.Lookup} lookup object to the <ocde>publicLookup</code>
-     *  object, thereby restricting all opeartions to the reference class <code>java.lang.Object</code>
+     *  object, thereby restricting all operations to the reference class <code>java.lang.Object</code>
      *  for the current {@link RexxAndJava} instance.
      *  This operation cannot be reverted for security reasons.
      */
