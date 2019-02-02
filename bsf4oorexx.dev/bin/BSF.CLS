@@ -12,7 +12,17 @@
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
    date:
-         2019-02-01, ---rgf, - propgate conditions in BSF's constructor method "init"
+         2019-02-02, ---rgf, - to inhibit attempting to instantiate abstract classes indirectly via bsf.import()
+                               the logic got changed; as a result routine "initialize.bsf.dir" got adapted to use
+                               bsf.loadClass() instead of bsf.importClass() for it
+
+                             - added new routine "bsf.loadClass2environment(jClzName[,indexName]": loads and
+                               saves class object in environment (currently .environment)
+
+                             - adapted BSF.InputStream and BSF.outputStream to use bsf.loadClass2bsf4rexx()
+                               instead of bsf.import() for the abstract Java Reader and Writer classes
+
+         2019-02-01, ---rgf, - propagate conditions in BSF's constructor method "init"
                              - adapted BSF-version string to indicate minimum ooRexx level as well:
                                minJavaVersion*100+minOoRexx*10 "." date-of-release
 
@@ -705,7 +715,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.41 (20190201)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     6.41 (20190202)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -805,7 +815,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20190201" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20190202" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1001,6 +1011,7 @@ syntax:
       string.class, system.class) to the directory ".bsf4rexx" and use the
       returned object as argument for the Java side
    */
+
    arr=.array~of( ,
       "Class.class",      'Class.class'        ,,   -- a Java Object class
       "Object.class",     'Object.class'       ,,   -- a Java Object class
@@ -1034,6 +1045,13 @@ syntax:
      bsf.dir~setentry(arr[i], .bsf_reference~new(arr[i+1], .true))
    end
 
+   -- 20190201, rgf: abstract Java Object classes cannot be bsf.import(ed) anymore (they cannot be instantiated)
+   --                hence use bsf.locadClass to load and save them
+   arr=.array~of( 'java.lang.ClassLoader' )  -- an abstract Java Object class, for supporting routine bsf.contextClassLoader
+   do jClassName over arr
+      call bsf.loadClass2environment jClassName
+   end
+
       -- Java classes for "String" and those representing the primitive datatypes
       -- creates ooRexx proxy classes
    arr=.array~of( ,
@@ -1046,10 +1064,10 @@ syntax:
       'java.lang.Integer'           ,,   -- a Java Object class
       'java.lang.Long'              ,,   -- a Java Object class
       'java.lang.Short'             ,,   -- a Java Object class
-      'java.lang.System'            ,,   -- a Java Object class
-      'java.lang.ClassLoader'       ,,   -- a Java Object class, for supporting routine bsf.contextClassLoader
+      'java.lang.System'            ,,   -- a Java Object class --      'java.lang.ClassLoader'       ,,   -- a Java Object class, for supporting routine bsf.contextClassLoader
       'java.lang.Thread'            ,,   -- a Java Object class, for supporting routine bsf.contextClassLoader
       'java.io.File'                ,,   -- a Java Object class, for supporting routine bsf.contextClassLoader
+      'java.lang.reflect.Modifier'  ,,   --
       'java.net.URL'                ,,   -- a Java Object class, for supporting routine bsf.contextClassLoader
       'java.net.URLClassLoader'     )    -- a Java Object class, for supporting routine bsf.contextClassLoader
 
@@ -1058,6 +1076,7 @@ syntax:
       jClassName=arr[i]
       bsf.dir~setEntry(jClassName, .bsf~bsf.import(jClassName)) -- will also place in .environment (instead of .local since 20171223)
    end
+
 
    -- add Boolean.TRUE and Boolean.FALSE to help speed up lambda invocations (e.g. if it is clear that the apply() function should return a Boolean)
    bsf.dir~boolean.true =.java.lang.Boolean~new("true")  -- this will save the Boolean object
@@ -1087,6 +1106,20 @@ syntax:
 
   return .true    -- indicate we created and populated .bsf4rexx
 
+/* 2019-02-02, rgf: bsf.immport[Class] cannot be used for abstract Java classes anymore; for the purpose of this
+                    package use bsf.loadClass instead and save in .environment (as bsf.import does)
+*/
+::routine bsf.loadClass2environment public
+  use strict arg jClassName, indexName=(jClassName)
+
+   signal on syntax
+   jclz=bsf.wrap( .routines~xBSF~call("loadClass", jClassName) )
+  .environment~setEntry(indexName, jclz)
+--  .bsf4rexx~setEntry(indexName, jclz)
+  return jclz
+
+syntax:
+  raise propagate
 
 
 /* ================================================================================================= */
@@ -1599,6 +1632,17 @@ syntax:
      jco=bsf.loadClass(java_path)   -- get Java class object (can be a BSF_Reference !)
   else                              -- use the passed Java class object
      jco=extendedJavaClz
+
+      -- 2019-02-02, rgf: check whether jco is a Class and not abstract
+signal on syntax
+      -- determine whether jco is an instance of java.lang.Class
+  parse value jco~getClass~objectName with clzName "@"
+  if clzName<>"java.lang.Class" then
+     raise syntax 40.900 array ("Java class """java_path""" is not a Java class object.")
+
+      -- now check for abstract, just use java.lang.reflect.Modifier~isAbstract
+  if bsf.loadClass("java.lang.reflect.Modifier")~isAbstract(jco~getModifiers) then
+     raise syntax 40.900 array ("Java class """java_path""" is abstract; cannot be instantiated, hence bsf.import[Class] is prohibited; use bsf.loadClass("""java_path""") instead")
 
       -- now create proxy class object
   new_class = .BSF~subclass(java_path) -- create a subclass of .BSFClass (a proxy ooRexx class)
@@ -4230,7 +4274,7 @@ syntax:
   charArray1=bsf.createJavaArray("char.class",1)   -- Java char array with capacity of one
 
   if \.environment~hasEntry("java.io.Reader") then
-     call bsf.import "java.io.Reader"  -- load Java class and store it as "JAVA.IO.READER" in .local
+     call bsf.loadClass2environment "java.io.Reader"  -- load Java class and store it as "JAVA.IO.READER" in .local
   isReader=.java.io.Reader~isInstance(javaInputObject)
 
 
@@ -4324,7 +4368,7 @@ wrong_args:
   use strict arg javaOutputObject, prefix=.nil
 
   if \.environment~hasEntry("java.io.Writer") then
-     call bsf.import "java.io.Writer"  -- load Java class and store it as "JAVA.IO.Writer" in .local
+     call bsf.loadClass2environment "java.io.Writer"  -- load Java class and store it as "JAVA.IO.WRITER" in environment
   isWriter=.java.io.Writer~isInstance(javaOutputObject)
   bPrefixPrinted=.false             -- indicates whether the prefix was printed already (in charout-scenarios)
   return

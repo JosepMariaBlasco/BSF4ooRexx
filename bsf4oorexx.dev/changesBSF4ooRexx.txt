@@ -1,3 +1,44 @@
+-------------------------------------- 2019-02-02 ----------------------------------
+
+- BSF.CLS
+
+  - to inhibit attempting to instantiate abstract classes indirectly via bsf.import()
+    the logic got changed; as a result routine "initialize.bsf.dir" got adapted to use
+    bsf.loadClass() instead of bsf.importClass() for it
+
+  - added new routine "bsf.loadClass2environment(javaClassName[,indexName])": loads and
+    saves class object in environment (currently .environment, with ooRexx 5.0 only
+    support maybe in .package~local, cf "bsf4oorexx.dev/ToDo.txt")
+
+  - adapted BSF.InputStream and BSF.outputStream to use bsf.loadClass2bsf4rexx()
+    instead of bsf.import() for the abstract Java Reader and Writer classes
+
+- The following nutshell programs now use bsf.loadClass()/bsf.loadClass2environment() for
+  abstract classes, now that bsf.import() cannot be used for them anymore (avoiding a possible, subtle bug)
+
+  - samples\JavaFX\javafx_02.rxj: because of abstract class "java.util.ResourceBundle"
+
+  - samples\JavaFX\fxml_02\fxml_02.rex: because of abstract class "java.util.ResourceBundle"
+
+  - samples\JavaFX\fxml_05\staff.rxj: because of abstract class "javafx.util.Callback"
+
+  - samples\JavaFX\fxml_99\MainApp.rex: because of abstract class "java.util.prefs.Preferences"
+
+-------------------------------------- 2019-02-01 ----------------------------------
+
+- RexxReflectUtil.java
+
+  - made sure that an abstract class gets not instantiated (possible reflectively,
+    if concrete default constructor)
+
+
+- BSF.CLS
+
+  - propagate conditions in BSF's constructor method "init"
+
+  - adapted BSF-version string to indicate minimum ooRexx level as well:
+    minJavaVersion*100+minOoRexx*10 "." date-of-release
+
 
 -------------------------------------- 2019-01-07 ----------------------------------
 

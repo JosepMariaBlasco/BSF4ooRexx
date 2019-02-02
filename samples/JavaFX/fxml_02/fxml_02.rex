@@ -5,6 +5,10 @@
    date:    2016-12-06
    changed: 2017-11-09, rgf: adapted to Rexx symposium 2017 article
             2018-03-24, rgf: make sure that we change into the directory of this program
+            2019-02-02, rgf: using bsf.loadClass() instead of bsf.importClass() for "java.util.ResourceBundle", as
+                             that class is abstract and bsf.importClass() does not import abstract
+                             Java classes anymore!
+                             employing routine ppCondition2() from "rgf_util2.rex" for debugging
 
    purpose: this is a simple the Rexx GUI application (taking advantage of JavaFX)
             where the GUI elements are defined in a FXML file ("FXML_02_Document.fxml"),
@@ -35,6 +39,7 @@ call directory filespec('L', pgm)   -- change to the directory where the program
    /* only "de" has an effect and will use the German translation for the */
 parse arg locale .
 
+signal on syntax
    -- create Rexx object that will control the FXML set up with or without local
 if locale<>"" then rxApp=.rexxApplication~new(locale)
               else rxApp=.rexxApplication~new
@@ -44,8 +49,14 @@ jrxApp=BsfCreateRexxProxy(rxApp,,"javafx.application.Application")
    -- launch the application, which will invoke the methdos "init" followed by "start"
 jrxApp~launch(jrxApp~getClass, .nil)    -- need to use this version of launch in order to work
 say center(" after jrxApp~launch ", 70, "-")
+exit
+
+syntax:
+  co=condition("object")
+  say ppCondition2(co)     -- this will resolve and show all Java exceptions that have occurred
 
 ::requires "BSF.CLS"    -- get Java support
+::requires "rgf_util2.rex"    -- get access to ppCondition2()
 
 /* implements the abstract method "start" of javafx.application.Application */
 ::class RexxApplication
@@ -62,7 +73,7 @@ say center(" after jrxApp~launch ", 70, "-")
    -- create a file URL for fxml_02.fxml file (hence the protocol "file:")
   fxmlUrl=.bsf~new("java.net.URL", "file:fxml_02.fxml")
   jLocale=.bsf~new("java.util.Locale", locale)  -- get the desired Locale
-  jRB=bsf.importClass("java.util.ResourceBundle")~getBundle("fxml_02", jLocale)
+  jRB=bsf.loadClass("java.util.ResourceBundle")~getBundle("fxml_02", jLocale)
 
   rootNode=bsf.loadClass("javafx.fxml.FXMLLoader")~load(fxmlUrl, jRB)
   scene=.bsf~new("javafx.scene.Scene", rootNode)    -- create a scene from the tree

@@ -10,6 +10,10 @@
             2018-03-24, rgf: - make sure that we change into the directory of this program
                              - make sure that directory "FXML_02" is lowercase for Unix systems
 
+            2019-02-02, rgf: using bsf.loadClass() instead of bsf.importClass() for "java.util.ResourceBundle", as
+                             that class is abstract and bsf.importClass() does not import abstract
+                             Java classes anymore!
+
    purpose: this is the standalone (FXML-less) version of the Rexx GUI application (taking advantage of JavaFX)
             in the fxml_02/ directory, i.e. the GUI elements are created in Rexx code only
 
@@ -44,7 +48,7 @@ parse arg locale                 -- parse command line arguments, if any
 if locale="" then locale="en"    -- default to English
 jLocale=.bsf~new("java.util.Locale", locale) -- get Locale object
    -- let ResourceBundle choose which properties file to load and use:
-.my.fx~resourceBundle=bsf.importClass("java.util.ResourceBundle")~getBundle(resources"/fxml_02", jLocale)
+.my.fx~resourceBundle=bsf.loadClass("java.util.ResourceBundle")~getBundle(resources"/fxml_02", jLocale)
 
    -- create Rexx object that will control the FXML set up
 rexxHandler=.RexxAppHandler~new

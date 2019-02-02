@@ -22,6 +22,9 @@
             2018-11-02, rgf, adjust again to the new box.strictArg() routine that allows the original
                              BOX() routine to remain unchanged
             2018-11-04, rgf, tidying up a little bit
+            2019-02-02, rgf: using bsf.loadClass() instead of bsf.importClass() for "java.util.prefs.Preferences",
+                             as that class is abstract and bsf.importClass() does not import abstract
+                             Java classes anymore!
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -166,7 +169,7 @@ syntax:
   personData=.fx.FXCollections~observableArrayList
 
    -- do we have a file save already, such that a "filePath" preference was set at the user's root node?
-  prefs=bsf.importClass("java.util.prefs.Preferences")~userRoot   -- get the user's root preference node, tutorial part # 5
+  prefs=bsf.loadClass("java.util.prefs.Preferences")~userRoot   -- get the user's root preference node, tutorial part # 5
   personFilePath=prefs~get("filePath", .nil) -- get filePath preference, if any
 
   if personFilePath<>.nil then

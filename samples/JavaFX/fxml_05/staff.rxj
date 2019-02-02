@@ -32,6 +32,10 @@
                                   list of URLs (no need to explicitly create an array of these values)
                2018-09-20, rgf: - use absolute paths to jar files, such that the program executes from any directory
 
+               2019-02-02, rgf: using bsf.loadClass2environment() instead of bsf.importClass() for "javafx.util.Callback", as
+                                that class is abstract and bsf.importClass() does not import abstract
+                                Java classes anymore!
+
    purpose:    - demonstrates usage of custom libraries
                - shows table view handling
                - demonstrates switching stylesheets to dramatically change the UI
@@ -79,7 +83,8 @@ else
 /* java class imports */
 call bsf.import "javafx.collections.FXCollections",            "fx.FXCollections"
 call bsf.import "org.controlsfx.control.Notifications",        "fx.Notification"
-call bsf.import "javafx.util.Callback",                        "Callback"
+-- call bsf.import "javafx.util.Callback",                        "Callback"
+call bsf.loadClass2environment "javafx.util.Callback",         "Callback"     -- abstract class, cannot be imported anymore
 
 /* set up environment, import Java classes use unqualified class name as the Rexx class name */
 call bsf.import "javafx.beans.property.SimpleStringProperty",  "SimpleStringProperty"
