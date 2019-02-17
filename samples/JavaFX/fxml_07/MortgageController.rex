@@ -4,7 +4,7 @@
 d1=.dateTime~new     -- save invocation date and time
 parse source s . fn  -- get fully qualified file name as supplied by the RexxScriptEngine
 
-bDebug=.true      -- change to .false to inhibit the debug output
+bDebug=.true         -- change to .false to inhibit the debug output
 if bDebug=.true then
 do
    say "--- MortageController.rex ("pp(fn)"), at begin of prolog code" pp(d1)
@@ -24,7 +24,9 @@ call bsf.loadClass "javafx.scene.input.KeyEvent", "KeyEvent"
    -- bsf.importClass allows ooRexx "new" messages to be sent to the imported class to create Java instances
 call bsf.importClass "javafx.scene.control.Tooltip"        , "Tooltip"
 call bsf.importClass "javafx.scene.control.Alert"          , "fxAlert"
-call bsf.importclass "javafx.scene.control.Alert$AlertType", "fxAlertType"   -- nested enumeration class, hence "$" instead of "."
+   -- nested enumeration class, hence "$" instead of "." in the following Java class name
+call bsf.importclass "javafx.scene.control.Alert$AlertType", "fxAlertType"
+
    -- needed for beeping in a platform independent form
 .context~package~local~toolkit=bsf.loadClass("java.awt.Toolkit")~getDefaultToolkit
 
@@ -33,16 +35,16 @@ pkgDir=.context~package~local    -- get package's local environment directory
 pkgDir~currencyF=.NumberFormat~getCurrencyInstance ~~setRoundingMode(.RoundingMode~half_up)
 pkgDir~decimalF=bsf.loadClass('java.text.DecimalFormat')~getinstance
 
-/* use RexxScriptEngine  facility "Rexx script annotation" to fetch ScriptContext supplied objects*/
+   /* use RexxScriptEngine  facility "Rexx script annotation" to fetch ScriptContext supplied objects*/
 /* @get( idGridPane ) */
 jrxObj=bsfCreateRexxProxy(.filterEventHandler~new,,"javafx.event.EventHandler")
 idGridPane~addEventFilter(.keyEvent~any, jrxObj)   -- let us act on the events directed at any TextField component
 
    /* fetch TextField/Label/Slider objects add listeners to the sliders to update their corresponding TextFields: */
-/* @get( idCreditTextField idInterestTextField idMonthsTextField ) */
+/* @get( idCreditTextField idInterestTextField idMonthsTextField )   */
 /* @get( idCreditLabel     idInterestLabel     idMonthsLabel       ) */
-/* @get( idCreditSlider    idInterestSlider    idMonthsSlider ) */
-/* @get( idFormattedCreditTF ) */
+/* @get( idCreditSlider    idInterestSlider    idMonthsSlider )      */
+/* @get( idFormattedCreditTF )                                       */
 chL="javafx.beans.value.ChangeListener"
 idCreditSlider  ~valueProperty~addListener(BsfCreateRexxProxy(.rexxKreditBetragSlider~new,idCreditTextField,chL))
 idInterestSlider~valueProperty~addListener(BsfCreateRexxProxy(.rexxZinsSatzSlider~new,    idInterestTextField,chL))
@@ -66,20 +68,22 @@ say
 ::routine addTooltip    -- create Tooltip text from slider's min/max values, add it to slider and textField
   use arg textField, label, slider
 
-  id=textField~id       -- determine number of decimal places
-  if id~pos("Credit")>0   then
-     .decimalF~applyPattern("#,##0.00")-- format to two decimal places
-  else if id~pos("Interest")>0 then
-     .decimalF~applyPattern("#,##0.0") -- format to a single decimal place
-  else
-     .decimalF~applyPattern("#,##0")   -- format to not show any decimal places
-
-  min=.decimalF~format(slider~min)     -- get and format number
-  max=.decimalF~format(slider~max)     -- get and format number
+  call setDecimalPattern textField  -- set the formatting pattern
+  min=.decimalF~format(slider~min)  -- get and format number
+  max=.decimalF~format(slider~max)  -- get and format number
   t=.tooltip~new("Numeric value must be between min="pp(min) "and max="pp(max))
-  textField~tooltip=t   -- assign tooltip
-  label    ~tooltip=t   -- assign tooltip
-  slider   ~tooltip=t   -- assign tooltip
+  t~setStyle("-fx-font-size: 14")   -- make the font larger to improve legibility
+  textField~tooltip=t               -- assign tooltip
+  label    ~tooltip=t               -- assign tooltip
+  slider   ~tooltip=t               -- assign tooltip
+
+/* ------------------------------------------------------------------------- */
+::routine setDecimalPattern   -- determine type and set decimal formatting pattern accordingly
+  use arg fxComponent
+  id=fxComponent~id           -- determine number of decimal places
+  if id~pos("Credit")>0        then .decimalF~applyPattern("#,##0.00")-- format to two decimal places
+  else if id~pos("Interest")>0 then .decimalF~applyPattern("#,##0.0") -- format to a single decimal place
+                               else .decimalF~applyPattern("#,##0")   -- format to not show any decimal places
 
 /* ------------------------------------------------------------------------- */
 ::routine dumpScriptContext   -- dump all current Bindings of ScriptContext
@@ -93,18 +97,21 @@ say
      say "scope #" pp(scope) info
      bindings=scriptContext~getBindings(scope)
      dir=.directory~new
+     len=0
      do with index idx item it over bindings
         dir~setEntry(idx, (idx, it))
+        len=max(len,idx~length)  -- determine longest entry
      end
+     len+=2                      -- account for enclosing brackets
      do idx over dir~allindexes~sort
         val=dir[idx]
-        say "   " pp(idx)~left(31,".") || ":" pp(val[1])~left(31,".") "->" pp(val[2])
+        say "   " pp(idx)~left(len,".") || ":" pp(val[1])~left(len,".") "->" pp(val[2])
      end
      say
   end
 
 /* ------------------------------------------------------------------------- */
-::routine dumpSlotDir         -- dump content of slotDir
+::routine dumpSlotDir            -- dump content of slotDir
   use arg slotDir
   do idx over slotDir~allindexes~sort
       say "   " pp(idx)~left(31,".") || ":" pp(slotDir[idx])
@@ -114,9 +121,9 @@ say
 /* will be invoked via JavaFX using the Java scripting framework, ie. RexxScriptEngine */
 ::routine rexxCalculateButtonPressed public
   /* @get( idCreditTextField idInterestTextField idMonthsTextField idRateTextField idTotalAccumulatedPaymentsTextField ) */
-  c=idCreditTextField~text   -- get current value
-  m=idMonthsTextField~text   -- get current value
-  i=idInterestTextField~text -- get current value
+  c=idCreditTextField~text       -- get current value
+  m=idMonthsTextField~text       -- get current value
+  i=idInterestTextField~text     -- get current value
 
   t = .Math~pow(1+(i/100)/12,m)
   if i=0 then
@@ -129,7 +136,7 @@ say
 
 /* ------------------------------------------------------------------------- */
 /* will be invoked directly via Rexx (no RexxScript annotations available) */
-::class  rexxKreditBetragSlider public    -- update TextField, if slider gets moved
+::class  rexxKreditBetragSlider public -- update TextField, if slider gets moved
 ::method changed
   use arg ov, oldValue, newValue, slotDir
   call updateTextField slotDir~userData, newValue, 2
@@ -137,14 +144,14 @@ say
 
 /* ------------------------------------------------------------------------- */
 /* will be invoked directly via Rexx (no RexxScript annotations available) */
-::class rexxZinsSatzSlider public         -- update TextField, if slider gets moved
+::class rexxZinsSatzSlider public      -- update TextField, if slider gets moved
 ::method changed
   use arg ov, oldValue, newValue, slotDir
   call updateTextField slotDir~userData, newValue, 1
 
 /* ------------------------------------------------------------------------- */
 /* will be invoked directly via Rexx (no RexxScript annotations available) */
-::class rexxLaufZeitSlider public         -- update TextField, if slider gets moved
+::class rexxLaufZeitSlider public      -- update TextField, if slider gets moved
 ::method changed
   use arg ov, oldValue, newValue, slotDir
   call updateTextField slotDir~userData, newValue, 0
@@ -206,8 +213,8 @@ say
   else if strEventType="KEY_RELEASED" then
   do
 -- say "KEY_RELEASED:" pp(event~toString)
-     tfValue=target~text     -- get the current text, should be a number
-     pkgDir=.context~package~local
+     tfValue=target~text               -- get the current text, should be a number
+     pkgDir=.context~package~local     -- get access to package's local environment (sinc ooRexx 5.0)
      if target~objectname=pkgDir~key_typed_target~objectName then   -- same object as previous "KEY_TYPED" target
      do
          title="" -- if set, an error title was defined
@@ -225,9 +232,16 @@ say
             if tfValue<slider~min | tfValue>slider~max then
             do
                title="Value Exceeds Range"
-               headerText="The currently entered value" pp(tfValue) "exceeds the defined range!"
-               contentText="Defined range: min="pp(slider~min) "and max="pp(slider~max) -
-                           "0a"x"Resetting to previous value:" pp(pkgDir~key_typed_text)
+               call setDecimalPattern slider
+               headerText="The currently entered value" pp(.decimalF~format(tfValue)) "exceeds the defined range!"
+               min=.decimalF~format(slider~min)
+               max=.decimalF~format(slider~max)
+               oldValue=pkgDir~key_typed_text
+               if oldValue>=1000 then  -- format for better legibility
+                  oldValue=oldValue "/" .decimalF~format(oldValue)
+
+               contentText="Defined range: min="pp(min) "and max="pp(max) -
+                           "0a0a"x"Resetting to previous value:" pp(oldValue)
             end
             else  -- checks are alright, now update the slider marker
             do

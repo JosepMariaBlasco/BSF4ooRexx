@@ -20,6 +20,13 @@
 
    license:    - Apache License 2.0 (AL 2.0)
 */
+rexxVersion=.bsf4rexx~rexx.version
+if rexxVersion<5 then
+do
+   say "This program cannot run on your version of ooRexx:" pp(rexxVersion)". Need ooRexx 5.0 or higher, aborting, sorry..."
+   exit -1
+end
+
 
    -- make sure we change to the directory this program resides, such that all resources are in the local directory
 parse source  . . pgm
