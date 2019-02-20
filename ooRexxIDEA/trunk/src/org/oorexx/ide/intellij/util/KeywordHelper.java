@@ -137,8 +137,15 @@ public class KeywordHelper {
                         "WHILE",
                         "WITH",
                         "ITEM",
-                        "INDEX" +
-                        "DOT");
+                        "INDEX",
+                        "DOT",
+                        "INPUT",
+                        "OUTPUT",
+                        "STREAM",
+                        "STEM",
+                        "REPLACE",
+                        "APPEND",
+                        "USING");
     }
 
 }

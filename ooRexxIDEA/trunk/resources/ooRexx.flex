@@ -463,6 +463,13 @@ DEC_LITERAL = [0-9] [0-9_]*
     "WHEN"                      { return WHEN; }
     "WHILE"                      { return WHILE; }
     "WITH"                      { return WITH; }
+    "APPEND"                {return APPEND;}
+    "INPUT" {return INPUT;}
+    "OUTPUT" {return OUTPUT;}
+    "STEM" {return STEM;}
+    "STREAM" {return STREAM;}
+    "REPLACE" {return REPLACE;}
+    "USING" {return USING;}
 
   // Environment Symbols
 

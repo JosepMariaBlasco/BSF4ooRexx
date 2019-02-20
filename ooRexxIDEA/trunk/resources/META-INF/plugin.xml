@@ -29,6 +29,30 @@
     <additionalTextAttributes scheme="Default" file="colorSchemes/ooRexxColors.xml"/>
     <applicationConfigurable groupId="language"  displayName="ooRexx" id="ooRexx" instance="org.oorexx.ide.intellij.setting.OoRexxLanguageConfigurable" />
     <applicationService serviceImplementation="org.oorexx.ide.intellij.setting.OoRexxLanguageSettings"/>
+
+    <!-- Project -->
+
+    <moduleType id="OOREXX_MODULE" implementationClass="org.oorexx.ide.intellij.project.OoRexxModuleType"/>
+
+
   </extensions>
   <depends>com.intellij.modules.lang</depends>
+
+  <actions>
+    <action id="ooRexx.NewOoRexxFile.Rexx"
+            class="org.oorexx.ide.intellij.action.NewOoRexxFile"
+            text="ooRexx File"
+            description="Create new ooRexx file">
+      <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
+    </action>
+    <action id="ooRexx.NewOoRexxFile.Cls"
+            class="org.oorexx.ide.intellij.action.NewOoRexxClsFile"
+            text="ooRexx CLS File"
+            description="Create new CLS file">
+      <add-to-group group-id="NewGroup" anchor="before" relative-to-action="NewFile"/>
+    </action>
+    <action id="ooRexx.SearchAction"
+            class="org.oorexx.ide.intellij.action.OoRexxSearchAction">
+    </action>
+  </actions>
 </idea-plugin>

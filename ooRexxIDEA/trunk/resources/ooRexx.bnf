@@ -30,6 +30,7 @@
 
 
             identifier  = 'regexp:\p{Alpha}\w*'
+            stream_identifier = 'regexp:\p{Alpha}.\p{Alpha}*'
 
             RESOURCE = 'RESOURCE'
             RESOURCE_DATA = 'RESOURCE_DATA'
@@ -53,6 +54,7 @@
             REQUIRES = 'REQUIRES'
             ROUTINE = 'ROUTINE'
             ABSTRACT = 'ABSTRACT'
+            APPEND = 'APPEND'
             ATTRIBUTE = 'ATTRIBUTE'
             CLASS = 'CLASS'
             DIGITS = 'DIGITS'
@@ -81,6 +83,7 @@
             CALL = 'CALL'
             DO = 'DO'
             DROP = 'DROP'
+            ERROR = 'ERROR'
             EXIT = 'EXIT'
             EXPOSE = 'EXPOSE'
             FORWARD = 'FORWARD'
@@ -89,6 +92,7 @@
             INTERPRET = 'INTERPRET'
             ITERATE = 'ITERATE'
             INDEX = 'INDEX'
+            INPUT = 'INPUT'
             ITEM = 'ITEM'
             LEAVE = 'LEAVE'
             LOOP = 'LOOP'
@@ -151,6 +155,7 @@
             OFF = 'OFF'
             ON = 'ON'
             OTHERWISE = 'OTHERWISE'
+            OUTPUT = 'OUTPUT'
             OVER = 'OVER'
             PROPAGATE = 'PROPAGATE'
             PULL = 'PULL'
@@ -311,6 +316,10 @@
             BIF_X2C =  "BIF_X2C"
             BIF_X2D =   "BIF_X2D"
             BIF_XRANGE =   "BIF_XRANGE"
+            REPLACE = 'REPLACE'
+            STEM = 'STEM'
+            STREAM = 'STREAM'
+            USING = 'USING'
         ]
 
 }
@@ -330,7 +339,7 @@ private assignments_and_keywords ::= ( assignment |  <<excluding_expr keyword_li
 instruction ::= (SEMICOLON | label_instruction | ((assignments_and_keywords | (!END keyword_list))  instruction_terminator))
 
 function_call ::= built_in_functions | (namespace_prefix? function_call_without_namespace)
-private function_call_without_namespace ::= ((FUNC_IDENTIFIER | built_in_functions_keyword_list) LPAREN (COMMA | parameter_expr)* RPAREN){pin = 2}
+private function_call_without_namespace ::= ((FUNC_IDENTIFIER | built_in_functions_keyword_list) LPAREN (COMMA | (variable_reference_operator? parameter_expr))* RPAREN){pin = 2}
 
 template_list ::= ( (expr (COMMA expr)*)+ | COMMA | DOT | ( (EQ | MINUS | PLUS) <<paren expr>>))+
 
@@ -352,6 +361,10 @@ symbol_or_string ::= STRING_LITERAL | id
 symbol_or_string_or_function ::= symbol_or_string | function_call
 symbol_or_string_or_keyword ::= symbol_or_string | keyword_list | lit
 new_line ::= EOL
+
+private stem_expr ::= stream_identifier//TODO check v.
+private stream_expr ::= identifier | string_lit | (LPAREN expr RPAREN)
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Message Term
@@ -385,6 +398,12 @@ array_term_parenthized ::= LPAREN array_term RPAREN
 assignment ::= (message_term | id) extended_assignment expr{pin = 2}
 
 extended_assignment ::= EQ  | ( (PLUS | MINUS | (MUL MUL) | MUL | (DIV DIV) | DIV | INTDIV | (PIPE PIPE) | PIPE | (AND AND) | AND) EQ)
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// Variablereference
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+variable_reference_operator ::= "<" | ">"
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Expressions
@@ -429,7 +448,9 @@ label_instruction ::= (symbol_or_string | keyword_list) COLON (keyword_procedure
 
 directive_access_private ::= (PRIVATE)
 directive_access_public ::= PUBLIC
+directive_access_package ::= PACKAGE
 directive_access ::= directive_access_private | directive_access_public
+directive_access_with_package ::= directive_access_private | directive_access_public | directive_access_package
 
 directive_start ::= (COLON COLON)
 
@@ -468,7 +489,7 @@ directive_attribute ::= ATTRIBUTE symbol_or_string (directive_attribute_get_set 
 
 directive_attribute_get_set ::= GET | SET {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_attribute_class ::= CLASS {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-directive_attribute_access ::= directive_access {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+directive_attribute_access ::= directive_access_with_package {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_attribute_guard_unguarded ::= GUARDED | UNGUARDED {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_attribute_unprotected_protected ::= UNPROTECTED | PROTECTED {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_attribute_abstract_delegate_external ::= directive_attribute_abstract | directive_attribute_delegate | directive_attribute_external {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
@@ -503,7 +524,7 @@ directive_class_inherit_name ::= symbol_or_string
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 directive_constant ::= CONSTANT symbol_or_string directive_constant_value instruction_terminator{implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin = 1}
-directive_constant_value ::= lit?
+directive_constant_value ::= (expr | lit)?
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // ::Method
@@ -513,7 +534,7 @@ directive_method ::= METHOD directive_method_name (directive_method_attribute | 
             directive_method_body? {implements = "org.oorexx.ide.lang.core.DirectiveHeader" pin=1}
 directive_method_attribute ::= ATTRIBUTE {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint" pin=1}
 directive_method_class ::= CLASS {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-directive_method_access ::= directive_access {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+directive_method_access ::= directive_access_with_package {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_method_guarded_unguarded ::= GUARDED | UNGUARDED {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_method_unprotected_protected ::= UNPROTECTED | PROTECTED {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 directive_method_abstract_delegate_external ::= directive_method_abstract | directive_method_external | directive_method_delegate {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
@@ -574,7 +595,11 @@ comma_separated_expr ::= (expr (COMMA+ expr)*)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Address
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-keyword_address ::= ADDRESS ((symbol_or_string expr?) | (VALUE? expr) ){pin = 1}
+keyword_address ::= ADDRESS ((symbol_or_string <<excluding_expr (WITH)>>?) | (VALUE? <<excluding_expr (WITH)>>) ) keyword_address_with? {pin = 1}
+private keyword_address_with ::= WITH (keyword_address_with_input | keyword_address_with_output_or_error)?
+private keyword_address_with_input ::= INPUT (NORMAL |  (USING LPAREN expr RPAREN))
+private keyword_address_with_output_or_error ::= (OUTPUT | ERROR) (NORMAL | keyword_address_with_output_or_error_replace)?
+private keyword_address_with_output_or_error_replace ::= (REPLACE | APPEND) ((STEM stem_expr) | (STREAM stream_expr) | (USING LPAREN expr RPAREN))
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Arg
@@ -821,7 +846,7 @@ keyword_trace_keyword_part ::= "?"* (NORMAL|ALL|COMMANDS|ERROR|FAILURE|INTERMEDI
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 keyword_use_variants ::= USE (keyword_use | keyword_use_local){pin = 1}
-keyword_use ::= STRICT? ARG (COMMA | (assignment | expr) )*
+keyword_use ::= STRICT? ARG (COMMA | (variable_reference_operator? (assignment | expr)) )*
 keyword_use_local ::= LOCAL id*
 
 built_in_functions_keyword_list ::= BIF_ABBREV | BIF_ABS | BIF_ADDRESS | BIF_ARG | BIF_B2X | BIF_BEEP | BIF_BITAND | BIF_BITOR | BIF_BITXOR | BIF_C2D | BIF_C2X | BIF_CENTER | BIF_CENTRE | BIF_CHANGESTR | BIF_CHARIN |
