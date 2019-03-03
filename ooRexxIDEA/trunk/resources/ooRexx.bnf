@@ -30,7 +30,7 @@
 
 
             identifier  = 'regexp:\p{Alpha}\w*'
-            stream_identifier = 'regexp:\p{Alpha}.\p{Alpha}*'
+            stream_identifier = 'regexp:\p{Alpha}\.\p{Alpha}*'
 
             RESOURCE = 'RESOURCE'
             RESOURCE_DATA = 'RESOURCE_DATA'
@@ -332,14 +332,31 @@ shebang ::= SHEBANG_LINE
 private meta paren ::= <<p>> | (LPAREN (<<paren  <<p>>>>| <<p>>) RPAREN)
 
 environment_id ::= ENV_IDENTIFIER | ENV_ENVIRONMENT | ENV_LOCAL
-id ::= (SELF TILDE)? (namespace_prefix (new_line* !assignments_and_keywords))? (identifier | environment_id | keyword_list)
-keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) | (EXIST) | (CREATE) | (CASE) | (COUNT) | (SUPER) | (PACKAGE) | (ABSTRACT) | (ANNOTATE) | (ATTRIBUTE) | (CLASS) | (CONDITION) | (DIGITS) | (EXTERNAL) | (FORM) | (FUZZ) | (GET) | (GUARDED) | (INHERIT) | (LIBRARY) | (METACLASS) | (MIXINCLASS) | (NAMESPACE) | (NOPROLOG) | (PRIVATE) | (PROLOG) | (PROTECTED) | (PUBLIC) | (RESOURCE) | (RESOURCE_DATA) | (SET) | (SUBCLASS) | (TRACE) | (UNGUARDED) | (UNPROTECTED) | (ADDRESS) | (ARG) | (CALL) | (DO) | (DROP) | (EXIT) | (EXPOSE) | (FORWARD) | (GUARD) | (IF) | (INTERPRET) | (ITERATE) | (LEAVE) | (LOOP) | (NOP) | (NUMERIC) | (OPTIONS) | (PARSE) | (PROCEDURE) | (PULL) | (PUSH) | (QUEUE) | (RAISE) | (REPLY) | (RETURN) | (SAY) | (SELECT) | (SIGNAL) | (TRACE) | (USE) | (SELF) | (ADDITIONAL) | (ANY) | (ARG) | (ARGUMENTS) | (ARRAY) | (BY) | (CASELESS) | (CLASS) | (COMMANDS) | (CONTINUE) | (DESCRIPTION) | (DIGIT) | (DROP) | (ELSE) | (END) | (ENGINEERING) | (ERROR) | (EXIT) | (EXPOSE) | (FAILURE) | (FOR) | (FOREVER) | (FORM) | (FUZZ) | (HALT) | (INTERMEDIATES) | (LABEL) | (LABELS) | (LINEIN) | (LINEOUT) | (LOSTDIGITS) | (LOWER) | (MESSAGE) | (NAME) | (NOMETHOD) | (NORMAL) | (NOSTRING) | (NOTREADY) | (NOVALUE) | (OFF) | (ON) | (OTHERWISE) | (OVER) | (PROPAGATE) | (PULL) | (RESULTS) | (RETURN) | (SCIENTIFIC) | (SOURCE) | (STRICT) | (SYNTAX) | (THEN) | (TO) | (UNTIL) | (UPPER) | (USER) | (VALUE) | (VAR) | (VERSION) | (WHEN) | (WHILE) | (WITH) | (ITEM) | (INDEX)
+id ::= (SELF TILDE)? (namespace_prefix (new_line* !assignments_and_keywords))? (identifier | environment_id | keyword_list){
+                                                                                                                            mixin = "org.oorexx.ide.intellij.reference.OoRexxNamedElementImpl"
+                                                                                                                            implements = "org.oorexx.ide.intellij.reference.OoRexxNamedElement"
+                                                                                                                            methods = [setName getNameIdentifier]
+
+                                                                                                                           }
+keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) | (EXIST) | (CREATE) | (CASE) | (COUNT)
+| (SUPER) | (PACKAGE) | (ABSTRACT) | (ANNOTATE) | (ATTRIBUTE) | (CLASS) | (CONDITION) | (DIGITS) | (EXTERNAL) | (FORM)
+| (FUZZ) | (GET) | (GUARDED) | (INHERIT) | (LIBRARY) | (METACLASS) | (MIXINCLASS) | (NAMESPACE) | (NOPROLOG) | (PRIVATE)
+| (PROLOG) | (PROTECTED) | (PUBLIC) | (RESOURCE) | (RESOURCE_DATA) | (SET) | (SUBCLASS) | (TRACE) | (UNGUARDED) | (UNPROTECTED)
+| (ADDRESS) | (ARG) | (CALL) | (DO) | (DROP) | (EXIT) | (EXPOSE) | (FORWARD) | (GUARD) | (IF) | (INTERPRET) | (ITERATE)
+| (LEAVE) | (LOOP) | (NOP) | (NUMERIC) | (OPTIONS) | (PARSE) | (PROCEDURE) | (PULL) | (PUSH) | (QUEUE) | (RAISE) | (REPLY)
+| (RETURN) | (SAY) | (SELECT) | (SIGNAL) | (TRACE) | (USE) | (SELF) | (ADDITIONAL) | (ANY) | (ARG) | (ARGUMENTS) | (ARRAY)
+| (BY) | (CASELESS) | (CLASS) | (COMMANDS) | (CONTINUE) | (DESCRIPTION) | (DIGIT) | (DROP) | (ELSE) | (END) | (ENGINEERING)
+| (ERROR) | (EXIT) | (EXPOSE) | (FAILURE) | (FOR) | (FOREVER) | (FORM) | (FUZZ) | (HALT) | (INTERMEDIATES) | (LABEL) | (LABELS)
+| (LINEIN) | (LINEOUT) | (LOSTDIGITS) | (LOWER) | (MESSAGE) | (NAME) | (NOMETHOD) | (NORMAL) | (NOSTRING) | (NOTREADY) | (NOVALUE)
+| (OFF) | (ON) | (OTHERWISE) | (OVER) | (PROPAGATE) | (PULL) | (RESULTS) | (RETURN) | (SCIENTIFIC) | (SOURCE) | (STRICT) | (SYNTAX)
+| (THEN) | (TO) | (UNTIL) | (UPPER) | (USER) | (VALUE) | (VAR) | (VERSION) | (WHEN) | (WHILE) | (WITH) | (ITEM) | (INDEX)
+| (INPUT) | (OUTPUT) | REPLACE | APPEND | WITH | STEM | STREAM | USING
 
 private assignments_and_keywords ::= ( assignment |  <<excluding_expr keyword_list>> | (keyword_instruction) )
 instruction ::= (SEMICOLON | label_instruction | ((assignments_and_keywords | (!END keyword_list))  instruction_terminator))
 
 function_call ::= built_in_functions | (namespace_prefix? function_call_without_namespace)
-private function_call_without_namespace ::= ((FUNC_IDENTIFIER | built_in_functions_keyword_list) LPAREN (COMMA | (variable_reference_operator? parameter_expr))* RPAREN){pin = 2}
+private function_call_without_namespace ::= ((FUNC_IDENTIFIER | built_in_functions_keyword_list) LPAREN (COMMA | (parameter_expr))* RPAREN){pin = 2}
 
 template_list ::= ( (expr (COMMA expr)*)+ | COMMA | DOT | ( (EQ | MINUS | PLUS) <<paren expr>>))+
 
@@ -349,6 +366,7 @@ namespace_prefix ::= (identifier | keyword_list) COLON
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 private lit ::= string_lit | number_lit
+
 
 string_lit ::= STRING_LITERAL | BINARY_STRING_LITERAL | HEX_STRING_LITERAL
 number_lit ::= (MINUS? (INTEGER_LITERAL | FLOAT_LITERAL)) | bool_lit
@@ -362,7 +380,7 @@ symbol_or_string_or_function ::= symbol_or_string | function_call
 symbol_or_string_or_keyword ::= symbol_or_string | keyword_list | lit
 new_line ::= EOL
 
-private stem_expr ::= stream_identifier//TODO check v.
+private stem_expr ::= stream_identifier
 private stream_expr ::= identifier | string_lit | (LPAREN expr RPAREN)
 
 
@@ -427,7 +445,7 @@ private mul_op ::= (MUL MUL)|MUL|(DIV DIV)| DIV|INTDIV
 private meta primary ::=  (  message_term | literal_expr | <<ref_expr <<p>>>> | function_call  | paren_expr )
 
  meta paren_expr ::= MINUS? '(' expr ')' {pin=2}
- meta ref_expr ::= (namespace_prefix (new_line* !assignments_and_keywords))? MINUS? (function_call | identifier | environment_id | (!<<p>> keyword_list) ) // ID
+ meta ref_expr ::= (namespace_prefix (new_line* !assignments_and_keywords))? MINUS? (function_call | (variable_reference_operator? identifier) | environment_id | (!<<p>> keyword_list) ) // ID
 literal_expr ::= string_lit | negative_numeric_expr | numeric_expr | bool_lit |  NIL
 numeric_expr ::= PLUS? (INTEGER_LITERAL | FLOAT_LITERAL)
 negative_numeric_expr ::= MINUS (INTEGER_LITERAL | FLOAT_LITERAL)
@@ -590,16 +608,18 @@ private keyword_instruction_recovery ::= !instruction_terminator
 
 instruction_terminator ::= (EOL+ | (SEMICOLON+ new_line*) | <<eof>>)
 
-comma_separated_expr ::= (expr (COMMA+ expr)*)
+private comma_separated_expr ::= (expr (COMMA+ expr)*)
+private comma_separated_expr_with_references ::= (variable_reference_operator? expr (COMMA+ variable_reference_operator? expr)*)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Address
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 keyword_address ::= ADDRESS ((symbol_or_string <<excluding_expr (WITH)>>?) | (VALUE? <<excluding_expr (WITH)>>) ) keyword_address_with? {pin = 1}
-private keyword_address_with ::= WITH (keyword_address_with_input | keyword_address_with_output_or_error)?
-private keyword_address_with_input ::= INPUT (NORMAL |  (USING LPAREN expr RPAREN))
-private keyword_address_with_output_or_error ::= (OUTPUT | ERROR) (NORMAL | keyword_address_with_output_or_error_replace)?
-private keyword_address_with_output_or_error_replace ::= (REPLACE | APPEND) ((STEM stem_expr) | (STREAM stream_expr) | (USING LPAREN expr RPAREN))
+private keyword_address_with ::= WITH (keyword_address_with_input | keyword_address_with_output | keyword_address_with_error)*
+keyword_address_with_input ::= INPUT (NORMAL |  (USING LPAREN expr RPAREN)){implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+keyword_address_with_output ::= OUTPUT (NORMAL | keyword_address_with_replace_append_or_nothing)?{implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+keyword_address_with_error ::= ERROR (NORMAL | keyword_address_with_replace_append_or_nothing)?{implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+private keyword_address_with_replace_append_or_nothing ::= (REPLACE | APPEND)? ((STEM stem_expr) | (STREAM stream_expr) | (USING LPAREN expr RPAREN))
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Arg
@@ -613,7 +633,7 @@ keyword_arg ::= ARG template_list?{pin = 1}
 
 keyword_call_variants ::= (keyword_call | keyword_call_on | keyword_call_off)
 
-keyword_call ::= CALL (symbol_or_string_or_function | ( LPAREN expr RPAREN)) comma_separated_expr?{pin = 1}
+keyword_call ::= CALL (symbol_or_string_or_function | ( LPAREN expr RPAREN)) comma_separated_expr_with_references?{pin = 1}
 
 keyword_call_on ::= CALL ON (((ANY | ERROR | FAILURE | HALT | NOTREADY | (USER id)) (NAME id)) |
                             ((NAME id) (ANY | ERROR | FAILURE | HALT | NOTREADY | (USER id)))){pin = 1}
@@ -639,7 +659,7 @@ private keyword_do_repetitor_1 ::= keyword_do_repetitor_assign (keyword_do_repet
 private keyword_do_repetitor_2 ::= (id OVER <<excluding_expr FOR>>) keyword_do_repetitor_2_for?
 private keyword_do_repetitor_2_for ::= FOR <<excluding_expr (WHILE | UNTIL)>>
 
-private keyword_do_repetitor_3 ::= WITH (keyword_do_repetitor_index | keyword_do_repetitor_item)* OVER id keyword_do_repetitor_for?
+private keyword_do_repetitor_3 ::= WITH (keyword_do_repetitor_index | keyword_do_repetitor_item)* OVER <<excluding_expr FOR>> keyword_do_repetitor_for?
 
 keyword_do_repetitor_assign ::= id EQ <<excluding_expr (TO | BY | INDEX | ITEM | FOR | WHILE | UNTIL)>> {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 keyword_do_repetitor_to ::= TO <<excluding_expr (BY | FOR | INDEX | ITEM | WHILE | UNTIL)>> {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
