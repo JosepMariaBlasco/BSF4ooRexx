@@ -36,6 +36,8 @@
                                 that class is abstract and bsf.importClass() does not import abstract
                                 Java classes anymore!
 
+               2019-08-13, rgf: warn, if not running run on ooRexx 5.0 or higher, ask user whether to proceed
+
    purpose:    - demonstrates usage of custom libraries
                - shows table view handling
                - demonstrates switching stylesheets to dramatically change the UI
@@ -53,6 +55,18 @@
    license:    - Apache License 2.0 (AL 2.0)
 */
 
+
+   -- make sure we run on ooRexx 5 or higher
+parse version full 1 "_" v "."    -- get major version number of ooRexx
+if v<5 then    -- pre ooRexx 5.0 expose problems with multithreading switching
+do
+   say "--> WARNING: this program will run stable with ooRexx 5.0 or higher only!"
+   say "             (You are running ooRexx version" pp(full)")";say
+   say
+   say "Do you wish to continue (y/N) ?"
+   parse upper pull val +1
+   if val<>"Y" then exit -1
+end
 
 
 /* Create a directory in the global Rexx .environment named MY.APP, such that we can store/retrieve
@@ -83,8 +97,7 @@ else
 /* java class imports */
 call bsf.import "javafx.collections.FXCollections",            "fx.FXCollections"
 call bsf.import "org.controlsfx.control.Notifications",        "fx.Notification"
--- call bsf.import "javafx.util.Callback",                        "Callback"
-call bsf.loadClass2environment "javafx.util.Callback",         "Callback"     -- abstract class, cannot be imported anymore
+call bsf.loadClass "javafx.util.Callback",                     "Callback"     -- abstract class, cannot be imported anymore
 
 /* set up environment, import Java classes use unqualified class name as the Rexx class name */
 call bsf.import "javafx.beans.property.SimpleStringProperty",  "SimpleStringProperty"

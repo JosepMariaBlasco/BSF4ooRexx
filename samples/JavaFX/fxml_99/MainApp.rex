@@ -222,8 +222,8 @@ syntax:
       call bsf.import "javafx.scene.control.Alert$AlertType",        "fx.Alert.Type"
   end
 
-  if personFilePath=.nil then primaryStage~setTitle("AddressApp")
-                         else primaryStage~title="AddressApp -" personFilePath
+  if personFilePath=.nil then primaryStage~setTitle("AddressApp (ooRexx)")
+                         else primaryStage~title="AddressApp (ooRexx) -" personFilePath
 
    -- create an URL for the FMXLDocument.fxml file (hence the protocol "file:")
   rootLayoutUrl=.bsf~new("java.net.URL", "file:RootLayout.fxml")
@@ -328,7 +328,7 @@ syntax:
 
      -- AnchorPane page = (AnchorPane) loader.load();
      dialogStage = .bsf~new("javafx.stage.Stage")
-     dialogStage~setTitle("Edit Person")
+     dialogStage~setTitle("Edit Person (ooRexx)")
      dialogStage~initModality(.fx.Modality~WINDOW_MODAL)
 
      dialogStage~initOwner(primaryStage)
@@ -357,7 +357,7 @@ syntax:
 
   -- AnchorPane page = (AnchorPane) loader.load();
   dialogStage = .bsf~new("javafx.stage.Stage")
-  dialogStage~setTitle("Birthday Statistics")
+  dialogStage~setTitle("Birthday Statistics (ooRexx)")
   dialogStage~initModality(.fx.Modality~WINDOW_MODAL)
 
   dialogStage~initOwner(primaryStage)
@@ -379,7 +379,7 @@ syntax:
 
   -- AnchorPane page = (AnchorPane) loader.load();
   dialogStage = .bsf~new("javafx.stage.Stage")
-  dialogStage~setTitle("Adress Book Printing")
+  dialogStage~setTitle("Adress Book Printing (ooRexx)")
   dialogStage~initModality(.fx.Modality~WINDOW_MODAL)
 
   dialogStage~initOwner(primaryStage)
@@ -504,7 +504,7 @@ syntax:
       do
          alert=.fx.alert~new(.fx.Alert.Type~WARNING)   -- create a warning alert
 
-         alert~setTitle("No Selection")
+         alert~setTitle("No Selection (ooRexx)")
          alert~setHeaderText(.nil)
          alert~setContentText("Please select a person in the table.")
          alert~showAndWait
@@ -543,7 +543,7 @@ syntax:
       do
          alert=.fx.alert~new(.fx.Alert.Type~WARNING)   -- create a warning alert
 
-         alert~setTitle("No Selection")
+         alert~setTitle("No Selection (ooRexx)")
          alert~setHeaderText(.nil)
          alert~setContentText("Please select a person in the table.")
          alert~showAndWait
@@ -727,7 +727,7 @@ syntax:
   if .my.app~bDialogsAlertsAvailable then
   do
      alert=.fx.alert~new(.fx.Alert.Type~ERROR)  -- create a warning alert
-     alert~setTitle("Invalid Fields")
+     alert~setTitle("Invalid Fields (ooRexx)")
      alert~setHeaderText("Please correct the listed errors!")
      alert~setContentText("Invalid values:" LF errorMessage)
      alert~showAndWait
@@ -997,7 +997,7 @@ syntax:
   do
      alert=.fx.alert~new(.fx.Alert.Type~information)  -- create an information alert
 
-     alert~setTitle("AddressApp")
+     alert~setTitle("AddressApp (ooRexx)")
      alert~setHeaderText(.nil)
      alert~setContentText(text)
      alert~showAndWait
@@ -1230,7 +1230,7 @@ syntax:
   if currPrinter=.nil then    -- no default printer, hence no printer installed at all!
   do
      alert=.fx.alert~new(.fx.Alert.Type~ERROR)  -- create a warning alert
-     alert~setTitle("No Default Printer Found")
+     alert~setTitle("No Default Printer Found (ooRexx)")
      alert~setHeaderText("Printer Missing")
      alert~setContentText("No printer found, please install one on this system!")
      alert~showAndWait

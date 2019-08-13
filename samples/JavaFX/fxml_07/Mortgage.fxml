@@ -19,7 +19,7 @@
     <children>
       <GridPane fx:id="idGridPane" layoutY="11.0">
         <columnConstraints>
-          <ColumnConstraints hgrow="SOMETIMES" prefWidth="85" />
+          <ColumnConstraints hgrow="SOMETIMES" prefWidth="100" />
           <ColumnConstraints hgrow="SOMETIMES" minWidth="150" prefWidth="200" />
           <ColumnConstraints />
         </columnConstraints>
@@ -41,15 +41,15 @@
 
          <children>
                 <!-- Column # 0 -->
-                <Label text="Credit Amount" fx:id="idCreditLabel"   prefWidth="75" alignment="BASELINE_RIGHT" />
-                <Label text="Interest Rate" fx:id="idInterestLabel" prefWidth="75" alignment="BASELINE_RIGHT"
+                <Label text="Credit Amount" fx:id="idCreditLabel"   prefWidth="100" alignment="BASELINE_RIGHT" />
+                <Label text="Interest Rate" fx:id="idInterestLabel" prefWidth="100" alignment="BASELINE_RIGHT"
                                                                  GridPane.rowIndex="2" />
-                <Label text="# Months"      fx:id="idMonthsLabel"   prefWidth="75" alignment="BASELINE_RIGHT"
+                <Label text="# Months"      fx:id="idMonthsLabel"   prefWidth="100" alignment="BASELINE_RIGHT"
                                                                  GridPane.rowIndex="3" />
 
                 <Label text="Monthly Payment Rate" minWidth="100" prefWidth="195" alignment="BASELINE_RIGHT"
                                         GridPane.columnIndex="1" GridPane.rowIndex="4" />
-                <Label text="Total Accumulated Payments" minWidth="100" prefWidth="195" alignment="BASELINE_RIGHT"
+                <Label text="Accrued Payments" minWidth="100" prefWidth="195" alignment="BASELINE_RIGHT"
                                         GridPane.columnIndex="1" GridPane.rowIndex="5" />
 
                 <!-- Column # 1 -->

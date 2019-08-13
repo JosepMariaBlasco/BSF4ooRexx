@@ -48,6 +48,7 @@
    changes: 2018-09-29, rgf: - commented "call SysSleep 0.001" which should not be needed for ooRexx 5.0
                              - if stopping, do not clear label anymore
             2018-10-07, rgf: - if running on pre ooRexx 5.0 use SysSleep() in loop to help avoid hangs
+            2019-08-08, rgf: - if ooRexx smaller version 5.0, ask user whether to proceed
 
    license: Apache License 2.0 (see at bottom)
 
@@ -66,6 +67,10 @@ if v<5 then    -- pre ooRexx 5.0 expose problems with multithreading switching
 do
    say "--> WARNING: this program will run stable with ooRexx 5.0 or higher only!"
    say "             (You are running ooRexx version" pp(full)")";say
+   say
+   say "Do you wish to continue (y/N) ?"
+   parse upper pull val +1
+   if val<>"Y" then exit -1
 end
 
 

@@ -23,7 +23,14 @@
 rexxVersion=.bsf4rexx~rexx.version
 if rexxVersion<5 then
 do
-   say "This program cannot run on your version of ooRexx:" pp(rexxVersion)". Need ooRexx 5.0 or higher, aborting, sorry..."
+   say "This program cannot run with your version of ooRexx" pp(rexxVersion)", because"
+   say "it uses the package local environment ('.context~package~local') introduced"
+   say "with ooRexx 5.0. Besides ooRexx 5.0 may be needed anyway, because of its much"
+   say "improved multi-threading support."
+   say
+   say "Hit enter to continue ..."
+   bsf.loadClass("java.awt.Toolkit")~getDefaultToolkit~beep -- cross-platform beep
+   parse pull x
    exit -1
 end
 

@@ -5,6 +5,7 @@
    date:       2017-02-28
 
    changed:    2018-03-24, rgf: make sure that we change into the directory of this program
+               2019-08-13, rgf: warn, if not running run on ooRexx 5.0 or higher, ask user whether to proceed
 
    purpose:    - shows how to switch between predefined themes
                - demonstrates how to prevent the window from closing
@@ -24,6 +25,19 @@
 
    license:    - Apache License 2.0 (AL 2.0)
 */
+
+
+   -- make sure we run on ooRexx 5 or higher
+parse version full 1 "_" v "."    -- get major version number of ooRexx
+if v<5 then    -- pre ooRexx 5.0 expose problems with multithreading switching
+do
+   say "--> WARNING: this program will run stable with ooRexx 5.0 or higher only!"
+   say "             (You are running ooRexx version" pp(full)")";say
+   say
+   say "Do you wish to continue (y/N) ?"
+   parse upper pull val +1
+   if val<>"Y" then exit -1
+end
 
    -- change directory to program location such that relatively addressed resources can be found
 parse source  . . pgm
