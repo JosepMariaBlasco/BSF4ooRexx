@@ -42,8 +42,11 @@
                - 2019-01-02, rgf, - adjust Apple for Java 9 or higher (the Apple Java classes for
                                     desktop integration are not available anymore; one could use
                                     java.awt.Taskbar and java.awt.Desktop in lieu)
+               - 2019-02-03, rgf: - now that bsf.import() does not accept abstract Java classes,
+                                    use bsf.loadClass2environment() for them
+               - 2019-02-04, rgf: - replace "bsf.loadClass2environment()" with "bsf.loadClass()"
 
-   version:    1.05
+   version:    1.07
 
    license:    AL 2.0 (Apache License 2.0, cf. <http://www.apache.org/licenses/LICENSE-2.0>)
 
@@ -67,7 +70,7 @@
 */
 
 /*****************************************************************************/
-.local~version.frontend_UNO_API_info="104.20110221"   -- save version information in .local
+.local~version.frontend_UNO_API_info="106.20190203"   -- save version information in .local
 
 parse version parse version 'exx_' v '.'
 if v<4 then
@@ -92,8 +95,12 @@ userData=.directory~new
 
    /* the following Java classes are used more than once, hence import them to simplify
       coding a bit   */
-call bsf.import "java.awt.event.ActionListener", "ActionListener"
-call bsf.import "java.awt.event.WindowListener", "WindowListener"
+-- rgf, 20190203. abstract!call bsf.import "java.awt.event.ActionListener", "ActionListener"
+-- rgf, 20190203. abstract!call bsf.import "java.awt.event.WindowListener", "WindowListener"
+
+      -- abstract classes to be loaded
+call bsf.loadClass "java.awt.event.ActionListener", "ActionListener"
+call bsf.loadClass "java.awt.event.WindowListener", "WindowListener"
 
 
 rexxCloseEH=.RexxCloseAppEventHandler~new -- create Rexx event handler

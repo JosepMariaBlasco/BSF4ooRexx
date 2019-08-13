@@ -3,7 +3,7 @@
    Purpose: GUI supported testing of ooRexx and Bsf4ooRexx enhanced Java support
    Author:  Markus Moldaschl
             Gerald Leitner
-   Version: 2.01
+   Version: 2.03
    Changes: 2011-02-20, Rony G. Flatscher:
                         - removed MacOSX-related change to name of menu "Exit"
                           to "Quit" as MacOSX has its own application
@@ -104,10 +104,14 @@
 
                               - class "CExitHandler", method "handleExit": make sure that after an explicit
                                 LF ("0a"x) the prefix ("REXXout>" or "REXXerr>") gets inserted as well
+
+            2019-02-03, rgf: - now that bsf.import() does not accept abstract Java classes, use bsf.loadClass2environment()
+                               for them
+            2019-02-04, rgf: - replace "bsf.loadClass2environment()" with "bsf.loadClass()"
 */
 
 /*----------------------------------------------------------------------------*/
-/*  Copyright 2011 Markus Moldaschl, 2011-2018 Rony G. Flatscher,             */
+/*  Copyright 2011 Markus Moldaschl, 2011-2019 Rony G. Flatscher,             */
 /*            2012-2014 Gerald Leitner                                        */
 /*                                                                            */
 /*  Licensed under the Apache License, Version 2.0 (the "License");           */
@@ -5580,23 +5584,23 @@ end
     list ~ append( 'java.awt.GridBagConstraints'        )
     list ~ append( 'java.awt.GridBagLayout'             )
     list ~ append( 'java.awt.Insets'                    )
-    list ~ append( 'java.awt.Toolkit'                   )
+-- rgf, 20190203. abstract!    list ~ append( 'java.awt.Toolkit'                   )
     list ~ append( 'java.awt.datatransfer.StringSelection' )
-    list ~ append( 'java.awt.event.ActionListener'      )
+-- rgf, 20190203. abstract!        list ~ append( 'java.awt.event.ActionListener'      )
     list ~ append( 'java.awt.event.KeyEvent'            )
-    list ~ append( 'java.awt.event.KeyListener'         )
-    list ~ append( 'java.awt.event.MouseListener'       )
+-- rgf, 20190203. abstract!        list ~ append( 'java.awt.event.KeyListener'         )
+-- rgf, 20190203. abstract!    list ~ append( 'java.awt.event.MouseListener'       )
     list ~ append( 'java.io.BufferedReader'             )
 --    list ~ append( 'java.io.File'                       )-- rgf, 2012-04-04, not used
     list ~ append( 'java.io.InputStreamReader'          )
     list ~ append( 'java.io.PrintWriter'                )
-    list ~ append( 'java.lang.Runnable'                 )
+-- rgf, 20190203. abstract!    list ~ append( 'java.lang.Runnable'                 )
     list ~ append( 'java.lang.Thread'                   )
     list ~ append( 'javax.swing.ButtonGroup'            )
     list ~ append( 'javax.swing.DefaultListModel'       )
     list ~ append( 'javax.swing.JButton'                )
     list ~ append( 'javax.swing.JCheckBoxMenuItem'      )
-    list ~ append( 'javax.swing.JComponent'             )
+-- rgf, 20190203. abstract!    list ~ append( 'javax.swing.JComponent'             )
     list ~ append( 'javax.swing.JDialog'                )
     list ~ append( 'javax.swing.JFileChooser'           )
     list ~ append( 'javax.swing.JFrame'                 )
@@ -5612,34 +5616,49 @@ end
     list ~ append( 'javax.swing.JTextArea'              )
     list ~ append( 'javax.swing.JTextField'             )
     list ~ append( 'javax.swing.KeyStroke'              )
-    list ~ append( 'javax.swing.ListSelectionModel'     )
+-- rgf, 20190203. abstract!    list ~ append( 'javax.swing.ListSelectionModel'     )
     list ~ append( 'javax.swing.UIManager'              )
     list ~ append( 'javax.swing.border.EmptyBorder'     )
-    list ~ append( 'javax.swing.filechooser.FileFilter' )
+-- rgf, 20190203. abstract!    list ~ append( 'javax.swing.filechooser.FileFilter' )
 
     do clz over list
        call bsf.importClass clz
     end
 
+      -- array of abstract classes to be loaded
+    arr=.array~of( 'java.awt.Toolkit'                   , -
+                   'java.awt.event.ActionListener'      , -
+                   'java.awt.event.KeyListener'         , -
+                   'java.awt.event.MouseListener'       , -
+                   'java.lang.Runnable'                 , -
+                   "javax.swing.JComponent"             , -
+                   "javax.swing.ListSelectionModel"     , -
+                   "javax.swing.filechooser.FileFilter" -
+                   )
+    do clzName over arr
+        call bsf.loadClass clzName, clzName
+    end
+
+
   .bsf~bsf.import('java.awt.BorderLayout',            'BorderLayout'       )
   .bsf~bsf.import('java.awt.Color',                   'Color'              )
   .bsf~bsf.import('java.awt.Container',               'Container'          )
-  .bsf~bsf.import('java.awt.Component',               'Component'          )
+-- rgf, 20190203. abstract!  .bsf~bsf.import('java.awt.Component',               'Component'          )
   .bsf~bsf.import('java.awt.Dimension',               'Dimension'          )
   .bsf~bsf.import('java.awt.FlowLayout',              'FlowLayout'         )
-  .bsf~bsf.import('java.awt.Graphics',                'Graphics'           )
+-- rgf, 20190203. abstract!  .bsf~bsf.import('java.awt.Graphics',                'Graphics'           )
   .bsf~bsf.import('java.awt.Rectangle',               'Rectangle'          )
   .bsf~bsf.import('java.awt.event.KeyEvent',          'KeyEvent'           )
-  .bsf~bsf.import('java.awt.event.ComponentListener', 'ComponentListener'  )
+-- rgf, 20190203. abstract!  .bsf~bsf.import('java.awt.event.ComponentListener', 'ComponentListener'  )
   .bsf~bsf.import('java.awt.GridBagConstraints',      'GridBagConstraints' )
   .bsf~bsf.import('java.awt.GridBagLayout',           'GridBagLayout'      )
   .bsf~bsf.import('java.awt.GridLayout',              'GridLayout'         )
   .bsf~bsf.import('java.awt.Insets',                  'Insets'             )
-  .bsf~bsf.import('javax.swing.AbstractButton',       'AbstractButton'     )
+-- rgf, 20190203. abstract!  .bsf~bsf.import('javax.swing.AbstractButton',       'AbstractButton'     )
   .bsf~bsf.import('javax.swing.BoxLayout',            'BoxLayout'          )
   .bsf~bsf.import('javax.swing.ImageIcon',            'ImageIcon'          )
   .bsf~bsf.import('javax.swing.JColorChooser',        'JColorChooser'      )
-  .bsf~bsf.import('javax.swing.colorchooser.ColorSelectionModel',           'ColorSelectionModel')
+-- rgf, 20190203. abstract!   .bsf~bsf.import('javax.swing.colorchooser.ColorSelectionModel',           'ColorSelectionModel')
   .bsf~bsf.import('javax.swing.JInternalFrame',       'JInternalFrame'     )
   .bsf~bsf.import('javax.swing.JDesktopPane',         'JDesktopPane'       )
   .bsf~bsf.import('javax.swing.JFrame',               'JFrame'             )
@@ -5654,9 +5673,20 @@ end
   .bsf~bsf.import('javax.swing.JTextArea',            'JTextArea'          )
   .bsf~bsf.import('javax.swing.JSplitPane',           'JSplitPane'         )
   .bsf~bsf.import('javax.swing.JColorChooser',        'JColorChooser'      )
-  .bsf~bsf.import('javax.swing.colorchooser.ColorSelectionModel',           'ColorSelectionModel')
-  .bsf~bsf.import('java.awt.GraphicsDevice',          'GraphicsDevice')
-  .bsf~bsf.import('java.awt.GraphicsEnvironment',     'GraphicsEnvironment')
+-- rgf, 20190203. duplicate!   .bsf~bsf.import('javax.swing.colorchooser.ColorSelectionModel',           'ColorSelectionModel')
+-- rgf, 20190203. abstract!  .bsf~bsf.import('java.awt.GraphicsDevice',          'GraphicsDevice')
+-- rgf, 20190203. abstract!  .bsf~bsf.import('java.awt.GraphicsEnvironment',     'GraphicsEnvironment')
+
+
+      -- abstract classes to be loaded
+   call bsf.loadClass "java.awt.Component"                           , "Component"
+   call bsf.loadClass "java.awt.Graphics"                            , "Graphics"
+   call bsf.loadClass "java.awt.event.ComponentListener"             , "ComponentListener"
+   call bsf.loadClass "javax.swing.AbstractButton"                   , "AbstractButton"
+   call bsf.loadClass "javax.swing.colorchooser.ColorSelectionModel" , "ColorSelectionModel"
+   call bsf.loadClass "java.awt.GraphicsDevice"                      , "GraphicsDevice"
+   call bsf.loadClass "java.awt.GraphicsEnvironment"                 , "GraphicsEnvironment"
+
 
 return
 

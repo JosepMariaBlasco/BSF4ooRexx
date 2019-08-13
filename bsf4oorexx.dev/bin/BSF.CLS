@@ -11,7 +11,20 @@
 
    needs: ooRexx 4.1.0 (cf. <http://www.ooRexx.org>) and BSF4ooRexx 4.0 or greater
 
+   TODO:  once BSF4ooRexx defines ooRexx 5.0 to be the minimal supported ooRexx version, then
+          its new features will be taken advantage of; one being ".context~package~local" to store
+          the class objects for bsf.import() and bsf.loadClass() instead of ".environment" (used to
+          be .local): such a change would ca
+          use changes in BSF4ooRexx as well, which tries to locate
+          .BSF in .environment;
+
    date:
+         2019-02-04, ---rgf, - used wrong versions the last two days: this version has the signature
+                               "bsf.loadClass(javaClassName[,name4environment])" and replaces experimental
+                               bsf.loadClass2Environment()
+
+         2019-02-03, ---rgf, - changed error message in bsf.import(), if abstract class supplied
+
          2019-02-02, ---rgf, - to inhibit attempting to instantiate abstract classes indirectly via bsf.import()
                                the logic got changed; as a result routine "initialize.bsf.dir" got adapted to use
                                bsf.loadClass() instead of bsf.importClass() for it
@@ -715,7 +728,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.41 (20190202)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     6.41 (20190204)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -815,7 +828,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20190202" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20190204" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -1049,7 +1062,7 @@ syntax:
    --                hence use bsf.locadClass to load and save them
    arr=.array~of( 'java.lang.ClassLoader' )  -- an abstract Java Object class, for supporting routine bsf.contextClassLoader
    do jClassName over arr
-      call bsf.loadClass2environment jClassName
+      call bsf.loadClass jClassName, jClassName -- save in environment under the same name
    end
 
       -- Java classes for "String" and those representing the primitive datatypes
@@ -1105,21 +1118,6 @@ syntax:
 --  say .line": BSF.CLS - java.version="pp(bsf.dir~java.version) "java.major.version="pp(bsf.dir~java.major.version) "java.minor.version="pp(bsf.dir~java.minor.version)
 
   return .true    -- indicate we created and populated .bsf4rexx
-
-/* 2019-02-02, rgf: bsf.immport[Class] cannot be used for abstract Java classes anymore; for the purpose of this
-                    package use bsf.loadClass instead and save in .environment (as bsf.import does)
-*/
-::routine bsf.loadClass2environment public
-  use strict arg jClassName, indexName=(jClassName)
-
-   signal on syntax
-   jclz=bsf.wrap( .routines~xBSF~call("loadClass", jClassName) )
-  .environment~setEntry(indexName, jclz)
---  .bsf4rexx~setEntry(indexName, jclz)
-  return jclz
-
-syntax:
-  raise propagate
 
 
 /* ================================================================================================= */
@@ -1608,13 +1606,13 @@ syntax:
 
 /* ------------------------------------------------------------------------------------------------- */
 /* -------------------------------------------------------------
-   class method allows for creating an ooRexx proxy class for a Java class
+   Class method allows for creating an ooRexx proxy class for a Java class
    which is made available to this process by placing it (optionally) into the
-   .local environment, unless the second argument is explicitly .nil
+   environment, unless the second argument is explicitly .nil
 
    @param java_path the fully qualified (binary) name of the Java class
-   @param optional classname to be used to save the new class object in .local;
-          if omitted or .nil there will be no entry in .local
+   @param optional classname to be used to save the new class object in the environment
+          if omitted or .nil there will be no entry in the environment
    @param extendecJavaClz optional class object representing a Java class object,
           which will be used to extend and supply it with the ooRexx new methods
 
@@ -1633,8 +1631,7 @@ syntax:
   else                              -- use the passed Java class object
      jco=extendedJavaClz
 
-      -- 2019-02-02, rgf: check whether jco is a Class and not abstract
-signal on syntax
+      -- 2019-02-02, rgf: check whether jco is a Class object and that it is not abstract
       -- determine whether jco is an instance of java.lang.Class
   parse value jco~getClass~objectName with clzName "@"
   if clzName<>"java.lang.Class" then
@@ -1642,7 +1639,7 @@ signal on syntax
 
       -- now check for abstract, just use java.lang.reflect.Modifier~isAbstract
   if bsf.loadClass("java.lang.reflect.Modifier")~isAbstract(jco~getModifiers) then
-     raise syntax 40.900 array ("Java class """java_path""" is abstract; cannot be instantiated, hence bsf.import[Class] is prohibited; use bsf.loadClass("""java_path""") instead")
+     raise syntax 40.900 array ("Java class """java_path""" is abstract; cannot be instantiated, hence 'bsf.import(...)' is illegal; use 'bsf.loadClass("""java_path""")' instead")
 
       -- now create proxy class object
   new_class = .BSF~subclass(java_path) -- create a subclass of .BSFClass (a proxy ooRexx class)
@@ -2270,12 +2267,15 @@ syntax:
 /* ------------------------------------------------------------------------------------------------- */
 ::METHOD     bsf.loadClass                 class
   expose rBSF
-  parse arg JavaClassName
+  -- parse arg JavaClassName
+  use arg javaClassName, name4env=.nil
   signal on syntax
   .local~remove("BSF_ERROR_MESSAGE")   -- make sure to remove any old
 
-   -- 2018-02-25, rgf: no need to escape .nil on ooRexx, will be correctly translated to null
-  return bsf.wrap(rBSF~call("loadClass", javaClassName))
+   -- 2019-02-04
+   jClz=bsf.wrap( rBSF~call("loadClass", javaClassName) )
+   if name4env<>.nil then .environment~setEntry(name4env,jClz)
+   return jClz
 
 syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the
@@ -2991,37 +2991,79 @@ syntax:
 
 
 /* ================================================================================================= */
+
+/* -------------------------------------------------------------------------------------------------
+*  Loads and returns the supplied Java class after adding the class methods new and newStrict to
+*  it.
+*
+* @param javaClassName fully qualified (binary) Java class name to import to ooRexx
+* @param name4env if supplied, the Java class proxy will be stored under this name in the environment
+*                 such that it can be easily referred to with an environment symbol (a Rexx symbol that
+*                 starts with a dot followed by the value of name4env
+* @param extendedJavaClz optional, the class object representing a Java class object to be enhanced
+*                 with the class methods new and newStrict; if omitted the Java class named javaClassName
+*                 gets loaded first and enhanced with the class methods new and newStrict
+*
+* @return the Java class proxy (an ooRexx class object proxying the Java class object) enhanced with
+*          the class methods new and newStrict
+*/
 ::routine bsf.import                         public
    signal on syntax
-   USE strict ARG java_path, className4LocalDir=.nil, extendedJavaClz=.nil
+   USE strict ARG java_path, name4env=.nil, extendedJavaClz=.nil
       -- if second argument is omitted, then allow BSF::bsf.import to determine that it got omitted as well
    if arg(2,"omitted") then return .bsf~bsf.import(java_path, , extendedJavaClz)
 
-   return .bsf~bsf.import(java_path, className4LocalDir, extendedJavaClz)
+   return .bsf~bsf.import(java_path, name4env, extendedJavaClz)
 
 syntax:
    raise propagate
 
 
 /* ================================================================================================= */
+
+/* -------------------------------------------------------------------------------------------------
+*  Loads and returns the supplied Java class after adding the class methods new and newStrict to
+*  it.
+*
+* @param javaClassName fully qualified (binary) Java class name to import to ooRexx
+* @param name4env if supplied, the Java class proxy will be stored under this name in the environment
+*                 such that it can be easily referred to with an environment symbol (a Rexx symbol that
+*                 starts with a dot followed by the value of name4env
+* @param extendedJavaClz optional, the class object representing a Java class object to be enhanced
+*                 with the class methods new and newStrict; if omitted the Java class named javaClassName
+*                 gets loaded first and enhanced with the class methods new and newStrict
+*
+* @return the Java class proxy (an ooRexx class object proxying the Java class object) enhanced with
+*          the class methods new and newStrict
+*/
 ::routine bsf.importClass                    public
    signal on syntax
-   USE strict ARG java_path, className4LocalDir=.nil, extendedJavaClz=.nil
+   USE strict ARG java_path, name4env=.nil, extendedJavaClz=.nil
 
       -- if second argument is omitted, then allow BSF::bsf.import to determine that it got omitted as well
    if arg(2,"omitted") then return .bsf~bsf.import(java_path, , extendedJavaClz)
 
-   return .bsf~bsf.import(java_path, className4LocalDir, extendedJavaClz)
-
+   return .bsf~bsf.import(java_path, name4env, extendedJavaClz)
 
 syntax:
    raise propagate
 
 
 /* ================================================================================================= */
+/** Loads and returns the supplied Java class.
+*
+* @param javaClassName fully qualified Java class name to load
+* @param name4env if supplied, the Java class proxy will be stored under this name in the environment
+*                 such that it can be easily referred to with an environment symbol (a Rexx symbol that
+*                 starts with a dot followed by the value of name4env
+* @return the Java class proxy (an ooRexx class object proxying the Java class object)
+*/
 ::routine bsf.loadClass                      public
-   parse arg JavaClassName
-   return bsf.wrap( .routines~xBSF~call("loadClass", JavaClassName) )
+   use arg javaClassName, name4env=.nil
+   jClz=bsf.wrap( .routines~xBSF~call("loadClass", javaClassName) )
+   if name4env<>.nil then .environment~setEntry(name4env,jClz)
+   return jClz
+
 
 
 
@@ -4273,8 +4315,9 @@ syntax:
   byteArray1=bsf.createJavaArray("byte.class",1)   -- Java byte array with capacity of one
   charArray1=bsf.createJavaArray("char.class",1)   -- Java char array with capacity of one
 
-  if \.environment~hasEntry("java.io.Reader") then
-     call bsf.loadClass2environment "java.io.Reader"  -- load Java class and store it as "JAVA.IO.READER" in .local
+  javaClassName="java.io.Reader"
+  if \.environment~hasEntry(javaClassName) then
+     call bsf.loadClass javaClassName, javaClassName  -- load Java class and store it as "JAVA.IO.READER" in .local
   isReader=.java.io.Reader~isInstance(javaInputObject)
 
 
@@ -4367,8 +4410,10 @@ wrong_args:
   signal on syntax
   use strict arg javaOutputObject, prefix=.nil
 
-  if \.environment~hasEntry("java.io.Writer") then
-     call bsf.loadClass2environment "java.io.Writer"  -- load Java class and store it as "JAVA.IO.WRITER" in environment
+  javaClassName="java.io.Writer"
+  if \.environment~hasEntry(javaClassName) then
+     call bsf.loadClass javaClassName, javaClassName  -- load Java class and store it as "JAVA.IO.WRITER" in environment
+
   isWriter=.java.io.Writer~isInstance(javaOutputObject)
   bPrefixPrinted=.false             -- indicates whether the prefix was printed already (in charout-scenarios)
   return

@@ -6,6 +6,9 @@
    last change: $Revision: 803 $ $Author: Administrator $ $Date: 2010-07-24 19:09:19 +0200 (Sat, 24 Jul 2010) $
 
    changed:
+            2019-02-03, ---rgf, - now that bsf.import() does not accept abstract Java classes, use bsf.loadClass()
+                                  for them in public routine UNO.LoadClass(), work now carried out in
+                                  new private routine work.loadUnoClass()
 
             2018-06-07, ---rgf, - added method "util.setmethods" to class UNO_ENUM to allow setting methods
                                   (with "float" scope) to individual instances; needed for decorating
@@ -288,7 +291,7 @@
             2006-01-03, ---rgf, corrected inline documentation
 
 
-   version: 1.3.7
+   version: 1.3.8
    name:    UNO.CLS
    purpose: allow interfacing with UNO components (via Java), tested with OpenOffice.org, v1.1.x and up
    needs:   BSF4Rexx, BSF.CLS, UNO_XINTERFACES.RXO
@@ -332,7 +335,7 @@ call bsfShowErrorMessage .false
 .uno~nil=.uno~any~void        -- if using in comparisons, then use "uno.areSame(unoObject, .uno~nil))"
 .uno~nil_name=.uno~any~objectname   -- index name of entry in BSFRegistry on the Java side
 
-.uno~version="137.20180607"      -- set version number
+.uno~version="138.20190203"      -- set version number
 
    -- XPropertySet-behaviour with getPropertyValue and setPropertyValue
 .uno~xPropertySetAutoCase=.true  -- if prop name not found pick a matching case, if possible
@@ -426,10 +429,22 @@ call bsfShowErrorMessage .false
      if .uno~hasentry(idx)=.true then    -- e.g. last word is used as a class in a another package as well
         .error~say("---> UNO.loadClass():" pp(idx) "already used, in hand:" pp(className) "in .UNO:" pp(.uno~entry(idx)))
 
-     tmpClass=.UNO_proxy~new(.bsf~bsf.import(className, .nil))  -- make it look like an ooRexx class
-
+     tmpClass=.UNO_proxy~new(work.loadUnoClass(className))  -- rgf, 2019-02-03, make it look like an ooRexx class
      .uno~setentry(idx, tmpClass)   -- load the given Java class and save it in .UNO
      return tmpClass
+
+::routine work.loadUnoClass     -- rgf, 2019-02-03: make sure that abstract classes do not get imported!
+   use arg className
+   signal on syntax
+   jco=bsf.wrap( .bsf~rBSF~call("loadClass", className) )   -- rBSF from BSF.CLS
+
+   if bsf.loadClass("java.lang.reflect.Modifier")~isAbstract(jco~getModifiers) then
+      return jco
+   return .bsf~bsf.import(className,.nil)   -- add class methods new and newStrict to ooRexx class object
+
+syntax:
+  raise propagate
+
 
 
 /* If the OOo instance which is used for RgfReflectUNO is closed, then the reflection
