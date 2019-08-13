@@ -13,7 +13,7 @@ import org.apache.bsf.*;   // BSF support
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2017 Rony G. Flatscher
+   Copyright 2015-2019 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -41,6 +41,8 @@ import org.apache.bsf.*;   // BSF support
 
 	- 2017-09-23, ---rgf: getLanguageVersion() explicitly terminates the Rexx engine after
 			      retrieving the Rexx version
+
+        - 2019-07-26, ---rgf: add "text/rexx", "text/oorexx", "application/rexx", "application/oorexx"
 */
 
 
@@ -59,7 +61,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     final public static RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY=new RexxScriptEngineFactory();
 
     final private static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
-    final private static String       ENGINE_VERSION   ="100.20170923";
+    final private static String       ENGINE_VERSION   ="100.20190726";
     final private static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
                                                                 "rxj", "rexxj", "jrexx",
                                                                 "rxo" );
@@ -69,9 +71,15 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
 
     final private static String       SHORT_NAME       ="Rexx";
 
-    final private static List<String> MIME_TYPES       = Arrays.asList("text/x-rexx",
+    final private static List<String> MIME_TYPES       = Arrays.asList(
+                                                                       "text/rexx",
+                                                                       "text/oorexx",
+                                                                       "application/rexx",
+                                                                       "application/oorexx",
+                                                                       "text/x-rexx",
                                                                        "text/x-rexx-java",
-                                                                       "text/x-rexx-java-ooo" );
+                                                                       "text/x-rexx-java-ooo"
+                                                                       );
     final private static List<String> SCRIPT_ENGINE_SHORT_NAMES = Arrays.asList("rexx", "Rexx",
                                                                        "oorexx", "ooRexx", "orexx", "oRexx");
     final private static String       THREADING        = "MULTITHREADED"; // "THREAD-ISOLATED";
