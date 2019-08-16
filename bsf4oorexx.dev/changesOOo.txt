@@ -1,3 +1,22 @@
+-------------------------------------- 2019-02-04 ----------------------------------
+
+- utilities\OOo\UNO_API_info\frontend_UNO_API_info.rxo
+
+  - replaced "bsf.loadClass2environment()" with "bsf.loadClass()"
+
+-------------------------------------- 2019-02-03 ----------------------------------
+
+- utilities\OOo\UNO_API_info\frontend_UNO_API_info.rxo
+
+  - now that bsf.import() does not accept abstract Java classes, use bsf.loadClass2environment()
+    for them
+
+- UNO.CLS
+
+  - now that bsf.import() does not accept abstract Java classes, use bsf.loadClass()
+    for them in public routine UNO.LoadClass(), work now carried out in
+    new private routine work.loadUnoClass()
+
 -------------------------------------- 2019-01-02 ----------------------------------
 
 - utilities\OOo\UNO_API_info\frontend_UNO_API_info.rxo

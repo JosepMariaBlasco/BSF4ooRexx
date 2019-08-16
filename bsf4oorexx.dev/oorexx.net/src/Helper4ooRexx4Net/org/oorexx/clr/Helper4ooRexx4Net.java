@@ -13,7 +13,7 @@
     suggested package to store: oorexx.net.jar
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2016 Rony G. Flatscher
+   Copyright 2016-2019 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -64,8 +64,8 @@
                                and doing it from Rexx is sufficient
 
     date:       2016-07-02
-    version:    0.99
-    changed:    ---
+    version:    1.00
+    changed:    2019-08-15, rgf: fixes for javadoc warnings
     author:     Rony G. Flatscher, started 2016-06-13
 
 */
@@ -116,13 +116,13 @@ public class Helper4ooRexx4Net {
 
         /** Version field, major version before dot, date of version after dot.
          */
-        public static final String version="099.20160702";
+        public static final String version="100.20190815";
 
         /** Boolean field that controls whether information is given, defaults to <code>false</code>.
          */
         private static boolean bVerbose=false;
 
-        /** Getter method for field {@link bVerbose}.
+        /** Getter method for field {@link #bVerbose}.
          *
          * @return whether verbose mode is active
          */
@@ -130,7 +130,7 @@ public class Helper4ooRexx4Net {
             return bVerbose;
         }
 
-        /** Setter method for field {@link bVerbose}.
+        /** Setter method for field {@link #bVerbose}.
          *
          * @param verboseMode to use from now on
          */
@@ -140,7 +140,7 @@ public class Helper4ooRexx4Net {
 
         private static boolean bDebug=false;
 
-        /** Getter method for field {@link bDebug}.
+        /** Getter method for field {@link #bDebug}.
          *
          * @return whether Debug mode is active
          */
@@ -148,7 +148,7 @@ public class Helper4ooRexx4Net {
             return bDebug;
         }
 
-        /** Setter method for field {@link bDebug}.
+        /** Setter method for field {@link #bDebug}.
          *
          * @param DebugMode to use from now on
          */
@@ -174,10 +174,10 @@ public class Helper4ooRexx4Net {
          */
         private static Hashtable tiPrimitiveWrapperClasses                    = null;
 
-        /** Returns an unmodifiable <code>Map</code> of {@link tiPrimitiveWrapperClasses} to
+        /** Returns an unmodifiable <code>Map</code> of {@link #tiPrimitiveWrapperClasses} to
          *  allow inspection and usage.
          *
-         *  @return unmodifiable    <code>Map</code> of {@link tiPrimitiveWrapperClasses}
+         *  @return unmodifiable    <code>Map</code> of {@link #tiPrimitiveWrapperClasses}
          */
         public static Map getPrimitiveWrapperClasses() {
                 // make sure Wrapper classes and the IFormatProvider versions of the Parse() and ToString() methods are loaded
@@ -196,10 +196,10 @@ public class Helper4ooRexx4Net {
          */
         private static Hashtable miCultureNeutralParseMethods = null;
 
-        /** Returns an unmodifiable <code>Map</code> of {@link miCultureNeutralParseMethods} to
+        /** Returns an unmodifiable <code>Map</code> of {@link #miCultureNeutralParseMethods} to
          *  allow inspection and usage.
          *
-         *  @return unmodifiable    <code>Map</code> of {@link miCultureNeutralParseMethods}
+         *  @return unmodifiable    <code>Map</code> of {@link #miCultureNeutralParseMethods}
          */
         public static Map getCultureNeutralParseMethods() {
                 // make sure Wrapper classes and the IFormatProvider versions of the Parse() and ToString() methods are loaded
@@ -218,10 +218,10 @@ public class Helper4ooRexx4Net {
          */
         private static Hashtable miCultureNeutralToStringMethods               = null;
 
-        /** Returns an unmodifiable <code>Map</code> of {@link miCultureNeutralToStringMethods} to
+        /** Returns an unmodifiable <code>Map</code> of {@link #miCultureNeutralToStringMethods} to
          *  allow inspection and usage.
          *
-         *  @return unmodifiable    <code>Map</code> of {@link miCultureNeutralToStringMethods}
+         *  @return unmodifiable    <code>Map</code> of {@link #miCultureNeutralToStringMethods}
          */
         public static Map getCultureNeutralToStringMethods() {
                 // make sure Wrapper classes and the IFormatProvider versions of the Parse() and ToString() methods are loaded
@@ -451,7 +451,7 @@ System.out.println("\\\\\\ --- ///");
          * @param typeIndicator one of (only capital letters need to be given) "STring" (return the value
          *                  as string), or return a boxed <code>value</code> according to the
          *                  following table:
-         * <p></p>
+         *
          * <table align="center" border="1">
          *    <caption align="top">Values for <code>typeIndicator</code> argument and the CLR class
          *                  to which to box.</caption>

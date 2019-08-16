@@ -1,5 +1,5 @@
-BSF4ooRexx - Installation Directions for Linux                   12 May 2015 (Beta)
-==============================================
+BSF4ooRexx - Installation Directions for Linux           3 February 2019 (Beta)
+==============================================           ======================
 Home: <http://sourceforge.net/projects/bsf4oorexx/>
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
@@ -15,7 +15,7 @@ All such ooRexx programs work on all operating systems supporting ooRexx!
 Prerequisites
 =============
 
-[1] Java Runtime Environment (JRE) 1.4 or higher installed on your computer.
+[1] Java Runtime Environment (JRE) 1.6 or higher installed on your computer.
     Usually the JRE gets installed with your web browser to allow for running
     Java applets from the Internet.
     Sometimes it is possible to run Java from the commandline. To check, open
@@ -23,23 +23,22 @@ Prerequisites
 
     Home: <http://www.java.com>
 
-[2] ooRexx 4.2.0 or higher from its home: <http://www.ooRexx.org>.
+[2] ooRexx 4.2.0 or higher from its home: <http://www.ooRexx.org>. Please note:
+    it is highly advised to use the latest ooRexx 5.0 beta, which is stabler and
+    has many great new features!
 
-[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org>
+[3] optional: Apache OpenOffice.org (OOo) from <http://download.openoffice.org>
 
-    Please note: on Linux it is possible that your distribution has an altered
-    version of OpenOffice.org installed, which may not be compatible in its Java
-    interfaces with the "genuine OpenOffice" package. In that case uninstall
-    your distribution's OOo and get the "genuine OpenOffice" from the above URL.
-
+    Please note: on Linux it is possible that LibreOffice (LO), a fork
+    of OpenOffice, is installed already. It can be downloaded as well
+    from <https://www.libreoffice.org/download/download/>.
 
 [4] Uninstall any previously installed version of BSF4[oo]Rexx, if any.
 
-    Choose the menu "Applications -> BSF4ooRexx ->  Installation -> uninstall"
+    Choose the menu "Applications -> BSF4ooRexx ->  Installation -> Uninstall BSF4ooRexx"
 
-    [If you have an old installation of BSF4ooRexx (installed before July 2010) then
-     run the     scripts created in the old installation folder in the following
-     sequence:
+    [To manually uninstall, try to locate the following two scripts and execute
+     them in the following sequence:
 
         Linux                   Comment
         -------                 -------
@@ -59,9 +58,10 @@ Alternatively use the command-line version:
 
 Step [1] Download the archive "BSF4ooRexx_install.zip" and unzip it
 
-Step [2] Open the folder "bsf4oorexx/install/linux"
+Step [2] Open a terminal window and change the directory to
+         "bsf4oorexx/install/linux"
 
-Step [3] Double-click on or execute the program "install.sh"
+Step [3] Run the shell program "sh install.sh"
 
 That's it.
 

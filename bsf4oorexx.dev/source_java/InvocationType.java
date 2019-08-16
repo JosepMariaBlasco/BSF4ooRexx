@@ -22,7 +22,7 @@ import java.util.HashMap;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.02, 2019-01-07
+ * @version 1.03, 2019-08-13
  * @since BSF4ooRexx 600
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -31,6 +31,7 @@ import java.util.HashMap;
  /*
      2018-11-01, rgf: - added enum value "CREATE_STRICT_ARGUMENT"
      2019-01-07, rgf: - added enum value "UNBOX"
+     2019-08-13, rgf: - fix Javadoc reference
 */
 
 
@@ -123,7 +124,7 @@ enum InvocationType {
 
 
     /**  HashMap that allows to retrieve the enum type given a string, irrespectible of the case the string was supplied.
-     *   Cf. {@link static public InvocationType getInvocationType(String mixedCase)}.
+     *   Cf. {@link #getInvocationType(String mixedCase)}.
      */
     final static HashMap<String,InvocationType> upperCase2InvocationType=new HashMap<String,InvocationType>(128);
 

@@ -40,10 +40,9 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2019-01-07
+  * @version 6.0.0, 2019-08-13
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
-
 
 
 // ---rgf, 2016-11-27: leave it for backward compatibility as there are users of BSF4Rexx code for years to come
@@ -54,6 +53,8 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2019-08-13, rgf: - fix Javadoc errors
+
      2019-02-07, rgf: - added subfunction "UNBOX": returns the unboxed value as a string or null, if not
                         a wrapped object
 
@@ -568,7 +569,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.2010107";
+    static final public String version = "600.20190813";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -717,11 +718,10 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
 
 
     /** Field used, if System.identityHashCode() returns duplicate values in method
-     *  {@link #makeBeanName(Object o)}, to allow adding a unique number to make the
+     *  {@link #makeBeanName(RexxAndJava rajo, Object o)}, to allow adding a unique number to make the
      *  resulting identifying string unique.
      *
      * @since 2012-11-01
-     * @author Rony G. Flatscher
      */
     static int spilloverCounter=0;
 
@@ -854,7 +854,7 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
     }   // end of static block
 
 
-    /** Returns an unmodifiable version of the {@link rajRegistry} Map (for debugging purposes).
+    /** Returns an unmodifiable version of the {@link #rajRegistry} Map (for debugging purposes).
     */
 // TODO: rgf, 20161219, remove after debugging
     protected static Map getRajRegistry()
@@ -2016,7 +2016,7 @@ System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FIN
         <td> Name of the object to be created and registered.
              if no name is given (empty string or <code>null</code>)
              then a unique one will be created and returned;
-             this is done in method {@link #makeBeanName(Object o)}.
+             this is done in method {@link #makeBeanName(RexxAndJava rajo, Object o)}.
 
 
         <tr class="TableRowColor"><!-- table row -->
@@ -2057,7 +2057,7 @@ System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FIN
         <td> Name of the object to be created and registered.
              if no name is given (empty string or <code>null</code>)
              then a unique one will be created and returned;
-             this is done in method {@link #makeBeanName(Object o)}.
+             this is done in method {@link #makeBeanName(RexxAndJava rajo, Object o)}.
 
         <tr class="TableRowColor"><!-- table row -->
         <td>
@@ -2158,7 +2158,7 @@ System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FIN
         <td> Name of the object to be created and registered.
              if no name is given (empty string or <code>null</code>)
              then a unique one will be created and returned;
-             this is done in method {@link #makeBeanName(Object o)}.
+             this is done in method {@link #makeBeanName(RexxAndJava rajo, Object o)}.
 
 
         <tr class="TableRowColor"><!-- table row -->
@@ -5514,7 +5514,8 @@ System.err.println("RAJ:   ===> RexxAndJava.unregisterBean("+beanName+"), now RE
 
 
 
-    /** This method allows for unregistering Beans from native code. Its code is a copy of {@link unregisterBean(String beanName ).
+    /** This method allows for unregistering Beans from native code.
+     *  Its code is a copy of {@link unregisterBean(String beanName ).}
       *
       *  @param beanName name of the Bean to be unregistered
       *
@@ -5712,13 +5713,13 @@ if (bDebug)  System.err.println("RexxAndJava.makeBeanName(rajo,o): o=\""+o+"\" -
     }
 
 
-    /** Called by {@link RexxEngine.terminate()}, Will free the references to {@link BSFManager} and {@link RexxEngine}.
+    /** Called by {@link RexxEngine#terminate()}, Will free the references to {@link BSFManager} and {@link RexxEngine}.
      *
-     *  {@link public boolean isTerminated()} to test whether the Rexx interpreter instance of
+     *  {@link #isTerminated()} to test whether the Rexx interpreter instance of
      *  this {@link RexxEngine} got terminated.
      *
      * To halt all Rexx threads of this engine's Rexx interpreter instance peer use
-     * {@link #halt()}.
+     * {@link #jniRexxHaltInterpreterInstance (String rii_ID)}.
      *
      * @since 2013-06-25
     */
@@ -6036,7 +6037,7 @@ if (bDebug) {System.err.println(this+".createRexxInterpreterInstance(...), retur
          */
         Object javaObject=null; // the Java object
 
-        /** Serves as the reference count field for maintenance purposes of the {@link rajRegistry}.
+        /** Serves as the reference count field for maintenance purposes of the {@link #rajRegistry}.
          */
         int refCount=1;         // allows to maintain the reference count value for this particular bean
 

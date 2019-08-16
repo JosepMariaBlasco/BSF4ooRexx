@@ -144,7 +144,7 @@ package org.oorexx.datergf; // "DateTime_RGF"-package
   * <hr>
   *
   * @author Rony G. Flatscher
-  * @version 0.92,  date: 2001-02-08 through 2001-04-05, 2006-01-01
+  * @version 0.93,  date: 2001-02-08 through 2001-04-05, 2006-01-01, 2019-08-13 (Javadoc fix)
   *
   */
 
@@ -408,7 +408,6 @@ public  class   DateRGF
 
     /** Main method to give a few hints on the command line.
      *
-     * @author Rony G. Flatscher
      * @since 2016-11-07
      */
     public static void main (String args[])

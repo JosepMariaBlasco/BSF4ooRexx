@@ -1,5 +1,5 @@
-BSF4ooRexx, 6.00                          12 Mar 2018 (Beta)
-=================================================================================
+BSF4ooRexx, 6.41                                         3 February 2019 (Beta)
+================                                         ======================
 
 This is a package that creates a bridge between ooRexx and Java. For that
 reason Java must be installed on your machine as well, which is easy and
@@ -7,12 +7,12 @@ a one click away e.g. from <http://www.java.com>. See box below for an
 important information.
 
 PLEASE NOTE: this version of BSF4ooRexx is for Java 1.6/6, 1.7/7, 1.8/8
-             and Java 9.0 (NEW!);
+             and Java 9.0 (introduced the module system) and newer
 
 
 *IMPORTANT* !
 
-    *AFTER DOWNLOADING* the installation zip-archive (e.g.  BSF4ooRexx_install_v600-20180312-beta.zip)
+    *AFTER DOWNLOADING* the installation zip-archive (e.g.  BSF4ooRexx_install_*zip)
     but *BEFORE UNZIPPING* make sure that no "security" attributes are attached to it.
 
     On *WINDOWS*: right mouse click on the zip-file and choose "Unblock" from the
@@ -48,7 +48,7 @@ HINT: after unzipping the zip-archive you can get additional installation inform
 0) If there is a previous version of BSF4Rexx or BSF4ooRexx installed on your
    system, please deinstall it first!
 
-   Best use the menu "BSF4ooRexx -> Installation -> Uninstall".
+   Best use the menu "BSF4ooRexx -> Installation -> Uninstall BSF4ooRexx".
 
            [A fallback, manual deinstallation, would be to locate the path to the
            installation directory "bsf4oorexx", named "path2-bsf4oorexx" in the

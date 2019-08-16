@@ -1,5 +1,10 @@
-BSF4ooRexx - Installation Directions for MacOSX                 12 May 2015 (Beta)
-===============================================
+BSF4ooRexx - Installation Directions for MacOS           3 February 2019 (Beta)
+==============================================           ======================
+
+Please note: there is a MacOS compatible GUI installation package that installs
+             the latest version of ooRexx (currently 5.0 beta) together with
+             the latest version of BSF4ooRexx which creates an entry "ooRexx"
+             in the "Application" folder that supplies an Apple menu if opened.
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
 Java objects as Rexx objects.
@@ -10,37 +15,40 @@ ooRexx messages to Java objects)!
 
 All such ooRexx programs work on all operating systems supporting ooRexx!
 
-NOTE: there are 32- and 64-bit native MacOSX installation packages that
-install ooRexx 4.2.0 together with BSF4ooRexx. It is suggested to install
-the 64-bit package.
-
 
 Prerequisites
 =============
 
-[1] Java Runtime Environment (JRE) 1.4 or higher installed on your computer.
+[1] Java Runtime Environment (JRE) 1.6 or higher installed on your computer.
 
 [2] Version 4.2.0 of ooRexx. This is part of the MacOSX BSF4ooRexx GUI
     installer from <http://sourceforge.net/projects/bsf4oorexx/files/>
 
-[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org>
+[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org> or its fork
+              LibreOffice (LO) from <https://www.libreoffice.org/download/download/>
 
-[4] Uninstall any previously installed version of BSF4[oo]Rexx, if any.
+[4] Uninstall any previously installed version of BSF4ooRexx, if any:
+
+    - cf. "readme-Linux.txt"
+
+    - if the GUI installation package was used, then open "ooRexx" in the
+      "Application" folder, pick "Installation -> Uninstall BSF4ooRexx"
 
 
 
 Installation
 ============
 
-Either double-click on the GUI installer (see URL above).
+Either double-click on the GUI installer (see URL above) and afterwards you are done!
 
-Alternatively use the general command-line install:
+Alternatively, use the general command-line install:
 
 Step [1] Download the archive "BSF4ooRexx_install.zip" and unzip it
 
-Step [2] Open the folder "bsf4oorexx/install/macosx"
+Step [2] Open a Terminal window and change the directory to
+         "bsf4oorexx/install/macosx"
 
-Step [3] Double-click on or execute the program "install.sh"
+Step [3] Run the shell program "sh install.sh"
 
 That's it.
 
@@ -58,10 +66,9 @@ P.S.: Support is given either via the newsgroup <news:comp.lang.rexx> or the
 
 P.P.S.: Restrictions on MacOSX:
 
-        - Run awt/swing-applications with "rexxj.sh" only.
+        - Run awt/swing/JavaFX-applications with "rexxj.sh" only.
 
         - Using the executable "rexx" will load and start Java in "headless" mode,
-          which means that no awt event dispatch thread can be created. This is
-          due to some pecularities of MacOSX. (This restriction may be lifted in
-          the future, when "rexx" will create a "CFRunLoop".)
+          which means that neither the awt nor the JavaFX event dispatch thread
+          can be created.
 

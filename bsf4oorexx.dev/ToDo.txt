@@ -1,4 +1,12 @@
 ---
+2019-08-13, rgf: maybe check in exits whether tid has changed (should not be necessary, maybe with command handlers)
+
+
+---
+2019-04-19, rgf, with ooRexx 5.0:
+        - add new SendMessageScoped() to RexxProxy
+
+---
 2019-01-28, rgf, with ooRexx 5.0:
         - add external function to add command environment implemented in Java, using the new native C++ function
                 - context->AddCommandEnvironment(name, handler, DIRECT_COMMAND_ENVIRONMENT);

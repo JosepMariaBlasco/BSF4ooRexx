@@ -7,7 +7,7 @@ import org.apache.bsf.BSFException;
  * This class represents values which type must strictly match with the type in a signature.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2018 Rony G. Flatscher
+ *    Copyright (C) 2018-2019 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -22,10 +22,16 @@ import org.apache.bsf.BSFException;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.0, 2018-11-01, 2018-11-04
+ * @version 1.00, 2018-11-01, 2018-11-04, 2019-08-16
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
+
+/*
+    changes:
+
+        2019-08-16, ---rgf, correct Javadocs
+*/
 
 
 public class RexxStrictArgument
@@ -35,20 +41,29 @@ public class RexxStrictArgument
     /** The value to use as argument value. */
     Object    value=null;
 
-    /** Returns the class object which needs to be strictly matched. */
+    /** Returns the class object which needs to be strictly matched.
+     *
+     * @return the class oobject to match strictly
+    */
     public Class<?> getClassObject()
     {
         return classObject;
     }
 
-    /** Returns the Java object to be used as the argument value. */
+    /** Returns the Java object to be used as the argument value.
+     *
+     * @return the value to use as argument value
+    */
     public Object getValue()
     {
         return value;
     }
 
     /** This constructor accepts any Java object which class object will be queried and stored.
-     * @param obj the Java object which class will have to be strictly matched
+     *
+     * @param value the Java object which class will have to be strictly matched
+     *
+     * @throws BSFException if value is null
      */
     public RexxStrictArgument (Object value) throws BSFException
     {
@@ -67,7 +82,9 @@ public class RexxStrictArgument
      *  If the value is <code>null</code>, then the <code>clz2CastTo</code> argument may be of any Class.
      *
      * @param type the Class object to strictly match (can also be a class to cast to)
-     * @param obj  the Java object to
+     * @param value  the Java object to
+     *
+     * @throws BSFException if arugment type and value do not match or the type is null
      */
     public RexxStrictArgument (Class<?> type, Object value) throws BSFException
     {
@@ -97,7 +114,7 @@ public class RexxStrictArgument
     /** This constructor accepts any Rexx type indicator (a String value) with its value supplied as a String:
        Converts the string from Rexx to the indicated type.
 
-            @param rajo the <code<RexxAndJava</code> object to use for testing against the Rexx string representation for <code>null</code>
+            @param rajo the <code>RexxAndJava</code> object to use for testing against the Rexx string representation for <code>null</code>
 
             @param type primitive type, one of
                         &quot;<strong>BO</strong>olean&quot; (i.e. '0' or '1'),
@@ -115,8 +132,8 @@ public class RexxStrictArgument
 
             @param bPrimitive if <code>true</code> the primitive class object, otherwise the primitive's wrapper class object should be used
 
-            @return value the value from Rexx (a string) to be converted to the Java type
-
+     *
+     * @throws BSFException if unknown type or incompatible value
      */
     RexxStrictArgument (RexxAndJava rajo, String type, String strValue, boolean bPrimitive) throws BSFException // this one gets used via RexxAndJava only
     {
@@ -210,6 +227,8 @@ public class RexxStrictArgument
     /** Return the value part in a form that is appropriate for ooRexx, ie.
      *  Boolean values as &quot;0&quot; or &quot;1&quot;, the primitive (and String object)
      *  with their String values, any other object unedited.
+     *
+     * @return the appropriate value for ooRexx
      */
     public Object getValue4Rexx()
     {

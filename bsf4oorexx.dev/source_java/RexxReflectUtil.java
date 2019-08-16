@@ -24,7 +24,7 @@ import        java.lang.reflect.Modifier;
  * different classes.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2018 Rony G. Flatscher
+ *    Copyright (C) 2018-2019 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -45,9 +45,14 @@ import        java.lang.reflect.Modifier;
  */
 
 /* changes:
-            20181031, ---rgf: added field 'result' to debugString()'s output
-            20181101, ---rgf: removed field 'bTryCoercions', not used anymore, now that RexxStrictArgument in place
-            20190201, ---rgf: made sure that an abstract class gets not instantiated (possible reflectively, if concrete default constructor)
+        2018-10-31, ---rgf: added field 'result' to debugString()'s output
+
+        2018-11-01, ---rgf: removed field 'bTryCoercions', not used anymore, now that RexxStrictArgument in place
+
+        2019-02-01, ---rgf: made sure that an abstract class gets not instantiated (possible reflectively, if concrete default constructor)
+
+        2019-08-16, ---rgf, correct Javadocs
+
 */
 
 
@@ -140,6 +145,7 @@ class RexxReflectUtil
      * @param choice the {@link InvocationType} choice of the reflective operation to carry out
      * @param rexxArgs the String array of the arguments supplied by Rexx
      *
+     * @throws BSFException if something is wrong with the supplied Rexx arguments
      */
     RexxReflectUtil(RexxAndJava rajo, InvocationType choice, String rexxArgs[]) throws BSFException
     {
@@ -371,11 +377,11 @@ if ( bean != null && bean instanceof String && rexxArgs[1] != null && bean.equal
      *
      * @param rajo the {@link RexxAndJava} object invoking this method
      * @param strBsfSubFunctionName the subfunction name which invokes this method
-     * @param the fully qualified Java class name
+     * @param className the fully qualified Java class name
      *
      * @return the loaded Java class object
      *
-     * @throws BSFException if the class cannot be loaded
+     * @throws BSFException  if the class cannot be loaded
      */
     static Class loadClass(RexxAndJava rajo, String strBsfSubFunctionName, String className) throws BSFException
     {
@@ -511,7 +517,7 @@ if ( bean != null && bean instanceof String && rexxArgs[1] != null && bean.equal
      *  {@link java.util.Iterator}, {@link java.util.Collection} or  {@link java.util.Map}.
      *
      *  It creates and poupates a {@link RexxProxy} representing either an ooRexx <code>Array</code> or
-     *  <code>Supplier</code> object and stores it in the {@link result} field.
+     *  <code>Supplier</code> object and stores it in the {@link #result} field.
      *
      * @throws BSFException in case an exception is thrown up while interacting with the  {@link RexxProxy}
      */
@@ -675,7 +681,9 @@ if (bDebug) System.err.println("in ... # i: SUPPLIER branch...");
      *  for the desired member, the last thrown exception will be supplied to the BSFException to allow the
      *  programmer to get additional hints, if found members could not be used.
      *
-     *  @throws a BSFException
+     *  @throws BSFException from the cached information indicating an invalid argument was supplied
+     *
+     *  @return will not return anything, rather the created string will be used to throw the exception
      */
     String throwNotFoundBSFException() throws BSFException
     {
@@ -791,7 +799,13 @@ if (bDebug) System.err.println("in ... # i: SUPPLIER branch...");
     }
 
 
-    /** Truncates string, if longer than given maxLength and append ellipsis (three dots: '...'). */
+    /** Truncates string, if longer than given maxLength and append ellipsis (three dots: '...').
+     *
+     * @param s the String which may have to be truncated if exceeding maxLength
+     * @param maxLength the maximum length of the supplied String before truncating it
+     *
+     * @return returns the supplied string truncated and with an ellipsis, if longer than maxLength
+    */
     String truncString (String s, int maxLength)
     {
         if (s==null)

@@ -1,5 +1,5 @@
-Additional information on BSF4ooRexx that may be interesting  12 May 2015 (Beta)
-=========================================================================
+Additional information on BSF4ooRexx that may be interesting 3 February 2019 (Beta)
+============================================================ ======================
 
 BSF4ooRexx is an extension to Rexx and ooRexx, consisting of an external Rexx
 function package ("BSF4ooRexx.dll", "libBSF4ooRexx") and a set of Java classes
@@ -16,41 +16,16 @@ and use all of Java's classes and objects.  (cf. <http://jakarta.apache.org/bsf>
   function library.  The special ooRexx support enabled by requiring "BSF.CLS"
   makes Java appear like a huge Object Rexx class library!
 
-Preliminary versions of "The Vienna Version of BSF4ooRexx" package were partly
-introduced in April 2005 and April 2006 to the Rexx world at the International
-Rexx Symposium organized by the Rexx Language Association (cf.
-<http://www.RexxLA.org>) where it was used for enabling ooRexx to automate
-(remote control) OpenOffice.org in a platform independent manner.
-
-An overview article (dated: 2003-06-01) with short examples can be found at:
-
-   <http://wi.wu-wien.ac.at/rgf/rexx/orx14/orx14_bsf4rexx-av.pdf>
-
-(and for the forerunner at:
-
-  <http://wi.wu-wien.ac.at/rgf/rexx/orx12/JavaBeanScriptingWithRexx_orx12.pdf>).
-
-
-Another (newer) document on BSF4ooRexx can be found at:
-
-  <http://wi.wu-wien.ac.at/rgf/rexx/orx15/2004_orx15_bsf-orx-layer.pdf>
-
-
-The "Vienna version of BSF4ooRexx" adds additional functionality, the most notable
-addition allows ooRexx programs to address Java fields as if they were Object
-Rexx attributes, as well as supplying the functions box() and unbox() to wrap
-and unwrap primitive datatypes into/from their corresponding Java class (e.g.
-needed for setting property values in OpenOffice.org - OOo).
-
 At the International Rexx Symposium in May 2009 an outlining talk was given about
-"BSF4Rexx 4.0" which now has been renamed to "BSF4ooRexx 4.0".
+"BSF4Rexx 4.0" which now has been renamed to "BSF4ooRexx 4.0", cf. the symposia
+pages at <https://www.RexxLA.org>.
 
 All Rexx programs using BSF4ooRexx are per se fully portable, ie.  to any system
 which possesses Java and a Rexx interpreter, provided that the JNI DLL/shared
 library is ported to that platform (the source file to be ported/compiled is
-"BSF4ooRexx.cc").  Out of the box the following operating systems are supported:
-Linux (Intel) and Windows, with the Mac OSX distribution of ooRexx incorporating
-BSF4Rexx.
+"BSF4ooRexx.cc").  Out of the box the following operating systems are currently
+supported: Linux (x86, amd64, arm32, s390x), MacOSX (32- and 64-bit) and Windows
+(32- and 64-bit).
 
 
 
@@ -232,32 +207,8 @@ Some hints ad Java:
 - In order to use Java as a huge external [oo]Rexx function library you
   merely need to have the "Java runtime environment (JRE)" installed on your
   machine. Probably it is installed already, due to support Java applets via
-  your WWW-browser. Otherwise you can download and install Java e.g. from:
-
-  <http://java.sun.com>.
-
-- You can download the entire Java API documentation from Sun's Java site. The
-  documentation is merely a set of plain HTML documents that are linked with
-  each other. Alternatively, it is possible to point your WWW browser directly
-  to Sun's Java WWW pages offering the very same documentation:
-
-  <http://java.sun.com/docs/index.html>
-     ... Overview page which allows you to choose which Java version's docs you
-     want to browse, e.g. as of this writing the following "J2SE API Docs" were
-     accessible:
-
-        <http://java.sun.com/j2se/1.4.2/docs/api/>            ... Java 1.4.2
-        or overview: <http://java.sun.com/j2se/1.4.2/docs/>
-
-        <http://java.sun.com/j2se/1.5.0/docs/api/>            ... Java 1.5 aka
-        or overview: <http://java.sun.com/j2se/1.5.0/docs/>       Java 5.0
-
-        <http://java.sun.com/javase/6/docs/api/>              ... Java 1.6 aka
-        or overview: <http://java.sun.com/javase/6/docs/>         Java 6.0
-
-     The overview URL also contains plenty of links to tutorials and other
-     valuable Java info material.
-
+  your WWW-browser. Otherwise you can download and install Java e.g. from, e.g.
+  <https://adoptOpenJDK.net> or <https://java.com>.
 
 
 a) Installing Java, if not yet installed
@@ -270,19 +221,16 @@ a) Installing Java, if not yet installed
    If "java" is not found or not executing Java (but a stub program as is
    sometimes the case on Linux) or the Java version is smaller than 1.4, then
    get a new Java from the Internet for your operating system and install it on
-   your machine.  One free possibility is to download Java from Sun, the
-   "father" of Java:
-
-        http://java.sun.com
+   your machine.
 
    It is sufficient to download the runtime version (JRE - Java runtime
-   environment), but you can download the Java developer version (JDK - Java
-   development kit) as well.
+   environment) up to Java 8, starting with Java 9 the JRE got replaced by the
+   JDK ("Java development kit") which includes some more functionality).
 
-   To get free access at the full documentation of all Java classes, you may
-   want to point your browser to:
+   Java is fully documented in HTML and the documentation can be consulted on
+   the web (or downloaded as a zip-archive). For Java 8 the documentation can
+   be found e.g. at: <https://docs.oracle.com/javase/8/docs/api/>
 
-        http://java.sun.com/docs/index.html
 
    Remark on Linux:
    ----------------

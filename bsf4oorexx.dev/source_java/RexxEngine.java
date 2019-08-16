@@ -14,7 +14,7 @@ import java.lang.reflect.Method;
   * using the RexxSAA interface.
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2018 Rony G. Flatscher
+ *    Copyright (C) 2001-2019 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 6.0.0, 20180223
+  * @version 6.0.0, 20190813
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -37,6 +37,8 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2019-08-13, ---rgf, - fix Javadoc warnings
 
     2018-02-23, ---rgf, - changed logic in unregisterBean() to adapt to change in RexxAndJava.unregisterBean return type (now int)
 
@@ -166,7 +168,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20180223";
+    static final public String version = "600.20190813";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -1302,7 +1304,7 @@ if (bDebug)
      *  the RexxEngine). Terminating the primodal Rexx interpreter instance makes it unavailable for
      *  use by the Java side, but remains running for the native code. All other Rexx interpreter
      *  instances will be terminated for good.
-     *  Use {@link public boolean isTerminated()} to test whether the Rexx interpreter instance of
+     *  Use {@link #isTerminated()} to test whether the Rexx interpreter instance of
      *  this {@link RexxEngine} got terminated.
      *
      * To halt all Rexx threads of this engine's Rexx interpreter instance peer use

@@ -1,19 +1,19 @@
-Additional information on the OpenOffice.org support that may be interesting 12 May 2015 (Beta)
-========================================================================================
+Some information on the OpenOffice/LibreOffice support   3 February 2019 (Beta)
+======================================================   ===============================
 
-The ooRexx OpenOffice.org (OOo) support is based on BSF4ooRexx as it uses
-the Java interfaces to and from OOo.  After installation of the OOo support
-the branches from the OOo-menu "Tools -> Macros" will contain an entry
-"ooRexx" indicating that it is now possible to create and run OOo macros
-implemented in ooRexx.
+The ooRexx Apache OpenOffice.org (OOo/AOO)/LibreOffice (LO, a fork of AOO) support
+is based on BSF4ooRexx as it uses the Java interfaces to and from OOo.
+After installation of the OOo support the branches from the OOo-menu "Tools -> Macros"
+will contain an entry "ooRexx" indicating that it is now possible to create and
+run OOo macros implemented in ooRexx.
 
 The component technology OOo uses is built with the programming language
 independent "Universal Network Objects (UNO)", which can be used on its
 own for creating cross-platform applications.
 
 The ooRexx support is created at the UNO-level and can therefore be used for
-interfacing with any UNO component technology, not only OOo!  The following
-ooRexx programs constitute the UNO support with specific OOo support built on
+interfacing with any UNO component technology, not only OOo/LO!  The following
+ooRexx programs constitute the UNO support with specific OOo/LO support built on
 top of it:
 
    UNO.CLS                       ... an ooRexx module defining UNO proxies and
@@ -22,21 +22,22 @@ top of it:
                                  (unqualified) interface name to the UNO proxy;
 
    UNO_XINTERFACES.REX           ... an ooRexx module defining the names of all
-                                 OOo interface classes as of OOo version 2.1.0
-                                 (January 2007) which increases performance;
-                                 since July 2006 UNO.CLS has a fall-back
-                                 solution in place, which uses the UNO
-                                 reflection mechanism at runtime
+                                 OOo interface classes as of OOo version 4.1
+                                 (June 2012) which increases performance;
+                                 UNO.CLS has a fall-back solution in place,
+                                 which uses the UNO reflection mechanism at
+                                 runtime to fetch any new UNO class
 
-   UNO_CREATE_INTERFACE_LIST.REX ... not needed, but could be used to create
-                                 the above ooRexx program "UNO_XINTERFACES.REX";
-                                 it is part of the distribution for completeness
-                                 only
+   UNO_CREATE_INTERFACE_LIST.REX ... not needed, but could be used to create and
+                                 thereby update the above ooRexx program
+                                 "UNO_XINTERFACES.REX" with the currently installed
+                                 version of AOO/LO; it is part of the distribution
+                                 for completeness only
 
-The following Java archive enables OOo to use ooRexx as a macro language:
+The following Java archive enables AOO/LO to use ooRexx as a macro language:
 
    ScriptProviderForooRexx.jar   ... Java archive containing the glue code
-                                 between OOo's Java based scripting framework
+                                 between AOO/LO's Java based scripting framework
                                  and ooRexx, employing the Jakarta BSF framework
                                  (it would be very easy to use BSF to add
                                  additional languages as macro languages to OOo)
@@ -127,36 +128,29 @@ Get and install OpenOffice.org (OOo) / StarOffice (SO)
 
    Go and get OpenOffice.org from <http://www.OpenOffice.org>: it is free, opensource,
    small in size, multiplatform and is able to read and write Microsoft Office documents!
-
-   Starting with version 2.0 the open-standard OASIS document format is used!
+   Alternatively, get its fork "LibreOffice" from <https://www.libreoffice.org/download/>
 
    Installation is done within a minute or two and off you go...
 
-   Note (especially for Linux users): if your installed version of OpenOffice.org does not
-   include the Java support, then ooRexx cannot interact with that version.
-   (Some Linux distributions compile OpenOffice.org without the Java support!)
-   In such a case please download the "genuine" OpenOffice.org package and install that.
+   Make sure that Java is enabled for AOO/LO
+   -----------------------------------------
 
-
-   Make sure that Java is enabled for OpenOffice.org
-   -------------------------------------------------
-
-   - start e.g. OOo Writer, choose the menu option 'Tools -> Options... ->
-     OpenOffice.org -> Java": make sure that the check-box is set next to "Use a
+   - start AOO/LO, choose from the menu the option 'Tools -> Options... ->
+     AOO/LO -> Java": make sure that the check-box is set next to "Use a
      Java runtime-environment"
 
-   - If you had to change the OOo Java configuration then you need to close
-     *all* running instances of OOo; do not forget to close the quick-launcher
+   - If you had to change the AOO/LO Java configuration then you need to close
+     *all* running instances of AOO/LO; do not forget to close the quick-launcher
      as well!
 
-     This will make sure that on the next start of any OOo component this new
-     configuration takes in effect as OOo has to re-read the configuration
+     This will make sure that on the next start of any AOO/LO component this new
+     configuration takes in effect as AOO/LO has to re-read the configuration
      from scratch.
 
 
 
-Install the OOo support
-=======================
+Install the AOO/LO support
+==========================
   - * ATTENTION LINUX USERS *     * ATTENTION LINUX USERS *   * ATTENTION LINUX USERS *
 
     Quite a few Linux distributions preinstall OpenOffice.org in a configuration that
@@ -164,15 +158,21 @@ Install the OOo support
     are not able to install and utilize the OOo support of BSF4ooRexx, then please
     use the official Linux-Distribution of OpenOffice by downloading it from
 
-        http://www.OpenOffice.org
+        https://www.OpenOffice.org
 
-    After the installation of the official distribution of OpenOffice.org everything
+    Or download LibreOffice from
+
+        https://www.libreoffice.org
+
+
+
+    After the installation of the official distribution of AOO or LO everything
     should work as explained in this readme.
 
 
-  - Run "rexx setupOOo.rex path-to-OOo-directory"
+  - Run "rexx setupOOo.rex path-to-AOO/LO-directory"
 
-    - e.g. "rexx setupOOo.rex d:\Programme\OpenOffice.org 2.3"
+    - e.g. "rexx setupOOo.rex d:\Programme\OpenOffice.org 4.1"
 
       This will create the following scripts:
 
@@ -290,10 +290,6 @@ Further information/documentation on Automating OOo/SO with BSF4ooRexx
 
           <http://api.openoffice.org/DevelopersGuide/DevelopersGuide.html>
 
-     *Excellent* Snippets homepage (featuring ooRexx samples since 2006-07 !):
-
-          <http://codesnippets.services.openoffice.org/>
-
 
   Good luck and have fun !
 
@@ -356,8 +352,5 @@ Further information on the BSF4ooRexx support for OpenOffice.org
              <http://wi.wu.ac.at/rgf/diplomarbeiten/>
 
         - <news:comp.lang.rexx>
-
-        - Snippet homepage of OpenOffice.org, choose "ooRexx" in the subpages
-          of: <http://codesnippets.services.openoffice.org/index.xml>
 
 

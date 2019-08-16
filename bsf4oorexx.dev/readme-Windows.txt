@@ -1,5 +1,5 @@
-BSF4ooRexx - Installation Directions for Windows                12 May 2015 (Beta)
-================================================
+BSF4ooRexx - Installation Directions for Windows         3 February 2019 (Beta)
+================================================         ======================
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
 Java objects as Rexx objects.
@@ -22,21 +22,21 @@ Prerequisites
 
 [2] ooRexx 4.2.0 or higher, cf. <http://www.oorexx.org/download.html>
 
-[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org>
+[3] optional: OpenOffice.org (OOo) from <http://download.openoffice.org> or its fork
+              LibreOffice (LO) from <https://www.libreoffice.org/download/download/>
 
 [4] Uninstall any previously installed version of BSF4[oo]Rexx, if any.
 
-    Choose the menu "Start -> All Programs -> BSF4ooRexx ->  Installation -> uninstall"
+    Choose the menu "Start -> All Programs -> BSF4ooRexx ->  Installation -> Uninstall BSF4ooRexx"
 
-    [If you have an old installation of BSF4ooRexx (installed before July 2010) then
-     run the     scripts created in the old installation folder in the following
-     sequence:
+    [To manually uninstall, try to locate the following two scripts and execute
+     them in the following sequence:
 
         Windows                 Comment
         -------                 -------
-        uninstallOOo.cmd        run, if the OOo support was installed
+        uninstallOOo.cmd        run, if the OOo/LO support was installed
 
-        uninstallBSF.cmd        uninstalls the old BSF4[oo]Rexx support]
+        uninstallBSF.cmd        uninstalls the old BSF4Rexx support]
 
 
 Installation

@@ -35,6 +35,7 @@ java org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool TestAbstract Caesar
     2018-02-19, rgf:   - when creating interface methods, make sure that only abstract interface methods get proxied;
                          starting with Java 1.8/8 there are concrete interface methods possible (static and default interface
                          methods)
+    2019-08-13, rgf:   - corrected Javadoc warnings
 */
 
 import java.lang.reflect.*;
@@ -56,7 +57,7 @@ import org.codehaus.janino.SimpleCompiler;
  *  proxied Java method invocations to their original target on the Java side.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2010-2017 Rony G. Flatscher
+ *    Copyright (C) 2010-2019 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -71,7 +72,7 @@ import org.codehaus.janino.SimpleCompiler;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 1.03, 2010-03-27, 2010-04-14, 2010-04-17, 2010-04-18, 2010-11-30, 2011-05-31, 2014-08-30, 2016-11-01, 2016-11-04/5, 2017-03-13
+  * @version 1.04, 2010-03-27, 2010-04-14, 2010-04-17, 2010-04-18, 2010-11-30, 2011-05-31, 2014-08-30, 2016-11-01, 2016-11-04/5, 2017-03-13, 2019-08-13
   * @since 2010
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu.ac.at">http://www.wu.ac.at</a>)
   */
@@ -92,13 +93,13 @@ public class ProxiedJavaClassTool
     public static boolean bShowSource= false; // true; // if set to .true, the generated source is printed to stderr
 
      /** Version information on this class. */
-    static final public String version="104.20180219";
+    static final public String version="104.20190813";
 
     /** Allow using this class from the command line to create an extended Java class and displaying the generated source.
      *  Example: <br>
      *  <code>java java org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool javax.swing.AbstractAction ronysClass "*"
      *
-     *  @param blankDelimitedStrings in the form of &quot;fullJavaClassName [newClassName [methodToProxy [...]]&quot;. If there is
+     *  @param args array of blank delimited Strings in the form of &quot;fullJavaClassName [newClassName [methodToProxy [...]]&quot;. If there is
      *         a single method to proxy with a value of &quot;*&quot; (asterisk), then all declared methods will get proxied.
      */
     public static void main (String args[])

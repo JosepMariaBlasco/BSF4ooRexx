@@ -15,7 +15,7 @@ import org.rexxla.bsf.engines.rexx.RexxProxy;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2018 Rony G. Flatscher
+   Copyright 2015-2019 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -48,12 +48,14 @@ Changes:
 
     2017-04-15: ---rgf, use new .Slot.Argument (a subclass of .Directory) instead of a regular .directory,
                         suggested by Jon Wolfers at the 2017 International Rexx symposium
+
+    2019-08-16, ---rgf, correct Javadocs
 */
 
 
 /** Class that extends the <code>javax.script.CompiledScript</code> class and implements
  *  the <code>javax.script.Invocable</code> interface as this only makes sense in this
- *  class for {@link public <T> T getInterface(Class<T> clasz)}. Therefore the author
+ *  class for {@link #getInterface(Class clasz)}. Therefore the author
  *  (Rony G. Flatscher) who served on the JSR-223 specification committee) thinkgs that the documentation
  *  in <code>javax.script.Invocable</code> is false, as it states that <code>Invocable</code> gets implemented by a
  *  <code>ScriptEngine</code>, somehow indicating it has to operate on some &quot;state&quot; of the script engine.
@@ -64,7 +66,7 @@ Changes:
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20170415
+ * @version 100.20190816
  * @since  2015-05-11
  *
  */
@@ -86,7 +88,7 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
     }
 
 
-    /** The value of this field controls whether {@link createScriptException(Exception exc)} supplies
+    /** The value of this field controls whether {@link #createScriptException(Exception exc)} supplies
      *  the <code>BSFException</code> object or not.
      *  If set to <code>true</code> the <code>BSFException</code> (may contain a
      *  <code>RexxException</code> as cause) will be used to create and throw the <code>ScriptException</code>.
@@ -97,7 +99,7 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
 
     /** Getter for the Rexx script which got compiled (tokenized).
      *
-     *  @return the current value of {@link bSupplyBSFExceptionObject}
+     *  @return the current value of {@link #bSupplyBSFExceptionObject}
     */
     public boolean getSupplyBSFExceptionObject()
     {
@@ -106,7 +108,7 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
 
     /** Setter for the Rexx script which got compiled (tokenized).
      *
-     *  @param the value to be used for the field {@link bSupplyBSFExceptionObject}
+     *  @param newValue the value to be used for the field {@link #bSupplyBSFExceptionObject}
     */
     public void setSupplyBSFExceptionObject(boolean newValue)
     {
@@ -118,9 +120,9 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
     /** The filename used for evaluating (executing) the script or invoking functions or methods from the script */
     String filename;
 
-    /** Getter method to return the current value of {@link filename}.
+    /** Getter method to return the current value of {@link #filename}.
      *
-     *  @return the current value of {@link filename}
+     *  @return the current value of {@link #filename}
      */
     public String getFilename()
     {
@@ -133,7 +135,7 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
 
     /** Getter for the Rexx script source code. If there are no Rexx script annotations present,
      *  then this code got compiled (tokenized), else the edited code stored in the field
-     *  {@link editedScriptSource}.
+     *  {@link #editedScriptSource}.
      .
 
      *  @return the string representing the Rexx script program
@@ -147,9 +149,9 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
     String editedScriptSource=null;
 
     /** Getter for the Rexx edited script source code which got compiled (tokenized), it will have
-     *  injected code, if any of the Rexx script annotations @GET, @GET("attribute list") or
-     *  @SET("attribute list") was found in {@link scriptSource}. If this version exists, it got
-     *  compiled instead of {@link scriptSource}.
+     *  injected code, if any of the Rexx script annotations @GET, @GET("attribute list") or @SET("attribute list")
+     *  was found in {@link #scriptSource}. If this version exists, it got
+     *  compiled instead of {@link #scriptSource}.
 
      *  @return the string representing of the edited Rexx script program
     */
@@ -186,12 +188,13 @@ public class RexxCompiledScript extends CompiledScript implements Invocable
 
     /** Constructor for a compiled (tokenized) Rexx script.
      *
-     * @param scriptSource - The string representing the Rexx source code.
-     * @@param filename - The filename to use when creating and executing the Rexx script.
-     * @param bSupplyBSFExceptionObject - The value that controls whether a <BSFException> should be supplied
+     * @param scriptEngine the sccript engine used
+     * @param scriptSource the string representing the Rexx source code.
+     * @param filename the filename to use when creating and executing the Rexx script.
+     * @param bSupplyBSFExceptionObject controls whether a <code>BSFException</code> should be supplied
      *                    as a cause of a <code>ScriptException</code>.
-     * @param scriptRexxProxy - The <code>RexxProxy</code>  representing the Rexx routine object.
-     * @param scriptRexxPackage - The <code>RexxProxy</code> representing the Rexx package object from
+     * @param scriptRexxProxy the <code>RexxProxy</code> object representing the Rexx routine object.
+     * @param scriptRexxPackage the <code>RexxProxy</code> object representing the Rexx package object from
      *                            the <code>scriptRexxProxy</code>.
      */
     RexxCompiledScript(RexxScriptEngine scriptEngine,
@@ -332,7 +335,7 @@ if (bDebug==true)
      *
      *
      *  <p>Hint: when an interface method gets invoked, the Rexx routine gets all its arguments in the
-     *           same order supplied to, plus an appended <code>RexxDirectory</code> &quot;slot directory</code>
+     *           same order supplied to, plus an appended <code>RexxDirectory</code> "slot directory"
      *           object, which contains information about this particular method invocation. This slot directory
      *           will also contain an entry, named <code>&quot;SCRIPTCONTEXT&quot;</code>, which allows the
      *           Rexx routine to fully interact with the <code>ScriptContext</code> used for its invocation.
@@ -399,21 +402,21 @@ if (bDebug==true)
     /** Returns an implementation of a Java interface where the Java method invocations will be implemented
      *  by the methods of the supplied Rexx object (a <code>RexxProxy</code>.
      *
-     *  <p>Note: Uses the implementation in {@link RexxScriptEngine.getInterface(Object thiz, Class<T> clasz)}.
+     *  <p>Note: Uses the implementation in {@link org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine#getInterface(Object thiz, Class clasz)}.
      *
      *  <p>Hint #1: the external <code>BSF4ooRexx</code> external Rexx function <code>BSFCreateRexxProxy(...)</code>
      *           is much more versatile and among other things allows for implementing multiple Java interface
      *           classes in a single Rexx class.
      *
      *  <p>Hint #2: when an interface method gets invoked, the Rexx method routine gets all its arguments in the
-     *           same order supplied to, plus an appended <code>RexxDirectory</code> &quot;slot directory</code>
+     *           same order supplied to, plus an appended <code>RexxDirectory</code> "slot directory"
      *           object, which contains information about this particular method invocation. This slot directory
      *           will also contain an entry, named <code>&quot;SCRIPTCONTEXT&quot;</code>, which allows the
      *           Rexx routine to fully interact with the <code>ScriptContext</code> used for its invocation.
      *           <br>(Hint: one can always access this object from Rexx code with the statement
      *           <code>scriptcontext=arg('A')~lastItem~scriptContext</code>).)
      *
-     *  @param thiz - The Java object (must be a <ocde>RexxProxy</code>) that implements the Java interface methods
+     *  @param thiz - The Java object (must be a <code>RexxProxy</code>) that implements the Java interface methods
      *
      *  @param clasz - The Java interface class object <code>&lt;T&gt;</code>, whose methods are implemented in the
      *                 <code>thiz</code> object
@@ -455,7 +458,7 @@ if (bDebug==true)
      *
      *         <br>Hint: one can interact with the contained Rexx object of a <code>RexxProxy</code> by sending
      *         it messages from Java using its <code>sendMessage</code> methods or the
-     *         {@link invokeMethod(Object thiz, String name, Object... args} method.
+     *         {@link #invokeMethod(Object thiz, String name, Object... args)} method.
      *
     */
     public Object invokeFunction(String name, Object... args) throws ScriptException, NoSuchMethodException
@@ -507,10 +510,10 @@ if (bDebug)
 
     /** Sends a Rexx message to the Rexx object contained in the addressed <code>RexxProxy</code> object.
      *
-     *  <p>Note: Uses the implementation in {@link RexxScriptEngine.invokeMethod(Object thiz, String name, Object... args)}
+     *  <p>Note: Uses the implementation in {@link org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine#invokeMethod(Object thiz, String name, Object... args)}
      *           where this method belongs to.
      *
-     *  @param thiz - The wrapped (as a <ocde>RexxProxy</code>) Rexx object to receive the message
+     *  @param thiz - The wrapped (as a <code>RexxProxy</code>) Rexx object to receive the message
      *
      *  @param name - The Rexx message (method) name.
      *
@@ -531,7 +534,7 @@ if (bDebug)
      *
      *         <br>Hint: one can interact with the contained Rexx object of a <code>RexxProxy</code> by sending
      *         it messages from Java using its <code>sendMessage</code> methods or the
-     *         {@link invokeMethod(Object thiz, String name, Object... args} method.
+     *         {@link #invokeMethod(Object thiz, String name, Object... args)} method.
      *
     */
     public Object invokeMethod(Object thiz, String name, Object... args) throws ScriptException, NoSuchMethodException
@@ -557,7 +560,7 @@ if (bDebug==true)
      * @param exc - The <code>Exception</code> object to process.
      *
      * @return a <code>ScriptException</code> object that either contains the supplied <code>Exception</code>
-     *         object as its cause. If however {@link bSupplyBSFExceptionObject} is set to <code>false</code>
+     *         object as its cause. If however {@link #bSupplyBSFExceptionObject} is set to <code>false</code>
      *         then a Rexx like message with a line number, if available, gets created and used for the
      *         <code>ScriptException</code> object to be returned.
      */
@@ -684,7 +687,7 @@ if (bDebug==true)
      *
      *  <p>Note: As of ooRexx 4.2.0 the routine's <code>CALLWITH</code>
      *  method sends a <code>MAKEARRAY</code> message which will compact the Java array by removing <code>null</code>
-     *  values (behaviour of {@link ArrayWrapper} to mimickry the ooRexx <code>Array MAKEARRAY</code> behaviour
+     *  values (behaviour of {@link org.rexxla.bsf.engines.rexx.ArrayWrapper} to mimickry the ooRexx <code>Array MAKEARRAY</code> behaviour
      *  as close as possible
      *  (ooRexx arrays are capable of distinguishing whether an entry is empty (NULL) or is explicitly set
      *  to <code>.nil</code>). To keep the argument array intact when there are Java array entries with the
@@ -694,7 +697,13 @@ if (bDebug==true)
      *
     *   @param args Object array with arguments to be supplied to the Rexx script
      *  @param sc ScriptContext to be appended to the arguments for the Rexx script
+     *  @param rse the RexxScriptEngine instance to use
+     *  @param rcs the compiled version of the Rexx script or null
+     *
      *  @return an Object array containing all arguments to be passed on to the Rexx script
+     *
+     *  @throws ScriptException if an exception occurs in <code>rse.getCreateSlotArgument()</code>
+     *  @throws BSFException    if an exception occurs while interacting with the RexxScriptEngine instance
     */
 
 // TODO: rgf, 2018-03-15, CALLWITH does not send MAKEARRAY message automatically, does it? If not, then supplying getNil() is not necessary!

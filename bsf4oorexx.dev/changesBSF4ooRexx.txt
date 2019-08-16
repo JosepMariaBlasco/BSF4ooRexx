@@ -1,3 +1,33 @@
+-------------------------------------- 2019-07-26 ----------------------------------
+
+- RexxScriptEngineFactory.java
+
+        - add mime types "text/rexx", "text/oorexx", "application/rexx", "application/oorexx"
+
+-------------------------------------- 2019-02-04 ----------------------------------
+
+- BSF.CLS
+
+  - removed "bsf.loadClass2environment()", changed "bsf.loadClass()" to save class
+    object in environment, if a second argument with the index name is supplied
+
+  - replaced "bsf.loadClass2environment()" with "bsf.loadClass()"
+
+- bsf4oorexx/samples/JavaFX/fxml_05/staff.rxj
+
+  - replaced "bsf.loadClass2environment()" with "bsf.loadClass()"
+
+- utilities/ooRexxTry.rxj
+
+  - replaced "bsf.loadClass2environment()" with "bsf.loadClass()"
+
+-------------------------------------- 2019-02-03 ----------------------------------
+
+- utilities/ooRexxTry.rxj
+
+  - adjusted code to use bsf.loadClass2environment() for abstract classes, instead
+    of bsf.importClass()
+
 -------------------------------------- 2019-02-02 ----------------------------------
 
 - BSF.CLS

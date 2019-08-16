@@ -24,14 +24,14 @@ import        java.lang.reflect.Modifier;
 
 /**
  * This class carries out reflections for Java starting with version 1.8/8. It uses the
- * infrastructure from the {@link java.lang.reflect} and the {@link java.lang.invoke}
+ * infrastructure from the <code>java.lang.reflect</code> and the <code>java.lang.invoke</code>
  * (introduced with java 1.7/7) package. In order to be as flexible as possible it
  * employs reflection first and attempts to get {@link MethodHandle}s for them. If
  * there are exceptions while carrying out these steps, a candidate member will be
  * ignored and resolution continues with the next ancestor.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2018 Rony G. Flatscher
+ *    Copyright (C) 2018-2019 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.04, 2018-11-01, 2018-11-03, 2018-11-09, 2018-11-13
+ * @version 1.04, 2018-11-01, 2018-11-03, 2018-11-09, 2018-11-13, 2019-08-16
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -55,6 +55,9 @@ import        java.lang.reflect.Modifier;
     concluded: 2018-02-22, ---rgf (version 1.0)
 
     changes:
+
+        2018-08-15, rgf:    - fix Javadoc warnings
+
         2018-11-01, rgf:    - adjusting to new usage of RexxStrictArgument, which makes sure that its classObject
                               is used to strictly compare signatures; is used in picking a strictly matching
                               candidate field, method, constructor
@@ -74,6 +77,8 @@ import        java.lang.reflect.Modifier;
         2018-11-13, rgf:    - corrected bug in processField() when accessing first element in the
                               returned value of coerceArgs(), which could also be the null value
 
+        2019-08-16, ---rgf, correct Javadocs
+
 */
 
 
@@ -81,13 +86,13 @@ class RexxReflectJava7 implements RexxReflectInterface
 {
     static final private boolean bDebug=false;  // enable debug output (quite verbose)
 
-    /** If <code>true</code> cache the {@link java.lang.reflect} objects and their
+    /** If <code>true</code> cache the <code>java.lang.reflect</code> objects and their
      *  corresponding <code>MethodHandle</code>s;.
     */
     public boolean useCaching   =true;      // if true cache java.lang.reflect objects and their MethodHandles; if false do not use caches
 
-    /** If <code>true</code> then {@link java.lang.reflect} object's (a {@link java.lang.reflect.Method},
-     *  {@link java.lang.reflect.Field}, {@link java.lang.reflect.Constructor) <code>invoke</code> methods will get used,
+    /** If <code>true</code> then <code>java.lang.reflect</code> object's (a {@link java.lang.reflect.Method},
+     *  {@link java.lang.reflect.Field}, {@link java.lang.reflect.Constructor} <code>invoke</code> methods will get used,
      *  else the corresponding <code>MethodHandle</code>'s <code>invoke</code> method.
     */
     // rgf, 2018-03-09: ooRexxTry.rxj does not work with MethodHandle.invokeWithArguments(), hence defaulting to core reflection
@@ -217,15 +222,18 @@ publicLookup yields o.k.!?!
 
 
     /** Returns the currently used lookup object.
+     *  @return returns the currently used lookup object
      */
     public MethodHandles.Lookup getLookup()
     {
         return thisLookup;
     }
 
-    /** This allows Rexx to set the lookup object. If clearing the cache using {@clearCache()} and then using this  method
-     *  to set lookup to {@link publicLookup}, Rexx cannot access objects from this package anymore, which makes it impossible
-     *  to use this method to reset to {@link fullLookup}.
+    /** This allows Rexx to set the lookup object. If clearing the cache using {@link #clearCache} and then using this  method
+     *  to set lookup to {@link #publicLookup}, Rexx cannot access objects from this package anymore, which makes it impossible
+     *  to use this method to reset to full lookup.
+     *
+     * @param mhl the {@link java.lang.invoke.MethodHandles.Lookup} object to use
      */
     public void setLookup(MethodHandles.Lookup mhl)
     {
@@ -242,13 +250,13 @@ publicLookup yields o.k.!?!
     /** If <code>true</code> then the <code>lookup</code> was set to <code>publicLookup</code> which will
      *  also be used for new <code>RexxAndJavaInterface</code> objects that may have been created afterwards
      *  via the BSF-subfunction 'rexxReflectObject', 'javaVersion'. <code>lookup</code> are introduced with
-     *  Java 7 to find a {@link java.lang.MethodHandle}.
+     *  Java 7 to find a {@link java.lang.invoke.MethodHandle}.
      */
     boolean lookupWasSetToPublic=false;
 
     /** Returns the current setting, which affects the reflection operation on Java 9 or higher.
      *
-     * @return <code>false</code>, if no restriction to a {@link MethodHandles.Lookup} <ocde>publicLookup</code> is in effect (cannot be
+     * @return <code>false</code>, if no restriction to a {@link java.lang.invoke.MethodHandles.Lookup} <code>publicLookup</code> is in effect (cannot be
      *                reversed for a {@link RexxAndJava} instance, <code>true</code> else
      */
     public boolean isPublicLookup()
@@ -256,7 +264,7 @@ publicLookup yields o.k.!?!
         return lookupWasSetToPublic;
     }
 
-    /** Will set the current {@link MethodHandles.Lookup} lookup object to the <ocde>publicLookup</code>
+    /** Will set the current {@link java.lang.invoke.MethodHandles.Lookup} lookup object to the <code>publicLookup</code>
      *  object, thereby restricting all opeartions to the reference class <code>java.lang.Object</code>
      *  for the current {@link RexxAndJava} instance.
      *  This operation cannot be reverted for security reasons.
@@ -293,20 +301,20 @@ publicLookup yields o.k.!?!
     static Class<?>[]emptyClassArray=new Class[0];  // empty array object of type Class for
 
     /** Class to hold cache entries for {@link java.lang.reflect.Field} and {@link java.lang.reflect.Method} objects together
-     *  with their corresponding {@link MethodHandle}s.
+     *  with their corresponding {@link java.lang.invoke.MethodHandle}s.
      */
     static class CachedFieldOrMethod    // used in ArrayList
     {
         /** The reflected {@link java.lang.reflect.Field} and {@link java.lang.reflect.Method} object. */
         Object        ro;           // java.lang.reflect object (Field or Method)
         /** Indicates whether the entry is stored in the opposite cache, i.e. if this is <code>true</code>, then
-         *  an entry in {@link cachedFields} is a reflected {@link java.lang.reflect.Method} object instead, and
-         *  an entry in {@link cachedMethods} is a reflected {@link java.lang.reflect.Field} object instead.
+         *  an entry in {@link #cachedFields} is a reflected {@link java.lang.reflect.Method} object instead, and
+         *  an entry in {@link #cachedMethods} is a reflected {@link java.lang.reflect.Field} object instead.
         */
         boolean       bOtherKind;   // if true, then cachedMethods entry is actually caching a Field object, and
                                     // a cachedFields entry is actually caching a (getter/setter) Method object;
                                     // needed when java.lang.reflect object invocation is desired
-        /** The corresponding {@link MethodHandle} */
+        /** The corresponding {@link java.lang.invoke.MethodHandle} */
         MethodHandle  mh;           // MethodHandle
         /** The kind of invocation for this {@link MethodHandle}. */
         MH_Kind       mhk;          // remember kind of method handle (see above)
@@ -331,7 +339,7 @@ publicLookup yields o.k.!?!
 
         /** Returns a rendering of this instance to ease debugging.
          *
-         * @retrun  a rendering of this instance
+         * @return  a rendering of this instance
          */
         public String toString()
         {
@@ -362,7 +370,7 @@ publicLookup yields o.k.!?!
 
         /** Returns a rendering of this instance to ease debugging.
          *
-         * @retrun  a rendering of this instance
+         * @return  a rendering of this instance
          */
         public String toString()
         {
@@ -380,7 +388,7 @@ publicLookup yields o.k.!?!
     /** The cache for reflected constructors. */
     static ConcurrentHashMap<Class<?>,ArrayList<CachedConstructor>>                        cachedConstructors = new ConcurrentHashMap() ;
 
-    /** Clears the cache, ie. {@link cachedFields}, {@link cachedMethods} and {@link cachedConstructors}.
+    /** Clears the cache, ie. {@link #cachedFields}, {@link #cachedMethods} and {@link #cachedConstructors}.
      */
     static public void clearCache()
     {
@@ -437,14 +445,16 @@ System.err.println("========================= > "+this+" < =====================
 
         // ========================================================================================================
     /**
-     * Reflect a field. This method consults the cache, if {@link useCaching} is set and tries to invoke every
-     * cached method using either {@link invokeFieldGet()} or {@link invokeFieldGet}, depending on the cached {@link MH_Kind}
-     * value.
+     * Reflect a field. This method consults the cache, if {@link #useCaching} is set and tries to invoke every
+     * cached method using either {@link #invokeFieldGet} or {@link #invokeFieldSet}, depending on the
+     * cached {@link MH_Kind} value.
      * <br>
-     * If no cache is found all fields of the bean are reflected and {@link processField} will
+     * If no cache is found all fields of the bean are reflected and {@link #processField} will
      * get invoked. The reflection process will take all ancestors and interfaces into account.
      *
      * @param rru the {@link RexxReflectUtil} object that contains all the necessary information for the reflection
+     *
+     * @throws BSFException if any of the invoked methods throw an error a {@link BSFException} gets thrown that wraps it
      */
     void reflectField(RexxReflectUtil rru) throws BSFException
     {
@@ -652,7 +662,7 @@ if (bDebug) System.err.println("... reflectField(): tmpRru.bFieldGet=[false], no
         // ========================================================================================================
         // process Interface class, all fields are static and public
     /**
-     * This method will process all fields of an interface and {@link processField} will
+     * This method will process all fields of an interface and {@link #processField} will
      * get invoked. The reflection process will take all interface ancestors into account.
      *
      * @param tmpClz the interface class object to process
@@ -688,7 +698,7 @@ if (bDebug) System.err.println("\\\\// RexxReflectJava7.getAndProcessFieldFromIn
         // Check name and carry out GET or SET operation, if GET, return value
     /** If a {@link java.lang.reflect.Field} is public and the Rexx arguments can be coerced to its parameter types
      *  the field becomes eligible. If a {@link MethodHandle} can be created for it successfully and the invocation
-     *  succeeds without an error, then a cache entry will be created in {@link cachedFields}.
+     *  succeeds without an error, then a cache entry will be created in {@link #cachedFields}.
      *
      * @param tmpField the {@link java.lang.reflect.Field} object to work on
      * @param rru the {@link RexxReflectUtil} object that contains all the necessary information for the reflection
@@ -1153,13 +1163,14 @@ if (debugLevel>2 || bDebugSuccess) System.err.println("// // :) -> RexxReflectJa
 
         // ========================================================================================================
     /**
-     * Reflect a method. This method consults the cache, if {@link useCaching} is set and tries to invoke every
-     * cached method using either {@link invokeMethod()}.
+     * Reflect a method. This method consults the cache, if {@link #useCaching} is set and tries to invoke every
+     * cached method using either {@link #invokeMethod}.
      * <br>
-     * If no cache is found all methods of the bean are reflected and {@link processField} will
+     * If no cache is found all methods of the bean are reflected and {@link #processField} will
      * get invoked. The reflection process will take all ancestors and interfaces into account.
      *
      * @param rru the {@link RexxReflectUtil} object that contains all the necessary information for the reflection
+     * @throws BSFException if any of the invoked methods throw an error a {@link BSFException} gets thrown that wraps it
      */
     void reflectMethod(RexxReflectUtil rru) throws BSFException
     {
@@ -1464,7 +1475,7 @@ System.err.println("... reflectMethod(): trying method, using method name ["+tmp
         // ========================================================================================================
         // process Interface class as starting with Java 8 there may be default interface methods
     /**
-     * This method will process all default methods of an interface and {@link processMethod} will
+     * This method will process all default methods of an interface and {@link #processMethod} will
      * get invoked. The reflection process will take all interface ancestors into account.
      *
      * @param tmpClz the interface class object to process
@@ -1501,7 +1512,7 @@ System.err.println("\\\\// RexxReflectJava7.getAndProcessMethodFromInterface: tm
         // Check name and carry out invocation
     /** If a {@link java.lang.reflect.Method} is public and the Rexx arguments can be coerced to its parameter types
      *  the method becomes eligible. If a {@link MethodHandle} can be created for it successfully and the invocation
-     *  succeeds without an error, then a cache entry will be created in {@link cachedMethods}.
+     *  succeeds without an error, then a cache entry will be created in {@link #cachedMethods}.
      *
      * @param tmpMethod the {@link java.lang.reflect.Method} object to work on
      * @param rru the {@link RexxReflectUtil} object that contains all the necessary information for the reflection
@@ -1810,6 +1821,7 @@ System.err.println("// // :) -> RexxReflectJava7.processMethod(): bean=\""+rru.b
      *
      * @param cfm   the cache entry to use for invocation
      * @param rru the {@link RexxReflectUtil} object that contains all the necessary information for the reflection
+     * @throws BSFException if any of the invoked methods throw an error a {@link BSFException} gets thrown that wraps it
      */
     void invokeMethod (CachedFieldOrMethod cfm, RexxReflectUtil rru) throws BSFException
     {
@@ -1924,6 +1936,7 @@ if (debugLevel>2 || bDebugSuccess) System.err.println("// // :) -> RexxReflectJa
      * @param cfm the cache entry
      * @param cachedFieldsOrMethods the cache to use
      * @param rru the {@link RexxReflectUtil} object that contains all the necessary information for the reflection
+     *
      */
     void add2cachedFieldsOrMethods(CachedFieldOrMethod cfm,
                                           ConcurrentHashMap<Class<?>,ConcurrentHashMap<String,ArrayList<CachedFieldOrMethod>>>  cachedFieldsOrMethods,
@@ -1968,13 +1981,15 @@ System.err.println("... add2cachedFieldsOrMethods(): SUCCESS rru.memberName=["+r
 
         // ========================================================================================================
     /**
-     * Reflect a method. This method consults the cache, if {@link useCaching} is set and tries to invoke every
-     * cached constructor using either {@link invokeConstructor()}.
+     * Reflect a method. This method consults the cache, if {@link #useCaching} is set and tries to invoke every
+     * cached constructor using either {@link #invokeConstructor}.
      * <br>
-     * If no cache is found all constructors of the bean are reflected and {@link processConstructor} will
+     * If no cache is found all constructors of the bean are reflected and {@link #processConstructor} will
      * get invoked. The reflection process will take all ancestors and into account.
      *
      * @param rru the {@link RexxReflectUtil} object that contains all the necessary information for the reflection
+     *
+     * @throws BSFException if any of the invoked methods throw an error a {@link BSFException} gets thrown that wraps it
      */
     void reflectConstructor(RexxReflectUtil rru) throws BSFException
     {
@@ -2044,7 +2059,7 @@ System.err.println("... reflectConstructor(): WOW, found cached Constructor/Meth
         // Check name and carry out GET or SET operation, if GET, return value
     /** If a {@link java.lang.reflect.Constructor} is public and the Rexx arguments can be coerced to its parameter types
      *  the constructor becomes eligible. If a {@link MethodHandle} can be created for it successfully and the invocation
-     *  succeeds without an error, then a cache entry will be created in {@link cachedConstructors}.
+     *  succeeds without an error, then a cache entry will be created in {@link #cachedConstructors}.
      *
      * @param tmpConstructor the {@link java.lang.reflect.Constructor} object to work on
      * @param rru the {@link RexxReflectUtil} object that contains all the necessary information for the reflection

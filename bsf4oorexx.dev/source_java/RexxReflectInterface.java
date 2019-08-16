@@ -9,7 +9,7 @@ import        java.lang.reflect.Modifier;
  * This interface class defines the reflect protocol instrumentated by RexxAndJava.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2018 Rony G. Flatscher
+ *    Copyright (C) 2018-2019 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,10 +24,12 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.0, 2018-01-05
+ * @version 1.01, 2018-01-05, 2019-08-15
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
+
+//      2019-08-15, rgf:    - fixed Javadoc warnings
 
 
 /** This interface class allows {@link RexxAndJava} to use Java reflection for different Java versions, if necessary.
@@ -72,19 +74,26 @@ import        java.lang.reflect.Modifier;
  */
 interface RexxReflectInterface
 {
-    /** Entry point to carry out the reflection for locating appropriate {@link java.lang.Field}, {@link java.lang.Method} and
-     *  {@link java.lang.Constructor} objects and invoke them.
+    /** Entry point to carry out the reflection for locating appropriate
+     *  {@link java.lang.reflect.Field},
+     *  {@link java.lang.reflect.Method} and
+     *  {@link java.lang.reflect.Constructor} objects and invoke them.
+     *
+     * @param rru the {@link RexxReflectUtil} object that contains all the necessary information for the reflection
+     *
+     * @throws BSFException if any of the invoked methods throw an error a {@link BSFException} gets thrown that wraps it
      */
     void reflect(final RexxReflectUtil rru) throws BSFException;
 
     /** Returns the current setting, which affects the reflection operation on Java 9 or higher.
      *
-     * @return <code>false</code>, if no restriction to a {@link MethodHandles.Lookup} <ocde>publicLookup</code> is in effect (cannot be
-     *                reversed for a {@link RexxAndJava} instance, <code>true</code> else
+     * @return <code>false</code>, if no restriction to a
+     *         {@link java.lang.invoke.MethodHandles.Lookup} <code>publicLookup</code> is in effect (cannot be
+     *         reversed for a {@link RexxAndJava} instance, <code>true</code> else
      */
     boolean isPublicLookup();
 
-    /** Will set the current {@link MethodHandles.Lookup} lookup object to the <ocde>publicLookup</code>
+    /** Will set the current {@link java.lang.invoke.MethodHandles.Lookup} lookup object to the <code>publicLookup</code>
      *  object, thereby restricting all operations to the reference class <code>java.lang.Object</code>
      *  for the current {@link RexxAndJava} instance.
      *  This operation cannot be reverted for security reasons.

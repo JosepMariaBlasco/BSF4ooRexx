@@ -33,15 +33,15 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 @echo adding javax.servlet.jsp and javax.servlet.http to CLASSPATH
 set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
 
-set releaseDate=20190107
-set runDate=20190107
-set doc_date=20190107
+set releaseDate=20190816
+set runDate=20190816
+set doc_date=20190816
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
 @rem set bsfVersion=v400
 @rem set releaseVersion=v452
-set releaseVersion=v600
+set releaseVersion=v641
 set releaseName=bsf4ooRexx-%releaseVersion%-%releaseDate%
 set bsfJarNameBin=%releaseName%-bin.jar
 set bsfJarNameSource=%releaseName%-source.jar
@@ -174,7 +174,7 @@ dir *.jar
 @rem -----------------------------------------------------------------------------------
 @echo creating Javadocs ...
 @echo [use at least Java 1.5 (5.0) and make OOo class files available via classpath!]
-call make-docs-apache.cmd
+call make-docs-apache.cmd 2>javadoc_errors.txt
 @echo deleting old zip-archives for Javadocs ...
 del docs_apache_bsf.zip docs_bsf4oorexx.zip
 
