@@ -34,6 +34,7 @@ import java.lang.reflect.Method;
 import java.security.AccessController;
 import java.security.Permissions;
 import java.security.PrivilegedAction;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -41,13 +42,11 @@ import java.util.logging.Logger;
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.Cookable;
 import org.codehaus.commons.compiler.ErrorHandler;
-import org.codehaus.commons.compiler.ICookable;
 import org.codehaus.commons.compiler.ISimpleCompiler;
 import org.codehaus.commons.compiler.Location;
 import org.codehaus.commons.compiler.Sandbox;
 import org.codehaus.commons.compiler.WarningHandler;
 import org.codehaus.commons.nullanalysis.Nullable;
-import org.codehaus.janino.Java.Type;
 import org.codehaus.janino.Visitor.AtomVisitor;
 import org.codehaus.janino.Visitor.TypeVisitor;
 import org.codehaus.janino.util.ClassFile;
@@ -70,11 +69,13 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
     @Nullable private ErrorHandler   optionalCompileErrorHandler;
     @Nullable private WarningHandler optionalWarningHandler;
 
-    private boolean debugSource = Boolean.getBoolean(ICookable.SYSTEM_PROPERTY_SOURCE_DEBUGGING_ENABLE);
+    private boolean debugSource = Boolean.getBoolean(Scanner.SYSTEM_PROPERTY_SOURCE_DEBUGGING_ENABLE);
     private boolean debugLines  = this.debugSource;
     private boolean debugVars   = this.debugSource;
 
     @Nullable private Permissions permissions;
+
+    private EnumSet<JaninoOption> options = EnumSet.noneOf(JaninoOption.class);
 
     public static void // SUPPRESS CHECKSTYLE JavadocMethod
     main(String[] args) throws Exception {
@@ -210,16 +211,16 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
      */
     public void
     cook(Scanner scanner) throws CompileException, IOException {
-        this.compileToClassLoader(new Parser(scanner).parseCompilationUnit());
+        this.compileToClassLoader(new Parser(scanner).parseAbstractCompilationUnit());
     }
 
     /**
      * Cooks this compilation unit directly and invokes {@link #cook(ClassFile[])}.
      */
     public void
-    cook(Java.CompilationUnit compilationUnit) throws CompileException {
+    cook(Java.AbstractCompilationUnit abstractCompilationUnit) throws CompileException {
 
-        SimpleCompiler.LOGGER.entering(null, "cook", compilationUnit);
+        SimpleCompiler.LOGGER.entering(null, "cook", abstractCompilationUnit);
 
         ClassFile[] classFiles;
 
@@ -227,7 +228,7 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
         try {
 
             // Compile compilation unit to class files.
-            UnitCompiler unitCompiler = new UnitCompiler(compilationUnit, icl);
+            UnitCompiler unitCompiler = new UnitCompiler(abstractCompilationUnit, icl).options(this.options);
             unitCompiler.setCompileErrorHandler(this.optionalCompileErrorHandler);
             unitCompiler.setWarningHandler(this.optionalWarningHandler);
 
@@ -329,6 +330,22 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
     }
 
     /**
+     * @return A reference to the currently effective compilation options; changes to it take
+     *         effect immediately
+     */
+    public EnumSet<JaninoOption>
+    options() { return this.options; }
+
+    /**
+     * Sets the options for all future compilations.
+     */
+    public SimpleCompiler
+    options(EnumSet<JaninoOption> options) {
+        this.options = options;
+        return this;
+    }
+
+    /**
      * Wraps a reflection {@link Class} in a {@link Java.Type} object.
      */
     @Nullable protected Java.Type
@@ -355,9 +372,10 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
             @Override @Nullable public <R, EX extends Throwable> R
             accept(TypeVisitor<R, EX> visitor) throws EX { return this.getDelegate().accept(visitor); }
 
-            @Override public String toString() { return this.getDelegate().toString(); }
+            @Override public String
+            toString() { return this.getDelegate().toString(); }
 
-            private Type
+            private Java.Type
             getDelegate() {
 
                 if (this.delegate != null) return this.delegate;
@@ -436,14 +454,14 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
     /**
      * Compiles the given compilation unit. (A "compilation unit" is typically the contents of a Java source file.)
      *
-     * @param compilationUnit   The parsed compilation unit
-     * @return                  The {@link ClassLoader} into which the compiled classes were defined
+     * @param abstractCompilationUnit The parsed compilation unit
+     * @return                        The {@link ClassLoader} into which the compiled classes were defined
      * @throws CompileException
      */
     protected final ClassLoader
-    compileToClassLoader(Java.CompilationUnit compilationUnit) throws CompileException {
+    compileToClassLoader(Java.AbstractCompilationUnit abstractCompilationUnit) throws CompileException {
         assert this.classLoaderIClassLoader == null;
-        this.cook(compilationUnit);
+        this.cook(abstractCompilationUnit);
         return this.assertCooked();
     }
 

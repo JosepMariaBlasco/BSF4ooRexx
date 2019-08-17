@@ -10,8 +10,7 @@ import java.lang.reflect.Method;
 
 
 /**
-  * This class manages the calls from Java via JNI to Rexx or Object Rexx
-  * using the RexxSAA interface.
+  * This class manages the calls from Java via JNI to Open Object Rexx (ooRexx).
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
  *    Copyright (C) 2001-2019 Rony G. Flatscher

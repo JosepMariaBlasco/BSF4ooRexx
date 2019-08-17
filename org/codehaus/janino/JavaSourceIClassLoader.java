@@ -28,6 +28,7 @@ package org.codehaus.janino;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
@@ -37,12 +38,10 @@ import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.ErrorHandler;
 import org.codehaus.commons.compiler.Location;
 import org.codehaus.commons.compiler.WarningHandler;
+import org.codehaus.commons.compiler.util.resource.Resource;
+import org.codehaus.commons.compiler.util.resource.ResourceFinder;
 import org.codehaus.commons.nullanalysis.Nullable;
-import org.codehaus.janino.Java.CompilationUnit;
 import org.codehaus.janino.util.ClassFile;
-import org.codehaus.janino.util.resource.Resource;
-import org.codehaus.janino.util.resource.ResourceFinder;
-
 
 /**
  * This {@link org.codehaus.janino.IClassLoader} finds, scans and parses compilation units.
@@ -55,8 +54,9 @@ class JavaSourceIClassLoader extends IClassLoader {
 
     private static final Logger LOGGER = Logger.getLogger(JavaSourceIClassLoader.class.getName());
 
-    private ResourceFinder           sourceFinder;
-    @Nullable private String         optionalCharacterEncoding;
+    private ResourceFinder        sourceFinder;
+    @Nullable private String      optionalCharacterEncoding;
+    private EnumSet<JaninoOption> options = EnumSet.noneOf(JaninoOption.class);
 
     /**
      * Collection of parsed compilation units.
@@ -86,11 +86,11 @@ class JavaSourceIClassLoader extends IClassLoader {
     getUnitCompilers() { return this.unitCompilers; }
 
     /**
-     * @param pathResourceFinder The source path
+     * @param sourceFinder The source path
      */
     public void
-    setSourceFinder(ResourceFinder pathResourceFinder) {
-        this.sourceFinder = pathResourceFinder;
+    setSourceFinder(ResourceFinder sourceFinder) {
+        this.sourceFinder = sourceFinder;
     }
 
     /**
@@ -117,6 +117,22 @@ class JavaSourceIClassLoader extends IClassLoader {
     public void
     setWarningHandler(@Nullable WarningHandler optionalWarningHandler) {
         this.optionalWarningHandler = optionalWarningHandler;
+    }
+
+    /**
+     * @return A reference to the currently effective compilation options; changes to it take
+     *         effect immediately
+     */
+    public EnumSet<JaninoOption>
+    options() { return this.options; }
+
+    /**
+     * Sets the options for all future compilations.
+     */
+    public JavaSourceIClassLoader
+    options(EnumSet<JaninoOption> options) {
+        this.options = options;
+        return this;
     }
 
     /**
@@ -155,10 +171,10 @@ class JavaSourceIClassLoader extends IClassLoader {
         }
 
         try {
-            Java.CompilationUnit cu = this.findCompilationUnit(className);
-            if (cu == null) return null;
+            Java.AbstractCompilationUnit acu = this.findCompilationUnit(className);
+            if (acu == null) return null;
 
-            UnitCompiler uc = new UnitCompiler(cu, this);
+            UnitCompiler uc = new UnitCompiler(acu, this).options(this.options);
             uc.setCompileErrorHandler(this.optionalCompileErrorHandler);
             uc.setWarningHandler(this.optionalWarningHandler);
 
@@ -190,7 +206,7 @@ class JavaSourceIClassLoader extends IClassLoader {
      *
      * @return {@code null} iff the source file could not be found
      */
-    @Nullable protected CompilationUnit
+    @Nullable protected Java.AbstractCompilationUnit
     findCompilationUnit(String className) throws IOException, CompileException {
 
         // Find source file.
@@ -211,7 +227,7 @@ class JavaSourceIClassLoader extends IClassLoader {
             Parser parser = new Parser(scanner);
             parser.setWarningHandler(this.optionalWarningHandler);
 
-            return parser.parseCompilationUnit();
+            return parser.parseAbstractCompilationUnit();
         } finally {
             try { inputStream.close(); } catch (IOException ex) {}
         }

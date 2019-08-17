@@ -43,6 +43,7 @@ import java.util.Map;
 
 import org.codehaus.commons.nullanalysis.Nullable;
 import org.codehaus.janino.Descriptor;
+import org.codehaus.janino.MethodDescriptor;
 import org.codehaus.janino.Mod;
 
 /**
@@ -52,7 +53,7 @@ import org.codehaus.janino.Mod;
  *   from it.
  * </p>
  * <p>
- *   {@link #store(OutputStream)} generates Java bytecode which is suitable for being processed by a Java
+ *   {@link #store(OutputStream)} generates JVM bytecode which is suitable for being processed by a Java
  *   virtual machine, and writes it to an {@link OutputStream}.
  * </p>
  */
@@ -65,18 +66,14 @@ class ClassFile implements Annotatable {
      */
     public static
     class ClassFileException extends RuntimeException {
-
-        public
-        ClassFileException(String message) { super(message); }
-
-        public
-        ClassFileException(String message, Throwable cause) { super(message, cause); }
+        public ClassFileException(String message)                  { super(message);        }
+        public ClassFileException(String message, Throwable cause) { super(message, cause); }
     }
 
     /**
      * Constructs a class with no fields and methods.
      * An application would typically add these through {@link ClassFile#addFieldInfo(short, String, String, Object)}
-     * and {@link ClassFile#addMethodInfo(short, String, String)} before saving it.
+     * and {@link ClassFile#addMethodInfo(short, String, MethodDescriptor)} before saving it.
      *
      * @param accessFlags as defined by {@link org.codehaus.janino.Mod}
      * @param thisClassFd the field descriptor for this class
@@ -86,11 +83,15 @@ class ClassFile implements Annotatable {
     public
     ClassFile(short accessFlags, String thisClassFd, @Nullable String superclassFd, String[] interfaceFds) {
 
-        // Must not set these to "..._1_5", for otherwise "EvaluatorTests.testCovariantClone()" and
-        // "JlsTests.test_8_4_8_3__Requirements_in_Overriding_and_Hiding()" choke.
-        // Further investigation required.
-        this.majorVersion  = ClassFile.MAJOR_VERSION_JDK_1_5;
-        this.minorVersion  = ClassFile.MINOR_VERSION_JDK_1_5;
+        // Must not set these to "..._1_7", because then the JVM insists on a StackMapTable (JVMS9 4.7.4), which
+        // JANINO currently does not produce:
+        //
+        //    java.lang.VerifyError: Expecting a stackmap frame at branch target 13
+        //
+        // ("jre -noverify" removes that requirement, but we cannot force our users to run their JVMs with that
+        // option.)
+        this.majorVersion  = ClassFile.MAJOR_VERSION_JDK_1_6;
+        this.minorVersion  = ClassFile.MINOR_VERSION_JDK_1_6;
 
         this.constantPool  = new ArrayList<ConstantPoolInfo>();
         this.constantPool.add(null); // Add fake "0" index entry.
@@ -201,14 +202,14 @@ class ClassFile implements Annotatable {
         return (AnnotationsAttribute) this.findAttribute(attributes, attributeName);
     }
 
-    @Override public AnnotationsAttribute.Annotation[]
+    @Override public Annotation[]
     getAnnotations(boolean runtimeVisible) {
 
         AnnotationsAttribute aa = this.getAnnotationsAttribute(runtimeVisible, this.attributes);
-        if (aa == null) return new AnnotationsAttribute.Annotation[0];
+        if (aa == null) return new Annotation[0];
 
-        return (AnnotationsAttribute.Annotation[]) aa.annotations.toArray(
-            new AnnotationsAttribute.Annotation[aa.annotations.size()]
+        return (Annotation[]) aa.annotations.toArray(
+            new Annotation[aa.annotations.size()]
         );
     }
 
@@ -220,9 +221,9 @@ class ClassFile implements Annotatable {
      */
     @Override public void
     addAnnotationsAttributeEntry(
-        boolean                                       runtimeVisible,
-        String                                        fieldDescriptor,
-        Map<Short, AnnotationsAttribute.ElementValue> elementValuePairs
+        boolean                            runtimeVisible,
+        String                             fieldDescriptor,
+        Map<Short, ClassFile.ElementValue> elementValuePairs
     ) { this.addAnnotationsAttributeEntry(runtimeVisible, fieldDescriptor, elementValuePairs, this.attributes); }
 
     /**
@@ -234,10 +235,10 @@ class ClassFile implements Annotatable {
      */
     private void
     addAnnotationsAttributeEntry(
-        boolean                                       runtimeVisible,
-        String                                        fieldDescriptor,
-        Map<Short, AnnotationsAttribute.ElementValue> elementValuePairs,
-        List<AttributeInfo>                           target
+        boolean                            runtimeVisible,
+        String                             fieldDescriptor,
+        Map<Short, ClassFile.ElementValue> elementValuePairs,
+        List<AttributeInfo>                target
     ) {
 
         // Find or create the "Runtime[In]visibleAnnotations" attribute.
@@ -250,7 +251,7 @@ class ClassFile implements Annotatable {
 
         // Add the new annotation.
         aa.getAnnotations().add(
-            new AnnotationsAttribute.Annotation(this.addConstantUtf8Info(fieldDescriptor), elementValuePairs)
+            new Annotation(this.addConstantUtf8Info(fieldDescriptor), elementValuePairs)
         );
     }
 
@@ -305,10 +306,7 @@ class ClassFile implements Annotatable {
      * @return The fully qualified name of this class, e.g. "pkg1.pkg2.Outer$Inner"
      */
     public String
-    getThisClassName() {
-        ConstantClassInfo cci = (ConstantClassInfo) this.getConstantPoolInfo(this.thisClass);
-        return cci.getName(this).replace('/', '.');
-    }
+    getThisClassName() { return this.getConstantClassInfo(this.thisClass).getName(this).replace('/', '.'); }
 
     /**
      * Sets the major and minor class file version numbers (JVMS 4.1). The class file version defaults to the JDK 1.1
@@ -483,7 +481,7 @@ class ClassFile implements Annotatable {
      * Convenience method that adds a String, Integer, Float, Long or Double ConstantInfo.
      */
     private short
-    addConstantSIFLDInfo(Object cv) { // SUPPRESS CHECKSTYLE AbbreviationAsWord
+    addConstantSifldInfo(Object cv) {
         if (cv instanceof String) {
             return this.addConstantStringInfo((String) cv);
         } else
@@ -558,7 +556,7 @@ class ClassFile implements Annotatable {
         if (optionalConstantValue != null) {
             attributes.add(new ConstantValueAttribute(
                 this.addConstantUtf8Info("ConstantValue"),
-                this.addConstantSIFLDInfo(optionalConstantValue)
+                this.addConstantSifldInfo(optionalConstantValue)
             ));
         }
         FieldInfo fi = new FieldInfo(
@@ -576,12 +574,28 @@ class ClassFile implements Annotatable {
      * ({@code Code}, {@code Deprecated}, {@code Exceptions}, ...) to the method.
      */
     public MethodInfo
-    addMethodInfo(short accessFlags, String methodName, String methodMd) {
+    addMethodInfo(short accessFlags, String methodName, MethodDescriptor methodMd) {
+
+        int parameterCount = Mod.isStatic(accessFlags) ? 0 : 1;
+        for (String fd : methodMd.parameterFds) parameterCount += Descriptor.size(fd);
+
+        // JVMS8 4.3.3
+        // See https://github.com/janino-compiler/janino/pull/46
+        if (parameterCount > 255) {
+            throw new ClassFileException((
+                "Method \""
+                + methodName
+                + "\" has too many parameters ("
+                + parameterCount
+                + ")"
+            ));
+        }
+
         MethodInfo mi = new MethodInfo(
-            accessFlags,                          // accessFlags
-            this.addConstantUtf8Info(methodName), // nameIndex
-            this.addConstantUtf8Info(methodMd),   // desriptorIndex
-            new ArrayList<AttributeInfo>()        // attributes
+            accessFlags,                                   // accessFlags
+            this.addConstantUtf8Info(methodName),          // nameIndex
+            this.addConstantUtf8Info(methodMd.toString()), // desriptorIndex
+            new ArrayList<AttributeInfo>()                 // attributes
         );
         this.methodInfos.add(mi);
         return mi;
@@ -594,7 +608,63 @@ class ClassFile implements Annotatable {
     getConstantPoolInfo(short index) { return (ConstantPoolInfo) this.constantPool.get(0xffff & index); }
 
     /**
-     * @return The (read-only) constant value pool entry indexed by <var>index</var>
+     * @return The (read-only) constant class info indexed by <var>index</var>
+     */
+    public ConstantClassInfo
+    getConstantClassInfo(short index) { return (ConstantClassInfo) this.getConstantPoolInfo(index); }
+
+    /**
+     * @return The (read-only) constant fieldref info indexed by <var>index</var>
+     */
+    public ConstantFieldrefInfo
+    getConstantFieldrefInfo(short index) { return (ConstantFieldrefInfo) this.getConstantPoolInfo(index); }
+
+    /**
+     * @return The (read-only) constant interface methodref info indexed by <var>index</var>
+     */
+    public ConstantInterfaceMethodrefInfo
+    getConstantInterfaceMethodrefInfo(short index) {
+        return (ConstantInterfaceMethodrefInfo) this.getConstantPoolInfo(index);
+    }
+
+    /**
+     * @return The (read-only) constant invoke dynamic info indexed by <var>index</var>
+     */
+    public ConstantInvokeDynamicInfo
+    getConstantInvokeDynamicInfo(short index) { return (ConstantInvokeDynamicInfo) this.getConstantPoolInfo(index); }
+
+    /**
+     * @return The (read-only) constant method handle info indexed by <var>index</var>
+     */
+    public ConstantMethodHandleInfo
+    getConstantMethodHandleInfo(short index) { return (ConstantMethodHandleInfo) this.getConstantPoolInfo(index); }
+
+    /**
+     * @return The (read-only) constant methodref info indexed by <var>index</var>
+     */
+    public ConstantMethodrefInfo
+    getConstantMethodrefInfo(short index) { return (ConstantMethodrefInfo) this.getConstantPoolInfo(index); }
+
+    /**
+     * @return The (read-only) constant method type info indexed by <var>index</var>
+     */
+    public ConstantMethodTypeInfo
+    getConstantMethodTypeInfo(short index) { return (ConstantMethodTypeInfo) this.getConstantPoolInfo(index); }
+
+    /**
+     * @return The (read-only) constant name and type info indexed by <var>index</var>
+     */
+    public ConstantNameAndTypeInfo
+    getConstantNameAndTypeInfo(short index) { return (ConstantNameAndTypeInfo) this.getConstantPoolInfo(index); }
+
+    /**
+     * @return The (read-only) constant utf8 info indexed by <var>index</var>
+     */
+    public ConstantUtf8Info
+    getConstantUtf8Info(short index) { return (ConstantUtf8Info) this.getConstantPoolInfo(index); }
+
+    /**
+     * @return The (read-only) constant value pool info indexed by <var>index</var>
      */
     public ConstantValuePoolInfo
     getConstantValuePoolInfo(short index) { return (ConstantValuePoolInfo) this.getConstantPoolInfo(index); }
@@ -606,14 +676,13 @@ class ClassFile implements Annotatable {
     getConstantPoolSize() { return this.constantPool.size(); }
 
     /**
+     * Shorthand for {@code getConstantUtf8Info(index).s}.
+     *
      * @param index Index to a {@code CONSTANT_Utf8_info} in the constant pool
      * @return      The string represented by the structure
      */
     public String
-    getConstantUtf8(short index) {
-        ConstantUtf8Info cui = (ConstantUtf8Info) this.getConstantPoolInfo(index);
-        return cui.s;
-    }
+    getConstantUtf8(short index) { return this.getConstantUtf8Info(index).s; }
 
     /**
      * u4 length, u1[length]
@@ -630,9 +699,8 @@ class ClassFile implements Annotatable {
      */
     private static short[]
     readShortArray(DataInputStream dis) throws IOException {
-        short   count  = dis.readShort();
-        short[] result = new short[count];
-        for (int i = 0; i < count; ++i) result[i] = dis.readShort();
+        short[] result = new short[dis.readUnsignedShort()];
+        for (int i = 0; i < result.length; ++i) result[i] = dis.readShort();
         return result;
     }
 
@@ -644,12 +712,12 @@ class ClassFile implements Annotatable {
         this.constantPool.clear();
         this.constantPoolMap.clear();
 
-        short constantPoolCount = dis.readShort(); // constant_pool_count
+        int constantPoolCount = dis.readUnsignedShort(); // constant_pool_count
         this.constantPool.add(null);
-        for (short i = 1; i < constantPoolCount; ++i) {
+        for (int i = 1; i < constantPoolCount; ++i) {
             ConstantPoolInfo cpi = ConstantPoolInfo.loadConstantPoolInfo(dis);
             this.constantPool.add(cpi);
-            this.constantPoolMap.put(cpi, new Short(i));
+            this.constantPoolMap.put(cpi, (short) i);
             if (cpi.isWide()) {
                 this.constantPool.add(null);
                 ++i;
@@ -665,8 +733,8 @@ class ClassFile implements Annotatable {
 
         List<FieldInfo> result = new ArrayList<FieldInfo>();
 
-        for (int i = dis.readShort(); i > 0; i--) { // fields_count
-            result.add(new FieldInfo(               // fields[field_count]
+        for (int i = dis.readUnsignedShort(); i > 0; i--) { // fields_count
+            result.add(new FieldInfo(                       // fields[field_count]
                 dis.readShort(),         // access_flags
                 dis.readShort(),         // name_index
                 dis.readShort(),         // descriptor_index
@@ -682,7 +750,7 @@ class ClassFile implements Annotatable {
      */
     private List<MethodInfo>
     loadMethods(DataInputStream dis) throws IOException {
-        short            methodsCount = dis.readShort();
+        int              methodsCount = dis.readUnsignedShort();
         List<MethodInfo> methods      = new ArrayList<MethodInfo>(methodsCount);
         for (int i = 0; i < methodsCount; ++i) methods.add(this.loadMethodInfo(dis));
         return methods;
@@ -693,7 +761,7 @@ class ClassFile implements Annotatable {
      */
     private List<AttributeInfo>
     loadAttributes(DataInputStream dis) throws IOException {
-        short               attributesCount = dis.readShort();
+        int                 attributesCount = dis.readUnsignedShort();
         List<AttributeInfo> attributes      = new ArrayList<AttributeInfo>(attributesCount);
         for (int i = 0; i < attributesCount; ++i) attributes.add(this.loadAttribute(dis));
         return attributes;
@@ -855,6 +923,22 @@ class ClassFile implements Annotatable {
     public static final short MAJOR_VERSION_JDK_1_8 = 52;
     /** Minor version number of a class file that was generated by a Java 1.8-compliant compiler. */
     public static final short MINOR_VERSION_JDK_1_8 = 0;
+    /** Major version number of a class file that was generated by a Java 1.9-compliant compiler. */
+    public static final short MAJOR_VERSION_JDK_1_9 = 53;
+    /** Minor version number of a class file that was generated by a Java 1.9-compliant compiler. */
+    public static final short MINOR_VERSION_JDK_1_9 = 0;
+    /** Major version number of a class file that was generated by a Java 1.10-compliant compiler. */
+    public static final short MAJOR_VERSION_JDK_1_10 = 54;
+    /** Minor version number of a class file that was generated by a Java 1.10-compliant compiler. */
+    public static final short MINOR_VERSION_JDK_1_10 = 0;
+    /** Major version number of a class file that was generated by a Java 1.11-compliant compiler. */
+    public static final short MAJOR_VERSION_JDK_1_11 = 55;
+    /** Minor version number of a class file that was generated by a Java 1.11-compliant compiler. */
+    public static final short MINOR_VERSION_JDK_1_11 = 0;
+    /** Major version number of a class file that was generated by a Java 1.12-compliant compiler. */
+    public static final short MAJOR_VERSION_JDK_1_12 = 56;
+    /** Minor version number of a class file that was generated by a Java 1.12-compliant compiler. */
+    public static final short MINOR_VERSION_JDK_1_12 = 0;
 
     private short                        majorVersion;
     private short                        minorVersion;
@@ -995,6 +1079,7 @@ class ClassFile implements Annotatable {
      */
     public static
     class ConstantClassInfo extends ConstantPoolInfo {
+
         private final short nameIndex;
 
         public ConstantClassInfo(short nameIndex) { this.nameIndex = nameIndex; }
@@ -1041,11 +1126,17 @@ class ClassFile implements Annotatable {
         }
 
         /**
+         * @return The {@link ConstantClassInfo} of this {@link ConstantFieldrefInfo}
+         */
+        public ConstantClassInfo
+        getClassInfo(ClassFile classFile) { return classFile.getConstantClassInfo(this.classIndex); }
+
+        /**
          * @return The {@link ConstantNameAndTypeInfo} of this {@link ConstantFieldrefInfo}
          */
         public ConstantNameAndTypeInfo
         getNameAndType(ClassFile classFile) {
-            return (ClassFile.ConstantNameAndTypeInfo) classFile.getConstantPoolInfo(this.nameAndTypeIndex);
+            return classFile.getConstantNameAndTypeInfo(this.nameAndTypeIndex);
         }
 
         // Implement ConstantPoolInfo.
@@ -1089,12 +1180,16 @@ class ClassFile implements Annotatable {
         }
 
         /**
+         * @return The {@link ConstantClassInfo} of this {@link ConstantMethodrefInfo}
+         */
+        public ConstantClassInfo
+        getClassInfo(ClassFile classFile) { return classFile.getConstantClassInfo(this.classIndex); }
+
+        /**
          * @return The {@link ConstantNameAndTypeInfo} of this {@link ConstantMethodrefInfo}
          */
         public ConstantNameAndTypeInfo
-        getNameAndType(ClassFile classFile) {
-            return (ClassFile.ConstantNameAndTypeInfo) classFile.getConstantPoolInfo(this.nameAndTypeIndex);
-        }
+        getNameAndType(ClassFile classFile) { return classFile.getConstantNameAndTypeInfo(this.nameAndTypeIndex); }
 
         // Implement ConstantPoolInfo.
 
@@ -1136,12 +1231,16 @@ class ClassFile implements Annotatable {
         }
 
         /**
+         * @return The {@link ConstantClassInfo} of this {@link ConstantInterfaceMethodrefInfo}
+         */
+        public ConstantClassInfo
+        getClassInfo(ClassFile classFile) { return classFile.getConstantClassInfo(this.classIndex); }
+
+        /**
          * @return The {@link ConstantNameAndTypeInfo} of this {@link ConstantInterfaceMethodrefInfo}
          */
         public ConstantNameAndTypeInfo
-        getNameAndType(ClassFile classFile) {
-            return (ClassFile.ConstantNameAndTypeInfo) classFile.getConstantPoolInfo(this.nameAndTypeIndex);
-        }
+        getNameAndType(ClassFile classFile) { return classFile.getConstantNameAndTypeInfo(this.nameAndTypeIndex); }
 
         // Implement ConstantPoolInfo.
 
@@ -1173,6 +1272,7 @@ class ClassFile implements Annotatable {
      */
     static
     class ConstantStringInfo extends ConstantValuePoolInfo {
+
         private final short stringIndex;
 
         ConstantStringInfo(short stringIndex) { this.stringIndex = stringIndex; }
@@ -1206,6 +1306,7 @@ class ClassFile implements Annotatable {
      */
     private static
     class ConstantIntegerInfo extends ConstantValuePoolInfo {
+
         private final int value;
 
         ConstantIntegerInfo(int value) { this.value = value; }
@@ -1245,7 +1346,8 @@ class ClassFile implements Annotatable {
         ConstantFloatInfo(float value) { this.value = value; }
 
         // Implement ConstantValuePoolInfo.
-        @Override public Object getValue(ClassFile classFile) { return new Float(this.value); }
+        @Override public Object
+        getValue(ClassFile classFile) { return new Float(this.value); }
 
         // Implement ConstantPoolInfo.
 
@@ -1278,7 +1380,8 @@ class ClassFile implements Annotatable {
         ConstantLongInfo(long value) { this.value = value; }
 
         // Implement ConstantValuePoolInfo.
-        @Override public Object getValue(ClassFile classFile) { return this.value; }
+        @Override public Object
+        getValue(ClassFile classFile) { return this.value; }
 
         // Implement ConstantPoolInfo.
 
@@ -1351,12 +1454,16 @@ class ClassFile implements Annotatable {
         }
 
         /**
+         * @return The name of the field or method
+         */
+        public String
+        getName(ClassFile classFile) { return classFile.getConstantUtf8(this.nameIndex); }
+
+        /**
          * @return The (field or method) descriptor related to the name
          */
         public String
-        getDescriptor(ClassFile classFile) {
-            return classFile.getConstantUtf8(this.descriptorIndex);
-        }
+        getDescriptor(ClassFile classFile) { return classFile.getConstantUtf8(this.descriptorIndex); }
 
         // Implement ConstantPoolInfo.
 
@@ -1387,7 +1494,8 @@ class ClassFile implements Annotatable {
      * See JVMS7 4.4.7.
      */
     public static
-    class ConstantUtf8Info extends ConstantPoolInfo {
+    class ConstantUtf8Info extends ConstantValuePoolInfo {
+
         private final String s;
 
         public
@@ -1395,6 +1503,10 @@ class ClassFile implements Annotatable {
             assert s != null;
             this.s = s;
         }
+
+        // Implement ConstantValuePoolInfo.
+
+        @Override public Object getValue(ClassFile classFile) { return this.s; }
 
         /**
          * @return The string contained in this {@link ConstantUtf8Info}
@@ -1442,7 +1554,7 @@ class ClassFile implements Annotatable {
             this.referenceIndex = referenceIndex;
         }
 
-        public byte  getReferenceKind()  { return this.referenceKind; }
+        public byte  getReferenceKind()  { return this.referenceKind;  }
         public short getReferenceIndex() { return this.referenceIndex; }
 
         // Implement ConstantPoolInfo.
@@ -1483,7 +1595,7 @@ class ClassFile implements Annotatable {
             this.descriptorIndex = descriptorIndex;
         }
 
-        public short getdescriptorIndex() { return this.descriptorIndex; }
+        public short getDescriptorIndex() { return this.descriptorIndex; }
 
         // Implement ConstantPoolInfo.
 
@@ -1524,7 +1636,7 @@ class ClassFile implements Annotatable {
         }
 
         public short getBootstrapMethodAttrIndex() { return this.bootstrapMethodAttrIndex; }
-        public short getNameAndTypeIndex()         { return this.nameAndTypeIndex; }
+        public short getNameAndTypeIndex()         { return this.nameAndTypeIndex;         }
 
         // Implement ConstantPoolInfo.
 
@@ -1592,15 +1704,13 @@ class ClassFile implements Annotatable {
         /**
          * @return The annotations of this method
          */
-        @Override public AnnotationsAttribute.Annotation[]
+        @Override public Annotation[]
         getAnnotations(boolean runtimeVisible) {
 
             AnnotationsAttribute aa = ClassFile.this.getAnnotationsAttribute(runtimeVisible, this.attributes);
-            if (aa == null) return new AnnotationsAttribute.Annotation[0];
+            if (aa == null) return new Annotation[0];
 
-            return (AnnotationsAttribute.Annotation[]) aa.annotations.toArray(
-                new AnnotationsAttribute.Annotation[aa.annotations.size()]
-            );
+            return (Annotation[]) aa.annotations.toArray(new Annotation[aa.annotations.size()]);
         }
 
         /**
@@ -1631,9 +1741,9 @@ class ClassFile implements Annotatable {
 
         @Override public void
         addAnnotationsAttributeEntry(
-            boolean                                       runtimeVisible,
-            String                                        fieldDescriptor,
-            Map<Short, AnnotationsAttribute.ElementValue> elementValuePairs
+            boolean                            runtimeVisible,
+            String                             fieldDescriptor,
+            Map<Short, ClassFile.ElementValue> elementValuePairs
         ) {
             ClassFile.this.addAnnotationsAttributeEntry(
                 runtimeVisible,
@@ -1692,15 +1802,13 @@ class ClassFile implements Annotatable {
         /**
          * @return The annotations of this field
          */
-        @Override public AnnotationsAttribute.Annotation[]
+        @Override public Annotation[]
         getAnnotations(boolean runtimeVisible) {
 
             AnnotationsAttribute aa = ClassFile.this.getAnnotationsAttribute(runtimeVisible, this.attributes);
-            if (aa == null) return new AnnotationsAttribute.Annotation[0];
+            if (aa == null) return new Annotation[0];
 
-            return (AnnotationsAttribute.Annotation[]) aa.annotations.toArray(
-                new AnnotationsAttribute.Annotation[aa.annotations.size()]
-            );
+            return (Annotation[]) aa.annotations.toArray(new Annotation[aa.annotations.size()]);
         }
 
         /**
@@ -1731,9 +1839,9 @@ class ClassFile implements Annotatable {
 
         @Override public void
         addAnnotationsAttributeEntry(
-            boolean                                       runtimeVisible,
-            String                                        fieldDescriptor,
-            Map<Short, AnnotationsAttribute.ElementValue> elementValuePairs
+            boolean                            runtimeVisible,
+            String                             fieldDescriptor,
+            Map<Short, ClassFile.ElementValue> elementValuePairs
         ) {
             ClassFile.this.addAnnotationsAttributeEntry(
                 runtimeVisible,
@@ -1829,6 +1937,9 @@ class ClassFile implements Annotatable {
         if ("SourceFile".equals(attributeName)) {
             result = SourceFileAttribute.loadBody(attributeNameIndex, bdis);
         } else
+        if ("StackMapTable".equals(attributeName)) {
+            result = StackMapTableAttribute.loadBody(attributeNameIndex, bdis);
+        } else
         if ("LineNumberTable".equals(attributeName)) {
             result = LineNumberTableAttribute.loadBody(attributeNameIndex, bdis);
         } else
@@ -1837,6 +1948,9 @@ class ClassFile implements Annotatable {
         } else
         if ("Deprecated".equals(attributeName)) {
             result = DeprecatedAttribute.loadBody(attributeNameIndex, bdis);
+        } else
+        if ("AnnotationDefault".equals(attributeName)) {
+            result = AnnotationDefaultAttribute.loadBody(attributeNameIndex, bdis);
         } else
         if ("RuntimeVisibleAnnotations".equals(attributeName)) {
             result = AnnotationsAttribute.loadBody(attributeNameIndex, bdis);
@@ -1879,9 +1993,7 @@ class ClassFile implements Annotatable {
          * @return The constant value contained in this attribute
          */
         public ConstantValuePoolInfo
-        getConstantValue(ClassFile classFile) {
-            return (ConstantValuePoolInfo) classFile.getConstantPoolInfo(this.constantValueIndex);
-        }
+        getConstantValue(ClassFile classFile) { return classFile.getConstantValuePoolInfo(this.constantValueIndex); }
 
         private static AttributeInfo
         loadBody(short attributeNameIndex, DataInputStream dis) throws IOException {
@@ -1918,9 +2030,7 @@ class ClassFile implements Annotatable {
         public ConstantClassInfo[]
         getExceptions(ClassFile classFile) {
             ConstantClassInfo[] es = new ConstantClassInfo[this.exceptionIndexes.length];
-            for (int i = 0; i < es.length; i++) {
-                es[i] = (ConstantClassInfo) classFile.getConstantPoolInfo(this.exceptionIndexes[i]);
-            }
+            for (int i = 0; i < es.length; i++) es[i] = classFile.getConstantClassInfo(this.exceptionIndexes[i]);
             return es;
         }
 
@@ -1965,8 +2075,8 @@ class ClassFile implements Annotatable {
         private static AttributeInfo
         loadBody(short attributeNameIndex, DataInputStream dis) throws IOException {
 
-            Entry[] ics = new Entry[dis.readShort()]; // number_of_classes
-            for (short i = 0; i < ics.length; ++i) {  // classes
+            Entry[] ics = new Entry[dis.readUnsignedShort()]; // number_of_classes
+            for (short i = 0; i < ics.length; ++i) {          // classes
                 ics[i] = new InnerClassesAttribute.Entry(
                     dis.readShort(), // innerClassInfoIndex
                     dis.readShort(), // outerClassInfoIndex
@@ -2022,29 +2132,27 @@ class ClassFile implements Annotatable {
     public static
     class AnnotationsAttribute extends AttributeInfo {
 
-        private final List<AnnotationsAttribute.Annotation> annotations;
+        private final List<Annotation> annotations;
 
         AnnotationsAttribute(short attributeNameIndex) {
             super(attributeNameIndex);
             this.annotations = new ArrayList<Annotation>();
         }
-        AnnotationsAttribute(short attributeNameIndex, AnnotationsAttribute.Annotation[] annotations) {
+        AnnotationsAttribute(short attributeNameIndex, Annotation[] annotations) {
             super(attributeNameIndex);
             this.annotations = new ArrayList<Annotation>(Arrays.asList(annotations));
         }
 
         /**
-         * @return The {@link AnnotationsAttribute.Annotation}s contained in this {@link AnnotationsAttribute}, see
-         *         JVMS8 4.7.16/17
+         * @return The {@link Annotation}s contained in this {@link AnnotationsAttribute}, see JVMS8 4.7.16/17
          */
-        public List<AnnotationsAttribute.Annotation>
+        public List<Annotation>
         getAnnotations() { return this.annotations; }
 
         private static AttributeInfo
         loadBody(short attributeNameIndex, DataInputStream dis) throws IOException {
 
-            AnnotationsAttribute.Annotation[]
-            as = new AnnotationsAttribute.Annotation[dis.readShort()]; // num_annotations
+            Annotation[] as = new Annotation[dis.readUnsignedShort()]; // num_annotations
             for (short i = 0; i < as.length; ++i) {                    // annotations[num_annotations]
                 as[i] = AnnotationsAttribute.loadAnnotation(dis);
             }
@@ -2052,297 +2160,29 @@ class ClassFile implements Annotatable {
             return new AnnotationsAttribute(attributeNameIndex, as);
         }
 
-        private static AnnotationsAttribute.Annotation
+        private static Annotation
         loadAnnotation(DataInputStream dis) throws IOException {
-            return new AnnotationsAttribute.Annotation(
+            return new Annotation(
                 dis.readShort(),                                // type_index
                 AnnotationsAttribute.loadElementValuePairs(dis) // num_element_value_pairs, element_value_pairs
             );
         }
 
-        private static Map<Short, AnnotationsAttribute.ElementValue>
+        private static Map<Short, ClassFile.ElementValue>
         loadElementValuePairs(DataInputStream dis) throws IOException {
 
-            short numElementaluePairs = dis.readShort(); // nul_element_value_pairs
+            int numElementaluePairs = dis.readUnsignedShort(); // nul_element_value_pairs
             if (numElementaluePairs == 0) return Collections.emptyMap();
 
-            Map<Short, AnnotationsAttribute.ElementValue>
-            result = new HashMap<Short, AnnotationsAttribute.ElementValue>();
+            Map<Short, ClassFile.ElementValue> result = new HashMap<Short, ClassFile.ElementValue>();
             for (int i = 0; i < numElementaluePairs; i++) {
                 result.put(
-                    dis.readShort(),                           // element_name_index
-                    AnnotationsAttribute.loadElementValue(dis) // value
+                    dis.readShort(),                // element_name_index
+                    ClassFile.loadElementValue(dis) // value
                 );
             }
 
             return result;
-        }
-
-        private static AnnotationsAttribute.ElementValue
-        loadElementValue(DataInputStream dis) throws IOException {
-
-            byte tag = dis.readByte(); // tag
-            switch (tag) {
-
-            case 'B': return new ByteElementValue(dis.readShort());
-            case 'C': return new CharElementValue(dis.readShort());
-            case 'D': return new DoubleElementValue(dis.readShort());
-            case 'F': return new FloatElementValue(dis.readShort());
-            case 'I': return new IntElementValue(dis.readShort());
-            case 'J': return new LongElementValue(dis.readShort());
-            case 'S': return new ShortElementValue(dis.readShort());
-            case 'Z': return new BooleanElementValue(dis.readShort());
-            case 's': return new StringElementValue(dis.readShort());
-            case 'e': return new EnumConstValue(dis.readShort(), dis.readShort());
-            case 'c': return new ClassElementValue(dis.readShort());
-            case '@': return AnnotationsAttribute.loadAnnotation(dis);
-
-            case '[':
-                short numValues = dis.readShort();                          // num_values
-
-                AnnotationsAttribute.ElementValue[] values = new AnnotationsAttribute.ElementValue[numValues & 0xffff];
-                for (int i = 0; i < numValues; i++) {
-                    values[i] = AnnotationsAttribute.loadElementValue(dis); // values[num_values]
-                }
-                return new ArrayElementValue(values);
-
-            default:
-                throw new ClassFileException("Invalid element-value-pair tag '" + (char) tag + "'");
-            }
-        }
-
-        /**
-         * Representation of the "element_value" structure (see JVMS8 4.7.16.1).
-         */
-        public
-        interface ElementValue {
-
-            /**
-             * @return The "tag" byte to use when storing this "value" in an "element_value" structure
-             */
-            byte getTag();
-
-            /**
-             * Writes this element value in an element-value-type dependent way; see JVMS8 4.7.16.1. The "tag" byte is
-             * s<em>not</em> part of this writing!
-             */
-            void store(DataOutputStream dos) throws IOException;
-
-            /**
-             * Invokes the respective method of the {@link AnnotationsAttribute.ElementValue.Visitor}.
-             */
-            @Nullable <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX;
-
-            /**
-             * The visitor interface for the implementation of the "visitor" pattern.
-             *
-             * @param <R>  The type of the object that the "{@code visit*()}" methods return
-             * @param <EX> The type of the exception that the "{@code visit*()}" methods may throw
-             */
-            public
-            interface Visitor<R, EX extends Throwable> extends ConstantElementValue.Visitor<R, EX> {
-
-                // SUPPRESS CHECKSTYLE JavadocMethod:3
-                R visitAnnotation(AnnotationsAttribute.Annotation subject) throws EX;
-                R visitArrayElementValue(ArrayElementValue subject) throws EX;
-                R visitEnumConstValue(EnumConstValue subject) throws EX;
-            }
-        }
-
-        /**
-         * Convenience class for element values that are constants (as opposed to annotations, enum constants and
-         * arrays).
-         */
-        public abstract static
-        class ConstantElementValue implements AnnotationsAttribute.ElementValue {
-
-            private final byte tag;
-
-            /**
-             * The index of the constant pool entry that holds the constant value for this annotation element.
-             */
-            public final short constantValueIndex;
-
-            public
-            ConstantElementValue(byte tag, short constantValueIndex) {
-                this.tag                = tag;
-                this.constantValueIndex = constantValueIndex;
-            }
-
-            @Override public byte
-            getTag() { return this.tag; }
-
-            @Override public void
-            store(DataOutputStream dos) throws IOException {
-                dos.writeShort(this.constantValueIndex); // const_value_index
-            }
-
-            @Override @Nullable public <R, EX extends Throwable> R
-            accept(AnnotationsAttribute.ElementValue.Visitor<R, EX> visitor) throws EX {
-                return this.accept((ConstantElementValue.Visitor<R, EX>) visitor);
-            }
-
-            /**
-             * Invokes the respective method of the {@link ConstantElementValue.Visitor}.
-             */
-            @Nullable protected abstract <R, EX extends Throwable> R
-            accept(ConstantElementValue.Visitor<R, EX> visitor) throws EX;
-
-            /**
-             * The visitor interface for the implementation of the "visitor" pattern.
-             *
-             * @param <R>  The type of the object that the "{@code visit*()}" methods return
-             * @param <EX> The type of the exception that the "{@code visit*()}" methods may throw
-             */
-            public
-            interface Visitor<R, EX extends Throwable> {
-
-                // SUPPRESS CHECKSTYLE JavadocMethod:10
-                R visitBooleanElementValue(BooleanElementValue subject) throws EX;
-                R visitByteElementValue(ByteElementValue subject) throws EX;
-                R visitCharElementValue(CharElementValue subject) throws EX;
-                R visitClassElementValue(ClassElementValue subject) throws EX;
-                R visitDoubleElementValue(DoubleElementValue subject) throws EX;
-                R visitFloatElementValue(FloatElementValue subject) throws EX;
-                R visitIntElementValue(IntElementValue subject) throws EX;
-                R visitLongElementValue(LongElementValue subject) throws EX;
-                R visitShortElementValue(ShortElementValue subject) throws EX;
-                R visitStringElementValue(StringElementValue subject) throws EX;
-            }
-        }
-
-        // SUPPRESS CHECKSTYLE LineLength|JavadocType:50
-        public static final
-        class ByteElementValue extends ConstantElementValue {
-            public                                          ByteElementValue(short constantValueIndex) { super((byte) 'B', constantValueIndex); }
-            @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX   { return visitor.visitByteElementValue(this); }
-        }
-        public static final
-        class CharElementValue extends ConstantElementValue {
-            public                                          CharElementValue(short constantValueIndex) { super((byte) 'C', constantValueIndex); }
-            @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX   { return visitor.visitCharElementValue(this); }
-        }
-        public static final
-        class DoubleElementValue extends ConstantElementValue {
-            public                                          DoubleElementValue(short constantValueIndex) { super((byte) 'D', constantValueIndex); }
-            @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX     { return visitor.visitDoubleElementValue(this); }
-        }
-        public static final
-        class FloatElementValue extends ConstantElementValue {
-            public                                          FloatElementValue(short constantValueIndex) { super((byte) 'F', constantValueIndex); }
-            @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX    { return visitor.visitFloatElementValue(this); }
-        }
-        public static final
-        class IntElementValue extends ConstantElementValue {
-            public                                          IntElementValue(short constantValueIndex) { super((byte) 'I', constantValueIndex); }
-            @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX  { return visitor.visitIntElementValue(this); }
-        }
-        public static final
-        class LongElementValue extends ConstantElementValue {
-            public                                          LongElementValue(short constantValueIndex) { super((byte) 'J', constantValueIndex); }
-            @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX   { return visitor.visitLongElementValue(this); }
-        }
-        public static final
-        class ShortElementValue extends ConstantElementValue {
-            public                                          ShortElementValue(short constantValueIndex) { super((byte) 'S', constantValueIndex); }
-            @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX    { return visitor.visitShortElementValue(this); }
-        }
-        public static final
-        class BooleanElementValue extends ConstantElementValue {
-            public                                          BooleanElementValue(short constantValueIndex) { super((byte) 'Z', constantValueIndex); }
-            @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX      { return visitor.visitBooleanElementValue(this); }
-        }
-        public static final
-        class StringElementValue extends ConstantElementValue {
-            public                                          StringElementValue(short constantValueIndex) { super((byte) 's', constantValueIndex); }
-            @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX     { return visitor.visitStringElementValue(this); }
-        }
-        public static final
-        class ClassElementValue extends ConstantElementValue {
-
-            /**
-             * @param constantValueIndex Index of a constant pool entry that is a CONSTANT_Utf8_info structure
-             *                           representing a return descriptor
-             */
-            public
-            ClassElementValue(short constantValueIndex) { super((byte) 'c', constantValueIndex); }
-
-            @Override protected <R, EX extends Throwable> R
-            accept(Visitor<R, EX> visitor) throws EX { return visitor.visitClassElementValue(this); }
-        }
-
-        /**
-         * Representation of the "enum_const_value" element in the "element_value" structure.
-         */
-        public static final
-        class EnumConstValue implements AnnotationsAttribute.ElementValue {
-
-            /**
-             * {@code type_name_index}; index of a {@link ConstantUtf8Info} representing a field descriptor.
-             */
-            public final short typeNameIndex;
-
-            /**
-             * {@code const_name_index}; index of a {@link ConstantUtf8Info} giveing the simple name of the enum
-             * constant represented by this {@code element_value} structure.
-             */
-            public final short constNameIndex;
-
-            /**
-             * @param typeNameIndex  {@code type_name_index}; index of a {@link ConstantUtf8Info} representing a field
-             *                       descriptor
-             * @param constNameIndex {@code const_name_index}; index of a {@link ConstantUtf8Info} giveing the simple
-             *                       name of the enum constant represented by this {@code element_value} structure
-             */
-            public
-            EnumConstValue(short typeNameIndex, short constNameIndex) {
-                this.typeNameIndex  = typeNameIndex;
-                this.constNameIndex = constNameIndex;
-            }
-
-            @Override public byte
-            getTag() { return 'e'; }
-
-            @Override public void
-            store(DataOutputStream dos) throws IOException {
-                dos.writeShort(this.typeNameIndex);  // type_name_index
-                dos.writeShort(this.constNameIndex); // const_name_index
-            }
-
-            @Override @Nullable public <R, EX extends Throwable> R
-            accept(AnnotationsAttribute.ElementValue.Visitor<R, EX> visitor)
-            throws EX { return visitor.visitEnumConstValue(this); }
-        }
-
-        /**
-         * Representation of the "array_value" structure.
-         */
-        public static final
-        class ArrayElementValue implements AnnotationsAttribute.ElementValue {
-
-            /**
-             * The values of the elements of this array element value.
-             */
-            public final AnnotationsAttribute.ElementValue[] values;
-
-            public
-            ArrayElementValue(AnnotationsAttribute.ElementValue[] values) { this.values = values; }
-
-            @Override public byte
-            getTag() { return '['; }
-
-            @Override public void
-            store(DataOutputStream dos) throws IOException {
-                dos.writeShort(this.values.length);                        // num_values
-                for (AnnotationsAttribute.ElementValue ev : this.values) { // values[num_values]
-                    dos.writeByte(ev.getTag()); // tag
-                    ev.store(dos);              // value
-                }
-            }
-
-            @Override @Nullable public <R, EX extends Throwable> R
-            accept(AnnotationsAttribute.ElementValue.Visitor<R, EX> visitor)
-            throws EX { return visitor.visitArrayElementValue(this); }
         }
 
         // Implement "AttributeInfo".
@@ -2350,65 +2190,7 @@ class ClassFile implements Annotatable {
         storeBody(DataOutputStream dos) throws IOException {
 
             dos.writeShort(this.annotations.size()); // num_annotations
-            for (AnnotationsAttribute.Annotation a : this.annotations) a.store(dos);
-        }
-
-        /**
-         * The structure of the {@code classes} array as described in JVMS7 4.7.6.
-         */
-        public static
-        class Annotation implements AnnotationsAttribute.ElementValue {
-
-            /**
-             * The "type_index" field of the {@code annotation} type as described in JVMS8 4.7.16. The constant pool
-             * entry at that index must be a CONSTANT_Utf8_info structure representing a field descriptor.
-             */
-            public final short typeIndex;
-
-            /**
-             * The "element_value_pairs" field of the {@code annotation} type as described in JVMS8 4.7.16.
-             * Key is the "{@code element_name_index}" (a constant pool index to a {@link ConstantUtf8Info});
-             * value is an {@link AnnotationsAttribute.ElementValue}.
-             */
-            public final Map<Short, AnnotationsAttribute.ElementValue> elementValuePairs;
-
-            /**
-             * @param typeIndex         UTF 8 constant pool entry index; field descriptor
-             * @param elementValuePairs Maps element name index ({@link ConstantUtf8Info}) to {@link
-             *                          AnnotationsAttribute.ElementValue}s
-             */
-            public
-            Annotation(short typeIndex, Map<Short, AnnotationsAttribute.ElementValue> elementValuePairs) {
-                this.typeIndex         = typeIndex;
-                this.elementValuePairs = elementValuePairs;
-            }
-
-            @Override public byte
-            getTag() { return '@'; }
-
-            @Override public void
-            store(DataOutputStream dos) throws IOException {
-
-                // SUPPRESS CHECKSTYLE LineLength:4
-                dos.writeShort(this.typeIndex);                // type_index
-                dos.writeShort(this.elementValuePairs.size()); // num_element_value_pairs
-                for (                                          // element_value_pairs[num_element_value_pairs]
-                    Map.Entry<Short, AnnotationsAttribute.ElementValue> evps
-                    : this.elementValuePairs.entrySet()
-                ) {
-                    Short elementNameIndex = (Short) evps.getKey();
-                    AnnotationsAttribute.ElementValue
-                    elementValue = (AnnotationsAttribute.ElementValue) evps.getValue();
-
-                    dos.writeShort(elementNameIndex);     // element_name_index
-                    dos.writeByte(elementValue.getTag()); // value.tag
-                    elementValue.store(dos);              // value.value
-                }
-            }
-
-            @Override @Nullable public <R, EX extends Throwable> R
-            accept(AnnotationsAttribute.ElementValue.Visitor<R, EX> visitor)
-            throws EX { return visitor.visitAnnotation(this); }
+            for (Annotation a : this.annotations) a.store(dos);
         }
     }
 
@@ -2478,8 +2260,8 @@ class ClassFile implements Annotatable {
         private static AttributeInfo
         loadBody(short attributeNameIndex, DataInputStream dis) throws IOException {
 
-            Entry[] lntes = new Entry[dis.readShort()]; // line_number_table_length
-            for (short i = 0; i < lntes.length; ++i) {  // line_number_table
+            Entry[] lntes = new Entry[dis.readUnsignedShort()]; // line_number_table_length
+            for (short i = 0; i < lntes.length; ++i) {          // line_number_table
                 lntes[i] = new LineNumberTableAttribute.Entry(
                     dis.readShort(), // startPC
                     dis.readShort()  // lineNumber
@@ -2493,7 +2275,7 @@ class ClassFile implements Annotatable {
         storeBody(DataOutputStream dos) throws IOException {
             dos.writeShort(this.entries.length);            // line_number_table_length
             for (Entry entry : this.entries) {
-                dos.writeShort(entry.startPC);
+                dos.writeShort(entry.startPc);
                 dos.writeShort(entry.lineNumber);
             }
         }
@@ -2507,14 +2289,14 @@ class ClassFile implements Annotatable {
             /**
              * The fields of the entries in the {@code line_number_table}, as described in JVMS7 4.7.12.
              */
-            public final short startPC, lineNumber;
+            public final short startPc, lineNumber;
 
             /**
              * @param lineNumber 1...65535
              */
             public
             Entry(short startPc, short lineNumber) {
-                this.startPC    = startPc;
+                this.startPc    = startPc;
                 this.lineNumber = lineNumber;
             }
         }
@@ -2536,8 +2318,8 @@ class ClassFile implements Annotatable {
 
         private static AttributeInfo
         loadBody(short attributeNameIndex, DataInputStream dis) throws IOException {
-            Entry[] lvtes = new Entry[dis.readShort()]; // local_variable_table_length
-            for (short i = 0; i < lvtes.length; ++i) {  // local_variable_table
+            Entry[] lvtes = new Entry[dis.readUnsignedShort()]; // local_variable_table_length
+            for (short i = 0; i < lvtes.length; ++i) {          // local_variable_table
                 lvtes[i] = new LocalVariableTableAttribute.Entry(
                     dis.readShort(), // startPC
                     dis.readShort(), // length
@@ -2555,7 +2337,7 @@ class ClassFile implements Annotatable {
         storeBody(DataOutputStream dos) throws IOException {
             dos.writeShort(this.entries.length); // local_variable_table_length
             for (Entry lnte : this.entries) {    // local_variable_table
-                dos.writeShort(lnte.startPC);         // start_pc;
+                dos.writeShort(lnte.startPc);         // start_pc;
                 dos.writeShort(lnte.length);          // length
                 dos.writeShort(lnte.nameIndex);       // name_index
                 dos.writeShort(lnte.descriptorIndex); // descriptor_index
@@ -2572,11 +2354,11 @@ class ClassFile implements Annotatable {
             /**
              * The fields of the entries in the {@code local_variable_table}, as described in JVMS7 4.7.13.
              */
-            public final short startPC, length, nameIndex, descriptorIndex, index;
+            public final short startPc, length, nameIndex, descriptorIndex, index;
 
             public
             Entry(short startPc, short length, short nameIndex, short descriptorIndex, short index) {
-                this.startPC         = startPc;
+                this.startPc         = startPc;
                 this.length          = length;
                 this.nameIndex       = nameIndex;
                 this.descriptorIndex = descriptorIndex;
@@ -2603,6 +2385,36 @@ class ClassFile implements Annotatable {
         @Override protected void
         storeBody(DataOutputStream dos) {
             ;
+        }
+    }
+
+    /**
+     * Representation of an {@code AnnotationDefault} attribute (see JVMS8 4.7.22).
+     */
+    public static
+    class AnnotationDefaultAttribute extends AttributeInfo {
+
+        private final ElementValue elementValue;
+
+        public
+        AnnotationDefaultAttribute(short attributeNameIndex, ElementValue elementValue) {
+            super(attributeNameIndex);
+            this.elementValue = elementValue;
+        }
+
+        private static AttributeInfo
+        loadBody(short attributeNameIndex, DataInputStream dis) throws IOException {
+            return new AnnotationDefaultAttribute(
+                attributeNameIndex,
+                ClassFile.loadElementValue(dis)
+            );
+        }
+
+        // Implement "AttributeInfo".
+        @Override protected void
+        storeBody(DataOutputStream dos) throws IOException {
+            dos.writeByte(this.elementValue.getTag());
+            this.elementValue.store(dos);
         }
     }
 
@@ -2637,12 +2449,12 @@ class ClassFile implements Annotatable {
         private static AttributeInfo
         loadBody(short attributeNameIndex, ClassFile classFile, DataInputStream dis) throws IOException {
 
-            final short  maxStack  = dis.readShort();                              // max_stack
-            final short  maxLocals = dis.readShort();                              // max_locals
-            final byte[] code      = ClassFile.readLengthAndBytes(dis);            // code_length, code
+            final short  maxStack  = dis.readShort();                                      // max_stack
+            final short  maxLocals = dis.readShort();                                      // max_locals
+            final byte[] code      = ClassFile.readLengthAndBytes(dis);                    // code_length, code
 
-            ExceptionTableEntry[] etes = new ExceptionTableEntry[dis.readShort()]; // exception_table_length
-            for (int i = 0; i < etes.length; ++i) {                                // exception_table
+            ExceptionTableEntry[] etes = new ExceptionTableEntry[dis.readUnsignedShort()]; // exception_table_length
+            for (int i = 0; i < etes.length; ++i) {                                        // exception_table
                 etes[i] = new ExceptionTableEntry(
                     dis.readShort(), // startPC
                     dis.readShort(), // endPC
@@ -2651,8 +2463,8 @@ class ClassFile implements Annotatable {
                 );
             }
 
-            AttributeInfo[] attributes = new AttributeInfo[dis.readShort()];       // attributes_count
-            for (int i = 0; i < attributes.length; ++i) {                          // attributes
+            AttributeInfo[] attributes = new AttributeInfo[dis.readUnsignedShort()];       // attributes_count
+            for (int i = 0; i < attributes.length; ++i) {                                  // attributes
                 attributes[i] = classFile.loadAttribute(dis);
             }
 
@@ -2697,6 +2509,755 @@ class ClassFile implements Annotatable {
                 this.handlerPc = handlerPc;
                 this.catchType = catchType;
             }
+        }
+    }
+
+    /**
+     * Representation of an unmodifiable {@code StackMapTable} attribute, as read from a class file.
+     */
+    public static
+    class StackMapTableAttribute extends AttributeInfo {
+
+        private final StackMapFrame[] entries;
+
+        StackMapTableAttribute(short attributeNameIndex, StackMapFrame[] entries) {
+            super(attributeNameIndex);
+            this.entries = entries;
+        }
+
+        public abstract static
+        class StackMapFrame {
+
+            /**
+             * The {@code offset_delta} value that is implicit to all stack map frames; see JVMS8 4.7.4.
+             */
+            final int offsetDelta;
+
+            public StackMapFrame(int offsetDelta) { this.offsetDelta = offsetDelta; }
+
+            /**
+             * Invokes the "right" {@code visit...()} method of the {@link StackMapFrameVisitor}.
+             */
+            public abstract <T> T accept(StackMapFrameVisitor<T> smfv);
+
+            public abstract void store(DataOutputStream dos) throws IOException;
+        }
+
+        /**
+         * @param <T> The return type of {@link
+         *            StackMapFrame#accept(ClassFile.StackMapTableAttribute.StackMapFrameVisitor)}
+         * @see       StackMapFrame#accept(ClassFile.StackMapTableAttribute.StackMapFrameVisitor)
+         */
+        public
+        interface StackMapFrameVisitor<T> {
+            T visitSameFrame(SameFrame sf); // SUPPRESS CHECKSTYLE JavadocMethod:6
+            T visitSameLocals1StackItemFrame(SameLocals1StackItemFrame sl1sif);
+            T visitSameLocals1StackItemFrameExtended(SameLocals1StackItemFrameExtended sl1sife);
+            T visitChopFrame(ChopFrame cf);
+            T visitSameFrameExtended(SameFrameExtended sfe);
+            T visitAppendFrame(AppendFrame af);
+            T visitFullFrame(FullFrame ff);
+        }
+
+        /**
+         * Representation of the {@code same_frame} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class SameFrame extends StackMapFrame {
+            public SameFrame(int offsetDelta) { super(offsetDelta); }
+
+            @Override public void
+            store(DataOutputStream dos) throws IOException { dos.writeByte(this.offsetDelta); }
+
+            @Override public <T> T
+            accept(StackMapFrameVisitor<T> smfv) { return smfv.visitSameFrame(this); }
+
+            @Override public String
+            toString() { return "same_frame"; }
+        }
+
+        /**
+         * Representation of the {@code same_locals_1_stack_item_frame} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class SameLocals1StackItemFrame extends StackMapFrame {
+            public final VerificationTypeInfo stack;
+
+            public
+            SameLocals1StackItemFrame(int offsetDelta, VerificationTypeInfo stack) {
+                super(offsetDelta);
+                this.stack = stack;
+            }
+
+            @Override public void
+            store(DataOutputStream dos) throws IOException {
+                dos.writeByte(this.offsetDelta + 64);
+                this.stack.store(dos);
+            }
+
+            @Override public <T> T
+            accept(StackMapFrameVisitor<T> smfv) { return smfv.visitSameLocals1StackItemFrame(this); }
+
+            @Override public String
+            toString() {
+                return "same_locals_1_stack_item_frame(stack=" + this.stack + ")";
+            }
+        }
+
+        /**
+         * Representation of the {@code same_locals_1_stack_item_frame_extended} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class SameLocals1StackItemFrameExtended extends StackMapFrame {
+            public final VerificationTypeInfo stack;
+
+            public
+            SameLocals1StackItemFrameExtended(int offsetDelta, VerificationTypeInfo stack) {
+                super(offsetDelta);
+                this.stack = stack;
+            }
+
+            @Override public void
+            store(DataOutputStream dos) throws IOException {
+                dos.writeByte(247);
+                dos.writeShort(this.offsetDelta);
+                this.stack.store(dos);
+            }
+
+            @Override public <T> T
+            accept(StackMapFrameVisitor<T> smfv) { return smfv.visitSameLocals1StackItemFrameExtended(this); }
+
+            @Override public String
+            toString() {
+                return (
+                    "same_locals_1_stack_item_frame_extended(offsetDelta="
+                    + this.offsetDelta
+                    + ", stack="
+                    + this.stack
+                    + ")"
+                );
+            }
+        }
+
+        /**
+         * Representation of the {@code chop_frame} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class ChopFrame extends StackMapFrame {
+            public final int k;
+
+            public
+            ChopFrame(int offsetDelta, int k) { super(offsetDelta); this.k = k; }
+
+            @Override public void
+            store(DataOutputStream dos) throws IOException {
+                dos.writeByte(251 - this.k);
+                dos.writeShort(this.offsetDelta);
+            }
+
+            @Override public <T> T
+            accept(StackMapFrameVisitor<T> smfv) { return smfv.visitChopFrame(this); }
+
+            @Override public String
+            toString() { return "chop_frame"; }
+        }
+
+        /**
+         * Representation of the {@code same_frame_extended} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class SameFrameExtended extends StackMapFrame {
+
+            public
+            SameFrameExtended(int offsetDelta) { super(offsetDelta); }
+
+            @Override public void
+            store(DataOutputStream dos) throws IOException {
+                dos.writeByte(251);
+                dos.writeShort(this.offsetDelta);
+            }
+
+            @Override public <T> T
+            accept(StackMapFrameVisitor<T> smfv) { return smfv.visitSameFrameExtended(this); }
+
+            @Override public String
+            toString() { return "same_frame_extended"; }
+        }
+
+        /**
+         * Representation of the {@code append_frame} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class AppendFrame extends StackMapFrame {
+            public final VerificationTypeInfo[] locals;
+
+            public
+            AppendFrame(int offsetDelta, VerificationTypeInfo[] locals) {
+                super(offsetDelta);
+                this.locals = locals;
+            }
+
+            @Override public void
+            store(DataOutputStream dos) throws IOException {
+                dos.writeByte(this.locals.length + 251);
+                dos.writeShort(this.offsetDelta);
+                StackMapTableAttribute.storeVerificationTypeInfos(this.locals, dos);
+            }
+
+            @Override public <T> T
+            accept(StackMapFrameVisitor<T> smfv) { return smfv.visitAppendFrame(this); }
+
+            @Override public String
+            toString() {
+                return "append_frame(locals=" + Arrays.toString(this.locals) + ")";
+            }
+        }
+
+        /**
+         * Representation of the {@code full_frame} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class FullFrame extends StackMapFrame {
+            public final VerificationTypeInfo[] locals;
+            public final VerificationTypeInfo[] stack;
+
+            public
+            FullFrame(int offsetDelta, VerificationTypeInfo[] locals, VerificationTypeInfo[] stack) {
+                super(offsetDelta);
+                this.locals = locals;
+                this.stack  = stack;
+            }
+
+            @Override public void
+            store(DataOutputStream dos) throws IOException {
+                dos.writeByte(255);
+                dos.writeShort(this.offsetDelta);
+                dos.writeShort(this.locals.length);
+                StackMapTableAttribute.storeVerificationTypeInfos(this.locals, dos);
+                dos.writeShort(this.stack.length);
+                StackMapTableAttribute.storeVerificationTypeInfos(this.stack, dos);
+            }
+
+            @Override public <T> T
+            accept(StackMapFrameVisitor<T> smfv) { return smfv.visitFullFrame(this); }
+
+            @Override public String
+            toString() {
+                return (
+                    "full_frame(offsetDelta="
+                    + this.offsetDelta
+                    + ", locals="
+                    + Arrays.toString(this.locals)
+                    + ", stack="
+                    + Arrays.toString(this.stack)
+                    + ")"
+                );
+            }
+        }
+
+        /**
+         * Representation of the {@code verification_type_info} union; see JVMS8 4.7.4.
+         */
+        public
+        interface VerificationTypeInfo {
+            void store(DataOutputStream dos) throws IOException;
+        }
+
+        /**
+         * Representation of the {@code top_variable_info} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class TopVariableInfo implements VerificationTypeInfo {
+
+            @Override public void   store(DataOutputStream dos) throws IOException { dos.writeByte(0); }
+            @Override public String toString()                                     { return "top";     }
+        }
+
+        /**
+         * Representation of the {@code integer_variable_info} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class IntegerVariableInfo implements VerificationTypeInfo {
+            @Override public void   store(DataOutputStream dos) throws IOException { dos.writeByte(1); }
+            @Override public String toString()                                     { return "int";     }
+        }
+
+        /**
+         * Representation of the {@code float_variable_info} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class FloatVariableInfo implements VerificationTypeInfo {
+            @Override public void   store(DataOutputStream dos) throws IOException { dos.writeByte(2); }
+            @Override public String toString()                                     { return "float";   }
+        }
+
+        /**
+         * Representation of the {@code double_variable_info} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class DoubleVariableInfo implements VerificationTypeInfo {
+            @Override public void   store(DataOutputStream dos) throws IOException { dos.writeByte(3); }
+            @Override public String toString()                                     { return "double";  }
+        }
+
+        /**
+         * Representation of the {@code long_variable_info} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class LongVariableInfo implements VerificationTypeInfo {
+            @Override public void   store(DataOutputStream dos) throws IOException { dos.writeByte(4); }
+            @Override public String toString()                                     { return "long";    }
+        }
+
+        /**
+         * Representation of the {@code null_variable_info} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class NullVariableInfo implements VerificationTypeInfo {
+            @Override public void   store(DataOutputStream dos) throws IOException { dos.writeByte(5); }
+            @Override public String toString()                                     { return "null";    }
+        }
+
+        /**
+         * Representation of the {@code uninitialized_this_variable_info} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class UninitializedThisVariableInfo implements VerificationTypeInfo {
+            @Override public void   store(DataOutputStream dos) throws IOException { dos.writeByte(6);           }
+            @Override public String toString()                                     { return "uninitializedThis"; }
+        }
+
+        /**
+         * Representation of the {@code object_variable_info} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class ObjectVariableInfo implements VerificationTypeInfo {
+
+            private final ConstantClassInfo constantClassInfo;
+
+            public
+            ObjectVariableInfo(ConstantClassInfo constantClassInfo) { this.constantClassInfo = constantClassInfo; }
+
+            @Override public void
+            store(DataOutputStream dos) throws IOException {
+                dos.writeByte(7);
+                dos.writeShort(this.constantClassInfo.nameIndex);
+            }
+
+            @Override public String
+            toString() { return this.constantClassInfo.toString(); }
+        }
+
+        /**
+         * Representation of the {@code uninitialized_variable_info} structure; see JVMS8 4.7.4.
+         */
+        public static
+        class UninitializedVariableInfo implements VerificationTypeInfo {
+
+            private final short offset;
+
+            public UninitializedVariableInfo(short offset) { this.offset = offset; }
+
+            @Override public void
+            store(DataOutputStream dos) throws IOException {
+                dos.writeByte(8);
+                dos.writeShort(this.offset);
+            }
+
+            @Override public String
+            toString() { return "uninitialized(offset=" + this.offset + ")"; }
+        }
+
+        private static AttributeInfo
+        loadBody(short attributeNameIndex, DataInputStream dis) throws IOException {
+
+            StackMapFrame[] entries = new StackMapFrame[dis.readUnsignedShort()]; // number_of_entries
+            for (int i = 0; i < entries.length; ++i) {                            // entries
+                int frameType = dis.readUnsignedByte();
+
+                StackMapFrame e = (
+                    frameType <= 63 ? new SameFrame(frameType) :
+                    frameType <= 127 ? new SameLocals1StackItemFrame(frameType - 64, StackMapTableAttribute.loadVerificationTypeInfo(dis)) : // SUPPRESS CHECKSTYLE LineLength:5
+                    frameType <= 246 ? null :
+                    frameType == 247 ? new SameLocals1StackItemFrameExtended(dis.readUnsignedShort(), StackMapTableAttribute.loadVerificationTypeInfo(dis)) :
+                    frameType <= 250 ? new ChopFrame(dis.readUnsignedShort(), 251 - frameType) :
+                    frameType == 251 ? new SameFrameExtended(dis.readUnsignedShort()) :
+                    frameType <= 254 ? new AppendFrame(dis.readUnsignedShort(), StackMapTableAttribute.loadVerificationTypeInfos(dis, frameType - 251)) :
+                    frameType == 255 ? new FullFrame(
+                        dis.readUnsignedShort(),                                                        // offsetDelta
+                        StackMapTableAttribute.loadVerificationTypeInfos(dis, dis.readUnsignedShort()), // locals
+                        StackMapTableAttribute.loadVerificationTypeInfos(dis, dis.readUnsignedShort())  // stack
+                    ) :
+                    null
+                );
+                if (e == null) throw new ClassFileException("Invalid stack_map_frame frame_type " + frameType);
+
+                entries[i] = e;
+            }
+
+            return new StackMapTableAttribute(
+                attributeNameIndex, // attributeNameIndex
+                entries             // entries
+            );
+        }
+
+        private static void
+        storeVerificationTypeInfos(VerificationTypeInfo[] vtis, DataOutputStream dos) throws IOException {
+            for (VerificationTypeInfo vti : vtis) vti.store(dos);
+        }
+
+        private static VerificationTypeInfo[]
+        loadVerificationTypeInfos(DataInputStream dis, int number) throws IOException {
+            VerificationTypeInfo[] result = new VerificationTypeInfo[number];
+            for (int i = 0; i < number; i++) result[i] = StackMapTableAttribute.loadVerificationTypeInfo(dis);
+            return result;
+        }
+
+        private static VerificationTypeInfo
+        loadVerificationTypeInfo(DataInputStream dis) throws IOException {
+
+            int tag = 0xff & dis.readByte();
+            switch (tag) {
+
+            case 0: return new TopVariableInfo();
+            case 1: return new IntegerVariableInfo();
+            case 2: return new FloatVariableInfo();
+            case 3: return new DoubleVariableInfo();
+            case 4: return new LongVariableInfo();
+            case 5: return new NullVariableInfo();
+            case 6: return new UninitializedThisVariableInfo();
+            case 7: return new ObjectVariableInfo(new ConstantClassInfo(dis.readShort()));
+            case 8: return new UninitializedVariableInfo(dis.readShort());
+
+            default: throw new ClassFileException("Invalid verification_type_info tag " + tag);
+            }
+        }
+
+        @Override protected void
+        storeBody(DataOutputStream dos) throws IOException {
+            dos.writeShort(this.entries.length);                   // number_of_entries
+            for (StackMapFrame smf : this.entries) smf.store(dos); // entries
+        }
+    }
+
+    /**
+     * Representation of the "element_value" structure (see JVMS8 4.7.16.1).
+     */
+    public
+    interface ElementValue {
+
+        /**
+         * @return The "tag" byte to use when storing this "value" in an "element_value" structure
+         */
+        byte getTag();
+
+        /**
+         * Writes this element value in an element-value-type dependent way; see JVMS8 4.7.16.1. The "tag" byte is
+         * s<em>not</em> part of this writing!
+         */
+        void store(DataOutputStream dos) throws IOException;
+
+        /**
+         * Invokes the respective method of the {@link ClassFile.ElementValue.Visitor}.
+         */
+        @Nullable <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX;
+
+        /**
+         * The visitor interface for the implementation of the "visitor" pattern.
+         *
+         * @param <R>  The type of the object that the "{@code visit*()}" methods return
+         * @param <EX> The type of the exception that the "{@code visit*()}" methods may throw
+         */
+        public
+        interface Visitor<R, EX extends Throwable> extends ClassFile.ConstantElementValue.Visitor<R, EX> {
+
+            // SUPPRESS CHECKSTYLE JavadocMethod:3
+            R visitAnnotation(Annotation subject) throws EX;
+            R visitArrayElementValue(ArrayElementValue subject) throws EX;
+            R visitEnumConstValue(EnumConstValue subject) throws EX;
+        }
+    }
+
+    /**
+     * Convenience class for element values that are constants (as opposed to annotations, enum constants and
+     * arrays).
+     */
+    public abstract static
+    class ConstantElementValue implements ClassFile.ElementValue {
+
+        private final byte tag;
+
+        /**
+         * The index of the constant pool entry that holds the constant value for this annotation element.
+         */
+        public final short constantValueIndex;
+
+        public
+        ConstantElementValue(byte tag, short constantValueIndex) {
+            this.tag                = tag;
+            this.constantValueIndex = constantValueIndex;
+        }
+
+        @Override public byte
+        getTag() { return this.tag; }
+
+        @Override public void
+        store(DataOutputStream dos) throws IOException {
+            dos.writeShort(this.constantValueIndex); // const_value_index
+        }
+
+        @Override @Nullable public <R, EX extends Throwable> R
+        accept(ClassFile.ElementValue.Visitor<R, EX> visitor) throws EX {
+            return this.accept((ConstantElementValue.Visitor<R, EX>) visitor);
+        }
+
+        /**
+         * Invokes the respective method of the {@link ConstantElementValue.Visitor}.
+         */
+        @Nullable protected abstract <R, EX extends Throwable> R
+        accept(ConstantElementValue.Visitor<R, EX> visitor) throws EX;
+
+        /**
+         * The visitor interface for the implementation of the "visitor" pattern.
+         *
+         * @param <R>  The type of the object that the "{@code visit*()}" methods return
+         * @param <EX> The type of the exception that the "{@code visit*()}" methods may throw
+         */
+        public
+        interface Visitor<R, EX extends Throwable> {
+
+            // SUPPRESS CHECKSTYLE JavadocMethod:10
+            R visitBooleanElementValue(BooleanElementValue subject) throws EX;
+            R visitByteElementValue(ByteElementValue subject) throws EX;
+            R visitCharElementValue(CharElementValue subject) throws EX;
+            R visitClassElementValue(ClassElementValue subject) throws EX;
+            R visitDoubleElementValue(DoubleElementValue subject) throws EX;
+            R visitFloatElementValue(FloatElementValue subject) throws EX;
+            R visitIntElementValue(IntElementValue subject) throws EX;
+            R visitLongElementValue(LongElementValue subject) throws EX;
+            R visitShortElementValue(ShortElementValue subject) throws EX;
+            R visitStringElementValue(StringElementValue subject) throws EX;
+        }
+    }
+
+    // SUPPRESS CHECKSTYLE LineLength|JavadocType:50
+    public static final
+    class ByteElementValue extends ConstantElementValue {
+        public                                          ByteElementValue(short constantValueIndex) { super((byte) 'B', constantValueIndex);      }
+        @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX   { return visitor.visitByteElementValue(this); }
+    }
+    public static final
+    class CharElementValue extends ConstantElementValue {
+        public                                          CharElementValue(short constantValueIndex) { super((byte) 'C', constantValueIndex);      }
+        @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX   { return visitor.visitCharElementValue(this); }
+    }
+    public static final
+    class DoubleElementValue extends ConstantElementValue {
+        public                                          DoubleElementValue(short constantValueIndex) { super((byte) 'D', constantValueIndex);        }
+        @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX     { return visitor.visitDoubleElementValue(this); }
+    }
+    public static final
+    class FloatElementValue extends ConstantElementValue {
+        public                                          FloatElementValue(short constantValueIndex) { super((byte) 'F', constantValueIndex);       }
+        @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX    { return visitor.visitFloatElementValue(this); }
+    }
+    public static final
+    class IntElementValue extends ConstantElementValue {
+        public                                          IntElementValue(short constantValueIndex) { super((byte) 'I', constantValueIndex);     }
+        @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX  { return visitor.visitIntElementValue(this); }
+    }
+    public static final
+    class LongElementValue extends ConstantElementValue {
+        public                                          LongElementValue(short constantValueIndex) { super((byte) 'J', constantValueIndex);      }
+        @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX   { return visitor.visitLongElementValue(this); }
+    }
+    public static final
+    class ShortElementValue extends ConstantElementValue {
+        public                                          ShortElementValue(short constantValueIndex) { super((byte) 'S', constantValueIndex);       }
+        @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX    { return visitor.visitShortElementValue(this); }
+    }
+    public static final
+    class BooleanElementValue extends ConstantElementValue {
+        public                                          BooleanElementValue(short constantValueIndex) { super((byte) 'Z', constantValueIndex);         }
+        @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX      { return visitor.visitBooleanElementValue(this); }
+    }
+    public static final
+    class StringElementValue extends ConstantElementValue {
+        public                                          StringElementValue(short constantValueIndex) { super((byte) 's', constantValueIndex);        }
+        @Override protected <R, EX extends Throwable> R accept(Visitor<R, EX> visitor) throws EX     { return visitor.visitStringElementValue(this); }
+    }
+    public static final
+    class ClassElementValue extends ConstantElementValue {
+
+        /**
+         * @param constantValueIndex Index of a constant pool entry that is a CONSTANT_Utf8_info structure
+         *                           representing a return descriptor
+         */
+        public
+        ClassElementValue(short constantValueIndex) { super((byte) 'c', constantValueIndex); }
+
+        @Override protected <R, EX extends Throwable> R
+        accept(Visitor<R, EX> visitor) throws EX { return visitor.visitClassElementValue(this); }
+    }
+
+    /**
+     * Representation of the "enum_const_value" element in the "element_value" structure.
+     */
+    public static final
+    class EnumConstValue implements ClassFile.ElementValue {
+
+        /**
+         * {@code type_name_index}; index of a {@link ConstantUtf8Info} representing a field descriptor.
+         */
+        public final short typeNameIndex;
+
+        /**
+         * {@code const_name_index}; index of a {@link ConstantUtf8Info} giveing the simple name of the enum
+         * constant represented by this {@code element_value} structure.
+         */
+        public final short constNameIndex;
+
+        /**
+         * @param typeNameIndex  {@code type_name_index}; index of a {@link ConstantUtf8Info} representing a field
+         *                       descriptor
+         * @param constNameIndex {@code const_name_index}; index of a {@link ConstantUtf8Info} giveing the simple
+         *                       name of the enum constant represented by this {@code element_value} structure
+         */
+        public
+        EnumConstValue(short typeNameIndex, short constNameIndex) {
+            this.typeNameIndex  = typeNameIndex;
+            this.constNameIndex = constNameIndex;
+        }
+
+        @Override public byte
+        getTag() { return 'e'; }
+
+        @Override public void
+        store(DataOutputStream dos) throws IOException {
+            dos.writeShort(this.typeNameIndex);  // type_name_index
+            dos.writeShort(this.constNameIndex); // const_name_index
+        }
+
+        @Override @Nullable public <R, EX extends Throwable> R
+        accept(ClassFile.ElementValue.Visitor<R, EX> visitor)
+        throws EX { return visitor.visitEnumConstValue(this); }
+    }
+
+    /**
+     * Representation of the "array_value" structure.
+     */
+    public static final
+    class ArrayElementValue implements ClassFile.ElementValue {
+
+        /**
+         * The values of the elements of this array element value.
+         */
+        public final ClassFile.ElementValue[] values;
+
+        public
+        ArrayElementValue(ClassFile.ElementValue[] values) { this.values = values; }
+
+        @Override public byte
+        getTag() { return '['; }
+
+        @Override public void
+        store(DataOutputStream dos) throws IOException {
+            dos.writeShort(this.values.length);             // num_values
+            for (ClassFile.ElementValue ev : this.values) { // values[num_values]
+                dos.writeByte(ev.getTag()); // tag
+                ev.store(dos);              // value
+            }
+        }
+
+        @Override @Nullable public <R, EX extends Throwable> R
+        accept(ClassFile.ElementValue.Visitor<R, EX> visitor)
+        throws EX { return visitor.visitArrayElementValue(this); }
+    }
+
+    /**
+     * The structure of the {@code annotations} array as described in JVMS8 4.7.16.
+     */
+    public static
+    class Annotation implements ClassFile.ElementValue {
+
+        /**
+         * The "type_index" field of the {@code annotation} type as described in JVMS8 4.7.16. The constant pool
+         * entry at that index must be a CONSTANT_Utf8_info structure representing a field descriptor.
+         */
+        public final short typeIndex;
+
+        /**
+         * The "element_value_pairs" field of the {@code annotation} type as described in JVMS8 4.7.16.
+         * Key is the "{@code element_name_index}" (a constant pool index to a {@link ConstantUtf8Info});
+         * value is an {@link ClassFile.ElementValue}.
+         */
+        public final Map<Short, ClassFile.ElementValue> elementValuePairs;
+
+        /**
+         * @param typeIndex         UTF 8 constant pool entry index; field descriptor
+         * @param elementValuePairs Maps element name index ({@link ConstantUtf8Info}) to {@link
+         *                          ClassFile.ElementValue}s
+         */
+        public
+        Annotation(short typeIndex, Map<Short, ClassFile.ElementValue> elementValuePairs) {
+            this.typeIndex         = typeIndex;
+            this.elementValuePairs = elementValuePairs;
+        }
+
+        @Override public byte
+        getTag() { return '@'; }
+
+        @Override public void
+        store(DataOutputStream dos) throws IOException {
+
+            // SUPPRESS CHECKSTYLE LineLength:4
+            dos.writeShort(this.typeIndex);                // type_index
+            dos.writeShort(this.elementValuePairs.size()); // num_element_value_pairs
+            for (                                          // element_value_pairs[num_element_value_pairs]
+                Map.Entry<Short, ClassFile.ElementValue> evps
+                : this.elementValuePairs.entrySet()
+            ) {
+                Short elementNameIndex = (Short) evps.getKey();
+                ClassFile.ElementValue
+                elementValue = (ClassFile.ElementValue) evps.getValue();
+
+                dos.writeShort(elementNameIndex);     // element_name_index
+                dos.writeByte(elementValue.getTag()); // value.tag
+                elementValue.store(dos);              // value.value
+            }
+        }
+
+        @Override @Nullable public <R, EX extends Throwable> R
+        accept(ClassFile.ElementValue.Visitor<R, EX> visitor)
+        throws EX { return visitor.visitAnnotation(this); }
+    }
+
+    private static ClassFile.ElementValue
+    loadElementValue(DataInputStream dis) throws IOException {
+
+        byte tag = dis.readByte(); // tag
+        switch (tag) {
+
+        case 'B': return new ByteElementValue(dis.readShort());
+        case 'C': return new CharElementValue(dis.readShort());
+        case 'D': return new DoubleElementValue(dis.readShort());
+        case 'F': return new FloatElementValue(dis.readShort());
+        case 'I': return new IntElementValue(dis.readShort());
+        case 'J': return new LongElementValue(dis.readShort());
+        case 'S': return new ShortElementValue(dis.readShort());
+        case 'Z': return new BooleanElementValue(dis.readShort());
+        case 's': return new StringElementValue(dis.readShort());
+        case 'e': return new EnumConstValue(dis.readShort(), dis.readShort());
+        case 'c': return new ClassElementValue(dis.readShort());
+        case '@': return AnnotationsAttribute.loadAnnotation(dis);
+
+        case '[':
+            ClassFile.ElementValue[] values = new ClassFile.ElementValue[dis.readUnsignedShort()]; // num_values
+            for (int i = 0; i < values.length; i++) values[i] = ClassFile.loadElementValue(dis);   // values[num_values]
+            return new ArrayElementValue(values);
+
+        default:
+            throw new ClassFileException("Invalid element-value-pair tag '" + (char) tag + "'");
         }
     }
 }

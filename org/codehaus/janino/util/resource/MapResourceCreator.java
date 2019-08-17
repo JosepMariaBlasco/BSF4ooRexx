@@ -32,6 +32,8 @@ import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.codehaus.commons.compiler.util.resource.ResourceCreator;
+
 /**
  * Creates resources as byte arrays in a delegate {@link java.util.Map}.
  */
@@ -46,6 +48,9 @@ class MapResourceCreator implements ResourceCreator {
     public
     MapResourceCreator() { this.map = new HashMap<String, byte[]>(); }
 
+    /**
+     * @param map String fileName =&gt; byte[] data
+     */
     public
     MapResourceCreator(Map<String, byte[]> map) { this.map = map; }
 

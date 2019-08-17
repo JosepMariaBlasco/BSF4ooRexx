@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
@@ -38,6 +40,7 @@ import org.codehaus.commons.compiler.IClassBodyEvaluator;
 import org.codehaus.commons.compiler.ICompilerFactory;
 import org.codehaus.commons.compiler.Location;
 import org.codehaus.commons.nullanalysis.Nullable;
+import org.codehaus.janino.Java.AbstractCompilationUnit;
 
 /**
  * The {@code optionalClassLoader} serves two purposes:
@@ -190,7 +193,7 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
     public ClassBodyEvaluator() {}
 
     @Override public void
-    setDefaultImports(@Nullable String[] optionalDefaultImports) {
+    setDefaultImports(@Nullable String... optionalDefaultImports) {
         this.optionalDefaultImports = optionalDefaultImports;
     }
 
@@ -224,12 +227,11 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
         Java.CompilationUnit compilationUnit = this.makeCompilationUnit(parser);
 
         // Add class declaration.
-        Java.AbstractClassDeclaration cd = this.addPackageMemberClassDeclaration(scanner.location(), compilationUnit);
+        Java.AbstractClassDeclaration
+        acd = this.addPackageMemberClassDeclaration(scanner.location(), compilationUnit);
 
         // Parse class body declarations (member declarations) until EOF.
-        while (!parser.peek(TokenType.END_OF_INPUT)) {
-            parser.parseClassBodyDeclaration(cd);
-        }
+        while (!parser.peek(TokenType.END_OF_INPUT)) parser.parseClassBodyDeclaration(acd);
 
         // Compile and load it.
         this.result = this.compileToClass(compilationUnit);
@@ -244,30 +246,29 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
      */
     protected final Java.CompilationUnit
     makeCompilationUnit(@Nullable Parser optionalParser) throws CompileException, IOException {
-        Java.CompilationUnit cu = (
-            new Java.CompilationUnit(optionalParser == null
-            ? null
-            : optionalParser.getScanner().getFileName())
-        );
+
+        List<AbstractCompilationUnit.ImportDeclaration> l = new ArrayList<AbstractCompilationUnit.ImportDeclaration>();
 
         // Set default imports.
         if (this.optionalDefaultImports != null) {
             for (String defaultImport : this.optionalDefaultImports) {
-                Scanner s       = new Scanner(null, new StringReader(defaultImport));
-                Parser  parser2 = new Parser(s);
-                cu.addImportDeclaration(parser2.parseImportDeclarationBody());
-                parser2.read(TokenType.END_OF_INPUT);
+                Parser parser = new Parser(new Scanner(null, new StringReader(defaultImport)));
+                l.add(parser.parseImportDeclarationBody());
+                parser.read(TokenType.END_OF_INPUT);
             }
         }
 
         // Parse all available IMPORT declarations.
         if (optionalParser != null) {
-            while (optionalParser.peek("import")) {
-                cu.addImportDeclaration(optionalParser.parseImportDeclaration());
-            }
+            while (optionalParser.peek("import")) l.add(optionalParser.parseImportDeclaration());
         }
 
-        return cu;
+        return new Java.CompilationUnit(
+            optionalParser == null ? null : optionalParser.getScanner().getFileName(), // optionalFileName
+            (AbstractCompilationUnit.ImportDeclaration[]) l.toArray(                   // importDeclaration
+                new AbstractCompilationUnit.ImportDeclaration[l.size()]
+            )
+        );
     }
 
     /**
@@ -280,7 +281,7 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
      * @return The created {@link Java.AbstractClassDeclaration} object
      */
     protected Java.PackageMemberClassDeclaration
-    addPackageMemberClassDeclaration(Location location, Java.CompilationUnit compilationUnit) throws CompileException {
+    addPackageMemberClassDeclaration(Location location, Java.CompilationUnit compilationUnit) {
         String cn  = this.className;
         int    idx = cn.lastIndexOf('.');
         if (idx != -1) {
@@ -288,13 +289,13 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
             cn = cn.substring(idx + 1);
         }
         Java.PackageMemberClassDeclaration tlcd = new Java.PackageMemberClassDeclaration(
-            location,                                                      // location
-            null,                                                          // optionalDocComment
-            new Java.Modifiers(Mod.PUBLIC),                                // modifiers
-            cn,                                                            // name
-            null,                                                          // optionalTypeParameters
-            this.optionalClassToType(location, this.optionalExtendedType), // optionalExtendedType
-            this.classesToTypes(location, this.implementedTypes)           // implementedTypes
+            location,                                                            // location
+            null,                                                                // optionalDocComment
+            new Java.Modifier[] { new Java.AccessModifier("public", location) }, // modifiers
+            cn,                                                                  // name
+            null,                                                                // optionalTypeParameters
+            this.optionalClassToType(location, this.optionalExtendedType),       // optionalExtendedType
+            this.classesToTypes(location, this.implementedTypes)                 // implementedTypes
         );
         compilationUnit.addPackageMemberTypeDeclaration(tlcd);
         return tlcd;

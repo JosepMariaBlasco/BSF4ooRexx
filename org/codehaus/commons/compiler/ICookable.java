@@ -2,8 +2,8 @@
 /*
  * Janino - An embedded Java[TM] compiler
  *
- * Copyright (c) 2001-2010, Arno Unkrig
- * All rights reserved.
+ * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
+ * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -12,16 +12,16 @@
  *       following disclaimer.
  *    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
  *       following disclaimer in the documentation and/or other materials provided with the distribution.
- *    3. The name of the author may not be used to endorse or promote products derived from this software without
- *       specific prior written permission.
+ *    3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written permission.
  *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL
- * THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+ * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 package org.codehaus.commons.compiler;
@@ -66,25 +66,8 @@ interface ICookable {
     void setParentClassLoader(@Nullable ClassLoader optionalParentClassLoader);
 
     /**
-     * Setting this system property to 'true' enables source-level debugging. Typically, this means that compilation
-     * is executed with "{@code -g:all}" instead of "{@code -g:none}".
-     */
-    String SYSTEM_PROPERTY_SOURCE_DEBUGGING_ENABLE = "org.codehaus.janino.source_debugging.enable";
-
-    /**
-     * If the source code is not read from a file, debuggers have a hard time locating the source file for source-level
-     * debugging. As a workaround, a copy of the source code is written to a temporary file, which must be included
-     * in the debugger's source path. If this system property is set, the temporary source file is created in that
-     * directory, otherwise in the default temporary-file directory.
-     *
-     * @see File#createTempFile(String, String, File)
-     */
-    String SYSTEM_PROPERTY_SOURCE_DEBUGGING_DIR = "org.codehaus.janino.source_debugging.dir";
-
-    /**
      * Determines what kind of debugging information is included in the generates classes. The default is typically
-     * "{@code -g:none}", and "{@code -g:all}" if the system property {@value #SYSTEM_PROPERTY_SOURCE_DEBUGGING_ENABLE}
-     * is set to "{@code true}".
+     * "{@code -g:none}".
      */
     void setDebuggingInformation(boolean debugSource, boolean debugLines, boolean debugVars);
 

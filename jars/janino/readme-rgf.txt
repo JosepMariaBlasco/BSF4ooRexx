@@ -1,9 +1,6 @@
-Up to December 2010
+2019-08-17, rgf:
 
-        janino-2.6.0.zip
+        replaced with janino-3.0.15 (2019-07-30), requires minimum Java 1.6/6
 
-has been used.
 
-Planned: replacement with janino-2.6.1.zip
 
----rgf, 2010-12-30

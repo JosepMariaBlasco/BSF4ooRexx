@@ -27,11 +27,11 @@ set doc_date=20190813
 :continue
 set docs_header=-header "%doc_date%, rgf"
 
-rm -rf %docs_apache_dir%
+rd /s /q %docs_apache_dir%
 javadoc  -Xdoclint:none %javadoc_scope% -d %docs_apache_dir% -use -version -author %docs_header% -subpackages org.apache
 
 
-rm -rf %docs_bsf4rexx_dir%
+rd /s /q %docs_bsf4rexx_dir%
 set wtitle="BSF4ooRexx %doc_release_version% with Add-ons, %doc_date%, Rony G. Flatscher"
 javadoc  -Xdoclint:none %javadoc_scope% -d %docs_bsf4rexx_dir% -windowtitle %wtitle% -use -version -author %docs_header% -subpackages org.oorexx -subpackages org.rexxla -subpackages com.sun.star.script.framework.provider.oorexx
 

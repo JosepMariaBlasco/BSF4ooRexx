@@ -38,7 +38,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.codehaus.commons.compiler.CompileException;
-import org.codehaus.commons.compiler.ICookable;
 import org.codehaus.commons.compiler.Location;
 import org.codehaus.commons.nullanalysis.Nullable;
 import org.codehaus.janino.util.TeeReader;
@@ -48,6 +47,28 @@ import org.codehaus.janino.util.TeeReader;
  */
 public
 class Scanner {
+
+    /**
+     * Setting this system property to 'true' enables source-level debugging. Typically, this means that compilation
+     * is executed with "{@code -g:all}" instead of "{@code -g:none}".
+     */
+    public static final String SYSTEM_PROPERTY_SOURCE_DEBUGGING_ENABLE = "org.codehaus.janino.source_debugging.enable";
+
+    /**
+     * If the source code is not read from a file, debuggers have a hard time locating the source file for source-level
+     * debugging. As a workaround, a copy of the source code is written to a temporary file, which must be included
+     * in the debugger's source path. If this system property is set, the temporary source file is created in that
+     * directory, otherwise in the default temporary-file directory.
+     *
+     * @see File#createTempFile(String, String, File)
+     */
+    public static final String SYSTEM_PROPERTY_SOURCE_DEBUGGING_DIR = "org.codehaus.janino.source_debugging.dir";
+
+    /**
+     * If set to "true", then the temporary source code files are <em>not</em> deleted on exit. That may be useful to
+     * interpret stack traces offline.
+     */
+    public static final String SYSTEM_PROPERTY_SOURCE_DEBUGGING_KEEP = "org.codehaus.janino.source_debugging.keep";
 
     // Public Scanners that read from a file.
 
@@ -109,10 +130,10 @@ class Scanner {
     public
     Scanner(@Nullable String optionalFileName, InputStream is) throws IOException {
         this(
-            optionalFileName,
+            optionalFileName,          // optionalFileName
             new InputStreamReader(is), // in
-            (short) 1,                 // initialLineNumber
-            (short) 0                  // initialColumnNumber
+            1,                         // initialLineNumber
+            0                          // initialColumnNumber
         );
     }
 
@@ -137,8 +158,8 @@ class Scanner {
                 ? new InputStreamReader(is)
                 : new InputStreamReader(is, optionalEncoding)
             ),
-            (short) 1,                         // initialLineNumber
-            (short) 0                          // initialColumnNumber
+            1,                                 // initialLineNumber
+            0                                  // initialColumnNumber
         );
     }
 
@@ -159,8 +180,8 @@ class Scanner {
         this(
             optionalFileName, // optionalFileName
             in,               // in
-            (short) 1,        // initialLineNumber
-            (short) 0         // initialColumnNumber
+            1,                // initialLineNumber
+            0                 // initialColumnNumber
         );
     }
 
@@ -171,8 +192,8 @@ class Scanner {
     Scanner(
         @Nullable String optionalFileName,
         Reader           in,
-        short            initialLineNumber,        // "1" is a good idea
-        short            initialColumnNumber       // "0" is a good idea
+        int              initialLineNumber,        // "1" is a good idea
+        int              initialColumnNumber       // "0" is a good idea
     ) throws IOException {
 
         // Debugging on source code level is only possible if the code comes from a "real" Java source file which the
@@ -183,11 +204,16 @@ class Scanner {
         //     org.codehaus.janino.source_debugging.dir
         // JANINO is designed to compile in memory to save the overhead of disk I/O, so writing this file is only
         // recommended for source code level debugging purposes.
-        if (optionalFileName == null && Boolean.getBoolean(ICookable.SYSTEM_PROPERTY_SOURCE_DEBUGGING_ENABLE)) {
-            String dirName       = System.getProperty(ICookable.SYSTEM_PROPERTY_SOURCE_DEBUGGING_DIR);
-            File   dir           = dirName == null ? null : new File(dirName);
-            File   temporaryFile = File.createTempFile("janino", ".java", dir);
-            temporaryFile.deleteOnExit();
+        if (optionalFileName == null && Boolean.getBoolean(Scanner.SYSTEM_PROPERTY_SOURCE_DEBUGGING_ENABLE)) {
+
+            String  dirName = System.getProperty(Scanner.SYSTEM_PROPERTY_SOURCE_DEBUGGING_DIR);
+            boolean keep    = Boolean.getBoolean(Scanner.SYSTEM_PROPERTY_SOURCE_DEBUGGING_KEEP);
+
+            File dir           = dirName == null ? null : new File(dirName);
+            File temporaryFile = File.createTempFile("janino", ".java", dir);
+
+            if (!keep) temporaryFile.deleteOnExit();
+
             in = new TeeReader(
                 in,                            // in
                 new FileWriter(temporaryFile), // out
@@ -227,10 +253,10 @@ class Scanner {
     close() throws IOException { this.in.close(); }
 
     /**
-     * @return The {@link Location} of the next character
+     * @return The {@link Location} of the previously read (or peeked) token.
      */
     public Location
-    location() { return new Location(this.optionalFileName, this.nextCharLineNumber, this.nextCharColumnNumber); }
+    location() { return new Location(this.optionalFileName, this.tokenLineNumber, this.tokenColumnNumber); }
 
     private Token
     token(TokenType type, String value) {
@@ -249,13 +275,13 @@ class Scanner {
     public Token
     produce() throws CompileException, IOException {
 
-        if (this.peek() == -1) return this.token(TokenType.END_OF_INPUT, "");
+        if (this.peek() == -1) return this.token(TokenType.END_OF_INPUT, "end-of-input");
 
         // Funny... the JLS calls it "white space", and the JRE calls it "whitespace"!?
         if (this.ignoreWhiteSpace && Character.isWhitespace(this.peek())) {
             do {
                 this.read();
-                if (this.peek() == -1) return this.token(TokenType.END_OF_INPUT, "");
+                if (this.peek() == -1) return this.token(TokenType.END_OF_INPUT, "end-of-input");
             } while (Character.isWhitespace(this.peek()));
         }
 
@@ -292,9 +318,9 @@ class Scanner {
         // Scan a token that begins with "/".
         if (this.peekRead('/')) {
 
-            if (this.peekRead(-1)) return TokenType.OPERATOR; // "/"
+            if (this.peekRead(-1)) return TokenType.OPERATOR; // E.g. "/"
 
-            if (this.peekRead('=')) return TokenType.OPERATOR; // "/="
+            if (this.peekRead('=')) return TokenType.OPERATOR; // E.g. "/="
 
             if (this.peekRead('/')) { // C++-style comment.
                 while (!this.peek("\r\n")) this.read();
@@ -317,7 +343,7 @@ class Scanner {
                 }
             }
 
-            return TokenType.OPERATOR; // "/"
+            return TokenType.OPERATOR; // E.g. "/"
         }
 
         // Scan identifier.
@@ -379,10 +405,12 @@ class Scanner {
     scanNumericLiteral() throws CompileException, IOException {
 
         if (this.peekRead('0')) {
-            if (
+
+            if (               // E.g. "01"...
                 Scanner.isOctalDigit(this.peek())
                 || (this.peek() == '_' && (this.peekButOne() == '_' || Scanner.isOctalDigit(this.peekButOne())))
             ) {
+
                 this.read();
                 while (
                     Scanner.isOctalDigit(this.peek())
@@ -395,21 +423,18 @@ class Scanner {
                     );
                 }
                 if (this.peekRead("lL")) {
-
-                    // Octal long literal.
-                    return TokenType.INTEGER_LITERAL;
+                    return TokenType.INTEGER_LITERAL; // Octal long literal, e.g. "0123L".
                 }
 
-                // Octal int literal
-                return TokenType.INTEGER_LITERAL;
+                return TokenType.INTEGER_LITERAL; // Octal int literal, e.g. "0123".
             }
 
             if (this.peekRead("lL")) return TokenType.INTEGER_LITERAL; // "0L"
 
-            if (this.peekRead("fFdD")) return TokenType.FLOATING_POINT_LITERAL; // "0F", "0D"
+            if (this.peekRead("fFdD")) return TokenType.FLOATING_POINT_LITERAL; // "0F" or "0D"
 
             if (this.peek(".Ee")) {
-                if (this.peekRead('.')) {
+                if (this.peekRead('.')) { // "0."...
                     while (
                         Scanner.isDecimalDigit(this.peek())
                         || (
@@ -418,7 +443,7 @@ class Scanner {
                         )
                     ) this.read();
                 }
-                if (this.peekRead("eE")) {
+                if (this.peekRead("eE")) { // "0e"... and "0.123e"...
 
                     this.peekRead("-+");
 
@@ -440,7 +465,7 @@ class Scanner {
                 return TokenType.FLOATING_POINT_LITERAL;
             }
 
-            if (this.peekRead("xX")) { // "0x"
+            if (this.peekRead("xX")) { // E.g. "0x"
 
                 while (Scanner.isHexDigit(this.peek())) this.read();
 
@@ -499,7 +524,7 @@ class Scanner {
                 return TokenType.INTEGER_LITERAL;
             }
 
-            if (this.peekRead("bB")) { // "0b"
+            if (this.peekRead("bB")) { // E.g. "0b"
 
                 if (!Scanner.isBinaryDigit(this.peek())) {
                     throw new CompileException("Binary digit expected after \"0b\"", this.location());
@@ -519,10 +544,10 @@ class Scanner {
             return TokenType.INTEGER_LITERAL;
         }
 
-        if (this.peek() == '.' && Scanner.isDecimalDigit(this.peekButOne())) { // ".9"
+        if (this.peek() == '.' && Scanner.isDecimalDigit(this.peekButOne())) { // E.g. ".9"
             ;
         } else
-        if (Scanner.isDecimalDigit(this.peek())) { // "[1-9]"
+        if (Scanner.isDecimalDigit(this.peek())) { // E.g. "123"
             this.read();
 
             while (
@@ -530,11 +555,11 @@ class Scanner {
                 || (this.peek() == '_' && (this.peekButOne() == '_' || Scanner.isDecimalDigit(this.peekButOne())))
             ) this.read();
 
-            if (this.peekRead("lL")) return TokenType.INTEGER_LITERAL;
+            if (this.peekRead("lL")) return TokenType.INTEGER_LITERAL; // E.g. "123L"
 
-            if (this.peekRead("fFdD")) return TokenType.FLOATING_POINT_LITERAL;
+            if (this.peekRead("fFdD")) return TokenType.FLOATING_POINT_LITERAL; // E.g. "123D"
 
-            if (!this.peek(".eE")) return TokenType.INTEGER_LITERAL;
+            if (!this.peek(".eE")) return TokenType.INTEGER_LITERAL; // E.g. "123"
         } else
         {
             throw new CompileException(
@@ -543,9 +568,7 @@ class Scanner {
             );
         }
 
-        // ".9" or "123." or "123e"
-
-        if (this.peekRead('.')) {
+        if (this.peekRead('.')) { // E.g. ".9" or "123." or "123e"
             if (Scanner.isDecimalDigit(this.peek())) {
                 this.read();
                 while (
@@ -555,7 +578,7 @@ class Scanner {
             }
         }
 
-        if (this.peekRead("eE")) {
+        if (this.peekRead("eE")) { // E.g. "1e3"
 
             this.peekRead("-+");
 
@@ -570,7 +593,7 @@ class Scanner {
             ) this.read();
         }
 
-        this.peekRead("fFdD");
+        this.peekRead("fFdD"); // E.g. "123F"
 
         return TokenType.FLOATING_POINT_LITERAL;
     }
@@ -760,8 +783,13 @@ class Scanner {
                 this.nextCharColumnNumber = 0;
             }
         } else
+        if (result == '\t') {
+            this.nextCharColumnNumber = this.nextCharColumnNumber - this.nextCharColumnNumber % 8 + 8;
+            this.crLfPending          = false;
+        } else
         {
             ++this.nextCharColumnNumber;
+            this.crLfPending = false;
         }
 
         return result;
@@ -773,19 +801,19 @@ class Scanner {
     private int                    nextChar       = -1;
     private int                    nextButOneChar = -1;
     private boolean                crLfPending;
-    private short                  nextCharLineNumber;
-    private short                  nextCharColumnNumber;
+    private int                    nextCharLineNumber;
+    private int                    nextCharColumnNumber;
 
     /**
      * Line number of the previously produced token (typically starting at one).
      */
-    private short tokenLineNumber;
+    private int tokenLineNumber;
 
     /**
      * Column number of the first character of the previously produced token (1 if token is immediately preceded by a
      * line break).
      */
-    private short tokenColumnNumber;
+    private int tokenColumnNumber;
 
     private static final Set<String> JAVA_KEYWORDS = new HashSet<String>(Arrays.asList(
 
@@ -815,11 +843,12 @@ class Scanner {
 
         // Separators:
         "(", ")", "{", "}", "[", "]", ";", ",", ".", "@",
+        "::",                                                                // <= Since Java 9
 
         // Operators:
-        "=",  ">",  "<",  "!",  "~",  "?",  ":",
+        "=",  ">",  "<",  "!",  "~",  "?",  ":",  "->",
         "==", "<=", ">=", "!=", "&&", "||", "++", "--",
         "+",  "-",  "*",  "/",  "&",  "|",  "^",  "%",  "<<",  ">>",  ">>>",
-        "+=", "-=", "*=", "/=", "&=", "|=", "^=", "%=", "<<=", ">>=", ">>>="
+        "+=", "-=", "*=", "/=", "&=", "|=", "^=", "%=", "<<=", ">>=", ">>>=" // SUPPRESS CHECKSTYLE Wrap
     ));
 }

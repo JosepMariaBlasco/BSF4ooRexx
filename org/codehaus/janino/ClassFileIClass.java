@@ -36,21 +36,20 @@ import java.util.logging.Logger;
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.nullanalysis.Nullable;
 import org.codehaus.janino.util.ClassFile;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.Annotation;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.ArrayElementValue;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.BooleanElementValue;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.ByteElementValue;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.CharElementValue;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.ClassElementValue;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.DoubleElementValue;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.ElementValue;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.EnumConstValue;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.FloatElementValue;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.IntElementValue;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.LongElementValue;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.ShortElementValue;
-import org.codehaus.janino.util.ClassFile.AnnotationsAttribute.StringElementValue;
+import org.codehaus.janino.util.ClassFile.Annotation;
+import org.codehaus.janino.util.ClassFile.ArrayElementValue;
+import org.codehaus.janino.util.ClassFile.BooleanElementValue;
+import org.codehaus.janino.util.ClassFile.ByteElementValue;
+import org.codehaus.janino.util.ClassFile.CharElementValue;
+import org.codehaus.janino.util.ClassFile.ClassElementValue;
 import org.codehaus.janino.util.ClassFile.ConstantClassInfo;
+import org.codehaus.janino.util.ClassFile.DoubleElementValue;
+import org.codehaus.janino.util.ClassFile.EnumConstValue;
+import org.codehaus.janino.util.ClassFile.FloatElementValue;
+import org.codehaus.janino.util.ClassFile.IntElementValue;
+import org.codehaus.janino.util.ClassFile.LongElementValue;
+import org.codehaus.janino.util.ClassFile.ShortElementValue;
+import org.codehaus.janino.util.ClassFile.StringElementValue;
 
 /**
  * A wrapper object that turns a {@link ClassFile} object into an {@link IClass}.
@@ -245,7 +244,7 @@ class ClassFileIClass extends IClass {
     getIAnnotations2() throws CompileException { return this.toIAnnotations(this.classFile.getAnnotations(true)); }
 
     private IAnnotation[]
-    toIAnnotations(ClassFile.AnnotationsAttribute.Annotation[] annotations) throws CompileException {
+    toIAnnotations(ClassFile.Annotation[] annotations) throws CompileException {
 
         int count = annotations.length;
         if (count == 0) return new IAnnotation[0];
@@ -256,15 +255,15 @@ class ClassFileIClass extends IClass {
     }
 
     private IAnnotation
-    toIAnnotation(final ClassFile.AnnotationsAttribute.Annotation annotation) throws CompileException {
+    toIAnnotation(final ClassFile.Annotation annotation) throws CompileException {
 
         final Map<String, Object> evps2 = new HashMap<String, Object>();
-        for (Entry<Short, ElementValue> e : annotation.elementValuePairs.entrySet()) {
-            Short        elementNameIndex = (Short) e.getKey();
-            ElementValue elementValue     = (ElementValue) e.getValue();
+        for (Entry<Short, ClassFile.ElementValue> e : annotation.elementValuePairs.entrySet()) {
+            Short                  elementNameIndex = (Short) e.getKey();
+            ClassFile.ElementValue elementValue     = (ClassFile.ElementValue) e.getValue();
 
             Object ev = elementValue.accept(
-                new ClassFile.AnnotationsAttribute.ElementValue.Visitor<Object, CompileException>() {
+                new ClassFile.ElementValue.Visitor<Object, CompileException>() {
 
                     final ClassFile cf = ClassFileIClass.this.classFile;
 
@@ -398,7 +397,7 @@ class ClassFileIClass extends IClass {
     resolveClass(short index) throws ClassNotFoundException {
         ClassFileIClass.LOGGER.entering(null, "resolveClass", index);
 
-        ConstantClassInfo cci = (ConstantClassInfo) this.classFile.getConstantPoolInfo(index);
+        ConstantClassInfo cci = this.classFile.getConstantClassInfo(index);
         return this.resolveClass(Descriptor.fromInternalForm(cci.getName(this.classFile)));
     }
 
@@ -511,39 +510,21 @@ class ClassFileIClass extends IClass {
                 }
 
                 @Override public IClass[]      getThrownExceptions2() { return thrownExceptions; }
-                @Override public Access        getAccess()            { return access; }
-                @Override public IAnnotation[] getAnnotations()       { return iAnnotations; }
+                @Override public Access        getAccess()            { return access;           }
+                @Override public IAnnotation[] getAnnotations()       { return iAnnotations;     }
             };
         } else {
 
             result = new IClass.IMethod() {
-
-                @Override public String
-                getName() { return name; }
-
-                @Override public IClass
-                getReturnType() { return returnType; }
-
-                @Override public boolean
-                isStatic() { return Mod.isStatic(methodInfo.getAccessFlags()); }
-
-                @Override public boolean
-                isAbstract() { return Mod.isAbstract(methodInfo.getAccessFlags()); }
-
-                @Override public boolean
-                isVarargs() { return Mod.isVarargs(methodInfo.getAccessFlags()); }
-
-                @Override public IClass[]
-                getParameterTypes2() { return parameterTypes; }
-
-                @Override public IClass[]
-                getThrownExceptions2() { return thrownExceptions; }
-
-                @Override public Access
-                getAccess() { return access; }
-
-                @Override public IAnnotation[]
-                getAnnotations() { return iAnnotations; }
+                @Override public IAnnotation[] getAnnotations()       { return iAnnotations;                                } // SUPPRESS CHECKSTYLE LineLength:9
+                @Override public Access        getAccess()            { return access;                                      }
+                @Override public boolean       isStatic()             { return Mod.isStatic(methodInfo.getAccessFlags());   }
+                @Override public boolean       isAbstract()           { return Mod.isAbstract(methodInfo.getAccessFlags()); }
+                @Override public IClass        getReturnType()        { return returnType;                                  }
+                @Override public String        getName()              { return name;                                        }
+                @Override public IClass[]      getParameterTypes2()   { return parameterTypes;                              }
+                @Override public boolean       isVarargs()            { return Mod.isVarargs(methodInfo.getAccessFlags());  }
+                @Override public IClass[]      getThrownExceptions2() { return thrownExceptions;                            }
             };
         }
         this.resolvedMethods.put(methodInfo, result);
@@ -593,12 +574,12 @@ class ClassFileIClass extends IClass {
         }
 
         result = new IField() {
-            @Override public Object        getConstantValue() { return optionalConstantValue; }
-            @Override public String        getName()          { return name; }
-            @Override public IClass        getType()          { return type; }
+            @Override public Object        getConstantValue() { return optionalConstantValue;                    }
+            @Override public String        getName()          { return name;                                     }
+            @Override public IClass        getType()          { return type;                                     }
             @Override public boolean       isStatic()         { return Mod.isStatic(fieldInfo.getAccessFlags()); }
-            @Override public Access        getAccess()        { return access; }
-            @Override public IAnnotation[] getAnnotations()   { return iAnnotations; }
+            @Override public Access        getAccess()        { return access;                                   }
+            @Override public IAnnotation[] getAnnotations()   { return iAnnotations;                             }
         };
         this.resolvedFields.put(fieldInfo, result);
         return result;

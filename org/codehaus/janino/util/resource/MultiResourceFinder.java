@@ -28,22 +28,26 @@ package org.codehaus.janino.util.resource;
 
 import java.util.Collection;
 
+import org.codehaus.commons.compiler.util.resource.Resource;
+import org.codehaus.commons.compiler.util.resource.ResourceFinder;
 import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
- * A {@link org.codehaus.janino.util.resource.ResourceFinder} that finds its resources through a collection of
- * other {@link org.codehaus.janino.util.resource.ResourceFinder}s.
+ * A {@link org.codehaus.commons.compiler.util.resource.ResourceFinder} that finds its resources through a collection of
+ * other {@link org.codehaus.commons.compiler.util.resource.ResourceFinder}s.
  */
 public
 class MultiResourceFinder extends ResourceFinder {
 
-    private final Collection<ResourceFinder> resourceFinders; // One for each entry
+    private final Collection<? extends ResourceFinder> resourceFinders; // One for each entry
 
     /**
      * @param resourceFinders The entries of the "path"
      */
     public
-    MultiResourceFinder(Collection<ResourceFinder> resourceFinders) { this.resourceFinders = resourceFinders; }
+    MultiResourceFinder(Collection<? extends ResourceFinder> resourceFinders) {
+        this.resourceFinders = resourceFinders;
+    }
 
     // Implement ResourceFinder.
 

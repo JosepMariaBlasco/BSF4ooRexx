@@ -36,13 +36,13 @@ import java.util.Set;
 import org.codehaus.commons.compiler.AbstractJavaSourceClassLoader;
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.ErrorHandler;
-import org.codehaus.commons.compiler.ICookable;
 import org.codehaus.commons.compiler.WarningHandler;
+import org.codehaus.commons.compiler.util.Disassembler;
+import org.codehaus.commons.compiler.util.resource.DirectoryResourceFinder;
+import org.codehaus.commons.compiler.util.resource.ResourceFinder;
 import org.codehaus.commons.nullanalysis.Nullable;
 import org.codehaus.janino.util.ClassFile;
-import org.codehaus.janino.util.resource.DirectoryResourceFinder;
 import org.codehaus.janino.util.resource.PathResourceFinder;
-import org.codehaus.janino.util.resource.ResourceFinder;
 
 /**
  * A {@link ClassLoader} that, unlike usual {@link ClassLoader}s, does not load byte code, but reads Java source code
@@ -87,8 +87,8 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
             parentClassLoader,        // parentClassLoader
             (                         // sourceFinder
                 optionalSourcePath == null
-                ? (ResourceFinder) new DirectoryResourceFinder(new File("."))
-                : (ResourceFinder) new PathResourceFinder(optionalSourcePath)
+                ? new DirectoryResourceFinder(new File("."))
+                : new PathResourceFinder(optionalSourcePath)
             ),
             optionalCharacterEncoding // optionalCharacterEncoding
         );
@@ -168,8 +168,7 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
      *
      * @throws ClassNotFoundException
      */
-    @Override protected /*synchronized <- No need to synchronize, because 'loadClass()' is synchronized
-    */ Class<?>
+    @Override protected /*synchronized <- No need to synchronize, because 'loadClass()' is synchronized */ Class<?>
     findClass(@Nullable String name) throws ClassNotFoundException {
         assert name != null;
 
@@ -195,8 +194,12 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
             }
         }
 
+        if (Boolean.getBoolean("disasm")) Disassembler.disassembleToStdout(bytecode);
+
         return this.defineBytecode(name, bytecode);
     }
+
+    private final Set<UnitCompiler> compiledUnitCompilers = new HashSet<UnitCompiler>();
 
     /**
      * This {@link Map} keeps those classes which were already compiled, but not yet defined i.e. which were not yet
@@ -216,11 +219,10 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
         if (this.iClassLoader.loadIClass(Descriptor.fromClassName(name)) == null) return null;
 
         Map<String /*name*/, byte[] /*bytecode*/> bytecodes             = new HashMap<String, byte[]>();
-        Set<UnitCompiler>                         compiledUnitCompilers = new HashSet<UnitCompiler>();
         COMPILE_UNITS:
         for (;;) {
             for (UnitCompiler uc : this.iClassLoader.getUnitCompilers()) {
-                if (!compiledUnitCompilers.contains(uc)) {
+                if (!this.compiledUnitCompilers.contains(uc)) {
                     ClassFile[] cfs;
                     try {
                         cfs = uc.compileUnit(this.debugSource, this.debugLines, this.debugVars);
@@ -228,7 +230,7 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
                         throw new ClassNotFoundException(ex.getMessage(), ex);
                     }
                     for (ClassFile cf : cfs) bytecodes.put(cf.getThisClassName(), cf.toByteArray());
-                    compiledUnitCompilers.add(uc);
+                    this.compiledUnitCompilers.add(uc);
                     continue COMPILE_UNITS;
                 }
             }
@@ -252,7 +254,7 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
 
     private final JavaSourceIClassLoader iClassLoader;
 
-    private boolean debugSource = Boolean.getBoolean(ICookable.SYSTEM_PROPERTY_SOURCE_DEBUGGING_ENABLE);
+    private boolean debugSource = Boolean.getBoolean(Scanner.SYSTEM_PROPERTY_SOURCE_DEBUGGING_ENABLE);
     private boolean debugLines  = this.debugSource;
     private boolean debugVars   = this.debugSource;
 }

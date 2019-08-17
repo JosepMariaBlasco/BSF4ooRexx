@@ -70,15 +70,15 @@ class ReflectionIClass extends IClass {
 
             // Arrays have ONE single method: "Object clone()".
             return new IMethod[] { new IMethod() {
-                @Override public String        getName()              { return "clone"; }
-                @Override public IClass        getReturnType()        { return ReflectionIClass.this.iClassLoader.TYPE_java_lang_Object; } // SUPPRESS CHECKSTYLE LineLength
-                @Override public boolean       isAbstract()           { return false; }
-                @Override public boolean       isStatic()             { return false; }
-                @Override public Access        getAccess()            { return Access.PUBLIC; }
-                @Override public boolean       isVarargs()            { return false; }
-                @Override public IClass[]      getParameterTypes2()   { return new IClass[0]; }
-                @Override public IClass[]      getThrownExceptions2() { return new IClass[0]; }
-                @Override public IAnnotation[] getAnnotations()       { return new IAnnotation[0]; }
+                @Override public IAnnotation[] getAnnotations()       { return new IAnnotation[0];                                       } // SUPPRESS CHECKSTYLE LineLength:8
+                @Override public Access        getAccess()            { return Access.PUBLIC;                                            }
+                @Override public boolean       isStatic()             { return false;                                                    }
+                @Override public boolean       isAbstract()           { return false;                                                    }
+                @Override public IClass        getReturnType()        { return ReflectionIClass.this.iClassLoader.TYPE_java_lang_Object; }
+                @Override public String        getName()              { return "clone";                                                  }
+                @Override public IClass[]      getParameterTypes2()   { return new IClass[0];                                            }
+                @Override public boolean       isVarargs()            { return false;                                                    }
+                @Override public IClass[]      getThrownExceptions2() { return new IClass[0];                                            }
             } };
         }
 
@@ -120,14 +120,14 @@ class ReflectionIClass extends IClass {
     }
 
     @Override protected IClass[] getInterfaces2() { return this.classesToIClasses(this.clazz.getInterfaces()); }
-    @Override protected String   getDescriptor2() { return Descriptor.fromClassName(this.clazz.getName()); }
+    @Override protected String   getDescriptor2() { return Descriptor.fromClassName(this.clazz.getName());     }
 
     @Override public Access  getAccess()   { return ReflectionIClass.modifiers2Access(this.clazz.getModifiers()); }
-    @Override public boolean isFinal()     { return Modifier.isFinal(this.clazz.getModifiers()); }
-    @Override public boolean isEnum()      { return this.clazz.isEnum(); }
-    @Override public boolean isInterface() { return this.clazz.isInterface(); }
-    @Override public boolean isAbstract()  { return Modifier.isAbstract(this.clazz.getModifiers()); }
-    @Override public boolean isArray()     { return this.clazz.isArray(); }
+    @Override public boolean isFinal()     { return Modifier.isFinal(this.clazz.getModifiers());                  }
+    @Override public boolean isEnum()      { return this.clazz.isEnum();                                          }
+    @Override public boolean isInterface() { return this.clazz.isInterface();                                     }
+    @Override public boolean isAbstract()  { return Modifier.isAbstract(this.clazz.getModifiers());               }
+    @Override public boolean isArray()     { return this.clazz.isArray();                                         }
 
     @Override public boolean
     isPrimitive() { return this.clazz.isPrimitive(); }
@@ -299,14 +299,14 @@ class ReflectionIClass extends IClass {
             return parameterTypes;
         }
 
-        @Override public String
+        @Override public MethodDescriptor
         getDescriptor2() {
             Class<?>[] parameterTypes       = this.constructor.getParameterTypes();
             String[]   parameterDescriptors = new String[parameterTypes.length];
             for (int i = 0; i < parameterDescriptors.length; ++i) {
                 parameterDescriptors[i] = Descriptor.fromClassName(parameterTypes[i].getName());
             }
-            return new MethodDescriptor(parameterDescriptors, Descriptor.VOID).toString();
+            return new MethodDescriptor(Descriptor.VOID, parameterDescriptors);
         }
 
         @Override public IClass[]

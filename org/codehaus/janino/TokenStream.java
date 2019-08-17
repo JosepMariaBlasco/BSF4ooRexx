@@ -29,6 +29,7 @@ package org.codehaus.janino;
 import java.io.IOException;
 
 import org.codehaus.commons.compiler.CompileException;
+import org.codehaus.commons.compiler.Location;
 import org.codehaus.commons.compiler.WarningHandler;
 import org.codehaus.commons.nullanalysis.Nullable;
 
@@ -151,9 +152,10 @@ interface TokenStream {
     /**
      * Checks whether the type of the next token is the <var>suspected</var>; if so, consumes the token.
      *
-     * @return Whether the type of the next token is the <var>suspected</var>
+     * @return The value of the next token; an {@link String#intern() interned} String iff the token represents an
+     *         identifier, {@code true}, {@code false}, {@code null}, or an operator
      */
-    boolean
+    @Nullable String
     peekRead(TokenType suspected) throws CompileException, IOException;
 
     /**
@@ -177,4 +179,10 @@ interface TokenStream {
      */
     void
     setWarningHandler(@Nullable WarningHandler optionalWarningHandler);
+
+    /**
+     * @return The location of the first character of the previously <em>read</em> (not <em>peek</em>ed!) token
+     */
+    Location
+    location();
 }

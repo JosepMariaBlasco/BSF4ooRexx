@@ -33,14 +33,14 @@ import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.janino.Java;
 import org.codehaus.janino.Parser;
 import org.codehaus.janino.Scanner;
-import org.codehaus.janino.util.Traverser;
+import org.codehaus.janino.util.AbstractTraverser;
 
 /**
  * An example application for the {@link org.codehaus.janino.util.Traverser}: Reads, scans and parses the files named
  * on the command line and counts several kinds of declarations.
  */
 public
-class DeclarationCounter extends Traverser<RuntimeException> {
+class DeclarationCounter extends AbstractTraverser<RuntimeException> {
 
     public static void // SUPPRESS CHECKSTYLE JavadocMethod
     main(String[] args) throws CompileException, IOException {
@@ -48,16 +48,16 @@ class DeclarationCounter extends Traverser<RuntimeException> {
         for (String fileName : args) {
 
             // Parse each compilation unit.
-            FileReader           r = new FileReader(fileName);
-            Java.CompilationUnit cu;
+            FileReader                   r = new FileReader(fileName);
+            Java.AbstractCompilationUnit acu;
             try {
-                cu = new Parser(new Scanner(fileName, r)).parseCompilationUnit();
+                acu = new Parser(new Scanner(fileName, r)).parseAbstractCompilationUnit();
             } finally {
                 r.close();
             }
 
             // Traverse it and count declarations.
-            dc.traverseCompilationUnit(cu);
+            dc.visitAbstractCompilationUnit(acu);
         }
 
         System.out.println("Class declarations:     " + dc.classDeclarationCount);

@@ -39,13 +39,14 @@ class ByteArrayClassLoader extends ClassLoader {
     /**
      * The given {@link Map} of classes must not be modified afterwards.
      *
-     * @param classes String className =&gt; byte[] data
+     * @param classes String className =&gt; byte[] data, or String classFileName =&gt; byte[] data
      */
     public
-    ByteArrayClassLoader(Map<String, byte[]> classes) { this.classes = classes; }
+    ByteArrayClassLoader(Map<String /*className*/, byte[] /*data*/> classes) { this.classes = classes; }
 
     /**
-     * @see #ByteArrayClassLoader(Map)
+     * @param classes {@code String className} =&gt; {@code byte[] data}, or {@code String classFileName} =&gt; {@code
+     *                byte[] data}
      */
     public
     ByteArrayClassLoader(Map<String /*className*/, byte[] /*data*/> classes, ClassLoader parent) {
@@ -65,7 +66,10 @@ class ByteArrayClassLoader extends ClassLoader {
         assert name != null;
 
         byte[] data = (byte[]) this.classes.get(name);
-        if (data == null) throw new ClassNotFoundException(name);
+        if (data == null) {
+            data = (byte[]) this.classes.get(name.replace('.', '/') + ".class");
+            if (data == null) throw new ClassNotFoundException(name);
+        }
 
         // Notice: Not inheriting the protection domain will cause problems with Java Web Start /
         // JNLP. See
@@ -80,5 +84,5 @@ class ByteArrayClassLoader extends ClassLoader {
         );
     }
 
-    private final Map<String /*className*/, byte[] /*data*/> classes;
+    private final Map<String /*className-or-classFileName*/, byte[] /*data*/> classes;
 }
