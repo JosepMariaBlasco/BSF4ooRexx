@@ -2726,7 +2726,7 @@ System.err.println(this+": *** - FINALIZE -  *** *** - FINALIZE -  *** *** - FIN
                           );
                    }
                }
-
+// System.err.println(" /// RexxAndJava - CREATE_ARRAY_OBJECT_OF --> ["+java.util.Arrays.toString((Object[])arr)+"]");
                return makeString4Rexx(this, arr);     // return the single dimensioned array object
            }
 

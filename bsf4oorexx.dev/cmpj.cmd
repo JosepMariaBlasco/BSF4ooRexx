@@ -78,11 +78,11 @@ copy %javaSrc%\RexxCommandHandler.java        %path2engine%
 copy %javaSrc%\RexxConfiguration.java         %path2engine%
 
 @rem 2009-07-31
-copy %javaSrc%\RexxExtendClass.java           %path2engine%
-copy %javaSrc%\RexxExtendingClassLoader.java  %path2engine%
+rem copy %javaSrc%\RexxExtendClass.java           %path2engine%
+rem copy %javaSrc%\RexxExtendingClassLoader.java  %path2engine%
 
 @rem 2010-04-17
-copy %javaSrc%\ProxiedJavaClassTool.java      %path2engine%
+copy %javaSrc%\ClassAdapter.java      %path2engine%
 copy %javaSrc%\RexxDispatcher.java            %path2rexxlaBsf%
 
 copy %javaSrc%\RexxScriptEngine.java          %path2jsr223%
@@ -122,13 +122,13 @@ javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxProxy.java                 
 javac %javacDefines% %javaBaseLine%    %javaSrc%\Supplier.java                  && copy %javaSrc%\Supplier*                   %path2engine%
 
 @rem 2009-07-31
-javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxExtendClass.java           && copy %javaSrc%\RexxExtendClass*            %path2engine% && copy %javaSrc%\MethodForSuperData.class  %path2engine% && copy %javaSrc%\TransformationData.class  %path2engine%
-javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxExtendingClassLoader.java  && copy %javaSrc%\RexxExtendingClassLoader*   %path2engine%
+rem javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxExtendClass.java           && copy %javaSrc%\RexxExtendClass*            %path2engine% && copy %javaSrc%\MethodForSuperData.class  %path2engine% && copy %javaSrc%\TransformationData.class  %path2engine%
+rem javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxExtendingClassLoader.java  && copy %javaSrc%\RexxExtendingClassLoader*   %path2engine%
 
 javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxDispatcher.java            && copy %javaSrc%\RexxDispatcher*             %path2rexxlaBsf%
 
 @rem 2010-04-17
-javac %javacDefines% %javaBaseLine%    %javaSrc%\ProxiedJavaClassTool.java      && copy %javaSrc%\ProxiedJavaClassTool*       %path2engine%
+javac %javacDefines% %javaBaseLine%    %javaSrc%\ClassAdapter.java              && copy %javaSrc%\ClassAdapter*               %path2engine%
 
 @rem 2010-04-17
 javac %javacDefines% %javaBaseLine%    %javaSrc%\RexxHandler.java               && copy %javaSrc%\RexxHandler*                %path2engine%

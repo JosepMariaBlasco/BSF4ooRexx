@@ -47,7 +47,7 @@ rem create OOo-Macro-Package which will contain everything, including BSF itself
 
 @del  %tmprgf%.jar
 
-rem echo jar cvmf %tmprgf%Manifest.mf %tmprgf%.jar Apache* com/sun/star/script/ org/apache/bsf/ org/oorexx/ org/rexxla/ org/apache/taglibs org/objectweb/ org/codehaus/
+rem echo jar cvmf %tmprgf%Manifest.mf %tmprgf%.jar Apache* com/sun/star/script/ org/apache/bsf/ org/oorexx/ org/rexxla/ org/apache/taglibs org/codehaus/
 rem pause
 
 jar cvmf %tmprgf%Manifest.mf %tmprgf%.jar Apache* com/sun/star/script/ org/apache/bsf/ org/oorexx/ org/rexxla/ org/apache/taglibs org/objectweb/ org/codehaus/

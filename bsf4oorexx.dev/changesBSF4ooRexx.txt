@@ -1,3 +1,93 @@
+17.08.2019  14:47            70.064 RexxEngine.java
+21.08.2019  18:18           297.557 RexxAndJava.java
+21.08.2019  19:19            73.346 ClassAdapter.java
+21.08.2019  19:19            59.545 RexxProxy.java
+
+
+
+-------------------------------------- 2019-08-21 ----------------------------------
+
+Removed ASM (cf. <https://asm.ow2.io/>) from package, adjusting necessary files
+
+
+- BSF.CLS
+        - adjust for renaming "org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool" to
+          "org.rexxla.bsf.engines.rexx.ClassAdapter"
+
+- RexxExtendClass.java
+
+        - removed (ASM)
+
+- RexxExtendingClassLoader.java
+
+        - removed (ASM)
+
+- RexxProxy.java
+
+        - renamed ProxiedJavaClassTool.java to ClassAdapter.java
+
+- ProxiedJavaClassTool.java
+
+        - renamed to ClassAdapter.java
+
+
+-------------------------------------- 2019-08-20 ----------------------------------
+
+- RexxProxy.java
+
+        - remove "ASM" as Janino suffices for our needs, is fast enough and compiles plain Java
+
+-------------------------------------- 2019-08-16 ----------------------------------
+
+- RexxCompiledScript.java
+
+        - fix Javadoc references
+
+- RexxReflectUtil.java
+
+        - fix Javadoc references
+
+- RexxScriptEngine.java
+
+        - fix Javadoc references
+
+- RexxStrictArgument.java
+
+        - fix Javadoc references
+
+-------------------------------------- 2019-08-15 ----------------------------------
+
+- RexxReflectInterface.java
+
+        - fix Javadoc references
+
+
+- RexxReflectJava6.java
+
+        - fix Javadoc references
+
+- RexxReflectJava7.java
+
+        - fix Javadoc references
+
+-------------------------------------- 2019-08-13 ----------------------------------
+
+- InvocationType.java
+
+        - fix Javadoc references
+
+- ProxiedJavaClassTool.java
+
+        - fix Javadoc references
+
+- RexxAndJava.java
+
+        - fix Javadoc references
+
+- RexxEngine.java
+
+        - fix Javadoc references
+
 -------------------------------------- 2019-07-26 ----------------------------------
 
 - RexxScriptEngineFactory.java

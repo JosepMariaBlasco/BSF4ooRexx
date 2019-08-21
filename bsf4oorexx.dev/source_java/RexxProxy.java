@@ -27,7 +27,7 @@ import org.apache.bsf.BSFException;
  *
 
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2009-2018 Rony G. Flatscher
+ *    Copyright (C) 2009-2019 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -42,11 +42,16 @@ import org.apache.bsf.BSFException;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 1.0.3, 2009-05-03, 2009-06-27, 2009-07-11, 2009-07-31, 2010-04-16, 2016-11-04, 2018-01-07
+  * @version 1.0.4, 2009-05-03, 2009-06-27, 2009-07-11, 2009-07-31, 2010-04-16, 2016-11-04, 2018-01-07, 2019-09-21
   * @author Rony G. Flatscher (<a href="http://www.wu.ac.at">WU/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu.ac.at/english">http://www.wu.ac.at/english</a>)
   */
 
 /*
+
+    2019-08-21, rgf - renamed ProxiedJavaClassTool.java to ClassAdapter.java
+
+    2019-08-20, rgf - remove "ASM" as Janino suffices for our needs, is fast enough and compiles plain Java
+
     2018-01-07, rgf  - remove deprecation warning of the Java 9 compiler, if there is a Java 6 compliant,
                        non-deprecated alternative; note: the deprecation warning on "finalize" will not
                        be honored as this is intentional as it is the only means to allow garbage collection
@@ -129,60 +134,7 @@ public class RexxProxy implements InvocationHandler
 {
 
      /** Version information on this class. */
-    static final public String version="103.20180107";
-
-
-    // rgf, 2010-04-16 --->
-    static final private String PROXIED_JAVA_CLASS_TOOL_NAME="org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool";
-    static final private String M_CREATE_PROXIED_JCLZ_NAME  ="createProxiedJavaClass";
-    static       private Class<?>   clzProxiedJavaClassTool=null;   // ---rgf, 20161104, cf. <http://stackoverflow.com/questions/892725/proper-way-to-check-java-reflection-calls>
-    static       private Method  mCreateProxiedJavaClass=null;
-    /** If set to <code>true</code> the Janino based implementation is used to extend
-     *  the given abstract or concrete class.
-     */
-    static private boolean extendUsingJanino=false;    // must be initially false, such that the setter can try to dynamically load the utility class
-
-    /** Setter method for field <code>extendUsingJanino</code>. Controls whether to use the
-     *  fast ASM solution for extending abstract classes, or the quick (but by no means as fast)
-     *  Janino-based solution, which allows to proxy Java methods that are defined in superclasses
-     *  (in this case the supplied method name may be blank-preceded by the superclass name)!
-     *  If the field <code>extendUsingJanino</code> is <code>false</code> (default), then ASM is used, Janino else.
-     */
-    static public void setExtendUsingJanino(boolean b) throws BSFException
-    {
-        extendUsingJanino=b;    // save new value
-            // try to load the Janino based utility class ?
-        if (b==true && clzProxiedJavaClassTool==null)
-        {
-            try {
-                clzProxiedJavaClassTool=RexxProxy.class.getClassLoader().loadClass(PROXIED_JAVA_CLASS_TOOL_NAME);
-                mCreateProxiedJavaClass=clzProxiedJavaClassTool.getDeclaredMethod(
-                             M_CREATE_PROXIED_JCLZ_NAME,
-                             new Class [] { Class.class, String.class, String[].class, Class[].class }
-                            );
-            }
-            catch (Exception e) // class not loadable, hence cannot be used
-            {
-                clzProxiedJavaClassTool=null;
-                extendUsingJanino=false;    // reset change
-
-                throw new BSFException (BSFException.REASON_OTHER_ERROR,
-                        "Cannot load class ["+PROXIED_JAVA_CLASS_TOOL_NAME+"] or its method ["+
-                                              M_CREATE_PROXIED_JCLZ_NAME+"]",
-                        e   // supply causing Throwable
-                        );
-            }
-        }
-    }
-
-    /** Getter method for field <code>extendUsingJanino</code>.
-     */
-    static public boolean getExtendUsingJanino()
-    {
-        return extendUsingJanino;
-    }
-    // <---
-
+    static final public String version="104.20190821";
 
 
     /** If set, then output for debugging is created. */
@@ -208,12 +160,6 @@ public class RexxProxy implements InvocationHandler
         {
 	    throw new NoSuchMethodError(e.getMessage());
 	}
-
-        try // ---rgf, 2016-11-05: make sure we use Janino ("ProxiedJavaClassTool.java") instead of ASM ("RexxExtend*.java"), which still is a fallback
-        {
-            setExtendUsingJanino(true);
-        }
-        catch (Exception e) {}
     }
 
     // ------------------------- instance stuff ------------------------------
@@ -1132,7 +1078,6 @@ if (bDebug) System.err.println("     added:                            o=["+o+"]
     public Object newExtendedProxyInstance(Object[] arguments) throws IllegalArgumentException, ClassNotFoundException, NoSuchFieldException, NoSuchMethodException, BSFException, IllegalAccessException, InvocationTargetException
     {
 
-// rgf, 2009-07-31
         Class       clz=null;
         {
             if (arguments==null)
@@ -1185,57 +1130,23 @@ if (bDebug) System.err.println("     added:                            o=["+o+"]
 
         Class<?> extendedClz=null;
 
-        if (extendUsingJanino)
+        if (Modifier.isAbstract(clz.getModifiers()))
         {
-            if (Modifier.isAbstract(clz.getModifiers()))
-            {
-                // extendedClz=clzProxiedJavaClassTool(clz, null, null);   // no explicit name, no list of methods to proxy
-                try {
-                    extendedClz=(Class) mCreateProxiedJavaClass.invoke(null, new Object[] {clz, null, null, null} );
-                }
-                catch (InvocationTargetException ite)
-                {
-                    Throwable c=ite.getCause();
-                    Throwable t=ite.getTargetException();
-                    System.err.println("...RexxProxy.newExtendedProxyInstance(...) # 1: "+
-                                       "cause=["+c.toString()+"]"+
-                                       "\n\ttargetException=["+t+"]");
 
-                    System.err.println("...RexxProxy.newExtendedProxyInstance(...) # 2: "+
-                                       "class:  ["+clzProxiedJavaClassTool.toString()+"], "+
-                                       "method: ["+mCreateProxiedJavaClass.toString()+"]");
-                    throw (ite);    // rethrow
-                }
-            }
-            else
-            {
-                // arguments array contains the method names to proxy
-                arguments[0]=null;  // not a method name, hence nullify it (is originally the supplied class name to extend replaced by its class object)
-                extendedClz=(Class) mCreateProxiedJavaClass.invoke(null, new Object[] {clz, null, (String []) arguments} );
-
-                // get method object, set the default handler to this RexxProxy object
-                Method mSDH=extendedClz.getMethod("setDefaultHandler", new Class[]{org.rexxla.bsf.engines.rexx.RexxProxy.class});
-
-                mSDH.invoke(null, new Object[]{this});
-
-                return extendedClz; // in this case return the class object which needs to get initialized separately
-            }
+            extendedClz=ClassAdapter.createProxiedJavaClass(clz, null, null, null);
         }
-        else    // only able to handle an abstract class which gets initialized
+        else
         {
-// long startLoadECL=0L, endLoadECL=0L, startGenerate=0L, endGenerate=0L;
+            // arguments array contains the method names to proxy
+            arguments[0]=null;  // not a method name, hence nullify it (is originally the supplied class name to extend replaced by its class object)
+            extendedClz=ClassAdapter.createProxiedJavaClass(clz, null, (String []) arguments, null);
 
-// startLoadECL=System.currentTimeMillis();
-            RexxExtendingClassLoader recl=new RexxExtendingClassLoader();
-// endLoadECL=System.currentTimeMillis();
+            // get method object, set the default handler to this RexxProxy object
+            Method mSDH=extendedClz.getMethod("setDefaultHandler", new Class[]{org.rexxla.bsf.engines.rexx.RexxProxy.class});
 
-// startGenerate=System.currentTimeMillis();
-            extendedClz=recl.generateAndLoadExtendedClass(clz.getName());
-// endGenerate=System.currentTimeMillis();
+            mSDH.invoke(null, new Object[]{this});
 
-// System.out.println("RexxProxy.newExtendedProxyInstance(): loading RexxExtendingClassLoader=["+(endLoadECL-startLoadECL)+"]");
-// System.out.println("RexxProxy.newExtendedProxyInstance(): creating extended class         =["+(endGenerate-startGenerate)+"]");
-// rgf, 2010-04-16, T7600 @ 2.33GHz: loading: 0|17msec, creating: 47|94,15|16,0
+            return extendedClz; // in this case return the class object which needs to get initialized separately
         }
 
         // now we need to get its constructors and inject this RexxProxy as the very first argument

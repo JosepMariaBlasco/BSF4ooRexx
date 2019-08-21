@@ -6,6 +6,7 @@
    date:             2009-09-04
    changed:          2015-06-27, rgf: - changed to adapt to new semantics when creating an extended class (array
                                         of method names must not be null now, but have a capacity of 0 instead)
+                     2019-08-21, rgf: - ASM got replaced, adjust tests; ProxiedJavaTool got renamed to ClassAdapter
 
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF4Rexx 4.0 new proxying of Java interfaces
@@ -47,7 +48,6 @@ return testResult
 ::class "testExtendNormal1" subclass ooTestCase public
 
 
-
 ::method "test_01_unknown"
    /* due to the naming in this testgroup, this method will be the first that gets
       run; as previous tests may have changed the "bsfPrefixReturnValue", make sure
@@ -56,13 +56,13 @@ return testResult
        call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
 
     -- get an instance of the RexxExtendingClassLoader
-    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+    adapterClass=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
+    class2proxy=bsf.loadClass("rgf.E_extendNormalClasses.NormalTest")
     newName="test_01_ExtendedNormal"
-      -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
---    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
 
+      -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
     jarray=bsf.createJavaArray("java.lang.String",0)  -- capacity of 0
-    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, jarray)
+    extClz=adapterClass~createProxiedJavaClass(class2proxy, newName, jarray, .nil)
 
     -- find constructor with single RexxProxy argument
     constructor=.nil
@@ -74,13 +74,6 @@ return testResult
           leave
        end
     end
-
-/*
-    argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
-    alternatively=extClz~getDeclaredConstructor(argArray)
-say "constructor:  " constructor~toString
-say "alternatively:" alternatively~toString
-*/
 
     ---
     ro=.RexxProxy_UsingUnknown_no_boxing~new(self) -- create Rexx object to send messages to
@@ -99,13 +92,13 @@ say "alternatively:" alternatively~toString
 
 ::method "test_02_unknown_box_result"
     -- get an instance of the RexxExtendingClassLoader
-    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+    adapterClass=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
+    class2proxy=bsf.loadClass("rgf.E_extendNormalClasses.NormalTest")
     newName="test_02_ExtendedNormal"
-      -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
-  --  extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
 
+      -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
     jarray=bsf.createJavaArray("java.lang.String",0)  -- capacity of 0
-    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, jarray)
+    extClz=adapterClass~createProxiedJavaClass(class2proxy, newName, jarray, .nil)
 
     -- find constructor with single RexxProxy argument
     argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
@@ -126,14 +119,12 @@ say "alternatively:" alternatively~toString
 
 ::method "test_03_individualMethods"
     -- get an instance of the RexxExtendingClassLoader
-    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+    adapterClass=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
+    class2proxy=bsf.loadClass("rgf.E_extendNormalClasses.NormalTest")
     newName="test_03_ExtendedNormal"
       -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
---    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
-
-
     jarray=bsf.createJavaArray("java.lang.String",0)  -- capacity of 0
-    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, jarray)
+    extClz=adapterClass~createProxiedJavaClass(class2proxy, newName, jarray, .nil)
 
     -- find constructor with single RexxProxy argument
     argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
@@ -154,14 +145,12 @@ say "alternatively:" alternatively~toString
 
 ::method "test_04_individualMethods_box_result"
     -- get an instance of the RexxExtendingClassLoader
-    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+    adapterClass=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
+    class2proxy=bsf.loadClass("rgf.E_extendNormalClasses.NormalTest")
     newName="test_04_ExtendedNormal"
       -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
---    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
-
-
     jarray=bsf.createJavaArray("java.lang.String",0)  -- capacity of 0
-    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, jarray)
+    extClz=adapterClass~createProxiedJavaClass(class2proxy, newName, jarray, .nil)
 
     -- find constructor with single RexxProxy argument
     argArray=bsf.createArrayOf("java.lang.Class", bsf.loadClass("org.rexxla.bsf.engines.rexx.RexxProxy"))
@@ -182,14 +171,12 @@ say "alternatively:" alternatively~toString
 
 ::method "test_05_test_correct_methods_generated"
     -- get an instance of the RexxExtendingClassLoader
-    extendingClassLoader=.bsf~new("org.rexxla.bsf.engines.rexx.RexxExtendingClassLoader")
+    adapterClass=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
+    class2proxy=bsf.loadClass("rgf.E_extendNormalClasses.NormalTest")
     newName="test_04_ExtendedNormal"
       -- create dynamically an extended Java-class that implements all methods and forwards their invocation to a Rexx proxy
---    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, .nil)
-
     jarray=bsf.createJavaArray("java.lang.String",0)  -- capacity of 0
-    extClz=extendingClassLoader~generateAndLoadExtendedClass("rgf.E_extendNormalClasses.NormalTest", newName, 0, jarray)
-
+    extClz=adapterClass~createProxiedJavaClass(class2proxy, newName, jarray, .nil)
 
 /*
     ro=.RexxProxy_UsingUnknown~new(self)
@@ -237,7 +224,7 @@ say "alternatively:" alternatively~toString
     self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods)")
     self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods)")
 
-    self~assertTrue(rpClz~getDeclaredConstructors~items=1, "only one (default) constructor")
+    self~assertTrue(rpClz~getDeclaredConstructors~items=2, "expecting two (default and RexxProxy-argument) constructors")
     return
 
 

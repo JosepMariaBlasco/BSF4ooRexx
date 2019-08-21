@@ -7,6 +7,7 @@
    changed:          2017-08-16, rgf: "test_05_test_correct_methods_generated" corrected expected number of declared
                               constructors from one to two: default constructor, constructor with RexxProxy as single
                               argument
+                     2019-08-21, rgf: - ASM got replaced, adjust tests
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF4Rexx 4.0 new proxying of Java interfaces
    needs:            compiled Java classes in this directory
@@ -56,6 +57,7 @@ return testResult
        call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
 
     ro=.RexxProxy_UsingUnknown_no_boxing~new(self)
+
     rp=BsfCreateRexxProxy(ro, , "rgf.D_abstractClasses.AbstractTest")  -- create a RexxProxy representing the Java "AbstractTest" interface
     jo=.bsf~new("rgf.D_abstractClasses.Test_AbstractTest") -- create an instance of the Java class that uses an AbstractTest object
     jo~test_AbstractTest(rp)         -- now let the Java object excercise all interface methods

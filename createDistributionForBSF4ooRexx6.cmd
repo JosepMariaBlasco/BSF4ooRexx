@@ -33,9 +33,9 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 @echo adding javax.servlet.jsp and javax.servlet.http to CLASSPATH
 set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
 
-set releaseDate=20190817
-set runDate=20190817
-set doc_date=20190817
+set releaseDate=20190821
+set runDate=20190821
+set doc_date=20190821
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -72,7 +72,7 @@ del BSF4ooRexx-apache-bsf.jar BSF4ooRexx-apache-bsf-source.jar bsf-*.jar
 @echo creating %bsfJarNameBin% ...
 @rem jar cvMf %bsfJarNameBin% org/apache/bsf/
 @rem rgf, 20090815 jar cvMf %bsfJarNameBin% org/apache/bsf org/apache/taglibs
-jar cvMf %bsfJarNameBin% org/apache/bsf org/apache/taglibs org/objectweb/ org/codehaus/ org/rexxla/ org/oorexx/
+jar cvMf %bsfJarNameBin% org/apache/bsf org/apache/taglibs org/codehaus/ org/rexxla/ org/oorexx/
 jar uf   %bsfJarNameBin% META-INF/
 @echo done - %bsfJarNameBin%
 @rem pause

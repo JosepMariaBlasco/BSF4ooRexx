@@ -8,6 +8,8 @@
                      - corrected method OutputStreamLogger.write(): turning received decimal value into characters
                      - correcting proxying classes as since using Janino new behaviour: explicitly proxying all methods
                        to match pre-Janino-behaviour (still not documented)
+                     2019-08-21, rgf:
+                        - only do a d2c, if an integer number in hand for our tests
 
    license:          ASF 2.0 (Apache Software License)
    remarks:          test BSF.CLS public classes "BSF.InputStream" and "BSF.OutputStream"
@@ -75,7 +77,6 @@ return testResult
           rxo~clearBuffers
        end
     end
-
 
 
 ::method "test_02_BSF_Output_Printer"
@@ -383,7 +384,11 @@ return testResult
 ::method write                      -- implementing abstract OutputStream.write(int ch)
   expose writeBuffer
   use arg val
-  writeBuffer||=val~d2c    -- append character representing received decimal code
+-- say "<<--<<--" .line "<" pp(val) "> >>-->>" "datatype(val)="pp(dataType(val))
+  if dataType(val,"whole") then     -- 2019-08-21, rgf: only do a d2c, if an integer number in hand for our tests
+     writeBuffer||=val~d2c    -- append character representing received decimal code
+  else
+     writeBuffer||=val
 
 
 ::method close                      -- do nothing
