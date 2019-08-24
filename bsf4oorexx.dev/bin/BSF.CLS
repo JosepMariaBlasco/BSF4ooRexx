@@ -19,6 +19,9 @@
           .BSF in .environment;
 
    date:
+         2019-08-24, ---rgf, - adjust bsf.createProxyClass() documentation according to effective behaviour of
+                               ClassAdapter.java
+
          2019-08-21, ---rgf, - adjust for renaming "org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool" to
                                "org.rexxla.bsf.engines.rexx.ClassAdapter"
 
@@ -731,7 +734,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.41 (20190821)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     6.41 (20190824)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -831,7 +834,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20190821" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20190824" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -3963,12 +3966,38 @@ Button Return Values    -1  Dialog CLOSE
 * @param newName the optional name of the newly created Java class, if omitted, a synthetic name
 *        will be created, containing the string &quot;<em>visitorName</em>_$RexxExtendClass$_<em>someHashcode</em>&quot;
 
-* @param methName... optional, either a list of single Java method names or an array of Java method names
+* @param methName... optional, where this and all following arguments denote a list of single Java method names or
+*        a single argument representing an empty string the asterisk (*) character or a Rexx array (or Java array of type
+*        <code>java.lang.String</code>) where each element denotes the Java method name
 *        the Rexx proxy needs to implement; optionally, each Java method name may be preceded by
-*        the Java class name and a blank; if <code>.nil</code>
-*        then all declared public and protected methods of the given class will be proxied; if single
+*        the Java class name and a blank. Please note: all public/protected abstract methods and
+*        constructors will always get proxied! <br/>
+
+*          The following special cases apply for this argument:
+*          <ul>
+*          <li>if this argument is <code>.nil</code>, then only the public/protected abstract methods and
+*              constructors get proxied.
+*          </li>
+*
+*          <li>if this argument is a single empty string, then only the public/protected abstract methods
+*              and constructors get proxied.
+*          </li>
+*
+*          <li>if this argument has a single element with the value <code>&quote;*&quote;</code> (asterisk), then
+*              all public/protected methods and constructors get proxied.
+*          </li>
+*          </ul>
+
+
+*        Please note:
+         <ul>
+         <li>
+        if this argument is omitted or <code>.nil</code> then only the public or protected
+
+then all declared public and protected methods of the given class will be proxied; if single
 *        empty string <code>&quot;&quot;</code> is given, then an empty (size of 0) Java String array
 *        is created and supplied, causing only the public and protected constructors to be proxied
+
 *        <br>Warning: if you proxy the methods <code>toString</code>, <code>equals</code> and <code>hashCode</code> be aware that a wrong
 *        implementation on your side may break the program. For that reason these methods are never
 *        automatically proxied (if you leave out this argument).
@@ -4032,7 +4061,6 @@ Button Return Values    -1  Dialog CLOSE
        javaClzToProxy=javaClzToProxy[1]         -- now replace the class to be extended with first entry in the supplied array
        if javaClzToProxy~isA(.string) then      -- make sure we have a Java object in hand
           javaClzToProxy=bsf.loadClass(javaClzToProxy)   -- load the Java class
-
    end
 
    if methName="", arg()<4 then     -- if only an empty method given, turn argument to empty Java String array

@@ -36,7 +36,13 @@ java org.rexxla.bsf.engines.rexx.ClassAdapter TestAbstract Caesar
                          starting with Java 1.8/8 there are concrete interface methods possible (static and default interface
                          methods)
     2019-08-13, rgf:   - corrected Javadoc warnings
-    2019-08-21, rgf - renamed ProxiedJavaClassTool.java to ClassAdapter.java
+    2019-08-21, rgf:   - renamed ProxiedJavaClassTool.java to ClassAdapter.java
+    2019-08-24, rgf:   - there will always methods for public/protected abstract methods and constructors created
+                         - if message name array is null or an empty Array, then
+                           only abstract methods and constructors get created
+                         - if message name array has a single entry "*", then
+                           all declared public/protected methods get created
+                         - else all array elements that refer to public/protected listed methods will be honored
 */
 
 import java.lang.reflect.*;
@@ -73,7 +79,7 @@ import org.codehaus.janino.SimpleCompiler;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 1.04, 2010-03-27, 2010-04-14, 2010-04-17, 2010-04-18, 2010-11-30, 2011-05-31, 2014-08-30, 2016-11-01, 2016-11-04/5, 2017-03-13, 2019-08-21
+  * @version 1.04, 2010-03-27, 2010-04-14, 2010-04-17, 2010-04-18, 2010-11-30, 2011-05-31, 2014-08-30, 2016-11-01, 2016-11-04/5, 2017-03-13, 2019-08-24
   * @since 2010
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu.ac.at">http://www.wu.ac.at</a>)
   */
@@ -94,11 +100,11 @@ public class ClassAdapter
     public static boolean bShowSource= false; // true; // if set to .true, the generated source is printed to stderr
 
      /** Version information on this class. */
-    static final public String version="104.20190821";
+    static final public String version="104.20190824";
 
     /** Allow using this class from the command line to create an extended Java class and displaying the generated source.
      *  Example: <br>
-     *  <code>java java org.rexxla.bsf.engines.rexx.ClassAdapter javax.swing.AbstractAction ronysClass "*"
+     *  <code>java java org.rexxla.bsf.engines.rexx.ClassAdapter javax.swing.AbstractAction ronysClass "*"</code>
      *
      *  @param args array of blank delimited Strings in the form of &quot;fullJavaClassName [newClassName [methodToProxy [...]]&quot;. If there is
      *         a single method to proxy with a value of &quot;*&quot; (asterisk), then all declared methods will get proxied.
@@ -156,7 +162,7 @@ public class ClassAdapter
     }
 
 
-    /* Do not allow instances of this class. */
+    /* Do not allow argument less instances of this class. */
     private ClassAdapter ()
     {}
 
@@ -165,18 +171,54 @@ public class ClassAdapter
      *
      *  @param  javaClassToProxy Class object to use for proxying
      *  @param  newClzName <code>null</code> or name for proxy class to create
-     *  @param  methodNames2proxy <code>null</code> or array of Strings denoting the names of methods to proxy
-     *          (each entry either the method name, or the class name blank-delimited with the method name); if
-     *          this is <code>null</code> or an empty String array no proxy methods will be created (may be useful
-     *          if supplying additional interface classes to mixin into the extended class for which proxy methods
-     *          should be created); if there is a String array with a length of 0 (no elements)
-     *          or a single entry denoting the string &quot;*&quot;
-     *          (asterisk), then there will be proxy methods created for all declared methods, in effect allowing
-     *          all method invocations to be intercepted by Rexx, including its constructors;
-     *  @param   interfaceClasses the extended class should implement as well
+     *  @param  methodNames2proxy an array denoting the protected or public methods to proxy. Please note:
+     *          each proxied class will get all public/protected abstract methods and constructors
+     *          created (proxied).<br/>
+     *          Each method name element denotes a public or protected single method which may be optionally
+     *          preceeded by a blank and preceeded by the name of some Java superclass to be used for looking
+     *          up the method definitions to proxy.
+     *
+     *          The following special cases apply for this argument:
+     *          <ul>
+     *          <li>if this argument is <code>null</code>, then only the public/protected abstract methods and
+     *              constructors get proxied.
+     *          </li>
+     *
+     *          <li>if this argument has no elements (its <code>length</code>field is <code>0</code>), then
+     *              only the public/protected abstract methods and constructors get proxied.
+     *          </li>
+     *
+     *          <li>if this argument has a single element with the value <code>"*"</code> (asterisk), then
+     *              all public/protected methods and constructors get proxied.
+     *          </li>
+     *          </ul>
+     *
+     *  @param   interfaceClasses optional, the extended class should in addition implement all abstract
+     *           methods of these interface classes
      *
      *  @return the class object representing the extended class
      */
+
+// rgf, 2019-08-24:
+//    java.security.MessageDigest.getInstance("SHA-256");
+/*  from: https://www.baeldung.com/java-md5
+
+    @Test
+    public void givenPassword_whenHashing_thenVerifying()
+      throws NoSuchAlgorithmException {
+        String hash = "35454B055CC325EA1AF2126E27707052";
+        String password = "ILoveJava";
+
+        MessageDigest md = MessageDigest.getInstance("MD5");
+        md.update(password.getBytes());
+        byte[] digest = md.digest();
+        String myHash = DatatypeConverter
+          .printHexBinary(digest).toUpperCase();
+
+        assertThat(myHash.equals(hash)).isTrue();
+    }
+*/
+
     public static Class createProxiedJavaClass(final Class    javaClassToProxy,
                                                      String   newClzName,
                                                final String[] methodNames2proxy,
@@ -234,27 +276,10 @@ if (bDebug==true)
         String [] methods2proxy=null;
         boolean isAbstractClz=Modifier.isAbstract(classModifiers);
 
-        // proxy all methods if there is a single method name argument with a single asterisk character
-/*
-        boolean bProxyAllDeclaredMethods=(methodNames2proxy!=null &&
-                                          methodNames2proxy.length==1 &&
-                                          methodNames2proxy[0].equals("*")
-                                          );
-*/
-
-        // rgf, 2019-08-21: make behaviour compatible with original ASM-solution (RexxExtend*.java), where
-        //                  .nil -> only handle abstract mehtoes
-        //                  empty string array or single element array with "*" will handle all methods
-        //                          including concrete methods for which "_forwardToSuper" ones get created as well
+        // proxy all public and protected declared methods if there is a single method name argument with a
+        // single asterisk character (*)
         boolean bProxyAllDeclaredMethods=( methodNames2proxy!=null &&
-                                           (
-                                            methodNames2proxy.length==0 ||
-                                              (
-                                                   methodNames2proxy.length==1 &&
-                                                   methodNames2proxy[0].equals("*")
-                                              )
-                                            )
-                                          );
+                                           methodNames2proxy.length==1 && methodNames2proxy[0].equals("*") );
 
 // System.err.println("ClassAdapter: bProxyAllDeclaredMethods=["+bProxyAllDeclaredMethods+"]");
 

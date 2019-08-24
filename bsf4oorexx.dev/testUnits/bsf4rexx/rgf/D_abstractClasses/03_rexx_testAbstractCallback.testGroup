@@ -11,6 +11,7 @@
 
                      2019-08-20, rgf: as baseline is Java 6 (class file version 50), do not test for earlier class versions
                      2019-08-21, rgf: - ASM got replaced, adjust tests; ProxiedJavaTool got renamed to ClassAdapter
+                     2019-08-24, rgf, - adjust tests according to corrected behaviour of ClassAdapter.java
 
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF4Rexx 4.0 new callback from Java to ooRexx
@@ -352,7 +353,7 @@ return testResult
       -- get current's Java class version
     javaClzVersion=.java.lang.System~getProperty("java.class.version")
 
-    adapterClass=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
+    clzClassAdapter=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
     class2proxy=bsf.loadClass("rgf.D_abstractClasses.AbstractTest_03")
 
     -- abstract methods for which by default methods get created
@@ -377,7 +378,7 @@ return testResult
     --> just create methods for public abstract methods, array of methods set to .nil !
     testFamily="_family_01"
     newName="AbstractTest_03_" || testFamily
-    clz=adapterClass~createProxiedJavaClass(class2proxy, newName, .nil, .nil)
+    clz=clzClassAdapter~createProxiedJavaClass(class2proxy, newName, .nil, .nil)
     self~assertTrue(abbrev(clz~getName, newName))
     self~assertEquals(4, clz~getDeclaredConstructors~items, "expecting 4 constructors")
 
@@ -394,7 +395,7 @@ return testResult
     newName="AbstractTest_03" || testFamily
     argArray=bsf.createArrayOf("java.lang.String", "<init>")
     -- clz=extendingClassLoader~generateAndLoadExtendedClass("rgf.D_abstractClasses.AbstractTest_03", newName, classVersion, argArray)
-    clz=adapterClass~createProxiedJavaClass(class2proxy, newName, argArray, .nil)
+    clz=clzClassAdapter~createProxiedJavaClass(class2proxy, newName, argArray, .nil)
 
     self~assertTrue(abbrev(clz~getName, newName))
     self~assertEquals(4, clz~getDeclaredConstructors~items, "expecting 4 constructors")
@@ -414,7 +415,7 @@ return testResult
     testFamily="_family_03"
     newName="AbstractTest_03_" || testFamily
     argArray=bsf.createArrayOf("java.lang.String", "instance_String_Method")
-    clz=adapterClass~createProxiedJavaClass(class2proxy, newName, argArray, .nil)
+    clz=clzClassAdapter~createProxiedJavaClass(class2proxy, newName, argArray, .nil)
 
     self~assertTrue(abbrev(clz~getName, newName))
     self~assertEquals(4, clz~getDeclaredConstructors~items, "expecting 4 constructors")
@@ -461,7 +462,7 @@ return testResult
     newName="AbstractTest_03_" || testFamily
 
     argArray=bsf.createArrayOf("java.lang.String", "static_String_Method")
-    clz=adapterClass~createProxiedJavaClass(class2proxy, newName, argArray, .nil)
+    clz=clzClassAdapter~createProxiedJavaClass(class2proxy, newName, argArray, .nil)
 
     self~assertTrue(abbrev(clz~getName, newName))
     self~assertEquals(4, clz~getDeclaredConstructors~items, "expecting 4 constructors")
@@ -504,8 +505,8 @@ return testResult
     --> just create explicitly methods for *all* methods; empty list of methods or single element with "*" for this argument causes this
     testFamily="_family_05"
     newName="AbstractTest_03_" || testFamily
-    argArray=bsf.createArrayOf("java.lang.String")
-    clz=adapterClass~createProxiedJavaClass(class2proxy, newName, argArray, .nil)
+    argArray=bsf.createArrayOf("java.lang.String", "*")
+    clz=clzClassAdapter~createProxiedJavaClass(class2proxy, newName, argArray, .nil)
 
     self~assertTrue(abbrev(clz~getName, newName))
     self~assertEquals(4, clz~getDeclaredConstructors~items, "expecting 4 constructors")
@@ -523,7 +524,7 @@ return testResult
     testFamily="_family_05b"
     newName="AbstractTest_03_" || testFamily
     argArray=bsf.createArrayOf("java.lang.String", "*")
-    clz=adapterClass~createProxiedJavaClass(class2proxy, newName, argArray, .nil)
+    clz=clzClassAdapter~createProxiedJavaClass(class2proxy, newName, argArray, .nil)
 
     self~assertTrue(abbrev(clz~getName, newName))
 
@@ -543,7 +544,7 @@ return testResult
     testFamily="_family_06"
     newName="AbstractTest_03_" || testFamily
     argArray=.nil
-    clz=adapterClass~createProxiedJavaClass(class2proxy, newName, argArray, .nil)
+    clz=clzClassAdapter~createProxiedJavaClass(class2proxy, newName, argArray, .nil)
     self~assertTrue(abbrev(clz~getName, newName))
     self~assertEquals(4, clz~getDeclaredConstructors~items, "expecting 4 constructors")
 
@@ -560,36 +561,36 @@ return testResult
 ::method "test_10_test_name_of_simple_extension"
     -- say;say "self:" self
 
-    adapterClass=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
+    clzClassAdapter=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
     class2proxy=bsf.loadClass("rgf.D_abstractClasses.AbstractTest_03")
 
-    clz2=adapterClass~createProxiedJavaClass(class2proxy, .nil, .nil, .nil)
+    clz2=clzClassAdapter~createProxiedJavaClass(class2proxy, .nil, .nil, .nil)
     self~assertTrue(abbrev(clz2~getName, "org.rexxla.bsf.engines.rexx.onTheFly.AbstractTest_03_$RexxExtendClass$_"), "clz2: test automatic generated new class name")
 
 
 ::method "test_11_creating_specific_class_version_48_Java_1_4" -- Java 1.4 (which is the minum version for BSF4Rexx 4.0)
     -- say;say "self:" self
 
-    adapterClass=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
+    clzClassAdapter=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
     class2proxy=bsf.loadClass("rgf.D_abstractClasses.AbstractTest_03")
 
     clzVersion=.java.lang.System~getProperty("java.class.version")
     newName="NixiNoxi_48"
     argArr=bsf.createArrayOf("java.lang.String", "instance_String_Method")
 
-    clz2=adapterClass~createProxiedJavaClass(class2proxy, newName, argArr, .nil)
+    clz2=clzClassAdapter~createProxiedJavaClass(class2proxy, newName, argArr, .nil)
     self~assertTrue(abbrev(clz2~getName, newName), "clz2: test new class name")
 
 
 
 ::method "test_12_checking that class$ does not exist on Java > 1.4" -- Java 1.5
     -- say;say "self:" self
-    adapterClass=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
+    clzClassAdapter=bsf.importClass("org.rexxla.bsf.engines.rexx.ClassAdapter")
     class2proxy=bsf.loadClass("rgf.D_abstractClasses.AbstractTest_03")
 
     newName="NixiNoxi_49"
     -- create all methods
-    clz2=adapterClass~createProxiedJavaClass(class2proxy, newName, .nil, .nil)
+    clz2=clzClassAdapter~createProxiedJavaClass(class2proxy, newName, .nil, .nil)
     self~assertEquals(newName, clz2~getName)
 
     -- on Java >= 1.5 the synthetic method "class$" must NOT be created
