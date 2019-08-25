@@ -1,16 +1,61 @@
-17.08.2019  14:47            70.064 RexxEngine.java
-21.08.2019  18:18           297.557 RexxAndJava.java
-21.08.2019  19:19            73.346 ClassAdapter.java
-21.08.2019  19:19            59.545 RexxProxy.java
+-------------------------------------- 2019-08-25 ----------------------------------
 
+- ClassAdapter.java
+
+        - supplying additional interface classes should be also honored for extending abstract classes
+
+        - fix bug that only honored one interface method (instead of honoring all)
+
+- bsf4rexx\rgf\D_abstractClasses\03_rexx_testAbstractCallback.testGroup
+
+        - add tests for optional array of Interface classes as fourth argument
+
+- bsf4rexx\rgf\E_extendNormalClasses\03_rexx_testExtendNormalCallback.testGroup
+
+        - add tests for optional array of Interface classes as fourth argument
+
+-------------------------------------- 2019-08-24 ----------------------------------
+
+- ClassAdapter.java
+
+        - there will always methods for public/protected abstract methods and constructors created
+
+          - if message name array is null or an empty Array, then
+            only abstract methods and constructors get created
+
+          - if message name array has a single entry "*", then
+            all declared public/protected methods get created
+
+          - else all array elements that refer to public/protected listed methods will be honored
+
+- BSF.CLS
+
+        - adjust bsf.createProxyClass() documentation according to effective behaviour of
+          ClassAdapter.java
+
+- bsf4rexx\rgf\D_abstractClasses\03_rexx_testAbstractCallback.testGroup
+
+        - adjust tests according to corrected behaviour of ClassAdapter.java
+
+- bsf4rexx\rgf\E_extendNormalClasses\01_rexx_testExtendNormal.testGroup
+
+        - adjust tests according to corrected behaviour of ClassAdapter.java
+
+- bsf4rexx\rgf\E_extendNormalClasses\02_rexx_testExtendNormalCallback.testGroup
+
+        - adjust tests according to corrected behaviour of ClassAdapter.java
+
+- bsf4rexx\rgf\E_extendNormalClasses\03_rexx_testExtendNormalCallback.testGroup
+
+        - adjust tests according to corrected behaviour of ClassAdapter.java
 
 
 -------------------------------------- 2019-08-21 ----------------------------------
 
 Removed ASM (cf. <https://asm.ow2.io/>) from package, adjusting necessary files
 
-
 - BSF.CLS
+
         - adjust for renaming "org.rexxla.bsf.engines.rexx.ProxiedJavaClassTool" to
           "org.rexxla.bsf.engines.rexx.ClassAdapter"
 
@@ -30,6 +75,21 @@ Removed ASM (cf. <https://asm.ow2.io/>) from package, adjusting necessary files
 
         - renamed to ClassAdapter.java
 
+- bsf4rexx\rgf\D_abstractClasses\03_rexx_testAbstractCallback.testGroup
+
+        - ASM got replaced, adjust tests; ProxiedJavaTool got renamed to ClassAdapter
+
+- bsf4rexx\rgf\E_extendNormalClasses\01_rexx_testExtendNormal.testGroup
+
+        - ASM got replaced, adjust tests; ProxiedJavaTool got renamed to ClassAdapter
+
+- bsf4rexx\rgf\E_extendNormalClasses\02_rexx_testExtendNormalCallback.testGroup
+
+        - ASM got replaced, adjust tests; ProxiedJavaTool got renamed to ClassAdapter
+
+- bsf4rexx\rgf\E_extendNormalClasses\03_rexx_testExtendNormalCallback.testGroup
+
+        - ASM got replaced, adjust tests; ProxiedJavaTool got renamed to ClassAdapter
 
 -------------------------------------- 2019-08-20 ----------------------------------
 

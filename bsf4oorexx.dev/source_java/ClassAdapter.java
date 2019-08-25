@@ -43,6 +43,8 @@ java org.rexxla.bsf.engines.rexx.ClassAdapter TestAbstract Caesar
                          - if message name array has a single entry "*", then
                            all declared public/protected methods get created
                          - else all array elements that refer to public/protected listed methods will be honored
+    2019-08-25, rgf:    - supplying additional interface classes should be also honored for extending abstract classes
+                        - fix bug that only honored one interface method (instead of honoring all)
 */
 
 import java.lang.reflect.*;
@@ -100,7 +102,7 @@ public class ClassAdapter
     public static boolean bShowSource= false; // true; // if set to .true, the generated source is printed to stderr
 
      /** Version information on this class. */
-    static final public String version="104.20190824";
+    static final public String version="104.20190825";
 
     /** Allow using this class from the command line to create an extended Java class and displaying the generated source.
      *  Example: <br>
@@ -429,18 +431,14 @@ if (bDebug==true)
 
 // ---------------------------------------------------------------------------
 
-        // interface(s) of an abstract class were already checked and created if necessary, hence
-        // checking extending concrete class with the supplied interface classes, create methods, if necessary
-        if (!Modifier.isAbstract(classModifiers))   // extending a concrete class, process any supplied interfaces
-        {
-            if (bDebug) System.err.println("createProxiedJavaClass(): extending the concrete class with interfaceClasses=["+interfaceClasses+"], .length=["+(interfaceClasses!=null?interfaceClasses.length:null)+"]");
+        // checking extending class with the supplied interface classes, create methods, if necessary
+        if (bDebug) System.err.println("createProxiedJavaClass(): extending the concrete class with interfaceClasses=["+interfaceClasses+"], .length=["+(interfaceClasses!=null?interfaceClasses.length:null)+"]");
 
-            if (interfaceClasses!=null)
+        if (interfaceClasses!=null)
+        {
+            for (Class tmpIClz : interfaceClasses)
             {
-                for (Class tmpIClz : interfaceClasses)
-                {
-                    createInterfaceMethods(sb, newClzName, tmpIClz, ri, javaClassToProxy);
-                }
+                createInterfaceMethods(sb, newClzName, tmpIClz, ri, javaClassToProxy);
             }
         }
 
@@ -953,9 +951,7 @@ if (bDebug==true) System.err.println("createConstructors(), END. <--");
     }
 
 
-
-
-    /** Controls the creation of interface methods (they are always public).
+    /** Controls the creation of the abstract interface methods.
      *
      * @param sb the StringBuffer to append the statements to
      * @param newClzName the new name of the new class
@@ -969,9 +965,10 @@ if (bDebug==true) System.err.println("createConstructors(), END. <--");
     static void createInterfaceMethods(StringBuffer sb, String newClzName, Class ifClz, RunInfos ri, Class<?> tmpClz)    // rgf, 2017-02-09: create methods for the interface classes
     {
         createInterfaceMethodsWorker(sb, newClzName, ifClz, ri, tmpClz);
+
         for (Class tmpIfClz : ifClz.getInterfaces())  // iterate over super interfaces if any
         {
-            createInterfaceMethodsWorker(sb, newClzName, tmpIfClz, ri, tmpClz);
+            createInterfaceMethods(sb, newClzName, tmpIfClz, ri, tmpClz);   // recurse
         }
     }
 
@@ -1005,29 +1002,22 @@ if (bDebug==true) System.err.println("createConstructors(), END. <--");
                 continue;
             }
 
-            if (tmpClz!=null)      // an abstract class supplied
+            // check method against the abstract class object's declaredMethods; is there a concrete
+            // (non-abstract) one available already? If so, do not create a proxy method for it.
+            try
             {
-                // check method against the abstract class object's declaredMethods; is there a concrete
-                // (non-abstract) one available already? If so, do not create a proxy method for it.
-                try
-                {
-                    Method dm=tmpClz.getDeclaredMethod(m.getName(), m.getParameterTypes());
-                    // declared method is not abstract?
-                    int mods=dm.getModifiers();
-                    if (Modifier.isAbstract(mods))      // make sure we implement proxy method only, if
-                    {
-                        createMethod(sb, m, newClzName, ri);         // create method code
-                    }
-                }
-                catch (NoSuchMethodException nsme)
+                Method dm=tmpClz.getDeclaredMethod(m.getName(), m.getParameterTypes());
+                // declared method is not abstract?
+                int mods=dm.getModifiers();
+                if (Modifier.isAbstract(mods))      // make sure we implement proxy method only, if
                 {
                     createMethod(sb, m, newClzName, ri);         // create method code
                 }
-                return;
             }
-
-            // interface methods are always public
-            createMethod(sb, m, newClzName, ri);         // create method code
+            catch (NoSuchMethodException nsme)
+            {
+                createMethod(sb, m, newClzName, ri);         // create method code
+            }
         }
     }
 
@@ -1200,7 +1190,7 @@ if (bDebug==true) System.err.println("---> createMethod() | 1 - method: "+m);
         else if (hs.contains(methSignature2))    // method with this signature already created?
         {
 
-if (bDebug==true) System.err.println("---> createMethod() | 2 - already created signature: "+methSignature2);
+            if (bDebug==true) System.err.println("---> createMethod() | 2 - already created signature: "+methSignature2);
             return;
         }
 

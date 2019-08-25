@@ -2,7 +2,7 @@
 /*
    name:             rexx_testAbstract1.testGroup
    author:           Rony G. Flatscher
-   version:          1.0.0
+   version:          1.0.1
    date:             2009-08-31, 2009-09-05, 2009-09-07
    changed:          2015-06-27, rgf - adapted the test to what is deocumented for supplying an array of
                                        method names to be proxied
@@ -12,6 +12,7 @@
                      2019-08-20, rgf: as baseline is Java 6 (class file version 50), do not test for earlier class versions
                      2019-08-21, rgf: - ASM got replaced, adjust tests; ProxiedJavaTool got renamed to ClassAdapter
                      2019-08-24, rgf, - adjust tests according to corrected behaviour of ClassAdapter.java
+                     2019-08-25, rgf, - add tests for optional array of Interface classes as fourth argument
 
    license:          ASF 2.0 (Apache Software License)
    purpose:          test BSF4Rexx 4.0 new callback from Java to ooRexx
@@ -369,8 +370,6 @@ return testResult
             "setDefaultHandler", "setTargetRexxProxy")      -- instance methods
 
       -- if masking methods, then the synthetic methods get generated depending on instance or static methods
---     forwardToSuperMethods=.set~of("convertFromStringTo$", "instance_String_Method", "forwardToSuper", "forwardToSuperStrict")   -- for instance methods
---     forwardToSuperStaticMethods=.set~of("convertFromStringTo$", "static_String_Method", "forwardToSuperStatic", "forwardToSuperStaticStrict")   -- for static methods
     forwardToSuperMethods=.set~of("instance_String_Method", "instance_String_Method_forwardToSuper")   -- for instance methods
     forwardToSuperStaticMethods=.set~of("static_String_Method", "static_String_Method_forwardToSuper")   -- for static methods
 
@@ -384,6 +383,58 @@ return testResult
 
     declaredMethods=getSetOfNames(clz~getDeclaredMethods)
     expectedMethods=abstractPublicMethods~union(defaultSyntheticMethods)
+-- call compareAndDump "declared<-->expected for:" testFamily, declaredMethods, expectedMethods
+
+    self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods)")
+    self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods)")
+
+    -------------------------------------------------------------------------------------------------
+    --> just create methods for public abstract methods, array of methods set to .nil !
+    --  also create the Interface methods
+    testFamily="_family_01_interface_01"
+    newName="AbstractTest_03_" || testFamily
+
+    ifClz=bsf.createArrayOf("java.lang.Class", bsf.loadClass("java.awt.event.ActionListener"))
+    ifMethods=.array~of("actionPerformed")
+-- say "clzClassAdapter~bShowSource (before)="pp(clzClassAdapter~bShowSource); clzClassAdapter~bShowSource=.true
+    clz=clzClassAdapter~createProxiedJavaClass(class2proxy, newName, .nil, ifClz)
+-- clzClassAdapter~bShowSource=.false; say "clzClassAdapter~bShowSource (AFTER )="pp(clzClassAdapter~bShowSource)
+
+    self~assertTrue(abbrev(clz~getName, newName))
+    self~assertEquals(4, clz~getDeclaredConstructors~items, "expecting 4 constructors")
+
+    declaredMethods=getSetOfNames(clz~getDeclaredMethods)
+    expectedMethods=abstractPublicMethods~union(defaultSyntheticMethods)~union(ifMethods)
+-- call compareAndDump "declared<-->expected for:" testFamily, declaredMethods, expectedMethods
+
+    self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods)")
+    self~assertTrue(expectedMethods~subset(declaredMethods), "expectedMethods~subset(declaredMethods)")
+
+    -------------------------------------------------------------------------------------------------
+    --> just create methods for public abstract methods, array of methods set to .nil !
+    --  also create the Interface methods
+    testFamily="_family_01_interface_02"
+    newName="AbstractTest_03_" || testFamily
+
+      -- MouseInputListener (no methods) -> MouseMotionListener -> MouseListener
+    ifClz=bsf.createArrayOf("java.lang.Class", bsf.loadClass("java.awt.event.ActionListener") , -
+                                               bsf.loadClass("javax.swing.event.MouseInputListener") )
+
+    ifMethods=.array~of("actionPerformed",              , - -- ActionListener
+                        "mouseDragged", "mouseMoved"  , , - -- <- MouseMotionListener
+                        "mouseClicked", "mouseEntered", , - -- <- MouseListener
+                                        "mouseExited" , "mousePressed", "mouseReleased" )
+
+-- say "clzClassAdapter~bShowSource (before)="pp(clzClassAdapter~bShowSource); clzClassAdapter~bShowSource=.true
+    clz=clzClassAdapter~createProxiedJavaClass(class2proxy, newName, .nil, ifClz)
+-- clzClassAdapter~bShowSource=.false; say "clzClassAdapter~bShowSource (AFTER )="pp(clzClassAdapter~bShowSource)
+
+    self~assertTrue(abbrev(clz~getName, newName))
+    self~assertEquals(4, clz~getDeclaredConstructors~items, "expecting 4 constructors")
+
+    declaredMethods=getSetOfNames(clz~getDeclaredMethods)
+    expectedMethods=abstractPublicMethods~union(defaultSyntheticMethods)~union(ifMethods)
+
 -- call compareAndDump "declared<-->expected for:" testFamily, declaredMethods, expectedMethods
 
     self~assertTrue(declaredMethods~subset(expectedMethods), "declaredMethods~subset(expectedMethods)")

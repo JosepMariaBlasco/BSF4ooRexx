@@ -7,7 +7,6 @@
    changed:          2015-06-27, rgf: - changed to adapt to new semantics when creating an extended class (array
                                         of method names must not be null now, but have a capacity of 0 instead)
                      2019-08-21, rgf: - ASM got replaced, adjust tests; ProxiedJavaTool got renamed to ClassAdapter
-
                      2019-08-24, rgf, - adjust tests according to corrected behaviour of ClassAdapter.java
 
    license:          ASF 2.0 (Apache Software License)
