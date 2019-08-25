@@ -45,6 +45,12 @@ java org.rexxla.bsf.engines.rexx.ClassAdapter TestAbstract Caesar
                          - else all array elements that refer to public/protected listed methods will be honored
     2019-08-25, rgf:    - supplying additional interface classes should be also honored for extending abstract classes
                         - fix bug that only honored one interface method (instead of honoring all)
+                        - added ability to save the generated code
+
+-- TODO (rgf, 20190825): - clarify whether Interface methods in Interface superclasses should/must not be implemented
+                           in the adapter (Janino allows for that, JDK 8 does not!)
+
+
 */
 
 import java.lang.reflect.*;
@@ -59,10 +65,21 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
 import org.codehaus.janino.SimpleCompiler;
 
+    // formatting Date()
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+    // calculation CRC32 from byte array
+import java.util.zip.CRC32;
+import java.util.zip.Checksum;
+
+import java.io.FileOutputStream;
+
+
 /**
   * This class creates a proxied Java class on the fly, which has concrete implementations for all
  *  abstract (inherited or not) methods. Additionally it allows for creating proxy methods for
- *  concrete methods and matching <&quot;>_forwardToSuper<&quot> methods to allow ooRexx to forward
+ *  concrete methods and matching <code>&quot;_forwardToSuper&quot;</code> methods to allow ooRexx to forward
  *  proxied Java method invocations to their original target on the Java side.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
@@ -104,12 +121,56 @@ public class ClassAdapter
      /** Version information on this class. */
     static final public String version="104.20190825";
 
+// 2019-08-15, rgf
+        // add ability to save generated programs to file system
+    /** Controls whether the generated file name should be led in with the
+     *  extended class' simple name, defaults to <code>true</code>. */
+    static public boolean bFileNameWithSimpleName=true;    // create with leading simple name of the class that gets extended
+
+        // simple Date formatter
+    /** Defines the format pattern (<code>"yyyyMMdd_HHmmss_SSS"</code>) that
+     *  {@link #formatDateTime()} and {@link #formatDateTime(Date d)} use; this
+     *  one is for showing date and time.
+     */
+    static SimpleDateFormat sdf_dt=new SimpleDateFormat("yyyyMMdd_HHmmss_SSS");
+
+    /** Defines the format pattern (<code>"yyyyMMdd"</code>) that
+     *  {@link #formatDateTime()} and {@link #formatDateTime(Date d)} use; this
+     *  one is for showing date only.
+     */
+    static SimpleDateFormat sdf_d =new SimpleDateFormat("yyyyMMdd");
+
+    /** Controls whether the generated file name includes a date and time
+     *  portion, defaults to <code>true</code>. */
+    static public boolean bFileNameWithDateTime  =true;    // create date time portion for file name
+
+    /** Controls whether the generated file name's date and time portion
+     *  should contain the date portion only, defaults to <code>false</code>. */
+    static public boolean bFileNameWithDateOnly  =false;    // create date portion for file name
+
+
+    // save generated program to file section -->
+    /** Flag that determines whether the generated program should be stored in the file system. */
+    static public boolean bSaveToFilesystem=false;          // do not save to file system
+
+    /** Path where a generated program should be stored to, defaults to the Java temporary directory
+     *  <code>(System.getProperty("java.io.tmpdir"))</code>. */
+    static public  String pathToSaveTo  =System.getProperty("java.io.tmpdir");   // use Java's tmp dirctory by default
+
+    /** Stores the current platform's file separator character. */
+    static private String fileSeparator=System.getProperty("file.separator");   // platform's file separator
+
+
+
+
     /** Allow using this class from the command line to create an extended Java class and displaying the generated source.
      *  Example: <br>
      *  <code>java java org.rexxla.bsf.engines.rexx.ClassAdapter javax.swing.AbstractAction ronysClass "*"</code>
      *
      *  @param args array of blank delimited Strings in the form of &quot;fullJavaClassName [newClassName [methodToProxy [...]]&quot;. If there is
      *         a single method to proxy with a value of &quot;*&quot; (asterisk), then all declared methods will get proxied.
+     *
+     * @throws BSFException if any execution error occurs
      */
     public static void main (String args[])
                     throws BSFException
@@ -199,28 +260,9 @@ public class ClassAdapter
      *           methods of these interface classes
      *
      *  @return the class object representing the extended class
+     *
+     * @throws BSFException if any execution error occurs
      */
-
-// rgf, 2019-08-24:
-//    java.security.MessageDigest.getInstance("SHA-256");
-/*  from: https://www.baeldung.com/java-md5
-
-    @Test
-    public void givenPassword_whenHashing_thenVerifying()
-      throws NoSuchAlgorithmException {
-        String hash = "35454B055CC325EA1AF2126E27707052";
-        String password = "ILoveJava";
-
-        MessageDigest md = MessageDigest.getInstance("MD5");
-        md.update(password.getBytes());
-        byte[] digest = md.digest();
-        String myHash = DatatypeConverter
-          .printHexBinary(digest).toUpperCase();
-
-        assertThat(myHash.equals(hash)).isTrue();
-    }
-*/
-
     public static Class createProxiedJavaClass(final Class    javaClassToProxy,
                                                      String   newClzName,
                                                final String[] methodNames2proxy,
@@ -456,10 +498,38 @@ if (bDebug==true)
         if (bTiming==true) crtSrcEndTime=System.currentTimeMillis(); // System.nanoTime(); // System.currentTimeMillis();
 
 
+        String generatedCode=null;
+            // writing generated code to file desired?
+        if (bSaveToFilesystem)      // o.k. programmer wants to save to the file system
+        {
+            String strClzSimpleName     =javaClassToProxy.getSimpleName();
+            String strClzName           =javaClassToProxy.getName();
+            String strMethodNames2proxy =Arrays.toString(methodNames2proxy);
+            String strInterfaceClasses  =Arrays.toString(interfaceClasses );
+
+            // String fileName=createFileName(javaClassToProxy, newClzName, methodNames2proxy, interfaceClasses);
+            String fileName=createFileName(strClzSimpleName, strClzName, newClzName, strMethodNames2proxy, strInterfaceClasses);
+
+            sb.append("\n\n").append("// ClassAdapter:");
+            sb.append("\n//\targument # 1: ").append(javaClassToProxy);
+            sb.append("\n//\targument # 2: ").append(newClzName);
+            sb.append("\n//\targument # 3: ").append(strMethodNames2proxy);
+            sb.append("\n//\targument # 4: ").append(strInterfaceClasses);
+            sb.append("\n\n// storing in a file named: ").append(fileName);
+            sb.append("\n");    // without this Janino 3.0.15 throws up
+
+            generatedCode=sb.toString();
+
+            writeToFile(fileName,generatedCode);
+        }
+        else
+        {
+            generatedCode=sb.toString();
+        }
+
+
         SimpleCompiler sc=new SimpleCompiler();
-
         Class clz=null;
-
         long startTime=0l, endTime=0l, endOfLoadTime=0l;
 
         try {
@@ -471,7 +541,7 @@ if (bDebug==true)
                 sc.setParentClassLoader(ClassAdapter.class.getClassLoader());
             }
 
-            sc.cook(sb.toString());             // compile program
+            sc.cook(generatedCode);             // compile program
 
             if (bTiming==true) endTime=System.currentTimeMillis(); // System.nanoTime(); // System.currentTimeMillis();
 
@@ -494,6 +564,7 @@ if (bDebug==true)
             System.err.println("load time        (in milliseconds): "+(endOfLoadTime-endTime));
         }
 
+
         return clz;
     }
 
@@ -510,6 +581,8 @@ if (bDebug==true)
      * @param javaClassToProxy the Java (concrete, abstract, interface) class that gets extended
      * @param interfaceClasses the extended class should implement
      * @param ri RunInfos runtime infos for managing the process
+     *
+     * @throws BSFException if any execution error occurs
      */
     static void createProlog (StringBuffer sb, String newClzName, Class javaClassToProxy, Class[] interfaceClasses, RunInfos ri)
                 throws BSFException
@@ -540,8 +613,9 @@ if (bDebug==true)
                 bAddComma=true;
             }
 
-            if (interfaceClasses!=null)         // no array of interfaceClasses supplied
+            if (interfaceClasses!=null)         // an array of interfaceClasses supplied
             {
+// TODO: rgf, 2019-08-25: also supply all super interface classes; if so make sure no duplicate super interfaces
                 for (Class iclz: interfaceClasses)  // iterate over interface classes
                 {
                     if (bAddComma)
@@ -966,6 +1040,7 @@ if (bDebug==true) System.err.println("createConstructors(), END. <--");
     {
         createInterfaceMethodsWorker(sb, newClzName, ifClz, ri, tmpClz);
 
+// TODO: automatically add super interface methods ??? (rgf, 2019-08-25); it seems Janino 3.0.15 mandates it whereas JDK 1.8 prohibits it
         for (Class tmpIfClz : ifClz.getInterfaces())  // iterate over super interfaces if any
         {
             createInterfaceMethods(sb, newClzName, tmpIfClz, ri, tmpClz);   // recurse
@@ -1034,6 +1109,7 @@ if (bDebug==true) System.err.println("createConstructors(), END. <--");
      *                         may be prepended with the name of a superclass delimited with a blank
      * @param ri RunInfos runtime infos for managing the process
      *
+     * @throws BSFException if any execution error occurs
      */
     static void createMethods(StringBuffer sb, String newClzName, Class javaClassToProxy,
                               String [] methods2proxy, RunInfos ri) throws BSFException
@@ -1510,7 +1586,7 @@ if (bDebug==true) System.err.println("---> createMethod() |     created 'forward
             return sb.append("\t\treturn ("+returnTypeName+") res; \n").toString();
         }
 
-        // TODO: primitive types
+        // primitive types
         String objTypeName=null;
 
              if (returnType==boolean.class) { objTypeName="Boolean";   }
@@ -1561,8 +1637,11 @@ if (bDebug==true) System.err.println("---> createMethod() |     created 'forward
 
 
     /** Create comma-separated list of parameter types, enclosed in round parenthesis.
+
      * @param paramTypes array of Class objects
-     * @param kind
+     * @param kind describes the kind (method signature or a throws clause)
+     *
+     * @return the clause depending on on the kind
     */
     // static String createMethodSignatureParen(Class [] paramTypes, boolean bMethodSignature)
     static String createListOfClassNames(Class [] paramTypes, int kind)
@@ -1615,7 +1694,7 @@ if (bDebug==true) System.err.println("---> createMethod() |     created 'forward
      *
      * @param excTypes array of Class objects representing the exceptions that may be thrown
      * @return a String array with two elements, the first entry representing the original list of
-     *         exceptions, the second entry extends this list by the <code>BSFException</cod>
+     *         exceptions, the second entry extends this list by the <code>BSFException</code>
      *
     */
     static String[] createThrowsClause(Class []excTypes)
@@ -1679,6 +1758,152 @@ if (bDebug==true) System.err.println("---> createMethod() |     created 'forward
         }
         return sb.toString();
     }
+
+
+    /** Writes generated code to the file system using {@link #pathToSaveTo} as the location.
+     *
+     *  @param fileName the name to use for storing the generated code
+     *  @param generatedCode the generated Java source
+     *
+     *  @return true if writing the file succeeded, false if {@link #bSaveToFilesystem} is false
+     *  @throws BSFException in case an I/O error occurs
+     */
+    static boolean writeToFile(String fileName, String generatedCode) throws BSFException
+    {
+        if (bSaveToFilesystem==false)
+        {
+            return false;       // indicate no file created
+        }
+
+        FileOutputStream outFile=null;
+
+        try
+        {
+            outFile=new FileOutputStream(pathToSaveTo+fileSeparator+fileName);
+            outFile.write(generatedCode.getBytes());
+            outFile.close();
+        }
+        catch (Exception exc)
+        {
+            exc.printStackTrace();
+            throw new BSFException (BSFException.REASON_OTHER_ERROR, exc.toString(), exc);
+        }
+        return true;
+    }
+
+
+
+    /** Creates and formats a {@link Date} object. Depending on {@link #bFileNameWithDateOnly}
+     *  the time portion may be left out.
+     *
+     * @return formatted {@link Date} object representing the date and time of invocation
+     */
+    public static String formatDateTime()
+    {
+        if (bFileNameWithDateOnly)       // use Date and Time portion
+        {
+            return sdf_d.format(new Date());
+        }
+        return sdf_dt.format(new Date());    // use Date portion only
+    }
+
+    /** Formats a {@link Date} object.  Depending on {@link #bFileNameWithDateOnly}
+     *  the time portion may be left out.
+     *
+     * @param d the {@link Date} object to format
+     * @return formatted {@link Date} object representing
+     */
+    public static String formatDateTime(Date d)
+    {
+        if (bFileNameWithDateOnly)       // use Date and Time portion
+        {
+            return sdf_d.format(d);
+        }
+        return sdf_dt.format(d);    // use Date portion only
+    }
+
+    /** Calculate the CRC32 value for the supplied string and return an uppercased hex-string.
+     *
+     * @param str the String for which the checksum should get calculated
+     * @return the uppercased hexadecimal value
+     */
+    public static String calcCRC32(String str)
+    {
+        if (str==null)      // return null, if no String
+        {
+            return null;
+        }
+        byte [] barrData=str.getBytes();            // get byte array
+        Checksum cs=new CRC32();                    // get CRC32 Checksum object
+        cs.update(barrData, 0, barrData.length);    // calc CRC32
+        return Long.toHexString(cs.getValue()).toUpperCase();
+    }
+
+/** This method will create a file name that by default gets built in the following
+ *  form: <code>SimpleClassName_ClassName_$RexxExtendClass$_CRC32_DATE_TIME_MSEC.java</code>.
+ *  The generation of the file name is controlled by {@link #bFileNameWithSimpleName},
+ *  {@link #bFileNameWithDateTime} and {@link #bFileNameWithDateOnly}.
+ *
+ *  @param clzToProxy the class object that gets extended
+ *  @param newClzName optional, the class name for the extended class
+ *  @param methodNames2proxy optional, an array of method names to proxy
+ *  @param interfaceClasses optional, an array of Interface classes whose abstract methods to proxy
+ *
+ *  @return the file name that should be used for storing the generated proxy class
+ */
+/*
+static    String createFileName(final Class    clzToProxy,
+                          final String   newClzName,
+                          final String[] methodNames2proxy,
+                          final Class[]  interfaceClasses
+                          )
+*/
+
+static String createFileName(final String strClzSimpleName,
+                             final String strClzName,
+                             final String newClzName,
+                             final String strMethodNames2proxy,
+                             final String strInterfaceClasses)
+
+    {
+/*
+        String strClzSimpleName     =clzToProxy.getSimpleName();
+        String strClzName           =clzToProxy.getName();
+        String strMethodNames2proxy =Arrays.toString(methodNames2proxy);
+        String strInterfaceClasses  =Arrays.toString(interfaceClasses );
+*/
+            // String that gets used for calculating CRC32; this way the CRC32 will
+            // indicate that generated classes may have identical content
+        String strToCalcCRC32=strClzName+"-"+newClzName+"-"+strMethodNames2proxy+"-"+strInterfaceClasses;
+        String strCRC32=calcCRC32(strToCalcCRC32);
+
+        StringBuffer sb=new StringBuffer();
+
+        if (bFileNameWithSimpleName)    // lead in with simple class name?
+        {
+            sb.append(strClzSimpleName).append("_");
+        }
+
+        sb.append(strClzName).append("_$RexxExtendClass$_").append(strCRC32);
+
+        if (bFileNameWithDateTime)      // include date/time?
+        {
+            sb.append("_").append(formatDateTime());
+        }
+        sb.append(".java");             // append file type
+
+        // String tmpFileName=strClzSimpleName+"_"+strClzName+"_$RexxExtendClass$_"+strCRC32+"_"+formatDateTime()+".java";
+
+        String tmpFileName=sb.toString();
+
+System.out.println("strToCalcCRC32=["+strToCalcCRC32+"]");
+System.out.println("\ttmpFileName=["+tmpFileName+"]\n");
+
+       return tmpFileName;
+    }
+
+
+
 
 
 

@@ -19,6 +19,8 @@
           .BSF in .environment;
 
    date:
+         2019-08-25, ---rgf, - fixed bug creating interface class objects in bsf.createProxyClass()
+
          2019-08-24, ---rgf, - adjust bsf.createProxyClass() documentation according to effective behaviour of
                                ClassAdapter.java
 
@@ -734,7 +736,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.41 (20190824)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     6.41 (20190825)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -834,7 +836,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20190824" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20190825" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4048,8 +4050,8 @@ then all declared public and protected methods of the given class will be proxie
        arrInterfaceClasses=bsf.createJavaArray("java.lang.Class", javaClzToProxy~items-1)
        loop i=2 to javaClzToProxy~items         -- create array of Java interface classes to proxy
           tmpClz=javaClzToProxy[i]              -- get entry
-          if tmp~isA(.string) then
-             tmpClz=bsf.loadClass(allClasses[i])   -- load the Java interface class
+          if tmpClz~isA(.string) then           -- a string?
+             tmpClz=bsf.loadClass(tmpClz)   -- load the Java interface class
 
           if tmpClz~isInterface<>.true then     -- not a Java interface class!
           do
