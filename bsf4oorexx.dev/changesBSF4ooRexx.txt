@@ -1,3 +1,11 @@
+-------------------------------------- 2019-08-26 ----------------------------------
+
+- ClassAdapter.java
+
+        - do not add BSFException to the throws clause of methods, rather
+          throw a RuntimeException with the BSFException as the cause when
+          a Rexx condition gets raised while invoking the proxy Rexx object
+
 -------------------------------------- 2019-08-25 ----------------------------------
 
 - ClassAdapter.java

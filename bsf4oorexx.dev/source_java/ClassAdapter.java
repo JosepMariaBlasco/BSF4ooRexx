@@ -46,11 +46,9 @@ java org.rexxla.bsf.engines.rexx.ClassAdapter TestAbstract Caesar
     2019-08-25, rgf:    - supplying additional interface classes should be also honored for extending abstract classes
                         - fix bug that only honored one interface method (instead of honoring all)
                         - added ability to save the generated code
-
--- TODO (rgf, 20190825): - clarify whether Interface methods in Interface superclasses should/must not be implemented
-                           in the adapter (Janino allows for that, JDK 8 does not!)
-
-
+    2019-08-26, rgf:    - do not add BSFException to the throws clause of methods, rather
+                          throw a RuntimeException with the BSFException as the cause when
+                          a Rexx condition gets raised while invoking the proxy Rexx object
 */
 
 import java.lang.reflect.*;
@@ -119,7 +117,7 @@ public class ClassAdapter
     public static boolean bShowSource= false; // true; // if set to .true, the generated source is printed to stderr
 
      /** Version information on this class. */
-    static final public String version="104.20190825";
+    static final public String version="104.20190826";
 
 // 2019-08-15, rgf
         // add ability to save generated programs to file system
@@ -552,7 +550,7 @@ if (bDebug==true)
         catch (Exception e)
         {
             e.printStackTrace();
-            throw new BSFException (BSFException.REASON_OTHER_ERROR, e.toString(), e);
+            throw new BSFException (BSFException.REASON_EXECUTION_ERROR, e.toString(), e);
         }
 
         if (bTiming==true)
@@ -563,7 +561,6 @@ if (bDebug==true)
             System.err.println("compilation time (in milliseconds): "+(endTime-startTime));
             System.err.println("load time        (in milliseconds): "+(endOfLoadTime-endTime));
         }
-
 
         return clz;
     }
@@ -615,7 +612,7 @@ if (bDebug==true)
 
             if (interfaceClasses!=null)         // an array of interfaceClasses supplied
             {
-// TODO: rgf, 2019-08-25: also supply all super interface classes; if so make sure no duplicate super interfaces
+// TODO: rgf, 2019-08-25: also supply all super interface classes; if so make sure no duplicate super interfaces ?
                 for (Class iclz: interfaceClasses)  // iterate over interface classes
                 {
                     if (bAddComma)
@@ -711,27 +708,31 @@ if (bDebug==true)
 if (bDebug==true) System.err.println("createConstructorsBase(), begin...");
 
             // determine whether super's default constructor exists (if so, it needs to be invoked)
-        String throwsClauses[]=new String[] {"", "throws BSFException"};    // default values
+        // originally: String throwsClauses[]=new String[] {"", "throws BSFException"};    // default values
+        String throwsClauses[]=new String[] {"", ""};    // default values
 
-        if (javaClassToProxy.isInterface()) // implmenting a Java interface means that we have to implement the default constructor
+        if (javaClassToProxy.isInterface()) // implementing a Java interface means that we have to implement the default constructor
         {
             sb.append("\n\t// --- creating base (default) constructor \n");
 
                 // define default constructor
-            sb.append("\n\tpublic "+newClzName+"() "+(bProxyConstructors ? throwsClauses[1] : throwsClauses[0])+"\n");
+            sb.append("\n\tpublic "+newClzName+"() \n");
             sb.append("\t{\n");
             sb.append("\t\tsuper();                    \n");
             sb.append("\t\ttarget=defaultHandler;      \n");
 
             if (bProxyConstructors)
             {
+                sb.append("\t\ttry {\n");
                 sb.append("\t\ttarget.invoke(this, \"<init>\", \"public "+newClzName+"()\", null);   \n");
+                sb.append("\t\t} \n\t\tcatch (BSFException be)\n");
+                sb.append("\t\t{ \n\t\t\tthrow new RuntimeException(be.toString(), be); \n\t\t}\n");
             }
             sb.append("\t}\n\n");
 
 
             // define constructor with one RexxProxy (the target for handling invocations)
-            sb.append("\n\tpublic "+newClzName+"(RexxProxy rexxproxy) "+(bProxyConstructors ? throwsClauses[1] : throwsClauses[0])+" \n");
+            sb.append("\n\tpublic "+newClzName+"(RexxProxy rexxproxy) \n");
             sb.append("\n");
             sb.append("\t{\n");
             sb.append("\t\tsuper();                 \n");
@@ -744,7 +745,10 @@ if (bDebug==true) System.err.println("createConstructorsBase(), begin...");
             sb.append("\t\t}                           \n");
             if (bProxyConstructors)
             {
+                sb.append("\t\ttry {\n");
                 sb.append("\t\ttarget.invoke(this, \"<init>\", \"public "+newClzName+"(RexxProxy rexxproxy)\", new Object[] {rexxproxy});   \n");
+                sb.append("\t\t} \n\t\tcatch (BSFException be)\n");
+                sb.append("\t\t{ \n\t\t\tthrow new RuntimeException(be.toString(), be); \n\t\t}\n");
             }
             sb.append("\t}\n\n");
             return;     // done for implementing this interface class
@@ -774,8 +778,6 @@ if (bDebug==true) System.err.println("createConstructorsBase(), default construc
 if (bDebug==true) System.err.println("createConstructorsBase(), no default constructor defined in javaClassToProxy, hence cannot create these base constructors, returning.");
             return;
         }
-
-
 
 
         String strMethName="<INIT>";
@@ -828,9 +830,11 @@ if (bDebug==true) System.err.println("createConstructorsBase(), creating: ["+met
 
             if (bProxyConstructors)
             {
+                sb.append("\t\ttry {\n");
                 sb.append("\t\ttarget.invoke(this, \"<init>\", \""+methSignature+"\", null);   \n");
+                sb.append("\t\t} \n\t\tcatch (BSFException be)\n");
+                sb.append("\t\t{ \n\t\t\tthrow new RuntimeException(be.toString(), be); \n\t\t}\n");
             }
-
             sb.append("\t}\n\n");
 
             // rgf, 2010-11-30a
@@ -901,7 +905,10 @@ if (bDebug==true) System.err.println("createConstructorsBase(), creating default
 
                 if (bProxyConstructors)
                 {
+                    sb.append("\t\ttry {\n");
                     sb.append("\t\ttarget.invoke(this, \"<init>\", \""+methSignature+"\", new Object[] {rexxproxy});   \n");
+                    sb.append("\t\t} \n\t\tcatch (BSFException be)\n");
+                    sb.append("\t\t{ \n\t\t\tthrow new RuntimeException(be.toString(), be); \n\t\t}\n");
                 }
                 sb.append("\t}\n\n");
 
@@ -1001,7 +1008,10 @@ if (bDebug==true) System.err.println("///  createConstructors(): methSignature2=
             if (bProxyConstructors)
             {
                 sb.append("\t\t"+paramArg[2]+"\n");     // define arguments as "Object[] obj"
+                sb.append("\t\ttry {\n");
                 sb.append("\t\ttarget.invoke(this, \"<init>\", \""+tmpConstr.toString()+"\", obj);   \n");
+                sb.append("\t\t} \n\t\tcatch (BSFException be)\n");
+                sb.append("\t\t{ \n\t\t\tthrow new RuntimeException(be.toString(), be); \n\t\t}\n");
             }
 
             sb.append("\t}\n\n");
@@ -1035,12 +1045,12 @@ if (bDebug==true) System.err.println("createConstructors(), END. <--");
      *                (create proxy method only, if no concrete declaredMethod() of it exists)
      *
      */
-// TODO: make sure we proxy also default interface methods, if "*" was supplied!
+// TODO: make sure we proxy also default interface methods, if "*" was supplied ?
     static void createInterfaceMethods(StringBuffer sb, String newClzName, Class ifClz, RunInfos ri, Class<?> tmpClz)    // rgf, 2017-02-09: create methods for the interface classes
     {
         createInterfaceMethodsWorker(sb, newClzName, ifClz, ri, tmpClz);
 
-// TODO: automatically add super interface methods ??? (rgf, 2019-08-25); it seems Janino 3.0.15 mandates it whereas JDK 1.8 prohibits it
+        // we must proxy all interface methods of "super interfaces"
         for (Class tmpIfClz : ifClz.getInterfaces())  // iterate over super interfaces if any
         {
             createInterfaceMethods(sb, newClzName, tmpIfClz, ri, tmpClz);   // recurse
@@ -1050,8 +1060,8 @@ if (bDebug==true) System.err.println("createConstructors(), END. <--");
     static void createInterfaceMethodsWorker(StringBuffer sb, String newClzName, Class ifClz, RunInfos ri, Class <?> tmpClz)
     {
         sb.append("\n\t// --- creating methods for interface ["+ifClz.getName()+"]" +
-                  (tmpClz==null? "" : " for ["+tmpClz.getName()+"]") +
-                  ", if not yet created \n");
+//                  (tmpClz==null? "" : " for ["+tmpClz.getName()+"]") +
+                  ", if any and not yet created \n");
 
         // create abstract methods
         Method []declMethods=null;
@@ -1186,9 +1196,8 @@ if (bDebug==true) System.err.println("---> BINGO !    <INIT>   BINGO! <---, newC
                 continue;
             }
 
-            // TODO: get all declared methods, analyze them and if matching, create proxied method
-            //       abstract method with now forwardTo, else forwardToSuper
-
+            // get all declared methods, analyze them and if matching, create proxied method
+            // for non-abstract methods with the suffix "_forwardToSuper"
             Method []meths=(Method []) ri.clz2declMethods.get(tmpClz);
             if (meths==null)    // no declared methods cached so far
             {
@@ -1212,8 +1221,7 @@ if (bDebug==true) System.err.println("---> BINGO !    <INIT>   BINGO! <---, newC
                 int mMods=meths[k].getModifiers();
 
                 // rgf, 20140830: allow to override protected methods too as a subclass is allowed to invoke it
-                // if ((mMods & (Modifier.FINAL | Modifier.PRIVATE | Modifier.PROTECTED)) != 0)
-                if ((mMods & (Modifier.FINAL | Modifier.PRIVATE )) != 0)
+                if ((mMods & (Modifier.FINAL | Modifier.PRIVATE )) != 0)    // ignore if final or private
                 {
                     continue;   // don't proxy
                 }
@@ -1316,7 +1324,10 @@ if (bDebug==true) System.err.println("---> createMethod() | 1 - method: "+m);
             sb.append("\t\tRexxProxy rpTarget=(target==null ? defaultHandler : target);     \n");
         }
 
+        sb.append("\t\ttry {\n");
         sb.append("\t\t\tres=rpTarget.invoke("+strThis+", \""+methName+"\", \""+strModifiers+" "+methName+methSignature2+"\", obj); \n");
+        sb.append("\t\t} \n\t\tcatch (BSFException be)\n");
+        sb.append("\t\t{ \n\t\t\tthrow new RuntimeException(be.toString(), be); \n\t\t}\n");
 
         sb.append(retStmts);
         sb.append("\t}\n\n");
@@ -1694,24 +1705,26 @@ if (bDebug==true) System.err.println("---> createMethod() |     created 'forward
      *
      * @param excTypes array of Class objects representing the exceptions that may be thrown
      * @return a String array with two elements, the first entry representing the original list of
-     *         exceptions, the second entry extends this list by the <code>BSFException</code>
+     *         thrown exceptions, the second entry used to extend this list by the <code>BSFException</code>,
+     *         which since 2019-08-26 is not the case anymore, therefor the second entry is the same
+     *         as the first one
      *
     */
     static String[] createThrowsClause(Class []excTypes)
     {
         // Class []excTypes=tmpConstr.getExceptionTypes();
-        String throwsClauseOri=createListOfClassNames(excTypes, THROWS_CLAUSE);
-        String throwsClause=throwsClauseOri;
-
-        if (throwsClauseOri==null)
-        {
-            throwsClauseOri="";
-        }
+        String throwsClause=createListOfClassNames(excTypes, THROWS_CLAUSE);
 
         if (throwsClause==null)
         {
-            throwsClause="throws BSFException";
+            return new String[] { "", ""};
         }
+
+        return new String[] { throwsClause, throwsClause };
+
+/* we do not add BSFException anymore as this would be illegal for JDK
+        String throwsClause=throwsClauseOri;
+
         else
         {
                 // BSFException already listed? If not, append it.
@@ -1728,6 +1741,7 @@ if (bDebug==true) System.err.println("---> createMethod() |     created 'forward
         }
 
         return new String[] { throwsClauseOri, throwsClause };
+*/
     }
 
 
@@ -1780,6 +1794,7 @@ if (bDebug==true) System.err.println("---> createMethod() |     created 'forward
         try
         {
             outFile=new FileOutputStream(pathToSaveTo+fileSeparator+fileName);
+// System.err.println("writeToFile(...), path=["+pathToSaveTo+fileSeparator+fileName+"]");
             outFile.write(generatedCode.getBytes());
             outFile.close();
         }
@@ -1896,13 +1911,11 @@ static String createFileName(final String strClzSimpleName,
 
         String tmpFileName=sb.toString();
 
-System.out.println("strToCalcCRC32=["+strToCalcCRC32+"]");
-System.out.println("\ttmpFileName=["+tmpFileName+"]\n");
+// System.out.println("strToCalcCRC32=["+strToCalcCRC32+"]");
+// System.out.println("\ttmpFileName=["+tmpFileName+"]\n");
 
        return tmpFileName;
     }
-
-
 
 
 
