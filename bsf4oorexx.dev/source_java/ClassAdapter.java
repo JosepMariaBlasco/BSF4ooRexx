@@ -49,6 +49,13 @@ java org.rexxla.bsf.engines.rexx.ClassAdapter TestAbstract Caesar
     2019-08-26, rgf:    - do not add BSFException to the throws clause of methods, rather
                           throw a RuntimeException with the BSFException as the cause when
                           a Rexx condition gets raised while invoking the proxy Rexx object
+    2019-08-29, rgf:    - allow more control over generated class names consulting the new fields:
+                                static public boolean bAddCRC32toNewName=false;
+                                static public boolean bAddCRC32toGeneratedClassName=true;
+                                static public boolean bAddHashToGeneratedClassName=false;
+                                static public String extensionIndicator = "$RexxExtendClass$";
+                                static public String packageName="org.rexxla.bsf.engines.rexx.onTheFly";
+
 */
 
 import java.lang.reflect.*;
@@ -117,7 +124,7 @@ public class ClassAdapter
     public static boolean bShowSource= false; // true; // if set to .true, the generated source is printed to stderr
 
      /** Version information on this class. */
-    static final public String version="104.20190826";
+    static final public String version="104.20190829";
 
 // 2019-08-15, rgf
         // add ability to save generated programs to file system
@@ -150,6 +157,66 @@ public class ClassAdapter
     // save generated program to file section -->
     /** Flag that determines whether the generated program should be stored in the file system. */
     static public boolean bSaveToFilesystem=false;          // do not save to file system
+
+
+// ---------->
+    /** Flag that determines whether the supplied <code>newName</code> should get the
+     *  CRC32 value appended, defaults to <code>true</code>. The CRC32 value gets calculated
+     *  from the string values of the arguments such that the same arguments are expected
+     *  to create the same CRC32 value.
+     */
+    static public boolean bAddCRC32toNewName=false;
+
+    /** Flag that determines whether the generated class name should get the CRC32
+     *  value appended, defaults to <code>true</code>. */
+    static public boolean bAddCRC32toGeneratedClassName=true;
+
+    /** Flag that determines whether the generated class name should get the hash value of
+     *  the class object appended, defaults to <code>false</code>. If name clashes occur
+     *  in an application due to having duplicate CRC32 values generated, then setting
+     *  this flag to <code>true</code> should allow for creating unique class names thereafter.
+     */
+    static public boolean bAddHashToGeneratedClassName=false;
+
+    /** String that gets appended to the generated class name to ease locating such classes, defaults to
+     *  <code>"_$RexxExtendClass$_"</code>.
+     */
+    static public String extensionIndicator = "$RexxExtendClass$";
+
+
+    /** Package name that will replace the package name of the extended class, defaults
+     *  to <code>"org.rexxla.bsf.engines.rexx.onTheFly"</code>.
+     *        If the value is <code>null</code>, then the package name will not be replaced.
+     *        If the value is the empty String (length of 0), then the package of the extended class
+     *        will be removed.
+     */
+    static public String packageName="org.rexxla.bsf.engines.rexx.onTheFly";
+
+/*
+    / ** Setter method that allows the replacement package name to be set.
+     *
+     * @param newPackageName the name used for replacing the package name of the extended class.
+     *        If the value is <code>null</code>, then the package name will not be replaced.
+     *        If the value is the empty String (length of 0), then the package of the extended class
+     *        will be removed.
+     * /
+    static public void setPackageName(String newPackageName)
+    {
+        packageName=newPackageName;
+    }
+
+    / ** Getter method that returns the the current replacement package name.
+     *
+     *  @return the current replacement package name
+     * /
+    static public String getPackageName()
+    {
+        return packageName;
+    }
+--- */
+
+
+// <----------
 
     /** Path where a generated program should be stored to, defaults to the Java temporary directory
      *  <code>(System.getProperty("java.io.tmpdir"))</code>. */
@@ -231,7 +298,7 @@ public class ClassAdapter
      *  a RexxProxy.
      *
      *  @param  javaClassToProxy Class object to use for proxying
-     *  @param  newClzName <code>null</code> or name for proxy class to create
+     *  @param  strNewClzName <code>null</code> or name for proxy class to create
      *  @param  methodNames2proxy an array denoting the protected or public methods to proxy. Please note:
      *          each proxied class will get all public/protected abstract methods and constructors
      *          created (proxied).<br/>
@@ -262,17 +329,19 @@ public class ClassAdapter
      * @throws BSFException if any execution error occurs
      */
     public static Class createProxiedJavaClass(final Class    javaClassToProxy,
-                                                     String   newClzName,
+                                               final String   strNewClzName,
                                                final String[] methodNames2proxy,
                                                final Class[]  interfaceClasses
                                                )
                                         throws BSFException
     {
+        String newClzName=strNewClzName;
+
 if (bDebug==true)
 {
    System.err.println("... arrived in \"public static Class createProxiedJavaClass(...)\"");
    System.err.println("\targ #1, javaClassToProxy : ["+javaClassToProxy.toString()+"]");
-   System.err.println("\targ #2, newClzName       : ["+newClzName                 +"]");
+   System.err.println("\targ #2, strNewClzName    : ["+strNewClzName                 +"]");
    System.err.println("\targ #3a, methodNames2proxy.length=["+methodNames2proxy.length+"]");
    System.err.println("\targ #3, methodNames2proxy: ["+(methodNames2proxy==null ? null : Arrays.toString(methodNames2proxy))+"]");
    System.err.println("\targ #4, interfaceClasses : ["+(interfaceClasses==null  ? null : Arrays.toString(interfaceClasses)) +"]");
@@ -308,12 +377,68 @@ if (bDebug==true)
                      "ClassAdapter.createProxiedJavaClass(...): argument \"javaClassToProxy\", value=["+javaClassToProxy+"]: must not be final");
         }
 
-        String argNewClzName=newClzName;    // save argument value
+// ----------->
+        String strCRC32            =null;
+        String strClzSimpleName    =null;
+        String strClzName          =null;
+        String strMethodNames2proxy=null;
+        String strInterfaceClasses =null;
 
-        if (newClzName==null)   // no name for the proxied Java class given?
+            // calc CRC32 if any of the following flags is true
+        if (bAddCRC32toGeneratedClassName || bSaveToFilesystem || bAddCRC32toNewName )
         {
-            newClzName=javaClassToProxy.getName()+"_$RexxExtendClass$_"+(new Object()).hashCode();
+                // String version of simple name only needed if saving to file and simple name desired
+            if (bSaveToFilesystem && bFileNameWithSimpleName)
+            {
+                strClzSimpleName    =javaClassToProxy.getSimpleName();
+            }
+
+            strClzName          =javaClassToProxy.getName();
+            strMethodNames2proxy=Arrays.toString(methodNames2proxy);
+            strInterfaceClasses =Arrays.toString(interfaceClasses );
+                // CRC32 value should be pretty good to create unique values
+            strCRC32=calcCRC32(strClzName+"-"+newClzName+"-"+strMethodNames2proxy+"-"+strInterfaceClasses);
         }
+// <-----------
+
+        if (newClzName==null)   // no name for the proxied Java class supplied? Generate an artificial name
+        {
+            newClzName=(strClzName != null ? strClzName : javaClassToProxy.getName()) +
+                        "_" + extensionIndicator ;  /* default: "$RexxExtendClass$"   */
+
+            if (bAddCRC32toGeneratedClassName)  // CRC32 could make the name unique already and is repeatable
+            {
+                newClzName=newClzName+"_"+strCRC32;
+            }
+
+            if (bAddHashToGeneratedClassName)   // some random hashCode could make the name unique
+            {
+                newClzName=newClzName +"_"+(new Object()).hashCode();
+            }
+        }
+        else if (bAddCRC32toNewName)    // shall we add CRC32 to the explictly passed-in new name for the class?
+        {
+            newClzName=strNewClzName+"_"+strCRC32;
+        }
+
+// --->
+if (bDebug==true)
+{
+    System.err.println("\n--> newClzName=["+newClzName+"] (edited according to flags)");
+    System.err.println("\tstrClzName                   =["+strClzName   +"]");
+    System.err.println("\tstrNewClzName                =["+strNewClzName+"]");
+    System.err.println("\tstrMethodNames2proxy         =["+strMethodNames2proxy         +"]");
+    System.err.println("\tstrInterfaceClasses          =["+strInterfaceClasses          +"]");
+    System.err.println();
+    System.err.println("\tbAddCRC32toGeneratedClassName=["+bAddCRC32toGeneratedClassName+"]");
+    System.err.println("\tbSaveToFilesystem            =["+bSaveToFilesystem            +"]");
+    System.err.println("\tbAddHashToGeneratedClassName =["+bAddHashToGeneratedClassName +"]");
+    System.err.println("\tbAddCRC32toNewName           =["+bAddCRC32toNewName           +"]");
+    System.err.println("\tstrCRC32                     =["+strCRC32                     +"]");
+}
+
+// <---
+
 
         String [] methods2proxy=null;
         boolean isAbstractClz=Modifier.isAbstract(classModifiers);
@@ -365,43 +490,81 @@ if (bDebug==true)
 
 
 // ---------------------------------------------------------------------------
+        // process package part of class:
+        // if:   newClzName given, then do not change its package name
+        // else:
+        // ... if packageName is null, then leave the package name intact
+        // ... if packageName is "", then remove package name altogether
 
-        String packageName="org.rexxla.bsf.engines.rexx.onTheFly";
+if (bDebug==true) System.err.println("\treplacing/adding package name ... ]");
+
+//        String packageName="org.rexxla.bsf.engines.rexx.onTheFly";
+        String simpleNewClzName=newClzName;         // default to current fully defined class name
+        String replacementPackageName=packageName;  // default to statically defined package name
             // extract simple class name
         int lpos=newClzName.lastIndexOf('.');
         if (lpos>=0)
         {
-            if (argNewClzName!=null)    // use argument's package name
+            if (strNewClzName!=null)    // use argument's package name later
             {
-                packageName=newClzName.substring(0,lpos);
+                // packageName=newClzName.substring(0,lpos);
+               replacementPackageName=newClzName.substring(0,lpos);
+            }
+            else
+            {
+                if (packageName.length()==0 || packageName.contains(" "))   // empty string or blanks only
+                {
+                    replacementPackageName="";
+                }
             }
 
-            newClzName=newClzName.substring(lpos+1);
+if (bDebug==true) System.err.println("\treplacing package name ...   =["+newClzName.substring(0,lpos) +"]");
+            // newClzName=newClzName.substring(lpos+1);    // remove package name
+            simpleNewClzName=newClzName.substring(lpos+1);    // remove package name
         }
-        else
+        else   // no package name
         {
-            packageName=null;
+            replacementPackageName=null;
         }
 
         String fullNewClzName=newClzName;
-        if (packageName!=null)  // only supply a package name, if original class has one as well, otherwise loadClass() may experience problems later
+        // if (packageName!=null)  // only supply a package name, if original class has one as well, otherwise loadClass() may experience problems later
+        if (replacementPackageName!=null)  // only supply a package name, if original class has one as well, otherwise loadClass() may experience problems later
         {
-            sb.append("package ").append(packageName).append("; \n");
-            fullNewClzName=packageName+"."+newClzName;
+            // sb.append("package ").append(packageName).append("; \n");
+            // fullNewClzName=packageName+"."+newClzName;
+            if (replacementPackageName.length()>0)
+            {
+                sb.append("package ").append(replacementPackageName).append("; \n");
+                // fullNewClzName=replacementPackageName+"."+newClzName;
+                fullNewClzName=replacementPackageName+"."+simpleNewClzName;
+            }
+            else
+            {
+                fullNewClzName=newClzName;
+            }
         }
 
+if (bDebug==true)
+{
+    System.err.println("\tpackageName                  =["+packageName           +"]");
+    System.err.println("\treplacementPackageName       =["+replacementPackageName+"]");
+    System.err.println("\tsimpleNewClzName             =["+simpleNewClzName      +"]");
+    System.err.println("\tEFFECTIVE fullNewClzName     =["+ fullNewClzName +"]");
+}
+
 // ---------------------------------------------------------------------------
 
-        createProlog(sb, newClzName, javaClassToProxy, interfaceClasses, ri); // create prolog code
+        createProlog(sb, simpleNewClzName, javaClassToProxy, interfaceClasses, ri); // create prolog code
 
 // ---------------------------------------------------------------------------
 
-        createMethods(sb, newClzName,  javaClassToProxy, methods2proxy, ri);
+        createMethods(sb, simpleNewClzName,  javaClassToProxy, methods2proxy, ri);
 
 // ---------------------------------------------------------------------------
 
         // if constructors were not created by demand of user, do not proxy them to the RexxProxy
-        createConstructorsBase(sb, newClzName,  javaClassToProxy, false, ri); // create base constructors
+        createConstructorsBase(sb, simpleNewClzName,  javaClassToProxy, false, ri); // create base constructors
 
 // ---------------------------------------------------------------------------
 
@@ -413,8 +576,8 @@ if (bDebug==true)
         {
             if (bDebug==true) System.err.println("createProxiedJavaClass(): tmpClz=["+tmpClz+"]");
 
-            // createConstructors(sb, newClzName,  javaClassToProxy, bProxyConstructors, isAbstractClz); // create addtional, constructors
-            createConstructors(sb, newClzName,  tmpClz, false, ri); // create addtional, constructors
+            // createConstructors(sb, simpleNewClzName,  javaClassToProxy, bProxyConstructors, isAbstractClz); // create addtional, constructors
+            createConstructors(sb, simpleNewClzName,  tmpClz, false, ri); // create addtional, constructors
 
             // if an abstract class, check its superclass for abstractness; and if so
             // proxy its public constructors as well
@@ -449,7 +612,7 @@ if (bDebug==true)
                     // only create proxy method if public or protected
                     if (Modifier.isPublic(methModifiers) || Modifier.isProtected(methModifiers) )
                     {
-                        createMethod(sb, m, newClzName, ri);         // create method code, do not create forwardToSuper()
+                        createMethod(sb, m, simpleNewClzName, ri);         // create method code, do not create forwardToSuper()
                     }
                 }
             }
@@ -458,7 +621,7 @@ if (bDebug==true)
                 // some of the interface methods are not implemented, implement then, if so
             for (Class tmpIClz : tmpClz.getInterfaces())    // iterate over declared interfaces and process them
             {
-                createInterfaceMethods(sb, newClzName, tmpIClz, ri, tmpClz);
+                createInterfaceMethods(sb, simpleNewClzName, tmpIClz, ri, tmpClz);
             }
 
             tmpClz=tmpClz.getSuperclass();
@@ -478,7 +641,7 @@ if (bDebug==true)
         {
             for (Class tmpIClz : interfaceClasses)
             {
-                createInterfaceMethods(sb, newClzName, tmpIClz, ri, javaClassToProxy);
+                createInterfaceMethods(sb, simpleNewClzName, tmpIClz, ri, javaClassToProxy);
             }
         }
 
@@ -490,7 +653,7 @@ if (bDebug==true)
 
         if (bShowSource)    // show the source before compiling
         {
-            System.err.println("/// ClassAdapter.createProxiedJavaClass(...) ---> begin of generated code for class: ["+newClzName+"], now: ["+fullNewClzName+"]\n"+sb.toString()+"\n<--- end of generated code \\\\\\");
+            System.err.println("/// ClassAdapter.createProxiedJavaClass(...) ---> begin of generated code for class: ["+simpleNewClzName+"], now: ["+fullNewClzName+"]\n"+sb.toString()+"\n<--- end of generated code \\\\\\");
         }
 
         if (bTiming==true) crtSrcEndTime=System.currentTimeMillis(); // System.nanoTime(); // System.currentTimeMillis();
@@ -500,17 +663,19 @@ if (bDebug==true)
             // writing generated code to file desired?
         if (bSaveToFilesystem)      // o.k. programmer wants to save to the file system
         {
+/*
             String strClzSimpleName     =javaClassToProxy.getSimpleName();
             String strClzName           =javaClassToProxy.getName();
             String strMethodNames2proxy =Arrays.toString(methodNames2proxy);
             String strInterfaceClasses  =Arrays.toString(interfaceClasses );
+*/
 
-            // String fileName=createFileName(javaClassToProxy, newClzName, methodNames2proxy, interfaceClasses);
-            String fileName=createFileName(strClzSimpleName, strClzName, newClzName, strMethodNames2proxy, strInterfaceClasses);
+            // String fileName=createFileName(javaClassToProxy, simpleNewClzName, methodNames2proxy, interfaceClasses);
+            String fileName=createFileName(strClzSimpleName, strClzName, simpleNewClzName, strMethodNames2proxy, strInterfaceClasses, strCRC32);
 
             sb.append("\n\n").append("// ClassAdapter:");
             sb.append("\n//\targument # 1: ").append(javaClassToProxy);
-            sb.append("\n//\targument # 2: ").append(newClzName);
+            sb.append("\n//\targument # 2: ").append(newClzName).append(" | simpleNewClzName: ").append(simpleNewClzName);
             sb.append("\n//\targument # 3: ").append(strMethodNames2proxy);
             sb.append("\n//\targument # 4: ").append(strInterfaceClasses);
             sb.append("\n\n// storing in a file named: ").append(fileName);
@@ -1859,38 +2024,28 @@ if (bDebug==true) System.err.println("---> createMethod() |     created 'forward
  *  The generation of the file name is controlled by {@link #bFileNameWithSimpleName},
  *  {@link #bFileNameWithDateTime} and {@link #bFileNameWithDateOnly}.
  *
- *  @param clzToProxy the class object that gets extended
- *  @param newClzName optional, the class name for the extended class
- *  @param methodNames2proxy optional, an array of method names to proxy
- *  @param interfaceClasses optional, an array of Interface classes whose abstract methods to proxy
+ *  @param strClzSimpleName the simple name of the extended class
+ *  @param strClzName the full name of the extended class
+ *  @param newClzName the new full name of the class
+ *  @param strMethodNames2proxy the list of method names to proxy
+ *  @param strInterfaceClasses the list of interface classes to proxy
  *
  *  @return the file name that should be used for storing the generated proxy class
  */
-/*
-static    String createFileName(final Class    clzToProxy,
-                          final String   newClzName,
-                          final String[] methodNames2proxy,
-                          final Class[]  interfaceClasses
-                          )
-*/
 
 static String createFileName(final String strClzSimpleName,
                              final String strClzName,
                              final String newClzName,
                              final String strMethodNames2proxy,
-                             final String strInterfaceClasses)
+                             final String strInterfaceClasses,
+                             final String strCRC32
+                             )
 
     {
-/*
-        String strClzSimpleName     =clzToProxy.getSimpleName();
-        String strClzName           =clzToProxy.getName();
-        String strMethodNames2proxy =Arrays.toString(methodNames2proxy);
-        String strInterfaceClasses  =Arrays.toString(interfaceClasses );
-*/
             // String that gets used for calculating CRC32; this way the CRC32 will
             // indicate that generated classes may have identical content
-        String strToCalcCRC32=strClzName+"-"+newClzName+"-"+strMethodNames2proxy+"-"+strInterfaceClasses;
-        String strCRC32=calcCRC32(strToCalcCRC32);
+//        String strToCalcCRC32=strClzName+"-"+newClzName+"-"+strMethodNames2proxy+"-"+strInterfaceClasses;
+//        String strCRC32=calcCRC32(strToCalcCRC32);
 
         StringBuffer sb=new StringBuffer();
 
@@ -1899,7 +2054,7 @@ static String createFileName(final String strClzSimpleName,
             sb.append(strClzSimpleName).append("_");
         }
 
-        sb.append(strClzName).append("_$RexxExtendClass$_").append(strCRC32);
+        sb.append(strClzName).append("_").append(extensionIndicator).append("_").append(strCRC32);
 
         if (bFileNameWithDateTime)      // include date/time?
         {

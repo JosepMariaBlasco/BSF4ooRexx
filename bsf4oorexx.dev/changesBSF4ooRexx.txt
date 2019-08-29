@@ -1,3 +1,15 @@
+
+-------------------------------------- 2019-08-29 ----------------------------------
+
+- ClassAdapter.java
+
+        - allow more control over generated class names consulting the new fields:
+                static public boolean bAddCRC32toNewName=false;
+                static public boolean bAddCRC32toGeneratedClassName=true;
+                static public boolean bAddHashToGeneratedClassName=false;
+                static public String extensionIndicator = "$RexxExtendClass$";
+                static public String packageName="org.rexxla.bsf.engines.rexx.onTheFly";
+
 -------------------------------------- 2019-08-26 ----------------------------------
 
 - ClassAdapter.java
