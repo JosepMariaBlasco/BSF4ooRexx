@@ -49,6 +49,13 @@ java org.rexxla.bsf.engines.rexx.ClassAdapter TestAbstract Caesar
     2019-08-26, rgf:    - do not add BSFException to the throws clause of methods, rather
                           throw a RuntimeException with the BSFException as the cause when
                           a Rexx condition gets raised while invoking the proxy Rexx object
+    2019-08-29, rgf:    - allow more control over generated class names consulting the new fields:
+                                static public boolean bAddCRC32toNewName=false;
+                                static public boolean bAddCRC32toGeneratedClassName=true;
+                                static public boolean bAddHashToGeneratedClassName=false;
+                                static public String extensionIndicator = "$RexxExtendClass$";
+                                static public String packageName="org.rexxla.bsf.engines.rexx.onTheFly";
+
 */
 
 import java.lang.reflect.*;
@@ -117,7 +124,7 @@ public class ClassAdapter
     public static boolean bShowSource= false; // true; // if set to .true, the generated source is printed to stderr
 
      /** Version information on this class. */
-    static final public String version="104.20190826";
+    static final public String version="104.20190829";
 
 // 2019-08-15, rgf
         // add ability to save generated programs to file system
@@ -291,7 +298,7 @@ public class ClassAdapter
      *  a RexxProxy.
      *
      *  @param  javaClassToProxy Class object to use for proxying
-     *  @param  newClzName <code>null</code> or name for proxy class to create
+     *  @param  strNewClzName <code>null</code> or name for proxy class to create
      *  @param  methodNames2proxy an array denoting the protected or public methods to proxy. Please note:
      *          each proxied class will get all public/protected abstract methods and constructors
      *          created (proxied).<br/>
@@ -415,17 +422,20 @@ if (bDebug==true)
         }
 
 // --->
-System.out.println("\n--> newClzName=["+newClzName+"] (edited according to flags)");
-System.out.println("\tstrClzName                   =["+strClzName   +"]");
-System.out.println("\tstrNewClzName                =["+strNewClzName+"]");
-System.out.println("\tstrMethodNames2proxy         =["+strMethodNames2proxy         +"]");
-System.out.println("\tstrInterfaceClasses          =["+strInterfaceClasses          +"]");
-System.out.println();
-System.out.println("\tbAddCRC32toGeneratedClassName=["+bAddCRC32toGeneratedClassName+"]");
-System.out.println("\tbSaveToFilesystem            =["+bSaveToFilesystem            +"]");
-System.out.println("\tbAddHashToGeneratedClassName =["+bAddHashToGeneratedClassName +"]");
-System.out.println("\tbAddCRC32toNewName           =["+bAddCRC32toNewName           +"]");
-System.out.println("\tstrCRC32                     =["+strCRC32                     +"]");
+if (bDebug==true)
+{
+    System.err.println("\n--> newClzName=["+newClzName+"] (edited according to flags)");
+    System.err.println("\tstrClzName                   =["+strClzName   +"]");
+    System.err.println("\tstrNewClzName                =["+strNewClzName+"]");
+    System.err.println("\tstrMethodNames2proxy         =["+strMethodNames2proxy         +"]");
+    System.err.println("\tstrInterfaceClasses          =["+strInterfaceClasses          +"]");
+    System.err.println();
+    System.err.println("\tbAddCRC32toGeneratedClassName=["+bAddCRC32toGeneratedClassName+"]");
+    System.err.println("\tbSaveToFilesystem            =["+bSaveToFilesystem            +"]");
+    System.err.println("\tbAddHashToGeneratedClassName =["+bAddHashToGeneratedClassName +"]");
+    System.err.println("\tbAddCRC32toNewName           =["+bAddCRC32toNewName           +"]");
+    System.err.println("\tstrCRC32                     =["+strCRC32                     +"]");
+}
 
 // <---
 
@@ -486,7 +496,7 @@ System.out.println("\tstrCRC32                     =["+strCRC32                 
         // ... if packageName is null, then leave the package name intact
         // ... if packageName is "", then remove package name altogether
 
-System.out.println("\treplacing/adding package name ... ]");
+if (bDebug==true) System.err.println("\treplacing/adding package name ... ]");
 
 //        String packageName="org.rexxla.bsf.engines.rexx.onTheFly";
         String simpleNewClzName=newClzName;         // default to current fully defined class name
@@ -508,7 +518,7 @@ System.out.println("\treplacing/adding package name ... ]");
                 }
             }
 
-System.out.println("\treplacing package name ...   =["+newClzName.substring(0,lpos) +"]");
+if (bDebug==true) System.err.println("\treplacing package name ...   =["+newClzName.substring(0,lpos) +"]");
             // newClzName=newClzName.substring(lpos+1);    // remove package name
             simpleNewClzName=newClzName.substring(lpos+1);    // remove package name
         }
@@ -535,10 +545,13 @@ System.out.println("\treplacing package name ...   =["+newClzName.substring(0,lp
             }
         }
 
-System.out.println("\tpackageName                  =["+packageName           +"]");
-System.out.println("\treplacementPackageName       =["+replacementPackageName+"]");
-System.out.println("\tsimpleNewClzName             =["+simpleNewClzName      +"]");
-System.out.println("\tEFFECTIVE fullNewClzName     =["+ fullNewClzName +"]");
+if (bDebug==true)
+{
+    System.err.println("\tpackageName                  =["+packageName           +"]");
+    System.err.println("\treplacementPackageName       =["+replacementPackageName+"]");
+    System.err.println("\tsimpleNewClzName             =["+simpleNewClzName      +"]");
+    System.err.println("\tEFFECTIVE fullNewClzName     =["+ fullNewClzName +"]");
+}
 
 // ---------------------------------------------------------------------------
 
