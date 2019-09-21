@@ -145,7 +145,8 @@ public class KeywordHelper {
                         "STEM",
                         "REPLACE",
                         "APPEND",
-                        "USING");
+                        "USING",
+                        "COUNTER");
     }
 
 }

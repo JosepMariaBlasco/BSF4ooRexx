@@ -330,6 +330,7 @@ DEC_LITERAL = [0-9] [0-9_]*
 "EXIST"                      { return EXIST; }
 "OPEN"                      { return OPEN; }
 "COUNT"                      { return COUNT; }
+"COUNTER"                      { return COUNTER; }
     "ABSTRACT"                      { return ABSTRACT; }
     "ANNOTATE"                      {return ANNOTATE;}
     "ATTRIBUTE"                      { return ATTRIBUTE; }

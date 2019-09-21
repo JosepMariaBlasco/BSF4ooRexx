@@ -338,7 +338,7 @@ id ::= (SELF TILDE)? (namespace_prefix (new_line* !assignments_and_keywords))? (
                                                                                                                             methods = [setName getNameIdentifier]
 
                                                                                                                            }
-keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) | (EXIST) | (CREATE) | (CASE) | (COUNT)
+keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) | (EXIST) | (CREATE) | (CASE) | (COUNT) | (COUNTER)
 | (SUPER) | (PACKAGE) | (ABSTRACT) | (ANNOTATE) | (ATTRIBUTE) | (CLASS) | (CONDITION) | (DIGITS) | (EXTERNAL) | (FORM)
 | (FUZZ) | (GET) | (GUARDED) | (INHERIT) | (LIBRARY) | (METACLASS) | (MIXINCLASS) | (NAMESPACE) | (NOPROLOG) | (PRIVATE)
 | (PROLOG) | (PROTECTED) | (PUBLIC) | (RESOURCE) | (RESOURCE_DATA) | (SET) | (SUBCLASS) | (TRACE) | (UNGUARDED) | (UNPROTECTED)
@@ -643,7 +643,7 @@ keyword_call_off ::= CALL OFF (ANY | ERROR | FAILURE | HALT | NOTREADY | (USER i
 // Do
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-keyword_do ::= (DO | LOOP) (LABEL id)?
+keyword_do ::= (DO | LOOP) (keyword_do_label | keyword_do_counter)*
     (
         (keyword_do_conditional  keyword_do_repetitor) |
         (keyword_do_repetitor  keyword_do_conditional) |
@@ -661,6 +661,9 @@ private keyword_do_repetitor_2_for ::= FOR <<excluding_expr (WHILE | UNTIL)>>
 
 private keyword_do_repetitor_3 ::= WITH (keyword_do_repetitor_index | keyword_do_repetitor_item)* OVER <<excluding_expr FOR>> keyword_do_repetitor_for?
 
+keyword_do_label ::= (LABEL id){implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+keyword_do_counter ::= (COUNTER id){implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+
 keyword_do_repetitor_assign ::= id EQ <<excluding_expr (TO | BY | INDEX | ITEM | FOR | WHILE | UNTIL)>> {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 keyword_do_repetitor_to ::= TO <<excluding_expr (BY | FOR | INDEX | ITEM | WHILE | UNTIL)>> {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 keyword_do_repetitor_by ::= BY <<excluding_expr (TO | FOR | INDEX | ITEM | WHILE | UNTIL)>> {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
@@ -669,7 +672,6 @@ keyword_do_repetitor_index ::= INDEX id {implements = "org.oorexx.ide.lang.const
 keyword_do_repetitor_item ::= ITEM id {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 
 keyword_do_conditional ::= (WHILE | UNTIL) ( <<excluding_expr (TO | BY | INDEX | ITEM | FOR)>> | COMMA)+ {implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
