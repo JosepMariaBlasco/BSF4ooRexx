@@ -43,13 +43,23 @@ import org.apache.bsf.*;   // BSF support
 			      retrieving the Rexx version
 
         - 2019-07-26, ---rgf: add "text/rexx", "text/oorexx", "application/rexx", "application/oorexx"
+
+        - 2019-11-04, ---rgf: - add uppercase names to "SCRIPT_ENGINE_SHORT_NAMES"
+                              - getParameter() now returns values for the keys (as Nahshorn):
+                                ScriptEngine.NAME,
+                                ScriptEngine.ENGINE, ScriptEngine.ENGINE_VERSION,
+                                ScriptEngine.LANGUAGE, ScriptEngine.LANGUAGE_VERSION
+        - 2019-11-07, ---rgf: - new static method "getStringLiteral()"
+                              - getOutputStatement() now uses getStringLiteral() and returns
+                                ".output~charOut(toDisplayAsRexxStringLiteral)"
+
 */
 
 
 /** Class that implements the <code>javax.script.ScriptEngineFactory</code> interface for the ooRexx support.
  *
  * @author Rony G. Flatscher
- * @version 100.20170922
+ * @version 100.20171107
  * @since   2015-05-11
  *
  */
@@ -61,7 +71,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     final public static RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY=new RexxScriptEngineFactory();
 
     final private static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
-    final private static String       ENGINE_VERSION   ="100.20190726";
+    final private static String       ENGINE_VERSION   ="100.20191107";
     final private static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
                                                                 "rxj", "rexxj", "jrexx",
                                                                 "rxo" );
@@ -80,8 +90,9 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
                                                                        "text/x-rexx-java",
                                                                        "text/x-rexx-java-ooo"
                                                                        );
-    final private static List<String> SCRIPT_ENGINE_SHORT_NAMES = Arrays.asList("rexx", "Rexx",
-                                                                       "oorexx", "ooRexx", "orexx", "oRexx");
+    final private static List<String> SCRIPT_ENGINE_SHORT_NAMES = Arrays.asList("rexx", "Rexx", "REXX",
+                                                                       "oorexx", "ooRexx", "OOREXX",
+                                                                       "orexx", "oRexx", "OREXX");
     final private static String       THREADING        = "MULTITHREADED"; // "THREAD-ISOLATED";
 
 
@@ -196,37 +207,182 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     }
 
     /** Returns a String that can be used as a statement to display the specified String using
-        the syntax of the supported scripting language. */
+        the syntax of the supported scripting language.  */
     public String getOutputStatement(String toDisplay)
     {
 // TODO: decide whether using SAY instead (which appends a \n)
 
+/*
         if (toDisplay==null)
         {
             return "say";
         }
         return "say \""+toDisplay.replace("\"","\"\"")+"\"";    // escape quote in the Rexx language style
+*/
 
+// TODO: return '.output~charOut(.nil)' instead? Will cause "The NIL object" in the output
 /*
         if (toDisplay==null)
         {
-            return "";
+            return ".nil";
         }
         return ".output~charout(\""+toDisplay.replace("\"","\"\"")+"\")";    // escape quote in the Rexx language style
 */
 
+        return ".output~charOut(" + getStringLiteral(toDisplay) + ")";
+    }
+
+
+    /** Creates and returns a quoted Rexx string, with carriage return (CR) and
+     *  line-feed (LF) characters escaped as concatenated Rexx hex strings.
+     *
+     * @param toDisplay the string to encode as a Rexx string literal, if null then ".nil" gets returned
+     * @return a Rexx encoded string
+     */
+
+    static public String getStringLiteral(final String toDisplay)
+    {
+/*
+        System.out.println("toDisplay=["+toDisplay+"]\n\tescaped:");
+        System.out.println("["+
+                           toDisplay.replace("\\", "\\\\")
+                                     .replace("\n", "\\n" )
+                                     .replace("\r", "\\r" )
+                                     .replace("\"", "\\\"")
+                         +"]\n");
+*/
+        if (toDisplay==null)        // .nil
+        {
+            return ".nil";
+        }
+
+        if (toDisplay.length()==0)  // empty string
+        {
+            return "\"\"";
+        }
+
+
+        StringBuffer sb=new StringBuffer();
+
+        char    charArr[] = toDisplay.toCharArray();
+        boolean bAddLeadingQuote = true;
+        boolean bAddClosingQuote = true;
+
+        for (int i=0; i<charArr.length;i++)
+        {
+            char c=charArr[i];
+
+            if (c=='\r' || c=='\n')     // escape CR and/or LF
+            {
+                if (i==0)               //
+                {
+                    bAddLeadingQuote = false;
+                    sb.append('"');     // close quote
+                }
+                else
+                {
+                    sb.append("\" || \"");      // close quote
+                }
+                if (c=='\r')
+                {
+                    sb.append("0d");
+                    if ((i+1)<charArr.length)
+                    {
+                        if (charArr[i+1]=='\n') // \n in hand!
+                        {
+                           sb.append("0a");
+                           i++;
+                        }
+                    }
+                }
+                else    // \n
+                {
+                    sb.append("0a");
+                }
+                sb.append("\"x");           // end hex-string
+
+                if ((i+1)==charArr.length)  // no bytes left
+                {
+                    bAddClosingQuote = false;     // we are done
+                }
+                else                        // concatenate remaining characters of string
+                {
+                    sb.append(" || \"");
+                }
+
+            }
+            else
+            {
+                if (bAddLeadingQuote==true)
+                {
+                    sb.append('\"');
+                    bAddLeadingQuote=false;
+                }
+
+                if (c=='"')     // escape quote Rexx style
+                {
+                    sb.append("\"\"");
+                }
+                else
+                {
+                    sb.append(c);
+                }
+            }
+        }
+
+        if (bAddClosingQuote)
+        {
+            sb.append('"');
+        }
+
+//        System.out.println("returning: ["+sb.toString()+"]\n------\n");
+
+        return sb.toString();
     }
 
 
     /** Returns the value of an attribute whose meaning may be implementation-specific. */
-    public Object getParameter(String key)
+    public Object getParameter(final String key)
     {
-        if (key.equals("THREADING"))
+
+// baseline is Java 6, hence cannot use a String value in a switch statement
+/*
+        switch (key)
         {
-            return THREADING;
+            case "THREADING":
+                return THREADING;
+
+            case ScriptEngine.NAME:
+                return SHORT_NAME;
+
+            case ScriptEngine.ENGINE:
+                return ENGINE_NAME;
+
+            case ScriptEngine.ENGINE_VERSION:
+                return ENGINE_VERSION;
+
+            case ScriptEngine.LANGUAGE:
+                return LANGUAGE_NAME;
+
+            case ScriptEngine.LANGUAGE_VERSION:
+                 return LANGUAGE_VERSION==null ? getLanguageVersion() : LANGUAGE_VERSION;
+
+            default:
+                return null;
         }
+*/
+        if (key.equals("THREADING")) return "THREADING";
+
+        if (key.equals(ScriptEngine.NAME)            ) return SHORT_NAME;
+        if (key.equals(ScriptEngine.ENGINE)          ) return ENGINE_NAME;
+        if (key.equals(ScriptEngine.ENGINE_VERSION)  ) return ENGINE_VERSION;
+        if (key.equals(ScriptEngine.LANGUAGE)        ) return LANGUAGE_NAME;
+        if (key.equals(ScriptEngine.LANGUAGE_VERSION)) return LANGUAGE_VERSION==null ?
+                                                                getLanguageVersion() :
+                                                                LANGUAGE_VERSION ;
         return null;
     }
+
 
     /** Returns a valid scripting language executable program with given statements. */
     public String getProgram(String... statements)
