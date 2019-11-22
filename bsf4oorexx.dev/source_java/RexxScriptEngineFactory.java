@@ -79,7 +79,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     // final private static String       LANGUAGE_VERSION ="4.1.0";
     static String                     LANGUAGE_VERSION=null;    // let it be accessed by RexxScriptEngine's constructor
 
-    final private static String       SHORT_NAME       ="Rexx";
+    final private static String       SHORT_NAME       ="rexx";
 
     final private static List<String> MIME_TYPES       = Arrays.asList(
                                                                        "text/rexx",
@@ -210,25 +210,6 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
         the syntax of the supported scripting language.  */
     public String getOutputStatement(String toDisplay)
     {
-// TODO: decide whether using SAY instead (which appends a \n)
-
-/*
-        if (toDisplay==null)
-        {
-            return "say";
-        }
-        return "say \""+toDisplay.replace("\"","\"\"")+"\"";    // escape quote in the Rexx language style
-*/
-
-// TODO: return '.output~charOut(.nil)' instead? Will cause "The NIL object" in the output
-/*
-        if (toDisplay==null)
-        {
-            return ".nil";
-        }
-        return ".output~charout(\""+toDisplay.replace("\"","\"\"")+"\")";    // escape quote in the Rexx language style
-*/
-
         return ".output~charOut(" + getStringLiteral(toDisplay) + ")";
     }
 
@@ -242,15 +223,6 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
 
     static public String getStringLiteral(final String toDisplay)
     {
-/*
-        System.out.println("toDisplay=["+toDisplay+"]\n\tescaped:");
-        System.out.println("["+
-                           toDisplay.replace("\\", "\\\\")
-                                     .replace("\n", "\\n" )
-                                     .replace("\r", "\\r" )
-                                     .replace("\"", "\\\"")
-                         +"]\n");
-*/
         if (toDisplay==null)        // .nil
         {
             return ".nil";
@@ -335,8 +307,6 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
             sb.append('"');
         }
 
-//        System.out.println("returning: ["+sb.toString()+"]\n------\n");
-
         return sb.toString();
     }
 
@@ -344,7 +314,6 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     /** Returns the value of an attribute whose meaning may be implementation-specific. */
     public Object getParameter(final String key)
     {
-
 // baseline is Java 6, hence cannot use a String value in a switch statement
 /*
         switch (key)

@@ -1,3 +1,43 @@
+-------------------------------------- 2019-11-14 ----------------------------------
+
+- RexxAndJava.java
+
+        - new method truncObject() to make sure that any Object's String value gets
+          truncated for better legibility in error messages
+
+- RexxReflectUtil.java
+
+        - new method truncObject() to make sure that any Object's String value gets
+          truncated for better legibility in error messages
+
+
+-------------------------------------- 2019-11-07 ----------------------------------
+
+- samples\JavaFX\fxml_01\fxml_01_controller.rex
+
+        - refactored dumping the Bindings to the new routine "dumpAllBindings"
+
+- samples\JavaFX\fxml_02\fxml_02_controller.rex
+
+        - refactored dumping the Bindings to the new routine "dumpAllBindings"
+
+-------------------------------------- 2019-10-24 ----------------------------------
+
+- samples\java\javax.script\RexxRunScript.rex
+
+        - show Java supplied messages related to raised syntax conditions in test_engine_eval() routine
+
+        - reformat output in routine testEngine() to make it a little bit terser
+
+-------------------------------------- 2019-09-09 ----------------------------------
+
+- samples\Java\ JavaRunRexx_02.java
+
+        - added prominent comment to draw the attention to initialize
+          the oo-support of BSF4ooRexx by executing the Rexx statement
+          "::requires 'BSF.CLS'" before running Rexx scripts; once "BSF.CLS"
+          was carried out BSF4ooRexx gets changed to supply the arguments
+          directly as objects (and not as strings representing the objects)
 
 -------------------------------------- 2019-08-29 ----------------------------------
 

@@ -19,7 +19,7 @@ import javax.script.SimpleScriptContext;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2016 Rony G. Flatscher
+   Copyright 2015-2019 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -39,6 +39,8 @@ import javax.script.SimpleScriptContext;
 
     changed: 2016-12-07, rgf: reformat getProgram()-output such that line comments are replaced by
                               block comments
+
+    changed: 2019-11-17, rgf: add getName()
 */
 
 
@@ -250,28 +252,31 @@ public class RunScript
     {
         System.out.println(name);
 
-        System.out.print  ("\tgetEngineName()          : ");
-        try { System.out.println(sef.getEngineName()     ); } catch (Exception e) { System.out.println("--> FAILED!"); }
+        System.out.print  ("\tgetParameter(ScriptEngine.NAME): ");
+        try { System.out.println(sef.getParameter(ScriptEngine.NAME)); } catch (Exception e) { System.out.println("--> FAILED!"); }
 
-        System.out.print  ("\tgetEngineVersion()       : ");
-        try { System.out.println(sef.getEngineVersion()  ); } catch (Exception e) { System.out.println("--> FAILED!"); }
-
-        System.out.print  ("\tgetExtensions()          : ");
-        try { System.out.println(sef.getExtensions     ()); } catch (Exception e) { System.out.println("--> FAILED!"); }
-
-        System.out.print  ("\tgetLanguageName()        : ");
-        try { System.out.println(sef.getLanguageName ()  ); } catch (Exception e) { System.out.println("--> FAILED!"); }
-
-        System.out.print  ("\tgetLanguageVersion()     : ");
-        try { System.out.println(sef.getLanguageVersion()); } catch (Exception e) { System.out.println("--> FAILED!"); }
-
-        System.out.print  ("\tgetMimeTypes()           : ");
-        try { System.out.println(sef.getMimeTypes      ()); } catch (Exception e) { System.out.println("--> FAILED!"); }
-
-        System.out.print  ("\tgetNames()               : ");
+        System.out.print  ("\tgetNames()                     : ");
         try { System.out.println(sef.getNames()          ); } catch (Exception e) { System.out.println("--> FAILED!"); }
 
-        System.out.print  ("\tgetParameter(\"THREADING\"): ");
+        System.out.print  ("\tgetEngineName()                : ");
+        try { System.out.println(sef.getEngineName()     ); } catch (Exception e) { System.out.println("--> FAILED!"); }
+
+        System.out.print  ("\tgetEngineVersion()             : ");
+        try { System.out.println(sef.getEngineVersion()  ); } catch (Exception e) { System.out.println("--> FAILED!"); }
+
+        System.out.print  ("\tgetExtensions()                : ");
+        try { System.out.println(sef.getExtensions     ()); } catch (Exception e) { System.out.println("--> FAILED!"); }
+
+        System.out.print  ("\tgetLanguageName()              : ");
+        try { System.out.println(sef.getLanguageName ()  ); } catch (Exception e) { System.out.println("--> FAILED!"); }
+
+        System.out.print  ("\tgetLanguageVersion()           : ");
+        try { System.out.println(sef.getLanguageVersion()); } catch (Exception e) { System.out.println("--> FAILED!"); }
+
+        System.out.print  ("\tgetMimeTypes()                 : ");
+        try { System.out.println(sef.getMimeTypes      ()); } catch (Exception e) { System.out.println("--> FAILED!"); }
+
+        System.out.print  ("\tgetParameter(\"THREADING\")      : ");
         try { System.out.println(sef.getParameter("THREADING")); } catch (Exception e) { System.out.println("--> FAILED!"); }
     }
 

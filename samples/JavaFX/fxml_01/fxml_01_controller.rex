@@ -12,29 +12,39 @@
   idLabel1~text="Clicked at:" now         -- set text property
   say '...     new value of label='pp(idLabel1~getText)
   say
-  ----- to be deleted ...
   bDebug=.false -- change to .true to learn about the ScriptContext bindings
   if bDebug=.true then
-  do
-      scriptContext=slotDir~scriptContext
-        /* show the currently defined attributes in all ScriptContext's scopes   */
-     say "getting all attributes from all ScriptContext's scopes..."
-     dir=.directory~new
-     dir[100]="ENGINE_SCOPE"
-     dir[200]="GLOBAL_SCOPE"
-     arr=.array~of(100,200)
-     do sc over arr
-         say "ScriptContext scope:" pp(sc) "("dir~entry(sc)"), available attributes:"
-         bin=scriptContext~getBindings(sc)
-         if bin=.nil then iterate -- inexistent scope
-         keys=bin~keySet          -- get kay values
-         it=keys~makearray        -- get the keys as a Rexx array
-         do key over it~sortWith(.CaselessComparator~new) -- sort keys (attributes) caselessly
-            val=bin~get(key)      -- fetch the key's value
-            str=""
-            if val~isA(.bsf) then str="~toString:" pp(val~toString)
-            say "  " pp(key)~left(35,".") pp(val) str
-         end
-         say "-"~copies(79)
-     end
-  end
+      call dumpAllBindings '--> from buttonClicked()', slotDir~scriptContext
+
+::routine dumpAllBindings
+    use strict arg title, scriptContext
+    /* show the currently defined attributes in the default ScriptContext's scopes   */
+    say  title 'at' pp(.dateTime~new)':'
+    say
+    say "getting all attributes from all ScriptContext's scopes..."
+    allScopes=scriptContext~getScopes  -- there may be any number of scopes
+
+    do scope over allScopes      -- show Bindings for each scope
+        say "ScriptContext scope:" pp(scope) getScopeTitle(scope)
+        bin=scriptContext~getBindings(scope)
+        if bin=.nil then iterate -- inexistent scope
+        minWidth=31              -- minimum width for key column
+        keys=bin~keySet          -- get kay values
+        it=keys~makearray        -- get the keys as a Rexx array
+        do key over it~sortWith(.CaselessComparator~new) -- sort keys caselessly
+           val=bin~get(key)      -- fetch the key's value
+           str=" " pp(key)~left(max(minWidth,key~length+2),".")":" pp(val)
+           if key="location" then str=str "~toString="pp(val~toString)
+           say str
+        end
+        say copies("-",86)
+    end
+    say copies("=",86)
+    return
+
+getScopeTitle: procedure
+   parse arg scopeNumber
+   if      scopeNumber=100 then return "[ENGINE_SCOPE]"
+   else if scopeNumber=200 then return "[GLOBAL_SCOPE]"
+   return ""
+

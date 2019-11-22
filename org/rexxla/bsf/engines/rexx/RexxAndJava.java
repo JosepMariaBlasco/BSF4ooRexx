@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2019-08-13
+  * @version 6.0.0, 2019-11-14
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -53,6 +53,9 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2019-11-14, rgf: - new method truncObject() to make sure that any Object's String value gets
+                        truncated for better legibility in error messages
+
      2019-08-13, rgf: - fix Javadoc errors
 
      2019-02-07, rgf: - added subfunction "UNBOX": returns the unboxed value as a string or null, if not
@@ -3595,13 +3598,13 @@ if (bDebug)
 // rgf, 20181030, temporarily: System.err.println(this+": rru.throwable="+rru.throwable);
                         throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                  "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": "+
-                                 "\n\tbean:   ["+rru.bean+"] type: ["+rru.beanClz+"]"+
+                                 "\n\tbean:   ["+truncObject(rru.bean,65)+"] type: ["+rru.beanClz+"]"+
                                  "\n\tmethod: ["+args[2]+"] not found or execution error!",
                                 rru.throwable);       // supply the Throwable from trying to invoke while searching for a Method
                     }
                     throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                              "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": "+
-                             "\n\tbean:   ["+rru.bean+"] type: ["+rru.beanClz+"]"+
+                             "\n\tbean:   ["+truncObject(rru.bean,65)+"] type: ["+rru.beanClz+"]"+
                              "\n\tmethod: ["+args[2]+"] not found!"
                              );
               }
@@ -4021,14 +4024,14 @@ if (bDebug)
                       {
                           throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                    "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": "+
-                                   "\n\tbean:  ["+rru.bean+"] type: ["+rru.beanClz+"]"+
+                                   "\n\tbean:  ["+truncObject(rru.bean,65)+"] type: ["+rru.beanClz+"]"+
                                    "\n\tclass: ["+args[2]+"], no matching constructor found, cannot create the Java object",
                                 rru.throwable);       // supply the Throwable from trying to invoke while searching for a Method
                       }
 
                       throw new BSFException (BSFException.REASON_INVALID_ARGUMENT,
                                "BSF4ooRexx subfunction "+'"'+args[0]+'"'+": "+
-                               "\n\tbean:  ["+rru.bean+"] type: ["+rru.beanClz+"]"+
+                               "\n\tbean:  ["+truncObject(rru.bean,65)+"] type: ["+rru.beanClz+"]"+
                                "\n\tclass: ["+args[2]+"], no matching constructor found, cannot create the Java object"
                                );
 
@@ -5915,6 +5918,29 @@ if (bDebug) System.err.println("*** TERMINATE *** bTerminated=["+bTerminated+"] 
             return s.substring(0, maxLength-1)+"...";
         }
 
+        return s;
+    }
+
+
+    /** Makes sure that supplied object's String value gets truncated, if longer than given maxLength and append ellipsis (three dots: '...').
+     *
+     * @param o the Object which String value may have to be truncated if exceeding maxLength
+     * @param maxLength the maximum length of the supplied String before truncating it
+     *
+     * @return returns the String value of the supplied object truncated and with an ellipsis, if longer than maxLength
+    */
+    String truncObject (Object o, int maxLength)
+    {
+        if (o==null)
+        {
+            return null;
+        }
+        String s = (o instanceof String ? (String) o : o.toString());
+
+        if (s.length()>maxLength)
+        {
+            return s.substring(0, maxLength-1)+"...";
+        }
         return s;
     }
 

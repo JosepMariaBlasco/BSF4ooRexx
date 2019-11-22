@@ -18,13 +18,18 @@
                             if that particular Rexx interpreter instance is not needed anymore,
                             such that its reserved system resources can be reclaimed
 
+                2019-09-09, added prominent comment to draw the attention to initialize
+                            the oo-support of BSF4ooRexx by executing the Rexx statement
+                            "::requires 'BSF.CLS'" before running Rexx scripts; once "BSF.CLS"
+                            was carried out BSF4ooRexx gets changed to supply the arguments
+                            directly as objects (and not as strings representing the objects)
 
     Needs:      ooRexx 4.0, BSF4ooRexx
 
     License:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2009-2013 Rony G. Flatscher
+       Copyright (C) 2009-2019 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -53,10 +58,13 @@ public class JavaRunRexx_02
         BSFEngine  rexxEngine=mgr.loadScriptingEngine("rexx");  // load the Rexx engine
 
         // Rexx code to run (just one line), triggering the requires-processing for "BSF.CLS"
+        // IMPORTANT! Executing BSF.CLS will change BSF4ooRexx to supply the arguments as OBJECTS
+        //            to Rexx scripts, rather than strings representing them as in JavaRunRexx_01.java
         rexxEngine.apply ("InvokeFromJavaRunRexx_02.java", 0, 0, "::requires BSF.CLS", null, null);
 
-        // Rexx code to run
-        String rexxCode= "use arg javaObj                           ;" +    // retrieve the beanName (index into BSFRegistry)
+        // Rexx code to run: NOTE! BECAUSE BSF.CLS was already executed once, the arguments
+        //                         are passed as OBJECTS and not as strings representing them!
+        String rexxCode= "use arg javaObj                           ;" +    // USE ARG will fetch a reference to the object
                          "say 'javaObj~class   :' javaObj~class     ;" +    // send Java object a message, show result
                          "say 'javaObj~toString:' javaObj~toString  ;" +    // send Java object a message, show result
 

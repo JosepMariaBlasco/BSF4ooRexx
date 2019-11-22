@@ -1,22 +1,25 @@
 #!/usr/bin/env rexx
 /*
--- 2017-02-11, Rony G. Flatscher: this is the Rexx equivilent fo the Java program "RunScript.java"
+   2017-02-11, Rony G. Flatscher: this is the Rexx equivalent fo the Java program "RunScript.java"
+   2019-10-24, rgf: - show Java supplied messages related to raised syntax conditions in test_engine_eval() routine
+                    - reformat output in routine testEngine() to make it a little bit terser
+   2019-11-17, rgf: - add getName()
 
------------------------- Apache Version 2.0 license -------------------------
-   Copyright 2017 Rony G. Flatscher
+   ------------------------ Apache Version 2.0 license -------------------------
+      Copyright 2017-2019 Rony G. Flatscher
 
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+          http://www.apache.org/licenses/LICENSE-2.0
 
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
------------------------------------------------------------------------------
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+   -----------------------------------------------------------------------------
 */
 
 
@@ -200,7 +203,14 @@ do
 end
 
 --        - eval the script
+signal on syntax
 scriptEngineToUse~eval(.bsf~new("java.io.FileReader", f))
+exit
+syntax:
+  co=condition("object")
+  .context~package~addPackage(.package~new("rgf_util2.rex"))   -- dynamic requires, get access to ppCondition2()
+  .error~say(ppCondition2(co))
+  exit -1
 
 
 ::requires "BSF.CLS"    -- get Java support
@@ -210,13 +220,14 @@ scriptEngineToUse~eval(.bsf~new("java.io.FileReader", f))
    use arg name, sef
 
   say name
+  say "09"x || "Name                   :" get_engine_property(sef, "getParameter", "javax.script.name") -- ScriptEngine.NAME
+  say "09"x || "getNames               :" get_engine_property(sef, "getNames")
   say "09"x || "getEngineName          :" get_engine_property(sef, "getEngineName")
   say "09"x || "getEngineVersion       :" get_engine_property(sef, "getEngineVersion")
   say "09"x || "getExtensions          :" get_engine_property(sef, "getExtensions")
   say "09"x || "getLanguageName        :" get_engine_property(sef, "getLanguageName")
   say "09"x || "getLanguageVersion     :" get_engine_property(sef, "getLanguageVersion")
   say "09"x || "getMimeTypes           :" get_engine_property(sef, "getMimeTypes")
-  say "09"x || "getNames               :" get_engine_property(sef, "getNames")
   say "09"x || "getParameter(THREADING):" get_engine_property(sef, "getParameter", "THREADING")
 
 ::routine get_engine_property
@@ -239,29 +250,29 @@ syntax:
    use arg name, sef, se
 
    tab="09"x      -- define TAB character
-   say "---> language" pp(name)": ---------------------------------------->"; say
-   text="hello world, this is """name""" speaking! "
+   say "===> language" pp(name)": ========================================>"; say
+   text="'hello world', this is """name""" speaking! "
    code=sef~getOutputStatement(text)
    say tab"1) output statement to process:" text; say
 
-   .output~charout(tab"--> testing getOutputStatement(String)")
-   say ", produced the following" pp(name) "output statement)"; say; say; say code; say
-   say tab"... now running ""eval(code)"" using the scripting engine" pp(name)":"; say; say
+   .output~charout(tab"--> testing getOutputStatement(text)")
+   say ", produced the following" pp(name) "output statement:"; say; say code; say
+   say tab"... now running ""eval(code)"" using the scripting engine" pp(name)":"; say
 --   se~eval(code)
    call test_engine_eval se, code
    say; say
 
-   .output~charout(tab"2) testing getMethodCallSyntax(obj, meth, arg...)")
+   .output~charout(tab'2) testing getMethodCallSyntax("obj", "meth", "arg1", "arg2")')
    args=bsf.createJavaArrayOf("java.lang.String", "arg1", "arg2")
-   methCode=sef~getMethodCallSyntax("object", "method", args)
-   say ", produced the following" pp(name) "method call statement:"; say; say; say methCode; say
+   methCode=sef~getMethodCallSyntax("obj", "meth", args)
+   say ", produced the following" pp(name) "method call statement:"; say; say methCode; say
 
    .output~charout(tab"3) testing getProgram(String...)")
    stmts=bsf.createJavaArrayOf("java.lang.String", code, methCode)
    programCode=sef~getProgram(stmts)
-   say " produced the following" pp(name) "program:"; say; say; say programCode; say
+   say " produced the following" pp(name) "program:"; say; say programCode
 
-   say "<--- end of testing language" pp(name)". <----------------------------------------"; say
+   say "<=== end of testing language" pp(name)". <========================================"; say
 
 ::routine test_engine_eval -- evaluate, in case of an error show error message
    use arg se, code
@@ -270,7 +281,21 @@ syntax:
    return
 
 syntax:
-   -- say condition("object")~message  -- just show error message
+   co=condition("object")
+   tabs="0909"x
+   say tabs "// syntax condition raised!" "---> "~copies(5)
+   leadin=tabs
+   say tabs || "test_engine_eval(): syntax condition raised while evaluating code:" pp(code)":"
+   say
+   prefix=""
+   jexc=co~additional[2]      -- fetch Java exception
+   do while jexc<>.nil
+      say leadin || prefix || "Java exception:" pp(jexc) "message:" pp(jexc~getMessage)
+      jexc=jexc~getCause      -- get Java exception that caused this Java exception to be thrown
+      say
+      prefix="... caused by "
+   end
+   say tabs "// syntax condition raised!" "<--- "~copies(5)
    return
 
 -- allow us to call this from different parts

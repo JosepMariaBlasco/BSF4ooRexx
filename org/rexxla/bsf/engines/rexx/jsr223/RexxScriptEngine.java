@@ -45,6 +45,9 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
    Changes:
 
+        2019-11-18, ---rgf, getReaderAsString(Reader r): read into a char[] rather than iterating
+                            over single read characters
+
         2019-08-16, ---rgf, correct Javadocs
 
         2018-03-04, ---rgf, added method "removeHashBang(String script)" which blanks out the
@@ -1376,27 +1379,42 @@ if (bDebug==true) {exc.printStackTrace();}
      *
      * @throws ScriptException if {@link IOException} occurs with the supplied Reader object
      */
-    static String getReaderAsString(Reader r) throws ScriptException
+    static String getReaderAsString(Reader reader) throws ScriptException
     {
-        if (r==null)        // no Reader supplied
+        if (reader==null)        // no Reader supplied
         {
             return null;
         }
 
-        if (! (r instanceof BufferedReader) )   // make sure we use a BufferedReader
+        if (! (reader instanceof BufferedReader) )   // make sure we use a BufferedReader
         {
-            r=new BufferedReader(r);
+            reader=new BufferedReader(reader);
         }
 
         StringBuffer sb=new StringBuffer();
         try
         {
+
+            // ---> rgf, 2019-11-18
+            // char[] charBuffer = new char[1024];
+            char[] charBuffer = new char[4096];
+            int r = 0;
+
+            while ((r = reader.read(charBuffer)) != -1)
+            {
+                sb.append(charBuffer, 0, r);
+            }
+            // <---
+
+/* --->
             int c=r.read();
             while(c != -1)
             {
                 sb.append((char) c);
                 c= r.read();
             }
+<--- */
+
         }
         catch (IOException ioe)
         {

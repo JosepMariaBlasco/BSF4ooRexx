@@ -39,7 +39,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.02, 2018-01-08-2018-02-18, 2018-03-10; 2018-10-31, 2019-02-01
+ * @version 1.03, 2018-01-08-2018-02-18, 2018-03-10; 2018-10-31, 2019-02-01, 2019-11-14
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -52,6 +52,9 @@ import        java.lang.reflect.Modifier;
         2019-02-01, ---rgf: made sure that an abstract class gets not instantiated (possible reflectively, if concrete default constructor)
 
         2019-08-16, ---rgf, correct Javadocs
+
+        2019-11-14, rgf: - new method truncObject() to make sure that any Object's String value gets
+                           truncated for better legibility in error messages
 
 */
 
@@ -733,7 +736,7 @@ if (bDebug) System.err.println("in ... # i: SUPPLIER branch...");
             // now create the message
         StringBuffer msg=new StringBuffer();
         msg.append(  "BSF4ooRexx subfunction "+'"'+this.rexxArgs[0]+'"'+": "
-                             + "\n\tbean:        ["+this.bean+"]"+ " --> type: <"+(this.beanClz==null ? null : this.beanClz.getName())+">"
+                             + "\n\tbean:        ["+truncObject(this.bean,65)+"]"+ " --> type: <"+(this.beanClz==null ? null : this.beanClz.getName())+">"
                              + "\n\t"
                              + (  this.reflectionType==REFLECT_METHOD ? "method:      [" :
                                       (this.reflectionType==REFLECT_FIELD  ? "field:       ["  : "constructor")
@@ -812,6 +815,29 @@ if (bDebug) System.err.println("in ... # i: SUPPLIER branch...");
         {
             return null;
         }
+
+        if (s.length()>maxLength)
+        {
+            return s.substring(0, maxLength-1)+"...";
+        }
+        return s;
+    }
+
+
+    /** Makes sure that supplied object's String value gets truncated, if longer than given maxLength and append ellipsis (three dots: '...').
+     *
+     * @param o the Object which String value may have to be truncated if exceeding maxLength
+     * @param maxLength the maximum length of the supplied String before truncating it
+     *
+     * @return returns the String value of the supplied object truncated and with an ellipsis, if longer than maxLength
+    */
+    String truncObject (Object o, int maxLength)
+    {
+        if (o==null)
+        {
+            return null;
+        }
+        String s = (o instanceof String ? (String) o : o.toString());
 
         if (s.length()>maxLength)
         {

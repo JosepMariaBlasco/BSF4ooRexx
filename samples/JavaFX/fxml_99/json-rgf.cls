@@ -121,6 +121,18 @@ end
   use strict arg           -- no argument allowed!
   return "100.20170920"    -- version in the form: major*100+minor || "." || yyyymmdd
 
+
+/*
+   BOM according to JSP2.3 specs, chapter "Table JSP.4-1 Byte representations of the BOM":
+   Bytes Encoding Form
+   FE FF       UTF-16, big-endian
+   FF FE       UTF-16, little-endian
+   00 00 FE FF UTF-32, big-endian
+   FF FE 00 00 UTF-32, little-endian
+   EF BB BF    UTF-8
+
+   also cf: <https://en.wikipedia.org/wiki/Byte_order_mark>
+*/
 /** Determines the encoding by inspecting the first four bytes of a JSON string, cf.
 *   cf. <https://www.ietf.org/rfc/rfc4627.txt>
 *
