@@ -1,3 +1,30 @@
+-------------------------------------- 2019-11-26 ----------------------------------
+
+- RexxAndJava.java
+
+        - lookupBean(): if not found in the registry looks up the new HashMap
+          RexxEngine.engineDeclaredBeans
+
+- RexxEngine.java
+        - rolled back changes of 2019-11-25, instead
+
+        - added HashMap<String,BSFDeclaredBean> engineDeclaredBeans to maintain
+          BSFManager's declareBean(bean) and undeclareBean(name) invocations; will
+          be looked up by RexxAndJava.lookupBean(), if beanName not found in its
+          registry
+
+
+-------------------------------------- 2019-11-26 ----------------------------------
+
+- RexxEngine.java
+
+        - the Apache BSF taglib uses BSFManager.declareBean() to register Java objects
+          for the scripts, therefore declareBean() and undeclareBean() must honor
+          their invocations in order to make those beans available to ooRexx
+          - declareBean(): now registers BSFDeclaredBean with RexxAndJava
+          - undeclareBean(): now unregisters the bean with RexxAndJava
+
+
 -------------------------------------- 2019-11-14 ----------------------------------
 
 - RexxAndJava.java

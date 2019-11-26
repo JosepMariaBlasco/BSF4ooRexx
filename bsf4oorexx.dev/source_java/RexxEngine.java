@@ -8,6 +8,10 @@ import org.rexxla.bsf.engines.rexx.RexxAndJava;
 
 import java.lang.reflect.Method;
 
+// TODO: rgf, 20191126  - process declaredBeans
+//                      - RexxEngine local declaredBeans (as HashMap?)
+//                      - change raj.lookupBean() accordingly
+
 
 /**
   * This class manages the calls from Java via JNI to Open Object Rexx (ooRexx).
@@ -28,7 +32,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 6.0.0, 20190813
+  * @version 6.0.0, 20191126
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -36,6 +40,17 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2019-11-26, ---rgf, added HashMap<String,BSFDeclaredBean> engineDeclaredBeans to maintain
+                        BSFManager's declareBean(bean) and undeclareBean(name) invocations; will
+                        be looked up by RexxAndJava.lookupBean(), if beanName not found in its
+                        registry
+
+    2019-11-25, ---rgf, the Apache BSF taglib uses BSFManager.declareBean() to register Java objects
+                        for the scripts, therefore declareBean() and undeclareBean() must honor
+                        their invocations in order to make those beans available to ooRexx
+                        - declareBean(): now registers BSFDeclaredBean with RexxAndJava
+                        - undeclareBean(): now unregisters the bean with RexxAndJava
 
     2019-08-13, ---rgf, - fix Javadoc warnings
 
@@ -167,7 +182,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20190813";
+    static final public String version = "600.20191126";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -252,6 +267,11 @@ public class RexxEngine extends BSFEngineImpl {
      */
     private String lastSourceLocation=null;
 
+
+    /** Stores the declared beans supplied by BSFManager in the initialize() method.
+     */
+    HashMap<String,BSFDeclaredBean> engineDeclaredBeans = new HashMap();
+
     /** Initializes the Rexx engine and causes the external
       * functions 'BSF' and 'BSFPollEvents' to be registered with the
       * Rexx interpreter. Therefore Rexx programs invoked from Java
@@ -263,6 +283,25 @@ public class RexxEngine extends BSFEngineImpl {
     {
         super.initialize (mgr, lang, declaredBeans);
         rexxInterface = new RexxAndJava(mgr, this);
+
+if (bDebug)
+{
+    Iterator it = declaredBeans.iterator();
+    System.err.println("RexxEngine.initialize(), dumping supplied Vector 'declaredBeans':");
+    while (it.hasNext())
+    {
+        Object el = it.next();
+        System.err.println("\t... it.next()=["+el+"] .getClass().getName()=["+el.getClass().getName()+"]");
+    }
+}
+
+
+        Iterator<BSFDeclaredBean> it = declaredBeans.iterator();
+        while (it.hasNext())
+        {
+            this.declareBean(it.next());
+        }
+
 
         // rexxInterface.jniRegisterBSF();
 
@@ -1273,19 +1312,26 @@ if (bDebug)
 
 
 
-    /** Method implemented in order to avoid an exeption to be thrown by the
-     *  default implementation.
+    /** Saves the supplied bean in {@link engineDeclaredBeans} which will be looked up
+     *  by RexxAndJava.lookupBean() if a bean with the supplied name is not present
+     *  in RexxAndJava's registry.
       *
-      * @param bean the bean to be declared for the already started language.
+      * @param bean the bean to be declared
       */
     public void declareBean(BSFDeclaredBean bean)
                  throws BSFException
     {
-        return;
+        if (bTerminated==true)       // engine got terminated, cannot use it anymore
+        {
+            return;     // gracefully return
+        }
+if (bDebug) System.err.println("RexxEngine.declareBean(): name=["+bean.name+"], bean=["+bean+"], bean.bean=["+bean.bean+"]");
+
+        engineDeclaredBeans.put(bean.name, bean);
     }
 
-    /** Method implemented in order to avoid an exeption to be thrown by the
-     *  default implementation.
+    /** Removes the supplied bean from {@link engineDeclaredBeans}.
+     *
       *
       * @param bean the bean to be declared for the already started language.
       */
@@ -1293,7 +1339,13 @@ if (bDebug)
     public void undeclareBean(BSFDeclaredBean bean)
                        throws BSFException
     {
-        return;
+        if (bTerminated==true)       // engine got terminated, cannot use it anymore
+        {
+            return;     // gracefully return
+        }
+if (bDebug) System.err.println("RexxEngine.undeclareBean(): name=["+bean.name+"], bean=["+bean.bean+"]");
+
+        engineDeclaredBeans.remove(bean.name);
     }
 
 

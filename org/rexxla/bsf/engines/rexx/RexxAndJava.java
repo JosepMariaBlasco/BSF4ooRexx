@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2019-11-14
+  * @version 6.0.0, 2019-11-26
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -53,6 +53,9 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2019-11-26, rgf: - lookupBean(): if not found in the registry looks up the new HashMap
+                        RexxEngine.engineDeclaredBeans
+
      2019-11-14, rgf: - new method truncObject() to make sure that any Object's String value gets
                         truncated for better legibility in error messages
 
@@ -572,7 +575,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20190813";
+    static final public String version = "600.20191126";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -5174,10 +5177,12 @@ System.err.println("\tcoerceArgs(): UNsuccessful :-( ---> returning 'null'!");
         final boolean bDebug= // true;
                               false;
 
+
 // if (bDebug) System.err.println(rajo+".lookupBean():     beanName=["+beanName+"]");
 if (bDebug) System.err.println(rajo+".lookupBean():     beanName=\""+beanName+"\"");
 
         RAJBean bean=null;
+        String  trueBeanName=beanName;
         synchronized (lockRajRegistry)
         {
             bean=rajRegistry.get(beanName);
@@ -5190,8 +5195,8 @@ System.err.println("//*...*// attempt #1: lookupBean(beanName=\""+beanName+"\"):
                 // bean not found, maybe still has prefix ?
             if (bean==null && rajo.bsfPrefixReturnValue && beanName.startsWith(OBJECT_INDICATOR_PREFIX))
             {
-                String name=beanName.substring(3);  // remove prefix from bean
-                bean=rajRegistry.get(name);         // try to get now
+                trueBeanName=beanName.substring(3);  // remove prefix from bean
+                bean=rajRegistry.get(trueBeanName);         // try to get now
 
 if (bDebug && bean==null)
 {
@@ -5213,7 +5218,13 @@ if (bDebug==true)
                        +"\"");
 }
 
-
+        if (bean==null)     // not found, look up whether engine has a BSFDeclaredBean for it
+        {
+            if (((RexxEngine) rajo.rexxEngine).engineDeclaredBeans.containsKey(trueBeanName))
+            {
+                return ((BSFDeclaredBean)((RexxEngine) rajo.rexxEngine).engineDeclaredBeans.get(trueBeanName)).bean;
+            }
+        }
 
         return (bean==null ? null : bean.javaObject);
     }
