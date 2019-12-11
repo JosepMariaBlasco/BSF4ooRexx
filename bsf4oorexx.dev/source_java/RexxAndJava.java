@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2019-11-26
+  * @version 6.0.0, 2019-12-11
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -53,6 +53,8 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2019-11-26, rgf: - lookupBean(), little optimization: only lookup declared beans, if there are any
+
      2019-11-26, rgf: - lookupBean(): if not found in the registry looks up the new HashMap
                         RexxEngine.engineDeclaredBeans
 
@@ -575,7 +577,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20191126";
+    static final public String version = "600.20191211";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -5218,11 +5220,14 @@ if (bDebug==true)
                        +"\"");
 }
 
-        if (bean==null)     // not found, look up whether engine has a BSFDeclaredBean for it
+        // not found, maybe a declared bean (maintained by BSFEngine, declared usually via BSFMansger)?
+        if (bean==null)
         {
-            if (((RexxEngine) rajo.rexxEngine).engineDeclaredBeans.containsKey(trueBeanName))
+            RexxEngine re=(RexxEngine) rajo.rexxEngine;
+            if (re.hasDeclaredBeans && re.engineDeclaredBeans.containsKey(trueBeanName))
             {
-                return ((BSFDeclaredBean)((RexxEngine) rajo.rexxEngine).engineDeclaredBeans.get(trueBeanName)).bean;
+                return ((BSFDeclaredBean)re.engineDeclaredBeans.get(trueBeanName)).bean;
+
             }
         }
 
