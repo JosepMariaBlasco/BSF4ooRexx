@@ -1,22 +1,12 @@
-import org.jetbrains.grammarkit.tasks.*
+
 
 plugins {
     id 'idea'
     id 'java'
     id "org.jetbrains.intellij" version "0.4.15"
-    id "org.jetbrains.grammarkit" version "2019.2.3"
 }
 
 apply plugin: "idea"
-apply plugin: 'org.jetbrains.grammarkit'
-
-grammarKit {
-    // version of IntelliJ patched JFlex (see bintray link below), Default is 1.7.0-1
-    jflexRelease = '1.7.0-1'
-
-    // tag or short commit hash of Grammar-Kit to use (see link below). Default is 2019.1.1
-    grammarKitRelease = '6452fde524'
-}
 
 group = "org.oorexx.idea"
 version = "1.0-Beta"
@@ -28,14 +18,15 @@ repositories {
 }
 
 dependencies {
-    compile fileTree(dir: 'lib', include: ['*.jar'])
+    compile project(':oorexxdoc')
+    compile project(':lang')
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
     // Define IntelliJ Platform API version to use for building this plugin
-    version '2019.2.3'
+    version '2019.3'
 }
 
 patchPluginXml {
@@ -46,7 +37,6 @@ sourceSets {
     main {
         java {
             srcDirs 'src'
-            srcDirs 'gen'
         }
         resources {
             srcDirs 'resources'
@@ -62,44 +52,5 @@ sourceSets {
     }
 }
 
-idea {
-    module {
-        // Marks the already(!) added srcDir as "generated"
-        generatedSourceDirs += file('/gen')
-    }
-}
-
-task generateOoRexxLexer(type: GenerateLexer) {
-    // source flex file
-    source = "resources/ooRexx.flex"
-
-    // target directory for lexer
-    targetDir = "gen/org/oorexx/ide/lexer"
-
-    // target classname, target file will be targetDir/targetClass.java
-    targetClass = "OoRexxLexer"
-
-    // if set, plugin will remove a lexer output file before generating new one. Default: false
-    purgeOldFiles = true
-}
-
-task generateOoRexxParser(type: GenerateParser) {
-    // source bnf file
-    source = "resources/ooRexx.bnf"
-
-    // optional, task-specific root for the generated files. Default: none
-    targetRoot = 'gen'
-
-    // path to a parser file, relative to the targetRoot
-    pathToParser = '/org/oorexx/ide/lang/OoRexxParser.java'
-
-    // path to a directory with generated psi files, relative to the targetRoot
-    pathToPsiRoot = "/org/oorexx/ide/lang"
-
-    // if set, plugin will remove a parser output file and psi output directory before generating new ones. Default: false
-    purgeOldFiles = true
-}
-generateOoRexxParser.dependsOn generateOoRexxLexer
-compileJava.dependsOn generateOoRexxParser
 
 tasks.withType(Test) {enabled = false}

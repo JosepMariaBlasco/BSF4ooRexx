@@ -2,7 +2,7 @@ package org.oorexx.ide.intellij.action;
 
 import com.intellij.ide.actions.CreateFileAction;
 import org.jetbrains.annotations.Nullable;
-import org.oorexx.ide.intellij.file.OoRexxIcons;
+import org.oorexx.ide.file.OoRexxIcons;
 
 public class NewOoRexxClsFile extends CreateFileAction{
 

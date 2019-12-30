@@ -1,6 +1,5 @@
 package org.oorexx.ide.intellij.highlighting;
 
-import com.google.common.collect.Lists;
 import com.intellij.lexer.Lexer;
 import com.intellij.openapi.editor.DefaultLanguageHighlighterColors;
 import com.intellij.openapi.editor.HighlighterColors;

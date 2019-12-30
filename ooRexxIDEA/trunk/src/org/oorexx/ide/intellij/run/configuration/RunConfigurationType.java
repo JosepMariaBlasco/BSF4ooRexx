@@ -1,12 +1,8 @@
 package org.oorexx.ide.intellij.run.configuration;
 
 import com.intellij.execution.configurations.*;
-import com.intellij.icons.AllIcons;
 import com.intellij.openapi.project.Project;
-import org.jetbrains.annotations.NotNull;
-import org.oorexx.ide.intellij.file.OoRexxIcons;
-
-import javax.swing.*;
+import org.oorexx.ide.file.OoRexxIcons;
 
 public class RunConfigurationType extends ConfigurationTypeBase {
 

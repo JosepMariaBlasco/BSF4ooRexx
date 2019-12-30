@@ -3,7 +3,7 @@ package org.oorexx.ide.intellij.project;
 import com.intellij.ide.util.projectWizard.ModuleBuilder;
 import com.intellij.openapi.module.ModuleType;
 import org.jetbrains.annotations.NotNull;
-import org.oorexx.ide.intellij.file.OoRexxIcons;
+import org.oorexx.ide.file.OoRexxIcons;
 
 import javax.swing.*;
 

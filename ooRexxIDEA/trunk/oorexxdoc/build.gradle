@@ -1,0 +1,33 @@
+plugins {
+    id 'idea'
+    id 'java'
+    id "org.jetbrains.intellij"
+}
+apply plugin: 'java'
+apply plugin: "idea"
+apply plugin: "org.jetbrains.intellij"
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile project(':lang')
+    compile "org.freemarker:freemarker:2.3.23"
+    compile "com.beust:jcommander:1.69"
+    compile "org.apache.commons:commons-lang3:3.6"
+    compile "org.apache.commons:commons-text:1.1"
+    compile "commons-io:commons-io:2.6"
+    testCompile "junit:junit:4.12"
+    compile fileTree(dir: '../lib', include: ['*.jar'])
+}
+
+
+intellij {
+    // Define IntelliJ Platform API version to use for building this plugin
+    version '2019.3'
+}
+
+tasks.withType(Test) {enabled = false}

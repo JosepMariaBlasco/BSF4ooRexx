@@ -6,7 +6,7 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.intellij.grammar.LightPsi;
 import org.junit.Test;
-import org.oorexx.ide.intellij.file.OoRexxFileTypeFactory;
+import org.oorexx.ide.file.OoRexxFileTypeFactory;
 import org.oorexx.ide.parser.standalone.OoRexxStandaloneParserDefinition;
 
 import java.io.File;

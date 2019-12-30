@@ -8,14 +8,14 @@
       ooRexx plugin for IntelliJ IDEA
     ]]></description>
 
-  <idea-version since-build="141.0"/>
+  <idea-version since-build="163"/>
 
   <extensions defaultExtensionNs="com.intellij">
     <lang.foldingBuilder language="ooRexx" implementationClass="org.oorexx.ide.intellij.folding.FoldingBuilder"/>
     <colorSettingsPage implementation="org.oorexx.ide.intellij.highlighting.OoRexxColorSettingPage"/>
     <lang.syntaxHighlighterFactory key="ooRexx" implementationClass="org.oorexx.ide.intellij.highlighting.OoRexxSyntaxHighlighterFactory"/>
     <lang.parserDefinition language="ooRexx" implementationClass="org.oorexx.ide.parser.OoRexxParserDefinition"/>
-    <fileTypeFactory implementation="org.oorexx.ide.intellij.file.OoRexxFileTypeFactory" />
+    <fileTypeFactory implementation="org.oorexx.ide.file.OoRexxFileTypeFactory" />
 
     <annotator language="ooRexx" implementationClass="org.oorexx.ide.intellij.annotator.UniqueConstraintAnnotator"/>
     <annotator language="ooRexx" implementationClass="org.oorexx.ide.intellij.annotator.KeywordHighlighter"/>
@@ -27,8 +27,8 @@
     <runConfigurationProducer implementation="org.oorexx.ide.intellij.run.configuration.RunConfigurationProducer"/>
 
     <additionalTextAttributes scheme="Default" file="colorSchemes/ooRexxColors.xml"/>
-    <applicationConfigurable groupId="language"  displayName="ooRexx" id="ooRexx" instance="org.oorexx.ide.intellij.setting.OoRexxLanguageConfigurable" />
-    <applicationService serviceImplementation="org.oorexx.ide.intellij.setting.OoRexxLanguageSettings"/>
+    <applicationConfigurable groupId="language"  displayName="ooRexx" id="ooRexx" instance="org.oorexx.ide.setting.OoRexxLanguageConfigurable" />
+    <applicationService serviceImplementation="org.oorexx.ide.setting.OoRexxLanguageSettings"/>
 
     <!-- Project -->
 
@@ -53,6 +53,11 @@
     </action>
     <action id="ooRexx.SearchAction"
             class="org.oorexx.ide.intellij.action.OoRexxSearchAction">
+    </action>
+    <action id="ooRexx.ooRexxDocAction" class="org.oorexx.ide.intellij.action.OoRexxDocAction"
+            text="Create 'ooRexxDoc' Documentation" description="Create an ooRexxDoc">
+      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
     </action>
   </actions>
 </idea-plugin>

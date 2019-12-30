@@ -2,16 +2,12 @@ package org.oorexx.ide.intellij.run.configuration;
 
 import com.intellij.execution.Location;
 import com.intellij.execution.actions.ConfigurationContext;
-import com.intellij.execution.configurations.ConfigurationFactory;
-import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.util.Comparing;
 import com.intellij.openapi.util.Ref;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.util.PsiTreeUtil;
-import org.jetbrains.annotations.NotNull;
-import org.oorexx.ide.intellij.file.OoRexxFileType;
-import org.oorexx.ide.intellij.file.OoRexxFileTypeFactory;
+import org.oorexx.ide.file.OoRexxFileTypeFactory;
 import org.oorexx.ide.lang.psi.OoRexxShebang;
 
 /**

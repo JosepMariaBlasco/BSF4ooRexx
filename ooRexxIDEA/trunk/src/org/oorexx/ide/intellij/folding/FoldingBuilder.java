@@ -11,7 +11,7 @@ import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.psi.util.PsiUtilCore;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.oorexx.ide.intellij.file.OoRexxFile;
+import org.oorexx.ide.file.OoRexxFile;
 import org.oorexx.ide.lang.OoRexxTypes;
 import org.oorexx.ide.lang.psi.*;
 
