@@ -1,11 +1,13 @@
 import org.jetbrains.grammarkit.tasks.*
 
 plugins {
+    id 'idea'
     id 'java'
     id "org.jetbrains.intellij" version "0.4.15"
     id "org.jetbrains.grammarkit" version "2019.2.3"
 }
 
+apply plugin: "idea"
 apply plugin: 'org.jetbrains.grammarkit'
 
 grammarKit {
@@ -60,6 +62,12 @@ sourceSets {
     }
 }
 
+idea {
+    module {
+        // Marks the already(!) added srcDir as "generated"
+        generatedSourceDirs += file('/gen')
+    }
+}
 
 task generateOoRexxLexer(type: GenerateLexer) {
     // source flex file
