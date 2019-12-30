@@ -2,11 +2,8 @@ package org.oorexx.ide.intellij.util;
 
 import com.google.common.collect.Lists;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.impl.source.tree.ElementType;
 import com.intellij.psi.tree.IElementType;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;

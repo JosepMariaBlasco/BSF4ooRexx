@@ -34,11 +34,6 @@ public class OoRexxModuleType extends ModuleType {
     }
 
     @Override
-    public Icon getBigIcon() {
-        return OoRexxIcons.MODULE;
-    }
-
-    @Override
     public Icon getNodeIcon(boolean b) {
         return OoRexxIcons.NODE;
     }

@@ -333,8 +333,7 @@ private meta paren ::= <<p>> | (LPAREN (<<paren  <<p>>>>| <<p>>) RPAREN)
 
 environment_id ::= ENV_IDENTIFIER | ENV_ENVIRONMENT | ENV_LOCAL
 id ::= (SELF TILDE)? (namespace_prefix (new_line* !assignments_and_keywords))? (identifier | environment_id | keyword_list){
-                                                                                                                            mixin = "org.oorexx.ide.intellij.reference.OoRexxNamedElementImpl"
-                                                                                                                            implements = "org.oorexx.ide.intellij.reference.OoRexxNamedElement"
+
                                                                                                                             methods = [setName getNameIdentifier]
 
                                                                                                                            }
