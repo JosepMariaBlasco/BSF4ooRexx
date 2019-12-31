@@ -16,6 +16,7 @@ import org.oorexx.doc.analyse.PackageAnalyzer;
 import org.oorexx.doc.analyse.model.OoRexxClass;
 import org.oorexx.doc.analyse.model.OoRexxPackage;
 import org.oorexx.doc.input.cli.GenerateCommand;
+import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
 import org.oorexx.doc.input.xml.OoRexxDocXml;
 import org.oorexx.ide.file.OoRexxFile;
 import org.oorexx.ide.file.OoRexxFileType;
@@ -47,11 +48,6 @@ public class DocGenerator {
     private Map<String, String> header = new HashMap<>();
     private List<VirtualFile> virtualFiles;
 
-    public DocGenerator(List<VirtualFile> virtualFiles, File output, String title){
-        this.virtualFiles = virtualFiles;
-        this.outputDirectory = output.getAbsolutePath();
-        this.title = title;
-    }
     public DocGenerator(GenerateCommand generateCommand) {
         inputFiles = generateCommand.getFilesAndDirectories();
         outputDirectory = generateCommand.getOutputDirectory();
@@ -64,6 +60,14 @@ public class DocGenerator {
         title = generateXml.getTitle();
         overview = generateXml.getOverview();
         generateXml.getHeader().getHeaderProperties().forEach(headerProperty -> header.put(headerProperty.getKey(), headerProperty.getValue()));
+    }
+
+    public DocGenerator(IntelliJGenerationCommand command) {
+        this.virtualFiles = command.getInputs();
+        this.outputDirectory = command.getOutput().getCanonicalPath();
+        this.title = command.getTitle();
+        this.header = command.getHeaders();
+        this.overview = command.getOverview();
     }
 
     public void generate() throws Exception{
