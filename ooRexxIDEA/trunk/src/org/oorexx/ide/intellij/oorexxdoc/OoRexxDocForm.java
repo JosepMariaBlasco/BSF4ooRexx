@@ -33,12 +33,17 @@ public class OoRexxDocForm {
     private JPanel filePanel;
     private JLabel error;
     private JEditorPane overview;
+    private JCheckBox quickConfiguration;
     private IntelliJGenerationCommand intelliJGenerationCommand = new IntelliJGenerationCommand();
     private DefaultListModel<VirtualFile> listModel = new DefaultListModel<>();
     private VirtualFile lastAdded = null;
     private List<KeyValuePair> keyValuePairs = new ArrayList<>();
     private AddEditRemovePanel<KeyValuePair> headerTable;
     private AddEditRemovePanel<VirtualFile> fileTable;
+
+    public boolean isQuickSave() {
+        return quickConfiguration.isSelected();
+    }
 
     private class HeaderTableModel extends AddEditRemovePanel.TableModel<KeyValuePair> {
         private int i = 0; // columnIndex always 0 so counting calls to function

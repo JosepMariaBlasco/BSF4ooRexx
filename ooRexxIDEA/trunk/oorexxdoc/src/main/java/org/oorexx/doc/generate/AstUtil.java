@@ -7,6 +7,7 @@ import com.intellij.util.FileContentUtilCore;
 import org.apache.commons.io.FileUtils;
 import org.intellij.grammar.LightPsi;
 import org.intellij.grammar.generator.ParserGeneratorUtil;
+import org.oorexx.ide.file.OoRexxFileType;
 import org.oorexx.ide.file.OoRexxFileTypeFactory;
 import org.oorexx.ide.lang.OoRexx;
 import org.oorexx.ide.parser.OoRexxParser;
@@ -45,7 +46,7 @@ public class AstUtil {
         final PsiFileFactory factory = PsiFileFactory.getInstance(OoRexxParserDefinition.getProject());
 
         try {
-            return new AstWrapper(file, factory.createFileFromText(new OoRexx(), FileUtils.readFileToString(file, "utf-8")));
+            return new AstWrapper(file, factory.createFileFromText(file.getName(), OoRexxFileType.INSTANCE, FileUtils.readFileToString(file, "utf-8")));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

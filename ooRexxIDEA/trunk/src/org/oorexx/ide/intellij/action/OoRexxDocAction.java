@@ -16,20 +16,12 @@ public class OoRexxDocAction extends AnAction {
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
-
-
-
         VirtualFile[] virtualFiles = e.getDataContext().getData(CommonDataKeys.VIRTUAL_FILE_ARRAY);
         if(virtualFiles == null){
             return;
         }
         List<VirtualFile> virtualFileList = OoRexxFileUtil.getFiles(Arrays.asList(virtualFiles));
         OoRexxDocGui.openUi(e.getProject(), virtualFileList);
-        /*try {
-            new DocGenerator(virtualFileList, new File(e.getProject().getBaseDir().getCanonicalPath() + "/oorexxdoc"), "myFirstDoc").generate();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }*/
     }
 
 

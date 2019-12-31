@@ -17,6 +17,7 @@ import org.oorexx.doc.analyse.PackageAnalyzer;
 import org.oorexx.doc.analyse.model.OoRexxClass;
 import org.oorexx.doc.analyse.model.OoRexxPackage;
 import org.oorexx.doc.input.cli.GenerateCommand;
+import org.oorexx.doc.input.gui.OORexxDocGUI;
 import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
 import org.oorexx.doc.input.xml.OoRexxDocXml;
 import org.oorexx.ide.file.OoRexxFile;
@@ -103,9 +104,13 @@ public class DocGenerator {
 
         return psiFiles.parallelStream()
                 .map(psiFile -> {
-                    PsiElement psi = psiFile.getPsiFile().getNode().getPsi();
-                    CommentContext commentContext = new CommentContext((OoRexxFile) psi);
-                    return new PackageAnalyzer(commentContext).analyze(psiFile.getFile(), (OoRexxFile) psi);
+                    final OoRexxPackage[] ooRexxPackage = new OoRexxPackage[1];
+                    ApplicationManager.getApplication().runReadAction(() -> {
+                        PsiElement psi = psiFile.getPsiFile().getNode().getPsi();
+                        CommentContext commentContext = new CommentContext((OoRexxFile) psi);
+                        ooRexxPackage[0] = new PackageAnalyzer(commentContext).analyze(psiFile.getFile(), (OoRexxFile) psi);
+                    });
+                    return ooRexxPackage[0];
                 })
                 .filter(OoRexxPackage::hasElements)
                 .collect(Collectors.toList());
@@ -161,6 +166,26 @@ public class DocGenerator {
             template.process(map, fileWriter);
         }
 
+    }
+
+    public String generateXML4IntelliJ(){
+        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<oorexxdoc>\n<parser>\n";
+        for (int i = 0; i < virtualFiles.size(); i++)
+            xml += "<input>" + virtualFiles.get(0).getCanonicalPath() + "</input>\n";
+        xml += "<output>" + outputDirectory + "</output>\n</parser>\n";
+        xml += "<title>" + title + "</title>\n";
+        xml += "<overview><![CDATA[" + overview
+                + "]]></overview>\n";
+        xml += "<header>\n";
+        for (Map.Entry<String, String> entry : header.entrySet()) {
+            xml += "<property><key>" + entry.getKey()
+                    + "</key><value>" + entry.getValue()
+                    + "</value></property>\n";
+        }
+        xml += "</header>\n";
+        xml += "</oorexxdoc>";
+
+        return xml;
     }
 
     private void writePackages(Configuration configuration, String templatePath, List<OoRexxPackage> packages) throws Exception{

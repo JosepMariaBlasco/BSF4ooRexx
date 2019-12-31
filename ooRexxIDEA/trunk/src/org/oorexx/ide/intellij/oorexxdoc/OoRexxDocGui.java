@@ -6,10 +6,13 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogBuilder;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.vfs.VirtualFile;
+import org.apache.commons.io.FileUtils;
 import org.oorexx.doc.generate.DocGenerator;
 import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
 
 import javax.swing.*;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 public class OoRexxDocGui {
@@ -29,7 +32,11 @@ public class OoRexxDocGui {
                 ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
                     ApplicationManager.getApplication().runReadAction(() -> {
                         try {
-                            new DocGenerator(command).generate();
+                            DocGenerator docGenerator = new DocGenerator(command);
+                            docGenerator.generate();
+                            if(ooRexxDocForm.isQuickSave()) {
+                                quickSave(project, docGenerator);
+                            }
                         } catch (Exception e) {
                             e.printStackTrace();
                             JOptionPane.showMessageDialog(null, e.getMessage());
@@ -40,6 +47,13 @@ public class OoRexxDocGui {
         });
         builder.addCancelAction();
         builder.show();
+    }
+
+    private static void quickSave(Project project, DocGenerator docGenerator) throws IOException {
+        String xml = docGenerator.generateXML4IntelliJ();
+        String canonicalPath = project.getProjectFile().getParent().getCanonicalPath();
+        File file = new File(canonicalPath, "ooRexxDoc.xml");
+        FileUtils.writeStringToFile(file, xml, "utf-8");
     }
 
 }
