@@ -1,5 +1,6 @@
 package org.oorexx.doc.generate;
 
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -114,7 +115,7 @@ public class DocGenerator {
         final PsiFileFactory factory = PsiFileFactory.getInstance(OoRexxParserDefinition.getProject());
 
         try {
-            return factory.createFileFromText("ooRexx", OoRexxFileType.INSTANCE, FileUtils.readFileToString(file, "utf-8"));
+            return factory.createFileFromText(file.getName(), OoRexxFileType.INSTANCE, FileUtils.readFileToString(file, "utf-8"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -122,11 +123,15 @@ public class DocGenerator {
     private List<OoRexxPackage> getOoRexxPackgesForVirtualFiles() {
         return virtualFiles.parallelStream()
                 .map(virtualFile -> {
-                    File file = new File(virtualFile.getCanonicalPath());
-                    PsiFile psiFile = getPsiFile(file);
-                    PsiElement psi = psiFile.getNode().getPsi();
-                    CommentContext commentContext = new CommentContext((OoRexxFile) psi);
-                    return new PackageAnalyzer(commentContext).analyze(file, (OoRexxFile) psi);
+                    final OoRexxPackage[] ooRexxPackage = {null};
+                    ApplicationManager.getApplication().runReadAction(() -> {
+                        File file = new File(virtualFile.getCanonicalPath());
+                        PsiFile psiFile = getPsiFile(file);
+                        PsiElement psi = psiFile.getNode().getPsi();
+                        CommentContext commentContext = new CommentContext((OoRexxFile) psi);
+                        ooRexxPackage[0] = new PackageAnalyzer(commentContext).analyze(file, (OoRexxFile) psi);
+                    });
+                    return ooRexxPackage[0];
                 })
                 .filter(OoRexxPackage::hasElements)
                 .collect(Collectors.toList());

@@ -8,7 +8,7 @@
       ooRexx plugin for IntelliJ IDEA
     ]]></description>
 
-  <idea-version since-build="163"/>
+  <idea-version since-build="172"/>
 
   <extensions defaultExtensionNs="com.intellij">
     <lang.foldingBuilder language="ooRexx" implementationClass="org.oorexx.ide.intellij.folding.FoldingBuilder"/>

@@ -1,5 +1,7 @@
 package org.oorexx.ide.intellij.oorexxdoc;
 
+import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogBuilder;
 import com.intellij.openapi.ui.DialogWrapper;
@@ -24,16 +26,19 @@ public class OoRexxDocGui {
             IntelliJGenerationCommand command = ooRexxDocForm.createCommand();
             if(ooRexxDocForm.isValid()) {
                 builder.getDialogWrapper().close(DialogWrapper.OK_EXIT_CODE);
-                try {
-                    new DocGenerator(command).generate();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    JOptionPane.showMessageDialog(null, e.getMessage());
-                }
+                ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
+                    ApplicationManager.getApplication().runReadAction(() -> {
+                        try {
+                            new DocGenerator(command).generate();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            JOptionPane.showMessageDialog(null, e.getMessage());
+                        }
+                    });
+                }, "Generating ooRexxDocs", false, project);
             }
         });
         builder.addCancelAction();
-
         builder.show();
     }
 
