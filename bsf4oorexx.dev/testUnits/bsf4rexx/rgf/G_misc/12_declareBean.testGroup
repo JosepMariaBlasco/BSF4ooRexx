@@ -1,0 +1,87 @@
+#!/usr/bin/env rexx
+/*
+   name:             rexx_testBsfIsA.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2020-01-20
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test RexxEngine.declareBean() and RexxEngine.unDeclareBean()
+
+                     - declareBean allows to define implicit values such that they automatically
+                       get resolved in bsf.lookupBean(nameOfImplicitVariable)
+
+                     - undeclare Bean removes defined implicit values, hence RexxEngine must not
+                       be able to be able to look them up anymore
+
+   needs:            ooRexx 5.0 due to using the ::resource directive for test program
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testDeclareBean)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+
+::class "testDeclareBean" subclass ooTestCase public
+
+::method setup
+   /* Unit tests for the older interface may have turned off the prefixing of the return values, if so, restore it. */
+  if bsf("bsfPrefixReturnValue")=0 then
+     call bsf "bsfPrefixReturnValue", 1  -- make sure that it is set
+
+
+::method "test_01_declareBean"
+
+    bm=.bsf~new("org.apache.bsf.BSFManager")
+
+      -- create and declare via the BSFManager: all existing script engines must honor this from now on
+    dim=.bsf~new("java.awt.Dimension", 111, 222)
+    bm~declareBean("myDim", dim, dim~getClass)
+    drop dim         -- let the ooRexx garbate collector reclaim dim (and unregisterBean on the Java side)
+
+    re=bm~loadScriptingEngine("rexx")  -- engine finds 'myDim', but not yet 'myDim2'
+    viaRE_myDim =re~eval("<nixi>", 0, 0, "return bsf.lookupBean('myDim');  ::requires BSF.CLS")
+    self~assertNotNull( viaRE_myDim , "'viaRE_Dim=myDim~isNil=.false'")
+    self~assertEquals(.true, viaRE_myDim~objectName~abbrev("java.awt.Dimension@"), "expecting objectname starts with 'java.awt.Dimension@'")
+
+    viaRE_myDim2=re~eval("<nixi>", 0, 0, "return bsf.lookupBean('myDim2');  ::requires BSF.CLS")
+    self~assertNull(    viaRE_myDim2, "'viaRE_Dim2~isNil=.true'")
+
+      -- create and declare via the BSFManager: all existing script engines must honor this from now on
+    dim2=.bsf~new("java.awt.Dimension", 333, 444)
+    bm~declareBean("myDim2", dim2, dim2~getClass)
+    drop dim2        -- let the ooRexx garbate collector reclaim dim (and unregisterBean on the Java side)
+
+    --------------------------------
+    call syssleep 0.001 -- give the garbage collector a chance to run (not guaranteed)
+    --------------------------------
+
+    viaRE_myDim2=re~eval("<nixi>", 0, 0, "return bsf.lookupBean('myDim2');  ::requires BSF.CLS")
+    self~assertEquals(.true, viaRE_myDim2~objectName~abbrev("java.awt.Dimension@"), "expecting objectname starts with 'java.awt.Dimension@'")
+    self~assertNotNull( viaRE_myDim2, "'viaRE_myDim2~isNil=.false'")
+
+    bm~undeclareBean("myDim")
+    viaRE_myDim_after_undeclare=re~eval("<nixi>", 0, 0, "return bsf.lookupBean('myDim');  ::requires BSF.CLS")
+    self~assertNull( viaRE_myDim_after_undeclare, "'viaRE_myDim_after_undeclare~isNil=.true'")
+
+    bm~undeclareBean("myDim2")
+    viaRE_myDim2_after_undeclare=re~eval("<nixi>", 0, 0, "return bsf.lookupBean('myDim2');  ::requires BSF.CLS")
+    self~assertNull( viaRE_myDim2_after_undeclare, "'viaRE_myDim2_after_undeclare~isNil=.true'")
+
+
+    -- check that looked-up Java objects still usable
+    self~assertEquals(111,viaRE_myDim ~getWidth)
+    self~assertEquals(222,viaRE_myDim ~getHeight)
+    self~assertEquals(333,viaRE_myDim2~getWidth)
+    self~assertEquals(444,viaRE_myDim2~getHeight)
+

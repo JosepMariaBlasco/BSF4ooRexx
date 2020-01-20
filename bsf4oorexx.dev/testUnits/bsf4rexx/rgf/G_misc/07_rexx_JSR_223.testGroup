@@ -4,11 +4,14 @@
    author:           Rony G. Flatscher
    version:          1.0.0
    date:             2015-07-05, 2015-07-07
-   chaanged:         2017-08-16, rgf:
-                     - adjust for new formatting of Rexx code when produced by the RexxEngine factory
-                     - adjust scope names which are turned into a stem by BsfContextVariables()
-                     - adjust count of context variables (scope entries starting with 'JAVAX.' will be one stem context variable)
-                     - remove usage of bsf.ScriptContext2rexx() use .JSR223 class method "ScriptContext2RexxDir" instead
+   changed:          2017-08-16, rgf:
+                        - adjust for new formatting of Rexx code when produced by the RexxEngine factory
+                        - adjust scope names which are turned into a stem by BsfContextVariables()
+                        - adjust count of context variables (scope entries starting with 'JAVAX.' will be one stem context variable)
+                        - remove usage of bsf.ScriptContext2rexx() use .JSR223 class method "ScriptContext2RexxDir" instead
+                     2020-01-20, rgf:
+                        - adjust for the change in getOutputStatement() which now uses .output~charout() instead of SAY
+                        - adjust for the change in returning "rexx" instead of "Rexx" in the extension list
 
    license:          ASF 2.0 (Apache Software License)
    purpose:          test JSR-223 (javax.script introduced with Java 6) support
@@ -67,7 +70,7 @@ return testResult
 
   self~assertTrue(ref~getLanguageVersion>"4.1")
 
-  self~assertSame("Rexx", ref~getName)
+  self~assertSame("rexx", ref~getName)
 
   jArrStr=bsf.createJavaArray(.java.lang.String,0)
   self~assertEquals("m~hi", ref~getMethodCallSyntax("m","hi", jArrStr))
@@ -114,9 +117,9 @@ return testResult
   end
   self~assertTrue(soen~items=0)
 
-  self~assertEquals('say "hi"', ref~getOutputStatement('hi'))
-  self~assertEquals('say """hi"""', ref~getOutputStatement('"hi"'))
-  self~assertEquals('say "''hi''"', ref~getOutputStatement("'hi'"))
+  self~assertEquals(".output~charOut(""hi"")", ref~getOutputStatement('hi'))
+  self~assertEquals('.output~charOut("""hi""")', ref~getOutputStatement('"hi"'))
+  self~assertEquals(".output~charOut(""'hi'"")", ref~getOutputStatement("'hi'"))
 
   self~assertEquals("MULTITHREADED", ref~getParameter("THREADING"))
 
