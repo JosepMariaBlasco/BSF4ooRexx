@@ -1,3 +1,30 @@
+-------------------------------------- 2020-01-20 ----------------------------------
+
+- RexxScriptEngineFactory.java
+
+        - error fix: return THREADING constant value instead of "THREADING"
+
+- bsf4rexx\rgf\G_misc\07_rexx_JSR_223.testGroup
+
+        - adjust for the change in getOutputStatement() which now uses .output~charout() instead of SAY
+
+        - adjust for the change in returning "rexx" instead of "Rexx" in the extension list
+
+bsf4rexx\rgf\F_testClassNames\01_rexx_ClassNameMusings.testGroup
+
+        - remove erroneous empty ::attribute directive
+
+bsf4rexx\rgf\G_misc\12_declareBean.testGroup
+
+        - added new testGroup to test declareBean() and undeclareBean(), now that that
+          functionality has been added to the RexxEngine
+
+                - declareBean allows to define implicit values such that they automatically
+                  get resolved in bsf.lookupBean(nameOfImplicitVariable)
+
+                - undeclare Bean removes defined implicit values, hence RexxEngine must not
+                  be able to be able to look them up anymore
+
 -------------------------------------- 2019-11-26 ----------------------------------
 
 - RexxAndJava.java
