@@ -11,7 +11,7 @@ import org.rexxla.bsf.engines.rexx.jsr223.*;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2016 Rony G. Flatscher
+   Copyright 2015-2020 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -29,6 +29,8 @@ import org.rexxla.bsf.engines.rexx.jsr223.*;
     changes:
         2016-12-18, rgf: - the inserted new Rexx-script "nutshell_04c.rex" uses Rexx script annotations
                            and therefore does not need setting ARGV explicitly
+
+    changed:    2020-01-26, rgf: spelling of "Rexx" to "rexx"
 */
 
 /** Demonstrate evaluating a Rexx script, once without supplying arguements and once supplying

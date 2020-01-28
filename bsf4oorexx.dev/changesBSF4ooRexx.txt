@@ -1,3 +1,28 @@
+-------------------------------------- 2020-01-28 ----------------------------------
+
+- RexxCompiledScript.java
+
+        - removed code to change filename this is not possible for aRexxCompiledScript
+
+
+- RexxScriptEngine.java
+
+        - when compiling and no filename is given, then try to use
+          the FILENAME value in the ENGINE_SCOPE Bindings, if any, otherwise
+          create an artificial filename that includes day and time of compiling;
+          note: once compilation is done the filename cannot be changed anymore
+
+-------------------------------------- 2020-01-27 ----------------------------------
+
+- RexxCompiledScript.java
+
+        - using createArgV(): only supply RexxScriptEngine instance and
+          RexxCompiledScript instance if in debuggingmode
+
+- RexxScriptEngine.java
+
+        - using createArgV(): only supply RexxScriptEngine And RexxCompiledScript instance if debugging
+
 -------------------------------------- 2020-01-20 ----------------------------------
 
 - RexxScriptEngineFactory.java
@@ -25,12 +50,21 @@ bsf4rexx\rgf\G_misc\12_declareBean.testGroup
                 - undeclare Bean removes defined implicit values, hence RexxEngine must not
                   be able to be able to look them up anymore
 
+
+-------------------------------------- 2019-12-11 ----------------------------------
+
+- RexxEngine.java
+
+        - added field hasDeclaredBeans to allow optimization in RexxAndJava.lookupBean()
+
 -------------------------------------- 2019-11-26 ----------------------------------
 
 - RexxAndJava.java
 
         - lookupBean(): if not found in the registry looks up the new HashMap
           RexxEngine.engineDeclaredBeans
+
+        - lookupBean(), little optimization: only lookup declared beans, if there are any
 
 - RexxEngine.java
         - rolled back changes of 2019-11-25, instead
@@ -40,16 +74,14 @@ bsf4rexx\rgf\G_misc\12_declareBean.testGroup
           be looked up by RexxAndJava.lookupBean(), if beanName not found in its
           registry
 
-
--------------------------------------- 2019-11-26 ----------------------------------
-
-- RexxEngine.java
-
         - the Apache BSF taglib uses BSFManager.declareBean() to register Java objects
           for the scripts, therefore declareBean() and undeclareBean() must honor
           their invocations in order to make those beans available to ooRexx
+
           - declareBean(): now registers BSFDeclaredBean with RexxAndJava
+
           - undeclareBean(): now unregisters the bean with RexxAndJava
+
 
 
 -------------------------------------- 2019-11-14 ----------------------------------

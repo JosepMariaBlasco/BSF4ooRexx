@@ -1,4 +1,11 @@
 ---
+DONE: 2020-01-26, rgf:
+        - re-capitlize and add engine names, e.g. "Rexx"
+
+        - make sure that CompiledScript objects gain the filename in engine scope Bindings,
+          if present/possible; DONE in RexxScriptEngine.compile(script,filename)
+
+---
 2019-08-13, rgf: maybe check in exits whether tid has changed (should not be necessary, maybe with command handlers)
 
 

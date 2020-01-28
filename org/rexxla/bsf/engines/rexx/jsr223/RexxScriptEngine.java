@@ -24,11 +24,9 @@ import org.rexxla.bsf.engines.rexx.RexxEngine;
 import org.rexxla.bsf.engines.rexx.RexxProxy;
 import org.rexxla.bsf.engines.rexx.RexxException;
 
-// TODO: check and correct visibility of new fields and methods
-
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2019 Rony G. Flatscher
+   Copyright 2015-2020 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -44,6 +42,13 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+
+        2020-01-28, ---rgf, - when compiling and no filename is given, then try to use
+                              the FILENAME value in the ENGINE_SCOPE Bindings, if any, otherwise
+                              create an artificial filename that includes day and time of compiling;
+                              note once compilation is done the filename cannot be changed anymore
+
+        2020-01-27, ---rgf, - using createArgV(): only supply RexxScriptEngine instance if debugging
 
         2019-11-18, ---rgf, getReaderAsString(Reader r): read into a char[] rather than iterating
                             over single read characters
@@ -151,7 +156,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20180816
+ * @version 100.20200128
  * @since  2015-05-11
  *
  */
@@ -605,14 +610,6 @@ if (bDebug==true){ System.err.println("arrived: getCreateSlotArgument(), rexxCre
         try
         {
             if (bInitialBSFRequiresDone==false) updateRexxEngine(null);
-/*
-            Vector args=new Vector();
-            args.add("createSlotArgument");
-            args.add(rexxCreateSlotArgumentCode);
-
-            rexxCreateSlotArgument=(RexxProxy) bsfRexxEngine.apply(filename, 0, 0, rexxCreateRoutineCode, null, args);
-*/
-
             rexxCreateSlotArgument=(RexxProxy) getCreateRoutine().sendMessage2("CALL", "createSlotArgument", rexxCreateSlotArgumentCode);
         }
         catch (Exception exc)
@@ -672,14 +669,6 @@ if (bDebug==true){ System.err.println("arrived: getCreateRoutineAndPackage(), re
         try
         {
             if (bInitialBSFRequiresDone==false) updateRexxEngine(null);
-/*
-            Vector args=new Vector();
-            args.add("createRoutineAndPackage");
-            args.add(rexxCreateRoutineAndPackageCode);
-
-            rexxCreateRoutineAndPackage=(RexxProxy) bsfRexxEngine.apply(filename, 0, 0, rexxCreateRoutineCode, null, args);
-*/
-
             rexxCreateRoutineAndPackage=(RexxProxy) getCreateRoutine().sendMessage2("CALL", "createRoutineAndPackage", rexxCreateRoutineAndPackageCode);
         }
         catch (Exception exc)
@@ -909,26 +898,19 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
         boolean bShowSource=(ran.posStartAnnotationChar>-1 && ran.isAnnotationWithinBlockCommentOnSameLine);
         if (bShowSource)    // show (for debugging purposes the supplied Rexx script)
         {
-// System.err.println(this+" - /1/ ORIGINAL bShowSource=["+bShowSource+"]");
             System.err.println(this+": show source of Rexx script, annotation \"/*@showsource*/\" present in file [" +filename+"]:"
                                 +"\n/// ----------------------------------------> begin of Rexx script ----------------------------------------> ///\n"
                                 +script
                                 +"\n\\\\\\ <----------------------------------------- end of Rexx script <----------------------------------------- \\\\\\");
         }
-// System.err.println(this+" - \\1\\ ORIGINAL bShowSource=["+bShowSource+"]");
 
         // - process @GET, @GET() and @SET() Rexx script annotations; if @SET() is empty, give a warning and ignore,
         //   save the edited script
         // - if Rexx script annotation SHOWSOURCE is given, show the edited script as well
         String rexxAnnos[] =new String[] { "GET", "SET" };  // Rexx script annotations to be processed
 
-        // strFormatGET; use String.format(strFormatGET, ran.contentAsRexxString)
-        // strFormatSET; use String.format(strFormatGET, ran.contentAsRexxString), // warning, if no attribute list is given, in which case do not inject code
-        // TODO: make sure "script" String is copied and we work on the copy, after each rxAnno create the new "script" String off the StringBuffer
         for (String rxAnno : rexxAnnos)     // iterate over Rexx script annotations
         {
-// System.err.println(this+": rxAnno=["+rxAnno+"], main for-loop <=== <=== <=== ************************************");
-
             StringBuilder  sbEditedScript=null; // StringBuilder
             int currPos=0;
             int prevPosStart=0;     // start of tmpScriptSource.substring() that determines which chunk of the script should be appended, if necessary
@@ -967,8 +949,7 @@ if (bDebug) System.err.println("--- 2 --- RSE.compile(): now prevPosStart="+prev
                 }
                 else    // submit the Rexx string
                 {
-// rgf,20170212                   sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), ran.contentAsRexxString) );
-// submit annotation content as is, escape and enquote according to Rexx rules
+                    // submit annotation content as is, escape and enquote according to Rexx rules
                     String tmpString='"'+ran.contentAsIs.replace("\"", "\"\"")+'"';   // escape any quotes
 
                     sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), tmpString) );
@@ -1037,9 +1018,16 @@ if (bDebug) System.err.println("--- 8 --- RSE.compile(): bAddLatestPackageDynami
             }
         }
 
-        if (filename==null)     // no file name supplied, create an artificial one
+        if (filename==null)     // no file name supplied
         {
-            filename="compiled_script_"+getGMTFormattedDate4Filename()+".rex";
+            // try to fetch the name from the ENGINE_SCOPE Bindings
+            ScriptContext sc=this.getContext();
+            filename=(String) sc.getAttribute(this.FILENAME, sc.ENGINE_SCOPE);
+
+            if (filename==null)     // create some artificial file name, indicating time of compiliation
+            {
+                filename="compiled_script_"+getGMTFormattedDate4Filename()+".rex";
+            }
         }
 
         Object[] rexxObjects;
@@ -1085,13 +1073,10 @@ if (bDebug==true) {exc.printStackTrace();}
             currentScript.editedScriptSource=tmpScriptSource;
             if (bShowSource)
             {
-// System.err.println(this+" - /2/ EDITED bShowSource=["+bShowSource+"], bGotScriptEdited=true");
-
                 System.err.println(this+": show source of EDITED Rexx script, annotation \"/*@showsource*/\" present in [" +filename+"]:"
                                     +"\n/// ========================================> begin of EDITED Rexx script ========================================> ///\n"
                                     +tmpScriptSource
                                     +"\n\\\\\\ <========================================= end of EDITED Rexx script <========================================= \\\\\\");
-// System.err.println(this+" - \\2\\ EDITED bShowSource=["+bShowSource+"], bGotScriptEdited=true");
             }
         }
 
@@ -1309,8 +1294,14 @@ if (bDebug==true) {exc.printStackTrace();}
         Object arrArgV[];
         try
         {
-// TODO: rgf, 2017-10-09: after BetaTesting make sure that neither the RexxScriptEngine, nor the RexxCompiledScript get supplied to the Rexx script!
-            arrArgV=RexxCompiledScript.createArgV(args, sc, this, null);  // supply default context; no access to RexxCompiledScript
+            if (bDebug) // supply this instance in Slot.Argument to Rexx for debugging purposes only
+            {
+                arrArgV=RexxCompiledScript.createArgV(this, args, sc, this, null);  // supply default context; no access to RexxCompiledScript
+            }
+            else       // GA version: do not supply RexxScriptEngine instance to Rexx script
+            {
+                arrArgV=RexxCompiledScript.createArgV(this, args, sc, null, null);  // supply default context; no access to RexxCompiledScript
+            }
         }
         catch (BSFException exc)
         {
@@ -1320,7 +1311,6 @@ if (bDebug==true) {exc.printStackTrace();}
         try {
                 // make sure BSF.CLS support in JNI available; .input, .output, .error set accordingly
             updateRexxEngine(sc);
-// System.err.println("RexxScriptEngine.invokeMethod(): sendMessage(\""+name+"\", arrArgV="+java.util.Arrays.deepToString(arrArgV)+")");
             return ((RexxProxy) thiz).sendMessage(name,arrArgV);
         }
         catch (Exception exc)
@@ -1394,9 +1384,6 @@ if (bDebug==true) {exc.printStackTrace();}
         StringBuffer sb=new StringBuffer();
         try
         {
-
-            // ---> rgf, 2019-11-18
-            // char[] charBuffer = new char[1024];
             char[] charBuffer = new char[4096];
             int r = 0;
 
@@ -1404,17 +1391,6 @@ if (bDebug==true) {exc.printStackTrace();}
             {
                 sb.append(charBuffer, 0, r);
             }
-            // <---
-
-/* --->
-            int c=r.read();
-            while(c != -1)
-            {
-                sb.append((char) c);
-                c= r.read();
-            }
-<--- */
-
         }
         catch (IOException ioe)
         {
@@ -1440,7 +1416,6 @@ if (bDebug==true) {exc.printStackTrace();}
      * @throws BSFException if something went wrong while interacting with ooRexx
      */
 
-// TODO: 2016-11-07, rgf: synchronized method?
 //          check whether current re-assignments are in place already or not
     synchronized void updateRexxEngine(ScriptContext sc) throws ScriptException, BSFException
     {
@@ -1492,34 +1467,6 @@ if (bDebug==true) {exc.printStackTrace();}
                 }
             }
         }
-/*
-System.err.println("... debug, add a few Bindings as scopes 13, 309, 155:");
-try {
-int scope=113;
-System.err.println("... debug, scope: "+scope);
-    sc.setBindings(new SimpleBindings(), scope);
-scope=309;
-System.err.println("... debug, scope: "+scope);
-    sc.setBindings(new SimpleBindings(), scope);
-scope=155;
-System.err.println("... debug, scope: "+scope);
-    sc.setBindings(new SimpleBindings(), scope);
-}
-catch (Exception e)
-{
-    System.err.println("... debug, OOPS exception, e="+e);
-    e.printStackTrace();
-}
-
-System.err.println("... debug, iterate over ScriptContext.getScopes():");
-for (Integer i: sc.getScopes())
-{
-    System.err.println("\tscope value i="+i);
-
-}
-*/
-
-
     }
 
 

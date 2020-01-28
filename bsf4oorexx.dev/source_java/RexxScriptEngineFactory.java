@@ -390,7 +390,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     }
 
 
-    /** Creates and returns an instance of the ScriptEngine associated with this ScriptEngineFactory. */
+    /** Creates and returns a new RexxScriptEngine instance. */
     public ScriptEngine getScriptEngine()
     {
 if (bDebug)

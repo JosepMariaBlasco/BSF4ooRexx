@@ -11,7 +11,7 @@ import org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015 Rony G. Flatscher
+   Copyright 2015-2020 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ import org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine
             - adapted the program to match its pure Java sibling
             - the inserted new Rexx-script "nutshell_04c.rex" uses Rexx script annotations
               and therefore does not need setting ARGV explicitly
+
+    changed:    2020-01-26, rgf: spelling of "Rexx" to "rexx"
 */
 
 
@@ -43,7 +45,7 @@ import org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngine
  */
         -- Using a ScriptEngineManager to fetch the Rexx script enginge
         manager = ScriptEngineManager()
-        rse=RexxScriptEngine manager.getEngineByName("Rexx")
+        rse=RexxScriptEngine manager.getEngineByName("rexx")
         do
             sc=rse.getContext()  -- get the default ScriptContext
 

@@ -32,7 +32,7 @@ import java.lang.reflect.Method;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
   *
-  * @version 6.0.0, 20191126
+  * @version 6.0.0, 20191211
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   *
   */
@@ -40,6 +40,8 @@ import java.lang.reflect.Method;
 
 /*
     last change: $Revision: 546 $ $Author: rony $ $Date: 2009-10-20 20:45:19 +0200 (Tue, 20 Oct 2009) $
+
+    2019-12-11, ---rgf, added field hasDeclaredBeans to allow optimization in RexxAndJava.lookupBean()
 
     2019-11-26, ---rgf, added HashMap<String,BSFDeclaredBean> engineDeclaredBeans to maintain
                         BSFManager's declareBean(bean) and undeclareBean(name) invocations; will
@@ -182,7 +184,7 @@ public class RexxEngine extends BSFEngineImpl {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20191126";
+    static final public String version = "600.20191211";
 
     /** If terminate() was invoked, then this instance must not be used anymore.
      */
@@ -271,6 +273,10 @@ public class RexxEngine extends BSFEngineImpl {
     /** Stores the declared beans supplied by BSFManager in the initialize() method.
      */
     HashMap<String,BSFDeclaredBean> engineDeclaredBeans = new HashMap();
+
+    /** Indicate whether there are declared beans to be looked up.
+     */
+    boolean hasDeclaredBeans = false;
 
     /** Initializes the Rexx engine and causes the external
       * functions 'BSF' and 'BSFPollEvents' to be registered with the
@@ -1328,6 +1334,7 @@ if (bDebug)
 if (bDebug) System.err.println("RexxEngine.declareBean(): name=["+bean.name+"], bean=["+bean+"], bean.bean=["+bean.bean+"]");
 
         engineDeclaredBeans.put(bean.name, bean);
+        hasDeclaredBeans=true;      // indicate we have a bean to lookup
     }
 
     /** Removes the supplied bean from {@link engineDeclaredBeans}.
@@ -1346,6 +1353,7 @@ if (bDebug) System.err.println("RexxEngine.declareBean(): name=["+bean.name+"], 
 if (bDebug) System.err.println("RexxEngine.undeclareBean(): name=["+bean.name+"], bean=["+bean.bean+"]");
 
         engineDeclaredBeans.remove(bean.name);
+        hasDeclaredBeans=(engineDeclaredBeans.isEmpty()==false);    // indicate whether we have a bean to lookup
     }
 
 

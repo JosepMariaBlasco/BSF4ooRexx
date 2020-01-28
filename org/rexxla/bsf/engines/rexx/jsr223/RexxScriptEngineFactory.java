@@ -13,7 +13,7 @@ import org.apache.bsf.*;   // BSF support
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2019 Rony G. Flatscher
+   Copyright 2015-2020 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -52,6 +52,8 @@ import org.apache.bsf.*;   // BSF support
         - 2019-11-07, ---rgf: - new static method "getStringLiteral()"
                               - getOutputStatement() now uses getStringLiteral() and returns
                                 ".output~charOut(toDisplayAsRexxStringLiteral)"
+
+        - 2020-01-20, ---rgf: - error fix: return THREADING constant value instead of "THREADING"
 
 */
 
@@ -340,7 +342,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
                 return null;
         }
 */
-        if (key.equals("THREADING")) return "THREADING";
+        if (key.equals("THREADING")) return THREADING;
 
         if (key.equals(ScriptEngine.NAME)            ) return SHORT_NAME;
         if (key.equals(ScriptEngine.ENGINE)          ) return ENGINE_NAME;
@@ -388,7 +390,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     }
 
 
-    /** Creates and returns an instance of the ScriptEngine associated with this ScriptEngineFactory. */
+    /** Creates and returns a new RexxScriptEngine instance. */
     public ScriptEngine getScriptEngine()
     {
 if (bDebug)

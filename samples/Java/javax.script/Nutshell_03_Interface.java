@@ -7,7 +7,7 @@ import org.rexxla.bsf.engines.rexx.jsr223.*;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015 Rony G. Flatscher
+   Copyright 2015-2020 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,6 +21,8 @@ import org.rexxla.bsf.engines.rexx.jsr223.*;
    See the License for the specific language governing permissions and
    limitations under the License.
 -----------------------------------------------------------------------------
+
+    changed:    2020-01-26, rgf: spelling of "Rexx" to "rexx"
 */
 
 /** Demonstrate the usage of the <code>Invocable</code> methods, this time using Java proxies

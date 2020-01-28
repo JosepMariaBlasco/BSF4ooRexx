@@ -7,7 +7,7 @@ import org.rexxla.bsf.engines.rexx.jsr223;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2016 Rony G. Flatscher
+   Copyright 2015-2020 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import org.rexxla.bsf.engines.rexx.jsr223;
 -----------------------------------------------------------------------------
    changes:
       - 2016-12-18, rgf: output the string "(NetRexx)" instead of "(Java)"
+
+    changed:    2020-01-26, rgf: spelling of "Rexx" to "rexx"
 */
 
 
@@ -35,7 +37,7 @@ import org.rexxla.bsf.engines.rexx.jsr223;
 
 -- Using a ScriptManager to fetch the Rexx script enginge
 manager = ScriptEngineManager()
-rse=RexxScriptEngine manager.getEngineByName("Rexx")
+rse=RexxScriptEngine manager.getEngineByName("rexx")
 do
    filename="nutshell_03.rex"
    b=rse.getContext().getBindings(ScriptContext.ENGINE_SCOPE)

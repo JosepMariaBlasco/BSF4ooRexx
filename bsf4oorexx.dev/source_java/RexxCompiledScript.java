@@ -11,11 +11,9 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 import org.rexxla.bsf.engines.rexx.RexxProxy;
 
 
-// TODO: check and correct visibility of new fields and methods
-
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2019 Rony G. Flatscher
+   Copyright 2015-2020 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -50,6 +48,12 @@ Changes:
                         suggested by Jon Wolfers at the 2017 International Rexx symposium
 
     2019-08-16, ---rgf, correct Javadocs
+
+    2020-01-27, ---rgf, - using createArgV(): only supply RexxScriptEngine instance and
+                          CompiledScript instance if debugging
+
+    2020-01-28, ---rgf, - removed code to change filename this is not possible for a
+                          RexxCompiledScript
 */
 
 
@@ -66,13 +70,13 @@ Changes:
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20190816
+ * @version 100.20200128
  * @since  2015-05-11
  *
  */
 public class RexxCompiledScript extends CompiledScript implements Invocable
 {
-
+    // using final such that the compiler can get rid of all debug blocks if bDebug is set to false
     private static final boolean bDebug      = false; // true; // false;
     private static final boolean bShowSource = true; // false;
 
@@ -274,34 +278,24 @@ if (bDebug==true)
         Object arrArgV[];
         try
         {
-
-// TODO: rgf, 2017-10-09: after BetaTesting make sure that neither the RexxScriptEngine, nor the RexxCompiledScript get supplied to the Rexx script!
-
-            arrArgV=createArgV((Object[])sc.getAttribute(ScriptEngine.ARGV), sc, rse, this);
+            if (bDebug==true)   // supply RexxScriptEngine instance and this CompiledScript instance in Slot.Argument to Rexx for debugging purposes only
+            {
+                arrArgV=createArgV(rse, (Object[])sc.getAttribute(ScriptEngine.ARGV), sc, rse, this);
+            }
+            else    // GA version: do not supply RexxScriptEngine instance nor this CompiledScript instance to Rexx script
+            {
+                arrArgV=createArgV(rse, (Object[])sc.getAttribute(ScriptEngine.ARGV), sc, null, null);
+            }
         }
         catch (BSFException exc)
         {
             throw createScriptException(exc);
         }
 
-        String filename=(String) sc.getAttribute(ScriptEngine.FILENAME);
-        if (filename==null)     // no filename given
-        {
-            filename="filename_created_by_"+this.toString().replace('.','_').replace('@','-')+"_at_"+RexxScriptEngine.getGMTFormattedDate4Filename();
-        }
-
         try
         {
             rse.updateRexxEngine(sc);   // make sure BSF.CLS support in JNI available; .input, .output, .error set accordingly
-
-//            return rexxScriptObject.sendMessage1("CALLWITH", arrArgV);  // execute routine object
-
             return rexxScriptObject.sendMessage("CALLWITH", arrArgV);  // execute routine object
-/*
-// rgf, 2018-02-12: for debugging
-System.err.println("RexxCompiledScript.eval(): sendMessage(\"CALLWITH\", arrArgV="+Arrays.deepToString(arrArgV)+")");
-            return rexxScriptObject.sendMessage("CALLWITH", arrArgV);  // execute routine object
-*/
         }
         catch (BSFException exc)
         {
@@ -485,15 +479,20 @@ if (bDebug==true)
                 throw new NoSuchMethodException("Received 'name' argument \""+name+"\" does not denote an existing, public Rexx routine");
             }
 
+        Object arrArgV[]=null;
                 // get the public routine, prepare arguments, invoke it
-// TODO: rgf, 2017-10-09: after BetaTesting make sure that neither the RexxScriptEngine, nor the RexxCompiledScript get supplied to the Rexx script!
-            Object arrArgV[]=createArgV(args, rse.getContext(), rse, this);    // supply default context
+        if (bDebug) // supply RexxScriptEngine instance and this CompiledScript instance in Slot.Argument to Rexx for debugging purposes only
+        {
+            arrArgV=createArgV(rse, args, rse.getContext(), rse, this);    // supply default context
+        }
+        else        // GA version: do not supply RexxScriptEngine instance nor this CompiledScript instance to Rexx script
+        {
+            arrArgV=createArgV(rse, args, rse.getContext(), null, null);    // supply default context
+        }
 
 if (bDebug) System.err.println("RexxCompiledScript.invokeFunction(): sendMessage(\"CALLWITH\", arrArgV="+Arrays.deepToString(arrArgV)+")");
 
             RexxProxy routine=(RexxProxy) publicRoutines.sendMessage1("ENTRY",name);    // get routine
-
-// rgf, 2018-02-12: war sendMessage1()! ?   -- fand SCRIPTCONTEXT nicht!
             return routine.sendMessage1("CALLWITH",arrArgV);    // the argument for a Rexx Routine object must be a single array object!
         }
         catch (Exception exc)
@@ -588,7 +587,6 @@ if (bDebug==true)
         // o.k., we are supposed to fill in as much information as possible, instead of supplying the BSFException
         RexxProxy rco=((RexxException)exc).getRexxConditionObject();    // get Rexx condition object
 
-        // TODO: create the values
         String message =createRexxLikeConditionMessage(rco);
         String filename="n/a";
         String position=null;
@@ -695,10 +693,11 @@ if (bDebug==true)
      *  the Rexx code fetching such an argument needs to unwrap the contained ooRexx <code>.nil</code> object using
      *  the external BSF function <code>BsfRexxProxy(rexxProxy,"ooRexxObject")</code>.
      *
+     *  @param rse the RexxScriptEngine instance to use
     *   @param args Object array with arguments to be supplied to the Rexx script
      *  @param sc ScriptContext to be appended to the arguments for the Rexx script
-     *  @param rse the RexxScriptEngine instance to use
-     *  @param rcs the compiled version of the Rexx script or null
+     *  @param dbgRse the RexxScriptEngine if not null supply for debugging via slot arguments
+     *  @param dbgRcs the compiled version of the Rexx script or null; if not null supply for debugging via slot arguments
      *
      *  @return an Object array containing all arguments to be passed on to the Rexx script
      *
@@ -706,14 +705,8 @@ if (bDebug==true)
      *  @throws BSFException    if an exception occurs while interacting with the RexxScriptEngine instance
     */
 
-// TODO: rgf, 2018-03-15, CALLWITH does not send MAKEARRAY message automatically, does it? If not, then supplying getNil() is not necessary!
-
-    static Object[] createArgV(Object[] args, ScriptContext sc, RexxScriptEngine rse, RexxCompiledScript rcs) throws ScriptException, BSFException
+    static Object[] createArgV(RexxScriptEngine rse, Object[] args, ScriptContext sc, RexxScriptEngine dbgRse, RexxCompiledScript dbgRcs) throws ScriptException, BSFException
     {
-
-// TODO: rgf, 2017-10-09: after BetaTesting make sure that neither the RexxScriptEngine, nor the RexxCompiledScript get supplied to
-//                        the Rexx script! (maybe make this controllable via the RexxScriptEngine for the Java host programmer ?)
-
         int argsLength= (args!=null ? args.length : 0);
         Object arrArgV[]=new Object[argsLength+1];
         int i=0;
@@ -722,7 +715,7 @@ if (bDebug==true)
                               // true;
 if (bDebug)
 {
-    System.err.println("/// in RexxCompiledScript.createArgV(): args["+args+"], sc=["+sc+"], rse=["+rse+"], rcs=["+rcs+"]");
+    System.err.println("/// in RexxCompiledScript.createArgV(): rse=["+rse+"], args["+args+"], sc=["+sc+"], dbgRse=["+dbgRse+"], dbgRcs=["+dbgRcs+"]");
 }
 
         if (args!=null && args.length>0)    // if ARGV array is given and has entries, then create argument vector
@@ -744,17 +737,17 @@ if (bDebug)
             // the last argument is a directory containing an entry "SCRIPTCONTEXT")
         // arrArgV[i]=rse.getCreateDirectory().sendMessage2("CALL","SCRIPTCONTEXT",sc);
         RexxProxy rpDir=(RexxProxy) rse.getCreateSlotArgument().sendMessage2("CALL","SCRIPTCONTEXT",sc); // create .directory supply a first entry
-        if (rcs!=null)
+        if (dbgRcs!=null)
         {
-            rpDir.sendMessage2("SETENTRY","REXXCOMPILEDSCRIPT",rcs);    // supply this RexxCompiledScript for reflective usage by Rexx program (e.g. for debugging)
+            rpDir.sendMessage2("SETENTRY","REXXCOMPILEDSCRIPT",dbgRcs);    // supply this RexxCompiledScript for reflective usage by Rexx program (e.g. for debugging)
         }
 
         // rgf, 2016-12-20: supply always the RESSCRIPTENGINE, if available // give the Rexx script the possibility to interact at leasat with the RexxScriptEngine (and get the currentScript from it
-        if (rse!=null)
+        if (dbgRse!=null)
         {
-            rpDir.sendMessage2("SETENTRY","REXXSCRIPTENGINE",rse);      // supply this RexxCompiledScript for reflective usage by Rexx program (e.g. for debugging)
+            rpDir.sendMessage2("SETENTRY","REXXSCRIPTENGINE",dbgRse);      // supply this RexxCompiledScript for reflective usage by Rexx program (e.g. for debugging)
         }
-        arrArgV[i]=rpDir;
+        arrArgV[i]=rpDir;       // assign Slot.Argument directory as last argument
 if (bDebug)
 {
     System.err.println("\t===> createArgV(), after adding scriptcontext, returning arrArgV["+arrArgV+"].length=["+arrArgV.length+"]");
