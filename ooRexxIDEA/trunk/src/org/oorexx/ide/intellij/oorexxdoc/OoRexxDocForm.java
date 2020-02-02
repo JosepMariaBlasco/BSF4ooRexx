@@ -8,11 +8,14 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogBuilder;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.TextFieldWithBrowseButton;
+import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.ui.AddEditRemovePanel;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
 import org.oorexx.ide.file.OoRexxFileType;
+import org.oorexx.ide.intellij.oorexxdoc.model.FileNotFoundException;
 import org.oorexx.ide.intellij.util.OoRexxFileUtil;
 
 import javax.swing.*;
@@ -20,6 +23,9 @@ import javax.swing.table.DefaultTableColumnModel;
 import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.event.ActionEvent;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -187,6 +193,7 @@ public class OoRexxDocForm {
     }
 
     public IntelliJGenerationCommand createCommand() {
+        intelliJGenerationCommand.setOutput(getVirtualFile(output.getText()));
         intelliJGenerationCommand.setInputs(OoRexxFileUtil.getFiles(fileTable.getData()));
         intelliJGenerationCommand.setTitle(title.getText());
         intelliJGenerationCommand.setHeaders(headerTable.getData().stream().filter(Objects::nonNull).collect(Collectors.toMap(KeyValuePair::getKey, KeyValuePair::getValue)));
@@ -195,25 +202,45 @@ public class OoRexxDocForm {
         return intelliJGenerationCommand;
     }
 
-    public StringBuilder validateMessage(){
-        StringBuilder stringBuilder = new StringBuilder();
-        if(intelliJGenerationCommand.getOutput() == null){
-            stringBuilder.append("Output required").append(" ");
+    private VirtualFile getVirtualFile(String path) {
+        if(path.toLowerCase().startsWith("file://")){
+            path = path.replace("file://", "");
+        }
+        try {
+            return VfsUtil.createDirectoryIfMissing(path);
+        } catch (IOException e) {
+            throw new FileNotFoundException("could not find file " + path);
+        }
+    }
+
+    public String validateMessage(){
+        List<String> messages = new ArrayList<>();
+
+        if(output.getText().trim().equals("")){
+            messages.add("Output required");
         }
 
-        if(intelliJGenerationCommand.getInputs().isEmpty()){
-            stringBuilder.append("Input(s) required").append(" ");
+        if(fileTable.getData().isEmpty()){
+            messages.add("Input(s) required");
         }
-        return stringBuilder;
+        try {
+            VirtualFile virtualFile = getVirtualFile(output.getText());
+            if(!virtualFile.isDirectory()){
+                messages.add("Output is not a directory");
+            }
+        } catch (FileNotFoundException e){
+            messages.add("Output directory not found");
+        }
+        return StringUtils.join(messages, ", ");
     }
 
     public boolean isValid(){
-        StringBuilder stringBuilder = validateMessage();
-        if(stringBuilder.length() == 0){
+        String message = validateMessage();
+        if(message.length() == 0){
             return true;
         }
 
-        error.setText(stringBuilder.toString());
+        error.setText(message);
 
         return false;
     }

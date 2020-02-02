@@ -1,7 +1,7 @@
 <idea-plugin version="2">
   <id>org.oorexx.ide</id>
   <name>ooRexx plugin for IntelliJ IDEA</name>
-  <version>1.0.3.1 Beta</version>
+  <version>1.0.4.2 Beta</version>
   <vendor email="alexander.t.seik@gmail.com">Alexander Seik</vendor>
 
   <description><![CDATA[

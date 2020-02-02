@@ -1,5 +1,6 @@
 package org.oorexx.doc.input.intellij;
 
+import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vfs.VirtualFile;
 
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.Map;
 
 public class IntelliJGenerationCommand {
 
+    private static Project project;
     private VirtualFile output;
     private List<VirtualFile> inputs = new ArrayList<>();
     private String title;
@@ -53,5 +55,13 @@ public class IntelliJGenerationCommand {
 
     public void setOverview(String overview) {
         this.overview = overview;
+    }
+
+    public static Project getProject() {
+        return project;
+    }
+
+    public static void setProject(Project project) {
+        IntelliJGenerationCommand.project = project;
     }
 }

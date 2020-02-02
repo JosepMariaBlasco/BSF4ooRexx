@@ -117,7 +117,7 @@ public class DocGenerator {
     }
 
     private PsiFile getPsiFile(File file){
-        final PsiFileFactory factory = PsiFileFactory.getInstance(OoRexxParserDefinition.getProject());
+        final PsiFileFactory factory = PsiFileFactory.getInstance(IntelliJGenerationCommand.getProject());
 
         try {
             return factory.createFileFromText(file.getName(), OoRexxFileType.INSTANCE, FileUtils.readFileToString(file, "utf-8"));

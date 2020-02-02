@@ -9,7 +9,7 @@ plugins {
 apply plugin: "idea"
 
 group = "org.oorexx.idea"
-version = "1.0-Beta"
+version = "2.0-Beta"
 
 sourceCompatibility = 1.8
 

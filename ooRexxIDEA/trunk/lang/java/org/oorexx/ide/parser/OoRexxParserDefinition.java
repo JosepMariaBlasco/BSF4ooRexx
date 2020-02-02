@@ -28,14 +28,6 @@ public class OoRexxParserDefinition implements ParserDefinition {
         public static final IFileElementType FILE =
                 new IFileElementType(Language.<OoRexx>findInstance(OoRexx.class));
 
-    public static Project getProject() {
-        return project;
-    }
-
-    public static void setProject(Project project){
-            OoRexxParserDefinition.project = project;
-        }
-
         @NotNull
         @Override
         public Lexer createLexer(Project project) {
@@ -59,7 +51,6 @@ public class OoRexxParserDefinition implements ParserDefinition {
 
         @NotNull
         public PsiParser createParser(final Project project) {
-            setProject(project);
             return new OoRexxParser();
         }
 
