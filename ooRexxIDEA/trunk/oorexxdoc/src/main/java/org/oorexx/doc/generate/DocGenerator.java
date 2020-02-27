@@ -6,6 +6,7 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiFileFactory;
 import freemarker.cache.FileTemplateLoader;
+import freemarker.cache.StringTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
@@ -17,24 +18,20 @@ import org.oorexx.doc.analyse.PackageAnalyzer;
 import org.oorexx.doc.analyse.model.OoRexxClass;
 import org.oorexx.doc.analyse.model.OoRexxPackage;
 import org.oorexx.doc.input.cli.GenerateCommand;
-import org.oorexx.doc.input.gui.OORexxDocGUI;
 import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
 import org.oorexx.doc.input.xml.OoRexxDocXml;
 import org.oorexx.ide.file.OoRexxFile;
 import org.oorexx.ide.file.OoRexxFileType;
-import org.oorexx.ide.parser.OoRexxParserDefinition;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
@@ -47,7 +44,7 @@ public class DocGenerator {
     private String outputDirectory;
     private String title;
     private String overview;
-    private Map<String, String> header = new HashMap<>();
+    private Map<String, String> headers = new HashMap<>();
     private List<VirtualFile> virtualFiles;
 
     public DocGenerator(GenerateCommand generateCommand) {
@@ -61,14 +58,14 @@ public class DocGenerator {
         outputDirectory = generateXml.getParser().getOutput();
         title = generateXml.getTitle();
         overview = generateXml.getOverview();
-        generateXml.getHeader().getHeaderProperties().forEach(headerProperty -> header.put(headerProperty.getKey(), headerProperty.getValue()));
+        generateXml.getHeader().getHeaderProperties().forEach(headerProperty -> headers.put(headerProperty.getKey(), headerProperty.getValue()));
     }
 
     public DocGenerator(IntelliJGenerationCommand command) {
         this.virtualFiles = command.getInputs();
         this.outputDirectory = command.getOutput().getCanonicalPath();
         this.title = command.getTitle();
-        this.header = command.getHeaders();
+        this.headers = command.getHeaders();
         this.overview = command.getOverview();
     }
 
@@ -162,10 +159,32 @@ public class DocGenerator {
             map.put("packages", ooRexxPackages);
             map.put("title", title);
             map.put("overview", overview);
-            map.put("header", header);
+            map.put("header", processHeaders(headers));
             template.process(map, fileWriter);
         }
 
+    }
+
+    private Map<String, String> processHeaders(Map<String, String> headers) {
+        StringTemplateLoader stringTemplateLoader = new StringTemplateLoader();
+        headers.entrySet().forEach(entry -> stringTemplateLoader.putTemplate(entry.getKey(), entry.getValue()));
+        Configuration configuration = new Configuration(Configuration.VERSION_2_3_23);
+        configuration.setDefaultEncoding("UTF-8");
+        configuration.setTemplateExceptionHandler(TemplateExceptionHandler.DEBUG_HANDLER);
+        configuration.setTemplateLoader(stringTemplateLoader);
+        LinkedHashMap<String, String> processedHeaders = new LinkedHashMap<>();
+        headers.entrySet().forEach(entry -> {
+            try {
+                Template template = configuration.getTemplate(entry.getKey());
+                StringWriter stringWriter = new StringWriter();
+                template.process(new HashMap<String, String>(), stringWriter);
+                processedHeaders.put(entry.getKey(), stringWriter.toString());
+            } catch (Exception e) {
+                processedHeaders.put(entry.getKey(), entry.getValue());
+                e.printStackTrace();
+            }
+        });
+        return processedHeaders;
     }
 
     public String generateXML4IntelliJ(){
@@ -177,7 +196,7 @@ public class DocGenerator {
         xml += "<overview><![CDATA[" + overview
                 + "]]></overview>\n";
         xml += "<header>\n";
-        for (Map.Entry<String, String> entry : header.entrySet()) {
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
             xml += "<property><key>" + entry.getKey()
                     + "</key><value>" + entry.getValue()
                     + "</value></property>\n";
@@ -205,7 +224,7 @@ public class DocGenerator {
                 map.put("packages", packages);
                 map.put("package", ooRexxPackage);
                 map.put("title", title);
-                map.put("header", header);
+                map.put("header", headers);
                 List<OoRexxClass> classes = ooRexxPackage.getClasses();
                 map.put("classes", classes);
                 template.process(map, fileWriter);

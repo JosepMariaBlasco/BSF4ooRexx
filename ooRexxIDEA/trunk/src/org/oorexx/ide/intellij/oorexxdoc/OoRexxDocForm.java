@@ -99,6 +99,8 @@ public class OoRexxDocForm {
         value.setHeaderValue("Value");
         defaultTableColumnModel.addColumn(value);
 
+        keyValuePairs.add(new KeyValuePair("Run-Date", "${.now?datetime}"));
+
         headerTable = new AddEditRemovePanel<KeyValuePair>(new HeaderTableModel(), keyValuePairs) {
             @Nullable
             @Override

@@ -41,8 +41,8 @@
                     <input type="text" id="search" class="form-control" placeholder="Search" id="test" data-provide="typeahead" autocomplete=off>
                 </div>
                 <span class="navbar-right">
-                    <#list header?keys as a>
-                        <span class="label label-info">${a}: ${header[a]}</span>
+                    <#list header?keys as key>
+                        <span class="label label-info">${key}: ${header[key]}</span>
                     </#list>
                 </span>
             </form>
