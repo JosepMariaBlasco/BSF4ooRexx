@@ -2,15 +2,13 @@ package org.oorexx.doc.analyse;
 
 import org.oorexx.doc.analyse.model.*;
 import org.oorexx.doc.analyse.model.reference.ClassReference;
-import org.oorexx.doc.analyse.model.reference.LinkedClassReference;
+import org.oorexx.doc.generate.Settings;
 import org.oorexx.ide.lang.psi.*;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.intellij.psi.util.PsiTreeUtil.findChildOfType;
@@ -24,13 +22,13 @@ public class ClassAnalyzer extends Analyzer{
     private AttributeAnalyzer attributeAnalyzer;
     private AnnotationAnalyzer annotationAnalyzer;
 
-    public ClassAnalyzer(CommentContext commentContext) {
-        super(commentContext);
+    public ClassAnalyzer(Settings settings, CommentContext commentContext) {
+        super(settings, commentContext);
 
-        methodAnalyzer = new MethodAnalyzer(commentContext);
-        constantAnalyzer = new ConstantAnalyzer(commentContext);
-        attributeAnalyzer = new AttributeAnalyzer(commentContext);
-        annotationAnalyzer = new AnnotationAnalyzer(commentContext);
+        methodAnalyzer = new MethodAnalyzer(settings, commentContext);
+        constantAnalyzer = new ConstantAnalyzer(settings, commentContext);
+        attributeAnalyzer = new AttributeAnalyzer(settings, commentContext);
+        annotationAnalyzer = new AnnotationAnalyzer(settings, commentContext);
     }
 
     public OoRexxClass analyze(OoRexxPackage ooRexxPackage, OoRexxDirectiveClass directiveClass) {
@@ -40,9 +38,7 @@ public class ClassAnalyzer extends Analyzer{
         Collection<OoRexxDirectiveAnnotate> annotates = findChildrenOfType(directiveClass, OoRexxDirectiveAnnotate.class);
 
         OoRexxClass ooRexxClass = new OoRexxClass(directiveClass);
-
         ooRexxClass.setOoRexxPackage(ooRexxPackage);
-
         ooRexxClass.setName(getText(directiveClass, OoRexxDirectiveClassName.class));
         ooRexxClass.setMetaClass(getMetaClass());
         ooRexxClass.setMixinClasses(getMixinClasses());
@@ -64,13 +60,11 @@ public class ClassAnalyzer extends Analyzer{
         init.ifPresent(ooRexxClass::setInitMethod);
 
         List<OoRexxAttribute> attributeAnalyzingResult = analyzeAttributes(attributes);
-
         ooRexxClass.setAttributes(attributeAnalyzingResult);
 
         setComment(ooRexxClass, directiveClass);
 
         List<OoRexxAnnotation> annotations = analyzeAnnotations(ooRexxPackage, annotates);
-
         List<OoRexxNamedElement> allAnnotateableElements = ooRexxClass.getAllAnnotateableElements();
 
         annotations.forEach(ooRexxAnnotation -> {
@@ -81,9 +75,6 @@ public class ClassAnalyzer extends Analyzer{
             }
         });
 
-        ooRexxClass.getMethods().removeIf(method -> AccessModifier.PRIVATE.equals(method.getAccessModifier()));
-        ooRexxClass.getAttributes().removeIf(attribute -> AccessModifier.PRIVATE.equals(attribute.getAccessModifier()));
-
         return ooRexxClass;
     }
 
@@ -92,7 +83,10 @@ public class ClassAnalyzer extends Analyzer{
     }
 
     private List<OoRexxAttribute> analyzeAttributes(Collection<OoRexxDirectiveAttribute> attributes) {
-        return attributes.stream().map(directive -> attributeAnalyzer.analyze(directive)).collect(Collectors.toList());
+        return attributes.stream()
+                .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPublic.class))
+                .map(directive -> attributeAnalyzer.analyze(directive))
+                .collect(Collectors.toList());
     }
 
     private List<OoRexxConstant> getConstants(){
@@ -101,7 +95,6 @@ public class ClassAnalyzer extends Analyzer{
                 .map(directive -> constantAnalyzer.analyze(directive))
                 .collect(Collectors.toList());
     }
-
 
     private ClassReference getMetaClass(){
         String name = getText(directiveClass, OoRexxDirectiveClassMetaclassName.class);
@@ -115,14 +108,15 @@ public class ClassAnalyzer extends Analyzer{
 
     private List<ClassReference> getMixinClasses(){
         Collection<OoRexxDirectiveClassMixinclassName> mixins = findChildrenOfType(directiveClass, OoRexxDirectiveClassMixinclassName.class);
-        return mixins.stream().map(name -> name.getText() == null ? null : new ClassReference(name.getText()))
+        return mixins.stream()
+                .map(name -> name.getText() == null ? null : new ClassReference(name.getText()))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
     private List<OoRexxMethod> analyzeMethods(Collection<OoRexxDirectiveMethod> directiveMethods) {
         return directiveMethods.stream()
-                .filter(hasDefaultPublicAccessWithParent(OoRexxDirectiveMethod.class))
+                .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPublic.class))
                 .map(method -> methodAnalyzer.analyze(method))
                 .collect(Collectors.toList());
     }

@@ -16,6 +16,9 @@ public class IntelliJGenerationCommand {
     private String title;
     private Map<String, String> headers = new LinkedHashMap<>();
     private String overview;
+    private boolean includePublic;
+    private boolean includePackage;
+    private boolean includePrivate;
 
     public VirtualFile getOutput() {
         return output;
@@ -63,5 +66,29 @@ public class IntelliJGenerationCommand {
 
     public static void setProject(Project project) {
         IntelliJGenerationCommand.project = project;
+    }
+
+    public boolean isIncludePublic() {
+        return includePublic;
+    }
+
+    public void setIncludePublic(boolean includePublic) {
+        this.includePublic = includePublic;
+    }
+
+    public boolean isIncludePackage() {
+        return includePackage;
+    }
+
+    public void setIncludePackage(boolean includePackage) {
+        this.includePackage = includePackage;
+    }
+
+    public boolean isIncludePrivate() {
+        return includePrivate;
+    }
+
+    public void setIncludePrivate(boolean includePrivate) {
+        this.includePrivate = includePrivate;
     }
 }

@@ -2,14 +2,15 @@ package org.oorexx.doc.analyse;
 
 import org.oorexx.doc.analyse.model.AccessModifier;
 import org.oorexx.doc.analyse.model.OoRexxRoutine;
+import org.oorexx.doc.generate.Settings;
 import org.oorexx.ide.lang.psi.*;
 
 import static com.intellij.psi.util.PsiTreeUtil.findChildOfType;
 
 public class RoutineAnalyzer extends Analyzer{
 
-    public RoutineAnalyzer(CommentContext commentContext) {
-        super(commentContext);
+    public RoutineAnalyzer(Settings settings, CommentContext commentContext) {
+        super(settings, commentContext);
     }
 
     public OoRexxRoutine analyze(OoRexxDirectiveRoutine directive){
@@ -17,7 +18,6 @@ public class RoutineAnalyzer extends Analyzer{
 
         OoRexxSymbolOrString symbolOrString = directive.getSymbolOrString();
         AccessModifier accessModifier = AccessModifier.fromText(getText(directive, OoRexxDirectiveAccess.class));
-
         ooRexxRoutine.setName(symbolOrString.getText());
         ooRexxRoutine.setAccessModifier(accessModifier);
 

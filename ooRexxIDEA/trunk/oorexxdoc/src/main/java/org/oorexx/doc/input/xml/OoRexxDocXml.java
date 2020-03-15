@@ -1,15 +1,12 @@
 package org.oorexx.doc.input.xml;
 
-
 public class OoRexxDocXml {
 
     private Parser parser;
-
     private String title;
-
     private Header header;
-
     private String overview;
+    private Settings settings = new Settings();
 
     public Parser getParser() {
         return parser;
@@ -41,5 +38,13 @@ public class OoRexxDocXml {
 
     public void setOverview(String overview) {
         this.overview = overview;
+    }
+
+    public Settings getSettings() {
+        return settings;
+    }
+
+    public void setSettings(Settings settings) {
+        this.settings = settings;
     }
 }

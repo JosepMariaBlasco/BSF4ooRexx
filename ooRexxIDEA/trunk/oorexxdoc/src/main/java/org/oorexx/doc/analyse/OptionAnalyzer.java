@@ -1,6 +1,7 @@
 package org.oorexx.doc.analyse;
 
 import org.oorexx.doc.analyse.model.OoRexxOption;
+import org.oorexx.doc.generate.Settings;
 import org.oorexx.ide.lang.psi.OoRexxDirectiveOptions;
 
 import java.util.List;
@@ -8,8 +9,8 @@ import java.util.stream.Collectors;
 
 public class OptionAnalyzer extends Analyzer{
 
-    public OptionAnalyzer(CommentContext commentContext) {
-        super(commentContext);
+    public OptionAnalyzer(Settings settings, CommentContext commentContext) {
+        super(settings, commentContext);
     }
 
     public List<? extends OoRexxOption> analyze(OoRexxDirectiveOptions ooRexxDirectiveOptions) {

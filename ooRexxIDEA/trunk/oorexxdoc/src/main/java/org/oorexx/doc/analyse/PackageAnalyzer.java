@@ -1,6 +1,7 @@
 package org.oorexx.doc.analyse;
 
 import org.oorexx.doc.analyse.model.*;
+import org.oorexx.doc.generate.Settings;
 import org.oorexx.ide.file.OoRexxFile;
 import org.oorexx.ide.lang.psi.*;
 
@@ -9,9 +10,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,16 +27,16 @@ public class PackageAnalyzer extends Analyzer{
     private RoutineAnalyzer routineAnalyzer;
     private AnnotationAnalyzer annotationAnalyzer;
 
-    public PackageAnalyzer(CommentContext commentContext) {
-        super(commentContext);
+    public PackageAnalyzer(Settings settings, CommentContext commentContext) {
+        super(settings, commentContext);
 
-        classAnalyzer = new ClassAnalyzer(commentContext);
-        methodAnalyzer = new MethodAnalyzer(commentContext);
-        requiresAnalyzer = new RequiresAnalyzer(commentContext);
-        optionAnalyzer = new OptionAnalyzer(commentContext);
-        resourceAnalyzer = new ResourceAnalyzer(commentContext);
-        routineAnalyzer = new RoutineAnalyzer(commentContext);
-        annotationAnalyzer = new AnnotationAnalyzer(commentContext);
+        classAnalyzer = new ClassAnalyzer(settings, commentContext);
+        methodAnalyzer = new MethodAnalyzer(settings, commentContext);
+        requiresAnalyzer = new RequiresAnalyzer(settings, commentContext);
+        optionAnalyzer = new OptionAnalyzer(settings, commentContext);
+        resourceAnalyzer = new ResourceAnalyzer(settings, commentContext);
+        routineAnalyzer = new RoutineAnalyzer(settings, commentContext);
+        annotationAnalyzer = new AnnotationAnalyzer(settings, commentContext);
     }
 
     public OoRexxPackage analyze(File file, OoRexxFile ooRexxFile){
@@ -52,9 +51,7 @@ public class PackageAnalyzer extends Analyzer{
         Collection<OoRexxDirectiveMethod> methods = findChildrenOfType(ooRexxFile, OoRexxDirectiveMethod.class);
 
         ooRexxPackage = new OoRexxPackage(ooRexxFile);
-
         ooRexxPackage.setFile(file);
-
         ooRexxPackage.setName(ooRexxFile.getName());
         ooRexxPackage.setClasses(analyzeClasses(classes));
         ooRexxPackage.setMethods(analyzeMethods(methods));
@@ -69,9 +66,6 @@ public class PackageAnalyzer extends Analyzer{
 
         setComment(ooRexxPackage, ooRexxFile);
 
-        ooRexxPackage.getClasses().removeIf(ooRexxClass -> AccessModifier.PRIVATE.equals(ooRexxClass.getAccessModifier()));
-        ooRexxPackage.getRoutines().removeIf(routine -> AccessModifier.PRIVATE.equals(routine.getAccessModifier()));
-
         return ooRexxPackage;
     }
 
@@ -80,7 +74,10 @@ public class PackageAnalyzer extends Analyzer{
     }
 
     private List<OoRexxRoutine> analyzeRoutines(Collection<OoRexxDirectiveRoutine> routines) {
-        return routines.stream().map(directive -> routineAnalyzer.analyze(directive)).collect(Collectors.toList());
+        return routines.stream()
+                .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPrivate.class))
+                .map(directive -> routineAnalyzer.analyze(directive))
+                .collect(Collectors.toList());
     }
 
     private List<OoRexxResource> analyzeResources(Collection<OoRexxDirectiveResource> resources) {
@@ -95,6 +92,7 @@ public class PackageAnalyzer extends Analyzer{
 
     private List<OoRexxClass> analyzeClasses(Collection<OoRexxDirectiveClass> directiveClasses){
         return directiveClasses.stream()
+                .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPrivate.class))
                 .map(ooRexxDirectiveClass -> classAnalyzer.analyze(ooRexxPackage, ooRexxDirectiveClass))
                 .collect(Collectors.toList());
     }
@@ -102,6 +100,7 @@ public class PackageAnalyzer extends Analyzer{
     private List<OoRexxMethod> analyzeMethods(Collection<OoRexxDirectiveMethod> directiveMethods){
         return directiveMethods.stream()
                 .filter(hasNotParent(OoRexxDirectiveClass.class))
+                .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPublic.class))
                 .map(directiveMethod -> methodAnalyzer.analyze(directiveMethod))
                 .collect(Collectors.toList());
     }

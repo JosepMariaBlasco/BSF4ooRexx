@@ -24,8 +24,6 @@ import javax.swing.table.TableColumn;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -40,6 +38,9 @@ public class OoRexxDocForm {
     private JLabel error;
     private JEditorPane overview;
     private JCheckBox quickConfiguration;
+    private JCheckBox modifierPublic;
+    private JCheckBox modifierPrivate;
+    private JCheckBox modifierPackage;
     private IntelliJGenerationCommand intelliJGenerationCommand = new IntelliJGenerationCommand();
     private DefaultListModel<VirtualFile> listModel = new DefaultListModel<>();
     private VirtualFile lastAdded = null;
@@ -200,6 +201,10 @@ public class OoRexxDocForm {
         intelliJGenerationCommand.setTitle(title.getText());
         intelliJGenerationCommand.setHeaders(headerTable.getData().stream().filter(Objects::nonNull).collect(Collectors.toMap(KeyValuePair::getKey, KeyValuePair::getValue)));
         intelliJGenerationCommand.setOverview(overview.getText());
+
+        intelliJGenerationCommand.setIncludePrivate(modifierPrivate.isSelected());
+        intelliJGenerationCommand.setIncludePublic(modifierPublic.isSelected());
+        intelliJGenerationCommand.setIncludePackage(modifierPackage.isSelected());
 
         return intelliJGenerationCommand;
     }

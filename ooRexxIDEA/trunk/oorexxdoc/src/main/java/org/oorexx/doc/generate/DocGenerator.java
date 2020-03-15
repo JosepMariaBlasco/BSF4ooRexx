@@ -46,6 +46,7 @@ public class DocGenerator {
     private String overview;
     private Map<String, String> headers = new HashMap<>();
     private List<VirtualFile> virtualFiles;
+    private Settings settings = new Settings();
 
     public DocGenerator(GenerateCommand generateCommand) {
         inputFiles = generateCommand.getFilesAndDirectories();
@@ -67,6 +68,9 @@ public class DocGenerator {
         this.title = command.getTitle();
         this.headers = command.getHeaders();
         this.overview = command.getOverview();
+        this.settings.setIncludePrivate(command.isIncludePrivate());
+        this.settings.setIncludePackage(command.isIncludePackage());
+        this.settings.setIncludePublic(command.isIncludePublic());
     }
 
     public void generate() throws Exception{
@@ -105,7 +109,7 @@ public class DocGenerator {
                     ApplicationManager.getApplication().runReadAction(() -> {
                         PsiElement psi = psiFile.getPsiFile().getNode().getPsi();
                         CommentContext commentContext = new CommentContext((OoRexxFile) psi);
-                        ooRexxPackage[0] = new PackageAnalyzer(commentContext).analyze(psiFile.getFile(), (OoRexxFile) psi);
+                        ooRexxPackage[0] = new PackageAnalyzer(settings, commentContext).analyze(psiFile.getFile(), (OoRexxFile) psi);
                     });
                     return ooRexxPackage[0];
                 })
@@ -131,7 +135,7 @@ public class DocGenerator {
                         PsiFile psiFile = getPsiFile(file);
                         PsiElement psi = psiFile.getNode().getPsi();
                         CommentContext commentContext = new CommentContext((OoRexxFile) psi);
-                        ooRexxPackage[0] = new PackageAnalyzer(commentContext).analyze(file, (OoRexxFile) psi);
+                        ooRexxPackage[0] = new PackageAnalyzer(settings, commentContext).analyze(file, (OoRexxFile) psi);
                     });
                     return ooRexxPackage[0];
                 })

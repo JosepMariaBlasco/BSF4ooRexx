@@ -2,6 +2,7 @@ package org.oorexx.doc.analyse;
 
 import org.oorexx.doc.analyse.model.OoRexxAnnotation;
 import org.oorexx.doc.analyse.model.OoRexxPackage;
+import org.oorexx.doc.generate.Settings;
 import org.oorexx.ide.lang.psi.OoRexxDirectiveAnnotate;
 import org.oorexx.ide.lang.psi.OoRexxDirectiveAnnotateName;
 import org.oorexx.ide.lang.psi.OoRexxDirectiveAnnotateReferenceName;
@@ -11,8 +12,8 @@ import static com.intellij.psi.util.PsiTreeUtil.findChildOfType;
 
 public class AnnotationAnalyzer extends Analyzer {
 
-    public AnnotationAnalyzer(CommentContext commentContext) {
-        super(commentContext);
+    public AnnotationAnalyzer(Settings settings, CommentContext commentContext) {
+        super(settings, commentContext);
     }
 
     public OoRexxAnnotation analyze(OoRexxPackage ooRexxPackage, OoRexxDirectiveAnnotate directive){

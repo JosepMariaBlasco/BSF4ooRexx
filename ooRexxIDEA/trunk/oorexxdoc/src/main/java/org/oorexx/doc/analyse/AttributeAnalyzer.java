@@ -2,14 +2,15 @@ package org.oorexx.doc.analyse;
 
 import org.oorexx.doc.analyse.model.AccessModifier;
 import org.oorexx.doc.analyse.model.OoRexxAttribute;
+import org.oorexx.doc.generate.Settings;
 import org.oorexx.ide.lang.psi.*;
 
 import static com.intellij.psi.util.PsiTreeUtil.findChildOfType;
 
 public class AttributeAnalyzer extends Analyzer{
 
-    public AttributeAnalyzer(CommentContext commentContext) {
-        super(commentContext);
+    public AttributeAnalyzer(Settings settings, CommentContext commentContext) {
+        super(settings, commentContext);
     }
 
     public OoRexxAttribute analyze(OoRexxDirectiveAttribute directive){
