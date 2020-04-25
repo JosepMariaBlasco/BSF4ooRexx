@@ -145,6 +145,7 @@
             LINEOUT = 'LINEOUT'
             LOSTDIGITS = 'LOSTDIGITS'
             LOWER = 'LOWER'
+            LOCAL = 'LOCAL'
             MESSAGE = 'MESSAGE'
             NAME = 'NAME'
             NOMETHOD = 'NOMETHOD'
@@ -349,7 +350,7 @@ keyword_list ::= (ROUTINE) | (METHOD) | (STATE) | (COMMAND) | (OPEN) | (DELETE) 
 | (LINEIN) | (LINEOUT) | (LOSTDIGITS) | (LOWER) | (MESSAGE) | (NAME) | (NOMETHOD) | (NORMAL) | (NOSTRING) | (NOTREADY) | (NOVALUE)
 | (OFF) | (ON) | (OTHERWISE) | (OVER) | (PROPAGATE) | (PULL) | (RESULTS) | (RETURN) | (SCIENTIFIC) | (SOURCE) | (STRICT) | (SYNTAX)
 | (THEN) | (TO) | (UNTIL) | (UPPER) | (USER) | (VALUE) | (VAR) | (VERSION) | (WHEN) | (WHILE) | (WITH) | (ITEM) | (INDEX)
-| (INPUT) | (OUTPUT) | REPLACE | APPEND | WITH | STEM | STREAM | USING
+| (INPUT) | (OUTPUT) | REPLACE | APPEND | WITH | STEM | STREAM | USING | LOCAL
 
 private assignments_and_keywords ::= ( assignment |  <<excluding_expr keyword_list>> | (keyword_instruction) )
 instruction ::= (SEMICOLON | label_instruction | ((assignments_and_keywords | (!END keyword_list))  instruction_terminator))

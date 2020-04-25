@@ -471,6 +471,7 @@ DEC_LITERAL = [0-9] [0-9_]*
     "STREAM" {return STREAM;}
     "REPLACE" {return REPLACE;}
     "USING" {return USING;}
+    "LOCAL" {return LOCAL;}
 
   // Environment Symbols
 
