@@ -121,12 +121,6 @@ public class OoRexxSyntaxHighlighter extends SyntaxHighlighterBase {
             if(ooRexxTokenType.getTokenName().equals("SHEBANG_LINE")){
                 return SHEBANG_LINE_KEYS;
             }
-
-            for(String keyword: keywordList){
-                if(ooRexxTokenType.getTokenName().equals(keyword)){
-                    return KEYWORD_KEYS;
-                }
-            }
         }
 
         return EMPTY_KEYS;

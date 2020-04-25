@@ -18,6 +18,8 @@ import org.oorexx.ide.lexer.token.OoRexxTokenType;
 
 import java.util.List;
 
+import static org.oorexx.ide.intellij.highlighting.OoRexxSyntaxHighlighter.*;
+
 
 public class KeywordHighlighter implements Annotator {
 
@@ -50,11 +52,13 @@ public class KeywordHighlighter implements Annotator {
                 if(iElementType instanceof OoRexxTokenType){
                     OoRexxTokenType ooRexxTokenType = (OoRexxTokenType) iElementType;
 
-                    if((keywordList.contains(ooRexxTokenType.getTokenName().toUpperCase())
-                            && !ooRexxTokenType.getTokenName().toUpperCase().equals("SUPER")
-                            && !ooRexxTokenType.getTokenName().toUpperCase().equals("SELF")
-                            && (psiElement.getParent() instanceof OoRexxKeywordList))){
-                        annotationHolder.createInfoAnnotation(psiElement.getNode(), null) .setEnforcedTextAttributes(TextAttributes.ERASE_MARKER);
+                    if ((!keywordList.contains(ooRexxTokenType.getTokenName().toUpperCase())
+                            || ooRexxTokenType.getTokenName().toUpperCase().equals("SUPER")
+                            || ooRexxTokenType.getTokenName().toUpperCase().equals("SELF")
+                            || (!(psiElement.getParent() instanceof OoRexxKeywordList)))) {
+                        if(keywordList.contains(ooRexxTokenType.getTokenName())){
+                            annotationHolder.createInfoAnnotation(psiElement.getNode(), null).setTextAttributes(OOREXX_KEYWORD);
+                        }
                     }
                 }
         }
