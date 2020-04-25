@@ -146,7 +146,8 @@ public class KeywordHelper {
                         "REPLACE",
                         "APPEND",
                         "USING",
-                        "COUNTER");
+                        "COUNTER",
+                        "LOCAL");
     }
 
 }
