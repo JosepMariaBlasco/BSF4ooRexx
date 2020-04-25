@@ -443,8 +443,10 @@ private mul_op ::= (MUL MUL)|MUL|(DIV DIV)| DIV|INTDIV
 
 private meta primary ::=  (  message_term | literal_expr | <<ref_expr <<p>>>> | function_call  | paren_expr )
 
- meta paren_expr ::= MINUS? '(' expr ')' {pin=2}
- meta ref_expr ::= (namespace_prefix (new_line* !assignments_and_keywords))? MINUS? (function_call | (variable_reference_operator? identifier) | environment_id | (!<<p>> keyword_list) ) // ID
+meta paren_expr ::= MINUS? '(' expr ')' {pin=2}
+meta ref_expr ::= (namespace_prefix (new_line* !assignments_and_keywords))? MINUS? (function_call | identifier_expr | environment_id | (!<<p>> keyword_list) ) // ID
+identifier_expr ::= &variable_reference_operator variable_reference_expr | identifier
+variable_reference_expr ::= (variable_reference_operator identifier)
 literal_expr ::= string_lit | negative_numeric_expr | numeric_expr | bool_lit |  NIL
 numeric_expr ::= PLUS? (INTEGER_LITERAL | FLOAT_LITERAL)
 negative_numeric_expr ::= MINUS (INTEGER_LITERAL | FLOAT_LITERAL)
@@ -867,7 +869,8 @@ keyword_trace_keyword_part ::= "?"* (NORMAL|ALL|COMMANDS|ERROR|FAILURE|INTERMEDI
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 keyword_use_variants ::= USE (keyword_use | keyword_use_local){pin = 1}
-keyword_use ::= STRICT? ARG (COMMA | (variable_reference_operator? (assignment | expr)) )*
+keyword_use ::= STRICT? ARG keyword_use_template_list
+keyword_use_template_list ::= (COMMA | (assignment | <<excluding_expr ",">>) )*
 keyword_use_local ::= LOCAL id*
 
 built_in_functions_keyword_list ::= BIF_ABBREV | BIF_ABS | BIF_ADDRESS | BIF_ARG | BIF_B2X | BIF_BEEP | BIF_BITAND | BIF_BITOR | BIF_BITXOR | BIF_C2D | BIF_C2X | BIF_CENTER | BIF_CENTRE | BIF_CHANGESTR | BIF_CHARIN |

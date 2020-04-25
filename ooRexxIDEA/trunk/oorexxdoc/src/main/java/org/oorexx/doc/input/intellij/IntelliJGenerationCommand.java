@@ -19,6 +19,7 @@ public class IntelliJGenerationCommand {
     private boolean includePublic;
     private boolean includePackage;
     private boolean includePrivate;
+    private boolean includeVariableReferences;
 
     public VirtualFile getOutput() {
         return output;
@@ -90,5 +91,13 @@ public class IntelliJGenerationCommand {
 
     public void setIncludePrivate(boolean includePrivate) {
         this.includePrivate = includePrivate;
+    }
+
+    public void setIncludeVariableReferences(boolean includeVariableReferences) {
+        this.includeVariableReferences = includeVariableReferences;
+    }
+
+    public boolean isIncludeVariableReferences() {
+        return includeVariableReferences;
     }
 }

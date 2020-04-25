@@ -7,9 +7,11 @@ import org.oorexx.doc.analyse.model.OoRexxElement;
 import org.oorexx.doc.generate.Settings;
 import org.oorexx.ide.lang.psi.*;
 
+import java.util.Collection;
 import java.util.function.Predicate;
 
 import static com.intellij.psi.util.PsiTreeUtil.findChildOfType;
+import static com.intellij.psi.util.PsiTreeUtil.findChildrenOfType;
 
 public abstract class Analyzer {
 
@@ -54,10 +56,21 @@ public abstract class Analyzer {
         return name != null ? name.getText() : null;
     }
 
-    protected String extractArgVariables(OoRexxKeywordUse ooRexxKeywordUse){
-        OoRexxExpr ooRexxExpr = findChildOfType(ooRexxKeywordUse, OoRexxExpr.class);
-        if(ooRexxExpr != null) {
-            return ooRexxExpr.getText();
+    protected String extractArgVariables(Settings settings, OoRexxKeywordUse ooRexxKeywordUse){
+        OoRexxKeywordUseTemplateList templateList = findChildOfType(ooRexxKeywordUse, OoRexxKeywordUseTemplateList.class);
+        Collection<OoRexxVariableReferenceExpr> variableReferenceExprs = findChildrenOfType(ooRexxKeywordUse, OoRexxVariableReferenceExpr.class);
+
+        if(templateList != null) {
+            if(settings.getIncludeVariableReferences()){
+                String expr = templateList.getText();
+                for (OoRexxVariableReferenceExpr variableReferenceExpr : variableReferenceExprs) {
+                    expr = expr.replace(variableReferenceExpr.getText(), "")
+                            .replaceAll(",\\s*,", ",")
+                            .replaceAll(",\\s*", ""); // todo: delete as soon as AST is clean
+                }
+                return expr;
+            }
+            return templateList.getText();
         }
 
         return null;

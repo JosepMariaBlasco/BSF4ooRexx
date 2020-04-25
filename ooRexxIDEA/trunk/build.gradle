@@ -4,9 +4,11 @@ plugins {
     id 'idea'
     id 'java'
     id "org.jetbrains.intellij" version "0.4.15"
+    id "org.jetbrains.kotlin.jvm" version "1.3.72"
 }
 
 apply plugin: "idea"
+apply plugin: 'kotlin'
 
 group = "org.oorexx.idea"
 version = "2.0-Beta"
@@ -20,7 +22,11 @@ repositories {
 dependencies {
     compile project(':oorexxdoc')
     compile project(':lang')
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.0.3'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.0.3'
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+
 }
 
 // See https://github.com/JetBrains/gradle-intellij-plugin/
@@ -33,24 +39,15 @@ patchPluginXml {
     version = project.version
 }
 
-sourceSets {
-    main {
-        java {
-            srcDirs 'src'
-        }
-        resources {
-            srcDirs 'resources'
-        }
-    }
-    test {
-        java {
-            srcDir 'test'
-        }
-        resources {
-            srcDir 'test-resources'
-        }
-    }
+test {
+    useJUnitPlatform()
 }
+sourceSets {
+    main.kotlin.srcDirs += 'src/main/kotlin'
+    main.java.srcDirs += 'src/main/java'
+    main.resources.srcDirs += 'src/main/resources'
 
-
-tasks.withType(Test) {enabled = false}
+    test.java.srcDirs += 'test/java'
+    test.kotlin.srcDirs += 'test/kotlin'
+    test.resources.srcDirs += 'test/resources'
+}

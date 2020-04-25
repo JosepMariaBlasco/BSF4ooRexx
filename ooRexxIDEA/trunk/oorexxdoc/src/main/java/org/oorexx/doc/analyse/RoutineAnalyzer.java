@@ -34,7 +34,7 @@ public class RoutineAnalyzer extends Analyzer{
         OoRexxKeywordUse use = findChildOfType(directive, OoRexxKeywordUse.class);
 
         if(use != null){
-            ooRexxRoutine.setUseArg(extractArgVariables(use));
+            ooRexxRoutine.setUseArg(extractArgVariables(settings, use));
         }
 
         OoRexxKeywordParse parseArg = findChildOfType(directive, OoRexxKeywordParse.class);

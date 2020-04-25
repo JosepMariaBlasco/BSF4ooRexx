@@ -1,11 +1,9 @@
 package org.oorexx.doc.analyse;
 
-import com.intellij.psi.util.PsiTreeUtil;
 import org.oorexx.doc.analyse.model.AccessModifier;
 import org.oorexx.doc.analyse.model.OoRexxMethod;
 
 import org.oorexx.doc.generate.Settings;
-import org.oorexx.ide.file.OoRexxFile;
 import org.oorexx.ide.lang.psi.*;
 
 import java.util.Collection;
@@ -31,7 +29,7 @@ public class MethodAnalyzer extends Analyzer{
 
         OoRexxKeywordUse use = findChildOfType(directive, OoRexxKeywordUse.class);
         if(use != null){
-            ooRexxMethod.setUseArg(extractArgVariables(use));
+            ooRexxMethod.setUseArg(extractArgVariables(settings, use));
         }
 
         OoRexxKeywordParse parseArg = findChildOfType(directive, OoRexxKeywordParse.class);

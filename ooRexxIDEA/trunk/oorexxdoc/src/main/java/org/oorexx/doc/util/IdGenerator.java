@@ -27,6 +27,8 @@ public class IdGenerator {
         }
     }
 
-
+    public static synchronized void reset(){
+        map = new ConcurrentHashMap<>();
+    }
 
 }

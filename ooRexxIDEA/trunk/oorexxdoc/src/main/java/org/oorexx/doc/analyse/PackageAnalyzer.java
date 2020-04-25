@@ -92,7 +92,7 @@ public class PackageAnalyzer extends Analyzer{
 
     private List<OoRexxClass> analyzeClasses(Collection<OoRexxDirectiveClass> directiveClasses){
         return directiveClasses.stream()
-                .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPrivate.class))
+                .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPackage.class))
                 .map(ooRexxDirectiveClass -> classAnalyzer.analyze(ooRexxPackage, ooRexxDirectiveClass))
                 .collect(Collectors.toList());
     }

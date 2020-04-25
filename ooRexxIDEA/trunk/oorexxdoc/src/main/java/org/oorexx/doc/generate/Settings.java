@@ -5,6 +5,7 @@ public class Settings {
     private boolean includePublic = true;
     private boolean includePrivate;
     private boolean includePackage;
+    private boolean includeVariableReferences;
 
     public boolean isIncludePublic() {
         return includePublic;
@@ -28,5 +29,13 @@ public class Settings {
 
     public void setIncludePackage(boolean includePackage) {
         this.includePackage = includePackage;
+    }
+
+    public void setIncludeVariableReferences(boolean includeVariableReferences) {
+        this.includeVariableReferences = includeVariableReferences;
+    }
+
+    public boolean getIncludeVariableReferences() {
+        return includeVariableReferences;
     }
 }

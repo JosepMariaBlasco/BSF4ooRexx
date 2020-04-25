@@ -351,7 +351,7 @@
                                             </#if>
 
 
-                                            <#if method.useArg != "">
+                                            <#if method.useArg?? && method.useArg != "">
                                                 <br /><span class="keyword">USE ARG</span> ${method.useArg}
                                             </#if>
 

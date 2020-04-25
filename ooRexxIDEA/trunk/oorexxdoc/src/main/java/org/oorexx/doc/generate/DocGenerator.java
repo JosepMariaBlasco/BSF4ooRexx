@@ -20,6 +20,7 @@ import org.oorexx.doc.analyse.model.OoRexxPackage;
 import org.oorexx.doc.input.cli.GenerateCommand;
 import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
 import org.oorexx.doc.input.xml.OoRexxDocXml;
+import org.oorexx.doc.util.IdGenerator;
 import org.oorexx.ide.file.OoRexxFile;
 import org.oorexx.ide.file.OoRexxFileType;
 
@@ -71,9 +72,11 @@ public class DocGenerator {
         this.settings.setIncludePrivate(command.isIncludePrivate());
         this.settings.setIncludePackage(command.isIncludePackage());
         this.settings.setIncludePublic(command.isIncludePublic());
+        this.settings.setIncludeVariableReferences(command.isIncludeVariableReferences());
     }
 
     public void generate() throws Exception{
+        IdGenerator.reset();
         List<OoRexxPackage> ooRexxPackages = getOoRexxPackages();
 
         classReferenceAnalyzer.setReferences(ooRexxPackages);
@@ -154,9 +157,9 @@ public class DocGenerator {
         configuration.setTemplateExceptionHandler(TemplateExceptionHandler.DEBUG_HANDLER);
 
 
-        writePackages(configuration, "package.html", ooRexxPackages);
+        writePackages(configuration, "package.ftl", ooRexxPackages);
 
-        Template template = configuration.getTemplate("main.html");
+        Template template = configuration.getTemplate("main.ftl");
 
         try (FileWriter fileWriter = new FileWriter(new File(outputDirectory,"oorexxdoc.html"))){
             HashMap<String, Object> map = new HashMap<>();
@@ -228,7 +231,7 @@ public class DocGenerator {
                 map.put("packages", packages);
                 map.put("package", ooRexxPackage);
                 map.put("title", title);
-                map.put("header", headers);
+                map.put("header", processHeaders(headers));
                 List<OoRexxClass> classes = ooRexxPackage.getClasses();
                 map.put("classes", classes);
                 template.process(map, fileWriter);

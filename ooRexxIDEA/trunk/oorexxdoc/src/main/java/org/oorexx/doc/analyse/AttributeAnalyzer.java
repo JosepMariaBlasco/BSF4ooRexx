@@ -75,7 +75,7 @@ public class AttributeAnalyzer extends Analyzer{
         OoRexxKeywordUse use = findChildOfType(directive, OoRexxKeywordUse.class);
 
         if(use != null){
-            ooRexxAttribute.setUseArg(extractArgVariables(use));
+            ooRexxAttribute.setUseArg(extractArgVariables(settings, use));
         }
 
         OoRexxKeywordParse parseArg = findChildOfType(directive, OoRexxKeywordParse.class);
