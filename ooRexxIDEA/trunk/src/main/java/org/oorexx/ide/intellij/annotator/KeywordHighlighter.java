@@ -43,6 +43,8 @@ public class KeywordHighlighter implements Annotator {
             annotationHolder.createInfoAnnotation(psiElement.getNode(), null).setTextAttributes(OoRexxSyntaxHighlighter.OOREXX_NUMBER);
         } else if (psiElement instanceof OoRexxDirectiveResourceEnd) {
             annotationHolder.createInfoAnnotation(psiElement.getNode(), null).setTextAttributes(OoRexxSyntaxHighlighter.OOREXX_KEYWORD);
+        } else if (psiElement instanceof OoRexxEnvironment) {
+            annotationHolder.createInfoAnnotation(psiElement.getNode(), null).setTextAttributes(OoRexxSyntaxHighlighter.OOREXX_KEYWORD);
         } else {
             IElementType iElementType = PsiUtilCore.getElementType(psiElement);
                 if(iElementType instanceof OoRexxTokenType){

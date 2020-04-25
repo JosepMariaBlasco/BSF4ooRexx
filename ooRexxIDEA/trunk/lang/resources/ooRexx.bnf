@@ -616,12 +616,14 @@ private comma_separated_expr_with_references ::= (variable_reference_operator? e
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Address
 ///////////////////////////////////////////////////////////////////////////////////////////////////
-keyword_address ::= ADDRESS ((symbol_or_string <<excluding_expr (WITH)>>?) | (VALUE? <<excluding_expr (WITH)>>) ) keyword_address_with? {pin = 1}
+keyword_address ::= ADDRESS ((environment_or_symbol <<excluding_expr (WITH)>>?) | (VALUE? <<excluding_expr (WITH)>>) ) keyword_address_with? {pin = 1}
+private environment_or_symbol ::= environment | symbol_or_string
+environment ::= '"sh"' | '"bsh"' | '"bash"' | '"ksh"' | '"tcsh"' | '"zsh"' | '"cmd"' | '"command"' | '"system"' | '"path"' | '""'
 private keyword_address_with ::= WITH (keyword_address_with_input | keyword_address_with_output | keyword_address_with_error)*
-keyword_address_with_input ::= INPUT (NORMAL |  (USING LPAREN expr RPAREN)){implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-keyword_address_with_output ::= OUTPUT (NORMAL | keyword_address_with_replace_append_or_nothing)?{implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+keyword_address_with_input ::= INPUT (NORMAL |  (USING expr)){implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+addresskeyword_address_with_output ::= OUTPUT (NORMAL | keyword__with_replace_append_or_nothing)?{implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
 keyword_address_with_error ::= ERROR (NORMAL | keyword_address_with_replace_append_or_nothing)?{implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-private keyword_address_with_replace_append_or_nothing ::= (REPLACE | APPEND)? ((STEM stem_expr) | (STREAM stream_expr) | (USING LPAREN expr RPAREN))
+private keyword_address_with_replace_append_or_nothing ::= (REPLACE | APPEND)? ((STEM stem_expr) | (STREAM stream_expr) | (USING expr))
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Arg
