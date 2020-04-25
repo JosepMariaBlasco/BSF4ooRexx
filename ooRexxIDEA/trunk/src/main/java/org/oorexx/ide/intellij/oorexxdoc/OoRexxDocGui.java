@@ -11,6 +11,7 @@ import org.oorexx.doc.generate.DocGenerator;
 import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -37,6 +38,8 @@ public class OoRexxDocGui {
                             docGenerator.generate();
                             if(ooRexxDocForm.isQuickSave()) {
                                 quickSave(project, docGenerator);
+                            } if(ooRexxDocForm.isAutoOpen()){
+                                openBrowser(docGenerator);
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -48,6 +51,14 @@ public class OoRexxDocGui {
         });
         builder.addCancelAction();
         builder.show();
+    }
+
+    private static void openBrowser(DocGenerator docGenerator) {
+        try {
+            Desktop.getDesktop().browse(docGenerator.getOutputFile().toURI());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void quickSave(Project project, DocGenerator docGenerator) throws IOException {

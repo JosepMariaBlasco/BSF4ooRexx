@@ -42,6 +42,7 @@ public class OoRexxDocForm {
     private JCheckBox modifierPrivate;
     private JCheckBox modifierPackage;
     private JCheckBox variableReferences;
+    private JCheckBox openDocumentationAfterCreation;
     private IntelliJGenerationCommand intelliJGenerationCommand = new IntelliJGenerationCommand();
     private DefaultListModel<VirtualFile> listModel = new DefaultListModel<>();
     private VirtualFile lastAdded = null;
@@ -260,5 +261,9 @@ public class OoRexxDocForm {
 
     public JComponent getRoot(){
         return container;
+    }
+
+    public boolean isAutoOpen() {
+        return openDocumentationAfterCreation.isSelected();
     }
 }

@@ -48,6 +48,7 @@ public class DocGenerator {
     private Map<String, String> headers = new HashMap<>();
     private List<VirtualFile> virtualFiles;
     private Settings settings = new Settings();
+    private File outputFile;
 
     public DocGenerator(GenerateCommand generateCommand) {
         inputFiles = generateCommand.getFilesAndDirectories();
@@ -161,7 +162,8 @@ public class DocGenerator {
 
         Template template = configuration.getTemplate("main.ftl");
 
-        try (FileWriter fileWriter = new FileWriter(new File(outputDirectory,"oorexxdoc.html"))){
+        outputFile = new File(outputDirectory, "oorexxdoc.html");
+        try (FileWriter fileWriter = new FileWriter(outputFile)){
             HashMap<String, Object> map = new HashMap<>();
             map.put("packages", ooRexxPackages);
             map.put("title", title);
@@ -290,5 +292,9 @@ public class DocGenerator {
 
             });
         }
+    }
+
+    public File getOutputFile() {
+        return outputFile;
     }
 }
