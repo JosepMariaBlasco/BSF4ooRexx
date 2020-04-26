@@ -620,10 +620,10 @@ keyword_address ::= ADDRESS ((environment_or_symbol <<excluding_expr (WITH)>>?) 
 private environment_or_symbol ::= environment | symbol_or_string
 environment ::= '"sh"' | '"bsh"' | '"bash"' | '"ksh"' | '"tcsh"' | '"zsh"' | '"cmd"' | '"command"' | '"system"' | '"path"' | '""'
 private keyword_address_with ::= WITH (keyword_address_with_input | keyword_address_with_output | keyword_address_with_error)*
-keyword_address_with_input ::= INPUT (NORMAL |  (USING expr)){implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-keyword_address_with_output ::= OUTPUT (NORMAL | keyword_address_with_replace_append_or_nothing)?{implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-keyword_address_with_error ::= ERROR (NORMAL | keyword_address_with_replace_append_or_nothing)?{implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
-private keyword_address_with_replace_append_or_nothing ::= (REPLACE | APPEND)? ((STEM stem_expr) | (STREAM stream_expr) | (USING expr))
+keyword_address_with_input ::= INPUT (NORMAL |  (USING <<excluding_expr (OUTPUT | ERROR)>>)){implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+keyword_address_with_output ::= OUTPUT (NORMAL | (USING <<excluding_expr (INPUT | ERROR)>>) | keyword_address_with_replace_append_or_nothing)?{implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+keyword_address_with_error ::= ERROR (NORMAL | (USING <<excluding_expr (OUTPUT | INPUT)>>) | keyword_address_with_replace_append_or_nothing)?{implements = "org.oorexx.ide.lang.constraint.UniqueConstraint"}
+private keyword_address_with_replace_append_or_nothing ::= (REPLACE | APPEND)? ((STEM stem_expr) | (STREAM stream_expr))
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 // Arg
