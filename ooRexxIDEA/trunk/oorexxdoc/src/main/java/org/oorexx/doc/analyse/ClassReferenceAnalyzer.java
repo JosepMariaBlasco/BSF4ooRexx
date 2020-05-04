@@ -54,7 +54,7 @@ public class ClassReferenceAnalyzer {
                             .stream()
                             .filter(ooRexxRequires -> hasMatch(ooRexxPackage, ooRexxRequires, test)).findFirst();
                     if(any.isPresent()){
-                        any.get().setRequiredPackage(ooRexxPackage);
+                        any.get().setRequiredPackage(test);
                         ooRexxPackage.getRequiredPackages().add(test);
                     } else {
                         Optional<OoRexxRequires> first = ooRexxPackage.getRequires().stream().filter(ooRexxRequires -> test.getName().equalsIgnoreCase(ooRexxRequires.getPath())).findFirst();

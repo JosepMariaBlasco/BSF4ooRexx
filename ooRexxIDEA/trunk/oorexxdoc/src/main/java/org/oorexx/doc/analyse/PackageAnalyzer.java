@@ -6,10 +6,7 @@ import org.oorexx.ide.file.OoRexxFile;
 import org.oorexx.ide.lang.psi.*;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -77,6 +74,7 @@ public class PackageAnalyzer extends Analyzer{
         return routines.stream()
                 .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPrivate.class))
                 .map(directive -> routineAnalyzer.analyze(directive))
+                .sorted(Comparator.comparing(o -> o.getName().toLowerCase()))
                 .collect(Collectors.toList());
     }
 
@@ -94,6 +92,7 @@ public class PackageAnalyzer extends Analyzer{
         return directiveClasses.stream()
                 .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPackage.class))
                 .map(ooRexxDirectiveClass -> classAnalyzer.analyze(ooRexxPackage, ooRexxDirectiveClass))
+                .sorted(Comparator.comparing(o -> o.getName().toLowerCase()))
                 .collect(Collectors.toList());
     }
 
@@ -102,6 +101,7 @@ public class PackageAnalyzer extends Analyzer{
                 .filter(hasNotParent(OoRexxDirectiveClass.class))
                 .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPublic.class))
                 .map(directiveMethod -> methodAnalyzer.analyze(directiveMethod))
+                .sorted(Comparator.comparing(o -> o.getName().toLowerCase()))
                 .collect(Collectors.toList());
     }
 

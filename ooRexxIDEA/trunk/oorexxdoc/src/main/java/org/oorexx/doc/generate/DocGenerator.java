@@ -118,6 +118,7 @@ public class DocGenerator {
                     return ooRexxPackage[0];
                 })
                 .filter(OoRexxPackage::hasElements)
+                .sorted(Comparator.comparing(o -> o.getName().toLowerCase()))
                 .collect(Collectors.toList());
     }
 
@@ -144,6 +145,7 @@ public class DocGenerator {
                     return ooRexxPackage[0];
                 })
                 .filter(OoRexxPackage::hasElements)
+                .sorted(Comparator.comparing(o -> o.getName().toLowerCase()))
                 .collect(Collectors.toList());
     }
 
