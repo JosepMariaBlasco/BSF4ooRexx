@@ -7,6 +7,9 @@ public class OoRexxFileTypeFilter implements VirtualFileFilter {
 
     @Override
     public boolean accept(VirtualFile file) {
-        return OoRexxFileTypeFactory.fileExtensions.contains(file.getExtension());
+        if(file.getExtension() != null) {
+            return OoRexxFileTypeFactory.fileExtensions.contains(file.getExtension().toLowerCase());
+        }
+        return false;
     }
 }
