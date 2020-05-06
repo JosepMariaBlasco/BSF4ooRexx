@@ -1,6 +1,11 @@
 package org.oorexx.doc.generate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.project.ProjectManager;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
@@ -123,13 +128,15 @@ public class DocGenerator {
     }
 
     private PsiFile getPsiFile(File file){
-        final PsiFileFactory factory = PsiFileFactory.getInstance(IntelliJGenerationCommand.getProject());
-
-        try {
-            return factory.createFileFromText(file.getName(), OoRexxFileType.INSTANCE, FileUtils.readFileToString(file, "utf-8"));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        Project defaultProject = ProjectManager.getInstance().getDefaultProject();
+        final PsiFileFactory factory = PsiFileFactory.getInstance(defaultProject);
+        return ApplicationManager.getApplication().runReadAction((Computable<PsiFile>) () -> {
+            try {
+                return factory.createFileFromText(file.getName(), OoRexxFileType.INSTANCE, FileUtils.readFileToString(file, "utf-8"));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
     private List<OoRexxPackage> getOoRexxPackgesForVirtualFiles() {
         return virtualFiles.parallelStream()

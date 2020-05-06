@@ -29,7 +29,6 @@ public class OoRexxDocGui {
         builder.setOkOperation(() -> {
             if(ooRexxDocForm.isValid()) {
                 IntelliJGenerationCommand command = ooRexxDocForm.createCommand();
-                IntelliJGenerationCommand.setProject(project);
                 builder.getDialogWrapper().close(DialogWrapper.OK_EXIT_CODE);
                 ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
                     ApplicationManager.getApplication().runReadAction(() -> {

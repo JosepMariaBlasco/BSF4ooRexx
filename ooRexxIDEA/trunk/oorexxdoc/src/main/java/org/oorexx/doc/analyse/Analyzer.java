@@ -61,7 +61,7 @@ public abstract class Analyzer {
         Collection<OoRexxVariableReferenceExpr> variableReferenceExprs = findChildrenOfType(ooRexxKeywordUse, OoRexxVariableReferenceExpr.class);
 
         if(templateList != null) {
-            if(settings.getIncludeVariableReferences()){
+            if(settings.isIncludeVariableReferences()){
                 String expr = templateList.getText();
                 for (OoRexxVariableReferenceExpr variableReferenceExpr : variableReferenceExprs) {
                     expr = expr.replace(variableReferenceExpr.getText(), "")

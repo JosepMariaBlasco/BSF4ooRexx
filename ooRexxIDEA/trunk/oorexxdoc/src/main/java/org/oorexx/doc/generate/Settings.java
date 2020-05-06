@@ -35,7 +35,7 @@ public class Settings {
         this.includeVariableReferences = includeVariableReferences;
     }
 
-    public boolean getIncludeVariableReferences() {
+    public boolean isIncludeVariableReferences() {
         return includeVariableReferences;
     }
 }

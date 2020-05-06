@@ -10,7 +10,6 @@ import java.util.Map;
 
 public class IntelliJGenerationCommand {
 
-    private static Project project;
     private VirtualFile output;
     private List<VirtualFile> inputs = new ArrayList<>();
     private String title;
@@ -59,14 +58,6 @@ public class IntelliJGenerationCommand {
 
     public void setOverview(String overview) {
         this.overview = overview;
-    }
-
-    public static Project getProject() {
-        return project;
-    }
-
-    public static void setProject(Project project) {
-        IntelliJGenerationCommand.project = project;
     }
 
     public boolean isIncludePublic() {
