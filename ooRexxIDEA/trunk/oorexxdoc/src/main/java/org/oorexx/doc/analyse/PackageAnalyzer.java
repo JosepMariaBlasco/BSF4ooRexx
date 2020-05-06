@@ -72,7 +72,7 @@ public class PackageAnalyzer extends Analyzer{
 
     private List<OoRexxRoutine> analyzeRoutines(Collection<OoRexxDirectiveRoutine> routines) {
         return routines.stream()
-                .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPrivate.class))
+                .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPackage.class))
                 .map(directive -> routineAnalyzer.analyze(directive))
                 .sorted(Comparator.comparing(o -> o.getName().toLowerCase()))
                 .collect(Collectors.toList());
