@@ -3,6 +3,7 @@ package org.oorexx.doc.analyse;
 import com.intellij.psi.PsiComment;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.util.PsiTreeUtil;
+import org.apache.commons.lang.StringEscapeUtils;
 import org.oorexx.doc.analyse.model.OoRexxElement;
 import org.oorexx.doc.generate.Settings;
 import org.oorexx.ide.lang.psi.*;
@@ -61,7 +62,7 @@ public abstract class Analyzer {
         Collection<OoRexxVariableReferenceExpr> variableReferenceExprs = findChildrenOfType(ooRexxKeywordUse, OoRexxVariableReferenceExpr.class);
 
         if(templateList != null) {
-            if(settings.isIncludeVariableReferences()){
+            if(!settings.isIncludeVariableReferences()){
                 String expr = templateList.getText();
                 for (OoRexxVariableReferenceExpr variableReferenceExpr : variableReferenceExprs) {
                     expr = expr.replace(variableReferenceExpr.getText(), "")
@@ -70,7 +71,7 @@ public abstract class Analyzer {
                 }
                 return expr;
             }
-            return templateList.getText();
+            return StringEscapeUtils.escapeHtml(templateList.getText());
         }
 
         return null;
