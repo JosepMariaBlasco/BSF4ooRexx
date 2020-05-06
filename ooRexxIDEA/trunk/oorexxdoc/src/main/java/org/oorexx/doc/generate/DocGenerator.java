@@ -1,12 +1,12 @@
 package org.oorexx.doc.generate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.ser.ToXmlGenerator;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectManager;
 import com.intellij.openapi.util.Computable;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiFileFactory;
@@ -24,7 +24,9 @@ import org.oorexx.doc.analyse.model.OoRexxClass;
 import org.oorexx.doc.analyse.model.OoRexxPackage;
 import org.oorexx.doc.input.cli.GenerateCommand;
 import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
-import org.oorexx.doc.input.xml.OoRexxDocXml;
+import org.oorexx.doc.input.model.OoRexxDocGenerationContext;
+import org.oorexx.doc.input.model.OoRexxDocGenerationContextFactory;
+import org.oorexx.doc.input.model.xml.OoRexxDocXml;
 import org.oorexx.doc.util.IdGenerator;
 import org.oorexx.ide.file.OoRexxFile;
 import org.oorexx.ide.file.OoRexxFileType;
@@ -46,39 +48,20 @@ public class DocGenerator {
 
     private ClassReferenceAnalyzer classReferenceAnalyzer = new ClassReferenceAnalyzer();
     private static final File localFile = new File(new File(System.getProperty("user.dir")), "/templates");
-    private List<String> inputFiles;
-    private String outputDirectory;
-    private String title;
-    private String overview;
-    private Map<String, String> headers = new HashMap<>();
-    private List<VirtualFile> virtualFiles;
-    private Settings settings = new Settings();
     private File outputFile;
+    private final OoRexxDocGenerationContext ooRexxDocGenerationContext;
 
     public DocGenerator(GenerateCommand generateCommand) {
-        inputFiles = generateCommand.getFilesAndDirectories();
-        outputDirectory = generateCommand.getOutputDirectory();
-        title = generateCommand.getTitle();
+        ooRexxDocGenerationContext = OoRexxDocGenerationContextFactory.of(generateCommand);
     }
 
-    public DocGenerator(OoRexxDocXml generateXml){
-        inputFiles = generateXml.getParser().getInput();
-        outputDirectory = generateXml.getParser().getOutput();
-        title = generateXml.getTitle();
-        overview = generateXml.getOverview();
-        generateXml.getHeader().getHeaderProperties().forEach(headerProperty -> headers.put(headerProperty.getKey(), headerProperty.getValue()));
+    @Deprecated
+    public DocGenerator(OoRexxDocXml ooRexxDocXml){
+        ooRexxDocGenerationContext = OoRexxDocGenerationContextFactory.of(ooRexxDocXml);
     }
 
     public DocGenerator(IntelliJGenerationCommand command) {
-        this.virtualFiles = command.getInputs();
-        this.outputDirectory = command.getOutput().getCanonicalPath();
-        this.title = command.getTitle();
-        this.headers = command.getHeaders();
-        this.overview = command.getOverview();
-        this.settings.setIncludePrivate(command.isIncludePrivate());
-        this.settings.setIncludePackage(command.isIncludePackage());
-        this.settings.setIncludePublic(command.isIncludePublic());
-        this.settings.setIncludeVariableReferences(command.isIncludeVariableReferences());
+        ooRexxDocGenerationContext = OoRexxDocGenerationContextFactory.of(command);
     }
 
     public void generate() throws Exception{
@@ -87,7 +70,7 @@ public class DocGenerator {
 
         classReferenceAnalyzer.setReferences(ooRexxPackages);
 
-        File jsDestination = new File(outputDirectory, "js");
+        File jsDestination = new File(ooRexxDocGenerationContext.getOutput(), "js");
 
         if(localFile.exists()) {
             FileUtils.copyDirectory(new File(localFile, "js"), jsDestination);
@@ -107,10 +90,7 @@ public class DocGenerator {
 
     @NotNull
     private List<OoRexxPackage> getOoRexxPackages() {
-        if(virtualFiles != null){
-            return getOoRexxPackgesForVirtualFiles();
-        }
-        List<AstUtil.AstWrapper> psiFiles = new AstUtil().getAbstractSyntaxTrees(inputFiles);
+        List<AstUtil.AstWrapper> psiFiles = new AstUtil().getAbstractSyntaxTrees(ooRexxDocGenerationContext.getInputs());
 
         return psiFiles.parallelStream()
                 .map(psiFile -> {
@@ -118,7 +98,7 @@ public class DocGenerator {
                     ApplicationManager.getApplication().runReadAction(() -> {
                         PsiElement psi = psiFile.getPsiFile().getNode().getPsi();
                         CommentContext commentContext = new CommentContext((OoRexxFile) psi);
-                        ooRexxPackage[0] = new PackageAnalyzer(settings, commentContext).analyze(psiFile.getFile(), (OoRexxFile) psi);
+                        ooRexxPackage[0] = new PackageAnalyzer(ooRexxDocGenerationContext.getSettings(), commentContext).analyze(psiFile.getFile(), (OoRexxFile) psi);
                     });
                     return ooRexxPackage[0];
                 })
@@ -138,23 +118,6 @@ public class DocGenerator {
             }
         });
     }
-    private List<OoRexxPackage> getOoRexxPackgesForVirtualFiles() {
-        return virtualFiles.parallelStream()
-                .map(virtualFile -> {
-                    final OoRexxPackage[] ooRexxPackage = {null};
-                    ApplicationManager.getApplication().runReadAction(() -> {
-                        File file = new File(virtualFile.getCanonicalPath());
-                        PsiFile psiFile = getPsiFile(file);
-                        PsiElement psi = psiFile.getNode().getPsi();
-                        CommentContext commentContext = new CommentContext((OoRexxFile) psi);
-                        ooRexxPackage[0] = new PackageAnalyzer(settings, commentContext).analyze(file, (OoRexxFile) psi);
-                    });
-                    return ooRexxPackage[0];
-                })
-                .filter(OoRexxPackage::hasElements)
-                .sorted(Comparator.comparing(o -> o.getName().toLowerCase()))
-                .collect(Collectors.toList());
-    }
 
     private void fillTemplates(List<OoRexxPackage> ooRexxPackages) throws Exception{
         Configuration configuration = new Configuration(Configuration.VERSION_2_3_23);
@@ -171,13 +134,13 @@ public class DocGenerator {
 
         Template template = configuration.getTemplate("main.ftl");
 
-        outputFile = new File(outputDirectory, "oorexxdoc.html");
+        outputFile = new File(ooRexxDocGenerationContext.getOutput(), "oorexxdoc.html");
         try (FileWriter fileWriter = new FileWriter(outputFile)){
             HashMap<String, Object> map = new HashMap<>();
             map.put("packages", ooRexxPackages);
-            map.put("title", title);
-            map.put("overview", overview);
-            map.put("header", processHeaders(headers));
+            map.put("title", ooRexxDocGenerationContext.getTitle());
+            map.put("overview", ooRexxDocGenerationContext.getOverview());
+            map.put("header", processHeaders(ooRexxDocGenerationContext.getHeaders()));
             template.process(map, fileWriter);
         }
 
@@ -206,23 +169,13 @@ public class DocGenerator {
     }
 
     public String generateXML4IntelliJ(){
-        String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<oorexxdoc>\n<parser>\n";
-        for (int i = 0; i < virtualFiles.size(); i++)
-            xml += "<input>" + virtualFiles.get(0).getCanonicalPath() + "</input>\n";
-        xml += "<output>" + outputDirectory + "</output>\n</parser>\n";
-        xml += "<title>" + title + "</title>\n";
-        xml += "<overview><![CDATA[" + overview
-                + "]]></overview>\n";
-        xml += "<header>\n";
-        for (Map.Entry<String, String> entry : headers.entrySet()) {
-            xml += "<property><key>" + entry.getKey()
-                    + "</key><value>" + entry.getValue()
-                    + "</value></property>\n";
+        XmlMapper xmlMapper = new XmlMapper();
+        try {
+            xmlMapper.configure( ToXmlGenerator.Feature.WRITE_XML_DECLARATION, true );
+            return xmlMapper.writeValueAsString(ooRexxDocGenerationContext.toXml());
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
-        xml += "</header>\n";
-        xml += "</oorexxdoc>";
-
-        return xml;
     }
 
     private void writePackages(Configuration configuration, String templatePath, List<OoRexxPackage> packages) throws Exception{
@@ -232,17 +185,15 @@ public class DocGenerator {
             FileWriter fileWriter = null;
 
             try {
-                File file = new File(outputDirectory, String.format("packages/%s.html", ooRexxPackage.getId()));
-
-                System.out.println("Writing " + ooRexxPackage.getName() + " documentation to " + outputDirectory);
+                File file = new File(ooRexxDocGenerationContext.getOutput(), String.format("packages/%s.html", ooRexxPackage.getId()));
 
                 FileUtils.touch(file);
                 fileWriter = new FileWriter(file);
                 HashMap<String, Object> map = new HashMap<>();
                 map.put("packages", packages);
                 map.put("package", ooRexxPackage);
-                map.put("title", title);
-                map.put("header", processHeaders(headers));
+                map.put("title", ooRexxDocGenerationContext.getTitle());
+                map.put("header", processHeaders(ooRexxDocGenerationContext.getHeaders()));
                 List<OoRexxClass> classes = ooRexxPackage.getClasses();
                 map.put("classes", classes);
                 template.process(map, fileWriter);
@@ -268,7 +219,7 @@ public class DocGenerator {
         Template template = configuration.getTemplate("search-data-template.ftl");
         FileWriter fileWriter = null;
         try {
-            fileWriter = new FileWriter(new File(outputDirectory,"js/search-data.js"));
+            fileWriter = new FileWriter(new File(ooRexxDocGenerationContext.getOutput(),"js/search-data.js"));
             HashMap<String, Object> map = new HashMap<>();
             map.put("packages", ooRexxPackages);
             template.process(map, fileWriter);

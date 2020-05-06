@@ -3,9 +3,9 @@ package org.oorexx.doc.input.gui;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.oorexx.doc.generate.DocGenerator;
-import org.oorexx.doc.input.xml.HeaderProperty;
-import org.oorexx.doc.input.xml.OoRexxDocXml;
-import org.oorexx.doc.input.xml.XmlParser;
+import org.oorexx.doc.input.model.xml.HeaderProperty;
+import org.oorexx.doc.input.model.xml.OoRexxDocXml;
+import org.oorexx.doc.input.xml.legacy.XmlParser;
 
 import javax.swing.*;
 import javax.swing.GroupLayout.Alignment;

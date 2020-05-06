@@ -1,4 +1,4 @@
-package org.oorexx.doc.input.xml;
+package org.oorexx.doc.input.model.xml;
 
 public class HeaderProperty {
 
@@ -8,6 +8,9 @@ public class HeaderProperty {
     public HeaderProperty(String key, String value) {
         this.key = key;
         this.value = value;
+    }
+
+    public HeaderProperty() {
     }
 
     public String getKey() {

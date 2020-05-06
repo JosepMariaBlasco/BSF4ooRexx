@@ -1,5 +1,6 @@
 package org.oorexx.ide.intellij.action;
 
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.progress.ProgressManager;
@@ -8,7 +9,7 @@ import com.intellij.openapi.vfs.VirtualFile;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.oorexx.doc.generate.DocGenerator;
-import org.oorexx.doc.input.xml.XmlParser;
+import org.oorexx.doc.input.model.xml.OoRexxDocXml;
 
 import java.io.File;
 
@@ -26,7 +27,8 @@ public class OoRexxDocQuickAction extends AnAction {
                 File file = getFile(e);
                 if(file.exists()) {
                     String xml = FileUtils.readFileToString(file, "utf-8");
-                    new DocGenerator(XmlParser.get(xml)).generate();
+                    XmlMapper xmlMapper = new XmlMapper();
+                    new DocGenerator(xmlMapper.readValue(xml, OoRexxDocXml.class)).generate();
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();

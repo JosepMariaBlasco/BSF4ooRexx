@@ -5,8 +5,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.oorexx.doc.generate.DocGenerator;
 import org.oorexx.doc.input.cli.GenerateCommand;
-import org.oorexx.doc.input.xml.OoRexxDocXml;
-import org.oorexx.doc.input.xml.XmlParser;
+import org.oorexx.doc.input.model.xml.OoRexxDocXml;
+import org.oorexx.doc.input.xml.legacy.XmlParser;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;

@@ -1,11 +1,15 @@
-package org.oorexx.doc.input.xml;
+package org.oorexx.doc.input.xml.legacy;
 
-import org.oorexx.doc.input.xml.legacy.OoRexxDocXmlParser;
+import org.oorexx.doc.input.model.xml.Header;
+import org.oorexx.doc.input.model.xml.HeaderProperty;
+import org.oorexx.doc.input.model.xml.OoRexxDocXml;
+import org.oorexx.doc.input.model.xml.Parser;
 
 import java.io.File;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+@Deprecated
 public class XmlParser {
 
     public static OoRexxDocXml get(String xml){

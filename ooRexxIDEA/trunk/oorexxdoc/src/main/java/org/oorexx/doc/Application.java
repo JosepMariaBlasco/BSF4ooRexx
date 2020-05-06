@@ -8,8 +8,8 @@ import org.oorexx.doc.generate.DocGenerator;
 import org.oorexx.doc.input.cli.GenerateCommand;
 import org.oorexx.doc.input.cli.HelpCommand;
 import org.oorexx.doc.input.gui.OORexxDocGUI;
-import org.oorexx.doc.input.xml.OoRexxDocXml;
-import org.oorexx.doc.input.xml.XmlParser;
+import org.oorexx.doc.input.model.xml.OoRexxDocXml;
+import org.oorexx.doc.input.xml.legacy.XmlParser;
 
 import java.io.File;
 import java.util.Optional;

@@ -1,4 +1,4 @@
-package org.oorexx.doc.input.xml;
+package org.oorexx.doc.input.model.xml;
 
 public class OoRexxDocXml {
 

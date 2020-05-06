@@ -1,10 +1,11 @@
-package org.oorexx.doc.input.xml;
+package org.oorexx.doc.input.model.xml;
 
 public class Settings {
 
     private boolean includePublic = true;
     private boolean includePrivate;
     private boolean includePackage;
+    private boolean includeVariableReferences;
 
     public boolean isIncludePublic() {
         return includePublic;
@@ -28,5 +29,13 @@ public class Settings {
 
     public void setIncludePackage(boolean includePackage) {
         this.includePackage = includePackage;
+    }
+
+    public boolean isIncludeVariableReferences() {
+        return includeVariableReferences;
+    }
+
+    public void setIncludeVariableReferences(boolean includeVariableReferences) {
+        this.includeVariableReferences = includeVariableReferences;
     }
 }
