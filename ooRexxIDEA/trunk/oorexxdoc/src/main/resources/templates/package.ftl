@@ -337,10 +337,10 @@
                                             </#if>
 
                                             <#if method.delegate??>
-                                                <span class="label label-info">DELEGATE</span> ${attribute.delegate}
+                                                <span class="label label-info">DELEGATE</span> ${method.delegate}
                                             </#if>
                                             <#if method.external??>
-                                                <span class="label label-info">EXTERNAL</span> ${attribute.external}
+                                                <span class="label label-info">EXTERNAL</span> ${method.external}
                                             </#if>
 
                                             <#if method.commentText != "">
@@ -375,15 +375,17 @@
                                     <i>No Constants</i>
                                 </#if>
                                 <#list class.constants as constant>
-                                    <a id="${constant.id}"></a>
-                                    <ul>
-                                        <li><b>${constant.htmlName}</b>
-                                            Value: ${constant.value}
-                                            <#list constant.annotations as constantAnnotation>
-                                             , Annotated with: ${constantAnnotation.dataToString()}
-                                            </#list>
-                                        </li>
-                                    </ul>
+                                    <#if constant??>
+                                        <a id="${constant.id}"></a>
+                                        <ul>
+                                            <li><b>${constant.htmlName}</b>
+                                                Value: ${constant.value}
+                                                <#list constant.annotations as constantAnnotation>
+                                                 , Annotated with: ${constantAnnotation.dataToString()}
+                                                </#list>
+                                            </li>
+                                        </ul>
+                                    </#if>
                                 </#list>
                             </div>
                         </div>
