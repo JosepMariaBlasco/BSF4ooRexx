@@ -97,7 +97,8 @@ public class OoRexxDocForm {
         }
     }
 
-    public OoRexxDocForm(Project project, List<VirtualFile> inputs){
+    public OoRexxDocForm(Project project, IntelliJGenerationCommand intelliJGenerationCommand){
+        this.intelliJGenerationCommand = intelliJGenerationCommand;
         DefaultTableColumnModel defaultTableColumnModel = new DefaultTableColumnModel();
         TableColumn key = new TableColumn();
         key.setHeaderValue("Key");
@@ -106,7 +107,11 @@ public class OoRexxDocForm {
         value.setHeaderValue("Value");
         defaultTableColumnModel.addColumn(value);
 
-        keyValuePairs.add(new KeyValuePair("Run-Date", "${.now?datetime}"));
+        if(intelliJGenerationCommand.getHeaders().isEmpty()) {
+            keyValuePairs.add(new KeyValuePair("Run-Date", "${.now?datetime}"));
+        } else {
+            intelliJGenerationCommand.getHeaders().forEach((s, s2) -> keyValuePairs.add(new KeyValuePair(s, s2)));
+        }
 
         headerTable = new AddEditRemovePanel<KeyValuePair>(new HeaderTableModel(), keyValuePairs) {
             @Nullable
@@ -154,7 +159,7 @@ public class OoRexxDocForm {
         headerTable.getTable().setColumnModel(defaultTableColumnModel);
         headerTable.getTable().setShowColumns(true);
 
-        fileTable = new AddEditRemovePanel<VirtualFile>(new FileTableModel(), inputs) {
+        fileTable = new AddEditRemovePanel<VirtualFile>(new FileTableModel(), OoRexxDocForm.this.intelliJGenerationCommand.getInputs()) {
             @Nullable
             @Override
             protected VirtualFile addItem() {
@@ -179,18 +184,36 @@ public class OoRexxDocForm {
 
         filePanel.add(fileTable, BorderLayout.CENTER);
         fileTable.getTable().setShowColumns(true);
+
+        if(this.intelliJGenerationCommand.getOutput() != null){
+            output.setText(this.intelliJGenerationCommand.getOutput().toString());
+        }
+
         output.getButton().addActionListener(new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 PathChooserDialog pathChooser = FileChooserFactory.getInstance().createPathChooser(FileChooserDescriptorFactory.createSingleFolderDescriptor(), project, null);
                 pathChooser.choose(null, virtualFiles -> {
                     if(!virtualFiles.isEmpty()) {
-                        intelliJGenerationCommand.setOutput(virtualFiles.get(0));
-                        output.setText(intelliJGenerationCommand.getOutput().toString());
+                        OoRexxDocForm.this.intelliJGenerationCommand.setOutput(virtualFiles.get(0));
+                        output.setText(OoRexxDocForm.this.intelliJGenerationCommand.getOutput().toString());
                     }
                 });
             }
         });
+
+        if(intelliJGenerationCommand.getOverview() != null){
+            overview.setText(intelliJGenerationCommand.getOverview());
+        }
+
+        if(intelliJGenerationCommand.getTitle() != null){
+            title.setText(intelliJGenerationCommand.getTitle());
+        }
+
+        modifierPublic.setSelected(intelliJGenerationCommand.isIncludePublic());
+        modifierPackage.setSelected(intelliJGenerationCommand.isIncludePackage());
+        modifierPrivate.setSelected(intelliJGenerationCommand.isIncludePrivate());
+        variableReferences.setSelected(intelliJGenerationCommand.isIncludeVariableReferences());
 
     }
 

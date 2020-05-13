@@ -9,7 +9,9 @@ import com.intellij.openapi.vfs.VirtualFile;
 import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 import org.oorexx.doc.generate.DocGenerator;
+import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
 import org.oorexx.doc.input.model.xml.OoRexxDocXml;
+import org.oorexx.ide.intellij.oorexxdoc.OoRexxDocGui;
 
 import java.io.File;
 
@@ -22,18 +24,18 @@ public class OoRexxDocQuickAction extends AnAction {
 
     @Override
     public void actionPerformed(@NotNull AnActionEvent e) {
-        ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
-            try {
-                File file = getFile(e);
-                if(file.exists()) {
-                    String xml = FileUtils.readFileToString(file, "utf-8");
-                    XmlMapper xmlMapper = new XmlMapper();
-                    new DocGenerator(xmlMapper.readValue(xml, OoRexxDocXml.class)).generate();
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
+        try {
+            File file = getFile(e);
+            if(file.exists()) {
+                String xml = FileUtils.readFileToString(file, "utf-8");
+                XmlMapper xmlMapper = new XmlMapper();
+                OoRexxDocXml ooRexxDocXml = xmlMapper.readValue(xml, OoRexxDocXml.class);
+                IntelliJGenerationCommand intelliJGenerationCommand = IntelliJGenerationCommand.of(ooRexxDocXml);
+                OoRexxDocGui.openUi(e.getProject(), intelliJGenerationCommand);
             }
-        }, "Generating ooRexxDocs with existing configuration", false, e.getProject());
+        } catch (Exception ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @NotNull

@@ -1,12 +1,16 @@
 package org.oorexx.doc.input.intellij;
 
-import com.intellij.openapi.project.Project;
+import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
+import org.oorexx.doc.input.model.xml.HeaderProperty;
+import org.oorexx.doc.input.model.xml.OoRexxDocXml;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class IntelliJGenerationCommand {
 
@@ -15,10 +19,29 @@ public class IntelliJGenerationCommand {
     private String title;
     private Map<String, String> headers = new LinkedHashMap<>();
     private String overview;
-    private boolean includePublic;
+    private boolean includePublic = true;
     private boolean includePackage;
     private boolean includePrivate;
     private boolean includeVariableReferences;
+
+    public static IntelliJGenerationCommand of(OoRexxDocXml ooRexxDocXml) throws Exception {
+        IntelliJGenerationCommand intelliJGenerationCommand = new IntelliJGenerationCommand();
+        List<VirtualFile> inputs = ooRexxDocXml.getParser().getInput()
+                .stream()
+                .map(s -> VfsUtil.findFileByIoFile(new File(s), true))
+                .collect(Collectors.toList());
+        intelliJGenerationCommand.setInputs(inputs);
+        intelliJGenerationCommand.setOutput(VfsUtil.createDirectoryIfMissing(ooRexxDocXml.getParser().getOutput()));
+
+        intelliJGenerationCommand.setTitle(ooRexxDocXml.getTitle());
+        intelliJGenerationCommand.setOverview(ooRexxDocXml.getOverview());
+        intelliJGenerationCommand.setHeaders(ooRexxDocXml.getHeader().getHeaderProperties().stream().collect(Collectors.toMap(HeaderProperty::getKey, HeaderProperty::getValue)));
+        intelliJGenerationCommand.setIncludePrivate(ooRexxDocXml.getSettings().isIncludePrivate());
+        intelliJGenerationCommand.setIncludePublic(ooRexxDocXml.getSettings().isIncludePublic());
+        intelliJGenerationCommand.setIncludePackage(ooRexxDocXml.getSettings().isIncludePackage());
+        intelliJGenerationCommand.setIncludeVariableReferences(ooRexxDocXml.getSettings().isIncludeVariableReferences());
+        return intelliJGenerationCommand;
+    }
 
     public VirtualFile getOutput() {
         return output;

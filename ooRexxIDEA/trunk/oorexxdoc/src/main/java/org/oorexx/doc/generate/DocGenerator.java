@@ -55,7 +55,6 @@ public class DocGenerator {
         ooRexxDocGenerationContext = OoRexxDocGenerationContextFactory.of(generateCommand);
     }
 
-    @Deprecated
     public DocGenerator(OoRexxDocXml ooRexxDocXml){
         ooRexxDocGenerationContext = OoRexxDocGenerationContextFactory.of(ooRexxDocXml);
     }

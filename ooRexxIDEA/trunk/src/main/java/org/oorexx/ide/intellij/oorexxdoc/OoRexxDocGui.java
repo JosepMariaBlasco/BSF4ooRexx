@@ -19,7 +19,12 @@ import java.util.List;
 public class OoRexxDocGui {
 
     public static void openUi(Project project, List<VirtualFile> inputs){
-        OoRexxDocForm ooRexxDocForm = new OoRexxDocForm(project, inputs);
+        IntelliJGenerationCommand intelliJGenerationCommand = new IntelliJGenerationCommand();
+        intelliJGenerationCommand.setInputs(inputs);
+        openUi(project, intelliJGenerationCommand);
+    }
+    public static void openUi(Project project, IntelliJGenerationCommand intelliJGenerationCommand){
+        OoRexxDocForm ooRexxDocForm = new OoRexxDocForm(project, intelliJGenerationCommand);
         DialogBuilder builder = new DialogBuilder(project);
         builder.setCenterPanel(ooRexxDocForm.getRoot());
         builder.setDimensionServiceKey("GrepConsoleTailFileDialog");
