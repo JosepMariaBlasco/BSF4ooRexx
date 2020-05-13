@@ -1,5 +1,6 @@
 package org.oorexx.doc.analyse;
 
+import com.intellij.psi.PsiElement;
 import org.oorexx.doc.analyse.model.AccessModifier;
 import org.oorexx.doc.analyse.model.OoRexxMethod;
 
@@ -7,6 +8,9 @@ import org.oorexx.doc.generate.Settings;
 import org.oorexx.ide.lang.psi.*;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.intellij.psi.util.PsiTreeUtil.findChildOfType;
 import static com.intellij.psi.util.PsiTreeUtil.findChildrenOfType;
@@ -77,6 +81,14 @@ public class MethodAnalyzer extends Analyzer{
         if(delegate != null){
             String text = delegate.getSymbolOrString().getText();
             ooRexxMethod.setDelegate(text);
+        }
+
+        if(settings.isIncludeVariableReferences()) {
+            Collection<OoRexxVariableReferenceExpr> references = findChildrenOfType(directive, OoRexxVariableReferenceExpr.class);
+            List<String> stringReferences
+                    = references.stream().map(PsiElement::getText).collect(Collectors.toList());
+
+            ooRexxMethod.setVariableReferences(stringReferences);
         }
 
         setComment(ooRexxMethod, directive);

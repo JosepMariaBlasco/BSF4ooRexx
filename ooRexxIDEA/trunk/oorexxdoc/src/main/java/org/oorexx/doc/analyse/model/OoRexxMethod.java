@@ -18,6 +18,7 @@ public class OoRexxMethod extends OoRexxNamedElement {
     private String delegate;
     private String external;
 
+    private List<String> variableReferences = new ArrayList<>();
     private List<String> exposedVariables = new ArrayList<>();
     private String useArg = "";
     private String parseArg;
@@ -124,5 +125,13 @@ public class OoRexxMethod extends OoRexxNamedElement {
 
     public void setParseArg(String parseArg) {
         this.parseArg = parseArg;
+    }
+
+    public List<String> getVariableReferences() {
+        return variableReferences;
+    }
+
+    public void setVariableReferences(List<String> variableReferences) {
+        this.variableReferences = variableReferences;
     }
 }

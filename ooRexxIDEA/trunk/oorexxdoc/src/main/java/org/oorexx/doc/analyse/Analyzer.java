@@ -59,18 +59,8 @@ public abstract class Analyzer {
 
     protected String extractArgVariables(Settings settings, OoRexxKeywordUse ooRexxKeywordUse){
         OoRexxKeywordUseTemplateList templateList = findChildOfType(ooRexxKeywordUse, OoRexxKeywordUseTemplateList.class);
-        Collection<OoRexxVariableReferenceExpr> variableReferenceExprs = findChildrenOfType(ooRexxKeywordUse, OoRexxVariableReferenceExpr.class);
 
         if(templateList != null) {
-            if(!settings.isIncludeVariableReferences()){
-                String expr = templateList.getText();
-                for (OoRexxVariableReferenceExpr variableReferenceExpr : variableReferenceExprs) {
-                    expr = expr.replace(variableReferenceExpr.getText(), "")
-                            .replaceAll(",\\s*,", ",")
-                            .replaceAll(",\\s*", ""); // todo: delete as soon as AST is clean
-                }
-                return expr;
-            }
             return StringEscapeUtils.escapeHtml(templateList.getText());
         }
 

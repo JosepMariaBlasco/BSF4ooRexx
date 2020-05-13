@@ -2,12 +2,16 @@ package org.oorexx.doc.analyse.model;
 
 import com.intellij.psi.PsiElement;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class OoRexxRoutine extends OoRexxNamedElement{
 
     private String useArg = "";
     private String parseArg;
     private AccessModifier accessModifier;
     private String external;
+    private List<String> variableReferences = new ArrayList<>();
 
     public OoRexxRoutine(PsiElement psiElement) {
         super(psiElement);
@@ -43,5 +47,13 @@ public class OoRexxRoutine extends OoRexxNamedElement{
 
     public void setParseArg(String parseArg) {
         this.parseArg = parseArg;
+    }
+
+    public List<String> getVariableReferences() {
+        return variableReferences;
+    }
+
+    public void setVariableReferences(List<String> variableReferences) {
+        this.variableReferences = variableReferences;
     }
 }

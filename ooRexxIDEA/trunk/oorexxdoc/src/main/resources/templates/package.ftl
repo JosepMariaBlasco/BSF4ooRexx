@@ -200,6 +200,14 @@
                                 </#list>
                             </#if>
 
+                            <#if routine.variableReferences?size != 0>
+                                <br /><b>Variable reference(s):</b>
+                                <#list routine.variableReferences as variableReference>
+                                     <i>${variableReference?html} </i>
+                                </#list>
+                                <br />
+                            </#if>
+
 
                             <#if routine.useArg != "">
                                 <br /><span class="keyword">USE ARG</span> ${routine.useArg}
@@ -350,6 +358,13 @@
                                                 </#list>
                                             </#if>
 
+                                            <#if method.variableReferences?size != 0>
+                                                <br /><b>Variable reference(s):</b>
+                                                <#list method.variableReferences as variableReference>
+                                                    <i>${variableReference?html} </i>
+                                                </#list>
+                                                <br />
+                                            </#if>
 
                                             <#if method.useArg?? && method.useArg != "">
                                                 <br /><span class="keyword">USE ARG</span> ${method.useArg}
