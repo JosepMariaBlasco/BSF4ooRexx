@@ -26,19 +26,23 @@ public abstract class Analyzer {
 
     protected Predicate<PsiElement> filterByDirectiveAccess(Class<?> defaultAccess){
         return psiElement -> {
-            OoRexxDirectiveAccessPrivate accessPrivate = PsiTreeUtil.findChildOfType(psiElement, OoRexxDirectiveAccessPrivate.class);
-            OoRexxDirectiveAccessPackage accessPackage = PsiTreeUtil.findChildOfType(psiElement, OoRexxDirectiveAccessPackage.class);
-            OoRexxDirectiveAccessPublic accessPublic = PsiTreeUtil.findChildOfType(psiElement, OoRexxDirectiveAccessPublic.class);
 
-            if((defaultAccess.equals(OoRexxDirectiveAccessPrivate.class) || accessPrivate != null) && settings.isIncludePrivate()){
+
+            Class stopAt = psiElement.toString().toLowerCase().contains("class") ? OoRexxDirectiveClassBody.class: null;
+
+            OoRexxDirectiveAccessPrivate accessPrivate = PsiTreeUtil.findChildOfType(psiElement, OoRexxDirectiveAccessPrivate.class, false, stopAt);
+            OoRexxDirectiveAccessPackage accessPackage = PsiTreeUtil.findChildOfType(psiElement, OoRexxDirectiveAccessPackage.class, false, stopAt);
+            OoRexxDirectiveAccessPublic accessPublic = PsiTreeUtil.findChildOfType(psiElement, OoRexxDirectiveAccessPublic.class, false, stopAt);
+
+            if((defaultAccess.equals(OoRexxDirectiveAccessPrivate.class) || accessPrivate != null) && settings.isIncludePrivate() && accessPublic == null && accessPackage == null){
                 return true;
             }
 
-            if((defaultAccess.equals(OoRexxDirectiveAccessPackage.class) || accessPackage != null) && settings.isIncludePackage()){
+            if((defaultAccess.equals(OoRexxDirectiveAccessPackage.class) || accessPackage != null) && settings.isIncludePackage() && accessPublic == null && accessPrivate == null){
                 return true;
             }
 
-            return (defaultAccess.equals(OoRexxDirectiveAccessPublic.class) || accessPublic != null) && settings.isIncludePublic();
+            return (defaultAccess.equals(OoRexxDirectiveAccessPublic.class) || accessPublic != null) && settings.isIncludePublic() && accessPackage == null && accessPrivate == null;
         };
     }
 
