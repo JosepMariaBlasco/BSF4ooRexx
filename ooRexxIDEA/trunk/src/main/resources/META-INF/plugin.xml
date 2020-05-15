@@ -1,6 +1,6 @@
-<idea-plugin version="2">
+<idea-plugin>
   <id>org.oorexx.ide</id>
-  <name>ooRexx plugin for IntelliJ IDEA</name>
+  <name>ooRexx for IntelliJ IDEA</name>
   <version>1.0.4.2 Beta</version>
   <vendor email="alexander.t.seik@gmail.com">Alexander Seik</vendor>
 
@@ -8,7 +8,7 @@
       ooRexx plugin for IntelliJ IDEA
     ]]></description>
 
-  <idea-version since-build="172"/>
+
 
   <extensions defaultExtensionNs="com.intellij">
     <lang.foldingBuilder language="ooRexx" implementationClass="org.oorexx.ide.intellij.folding.FoldingBuilder"/>
@@ -60,7 +60,7 @@
       <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
     </action>
     <action id="ooRexx.ooRexxDocQuickAction" class="org.oorexx.ide.intellij.action.OoRexxDocQuickAction"
-            text="Quick Create 'ooRexxDoc' Documentation" description="Quick Create an ooRexxDoc">
+            text="Quick Create 'ooRexxDoc' Documentation ..." description="Quick Create an ooRexxDoc">
       <add-to-group group-id="EditorPopupMenu" anchor="last"/>
       <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
     </action>

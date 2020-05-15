@@ -29,6 +29,6 @@ dependencies {
 
 intellij {
     // Define IntelliJ Platform API version to use for building this plugin
-    version '2019.3'
+    version '2020.1'
 }
 

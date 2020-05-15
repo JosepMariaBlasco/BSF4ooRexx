@@ -5,10 +5,16 @@ import com.intellij.psi.PsiElement;
 import com.intellij.psi.util.PsiTreeUtil;
 import org.oorexx.ide.file.OoRexxFile;
 import org.oorexx.ide.lang.psi.OoRexxDirective;
+import org.oorexx.ide.lang.psi.OoRexxInstructionTerminator;
+import org.oorexx.ide.lang.psi.impl.OoRexxInstructionTerminatorImpl;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CommentContext {
 
@@ -18,7 +24,18 @@ public class CommentContext {
 
     public CommentContext(OoRexxFile ooRexxFile) {
         Collection<PsiComment> psiComments = PsiTreeUtil.findChildrenOfType(ooRexxFile, PsiComment.class);
-        this.docComments = psiComments.stream()
+        this.docComments.addAll(psiComments);
+        Collection<OoRexxInstructionTerminator> instT = PsiTreeUtil.findChildrenOfType(ooRexxFile, OoRexxInstructionTerminatorImpl.class);
+        List<OoRexxInstructionTerminator> collect = instT.stream().collect(Collectors.toList());
+
+        collect.forEach(a -> {
+            for (PsiElement current = a.getFirstChild(); current != null; current = current.getNextSibling()) {
+                if (current instanceof PsiComment){
+                    docComments.add((PsiComment) current);
+                }
+            }
+        });
+        this.docComments = docComments.stream()
                 .filter(psiComment -> "DOC_COMMENT".equalsIgnoreCase(psiComment.getTokenType().toString()))
                 .collect(Collectors.toCollection(ArrayList::new));
 
@@ -31,6 +48,9 @@ public class CommentContext {
     }
 
     public PsiComment getComment(OoRexxDirective ooRexxDirective){
+        if(ooRexxDirective == null && !combinedList.isEmpty() && combinedList.get(0) instanceof PsiComment){
+            return (PsiComment) combinedList.get(0);
+        }
         int i = this.combinedList.indexOf(ooRexxDirective);
 
         if(i <= 0){

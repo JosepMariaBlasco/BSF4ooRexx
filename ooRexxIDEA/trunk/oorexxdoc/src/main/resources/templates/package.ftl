@@ -108,6 +108,13 @@
                                     </#list>
                             </li>
                         </#if>
+                        <#if package.methods?size != 0>
+                            <li>Floating Methods
+                                <#list package.methods as method>
+                                    <a href="${package.id}.html#${method.id}">${method.name}</a>
+                                </#list>
+                            </li>
+                        </#if>
                         <#if package.classes?size != 0>
                             <li>Classes
                                 <ul>
@@ -217,6 +224,70 @@
                                 <br /><span class="keyword">PARSE ARG</span> ${routine.parseArg}
                             </#if>
 
+                        </div>
+                    </div>
+                </div>
+            </#list>
+
+
+            <#list package.methods as method>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="${method.id}"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Method: ${method.name}</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li style="list-style-type: none;">
+                                    <#if !method.guarded>
+                                        <span class="label label-info">UNGUARDED</span>
+                                    </#if>
+                                    <#if !method.unprotected>
+                                        <span class="label label-info">PROTECTED</span>
+                                    </#if>
+                                    <#if method.classMethod>
+                                        <span class="label label-info">CLASS</span>
+                                    </#if>
+                                    <#if method.abstractMethod>
+                                        <span class="label label-info">ABSTRACT</span>
+                                    </#if>
+
+                                    <#if method.delegate??>
+                                        <span class="label label-info">DELEGATE</span> ${method.delegate}
+                                    </#if>
+                                    <#if method.external??>
+                                        <span class="label label-info">EXTERNAL</span> ${method.external}
+                                    </#if>
+
+                                    <#if method.commentText != "">
+                                        <br /><br /><pre><small>${method.commentText}</small></pre>
+                                        <#list method.comment.commentAnnotations as commentAnnotation>
+                                            <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
+                                        </#list>
+                                    </#if>
+
+                                    <#if method.variableReferences?size != 0>
+                                        <br /><b>Variable reference(s):</b>
+                                        <#list method.variableReferences as variableReference>
+                                            <i>${variableReference?html} </i>
+                                        </#list>
+                                        <br />
+                                    </#if>
+
+                                    <#if method.useArg?? && method.useArg != "">
+                                        <br /><span class="keyword">USE ARG</span> ${method.useArg}
+                                    </#if>
+
+                                    <#if method.parseArg??>
+                                        <br /><span class="keyword">PARSE ARG</span> ${method.parseArg}
+                                    </#if>
+
+                                    <#list method.annotations as methodAnnotation>
+                                        Annotated with: ${methodAnnotation.dataToString()}
+                                    </#list>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </div>
