@@ -75,6 +75,15 @@
                                     </ul>
                                 </li>
                             </#if>
+                            <#if package.methods?size != 0>
+                                <li>Floating Methods
+                                    <ul>
+                                        <#list package.methods as method>
+                                            <li><a href="packages/${package.name}.html#${method.id}">${method.name}</a></li>
+                                        </#list>
+                                    </ul>
+                                </li>
+                            </#if>
                             <#if package.classes?size != 0>
                                 <li>Classes
                                     <ul>
