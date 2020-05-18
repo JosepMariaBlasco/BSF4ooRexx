@@ -115,6 +115,20 @@
                                 </#list>
                             </li>
                         </#if>
+                        <#if package.attributes?size != 0>
+                            <li>Floating Methods
+                                <#list package.attributes as attribute>
+                                    <a href="${package.id}.html#${attribute.id}">${attribute.name}</a>
+                                </#list>
+                            </li>
+                        </#if>
+                        <#if package.constants?size != 0>
+                            <li>Floating Methods
+                                <#list package.constants as constant>
+                                    <a href="${package.id}.html#${constant.id}">${constant.name}</a>
+                                </#list>
+                            </li>
+                        </#if>
                         <#if package.classes?size != 0>
                             <li>Classes
                                 <ul>
