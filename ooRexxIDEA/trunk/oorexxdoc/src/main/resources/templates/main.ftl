@@ -84,6 +84,24 @@
                                     </ul>
                                 </li>
                             </#if>
+                            <#if package.attributes?size != 0>
+                                <li>Floating Attributes
+                                    <ul>
+                                        <#list package.attributes as attribute>
+                                            <li><a href="packages/${package.name}.html#${attribute.id}">${attribute.name}</a></li>
+                                        </#list>
+                                    </ul>
+                                </li>
+                            </#if>
+                            <#if package.constants?size != 0>
+                                <li>Floating Constants
+                                    <ul>
+                                        <#list package.constants as constant>
+                                            <li><a href="packages/${package.name}.html#${constant.id}">${constant.name}</a></li>
+                                        </#list>
+                                    </ul>
+                                </li>
+                            </#if>
                             <#if package.classes?size != 0>
                                 <li>Classes
                                     <ul>

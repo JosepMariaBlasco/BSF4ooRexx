@@ -293,6 +293,95 @@
                 </div>
             </#list>
 
+            <#list package.attributes as attribute>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="${attribute.id}"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Attribute: ${attribute.name}</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li><b>${attribute.htmlName}</b>
+                                    <#if attribute.type != "BOTH">
+                                        <span class="label label-info">${attribute.type}</span>
+                                    <#else>
+                                        <span class="label label-info">GETTER</span>
+                                        <span class="label label-info">SETTER</span>
+                                    </#if>
+                                    <#if !attribute.guarded>
+                                        <span class="label label-info">UNGUARDED</span>
+                                    </#if>
+                                    <#if !attribute.unprotected>
+                                        <span class="label label-info">PROTECTED</span>
+                                    </#if>
+                                    <#if attribute.classMethod>
+                                        <span class="label label-info">CLASS</span>
+                                    </#if>
+                                    <#if attribute.abstractMethod>
+                                        <span class="label label-info">ABSTRACT</span>
+                                    </#if>
+
+                                    <#if attribute.delegate??>
+                                        <span class="label label-info">DELEGATE</span> ${attribute.delegate}
+                                    </#if>
+                                    <#if attribute.external??>
+                                        <span class="label label-info">EXTERNAL</span> ${attribute.external}
+                                    </#if>
+
+                                    <#if attribute.commentText != "">
+                                        <br /><br /><pre><small>${attribute.commentText}</small></pre>
+                                        <#list attribute.comment.commentAnnotations as commentAnnotation>
+                                            <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
+                                        </#list>
+                                    </#if>
+
+                                    <#if attribute.useArg??>
+                                        <br /><span class="keyword">USE ARG</span> ${attribute.useArg}
+                                    </#if>
+
+                                    <#if attribute.parseArg??>
+                                        <br /><span class="keyword">PARSE ARG</span> ${attribute.parseArg}
+                                    </#if>
+
+                                    <#list attribute.annotations as attrAnnotation>
+                                        Annotated with: ${attrAnnotation.dataToString()}
+                                    </#list>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </#list>
+
+            <#list package.constants as constant>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="${constant.id}"></a>
+                        <div class="panel-heading">
+                            <h4>Floating Constant: ${constant.name}</h4>
+                        </div>
+                        <div class="panel-body">
+                            <ul>
+                                <li><b>${constant.htmlName}</b>
+                                    Value: ${constant.value}
+                                    <#list constant.annotations as constantAnnotation>
+                                        , Annotated with: ${constantAnnotation.dataToString()}
+                                    </#list>
+
+                                    <#if constant.commentText != "">
+                                        <br /><br /><pre><small>${constant.commentText}</small></pre>
+                                        <#list constant.comment.commentAnnotations as commentAnnotation>
+                                            <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
+                                        </#list>
+                                    </#if>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </#list>
+
             <#list package.classes as class>
                 <div class="row">
                     <div class="panel panel-default">

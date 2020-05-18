@@ -11,6 +11,8 @@ public class OoRexxPackage extends OoRexxNamedElement implements Comparable<OoRe
     private File file;
     private List<OoRexxClass> classes = new ArrayList<>();
     private List<OoRexxMethod> methods = new ArrayList<>();
+    private List<OoRexxAttribute> attributes = new ArrayList<>();
+    private List<OoRexxConstant> constants = new ArrayList<>();
     private List<OoRexxRequires> requires = new ArrayList<>();
     private List<OoRexxOption> options = new ArrayList<>();
     private List<OoRexxResource> resources = new ArrayList<>();
@@ -96,6 +98,22 @@ public class OoRexxPackage extends OoRexxNamedElement implements Comparable<OoRe
 
     public void setRequiredBy(Set<OoRexxPackage> requiredBy) {
         this.requiredBy = requiredBy;
+    }
+
+    public List<OoRexxAttribute> getAttributes() {
+        return attributes;
+    }
+
+    public void setAttributes(List<OoRexxAttribute> attributes) {
+        this.attributes = attributes;
+    }
+
+    public List<OoRexxConstant> getConstants() {
+        return constants;
+    }
+
+    public void setConstants(List<OoRexxConstant> constants) {
+        this.constants = constants;
     }
 
     @Override

@@ -23,6 +23,8 @@ public class PackageAnalyzer extends Analyzer{
     private OoRexxPackage ooRexxPackage;
     private RoutineAnalyzer routineAnalyzer;
     private AnnotationAnalyzer annotationAnalyzer;
+    private AttributeAnalyzer attributeAnalyzer;
+    private ConstantAnalyzer constantAnalyzer;
 
     public PackageAnalyzer(Settings settings, CommentContext commentContext) {
         super(settings, commentContext);
@@ -34,6 +36,8 @@ public class PackageAnalyzer extends Analyzer{
         resourceAnalyzer = new ResourceAnalyzer(settings, commentContext);
         routineAnalyzer = new RoutineAnalyzer(settings, commentContext);
         annotationAnalyzer = new AnnotationAnalyzer(settings, commentContext);
+        attributeAnalyzer = new AttributeAnalyzer(settings, commentContext);
+        constantAnalyzer = new ConstantAnalyzer(settings, commentContext);
     }
 
     public OoRexxPackage analyze(File file, OoRexxFile ooRexxFile){
@@ -46,6 +50,8 @@ public class PackageAnalyzer extends Analyzer{
         Collection<OoRexxDirectiveResource> resources = findChildrenOfType(ooRexxFile, OoRexxDirectiveResource.class);
         Collection<OoRexxDirectiveOptions> options = findChildrenOfType(ooRexxFile, OoRexxDirectiveOptions.class);
         Collection<OoRexxDirectiveMethod> methods = findChildrenOfType(ooRexxFile, OoRexxDirectiveMethod.class);
+        Collection<OoRexxDirectiveAttribute> attributes = findChildrenOfType(ooRexxFile, OoRexxDirectiveAttribute.class);
+        Collection<OoRexxDirectiveConstant> constants = findChildrenOfType(ooRexxFile, OoRexxDirectiveConstant.class);
 
         ooRexxPackage = new OoRexxPackage(ooRexxFile);
         ooRexxPackage.setFile(file);
@@ -56,6 +62,8 @@ public class PackageAnalyzer extends Analyzer{
         ooRexxPackage.setOptions(analyzeOptions(options));
         ooRexxPackage.setResources(analyzeResources(resources));
         ooRexxPackage.setRoutines(analyzeRoutines(routines));
+        ooRexxPackage.setAttributes(analyzeAttributes(attributes));
+        ooRexxPackage.setConstants(analyzeConstants(constants));
 
         List<OoRexxAnnotation> annotations = getAllNonClassAnnotations(ooRexxPackage, annotates);
 
@@ -64,6 +72,23 @@ public class PackageAnalyzer extends Analyzer{
         setComment(ooRexxPackage, ooRexxFile);
 
         return ooRexxPackage;
+    }
+
+    private List<OoRexxAttribute> analyzeAttributes(Collection<OoRexxDirectiveAttribute> attributes) {
+        return attributes.stream()
+                .filter(hasNotParent(OoRexxDirectiveClass.class))
+                .filter(filterByDirectiveAccess(OoRexxDirectiveAccessPublic.class))
+                .map(directive -> attributeAnalyzer.analyze(directive))
+                .sorted(Comparator.comparing(o -> o.getName().toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    private List<OoRexxConstant> analyzeConstants(Collection<OoRexxDirectiveConstant> constants){
+        return constants.stream()
+                .filter(hasNotParent(OoRexxDirectiveClass.class))
+                .map(directive -> constantAnalyzer.analyze(directive))
+                .sorted(Comparator.comparing(o -> o.getName().toLowerCase()))
+                .collect(Collectors.toList());
     }
 
     private List<OoRexxAnnotation> getAllNonClassAnnotations(OoRexxPackage ooRexxPackage, Collection<OoRexxDirectiveAnnotate> annotation) {
