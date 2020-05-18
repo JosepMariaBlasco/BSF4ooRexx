@@ -187,12 +187,14 @@
         <div class="container-fluid">
             <h1>${package.name}</h1>
 
-            <#if package.commentText != "">
+            <#if package.comment??>
                 <br /><br />
                 <div class="panel panel-default">
                     <div class="panel-body">
                         ${package.commentText}
-                        <br />
+                        <#if package.comment.commentAnnotations?size != 0 && package.commentText != "">
+                            <br /><br />
+                        </#if>
                         <#list package.comment.commentAnnotations as commentAnnotation>
                             <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
                         </#list>
@@ -223,14 +225,16 @@
                                 Annotated with: ${routineAnnotation.dataToString()}
                             </#list>
 
-                            <#if routine.commentText != "">
+                            <#if routine.comment??>
                                 <#if routineSpacing>
                                     <br /><br />
                                 </#if>
                                 <div class="panel panel-default">
                                     <div class="panel-body">
                                         ${routine.commentText}
-                                        <br />
+                                        <#if routine.comment.commentAnnotations?size != 0 && routine.commentText != "">
+                                            <br /><br />
+                                        </#if>
                                         <#list routine.comment.commentAnnotations as commentAnnotation>
                                             <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
                                         </#list>
@@ -291,12 +295,14 @@
                                         <span class="label label-info">EXTERNAL</span> ${method.external}
                                     </#if>
 
-                                    <#if method.commentText != "">
+                                    <#if method.comment??>
                                         <br /><br />
                                         <div class="panel panel-default">
                                             <div class="panel-body">
                                                 ${method.commentText}
-                                                <br />
+                                                <#if method.comment.commentAnnotations?size != 0 && method.commentText != "">
+                                                    <br /><br />
+                                                </#if>
                                                 <#list method.comment.commentAnnotations as commentAnnotation>
                                                     <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
                                                 </#list>
@@ -366,12 +372,14 @@
                                         <span class="label label-info">EXTERNAL</span> ${attribute.external}
                                     </#if>
 
-                                    <#if attribute.commentText != "">
+                                    <#if attribute.comment??>
                                         <br /><br />
                                         <div class="panel panel-default">
                                             <div class="panel-body">
                                                 ${attribute.commentText}
-                                                <br />
+                                                <#if attribute.comment.commentAnnotations?size != 0  && attribute.commentText != "">
+                                                    <br /><br />
+                                                </#if>
                                                 <#list attribute.comment.commentAnnotations as commentAnnotation>
                                                     <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
                                                 </#list>
@@ -412,12 +420,14 @@
                                         , Annotated with: ${constantAnnotation.dataToString()}
                                     </#list>
 
-                                    <#if constant.commentText != "">
+                                    <#if constant.comment??>
                                         <br /><br />
                                         <div class="panel panel-default">
                                             <div class="panel-body">
                                                 ${constant.commentText}
-                                                <br />
+                                                <#if constant.comment.commentAnnotations?size != 0 && constant.commentText != "">
+                                                    <br /><br />
+                                                </#if>
                                                 <#list constant.comment.commentAnnotations as commentAnnotation>
                                                     <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
                                                 </#list>
@@ -463,11 +473,13 @@
                                 Annotated with: ${classAnnotation.dataToString()}
                             </#list>
 
-                            <#if class.commentText != "">
+                            <#if class.comment??>
                                 <div class="panel panel-default">
                                     <div class="panel-body">
                                         ${class.commentText}
-                                        <br />
+                                        <#if class.comment.commentAnnotations?size != 0 && class.commentText != "">
+                                            <br /><br />
+                                        </#if>
                                         <#list class.comment.commentAnnotations as commentAnnotation>
                                             <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
                                         </#list>
@@ -510,12 +522,14 @@
                                                 <span class="label label-info">EXTERNAL</span> ${attribute.external}
                                             </#if>
 
-                                            <#if attribute.commentText != "">
+                                            <#if attribute.comment??>
                                                 <br /><br />
                                                 <div class="panel panel-default">
                                                     <div class="panel-body">
                                                         ${attribute.commentText}
-                                                        <br />
+                                                        <#if attribute.comment.commentAnnotations?size != 0 && attribute.commentText != "">
+                                                            <br /><br />
+                                                        </#if>
                                                         <#list attribute.comment.commentAnnotations as commentAnnotation>
                                                             <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
                                                         </#list>
@@ -570,12 +584,14 @@
                                                 <span class="label label-info">EXTERNAL</span> ${method.external}
                                             </#if>
 
-                                            <#if method.commentText != "">
+                                            <#if method.comment??>
                                                 <br /><br />
                                                 <div class="panel panel-default">
                                                     <div class="panel-body">
                                                         ${method.commentText}
-                                                        <br />
+                                                        <#if method.comment.commentAnnotations?size != 0 && method.commentText != "">
+                                                            <br /><br />
+                                                        </#if>
                                                         <#list method.comment.commentAnnotations as commentAnnotation>
                                                             <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
                                                         </#list>
@@ -624,12 +640,14 @@
                                                     , Annotated with: ${constantAnnotation.dataToString()}
                                                 </#list>
 
-                                                <#if constant.commentText != "">
+                                                <#if constant.comment??>
                                                     <br /><br />
                                                     <div class="panel panel-default">
                                                         <div class="panel-body">
                                                             ${constant.commentText}
-                                                            <br />
+                                                            <#if constant.comment.commentAnnotations?size != 0 && constant.commentText != "">
+                                                                <br /><br />
+                                                            </#if>
                                                             <#list constant.comment.commentAnnotations as commentAnnotation>
                                                                 <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
                                                             </#list>
@@ -673,12 +691,14 @@
                                 , Annotated with: ${constantAnnotation.dataToString()}
                             </#list>
 
-                            <#if resource.commentText != "">
+                            <#if resource.comment??>
                                 <br /><br />
                                 <div class="panel panel-default">
                                     <div class="panel-body">
                                         ${resource.commentText}
-                                        <br />
+                                        <#if resource.comment.commentAnnotations?size != 0 && resource.commentText != "">
+                                            <br /><br />
+                                        </#if>
                                         <#list resource.comment.commentAnnotations as commentAnnotation>
                                             <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
                                         </#list>

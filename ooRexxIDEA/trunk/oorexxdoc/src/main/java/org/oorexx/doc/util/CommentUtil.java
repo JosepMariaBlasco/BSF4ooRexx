@@ -42,7 +42,7 @@ public class CommentUtil {
             firstOffset = comment.length();
         }
         String commentText = comment.substring(0, firstOffset);
-        ooRexxComment.setText(commentText);
+        ooRexxComment.setText(commentText.trim());
         ooRexxComment.setCommentAnnotations(extractAnnotation(rawAnnotations));
         return ooRexxComment;
     }
@@ -70,7 +70,7 @@ public class CommentUtil {
         return rawAnnotations.stream()
                 .map(s -> {
                     int spaceIndex = s.indexOf(' ');
-                    return new OoRexxCommentAnnotation(s.substring(1, spaceIndex), s.substring(spaceIndex + 1));
+                    return new OoRexxCommentAnnotation(s.substring(1, spaceIndex).trim(), s.substring(spaceIndex + 1).trim());
                 }).collect(Collectors.toList());
     }
 

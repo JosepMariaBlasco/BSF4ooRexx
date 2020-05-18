@@ -31,9 +31,6 @@ public abstract class OoRexxElement {
     }
 
     public String getCommentText(){
-        if(commentText == null){
-            return "";
-        }
         return comment.getText();
     }
 
