@@ -34,7 +34,7 @@ public abstract class OoRexxElement {
         if(commentText == null){
             return "";
         }
-        return StringEscapeUtils.escapeHtml4(comment.getText());
+        return comment.getText();
     }
 
     public OoRexxComment getComment() {
