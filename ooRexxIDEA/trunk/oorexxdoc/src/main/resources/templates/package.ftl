@@ -101,11 +101,11 @@
                 <div class="panel-heading">${package.name} Overview</div>
                 <div class="panel-body">
                     <ul>
-                         <#if package.routines?size != 0>
+                        <#if package.routines?size != 0>
                             <li>Routines
-                                    <#list package.routines as routine>
-                                        <a href="${package.id}.html#${routine.id}">${routine.name}</a>
-                                    </#list>
+                                <#list package.routines as routine>
+                                    <a href="${package.id}.html#${routine.id}">${routine.name}</a>
+                                </#list>
                             </li>
                         </#if>
                         <#if package.methods?size != 0>
@@ -116,14 +116,14 @@
                             </li>
                         </#if>
                         <#if package.attributes?size != 0>
-                            <li>Floating Methods
+                            <li>Floating Attributes
                                 <#list package.attributes as attribute>
                                     <a href="${package.id}.html#${attribute.id}">${attribute.name}</a>
                                 </#list>
                             </li>
                         </#if>
                         <#if package.constants?size != 0>
-                            <li>Floating Methods
+                            <li>Floating Constants
                                 <#list package.constants as constant>
                                     <a href="${package.id}.html#${constant.id}">${constant.name}</a>
                                 </#list>
@@ -137,18 +137,18 @@
                                             <#if class.attributes?size != 0>
                                                 <ul>
                                                     <li>Attributes:
-                                                            <#list class.attributes as attribute>
-                                                                <a href="${package.id}.html#${attribute.id}">${attribute.name}</a>
-                                                            </#list>
+                                                        <#list class.attributes as attribute>
+                                                            <a href="${package.id}.html#${attribute.id}">${attribute.name}</a>
+                                                        </#list>
                                                     </li>
                                                 </ul>
                                             </#if>
                                             <#if class.methods?size != 0>
                                                 <ul>
                                                     <li>Methods:
-                                                            <#list class.methods as method>
-                                                                <a href="${package.id}.html#${method.id}">${method.name}</a>
-                                                            </#list>
+                                                        <#list class.methods as method>
+                                                            <a href="${package.id}.html#${method.id}">${method.name}</a>
+                                                        </#list>
                                                     </li>
                                                 </ul>
                                             </#if>
@@ -159,9 +159,16 @@
                         </#if>
                         <#if package.requires?size != 0>
                             <li>Requires
-                                    <#list package.requires as require>
-                                        ${require.reference}
-                                    </#list>
+                                <#list package.requires as require>
+                                    ${require.reference}
+                                </#list>
+                            </li>
+                        </#if>
+                        <#if package.resources?size != 0>
+                            <li>Resources
+                                <#list package.resources as resource>
+                                    <a href="${package.id}.html#${resource.id}">${resource.name}</a>
+                                </#list>
                             </li>
                         </#if>
                     </ul>
@@ -186,9 +193,9 @@
                     <div class="panel-body">
                         ${package.commentText}
                         <br />
-                    <#list package.comment.commentAnnotations as commentAnnotation>
-                        <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
-                    </#list>
+                        <#list package.comment.commentAnnotations as commentAnnotation>
+                            <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
+                        </#list>
                     </div>
                 </div>
             </#if>
@@ -224,9 +231,9 @@
                                     <div class="panel-body">
                                         ${routine.commentText}
                                         <br />
-                                    <#list routine.comment.commentAnnotations as commentAnnotation>
-                                        <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
-                                    </#list>
+                                        <#list routine.comment.commentAnnotations as commentAnnotation>
+                                            <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
+                                        </#list>
                                     </div>
                                 </div>
                             </#if>
@@ -234,7 +241,7 @@
                             <#if routine.variableReferences?size != 0>
                                 <br /><b>Variable reference(s):</b>
                                 <#list routine.variableReferences as variableReference>
-                                     <i>${variableReference?html} </i>
+                                    <i>${variableReference?html} </i>
                                 </#list>
                                 <br />
                             </#if>
@@ -290,9 +297,9 @@
                                             <div class="panel-body">
                                                 ${method.commentText}
                                                 <br />
-                                            <#list method.comment.commentAnnotations as commentAnnotation>
-                                                <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
-                                            </#list>
+                                                <#list method.comment.commentAnnotations as commentAnnotation>
+                                                    <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
+                                                </#list>
                                             </div>
                                         </div>
                                     </#if>
@@ -365,9 +372,9 @@
                                             <div class="panel-body">
                                                 ${attribute.commentText}
                                                 <br />
-                                            <#list attribute.comment.commentAnnotations as commentAnnotation>
-                                                <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
-                                            </#list>
+                                                <#list attribute.comment.commentAnnotations as commentAnnotation>
+                                                    <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
+                                                </#list>
                                             </div>
                                         </div>
                                     </#if>
@@ -409,11 +416,11 @@
                                         <br /><br />
                                         <div class="panel panel-default">
                                             <div class="panel-body">
-                                            ${constant.commentText}
+                                                ${constant.commentText}
                                                 <br />
-                                            <#list constant.comment.commentAnnotations as commentAnnotation>
-                                                <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
-                                            </#list>
+                                                <#list constant.comment.commentAnnotations as commentAnnotation>
+                                                    <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
+                                                </#list>
                                             </div>
                                         </div>
                                     </#if>
@@ -461,9 +468,9 @@
                                     <div class="panel-body">
                                         ${class.commentText}
                                         <br />
-                                    <#list class.comment.commentAnnotations as commentAnnotation>
-                                        <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
-                                    </#list>
+                                        <#list class.comment.commentAnnotations as commentAnnotation>
+                                            <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
+                                        </#list>
                                     </div>
                                 </div>
                             </#if>
@@ -479,9 +486,9 @@
                                         <li><b>${attribute.htmlName}</b>
                                             <#if attribute.type != "BOTH">
                                                 <span class="label label-info">${attribute.type}</span>
-                                                <#else>
-                                                    <span class="label label-info">GETTER</span>
-                                                    <span class="label label-info">SETTER</span>
+                                            <#else>
+                                                <span class="label label-info">GETTER</span>
+                                                <span class="label label-info">SETTER</span>
                                             </#if>
                                             <#if !attribute.guarded>
                                                 <span class="label label-info">UNGUARDED</span>
@@ -509,9 +516,9 @@
                                                     <div class="panel-body">
                                                         ${attribute.commentText}
                                                         <br />
-                                                    <#list attribute.comment.commentAnnotations as commentAnnotation>
-                                                        <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
-                                                    </#list>
+                                                        <#list attribute.comment.commentAnnotations as commentAnnotation>
+                                                            <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
+                                                        </#list>
                                                     </div>
                                                 </div>
                                             </#if>
@@ -569,9 +576,9 @@
                                                     <div class="panel-body">
                                                         ${method.commentText}
                                                         <br />
-                                                    <#list method.comment.commentAnnotations as commentAnnotation>
-                                                        <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
-                                                    </#list>
+                                                        <#list method.comment.commentAnnotations as commentAnnotation>
+                                                            <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
+                                                        </#list>
                                                     </div>
                                                 </div>
                                             </#if>
@@ -614,7 +621,7 @@
                                             <li><b>${constant.htmlName}</b>
                                                 Value: ${constant.value}
                                                 <#list constant.annotations as constantAnnotation>
-                                                 , Annotated with: ${constantAnnotation.dataToString()}
+                                                    , Annotated with: ${constantAnnotation.dataToString()}
                                                 </#list>
 
                                                 <#if constant.commentText != "">
@@ -653,6 +660,35 @@
                     </div>
                 </div>
             </#if>
+
+            <#list package.resources as resource>
+                <div class="row">
+                    <div class="panel panel-default">
+                        <a id="${resource.id}"></a>
+                        <div class="panel-heading">
+                            <h4>Resource: ${resource.name}</h4>
+                        </div>
+                        <div class="panel-body">
+                            <#list resource.annotations as constantAnnotation>
+                                , Annotated with: ${constantAnnotation.dataToString()}
+                            </#list>
+
+                            <#if resource.commentText != "">
+                                <br /><br />
+                                <div class="panel panel-default">
+                                    <div class="panel-body">
+                                        ${resource.commentText}
+                                        <br />
+                                        <#list resource.comment.commentAnnotations as commentAnnotation>
+                                            <b>${commentAnnotation.key}</b>: ${commentAnnotation.value} <br />
+                                        </#list>
+                                    </div>
+                                </div>
+                            </#if>
+                        </div>
+                    </div>
+                </div>
+            </#list>
 
             <#if package.requiredBy?size != 0>
                 <div class="row">
