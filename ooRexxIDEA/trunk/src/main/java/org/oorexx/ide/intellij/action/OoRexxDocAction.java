@@ -3,6 +3,7 @@ package org.oorexx.ide.intellij.action;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.CommonDataKeys;
+import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,6 +25,7 @@ public class OoRexxDocAction extends AnAction {
     public void actionPerformed(@NotNull AnActionEvent e) {
         List<VirtualFile> virtualFileList = getVirtualFiles(e);
         if (virtualFileList == null) return;
+        FileDocumentManager.getInstance().saveAllDocuments();
         OoRexxDocGui.openUi(e.getProject(), virtualFileList);
     }
 
