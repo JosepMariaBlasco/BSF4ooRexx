@@ -407,7 +407,7 @@ end
     expose buffer eJS level indent rexx2json
     use strict arg rexxObject, bQuote=.false
 
-    if rexxObject=="" 0 then           -- empty string?
+    if rexxObject==""  then           -- empty string?
        buffer~append('""')
     else
     do
