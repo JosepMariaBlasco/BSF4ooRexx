@@ -72,7 +72,14 @@
 
                - added minify(), toMinifiedJson()
 
-   references: - JSON RFC, as of July 2006: <http://tools.ietf.org/html/rfc-4627>
+   references: - based on: JSON RFC, as of July 2006: <http://tools.ietf.org/html/rfc-4627>
+
+               - latest specs:
+                 - [JSON specs, April 2013: <https://tools.ietf.org/html/rfc6902#appendix-A>]
+
+                 - "The I-JSON Message Format",  March 2015: <https://tools.ietf.org/html/rfc7493>
+
+                 - JSON specs, December 2019: https://www.rfc-editor.org/info/rfc8259
 
 */
 
