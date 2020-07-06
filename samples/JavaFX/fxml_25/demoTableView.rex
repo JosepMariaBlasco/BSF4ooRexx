@@ -789,9 +789,10 @@ syntax:
 
   tipText="If editing enabled: <enter> or click to edit," "0a"x"Ctl-click to nullify cell/undo cell nullify"
   tooltip =.bsf~new("javafx.scene.control.Tooltip", tipText)
-  tooltip~setGraphic(.fx.ImageView~new("file:icons8-mailbox-opened-flag-up-64.png"))
+  imgView=.fx.ImageView~new("file:icons8-mailbox-opened-flag-up-64.png") ~~setPreserveRatio(.true) ~~setFitHeight(50)
+  tooltip~setGraphic(imgView)
    -- Cf. <https://docs.oracle.com/javafx/2/api/javafx/scene/doc-files/cssref.html> (as of 2020-07-05)
-  tooltip~setStyle("-fx-font-size: 16pt; -fx-text-fill: black; -fx-padding: 5; -fx-background-color: moccasin ;")
+  tooltip~setStyle("-fx-font-size: 14pt; -fx-text-fill: black; -fx-padding: 5; -fx-background-color: moccasin ;")
   .my.app~cell.tooltip=tooltip
 
 
