@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckMenuItem?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.RadioMenuItem?>
+<?import javafx.scene.control.SeparatorMenuItem?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+<?language rexx?>
+
+<VBox fx:id="id_vbox" prefHeight="592.0" prefWidth="673.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1">
+  <children>
+                <!-- define a ToggleGroup (cannot be done in SceneBuilder) to place RadioMenuItems into it -->
+    <fx:define>
+        <ToggleGroup fx:id="id_toggleGroup" />
+    </fx:define>
+    <MenuBar VBox.vgrow="NEVER">
+      <menus>
+        <Menu fx:id="id_menu_file" mnemonicParsing="false" text="File">
+          <items>
+            <CheckMenuItem fx:id="id_menu_show_debug" mnemonicParsing="false" selected="true" text="Show Debug Output" />
+            <CheckMenuItem fx:id="id_menu_enable_editing" mnemonicParsing="false" selected="false" text="Enable Editing" />
+            <SeparatorMenuItem mnemonicParsing="false" />
+            <MenuItem fx:id="id_menu_setitems" mnemonicParsing="false" text="SetItems" />
+            <MenuItem fx:id="id_menu_remove" disable="true" mnemonicParsing="false" text="RemoveEmptyCells" />
+            <MenuItem fx:id="id_menu_clear" disable="true" mnemonicParsing="false" text="Clear" />
+            <MenuItem fx:id="id_menu_quit" mnemonicParsing="false" text="Quit" />
+          </items>
+        </Menu>
+            <Menu fx:id="id_menu_stylesheets" mnemonicParsing="false" text="Stylesheet">
+              <items>
+                   <!-- adds all RadioMenuItem objects to the same "toggleGroup" when fxml gets loaded -->
+                   <!-- allow execution on pre-JavaFX15 versions (event object is not supplied as an argument),
+                        supply the slotDir argument (last argument from BSF4ooRexx) -->
+                  <RadioMenuItem fx:id="id_menu_style_none" mnemonicParsing="false" onAction="call setStylingType arg(arg())" selected="true" text="No Stylesheets">
+                     <toggleGroup>
+                        <ToggleGroup fx:id="id_toggleGroup" />
+                     </toggleGroup></RadioMenuItem>
+                  <RadioMenuItem fx:id="id_menu_style_1" mnemonicParsing="false" onAction="call setStylingType arg(arg())" onMenuValidation="use arg event, slotdir; call setStyle event,slotdir" text="Stylesheet 1" toggleGroup="$id_toggleGroup" />
+                  <RadioMenuItem fx:id="id_menu_style_2" mnemonicParsing="false" onAction="call setStylingType arg(arg())" text="Stylesheet 2" toggleGroup="$id_toggleGroup" />
+                  <RadioMenuItem fx:id="id_menu_style_cell" mnemonicParsing="false" onAction="call setStylingType arg(arg())" onMenuValidation="use arg event, slotdir; call setStyle event,slotdir" text="Style Cells Programmatically" toggleGroup="$id_toggleGroup" />
+              </items>
+            </Menu>
+      </menus>
+    </MenuBar>
+    <AnchorPane maxHeight="-1.0" maxWidth="-1.0" prefHeight="418.0" prefWidth="514.0" VBox.vgrow="ALWAYS">
+      <children>
+
+            <Label fx:id="id_label" alignment="CENTER" layoutX="56.0" layoutY="486.0" prefHeight="25.0" prefWidth="501.0" textAlignment="CENTER" textFill="#0d39bc" AnchorPane.bottomAnchor="52.0" AnchorPane.leftAnchor="56.0" AnchorPane.rightAnchor="55.0">
+               <font>
+                  <Font name="System Italic" size="16.0" />
+               </font>
+               </Label>
+            <Button fx:id="id_button_add" disable="true" layoutX="58.0" layoutY="520.0" mnemonicParsing="false" text="Add" AnchorPane.bottomAnchor="14.0" AnchorPane.leftAnchor="58.0" />
+            <Button fx:id="id_button_delete" disable="true" layoutX="488.0" layoutY="520.0" mnemonicParsing="false" text="Delete Selected Cell" AnchorPane.bottomAnchor="14.0" AnchorPane.rightAnchor="53.0" />
+            <TableView fx:id="id_tableview" layoutX="58.0" layoutY="37.0" prefHeight="438.0" prefWidth="562.0" AnchorPane.bottomAnchor="88.0" AnchorPane.leftAnchor="58.0" AnchorPane.rightAnchor="53.0" AnchorPane.topAnchor="37.0">
+              <columns>
+                  <TableColumn fx:id="id_column_nr" editable="false" prefWidth="75.0" resizable="false" style="-fx-alignment: center;" text="ID" />
+                  <TableColumn fx:id="id_column_name" prefWidth="208.0" resizable="false" style="-fx-alignment: center-left;" text="Name" />
+                  <TableColumn fx:id="id_column_expert" prefWidth="148.0" resizable="false" style="-fx-alignment: center;" text="Expert" />
+                  <TableColumn fx:id="id_column_since" prefWidth="125.0" resizable="false" style="-fx-alignment: center;" text="Since" />
+              </columns>
+            </TableView>
+      </children>
+    </AnchorPane>
+  </children>
+
+  <!-- make sure fx:id objects get put into .my.app~demoTableView.fxml -->
+  <fx:script source="put_FXID_objects_into.my.app.rex" />
+
+  <!-- make public routines visible to event handler Rexx code defined in here -->
+  <fx:script source="demoTableViewController.rex" />
+</VBox>

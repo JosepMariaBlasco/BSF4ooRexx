@@ -1,0 +1,43 @@
+/* Some Java-FX CSS definitions, cf. <http://docs.oracle.com/javafx/2/get_started/css.htm>,
+   especially: <https://docs.oracle.com/javafx/2/api/javafx/scene/doc-files/cssref.html>.
+
+   The following style definitions only have the purpose to demonstrate the power available.
+   These definitions are only meant for fun and starting point for experiments, not for
+   professional use! :)
+
+   2020-06-22, ---rgf
+*/
+
+/* define the background of the scene, will be applied to VBox (being the root of the scene): */
+.root {
+        -fx-background-image: url("oorexx_032.png");
+        -fx-background-color: LightGoldenRodYellow;
+}
+
+/* this is the basic formatting for all Label:s */
+.label {
+        -fx-text-fill: red;
+        -fx-font-size: 15px;
+        -fx-font-weight: bold;
+
+        -fx-background-color: rgb(253, 245, 230, 0.75) ;
+        -fx-effect: dropshadow( gaussian , rgba(255,255,255,0.5) , 0,0,0,1 );
+        -fx-padding: 3 3 3 3;
+
+        -fx-border-color: red;
+        -fx-border-radius: 3px;
+        -fx-border-width: 1px;
+        -fx-border-style: dashed;
+}
+
+/* -------------------------- */
+
+.list-cell:even {
+        -fx-background-color: #ffFFff80; /* fourth byte in color is opacity=.50 */
+        -fx-text-fill: black;
+}
+
+.list-cell:odd  {
+        -fx-background-color: #00000080; /* fourth byte in color is opacity=.50 */
+        -fx-text-fill: white;
+}
