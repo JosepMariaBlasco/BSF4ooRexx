@@ -15,20 +15,42 @@
                           displayed cell that is not backed by data
                         - Animation
 
-   additional infos on the web:
+   additional infos on the web, e.g.:
 
-         <https://www.educba.com/javafx-listview/>, 2020-06-15
          <https://docs.oracle.com/javafx/2/ui_controls/list-view.htm>, 2020-06-21
 
    license: Apache License 2.0 (see at bottom)
 
    invoke:
 
-         rexx tpgm_demoListView.rex
+         rexx demoListView.rex
          rexxj.{cmd|sh} tpgm_demoListView.rex
 
    needs: ooRexx 5.0 or higher, and BSF4ooRexx 6.00 or highter
 */
+
+
+/** A <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/ListView.html">ListView</a>
+    consists of a single column of
+    <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/ListCell.html">ListCell</a>s,
+    each representing an <em>item</em> (object) from the backing
+    <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/collections/FXCollections.html#observableArrayList--">ObservableArrayList</a>.
+
+    <br>
+
+    A <em>ListView</em> will create cells by using a <em>cell factory</em>
+    (cf. callback method <code>change</code>)
+    which creates and returns the cells to be used by the ListView, cf. the
+    <code>RexxCellFactory</code> class. In this implementation the
+    <code>RexxCell</code> class is used, which extends the JavaFX class
+    <a href="javafx.scene.control.cell.TextFieldListCell">TextFieldListCell</a>
+    in order to become able to represent the value as a text and with a graphic.
+    It is responsible therefore to maintain the appearance of each cell
+    (cf. callback method <code>updateItem</code>).
+
+*
+*/
+
 
    -- make sure we run this program only on ooRexx 5.0 or higher
 parse version "_" majorVersion "."
@@ -92,10 +114,14 @@ syntax:
 
 
 /* =================================================================================== */
-/* implements the abstract method "start" for the Java class "javafx.application.Application"
-   (BSF4ooRexx also supplies another (trailing) slotDir (a Rexx Directory) argument, as "start" is
-   invoked from Java).
-   It also controls
+/** This Rexx class implements the abstract JavaFX class
+    <a href="javafx.application.Application">Application</a> by implementing the
+    abstract method <code>start</code> that sets up the JavaFX GUI.
+
+    @param primaryStage stage (window) supplied by <em>Application</em>'s
+                        <code>launch</code> method
+    @param slotDir      a Rexx directory supplied by BSF4ooRexx
+*
 */
 ::class RxMainApplication
 
@@ -123,10 +149,6 @@ syntax:
   call setupApplicationData   -- now that the graphics subsystem is initialized
 
    -- demo action! :)
-  /*
-  ft=.bsf~new("javafx.animation.FadeTransition", .fx.Duration~millis(3000),demoListView)
-  ft ~~setFromValue(0.0) ~~setToValue(1.0) ~~play
-  */
   rt=.bsf~new("javafx.animation.RotateTransition", .fx.Duration~millis(750),demoListView)
   rt ~~setByAngle(270) ~~setCycleCount(2) ~~setAutoReverse(.true) ~~play
 
@@ -146,11 +168,17 @@ syntax:
    This Rexx class controls the interaction with the fxml form named "demoListView.fxml".
 
 */
-::class demoListViewController
-::attribute id_listview
-::attribute firstNameColumn
 
-   /* save the Java objects in ooRexx attributes for faster access in this class */
+/** This Rexx class manages the user interaction with the FXML form named
+    &quot;demoListView.fxml&quot;.
+*/
+
+::class demoListViewController
+/** Caches the <code>id_listview</code> JavaFX object.
+*/
+::attribute id_listview
+
+/** Caches the JavaFX objects in ooRexx attributes for faster access. */
 ::method init
   expose id_vbox id_listview id_menu_setitems id_menu_clear id_menu_quit -
          id_menu_remove id_label id_menu_show_debug id_menu_enable_editing -
@@ -205,7 +233,8 @@ syntax:
 
 
 /** Event handler for most events that are of interest for our little application.
-   @param event the JavaFX event object
+   @param event   the JavaFX event object
+   @param slotDir a Rexx directory supplied by BSF4ooRexx
 */
 ::method handle   /* implements the interface "javafx.event.EventHandler"   */
   expose id_listview id_menu_setitems id_menu_clear id_menu_quit id_menu_remove id_label -
@@ -525,40 +554,38 @@ syntax:
   end
 
 
- /* Closes the application. */
+ /** Closes the application. */
 ::method handleExit
   bsf.loadClass("javafx.application.Platform")~exit   -- unload JavaFX, but let Rexx continue in main thread
 
 
 /* =================================================================================== */
 /* implements "R javafx.util.Callback<P,R>(P o) used by PropertyValueFactory */
+/** Rexx class that creates the cell objects that get used by <em>ListView</em> for its
+    <em>ListCell</em>s. It implements the JavaFX interface
+    <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/util/Callback.html">Callback</a>,
+    i.e. the method <code>call</code>.
+*/
 ::class RexxCellFactory -- Rexx class implementing "javafx.util.Callback"'s "call" method
 
-::attribute clzOoRexxListCell class get  -- a class attribute
-::attribute stringConverter   class get  -- a class attribute
-
   /* ------------------------------------------------------------------------------ */
-::method init class     -- the Rexx constructor at the class level: create and memorize a proxy class for "javfx.scene.control.ListCell"
-  expose clzOoRexxListCell stringConverter
-   -- use a TextFieldListCell to allow in place edits
-  clzOoRexxListCell=bsf.createProxyClass("javafx.scene.control.cell.TextFieldListCell", "jRexxListCell", "javafx.scene.control.Cell updateItem")
-   -- we need a stringConverter for in-place edits
-  stringConverter=.bsf~new("javafx.util.converter.DefaultStringConverter")
+/**  Callback method that creates and returns the cell object to be used for a <em>ListCell</em>.
 
-  /* ------------------------------------------------------------------------------ */
-  /* create and setup a cell, assign stringConverter for in-place edits */
+   @param listView   the <em>ListView</em> for which this method gets invoked
+   @param slotDir    a Rexx directory supplied by BSF4ooRexx
+*/
 ::method call           -- implements "javafx.util.Callback.call(Object o)": in this case an instance of a ListCell (or a subclass of it) must be returned!
-  use arg obj, slotDir
-               -- create the ListCell handler, supply a RexxListCell object to carry out "updateItem"
-  myClz=self~class      -- get Rexx class object to ease access to its class attributes
-  rexxCellHandler=myClz~clzOoRexxListCell~new(.RexxListCell~new)  -- will have updateItem() invoked
-  rexxCellHandler~setTooltip(.my.app~cell.tooltip)         -- set ToolTip to this Cell
-  rexxCellHandler~setConverter(myClz~stringConverter) -- needed for edits with TextFieldListCell
+  use arg listView, slotDir
+
+         -- create the ListCell handler, supply a RexxListCell object to carry out "updateItem"
+  rexxCellHandler=.RexxListCell~clzOoRexxListCell~new(.RexxListCell~new)  -- will have updateItem() invoked
+  rexxCellHandler~setTooltip(.my.app~cell.tooltip)             -- set ToolTip to this Cell
+  rexxCellHandler~setConverter(.RexxListCell~stringConverter)  -- needed for edits with TextFieldListCell
 
   if .my.app~showDebugOutput=.true then
   do
      say
-     say .line":" .dateTime~new "///-->" self pp(obj)", RETURNING:" pp(rexxCellHandler)
+     say .line":" .dateTime~new "///-->" self ", RETURNING:" pp(rexxCellHandler) "for:" pp(listView)
   end
   return rexxCellHandler
 
@@ -567,10 +594,45 @@ syntax:
 /* This is an ooRexx class, subclassing the JavaFX "javafx.scene.control.ListCell" class
    in order to become able to edit/format ListCells by intercepting the "updateItem" method.
 */
+
+/** This Rexx class creates and maintains the appearence (cf. callback method
+    <code>updateItem</code>) of <em>ListCell</em> cell. In order to become able
+    to set a text and a graphic to represent a cell value in the ListCell it
+    subclasses the JavaFX class
+    <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/cell/TextFieldListCell.html>TextFieldListCell</a>.
+*/
 ::class RexxListCell
+
+/** Caches the JavaFX proxy class for this Rexx class. */
+::attribute clzOoRexxListCell class get  -- a class attribute
+
+/** Caches the string converter for the <em>ListCell</em>. */
+::attribute stringConverter   class get  -- a class attribute
+
+/** Class constructor method that creates and caches the JavaFX proxy class
+    as well as the string converter object to be used by this <em>ListCell</em>
+    implementation.
+*/
+  /* ------------------------------------------------------------------------------ */
+::method init class     -- the Rexx constructor at the class level: create and memorize a proxy class for "javfx.scene.control.ListCell"
+  expose clzOoRexxListCell stringConverter
+   -- use a TextFieldListCell to allow in place edits
+  clzOoRexxListCell=bsf.createProxyClass("javafx.scene.control.cell.TextFieldListCell", "jRexxListCell", "javafx.scene.control.Cell updateItem")
+   -- we need a stringConverter for in-place edits
+  stringConverter=.bsf~new("javafx.util.converter.DefaultStringConverter")
+
+
+/** This implements the
+   <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/Cell.html#updateItem-T-boolean-">updateItem</a>
+   method in Rexx.
+
+   @param name
+   @param empty
+   @param slotDir a Rexx directory supplied by BSF4ooRexx
+*/
 ::method updateItem
-  -- void ListCell.updateItem (SimpleStringProperty name, boolean empty)
-  use arg name, empty, slotDir
+  -- void ListCell.updateItem (SimpleStringProperty item, boolean empty)
+  use arg item, empty, slotDir
 
   jSelf=slotDir~javaObject
   index=jSelf~getIndex     -- get 0-based index (row) of this cell
@@ -578,21 +640,21 @@ syntax:
   if .my.app~showDebugOutput=.true then
   do
      say .line":" .dateTime~new "///-->" self"::".context~name": jself:" pp(jself)
-     say "09"x .line":" "jSelf" pp(jSelf) "| name="pp(name)",empty="pp(empty)",index="pp(index)
+     say "09"x .line":" "jSelf" pp(jSelf) "| item="pp(item)",empty="pp(empty)",index="pp(index)
   end
      -- we need to invoke the method in the superclass first
-  jSelf~updateItem_forwardToSuper(name,empty)
+  jSelf~updateItem_forwardToSuper(item,empty)
   jself~setStyle("")
 
-  if name=.nil | empty=.true then
+  if item=.nil | empty=.true then
   do
      jSelf~setText(.nil)
      jSelf~setGraphic(.nil)
   end
   else   -- we have a value and are not empty
   do
-     jSelf~setText(name)
-     parse var name "(" pic ")"  -- extract picture name if any, set graphics to it
+     jSelf~setText(item)
+     parse var item "(" pic ")"  -- extract picture name if any, set graphics to it
      jSelf~setGraphic(.fx.ImageView~new(.my.app~imageViewDir~entry(pic)))
   end
 
@@ -605,7 +667,7 @@ syntax:
 
 
 /* =================================================================================== */
-/* This routine can only work, once the internal graphics of JavaFX got initilaized
+/** This routine can only work, once the internal graphics of JavaFX got initilaized
    (e.g. in the Application's start method). It sets up the items to be viewed in the
    list and saves all collections in this package local directory.
 */
@@ -640,12 +702,14 @@ syntax:
   tooltip =.bsf~new("javafx.scene.control.Tooltip", tipText)
 
   tooltip~setGraphic(.fx.ImageView~new("file:icons8-mailbox-opened-flag-up-64.png"))
-  tooltip~setStyle("-fx-font-size: 16pt;")   -- make sure font-size is legible
+   -- Cf. <https://docs.oracle.com/javafx/2/api/javafx/scene/doc-files/cssref.html> (as of 2020-07-05)
+  tooltip~setStyle("-fx-font-size: 15pt; -fx-text-fill: blue; -fx-padding: 5; -fx-background-color: lightyellow ;")   -- make sure font-size is legible
   .my.app~cell.tooltip=tooltip
 
 
 /* =================================================================================== */
-/* Recreates the listViewData content from .my.app~entryNames
+/** Recreates the <em>listViewData</em> that backs the <em>ListView</em> content from
+    the <code>.my.app~entryNames</code> cache.
 */
 ::routine resetListViewData   -- clears .app.dir~listViewData and sets its entries according to .my.app~entryNames
   listViewData=.my.app~listViewData
@@ -656,19 +720,23 @@ syntax:
 
 
 /* =================================================================================== */
-/* For a context menu we cannot refer to existing MenuItems (they will not be honored/shown),
-   rather we must create proper context MenuItems. */
+/** Routine that creates the context menu. We cannot refer to existing <em>MenuItems</em>
+    as long as they are part of a JavaFX node (tree) that is being used in a scene,
+    therefore we must create proper context <code>MenuItems</code>.
+
+    @param eventHandler the event handler that processes the user's menu interactions
+*/
 ::routine createContextMenu
   use arg eventHandler
   ctxtMenu=.bsf~new("javafx.scene.control.ContextMenu")
   items=ctxtMenu~getItems
 
   sdo=.bsf~new("javafx.scene.control.CheckMenuItem","Show Debug Output") -
-      ~~setSelected(.my.app~showDebugOutput) -
+      ~~setSelected(.my.app~showDebugOutput)                             -
       ~~setId("id_ctxt_menu_show_debug")~~setOnAction(eventHandler)
   items~add(sdo)
 
-  ee=.bsf~new("javafx.scene.control.CheckMenuItem","Enable Editing") -
+  ee=.bsf~new("javafx.scene.control.CheckMenuItem","Enable Editing")     -
       ~~setId("id_ctxt_menu_enable_editing")~~setOnAction(eventHandler)
   items~add(ee)
 
@@ -689,11 +757,13 @@ syntax:
   return ctxtMenu                -- return the ContextMenu
 
 /* ----------------------------------------------------------------------------------- */
-/* Rather than using a class with methods to handle events for the Context menu, this
-   demonstrates using a routine for that purpose. This event handler will set all the
-   ContextMenu's MenuItems to the same disable state as the matching MenuItems in the
-   form's File Menu.
-   Before showing the context menu, set its menu items according to the File menu items.
+/** This demonstrates using a routine (instead of a method) for event handling instead
+    of a method. This event handler will set all the <em>ContextMenu</em>'s <em>MenuItems</em>
+    to the same state as the matching <em>MenuItem</em>s in the scene's <em>Menu</em>s.
+
+    @param event  the JavaFX event to process
+    @param slotDir a Rexx directory supplied by BSF4ooRexx
+    @return the <em>ContextMenu</em> object
 */
 ::routine "ContextMenuHandler"     -- set disable state according to the File MenuItems state
   use arg event, slotDir
@@ -727,8 +797,16 @@ syntax:
 
 
 /* =================================================================================== */
-/* Return a string of the list of nodes from the intersected node to the root node.
-   If a cell node is encountered query and show its getIndex() value. */
+/** A routine for debugging that creates and returns a string of the list of nodes from
+    the intersected node to the root node. If a <em>Cell</em> node is encountered it will
+    be queried of its <em>index</em> (0-based position) in the <em>ListView</em>.
+
+    @param event  the JavaFX event object to analyze
+    @return  <code>.nil</code> if no intersecting node available, otherwise a string
+             of nodes from the intersecting node to the root node; if a <em>Cell</em>
+             node is encountered it will be augmented with its index position in the
+             <em>ListView</em>
+*/
 ::routine ppNodeInfo
    use arg event
 
@@ -749,7 +827,12 @@ syntax:
 
 
 /* =================================================================================== */
-/* Find and return Cell object. */
+/** Find and return <em>Cell</em> object from an event.
+
+    @param event  the JavaFX event to process
+    @return  <code>.nil</code> if no intersecting or <em>Cell</em> node available,
+             otherwise the <em>Cell</em> node
+*/
 ::routine findCellObject
    use arg event
       -- get the node of the event
@@ -769,10 +852,16 @@ syntax:
 
 
 /* =================================================================================== */
-/* Return the event's Cell index in the ListView or -1 if not available.
+/** Returns the event's <em>Cell</em> index (0-based position) in the <em>ListView<em> or
+    <code>-1</code> if not available or meaningful.
+
+    @param event  the JavaFX event to process
+    @return       index (0-based position) in the <em>ListView<em> or <code>-1</code> if
+                  not available or meaningful
 */
 ::routine getIndex
    use arg event
+
       -- get the node of the event
    cell=findCellObject(event)
    if cell~isNil then return -1
@@ -780,7 +869,7 @@ syntax:
 
 
 /* =================================================================================== */
-/* Utility routine for debugging: dumps the content of a directory ordered by name. */
+/** Utility routine for debugging: dumps the content of a Rexx directory ordered by name. */
 ::routine dumpDir
 
   if .my.app~showDebugOutput=.false then return

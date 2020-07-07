@@ -4,9 +4,9 @@
    date:    2020-06-22
    changes: --
 
-   purpose: demonstrate a controller with a public routine that can be invoked from
-            an ooRexx FXML event handler script
-
+   purpose: demonstrate a controller with a public routine that can be invoked directly from
+            an ooRexx FXML event handler script; it will handle the interactions with the
+            Stylesheet "id_menu_stylesheets" menu items
 
    license: Apache License 2.0 (see at bottom)
 
@@ -22,11 +22,16 @@
 parse source s
 say .line":" .dateTime~new pp(s)  "->" pp("demoListViewController.rex") "..."
 
+/** This routine will fetch the <code>event</code> JavaFX object from the global
+    <em>ScriptContext</em> using the Rexx script annotation &quot;/* @get(event) */&quot;
+    using <code>slotDir</code> argument.
 
+    @param slotDir a Rexx directory supplied by the event handler script in the FXML file
+*/
 ::routine setStylingType public
    use arg slotdir
    /* RexxScript annotation: @get(event) (will be fetched from slotDir's scriptContext) */
-   if .my.app~showDebugOutput=.false then
+   if .my.app~showDebugOutput=.true then
    do
       say .line":" .context~name":" "arg()="arg() "event="pp(event) "slotDir="pp(slotDir)
       say .line":" .context~name":" "event="pp(event~toString)
@@ -37,7 +42,6 @@ say .line":" .dateTime~new pp(s)  "->" pp("demoListViewController.rex") "..."
       say "<---------------------------------------"
       say
    end
-
 
       -- fetch the id_listview object
    id_vbox=.my.app~demoListView.fxml~id_vbox
@@ -65,7 +69,6 @@ say .line":" .dateTime~new pp(s)  "->" pp("demoListViewController.rex") "..."
       otherwise nop
    end
    id_listView~refresh     -- make sure the ListView refreshes
-
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
