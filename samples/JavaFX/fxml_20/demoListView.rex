@@ -655,7 +655,7 @@ syntax:
   do
      jSelf~setText(item)
      parse var item "(" pic ")"  -- extract picture name if any, set graphics to it
-     jSelf~setGraphic(.fx.ImageView~new(.my.app~imageViewDir~entry(pic)))
+     jSelf~~setGraphic(.fx.ImageView~new(.my.app~imageViewDir~entry(pic))) ~~setGraphicTextGap(20)
   end
 
    -- style the cell's background
@@ -698,10 +698,11 @@ syntax:
   .my.app~listViewData=listViewData
   .my.app~alert.audioclip=.bsf~new("javafx.scene.media.AudioClip", "file:oops.wav")
 
+
   tipText="If editing enabled: <enter> or double-click to edit," "0a"x"Ctl-click to nullify cell/undo cell nullify"
   tooltip =.bsf~new("javafx.scene.control.Tooltip", tipText)
-
-  tooltip~setGraphic(.fx.ImageView~new("file:icons8-mailbox-opened-flag-up-64.png"))
+  imgView=.fx.ImageView~new("file:icons8-mailbox-opened-flag-up-64.png")
+  tooltip~~setGraphic(imgView)~~setGraphicTextGap(20)
    -- Cf. <https://docs.oracle.com/javafx/2/api/javafx/scene/doc-files/cssref.html> (as of 2020-07-05)
   tooltip~setStyle("-fx-font-size: 15pt; -fx-text-fill: blue; -fx-padding: 5; -fx-background-color: lightyellow ;")   -- make sure font-size is legible
   .my.app~cell.tooltip=tooltip
