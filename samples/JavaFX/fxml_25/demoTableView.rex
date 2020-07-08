@@ -1,11 +1,11 @@
 #!/usr/bin/env rexx
 /*
    author:  Rony G. Flatscher
-   date:    2020-07-05  (started: 2020-06-23)
+   date:    2020-07-07  (started: 2020-06-23)
    changes: --
 
    purpose: demonstrate - TableView with cells containing text and graphics
-                        - Setting TableView cell to null as opposed to removing the cell
+                        - Setting TableView item to null as a whole as opposed to removing the item
                         - Enabling/disabling menu options
                         - ContextMenu and demonstrating an ooRexx routine to serve as the callback
                           target from Java right before the context menu is displayed to allow for
@@ -14,12 +14,16 @@
                           displayed cell that is not backed by data
                         - Animation
 
+                        - demonstrate how to implement an autocommit feature (not only ENTER
+                          commit a change, but also TAB and focus-change)
+                        - demonstrate how to implement cell factories and extend TableCell for
+                          appropriate behaviour
+
    additional infos on the web:
 
-         <https://www.educba.com/javafx-listview/>, 2020-06-15
-         <https://docs.oracle.com/javafx/2/ui_controls/list-view.htm>, 2020-06-21
+         <https://docs.oracle.com/javafx/2/ui_controls/table-view.htm>, 2020-07-07
 
-         table-View and edit control infos (2020-06, 2020-07):
+         Further TableView and edit control infos (2020-06, 2020-07):
             DatePicker: <https://gist.github.com/james-d/9776485>
                         <https://www.programcreek.com/java-api-examples/?code=vibridi%2Ffxutils%2Ffxutils-master%2Fsrc%2Fmain%2Fjava%2Fcom%2Fvibridi%2Ffxu%2Finput%2FDatePickerTableCell.java#>
                         <https://stackoverflow.com/questions/22637292/javafx-tableview-with-custom-cell-datepicker-oneditcommit-is-not-invoked>
@@ -31,10 +35,34 @@
 
    invoke:
 
-         rexx tpgm_demoTableView.rex
-         rexxj.{cmd|sh} tpgm_demoTableView.rex
+         rexx           demoTableView.rex
+         rexxj.{cmd|sh} demoTableView.rex
 
    needs: ooRexx 5.0 or higher, and BSF4ooRexx 6.00 or highter
+*/
+
+
+/** A <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/TableView.html">TableView</a>
+    consists of one or more
+    <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/TableColumn.html">TableColumn</a>s
+    of
+    <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/TableCell.html">TableCell</a>s,
+    each representing an <em>item</em> (object with fields represented by the <em>TableColumn</em>s) from the backing
+    <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/collections/FXCollections.html#observableArrayList--">ObservableArrayList</a>.
+
+    <br>
+
+    A <em>TextView</em> will create cells for its <em>TableColumn</em>s by using a
+    <em>cell value factory</em> (cf. callback method <code>change</code>)
+    which creates and returns the cells to be used by the TextView, cf. the
+    <code>RexxCellFactory</code> class. In this implementation the
+    <code>RexxCell</code> class is used, which extends the JavaFX class
+    <a href="javafx.scene.control.cell.TextFieldListCell">TextFieldListCell</a>
+    in order to become able to represent the value as a text and with a graphic.
+    It is responsible therefore to maintain the appearance of each cell
+    (cf. callback method <code>updateItem</code>).
+
+*
 */
 
    -- make sure we run this program only on ooRexx 5.0 or higher
@@ -132,7 +160,7 @@ syntax:
 
    -- demo action! :) will fade on and off for a minute while user can interact with GUI!
   ft=.bsf~new("javafx.animation.FadeTransition", .fx.Duration~millis(2000),demoTableView)
-  ft ~~setFromValue(.25) ~~setToValue(1) ~~setCycleCount(15) ~~setAutoReverse(.true) ~~play
+  ft ~~setFromValue(.25) ~~setToValue(1) ~~setCycleCount(7) ~~setAutoReverse(.true) ~~play
 
   scene=.fx.scene~new(demoTableView)   -- create a scene from the parsed FXML tree
   primaryStage~setScene(scene)         -- set the stage to our scene
@@ -557,6 +585,111 @@ syntax:
   bsf.loadClass("javafx.application.Platform")~exit   -- unload JavaFX, but let Rexx continue in main thread
 
 
+
+
+/* =================================================================================== */
+::class Person
+
+/* -------------------------------------------------------------------------------- */
+::attribute experts  class    -- array of expert options
+::attribute graphics class    -- stringtable (directory) of expert->Image/Graphic
+::attribute testData class    -- array of generated persons
+::attribute expertChoices class
+
+
+::method    init     class
+  use local tmp
+  graphics=.stringtable~new
+  testData=.array~new
+   -- set up expert names and their corresponding image files
+  experts  = "Bug", "Java", "Linux", "OpenSource", .nil  -- .nil indicate non-experts
+  imageFileNames=.array~of("icons8-bug-64.png","icons8-java-64.png", -
+                       "icons8-linux-64.png", "icons8-open-source-64.png")
+
+   -- create an ObservableList with the choices of experts to be listed in the ComboBoxTableCell
+  .context~package~local~nilString="<null>"
+  expertChoices=bsf.loadClass("javafx.collections.FXCollections")~observableArrayList
+  do tmp over experts
+     if tmp~isNil then
+        expertChoices~add(.nilString)
+     else
+        expertChoices~add(tmp)
+  end
+
+   -- define first and last names to be randomly combined
+  arrFirstName="Anton", "Berta", "Caesar", "Dora", "Emil", "Friedrich", "Gustav", "Heidelinde", "Ida"
+  arrFirstNameCount=arrFirstName~items
+  arrLastName ="Barmwater", "Cowlishaw", "Davis", "Flatscher", "Fuller", "Jansen", "Jonsson", "McGuire", "Steinboeck", "Wolfers"
+  arrLastNameCount=arrLastName~items
+
+  expertsCount=experts~items
+  counter=0
+
+::attribute counter get class
+  expose counter
+  counter+=1
+  return counter
+
+
+::method createTestPerson class  -- returns a randomyl created Person instance
+  expose graphics experts expertsCount arrFirstName arrFirstNameCount arrLastName arrLastNameCount
+
+  currentYear=.dateTime~new~year -- get current year
+  name=arrLastName[random(1,arrLastNameCount)]"," arrFirstName[random(1,arrFirstNameCount)]
+  exp=experts[random(1,expertsCount)]  -- get expert status
+  i=self~counter                 -- get next value
+  if exp~isNil then
+     p=.person~new(i,name)
+  else   -- expert status set, create a "since" value in ISO date
+  do
+     since=random(1997,currentYear)"-"random(1,12)~right(2,0)"-"random(1,28)~right(2,0)
+     p=.person~new(i,name,exp,graphics~entry(exp),since)
+  end
+  return p
+
+
+::method    createTestdata class    -- will run after all class objects got iniitialized
+  expose graphics testData imageFileNames experts expertsCount arrFirstName arrFirstNameCount arrLastName arrLastNameCount
+
+  if graphics~items=0 then    -- create images, store them under the corresponding expert's name
+  do
+     do counter i name over experts
+        if name~isNil then iterate
+        img=.fx.Image~new(imageFileNames[i]) -- create an Image and store it
+        graphics~setEntry(name,img)
+     end
+     .context~package~local~graphics=graphics   -- save in package local
+  end
+
+  -- create a few persons, add them to the observable list, will cause the created
+  -- Rexx objects to be autoboxed as Java RexxProxy objects
+  do i=1 to 5
+     testData~append(self~createTestPerson)
+  end
+
+
+/* -------------------------------------------------------------------------------- */
+::attribute nr
+::attribute name
+::attribute expert
+::attribute graphic     -- really needed?
+::attribute since
+
+::method makeString
+  use local
+  return "a Person:[nr="nr",name="name",expert="expert",since="since"]"
+
+::method init        -- fetch person's attribute values
+  use local
+  use strict arg nr, name, expert=.nil, graphic=.nil, since=.nil
+
+  if .my.app~showDebugOutput=.true then
+     say .line":" .datetime~new "///   " self
+
+
+
+
+
 /* =================================================================================== */
 /* Implements "R javafx.util.Callback<P,R>(P o) used by PropertyValueFactory */
 
@@ -570,19 +703,28 @@ syntax:
   expose columnName
   use strict arg columnName
 
+/*
   if .my.app~showDebugOutput=.true then
   do
      say
      say .line":" .datetime~new "///" self"::init" "columnName="pp(columnName)
   end
+*/
 
   /* ------------------------------------------------------------------------------ */
   /* create and setup a cell, assign stringConverter for in-place edits */
+
+/** This callback method will be called by the <em>TableColumn</em> which supplies
+    the backing object (item) of the <em>TableView</em> such that it becomes possible
+    to query it for the value (property, field) for this particular column.
+
+*/
 ::method call           -- implements "javafx.util.Callback.call(Object o)": in this case an instance of a TableCell (or a subclass of it) must be returned!
   expose columnName
   use arg obj, slotDir
 
-  if obj~getValue~isNil then return    -- "obj~value" may be .nil (if user nullified row with ctl-mouseclick
+   -- "obj~value" may be .nil (if user nullified row with ctl-mouseclick
+  if obj~getValue~isNil then return
 
   aRexxObj=bsfRexxProxy(obj~getValue)  -- extract Rexx object from Java RexxProxy
   if aRexxObj~isNil then
@@ -591,24 +733,24 @@ syntax:
      val=aRexxObj~send(columnName)     -- get value from Rexx object
 
   select case columnName
-      when "nr"     then cell=.fx.simpleIntegerProperty~new(val)
-      when "name"   then cell=.fx.simpleStringProperty~new(val)
-      when "expert" then cell=.fx.simpleStringProperty~new(val)
-      when "since"  then cell=.fx.simpleStringProperty~new(val)
+      when "nr"     then cellValue=.fx.simpleIntegerProperty~new(val)   -- allows TableView to sort correctly by number
+      when "name"   then cellValue=.fx.simpleStringProperty~new(val)
+      when "expert" then cellValue=.fx.simpleStringProperty~new(val)
+      when "since"  then cellValue=.fx.simpleStringProperty~new(val)
       otherwise nop
   end
 
   if .my.app~showDebugOutput=.true then
   do
-     say .line":" .dateTime~new "///<--" self"::call -" "obj="pp(obj) pp(columnName)"="pp(val) "| RETURNING:" pp(cell)
+     say .line":" .dateTime~new "///<--" self"::call" pp(jStrip(obj)) "for" pp(columnName)~left(8)"="pp(val) "| RETURNING cellValue:" pp(cellValue)
      if columnName="since" then
      do
-         say .line":" "--- last column of this row ---"
+         say .line":" "--- last column of this row --- ("self"::call)"
          say     -- on the last column add an empty line
      end
   end
+  return cellValue
 
-  return cell
 
 
 /* =================================================================================== */
@@ -628,8 +770,7 @@ syntax:
   expose columnName
   use strict arg columnName
 
-  if .my.app~showDebugOutput=.true then
-      say .line":" .datetime~new "///" self"::init" "columnName="pp(columnName)
+  -- if .my.app~showDebugOutput=.true then say .line":" .datetime~new "///" self"::init" "columnName="pp(columnName)
 
   /* ------------------------------------------------------------------------------ */
   /* create and setup a cell, assign stringConverter for in-place edits */
@@ -638,24 +779,24 @@ syntax:
   use arg obj, slotDir
 
                -- create the TableCell handler, supply a RexxTableCell object to carry out "updateItem"
-  if columnName="since" then   -- use our custom RexxDatePickerTableCell implementation
+  if columnName="since" then        -- use our custom RexxDatePickerTableCell implementation
      myClz=.RexxDatePickerTableCell
   else if columnName="expert" then
-     myClz=.RexxComboBoxTableCell
+     myClz=.RexxComboBoxTableCell   -- use our custom RexxComboBoxTableCell implementation
   else
-     myClz=.RexxTableCell        -- get Rexx class object to ease access to its class attributes
+     myClz=.RexxTableCell           -- get Rexx class object to ease access to its class attributes
 
-  rexxObj=myClz~new(columnName)  -- create Rexx object to handle cell
-  rexxCellHandler=myClz~proxyClass~new(rexxObj)       -- create corresponding Java cell
-  rexxCellHandler~setConverter(myClz~stringConverter)
-  rexxCellHandler~setTooltip(.my.app~cell.tooltip)
+  rCell=myClz~new(columnName)                -- create Rexx object to handle cell
+  jCell=myClz~proxyClass~new(rCell)          -- create corresponding Java cell
+  jCell~setConverter(myClz~stringConverter)
+  jCell~setTooltip(.my.app~cell.tooltip)
 
   if .my.app~showDebugOutput=.true then
   do
-     say .line":" .dateTime~new "///<--" self"::call" "columnName="pp(columnName)  "| RETURNING:" pp(rexxCellHandler)
+     say .line":" .dateTime~new "///<--" self"::call" pp(jStrip(obj)) "for" pp(columnName)~left(8)  "| RETURNING jCell:" pp(jCell)
      if columnName="since" then say
   end
-  return rexxCellHandler         -- return the Java cell to be used for the TableView
+  return jCell         -- return the Java cell to be used for the TableView
 
 
 
@@ -663,7 +804,8 @@ syntax:
 /* This is an ooRexx class, subclassing the JavaFX "javafx.scene.control.TableCell" class
    in order to become able to edit/format TableCells by intercepting the "updateItem" method.
 
-   This implements the standard Cell behaviour controlled by our implementation.
+   This implements the standard Cell behaviour controlled by our implementation: hence no
+   commitEdit when focus lost (by mouse-click or TAB) !!
 */
 ::class "RexxTableCell"
 /* -------------------------------------------------------------------------------- */
@@ -683,14 +825,105 @@ syntax:
 
 
   /* ------------------------------------------------------------------------------ */
+
+
 ::method init
-  expose columnName
+  expose columnName -- isCancelled
   use strict arg columnName   -- save column name in case we use this class for multiple string columns
 
-  if .my.app~showDebugOutput=.true then say .line":" .datetime~new "///   " self"::init" "columnName="pp(columnName)
+-- TODO: needed ??
+--  isCancelled=.true     -- start out with .true, such that startEdit's focus change does not commit the empty initial cell
 
-   -- in the case that the obsverable of the record got nullified (ctl-mouseclick), make sure to inhibit editing
+  -- if .my.app~showDebugOutput=.true then say .line":" .datetime~new "///   " self"::init" "columnName="pp(columnName)
+
+/* This method fetches the cell value and updates the textField and the corresponding
+*  Rexx object's 'since' attribute.
+*
+*/
+::method commitCellUpdate
+  expose columnName textField selfClass rp bAlreadyCommitted
+  use strict arg jCell
+
+   -- already new Cell value committed (TAB), now called again because of Focus lost, return
+  if bAlreadyCommitted=.true then return
+
+   -- get the current cell's string value
+  newStringValue=textField~getText      -- get current value in textField
+  if newStringValue=.nilString then    -- picked the .nilString from textField
+     newStringValue=.nil
+
+   -- get RexxProxy in order to change its date value
+  index=jCell~getIndex    -- get 0-based index of this cell (= row)
+  rexxProxy=jCell~tableview~getItems~get(index) -- fetch the corresponding RexxProxy entry
+  rexxObj=bsfRexxProxy(rexxProxy)               -- extract Rexx object from the Java RexxProxy
+
+  if rexxObj~send(columnName)<>newStringValue then  -- only update, if value has changed
+  do
+     rexxObj~send(columnName"=", newStringValue)        -- assign new value to attribute
+  end
+
+   -- remember that we have dealt with this cell already (via TAB followed by Focus change)
+   bAlreadyCommitted=.true             -- remember that we have dealt with this cell already
+   jCell~commitEdit(newStringValue)   -- now let us finish up
+
+      -- edit mode is over, remove listeners (works in JavaFX 8 for DatePicker)
+   jCell~removeEventFilter(.fx.KeyEvent~key_pressed, rp)
+   textField~focusedProperty~removeListener(rp)
+
+
+/* We need to intercept KeyCode.ENTER in order to become able to update our
+   backing Person Rexx object with the new value. Because of intercepting all
+   Key events, we need to explicitly invoke "cancelEdit" in case the user
+   presses KeyCode.ESCAPE.
+*/
+-- in event capturing phase (set with event filter)
+::method handle   /* implements the interface "javafx.event.EventHandler"   */
+  expose jself isCancelled
+  use arg event, slotDir
+
+  strKeyCode=event~getCode~toString
+  if .my.app~showDebugOutput=.true then
+  do
+     say .line":" .dateTime~new "///-->" self"::".context~name":" "strKeyCode="pp(strKeyCode) "isCancelled="pp(isCancelled)
+     say "09"x .line":" "event~source:" pp(event~source) "event~target:" pp(event~target)
+  end
+
+  select
+      when wordpos(strKeyCode, "ENTER TAB")>0 then -- ENTER or TAB pressed, commit Cell changes
+            self~commitCellUpdate(jSelf)
+
+      when strKeyCode="ESCAPE" then -- ESCAPE pressed, remember it
+            isCancelled=.true       -- make sure that focus change does not change cell's value!
+
+      otherwise nop
+  end
+
+
+
+/* In case the user moves the focus to somewhere else with a mouse click or TAB key, we must
+   assure that the (potentially changed) value in the editor gets used to update the backing
+   Person Rexx object. Also the ESCAPE key will cause a focus change by default, make sure
+   that in such a case the cell's content does not get committed.
+   Also, in JavaFX8 one needs to explicitly set the textField
+   as well and refresh the TableView in order to have it update the value.
+*/
+-- focus event on Cell
+::method changed unguarded    /* implements the interface "javafx.beans.value.ChangeListener" */
+  expose jself isCancelled
+  use arg observable, oldValue, newValue
+
+  if .my.app~showDebugOutput=.true then
+     say .line":" .dateTime~new "///-->" self"::".context~name", focus changed:" "observable="pp(jstrip(observable))", oldValue="pp(oldValue)", newValue="pp(newValue) "isCancelled="pp(isCancelled)
+
+  if oldValue=.true, newValue=.false, jself~getIndex>-1, isCancelled=.false then -- focus leaving? make sure we set the textField
+  do
+     self~commitCellUpdate(jself)   -- now let us finish up
+     jSelf~getTableView~refresh     -- MUST on Java_FX8, otherwise cached values distort cell's value on focus traversals
+  end
+
+
 ::method startEdit
+  expose selfClass jself textField rp isCancelled bAlreadyCommitted
   use arg slotDir
 
   jself=slotDir~javaObject       -- get Java peer object
@@ -700,21 +933,41 @@ syntax:
      .my.app~alert.audioclip~play   -- use JavaFX to have an "oops" clip played on all platforms alike
      return
   end
-  jself~startEdit_forwardToSuper -- continue editing
+
+  oriValue=jself~getText         -- save current text value from cell, before forwardToSuper
+  jself~startEdit_forwardToSuper -- will cause the event to fire, in case there are registered event handlers
+
+  if \textField~isA(.bsf) then   -- create a textField and assign filter and focus listener
+  do
+     textField=.bsf~new("javafx.scene.control.TextField")
+
+     rp=BSFCreateRexxProxy(self, ,"javafx.beans.value.ChangeListener" ,"javafx.event.EventHandler")
+         -- ATTENTION: must be an event filter, otherwise ESCAPE key event may be consumed by someone
+         -- else and cannot be seen in the bubbling up phase of a plain setEvent-handler
+     jself~addEventFilter(.fx.KeyEvent~key_pressed, rp)
+         -- this will notify us of the changed message upon focus change (e.g. TAB, ESCAPE, mouse click)
+     textField~focusedProperty~addListener(rp)
+  end
+
+  textField~setText(oriValue) -- set textField to the cell's value
+  jself~setText(.nil)         -- remove text field
+  jself~setGraphic(textField)  -- add textField UI
+  textField~requestFocus
+
+  isCancelled=.false          -- we set this, if cancelEdit gets invoked
+  bAlreadyCommitted=.false    -- if changes occur in Cell allow to commit them
 
 
-::method updateItem           -- void TableCell.updateItem (SimpleStringProperty name, boolean empty)
-  expose columnName
+::method updateItem
+  expose textField columnName
   use arg item, empty, slotDir
 
   jSelf=slotDir~javaObject
-  index=jSelf~getIndex     -- get 0-based index (row) of this cell
-
+  index=jSelf~getIndex
   if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "/// -->" self"::".context~name": jself:" pp(jself) "columnName="pp(columnName) "| item="pp(item)",empty="pp(empty)",index="pp(index)
+     say .line":" .dateTime~new "/// -->" self"::".context~name": jself:" pp(jstrip(jself)) "columnName="pp(columnName) "| item="pp(item)",empty="pp(empty)",index="pp(index)
 
-     -- we need to invoke the method in the superclass first
-  jSelf~updateItem_forwardToSuper(item,empty)
+  jSelf~updateItem_forwardToSuper(item,empty)   -- will cause the event to fire, in case there are registered event handlers
 
   if item=.nil | empty=.true then
   do
@@ -723,32 +976,562 @@ syntax:
   end
   else   -- we have a value and are not empty
   do
-     jSelf~setText(item)
-         -- update Person object
-     if columnName="name" then   -- after changes, we only use this class for the "name" attribute/column
-     do
-        index=jSelf~getIndex    -- get 0-based index of this cell (= row)
-        rexxProxy=jSelf~tableview~getItems~get(index) -- fetch the corresponding RexxProxy entry
+  -- eventuell: ~isEditing die textField, sonst den Text
 
-        if \rexxProxy~isNil then
-        do
-           rexxobj=bsfRexxProxy(rexxProxy)               -- unbox Rexx object from the Java RexxProxy
-           if rexxObj~name<>item then  -- only update, if value has changed
-              rexxObj~name=item        -- assign new value to Rexx attribute
-        end
+     if textField~isA(.bsf) then    -- if textField isA Java(FX) object
+     do
+        textField~setText(item)
+        jself~setText(.nil)
+        jself~setGraphic(textField)
+     end
+     else
+     do
+        jself~setText(item)
+        jSelf~setGraphic(.nil)
      end
   end
 
    -- style the cell's background
-  if index>-1, .my.app~tableview_stylesheet_kind=3 then      -- colorize the background of the odd entries
+   -- note: one can use a CSS definition like: ".list-cell:odd { -fx-background-color: #dbffdb; }"
+  if index>-1, .my.app~tableview_stylesheet_kind=3, index//2  then      -- colorize the background of the odd entries
   do
-     if index//2 then
+      -- we need to make sure that any predefined style (like -fx-alignment) remains intact
+     jSelf~setStyle(jself~getStyle .my.app~tableview_style_kind3)
+  end
+
+
+
+
+
+
+
+
+
+/* =================================================================================== */
+/* Rexx implementation of a DatePickerTableCell.
+*  Will handle the enter, tab key event and focus lost event to commit the new value.
+
+   This example displays the date in the unedited cell as ISO_LOCAL_DATE ("yyyy-mm-dd").
+*/
+::class "RexxDatePickerTableCell"   -- extends javafx.scene.control.TableCell
+
+/* -------------------------------------------------------------------------------- */
+::attribute clzDateTimeFormatter    class
+::attribute clzLocalDate            class
+
+::attribute iso_local_date          class -- a DateTimeFormatter (ISO_LOCAL_DATE constant)
+::attribute iso_local_date_pattern  class -- the string pattern "yyyy-mm-dd"
+
+::attribute methods2proxy           class -- arguments for bsf.proxyClass
+::attribute proxyClass              class -- the Java proxy class for this Rexx class
+
+::attribute stringConverter         class -- a LocalDateStringConverter(iso_local_date,iso_local_date)
+::attribute localDateStringConverter class -- to parse editor's date text value into a LocalDate
+
+
+::method init class
+  use local tmp               -- all local variables are attributes but "TMP"
+
+  clzDateTimeFormatter=bsf.loadClass("java.time.format.DateTimeFormatter")
+  clzLocalDate   =bsf.loadClass("java.time.LocalDate")
+  iso_local_date = clzDatetimeformatter~iso_local_date
+  iso_local_date_pattern="yyyy-mm-dd"  -- the String pattern of the ISO_LOCAL_DATE
+
+   -- create proxy class and save it in the class attribute
+  methods2proxy  ="javafx.scene.control.Cell startEdit", "javafx.scene.control.Cell updateItem"
+   -- create the proxy class (a Java class forwarding method invocations to Rexx object)
+  proxyClass     =bsf.createProxyClass("javafx.scene.control.cell.TextFieldTableCell", -
+                                       "jRexxDatePickerTableCell", methods2proxy)
+
+   -- we need a stringConverter for in-place edits
+  localDateStringConverter=.bsf~new("javafx.util.converter.LocalDateStringConverter")
+  stringConverter=.bsf~new("javafx.util.converter.DefaultStringConverter")
+
+
+/* -------------------------------------------------------------------------------- */
+::method init
+  use local                   -- all variables are attributes
+  use strict arg columnName
+
+  selfClass=self~class
+  datePicker=.nil
+  dateFormatter=selfclass~iso_local_date
+
+  isCancelled=.true     -- start out with .true, such that startEdit's focus change does not commit the empty initial cell
+
+/* This method fetches the cell value and updates the datePicker and the corresponding
+*  Rexx object's 'since' attribute.
+*/
+
+::method commitCellUpdate
+  expose columnName datePicker selfClass rp dateFormatter bAlreadyCommitted
+  use strict arg jCell
+
+   -- already new Cell value committed (TAB), now called again because of Focus lost, return
+  if bAlreadyCommitted=.true then return
+
+   -- get the current cell's string value
+  cellStringValue=datePicker~editorProperty~get~getText  -- in the format of the localDateStringConverter
+   -- create a LocalDate object from it
+  ldEditedText=selfClass~localDateStringConverter~fromString(cellStringValue)
+   -- set datePicker to this local date as well
+  datePicker~setValue(ldEditedText)    -- make sure datePicker gets set to the new value
+
+   -- turn local date into a string rendering that we use in Rexx and in the column if not in editing mode
+  newStringValue=ldEditedText~format(dateFormatter)      -- get as formatted string
+  datePicker~editorProperty~get~setText(newStringValue)  -- set datepicker's editor
+
+   -- get RexxProxy in order to change its date value
+  index=jCell~getIndex    -- get 0-based index of this cell (= row)
+  rexxProxy=jCell~tableview~getItems~get(index) -- fetch the corresponding RexxProxy entry
+  rexxobj=bsfRexxProxy(rexxProxy)               -- extract Rexx object from the Java RexxProxy
+
+  if rexxObj~send(columnName)<>newStringValue then -- only update, if value has changed
+     rexxObj~send(columnName"=",newStringValue)    -- assign new value using the setter pattern
+
+   -- remember that we have dealt with this cell already (via TAB followed by Focus change)
+   bAlreadyCommitted=.true             -- remember that we have dealt with this cell already
+   jCell~commitEdit(newStringValue)    -- now let us finish up
+
+      -- edit mode is over, remove listeners (works in JavaFX 8 for DatePicker)
+   jCell~removeEventFilter(.fx.KeyEvent~key_pressed, rp)
+   datePicker~focusedProperty~removeListener(rp)
+
+
+/* We need to intercept KeyCode.ENTER in order to become able to update our
+   backing Person Rexx object with the new value. Because of intercepting all
+   Key events, we need to explicitly invoke "cancelEdit" in case the user
+   presses KeyCode.ESCAPE.
+*/
+-- in event capturing phase (set with event filter)
+::method handle   /* implements the interface "javafx.event.EventHandler"   */
+  expose jself isCancelled
+  use arg event, slotDir
+
+  strKeyCode=event~getCode~toString
+  if .my.app~showDebugOutput=.true then
+  do
+     say .line":" .dateTime~new "///-->" self"::".context~name":" "strKeyCode="pp(strKeyCode) "isCancelled="pp(isCancelled)
+     say "09"x .line":" "event~source:" pp(event~source) "event~target:" pp(event~target)
+  end
+
+  select
+      when wordpos(strKeyCode, "ENTER TAB")>0 then -- ENTER or TAB pressed, commit Cell changes
+            self~commitCellUpdate(jSelf)
+
+      when strKeyCode="ESCAPE" then -- ESCAPE pressed, remember it
+            isCancelled=.true       -- make sure that focus change does not change cell's value!
+
+      otherwise nop
+  end
+
+
+
+/* In case the user moves the focus to somewhere else with a mouse click or TAB key, we must
+   assure that the (potentially changed) value in the editor gets used to update the backing
+   Person Rexx object. Also the ESCAPE key will cause a focus change by default, make sure
+   that in such a case the cell's content does not get committed.
+   Also, in JavaFX8 one needs to explicitly set the datePicker
+   as well and refresh the TableView in order to have it update the value.
+*/
+-- focus event on Cell
+::method changed unguarded    /* implements the interface "javafx.beans.value.ChangeListener" */
+  expose jself isCancelled
+  use arg observable, oldValue, newValue
+
+  if .my.app~showDebugOutput=.true then
+     say .line":" .dateTime~new "///-->" self"::".context~name", focus changed:" "observable="pp(observable)", oldValue="pp(oldValue)", newValue="pp(newValue) "isCancelled="pp(isCancelled)
+
+  if oldValue=.true, newValue=.false, jself~getIndex>-1, isCancelled=.false then -- focus leaving? make sure we set the DatePicker
+  do
+     self~commitCellUpdate(jself)   -- now let us finish up
+     jSelf~getTableView~refresh     -- MUST on Java_FX8, otherwise cached values distort cell's value on focus traversals
+  end
+
+
+::method getDate        -- return localDate date
+  expose selfClass dateFormatter
+  use arg item
+
+  if item~isNil | item="" then
+     date=selfClass~clzLocalDate~now  -- supply today's date
+  else
+    date=selfClass~clzLocalDate~parse(item,dateFormatter)
+
+  return date
+
+::method startEdit
+  expose selfClass jself datePicker isCancelled bAlreadyCommitted rp
+  use arg slotDir
+
+  jself=slotDir~javaObject       -- get Java peer object
+  index=jself~getIndex
+
+  if .my.App~tableViewData~get(index)~isNil then
+  do
+     .my.app~alert.audioclip~play   -- use JavaFX to have an "oops" clip played on all platforms alike
+     return
+  end
+
+  oriValue=jself~getText         -- save current text value from cell, before forwardToSuper
+  jself~startEdit_forwardToSuper -- will cause the event to fire, in case there are registered event handlers
+
+  if datePicker~isNil then       -- create a datePicker and assign filter and focus listener
+  do
+     datePicker=.bsf~new("javafx.scene.control.DatePicker")
+     rp=BSFCreateRexxProxy(self, ,"javafx.beans.value.ChangeListener" ,"javafx.event.EventHandler")
+
+         -- ATTENTION: must be an event filter, otherwise ESCAPE key event may be consumed and cannot be seen in bubbling up phase
+     jself~addEventFilter(.fx.KeyEvent~key_pressed, rp)
+         -- this will cause the changed message upon focus change (e.g. ENTER, TAB, ESCAPE, mouse click
+     datePicker~focusedProperty~addListener(rp)
+  end
+
+  oriDate=self~getDate(oriValue) -- get a localDate object
+  datePicker~setValue(oriDate)   -- set datePicker to that date
+
+  jself~setText(.nil)            -- remove text field
+  jself~setGraphic(datePicker)   -- add datpicker UI
+  datePicker~requestFocus
+
+  isCancelled=.false             -- we set this, if cancelEdit gets invoked
+  bAlreadyCommitted=.false       -- if changes occur in Cell allow to commit them
+
+
+
+::method updateItem
+  expose datePicker columnName
+  use arg item, empty, slotDir
+
+  jSelf=slotDir~javaObject
+  index=jSelf~getIndex
+  if .my.app~showDebugOutput=.true then
+     say .line":" .dateTime~new "/// -->" self"::".context~name": jself:" pp(jstrip(jself)) "columnName="pp(columnName) "| item="pp(item)",empty="pp(empty)",index="pp(index)
+
+  jSelf~updateItem_forwardToSuper(item,empty)   -- will cause the event to fire, in case there are registered event handlers
+
+  if item=.nil | empty=.true then
+  do
+     jSelf~setText(.nil)
+     jSelf~setGraphic(.nil)
+  end
+  else   -- we have a value and are not empty
+  do
+     if \datePicker~isNil then
      do
-        -- we need to make sure that any predefined style (like -fx-alignment) remains intact
-        jSelf~setStyle(jself~getStyle .my.app~tableview_style_kind3)
+        datePicker~setValue(self~getDate(item))
+        jself~setText(.nil)
+        jself~setGraphic(datePicker)
+     end
+     else
+     do
+        jself~setText(item)
+        jself~setGraphic(.nil)
      end
   end
 
+   -- style the cell's background
+   -- note: one can use a CSS definition like: ".list-cell:odd { -fx-background-color: #dbffdb; }"
+  if index>-1, .my.app~tableview_stylesheet_kind=3, index//2  then      -- colorize the background of the odd entries
+  do
+      -- we need to make sure that any predefined style (like -fx-alignment) remains intact
+     jSelf~setStyle(jself~getStyle .my.app~tableview_style_kind3)
+  end
+
+
+
+
+/* =================================================================================== */
+/* Rexx implementation of a ComboBoxTableCell.
+* Will handle the enter key event (and commit the new value), but not the focus lost event as
+  on JavaFX 8 the ComboBox does not yield the new value in the editor field.
+
+  Warning: do not use "javafx.scene.control.cell.ComboBoxTableCell" for this purpose, it
+           has many, many problems for which bugs got reported as numereous null pointer
+           exceptions may get issued (at least in JavaFX 8); the following implementation
+           is stable and straight forward by using "javafx.scene.control.ComboBox" directly !
+           (Besides the implementation uses has exactly the same pattern as the DatePicker above!)
+*/
+::class "RexxComboBoxTableCell"   -- extends javafx.scene.control.TableCell
+
+/* -------------------------------------------------------------------------------- */
+::attribute methods2proxy           class -- arguments for bsf.proxyClass
+::attribute proxyClass              class -- the Java proxy class for this Rexx class
+::attribute stringConverter         class
+
+::method init class
+  use local tmp               -- all local variables are attributes but "TMP"
+
+   -- create proxy class and save it in the class attribute
+  methods2proxy="javafx.scene.control.Cell startEdit", "javafx.scene.control.Cell updateItem"
+   -- create the proxy class (a Java class forwarding method invocations to Rexx object)
+  proxyClass   =bsf.createProxyClass("javafx.scene.control.cell.TextFieldTableCell", -
+                                       "jRexxComboBoxTableCell", methods2proxy)
+
+   -- we need a stringConverter for in-place edits
+  stringConverter=.bsf~new("javafx.util.converter.DefaultStringConverter")
+
+
+/* -------------------------------------------------------------------------------- */
+::method init
+  use local                   -- all are attributes
+  use strict arg columnName
+
+  selfClass=self~class
+  comboBox=.nil
+
+  isCancelled=.true     -- start out with .true, such that startEdit's focus change does not commit the empty initial cell
+
+  -- if .my.app~showDebugOutput=.true then say .line":" .datetime~new "///   " self"::init" "columnName="pp(columnName)
+
+/* This method fetches the cell value and updates the comboBox and the corresponding
+*  Rexx object's 'since' attribute.
+*
+*/
+::method commitCellUpdate
+  expose columnName comboBox selfClass rp bAlreadyCommitted
+  use strict arg jCell
+
+   -- already new Cell value committed (TAB), now called again because of Focus lost, return
+  if bAlreadyCommitted=.true then return
+
+   -- get the current cell's string value
+  newStringValue=comboBox~getValue     -- get current value in comboBox
+  if newStringValue=.nilString then    -- picked the .nilString from ComboBox
+     newStringValue=.nil
+
+   -- get RexxProxy in order to change its date value
+  index=jCell~getIndex    -- get 0-based index of this cell (= row)
+  rexxProxy=jCell~tableview~getItems~get(index) -- fetch the corresponding RexxProxy entry
+  rexxObj=bsfRexxProxy(rexxProxy)               -- extract Rexx object from the Java RexxProxy
+
+  if rexxObj~expert<>newStringValue then  -- only update, if value has changed
+  do
+     rexxObj~expert=newStringValue        -- assign new value to attribute
+     if newStringValue~isNil then         -- remove value of since
+        rexxObj~since=.nil                -- nullify
+     else                                 -- changed expert status, update "since" attribute
+        rexxObj~since=date('iso')         -- use today's date
+  end
+
+   -- remember that we have dealt with this cell already (via TAB followed by Focus change)
+   bAlreadyCommitted=.true             -- remember that we have dealt with this cell already
+   jCell~commitEdit(newStringValue)   -- now let us finish up
+
+
+/* We need to intercept KeyCode.ENTER in order to become able to update our
+   backing Person Rexx object with the new value. Because of intercepting all
+   Key events, we need to explicitly invoke "cancelEdit" in case the user
+   presses KeyCode.ESCAPE.
+*/
+-- in event capturing phase (set with event filter)
+::method handle   /* implements the interface "javafx.event.EventHandler"   */
+  expose jself isCancelled
+  use arg event, slotDir
+
+  strKeyCode=event~getCode~toString
+  if .my.app~showDebugOutput=.true then
+  do
+     say .line":" .dateTime~new "///-->" self"::".context~name":" "strKeyCode="pp(strKeyCode) "isCancelled="pp(isCancelled)
+     say "09"x .line":" "event~source:" pp(event~source) "event~target:" pp(event~target)
+  end
+
+  select
+      when wordpos(strKeyCode, "ENTER TAB")>0 then -- ENTER or TAB pressed, commit Cell changes
+            self~commitCellUpdate(jSelf)
+
+      when strKeyCode="ESCAPE" then -- ESCAPE pressed, remember it
+            isCancelled=.true       -- make sure that focus change does not change cell's value!
+
+      otherwise nop
+  end
+
+
+
+/* In case the user moves the focus to somewhere else with a mouse click or TAB key, we must
+   assure that the (potentially changed) value in the editor gets used to update the backing
+   Person Rexx object. Also the ESCAPE key will cause a focus change by default, make sure
+   that in such a case the cell's content does not get committed.
+   Also, in JavaFX8 one needs to explicitly set the comboBox
+   as well and refresh the TableView in order to have it update the value.
+*/
+-- focus event on Cell
+::method changed unguarded    /* implements the interface "javafx.beans.value.ChangeListener" */
+  expose jself isCancelled
+  use arg observable, oldValue, newValue
+
+  if .my.app~showDebugOutput=.true then
+     say .line":" .dateTime~new "///-->" self"::".context~name", focus changed:" "observable="pp(jstrip(observable))", oldValue="pp(oldValue)", newValue="pp(newValue) "isCancelled="pp(isCancelled)
+
+  if oldValue=.true, newValue=.false, jself~getIndex>-1, isCancelled=.false then -- focus leaving? make sure we set the ComboBox
+  do
+     self~commitCellUpdate(jself)   -- now let us finish up
+     jSelf~getTableView~refresh     -- MUST on Java_FX8, otherwise cached values distort cell's value on focus traversals
+  end
+
+
+::method startEdit
+  expose selfClass jself comboBox rp isCancelled bAlreadyCommitted
+  use arg slotDir
+
+  jself=slotDir~javaObject       -- get Java peer object
+  index=jself~getIndex
+  if .my.App~tableViewData~get(index)~isNil then
+  do
+     .my.app~alert.audioclip~play   -- use JavaFX to have an "oops" clip played on all platforms alike
+     return
+  end
+
+  oriValue=jself~getText         -- save current text value from cell, before forwardToSuper
+  jself~startEdit_forwardToSuper -- will cause the event to fire, in case there are registered event handlers
+
+  if comboBox~isNil then       -- create a comboBox and assign filter and focus listener
+  do
+     comboBox=.bsf~new("javafx.scene.control.ComboBox")
+     comboBox~setItems(.person~expertChoices)
+
+      -- create a RexxComboListCell to be used for the button in edit mode (allows graphic
+      -- and text to be displaced like in the drop-down list as using the same implementation
+     listCell=.RexxComboBoxCellFactory~clzOoRexxComboBoxListCell~new(.RexxComboBoxListCell~new)
+     listCell~setConverter(.RexxComboBoxCellFactory~stringConverter)
+     comboBox~setButtonCell(listCell)
+
+     -- the ComboBox uses a ListView, which we now want to format such that the graphic is shown as well
+     comboBox~setCellFactory(BsfCreateRexxProxy(.RexxComboBoxCellFactory~new, , .fx.Callback))
+     rp=BSFCreateRexxProxy(self, ,"javafx.beans.value.ChangeListener" ,"javafx.event.EventHandler")
+         -- ATTENTION: must be an event filter, otherwise ESCAPE key event may be consumed by someone
+         -- else and cannot be seen in the bubbling up phase of a plain setEvent-handler
+     jself~addEventFilter(.fx.KeyEvent~key_pressed, rp)
+         -- this will notify us of the changed message upon focus change (e.g. TAB, ESCAPE, mouse click)
+     comboBox~focusedProperty~addListener(rp)
+  end
+
+  comboBox~setValue(oriValue) -- set comboBox to the cell's value
+  jself~setText(.nil)         -- remove text field
+  jself~setGraphic(comboBox)  -- add comboBox UI
+  comboBox~requestFocus
+
+  isCancelled=.false          -- we set this, if cancelEdit gets invoked
+  bAlreadyCommitted=.false    -- if changes occur in Cell allow to commit them
+
+
+::method updateItem
+  expose comboBox columnName
+  use arg item, empty, slotDir
+
+  jSelf=slotDir~javaObject
+  index=jSelf~getIndex
+  if .my.app~showDebugOutput=.true then
+     say .line":" .dateTime~new "/// -->" self"::".context~name": jself:" pp(jstrip(jself)) "columnName="pp(columnName) "| item="pp(item)",empty="pp(empty)",index="pp(index)
+
+  jSelf~updateItem_forwardToSuper(item,empty)   -- will cause the event to fire, in case there are registered event handlers
+
+  if item=.nil | empty=.true then
+  do
+     jSelf~setText(.nil)
+     jSelf~setGraphic(.nil)
+  end
+  else   -- we have a value and are not empty
+  do
+  -- eventuell: ~isEditing die comboBox, sonst den Text
+
+     if \comboBox~isNil then
+     do
+        comboBox~setValue(self~getDate(item))
+        jself~setText(.nil)
+        jself~setGraphic(comboBox)
+     end
+     else
+     do
+        jself~setText(item)
+        jImageView=.fx.ImageView~new(.graphics~entry(item))
+        jSelf~setGraphic(jImageView ~~setPreserveRatio(.true) ~~setFitHeight(30))
+        jSelf~~setContentDisplay(.fx.contentDisplay~top)
+     end
+  end
+
+   -- style the cell's background
+   -- note: one can use a CSS definition like: ".list-cell:odd { -fx-background-color: #dbffdb; }"
+  if index>-1, .my.app~tableview_stylesheet_kind=3, index//2  then      -- colorize the background of the odd entries
+  do
+      -- we need to make sure that any predefined style (like -fx-alignment) remains intact
+     jSelf~setStyle(jself~getStyle .my.app~tableview_style_kind3)
+  end
+
+
+
+/* =================================================================================== */
+/* implements "R javafx.util.Callback<P,R>(P o) used by PropertyValueFactory */
+/* this supplies the ComboBox Cell objects (items) and sets up callbacks for formatting them */
+/* only needed, if we set a factory for the ComboBox instance                 */
+::class RexxComboBoxCellFactory -- Rexx class implementing "javafx.util.Callback"'s "call" method
+
+/* -------------------------------------------------------------------------------- */
+::attribute clzOoRexxComboBoxListCell class get  -- a class attribute
+::attribute stringConverter   class get  -- a class attribute
+
+::method init class     -- the Rexx constructor at the class level: create and memorize a proxy class for "javfx.scene.control.ListCell"
+  expose clzOoRexxComboBoxListCell stringConverter
+   -- use a TextFieldListCell to allow in place edits
+  clzOoRexxComboBoxListCell=bsf.createProxyClass("javafx.scene.control.cell.TextFieldListCell", "jRexxComboBoxListCell", "javafx.scene.control.Cell updateItem")
+   -- we need a stringConverter for in-place edits (in case the ComboBox was set to editable)
+  stringConverter=.bsf~new("javafx.util.converter.DefaultStringConverter")
+
+/* -------------------------------------------------------------------------------- */
+  /* create and setup a cell, assign stringConverter for in-place edits */
+::method call           -- implements "javafx.util.Callback.call(Object o)": in this case an instance of a ListCell (or a subclass of it) must be returned!
+  use arg obj, slotDir
+               -- create the ListCell handler, supply a RexxComboBoxListCell object to carry out "updateItem"
+  myClz=self~class      -- get Rexx class object to ease access to its class attributes
+  RexxComboBoxCellHandler=myClz~clzOoRexxComboBoxListCell~new(.RexxComboBoxListCell~new)  -- will have updateItem() invoked
+  RexxComboBoxCellHandler~setConverter(myClz~stringConverter) -- needed for edits with TextFieldListCell
+
+  if .my.app~showDebugOutput=.true then
+     say .line":" .dateTime~new "///-->" self"::call" pp(obj)", RETURNING:" pp(RexxComboBoxCellHandler)
+
+  return RexxComboBoxCellHandler
+
+
+/* =================================================================================== */
+/* This is an ooRexx class, subclassing the JavaFX "javafx.scene.control.ListCell" class
+   in order to become able to edit/format ListCells by intercepting the "updateItem" method.
+*/
+::class RexxComboBoxListCell     -- this formats the ComboBox ListView items (cells)
+::method updateItem
+  -- void ListCell.updateItem (SimpleStringProperty name, boolean empty)
+  use arg name, empty, slotDir
+
+  jSelf=slotDir~javaObject
+  index=jSelf~getIndex     -- get 0-based index (row) of this cell
+
+  if .my.app~showDebugOutput=.true then
+     say .line":" .dateTime~new "///-->" self"::".context~name": jself:" pp(jstrip(jself)) "| name="pp(name)",empty="pp(empty)",index="pp(index)
+
+     -- we need to invoke the method in the superclass first
+  jSelf~updateItem_forwardToSuper(name,empty)
+  jself~setStyle("")
+
+  if name=.nil | empty=.true then
+  do
+     jSelf~setText(.nil)
+     jSelf~setGraphic(.nil)
+  end
+  else   -- we have a value and are not empty
+  do
+     jSelf~setText(name)
+
+     jImageView=.fx.ImageView~new(.graphics~entry(name))
+     jSelf~setGraphic(jImageView ~~setPreserveRatio(.true) ~~setFitWidth(20))
+     jSelf~~setGraphicTextGap(15) ~~setContentDisplay(.fx.contentDisplay~left)
+  end
+
+   -- style the cell's background
+   -- note: one can use a CSS definition like: ".list-cell:odd { -fx-background-color: #dbffdb; }"
+  if index>-1, .my.app~listview_stylesheet_kind=3 then      -- colorize the background of the odd entries
+  do
+      -- we need to make sure that any predefined style (like -fx-alignment) remains intact
+     if index//2 then jSelf~setStyle(jself~getStyle .my.app~tableview_style_kind3)
+  end
 
 
 
@@ -789,8 +1572,9 @@ syntax:
 
   tipText="If editing enabled: <enter> or click to edit," "0a"x"Ctl-click to nullify cell/undo cell nullify"
   tooltip =.bsf~new("javafx.scene.control.Tooltip", tipText)
-  imgView=.fx.ImageView~new("file:icons8-mailbox-opened-flag-up-64.png") ~~setPreserveRatio(.true) ~~setFitHeight(50) ~~setPadding(5)
-  tooltip~setGraphic(imgView)
+  imgView=.fx.ImageView~new("file:icons8-mailbox-opened-flag-up-64.png")
+  imgView~~setPreserveRatio(.true) ~~setFitHeight(50)
+  tooltip~~setGraphic(imgView)~~setGraphicTextGap(15)
    -- Cf. <https://docs.oracle.com/javafx/2/api/javafx/scene/doc-files/cssref.html> (as of 2020-07-05)
   tooltip~setStyle("-fx-font-size: 14pt; -fx-text-fill: black; -fx-padding: 5; -fx-background-color: moccasin ;")
   .my.app~cell.tooltip=tooltip
@@ -880,9 +1664,12 @@ syntax:
 ::routine ppNodeInfo
    use arg event
 
+   signal on syntax
    node=event~pickResult~getIntersectedNode
    if node=.nil then return .nil
    return ppCreateNodePath(node)
+syntax:
+   return .nil
 
 
 ::routine ppCreateNodePath
@@ -932,6 +1719,16 @@ syntax:
 
 
 /* =================================================================================== */
+/* jStrip */   -- strip package name from Java object string
+::routine jStrip        -- remove package name from Java object strings
+   parse arg name
+
+   pos=name~lastPos(".")
+   if pos=0 then return name     -- return unchanged
+   return name~substr(pos+1)     -- return unqualified name
+
+
+/* =================================================================================== */
 /* Utility routine for debugging: dumps the content of a directory ordered by name. */
 ::routine dumpDir
 
@@ -944,638 +1741,6 @@ syntax:
      say i~right(3)":" pp(n) pp(dir~entry(n))
   end
   say
-
-
-/* =================================================================================== */
-::class Person
-
-/* -------------------------------------------------------------------------------- */
-::attribute experts  class    -- array of expert options
-::attribute graphics class    -- stringtable (directory) of expert->Image/Graphic
-::attribute testData class    -- array of generated persons
-::attribute expertChoices class
-
-
-::method    init     class
-  use local tmp
-  graphics=.stringtable~new
-  testData=.array~new
-   -- set up expert names and their corresponding image files
-  experts  = "Bug", "Java", "Linux", "OpenSource", .nil  -- .nil indicate non-experts
-  imageFileNames=.array~of("icons8-bug-64.png","icons8-java-64.png", -
-                       "icons8-linux-64.png", "icons8-open-source-64.png")
-
-   -- create an ObservableList with the choices of experts to be listed in the ComboBoxTableCell
-  .context~package~local~nilString="<null>"
-  expertChoices=bsf.loadClass("javafx.collections.FXCollections")~observableArrayList
-  do tmp over experts
-     if tmp~isNil then
-        expertChoices~add(.nilString)
-     else
-        expertChoices~add(tmp)
-  end
-
-   -- define first and last names to be randomly combined
-  arrFirstName="Anton", "Berta", "Caesar", "Dora", "Emil", "Friedrich", "Gustav", "Heidelinde", "Ida"
-  arrFirstNameCount=arrFirstName~items
-  arrLastName ="Barmwater", "Cowlishaw", "Davis", "Flatscher", "Fuller", "Jansen", "Jonsson", "McGuire", "Steinboeck", "Wolfers"
-  arrLastNameCount=arrLastName~items
-
-  expertsCount=experts~items
-  counter=0
-
-
-::attribute counter get class
-  expose counter
-  counter+=1
-  return counter
-
-
-::method createTestPerson class  -- returns a randomyl created Person instance
-  expose graphics experts expertsCount arrFirstName arrFirstNameCount arrLastName arrLastNameCount
-
-  currentYear=.dateTime~new~year -- get current year
-  name=arrLastName[random(1,arrLastNameCount)]"," arrFirstName[random(1,arrFirstNameCount)]
-  exp=experts[random(1,expertsCount)]  -- get expert status
-  i=self~counter                 -- get next value
-  if exp~isNil then
-     p=.person~new(i,name)
-  else   -- expert status set, create a "since" value in ISO date
-  do
-     since=random(1997,currentYear)"-"random(1,12)~right(2,0)"-"random(1,28)~right(2,0)
-     p=.person~new(i,name,exp,graphics~entry(exp),since)
-  end
-  return p
-
-
-::method    createTestdata class    -- will run after all class objects got iniitialized
-  expose graphics testData imageFileNames experts expertsCount arrFirstName arrFirstNameCount arrLastName arrLastNameCount
-
-  if graphics~items=0 then    -- create images, store them under the corresponding expert's name
-  do
-     do counter i name over experts
-        if name~isNil then iterate
-        img=.fx.Image~new(imageFileNames[i]) -- create an Image and store it
-        graphics~setEntry(name,img)
-     end
-     .context~package~local~graphics=graphics   -- save in package local
-  end
-
-  -- create a few persons, add them to the observable list, will cause the created
-  -- Rexx objects to be autoboxed as Java RexxProxy objects
-  do i=1 to 5
-     testData~append(self~createTestPerson)
-  end
-
-
-/* -------------------------------------------------------------------------------- */
-::attribute nr
-::attribute name
-::attribute expert
-::attribute graphic     -- really needed?
-::attribute since
-
-::method makeString
-  use local
-  return "a Person:[nr="nr",name="name",expert="expert",since="since"]"
-
-::method init        -- fetch person's attribute values
-  use local
-  use strict arg nr, name, expert=.nil, graphic=.nil, since=.nil
-
-  if .my.app~showDebugOutput=.true then
-     say .line":" .datetime~new "///   " self"::init" "columnName="pp(columnName)
-
-
-
-/* =================================================================================== */
-/* Rexx implementation of a DatePickerTableCell.
-*  Will handle the enter, tab key event and focus lost event to commit the new value.
-
-   This example displays the date in the unedited cell as ISO_LOCAL_DATE ("yyyy-mm-dd").
-*/
-::class "RexxDatePickerTableCell"   -- extends javafx.scene.control.TableCell
-
-/* -------------------------------------------------------------------------------- */
-::attribute clzDateTimeFormatter    class
-::attribute clzLocalDate            class
-
-::attribute iso_local_date          class -- a DateTimeFormatter (ISO_LOCAL_DATE constant)
-::attribute iso_local_date_pattern  class -- the string pattern "yyyy-mm-dd"
-
-::attribute methods2proxy           class -- arguments for bsf.proxyClass
-::attribute proxyClass              class -- the Java proxy class for this Rexx class
-
-::attribute stringConverter         class -- a LocalDateStringConverter(iso_local_date,iso_local_date)
-::attribute localDateStringConverter class -- to parse editor's date text value into a LocalDate
-
-
-::method init class
-  use local tmp               -- all local variables are attributes but "TMP"
-
-  clzDateTimeFormatter=bsf.loadClass("java.time.format.DateTimeFormatter")
-  clzLocalDate   =bsf.loadClass("java.time.LocalDate")
-  iso_local_date = clzDatetimeformatter~iso_local_date
-  iso_local_date_pattern="yyyy-mm-dd"  -- the String pattern of the ISO_LOCAL_DATE
-
-   -- create proxy class and save it in the class attribute
-  methods2proxy  ="javafx.scene.control.Cell startEdit", "javafx.scene.control.Cell updateItem"
-   -- create the proxy class (a Java class forwarding method invocations to Rexx object)
-  proxyClass     =bsf.createProxyClass("javafx.scene.control.cell.TextFieldTableCell", -
-                                       "jRexxDatePickerTableCell", methods2proxy)
-
-   -- we need a stringConverter for in-place edits
-  localDateStringConverter=.bsf~new("javafx.util.converter.LocalDateStringConverter")
-  stringConverter=.bsf~new("javafx.util.converter.DefaultStringConverter")
-
-
-/* -------------------------------------------------------------------------------- */
-::method init
-  use local                   -- all are attributes
-  use strict arg columnName
-
-  selfClass=self~class
-  datePicker=.nil
-  dateFormatter=selfclass~iso_local_date
-
-  isCancelled=.true     -- start out with .true, such that startEdit's focus change does not commit the empty initial cell
-
-  if .my.app~showDebugOutput=.true then
-     say .line":" .datetime~new "///   " self"::init" "columnName="pp(columnName)
-
-/* This method fetches the cell value and updates the datePicker and the corresponding
-*  Rexx object's 'since' attribute.
-*/
-
-::method commitCellUpdate
-  expose columnName datePicker selfClass dateFormatter bAlreadyCommitted
-  use strict arg jCell
-
-   -- already new Cell value committed (TAB), now called again because of Focus lost, return
-  if bAlreadyCommitted=.true then return
-
-   -- get the current cell's string value
-  cellStringValue=datePicker~editorProperty~get~getText  -- in the format of the localDateStringConverter
-   -- create a LocalDate object from it
-  ldEditedText=selfClass~localDateStringConverter~fromString(cellStringValue)
-   -- set datePicker to this local date as well
-  datePicker~setValue(ldEditedText)    -- make sure datePicker gets set to the new value
-
-   -- turn local date into a string rendering that we use in Rexx and in the column if not in editing mode
-  newStringValue=ldEditedText~format(dateFormatter)      -- get as formatted string
-  datePicker~editorProperty~get~setText(newStringValue)  -- set datepicker's editor
-
-   -- get RexxProxy in order to change its date value
-  index=jCell~getIndex    -- get 0-based index of this cell (= row)
-  rexxProxy=jCell~tableview~getItems~get(index) -- fetch the corresponding RexxProxy entry
-  rexxobj=bsfRexxProxy(rexxProxy)               -- extract Rexx object from the Java RexxProxy
-
-  if rexxObj~send(columnName)<>newStringValue then -- only update, if value has changed
-     rexxObj~send(columnName"=",newStringValue)    -- assign new value using the setter pattern
-
-   -- remember that we have dealt with this cell already (via TAB followed by Focus change)
-   bAlreadyCommitted=.true             -- remember that we have dealt with this cell already
-   jCell~commitEdit(newStringValue)    -- now let us finish up
-
-
-
-/* We need to intercept KeyCode.ENTER in order to become able to update our
-   backing Person Rexx object with the new value. Because of intercepting all
-   Key events, we need to explicitly invoke "cancelEdit" in case the user
-   presses KeyCode.ESCAPE.
-*/
--- in event capturing phase (set with event filter)
-::method handle   /* implements the interface "javafx.event.EventHandler"   */
-  expose jself isCancelled
-  use arg event, slotDir
-
-  strKeyCode=event~getCode~toString
-  if .my.app~showDebugOutput=.true then
-  do
-     say .line":" .dateTime~new "///-->" self"::".context~name":" "strKeyCode="pp(strKeyCode) "isCancelled="pp(isCancelled)
-     say "09"x .line":" "event~source:" pp(event~source) "event~target:" pp(event~target)
-  end
-
-  select
-      when wordpos(strKeyCode, "ENTER TAB")>0 then -- ENTER or TAB pressed, commit Cell changes
-            self~commitCellUpdate(jSelf)
-
-      when strKeyCode="ESCAPE" then -- ESCAPE pressed, remember it
-            isCancelled=.true       -- make sure that focus change does not change cell's value!
-
-      otherwise nop
-  end
-
-
-
-/* In case the user moves the focus to somewhere else with a mouse click or TAB key, we must
-   assure that the (potentially changed) value in the editor gets used to update the backing
-   Person Rexx object. Also the ESCAPE key will cause a focus change by default, make sure
-   that in such a case the cell's content does not get committed.
-   Also, in JavaFX8 one needs to explicitly set the datePicker
-   as well and refresh the TableView in order to have it update the value.
-*/
--- focus event on Cell
-::method changed unguarded    /* implements the interface "javafx.beans.value.ChangeListener" */
-  expose jself isCancelled
-  use arg observable, oldValue, newValue
-
-  if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "///-->" self"::".context~name", focus changed:" "observable="pp(observable)", oldValue="pp(oldValue)", newValue="pp(newValue) "isCancelled="pp(isCancelled)
-
-  if oldValue=.true, newValue=.false, jself~getIndex>-1, isCancelled=.false then -- focus leaving? make sure we set the DatePicker
-  do
-     self~commitCellUpdate(jself)   -- now let us finish up
-     jSelf~getTableView~refresh     -- MUST on Java_FX8, otherwise cached values distort cell's value on focus traversals
-  end
-
-
-::method getDate        -- return localDate date
-  expose selfClass dateFormatter
-  use arg item
-
-  if item~isNil | item="" then
-     date=selfClass~clzLocalDate~now  -- supply today's date
-  else
-    date=selfClass~clzLocalDate~parse(item,dateFormatter)
-
-  return date
-
-::method startEdit
-  expose selfClass jself datePicker isCancelled bAlreadyCommitted
-  use arg slotDir
-
-  jself=slotDir~javaObject       -- get Java peer object
-  index=jself~getIndex
-
-  if .my.App~tableViewData~get(index)~isNil then
-  do
-     .my.app~alert.audioclip~play   -- use JavaFX to have an "oops" clip played on all platforms alike
-     return
-  end
-
-  oriValue=jself~getText         -- save current text value from cell, before forwardToSuper
-  jself~startEdit_forwardToSuper -- will cause the event to fire, in case there are registered event handlers
-
-  if datePicker~isNil then       -- create a datePicker and assign filter and focus listener
-  do
-     datePicker=.bsf~new("javafx.scene.control.DatePicker")
-     rp=BSFCreateRexxProxy(self, ,"javafx.beans.value.ChangeListener" ,"javafx.event.EventHandler")
-
-         -- ATTENTION: must be an event filter, otherwise ESCAPE key event may be consumed and cannot be seen in bubbling up phase
-     jself~addEventFilter(.fx.KeyEvent~key_pressed, rp)
-         -- this will cause the changed message upon focus change (e.g. ENTER, TAB, ESCAPE, mouse click
-     datePicker~focusedProperty~addListener(rp)
-  end
-
-  oriDate=self~getDate(oriValue) -- get a localDate object
-  datePicker~setValue(oriDate)   -- set datePicker to that date
-
-  jself~setText(.nil)            -- remove text field
-  jself~setGraphic(datePicker)   -- add datpicker UI
-  datePicker~requestFocus
-
-  isCancelled=.false             -- we set this, if cancelEdit gets invoked
-  bAlreadyCommitted=.false       -- if changes occur in Cell allow to commit them
-
-
-
-::method updateItem
-  expose datePicker columnName
-  use arg item, empty, slotDir
-
-  jSelf=slotDir~javaObject
-  index=jSelf~getIndex
-  if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "/// -->" self"::".context~name": jself:" pp(jself) "columnName="pp(columnName) "| item="pp(item)",empty="pp(empty)",index="pp(index)
-
-  jSelf~updateItem_forwardToSuper(item,empty)   -- will cause the event to fire, in case there are registered event handlers
-
-  if item=.nil | empty=.true then
-  do
-     jSelf~setText(.nil)
-     jSelf~setGraphic(.nil)
-  end
-  else   -- we have a value and are not empty
-  do
-     if \datePicker~isNil then
-     do
-        datePicker~setValue(self~getDate(item))
-        jself~setText(.nil)
-        jself~setGraphic(datePicker)
-     end
-     else
-     do
-        jself~setText(item)
-        jself~setGraphic(.nil)
-     end
-  end
-
-   -- style the cell's background
-   -- note: one can use a CSS definition like: ".list-cell:odd { -fx-background-color: #dbffdb; }"
-  if index>-1, .my.app~tableview_stylesheet_kind=3, index//2  then      -- colorize the background of the odd entries
-  do
-      -- we need to make sure that any predefined style (like -fx-alignment) remains intact
-     jSelf~setStyle(jself~getStyle .my.app~tableview_style_kind3)
-  end
-
-
-
-
-/* =================================================================================== */
-/* Rexx implementation of a ComboBoxTableCell.
-* Will handle the enter key event (and commit the new value), but not the focus lost event as
-  on JavaFX 8 the ComboBox does not yield the new value in the editor field.
-
-  Warning: do not use "javafx.scene.control.cell.ComboBoxTableCell" for this purpose, it
-           has many, many problems for which bugs got reported as numereous null pointer
-           exceptions may get issued (at least in JavaFX 8); the following implementation
-           is stable and straight forward by using "javafx.scene.control.ComboBox" directly !
-           (Besides the implementation uses has exactly the same pattern as the DatePicker above!)
-*/
-::class "RexxComboBoxTableCell"   -- extends javafx.scene.control.TableCell
-
-/* -------------------------------------------------------------------------------- */
-::attribute methods2proxy           class -- arguments for bsf.proxyClass
-::attribute proxyClass              class -- the Java proxy class for this Rexx class
-::attribute stringConverter         class
-
-::method init class
-  use local tmp               -- all local variables are attributes but "TMP"
-
-   -- create proxy class and save it in the class attribute
-  methods2proxy="javafx.scene.control.Cell startEdit", "javafx.scene.control.Cell updateItem"
-   -- create the proxy class (a Java class forwarding method invocations to Rexx object)
-  proxyClass   =bsf.createProxyClass("javafx.scene.control.cell.TextFieldTableCell", -
-                                       "jRexxComboBoxTableCell", methods2proxy)
-
-   -- we need a stringConverter for in-place edits
-  stringConverter=.bsf~new("javafx.util.converter.DefaultStringConverter")
-
-
-/* -------------------------------------------------------------------------------- */
-::method init
-  use local                   -- all are attributes
-  use strict arg columnName
-
-  selfClass=self~class
-  comboBox=.nil
-
-  isCancelled=.true     -- start out with .true, such that startEdit's focus change does not commit the empty initial cell
-
-  if .my.app~showDebugOutput=.true then
-     say .line":" .datetime~new "///   " self"::init" "columnName="pp(columnName)
-
-/* This method fetches the cell value and updates the comboBox and the corresponding
-*  Rexx object's 'since' attribute.
-*
-*/
-::method commitCellUpdate
-  expose columnName comboBox selfClass dateFormatter bAlreadyCommitted
-  use strict arg jCell
-
-   -- already new Cell value committed (TAB), now called again because of Focus lost, return
-  if bAlreadyCommitted=.true then return
-
-   -- get the current cell's string value
-  newStringValue=comboBox~getValue     -- get current value in comboBox
-  if newStringValue=.nilString then    -- picked the .nilString from ComboBox
-     newStringValue=.nil
-
-   -- get RexxProxy in order to change its date value
-  index=jCell~getIndex    -- get 0-based index of this cell (= row)
-  rexxProxy=jCell~tableview~getItems~get(index) -- fetch the corresponding RexxProxy entry
-  rexxObj=bsfRexxProxy(rexxProxy)               -- extract Rexx object from the Java RexxProxy
-
-  if rexxObj~expert<>newStringValue then  -- only update, if value has changed
-  do
-     rexxObj~expert=newStringValue        -- assign new value to attribute
-     if newStringValue~isNil then         -- remove value of since
-        rexxObj~since=.nil                -- nullify
-     else                                 -- changed expert status, update "since" attribute
-        rexxObj~since=date('iso')         -- use today's date
-  end
-
-   -- remember that we have dealt with this cell already (via TAB followed by Focus change)
-   bAlreadyCommitted=.true             -- remember that we have dealt with this cell already
-   jCell~commitEdit(newStringValue)   -- now let us finish up
-
-
-
-/* We need to intercept KeyCode.ENTER in order to become able to update our
-   backing Person Rexx object with the new value. Because of intercepting all
-   Key events, we need to explicitly invoke "cancelEdit" in case the user
-   presses KeyCode.ESCAPE.
-*/
--- in event capturing phase (set with event filter)
-::method handle   /* implements the interface "javafx.event.EventHandler"   */
-  expose jself isCancelled
-  use arg event, slotDir
-
-  strKeyCode=event~getCode~toString
-  if .my.app~showDebugOutput=.true then
-  do
-     say .line":" .dateTime~new "///-->" self"::".context~name":" "strKeyCode="pp(strKeyCode) "isCancelled="pp(isCancelled)
-     say "09"x .line":" "event~source:" pp(event~source) "event~target:" pp(event~target)
-  end
-
-  select
-      when wordpos(strKeyCode, "ENTER TAB")>0 then -- ENTER or TAB pressed, commit Cell changes
-            self~commitCellUpdate(jSelf)
-
-      when strKeyCode="ESCAPE" then -- ESCAPE pressed, remember it
-            isCancelled=.true       -- make sure that focus change does not change cell's value!
-
-      otherwise nop
-  end
-
-
-
-/* In case the user moves the focus to somewhere else with a mouse click or TAB key, we must
-   assure that the (potentially changed) value in the editor gets used to update the backing
-   Person Rexx object. Also the ESCAPE key will cause a focus change by default, make sure
-   that in such a case the cell's content does not get committed.
-   Also, in JavaFX8 one needs to explicitly set the comboBox
-   as well and refresh the TableView in order to have it update the value.
-*/
--- focus event on Cell
-::method changed unguarded    /* implements the interface "javafx.beans.value.ChangeListener" */
-  expose jself isCancelled
-  use arg observable, oldValue, newValue
-
-  if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "///-->" self"::".context~name", focus changed:" "observable="pp(observable)", oldValue="pp(oldValue)", newValue="pp(newValue) "isCancelled="pp(isCancelled)
-
-  if oldValue=.true, newValue=.false, jself~getIndex>-1, isCancelled=.false then -- focus leaving? make sure we set the ComboBox
-  do
-     self~commitCellUpdate(jself)   -- now let us finish up
-     jSelf~getTableView~refresh     -- MUST on Java_FX8, otherwise cached values distort cell's value on focus traversals
-  end
-
-
-::method startEdit
-  expose selfClass jself comboBox isCancelled bAlreadyCommitted
-  use arg slotDir
-
-  jself=slotDir~javaObject       -- get Java peer object
-  index=jself~getIndex
-  if .my.App~tableViewData~get(index)~isNil then
-  do
-     .my.app~alert.audioclip~play   -- use JavaFX to have an "oops" clip played on all platforms alike
-     return
-  end
-
-  oriValue=jself~getText         -- save current text value from cell, before forwardToSuper
-  jself~startEdit_forwardToSuper -- will cause the event to fire, in case there are registered event handlers
-
-  if comboBox~isNil then       -- create a comboBox and assign filter and focus listener
-  do
-     comboBox=.bsf~new("javafx.scene.control.ComboBox")
-     comboBox~setItems(.person~expertChoices)
-
-      -- create a RexxComboListCell to be used for the button in edit mode (allows graphic
-      -- and text to be displaced like in the drop-down list as using the same implementation
-     listCell=.RexxComboBoxCellFactory~clzOoRexxComboBoxListCell~new(.RexxComboBoxListCell~new)
-     listCell~setConverter(.RexxComboBoxCellFactory~stringConverter)
-     comboBox~setButtonCell(listCell)
-
-     -- the ComboBox uses a ListView, which we now want to format such that the graphic is shown as well
-     comboBox~setCellFactory(BsfCreateRexxProxy(.RexxComboBoxCellFactory~new, , .fx.Callback))
-     rp=BSFCreateRexxProxy(self, ,"javafx.beans.value.ChangeListener" ,"javafx.event.EventHandler")
-         -- ATTENTION: must be an event filter, otherwise ESCAPE key event may be consumed by someone
-         -- else and cannot be seen in the bubbling up phase of a plain setEvent-handler
-     jself~addEventFilter(.fx.KeyEvent~key_pressed, rp)
-         -- this will notify us of the changed message upon focus change (e.g. TAB, ESCAPE, mouse click)
-     comboBox~focusedProperty~addListener(rp)
-  end
-
-  comboBox~setValue(oriValue) -- set comboBox to the cell's value
-  jself~setText(.nil)         -- remove text field
-  jself~setGraphic(comboBox)  -- add comboBox UI
-  comboBox~requestFocus
-
-  isCancelled=.false          -- we set this, if cancelEdit gets invoked
-  bAlreadyCommitted=.false    -- if changes occur in Cell allow to commit them
-
-
-::method updateItem
-  expose comboBox columnName
-  use arg item, empty, slotDir
-
-  jSelf=slotDir~javaObject
-  index=jSelf~getIndex
-  if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "/// -->" self"::".context~name": jself:" pp(jself) "columnName="pp(columnName) "| item="pp(item)",empty="pp(empty)",index="pp(index)
-
-  jSelf~updateItem_forwardToSuper(item,empty)   -- will cause the event to fire, in case there are registered event handlers
-
-  if item=.nil | empty=.true then
-  do
-     jSelf~setText(.nil)
-     jSelf~setGraphic(.nil)
-  end
-  else   -- we have a value and are not empty
-  do
-  -- eventuell: ~isEditing die comboBox, sonst den Text
-
-     if \comboBox~isNil then
-     do
-        comboBox~setValue(self~getDate(item))
-        jself~setText(.nil)
-        jself~setGraphic(comboBox)
-     end
-     else
-     do
-        jself~setText(item)
-        jImageView=.fx.ImageView~new(.graphics~entry(item))
-        jSelf~setGraphic(jImageView ~~setPreserveRatio(.true) ~~setFitHeight(30))
-        jSelf~~setContentDisplay(.fx.contentDisplay~top)
-     end
-  end
-
-   -- style the cell's background
-   -- note: one can use a CSS definition like: ".list-cell:odd { -fx-background-color: #dbffdb; }"
-  if index>-1, .my.app~tableview_stylesheet_kind=3, index//2  then      -- colorize the background of the odd entries
-  do
-      -- we need to make sure that any predefined style (like -fx-alignment) remains intact
-     jSelf~setStyle(jself~getStyle .my.app~tableview_style_kind3)
-  end
-
-
-
-/* =================================================================================== */
-/* implements "R javafx.util.Callback<P,R>(P o) used by PropertyValueFactory */
-/* this supplies the ComboBox Cell objects (items) and sets up callbacks for formatting them */
-/* only needed, if we set a factory for the ComboBox instance                 */
-::class RexxComboBoxCellFactory -- Rexx class implementing "javafx.util.Callback"'s "call" method
-
-/* -------------------------------------------------------------------------------- */
-::attribute clzOoRexxComboBoxListCell class get  -- a class attribute
-::attribute stringConverter   class get  -- a class attribute
-
-::method init class     -- the Rexx constructor at the class level: create and memorize a proxy class for "javfx.scene.control.ListCell"
-  expose clzOoRexxComboBoxListCell stringConverter
-   -- use a TextFieldListCell to allow in place edits
-  clzOoRexxComboBoxListCell=bsf.createProxyClass("javafx.scene.control.cell.TextFieldListCell", "jRexxComboBoxListCell", "javafx.scene.control.Cell updateItem")
-   -- we need a stringConverter for in-place edits (in case the ComboBox was set to editable)
-  stringConverter=.bsf~new("javafx.util.converter.DefaultStringConverter")
-
-/* -------------------------------------------------------------------------------- */
-  /* create and setup a cell, assign stringConverter for in-place edits */
-::method call           -- implements "javafx.util.Callback.call(Object o)": in this case an instance of a ListCell (or a subclass of it) must be returned!
-  use arg obj, slotDir
-               -- create the ListCell handler, supply a RexxComboBoxListCell object to carry out "updateItem"
-  myClz=self~class      -- get Rexx class object to ease access to its class attributes
-  RexxComboBoxCellHandler=myClz~clzOoRexxComboBoxListCell~new(.RexxComboBoxListCell~new)  -- will have updateItem() invoked
-  RexxComboBoxCellHandler~setConverter(myClz~stringConverter) -- needed for edits with TextFieldListCell
-
-  if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "///-->" self pp(obj)", RETURNING:" pp(RexxComboBoxCellHandler)
-
-  return RexxComboBoxCellHandler
-
-
-/* =================================================================================== */
-/* This is an ooRexx class, subclassing the JavaFX "javafx.scene.control.ListCell" class
-   in order to become able to edit/format ListCells by intercepting the "updateItem" method.
-*/
-::class RexxComboBoxListCell     -- this formats the ComboBox ListView items (cells)
-::method updateItem
-  -- void ListCell.updateItem (SimpleStringProperty name, boolean empty)
-  use arg name, empty, slotDir
-
-  jSelf=slotDir~javaObject
-  index=jSelf~getIndex     -- get 0-based index (row) of this cell
-
-  if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "///-->" self"::".context~name": jself:" pp(jself) "| name="pp(name)",empty="pp(empty)",index="pp(index)
-
-     -- we need to invoke the method in the superclass first
-  jSelf~updateItem_forwardToSuper(name,empty)
-  jself~setStyle("")
-
-  if name=.nil | empty=.true then
-  do
-     jSelf~setText(.nil)
-     jSelf~setGraphic(.nil)
-  end
-  else   -- we have a value and are not empty
-  do
-     jSelf~setText(name)
-
-     jImageView=.fx.ImageView~new(.graphics~entry(name))
-     jSelf~setGraphic(jImageView ~~setPreserveRatio(.true) ~~setFitHeight(20))
-     jSelf~~setContentDisplay(.fx.contentDisplay~left)
-  end
-
-   -- style the cell's background
-   -- note: one can use a CSS definition like: ".list-cell:odd { -fx-background-color: #dbffdb; }"
-  if index>-1, .my.app~listview_stylesheet_kind=3 then      -- colorize the background of the odd entries
-  do
-      -- we need to make sure that any predefined style (like -fx-alignment) remains intact
-     if index//2 then jSelf~setStyle(jself~getStyle .my.app~tableview_style_kind3)
-  end
-
 
 
 

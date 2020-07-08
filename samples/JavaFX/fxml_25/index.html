@@ -22,17 +22,25 @@ all platforms and can be downloaded from its homepage at
     <dd>Display all of the parent directory's files and directories.
 
     <dt> <a href="demoListView.rex">demoListView.rex</a>
-    <dd> The main Rexx program that sets up and starts the JavaFX application. This program
+    <dd> The main Rexx program that sets up and starts the JavaFX application that demonstrates
+         the JavaFX <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/ListView.html">ListView</a>,
+         menus, context-menus, audio and some more. This program
          will cause JavaFX to load and process the GUI defined in the XML text file of
          &quot;<code>demoListView.fxml</code>&quot;.
+         <br>
+         Hint: This program includes ooRexxDoc comments. If you process it with ooRexxDoc
+         (part of the ooRexx plugin for IntelliJ) you will get a nicely formatted
+         HTML documentation of what it does.
 
     <dt> <a href="demoListView.fxml">demoListView.fxml</a>
-    <dd> The XML text file that defines the GUI, runs the Rexx program  &quot;<code>demoListView_controller.rex</code>&quot;
-         and defines an event handler, programmed in Rexx.
+    <dd> The XML text file that defines the GUI, runs the Rexx program
+         &quot;<code>demoListView_controller.rex</code>&quot;
+         and defines event handler, programmed in Rexx for the stylesheet menu items.
 
     <dt> <a href="demoListView_controller.rex">demoListView_controller.rex</a>
     <dd> A Rexx package defining a public routine that gets invoked by the Rexx event handler
-         defined in &quot;<code>demoListView.fxml</code>&quot;
+         scripts defined in &quot;<code>demoListView.fxml</code>&quot; for the
+         stylesheet menu items.
 
     <dt> <a href="put_FXID_objects_into.my.app.rex">put_FXID_objects_into.my.app.rex</a>
     <dd> A Rexx utility invoked from &quot;<code>demoListView.fxml</code>&quot; which
@@ -40,10 +48,34 @@ all platforms and can be downloaded from its homepage at
          with that value as the index in a Rexx directory. This Rexx directory can
          then be fetched via &quot;<code>.my.app~demoListView.xml</code>&quot; from all
          Rexx programs.
+
+         <p>
+
+    <dt> Additional resources:
+    <dd>
+         <ul>
+            <li><a href="styles-1.css">styles-1.css"</a> stylesheet for formatting the GUI
+            <li><a href="styles-2.css">styles-2.css"</a> stylesheet for formatting the GUI
+            <li><a href="bsf4oorexx_032.png">bsf4oorexx_032.png"</a>, a 32x32 pixel BSF4ooRexx logo
+            <li><a href="oorexx_032.png">oorexx_032.png"</a>, a 32x32 pixel ooRexx logo
+            <li><a href="oops.wav">oops.wav"</a> an audio clip uttering &quot;oops!&quot;
+
+
+            <li>Open source icons (64x64 pixels) from <a href="https://icons8.com/icons/set/open-source-software">icons8.com</a>
+               <ul>
+               <li><a href="icons8-bug-64.png">icons8-bug-64.png</a> representing a bug
+               <li><a href="icons8-java-64.png">icons8-java-64.png</a> representing Java
+               <li><a href="icons8-linux-64.png">icons8-linux-64.png</a> representing Linux
+               <li><a href="icons8-mailbox-opened-flag-up-64.png">icons8-mailbox-opened-flag-up-64.png</a> representing an opened flag mailbox
+               <li><a href="icons8-open-source-64.png">icons8-open-source-64.png</a> representing open-source (OSS)
+               </ul>
+
+         </ul>
+
 </dl>
 <p>
 <hr>
 <p style="font-size: smaller;">
-Rony G. Flatscher, 2020-06-22, Wien/Vienna, Austria, Europe
+Rony G. Flatscher, 2020-06-22, 2020-07-07, Wien/Vienna, Austria, Europe
 </body>
 
