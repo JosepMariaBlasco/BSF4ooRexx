@@ -1,7 +1,7 @@
 #!/usr/bin/env rexx
 /*
    author:  Rony G. Flatscher
-   date:    2020-06-22
+   date:    2020-07-11 (2020-06-22)
    changes: --
 
    purpose: demonstrate - ListView with cells containing text and graphics
@@ -11,6 +11,7 @@
                         - ContextMenu and demonstrating an ooRexx routine to serve as the callback
                           target from Java right before the context menu is displayed to allow for
                           dis/enabling the menu items to match the File's menu items
+                        - control displaying text and/or graphic in ListCell via the context menu
                         - Playing AudioClip (works on all operating systems) if clicking on a
                           displayed cell that is not backed by data
                         - Animation
@@ -180,7 +181,7 @@ syntax:
 
 /** Caches the JavaFX objects in ooRexx attributes for faster access. */
 ::method init
-  expose id_vbox id_listview id_menu_setitems id_menu_clear id_menu_quit -
+  expose id_vbox id_listview id_menu_setitems id_menu_clear id_menu_quit   -
          id_menu_remove id_label id_menu_show_debug id_menu_enable_editing -
          id_button_add id_button_delete
 
@@ -195,6 +196,9 @@ syntax:
   id_label          =appDir~id_label
   id_menu_show_debug=appDir~id_menu_show_debug
   id_menu_enable_editing=appDir~id_menu_enable_editing
+
+  appDir~is_id_ctxt_menu_display_text    =.true -- enable by default: display text in ListCell?
+  appDir~is_id_ctxt_menu_display_graphics=.true -- enable by default: display graphics in ListCell?
 
   id_menu_setItems  =appDir~id_menu_setitems
   id_menu_remove    =appDir~id_menu_remove
@@ -234,7 +238,7 @@ syntax:
 
 /** Event handler for most events that are of interest for our little application.
    @param event   the JavaFX event object
-   @param slotDir a Rexx directory supplied by BSF4ooRexx
+   @param slotDir (not used) a Rexx directory supplied by BSF4ooRexx
 */
 ::method handle   /* implements the interface "javafx.event.EventHandler"   */
   expose id_listview id_menu_setitems id_menu_clear id_menu_quit id_menu_remove id_label -
@@ -338,6 +342,12 @@ syntax:
               id_button_add   ~setDisable(\isSelected)
               id_button_delete~setDisable(\isSelected)
               return
+           end
+
+     when tgtId="id_ctxt_menu_display_text" | tgtId="id_ctxt_menu_display_graphics" then
+           do
+               .my.app~demoListView.fxml~setEntry("is_"tgtId,source~isSelected)  -- save new state
+               id_listView~refresh     -- update ListView
            end
 
      when tgtId="id_ctxt_menu_enable_editing" then -- reflect change from context menu in File menu item as well
@@ -653,9 +663,20 @@ syntax:
   end
   else   -- we have a value and are not empty
   do
-     jSelf~setText(item)
-     parse var item "(" pic ")"  -- extract picture name if any, set graphics to it
-     jSelf~~setGraphic(.fx.ImageView~new(.my.app~imageViewDir~entry(pic))) ~~setGraphicTextGap(20)
+
+     appDir=.my.app~demoListView.fxml
+     if appDir~is_id_ctxt_menu_display_text then
+        jSelf~setText(item)
+     else
+        jSelf~setText(.nil)
+
+     if appDir~is_id_ctxt_menu_display_graphics then
+     do
+        parse var item "(" pic ")"  -- extract picture name if any, set graphics to it
+        jSelf~~setGraphic(.fx.ImageView~new(.my.app~imageViewDir~entry(pic))) ~~setGraphicTextGap(20)
+     end
+     else
+        jSelf~setGraphic(.nil)
   end
 
    -- style the cell's background
@@ -741,6 +762,16 @@ syntax:
       ~~setId("id_ctxt_menu_enable_editing")~~setOnAction(eventHandler)
   items~add(ee)
 
+  items~add(.bsf~new("javafx.scene.control.SeparatorMenuItem"))
+
+  et=.bsf~new("javafx.scene.control.CheckMenuItem","Display Text in ListCell?")     -
+      ~~setId("id_ctxt_menu_display_text")~~setOnAction(eventHandler)
+  items~add(et)
+
+  eg=.bsf~new("javafx.scene.control.CheckMenuItem","Display Graphics in ListCell?")     -
+      ~~setId("id_ctxt_menu_display_graphics")~~setOnAction(eventHandler)
+  items~add(eg)
+
   fxMI=bsf.importClass("javafx.scene.control.MenuItem")
   items~add(.bsf~new("javafx.scene.control.SeparatorMenuItem"))
       -- use same id as the File menu items, such that the context menu items cause the same behaviour
@@ -781,17 +812,27 @@ syntax:
       id=menuItem~getId                -- get ID (same as the one in the File's MenuItem)
       if \id~isNil then                -- separator does not have an id
       do
-         if id="id_ctxt_menu_show_debug" then   -- the current state is contained in .showDebugOutput
-            menuItem~setSelected(.my.app~showDebugOutput)
-         else if id="id_ctxt_menu_enable_editing" then
-         do
-            isSelected=appDir~id_menu_enable_editing~isSelected
-            menuItem~setSelected(isSelected)
-         end
-         else  -- reflect current state from File menu items
-         do
-            state=appDir~send(id)~isDisable  -- fetch File's MenuItem, get its disable state
-            menuItem~setDisable(state)       -- set matching popup MenuItem's disable state accordingly
+         select case id
+            when "id_ctxt_menu_show_debug" then   -- the current state is contained in .showDebugOutput
+               menuItem~setSelected(.my.app~showDebugOutput)
+
+            when "id_ctxt_menu_display_text" then
+               menuItem~setSelected(appDir~is_id_ctxt_menu_display_text)
+
+            when "id_ctxt_menu_display_graphics" then
+               menuItem~setSelected(appDir~is_id_ctxt_menu_display_graphics)
+
+            when "id_ctxt_menu_enable_editing" then
+               do
+                  isSelected=appDir~id_menu_enable_editing~isSelected
+                  menuItem~setSelected(isSelected)
+               end
+
+            otherwise   -- reflect current state from File menu items
+            do
+               state=appDir~send(id)~isDisable  -- fetch File's MenuItem, get its disable state
+               menuItem~setDisable(state)       -- set matching popup MenuItem's disable state accordingly
+            end
          end
       end
   end
