@@ -65,7 +65,7 @@
               <columns>
                   <TableColumn fx:id="id_column_nr" editable="false" prefWidth="75.0" resizable="false" style="-fx-alignment: center;" text="ID" />
                   <TableColumn fx:id="id_column_name" prefWidth="208.0" resizable="false" style="-fx-alignment: center-left;" text="Name" />
-                  <TableColumn fx:id="id_column_expert" prefWidth="148.0" resizable="false" style="-fx-alignment: center;" text="Expert" />
+                  <TableColumn fx:id="id_column_expertise" prefWidth="148.0" resizable="false" style="-fx-alignment: center;" text="Expertise" />
                   <TableColumn fx:id="id_column_since" prefWidth="125.0" resizable="false" style="-fx-alignment: center;" text="Since" />
               </columns>
             </TableView>

@@ -1,7 +1,7 @@
 #!/usr/bin/env rexx
 /*
    author:  Rony G. Flatscher
-   date:    2020-07-11 (2020-06-22)
+   date:    2020-07-12 (2020-06-22)
    changes: --
 
    purpose: demonstrate - ListView with cells containing text and graphics
@@ -108,7 +108,7 @@ syntax:
    say " done. "~center(100, "-")
 
 
-::requires "rgf_util2.rex"    -- get access to public routine ppCondition() which pretty prints
+::requires "rgf_util2.rex"    -- get access to public routine ppCondition2() which pretty prints
                               -- the information in a condition object to ease debugging
 
 ::requires "BSF.CLS"          -- get Java support
@@ -118,18 +118,20 @@ syntax:
 /** This Rexx class implements the abstract JavaFX class
     <a href="javafx.application.Application">Application</a> by implementing the
     abstract method <code>start</code> that sets up the JavaFX GUI.
-
-    @param primaryStage stage (window) supplied by <em>Application</em>'s
-                        <code>launch</code> method
-    @param slotDir      a Rexx directory supplied by BSF4ooRexx
-*
 */
 ::class RxMainApplication
 
-   /* loads the fxml document defining the GUI elements, sets up a scene for it and shows it */
+/** This Rexx method will be called by the <em>launch</em> method and allows to set up
+    the JavaFX application. It loads the FXML document which defines the GUI elements
+    declaratively, adds an animation to it, creates the scene and displays it in the
+    supplied <em>primaryStage</em>.
 
+    @param primaryStage stage (window) supplied by <em>Application</em>'s
+                        <code>launch</code> method
+    @param slotDir      not used (a Rexx directory supplied by BSF4ooRexx)
+*/
 ::method start    -- will be invoked by the "launch" method
-  expose locale primaryStage
+  expose primaryStage
   use arg primaryStage  -- we get the stage to use for our UI
 
   -- set window's system icon and title text
@@ -142,19 +144,19 @@ syntax:
 
    -- create an URL for the FMXLDocument.fxml file (hence the protocol "file:")
   demoListViewUrl=.bsf~new("java.net.URL", "file:demoListView.fxml")
-  demoListView   =.fx.FXMLLoader~load(demoListViewUrl) -- load the fxml document
+  rootNode       =.fx.FXMLLoader~load(demoListViewUrl) -- load the fxml document
   -- get current selection state from corresponding menu object, now that .my.app is populated
   .my.app~showDebugOutput=.my.app~demoListView.fxml~id_menu_show_debug~isSelected
 
    -- as .my.app is populated, all the FXML fx:id objects are available to Rexx
   call setupApplicationData   -- now that the graphics subsystem is initialized
 
+   -- define an animation effect for the root node (i.e. the entire scene)
    -- demo action! :)
-  rt=.bsf~new("javafx.animation.RotateTransition", .fx.Duration~millis(750),demoListView)
+  rt=.bsf~new("javafx.animation.RotateTransition", .fx.Duration~millis(750),rootNode)
   rt ~~setByAngle(270) ~~setCycleCount(2) ~~setAutoReverse(.true) ~~play
 
-  scene=.fx.scene~new(demoListView)   -- create a scene for our document
-
+  scene=.fx.scene~new(rootNode)   -- create a scene for our document
   primaryStage~setScene(scene)      -- set the stage to our scene
 
    -- this will setup and register the event handlers
@@ -165,21 +167,13 @@ syntax:
 
 
 /* =================================================================================== */
-/*
-   This Rexx class controls the interaction with the fxml form named "demoListView.fxml".
-
-*/
 
 /** This Rexx class manages the user interaction with the FXML form named
     &quot;demoListView.fxml&quot;.
 */
-
 ::class demoListViewController
-/** Caches the <code>id_listview</code> JavaFX object.
-*/
-::attribute id_listview
 
-/** Caches the JavaFX objects in ooRexx attributes for faster access. */
+/** Caches the JavaFX objects in ooRexx attributes for easier access. */
 ::method init
   expose id_vbox id_listview id_menu_setitems id_menu_clear id_menu_quit   -
          id_menu_remove id_label id_menu_show_debug id_menu_enable_editing -
@@ -198,7 +192,7 @@ syntax:
   id_menu_enable_editing=appDir~id_menu_enable_editing
 
   appDir~is_id_ctxt_menu_display_text    =.true -- enable by default: display text in ListCell?
-  appDir~is_id_ctxt_menu_display_graphics=.true -- enable by default: display graphics in ListCell?
+  appDir~is_id_ctxt_menu_display_graphic=.true -- enable by default: display graphics in ListCell?
 
   id_menu_setItems  =appDir~id_menu_setitems
   id_menu_remove    =appDir~id_menu_remove
@@ -237,8 +231,8 @@ syntax:
 
 
 /** Event handler for most events that are of interest for our little application.
-   @param event   the JavaFX event object
-   @param slotDir (not used) a Rexx directory supplied by BSF4ooRexx
+    @param event   the JavaFX event object
+    @param slotDir      not used (a Rexx directory supplied by BSF4ooRexx)
 */
 ::method handle   /* implements the interface "javafx.event.EventHandler"   */
   expose id_listview id_menu_setitems id_menu_clear id_menu_quit id_menu_remove id_label -
@@ -286,7 +280,7 @@ syntax:
 
       mb~append("@ screen: x=",  event~getScreenX,"/y=",event~getScreenY," ")
       mb~append("@ Scene: x=",   event~getSceneX, "/y=",event~getSceneY," ")
-      mb~append("@ eventSource=",event~getX,      "/y=",event~getY,"/z=",event~getZ)
+      mb~append("@ eventSource: x=",event~getX,      "/y=",event~getY,"/z=",event~getZ)
 
       say indent .line":" "MOUSE_CLICKED -->" pp(mb~string)
 
@@ -344,7 +338,7 @@ syntax:
               return
            end
 
-     when tgtId="id_ctxt_menu_display_text" | tgtId="id_ctxt_menu_display_graphics" then
+     when tgtId="id_ctxt_menu_display_text" | tgtId="id_ctxt_menu_display_graphic" then
            do
                .my.app~demoListView.fxml~setEntry("is_"tgtId,source~isSelected)  -- save new state
                id_listView~refresh     -- update ListView
@@ -459,7 +453,7 @@ syntax:
 
                if \selectedIndex~isNil then
                do
-                  listViewData~remove(selectedIndex)
+                  listViewData~remove(box('int',selectedIndex))
                   id_listView~refresh
                   id_label~setText("ListView has" listViewData~size "cell(s)")
                end
@@ -581,11 +575,12 @@ syntax:
   /* ------------------------------------------------------------------------------ */
 /**  Callback method that creates and returns the cell object to be used for a <em>ListCell</em>.
 
-   @param listView   the <em>ListView</em> for which this method gets invoked
-   @param slotDir    a Rexx directory supplied by BSF4ooRexx
+    @param listView   the <em>ListView</em> for which this method gets invoked
+    @param slotDir      not used (a Rexx directory supplied by BSF4ooRexx)
+
 */
 ::method call           -- implements "javafx.util.Callback.call(Object o)": in this case an instance of a ListCell (or a subclass of it) must be returned!
-  use arg listView, slotDir
+  use arg listView
 
          -- create the ListCell handler, supply a RexxListCell object to carry out "updateItem"
   rexxCellHandler=.RexxListCell~clzOoRexxListCell~new(.RexxListCell~new)  -- will have updateItem() invoked
@@ -623,7 +618,6 @@ syntax:
     as well as the string converter object to be used by this <em>ListCell</em>
     implementation.
 */
-  /* ------------------------------------------------------------------------------ */
 ::method init class     -- the Rexx constructor at the class level: create and memorize a proxy class for "javfx.scene.control.ListCell"
   expose clzOoRexxListCell stringConverter
    -- use a TextFieldListCell to allow in place edits
@@ -634,14 +628,13 @@ syntax:
 
 /** This implements the
    <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/Cell.html#updateItem-T-boolean-">updateItem</a>
-   method in Rexx.
+   method in Rexx. It controls what gets displayed in <em>ListCell</em>s (text and/or graphic).
 
-   @param name
-   @param empty
+   @param item    the item to be displayed
+   @param empty   whether this is for an empty cell
    @param slotDir a Rexx directory supplied by BSF4ooRexx
 */
 ::method updateItem
-  -- void ListCell.updateItem (SimpleStringProperty item, boolean empty)
   use arg item, empty, slotDir
 
   jSelf=slotDir~javaObject
@@ -663,14 +656,13 @@ syntax:
   end
   else   -- we have a value and are not empty
   do
-
      appDir=.my.app~demoListView.fxml
      if appDir~is_id_ctxt_menu_display_text then
         jSelf~setText(item)
      else
         jSelf~setText(.nil)
 
-     if appDir~is_id_ctxt_menu_display_graphics then
+     if appDir~is_id_ctxt_menu_display_graphic then
      do
         parse var item "(" pic ")"  -- extract picture name if any, set graphics to it
         jSelf~~setGraphic(.fx.ImageView~new(.my.app~imageViewDir~entry(pic))) ~~setGraphicTextGap(20)
@@ -768,8 +760,8 @@ syntax:
       ~~setId("id_ctxt_menu_display_text")~~setOnAction(eventHandler)
   items~add(et)
 
-  eg=.bsf~new("javafx.scene.control.CheckMenuItem","Display Graphics in ListCell?")     -
-      ~~setId("id_ctxt_menu_display_graphics")~~setOnAction(eventHandler)
+  eg=.bsf~new("javafx.scene.control.CheckMenuItem","Display Graphic in ListCell?")     -
+      ~~setId("id_ctxt_menu_display_graphic")~~setOnAction(eventHandler)
   items~add(eg)
 
   fxMI=bsf.importClass("javafx.scene.control.MenuItem")
@@ -794,11 +786,11 @@ syntax:
     to the same state as the matching <em>MenuItem</em>s in the scene's <em>Menu</em>s.
 
     @param event  the JavaFX event to process
-    @param slotDir a Rexx directory supplied by BSF4ooRexx
+    @param slotDir  not used (a Rexx directory supplied by BSF4ooRexx)
     @return the <em>ContextMenu</em> object
 */
 ::routine "ContextMenuHandler"     -- set disable state according to the File MenuItems state
-  use arg event, slotDir
+  use arg event
 
   if .my.app~showDebugOutput=.true then
   do
@@ -819,8 +811,8 @@ syntax:
             when "id_ctxt_menu_display_text" then
                menuItem~setSelected(appDir~is_id_ctxt_menu_display_text)
 
-            when "id_ctxt_menu_display_graphics" then
-               menuItem~setSelected(appDir~is_id_ctxt_menu_display_graphics)
+            when "id_ctxt_menu_display_graphic" then
+               menuItem~setSelected(appDir~is_id_ctxt_menu_display_graphic)
 
             when "id_ctxt_menu_enable_editing" then
                do
@@ -898,7 +890,7 @@ syntax:
     <code>-1</code> if not available or meaningful.
 
     @param event  the JavaFX event to process
-    @return       index (0-based position) in the <em>ListView<em> or <code>-1</code> if
+    @return       index (0-based position/row) in the <em>ListView<em> or <code>-1</code> if
                   not available or meaningful
 */
 ::routine getIndex

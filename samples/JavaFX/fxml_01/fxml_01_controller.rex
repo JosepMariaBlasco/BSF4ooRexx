@@ -5,8 +5,9 @@
   slotDir=arg(arg())  -- note: last argument is the slotDir argument from BSF4ooRexx
   now=.dateTime~new -- time of invocation
   say now": arrived in routine 'buttonClicked' ..."
-  /* RexxScript annotation fetches "label" from ScriptContext
-     and makes it available as the Rexx variable "LABEL":  */
+
+  /* RexxScript annotation fetches the Label object with the id "idLabel1" from
+     the ScriptContext and makes it available as the Rexx variable "IDLABEL1":  */
   /* @get(idLabel1) */
   say '... current value of label='pp(idLabel1~getText)
   idLabel1~text="Clicked at:" now         -- set text property
