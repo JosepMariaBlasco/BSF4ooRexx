@@ -886,11 +886,11 @@ syntax:
 
 
 /* =================================================================================== */
-/** Returns the event's <em>Cell</em> index (0-based position) in the <em>ListView<em> or
+/** Returns the event's <em>Cell</em> index (0-based position) in the <em>ListView</em> or
     <code>-1</code> if not available or meaningful.
 
     @param event  the JavaFX event to process
-    @return       index (0-based position/row) in the <em>ListView<em> or <code>-1</code> if
+    @return       index (0-based position/row) in the <em>ListView</em> or <code>-1</code> if
                   not available or meaningful
 */
 ::routine getIndex

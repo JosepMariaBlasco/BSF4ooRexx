@@ -63,8 +63,6 @@
     It is responsible therefore to maintain the appearance of each cell
     (cf. callback method <code>updateItem</code>).
 
----------
-
 *
 */
 
