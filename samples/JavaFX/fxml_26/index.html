@@ -1,0 +1,84 @@
+<head>
+    <title>Brief Overview of the BSF4ooRexx Samples in this Directory</title>
+</head>
+
+<body>
+<h1>
+      &quot;fxml_26&quot; Rexx Application &quot;TableView&quot; with &quot;CheckBox&quot; Cells
+</h1>
+
+<p style="font-size: smaller;">
+
+<em>Hint:</em> if you wish to look at the ooRexx code with syntax highlighting, then you can
+use the free and open-source editor <code>&quot;[g]vim&quot;</code>, which is available for practically
+all platforms and can be downloaded from its homepage at
+<a href="http://www.vim.org/">http://www.vim.org/</a>.
+
+<dl>
+    <dt><em><a href=".">.  &lt;directory&gt; (List of this directory)</a></em>
+    <dd>Display all of this directory's files and directories.
+
+    <dt><em><a href="../index.html">..  &lt;directory&gt; (List of parent directory)</a></em>
+    <dd>Display all of the parent directory's files and directories.
+
+    <dt> <a href="demoTableViewComboBoxCell.rex">demoTableViewComboBoxCell.rex</a>
+    <dd> The main Rexx program that sets up and starts the JavaFX application that demonstrates
+         the JavaFX <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/TableView.html">TableView</a>,
+         <em>ComboBox</em> control with a backing <em>ListView</em> of valid values,
+         menus, context-menus, audio and some more. This program
+         will cause JavaFX to load and process the GUI defined in the XML text file of
+         &quot;<code>demoTableViewComboBoxCell.fxml</code>&quot;. It also uses
+         a JavaFX <em>ComboBox</em> for editing the &quot;expertise&quot; cells, which
+         causes a <em>ListView</em> to be displayed with the allowable values.
+         <br>
+         Hint: This program includes ooRexxDoc comments. If you process it with ooRexxDoc
+         (part of the ooRexx plugin for IntelliJ) you will get a nicely formatted
+         HTML documentation of what it does.
+
+    <dt> <a href="demoTableViewComboBoxCell.fxml">demoTableViewComboBoxCell.fxml</a>
+    <dd> The XML text file that defines the GUI, runs the Rexx program
+         &quot;<code>demoTableViewComboBoxCell_controller.rex</code>&quot;
+         and defines event handler, programmed in Rexx for the stylesheet menu items.
+
+    <dt> <a href="demoTableViewComboBoxCellController.rex">demoTableViewComboBoxCellController.rex</a>
+    <dd> A Rexx package defining a public routine that gets invoked by the Rexx event handler
+         scripts defined in &quot;<code>demoTableViewComboBoxCell.fxml</code>&quot; for the
+         stylesheet menu items.
+
+    <dt> <a href="put_FXID_objects_into.my.app.rex">put_FXID_objects_into.my.app.rex</a>
+    <dd> A Rexx utility invoked from &quot;<code>demoTableViewComboBoxCell.fxml</code>&quot; which
+         fetches all JavaFX objects with a &quot;<code>fx:id</code>&quot; value and stores them
+         with that value as the index in a Rexx directory. This Rexx directory can
+         then be fetched via &quot;<code>.my.app~demoTableViewComboBoxCell.xml</code>&quot; from all
+         Rexx programs.
+
+         <p>
+
+    <dt> Additional resources:
+    <dd>
+         <ul>
+            <li><a href="styles-1.css">styles-1.css"</a> stylesheet for formatting the GUI
+            <li><a href="styles-2.css">styles-2.css"</a> stylesheet for formatting the GUI
+            <li><a href="bsf4oorexx_032.png">bsf4oorexx_032.png"</a>, a 32x32 pixel BSF4ooRexx logo
+            <li><a href="oorexx_032.png">oorexx_032.png"</a>, a 32x32 pixel ooRexx logo
+            <li><a href="oops.wav">oops.wav"</a> an audio clip uttering &quot;oops!&quot;
+
+
+            <li>Open source icons (64x64 pixels) from <a href="https://icons8.com/icons/set/open-source-software">icons8.com</a>
+               <ul>
+               <li><a href="icons8-bug-64.png">icons8-bug-64.png</a> representing a bug
+               <li><a href="icons8-java-64.png">icons8-java-64.png</a> representing Java
+               <li><a href="icons8-linux-64.png">icons8-linux-64.png</a> representing Linux
+               <li><a href="icons8-mailbox-opened-flag-up-64.png">icons8-mailbox-opened-flag-up-64.png</a> representing an opened flag mailbox
+               <li><a href="icons8-open-source-64.png">icons8-open-source-64.png</a> representing open-source (OSS)
+               </ul>
+
+         </ul>
+
+</dl>
+<p>
+<hr>
+<p style="font-size: smaller;">
+Rony G. Flatscher, 2020-07-15, Wien/Vienna, Austria, Europe
+</body>
+
