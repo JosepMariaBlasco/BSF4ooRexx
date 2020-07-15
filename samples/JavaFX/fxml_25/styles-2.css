@@ -1,0 +1,52 @@
+/* Some Java-FX CSS definitions, cf. <http://docs.oracle.com/javafx/2/get_started/css.htm>,
+   especially: <https://docs.oracle.com/javafx/2/api/javafx/scene/doc-files/cssref.html>.
+
+   The following style definitions only have the purpose to demonstrate the power available.
+   These definitions are only meant for fun and starting point for experiments, not for
+   professional use! :)
+
+   2020-06-20, rgf
+*/
+
+/* define the background of the scene, will be applied to VBox (being the root of the scene): */
+.root {
+        -fx-background-image: url("bsf4oorexx_032.png");
+        -fx-background-color: Peru;
+}
+
+/* this is the basic formatting for all Label:s */
+.label {
+        -fx-text-fill: royalblue;
+        -fx-font-size: 14px;
+        -fx-font-weight: bold;
+
+        -fx-background-color: rgb(210, 210, 210, 0.75) ;
+        -fx-effect: dropshadow( gaussian , rgba(255,255,255,0.5) , 0,0,0,1 );
+        -fx-padding: 3 3 3 3;
+        -fx-border-color: royalblue;
+        -fx-border-radius: 10px;
+        -fx-border-width: 1px;
+        -fx-border-style: segments(3, 7, 3, 7)  line-cap round ;
+}
+
+
+/* -------------------------- */
+
+.list-cell:filled:selected:focused, .list-cell:filled:selected {
+        -fx-background-color: linear-gradient(#328BDB 0%, #207BCF 25%, #1973C9 75%, #0A65BF 100%);
+        -fx-text-fill: white;
+}
+
+.list-cell:even {
+        -fx-background-color: white;
+}
+
+.list-cell:odd  {
+        -fx-background-color: cyan;
+}
+
+.list-cell:filled:hover {
+        -fx-background-color: #0093ff;
+        -fx-text-fill: white;
+}
+
