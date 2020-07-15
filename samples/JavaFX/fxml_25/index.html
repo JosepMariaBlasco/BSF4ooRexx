@@ -4,7 +4,7 @@
 
 <body>
 <h1>
-      &quot;fxml_20&quot; Rexx Application
+      &quot;fxml_25&quot; Rexx Application
 </h1>
 
 <p style="font-size: smaller;">
@@ -21,32 +21,37 @@ all platforms and can be downloaded from its homepage at
     <dt><em><a href="../index.html">..  &lt;directory&gt; (List of parent directory)</a></em>
     <dd>Display all of the parent directory's files and directories.
 
-    <dt> <a href="demoListView.rex">demoListView.rex</a>
+    <dt> <a href="demoTableView.rex">demoTableView.rex</a>
     <dd> The main Rexx program that sets up and starts the JavaFX application that demonstrates
-         the JavaFX <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/ListView.html">ListView</a>,
+         the JavaFX <a href="https://docs.oracle.com/javase/8/javafx/api/javafx/scene/control/TableView.html">TableView</a>,
          menus, context-menus, audio and some more. This program
          will cause JavaFX to load and process the GUI defined in the XML text file of
-         &quot;<code>demoListView.fxml</code>&quot;.
+         &quot;<code>demoTableView.fxml</code>&quot;. It implements Rexx classes for each
+         table column in order to become able to &quot;auto-commit&quot; changes to cells
+         also in the case that the user moves away with the &lt;TAB&gt; key or uses the mouse
+         to click away from the cell in edit mode. This also allows for formatting cells
+         (including the background) under the control of Rexx code (c.f. method
+         &quot;updateItem&quot; in those classes).
          <br>
          Hint: This program includes ooRexxDoc comments. If you process it with ooRexxDoc
          (part of the ooRexx plugin for IntelliJ) you will get a nicely formatted
          HTML documentation of what it does.
 
-    <dt> <a href="demoListView.fxml">demoListView.fxml</a>
+    <dt> <a href="demoTableView.fxml">demoTableView.fxml</a>
     <dd> The XML text file that defines the GUI, runs the Rexx program
-         &quot;<code>demoListView_controller.rex</code>&quot;
+         &quot;<code>demoTableView_controller.rex</code>&quot;
          and defines event handler, programmed in Rexx for the stylesheet menu items.
 
-    <dt> <a href="demoListView_controller.rex">demoListView_controller.rex</a>
+    <dt> <a href="demoTableViewController.rex">demoTableViewController.rex</a>
     <dd> A Rexx package defining a public routine that gets invoked by the Rexx event handler
-         scripts defined in &quot;<code>demoListView.fxml</code>&quot; for the
+         scripts defined in &quot;<code>demoTableView.fxml</code>&quot; for the
          stylesheet menu items.
 
     <dt> <a href="put_FXID_objects_into.my.app.rex">put_FXID_objects_into.my.app.rex</a>
-    <dd> A Rexx utility invoked from &quot;<code>demoListView.fxml</code>&quot; which
+    <dd> A Rexx utility invoked from &quot;<code>demoTableView.fxml</code>&quot; which
          fetches all JavaFX objects with a &quot;<code>fx:id</code>&quot; value and stores them
          with that value as the index in a Rexx directory. This Rexx directory can
-         then be fetched via &quot;<code>.my.app~demoListView.xml</code>&quot; from all
+         then be fetched via &quot;<code>.my.app~demoTableView.xml</code>&quot; from all
          Rexx programs.
 
          <p>

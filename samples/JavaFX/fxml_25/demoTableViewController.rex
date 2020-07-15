@@ -10,10 +10,7 @@
 
    license: Apache License 2.0 (see at bottom)
 
-   invoke:
-
-         rexx tpgm_demoTableView.rex
-         rexxj.{cmd|sh} tpgm_demoTableView.rex
+   invoke:  called from FXML form
 
    needs: ooRexx 5.0 or higher, and BSF4ooRexx 6.00 or highter
 */

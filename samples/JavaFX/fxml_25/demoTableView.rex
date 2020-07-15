@@ -879,7 +879,7 @@ syntax:
 
   if .my.app~showDebugOutput=.true then
   do
-     say .line":" .dateTime~new "///<--" self"::call" "for" pp(columnName)~left(8)  "| RETURNING jCell:" pp(jCell)
+     say .line":" .dateTime~new "///<--" self"::call" "for" pp(columnName)~left(11)  "| RETURNING jCell:" pp(jStrip(jCell))
      -- if columnName="since" then say
   end
   return jCell         -- return the Java cell
@@ -1849,21 +1849,21 @@ syntax:
 
   items~add(.bsf~new("javafx.scene.control.SeparatorMenuItem"))
 
-  et=.bsf~new("javafx.scene.control.CheckMenuItem","Display Text in ListCell?")     -
+  et=.bsf~new("javafx.scene.control.CheckMenuItem","Display Text in Expertise ComboBox?")     -
       ~~setId("id_ctxt_menu_display_text")~~setOnAction(eventHandler)
   items~add(et)
 
-  eg=.bsf~new("javafx.scene.control.CheckMenuItem","Display Graphic in ListCell?")     -
+  eg=.bsf~new("javafx.scene.control.CheckMenuItem","Display Graphic in Expertise ComboBox?")     -
       ~~setId("id_ctxt_menu_display_graphic")~~setOnAction(eventHandler)
   items~add(eg)
 
   fxMI=bsf.importClass("javafx.scene.control.MenuItem")
   items~add(.bsf~new("javafx.scene.control.SeparatorMenuItem"))
       -- use same id as the File menu items, such that the context menu items cause the same behaviour
-  items~add(fxMI~new("Setitems")        ~~setId("id_menu_setitems")~~setOnAction(eventHandler) )
-  items~add(fxMI~new("RemoveEmptyCells")~~setId("id_menu_remove")  ~~setOnAction(eventHandler) )
-  items~add(fxMI~new("Clear")           ~~setId("id_menu_clear")   ~~setOnAction(eventHandler) )
-  items~add(fxMI~new("Quit")            ~~setId("id_menu_quit")    ~~setOnAction(eventHandler) )
+  items~add(fxMI~new("Fill Table with Testdata")~~setId("id_menu_setitems")~~setOnAction(eventHandler) )
+  items~add(fxMI~new("Remove Empty Rows")~~setId("id_menu_remove") ~~setOnAction(eventHandler) )
+  items~add(fxMI~new("Clear Table")     ~~setId("id_menu_clear")  ~~setOnAction(eventHandler) )
+  items~add(fxMI~new("Quit")            ~~setId("id_menu_quit")   ~~setOnAction(eventHandler) )
 
   if .my.app~showDebugOutput=.true then
      say .line":" .dateTime~new "\\\"  "createContextMenu(eventHandler): ctxtMenu~toString="pp(ctxtMenu~toString)

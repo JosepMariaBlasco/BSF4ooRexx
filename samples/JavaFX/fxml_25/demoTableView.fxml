@@ -16,7 +16,7 @@
 <?import javafx.scene.text.Font?>
 <?language rexx?>
 
-<VBox fx:id="id_vbox" prefHeight="592.0" prefWidth="673.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1">
+<VBox fx:id="id_vbox" prefHeight="592.0" prefWidth="673.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" style="-fx-background-color: burlywood;">
   <children>
                 <!-- define a ToggleGroup (cannot be done in SceneBuilder) to place RadioMenuItems into it -->
     <fx:define>
@@ -29,9 +29,9 @@
             <CheckMenuItem fx:id="id_menu_show_debug" mnemonicParsing="false" selected="true" text="Show Debug Output" />
             <CheckMenuItem fx:id="id_menu_enable_editing" mnemonicParsing="false" selected="false" text="Enable Editing" />
             <SeparatorMenuItem mnemonicParsing="false" />
-            <MenuItem fx:id="id_menu_setitems" mnemonicParsing="false" text="SetItems" />
-            <MenuItem fx:id="id_menu_remove" disable="true" mnemonicParsing="false" text="RemoveEmptyCells" />
-            <MenuItem fx:id="id_menu_clear" disable="true" mnemonicParsing="false" text="Clear" />
+            <MenuItem fx:id="id_menu_setitems" mnemonicParsing="false" text="Fill Table with Testdata" />
+            <MenuItem fx:id="id_menu_remove" disable="true" mnemonicParsing="false" text="Remove Empty Rows" />
+            <MenuItem fx:id="id_menu_clear" disable="true" mnemonicParsing="false" text="Clear Table" />
             <MenuItem fx:id="id_menu_quit" mnemonicParsing="false" text="Quit" />
           </items>
         </Menu>
@@ -61,7 +61,7 @@
                </Label>
             <Button fx:id="id_button_add" disable="true" layoutX="58.0" layoutY="520.0" mnemonicParsing="false" text="Add Row" AnchorPane.bottomAnchor="14.0" AnchorPane.leftAnchor="58.0" />
             <Button fx:id="id_button_delete" disable="true" layoutX="488.0" layoutY="520.0" mnemonicParsing="false" text="Delete Selected Row" AnchorPane.bottomAnchor="14.0" AnchorPane.rightAnchor="53.0" />
-            <TableView fx:id="id_tableview" layoutX="58.0" layoutY="37.0" prefHeight="438.0" prefWidth="562.0" AnchorPane.bottomAnchor="88.0" AnchorPane.leftAnchor="58.0" AnchorPane.rightAnchor="53.0" AnchorPane.topAnchor="37.0">
+            <TableView fx:id="id_tableview" layoutX="58.0" layoutY="37.0" prefHeight="438.0" prefWidth="562.0" AnchorPane.bottomAnchor="88.0" AnchorPane.leftAnchor="58.0" AnchorPane.rightAnchor="53.0" AnchorPane.topAnchor="37.0" style="-fx-background-color: wheat;">
               <columns>
                   <TableColumn fx:id="id_column_nr" editable="false" prefWidth="75.0" resizable="false" style="-fx-alignment: center;" text="ID" />
                   <TableColumn fx:id="id_column_name" prefWidth="208.0" resizable="false" style="-fx-alignment: center-left;" text="Name" />
