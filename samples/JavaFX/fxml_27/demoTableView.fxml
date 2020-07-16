@@ -15,8 +15,8 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 <?language rexx?>
-
-<VBox fx:id="id_vbox" prefHeight="592.0" prefWidth="673.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" style="-fx-background-color: burlywood;">
+                                                                                                                                                 <!-- lightgreen | tomato-->
+<VBox fx:id="id_vbox" prefHeight="592.0" prefWidth="673.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" style="-fx-background-color: lightgreen;">
   <children>
                 <!-- define a ToggleGroup (cannot be done in SceneBuilder) to place RadioMenuItems into it -->
     <fx:define>
@@ -60,8 +60,8 @@
                </font>
                </Label>
             <Button fx:id="id_button_add" disable="true" layoutX="58.0" layoutY="520.0" mnemonicParsing="false" text="Add Row" AnchorPane.bottomAnchor="14.0" AnchorPane.leftAnchor="58.0" />
-            <Button fx:id="id_button_delete" disable="true" layoutX="488.0" layoutY="520.0" mnemonicParsing="false" text="Delete Selected Row" AnchorPane.bottomAnchor="14.0" AnchorPane.rightAnchor="53.0" />
-            <TableView fx:id="id_tableview" layoutX="58.0" layoutY="37.0" prefHeight="438.0" prefWidth="562.0" AnchorPane.bottomAnchor="88.0" AnchorPane.leftAnchor="58.0" AnchorPane.rightAnchor="53.0" AnchorPane.topAnchor="37.0" style="-fx-background-color: wheat;">
+            <Button fx:id="id_button_delete" disable="true" layoutX="488.0" layoutY="520.0" mnemonicParsing="false" text="Delete Selected Row" AnchorPane.bottomAnchor="14.0" AnchorPane.rightAnchor="53.0" />                            <!-- palegreen | salmon -->
+            <TableView fx:id="id_tableview" layoutX="58.0" layoutY="37.0" prefHeight="438.0" prefWidth="562.0" AnchorPane.bottomAnchor="88.0" AnchorPane.leftAnchor="58.0" AnchorPane.rightAnchor="53.0" AnchorPane.topAnchor="37.0" style="-fx-background-color: palegreen;">
               <columns>
                   <TableColumn fx:id="id_column_nr" editable="false" prefWidth="75.0" resizable="false" style="-fx-alignment: center;" text="ID" />
                   <TableColumn fx:id="id_column_name" prefWidth="208.0" resizable="false" style="-fx-alignment: center-left;" text="Name" />

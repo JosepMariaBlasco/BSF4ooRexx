@@ -590,7 +590,7 @@ syntax:
   if .my.app~showDebugOutput=.true then
   do
      say
-     say .line":" .dateTime~new "///-->" self ", RETURNING:" pp(rexxCellHandler) "for:" pp(listView)
+     say .line":" .dateTime~new "///-->" self ", RETURNING:" pp(rexxCellHandler) "for:" pp(jStrip(listView))
   end
   return rexxCellHandler
 
@@ -900,6 +900,18 @@ syntax:
    cell=findCellObject(event)
    if cell~isNil then return -1
    return cell~getIndex
+
+/* =================================================================================== */
+/** Routine to strop package name from Java object string.
+   @param name the Java object string
+   @return the Java object string without package name or string unaltered if no dot found
+*/
+::routine jStrip        -- remove package name from Java object strings
+   parse arg name
+
+   pos=name~lastPos(".")
+   if pos=0 then return name     -- return unchanged
+   return name~substr(pos+1)     -- return unqualified name
 
 
 /* =================================================================================== */
