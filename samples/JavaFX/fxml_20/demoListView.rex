@@ -698,7 +698,7 @@ syntax:
   imageViewDir=.directory~new      -- maps the entryName to its icon/grahpics
   do counter i name over entryNames
      listViewData~add(name)            -- ObservableArrayList to be displayed in the list
-     img=.fx.Image~new(imageNames[i])
+     img=.fx.Image~new("file:"imageNames[i])
      imageViewDir~setEntry(name,img)
      imageViewDir~setEntry(imageIndexNames[i],img)
   end
@@ -767,9 +767,9 @@ syntax:
   fxMI=bsf.importClass("javafx.scene.control.MenuItem")
   items~add(.bsf~new("javafx.scene.control.SeparatorMenuItem"))
       -- use same id as the File menu items, such that the context menu items cause the same behaviour
-  items~add(fxMI~new("Setitems")        ~~setId("id_menu_setitems")~~setOnAction(eventHandler) )
+  items~add(fxMI~new("Fill ListView with Testdata")~~setId("id_menu_setitems")~~setOnAction(eventHandler) )
   items~add(fxMI~new("RemoveEmptyCells")~~setId("id_menu_remove")  ~~setOnAction(eventHandler) )
-  items~add(fxMI~new("Clear")           ~~setId("id_menu_clear")   ~~setOnAction(eventHandler) )
+  items~add(fxMI~new("Clear ListView")           ~~setId("id_menu_clear")   ~~setOnAction(eventHandler) )
   items~add(fxMI~new("Quit")            ~~setId("id_menu_quit")    ~~setOnAction(eventHandler) )
 
   if .my.app~showDebugOutput=.true then

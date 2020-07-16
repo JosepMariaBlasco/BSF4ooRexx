@@ -29,9 +29,9 @@
             <CheckMenuItem fx:id="id_menu_show_debug" mnemonicParsing="false" selected="true" text="Show Debug Output" />
             <CheckMenuItem fx:id="id_menu_enable_editing" mnemonicParsing="false" selected="false" text="Enable Editing" />
             <SeparatorMenuItem mnemonicParsing="false" />
-            <MenuItem fx:id="id_menu_setitems" mnemonicParsing="false" text="Fill Table with Testdata" />
+            <MenuItem fx:id="id_menu_setitems" mnemonicParsing="false" text="Fill TableView with Testdata" />
             <MenuItem fx:id="id_menu_remove" disable="true" mnemonicParsing="false" text="Remove Empty Rows" />
-            <MenuItem fx:id="id_menu_clear" disable="true" mnemonicParsing="false" text="Clear" />
+            <MenuItem fx:id="id_menu_clear" disable="true" mnemonicParsing="false" text="Clear TableView" />
             <MenuItem fx:id="id_menu_quit" mnemonicParsing="false" text="Quit" />
           </items>
         </Menu>

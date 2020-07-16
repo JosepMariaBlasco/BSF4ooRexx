@@ -683,7 +683,7 @@ syntax:
   do
      do counter i name over expertises
         if name~isNil then iterate
-        img=.fx.Image~new(imageFileNames[i]) -- create an Image and store it
+        img=.fx.Image~new("file:"imageFileNames[i]) -- create an Image and store it
         graphics~setEntry(name,img)
      end
      .context~package~local~graphics=graphics   -- save in package local
@@ -899,7 +899,7 @@ syntax:
 
   imageViewDir=.directory~new       -- maps the entryName to its icon/grahpics
   do counter i name over entryNames
-     img=.fx.Image~new(imageNames[i])
+     img=.fx.Image~new("file:"imageNames[i])
      imageViewDir~setEntry(name,img)
      imageViewDir~setEntry(imageIndexNames[i],img)
   end
@@ -959,9 +959,9 @@ syntax:
   fxMI=bsf.importClass("javafx.scene.control.MenuItem")
   items~add(.bsf~new("javafx.scene.control.SeparatorMenuItem"))
       -- use same id as the File menu items, such that the context menu items cause the same behaviour
-  items~add(fxMI~new("Fill Table with Testdata")~~setId("id_menu_setitems")~~setOnAction(eventHandler) )
+  items~add(fxMI~new("Fill TableView with Testdata")~~setId("id_menu_setitems")~~setOnAction(eventHandler) )
   items~add(fxMI~new("Remove Empty Rows") ~~setId("id_menu_remove")  ~~setOnAction(eventHandler) )
-  items~add(fxMI~new("Clear Table")     ~~setId("id_menu_clear")   ~~setOnAction(eventHandler) )
+  items~add(fxMI~new("Clear TableView")     ~~setId("id_menu_clear")   ~~setOnAction(eventHandler) )
   items~add(fxMI~new("Quit")            ~~setId("id_menu_quit")    ~~setOnAction(eventHandler) )
 
   if .my.app~showDebugOutput=.true then
