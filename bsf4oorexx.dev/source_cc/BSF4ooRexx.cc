@@ -37,6 +37,8 @@ remarks:
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
 
+    6.0.0   2020-06-28, rgf: - in _jniRexxSendMessageToRexxObject make debug output for args better legible
+
     6.0.0   2018-10-07, rgf: - fixed subtle bug in RgfJavaObject2RexxObject(): only do a ReleaseLocalReference(), if
                                bsf.wrap() returns a new Rexx object, otherwise ooRexx crashes may develop
                                as wrong Rexx object pointers get used!
@@ -966,11 +968,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20181007 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20200628 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20181007 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20200628 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20181007 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20200628 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -8934,6 +8936,49 @@ JNIEXPORT jobject JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxSe
                           j_returnType
             );
     fflush(stderr);
+
+    {   // make arguments better legible for debugging, rgf, 2020-06-28
+        char strUserData_ID[256]="<null>";
+// fprintf(stderr, "\n   ---> (__LINE__=%d) <---\n", __LINE__);fflush(stderr);
+        if (j_userData_ID!=NULL) {
+            JAVA_TO_STRING(env, j_userData_ID, strUserData_ID, 256);
+        }
+
+        char strJavaObjectBean[256]="<null>";
+        if (j_javaObjectBean!=NULL) {
+            JAVA_TO_STRING(env, j_javaObjectBean, strJavaObjectBean, 256);
+        }
+
+        char strMethodObjectBean[256]="<null>";
+        if (j_methodObjectBean!=NULL) {
+            JAVA_TO_STRING(env, j_methodObjectBean, strMethodObjectBean, 256);
+        }
+
+        char strMessageName[1024]="<null>";
+        if (j_messageName!=NULL) {
+            JAVA_TO_STRING(env, j_messageName, strMessageName, 1024);
+        }
+
+        char strMethodDescription[1024]="<null>";
+        if (j_methodDescription!=NULL) {
+            JAVA_TO_STRING(env, j_methodDescription, strMethodDescription, 1024);
+        }
+
+        int arrayLength=-1;
+        if (j_args != NULL) {
+            arrayLength=env->GetArrayLength( j_args );
+        }
+
+        fprintf(stderr, "\n// -->\t\t\\\\ j_messageName=[%s] //, j_args.length=[%d]\n\t\t// -->j_javaObjectBean=[%s], j_methodObjectBean=[%s], j_methodDescription=[%s], j_userData_ID=[%s]\n",
+                              (char *) strMessageName,
+                                       arrayLength,
+                              (char *) strJavaObjectBean,
+                              (char *) strMethodObjectBean,
+                              (char *) strMethodDescription,
+                              (char *) strUserData_ID
+                );
+        fflush(stderr);
+    }
 #endif
 
     thread_id_t          tid=RgfGetTID();   // rgf, 2009-05-24, get current TID
