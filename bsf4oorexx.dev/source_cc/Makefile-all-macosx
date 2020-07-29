@@ -4,9 +4,6 @@
 # to support earlier versions of MacOSX export MACOSX_DEPLOYMENT_TARGET=min_version
 # before compiling (cf. "man g++"), e.g.:
 #
-#  MacOSX 10.6, "Snow Leopard", released: 2009-08-28
-#
-#                  export MACOSX_DEPLOYMENT_TARGET=10.6
 #
 #  MacOSX 10.9, "Mavericks", released: 2013-10-22
 #
@@ -16,6 +13,10 @@
 #
 #         target 10.9, add to g++ "-std=c++11" (or "-std=gnu++11"); (and before Maverick: "-stdlib=libc++"; to force gnu without c++-11 support use: "-stdlib=libstdc++")
 #
+#  MacOSX 10.6, "Snow Leopard", released: 2009-08-28
+#
+#                  export MACOSX_DEPLOYMENT_TARGET=10.6
+
 
 #/*----------------------------------------------------------------------------*/
 #/*                                                                            */
@@ -81,11 +82,23 @@ BSF4REXX   	   = $(BLD_PATH)/libBSF4ooRexx.dylib
 # rgf, 2014-03-30, 2014-03-31
 # INC_PATH = -I. -I/System/Library/Frameworks/JavaVM.framework/headers
 # INC_PATH = -I. -I/Developer/SDKs/MacOSX10.6.sdk/System/Library/Frameworks/JavaVM.framework/Versions/A/Headers
-INC_PATH = -I/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers -I .
+# INC_PATH = -I/System/Library/Frameworks/JavaVM.framework/Versions/Current/Headers -I .
+
+# INC_PATH = -I/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/include -I .
+
+JDK_INCLUDE_PATH1 = /Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/include 
+JDK_INCLUDE_PATH2 = /Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/include/darwin
+INC_PATH = -I ${JDK_INCLUDE_PATH1} -I ${JDK_INCLUDE_PATH2} -I .
+
+
+# INC_PATH = -I/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/include -I/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/include/darwin -I .
+
 
 # old ooRexx 4.x installations (need different ones for ooRexx 5.0beta)
 ORX_LIBPATH_32 = /opt/oldrexx/ooRexx-i386/lib
-ORX_LIBPATH_64 = /opt/oldrexx/ooRexx-x86_64/lib/
+# ORX_LIBPATH_64 = /opt/oldrexx/ooRexx-x86_64/lib/
+# rgf, 20170122, ooRexx 5.0.0 (beta)
+ORX_LIBPATH_64 = /Library/Frameworks/ooRexx.framework/Libraries/
 
 # rgf, 2017-04-05: manually creating an ooRexx 5.0 "installation"
 ORX_LIBPATH_64 = /opt/oldrexx/ooRexx-5-x86_64/lib/
