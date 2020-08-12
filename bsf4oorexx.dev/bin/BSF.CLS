@@ -19,6 +19,12 @@
           .BSF in .environment;
 
    date:
+         2020-08-12, ---rgf, - added public routine ppJavaExceptionChain(co[,bStackTrace]) which
+                               returns a string showing the Java exception chain to ease spotting
+                               the source Java exception for debugging
+
+         2020-07-27, ---rgf, - fix some ooRexxDoc formatting errors
+
          2019-08-25, ---rgf, - fixed bug creating interface class objects in bsf.createProxyClass()
 
          2019-08-24, ---rgf, - adjust bsf.createProxyClass() documentation according to effective behaviour of
@@ -736,7 +742,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.41 (20191126)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     6.41 (20200130)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -836,7 +842,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20191126" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20200812" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4909,7 +4915,7 @@ syntax: raise propagate   -- neither a .RexxContext with a / nor a ScriptContext
 
 /* ------------------------------------------------------------------------------------------------- */
 /** This method will be used by the Rexx injection code in Rexx scripts if the Rexx script annotation
-*   <code>@GET<code> or <code>@GET(quoted list of blank delimited attribute names)<code> is contained
+*   <code>@GET</code> or <code>@GET(quoted list of blank delimited attribute names)</code> is contained
 *   in Rexx block comments.
 *
 *   @param scriptContext a Java <code>scriptContext</code> or a RexxContext <code>.context</code>
@@ -5051,7 +5057,7 @@ syntax:
 
 /* ------------------------------------------------------------------------------------------------- */
 /** This method will be used by the Rexx injection code in Rexx scripts if the Rexx script annotation
-*   <code>@SET(quoted list of blank delimited attribute names)<code> is contained in Rexx block comments.
+*   <code>@SET(quoted list of blank delimited attribute names)</code> is contained in Rexx block comments.
 *   <p>
 *
 *   If an attribute in the attribute list cannot be found in the ScriptContext's scope, a warning will
@@ -5969,6 +5975,8 @@ syntax:
 
 
 /** Encodes the currently employed versions of ooRexx, BSF.CLS and Java in a single string to ease debugging.
+
+    @return a string containing the version information of ooRexx, BSF.CLS and Java in use
 */
 ::routine create_display.version_entry
     parse version "-" name "_" ver "(" . . date
@@ -5990,4 +5998,49 @@ getRevision: procedure  -- starting with svn rev. 11639 (Dec 22, 2018) the sourc
     return " r".rexxInfo~revision   -- get and return (e.g. svn) revision value
 syntax:
     return ""
+
+
+/** This routine takes a Rexx condition object, extracts the Java exception object and
+    creates the chain of the Java exceptions such that Rexx programmers can easily
+    learn about it. Each Java exception's object name gets shown together with the
+    its string exception. If the optional second argument is <code>.true</code> then
+    the stack trace of the source of the Java exception chain gets returned as well.
+
+    @param co Rexx condition object (cf. <code>condition("object")</code> in the reference manual)
+    @param bStackTrace optional, defaults to <code>.false</code>; if set to <code>.true</code>
+              then the stack trace of the source of the Java exception chain gets returned
+    @return string containing the Java exception chain or an empty string, if there cannot
+                   be a a Java exception object found
+    @since  2020-08-12
+    @author Rony G. Flatscher
+*/
+::routine ppJavaExceptionChain public  -- "pretty print" the list of the Java exception chain, return it as a string
+  use strict arg co, bStackTrace=.false
+
+  jexc=co~Additional~at(2)    -- get Java Exception object
+  if \jexc~isA(.bsf) then return ""    -- not a Java object
+
+  mb=.MutableBuffer~new
+  i=0
+  do while jexc~isA(.bsf)     -- loop over Java exception chain
+     i+=1
+     mb~append("-"~copies(18), .endOfLine)
+     mb~append("---> caused by Java exception # ", i,": [", jexc~objectName, "]~toString:", .endOfLine)
+     mb~append("[", jexc~toString, "]")
+     oldJexc=jexc             -- save Java exception object
+     jexc=jexc~getCause       -- get cause if any left
+  end
+
+  if bStackTrace=.true then   -- show stack trace for the source exception?
+  do
+     mb~append(.endOfLine)
+     barrOutputStream=.bsf~new("java.io.ByteArrayOutputStream", 8192)
+     barrPrintWriter=.bsf~new("java.io.PrintWriter", barrOutputStream)
+     oldJexc~printStackTrace(barrPrintWriter)   -- show stack trace
+     barrPrintWriter~flush
+     mb~append(barrOutputStream~toString) -- get string and append
+     barrPrintWriter~close
+  end
+  return mb~string
+
 
