@@ -49,6 +49,8 @@
                              - if stopping, do not clear label anymore
             2018-10-07, rgf: - if running on pre ooRexx 5.0 use SysSleep() in loop to help avoid hangs
             2019-08-08, rgf: - if ooRexx smaller version 5.0, ask user whether to proceed
+            2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
+                             - removing dependency on "rgf_util2.rex"
 
    license: Apache License 2.0 (see at bottom)
 
@@ -81,15 +83,15 @@ jrxApp=BSFCreateRexxProxy(rxApp, ,"javafx.application.Application")
 jrxApp~launch(jrxApp~getClass, .nil)   -- launch the application, invokes "start"
 
 .SOME_REXX_CLASS~stopRexxThread=.true  -- make sure we leave non-GUI thread, otherwise this app hangs here
+call syssleep .0001              -- give ooRexx some closing time
 exit
 
 syntax:
   co=condition("object")
-  say ppCondition2(co)
+  say ppJavaExceptionChain(co)   -- display Java exception chain
   exit -1
 
 ::requires "BSF.CLS"    -- get Java support
-::requires "rgf_util2.rex"    -- to get access to ppCondition2()
 
 -- Rexx class defines "javafx.application.Application" abstract method "start"
 ::class RexxApplication -- implements the abstract class "javafx.application.Application"

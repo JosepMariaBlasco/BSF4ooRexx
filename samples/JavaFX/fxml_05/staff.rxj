@@ -37,6 +37,9 @@
                                 Java classes anymore!
 
                2019-08-13, rgf: warn, if not running run on ooRexx 5.0 or higher, ask user whether to proceed
+               2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
+                                - removing dependency on "rgf_util2.rex"
+
 
    purpose:    - demonstrates usage of custom libraries
                - shows table view handling
@@ -120,15 +123,15 @@ rxApp = BsfCreateRexxProxy(.my.app~rexxHandler,,"javafx.application.Application"
 signal on syntax           -- activate handling of syntax condition
    -- launch the application, invoke "start" and then stay up until the application closes
 rxApp~launch(rxApp~getClass, .nil)     -- need to use this version of launch in order to work
+call sysSleep 0.01         -- let ooRexx clean up
 exit
 
 syntax:
   co=condition('o')        -- get condition object
-  say ppCondition2(co)     -- show extensive information about exception to ease debugging JavaFX programs
+  say ppJavaExceptionChain(co)   -- display Java exception chain
   exit -1
 
 
-::requires "rgf_util2.rex" -- get access to public routien ppCondition2()
 ::requires "BSF.CLS"       -- get Java support
 
   /***************************************************************************************/

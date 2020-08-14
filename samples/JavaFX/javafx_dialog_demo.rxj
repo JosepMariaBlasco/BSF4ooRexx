@@ -17,8 +17,12 @@
                  .FxGuiThread and its method 'runLater'; in this mode it is possible that focusing
                  via .FxGuiThread is overriden by awt/swing (and therefore not working correctly)
 
-   changes:    2018-07-22, prepended file name in creating Image with "file:" to allow it to find
+   changes: 2018-07-22, rgf: prepended file name in creating Image with "file:" to allow it to find
                the bitmap in the current directory
+
+            2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
+                             - removing dependency on "rgf_util2.rex"
+
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
 
    changed:
@@ -27,7 +31,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2018 Rony G. Flatscher
+       Copyright (C) 2018-2019 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -109,15 +113,11 @@ exit
 
 syntax:
    co=condition("object")     -- get all condition information
-   say ppCondition2(co)       -- ppCondition2() will show us the chain of Java exceptions, if any
+   say ppJavaExceptionChain(co)   -- display Java exception chain
    exit -1
 
-
-
 ::requires BSF.CLS
-::requires "rgf_util2.rex"    -- get access to the public routine "ppCondition2()"
-
-
+::requires "rgf_util2.rex"    -- to get access to ppCondition2()
 
 /* =========================================================================== */
 /* =========================================================================== */

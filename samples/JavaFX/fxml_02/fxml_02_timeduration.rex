@@ -6,6 +6,8 @@
    changed: 2017-11-09, rgf: adapted to Rexx symposium 2017 article
             2018-03-24, rgf: make sure that we change into the directory of this program
             2018-06-25, rgf: demonstrate how to intercept the "stop" method
+            2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
+                             - removing dependency on "rgf_util2.rex"
 
    purpose: this is a simple the Rexx GUI application (taking advantage of JavaFX)
             where the GUI elements are defined in a FXML file ("FXML_02_Document.fxml"),
@@ -54,15 +56,15 @@ jrxApp=tmpClz~new(rxApp)
 signal on syntax              -- if an error occurs, the Java exception may not be helpful, so do it Rexx-like
 jrxApp~launch(jrxApp~getClass, .nil)    -- need to use this version of launch in order to work
 say center(" after jrxApp~launch ", 70, "-")
+call sysSleep 0.01            -- let ooRexx clean up
 exit
 
 syntax:                       -- internal routine: eases identification of the problem
   co=condition("object")      -- get condition directory
-  say ppCondition2(co)        -- this routine returns a string that shows the Java exception chain in full
+  say ppJavaExceptionChain(co)   -- display Java exception chain
   exit -1
 
 ::requires "BSF.CLS"          -- get Java support
-::requires "rgf_util2.rex"    -- get access to the public ppConditon2() routine
 
 /* implements the abstract method "start" of javafx.application.Application */
 ::class RexxApplication
@@ -80,7 +82,7 @@ syntax:                       -- internal routine: eases identification of the p
    -- create a file URL for fxml_02.fxml file (hence the protocol "file:")
   fxmlUrl=.bsf~new("java.net.URL", "file:fxml_02.fxml")
   jLocale=.bsf~new("java.util.Locale", locale)  -- get the desired Locale
-  jRB=bsf.importClass("java.util.ResourceBundle")~getBundle("fxml_02", jLocale)
+  jRB=bsf.loadClass("java.util.ResourceBundle")~getBundle("fxml_02", jLocale)
 
   rootNode=bsf.loadClass("javafx.fxml.FXMLLoader")~load(fxmlUrl, jRB)
   scene=.bsf~new("javafx.scene.Scene", rootNode)    -- create a scene from the tree
@@ -102,7 +104,7 @@ syntax:                       -- internal routine: eases identification of the p
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016-2018 Rony G. Flatscher
+         Copyright 2016-2020 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

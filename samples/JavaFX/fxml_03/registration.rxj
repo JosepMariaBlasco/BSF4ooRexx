@@ -6,6 +6,8 @@
 
    changed:    2018-03-24, rgf: make sure that we change into the directory of this program
                2019-08-13, rgf: warn, if not running run on ooRexx 5.0 or higher, ask user whether to proceed
+               2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
+                                - removing dependency on "rgf_util2.rex"
 
    purpose:    - show how versatile and easy JavaFX can be
                - demonstrate how to use resources in subdirectories (loading files using an URLClassLoader)
@@ -66,10 +68,18 @@ rexxHandler = .rxDocHandler~new
    -- instantiate the abstract JavaFX class, the abstract "start" method will be served by rexxHandler
 rxApp = BsfCreateRexxProxy(rexxHandler,,"javafx.application.Application")
 
+signal on syntax
    -- launch the application, invoke "start" and then stay up until the application closes
 rxApp~launch(rxApp~getClass, .nil)     -- need to use this version of launch in order to work
+call sysSleep 0.01                 -- let ooRexx clean up
+exit
+
+syntax:
+  co=condition("object")
+  say ppJavaExceptionChain(co)   -- display Java exception chain
 
 ::requires "BSF.CLS"    -- get Java support
+
 
 /* implements the abstract method "start" for the Java class javafx.application.Application
    (BSF4ooRexx also supplies another (trailing) slotDir (a Rexx Directory) argument, as "start" is

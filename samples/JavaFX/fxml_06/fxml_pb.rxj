@@ -5,6 +5,8 @@
    date:       2017-11-19
 
    changed:    2018-03-24, rgf: make sure that we change into the directory of this program
+               2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
+                                - removing dependency on "rgf_util2.rex"
 
    purpose:    - demonstrate how JavaFX controls can be updated from another thread
                  than the mandatory "JavaFX Application Thread" in ooRexx; the solution
@@ -52,15 +54,15 @@ jrxApp=BsfCreateRexxProxy(rxApp,,"javafx.application.Application")
 signal on syntax  -- intercept syntax conditions
 jrxApp~launch(jrxApp~getClass, .nil)    -- launch the application
 say center(" after jrxApp~launch ", 70, "-")
+call sysSleep 0.01                 -- let ooRexx clean up
 exit
 
    -- in case something goes foul, use "ppCondition2()" to show all Java exception causes
 syntax:
   co=condition('object')
   say "--- oops, something went wrong while executing 'fxml_pb.rex':"
-  say ppCondition2(co)
-
-::requires "rgf_util2.rex" -- get access to public routine ppCondition2()
+  say ppJavaExceptionChain(co)   -- display Java exception chain
+  exit -1
 
 
 ::requires "BSF.CLS"    -- get Java support
@@ -92,7 +94,7 @@ syntax:
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016-2017 Rony G. Flatscher
+         Copyright 2016-2020 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

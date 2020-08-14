@@ -25,6 +25,8 @@
             2019-02-02, rgf: using bsf.loadClass() instead of bsf.importClass() for "java.util.prefs.Preferences",
                              as that class is abstract and bsf.importClass() does not import abstract
                              Java classes anymore!
+            2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
+                             - removing dependency on "rgf_util2.rex"
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -54,7 +56,6 @@
                - bar chart: adds a title describing the depicted data and adds a name to the data series
                - supplying the name of a jfson-file on the command line will cause that address book
                  to be loaded
-
 
    license: Apache License 2.0 (see at bottom)
 
@@ -126,20 +127,14 @@ jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
 signal on syntax
    -- launch the application, invoke "start" and then stay up until the application closes
 jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch in order to work
+call sysSleep 0.01                 -- let ooRexx clean up
 exit
 
 syntax:
    co=condition("object")
-   say ppCondition2(co)
-   say "---"
-   jexc=co~additional~at(2)
-   say "jexc="pp(jexc) "jexc~isA(.bsf)="pp(jexc~isA(.bsf))
-   if jexc~isA(.bsf) then jexc~printStackTrace
-   say "-"~center(" done. ", 100, "-")
-
-
-::requires "rgf_util2.rex"    -- get access to public routine ppCondition() which pretty prints
-                              -- the information in a condition object to ease debugging
+   say ppJavaExceptionChain(co, .true) -- display Java exception chain and stack trace of original Java exception
+   say " done. "~center(100, "-")
+   exit -1
 
 ::requires "BSF.CLS"          -- get Java support
 ::requires "json-rgf.cls"     -- get JSON support for ooRexx (to load and store person data)
@@ -1303,7 +1298,7 @@ syntax:     -- Rexx condition raised
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016-2018 Rony G. Flatscher
+         Copyright 2016-2020 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

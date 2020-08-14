@@ -5,6 +5,8 @@
    date:       2019-02-17
 
    changed:    --
+   changed:    2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
+                                - removing dependency on "rgf_util2.rex"
 
    purpose:    - demonstrates event filtering for assuring that numeric text fields
                  only contain valid numbers (otherwise an Alert error window pups
@@ -49,15 +51,16 @@ rxApp=.rexxApplication~new
    -- instantiate the abstract JavaFX class, abstract "start" method implemented in Rexx
 jrxApp=BsfCreateRexxProxy(rxApp,,"javafx.application.Application")
    -- launch the application, which will invoke the methdos "init" followed by "start"
-jrxApp~launch(jrxApp~getClass, .nil)    -- need to use this version of launch in order to work
+jrxApp~launch(jrxApp~getClass, .nil)   -- need to use this version of launch in order to work
+call sysSleep 0.01                     -- let ooRexx clean up
 exit
 
 syntax:
   co=condition("object")
-  say ppCondition2(co)     -- this will resolve and show all Java exceptions that have occurred
+  say ppJavaExceptionChain(co)   -- display Java exception chain
+  exit -1
 
 ::requires "BSF.CLS"       -- get Java support
-::requires "rgf_util2.rex" -- get access to ppCondition2() to show all Java exceptions that have occurred
 
 /* implements the abstract method "start" of javafx.application.Application */
 ::class RexxApplication
@@ -77,7 +80,7 @@ syntax:
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2019 Rony G. Flatscher
+         Copyright 2019-2020 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

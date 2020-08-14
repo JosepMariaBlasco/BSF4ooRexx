@@ -2,7 +2,9 @@
 /*
    author:  Rony G. Flatscher
    date:    2020-07-15
-   changes: --
+
+   changes: 2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
+                             - removing dependency on "rgf_util2.rex"
 
    purpose: demonstrate - TableView with editing, binding Person's simple properties with cell values
                         - Setting TableView item to null as a whole as opposed to removing the item
@@ -131,15 +133,9 @@ exit
 
 syntax:
    co=condition("object")
-   say ppCondition2(co)
-   say "---"
-   jexc=co~additional~at(2)
-   say "jexc="pp(jexc) "jexc~isA(.bsf)="pp(jexc~isA(.bsf))
-   if jexc~isA(.bsf) then jexc~printStackTrace
+   say ppJavaExceptionChain(co, .true) -- display Java exception chain and stack trace of original Java exception
    say " done. "~center(100, "-")
-
-
-::requires "rgf_util2.rex"    -- get access to public routine ppCondition2() which pretty prints
+   exit -1
                               -- the information in a condition object to ease debugging
 ::requires "BSF.CLS"          -- get Java support
 

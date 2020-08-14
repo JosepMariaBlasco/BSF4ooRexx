@@ -14,6 +14,9 @@
                              that class is abstract and bsf.importClass() does not import abstract
                              Java classes anymore!
 
+            2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
+                             - removing dependency on "rgf_util2.rex"
+
    purpose: this is the standalone (FXML-less) version of the Rexx GUI application (taking advantage of JavaFX)
             in the fxml_02/ directory, i.e. the GUI elements are created in Rexx code only
 
@@ -58,18 +61,18 @@ rxApp=BSFCreateRexxProxy(rexxHandler, ,"javafx.application.Application")
 
    -- launch the application, invoke "start" and then stay up until the application closes
 rxApp~launch(rxApp~getClass, .nil)  -- cf. <http://www.dreamchain.com/javafx-and-groovy-exception/> or <http://stackoverflow.com/questions/16636883/javafx-anonymous-application-class>, etc.
+call sysSleep 0.01                 -- let ooRexx clean up
 exit
 
 syntax:
   co=condition("obj")
-  say ppCondition2(co)
+  say ppJavaExceptionChain(co)   -- display Java exception chain
   say
   raise propagate
   exit -1
 
 
 ::requires "BSF.CLS"    -- get Java support
-::requires "rgf_util2.rex"    -- get access to ppCondition2()
 
 ::class RexxAppHandler  -- the Rexx handler for javafx.application.Application
 
@@ -219,7 +222,6 @@ syntax:
   primaryStage~getIcons~add(img)                       -- set application icon
   primaryStage~show
 
-
    -- Rexx class which handles the button presses
 ::class RexxButtonHandler
 
@@ -255,10 +257,9 @@ syntax:
   say
 
 
-
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016-2018 Rony G. Flatscher
+         Copyright 2016-2020 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.

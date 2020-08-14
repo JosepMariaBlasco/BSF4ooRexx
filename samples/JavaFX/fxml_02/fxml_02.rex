@@ -9,6 +9,8 @@
                              that class is abstract and bsf.importClass() does not import abstract
                              Java classes anymore!
                              employing routine ppCondition2() from "rgf_util2.rex" for debugging
+            2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
+                             - removing dependency on "rgf_util2.rex"
 
    purpose: this is a simple the Rexx GUI application (taking advantage of JavaFX)
             where the GUI elements are defined in a FXML file ("FXML_02_Document.fxml"),
@@ -49,14 +51,15 @@ jrxApp=BsfCreateRexxProxy(rxApp,,"javafx.application.Application")
    -- launch the application, which will invoke the methdos "init" followed by "start"
 jrxApp~launch(jrxApp~getClass, .nil)    -- need to use this version of launch in order to work
 say center(" after jrxApp~launch ", 70, "-")
+call sysSleep 0.01                 -- let ooRexx clean up
 exit
 
 syntax:
   co=condition("object")
-  say ppCondition2(co)     -- this will resolve and show all Java exceptions that have occurred
+  say ppJavaExceptionChain(co)   -- display Java exception chain
+  exit -1
 
 ::requires "BSF.CLS"    -- get Java support
-::requires "rgf_util2.rex"    -- get access to ppCondition2()
 
 /* implements the abstract method "start" of javafx.application.Application */
 ::class RexxApplication
@@ -88,7 +91,7 @@ syntax:
 
 /*
       ------------------------ Apache Version 2.0 license -------------------------
-         Copyright 2016-2017 Rony G. Flatscher
+         Copyright 2016-2020 Rony G. Flatscher
 
          Licensed under the Apache License, Version 2.0 (the "License");
          you may not use this file except in compliance with the License.
