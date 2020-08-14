@@ -71,6 +71,7 @@
                                 the DriverManager variant in Java 1.7/7
                - 20180103, rgf: corrected HSQL statements (obviously the DataSource interface was never exercised)
                - 20200812, rgf: added MariaDB, MySQL, SQLite, adjusted hsql and PostgreSQL
+               - 20200814, rgf: renamed to ".rex", fixed error in error branch
    license:    Apache License 2.0
 */
 
@@ -88,10 +89,10 @@ kind?="SM"~pos(kind)>0        -- check valid kind
 if \dbms? | \kind? then       -- either/both argument(s) wrong?
 do
    say
-   if \d_ok then say "error: database" pp(dbms_ori) "unknown"
-   if \k_ok then say "error: kind" pp(kind_ori) "unknown"
+   if \dbms? then say "error: database" pp(dbms_ori) "unknown"
+   if \kind? then say "error: kind" pp(kind_ori) "unknown"
    say
-   say "usage: rexx jdbc.jrexx database [kind]"
+   say "usage: rexx jdbc.rex database [kind]"
    say
    say "where 'database' is one of the letters:"
    say "    A ... MariaDB   , cf. https://downloads.mariadb.org/"
@@ -108,13 +109,13 @@ do
    exit -1
 end
 
-bUseDriverManager=(kind="M")
+bUseDriverManager=(kind="M")     -- use "DriverManager" for connecting?
 if bUseDriverManager=.true then
 do
    driverMgr = bsf.loadClass("java.sql.DriverManager") -- load the DriverManager Java class
    say "... kind="pp(kind) "therefore using 'java.sql.DriverManager' for connecting ..."
 end
-else
+else  -- default
    say "... kind="pp(kind) "therefore using 'javax.sql.DataSource' for connecting ..."
 
 select
@@ -128,8 +129,8 @@ select
      else   -- use implemented javax.sql.DataSource interface instead
      do
         ds=.bsf~new("org.mariadb.jdbc.MariaDbDataSource")
-        ds~user    ='root'       -- same as: ds~setUser('user')
-        ds~password='pwroot'     -- same as: ds~setPassword('pwuser')
+        ds~user    ='root'       -- same as: ds~setUser('root')
+        ds~password='pwroot'     -- same as: ds~setPassword('pwroot')
         ds~setDatabaseName("test_rexx_db")
         statement=ds~getConnection~createStatement
      end
@@ -235,8 +236,8 @@ statement~executeUpdate("CREATE TABLE test( name char(42), place char(42))")
 
    -- insert some rows
 statement~executeUpdate("INSERT INTO test (name, place) VALUES('Lee Peedin',        'Wallace, NC, USA' )")
-statement~executeUpdate("INSERT INTO test (name, place) VALUES('Jeff Hennick',      'Rochester, NY/Fort Myers, FL, USA'  )")
-statement~executeUpdate("INSERT INTO test (name, place) VALUES('Rene Jansen',       'Amsterdam, The Netherlands')")
+statement~executeUpdate("INSERT INTO test (name, place) VALUES('Jeff Hennick',      'Fort Myers, FL, USA'  )")
+statement~executeUpdate("INSERT INTO test (name, place) VALUES('Rene Jansen',       'Amsterdam, Netherlands')")
 statement~executeUpdate("INSERT INTO test (name, place) VALUES('Rony G. Flatscher', 'Vienna, Austria'   )")
 
    -- select database content: specify query and execute to get result set

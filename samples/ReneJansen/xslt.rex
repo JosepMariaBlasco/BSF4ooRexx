@@ -1,18 +1,18 @@
 #!/usr/bin/env rexx
-/* rexx */
+/* rexx, changed: 2020-08-13, rgf: use bsf.loadClass() for abstract Transformer Factory */
 
 FileOutputStream   = .bsf~bsf.import("java.io.FileOutputStream")
 FileInputStream    = .bsf~bsf.import("java.io.FileInputStream")
 
 StreamSource       = .bsf~bsf.import("javax.xml.transform.stream.StreamSource")
 StreamResult       = .bsf~bsf.import("javax.xml.transform.stream.StreamResult")
-TransformerFactory = .bsf~bsf.import("javax.xml.transform.TransformerFactory")
+TransformerFactory = .bsf~bsf.loadClass("javax.xml.transform.TransformerFactory")
 
 parse arg xmlFile xslFile outputFile
 
 if xslFile="" then   -- first two arguments are mandatory
 do
-  say "use: rexxj xslt.jrexx xmlfile stylesheet [output]"
+  say "use: rexxj xslt.rex xmlfile stylesheet [output]"
   exit
 end
 if outputFile = "" then outputFile = xmlFile||".output"
