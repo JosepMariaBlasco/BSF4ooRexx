@@ -19,6 +19,9 @@
           .BSF in .environment;
 
    date:
+         2020-08-14, ---rgf, - reformatted ppJavaExceptionChain(co[,bStackTrace])
+                             - add operating system infos from sysVersion() to .bsf4rexx~display.version
+
          2020-08-12, ---rgf, - added public routine ppJavaExceptionChain(co[,bStackTrace]) which
                                returns a string showing the Java exception chain to ease spotting
                                the source Java exception for debugging
@@ -842,11 +845,11 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20200812" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20200821" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
-      .bsf4rexx~opSys3 =opsys~left(3)~upper  -- save operating system name's first two letters in uppercase
+      .bsf4rexx~opSys3 =opsys~left(3)~upper  -- save operating system name's first three letters in uppercase
 
       .bsf4rexx~rexx.version=rexxVersion  -- make Rexx version, e.g. "4.1", "5.0" etc available to the clients
 
@@ -5989,7 +5992,7 @@ syntax:
 
     javaVersion="Java" javaVersion"," .java.lang.System~getProperty("sun.arch.data.model")"-bit"
 
-    .bsf4rexx~display.version=orxVersion "/ BSF" .bsf4rexx~version "/" javaVersion
+    .bsf4rexx~display.version=orxVersion "/ BSF" .bsf4rexx~version "/" javaVersion "/" sysVersion()
     return
 
 getRevision: procedure  -- starting with svn rev. 11639 (Dec 22, 2018) the source-code revision number is available
@@ -6021,26 +6024,30 @@ syntax:
   if \jexc~isA(.bsf) then return ""    -- not a Java object
 
   mb=.MutableBuffer~new
+
+  mb~append("/"~copies(39), " Environment: [", .bsf4rexx~display.version, "]", .endOfLine)
+  mb~append(.endOfLine, "showing Java exception chain (trigger exception at bottom) ...", .endOfLine, .endOfLine)
   i=0
+  eyecatcher="-"~copies(7)
   do while jexc~isA(.bsf)     -- loop over Java exception chain
      i+=1
-     mb~append("-"~copies(18), .endOfLine)
-     mb~append("---> caused by Java exception # ", i,": [", jexc~objectName, "]~toString:", .endOfLine)
-     mb~append("[", jexc~toString, "]")
+     mb~append(eyecatcher, "> (Java exception # ", i, ")")
+     mb~append(" caused by: [", jexc~objectName, "]:", .endOfLine)
+     mb~append(jexc~toString, .endOfLine, "<", eyecatcher, " (Java exception # ", i, ")", .endofline)
      oldJexc=jexc             -- save Java exception object
      jexc=jexc~getCause       -- get cause if any left
+     if jexc~isA(.bsf) then mb~append(.endOfLine)
   end
 
   if bStackTrace=.true then   -- show stack trace for the source exception?
   do
-     mb~append(.endOfLine)
      barrOutputStream=.bsf~new("java.io.ByteArrayOutputStream", 8192)
      barrPrintWriter=.bsf~new("java.io.PrintWriter", barrOutputStream)
      oldJexc~printStackTrace(barrPrintWriter)   -- show stack trace
      barrPrintWriter~flush
-     mb~append(barrOutputStream~toString) -- get string and append
+     mb~append(.endOfLine, eyecatcher, "- stack trace from [", oldJexc~objectName, "]:", .endOfLine, .endOfLine, barrOutputStream~toString) -- get string and append
      barrPrintWriter~close
   end
+  mb~append("\"~copies(39), " ... end of Java exception chain." , .endOfLine)
   return mb~string
-
 

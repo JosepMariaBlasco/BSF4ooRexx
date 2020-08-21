@@ -272,28 +272,7 @@ do
    cmd.eShowEnvironment=""             -- not defined for Unix-variants (TODO: research shell-related commands)
    cmd.eShowOperatingSystemVersion="uname -a"   -- Linux, MacOSX
 
-/* ---> new strategy: symbolically link matchitng "libjvm.so" to "/opt/BSF4ooRexx" where it will
-                      be looked for fist, then "libjvm.so" is searched without path
-      -- make sure we have Java setup and '/usr/lib/libjvm.so' available, unless we are uninstalling
-   if SysFileExists("/usr/lib/libjvm.so")=.false, runType<>'U' then -- no Java setup as of yet?
-   do
-      say cmd.eThisName': "/usr/lib/libjvm.so" is missing, hence it needs to get set up, thereofre running "setupJava.rex" ...'
-      call "setupJava.rex"    -- all Rexx program
-      if result<>0 then       -- oops, there is a problem, so quit this run
-      do
-         if cmd.eBInteractive=.true then
-         do
-            say cmd.eThisName": about to exit program, please hit enter to continue ..."
-            parse pull input
-         end
-         exit result
-      end
-      say cmd.eThisName': if you wish to change the Java version BSF4ooRexx programs pick up, just re-run "setupJava.rex" ...'
-   end
-<--- */
-
 -- cp -rfv * /opt/BSF4ooRexx
-
 -- rm -rfv /opt/BSF4ooRexx
 
    cmd.eRmDir="rm -rf"

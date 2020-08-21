@@ -53,7 +53,7 @@
             2010-07-31, ---rgf, - Linux: add file associations
             2010-08-10, ---rgf, - Linux: now adding setE* to /etc/profile and $HOME/.bashrc
             2010-08-15, ---rgf, - Linux: now supplying full path to "unopkg" to add_ooRexxPackage.rxo
-            2010-08-17, ---rgf, - Linux: don't copy ooRexx-OOo-support files to OOo/program dir (not needed due to copying them tu /usr/bin)
+            2010-08-17, ---rgf, - Linux: don't copy ooRexx-OOo-support files to OOo/program dir (not needed due to copying them to /usr/bin)
             2010-08-24, ---rgf, - Windows: assume CLASSPATH is always set !
             2011-01-25/26, ---rgf, - Windows: if CLASSPATH set in HKCU, then make sure we refer to system's set value of CLASSPATH as well;
                                   escape "%" with "[25x]" in path
@@ -84,13 +84,14 @@
             2016-08-15, ---rgf, - Windows: change elevation to use Gil Barmwater's "elevate.rex" script instead (bitness agnostic)
             2017-08-13, ---rgf, - make sure to determine MACOSX correctly by honoring the new name DARWIN as well
             2018-12-19, ---rgf, - adding "BSF_OnTheFly.cls rgf_util2.rex" to cmd.e4OOoPrograms (copying to LO/AOO program directory)
+            2020-08-17, ---rgf, - changed Linux installation from "/usr" dir to "/usr/local"
 
    last svn check-in: $Revision: 916 $ $Author: Administrator $ $Date: 2010-08-24 16:30:15 +0200 (Tue, 24 Aug 2010) $
 
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2006-2017 Rony G. Flatscher
+       Copyright (C) 2006-2020 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -106,28 +107,12 @@
     -----------------------------------------------------------------------------
 */
 
-/*
-
-Ubuntu 6.10 (as of 2007-02-03):
-
-OOO_pgms=/usr/lib/openoffice/program
-
-# händisch:
-export LD_LIBRARY_PATH=$OOO_pgms:$LD_LIBRARY_PATH
-
-OOO_jars=/usr/share/java/openoffice
-
-*/
-
 cmd.=""                          /* default value for stem        */
 parse upper source s +1          /* get first character of operating system in uppercase */
 cmd.eIsUnix=(pos(s, "WO")=0)     /* neither Windows nor OS/2, hence Unix */
 
 parse upper source s +1  -- get operating system name in uppercase
 cmd.eIsMacOSX=(s="D" | s="M")      -- determine whether running on "MACOSX" replaced by "DARWIN"
-
-
--- cmd.eIsUnix=1     /* for debugging: force Unix-mode */
 
 cmd.eBitness=getRexxBitness()    -- can be "0" if not determinable, else "32" or "64"
 
@@ -158,13 +143,9 @@ do
    cmd.eFile.sep="/"
    cmd.ePath.sep=":"
 end
-
-
                                  /* paths to Java and desired bin-dir given?  */
 parse arg path2OOo               /* get path to OpenOffice.org */
 hive=""                    -- relevant for Windows registry
-
--- say "path2OOo=["path2OOo"]"
 
 if path2OOo="" then        -- no path to OOo given
 do
@@ -217,16 +198,6 @@ cmd.ePath2OOoBase=canonizePath(cmd.ePath2OOoBase)
 
 say "cmd.ePath2OOoBase:     ["cmd.ePath2OOoBase"]"
 
-
-/*
-oldDir=directory()               /* memorize actual directory                 */
-cmd.ePath2OOoBase=directory(strip(path2OOo, 'B', '"'))   -- remove quotes, if any; change to directory
-call directory oldDir            /* reset directory                           */
-*/
-
--- temp
--- cmd.ePath2OOoBase="/opt/openoffice.org2.2
-
 if cmd.ePath2OOoBase="" then         /* not found, give a message and abort ...   */
 do
    say "OpenOffice not installed?"
@@ -251,13 +222,6 @@ end
    -- on Windows: determine hive to use for "un/installOOo.cmd":
 if cmd.eIsUnix=.false then    -- o.k. Windows, no hive given, determine hive to install to
 do
-/*
-      -- remove trailing "\program" directory
-    lpos=path2OOo~lastpos("\")         -- find last backslash
-    if lpos>0 then
-       path2OOo=path2OOo~left(lpos-1)  -- extract home-dir
-*/
-
     if hive="HKLM" then    -- ooRexx in system hive (HKLM: local machine)
     do
        cmd.eRegistryPath     ="HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment\Path"
@@ -284,17 +248,11 @@ cmd.eThisDirectory=directory() || cmd.eFile.sep -- save this directory
 say "cmd.ePath2OOoPrograms: ["cmd.ePath2OOoPrograms"]"
 say "cmd.ePath2OOoJars:     ["cmd.ePath2OOoJars"]"
 
-/* for forcing testing Unix on Windows
-j.cmd.eFile.separator="/" -- rgf, debug
-j.cmd.ePath.separator=":" -- rgf, debug
-*/
-
    /* parse path, put directories into the stem variable */
 path.=""
 call parsePath
 
 cp=value("CLASSPATH", , "ENVIRONMENT") /* try to get the CLASSPATH value   */
-/* cmd.eRgfReflectUNO="oorexx-uno.jar"  ---rgf, 2007-02-02: not needed anymore as part of "bsf-rexx-engine.jar" */
 cmd.eSupportInfos=qc("Support: Internet newsgroup <news:comp.lang.rexx>, <http://www.OpenOffice.org> or via <http://www.RexxLA.org>")
 
 -- 2010-03-19: create a unique needle (e.g. to allow deleting lines with sed from profiles later)
@@ -338,23 +296,9 @@ do
    else
       cmd.eDLL="libBSF4ooRexx.so"     /* define name of dynamic link library    */
 
---rgf,20100320   cmd.eSetOOoPgms = "OOoPgm=" || cmd.ePath2OOoPrograms
-
-/*
-   if cp="" then
-      cmd.eSetCP  = "CLASSPATH=."            /* make sure local dir is searched!       */
-   else
-      cmd.eSetCP  = "CLASSPATH=$CLASSPATH"
-*/
-
-
    -- rgf, 2010-03-20: only use $CLASSPATH, if set
-   -- cmd.eSetCP= '[ "$CLASSPATH" != "" ] && TMPCP=.:$CLASSPATH || TMPCP=.:' || .endOfLine || -
-
    cmd.eSetCP= '[ "$CLASSPATH" != "" ] && TMPCP=$CLASSPATH: || TMPCP=' || .endOfLine || -
                'export CLASSPATH=$TMPCP'
-
-   -- cmd.eSetCP2 = "export CLASSPATH"
 
    cmd.eSetPath="export PATH="   || "$PATH" || cmd.ePath.sep || "$OOO_pgms"
 
@@ -366,13 +310,11 @@ do
    cmd.eUninstallScriptName.RunAsAdmin="uninstallOOo_sudo.sh"
 
    if cmd.eBinDir="" then
-      cmd.eBinDir="/usr/bin"     /* directory where executables reside     */
+      cmd.eBinDir="/usr/local/bin"     /* directory where executables reside     */
 
-   -- cmd.eSetEnvironmentScriptName="setEnvironment4OOo.sh"
    cmd.eSetEnvironmentScriptName=cmd.eThisDirectory || "setEnvironment4OOo.sh"
    cmd.eExecuteEnvironmentScript=". "cmd.eSetEnvironmentScriptName
 
-   -- cmd.eSetEnvironment4BSFScriptName=cmd.eInstallDirectory || "setEnvironment4BSF.sh"
    cmd.eSetEnvironment4BSFScriptName=cmd.eThisDirectory || "setEnvironment4BSF.sh"
 
    cmd.eRunRexxScriptJava = cmd.eThisDirectory || "runRexxScriptJava.sh"
@@ -395,9 +337,6 @@ do
    cmd.eAdd2BashRcEpilog = "fi" "#" cmd.eInstallationNeedle
 
    cmd.eAdd2BashRc.0 = 2
-   -- cmd.eAdd2BashRc.1 = "    # allow BSF4ooRexx to find OOo and the OOo jars"
-   -- cmd.eAdd2BashRc.2 = "    ." cmd.eSetEnvironmentScriptName ">/dev/null"
-   -- cmd.eAdd2BashRc.1 = "    #" cmd.eInstallationNeedle "(created by" j.user.name")"
    cmd.eAdd2BashRc.1 = "    #" cmd.eInstallationNeedle "(created by" cmd.eUser || ")"
 
    cmd.eAdd2BashRc.2="if [ -f" cmd.eSetEnvironmentScriptName "];" -
@@ -426,13 +365,6 @@ do
 
    cmd.eDLL="BSF4ooRexx.dll"       /* define name of dynamic link library    */
 
---rgf,20100320   cmd.eSetOOoPgms = "set OOoPgm=" || cmd.ePath2OOoPrograms
-
-/*
-   if cp="" then
-      cmd.eSetCP  = "set CLASSPATH=."        /* make sure local dir is searched!       */
-   else
-*/
    cmd.eSetCP  = "set CLASSPATH=.;%CLASSPATH%" -- rgf, 20100823: always assume CLASSPATH (e.g. BSF) exists already!
 
    cmd.eSetPath="set PATH="      || "%PATH%" || cmd.ePath.sep || "%OOO_pgms%"
@@ -458,15 +390,9 @@ end
 
 -- rgf, 2008-07-12: check whether "unoinfo" executable exists (starting with OOo 3.x), if so, use it
 if cmd.eIsUnix then
-do
    tmpPath=cmd.ePath2OOoPrograms || cmd.eFile.sep || "unoinfo"
-   -- tmpPath=stream(cmd.ePath2OOoPrograms || cmd.eFile.sep || "unoinfo", "C", "QUERY EXISTS")
-end
 else                 -- Windows
-do
    tmpPath=cmd.ePath2OOoPrograms || cmd.eFile.sep || "unoinfo.exe"
-   -- tmpPath=stream(cmd.ePath2OOoPrograms || cmd.eFile.sep || "unoinfo.exe", "C", "QUERY EXISTS")
-end
 
 say "a) checking existence of ["tmpPath"]..."
 
@@ -476,12 +402,9 @@ say "b) query exists returns: ["tmpPath"]"
 if tmpPath<>"" then
 do
    cmd.eSetCPWithFullPath=getClassPath4OOo(tmpPath)
--- say "debug: cmd.eSetCPWithFullPath=["cmd.eSetCPWithFullPath"] <-- 000 <---"
 end
 else  -- assume pre OOo 3.0 setup configuration, create CLASSPATH string accordingly
 do
-   -- jars="jurt.jar unoil.jar ridl.jar juh.jar" cmd.eRgfReflectUNO, ---rgf, 2007-02-03: not needed anymore
-   -- jars="jurt.jar unoil.jar ridl.jar juh.jar"
    -- use sequence of OOo 3.*
    jars="juh.jar ridl.jar jurt.jar unoil.jar"
         -- "sandbox.jar"               /* only needed for OOo < 2.0              */
@@ -489,9 +412,6 @@ do
    cmd.eSetCPWithFullPath=""
    do i=1 to words(jars)            /* loop over words                        */
       jar=word(jars, i)             /* extract word */
--- say "debug: jar=["jar"] <-"
---      cmd.eSetCP=cmd.eSetCP || cmd.eJarVar || jar  /* append it */
-
       if cmd.eSetCPWithFullPath<>"" then
          cmd.eSetCPWithFullPath=cmd.eSetCPWithFullPath || cmd.ePath.sep
 
@@ -502,36 +422,6 @@ do
    cmd.eSetCPWithFullPath=cmd.eSetCPWithFullPath || cmd.ePath.sep || cmd.ePath2OOoPrograms
 end
 
-/*
-if cmd.eIsUnix=1 then
-   cmd.eSetCP=cmd.eSetCP || cmd.ePath.sep || "$OOO_pgms"
-else
-   cmd.eSetCP=cmd.eSetCP || cmd.ePath.sep || "%OOO_pgms%"
-*/
-
-
-/* make sure that CLASSPATH is used in case this script runs at a time, when other programs have set
-   the classpath environment variable
-*/
-/* rgf, 20100320
-if cp="" then
-do
-
---  call lineout fn, cmd.eSetCP || cmd.ePath.Sep || cmd.eSetCPWithFullPath   /* set CLASSPATH        */
-
-  if cmd.eIsUnix=1 then
-     cmd.eSetCP=cmd.eSetCP || "$OOO_pgms"  || cmd.ePath.sep
-
-/*
-  else -- rgf, 20100320
-     cmd.eSetCP=cmd.eSetCP || cmd.ePath.sep || "%CLASSPATH%"
-*/
-
-end
--- */
-
--- say "debug: cmd.eSetCP            =["cmd.eSetCP"] <--"
--- say "debug: cmd.eSetCPWithFullPath=["cmd.eSetCPWithFullPath"] <--"
   -- rgf, 20100320: complete CLASSPATH definition
 cmd.eSetCP=cmd.eSetCP || cmd.ePath.sep || cmd.eSetCPWithFullPath
 
@@ -547,11 +437,8 @@ cmd.e4OOoPrograms=cmd.e4OOoPrograms "BSF_OnTheFly.cls rgf_util2.rex"    -- rgf, 
 
    /* create the scripts   */
 call createEnvironmentScript
-
 call createInstallScript
-
 call createRunAsScripts       /* 2010-03-07: for Vista and higher */
-
 call info         /* tell the user what to do with it */
 
 exit
@@ -565,12 +452,11 @@ createInstallScript: procedure expose cmd. path.
   ui=cmd.eUninstallScriptName          /* name of uninstall script            */
 
    /* copying setEnvironment4* to a PATH-directory */
-  tgtDir=cmd.eBinDir       /* Windows: Rexx-home directory, Unix: /usr/bin  */
+  tgtDir=cmd.eBinDir       /* Windows: Rexx-home directory, Unix: /usr/local/bin  */
 
   call stream fn, "c", "open replace"
   call stream ui, "c", "open replace"
 
-  -- hintString="created:" q(date("S") time()) "by user" q(value("USER",,"ENVIRONMENT"))
   hintString="created:" q(date("S") time()) "by user" q(userid())
 
   call lineout fn, cmd.eEcho qe("created:" q(date("S") time()))
@@ -591,26 +477,10 @@ createInstallScript: procedure expose cmd. path.
   -- uninstall Rexx macros, before we uninstall the rest of the pack ... ???
   call lineout ui, cmd.eEcho qe("uninstalling ooRexx OOo macros from OpenOffice:")
   if cmd.eIsUnix=1 then
-  do
-     -- tmpCmd= "." cmd.eSetEnvironment4BSFScriptName  ">/dev/null;" "." cmd.eSetEnvironmentScriptName ">/dev/null;"
-     -- rgf, 2010-08-21
-     -- tmpCmd=cmd.eRunRexxScriptOOo "installOOoRexxMacros.rxo uninstall"
-     -- call lineout ui, tmpCmd
      call lineout ui, cmd.eRunRexxScriptOOo "installOOoRexxMacros.rxo uninstall"
-  end
   else
-  do
-     -- tmpCmd="call" cmd.eSetEnvironment4BSFScriptName  ">nul &&" -
-     --               cmd.eSetEnvironmentScriptName      ">nul &&" -
-     --               "rexx installOOoRexxMacros.rxo uninstall"
-
-     -- on uninstall not needed as environment is already set o.k.
-     -- call lineout ui,  cmd.eSetEnvironment4BSFScriptName  ">nul"
-     -- call lineout ui,  cmd.eSetEnvironmentScriptName      ">nul"
      call lineout ui, "rexx installOOoRexxMacros.rxo uninstall"
-  end
 
-  -- call lineout ui, tmpCmd "rexx installOOoRexxMacros.rxo uninstall"
   call lineout ui, cmd.eEcho qe(" ")
   call lineout ui, ""
 
@@ -618,39 +488,16 @@ createInstallScript: procedure expose cmd. path.
   call lineout ui, cmd.eEcho qe("Removing package ""ScriptProviderForooRexx.oxt"" from OpenOffice:")
   if cmd.eIsUnix=1 then
   do
---     call lineout ui, "."    cmd.eSetEnvironmentScriptName ">/dev/null;rexx add_ooRexxPackage.rxo remove 2>/dev/null"
-     -- tmpCmd="rexx add_ooRexxPackage.rxo remove /unopkg:"cmd.ePath2OOoPrograms"/unopkg"
-     -- call lineout ui, "."    cmd.eSetEnvironmentScriptName ">/dev/null;"tmpCmd "2>/dev/null"
      tmpCmd=cmd.eRunRexxScriptOOo "add_ooRexxPackage.rxo remove /unopkg:"cmd.ePath2OOoPrograms"/unopkg"
      call lineout ui, tmpCmd "2>/dev/null"
   end
   else
   do
-     -- call lineout ui, "call" cmd.eSetEnvironmentScriptName ">nul && rexx add_ooRexxPackage.rxo remove 2>nul"
-     -- tmpCmd="call" cmd.eSetEnvironment4BSFScriptName  ">nul &&" -
-     --               cmd.eSetEnvironmentScriptName      ">nul &&" -
-     --               "rexx  add_ooRexxPackage.rxo remove 2>nul"
-     -- call lineout ui, tmpCmd
-
      call lineout ui, "rexx  add_ooRexxPackage.rxo remove 2>nul"
   end
 
   call lineout ui, cmd.eEcho qe(" ")
   call lineout ui, ""
-
-/*  ---rgf, 2007-02-03: no need to copy as it is now part of "bsf-rexx-engine.jar"
-     /* copying jar-file to OOo classes-directory */
-  tgtDir=cmd.ePath2OOoJars
-  tgtFile=stream(cmd.eRgfReflectUNO, "C","Query EXISTS")
-
-  call lineout fn, cmd.eEcho qe("copying UNO reflection jar" q(cmd.eRgfReflectUNO) "to" q(tgtDir) "...")
-  call lineout fn, cmd.eCopy qw(cmd.eRgfReflectUNO) qw(tgtDir)
-  call lineout fn, ""
-
-  call lineout ui, cmd.eEcho qe("deleting" q(cmd.eRgfReflectUNO)  "from directory" q(tgtDir) "...")
-  call lineout ui, cmd.eDelete qw(tgtDir || cmd.eFile.sep || cmd.eRgfReflectUNO)
-  call lineout ui, ""
-*/
 
    /* 2007-02-03, ---rgf: copy OOo-Files to OOo directory; this way macros work without any
                           global changes to the environment */
@@ -659,7 +506,7 @@ createInstallScript: procedure expose cmd. path.
   do
      if cmd.eIsUnix=.true then
      do
-        tmpTargetDir=q("/usr/bin")
+        tmpTargetDir=q(cmd.eBinDir)
         tmpTitleCopy="copying OOo-support Rexx programs to" tmpTargetDir "..."
         tmpTitleDel ="removing OOo-support Rexx programs from" tmpTargetDir "..."
      end
@@ -687,12 +534,12 @@ createInstallScript: procedure expose cmd. path.
            call lineout fn, cmd.eCopy qw(pgmWithSourcePath) qw(cmd.ePath2OOoPrograms)
            call lineout ui, cmd.eDelete qw(cmd.ePath2OOoPrograms || cmd.eFile.sep || pgm)
         end
-        else   -- in Unix: copy to /usr/bin, ignore lib´BSF4ooRexx.so, which gets linked to its appropriate lib directory
+        else   -- in Unix: copy to cmd.eBinDir, ignore libBSF4ooRexx.so, which gets linked to its appropriate lib directory
         do
            if pgm~left(3)<>"lib" then
            do
-              call lineout fn, cmd.eCopy qw(pgmWithSourcePath) qw("/usr/bin")
-              call lineout ui, cmd.eDelete qw("/usr/bin/" || cmd.eFile.sep || pgm)
+              call lineout fn, cmd.eCopy qw(pgmWithSourcePath) qw(cmd.eBinDir)
+              call lineout ui, cmd.eDelete qw(cmd.eBinDir || cmd.eFile.sep || pgm)
            end
         end
 
@@ -700,18 +547,6 @@ createInstallScript: procedure expose cmd. path.
         call lineout ui, ""
      end
   end
-
-/*
-   /* tgtFile=stream(cmd.eSetEnvironmentScriptName, "C","Query EXISTS") */
-  tgtFile=cmd.eSetEnvironmentScriptName
-  call lineout fn, cmd.eEcho qe("copying"  q(tgtFile) "to" q(tgtDir) "...")
-  call lineout fn, cmd.eCopy qw(tgtFile) qw(tgtDir)
-  call lineout fn, ""
-
-  call lineout ui, cmd.eEcho qe("deleting" q(tgtFile)  "from directory" q(tgtDir) "...")
-  call lineout ui, cmd.eDelete qw(tgtDir || cmd.eFile.sep || cmd.eSetEnvironmentScriptName)
-  call lineout ui, ""
-*/
 
    -- 2008-05-17, ---rgf: now add necessary path and classpath values to registry
   call lineout ui, ""
@@ -729,9 +564,6 @@ createInstallScript: procedure expose cmd. path.
 
         call lineout fn, ""
         call lineout fn, cmd.eEcho qc("adding entries to the end of" tmpTgt "...")
-
--- rgf, 2010-08-14: do not write empty line anymore
---        call lineout fn, cmd.eEcho qc(" ") appendTo
 
         if bWriteProlog then
            call lineout fn, cmd.eEcho qc(cmd.eAdd2BashRcProlog) appendTo
@@ -751,45 +583,16 @@ createInstallScript: procedure expose cmd. path.
 
         bWriteProlog=.true
      end
----------------------
-/* rgf, 2010-08-10
-     if cmd.eInstallSystemWide=.true then -- install systemwide?
-        tmpTgt=cmd.eAdd2Profile
-     else
-        tmpTgt=cmd.eAdd2BashRc
 
-     call lineout fn, ""
-     -- call lineout fn, cmd.eEcho qc("adding entries to the end of" cmd.eAdd2BashRc "...")
-     call lineout fn, cmd.eEcho qc("adding entries to the end of" tmpTgt "...")
+     if \cmd.eIsMacOSX then	-- do not create file assosiations on MacOSX
+     do
+              -- 2010-07-27, create/remove fileAssocations
+        call lineout fn, "./fileAssociations_for_rxo_add.sh"
+        call lineout fn, ""
 
-     -- appendTo=">>" cmd.eAdd2BashRc
-     appendTo=">>" tmpTgt
-
-
-     call lineout fn, cmd.eEcho qc(" ") appendTo
-     -- call lineout fn, cmd.eEcho qc("#" hintString":") appendTo
-
-     do i=1 to cmd.eAdd2BashRc.0
-        call lineout fn, cmd.eEcho qc(cmd.eAdd2BashRc.i) appendTo
+        call lineout ui, "./fileAssociations_for_rxo_remove.sh"
+        call lineout ui, ""
      end
-     call lineout fn, ""
-
-     call lineout ui, cmd.eEcho qe("removing BSF4ooRexx' OpenOffice.org entries from" tmpTgt "...")
-     call lineout ui, cmd.e_sed_delete tmpTgt
-     call lineout ui, ""
-*/
-----<----
-
-      if \cmd.eIsMacOSX then	-- do not create file assosiations on MacOSX
-      do
-               -- 2010-07-27, create/remove fileAssocations
-         call lineout fn, "./fileAssociations_for_rxo_add.sh"
-         call lineout fn, ""
-
-         call lineout ui, "./fileAssociations_for_rxo_remove.sh"
-         call lineout ui, ""
-      end
-
   end
   else      -- add statements to incorporate paths into registry
   do
@@ -811,8 +614,6 @@ createInstallScript: procedure expose cmd. path.
       tmpStr1=cmd "/add"    arg
       tmpStr2=cmd "/remove" arg
          -- inform user
-      -- call lineout fn, cmd.eEcho qc(tmpStr1)
-      -- call lineout ui, cmd.eEcho qc(tmpStr2)
       call lineout fn, cmd.eEcho qc("add OpenOffice-paths to environment variable 'Path' via registry ...")
       call lineout ui, cmd.eEcho qc("remove OpenOffice-paths from environment variable 'Path' via registry ...")
 
@@ -824,7 +625,6 @@ createInstallScript: procedure expose cmd. path.
       call lineout fn, ""
 
          -- add bsf-jars to CLASSPATH
-
          -- make sure the current directory is searched as well
       if cmd.eRegistryClassPath~left(5)="HKCU\" then  -- rgf, 2011-01-25: make sure that system set CLASSPATH is honored !
          arg="/key:"q(cmd.eRegistryClassPath) "/path:"q("%CLASSPATH%;"cmd.eSetCPWithFullPath)
@@ -836,8 +636,6 @@ createInstallScript: procedure expose cmd. path.
       tmpStr1=cmd "/add"    arg
       tmpStr2=cmd "/remove" arg
          -- inform user
-      -- call lineout fn, cmd.eEcho qc(tmpStr1)
-      -- call lineout ui, cmd.eEcho qc(tmpStr2)
       call lineout fn, cmd.eEcho qc("add OpenOffice-jars to environment variable 'CLASSPATH' via registry ...")
       call lineout ui, cmd.eEcho qc("remove OpenOffice-jars from environment variable 'CLASSPATH' via registry ...")
 
@@ -856,40 +654,17 @@ createInstallScript: procedure expose cmd. path.
       call lineout ui, "regedit /s fileAssociations_for_RXO_remove.reg"
       call lineout ui, "associationChanged.exe"
       call lineout ui, ""
-
   end
-
-
-/*
-  call lineout fn, cmd.eEcho qe("If addressing OOo from the command line, then setup the environment beforehand using:")
-  call lineout fn, ""
-  call lineout fn, cmd.eEcho qe("   " cmd.eExecuteEnvironmentScript)
-  call lineout fn, ""
-  call lineout fn, cmd.eEcho qe("done.")
-  call lineout fn, ""
-*/
 
    /* rgf, 2006-07-11: add package to OOo via Rexx and the now established OOo-support */
   call lineout fn, cmd.eEcho qe("adding package ""ScriptProviderForooRexx.oxt"" to OpenOffice:")
   if cmd.eIsUnix=1 then
   do
---     call lineout fn, "."    cmd.eSetEnvironmentScriptName ">/dev/null;rexx add_ooRexxPackage.rxo"
-     -- tmpCmd="rexx add_ooRexxPackage.rxo /unopkg:"cmd.ePath2OOoPrograms"/unopkg"
-     -- call lineout fn, "."    cmd.eSetEnvironmentScriptName ">/dev/null;"tmpCmd "2>/dev/null"
-
      tmpCmd=cmd.eRunRexxScriptOOo "add_ooRexxPackage.rxo /unopkg:"cmd.ePath2OOoPrograms"/unopkg"
      call lineout fn, tmpCmd "2>/dev/null"
-
   end
   else
   do
-     -- call lineout fn, "call" cmd.eSetEnvironmentScriptName ">nul && rexx add_ooRexxPackage.rxo"
-
-     -- tmpCmd="call" cmd.eSetEnvironment4BSFScriptName  ">nul &&"  -
-     --               cmd.eSetEnvironmentScriptName      ">nul &&"  -
-     --               "rexx add_ooRexxPackage.rxo"
-     -- call lineout fn, tmpCmd
-
      call lineout fn, "call" cmd.eSetEnvironment4BSFScriptName  ">nul"
      call lineout fn, "call" cmd.eSetEnvironmentScriptName      ">nul"
      call lineout fn, "rexx add_ooRexxPackage.rxo"
@@ -904,32 +679,13 @@ createInstallScript: procedure expose cmd. path.
 
   if cmd.eIsUnix=1 then
   do
-      -- rgf, 20100814
-     -- tmpCmd= "." cmd.eSetEnvironmentScriptName ">/dev/null;"
-     -- tmpCmd= "." cmd.eSetEnvironment4BSFScriptName  ">/dev/null;" "." cmd.eSetEnvironmentScriptName ">/dev/null;"
-     -- rgf, 2010-08-21:
      tmpCmd=cmd.eRunRexxScriptOOo "installOOoRexxMacros.rxo install"
-
-
-/*
-     call lineout fn, "."    cmd.eSetEnvironmentScriptName ">/dev/null;rexx installOOoRexxMacros.rxo install"
-     call lineout ui, "."    cmd.eSetEnvironmentScriptName ">/dev/null;rexx installOOoRexxMacros.rxo uninstall"
-*/
   end
   else
   do
-     -- tmpCmd="call" cmd.eSetEnvironment4BSFScriptName  ">nul &&"  -
-     --               cmd.eSetEnvironmentScriptName      ">nul &&"  -
-     --               "rexx installOOoRexxMacros.rxo install"
-
      tmpCmd="rexx installOOoRexxMacros.rxo install"
-/*
-     call lineout fn, "call" cmd.eSetEnvironmentScriptName ">nul && rexx installOOoRexxMacros.rxo install"
-     call lineout ui, "call" cmd.eSetEnvironmentScriptName ">nul && rexx installOOoRexxMacros.rxo uninstall"
-*/
   end
 
-  -- call lineout fn, tmpCmd "rexx installOOoRexxMacros.rxo install"
   call lineout fn, tmpCmd
 
   lastMessage="done."
@@ -946,26 +702,11 @@ createInstallScript: procedure expose cmd. path.
   call lineout fn, ""
   call lineout fn, cmd.eEcho cmd.eSupportInfos
   call lineout fn, ""
-/*
-  if cmd.eIsUnix=.false then
-  do
-     call lineout fn, "@pause"
-     call lineout fn, ""
-  end
-*/
 
   call lineout ui, cmd.eEcho qe("done.")
   call lineout ui, ""
   call lineout ui, cmd.eEcho cmd.eSupportInfos
   call lineout ui, ""
-/*
-  if cmd.eIsUnix=.false then
-  do
-     call lineout ui, "@pause"
-     call lineout ui, ""
-  end
-*/
-
 
   call stream fn, "c", "close"
   call stream ui, "c", "close"
@@ -973,17 +714,9 @@ createInstallScript: procedure expose cmd. path.
   if cmd.eSetExecutable<>"" then       /* set file executable (Unix)    */
   do
      cmd.eSetExecutable cmd.eInstallScriptName
-
--- rgf,2011-06-08: FC has no "admin" group!
---     cmd.eSetOwner      cmd.eInstallScriptName
-
      cmd.eSetExecutable cmd.eUninstallScriptName
-
--- rgf,2011-06-08: FC has no "admin" group!
---     cmd.eSetOwner      cmd.eUninstallScriptName
   end
   return
-
 
 
 /* Windows only: create runAs batch file for Vista and higher, rgf 2010-03-07 */
@@ -1013,8 +746,6 @@ createRunAsScripts: procedure expose cmd. path.
   return
 
 
-
-
 /* create the test script which sets up all needed parameters to run Rexx programs from
    this directory */
 createEnvironmentScript: procedure expose cmd. path.
@@ -1030,70 +761,32 @@ createEnvironmentScript: procedure expose cmd. path.
   else
      call lineout fn, cmd.eEcho qe("setting the CLASSPATH environment variable to point to the OpenOffice jar files")
 
---  call lineout fn, cmd.eEcho qe("(make sure that the environment is set for BSF4ooRexx as well)...")
   call lineout fn, ""
 
---  call lineout fn, cmd.eLineComment "make sure we use the same OOo-BSF4Rexx programs the OOo macros do (hence" q("OOo_pgms") "listed first)"
   if \cmd.eIsMacOSX then
   do
      call lineout fn, cmd.eLineComment "define and lookup OOo's program directory first"
      call lineout fn, cmd.eSetOOoHome
   end
 
--- call lineout fn, cmd.eSetOOoJars
---  call lineout fn, ""
-
---   call lineout fn, cmd.eLineComment "make sure only BSF4Rexx files from the installation are used, hence listing first"
-
-  if cmd.eIsUnix=.false then  -- 2010-08-14: on Linux the needed Rexx scripts are copied to '/usr/bin' already, hence no need anymore
+  if cmd.eIsUnix=.false then  -- on Linux the needed Rexx scripts are copied to '/usr/local/bin' already, hence no need anymore
   do
      call lineout fn, cmd.eSetPath        /* set PATH        */
      call lineout fn, ""
   end
 
-/*
-  call lineout fn, cmd.eLineComment "copy UNO-reflection jar to OOo/SO program/classes directory..."
-  call lineout fn, cmd.eCopy qw(stream(cmd.eRgfReflectUNO, "C","Query EXISTS")) qw(cmd.ePath2OOoJars)
-  call lineout fn, ""
-*/
-
   call lineout fn, cmd.eLineComment "set CLASSPATH environment variable ..."
---  call lineout fn, cmd.eLineComment "please note: if using OOo/SO version 2.0 or greater, you do not need ""sandbox.jar"""
-
---   call lineout fn, cmd.eSetCP          /* set CLASSPATH        */
-  -- rgf, 20100320: call lineout fn, cmd.eSetCP || cmd.ePath.Sep || cmd.eSetCPWithFullPath   /* set CLASSPATH        */
   call lineout fn, cmd.eSetCP /* set CLASSPATH        */
-
---  call lineout fn, cmd.eSetCP2         /* export it on Unix    */
   call lineout fn, ""
 
   if cmd.eIsUnix=.false then  -- don't echo in Unix as this script may be executed on every new shell
      call lineout fn, cmd.eEcho qe(".")
 
---  call lineout fn, cmd.eEcho qe("It is advised to add these environment settings to your systems profile!")
---  call lineout fn, cmd.eEcho qe("(This way it is always assured, that Rexx can find the OOo Java classes.)")
-
-/*
-  if cmd.eIsUnix=1 then
-  do
-     call lineout fn, cmd.eEcho qe("E.g. add the following entries to your '~/.bashrc':")
-     call lineout fn, cmd.eEcho qe(" ")
-     call lineout fn, cmd.eEcho qe("   # allow using OpenOffice.org via its Java interface classes")
-     call lineout fn, cmd.eEcho qe("   ." cmd.eSetEnvironmentScriptName ">/dev/null")
-  end
-*/
-
   call lineout fn, ""
-
   call stream fn, "c", "close"
 
   if cmd.eSetExecutable<>"" then       /* set file executable (Unix)    */
-  do
      cmd.eSetExecutable cmd.eSetEnvironmentScriptName
-
--- rgf,2011-06-08: FC has no "admin" group!
---     cmd.eSetOwner      cmd.eSetEnvironmentScriptName
-  end
 
   return
 
@@ -1143,13 +836,6 @@ info:                            /* tell user what has happened   */
   say "the following scripts have been created:"
   say
   say " " pp(cmd.eInstallScriptName)": run to install ooRexx-UNO support for OpenOffice"
-/*
-  if cmd.eIsUnix=0 then
-     say "       usage:" cmd.eInstallScriptName
-  else
-     say "       usage:" q("./"cmd.eInstallScriptName)
-  say
-*/
   if cmd.eIsUnix=0 then
      say "       to install as Administrator run:" cmd.eInstallScriptName.RunAsAdmin
   else
@@ -1158,45 +844,15 @@ info:                            /* tell user what has happened   */
   say
 
   say " " pp(cmd.eUninstallScriptName)": run to uninstall ooRexx-UNO support for OpenOffice"
-/*
-  if cmd.eIsUnix=0 then
-     say "       usage:" cmd.eUninstallScriptName
-  else
-     say "       usage:" q("./"cmd.eUninstallScriptName)
-  say
-*/
   if cmd.eIsUnix=0 then
      say "       to uninstall as Administrator run:" cmd.eUnInstallScriptName.RunAsAdmin
   else
      say "       to uninstall as root run:" q("./"cmd.eUnInstallScriptName.RunAsAdmin)
   say
 
-  -- say " " pp(cmd.eSetEnvironmentScriptName)": helper script for setting up the environment"
   say " " pp(filespec("Name",cmd.eSetEnvironmentScriptName))": helper script for setting up the environment"
   say "              for running OpenOffice.org (OOo) ooRexx programs"
   say
-/*
-  if cmd.eIsUnix=0 then
-     say "       usage:" cmd.eSetEnvironmentScriptName
-  else
-     say "       usage:" q(". ./"cmd.eSetEnvironmentScriptName)
-  say
-*/
-
-/*
-  say
-  say "     remarks: - After running this script you may invoke any BSF4ooRexx-program"
-  say "                automating OOo/SO via BSF4ooRexx', e.g. (try it!)"
-  say
-  if cmd.eIsUnix=0 then
-     say "                  " cmd.eSetEnvironmentScriptName
-  else
-     say "                  " q(". ./"cmd.eSetEnvironmentScriptName)
-
-  say "                  " "rexx testOOo.rex"
-  say
-  say "Good luck! :-)  [You may also want to take a look at this generated script.]"
-*/
   say "Have fun and enjoy! --rony"
   exit 0
 
@@ -1214,7 +870,6 @@ getRexxDir: procedure expose cmd. path.
   say "         with the environment variable ""PATH"", ie. replace" pp(eyecatcher) "with"
   say "         any of the listed PATH directory, and then run the scripts."
   return eyecatcher              /* indicate that not found       */
-
 
 
 /* parse path into stem path. */
@@ -1245,6 +900,7 @@ say "... i="i "chunk="pp(chunk)
 
   return
 
+
 /* find needle in path and return it   */
 findPath: procedure expose cmd. path.
    parse upper arg needles    /* blank delimited, translated into uppercase   */
@@ -1256,7 +912,6 @@ findPath: procedure expose cmd. path.
       end
    end
    return ""
-
 
 
 /* Returns the received path in canonized form, i.e. removes "." and "..", wherever possible */
@@ -1292,8 +947,6 @@ canonizePath: procedure expose cmd. path.
    end
 
    return newArr~makeString("LINE",sep)
-
-
 
 
 /*  2008-05-17, ---rgf
@@ -1344,14 +997,6 @@ syntax2:                   -- no OOo-entry
 /* Look for "soffice" on environment variable PATH. If a link, find link's target.
 */
 ::routine getOOoHomeDirUnix
-
-/*
-    -- rgf, 2011-05-31: check for "/opt/libreoffice/soffice" first (default installation location for http://www.LibreOffice.org)
-  path="/opt/libreoffice/program"
-  if sysFileExists(path"/soffice") then
-     return path
-*/
-
    -- cater for new name variants of "libreoffice"
   do needle over .list~of("/opt/*openoffice*", "/opt/libreoffice*")
      -- call sysFileTree "/opt/libreoffice*", "dirs.", "DO"
@@ -1364,7 +1009,6 @@ syntax2:                   -- no OOo-entry
         end
      end
   end
-
 
   val=value("PATH", , "environment")   -- get PATH environment variable's value
   paths=val~makeArray(":")       -- create array from string, use Unix path delimiter (":")
@@ -1469,9 +1113,7 @@ syntax2:                   -- no OOo-entry
    -- starting with ooRexx 4.2.0 we can get the bitness information out of the version string
   parse version '_'version'(' '_' bitness '-'
   if version>="4.2", bitness<>"" then
-  do
      return bitness
-  end
 
   -- do not use ADDRESS CMD as on Linux this causes an error :(
   "rexx -v 2>&1 | rxqueue"
@@ -1480,5 +1122,4 @@ syntax2:                   -- no OOo-entry
      parse pull hint ":" val .
      if hint="Addressing Mode" then bitness=val
   end
-
   return bitness

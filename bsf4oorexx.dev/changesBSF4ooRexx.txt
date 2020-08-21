@@ -1,9 +1,69 @@
+
+-------------------------------------- 2020-08-20 ----------------------------------
+
+- Janino (http://janino-compiler.github.io/janino/)
+
+  - replaced Janino 3.0.15 (from 2019) with latest version (3.1.2, baseline is Java 6 and
+    is able to compile up to Java 1.8/8 features, check feature list as not everything
+    of newer Java features is implemented, although almost everything :) )
+
+-------------------------------------- 2020-08-17 ----------------------------------
+
+- bsf4oorexx.dev/install/setupBSF.rex
+
+        - add 64-bit arm library name
+
+-------------------------------------- 2020-08-13 ----------------------------------
+
+- samples/ReneJansen/jdbc.jrexx
+
+        - added new databases, switches: "A" (MariaDB), "L" (SQLite), "Y" (MySQL)
+
+        - tidying up a little bit
+
+
+- samples/ReneJansen/xslt.jrexx
+
+        - uses bsf.loadClass() for abstract TransformerFactory instead of bsf.import()
+
+-------------------------------------- 2020-08-12 ----------------------------------
+
+- BSF.CLS
+
+        - added public routine ppJavaExceptionChain(co[,bStackTrace]) which
+          returns a string showing the Java exception chain to ease spotting
+          the source Java exception for debugging
+
+- samples/JavaFX/*
+
+        - removed dependency on rgf_util2.rex' ppCondition2() by replacing these
+          calls with the new ppJavaExceptionChain() routine
+
+-------------------------------------- 2020-07-27 ----------------------------------
+
+- BSF.CLS
+
+        - fixed some ooRexxDoc formatting errors
+
+-------------------------------------- 2020-07-27 ----------------------------------
+
+- samples\JavaFX, added new samples:
+
+        - fxml_20: ListView sample
+
+        - fxml_25: simple TableView sample
+
+        - fxml_26: TableView sample with editable ComboBox column
+
+        - fxml_27: TableView sample with editable ComboBox, DatePicker;
+                   committing in addition to ENTER, when using TAB or focus change with
+                   mouse
+
 -------------------------------------- 2020-01-28 ----------------------------------
 
 - RexxCompiledScript.java
 
         - removed code to change filename this is not possible for aRexxCompiledScript
-
 
 - RexxScriptEngine.java
 

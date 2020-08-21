@@ -1,9 +1,62 @@
 ---
-DONE: 2020-01-26, rgf:
-        - re-capitlize and add engine names, e.g. "Rexx"
 
-        - make sure that CompiledScript objects gain the filename in engine scope Bindings,
-          if present/possible; DONE in RexxScriptEngine.compile(script,filename)
+2020-07-05, rgf: --2020-08-12: NOT NEEDED, everything needed already in place!
+        - BSF.InputStream
+        - BSF.OutputStream
+
+                - allow switch to temporarily inhibit prefixes
+                - change prefix to an attribute to allow its change
+
+---
+
+2020-07-02, rgf:
+
+        - rgf: --2020-08-12: make JDBC samples for MiniSQL, MySQL, Postgress; DONE, also added
+          MariaDB
+        - create and add Tomcat-Taglib for script engines, have stdout
+          use the document writer object without a "rexxOut>" prefix
+          - may need rework of BSF.CLS redirections (individually turn on/off
+            prefix, get/set prefix values)
+        - check whether Tomcat "Rexx server pages (RSP)" are feasible
+
+
+---
+2020-06-04, rgf:
+
+        - notices.txt file!
+
+        - update xdg-tools (currently from 2011) ?
+
+        - rgf: --2020-06-15: NOT APPLICABLE, he has a quite "strange" setup
+          not adhering to standards; Till Winkler, e-Mail, 2020-06-04 abends
+
+                "Habe festgestellt (was mir neu war) das wenn man symbolic links (ln -s)
+                nach /usr/lib erstellt, die zwar ohne Fehlermeldung erzeugt werden,
+                diese aber nicht funktionieren und auch nicht gefunden gefunden werden.
+
+                Relative Softlinks ( ln -rs ) + ldconfig lösen bei mir aber das Problem.
+                Ich glaube in deinem setupBSF script liegt der Fehler (line 901ff) in
+                der Verwendung von ln -fsv
+                ...
+                Nachtrag: ln -fsrv statt ln -fsv in löst auch das LibreOffice Problem."
+
+                - on Linux use "ln -fsrv" (on Mac the "r" option is not present) ?
+
+
+---
+
+2020-02-06, rgf: exits: check for thread, attach/detach if necessary
+
+---
+                DONE: 2020-01-26, rgf:
+                        - re-capitlize and add engine names, e.g. "Rexx"
+
+                        - make sure that CompiledScript objects gain the filename in engine scope Bindings,
+                          if present/possible; DONE in RexxScriptEngine.compile(script,filename)
+
+                        remark (rgf): in the meantime I could officially add a proper filename creation in FXMLLoader
+                                  which also gives exact location information in FXML files; will be part of JavaFX15
+                                  to be released in fall 2020
 
 ---
 2019-08-13, rgf: maybe check in exits whether tid has changed (should not be necessary, maybe with command handlers)
