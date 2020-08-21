@@ -3,7 +3,6 @@
  * Janino - An embedded Java[TM] compiler
  *
  * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
- * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -33,6 +32,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
 import org.codehaus.commons.compiler.CompileException;
+import org.codehaus.commons.compiler.InternalCompilerException;
 import org.codehaus.commons.compiler.Location;
 import org.codehaus.commons.nullanalysis.Nullable;
 
@@ -70,15 +70,17 @@ class ReflectionIClass extends IClass {
 
             // Arrays have ONE single method: "Object clone()".
             return new IMethod[] { new IMethod() {
-                @Override public IAnnotation[] getAnnotations()       { return new IAnnotation[0];                                       } // SUPPRESS CHECKSTYLE LineLength:8
-                @Override public Access        getAccess()            { return Access.PUBLIC;                                            }
-                @Override public boolean       isStatic()             { return false;                                                    }
-                @Override public boolean       isAbstract()           { return false;                                                    }
-                @Override public IClass        getReturnType()        { return ReflectionIClass.this.iClassLoader.TYPE_java_lang_Object; }
-                @Override public String        getName()              { return "clone";                                                  }
-                @Override public IClass[]      getParameterTypes2()   { return new IClass[0];                                            }
-                @Override public boolean       isVarargs()            { return false;                                                    }
-                @Override public IClass[]      getThrownExceptions2() { return new IClass[0];                                            }
+                @Override public IAnnotation[] getAnnotations()       { return new IAnnotation[0]; }
+                @Override public Access        getAccess()            { return Access.PUBLIC;      }
+                @Override public boolean       isStatic()             { return false;              }
+                @Override public boolean       isAbstract()           { return false;              }
+                @Override public String        getName()              { return "clone";            }
+                @Override public IClass[]      getParameterTypes2()   { return new IClass[0];      }
+                @Override public boolean       isVarargs()            { return false;              }
+                @Override public IClass[]      getThrownExceptions2() { return new IClass[0];      }
+
+                @Override public IClass
+                getReturnType() { return ReflectionIClass.this.iClassLoader.TYPE_java_lang_Object; }
             } };
         }
 
@@ -165,7 +167,7 @@ class ReflectionIClass extends IClass {
             } catch (ClassNotFoundException cnfe) {
                 throw new CompileException(
                     "Loading annotation type",
-                    null, // optionalLocation
+                    null, // location
                     cnfe
                 );
             }

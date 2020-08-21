@@ -3,7 +3,6 @@
  * Janino - An embedded Java[TM] compiler
  *
  * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
- * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -27,12 +26,16 @@
 package org.codehaus.commons.compiler;
 
 import java.io.File;
+import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.nio.charset.Charset;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import org.codehaus.commons.compiler.util.resource.ResourceFinder;
+import org.codehaus.commons.nullanalysis.NotNullByDefault;
 import org.codehaus.commons.nullanalysis.Nullable;
 
 /**
@@ -49,7 +52,7 @@ class AbstractJavaSourceClassLoader extends ClassLoader {
     /**
      * @see ClassLoader#defineClass(String, byte[], int, int, ProtectionDomain)
      */
-    @Nullable protected ProtectionDomainFactory optionalProtectionDomainFactory;
+    @Nullable protected ProtectionDomainFactory protectionDomainFactory;
 
     public
     AbstractJavaSourceClassLoader() {}
@@ -57,15 +60,32 @@ class AbstractJavaSourceClassLoader extends ClassLoader {
     public
     AbstractJavaSourceClassLoader(ClassLoader parentClassLoader) { super(parentClassLoader); }
 
+    // Override and delegate to parent.
+    @Override @NotNullByDefault(false) public InputStream
+    getResourceAsStream(String name) { return super.getParent().getResourceAsStream(name); }
+
     /**
      * @param sourcePath The sequence of directories to search for Java source files
      */
     public abstract void setSourcePath(File[] sourcePath);
 
     /**
-     * @param optionalCharacterEncoding if {@code null}, use platform default encoding
+     * @param sourceFinder Is used when searching for Java source files
      */
-    public abstract void setSourceFileCharacterEncoding(@Nullable String optionalCharacterEncoding);
+    public abstract void setSourceFinder(ResourceFinder sourceFinder);
+
+    /**
+     * @param charsetName if {@code null}, use platform default encoding
+     */
+    public void
+    setSourceFileCharacterEncoding(@Nullable String charsetName) {
+        this.setSourceCharset(charsetName == null ? Charset.defaultCharset() : Charset.forName(charsetName));
+    }
+
+    /**
+     * @param charset The character set to using when reading characters from a source file
+     */
+    public abstract void setSourceCharset(Charset charset);
 
     /**
      * @param lines  Whether line number debugging information should be generated
@@ -78,8 +98,8 @@ class AbstractJavaSourceClassLoader extends ClassLoader {
      * @see ClassLoader#defineClass(String, byte[], int, int, ProtectionDomain)
      */
     public final void
-    setProtectionDomainFactory(@Nullable ProtectionDomainFactory optionalProtectionDomainFactory) {
-        this.optionalProtectionDomainFactory = optionalProtectionDomainFactory;
+    setProtectionDomainFactory(@Nullable ProtectionDomainFactory protectionDomainFactory) {
+        this.protectionDomainFactory = protectionDomainFactory;
     }
 
     /**
@@ -113,8 +133,8 @@ class AbstractJavaSourceClassLoader extends ClassLoader {
      */
     public static void
     main(String[] args) throws Exception {
-        File[]  optionalSourcePath        = null;
-        String  optionalCharacterEncoding = null;
+        File[]  sourcePath        = null;
+        String  characterEncoding = null;
 
         boolean debuggingInfoLines  = false;
         boolean debuggingInfoVars   = false;
@@ -128,10 +148,10 @@ class AbstractJavaSourceClassLoader extends ClassLoader {
             if (!arg.startsWith("-")) break;
 
             if ("-sourcepath".equals(arg)) {
-                optionalSourcePath = AbstractJavaSourceClassLoader.splitPath(args[++i]);
+                sourcePath = AbstractJavaSourceClassLoader.splitPath(args[++i]);
             } else
             if ("-encoding".equals(arg)) {
-                optionalCharacterEncoding = args[++i];
+                characterEncoding = args[++i];
             } else
             if ("-g".equals(arg)) {
                 debuggingInfoLines  = true;
@@ -190,8 +210,8 @@ class AbstractJavaSourceClassLoader extends ClassLoader {
             CompilerFactoryFactory.getDefaultCompilerFactory().newJavaSourceClassLoader()
         );
         if (haveDebuggingInfo) ajscl.setDebuggingInfo(debuggingInfoLines, debuggingInfoVars, debuggingInfoSource);
-        if (optionalCharacterEncoding != null) ajscl.setSourceFileCharacterEncoding(optionalCharacterEncoding);
-        if (optionalSourcePath != null) ajscl.setSourcePath(optionalSourcePath);
+        if (characterEncoding != null) ajscl.setSourceFileCharacterEncoding(characterEncoding);
+        if (sourcePath != null) ajscl.setSourcePath(sourcePath);
 
         // Load the given class.
         Class<?> clazz = ajscl.loadClass(className);

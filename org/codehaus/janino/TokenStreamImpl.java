@@ -3,7 +3,6 @@
  * Janino - An embedded Java[TM] compiler
  *
  * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
- * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -47,7 +46,7 @@ class TokenStreamImpl implements TokenStream {
     /**
      * The optional JAVADOC comment preceding the {@link #nextToken}.
      */
-    @Nullable private String optionalDocComment;
+    @Nullable private String docComment;
 
     private Token
     produceToken() throws CompileException, IOException {
@@ -63,9 +62,9 @@ class TokenStreamImpl implements TokenStream {
 
             case C_STYLE_COMMENT:
                 if (token.value.startsWith("/**")) {
-                    if (TokenStreamImpl.this.optionalDocComment != null) {
+                    if (TokenStreamImpl.this.docComment != null) {
                         TokenStreamImpl.this.warning("MDC", "Misplaced doc comment", this.scanner.location());
-                        TokenStreamImpl.this.optionalDocComment = null;
+                        TokenStreamImpl.this.docComment = null;
                     }
                 }
                 break;
@@ -83,8 +82,8 @@ class TokenStreamImpl implements TokenStream {
      */
     @Nullable public String
     doc() {
-        String s = this.optionalDocComment;
-        this.optionalDocComment = null;
+        String s = this.docComment;
+        this.docComment = null;
         return s;
     }
 
@@ -327,12 +326,12 @@ class TokenStreamImpl implements TokenStream {
     }
 
     @Override public void
-    setWarningHandler(@Nullable WarningHandler optionalWarningHandler) {
-        this.optionalWarningHandler = optionalWarningHandler;
+    setWarningHandler(@Nullable WarningHandler warningHandler) {
+        this.warningHandler = warningHandler;
     }
 
     // Used for elaborate warning handling.
-    @Nullable private WarningHandler optionalWarningHandler;
+    @Nullable private WarningHandler warningHandler;
 
     @Override public String
     toString() { return this.nextToken + "/" + this.nextButOneToken + "/" + this.scanner.location(); }
@@ -349,9 +348,9 @@ class TokenStreamImpl implements TokenStream {
      *                          CompileException}
      */
     private void
-    warning(String handle, String message, @Nullable Location optionalLocation) throws CompileException {
-        if (this.optionalWarningHandler != null) {
-            this.optionalWarningHandler.handleWarning(handle, message, optionalLocation);
+    warning(String handle, String message, @Nullable Location location) throws CompileException {
+        if (this.warningHandler != null) {
+            this.warningHandler.handleWarning(handle, message, location);
         }
     }
 

@@ -3,7 +3,6 @@
  * Janino - An embedded Java[TM] compiler
  *
  * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
- * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -28,6 +27,7 @@ package org.codehaus.commons.compiler.util.resource;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 
 import org.codehaus.commons.nullanalysis.Nullable;
 
@@ -38,6 +38,8 @@ import org.codehaus.commons.nullanalysis.Nullable;
  *   that creates resources for writing.
  * </p>
  *
+ * @see #findResource(String)
+ * @see #findResourceAsStream(String)
  * @see org.codehaus.commons.compiler.util.resource.ResourceCreator
  */
 public abstract
@@ -71,8 +73,15 @@ class ResourceFinder {
     /**
      * This one's useful when a resource finder is required, but cannot be created for some reason.
      */
-    public static final ResourceFinder EMPTY_RESOURCE_FINDER = new ResourceFinder() {
-        @Override @Nullable public Resource findResource(String resourceName) { return null;            }
-        @Override public String             toString()                        { return "invalid entry"; }
+    public static final ListableResourceFinder EMPTY_RESOURCE_FINDER = new ListableResourceFinder() {
+
+        @Override @Nullable public Resource
+        findResource(String resourceName) { return null; }
+
+        @Override @Nullable public Iterable<Resource>
+        list(String resourceNamePrefix, boolean recurse) { return Collections.emptyList(); }
+
+        @Override public String
+        toString() { return "EMPTY_RESOURCE_FINDER"; }
     };
 }

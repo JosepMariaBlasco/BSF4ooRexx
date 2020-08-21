@@ -3,7 +3,6 @@
  * Janino - An embedded Java[TM] compiler
  *
  * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
- * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -26,8 +25,8 @@
 
 package org.codehaus.janino.util;
 
+import org.codehaus.commons.compiler.InternalCompilerException;
 import org.codehaus.commons.nullanalysis.Nullable;
-import org.codehaus.janino.InternalCompilerException;
 import org.codehaus.janino.Java.AbstractClassDeclaration;
 import org.codehaus.janino.Java.AbstractCompilationUnit;
 import org.codehaus.janino.Java.AbstractCompilationUnit.ImportDeclaration;
@@ -552,8 +551,8 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
 
     @Override public void
     traverseConstructorDeclarator(ConstructorDeclarator cd) throws EX {
-        if (cd.optionalConstructorInvocation != null) {
-            cd.optionalConstructorInvocation.accept(this.blockStatementTraverser);
+        if (cd.constructorInvocation != null) {
+            cd.constructorInvocation.accept(this.blockStatementTraverser);
         }
         this.traverseFunctionDeclarator(cd);
     }
@@ -571,8 +570,8 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
     traverseFieldDeclaration(FieldDeclaration fd) throws EX {
         fd.type.accept(this.atomTraverser);
         for (VariableDeclarator vd : fd.variableDeclarators) {
-            ArrayInitializerOrRvalue optionalInitializer = vd.optionalInitializer;
-            if (optionalInitializer != null) this.traverseArrayInitializerOrRvalue(optionalInitializer);
+            ArrayInitializerOrRvalue initializer = vd.initializer;
+            if (initializer != null) this.traverseArrayInitializerOrRvalue(initializer);
         }
         this.traverseStatement(fd);
     }
@@ -605,10 +604,10 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
 
     @Override public void
     traverseForStatement(ForStatement fs) throws EX {
-        if (fs.optionalInit != null) fs.optionalInit.accept(this.blockStatementTraverser);
-        if (fs.optionalCondition != null) fs.optionalCondition.accept(this.rvalueTraverser);
-        if (fs.optionalUpdate != null) {
-            for (Rvalue rv : fs.optionalUpdate) rv.accept(this.rvalueTraverser);
+        if (fs.init != null) fs.init.accept(this.blockStatementTraverser);
+        if (fs.condition != null) fs.condition.accept(this.rvalueTraverser);
+        if (fs.update != null) {
+            for (Rvalue rv : fs.update) rv.accept(this.rvalueTraverser);
         }
         fs.body.accept(this.blockStatementTraverser);
         this.traverseContinuableStatement(fs);
@@ -669,15 +668,15 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
     traverseLocalVariableDeclarationStatement(LocalVariableDeclarationStatement lvds) throws EX {
         lvds.type.accept(this.atomTraverser);
         for (VariableDeclarator vd : lvds.variableDeclarators) {
-            ArrayInitializerOrRvalue optionalInitializer = vd.optionalInitializer;
-            if (optionalInitializer != null) this.traverseArrayInitializerOrRvalue(optionalInitializer);
+            ArrayInitializerOrRvalue initializer = vd.initializer;
+            if (initializer != null) this.traverseArrayInitializerOrRvalue(initializer);
         }
         this.traverseStatement(lvds);
     }
 
     @Override public void
     traverseReturnStatement(ReturnStatement rs) throws EX {
-        if (rs.optionalReturnValue != null) rs.optionalReturnValue.accept(this.rvalueTraverser);
+        if (rs.returnValue != null) rs.returnValue.accept(this.rvalueTraverser);
         this.traverseStatement(rs);
     }
 
@@ -696,7 +695,7 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
     @Override public void
     traverseAssertStatement(AssertStatement as) throws EX {
         as.expression1.accept(this.rvalueTraverser);
-        if (as.optionalExpression2 != null) as.optionalExpression2.accept(this.rvalueTraverser);
+        if (as.expression2 != null) as.expression2.accept(this.rvalueTraverser);
         this.traverseStatement(as);
     }
 
@@ -774,7 +773,7 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
 
     @Override public void
     traverseMethodInvocation(MethodInvocation mi) throws EX {
-        if (mi.optionalTarget != null) mi.optionalTarget.accept(this.atomTraverser);
+        if (mi.target != null) mi.target.accept(this.atomTraverser);
         this.traverseInvocation(mi);
     }
 
@@ -807,8 +806,8 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
 
     @Override public void
     traverseNewAnonymousClassInstance(NewAnonymousClassInstance naci) throws EX {
-        if (naci.optionalQualification != null) {
-            naci.optionalQualification.accept(this.rvalueTraverser);
+        if (naci.qualification != null) {
+            naci.qualification.accept(this.rvalueTraverser);
         }
         naci.anonymousClassDeclaration.accept(this.typeDeclarationTraverser);
         for (Rvalue argument : naci.arguments) argument.accept(this.rvalueTraverser);
@@ -848,8 +847,8 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
 
     @Override public void
     traverseNewClassInstance(NewClassInstance nci) throws EX {
-        if (nci.optionalQualification != null) {
-            nci.optionalQualification.accept(this.rvalueTraverser);
+        if (nci.qualification != null) {
+            nci.qualification.accept(this.rvalueTraverser);
         }
         if (nci.type != null) nci.type.accept(this.atomTraverser);
         for (Rvalue argument : nci.arguments) argument.accept(this.rvalueTraverser);
@@ -913,8 +912,8 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
 
     @Override public void
     traverseSuperConstructorInvocation(SuperConstructorInvocation sci) throws EX {
-        if (sci.optionalQualification != null) {
-            sci.optionalQualification.accept(this.rvalueTraverser);
+        if (sci.qualification != null) {
+            sci.qualification.accept(this.rvalueTraverser);
         }
         this.traverseConstructorInvocation(sci);
     }
@@ -943,8 +942,8 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
 
     @Override public void
     traverseSuperclassFieldAccessExpression(SuperclassFieldAccessExpression scfae) throws EX {
-        if (scfae.optionalQualification != null) {
-            scfae.optionalQualification.accept(this.atomTraverser);
+        if (scfae.qualification != null) {
+            scfae.qualification.accept(this.atomTraverser);
         }
         this.traverseLvalue(scfae);
     }
@@ -1021,7 +1020,7 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
         for (Type implementedType : ncd.implementedTypes) {
             implementedType.accept(this.atomTraverser);
         }
-        if (ncd.optionalExtendedType != null) ncd.optionalExtendedType.accept(this.atomTraverser);
+        if (ncd.extendedType != null) ncd.extendedType.accept(this.atomTraverser);
         this.traverseClassDeclaration(ncd);
     }
 
@@ -1035,8 +1034,8 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
     @Override public void
     traverseFunctionDeclarator(FunctionDeclarator fd) throws EX {
         this.traverseFormalParameters(fd.formalParameters);
-        if (fd.optionalStatements != null) {
-            for (BlockStatement bs : fd.optionalStatements) bs.accept(this.blockStatementTraverser);
+        if (fd.statements != null) {
+            for (BlockStatement bs : fd.statements) bs.accept(this.blockStatementTraverser);
         }
     }
 
@@ -1087,8 +1086,8 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
 
         for (ConstructorDeclarator cd : ec.constructors) this.traverseConstructorDeclarator(cd);
 
-        if (ec.optionalArguments != null) {
-            for (Rvalue a : ec.optionalArguments) this.traverseRvalue(a);
+        if (ec.arguments != null) {
+            for (Rvalue a : ec.arguments) this.traverseRvalue(a);
         }
 
         this.traverseAbstractTypeDeclaration(ec);
@@ -1129,7 +1128,7 @@ class AbstractTraverser<EX extends Throwable> implements Traverser<EX> {
     @Override public void
     traverseLocalVariableDeclaratorResource(LocalVariableDeclaratorResource lvdr) throws EX {
         lvdr.type.accept(this.atomTraverser);
-        ArrayInitializerOrRvalue i = lvdr.variableDeclarator.optionalInitializer;
+        ArrayInitializerOrRvalue i = lvdr.variableDeclarator.initializer;
         if (i != null) this.traverseArrayInitializerOrRvalue(i);
     }
 

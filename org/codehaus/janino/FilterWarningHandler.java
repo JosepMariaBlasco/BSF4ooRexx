@@ -3,7 +3,6 @@
  * Janino - An embedded Java[TM] compiler
  *
  * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
- * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -29,8 +28,8 @@ package org.codehaus.janino;
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.Location;
 import org.codehaus.commons.compiler.WarningHandler;
+import org.codehaus.commons.compiler.util.StringPattern;
 import org.codehaus.commons.nullanalysis.Nullable;
-import org.codehaus.janino.util.StringPattern;
 
 /**
  * Invokes a delegate iff the handle of the warning matches one or more of a set of {@link StringPattern}s.
@@ -51,10 +50,10 @@ class FilterWarningHandler implements WarningHandler {
     }
 
     @Override public void
-    handleWarning(@Nullable String handle, String message, @Nullable Location optionalLocation)
+    handleWarning(@Nullable String handle, String message, @Nullable Location location)
     throws CompileException {
         if (handle == null || StringPattern.matches(this.handlePatterns, handle)) {
-            this.delegate.handleWarning(handle, message, optionalLocation);
+            this.delegate.handleWarning(handle, message, location);
         }
     }
 }

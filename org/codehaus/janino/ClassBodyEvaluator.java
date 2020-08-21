@@ -3,7 +3,6 @@
  * Janino - An embedded Java[TM] compiler
  *
  * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
- * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -31,38 +30,33 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.Cookable;
+import org.codehaus.commons.compiler.ErrorHandler;
 import org.codehaus.commons.compiler.IClassBodyEvaluator;
 import org.codehaus.commons.compiler.ICompilerFactory;
+import org.codehaus.commons.compiler.InternalCompilerException;
 import org.codehaus.commons.compiler.Location;
+import org.codehaus.commons.compiler.WarningHandler;
 import org.codehaus.commons.nullanalysis.Nullable;
 import org.codehaus.janino.Java.AbstractCompilationUnit;
+import org.codehaus.janino.Java.CompilationUnit;
 
-/**
- * The {@code optionalClassLoader} serves two purposes:
- * <ul>
- *   <li>It is used to look for classes referenced by the class body.
- *   <li>It is used to load the generated Java class
- *   into the JVM; directly if it is a subclass of {@link
- *   ByteArrayClassLoader}, or by creation of a temporary
- *   {@link ByteArrayClassLoader} if not.
- * </ul>
- * <p>
- *   A number of "convenience constructors" exist that execute the setup steps instantly.
- * </p>
- */
 public
-class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
+class ClassBodyEvaluator extends Cookable implements IClassBodyEvaluator {
 
     private static final Class<?>[] ZERO_CLASSES = new Class[0];
 
-    @Nullable private String[] optionalDefaultImports;
-    private String             className = IClassBodyEvaluator.DEFAULT_CLASS_NAME;
-    @Nullable private Class<?> optionalExtendedType;
+    private final SimpleCompiler sc = new SimpleCompiler();
+
+    private String[]           defaultImports = new String[0];
+    private String             className      = IClassBodyEvaluator.DEFAULT_CLASS_NAME;
+    @Nullable private Class<?> extendedType;
     private Class<?>[]         implementedTypes = ClassBodyEvaluator.ZERO_CLASSES;
     @Nullable private Class<?> result; // null=uncooked
 
@@ -83,37 +77,37 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
      * Equivalent to
      * <pre>
      *     ClassBodyEvaluator cbe = new ClassBodyEvaluator();
-     *     cbe.cook(optionalFileName, is);
+     *     cbe.cook(fileName, is);
      * </pre>
      *
      * @see #ClassBodyEvaluator()
      * @see Cookable#cook(String, InputStream)
      */
     public
-    ClassBodyEvaluator(@Nullable String optionalFileName, InputStream is) throws CompileException, IOException {
-        this.cook(optionalFileName, is);
+    ClassBodyEvaluator(@Nullable String fileName, InputStream is) throws CompileException, IOException {
+        this.cook(fileName, is);
     }
 
     /**
      * Equivalent to
      * <pre>
      *     ClassBodyEvaluator cbe = new ClassBodyEvaluator();
-     *     cbe.cook(optionalFileName, reader);
+     *     cbe.cook(fileName, reader);
      * </pre>
      *
      * @see #ClassBodyEvaluator()
      * @see Cookable#cook(String, Reader)
      */
     public
-    ClassBodyEvaluator(@Nullable String optionalFileName, Reader reader) throws CompileException, IOException {
-        this.cook(optionalFileName, reader);
+    ClassBodyEvaluator(@Nullable String fileName, Reader reader) throws CompileException, IOException {
+        this.cook(fileName, reader);
     }
 
     /**
      * Equivalent to
      * <pre>
      *     ClassBodyEvaluator cbe = new ClassBodyEvaluator();
-     *     cbe.setParentClassLoader(optionalParentClassLoader);
+     *     cbe.setParentClassLoader(parentClassLoader);
      *     cbe.cook(scanner);
      * </pre>
      *
@@ -122,9 +116,9 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
      * @see Cookable#cook(Reader)
      */
     public
-    ClassBodyEvaluator(Scanner scanner, @Nullable ClassLoader optionalParentClassLoader)
+    ClassBodyEvaluator(Scanner scanner, @Nullable ClassLoader parentClassLoader)
     throws CompileException, IOException {
-        this.setParentClassLoader(optionalParentClassLoader);
+        this.setParentClassLoader(parentClassLoader);
         this.cook(scanner);
     }
 
@@ -132,9 +126,9 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
      * Equivalent to
      * <pre>
      *     ClassBodyEvaluator cbe = new ClassBodyEvaluator();
-     *     cbe.setExtendedType(optionalExtendedType);
+     *     cbe.setExtendedType(extendedType);
      *     cbe.setImplementedTypes(implementedTypes);
-     *     cbe.setParentClassLoader(optionalParentClassLoader);
+     *     cbe.setParentClassLoader(parentClassLoader);
      *     cbe.cook(scanner);
      * </pre>
      *
@@ -147,13 +141,13 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
     public
     ClassBodyEvaluator(
         Scanner               scanner,
-        @Nullable Class<?>    optionalExtendedType,
+        @Nullable Class<?>    extendedType,
         Class<?>[]            implementedTypes,
-        @Nullable ClassLoader optionalParentClassLoader
+        @Nullable ClassLoader parentClassLoader
     ) throws CompileException, IOException {
-        this.setExtendedClass(optionalExtendedType);
+        this.setExtendedClass(extendedType);
         this.setImplementedInterfaces(implementedTypes);
-        this.setParentClassLoader(optionalParentClassLoader);
+        this.setParentClassLoader(parentClassLoader);
         this.cook(scanner);
     }
 
@@ -162,9 +156,9 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
      * <pre>
      *     ClassBodyEvaluator cbe = new ClassBodyEvaluator();
      *     cbe.setClassName(className);
-     *     cbe.setExtendedType(optionalExtendedType);
+     *     cbe.setExtendedType(extendedType);
      *     cbe.setImplementedTypes(implementedTypes);
-     *     cbe.setParentClassLoader(optionalParentClassLoader);
+     *     cbe.setParentClassLoader(parentClassLoader);
      *     cbe.cook(scanner);</pre>
      * </p>
      *
@@ -179,52 +173,93 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
     ClassBodyEvaluator(
         Scanner               scanner,
         String                className,
-        @Nullable Class<?>    optionalExtendedType,
+        @Nullable Class<?>    extendedType,
         Class<?>[]            implementedTypes,
-        @Nullable ClassLoader optionalParentClassLoader
+        @Nullable ClassLoader parentClassLoader
     ) throws CompileException, IOException {
         this.setClassName(className);
-        this.setExtendedClass(optionalExtendedType);
+        this.setExtendedClass(extendedType);
         this.setImplementedInterfaces(implementedTypes);
-        this.setParentClassLoader(optionalParentClassLoader);
+        this.setParentClassLoader(parentClassLoader);
         this.cook(scanner);
     }
 
     public ClassBodyEvaluator() {}
 
-    @Override public void
-    setDefaultImports(@Nullable String... optionalDefaultImports) {
-        this.optionalDefaultImports = optionalDefaultImports;
-    }
+    // ====================== CONFIGURATION SETTERS AND GETTERS ======================
 
     @Override public void
-    setClassName(String className) {
-        this.className = className;
-    }
+    setDefaultImports(String... defaultImports) { this.defaultImports = (String[]) defaultImports.clone(); }
+
+    @Override public String[]
+    getDefaultImports() { return (String[]) this.defaultImports.clone(); }
 
     @Override public void
-    setExtendedClass(@Nullable Class<?> optionalExtendedType) { this.optionalExtendedType = optionalExtendedType; }
+    setClassName(String className) { this.className = className; }
 
-    /**
-     * @deprecated Use {@link #setExtendedClass(Class)} instead
-     */
-    @Deprecated @Override public void
-    setExtendedType(@Nullable Class<?> optionalExtendedClass) { this.setExtendedClass(optionalExtendedClass); }
+    @Override public void
+    setExtendedClass(@Nullable Class<?> extendedType) { this.extendedType = extendedType; }
+
+    @Override public void
+    setExtendedType(@Nullable Class<?> extendedClass) { this.setExtendedClass(extendedClass); }
 
     @Override public void
     setImplementedInterfaces(Class<?>[] implementedTypes) { this.implementedTypes = implementedTypes; }
 
-    /**
-     * @deprecated Use {@link #setImplementedInterfaces(Class[])} instead
-     */
-    @Deprecated @Override public void
+    @Override public void
     setImplementedTypes(Class<?>[] implementedInterfaces) { this.setImplementedInterfaces(implementedInterfaces); }
 
+    // Configuration setters and getters that delegate to the SimpleCompiler
+
     @Override public void
+    setParentClassLoader(@Nullable ClassLoader parentClassLoader) { this.sc.setParentClassLoader(parentClassLoader); }
+
+    @Override public void
+    setDebuggingInformation(boolean debugSource, boolean debugLines, boolean debugVars) {
+        this.sc.setDebuggingInformation(debugSource, debugLines, debugVars);
+    }
+
+    @Override public void
+    setCompileErrorHandler(@Nullable ErrorHandler compileErrorHandler) {
+        this.sc.setCompileErrorHandler(compileErrorHandler);
+    }
+
+    @Override public void
+    setWarningHandler(@Nullable WarningHandler warningHandler) { this.sc.setWarningHandler(warningHandler); }
+
+    // JANINO-specific configuration setters and getters
+
+    /**
+     * @return A reference to the currently effective compilation options; changes to it take
+     *         effect immediately
+     */
+    public EnumSet<JaninoOption>
+    options() { return this.sc.options(); }
+
+    /**
+     * Sets the options for all future compilations.
+     */
+    public ClassBodyEvaluator
+    options(EnumSet<JaninoOption> options) {
+        this.sc.options(options);
+        return this;
+    }
+
+    // ================================= END OF CONFIGURATION SETTERS AND GETTERS =================================
+
+    @Override public final void
+    cook(@Nullable String fileName, Reader r) throws CompileException, IOException {
+        this.cook(new Scanner(fileName, r));
+    }
+
+    public void
     cook(Scanner scanner) throws CompileException, IOException {
 
-        Parser               parser          = new Parser(scanner);
-        Java.CompilationUnit compilationUnit = this.makeCompilationUnit(parser);
+        Parser                                           parser             = new Parser(scanner);
+        Java.AbstractCompilationUnit.ImportDeclaration[] importDeclarations = this.makeImportDeclarations(parser);
+
+
+        Java.CompilationUnit compilationUnit = new Java.CompilationUnit(scanner.getFileName(), importDeclarations);
 
         // Add class declaration.
         Java.AbstractClassDeclaration
@@ -234,40 +269,61 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
         while (!parser.peek(TokenType.END_OF_INPUT)) parser.parseClassBodyDeclaration(acd);
 
         // Compile and load it.
-        this.result = this.compileToClass(compilationUnit);
+        this.cook(compilationUnit);
     }
 
+    void
+    cook(CompilationUnit compilationUnit) throws CompileException {
+
+        this.sc.cook(compilationUnit);
+
+        // Find the generated class by name.
+        Class<?> c;
+        try {
+            c = this.sc.getClassLoader().loadClass(this.className);
+        } catch (ClassNotFoundException ex) {
+            throw new InternalCompilerException((
+                "SNO: Generated compilation unit does not declare class '"
+                + this.className
+                + "'"
+            ), ex);
+        }
+
+        this.result = c;
+    }
+
+    @Override public Class<?>
+    getClazz() { return this.assertCooked(); }
+
+    @Override public Map<String, byte[]>
+    getBytecodes() { return this.sc.getBytecodes(); }
+
     /**
-     * Creates a {@link Java.CompilationUnit}, sets the default imports, and parses the import declarations.
-     * <p>
-     *   If the {@code optionalParser} is given, a sequence of IMPORT directives is parsed from it and added to the
-     *   compilation unit.
-     * </p>
+     * @return                                  The {@link #setDefaultImports(String...) default imports}, concatenated
+     *                                          with the import declarations that can be parsed from the
+     *                                          <var>parser</var>
+     * @see Parser#parseImportDeclarationBody()
      */
-    protected final Java.CompilationUnit
-    makeCompilationUnit(@Nullable Parser optionalParser) throws CompileException, IOException {
+    final Java.AbstractCompilationUnit.ImportDeclaration[]
+    makeImportDeclarations(@Nullable Parser parser) throws CompileException, IOException {
 
-        List<AbstractCompilationUnit.ImportDeclaration> l = new ArrayList<AbstractCompilationUnit.ImportDeclaration>();
+        List<Java.AbstractCompilationUnit.ImportDeclaration>
+        l = new ArrayList<Java.AbstractCompilationUnit.ImportDeclaration>();
 
-        // Set default imports.
-        if (this.optionalDefaultImports != null) {
-            for (String defaultImport : this.optionalDefaultImports) {
-                Parser parser = new Parser(new Scanner(null, new StringReader(defaultImport)));
-                l.add(parser.parseImportDeclarationBody());
-                parser.read(TokenType.END_OF_INPUT);
-            }
+        // Honor the default imports.
+        for (String defaultImport : this.defaultImports) {
+            final Parser p = new Parser(new Scanner(null, new StringReader(defaultImport)));
+            l.add(p.parseImportDeclarationBody());
+            p.read(TokenType.END_OF_INPUT);
         }
 
         // Parse all available IMPORT declarations.
-        if (optionalParser != null) {
-            while (optionalParser.peek("import")) l.add(optionalParser.parseImportDeclaration());
+        if (parser != null) {
+            while (parser.peek("import")) l.add(parser.parseImportDeclaration());
         }
 
-        return new Java.CompilationUnit(
-            optionalParser == null ? null : optionalParser.getScanner().getFileName(), // optionalFileName
-            (AbstractCompilationUnit.ImportDeclaration[]) l.toArray(                   // importDeclaration
-                new AbstractCompilationUnit.ImportDeclaration[l.size()]
-            )
+        return (Java.AbstractCompilationUnit.ImportDeclaration[]) l.toArray(
+            new AbstractCompilationUnit.ImportDeclaration[l.size()]
         );
     }
 
@@ -290,50 +346,54 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
         }
         Java.PackageMemberClassDeclaration tlcd = new Java.PackageMemberClassDeclaration(
             location,                                                            // location
-            null,                                                                // optionalDocComment
+            null,                                                                // docComment
             new Java.Modifier[] { new Java.AccessModifier("public", location) }, // modifiers
             cn,                                                                  // name
-            null,                                                                // optionalTypeParameters
-            this.optionalClassToType(location, this.optionalExtendedType),       // optionalExtendedType
-            this.classesToTypes(location, this.implementedTypes)                 // implementedTypes
+            null,                                                                // typeParameters
+            this.optionalClassToType(location, this.extendedType),               // extendedType
+            this.sc.classesToTypes(location, this.implementedTypes)              // implementedTypes
         );
         compilationUnit.addPackageMemberTypeDeclaration(tlcd);
         return tlcd;
     }
 
     /**
-     * Compiles the given compilation unit, load all generated classes, and return the class with the given name.
-     *
-     * @param compilationUnit
-     * @return The loaded class
+     * @see SimpleCompiler#optionalClassToType(Location, Class)
      */
-    protected final Class<?>
-    compileToClass(Java.CompilationUnit compilationUnit) throws CompileException {
-
-        // Compile and load the compilation unit.
-        ClassLoader cl = this.compileToClassLoader(compilationUnit);
-
-        // Find the generated class by name.
-        try {
-            return cl.loadClass(this.className);
-        } catch (ClassNotFoundException ex) {
-            throw new InternalCompilerException((
-                "SNO: Generated compilation unit does not declare class '"
-                + this.className
-                + "'"
-            ), ex);
-        }
+    @Nullable protected Java.Type
+    optionalClassToType(final Location location, @Nullable final Class<?> clazz) {
+        return this.sc.optionalClassToType(location, clazz);
     }
 
-    @Override public Class<?>
-    getClazz() {
+    protected Java.Type
+    classToType(final Location location, final Class<?> clazz) { return this.sc.classToType(location, clazz); }
 
-        if (this.getClass() != ClassBodyEvaluator.class) {
-            throw new IllegalStateException("Must not be called on derived instances");
-        }
+    public Java.Type[]
+    classesToTypes(Location location, Class<?>[] classes) { return this.sc.classesToTypes(location, classes); }
 
-        return this.assertCooked();
-    }
+//    /**
+//     * Compiles the given compilation unit, load all generated classes, and return the class with the given name.
+//     *
+//     * @param compilationUnit
+//     * @return The loaded class
+//     */
+//    protected final Class<?>
+//    compileToClass(Java.CompilationUnit compilationUnit) throws CompileException {
+//
+//        // Compile and load the compilation unit.
+//        ClassLoader cl = this.compileToClassLoader(compilationUnit);
+//
+//        // Find the generated class by name.
+//        try {
+//            return cl.loadClass(this.className);
+//        } catch (ClassNotFoundException ex) {
+//            throw new InternalCompilerException((
+//                "SNO: Generated compilation unit does not declare class '"
+//                + this.className
+//                + "'"
+//            ), ex);
+//        }
+//    }
 
     private Class<?>
     assertCooked() {
@@ -372,14 +432,14 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
      *     IClassBodyEvaluator cbe = {@link CompilerFactoryFactory}.{@link
      *     CompilerFactoryFactory#getDefaultCompilerFactory() getDefaultCompilerFactory}().{@link
      *     ICompilerFactory#newClassBodyEvaluator() newClassBodyEvaluator}();
-     *     if (optionalBaseType != null) {
-     *         if (optionalBaseType.isInterface()) {
-     *             cbe.{@link #setImplementedInterfaces setImplementedInterfaces}(new Class[] { optionalBaseType });
+     *     if (baseType != null) {
+     *         if (baseType.isInterface()) {
+     *             cbe.{@link #setImplementedInterfaces setImplementedInterfaces}(new Class[] { baseType });
      *         } else {
-     *             cbe.{@link #setExtendedClass(Class) setExtendedClass}(optionalBaseType);
+     *             cbe.{@link #setExtendedClass(Class) setExtendedClass}(baseType);
      *         }
      *     }
-     *     cbe.{@link #setParentClassLoader(ClassLoader) setParentClassLoader}(optionalParentClassLoader);
+     *     cbe.{@link #setParentClassLoader(ClassLoader) setParentClassLoader}(parentClassLoader);
      *     cbe.{@link IClassBodyEvaluator#createInstance(Reader) createInstance}(reader);
      * </pre>
      *
@@ -388,23 +448,23 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
     public static Object
     createFastClassBodyEvaluator(
         Scanner               scanner,
-        @Nullable Class<?>    optionalBaseType,
-        @Nullable ClassLoader optionalParentClassLoader
+        @Nullable Class<?>    baseType,
+        @Nullable ClassLoader parentClassLoader
     ) throws CompileException, IOException {
         return ClassBodyEvaluator.createFastClassBodyEvaluator(
             scanner,                                // scanner
             IClassBodyEvaluator.DEFAULT_CLASS_NAME, // className
-            (                                       // optionalExtendedType
-                optionalBaseType != null && !optionalBaseType.isInterface()
-                ? optionalBaseType
+            (                                       // extendedType
+                baseType != null && !baseType.isInterface()
+                ? baseType
                 : null
             ),
             (                                       // implementedTypes
-                optionalBaseType != null && optionalBaseType.isInterface()
-                ? new Class[] { optionalBaseType }
+                baseType != null && baseType.isInterface()
+                ? new Class[] { baseType }
                 : new Class[0]
             ),
-            optionalParentClassLoader               // optionalParentClassLoader
+            parentClassLoader                       // parentClassLoader
         );
     }
 
@@ -414,9 +474,9 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
      *     IClassBodyEvaluator cbe = {@link CompilerFactoryFactory}.{@link
      *     CompilerFactoryFactory#getDefaultCompilerFactory() getDefaultCompilerFactory}().{@link
      *     ICompilerFactory#newClassBodyEvaluator() newClassBodyEvaluator}();
-     *     cbe.{@link #setExtendedClass(Class) setExtendedClass}(optionalExtendedClass);
+     *     cbe.{@link #setExtendedClass(Class) setExtendedClass}(extendedClass);
      *     cbe.{@link #setImplementedInterfaces(Class[]) setImplementedInterfaces}(implementedInterfaces);
-     *     cbe.{@link #setParentClassLoader(ClassLoader) setParentClassLoader}(optionalParentClassLoader);
+     *     cbe.{@link #setParentClassLoader(ClassLoader) setParentClassLoader}(parentClassLoader);
      *     cbe.{@link IClassBodyEvaluator#createInstance(Reader) createInstance}(reader);
      * </pre>
      *
@@ -427,15 +487,15 @@ class ClassBodyEvaluator extends SimpleCompiler implements IClassBodyEvaluator {
     createFastClassBodyEvaluator(
         Scanner               scanner,
         String                className,
-        @Nullable Class<?>    optionalExtendedClass,
+        @Nullable Class<?>    extendedClass,
         Class<?>[]            implementedInterfaces,
-        @Nullable ClassLoader optionalParentClassLoader
+        @Nullable ClassLoader parentClassLoader
     ) throws CompileException, IOException {
         ClassBodyEvaluator cbe = new ClassBodyEvaluator();
         cbe.setClassName(className);
-        cbe.setExtendedClass(optionalExtendedClass);
+        cbe.setExtendedClass(extendedClass);
         cbe.setImplementedInterfaces(implementedInterfaces);
-        cbe.setParentClassLoader(optionalParentClassLoader);
+        cbe.setParentClassLoader(parentClassLoader);
         cbe.cook(scanner);
         Class<?> c = cbe.getClazz();
         try {

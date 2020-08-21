@@ -25,7 +25,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
   *
   *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2019 Rony G. Flatscher
+ *    Copyright (C) 2001-2020 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
-  * @version 6.0.0, 2019-12-11
+  * @version 6.0.0, 2020-08-21
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
   */
 
@@ -53,6 +53,11 @@ import static org.rexxla.bsf.engines.rexx.InvocationType.*;
 
 
  /*
+     2020-08-21, rgf: - if loaded from Rexx on Linux, and libBSF4ooRexx.so resides in /usr/local/lib
+                        then it is not found as of Java 14, cf. <https://bugs.openjdk.java.net/browse/JDK-8073067>;
+                        this version explicitly tries to load it from /usr/local/lib if not found by
+                        System.loadLibrary("BSF4ooREXX");
+
      2019-11-26, rgf: - lookupBean(), little optimization: only lookup declared beans, if there are any
 
      2019-11-26, rgf: - lookupBean(): if not found in the registry looks up the new HashMap
@@ -577,7 +582,7 @@ final static public ConcurrentHashMap<String,RAJBean> rajRegistryToWatch=new Con
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static final public String version = "600.20191211";
+    static final public String version = "600.20200821";
 
     static final private String pkgName = "org.rexxla.bsf.engines.rexx";
 
@@ -825,7 +830,46 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
 
         // 2012-03-12, rgf: move loading the BSF4ooRexx library *after* loading the NetRexx class, this
         //                  way it is clear whether netrexx.lang.Rexx is available for BSF4ooRexx
-        System.loadLibrary( DLL_NAME );
+
+        // 2020-08-21, rgf: on Linux Java will not honor "/usr/local/lib", so try to load from there explicitly
+        //                  cf. <https://bugs.openjdk.java.net/browse/JDK-8073067>
+
+        boolean bLoadSuccessful=false;
+        try
+        {
+            System.loadLibrary( DLL_NAME ); // uses Java's library search order (java.library.path)
+            bLoadSuccessful=true;
+        }
+        catch (UnsatisfiedLinkError t)  // not found via java.library.path
+        {
+            // 2020-08-21, rgf: if on Linux, explicitly try to load from "/usr/local/lib"
+            // as loadLibrary seems to not honor that location, although one is supposed
+            // to install non-system shared objects there
+            String libFileName=System.mapLibraryName( DLL_NAME );
+            if (libFileName.startsWith("lib") && libFileName.endsWith(".so") )  // we are on Linux, check /usr/local/lib
+            {
+                String strFullLibPath="/usr/local/lib/"+libFileName;
+                java.io.File fileLibPath=new java.io.File(strFullLibPath);
+
+                if (fileLibPath.exists())   // if file exists, we let Java resolve it (e.g. if a symbolic link)
+                {
+                    try
+                    {
+                       String canonicalLibPath=fileLibPath.getCanonicalPath();
+                       System.load(canonicalLibPath);   // now explicitly load it
+// System.err.println("**DEBUG** RexxAndJava.java, # 860; explicitly loading from ["+strFullLibPath+"], canonical=["+canonicalLibPath+"], was successful!");
+                       bLoadSuccessful=true;            // indicate we could load/find it!
+                    }
+                    catch (Throwable t2)    // do nothing
+                    {}
+                }
+            }
+        }
+
+        if (!bLoadSuccessful)   // loading was not successful, load again, but do not catch the error anymore
+        {
+            System.loadLibrary( DLL_NAME );
+        }
 
 
         // for conversions of java.lang.String -> java.lang.Object, RexxAndJava.java needs an explicit

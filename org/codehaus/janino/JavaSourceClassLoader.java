@@ -3,7 +3,6 @@
  * Janino - An embedded Java[TM] compiler
  *
  * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
- * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -28,6 +27,7 @@ package org.codehaus.janino;
 
 import java.io.File;
 import java.io.Reader;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -36,13 +36,15 @@ import java.util.Set;
 import org.codehaus.commons.compiler.AbstractJavaSourceClassLoader;
 import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.ErrorHandler;
+import org.codehaus.commons.compiler.InternalCompilerException;
 import org.codehaus.commons.compiler.WarningHandler;
+import org.codehaus.commons.compiler.lang.ClassLoaders;
 import org.codehaus.commons.compiler.util.Disassembler;
 import org.codehaus.commons.compiler.util.resource.DirectoryResourceFinder;
+import org.codehaus.commons.compiler.util.resource.PathResourceFinder;
 import org.codehaus.commons.compiler.util.resource.ResourceFinder;
 import org.codehaus.commons.nullanalysis.Nullable;
 import org.codehaus.janino.util.ClassFile;
-import org.codehaus.janino.util.resource.PathResourceFinder;
 
 /**
  * A {@link ClassLoader} that, unlike usual {@link ClassLoader}s, does not load byte code, but reads Java source code
@@ -51,6 +53,12 @@ import org.codehaus.janino.util.resource.PathResourceFinder;
  *   As with any {@link ClassLoader}, it is not possible to "update" classes after they've been loaded. The way to
  *   achieve this is to give up on the {@link JavaSourceClassLoader} and create a new one.
  * </p>
+ * <p>
+ *   Notice that this class loader does not support resoures in the sense of {@link ClassLoader#getResource(String)},
+ *   {@link ClassLoader#getResourceAsStream(String)} nd {@link ClassLoader#getResources(String)}.
+ * </p>
+ *
+ * @see ClassLoaders
  */
 public
 class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
@@ -62,8 +70,8 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
     JavaSourceClassLoader(ClassLoader parentClassLoader) {
         this(
             parentClassLoader,
-            (File[]) null,     // optionalSourcePath
-            null               // optionalCharacterEncoding
+            (File[]) null,     // sourcePath
+            null               // characterEncoding
         );
     }
 
@@ -72,25 +80,25 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
      * the directories specified by the given source path.
      *
      * @param parentClassLoader         See {@link ClassLoader}
-     * @param optionalSourcePath        A collection of directories that are searched for Java source files in
+     * @param sourcePath        A collection of directories that are searched for Java source files in
      *                                  the given order
-     * @param optionalCharacterEncoding The encoding of the Java source files ({@code null} for platform
+     * @param characterEncoding The encoding of the Java source files ({@code null} for platform
      *                                  default encoding)
      */
     public
     JavaSourceClassLoader(
         ClassLoader      parentClassLoader,
-        @Nullable File[] optionalSourcePath,
-        @Nullable String optionalCharacterEncoding
+        @Nullable File[] sourcePath,
+        @Nullable String characterEncoding
     ) {
         this(
-            parentClassLoader,        // parentClassLoader
-            (                         // sourceFinder
-                optionalSourcePath == null
+            parentClassLoader, // parentClassLoader
+            (                  // sourceFinder
+                sourcePath == null
                 ? new DirectoryResourceFinder(new File("."))
-                : new PathResourceFinder(optionalSourcePath)
+                : new PathResourceFinder(sourcePath)
             ),
-            optionalCharacterEncoding // optionalCharacterEncoding
+            characterEncoding  // characterEncoding
         );
     }
 
@@ -104,19 +112,19 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
      *
      * @param parentClassLoader         See {@link ClassLoader}
      * @param sourceFinder              Used to locate additional source files
-     * @param optionalCharacterEncoding The encoding of the Java source files ({@code null} for platform
+     * @param characterEncoding The encoding of the Java source files ({@code null} for platform
      *                                  default encoding)
      */
     public
     JavaSourceClassLoader(
         ClassLoader      parentClassLoader,
         ResourceFinder   sourceFinder,
-        @Nullable String optionalCharacterEncoding
+        @Nullable String characterEncoding
     ) {
         this(parentClassLoader, new JavaSourceIClassLoader(
             sourceFinder,                                  // sourceFinder
-            optionalCharacterEncoding,                     // optionalCharacterEncoding
-            new ClassLoaderIClassLoader(parentClassLoader) // optionalParentIClassLoader
+            characterEncoding,                             // characterEncoding
+            new ClassLoaderIClassLoader(parentClassLoader) // parentIClassLoader
         ));
     }
 
@@ -130,14 +138,13 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
     }
 
     @Override public void
-    setSourcePath(File[] sourcePath) {
-        this.iClassLoader.setSourceFinder(new PathResourceFinder(sourcePath));
-    }
+    setSourcePath(File[] sourcePath) { this.setSourceFinder(new PathResourceFinder(sourcePath)); }
 
     @Override public void
-    setSourceFileCharacterEncoding(@Nullable String optionalCharacterEncoding) {
-        this.iClassLoader.setCharacterEncoding(optionalCharacterEncoding);
-    }
+    setSourceFinder(ResourceFinder sourceFinder) { this.iClassLoader.setSourceFinder(sourceFinder); }
+
+    @Override public void
+    setSourceCharset(Charset charset) { this.iClassLoader.setSourceCharset(charset); }
 
     @Override public void
     setDebuggingInfo(boolean debugSource, boolean debugLines, boolean debugVars) {
@@ -150,8 +157,8 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
      * @see UnitCompiler#setCompileErrorHandler
      */
     public void
-    setCompileErrorHandler(@Nullable ErrorHandler optionalCompileErrorHandler) {
-        this.iClassLoader.setCompileErrorHandler(optionalCompileErrorHandler);
+    setCompileErrorHandler(@Nullable ErrorHandler compileErrorHandler) {
+        this.iClassLoader.setCompileErrorHandler(compileErrorHandler);
     }
 
     /**
@@ -159,8 +166,8 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
      * @see UnitCompiler#setCompileErrorHandler
      */
     public void
-    setWarningHandler(@Nullable WarningHandler optionalWarningHandler) {
-        this.iClassLoader.setWarningHandler(optionalWarningHandler);
+    setWarningHandler(@Nullable WarningHandler warningHandler) {
+        this.iClassLoader.setWarningHandler(warningHandler);
     }
 
     /**
@@ -246,8 +253,8 @@ class JavaSourceClassLoader extends AbstractJavaSourceClassLoader {
     defineBytecode(String className, byte[] ba) {
 
         return this.defineClass(className, ba, 0, ba.length, (
-            this.optionalProtectionDomainFactory != null
-            ? this.optionalProtectionDomainFactory.getProtectionDomain(ClassFile.getSourceResourceName(className))
+            this.protectionDomainFactory != null
+            ? this.protectionDomainFactory.getProtectionDomain(ClassFile.getSourceResourceName(className))
             : null
         ));
     }

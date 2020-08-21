@@ -3,7 +3,6 @@
  * Janino - An embedded Java[TM] compiler
  *
  * Copyright (c) 2001-2010 Arno Unkrig. All rights reserved.
- * Copyright (c) 2015-2016 TIBCO Software Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -32,7 +31,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.lang.reflect.Method;
 import java.security.AccessController;
-import java.security.Permissions;
 import java.security.PrivilegedAction;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -43,9 +41,10 @@ import org.codehaus.commons.compiler.CompileException;
 import org.codehaus.commons.compiler.Cookable;
 import org.codehaus.commons.compiler.ErrorHandler;
 import org.codehaus.commons.compiler.ISimpleCompiler;
+import org.codehaus.commons.compiler.InternalCompilerException;
 import org.codehaus.commons.compiler.Location;
-import org.codehaus.commons.compiler.Sandbox;
 import org.codehaus.commons.compiler.WarningHandler;
+import org.codehaus.commons.compiler.util.reflect.ByteArrayClassLoader;
 import org.codehaus.commons.nullanalysis.Nullable;
 import org.codehaus.janino.Visitor.AtomVisitor;
 import org.codehaus.janino.Visitor.TypeVisitor;
@@ -65,17 +64,20 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
     // Set while "cook()"ing.
     @Nullable private ClassLoaderIClassLoader classLoaderIClassLoader;
 
-    @Nullable private ClassLoader    result;
-    @Nullable private ErrorHandler   optionalCompileErrorHandler;
-    @Nullable private WarningHandler optionalWarningHandler;
+//    @Nullable private ClassLoader    result;
+    @Nullable private ErrorHandler   compileErrorHandler;
+    @Nullable private WarningHandler warningHandler;
 
     private boolean debugSource = Boolean.getBoolean(Scanner.SYSTEM_PROPERTY_SOURCE_DEBUGGING_ENABLE);
     private boolean debugLines  = this.debugSource;
     private boolean debugVars   = this.debugSource;
 
-    @Nullable private Permissions permissions;
-
     private EnumSet<JaninoOption> options = EnumSet.noneOf(JaninoOption.class);
+
+    /**
+     * {@code Null} before cooking, non-{@code null} after cooking.
+     */
+    @Nullable private ClassFile[] classFiles;
 
     public static void // SUPPRESS CHECKSTYLE JavadocMethod
     main(String[] args) throws Exception {
@@ -118,30 +120,30 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
      * Equivalent to
      * <pre>
      *     SimpleCompiler sc = new SimpleCompiler();
-     *     sc.cook(optionalFileName, in);
+     *     sc.cook(fileName, in);
      * </pre>
      *
      * @see #SimpleCompiler()
      * @see Cookable#cook(String, Reader)
      */
     public
-    SimpleCompiler(@Nullable String optionalFileName, Reader in) throws IOException, CompileException {
-        this.cook(optionalFileName, in);
+    SimpleCompiler(@Nullable String fileName, Reader in) throws IOException, CompileException {
+        this.cook(fileName, in);
     }
 
     /**
      * Equivalent to
      * <pre>
      *     SimpleCompiler sc = new SimpleCompiler();
-     *     sc.cook(optionalFileName, is);
+     *     sc.cook(fileName, is);
      * </pre>
      *
      * @see #SimpleCompiler()
      * @see Cookable#cook(String, InputStream)
      */
     public
-    SimpleCompiler(@Nullable String optionalFileName, InputStream is) throws IOException, CompileException {
-        this.cook(optionalFileName, is);
+    SimpleCompiler(@Nullable String fileName, InputStream is) throws IOException, CompileException {
+        this.cook(fileName, is);
     }
 
     /**
@@ -163,7 +165,7 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
      * Equivalent to
      * <pre>
      *     SimpleCompiler sc = new SimpleCompiler();
-     *     sc.setParentClassLoader(optionalParentClassLoader);
+     *     sc.setParentClassLoader(parentClassLoader);
      *     sc.cook(scanner);
      * </pre>
      *
@@ -172,19 +174,19 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
      * @see Cookable#cook(Reader)
      */
     public
-    SimpleCompiler(Scanner scanner, @Nullable ClassLoader optionalParentClassLoader)
+    SimpleCompiler(Scanner scanner, @Nullable ClassLoader parentClassLoader)
     throws IOException, CompileException {
-        this.setParentClassLoader(optionalParentClassLoader);
+        this.setParentClassLoader(parentClassLoader);
         this.cook(scanner);
     }
 
     public SimpleCompiler() {}
 
     @Override public void
-    setParentClassLoader(@Nullable ClassLoader optionalParentClassLoader) {
+    setParentClassLoader(@Nullable ClassLoader parentClassLoader) {
         this.parentClassLoader = (
-            optionalParentClassLoader != null
-            ? optionalParentClassLoader
+            parentClassLoader != null
+            ? parentClassLoader
             : Thread.currentThread().getContextClassLoader()
         );
     }
@@ -201,8 +203,8 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
      * #getClassLoader()} returns a {@link ClassLoader} that allows for access to the compiled classes.
      */
     @Override public final void
-    cook(@Nullable String optionalFileName, Reader r) throws CompileException, IOException {
-        this.cook(new Scanner(optionalFileName, r));
+    cook(@Nullable String fileName, Reader r) throws CompileException, IOException {
+        this.cook(new Scanner(fileName, r));
     }
 
     /**
@@ -215,87 +217,77 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
     }
 
     /**
-     * Cooks this compilation unit directly and invokes {@link #cook(ClassFile[])}.
+     * Cooks this compilation unit directly.
      */
     public void
     cook(Java.AbstractCompilationUnit abstractCompilationUnit) throws CompileException {
 
         SimpleCompiler.LOGGER.entering(null, "cook", abstractCompilationUnit);
 
-        ClassFile[] classFiles;
+        this.assertUncooked();
 
         IClassLoader icl = (this.classLoaderIClassLoader = new ClassLoaderIClassLoader(this.parentClassLoader));
         try {
 
             // Compile compilation unit to class files.
             UnitCompiler unitCompiler = new UnitCompiler(abstractCompilationUnit, icl).options(this.options);
-            unitCompiler.setCompileErrorHandler(this.optionalCompileErrorHandler);
-            unitCompiler.setWarningHandler(this.optionalWarningHandler);
+            unitCompiler.setCompileErrorHandler(this.compileErrorHandler);
+            unitCompiler.setWarningHandler(this.warningHandler);
 
-            classFiles = unitCompiler.compileUnit(this.debugSource, this.debugLines, this.debugVars);
+            this.classFiles = unitCompiler.compileUnit(this.debugSource, this.debugLines, this.debugVars);
         } finally {
             this.classLoaderIClassLoader = null;
         }
-
-        this.cook(classFiles);
     }
 
     /**
-     * Serializes the given <var>classFiles</var> as bytecode, stores them in a map, and then invokes {@link
-     * #cook(Map)}.
+     * @return The {@link ClassFile}s that were generated during cooking
      */
-    public void
-    cook(ClassFile[] classFiles) {
+    public ClassFile[]
+    getClassFiles() { return this.assertCooked(); }
 
-        // Convert the class files to bytes and store them in a Map.
-        final Map<String /*className*/, byte[] /*bytecode*/> classes = new HashMap<String, byte[]>();
-        for (ClassFile cf : classFiles) {
-            classes.put(cf.getThisClassName(), cf.toByteArray());
+    @Override public Map<String /*className*/, byte[] /*bytecode*/>
+    getBytecodes() {
+        if (this.getBytecodesCache != null) return this.getBytecodesCache;
+        return (this.getBytecodesCache = this.getBytecodes2());
+    }
+    @Nullable private Map<String /*className*/, byte[] /*bytecode*/> getBytecodesCache;
+
+    private Map<String /*className*/, byte[] /*bytecode*/>
+    getBytecodes2() {
+
+        Map<String /*className*/, byte[] /*bytecode*/> result = new HashMap<String, byte[]>();
+        for (ClassFile cf : this.getClassFiles()) {
+            result.put(cf.getThisClassName(), cf.toByteArray());
         }
 
-        this.cook(classes);
-    }
-
-    /**
-     * Creates a {@link ClassLoader} that loads the given <var>classes</var> (lazily), and makes that class loader
-     * available through {@link #getClassLoader()}.
-     *
-     * @param classes Maps fully qualified classes names to bytecodes
-     */
-    public void
-    cook(final Map<String /*className*/, byte[] /*bytecode*/> classes) {
-
-        // Create a ClassLoader that loads the generated classes.
-        ClassLoader cl = (ClassLoader) AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
-
-            @Override public ClassLoader
-            run() {
-                return new ByteArrayClassLoader(
-                    classes,                              // classes
-                    SimpleCompiler.this.parentClassLoader // parent
-                );
-            }
-        });
-
-        // Apply any configured permissions.
-        if (this.permissions != null) Sandbox.confine(cl, this.permissions);
-
-        this.result = cl;
+        return result;
     }
 
     @Override public ClassLoader
     getClassLoader() {
-        if (this.getClass() != SimpleCompiler.class) {
-            throw new IllegalStateException("Must not be called on derived instances");
-        }
-        return this.assertCooked();
+        if (this.getClassLoaderCache != null) return this.getClassLoaderCache;
+        return (this.getClassLoaderCache = this.getClassLoader2());
     }
+    @Nullable private ClassLoader getClassLoaderCache;
 
-    @Override public void
-    setPermissions(Permissions permissions) { this.permissions = permissions;  }
+    private ClassLoader
+    getClassLoader2() {
 
-    @Override public void
-    setNoPermissions() { this.setPermissions(new Permissions()); }
+        final Map<String, byte[]> bytecode = this.getBytecodes();
+
+        // Create a ClassLoader that loads the generated classes.
+        return (ClassLoader) AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
+
+            @Override public ClassLoader
+            run() {
+                return new ByteArrayClassLoader(
+                    bytecode,                             // classes
+                    SimpleCompiler.this.parentClassLoader // parent
+                );
+            }
+        });
+    }
 
     /**
      * Two {@link SimpleCompiler}s are regarded equal iff
@@ -320,13 +312,13 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
     hashCode() { return this.parentClassLoader.hashCode(); }
 
     @Override public void
-    setCompileErrorHandler(@Nullable ErrorHandler optionalCompileErrorHandler) {
-        this.optionalCompileErrorHandler = optionalCompileErrorHandler;
+    setCompileErrorHandler(@Nullable ErrorHandler compileErrorHandler) {
+        this.compileErrorHandler = compileErrorHandler;
     }
 
     @Override public void
-    setWarningHandler(@Nullable WarningHandler optionalWarningHandler) {
-        this.optionalWarningHandler = optionalWarningHandler;
+    setWarningHandler(@Nullable WarningHandler warningHandler) {
+        this.warningHandler = warningHandler;
     }
 
     /**
@@ -460,20 +452,29 @@ class SimpleCompiler extends Cookable implements ISimpleCompiler {
      */
     protected final ClassLoader
     compileToClassLoader(Java.AbstractCompilationUnit abstractCompilationUnit) throws CompileException {
-        assert this.classLoaderIClassLoader == null;
         this.cook(abstractCompilationUnit);
-        return this.assertCooked();
+        return this.getClassLoader();
     }
 
     /**
-     * @return The class loader created when this {@link SimpleCompiler} was {@link #cook(Reader)}ed
+     * @throws IllegalStateException This SimpleCompiler is already cooked
      */
-    private ClassLoader
+    private void
+    assertUncooked() {
+        if (this.classFiles != null) throw new IllegalStateException("Must only be called before \"cook()\"");
+    }
+
+    /**
+     * @return The {@link ClassFile}s that were created when this {@link SimpleCompiler} was {@link #cook(Reader)}ed
+     *
+     * @throws IllegalStateException This SimpleCompiler is not yet cooked
+     */
+    private ClassFile[]
     assertCooked() {
 
-        ClassLoader cl = this.result;
-        if (cl == null) throw new IllegalStateException("Must only be called after \"cook()\"");
+        ClassFile[] result = this.classFiles;
+        if (result == null) throw new IllegalStateException("Must only be called after \"cook()\"");
 
-        return cl;
+        return result;
     }
 }

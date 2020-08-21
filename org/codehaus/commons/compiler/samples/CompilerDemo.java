@@ -32,6 +32,9 @@ import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.ICompiler;
 import org.codehaus.commons.compiler.util.StringUtil;
 
+/**
+ * A drop-in replacement for the JDK's {@code JAVAC} tool.
+ */
 public final
 class CompilerDemo {
 
@@ -48,7 +51,7 @@ class CompilerDemo {
         File[]          classPath             = { new File(".") };
         File[]          extDirs               = new File[0];
         File[]          bootClassPath         = new File[0];
-        Charset         encoding              = null;
+        Charset         encoding              = Charset.defaultCharset();
         boolean         verbose               = false;
         boolean         debugSource           = true;
         boolean         debugLines            = true;
@@ -119,13 +122,12 @@ class CompilerDemo {
         compiler.setClassPath(classPath);
         compiler.setExtensionDirectories(extDirs);
         compiler.setBootClassPath(bootClassPath);
-        compiler.setDestinationDirectory(destinationDirectory);
+        compiler.setDestinationDirectory(destinationDirectory, rebuild);
         compiler.setEncoding(encoding);
         compiler.setVerbose(verbose);
         compiler.setDebugSource(debugSource);
         compiler.setDebugLines(debugLines);
         compiler.setDebugVars(debugVars);
-        compiler.setRebuild(rebuild);
 
         // Compile source files.
         try {
@@ -157,13 +159,13 @@ class CompilerDemo {
         + "  -encoding <encoding>      Encoding of source files, e.g. \"UTF-8\" or \"ISO-8859-1\"%n"
         + "  -verbose%n"
         + "  -g                        Generate all debugging info%n"
-        + "  -g:none                   Generate no debugging info%n"
+        + "  -g:none                   Generate no debugging info (the default)%n"
         + "  -g:{source,lines,vars}    Generate only some debugging info%n"
         + "  -rebuild                  Compile all source files, even if the class files%n"
-        + "                            seems up-to-date%n"
+        + "                            seem up-to-date%n"
         + "  -help%n"
         + "%n"
-        + "The default encoding in this environment is \"" + Charset.defaultCharset().toString() + "\".%n"
+        + "The default encoding in this environment is \"" + Charset.defaultCharset() + "\".%n"
     );
 
 }
