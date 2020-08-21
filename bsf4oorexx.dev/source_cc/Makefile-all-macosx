@@ -101,8 +101,9 @@ ORX_LIBPATH_32 = /opt/oldrexx/ooRexx-i386/lib
 ORX_LIBPATH_64 = /Library/Frameworks/ooRexx.framework/Libraries/
 
 # rgf, 2017-04-05: manually creating an ooRexx 5.0 "installation"
-ORX_LIBPATH_64 = /opt/oldrexx/ooRexx-5-x86_64/lib/
-ORX5_INCPATH_64 = -I/opt/oldrexx/ooRexx-5-x86_64/include/
+# rgf, 2020-08-21: removing this now misleading definitions
+# ORX_LIBPATH_64 = /opt/oldrexx/ooRexx-5-x86_64/lib/
+# ORX5_INCPATH_64 = -I/opt/oldrexx/ooRexx-5-x86_64/include/
 
 ORX_LIBS_32 = $(ORX_LIBPATH_32)/librexx.dylib $(ORX_LIBPATH_32)/librexxapi.dylib
 ORX_LIBS_64 = $(ORX_LIBPATH_64)/librexx.dylib $(ORX_LIBPATH_64)/librexxapi.dylib
