@@ -96,11 +96,12 @@ do
    say
    say "where 'database' is one of the letters:"
    say "    A ... MariaDB   , cf. https://downloads.mariadb.org/"
-   say "    D ... Derby     , cf. https://db.apache.org/derby/derby_downloads.html"
-   say "    H ... HSQL      , cf. http://hsqldb.org/"
-   say "    L ... SQLite    , cf. https://github.com/xerial/sqlite-jdbc"
+   say "    D ... Derby *)  , cf. https://db.apache.org/derby/derby_downloads.html"
+   say "    H ... HSQL *)   , cf. http://hsqldb.org/"
+   say "    L ... SQLite *) , cf. https://github.com/xerial/sqlite-jdbc (RDBMS contained)"
    say "    P ... PostgreSQL, cf. https://https://www.postgresql.org/"
    say "    Y ... MySQL     , cf. https://www.mysql.com/products/connector/"
+   say "          *) ... RDBMS fully implemented in Java or contained in JDBC driver"
    say
    say "where 'kind' is optionally one of the letters:"
    say "    M ... use the classic 'java.sql.DriverManager' approach to connect"
