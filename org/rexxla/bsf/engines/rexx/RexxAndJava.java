@@ -849,7 +849,7 @@ if (bDebug) System.err.println(this+".set_rii_ID(new_rii_ID=["+new_rii_ID+"])");
             if (libFileName.startsWith("lib") && libFileName.endsWith(".so") )  // we are on Linux, check /usr/local/lib
             {
                 String strFullLibPath="/usr/local/lib/"+libFileName;
-                java.io.File fileLibPath=new java.io.File(strFullLibPath);
+                File fileLibPath=new File(strFullLibPath);
 
                 if (fileLibPath.exists())   // if file exists, we let Java resolve it (e.g. if a symbolic link)
                 {

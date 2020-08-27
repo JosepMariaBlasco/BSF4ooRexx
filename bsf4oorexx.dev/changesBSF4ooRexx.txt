@@ -1,3 +1,15 @@
+-------------------------------------- 2020-08-27 ----------------------------------
+
+- RexxScriptEngine.java
+
+        - make sure that compiled scripts do not get rewritten (no annotation processing)
+
+        - if a compiled script is not encoded, then raise an appropraite ScriptException
+
+- bin/rexxcUtil.rex
+
+        - added rexxcUtil.rex such that programmers can encode a compiled Rexx program to
+          allow it to run directly under BSF4ooRexx.
 
 -------------------------------------- 2020-08-20 ----------------------------------
 

@@ -33,9 +33,9 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 @echo adding javax.servlet.jsp and javax.servlet.http to CLASSPATH
 set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
 
-set releaseDate=20200821
-set runDate=20200821
-set doc_date=20200821
+set releaseDate=20200827
+set runDate=20200827
+set doc_date=20200827
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
@@ -78,7 +78,7 @@ jar uf   %bsfJarNameBin% META-INF/
 @echo done - %bsfJarNameBin%
 @rem pause
 
-zip -d %bsfJarNameBin% "*.svn*" "*bkp*" "*tmp*"
+zip -d %bsfJarNameBin% "*.svn*" "*bkp*" "*tmp*" "*.idea*" "bin.iml"
 
 rem rgf, 20070917, not needed, we have BSF4ooRexx-apache-bsf-source.jar instead
 @rem @echo creating %bsfJarNameSource% ...
@@ -234,6 +234,7 @@ copy ScriptProviderForooRexx.oxt                   bsf4oorexx\install\
 copy %path2dev%\bin\add*.r*                        bsf4oorexx\
 copy %path2dev%\bin\BSF*                           bsf4oorexx\
 copy %path2dev%\bin\rexxj2*                        bsf4oorexx\
+copy %path2dev%\bin\rexxcUtil.rex                  bsf4oorexx\
 copy %path2dev%\bin\rgf_util2.rex                  bsf4oorexx\
 copy %path2dev%\bin\libBS*                         bsf4oorexx\
 copy %path2dev%\bin\UNO*                           bsf4oorexx\
@@ -336,7 +337,7 @@ xcopy samples\*                         bsf4oorexx\samples\   /s/e/i/r/k/y
 
 del %releaseInstallZip%.zip
 zip -9r %releaseInstallZip% bsf4oorexx/*
-zip -d  %releaseInstallZip% "*.svn*" "*bkp*" "*tmp*" "*cachedir*" "*~"
+zip -d  %releaseInstallZip% "*.svn*" "*bkp*" "*tmp*" "*cachedir*" "*~"  "*.idea*" "bin.iml"
 zip -9r %releaseInstallZip% ApacheLicense2.0.txt
 zip -9r %releaseInstallZip% asm_LICENSE.TXT
 zip -9r %releaseInstallZip% janino_LICENSE.TXT
@@ -356,7 +357,7 @@ zip -d  %releaseInstallZip% "*samples/deprecated*" "*samples/LeePeedin/deprecate
 @rem del samples\OOo\*.pdf
 @rem zip -9r BSF4ooRexx_samples samples/*
 @rem zip -9r BSF4ooRexx_samples ApacheLicense2.0.txt
-@rem zip -d BSF4ooRexx_samples "*.svn*" "*bkp*" "*tmp*" "*cachedir*" "*~"
+@rem zip -d BSF4ooRexx_samples "*.svn*" "*bkp*" "*tmp*" "*cachedir*" "*~"  "*.idea*" "bin.iml"
 @rem @pause
 
 
@@ -365,7 +366,7 @@ zip -d  %releaseInstallZip% "*samples/deprecated*" "*samples/LeePeedin/deprecate
 del BSF4ooRexx_tests.zip
 zip -9r BSF4ooRexx_tests test/*
 zip -9r BSF4ooRexx_tests ApacheLicense2.0.txt
-zip -d BSF4ooRexx_tests "*.svn*" "*bkp*" "*_bkp*" "*tmp*"  "*~"
+zip -d BSF4ooRexx_tests "*.svn*" "*bkp*" "*_bkp*" "*tmp*"  "*~"  "*.idea*" "bin.iml"
 @rem pause
 
 
@@ -374,7 +375,7 @@ zip -d BSF4ooRexx_tests "*.svn*" "*bkp*" "*_bkp*" "*tmp*"  "*~"
 del BSF4ooRexx_testUnits.zip
 zip -9r BSF4ooRexx_testUnits %devName%/testUnits/*
 zip -9r BSF4ooRexx_testUnits ApacheLicense2.0.txt
-zip -d  BSF4ooRexx_testUnits "*.svn*" "*bkp*" "*_bkp*" "*tmp*"  "*~"
+zip -d  BSF4ooRexx_testUnits "*.svn*" "*bkp*" "*_bkp*" "*tmp*"  "*~"  "*.idea*" "bin.iml"
 @rem pause
 
 
@@ -392,7 +393,7 @@ zip -9r BSF4ooRexx_sources com/sun/*
 zip -9r BSF4ooRexx_sources org/*
 zip -9r BSF4ooRexx_sources %devName%/*
 
-zip -d BSF4ooRexx_sources "*.svn*"  "*bkp*" "*tmp*" "*~"
+zip -d BSF4ooRexx_sources "*.svn*"  "*bkp*" "*tmp*" "*~"   "*.idea*" "bin.iml"
 zip -d BSF4ooRexx_sources "*class" "*dll" "*lib" "*pdf" "*exe"
 zip -d BSF4ooRexx_sources "*zip" "*.o" "*obj" "*exp" "*swp" "*so"
 
