@@ -43,6 +43,12 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
    Changes:
 
+        2020-08-27, ---rgf, - make sure that compiled scripts do not get rewritten (no annotation
+                              processing)
+                            - if a compiled script is not encoded, then raise an appropraite ScriptException
+
+        2020-08-25, ---rgf, - do not remove hashbang line as compiled+encoded Rexx programs rely on it
+
         2020-01-28, ---rgf, - when compiling and no filename is given, then try to use
                               the FILENAME value in the ENGINE_SCOPE Bindings, if any, otherwise
                               create an artificial filename that includes day and time of compiling;
@@ -156,7 +162,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 100.20200128
+ * @version 101.20200827
  * @since  2015-05-11
  *
  */
@@ -646,6 +652,75 @@ if (bDebug==true) {exc.printStackTrace();}
            "                                                                                  ; " +
            "::requires BSF.CLS                                                                ; " ;
 
+    String rexxCreateRoutineAndPackageCode_work1=
+           "parse arg name, script                      /* fetch script code            */    ; " +
+           "                                                                                  ; " +
+           "say 'script~class='pp(script~class)                                               ; " +
+           "if script~isA(.array) then                  /* argument already an array    */    ; " +
+           "do                                                                                ; " +
+           "   r=.routine~new(name, script)             /* create routine object        */    ; " +
+           "end                                                                               ; " +
+           "else                                                                              ; " +
+           "do                                                                                ; " +
+           "  say '... string!, script~left(40)    ='pp(script~left(40))                            ; " +
+           "  say '             script~left(40)~c2x='pp(script~left(40)~c2x)                        ; " +
+           "  strarr=script~makeArray                                                         ; " +
+        "  str1=strarr~makeString('L','0a'x);strArr2=str1~makeArray;str2=strArr2~makeString('L','0a'x)         ; " +
+        "  say '...script=str1?' pp(script=str1) '==' pp(script==str1) 'script~length='pp(script~length) 'str1~length='pp(str1~length)     ; " +
+        "  say '...str1  =str2?' pp(str1  =str2) '==' pp(str1  ==str2) 'str1  ~length='pp(str1  ~length) 'str2~length='pp(str2~length)     ; " +
+        "    .stream~new('scri.eencoded.rex')~~open('write replace')~~charout(script)~~close  ; " +
+        "    .stream~new('str1.eencoded.rex')~~open('write replace')~~charout(str1)~~close  ; " +
+        "    .stream~new('str2.eencoded.rex')~~open('write replace')~~charout(str2)~~close  ; " +
+        "                                                                                  ; " +
+        "                                                                                  ; " +
+           "  say '    strArr[1]    ='pp(strarr[1])                                           ; " +
+           "  say '    strArr[1]~c2x='pp(strarr[1]~c2x)                                       ; " +
+           "  say '    strArr[2]    ='pp(strarr[2])                                           ; " +
+           "  say '    strArr[2]~c2x='pp(strarr[2]~c2x)                                       ; " +
+           "  say '    strArr[3]    ='pp(strarr[3])                                           ; " +
+           "  say '    strArr[3]~c2x='pp(strarr[3]~c2x)                                       ; " +
+           "  say '    strArr~items ='pp(strarr~items) '| script~length='pp(script~length)    ; " +
+           "   r=.routine~new(name, strArr          )   /* create routine object        */    ; " +
+           " /*  r=.routine~new(name, script~makeArray) */   /* create routine object        */    ; " +
+           "   say '<--- routine successfully created!'                                        ; " +
+        "  say                                                                             ; " +
+           "end                                                                               ; " +
+           "                                                                                  ; " +
+           "p=r~package                                 /* get its package              */    ; " +
+           "   /* return Rexx objects in a Java array to ease access in the Java code   */    ; " +
+           "return bsf.createJavaArrayOf('java.lang.Object', r, p)                            ; " +
+           "                                                                                  ; " +
+           "::requires BSF.CLS                                                                ; " ;
+
+    String rexxCreateRoutineAndPackageCode_nixi=
+           "parse arg name, script                      /* fetch script code            */    ; " +
+           "                                                                                  ; " +
+           "say 'script~class='pp(script~class)                                               ; " +
+           "if script~isA(.array) then                  /* argument already an array    */    ; " +
+           "do                                                                                ; " +
+           "   r=.routine~new(name, script)             /* create routine object        */    ; " +
+           "end                                                                               ; " +
+           "else                                                                              ; " +
+           "do                                                                                ; " +
+           "  say '... string!, script~left(40)    ='pp(script~left(40))                      ; " +
+           "  say '             script~left(40)~c2x='pp(script~left(40)~c2x)                  ; " +
+           "  say '             script~length      ='pp(script~length)                        ; " +
+           "  say '             script~countStr(0A)='pp(script~countStr('0A'))                ; " +
+           "  say '             script~countStr(''0A''x)='pp(script~countStr('0A'x))          ; " +
+           "  strArr=script~makeArray                                                         ; " +
+           "  say '             strArr~items='pp(strarr~items)                                ; " +
+           "   r=.routine~new(name, strArr          )   /* create routine object        */    ; " +
+           " /*  r=.routine~new(name, script~makeArray) */   /* create routine object        */    ; " +
+           "   say '<--- routine successfully created!'                                        ; " +
+           "  say                                                                             ; " +
+           "end                                                                               ; " +
+           "                                                                                  ; " +
+           "p=r~package                                 /* get its package              */    ; " +
+           "   /* return Rexx objects in a Java array to ease access in the Java code   */    ; " +
+           "return bsf.createJavaArrayOf('java.lang.Object', r, p)                            ; " +
+           "                                                                                  ; " +
+           "::requires BSF.CLS                                                                ; " ;
+
     /** <code>RexxProxy</code> for the Rexx routine created by the Rexx code stored in {@link #rexxCreateRoutineAndPackageCode}. */
     private RexxProxy rexxCreateRoutineAndPackage=null;
 
@@ -889,134 +964,158 @@ if (bDebug) {System.err.println("--> RexxScriptEngine().compile(String=[---scrip
             throw new ScriptException( new NullPointerException("Received \"String script\" argument null"));
         }
 
-        String     tmpScriptSource=removeHashBang(script);  // the script that will get compiled (tokenized), maybe edited (code injected)
+        // String     tmpScriptSource=removeHashBang(script);  // the script that will get compiled (tokenized), maybe edited (code injected)
+        String     tmpScriptSource=script;  // 2020-08-25: do not remove hashbang as compiled+encoded programs rely on it!
         boolean    bGotScriptEdited=false;  // true, if Rexx script got edited via injections
 
-
-        RexxAnnotation ran=new RexxAnnotation(script, "showsource", 0); // try to get the Rexx script annotation "/* @showsource */"
-            // determine, whether this Rexx script property is present
-        boolean bShowSource=(ran.posStartAnnotationChar>-1 && ran.isAnnotationWithinBlockCommentOnSameLine);
-        if (bShowSource)    // show (for debugging purposes the supplied Rexx script)
+        // --> determine whether compiled script in hand, which must not be edited!
+        boolean    isScriptCompiled=false;  // only if false, can the script be annotation processed
+        if (script.startsWith("#!"))        // hashbang must be present
         {
-            System.err.println(this+": show source of Rexx script, annotation \"/*@showsource*/\" present in file [" +filename+"]:"
-                                +"\n/// ----------------------------------------> begin of Rexx script ----------------------------------------> ///\n"
-                                +script
-                                +"\n\\\\\\ <----------------------------------------- end of Rexx script <----------------------------------------- \\\\\\");
-        }
-
-        // - process @GET, @GET() and @SET() Rexx script annotations; if @SET() is empty, give a warning and ignore,
-        //   save the edited script
-        // - if Rexx script annotation SHOWSOURCE is given, show the edited script as well
-        String rexxAnnos[] =new String[] { "GET", "SET" };  // Rexx script annotations to be processed
-
-        for (String rxAnno : rexxAnnos)     // iterate over Rexx script annotations
-        {
-            StringBuilder  sbEditedScript=null; // StringBuilder
-            int currPos=0;
-            int prevPosStart=0;     // start of tmpScriptSource.substring() that determines which chunk of the script should be appended, if necessary
-            int prevPosEnd=-1;      // end of tmpScriptSource.substring() that determines which chunk of the script should be appended, if necessary
-            int tssLength=tmpScriptSource.length(); // get length of current temporary script source
-                // get annotation, if any
-            while ( currPos<tssLength       &&  // unprocessed chars left?
-                    (ran=new RexxAnnotation(tmpScriptSource, rxAnno, currPos)).posStartAnnotationChar>=0 && // get and check whether the sought annotation was found
-                     ran.isAnnotationWithinBlockCommentOnSameLine   // a valid annotation that has also an ending block comment?
-                  )
+            int len=script.length();
+            int line2=script.indexOf(0x0a)+1;   // get position of character on second line
+            if (line2>0 && line2<len)           // second line with characters on it
             {
-if (bDebug) System.err.println("--- 0 --- found a [@"+rxAnno+"], begin BComment: ["+ran.posStartBlockComment+"], '@'-pos: ["+ran.posStartAnnotationChar+"], ran.isAnnotationWithinBlockCommentOnSameLine=["+ran.isAnnotationWithinBlockCommentOnSameLine+"]...");
-                    // allow one annotation per block comment only
-                if (sbEditedScript==null)       // not yet created?
+                int needlePos=script.indexOf("/**/@REXX", line2);   // compiled="/**/@REXX", compiled+encoded: "/**/@REXX@"
+                isScriptCompiled=(needlePos == line2);    // if second line starts with needle, it is a compiled Rexx script!
+                    // if compiled, is it encoded, if not throw ScriptException
+                if (isScriptCompiled && needlePos+10<len && script.charAt(needlePos+9)!='@')
                 {
-                    sbEditedScript=new StringBuilder();
+                    throw new ScriptException("Rexx script ["+filename+"] is compiled, but not encoded");
                 }
-
-                    // append script code before injection point
-                prevPosEnd=ran.posStartBlockComment;    // everything up to, but not including open block comment
-
-                if (prevPosEnd>prevPosStart)    // is there anything to be carried over from the original script ?
-                {
-if (bDebug) System.err.println("--- 1 --- adding script code before annotation, prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd+"\n--->>>["+tmpScriptSource.substring(prevPosStart, prevPosEnd)+"]\n<<<---");
-
-                    sbEditedScript.append( tmpScriptSource.substring(prevPosStart, prevPosEnd));
-                    prevPosStart=prevPosEnd;
-                }
-
-if (bDebug) System.err.println("--- 2 --- RSE.compile(): now prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd);
-
-                    // inject code
-                if (ran.contentAsRexxString==null)  // no content, then use empty string ("") instead to mean all atributes
-                {
-                    sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), "\"\"") );
-                }
-                else    // submit the Rexx string
-                {
-                    // submit annotation content as is, escape and enquote according to Rexx rules
-                    String tmpString='"'+ran.contentAsIs.replace("\"", "\"\"")+'"';   // escape any quotes
-
-                    sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), tmpString) );
-                }
-
-                    // append entire Rexx script annotation (if multiple annotations of the same kind, the first one gets honored)
-                prevPosEnd=ran.posEndBlockComment+2;
-
-if (bDebug) System.err.println("--- 3 --- RSE.compile(): after appending code for ["+rxAnno+"] annotation, new prevPosEnd: ["+prevPosEnd+"]");
-                // extract script section and append, if anything to append
-                if (prevPosStart<prevPosEnd)
-                {
-if (bDebug) System.err.println("--- 4 --- RSE.compile(): add original script section - prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd+", hence: ["+tmpScriptSource.substring(prevPosStart, prevPosEnd)+"]");
-                    sbEditedScript.append( tmpScriptSource.substring(prevPosStart, prevPosEnd));
-                    // set currPos and prevPosStart
-                    prevPosStart=prevPosEnd;
-if (bDebug) System.err.println("--- 4b --- RSE.compile(): now currPos=prevPosStart=prevPosEnd: ["+prevPosEnd+"]");
-                }
-                currPos=prevPosEnd;     // set currPos after current Rexx script annotation's end
-
-if (bDebug) System.err.println("--- 5 --- RSE.compile(): processing of this annotation ended, next round: currPos="+currPos+", prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd);
-            }
-
-                // did we edit the script source?
-            if (sbEditedScript!=null)   // code got injected!
-            {
-                bGotScriptEdited=true;      // indicate that the script got edited
-                    // add remaining script code, re-create script String value to make sure
-                if (prevPosEnd<tssLength)   // do we have a section of the script left to be appended ?
-                {
-                    // sbEditedScript.append( tmpScriptSource.substring(prevPosStart, tssLength));
-                    sbEditedScript.append( tmpScriptSource.substring(prevPosEnd, tssLength));
-if (bDebug) System.err.println("--- 6 --- RSE.compile(): appending remaining script - prevPosEnd="+prevPosEnd+", tssLength="+tssLength+", appended from String:"+"\n--->>>["+tmpScriptSource.substring(prevPosEnd, tssLength)+"]\n<<<---");
-                }
-                tmpScriptSource=sbEditedScript.toString();  // create a String off it
-                sbEditedScript=null;                        // reset StringBuilder variable to null
-
-if (bDebug) System.err.println("--- 7 --- RSE.compile(): finished editing for ["+rxAnno+"] annotations, sbEditedScript.toString() --> ---> ===>["+tmpScriptSource+"] <=== <--- <-- sbEditedScript!=NULL, hence bGotScriptEdited->[TRUE]!");
             }
         }
 
-          // only necessary, if BSF-support is needed and no dynamic package additions take place (which would include the package BSF.CLS)
-        if (bAddLatestPackageDynamically==false && bPrependDynamicRequiresStatement==true)     // inject dynamic requires for BSF.CLS
+        boolean bShowSource=false;
+        if (isScriptCompiled==false)        // only process if source available
         {
-if (bDebug) System.err.println("--- 8 --- RSE.compile(): bAddLatestPackageDynamically==false && bPrependDynamicRequiresStatement==true, bGotScriptEdited -> [TRUE] !");
-            bGotScriptEdited=true;      // indicate that the script got edited
-            // check for hash bang line [#!/usr/bin/rexx] to inject code appropriately!
-            if (tmpScriptSource.charAt(0)=='#' && tmpScriptSource.charAt(1)=='!')     // starts with hash-bang line, inject after \n!
+            RexxAnnotation ran=new RexxAnnotation(script, "showsource", 0); // try to get the Rexx script annotation "/* @showsource */"
+                // determine, whether this Rexx script property is present
+            bShowSource=(ran.posStartAnnotationChar>-1 && ran.isAnnotationWithinBlockCommentOnSameLine);
+            if (bShowSource)    // show (for debugging purposes the supplied Rexx script)
             {
-                int idx=tmpScriptSource.indexOf('\n');
+                System.err.println(this+": show source of Rexx script, annotation \"/*@showsource*/\" present in file [" +filename+"]:"
+                                    +"\n/// ----------------------------------------> begin of Rexx script ----------------------------------------> ///\n"
+                                    +script
+                                    +"\n\\\\\\ <----------------------------------------- end of Rexx script <----------------------------------------- \\\\\\");
+            }
 
-                // if no '\n' found then there is no Rexx code, hence do not inject at all
-                if (idx>=0)      // found!
+            // - process @GET, @GET() and @SET() Rexx script annotations; if @SET() is empty, give a warning and ignore,
+            //   save the edited script
+            // - if Rexx script annotation SHOWSOURCE is given, show the edited script as well
+            String rexxAnnos[] =new String[] { "GET", "SET" };  // Rexx script annotations to be processed
+
+            for (String rxAnno : rexxAnnos)     // iterate over Rexx script annotations
+            {
+                StringBuilder  sbEditedScript=null; // StringBuilder
+                int currPos=0;
+                int prevPosStart=0;     // start of tmpScriptSource.substring() that determines which chunk of the script should be appended, if necessary
+                int prevPosEnd=-1;      // end of tmpScriptSource.substring() that determines which chunk of the script should be appended, if necessary
+                int tssLength=tmpScriptSource.length(); // get length of current temporary script source
+                    // get annotation, if any
+                while ( currPos<tssLength       &&  // unprocessed chars left?
+                        (ran=new RexxAnnotation(tmpScriptSource, rxAnno, currPos)).posStartAnnotationChar>=0 && // get and check whether the sought annotation was found
+                         ran.isAnnotationWithinBlockCommentOnSameLine   // a valid annotation that has also an ending block comment?
+                      )
                 {
-                    String tmpStr=tmpScriptSource.substring(0,idx+1)+dynamicallyRequireBSF;
-                    if (idx<tmpScriptSource.length())   // script code to be added
+    if (bDebug) System.err.println("--- 0 --- found a [@"+rxAnno+"], begin BComment: ["+ran.posStartBlockComment+"], '@'-pos: ["+ran.posStartAnnotationChar+"], ran.isAnnotationWithinBlockCommentOnSameLine=["+ran.isAnnotationWithinBlockCommentOnSameLine+"]...");
+                        // allow one annotation per block comment only
+                    if (sbEditedScript==null)       // not yet created?
                     {
-                        tmpStr=tmpStr+tmpScriptSource.substring(idx+1);
+                        sbEditedScript=new StringBuilder();
                     }
-                    tmpScriptSource=tmpStr;
+
+                        // append script code before injection point
+                    prevPosEnd=ran.posStartBlockComment;    // everything up to, but not including open block comment
+
+                    if (prevPosEnd>prevPosStart)    // is there anything to be carried over from the original script ?
+                    {
+    if (bDebug) System.err.println("--- 1 --- adding script code before annotation, prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd+"\n--->>>["+tmpScriptSource.substring(prevPosStart, prevPosEnd)+"]\n<<<---");
+
+                        sbEditedScript.append( tmpScriptSource.substring(prevPosStart, prevPosEnd));
+                        prevPosStart=prevPosEnd;
+                    }
+
+    if (bDebug) System.err.println("--- 2 --- RSE.compile(): now prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd);
+
+                        // inject code
+                    if (ran.contentAsRexxString==null)  // no content, then use empty string ("") instead to mean all atributes
+                    {
+                        sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), "\"\"") );
+                    }
+                    else    // submit the Rexx string
+                    {
+                        // submit annotation content as is, escape and enquote according to Rexx rules
+                        String tmpString='"'+ran.contentAsIs.replace("\"", "\"\"")+'"';   // escape any quotes
+
+                        sbEditedScript.append( String.format( (rxAnno.startsWith("G") ? strFormatGET  : strFormatSET), tmpString) );
+                    }
+
+                        // append entire Rexx script annotation (if multiple annotations of the same kind, the first one gets honored)
+                    prevPosEnd=ran.posEndBlockComment+2;
+
+    if (bDebug) System.err.println("--- 3 --- RSE.compile(): after appending code for ["+rxAnno+"] annotation, new prevPosEnd: ["+prevPosEnd+"]");
+                    // extract script section and append, if anything to append
+                    if (prevPosStart<prevPosEnd)
+                    {
+    if (bDebug) System.err.println("--- 4 --- RSE.compile(): add original script section - prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd+", hence: ["+tmpScriptSource.substring(prevPosStart, prevPosEnd)+"]");
+                        sbEditedScript.append( tmpScriptSource.substring(prevPosStart, prevPosEnd));
+                        // set currPos and prevPosStart
+                        prevPosStart=prevPosEnd;
+    if (bDebug) System.err.println("--- 4b --- RSE.compile(): now currPos=prevPosStart=prevPosEnd: ["+prevPosEnd+"]");
+                    }
+                    currPos=prevPosEnd;     // set currPos after current Rexx script annotation's end
+
+    if (bDebug) System.err.println("--- 5 --- RSE.compile(): processing of this annotation ended, next round: currPos="+currPos+", prevPosStart="+prevPosStart+", prevPosEnd="+prevPosEnd);
+                }
+
+                    // did we edit the script source?
+                if (sbEditedScript!=null)   // code got injected!
+                {
+                    bGotScriptEdited=true;      // indicate that the script got edited
+                        // add remaining script code, re-create script String value to make sure
+                    if (prevPosEnd<tssLength)   // do we have a section of the script left to be appended ?
+                    {
+                        // sbEditedScript.append( tmpScriptSource.substring(prevPosStart, tssLength));
+                        sbEditedScript.append( tmpScriptSource.substring(prevPosEnd, tssLength));
+    if (bDebug) System.err.println("--- 6 --- RSE.compile(): appending remaining script - prevPosEnd="+prevPosEnd+", tssLength="+tssLength+", appended from String:"+"\n--->>>["+tmpScriptSource.substring(prevPosEnd, tssLength)+"]\n<<<---");
+                    }
+                    tmpScriptSource=sbEditedScript.toString();  // create a String off it
+                    sbEditedScript=null;                        // reset StringBuilder variable to null
+
+    if (bDebug) System.err.println("--- 7 --- RSE.compile(): finished editing for ["+rxAnno+"] annotations, sbEditedScript.toString() --> ---> ===>["+tmpScriptSource+"] <=== <--- <-- sbEditedScript!=NULL, hence bGotScriptEdited->[TRUE]!");
                 }
             }
-            else    // merely prepend the script source
+
+
+              // only necessary, if BSF-support is needed and no dynamic package additions take place (which would include the package BSF.CLS)
+            if (bAddLatestPackageDynamically==false && bPrependDynamicRequiresStatement==true)     // inject dynamic requires for BSF.CLS
             {
-                tmpScriptSource=dynamicallyRequireBSF+tmpScriptSource;
+    if (bDebug) System.err.println("--- 8 --- RSE.compile(): bAddLatestPackageDynamically==false && bPrependDynamicRequiresStatement==true, bGotScriptEdited -> [TRUE] !");
+                bGotScriptEdited=true;      // indicate that the script got edited
+                // check for hash bang line [#!/usr/bin/rexx] to inject code appropriately!
+                if (tmpScriptSource.charAt(0)=='#' && tmpScriptSource.charAt(1)=='!')     // starts with hash-bang line, inject after \n!
+                {
+                    int idx=tmpScriptSource.indexOf('\n');
+
+                    // if no '\n' found then there is no Rexx code, hence do not inject at all
+                    if (idx>=0)      // found!
+                    {
+                        String tmpStr=tmpScriptSource.substring(0,idx+1)+dynamicallyRequireBSF;
+                        if (idx<tmpScriptSource.length())   // script code to be added
+                        {
+                            tmpStr=tmpStr+tmpScriptSource.substring(idx+1);
+                        }
+                        tmpScriptSource=tmpStr;
+                    }
+                }
+                else    // merely prepend the script source
+                {
+                    tmpScriptSource=dynamicallyRequireBSF+tmpScriptSource;
+                }
             }
         }
+
 
         if (filename==null)     // no file name supplied
         {
@@ -1037,7 +1136,6 @@ if (bDebug) System.err.println("--- 8 --- RSE.compile(): bAddLatestPackageDynami
 
             // now create the routine object, fetch it and its package object
             rexxObjects= (Object[]) getCreateRoutineAndPackage().sendMessage2("CALL", filename,tmpScriptSource);
-
         }
         catch (Exception exc)
         {
@@ -1084,12 +1182,13 @@ if (bDebug==true) {exc.printStackTrace();}
     }
 
 
-    /** Blanks out the very first line if it leads in with a Unixh hashbang (#!) line.
+    /* * Blanks out the very first line if it leads in with a Unixh hashbang (#!) line.
      *
      * @param script the Rexx script to process
      * @return the original script, if no hashbang line, else the script where the very first line is blanked out
      *
      */
+/* TODO: not needed, remove, 2020-08-25, rgf
     String removeHashBang(String script)
     {
         if (script.startsWith("#!"))    // starts with a hashbang line!
@@ -1109,6 +1208,7 @@ if (bDebug==true) {exc.printStackTrace();}
         }
         return script;
     }
+*/
 
 // -----------------------------------------------------------------------------------------------------
 // Invocable methods
