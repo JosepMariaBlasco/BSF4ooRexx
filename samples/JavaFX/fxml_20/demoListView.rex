@@ -6,6 +6,8 @@
    changes: 2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                              - removing dependency on "rgf_util2.rex"
 
+            2020-08-30, rgf: - demonstrate usage of BSF's bsf.exit-method
+
    purpose: demonstrate - ListView with cells containing text and graphics
                         - Setting ListView cell to null as opposed to removing the cell
                         - Setting ToolTips with a graphic and a text to the cells in the RexxCellFactory
@@ -96,7 +98,9 @@ jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
 signal on syntax
    -- launch the application, invoke "start" and then stay up until the application closes
 jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch in order to work
-call sysSleep 0.01                 -- let ooRexx clean up
+
+  -- .BSF-bsf.exit([returnCode][,msecsToWaitBeforeShuttingDownJava=100ms])
+.bsf~bsf.exit     -- inhibit callbacks from Java to Rexx, shutdown JVM in 0.01 seconds
 exit
 
 syntax:

@@ -102,7 +102,7 @@ jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
 signal on syntax
    -- launch the application, invoke "start" and then stay up until the application closes
 jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch in order to work
-call sysSleep 0.01                 -- let ooRexx clean up
+call sysSleep 0.01                 -- let ooRexx clean up a little bit
 exit
 
 syntax:
