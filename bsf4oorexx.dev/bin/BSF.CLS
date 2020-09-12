@@ -19,6 +19,13 @@
           .BSF in .environment;
 
    date:
+         2020-09-07, ---rgf, - BSF.OutputStream now allows an optional third argument, the
+                               end-of-line characters to use (defaults to .endOfLine); this
+                               allows one to make sure that e.g. in the context of creating
+                               HTML via J2EE the correct end-of-line character sequence
+                               is being used ("0d0a"x) independent of the current operating
+                               system's end-of-line
+
          2020-08-14, ---rgf, - reformatted ppJavaExceptionChain(co[,bStackTrace])
                              - add operating system infos from sysVersion() to .bsf4rexx~display.version
 
@@ -745,7 +752,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.41 (20200130)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     6.41 (20200912)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -754,7 +761,7 @@
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2001-2019 Rony G. Flatscher
+   Copyright 2001-2020 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -772,7 +779,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2001-2019 Rony G. Flatscher
+   Copyright 2001-2020 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -845,7 +852,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20200827" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20200912" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4445,12 +4452,19 @@ wrong_args:
 ::attribute isWriter          -- allow direct access
 /* ------------------------------------------------------------------------------------------------- */
 ::attribute prefix            -- prefix string to be output before executing a LINEOUT
+/* ------------------------------------------------------------------------------------------------- */
+::attribute endOfLine         -- allows setting explicitly end-of-line charactesrs, defaults to .endofline
 
 /* ------------------------------------------------------------------------------------------------- */
+/** Constructor.
+*   @param javaOutputObject a Java <code>Stream</code> or <code>Writer</code> object to use for output
+*   @param prefix the string to print at the beginning of an output line, defaults to <code>.nil</code>
+*   @param endofLine the string to use as end-of-line sequence, defaults to <code>.endOfLine</code>
+*/
 ::method init
-  expose javaOutputObject isWriter prefix bPrefixPrinted
+  expose javaOutputObject isWriter prefix bPrefixPrinted endOfLine
   signal on syntax
-  use strict arg javaOutputObject, prefix=.nil
+  use strict arg javaOutputObject, prefix=.nil, endOfLine=.endOfLine
 
   javaClassName="java.io.Writer"
   if \.environment~hasEntry(javaClassName) then
@@ -4503,7 +4517,7 @@ syntax:
 
 /* ------------------------------------------------------------------------------------------------- */
 ::method lineOut     -- a true synonym for SAY in this implementation (even if no data to display are supplied)
-  expose javaOutputObject isWriter prefix bPrefixPrinted
+  expose javaOutputObject isWriter prefix bPrefixPrinted endOfLine
   use strict arg chars=""
 
   mb=.MutableBuffer~new(chars)
@@ -4520,7 +4534,7 @@ syntax:
   if isWriter then
   do
      javaOutputObject~write(mb~string)
-     javaOutputObject~write(.endofline)
+     javaOutputObject~write(endofline)
   end
   else
   do
