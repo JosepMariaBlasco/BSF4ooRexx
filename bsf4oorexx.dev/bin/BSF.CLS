@@ -19,6 +19,12 @@
           .BSF in .environment;
 
    date:
+         2020-09-12, ---rgf, - fix bsf.redirectTo:
+                               - check if supplied objects are instances of bsf.inputStream or
+                                 bsf.outputStream and change logic accordingly
+                               - if bsf.inputStream or bsf.outputStream objects supplied do not change prefix at all
+                               - fix reusing .input for debugInput and .error for traceOutput
+                             - bsf.outputStream: expose ENDOFLINE in lineout method
          2020-09-07, ---rgf, - BSF.OutputStream now allows an optional third argument, the
                                end-of-line characters to use (defaults to .endOfLine); this
                                allows one to make sure that e.g. in the context of creating
@@ -4243,55 +4249,97 @@ syntax:
 --                   from/to the console!
 
    ---------------------- .input ----------------------
-  if Input <>.nil then .input~destination(input)
-  else
-  do   -- no object supplied
+  if Input <>.nil then           -- object for input monitor supplied
+  do
+     if bRedirectToJava then     -- make sure we wrap the Java object
+     do
+        if input~isA(.bsf.inputStream) then  -- already wrapped
+        do
+           .input~destination(input)
+           setInputPrefix=.false -- do not change prefix setting
+        end
+        else                     -- wrap Java input object
+           .input~destination(.bsf.inputStream~new(input))
+     end
+     else   -- redirect to Rexx object, whatever it is
+       .input~destination(input)
+  end
+  else   -- no input object supplied
+  do
      prev=.input~current    -- get current monitored object
-     if .input~destination=.nil then    -- remove current montitored object, if none left, add it back
+     if .input~destination=.nil then   -- remove current montitored object, if none left, add it back
         .input~destination(prev)
 
-     if bRedirectToJava=.true then
+     if bRedirectToJava=.true then     -- if no input Java object supplied, default to System's in object
         .input~destination(.bsf.InputStream~new(.java.lang.System~in))
      else
         .input~destination(.stdin)
   end
 
   inp=.input~current          -- fetch current monitored object
-  if inp~isA(.bsf.InputStream), inp~prefix=.nil then  -- only set the prefix string, if not yet set
+  if inp~isA(.bsf.InputStream), setInputPrefix<>.false, inp~prefix=.nil then  -- only set the prefix string, if not yet set
      inp~prefix="REXXin?>"
 
    ---------------------- .output ----------------------
-  if Output <>.nil then .Output~destination(Output)
-  else
+  if Output <>.nil then
+  do
+     if bRedirectToJava then     -- make sure we wrap the Java object
+     do
+        if output~isA(.bsf.outputStream) then  -- already wrapped
+        do
+           .output~destination(output)
+           setOutputPrefix=.false -- do not change prefix setting
+        end
+        else                     -- wrap Java output object
+           .output~destination(.bsf.outputStream~new(output))
+     end
+     else   -- redirect to Rexx object, whatever it is
+       .output~destination(output)
+  end
+  else   -- no output object supplied
   do
      prev=.output~current    -- get current monitored object
-     if .output~destination=.nil then    -- remove current montitored object, if none left, add it back
+     if .output~destination=.nil then  -- remove current montitored object, if none left, add it back
         .output~destination(prev)
 
-     if bRedirectToJava=.true then
+     if bRedirectToJava=.true then     -- if no output Java object supplied, default to System's out object
         .Output~destination(.bsf.outputStream~new(.java.lang.System~out))
      else
         .Output~destination(.stdout)
   end
   outp=.output~current        -- fetch current monitored object
-  if outp~isA(.bsf.OutputStream), outp~prefix=.nil then -- only set the prefix string, if not yet set
-                                  outp~prefix="REXXout>"
+  if outp~isA(.bsf.OutputStream), setOutputPrefix<>.false, outp~prefix=.nil then -- only set the prefix string, if not yet set
+     outp~prefix="REXXout>"
 
    ---------------------- .error ----------------------
-  if Error <>.nil then .Error~destination(Error)
-  else
+  if Error <>.nil then
+  do
+     if bRedirectToJava then     -- make sure we wrap the Java object
+     do
+        if error~isA(.bsf.outputStream) then  -- already wrapped
+        do
+           .error~destination(error)
+           setErrorPrefix=.false -- do not change prefix setting
+        end
+        else                     -- wrap Java output object
+           .error~destination(.bsf.outputStream~new(error))
+     end
+     else   -- redirect to Rexx object, whatever it is
+       .error~destination(error)
+  end
+  else   -- no error object supplied
   do
     prev=.error~current    -- get current monitored object
     if .error~destination=.nil then    -- remove current montitored object, if none left, add it back
        .error~destination(prev)
 
-    if bRedirectToJava=.true then
+    if bRedirectToJava=.true then      -- if no error Java object supplied, default to System's err object
        .Error~destination(.bsf.outputStream~new(.java.lang.System~err))
     else
        .Error~destination(.stderr)
   end
   err=.error~current          -- fetch current monitored object
-  if err~isA(.bsf.OutputStream), err~prefix=.nil then    -- only set the prefix string, if not yet set
+  if err~isA(.bsf.OutputStream), setErrorPrefix<>.false, err~prefix=.nil then    -- only set the prefix string, if not yet set
      err~prefix="REXXerr>"
 
 
@@ -4299,24 +4347,37 @@ syntax:
   if .local~hasEntry("DebugInput") then   -- ooRexx<4.2 does not have this
   do
      If DebugInput <>.nil then
-        .DebugInput~destination(DebugInput)
-     else
+     do
+        if bRedirectToJava then     -- make sure we wrap the Java object
+        do
+           if debugInput~isA(.bsf.inputStream) then  -- already wrapped
+           do
+              .debugInput~destination(debugInput)
+              setDebugInputPrefix=.false -- do not change prefix setting
+           end
+           else                     -- wrap Java input object
+              .debugInput~destination(.bsf.inputStream~new(debugInput))
+        end
+        else   -- redirect to Rexx object, whatever it is
+          .debugInput~destination(debugInput)
+     end
+     else   -- no debugInput object supplied
      do
         prev=.debugInput~current    -- get current monitored object
         if .debugInput~destination=.nil then    -- remove current montitored object, if none left, add it back
            .debugInput~destination(prev)
 
-        if bRedirectToJava, input<>.nil then  -- create a new BSF.InputStream instance in order to distinguish both streams (e.g. for prefixing correctly)
+        if bRedirectToJava then  -- create a new BSF.InputStream instance in order to distinguish both streams (e.g. for prefixing correctly)
         do
             -- create a new .BSF.InputStream working with the same Java stream object
-            .debugInput~destination(.bsf.inputStream~new(input~javaInputObject))
+            .debugInput~destination(.bsf.inputStream~new(.input~javaInputObject))
         end
         else
            .DebugInput~destination(.input)    -- redirect to .input object, whatever it is
      end
 
      debIn=.debugInput~current   -- fetch current monitored object
-     if debIn~isA(.bsf.InputStream), debIn~prefix=.nil then       -- only set the prefix string, if not yet set
+     if debIn~isA(.bsf.InputStream), setDebugInputPrefix<>.false, debIn~prefix=.nil then       -- only set the prefix string, if not yet set
         debIn~prefix="REXXdbgIn?>"
   end
 
@@ -4328,10 +4389,23 @@ syntax:
         .traceOutput~destination(prev)
 
      if TraceOutput <>.nil then
-        .TraceOutput~destination(TraceOutput)
-     else
      do
-        if bRedirectToJava, error<>.nil then -- create a new BSF.OutputStream instance in order to distinguish both streams (e.g. for prefixing correctly)
+        if bRedirectToJava then     -- make sure we wrap the Java object, if needed
+        do
+           if traceOutput~isA(.bsf.outputStream) then  -- already wrapped
+           do
+              .traceOutput~destination(traceOutput)
+              setTraceOutputPrefix=.false -- do not change prefix setting
+           end
+           else                     -- wrap Java output object
+              .traceOutput~destination(.bsf.outputStream~new(traceOutput))
+        end
+        else   -- redirect to Rexx object, whatever it is
+          .traceOutput~destination(traceOutput)
+     end
+     else   -- no traceOutput object supplied
+     do
+        if bRedirectToJava then  -- create a new BSF.OutputStream instance in order to distinguish both streams (e.g. for prefixing correctly)
         do
            .traceOutput~destination(.bsf.outputStream~new(.error~javaOutputObject))
         end
@@ -4340,7 +4414,7 @@ syntax:
      end
 
      trcOut=.traceOutput~current -- fetch current monitored object
-     if trcOut~isA(.bsf.OutputStream), trcOut~prefix=.nil then  -- only set the prefix string, if not yet set
+     if trcOut~isA(.bsf.OutputStream), setTraceOutputPrefix<>.false, trcOut~prefix=.nil then  -- only set the prefix string, if not yet set
         trcOut~prefix="REXXtrc>"
 
   end
