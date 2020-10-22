@@ -758,7 +758,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.41 (20200912)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     6.41 (20200928)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -858,7 +858,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20200912" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20200928" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4243,23 +4243,15 @@ syntax:
 
   bRedirectToJava=redirectTo~strip~left(1)~caselessEquals("J")
 
--- TODO: 2016-11-09: if removing a monitored object (because .nil was supplied), then make sure to
---                   remove monitored object, but make also sure that one monitored object (the
---                   Rexx default ones) remains in place, otherwise Rexx can't read and write
---                   from/to the console!
-
    ---------------------- .input ----------------------
   if Input <>.nil then           -- object for input monitor supplied
   do
      if bRedirectToJava then     -- make sure we wrap the Java object
      do
         if input~isA(.bsf.inputStream) then  -- already wrapped
-        do
            .input~destination(input)
-           setInputPrefix=.false -- do not change prefix setting
-        end
         else                     -- wrap Java input object
-           .input~destination(.bsf.inputStream~new(input))
+           .input~destination(.bsf.inputStream~new(input,"REXXin?>"))
      end
      else   -- redirect to Rexx object, whatever it is
        .input~destination(input)
@@ -4271,14 +4263,10 @@ syntax:
         .input~destination(prev)
 
      if bRedirectToJava=.true then     -- if no input Java object supplied, default to System's in object
-        .input~destination(.bsf.InputStream~new(.java.lang.System~in))
+        .input~destination(.bsf.InputStream~new(.java.lang.System~in,"REXXin?>"))
      else
         .input~destination(.stdin)
   end
-
-  inp=.input~current          -- fetch current monitored object
-  if inp~isA(.bsf.InputStream), setInputPrefix<>.false, inp~prefix=.nil then  -- only set the prefix string, if not yet set
-     inp~prefix="REXXin?>"
 
    ---------------------- .output ----------------------
   if Output <>.nil then
@@ -4286,12 +4274,9 @@ syntax:
      if bRedirectToJava then     -- make sure we wrap the Java object
      do
         if output~isA(.bsf.outputStream) then  -- already wrapped
-        do
            .output~destination(output)
-           setOutputPrefix=.false -- do not change prefix setting
-        end
         else                     -- wrap Java output object
-           .output~destination(.bsf.outputStream~new(output))
+           .output~destination(.bsf.outputStream~new(output,"REXXout>"))
      end
      else   -- redirect to Rexx object, whatever it is
        .output~destination(output)
@@ -4303,13 +4288,10 @@ syntax:
         .output~destination(prev)
 
      if bRedirectToJava=.true then     -- if no output Java object supplied, default to System's out object
-        .Output~destination(.bsf.outputStream~new(.java.lang.System~out))
+        .Output~destination(.bsf.outputStream~new(.java.lang.System~out,"REXXout>"))
      else
         .Output~destination(.stdout)
   end
-  outp=.output~current        -- fetch current monitored object
-  if outp~isA(.bsf.OutputStream), setOutputPrefix<>.false, outp~prefix=.nil then -- only set the prefix string, if not yet set
-     outp~prefix="REXXout>"
 
    ---------------------- .error ----------------------
   if Error <>.nil then
@@ -4322,7 +4304,7 @@ syntax:
            setErrorPrefix=.false -- do not change prefix setting
         end
         else                     -- wrap Java output object
-           .error~destination(.bsf.outputStream~new(error))
+           .error~destination(.bsf.outputStream~new(error,"REXXerr>"))
      end
      else   -- redirect to Rexx object, whatever it is
        .error~destination(error)
@@ -4334,14 +4316,10 @@ syntax:
        .error~destination(prev)
 
     if bRedirectToJava=.true then      -- if no error Java object supplied, default to System's err object
-       .Error~destination(.bsf.outputStream~new(.java.lang.System~err))
+       .Error~destination(.bsf.outputStream~new(.java.lang.System~err,"REXXerr>"))
     else
        .Error~destination(.stderr)
   end
-  err=.error~current          -- fetch current monitored object
-  if err~isA(.bsf.OutputStream), setErrorPrefix<>.false, err~prefix=.nil then    -- only set the prefix string, if not yet set
-     err~prefix="REXXerr>"
-
 
    ---------------------- .debugInput ----------------------
   if .local~hasEntry("DebugInput") then   -- ooRexx<4.2 does not have this
@@ -4351,12 +4329,9 @@ syntax:
         if bRedirectToJava then     -- make sure we wrap the Java object
         do
            if debugInput~isA(.bsf.inputStream) then  -- already wrapped
-           do
               .debugInput~destination(debugInput)
-              setDebugInputPrefix=.false -- do not change prefix setting
-           end
            else                     -- wrap Java input object
-              .debugInput~destination(.bsf.inputStream~new(debugInput))
+              .debugInput~destination(.bsf.inputStream~new(debugInput,"REXXdbgIn?>"))
         end
         else   -- redirect to Rexx object, whatever it is
           .debugInput~destination(debugInput)
@@ -4370,15 +4345,11 @@ syntax:
         if bRedirectToJava then  -- create a new BSF.InputStream instance in order to distinguish both streams (e.g. for prefixing correctly)
         do
             -- create a new .BSF.InputStream working with the same Java stream object
-            .debugInput~destination(.bsf.inputStream~new(.input~javaInputObject))
+            .debugInput~destination(.bsf.inputStream~new(.input~javaObject,"REXXdbgIn?>"))
         end
         else
            .DebugInput~destination(.input)    -- redirect to .input object, whatever it is
      end
-
-     debIn=.debugInput~current   -- fetch current monitored object
-     if debIn~isA(.bsf.InputStream), setDebugInputPrefix<>.false, debIn~prefix=.nil then       -- only set the prefix string, if not yet set
-        debIn~prefix="REXXdbgIn?>"
   end
 
    ---------------------- .traceOutput ----------------------
@@ -4393,12 +4364,9 @@ syntax:
         if bRedirectToJava then     -- make sure we wrap the Java object, if needed
         do
            if traceOutput~isA(.bsf.outputStream) then  -- already wrapped
-           do
               .traceOutput~destination(traceOutput)
-              setTraceOutputPrefix=.false -- do not change prefix setting
-           end
            else                     -- wrap Java output object
-              .traceOutput~destination(.bsf.outputStream~new(traceOutput))
+              .traceOutput~destination(.bsf.outputStream~new(traceOutput,"REXXtrc>"))
         end
         else   -- redirect to Rexx object, whatever it is
           .traceOutput~destination(traceOutput)
@@ -4407,16 +4375,11 @@ syntax:
      do
         if bRedirectToJava then  -- create a new BSF.OutputStream instance in order to distinguish both streams (e.g. for prefixing correctly)
         do
-           .traceOutput~destination(.bsf.outputStream~new(.error~javaOutputObject))
+           .traceOutput~destination(.bsf.outputStream~new(.error~javaObject,"REXXtrc>"))
         end
         else
            .TraceOutput~destination(.error)  -- redirect to .error object, whatever it is
      end
-
-     trcOut=.traceOutput~current -- fetch current monitored object
-     if trcOut~isA(.bsf.OutputStream), setTraceOutputPrefix<>.false, trcOut~prefix=.nil then  -- only set the prefix string, if not yet set
-        trcOut~prefix="REXXtrc>"
-
   end
 
 
@@ -4425,7 +4388,7 @@ syntax:
 /* Allows to use a java.io.InputStream or a java.io.Reader object as an ooRexx input stream. */
 ::class "BSF.InputStream"  subclass inputStream  public
 /* ------------------------------------------------------------------------------------------------- */
-::attribute javaInputObject         -- allow direct access to input stream object
+::attribute javaObject         -- allow direct access to input stream object
 /* ------------------------------------------------------------------------------------------------- */
 ::attribute isReader                -- allow direct access
 /* ------------------------------------------------------------------------------------------------- */
@@ -4433,20 +4396,20 @@ syntax:
 
 /* ------------------------------------------------------------------------------------------------- */
 ::method init                       -- constructor that takes the Java InputStream object
-  expose javaInputObject byteArray1 charArray1 isReader prefix
-  use strict arg javaInputObject, prefix=.nil
+  expose javaObject byteArray1 charArray1 isReader prefix
+  use strict arg javaObject, prefix=.nil
   byteArray1=bsf.createJavaArray("byte.class",1)   -- Java byte array with capacity of one
   charArray1=bsf.createJavaArray("char.class",1)   -- Java char array with capacity of one
 
   javaClassName="java.io.Reader"
   if \.environment~hasEntry(javaClassName) then
      call bsf.loadClass javaClassName, javaClassName  -- load Java class and store it as "JAVA.IO.READER" in .local
-  isReader=.java.io.Reader~isInstance(javaInputObject)
+  isReader=.java.io.Reader~isInstance(javaObject)
 
 
 /* ------------------------------------------------------------------------------------------------- */
 ::method charIn
-  expose javaInputObject byteArray1 charArray1 isReader
+  expose javaObject byteArray1 charArray1 isReader
   signal on syntax name wrong_args
   use strict arg start=1, length=1
   signal off syntax
@@ -4454,7 +4417,7 @@ syntax:
   if start>1 then
   do
      signal on syntax               -- if empty string, then InputStream raises an "invalid handle" exception
-     javaInputObject~skip(start-1)
+     javaObject~skip(start-1)
   end
 
   if isReader=.false then
@@ -4464,7 +4427,7 @@ syntax:
      else
         barr=bsf.createJavaArray("byte.class", length)
 
-     n=javaInputObject~read(barr,0,length)
+     n=javaObject~read(barr,0,length)
      if n=0 then return ""
      return BSFRawBytes(barr,n)
   end
@@ -4474,7 +4437,7 @@ syntax:
   else
      charr=bsf.createJavaArray("char.class", length)
 
-  n=javaInputObject~read(charr, 0, length)
+  n=javaObject~read(charr, 0, length)
 
   if n<=0 then return ""
   return .java.lang.String~new(charr, 0, n)~toString
@@ -4488,11 +4451,11 @@ wrong_args:
 
 /* ------------------------------------------------------------------------------------------------- */
 ::method chars
-  expose javaInputObject isReader
+  expose javaObject isReader
   if isReader then
-     return javaInputObject~ready
+     return javaObject~ready
   else   -- assume an InputStream (e.g. java.lang.System.in)
-     return javaInputObject~available
+     return javaObject~available
 
 
 /* ------------------------------------------------------------------------------------------------- */
@@ -4521,7 +4484,7 @@ wrong_args:
 /* Allows to use a java.io.PrintStream or a java.io.Writer object as an ooRexx output stream. */
 ::class "BSF.OutputStream" subclass outputStream public
 /* ------------------------------------------------------------------------------------------------- */
-::attribute javaOutputObject  -- allow direct access to output stream object
+::attribute javaObject  -- allow direct access to output stream object
 /* ------------------------------------------------------------------------------------------------- */
 ::attribute isWriter          -- allow direct access
 /* ------------------------------------------------------------------------------------------------- */
@@ -4531,20 +4494,20 @@ wrong_args:
 
 /* ------------------------------------------------------------------------------------------------- */
 /** Constructor.
-*   @param javaOutputObject a Java <code>Stream</code> or <code>Writer</code> object to use for output
+*   @param javaObject a Java <code>Stream</code> or <code>Writer</code> object to use for output
 *   @param prefix the string to print at the beginning of an output line, defaults to <code>.nil</code>
 *   @param endofLine the string to use as end-of-line sequence, defaults to <code>.endOfLine</code>
 */
 ::method init
-  expose javaOutputObject isWriter prefix bPrefixPrinted endOfLine
+  expose javaObject isWriter prefix bPrefixPrinted endOfLine
   signal on syntax
-  use strict arg javaOutputObject, prefix=.nil, endOfLine=.endOfLine
+  use strict arg javaObject, prefix=.nil, endOfLine=.endOfLine
 
   javaClassName="java.io.Writer"
   if \.environment~hasEntry(javaClassName) then
      call bsf.loadClass javaClassName, javaClassName  -- load Java class and store it as "JAVA.IO.WRITER" in environment
 
-  isWriter=.java.io.Writer~isInstance(javaOutputObject)
+  isWriter=.java.io.Writer~isInstance(javaObject)
   bPrefixPrinted=.false             -- indicates whether the prefix was printed already (in charout-scenarios)
   return
 syntax:
@@ -4553,7 +4516,7 @@ syntax:
 
 /* ------------------------------------------------------------------------------------------------- */
 ::method charOut
-  expose javaOutputObject isWriter prefix bPrefixPrinted
+  expose javaObject isWriter prefix bPrefixPrinted
   signal on syntax
   use strict arg chars, start=1, bSkipPrefix=.false
 
@@ -4567,9 +4530,9 @@ syntax:
      if bPrefixPrinted=.false, bSkipPrefix=.false then  -- if not yet output
      do
         if isWriter then
-           javaOutputObject~write(prefix)
+           javaObject~write(prefix)
         else
-           javaOutputObject~print(prefix)
+           javaObject~print(prefix)
 
         bPrefixPrinted=.true              -- on subsequent charOuts do not write prefix anymore
      end
@@ -4579,11 +4542,11 @@ syntax:
 
    -- output string
   if isWriter then
-     javaOutputObject~write(mb~string)
+     javaObject~write(mb~string)
   else
-     javaOutputObject~print(mb~string)
+     javaObject~print(mb~string)
 
-  javaOutputObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
+  javaObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
   return
 syntax:
   raise propagate
@@ -4591,7 +4554,7 @@ syntax:
 
 /* ------------------------------------------------------------------------------------------------- */
 ::method lineOut     -- a true synonym for SAY in this implementation (even if no data to display are supplied)
-  expose javaOutputObject isWriter prefix bPrefixPrinted endOfLine
+  expose javaObject isWriter prefix bPrefixPrinted endOfLine
   use strict arg chars=""
 
   mb=.MutableBuffer~new(chars)
@@ -4607,14 +4570,14 @@ syntax:
 
   if isWriter then
   do
-     javaOutputObject~write(mb~string)
-     javaOutputObject~write(endofline)
+     javaObject~write(mb~string)
+     javaObject~write(endofline)
   end
   else
   do
-     javaOutputObject~println(mb~string)
+     javaObject~println(mb~string)
   end
-  javaOutputObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
+  javaObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
   bPrefixPrinted=.false          -- a new line for which the prefix was not printed yet
 
 
