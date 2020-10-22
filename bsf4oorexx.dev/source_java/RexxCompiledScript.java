@@ -60,7 +60,7 @@ Changes:
 /** Class that extends the <code>javax.script.CompiledScript</code> class and implements
  *  the <code>javax.script.Invocable</code> interface as this only makes sense in this
  *  class for {@link #getInterface(Class clasz)}. Therefore the author
- *  (Rony G. Flatscher) who served on the JSR-223 specification committee) thinkgs that the documentation
+ *  (Rony G. Flatscher) who served on the JSR-223 specification committee) thinks that the documentation
  *  in <code>javax.script.Invocable</code> is false, as it states that <code>Invocable</code> gets implemented by a
  *  <code>ScriptEngine</code>, somehow indicating it has to operate on some &quot;state&quot; of the script engine.
  *  <br>Please note: the JSR-223 specification does not imply that ScriptEngine should implement this

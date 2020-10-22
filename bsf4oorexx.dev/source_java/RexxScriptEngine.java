@@ -43,6 +43,13 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
    Changes:
 
+        2020-09-22, ---rgf, - make sure that redirected streams get only replaced when
+                              the ScriptContext's in, out or err are not yet redirected
+                              to monitored .bsf.inputStream or .bsf.outputStream objects;
+                              to reset the redirection use "call bsf.redirectTo 'Rexx'"
+
+        2020-09-13, ---rgf, - let bsf.redirectTo do the wrapping
+
         2020-08-27, ---rgf, - make sure that compiled scripts do not get rewritten (no annotation
                               processing)
                             - if a compiled script is not encoded, then raise an appropraite ScriptException
@@ -162,7 +169,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 101.20200827
+ * @version 101.20200922
  * @since  2015-05-11
  *
  */
@@ -202,6 +209,7 @@ public class RexxScriptEngine extends AbstractScriptEngine implements Compilable
      *  it is not necessary to set this value each time a script gets invoked or evaluated.
      */
     Writer             cachedErrorWriter;
+
 
     /** Caches the last compiled script. This is necessary in the case that {@link Invocable} methods
      *  get invoked (namely {@link #getInterface(Class clasz)})
@@ -528,7 +536,7 @@ if (bDebug==true) {exc.printStackTrace(); }
      *
      */
 
-    String rexxRedirectStandardFilesCode=   // redirect ooRexx standard streams to the ScriptContext supplied ones
+    String rexxRedirectStandardFilesCode_ori=   // redirect ooRexx standard streams to the ScriptContext supplied ones
            "use arg in, out, err                          \n" +
            "/* redirect .input, .output, .error       */  \n" +
            "call bsf.RedirectTo 'Java'                , - \n" +
@@ -537,6 +545,104 @@ if (bDebug==true) {exc.printStackTrace(); }
            "     .bsf.outputStream~new(err)               \n" +
            "                                              \n" +
            "::requires BSF.CLS    /* get Java support */  \n" ;
+
+
+    String rexxRedirectStandardFilesCode_debug = // _with_debug_statements =    // redirect ooRexx standard streams to the ScriptContext supplied ones
+        "use arg in, out, err                                                            \n" +
+        ".stdout~say('RSE.rex: // args ---> in='in', out='out', err='err)     \n" +
+        "                                                                                \n" +
+        "/* redirect .input, .output, .error       */                                    \n" +
+        "   -- only replace, if not yet a .bsf.inputStream                               \n" +
+        "currIn=.input~current                                                           \n" +
+        "if \\.input~current~isA(.bsf.inputStream) then                                  \n" +
+        "do                                                                              \n" +
+        "   currIn=in                                                                    \n" +
+        "   .error~say(.context~name': .error~say ... currIn ='pp(currIn))               \n" +
+        "   .java.lang.system~err~println(.context~name': currIn ='pp(currIn))           \n" +
+        "end                                                                             \n" +
+        "call show 'in', in, .input, 'BEFORE redirect'                                   \n" +
+        "                                                                                \n" +
+        "   -- only replace, if not yet a .bsf.outputStream                              \n" +
+        "currOut=.output~current                                                         \n" +
+        "if \\.output~current~isA(.bsf.outputStream) then                                \n" +
+        "do                                                                              \n" +
+        "   currOut=out                                                                  \n" +
+        "   .error~say(.context~name': .error~say ... currOut='pp(currOut))              \n" +
+        "   .java.lang.system~err~println(.context~name': currOut='pp(currOut))          \n" +
+        "end                                                                             \n" +
+        "call show 'out', out, .output, 'BEFORE redirect'                                \n" +
+        "                                                                                \n" +
+        "   -- only replace, if not yet a .bsf.outputStream                              \n" +
+        "currErr=.error ~current                                                         \n" +
+        "if \\.error ~current~isA(.bsf.outputStream) then                                \n" +
+        "do                                                                              \n" +
+        "   currErr=err                                                                  \n" +
+        "   .error~say(.context~name': .error~say ... currErr='pp(currErr))              \n" +
+        "   .java.lang.system~err~println(.context~name': currErr='pp(currErr))          \n" +
+        "end                                                                             \n" +
+        "call show 'err', err, .error, 'BEFORE redirect'                                 \n" +
+        "                                                                                \n" +
+        "call bsf.RedirectTo 'Java', currIn, currOut, currErr                            \n" +
+        "                                                                                \n" +
+        "call show 'in', in, .input, 'after  redirect'                                   \n" +
+        "call show 'out', out, .output, 'after  redirect'                                \n" +
+        "call show 'err', err, .error, 'after  redirect'                                 \n" +
+        "                                                                                \n" +
+        "::requires BSF.CLS    /* get Java support */                                    \n" +
+        "                                                                                \n" +
+        " ::routine show                                                                 \n" +
+        "    use arg title, stream, monitor, additional=''                               \n" +
+        "                                                                                \n" +
+        " s='Rexx-show():' title additional                                              \n" +
+        " curr=monitor~current                                                           \n" +
+        " s=s 'stream='pp(stream) 'monitor~current='pp(curr)                             \n" +
+        " if (curr~isA(.bsf.inputStream)) |  curr~isA(.bsf.outputStream) then            \n" +
+        " do                                                                             \n" +
+        "   jo=curr~javaObject                                                           \n" +
+        "   s=s '| javaobject='pp(jo) 'prefix='pp(curr~prefix)                           \n" +
+        " end                                                                            \n" +
+        "                                                                                \n" +
+        " .stdout~say('rexxRedirectStandardFilesCode:' s)                                \n" +
+        " .java.lang.system~err~println(s)                                               \n" +
+        " .java.lang.system~out~println(s)                                               \n" ;
+
+
+/* Note: this program will not replace monitored streams, if they are instances
+         of .bsf.inputStream or .bsf.outputStream. This way the Rexx programmer
+         can force his versions to remain in effect, rather than getting them
+         replaced by this routine automatically. This may be helpful in situations
+         where e.g. the prefixes are not needed (like in the J2EE taglib library
+         where the "EXXout>" prefix must not be used and hence gets set to .nil).
+
+         If in this case the Rexx programmer wishes to allow the default replacements
+         to take effect again, then he needs to first issue a "call bsf.RedirectTo
+         'Rexx'" (and then maybe followed by a "call bsf.RedirectTot 'Java' which
+         then will fetch the System in, out, and err streams to be used for redirection.
+*/
+    String rexxRedirectStandardFilesCode =   // redirect ooRexx standard streams to the ScriptContext supplied ones
+        "/* redirect .input, .output, .error       */                                    \n" +
+        "use arg in, out, err                                                            \n" +
+        "                                                                                \n" +
+        "   -- only replace, if not yet a .bsf.inputStream                               \n" +
+        "currIn=.input~current                                                           \n" +
+        "                                                                                \n" +
+        "if \\.input~current~isA(.bsf.inputStream) then                                  \n" +
+        "   currIn=in                                                                    \n" +
+        "                                                                                \n" +
+        "   -- only replace, if not yet a .bsf.outputStream                              \n" +
+        "currOut=.output~current                                                         \n" +
+        "if \\.output~current~isA(.bsf.outputStream) then                                \n" +
+        "   currOut=out                                                                  \n" +
+        "                                                                                \n" +
+        "   -- only replace, if not yet a .bsf.outputStream                              \n" +
+        "currErr=.error ~current                                                         \n" +
+        "if \\.error ~current~isA(.bsf.outputStream) then                                \n" +
+        "   currErr=err                                                                  \n" +
+        "                                                                                \n" +
+        "call bsf.RedirectTo 'Java', currIn, currOut, currErr                            \n" +
+        "                                                                                \n" +
+        "::requires BSF.CLS    /* get Java support */                                    \n" ;
+
 
     /** <code>RexxProxy</code> for the Rexx routine created by the Rexx code stored in {@link #rexxRedirectStandardFilesCode}. */
     private RexxProxy rexxRedirectStandardFiles=null;
@@ -1182,34 +1288,6 @@ if (bDebug==true) {exc.printStackTrace();}
     }
 
 
-    /* * Blanks out the very first line if it leads in with a Unixh hashbang (#!) line.
-     *
-     * @param script the Rexx script to process
-     * @return the original script, if no hashbang line, else the script where the very first line is blanked out
-     *
-     */
-/* TODO: not needed, remove, 2020-08-25, rgf
-    String removeHashBang(String script)
-    {
-        if (script.startsWith("#!"))    // starts with a hashbang line!
-        {
-            int eofFirstLine=-1;        // first CR or LF, if any
-            // blank out
-            char charArr[]=script.toCharArray();
-            for (int i=0; i<charArr.length; i++)
-            {
-                if (charArr[i]==0x0d || charArr[i]==0x0a)
-                {
-                    break;
-                }
-                charArr[i]=' ';         // blank out
-            }
-            script=new String(charArr); // create String
-        }
-        return script;
-    }
-*/
-
 // -----------------------------------------------------------------------------------------------------
 // Invocable methods
     /** Returns an implementation of an interface using functions compiled in the interpreter.
@@ -1549,9 +1627,21 @@ if (bDebug) {System.err.println(this+":     RexxScriptEngine(), getting and sett
             Writer tmpWriter     =(Writer) sc.getWriter();
             Writer tmpErrorWriter=(Writer) sc.getErrorWriter();
 
+if (bDebug==true)
+   System.err.println(this+":     REXX -> RexxScriptEngine.update(...)");
                 // has there been a change in any of the reader or writers, if so reflect them!
             if ( (cachedReader!=tmpReader) || (cachedWriter!=tmpWriter) || (cachedErrorWriter!=tmpErrorWriter) )
             {
+
+if (bDebug==true)
+{
+   System.err.println(this+":     REXX -> RexxScriptEngine.update(...): doing a bsf.redirectTo 'Java', in, out, err with Rexx\n"
+                          +"\t\t new standard streams: in=["+tmpReader+"], out=["+tmpWriter+"], err=["+tmpErrorWriter+"]\n\tthis.rse=["+this+"]");
+// for Tomcat debugging, pritn to stdout
+   System.out.println(this+":     REXX -> RexxScriptEngine.update(...): doing a bsf.redirectTo 'Java', in, out, err with Rexx\n"
+                          +"\t\t new standard streams: in=["+tmpReader+"], out=["+tmpWriter+"], err=["+tmpErrorWriter+"]");
+}
+
                     // cache current values
                 cachedReader     =tmpReader;
                 cachedWriter     =tmpWriter;
