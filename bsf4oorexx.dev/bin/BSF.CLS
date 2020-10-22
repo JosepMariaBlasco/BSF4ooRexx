@@ -19,6 +19,9 @@
           .BSF in .environment;
 
    date:
+         2020-10-22, ---rgf, - add "string" methods to bsf.inputStream and bsf.outputStream
+                             - allow to configure bsf.outputStream to not use flush method (attribute "doFlush")
+
          2020-09-12, ---rgf, - fix bsf.redirectTo:
                                - check if supplied objects are instances of bsf.inputStream or
                                  bsf.outputStream and change logic accordingly
@@ -758,7 +761,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.41 (20200928)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     6.41 (20201022)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -858,7 +861,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20200928" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20201022" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -4394,6 +4397,13 @@ syntax:
 /* ------------------------------------------------------------------------------------------------- */
 ::attribute prefix                  -- prefix string to be output before executing a LINEIN, writes directly to System.err to bypass outputting any other prefixes
 
+::method string
+  expose javaObject isReader prefix
+  return "BSF.InputStream[javaObject="javaObject~objectName         || -
+                          ";isReader="isReader                      || -
+                          ";prefix="prefix"]"
+
+
 /* ------------------------------------------------------------------------------------------------- */
 ::method init                       -- constructor that takes the Java InputStream object
   expose javaObject byteArray1 charArray1 isReader prefix
@@ -4484,13 +4494,23 @@ wrong_args:
 /* Allows to use a java.io.PrintStream or a java.io.Writer object as an ooRexx output stream. */
 ::class "BSF.OutputStream" subclass outputStream public
 /* ------------------------------------------------------------------------------------------------- */
-::attribute javaObject  -- allow direct access to output stream object
+::attribute javaObject        -- allow direct access to output stream/writer object
 /* ------------------------------------------------------------------------------------------------- */
 ::attribute isWriter          -- allow direct access
 /* ------------------------------------------------------------------------------------------------- */
-::attribute prefix            -- prefix string to be output before executing a LINEOUT
+::attribute prefix            -- default: .nil, prefix string to be output before executing a LINEOUT
 /* ------------------------------------------------------------------------------------------------- */
 ::attribute endOfLine         -- allows setting explicitly end-of-line charactesrs, defaults to .endofline
+/* ------------------------------------------------------------------------------------------------- */
+::attribute doFlush           -- default: .true, allows setting whether we do the flush (a no go in JSPs as 'flush' commits the 'request'!
+
+::method string
+  expose javaObject isWriter prefix endOfLine doFlush
+  return "BSF.OutputStream[javaObject="javaObject~objectName      || -
+                          ";isWriter="isWriter                    || -
+                          ";prefix="prefix                        || -
+                          ";endOfLine=" || ('"'endOfLine~c2x'"x') || -
+                          ";doFlush="doFlush"]"
 
 /* ------------------------------------------------------------------------------------------------- */
 /** Constructor.
@@ -4499,9 +4519,9 @@ wrong_args:
 *   @param endofLine the string to use as end-of-line sequence, defaults to <code>.endOfLine</code>
 */
 ::method init
-  expose javaObject isWriter prefix bPrefixPrinted endOfLine
+  expose javaObject isWriter prefix bPrefixPrinted endOfLine doFlush
   signal on syntax
-  use strict arg javaObject, prefix=.nil, endOfLine=.endOfLine
+  use strict arg javaObject, prefix=.nil, endOfLine=.endOfLine, doFlush=.true
 
   javaClassName="java.io.Writer"
   if \.environment~hasEntry(javaClassName) then
@@ -4516,7 +4536,7 @@ syntax:
 
 /* ------------------------------------------------------------------------------------------------- */
 ::method charOut
-  expose javaObject isWriter prefix bPrefixPrinted
+  expose javaObject isWriter prefix bPrefixPrinted doFlush
   signal on syntax
   use strict arg chars, start=1, bSkipPrefix=.false
 
@@ -4546,7 +4566,8 @@ syntax:
   else
      javaObject~print(mb~string)
 
-  javaObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
+  if doFlush=.true then
+     javaObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
   return
 syntax:
   raise propagate
@@ -4554,7 +4575,7 @@ syntax:
 
 /* ------------------------------------------------------------------------------------------------- */
 ::method lineOut     -- a true synonym for SAY in this implementation (even if no data to display are supplied)
-  expose javaObject isWriter prefix bPrefixPrinted endOfLine
+  expose javaObject isWriter prefix bPrefixPrinted endOfLine doFlush
   use strict arg chars=""
 
   mb=.MutableBuffer~new(chars)
@@ -4577,7 +4598,9 @@ syntax:
   do
      javaObject~println(mb~string)
   end
-  javaObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
+
+  if doFlush=.true then
+     javaObject~flush         -- make sure buffer gets flushed (otherwise we may not see any output)
   bPrefixPrinted=.false          -- a new line for which the prefix was not printed yet
 
 
