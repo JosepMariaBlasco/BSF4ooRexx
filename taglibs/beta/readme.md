@@ -45,27 +45,28 @@ Remark: the invocation of the scripts will always supply the following three imp
 
 The taglib libraries implement the following attributes for the `script` and `expr` elements:
 
-    Attribute        | Purpose
-    ----------------   -------
-    type             | Mandatory, defines the script language to use for executing the code
-    name             | Optional, a string that will be used as a pseudo file-name for the script (debugging)
-    src              | Optional, a string that represents a relative path to the file where the script program to execute is located
-    cacheSrc         | Optional (defaults to "true"), will cache the source: while developping set to "true" to have the source reread each time the JSP gets invoked
-    compileSrc       | JSR-223 only! Optional (defaults to "true"), will compile the script and run the compiled form
-    throwException   | Optional (defaults to "false"), will stop processing JSP in case of a script error
-    debug            | Optional (defaults to "false"), will inject information about JSP invocation (debugging)
+Attribute          | Purpose
+------------------ | -------
+`type`             | Mandatory, defines the script language to use for executing the code
+`name`             | Optional, a string that will be used as a pseudo file-name for the script (debugging)
+`src`              | Optional, a string that represents a relative path to the file where the script program to execute is located
+`cacheSrc`         | Optional (defaults to "true"), will cache the source: while developping set to "true" to have the source reread each time the JSP gets invoked
+`compileSrc`       | JSR-223 only! Optional (defaults to "true"), will compile the script and run the compiled form
+`throwException`   | Optional (defaults to "false"), will stop processing JSP in case of a script error
+`debug`            | Optional (defaults to "false"), will inject information about JSP invocation (debugging)
 
 
 ## Files ##
 
-    File name                 | Purpose
-    ------------------------- | --------------------------
-    readme.md                 | brief infos, text file
-    javax.ScriptTagLibs.jar   | contains the taglibs, uses "javax." package name, binary file (e.g. Tomcat 9 or earlier)
-    jakarta.ScriptTagLibs.jar | contains the taglibs, uses "jakarta." package name, binary file (TODO, e.g. Tomcat 10 or later)
-    script-bsf.tld            | describes BSF taglib, text file
-    script-jsr223.tld         | describes JSR-223 taglib, text file
-    demoRexxYYYYMMDD.zip      | examples that demonstrate the taglibs for the Rexx language (e.g. Tomcat: unzip into the "webapps" directory)
+File name                   | Purpose
+--------------------------- | --------------------------
+`readme.md`                 | brief infos, text file
+`javax.ScriptTagLibs.jar`   | contains the taglibs, uses "javax." package name, binary file (e.g. Tomcat 9 or earlier)
+`jakarta.ScriptTagLibs.jar` | contains the taglibs, uses "jakarta." package name, binary file (TODO, e.g. Tomcat 10 or later)
+`script-bsf.tld`            | describes BSF taglib, text file; copy into the application's WEB-INF directory
+`script-jsr223.tld`         | describes JSR-223 taglib, text file; copy into the application's WEB-INF directory
+`demoRexxYYYYMMDD.zip`      | examples that demonstrate the taglibs for the Rexx language (e.g. Tomcat: unzip into the "webapps" directory)
+`IntelliJ-oorexx-language-injections.xml` | Import file for ooRexx language injection support in IntelliJ (see addendum below)
 
 
 ## Example Using Taglibs with Tomcat 9 (`javax.` namespace) ##
@@ -90,4 +91,10 @@ The taglib libraries implement the following attributes for the `script` and `ex
 * load the Tomcat manager interface into your browser, e.g. "http://localhost:8080/manager"
 * * click on "/demoRexx" and pick the JSP examples for Rexx that you wish to look at
 
+## Addendum: IntelliJ ooRexx Support ##
 
+There is an ooRexx plugin for IntelliJ available from <https://sourceforge.net/projects/bsf4oorexx/files/Sandbox/aseik/ooRexxIDEA/GA/>.
+Download the latest plugin zip archive and point IntelliJ Plugin configuration to it in order to load.
+
+Then save `IntelliJ-oorexx-language-injections.xml` and import it in the "Settings -> Editor -> Language Injections"
+to allow ooRexx code to be highlighted in HTML, XML and JSP text.
