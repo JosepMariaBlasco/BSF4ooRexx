@@ -88,7 +88,7 @@ File name                   | Purpose
 * * copy "bsf4ooRexx-v641-YYYYMMDD-bin.jar" (location can be found by inspecting the environment variable CLASSPATH) to Tomcat's "lib" directory (makes it for all JSPs available)
 * * unzip "demoRexx20201029.zip" into Tomcat's "webapps" directory
 
-* load the Tomcat manager interface into your browser, e.g. "http://localhost:8080/manager"
+* load the Tomcat manager interface into your browser, e.g. "localhost:8080/manager"
 * * click on "/demoRexx" and pick the JSP examples for Rexx that you wish to look at
 
 ## Addendum: IntelliJ ooRexx Support ##
@@ -97,7 +97,7 @@ There is an ooRexx plugin for IntelliJ available from <https://sourceforge.net/p
 Download the latest plugin zip archive and point IntelliJ Plugin configuration to it in order to load.
 
 <em>IntelliJ</em> is an "integrated development application" (IDEA) for which a free "community" edition exists
-which can be downloaded from <https://www.jetbrains.com/idea/download/#section=windows>.
+which can be downloaded from <https://www.jetbrains.com/idea/download/>.
 
 Then save `IntelliJ-oorexx-language-injections.xml` and import it in the "Settings -> Editor -> Language Injections"
 to allow ooRexx code to be highlighted in HTML, XML and JSP text.
