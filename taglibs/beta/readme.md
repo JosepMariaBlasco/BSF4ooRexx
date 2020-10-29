@@ -50,7 +50,7 @@ Attribute          | Purpose
 `type`             | Mandatory, defines the script language to use for executing the code
 `name`             | Optional, a string that will be used as a pseudo file-name for the script (debugging)
 `src`              | Optional, a string that represents a relative path to the file where the script program to execute is located
-`cacheSrc`         | Optional (defaults to "true"), will cache the source: while developping set to "true" to have the source reread each time the JSP gets invoked
+`cacheSrc`         | Optional (defaults to "true"), will cache the source: while developping set to "false" to have the source reread each time the JSP gets invoked
 `compileSrc`       | JSR-223 only! Optional (defaults to "true"), will compile the script and run the compiled form
 `throwException`   | Optional (defaults to "false"), will stop processing JSP in case of a script error
 `debug`            | Optional (defaults to "false"), will inject information about JSP invocation (debugging)
@@ -80,9 +80,9 @@ File name                   | Purpose
 ~~~
 * copy "javax.ScriptTagLibs.jar" to Tomcat's "lib" directory (makes it for all JSPs available)
 * if testing the Rexx examples
-* * MacOSX (needs Java installed already)
+* * MacOSX (needs Java installed already, see addendum below for Java downloads)
 * * * get the latest version of BSF4ooRexx (ooRexx-Java bridge) which also includes ooRexx from <https://sourceforge.net/projects/bsf4oorexx/files/beta/20200928/> and install it
-* * Linux and Windows (needs Java installed already)
+* * Linux and Windows (needs Java installed already, see addendum below for Java downloads)
 * * * get the latest version of ooRexx from <https://sourceforge.net/projects/oorexx/files/oorexx/5.0.0beta/> and install it
 * * * get the latest version of BSF4ooRexx (ooRexx-Java bridge) from <https://sourceforge.net/projects/bsf4oorexx/files/beta/20200928/> and install it
 * * copy "bsf4ooRexx-v641-YYYYMMDD-bin.jar" (location can be found by inspecting the environment variable CLASSPATH) to Tomcat's "lib" directory (makes it for all JSPs available)
@@ -101,4 +101,18 @@ which can be downloaded from <https://www.jetbrains.com/idea/download/>.
 
 Then save `IntelliJ-oorexx-language-injections.xml` and import it in the "Settings -> Editor -> Language Injections"
 to allow ooRexx code to be highlighted in HTML, XML and JSP text.
+
+
+## Addendum: Java Downloads ##
+
+There is a proprietary Java implementation by Oracle, but there are numerous open-source
+Java installation packages from the same open source by other distributors. If you do
+not have Java installed yet, then try to locate an installation package that includes "JavaFX" ('OSS' means
+'open source software', 'LTS' means 'long term support'):
+<ul>
+    <li>Liberica (look for 'full Liberica', OSS): <https://bell-sw.com/>
+    <li>Zulu (look for 'FX' versions, OSS): <https://www.azul.com/downloads/>
+    <li>AdoptOpenJDK (OSS): <https://adoptOpenJDK.net>
+    <li>Oracle (note license):   <https://www.java.com>
+</ul>
 
