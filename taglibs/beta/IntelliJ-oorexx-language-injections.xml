@@ -1,0 +1,12 @@
+<LanguageInjectionConfiguration>
+  <injection language="ooRexx" injector-id="xml">
+    <display-name>oorexx-expr</display-name>
+    <place><![CDATA[xmlTag().withLocalName(string().equalTo("expr"))]]></place>
+    <xpath-condition>contains(lower-case(@type), 'rexx')</xpath-condition>
+  </injection>
+  <injection language="ooRexx" injector-id="xml">
+    <display-name>oorexx-script</display-name>
+    <place><![CDATA[xmlTag().withLocalName(string().equalTo("script"))]]></place>
+    <xpath-condition>contains(lower-case(@type), 'rexx')</xpath-condition>
+  </injection>
+</LanguageInjectionConfiguration>

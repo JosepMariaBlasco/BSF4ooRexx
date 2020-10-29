@@ -65,7 +65,7 @@ File name                   | Purpose
 `jakarta.ScriptTagLibs.jar` | contains the taglibs, uses "jakarta." package name, binary file (TODO, e.g. Tomcat 10 or later)
 `script-bsf.tld`            | describes BSF taglib, text file; copy into the application's WEB-INF directory
 `script-jsr223.tld`         | describes JSR-223 taglib, text file; copy into the application's WEB-INF directory
-`demoRexxYYYYMMDD.zip`      | examples that demonstrate the taglibs for the Rexx language (e.g. Tomcat: unzip into the "webapps" directory)
+`demoRexx20201029.zip`      | examples that demonstrate the taglibs for the Rexx language (e.g. Tomcat: unzip into the "webapps" directory)
 `IntelliJ-oorexx-language-injections.xml` | Import file for ooRexx language injection support in IntelliJ (see addendum below)
 
 
@@ -86,7 +86,7 @@ File name                   | Purpose
 * * * get the latest version of ooRexx from <https://sourceforge.net/projects/oorexx/files/oorexx/5.0.0beta/> and install it
 * * * get the latest version of BSF4ooRexx (ooRexx-Java bridge) from <https://sourceforge.net/projects/bsf4oorexx/files/beta/20200928/> and install it
 * * copy "bsf4ooRexx-v641-YYYYMMDD-bin.jar" (location can be found by inspecting the environment variable CLASSPATH) to Tomcat's "lib" directory (makes it for all JSPs available)
-* * unzip "demoRexxYYYYMMDD.zip" into Tomcat's "webapps" directory
+* * unzip "demoRexx20201029.zip" into Tomcat's "webapps" directory
 
 * load the Tomcat manager interface into your browser, e.g. "http://localhost:8080/manager"
 * * click on "/demoRexx" and pick the JSP examples for Rexx that you wish to look at
@@ -96,5 +96,9 @@ File name                   | Purpose
 There is an ooRexx plugin for IntelliJ available from <https://sourceforge.net/projects/bsf4oorexx/files/Sandbox/aseik/ooRexxIDEA/GA/>.
 Download the latest plugin zip archive and point IntelliJ Plugin configuration to it in order to load.
 
+<em>IntelliJ</em> is an "integrated development application" (IDEA) for which a free "community" edition exists
+which can be downloaded from <https://www.jetbrains.com/idea/download/#section=windows>.
+
 Then save `IntelliJ-oorexx-language-injections.xml` and import it in the "Settings -> Editor -> Language Injections"
 to allow ooRexx code to be highlighted in HTML, XML and JSP text.
+
