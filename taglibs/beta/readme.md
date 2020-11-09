@@ -54,6 +54,7 @@ Attribute          | Purpose
 `compileSrc`       | JSR-223 only! Optional (defaults to "true"), will compile the script and run the compiled form
 `throwException`   | Optional (defaults to "false"), will stop processing JSP in case of a script error
 `debug`            | Optional (defaults to "false"), will inject information about JSP invocation (debugging)
+`arguments`        | Optional (defaults to "true"), controls supplying the three arguments `request`, `response` and `out` in that order for each script/expr
 
 
 ## Files ##

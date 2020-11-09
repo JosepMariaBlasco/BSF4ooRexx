@@ -41,6 +41,11 @@
       <name>debug</name>            <!-- if "true" show miscellaneous information, default: "false" -->
       <required>false</required>
     </attribute>
+    <attribute>
+      <name>arguments</name>        <!-- optional: if "true" supply the implicit objects "request", "response"
+                                         and "out" as arguments in that order, default: "true" -->
+      <required>false</required>
+    </attribute>
   </tag>
 
   <tag>
@@ -70,6 +75,11 @@
     </attribute>
     <attribute>
       <name>debug</name>            <!-- if "true" show miscellaneous information, default: "false" -->
+      <required>false</required>
+    </attribute>
+    <attribute>
+      <name>arguments</name>        <!-- optional: if "true" supply the implicit objects "request", "response"
+                                         and "out" as arguments in that order, default: "true" -->
       <required>false</required>
     </attribute>
   </tag>
