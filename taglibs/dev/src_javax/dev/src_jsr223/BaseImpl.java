@@ -23,6 +23,9 @@
 
         - 2020-10-22: make sure that flush() does not get used in bsf.outputStream as it
                       would implicitly commit the response object!
+
+        - 2020-11-09: make sure that for ooRexx 'out' gets used only at the very first invocation
+                      on a page (otherwise each Rexx script/expr would needleslly redirect over and over)
 */
 
 /*
@@ -63,11 +66,16 @@ import javax.script.* ;
 
 abstract public class BaseImpl implements BodyTag
 {
+    static final protected String version = "100.20201109"; // version of this taglib
+
     static final protected String TAGLIBINFORMATION ="Taglib.Information";
 
     static final protected String scriptTaglib="ScriptTaglib";
+
     // used to determine whether any tag handler runs for the first time for this page
     static final protected String pageScopeAttrName="ScriptTaglibTest";
+    // used to determine whether first invocation of Rexx is also the first invocation for the page
+    static final protected String rexxOutRedirected="RexxOutRedirected";
     // will be used for retrieving/storing in pageContext
     static final protected String pageScopeManagerName=scriptTaglib+".Manager";
     static final protected String pageScopeEnginesName=scriptTaglib+".Engines";
@@ -95,20 +103,30 @@ abstract public class BaseImpl implements BodyTag
     protected PageContext  pageContext ;
 
     protected String       type ;                       // attribute 'type': script language name
+    protected boolean      isRexx = false;              // determine whether we have Rexx/oRexx/ooRexx in hand
     protected String       name ;                       // optional: name for the script in the JSP (for debugging)
     protected String       src  ;                       // optional: src: relative path to script to run
     protected boolean      bCacheSrc = true;            // optional: if "false" reread from file, default: true
     protected boolean      bCompileSrc = true ;         // optional: if compilable language will compile by default, if "false" only interprets
     protected boolean      bThrowException = false ;    // optional: if "true" an exception causes SkipPageException to be thrown, defaults to "false"
     protected boolean      bDebug = false;              // optional: if "true" show debug information
+    protected boolean      bArguments = true;           // optional: if "true" supply the three implicit objects "request",
+                                                        //           "response", "out" as arguments in that order
 
-    public void setType    (String value)           { type = value ; }; // HTML now uses 'type' instead of 'language'
+    public void setType    (String value)           { type = value ;
+                                                      // determine whether ooRexx in hand
+                                                      String lowerType=type.toLowerCase();
+                                                      isRexx =    (lowerType.equals("rexx")
+                                                                || lowerType.equals("orexx")
+                                                                || lowerType.equals("oorexx") );
+                                                    }; // HTML now uses 'type' instead of 'language'
     public void setName    (String value)           { name = value ; };
     public void setSrc     (String value)           { src  = value ; };
     public void setCacheSrc (String value)          { bCacheSrc  = Boolean.valueOf(value) ; };
     public void setCompileSrc (String value)        { bCompileSrc  = Boolean.valueOf(value) ; };
     public void setThrowException (String value)    { bThrowException = Boolean.valueOf(value) ; };
     public void setDebug   (String value)           { bDebug = Boolean.valueOf(value) ; };
+    public void setArguments (String value)         { bArguments = Boolean.valueOf(value) ; };
 
     public void setParent(Tag parent)               { this.parent = parent ; };
     public Tag  getParent()                         { return( this.parent ); };
@@ -316,6 +334,7 @@ abstract public class BaseImpl implements BodyTag
             {
                 HashMap <String,Object> attr = new HashMap();
                 attr.put("tagLibName"       , scriptTaglib    );
+                attr.put("version"          , version         );
                 attr.put("tagName"          , getTagName()    );
                 attr.put("type"             , type            );
                 attr.put("name"             , name            );
@@ -324,6 +343,7 @@ abstract public class BaseImpl implements BodyTag
                 attr.put("compileSrc"       , bCompileSrc     );
                 attr.put("throwException"   , bThrowException );
                 attr.put("debug"            , bDebug          );
+                attr.put("arguments"        , bArguments      );
                 engine.put(TAGLIBINFORMATION, attr);
             }
 
@@ -464,6 +484,9 @@ abstract public class BaseImpl implements BodyTag
                 out.print  ("<tr><td "+style+">Attribute &quot;debug&quot;</td>");
                 out.println("<td "+style+">"+bDebug+"</td></tr>");
 
+                out.print  ("<tr><td "+style+">Attribute &quot;arguments&quot;</td>");
+                out.println("<td "+style+">"+bArguments+"</td></tr>");
+
                 out.print  ("<tr><td "+style+">scriptTaglib</td>");
                 out.println("<td "+style+">"+scriptTaglib+"</td></tr>");
 
@@ -523,9 +546,6 @@ abstract public class BaseImpl implements BodyTag
                 out.println("<hr style=\"color: maroon;\"/>");
             }
 
-            // define arguments
-            Object args [] = new Object [] {request, response, out};
-            engine.put(engine.ARGV, args);
 
             ScriptContext sc=engine.getContext();
             sc.setWriter(out);      // make sure the scripts can directly print/write to their output stream
@@ -534,13 +554,17 @@ abstract public class BaseImpl implements BodyTag
             // invocation will be able to fetch the arguments directly as BSF proxies
             // with USE ARG; in addition redirect the standard streams to Java and
             // .output specifically to "out" such that SAY statements get directed to it
-            if (type.equals("rexx"))
+
+            if (isRexx && (pageContext.getAttribute(rexxOutRedirected, pageContext.PAGE_SCOPE) == null))     // redirect .output target to out-Java object
             {
+                // indicate that for this page we have Rexx .output redirected to not do it repeatedly
+                pageContext.setAttribute(rexxOutRedirected, new Object(), pageContext.PAGE_SCOPE);
+
                 // setup the Rexx instance to use the implicit 'out' object for its .output,
                 // if needed (only the first time)
                     // make sure we always set 'out' with no prefix and with no flushing (implicitly commits response object)!
                     // we need to cater for RexxScriptEngine having redirected already
-                String code = "use arg request, response, out                               \n" +
+                String code = "use arg out                                                  \n" +
                               "-- make sure no prefix gets inserted                         \n" +
                               "outWrapped=.bsf.outputStream~new(out, .nil, '0d0a'x, .false) \n" +
                               "prev=.output~current                                         \n" +
@@ -550,13 +574,25 @@ abstract public class BaseImpl implements BodyTag
                               "                                                             \n" +
                               "::requires BSF.CLS  -- load camouflaging support             \n" ;
 
-                engine.put("engine",engine);
+                engine.put(engine.ARGV, new Object [] {out});
                 engine.eval(code);
 
-                if (isExpression())   // rewrite expression code to return expression result
+                if (!bArguments)        // no arguments to supply, make sure we remove the args
+                {
+                    engine.put(engine.ARGV, new Object [] {});
+                }
+
+                if (isExpression())     // rewrite expression code to return expression result
                 {
                     scriptCode="return "+scriptCode;
                 }
+            }
+
+            // define arguments (supply implicit objects "request", "response", "out" in that order
+            if (bArguments)
+            {
+                Object args [] = new Object [] {request, response, out};
+                engine.put(engine.ARGV, args);
             }
 
             // evaluate expression from body content and print result to page
