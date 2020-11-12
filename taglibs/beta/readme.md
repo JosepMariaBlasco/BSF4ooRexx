@@ -62,10 +62,11 @@ Attribute          | Purpose
 File name                   | Purpose
 --------------------------- | --------------------------
 `readme.md`                 | brief infos, text file
-`javax.ScriptTagLibs.jar`   | contains the taglibs, uses "javax." package name, binary file (e.g. Tomcat 9 or earlier)
-`jakarta.ScriptTagLibs.jar` | contains the taglibs, uses "jakarta." package name, binary file (TODO, e.g. Tomcat 10 or later)
-`script-bsf.tld`            | describes BSF taglib, text file; copy into the application's WEB-INF directory
-`script-jsr223.tld`         | describes JSR-223 taglib, text file; copy into the application's WEB-INF directory
+`javax.ScriptTagLibs.jar`   | contains the taglibs, uses "javax." package name, binary file (e.g. Tomcat 9 or earlier); copy into the application's `WEB-INF/lib` directory
+`jakarta.ScriptTagLibs.jar` | contains the taglibs, uses "jakarta." package name, binary file (TODO, e.g. Tomcat 10 or later); copy into the application's `WEB-INF/lib` directory
+`script-bsf.tld`            | describes BSF taglib, text file; copy into the application's `WEB-INF` directory
+`script-jsr223.tld`         | describes JSR-223 taglib, text file; copy into the application's `WEB-INF` directory
+`ronyDemoRexx20201111-updated.war`  | use your Java-based web server's deploy "war"/"web module" feature to deploy (you need the latest ooRexx 5 and BSF4ooRexx installed on the system)
 `demoRexx20201029.zip`      | examples that demonstrate the taglibs for the Rexx language (e.g. Tomcat: unzip into the "webapps" directory)
 `IntelliJ-oorexx-language-injections.xml` | Import file for ooRexx language injection support in IntelliJ (see addendum below)
 
@@ -86,8 +87,11 @@ File name                   | Purpose
 * * Linux and Windows (needs Java installed already, see addendum below for Java downloads)
 * * * get the latest version of ooRexx from <https://sourceforge.net/projects/oorexx/files/oorexx/5.0.0beta/> and install it
 * * * get the latest version of BSF4ooRexx (ooRexx-Java bridge) from <https://sourceforge.net/projects/bsf4oorexx/files/beta/20200928/> and install it
-* * copy "bsf4ooRexx-v641-YYYYMMDD-bin.jar" (location can be found by inspecting the environment variable CLASSPATH) to Tomcat's "lib" directory (makes it for all JSPs available)
-* * unzip "demoRexx20201029.zip" into Tomcat's "webapps" directory
+* * either
+* * * deploy "ronyDemoRexx20201111-updated.war" using your Java-based web server management tool (e.g. Tomcat 9: http://localhost:8080/manager/, section "WAR file to deploy")
+* * or (deprecated)
+* * * copy "bsf4ooRexx-v641-YYYYMMDD-bin.jar" (location can be found by inspecting the environment variable CLASSPATH) to Tomcat's "lib" directory (makes it for all JSPs available)
+* * * unzip "demoRexx20201029.zip" into Tomcat's "webapps" directory
 
 * load the Tomcat manager interface into your browser, e.g. "localhost:8080/manager"
 * * click on "/demoRexx" and pick the JSP examples for Rexx that you wish to look at
