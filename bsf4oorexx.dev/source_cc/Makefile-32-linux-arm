@@ -34,6 +34,23 @@ BLD_PATH = ./tmp
 # directory to copy generated lib to
 TGT_LIB_DIR     = ./lib
 
+# >>> Modifications to Implement Java OpenJDK V8 on Various Raspberry Pi 4 Linux Distros <<<
+# >>> T. Dycks -- November 17, 2020 <<<
+# >>> Use $JAVA_HOME Environment Variable <<<
+# Enter The Following Shell Command to Set $JAVA_HOME Environment Variable:
+#   export JAVA_HOME=/path/to/jdk/base
+# Enter The Followin Shell Command to Prepend $JAVA_HOME Binary to System PATH:
+#  export PATH=$JAVA_HOME/bin:$PATH
+# Entries Above can be added to $HOME/.bashrc File to Set When Bash Command Shell is Started
+JDK_BASE = $(JAVA_HOME)
+# >>> Raspbian or Raspberry Pi OS 32 bit (armv7l) for OpenJDK Debian Packages Install <<<
+#JDK_BASE = /usr/lib/jvm/java-8-openjdk-armhf
+# >>> Sparky Linux OS 32 Bit (armhf) for RPii4 v5.12 (nibiru) <<<
+#JDK_BASE = /usr/lib/jvm/java-8-openjdk-armhf
+# >>> CentOS7 32 Bit Minimal (armv7l) for RPi4 <<<
+#JDK_BASE = /usr/lib/jvm/java-1.8.0-openjdk
+# >>> End Linux Modifications for 32 bit Raspberry Pi Linux ARM Distros <<<
+
 # base directory of the Java JDK to use on this system
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk
 
@@ -42,7 +59,7 @@ TGT_LIB_DIR     = ./lib
 # JDK_BASE = /usr/lib/jvm/java-6-oracle
 # JDK_BASE = /usr/lib/jvm/java-6-openjdk
 # JDK_BASE = ./java_include/lin_include_6
-JDK_BASE = /usr/lib/jvm/jdk-8-oracle-arm32-vfp-hflt
+#JDK_BASE = /usr/lib/jvm/jdk-8-oracle-arm32-vfp-hflt
 # rgf, 2017-04-05: force it to use the locally stored Java include files
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 

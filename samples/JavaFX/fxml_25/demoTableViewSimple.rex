@@ -94,7 +94,7 @@ call bsf.import    "javafx.util.converter.DefaultStringConverter","fx.DefaultStr
 
    -- create Rexx object that will control the application
 rexxApp=.RxMainApplication~new
-.my.app~mainApp=rexxApp        -- store the Rexx MainApp object in .my.app
+.my.app~mainApp=rexxApp       -- store the Rexx MainApp object in .my.app
 
    -- instantiate the abstract JavaFX class, the abstract "start" method will be served by rexxApp
 jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
@@ -102,7 +102,7 @@ jRexxApp=BsfCreateRexxProxy(rexxApp, ,"javafx.application.Application")
 signal on syntax
    -- launch the application, invoke "start" and then stay up until the application closes
 jRexxApp~launch(jRexxApp~getClass, .nil)  -- need to use this version of launch in order to work
-call sysSleep 0.01                 -- let ooRexx clean up a little bit
+call sysSleep 0.01            -- let ooRexx clean up a little bit
 exit
 
 syntax:

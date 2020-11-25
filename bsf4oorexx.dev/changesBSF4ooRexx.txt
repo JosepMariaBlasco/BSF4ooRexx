@@ -1,3 +1,62 @@
+-------------------------------------- 2020-11-24 ----------------------------------
+
+- RexxScriptEngineFactory.java
+
+        - getProgram(): make comment a little bit more terse
+
+
+-------------------------------------- 2020-11-20 ----------------------------------
+
+- install/setupBSF.rex
+
+        -  make sure the 64-bit "arm" library can be also "aarch64" and use
+           the suffix "-aarch64" for it from now on
+
+-------------------------------------- 2020-10-22 ----------------------------------
+
+- BSF.CLS
+
+         - add "string" methods to bsf.inputStream and bsf.outputStream
+
+         - allow to configure bsf.outputStream to not use flush method (attribute "doFlush")
+
+-------------------------------------- 2020-09-22 ----------------------------------
+
+- RexxScriptEngine.java
+
+        - make sure that redirected streams get only replaced when
+          the ScriptContext's in, out or err are not yet redirected
+          to monitored .bsf.inputStream or .bsf.outputStream objects;
+          to reset the redirection use "call bsf.redirectTo 'Rexx'"
+
+-------------------------------------- 2020-09-13 ----------------------------------
+
+- RexxScriptEngine.java
+
+        - let bsf.redirectTo do the wrapping
+
+-------------------------------------- 2020-09-12 ----------------------------------
+
+- BSF.CLS
+
+        - fix bsf.redirectTo:
+          - check if supplied objects are instances of bsf.inputStream or
+            bsf.outputStream and change logic accordingly
+          - if bsf.inputStream or bsf.outputStream objects supplied do not change prefix at all
+          - fix reusing .input for debugInput and .error for traceOutput
+        - bsf.outputStream: expose ENDOFLINE in lineout method
+
+-------------------------------------- 2020-09-07 ----------------------------------
+
+- BSF.CLS
+
+        - BSF.OutputStream now allows an optional third argument, the
+          end-of-line characters to use (defaults to .endOfLine); this
+          allows one to make sure that e.g. in the context of creating
+          HTML via J2EE the correct end-of-line character sequence
+          is being used ("0d0a"x) independent of the current operating
+          system's end-of-line
+
 -------------------------------------- 2020-08-27 ----------------------------------
 
 - RexxScriptEngine.java

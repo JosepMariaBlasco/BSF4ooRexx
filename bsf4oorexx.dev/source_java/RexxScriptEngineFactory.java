@@ -55,13 +55,15 @@ import org.apache.bsf.*;   // BSF support
 
         - 2020-01-20, ---rgf: - error fix: return THREADING constant value instead of "THREADING"
 
+        - 2020-11-24, ---rgf: - getProgram(): make comment a little bit more terse
+
 */
 
 
 /** Class that implements the <code>javax.script.ScriptEngineFactory</code> interface for the ooRexx support.
  *
  * @author Rony G. Flatscher
- * @version 100.20171107
+ * @version 100.20201124
  * @since   2015-05-11
  *
  */
@@ -73,7 +75,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     final public static RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY=new RexxScriptEngineFactory();
 
     final private static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
-    final private static String       ENGINE_VERSION   ="100.20191107";
+    final private static String       ENGINE_VERSION   ="100.20201124";
     final private static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
                                                                 "rxj", "rexxj", "jrexx",
                                                                 "rxo" );
@@ -360,8 +362,9 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     {
         StringBuilder sb=new StringBuilder();
         String strThis=this.toString();
+        strThis=strThis.substring(strThis.lastIndexOf('.')); // extract unqualified name with hash
 
-        sb.append("/* --> begin of "+strThis+".getProgram(String[]) --> "+getGMTFormattedDateAsISO()+" --> */;\n");
+        sb.append("/* --> begin of "+strThis+" --> "+getGMTFormattedDateAsISO()+" --> */;\n");
 
         if (statements==null)
         {
@@ -385,7 +388,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
                 }
             }
         }
-        sb.append("/* <-- end   of "+strThis+".getProgram(String[]) <-- "+getGMTFormattedDateAsISO()+" <-- */; \n");
+        sb.append("/* <-- end   of "+strThis+" <-- "+getGMTFormattedDateAsISO()+" <-- */; \n");
         return sb.toString();
     }
 

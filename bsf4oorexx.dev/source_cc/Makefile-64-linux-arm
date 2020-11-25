@@ -35,15 +35,34 @@ BLD_PATH = ./tmp
 TGT_LIB_DIR     = ./lib
 
 # base directory of the Java JDK to use on this system
-# Revised for Java 8 JDK -- T. Dycks -- June 13, 2020
-JDK_BASE = /usr/lib/jvm/java-8-openjdk
 
-# Mac-Virtualbox Ubuntut 11.04 desktop i386
-# JDK_BASE = /home/wu/jdk_rpm_bin/tmp/jdk1.6.0_10
-# JDK_BASE = /usr/lib/jvm/java-6-oracle
-# JDK_BASE = /usr/lib/jvm/java-6-openjdk
-# JDK_BASE = ./java_include/lin_include_6
-# JDK_BASE = /usr/lib/jvm/jdk-8-oracle-arm32-vfp-hflt
+# >>> Revised to Use $JAVA_HOME Env Var -- T. Dycks -- November 17, 2020 <<<
+# ==> To Use $JAVA_HOME Environment Variable ...
+# To Set Value from Command Shell Prompt:
+#   export JAVA_HOME=/path/to/jdk/base
+# To Prepend to System PATH from Command Shell:
+#   export PATH=$JAVA_HOME/bin:$PATH
+# Statements Above can be added to the $HOME/.bashrc file to be set when Bash
+# Command Shell is started; Some Distros also use $JDK_HOME as an environment variable
+JDK_BASE = $(JAVA_HOME)  # Best Practice for JDK Version Differences
+# If Using $JDK_HOME Environment Variable; Uncomment Line Below & Comment Out $(JAVA_HOME) Line
+#JDK_BASE = $(JDK_HOME)
+# ---------------------------------------------------------------------------
+# >>> Raspberry Pi 4 (aarch64) Architecture JDK 8 or 11 Settings <<<
+# ==> Manjaro Linux; JDK 8 Setting for OpenJDK Pacman Package
+#JDK_BASE = /usr/lib/jvm/java-8-openjdk
+# ==> Ubuntu Linux Server; JDK 8 Setting for Ubuntu Debian Packages Install 
+#JDK_BASE = /usr/lib/jvm/java-8-openjdk-arm64
+# ==> Raspberry Pi OS 64 Beta; JDK 8 Setting for Oracle Download Install
+#JDK_BASE = /opt/jdk1.8.0_261 # Oracle JDK v1.8 Download
+# ==> Raspberry Pi OS 64 Beta; OpenJDK 11 Debian Package Install
+#JDK_BASE = /usr/lib/jvm/java-11-openjdk-arm64
+# ==> CentOS/RHEL 7 64; JDK 8 Setting for RPM (yum) Packages Install
+#JDK_BASE = /usr/lib/jvm/java-1.8.0
+# ==> Fedora 33 64; JDK 8 Setting for RPM (yum or dnf) Package Install
+#JDK_BASE = /usr/lib/jvm/java-1.8.0-openjdk
+# >>> End of  Revisions for ARM aarch64 Distros -- T. Dycks -- November 17, 2020 <<<
+
 # rgf, 2017-04-05: force it to use the locally stored Java include files
 INC_PATH = -I. -I/usr/local/include -I$(JDK_BASE)/include -I$(JDK_BASE)/include/linux -I/usr/include
 

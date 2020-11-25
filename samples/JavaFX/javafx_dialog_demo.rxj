@@ -20,8 +20,7 @@
    changes: 2018-07-22, rgf: prepended file name in creating Image with "file:" to allow it to find
                the bitmap in the current directory
 
-            2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
-                             - removing dependency on "rgf_util2.rex"
+            2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()                     
 
    last change: $Revision: 564 $ $Author: rony $ $Date: 2010-02-10 18:03:08 +0100 (Wed, 10 Feb 2010) $
 
@@ -31,7 +30,7 @@
    license:
 
     ------------------------ Apache Version 2.0 license -------------------------
-       Copyright (C) 2018-2019 Rony G. Flatscher
+       Copyright (C) 2018-2020 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -223,7 +222,7 @@ syntax:
    say "** causing a Rexx error condition, which can be looked at"
    say
    signal on syntax
-   rexxCode="say '   >>> from an interpreted Rexx program: hello, world'",                                                     -
+   rexxCode="say '   >>> from an interpreted Rexx program: hello, world'",                 -
             "say '   >>> this running Rexx program causes a syntax exception on purpose'", -
             "a=1/0    -- a divide by 0 runtime error"
    interpret rexxCode~toString(, ';')

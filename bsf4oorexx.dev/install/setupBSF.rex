@@ -5,9 +5,11 @@
             without any knowledge about Java installation issues)
    Author:  Rony G. Flatscher
    Date:    2006-01-07
-   Version: 1.34
+   Version: 1.35
    Changed:
 
+            2020-11-20, ---rgf, - make sure the 64-bit arm library can be also "aarch64" and use
+                                  the suffix "-aarch64" for it from now on
             2020-08-17, ---rgf, - add 64-bit arm library
             2018-10-11, ---rgf, - adjust installation for now supporting ARM-32 (Raspberry Pi)
             2018-06-13, ---rgf, - create_RexxJ_Script: the CLASSPATH may get too large for
@@ -552,7 +554,8 @@ do
          when cmd.eBitness=64    then
          do
             if j.os.arch='s390x'    then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-s390x"
-            else if j.os.arch='arm' then cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-arm"
+            else if j.os.arch='arm' | j.os.arch='aarch64' then
+                                         cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-aarch64"
                                     else cmd.eDll.sourcePath="lib/libBSF4ooRexx.so-64-amd64"
          end
 
