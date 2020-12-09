@@ -11,7 +11,7 @@ apply plugin: "idea"
 apply plugin: 'kotlin'
 
 group = "org.oorexx.idea"
-version = "2.0.1-GA"
+version = "2.0.2-GA"
 
 sourceCompatibility = 1.8
 
@@ -29,14 +29,13 @@ dependencies {
 
 }
 
-// See https://github.com/JetBrains/gradle-intellij-plugin/
 intellij {
     // Define IntelliJ Platform API version to use for building this plugin
-    version '2020.2'
+    version '2020.1'
 }
-
 patchPluginXml {
-    version = project.version
+    sinceBuild '201.*'
+    untilBuild null
 }
 
 test {
