@@ -57,13 +57,17 @@ import org.apache.bsf.*;   // BSF support
 
         - 2020-11-24, ---rgf: - getProgram(): make comment a little bit more terse
 
+        - 2020-12-17, ---rgf: - introduced a boolean field that controls whether the
+                                getOutputStatement(someString) uses "SAY" (true) or
+                                ".output~charout" (false)
+
 */
 
 
 /** Class that implements the <code>javax.script.ScriptEngineFactory</code> interface for the ooRexx support.
  *
  * @author Rony G. Flatscher
- * @version 100.20201124
+ * @version 100.20201217
  * @since   2015-05-11
  *
  */
@@ -75,7 +79,7 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     final public static RexxScriptEngineFactory DEFAULT_REXX_SCRIPT_ENGINE_FACTORY=new RexxScriptEngineFactory();
 
     final private static String       ENGINE_NAME      ="Open Object Rexx (ooRexx)";
-    final private static String       ENGINE_VERSION   ="100.20201124";
+    final private static String       ENGINE_VERSION   ="100.20201217";
     final private static List<String> EXTENSIONS       = Arrays.asList("rex", "rexx", "orx", "cls",
                                                                 "rxj", "rexxj", "jrexx",
                                                                 "rxo" );
@@ -98,6 +102,17 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
                                                                        "oorexx", "ooRexx", "OOREXX",
                                                                        "orexx", "oRexx", "OREXX");
     final private static String       THREADING        = "MULTITHREADED"; // "THREAD-ISOLATED";
+
+    /** Field controls whether {@link #getOutputStatement(String toDisplay)} uses the
+     *  Rexx <code>SAY</code> (always appends a line-feed character) keyword statement
+     *  or the ooRexx <code>.output</code> monitor with the <code>charOut</code> method
+     *  (will output the string as is without appending anything).
+     *  This field is set to <code>true</code> by default causing the <code>SAY</code>
+     *  keyword statement to be used.
+     *
+     * {@link #available()}
+    */
+    public static boolean bSay4Output=true; // default: use SAY
 
 
     /** Returns the full name of the ScriptEngine. */
@@ -211,9 +226,16 @@ public class RexxScriptEngineFactory implements ScriptEngineFactory
     }
 
     /** Returns a String that can be used as a statement to display the specified String using
-        the syntax of the supported scripting language.  */
+        the syntax of the supported scripting language. The boolean field {@link #bSay4Output}
+        value controls whether <code>SAY</code> (<code>true</code>) or
+        <code>.output~charOut</code> (<code>false</code>) gets employed.
+    */
     public String getOutputStatement(String toDisplay)
     {
+        if (bSay4Output)
+        {
+            return "SAY " + getStringLiteral(toDisplay);
+        }
         return ".output~charOut(" + getStringLiteral(toDisplay) + ")";
     }
 

@@ -1,5 +1,5 @@
-Additional information on BSF4ooRexx that may be interesting 3 February 2019 (Beta)
-============================================================ ======================
+Additional information on BSF4ooRexx that may be interesting 17 December 2020 (Beta)
+============================================================ =======================
 
 BSF4ooRexx is an extension to Rexx and ooRexx, consisting of an external Rexx
 function package ("BSF4ooRexx.dll", "libBSF4ooRexx") and a set of Java classes

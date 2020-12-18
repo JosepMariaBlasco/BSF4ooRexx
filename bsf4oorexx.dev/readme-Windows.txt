@@ -1,5 +1,5 @@
-BSF4ooRexx - Installation Directions for Windows         3 February 2019 (Beta)
-================================================         ======================
+BSF4ooRexx - Installation Directions for Windows         17 December 2020 (Beta)
+================================================         =======================
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage
 Java objects as Rexx objects.

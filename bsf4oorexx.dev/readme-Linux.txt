@@ -1,5 +1,5 @@
-BSF4ooRexx - Installation Directions for Linux           3 February 2019 (Beta)
-==============================================           ======================
+BSF4ooRexx - Installation Directions for Linux           17 December 2020 (Beta)
+==============================================           =======================
 Home: <http://sourceforge.net/projects/bsf4oorexx/>
 
 BSF4ooRexx adds support to the ooRexx scripting language to camouflage

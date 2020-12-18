@@ -1,3 +1,11 @@
+-------------------------------------- 2020-12-17 ----------------------------------
+
+- RexxScriptEngineFactory.java
+
+        - introduced a boolean field that controls whether the
+          getOutputStatement(someString) uses "SAY" (true) or
+          ".output~charout" (false)
+
 -------------------------------------- 2020-11-24 ----------------------------------
 
 - RexxScriptEngineFactory.java

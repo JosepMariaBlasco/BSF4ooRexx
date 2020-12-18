@@ -1,5 +1,5 @@
-BSF4ooRexx - Installation Directions for MacOS           3 February 2019 (Beta)
-==============================================           ======================
+BSF4ooRexx - Installation Directions for MacOS           17 December 2020 (Beta)
+==============================================           =======================
 
 Please note: there is a MacOS compatible GUI installation package that installs
              the latest version of ooRexx (currently 5.0 beta) together with
