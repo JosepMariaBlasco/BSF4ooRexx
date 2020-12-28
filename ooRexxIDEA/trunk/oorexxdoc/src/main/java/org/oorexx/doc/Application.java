@@ -4,10 +4,10 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.MissingCommandException;
 import com.beust.jcommander.ParameterException;
 import org.apache.commons.io.FileUtils;
-import org.oorexx.doc.generate.DocGenerator;
+import org.oorexx.doc.generate.DocGeneratorBase;
+import org.oorexx.doc.generate.StandaloneDocGenerator;
 import org.oorexx.doc.input.cli.GenerateCommand;
 import org.oorexx.doc.input.cli.HelpCommand;
-import org.oorexx.doc.input.gui.OORexxDocGUI;
 import org.oorexx.doc.input.model.xml.OoRexxDocXml;
 import org.oorexx.doc.input.xml.legacy.XmlParser;
 
@@ -22,11 +22,6 @@ public class Application {
     private static HelpCommand helpCommand;
 
     public static void main(String[] args) throws Exception{
-
-        if(System.console() == null && args.length == 0){
-            new OORexxDocGUI().setVisible(true);
-            return;
-        }
 
         if(args.length == 0){
             File file = null;
@@ -112,7 +107,7 @@ public class Application {
     }
 
     private static void generate() throws Exception{
-        DocGenerator docGenerator = new DocGenerator(generateCommand);
+        DocGeneratorBase docGenerator = new StandaloneDocGenerator(generateCommand);
         docGenerator.generate();
     }
 
@@ -127,7 +122,7 @@ public class Application {
     private static void generateXml(File file)throws Exception{
         String xmlContent = FileUtils.readFileToString(file, "UTF-8");
         OoRexxDocXml ooRexxDocXml = XmlParser.get(xmlContent);
-        DocGenerator docGenerator = new DocGenerator(ooRexxDocXml);
+        DocGeneratorBase docGenerator = new StandaloneDocGenerator(ooRexxDocXml);
         docGenerator.generate();
     }
 }

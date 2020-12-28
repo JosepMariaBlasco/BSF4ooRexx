@@ -8,6 +8,7 @@ import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.vfs.VirtualFile;
 import org.apache.commons.io.FileUtils;
 import org.oorexx.doc.generate.DocGenerator;
+import org.oorexx.doc.generate.DocGeneratorBase;
 import org.oorexx.doc.input.intellij.IntelliJGenerationCommand;
 
 import javax.swing.*;
@@ -38,7 +39,7 @@ public class OoRexxDocGui {
                 ProgressManager.getInstance().runProcessWithProgressSynchronously(() -> {
                     ApplicationManager.getApplication().runReadAction(() -> {
                         try {
-                            DocGenerator docGenerator = new DocGenerator(command);
+                            DocGeneratorBase docGenerator = new DocGenerator(command);
                             docGenerator.generate();
                             if(ooRexxDocForm.isQuickSave()) {
                                 quickSave(project, docGenerator);
@@ -57,7 +58,7 @@ public class OoRexxDocGui {
         builder.show();
     }
 
-    private static void openBrowser(DocGenerator docGenerator) {
+    private static void openBrowser(DocGeneratorBase docGenerator) {
         try {
             Desktop.getDesktop().browse(docGenerator.getOutputFile().toURI());
         } catch (IOException e) {
@@ -65,7 +66,7 @@ public class OoRexxDocGui {
         }
     }
 
-    private static void quickSave(Project project, DocGenerator docGenerator) throws IOException {
+    private static void quickSave(Project project, DocGeneratorBase docGenerator) throws IOException {
         String xml = docGenerator.generateXML4IntelliJ();
         String canonicalPath = project.getProjectFile().getParent().getCanonicalPath();
         File file = new File(canonicalPath, "ooRexxDoc.xml");

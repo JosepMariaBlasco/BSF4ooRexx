@@ -1,18 +1,16 @@
-import org.jetbrains.grammarkit.tasks.GenerateLexer
-import org.jetbrains.grammarkit.tasks.GenerateParser
-
 plugins {
-    id 'idea'
     id 'java'
-    id "org.jetbrains.intellij"
-    id "org.jetbrains.grammarkit" version "2019.2.3"
+    id 'org.jetbrains.intellij'
+    id "org.jetbrains.grammarkit" version "2020.3.1"
 }
 apply plugin: 'java'
 apply plugin: 'org.jetbrains.grammarkit'
-apply plugin: "idea"
 apply plugin: "org.jetbrains.intellij"
 
-sourceCompatibility = 1.8
+import org.jetbrains.grammarkit.tasks.GenerateLexer
+import org.jetbrains.grammarkit.tasks.GenerateParser
+
+sourceCompatibility = 1.11
 
 repositories {
     mavenCentral()
@@ -23,19 +21,18 @@ grammarKit {
     jflexRelease = '1.7.0-1'
 
     // tag or short commit hash of Grammar-Kit to use (see link below). Default is 2019.1.1
-    grammarKitRelease = '7aecfcd'
+    grammarKitRelease = 'f75d0d8'
 }
 
 dependencies {
     //compile fileTree(dir: 'lib', include: ['*.jar'])
     testCompile "junit:junit:4.12"
 }
-
 intellij {
     // Define IntelliJ Platform API version to use for building this plugin
-    version '2019.3'
-}
+    version '2020.3'
 
+}
 sourceSets {
     main {
         java {

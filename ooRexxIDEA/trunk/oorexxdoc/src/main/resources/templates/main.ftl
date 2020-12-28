@@ -119,7 +119,7 @@
         </div>
     </div>
 </div>
-<script src="js/jquery-3.2.1.min.js"></script>
+<script src="js/jquery.min.js"></script>
 <script src="js/typeahead-bootstrap.js"></script>
 <script src="js/bootstrap.min.js"></script>
 <script src="js/search-data.js"></script>

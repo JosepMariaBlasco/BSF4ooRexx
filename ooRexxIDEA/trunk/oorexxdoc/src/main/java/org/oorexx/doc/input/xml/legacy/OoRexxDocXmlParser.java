@@ -1,15 +1,13 @@
 package org.oorexx.doc.input.xml.legacy;
 
 import org.apache.commons.io.FileUtils;
-import org.oorexx.doc.generate.DocGenerator;
+import org.oorexx.doc.generate.DocGeneratorBase;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
-import sun.applet.Main;
-
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -20,13 +18,12 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.logging.Logger;
 
 @Deprecated
 public class OoRexxDocXmlParser {
 
     private String xml;
-    private DocGenerator generator;
+    private DocGeneratorBase generator;
     private File destFile;
     private String title;
     private String overview;
@@ -123,7 +120,7 @@ public class OoRexxDocXmlParser {
     }
 
 
-    public DocGenerator getGenerator() {
+    public DocGeneratorBase getGenerator() {
         return generator;
     }
 

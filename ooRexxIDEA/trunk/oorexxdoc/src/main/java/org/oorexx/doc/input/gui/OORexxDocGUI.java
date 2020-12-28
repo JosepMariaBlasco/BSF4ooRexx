@@ -2,7 +2,8 @@ package org.oorexx.doc.input.gui;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.oorexx.doc.generate.DocGenerator;
+import org.oorexx.doc.generate.DocGeneratorBase;
+import org.oorexx.doc.generate.StandaloneDocGenerator;
 import org.oorexx.doc.input.model.xml.HeaderProperty;
 import org.oorexx.doc.input.model.xml.OoRexxDocXml;
 import org.oorexx.doc.input.xml.legacy.XmlParser;
@@ -356,7 +357,7 @@ public class OORexxDocGUI extends JFrame {
 						try {
 							createDoc.setEnabled(false);
 							OoRexxDocXml ooRexxDocXml = XmlParser.get(generateXML());
-							DocGenerator docGenerator = new DocGenerator(ooRexxDocXml);
+							DocGeneratorBase docGenerator = new StandaloneDocGenerator(ooRexxDocXml);
 							docGenerator.generate();
 							createDoc.setEnabled(true);
 						} catch (Exception e1) {

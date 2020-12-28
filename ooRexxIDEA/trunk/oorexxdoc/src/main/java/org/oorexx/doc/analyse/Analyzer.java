@@ -3,16 +3,14 @@ package org.oorexx.doc.analyse;
 import com.intellij.psi.PsiComment;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.util.PsiTreeUtil;
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.oorexx.doc.analyse.model.OoRexxElement;
 import org.oorexx.doc.generate.Settings;
 import org.oorexx.ide.lang.psi.*;
 
-import java.util.Collection;
 import java.util.function.Predicate;
 
 import static com.intellij.psi.util.PsiTreeUtil.findChildOfType;
-import static com.intellij.psi.util.PsiTreeUtil.findChildrenOfType;
 
 public abstract class Analyzer {
 
@@ -65,7 +63,7 @@ public abstract class Analyzer {
         OoRexxKeywordUseTemplateList templateList = findChildOfType(ooRexxKeywordUse, OoRexxKeywordUseTemplateList.class);
 
         if(templateList != null) {
-            return StringEscapeUtils.escapeHtml(templateList.getText());
+            return StringEscapeUtils.escapeHtml4(templateList.getText());
         }
 
         return null;

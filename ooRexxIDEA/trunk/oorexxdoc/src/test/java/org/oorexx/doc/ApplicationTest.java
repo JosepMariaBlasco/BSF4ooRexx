@@ -3,7 +3,8 @@ package org.oorexx.doc;
 import com.beust.jcommander.MissingCommandException;
 import org.junit.Before;
 import org.junit.Test;
-import org.oorexx.doc.generate.DocGenerator;
+import org.oorexx.doc.generate.DocGeneratorBase;
+import org.oorexx.doc.generate.StandaloneDocGenerator;
 import org.oorexx.doc.input.cli.GenerateCommand;
 import org.oorexx.doc.input.model.xml.OoRexxDocXml;
 import org.oorexx.doc.input.xml.legacy.XmlParser;
@@ -208,7 +209,7 @@ public class ApplicationTest {
 
         OoRexxDocXml ooRexxDoc = XmlParser.get(xml);
 
-        DocGenerator docGenerator = new DocGenerator(ooRexxDoc);
+        DocGeneratorBase docGenerator = new StandaloneDocGenerator(ooRexxDoc);
         docGenerator.generate();
     }
 
