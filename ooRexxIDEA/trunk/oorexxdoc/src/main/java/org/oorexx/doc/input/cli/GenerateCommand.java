@@ -12,7 +12,7 @@ public class GenerateCommand {
     @Parameter(names = {"--title", "-t"}, required = true)
     private String title;
 
-    @Parameter(names = {"--inputFilesAndDirectories", "-i"}, splitter = CommaParameterSplitter.class, required = true)
+    @Parameter(names = {"--inputFilesAndDirectories", "-i"}, required = true)
     private List<String> filesAndDirectories;
 
     @Parameter(names = {"--outputFiles", "-o"}, required = true)
