@@ -17,6 +17,7 @@ public class XmlParser {
         OoRexxDocXml ooRexxDocXml = new OoRexxDocXml();
         ooRexxDocXml.setOverview(p.getOverview());
         ooRexxDocXml.setTitle(p.getTitle());
+        ooRexxDocXml.setSettings(p.getSettings());
 
         Parser parser = new Parser();
         parser.setInput(p.getSrcFiles().stream().map(File::getAbsolutePath).collect(Collectors.toList()));

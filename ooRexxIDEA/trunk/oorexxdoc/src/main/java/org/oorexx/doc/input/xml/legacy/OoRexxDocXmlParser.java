@@ -2,6 +2,7 @@ package org.oorexx.doc.input.xml.legacy;
 
 import org.apache.commons.io.FileUtils;
 import org.oorexx.doc.generate.DocGeneratorBase;
+import org.oorexx.doc.input.model.xml.Settings;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -29,6 +30,7 @@ public class OoRexxDocXmlParser {
     private String overview;
     private LinkedHashMap<String, String> headerData;
     private List<File> srcFiles;
+    private Settings settings = new Settings();
 
     public OoRexxDocXmlParser(String xml) {
 
@@ -94,6 +96,10 @@ public class OoRexxDocXmlParser {
 
         if (node.getNodeName().toLowerCase().equals("header"))
             parseHeader(node.getChildNodes());
+
+        if(node.getNodeName().toLowerCase().equals("settings")){
+            parseSettings(node);
+        }
     }
 
     private void parseHeader(NodeList nodes) {
@@ -119,6 +125,27 @@ public class OoRexxDocXmlParser {
         }
     }
 
+    private void parseSettings(Node settingsNode){
+        NodeList childNodes = settingsNode.getChildNodes();
+        for(int i = 0; i < childNodes.getLength(); i++) {
+            Node node = childNodes.item(i);
+            if (node.getNodeName().toLowerCase().equals("includePublic".toLowerCase())) {
+                settings.setIncludePublic(Boolean.valueOf(node.getTextContent()));
+            }
+
+            if (node.getNodeName().toLowerCase().equals("includePrivate".toLowerCase())) {
+                settings.setIncludePrivate(Boolean.valueOf(node.getTextContent()));
+            }
+
+            if (node.getNodeName().toLowerCase().equals("includePackage".toLowerCase())) {
+                settings.setIncludePackage(Boolean.valueOf(node.getTextContent()));
+            }
+
+            if (node.getNodeName().toLowerCase().equals("includeVariableReferences".toLowerCase())) {
+                settings.setIncludeVariableReferences(Boolean.valueOf(node.getTextContent()));
+            }
+        }
+    }
 
     public DocGeneratorBase getGenerator() {
         return generator;
@@ -155,5 +182,9 @@ public class OoRexxDocXmlParser {
 
     public List<File> getSrcFiles() {
         return srcFiles;
+    }
+
+    public Settings getSettings() {
+        return settings;
     }
 }
