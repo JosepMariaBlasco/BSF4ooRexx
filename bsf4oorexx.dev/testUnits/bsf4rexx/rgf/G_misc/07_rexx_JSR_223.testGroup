@@ -2,8 +2,8 @@
 /*
    name:             07_rexx_JSR_223.testGroup
    author:           Rony G. Flatscher
-   version:          1.0.0
-   date:             2015-07-05, 2015-07-07
+   version:          1.0.1
+   date:             2015-07-05, 2015-07-07, 2021-01-11
    changed:          2017-08-16, rgf:
                         - adjust for new formatting of Rexx code when produced by the RexxEngine factory
                         - adjust scope names which are turned into a stem by BsfContextVariables()
@@ -12,6 +12,9 @@
                      2020-01-20, rgf:
                         - adjust for the change in getOutputStatement() which now uses .output~charout() instead of SAY
                         - adjust for the change in returning "rexx" instead of "Rexx" in the extension list
+                     2021-01-11, rgf: - adjust for change in getOutputStatement() which now uses "SAY" again
+                                      - adjust for change in using unqualified ".RexxScriptEngine@"
+
 
    license:          ASF 2.0 (Apache Software License)
    purpose:          test JSR-223 (javax.script introduced with Java 6) support
@@ -117,9 +120,14 @@ return testResult
   end
   self~assertTrue(soen~items=0)
 
+/*
   self~assertEquals(".output~charOut(""hi"")", ref~getOutputStatement('hi'))
   self~assertEquals('.output~charOut("""hi""")', ref~getOutputStatement('"hi"'))
   self~assertEquals(".output~charOut(""'hi'"")", ref~getOutputStatement("'hi'"))
+*/
+  self~assertEquals("SAY ""hi""", ref~getOutputStatement('hi'))
+  self~assertEquals('SAY """hi"""', ref~getOutputStatement('"hi"'))
+  self~assertEquals("SAY ""'hi'""", ref~getOutputStatement("'hi'"))
 
   self~assertEquals("MULTITHREADED", ref~getParameter("THREADING"))
 
@@ -142,7 +150,8 @@ return testResult
 check: procedure      -- routine to carry out program creation and checking correctness
   use arg self, ref, strArr=.nil
 
-  refName="org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngineFactory@"
+--  refName="org.rexxla.bsf.engines.rexx.jsr223.RexxScriptEngineFactory@"
+  refName=".RexxScriptEngineFactory@"  -- adjusted
   leadin ="/* --> begin of" refName
   leadout="/* <-- end   of" refName
 
@@ -161,6 +170,7 @@ check: procedure      -- routine to carry out program creation and checking corr
          strPgmArr=ref~getProgram(jStrArr)~makeArray
 
       self~assertTrue(strPgmArr~items=3)
+
       self~assertTrue(strPgmArr[1]~abbrev(leadIn))
 
       if strArr=.nil then
