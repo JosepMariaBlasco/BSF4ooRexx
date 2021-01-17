@@ -41,6 +41,10 @@ Remark: the invocation of the scripts will always supply the following three imp
         at the position of the script (some script languages expect the implicit
         object to be prefixed with the `$` character like `$out`).
 
+
+
+---
+
 ## Taglib Attributes ##
 
 The taglib libraries implement the following attributes for the `script` and `expr` elements:
@@ -51,27 +55,30 @@ Attribute          | Purpose
 `name`             | Optional, a string that will be used as a pseudo file-name for the script (debugging)
 `src`              | Optional, a string that represents a relative path to the file where the script program to execute is located
 `cacheSrc`         | Optional (defaults to "true"), will cache the source: while developping set to "false" to have the source reread each time the JSP gets invoked
-`compileSrc`       | JSR-223 only! Optional (defaults to "true"), will compile the script and run the compiled form
+`compile`          | JSR-223 only! Optional (defaults to "true"), will compile the script and run the compiled form
 `throwException`   | Optional (defaults to "false"), will stop processing JSP in case of a script error
 `debug`            | Optional (defaults to "false"), will inject information about JSP invocation (debugging)
 `arguments`        | Optional (defaults to "true"), controls supplying the three arguments `request`, `response` and `out` in that order for each script/expr
 
 
+---
+
 ## Files ##
 
 File name                   | Purpose
 --------------------------- | --------------------------
-`readme.md`                 | brief infos, text file
-`javax.ScriptTagLibs.jar`   | contains the taglibs, uses "javax." package name, binary file (e.g. Tomcat 9 or earlier); copy into the application's `WEB-INF/lib` directory
-`jakarta.ScriptTagLibs.jar` | contains the taglibs, uses "jakarta." package name, binary file (TODO, e.g. Tomcat 10 or later); copy into the application's `WEB-INF/lib` directory
-`script-bsf.tld`            | describes BSF taglib, text file; copy into the application's `WEB-INF` directory
-`script-jsr223.tld`         | describes JSR-223 taglib, text file; copy into the application's `WEB-INF` directory
-`ronyDemoRexx20201111-updated.war`  | use your Java-based web server's deploy "war"/"web module" feature to deploy (you need the latest ooRexx 5 and BSF4ooRexx installed on the system)
-`demoRexx20201029.zip`      | examples that demonstrate the taglibs for the Rexx language (e.g. Tomcat: unzip into the "webapps" directory)
+`readme.md`                 | this text file: brief infos, text file
+`script-bsf.tld`            | describes BSF     taglib, text file; copy into the web application's `WEB-INF` directory
+`script-jsr223.tld`         | describes JSR-223 taglib, text file; copy into the web application's `WEB-INF` directory
+**`javax.`**`ScriptTagLibs.jar` | taglib library, uses "**javax.**" as the top level package name, binary file (Java EE 8 or earlier, e.g. Tomcat 9 or earlier);   copy into the shared `lib` directory of your Java based web server (e.g. Tomcat: `$CATALINA_HOME/lib`)
+**`jakarta.`**`ScriptTagLibs.jar` | taglib library, uses "**jakarta.**" as the top level package name, binary file (Jakarta EE 9 or later, e.g. Tomcat 10 or later); copy into the shared `lib` directory of your Java based web server (e.g. Tomcat: `$CATALINA_HOME/lib`)
+`demoRexx.war`              | use your Java-based web server's deploy "war"/"web module" feature to deploy (you need the latest ooRexx 5 and BSF4ooRexx installed on the system) or copy it into your Java based web server's `webapps` directory; demonstrates usage of ooRexx
 `IntelliJ-oorexx-language-injections.xml` | Import file for ooRexx language injection support in IntelliJ (see addendum below)
 
 
-## Example Using Taglibs with Tomcat 9 (`javax.` namespace) ##
+---
+
+## Example Using Taglibs with Tomcat 9 (`javax.` namespace) or 10 (`jakarta.` namespace) ##
 
 * Install Tomcat, e.g. from <https://tomcat.apache.org/> or e.g. on a Mac via Homebrew etc.
 * Create the manager and the manager roles in Tomcat's "conf\tomcat-users.xml", e.g.
@@ -80,21 +87,71 @@ File name                   | Purpose
         <role rolename="admin-gui"/>
         <user username="tomcat" password="some_password" roles="admin-gui,manager-gui"/>
 ~~~
-* copy "javax.ScriptTagLibs.jar" to Tomcat's "lib" directory (makes it for all JSPs available)
-* if testing the Rexx examples
-* * MacOSX (needs Java installed already, see addendum below for Java downloads)
-* * * get the latest version of BSF4ooRexx (ooRexx-Java bridge) which also includes ooRexx from <https://sourceforge.net/projects/bsf4oorexx/files/beta/20200928/> and install it
-* * Linux and Windows (needs Java installed already, see addendum below for Java downloads)
-* * * get the latest version of ooRexx from <https://sourceforge.net/projects/oorexx/files/oorexx/5.0.0beta/> and install it
-* * * get the latest version of BSF4ooRexx (ooRexx-Java bridge) from <https://sourceforge.net/projects/bsf4oorexx/files/beta/20200928/> and install it
-* * either
-* * * deploy "ronyDemoRexx20201111-updated.war" using your Java-based web server management tool (e.g. Tomcat 9: http://localhost:8080/manager/, section "WAR file to deploy")
-* * or (deprecated)
-* * * copy "bsf4ooRexx-v641-YYYYMMDD-bin.jar" (location can be found by inspecting the environment variable CLASSPATH) to Tomcat's "lib" directory (makes it for all JSPs available)
-* * * unzip "demoRexx20201029.zip" into Tomcat's "webapps" directory
 
-* load the Tomcat manager interface into your browser, e.g. "localhost:8080/manager"
-* * click on "/demoRexx" and pick the JSP examples for Rexx that you wish to look at
+
+
+---
+
+
+* Testing the ooRexx samples in `demoRexx.war` needs the latest ooRexx 5.0 or later and BSF4ooRexx (20201217 distribution or later) and deploying `demoRexx.war`:
+
+  .. * MacOSX (needs Java installed already, see addendum below for Java downloads)
+
+  .. .. get the latest version of BSF4ooRexx (ooRexx-Java bridge) which also includes ooRexx from <https://sourceforge.net/projects/bsf4oorexx/files/beta/20200928/> and install it
+
+  .. * Linux and Windows (needs Java installed already, see addendum below for Java downloads)
+
+  .. .. get the latest version of ooRexx from <https://sourceforge.net/projects/oorexx/files/oorexx/5.0.0beta/> and install it
+
+  .. .. get the latest version of BSF4ooRexx (ooRexx-Java bridge) from <https://sourceforge.net/projects/bsf4oorexx/files/beta/20200928/> and install it
+
+
+* copy the file `bsf4ooRexx-v6??-202?????-bin.jar` from your BSF4ooRexx installation into your
+  Java based web application server's shared `lib` directory usually located in the installation/home
+  directory (otherwise classloader problems may show up):
+
+  -> for "**Java EE**" (e.g. Tomcat 9 or earlier) copy **`javax.`**`ScriptTagLibs.jar` into your
+    Java based web application server's shared `lib` directory (e.g. Tomcat `$CATALINA_HOME/lib`)
+
+  -> for "**Jakarta EE**" (e.g. Tomcat 10 or later) copy **`jakarta.`**`ScriptTagLibs.jar` into your
+    Java based web application server's shared `lib` directory (e.g. Tomcat `$
+    CATALINA_HOME/lib`)
+
+* deploy `demoRexx.war` (web application archive)
+
+  .. * either copy `demoRexx.war` to your Java based web server's `webapps` directory or use its deployment management tool
+
+  .. * load the Tomcat manager interface into your browser, e.g. "localhost:8080/manager" (adjust the port number to your installation),
+
+* click on "/demoRexx" and pick the JSP examples for Rexx that you wish to look at (alternatively use the URL
+    "localhost:8080/demoRexx", adjust the port number to your installation)
+
+---
+
+## Addendum: Namespace "**javax.**" versus "**jakarta.**" ##
+
+Cf. <https://www.baeldung.com/java-enterprise-evolution> and <https://en.wikipedia.org/wiki/Jakarta_EE>  (as of 2020-11-12).
+
+In essence: earlier implementations of Java based web servers implementing
+the "extended edition" specifications used the package name "javax.".
+Oracle approached the open-source Eclipse foundation that took over
+development of future "Java extended editionS (EE)" and told them not to
+use neither "Java EE" nor "javax." (as the top level package name)!
+
+This has an impact on quite a few packages, including taglib libraries
+that implement e.g.  the servlet specifications for up to and including
+Java EE 8 (released 2017) which use "javax." as the top level package
+name.  Starting with version 9 (released 2018) which now gets named
+"Jakarte EE 9") the top level package name got changed to "jakarta." in
+all Java packages implementing the Jakarte EE spedifications.
+
+Therefore there are two versions of the ScriptTagLibs.jar, one indicating
+to refer to the top level package name "javax." (for Java EE 8 or earlier,
+hence named **`javax.`**`ScriptTagLibs.jar`) and one that refers to "jakarta."
+(for Jakarte EE 9 or later, hence named **`jakarta.`**`ScriptTagLibs.jar`).
+
+---
+
 
 ## Addendum: IntelliJ ooRexx Support ##
 
@@ -106,6 +163,8 @@ which can be downloaded from <https://www.jetbrains.com/idea/download/>.
 
 Then save `IntelliJ-oorexx-language-injections.xml` and import it in the "Settings -> Editor -> Language Injections"
 to allow ooRexx code to be highlighted in HTML, XML and JSP text.
+
+---
 
 
 ## Addendum: Java Downloads ##
@@ -121,3 +180,6 @@ not have Java installed yet, then try to locate an installation package that inc
     <li>Oracle (note license):   <https://www.java.com>
 </ul>
 
+---
+
+rgf, as of: 2021-01-17
