@@ -35,7 +35,7 @@
       <required>false</required>
     </attribute>
     <attribute>
-      <name>compileSrc</name>       <!-- optional: if "false" do not compile if language can compile, default: "true" -->
+      <name>compile</name>          <!-- optional: if "false" do not compile if language can compile, default: "true" -->
       <required>false</required>
     </attribute>
     <attribute>
@@ -75,7 +75,7 @@
       <required>false</required>
     </attribute>
     <attribute>
-      <name>compileSrc</name>       <!-- optional: if "false" do not compile if language can compile, default: "true" -->
+      <name>compile</name>          <!-- optional: if "false" do not compile if language can compile, default: "true" -->
       <required>false</required>
     </attribute>
     <attribute>

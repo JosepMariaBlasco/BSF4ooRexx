@@ -26,6 +26,10 @@
 
         - 2020-11-09: make sure that for ooRexx 'out' gets used only at the very first invocation
                       on a page (otherwise each Rexx script/expr would needleslly redirect over and over)
+
+        - 2020-11-23: add an additional debug section (about the ScriptEngine and ScriptEngineFactory)
+
+        - 2021-01-17: change attribute "compileSrc" to "compile"
 */
 
 /*
@@ -65,7 +69,7 @@ import jakarta.servlet.jsp.tagext.* ;
 
 abstract public class BaseImpl implements BodyTag
 {
-    static final protected String version = "100.20201109"; // version of this taglib
+    static final protected String version = "100.20201123"; // version of this taglib
 
     static final protected String TAGLIBINFORMATION ="Taglib.Information";
 
@@ -106,7 +110,7 @@ abstract public class BaseImpl implements BodyTag
     protected String       name ;                       // optional: name for the script in the JSP (for debugging)
     protected String       src  ;                       // optional: src: relative path to script to run
     protected boolean      bCacheSrc = true;            // optional: if "false" reread from file, default: true
-    protected boolean      bCompileSrc = true ;         // optional: if compilable language will compile by default, if "false" only interprets
+    protected boolean      bCompile = true ;            // optional: if compilable language will compile by default, if "false" only interprets
     protected boolean      bThrowException = false ;    // optional: if "true" an exception causes SkipPageException to be thrown, defaults to "false"
     protected boolean      bDebug = false;              // optional: if "true" show debug information
     protected boolean      bArguments = true;           // optional: if "true" supply the three implicit objects "request",
@@ -122,7 +126,7 @@ abstract public class BaseImpl implements BodyTag
     public void setName    (String value)           { name = value ; };
     public void setSrc     (String value)           { src  = value ; };
     public void setCacheSrc (String value)          { bCacheSrc  = Boolean.valueOf(value) ; };
-    public void setCompileSrc (String value)        { bCompileSrc  = Boolean.valueOf(value) ; };
+    public void setCompile (String value)           { bCompile  = Boolean.valueOf(value) ; };
     public void setThrowException (String value)    { bThrowException = Boolean.valueOf(value) ; };
     public void setDebug   (String value)           { bDebug = Boolean.valueOf(value) ; };
     public void setArguments (String value)         { bArguments = Boolean.valueOf(value) ; };
@@ -211,7 +215,7 @@ abstract public class BaseImpl implements BodyTag
             }
 
             // check for compiled script, if available use its engine for execution as per JSR-223
-            if (bCacheSrc && bCompileSrc)
+            if (bCacheSrc && bCompile)
             {
                 compiledScript =  compiledCachedSrcScripts.get(srcVirtualPath);  // fetch from cache
                 if (compiledScript!=null)
@@ -318,7 +322,7 @@ abstract public class BaseImpl implements BodyTag
                 engine.put(engine.FILENAME,filename);
 
                 // if compilation is desired and engine implements Compilable
-                if (bCompileSrc && compiledScript==null && engine instanceof Compilable)
+                if (bCompile && compiledScript==null && engine instanceof Compilable)
                 {
                     compiledScript = ((Compilable) engine).compile(scriptCode);
                     if (bCacheSrc)
@@ -339,11 +343,60 @@ abstract public class BaseImpl implements BodyTag
                 attr.put("name"             , name            );
                 attr.put("src"              , src             );
                 attr.put("cacheSrc"         , bCacheSrc       );
-                attr.put("compileSrc"       , bCompileSrc     );
+                attr.put("compile"       , bCompile     );
                 attr.put("throwException"   , bThrowException );
                 attr.put("debug"            , bDebug          );
                 attr.put("arguments"        , bArguments      );
                 engine.put(TAGLIBINFORMATION, attr);
+            }
+
+            // if Rexx, make sure BSF.CLS is required, such that the Scriptlet code
+            // invocation will be able to fetch the arguments directly as BSF proxies
+            // with USE ARG; in addition redirect the standard streams to Java and
+            // .output specifically to "out" such that SAY statements get directed to it
+
+            if (isRexx)     // redirect .output target to out-Java object
+            {
+                // redirect .output to 'out' ?
+                if (pageContext.getAttribute(rexxOutRedirected, pageContext.PAGE_SCOPE) == null)
+                {
+                    // indicate that for this page we have Rexx .output redirected to not do it repeatedly
+                    pageContext.setAttribute(rexxOutRedirected, new Object(), pageContext.PAGE_SCOPE);
+
+                    // setup the Rexx instance to use the implicit 'out' object for its .output,
+                    // if needed (only the first time)
+                        // make sure we always set 'out' with no prefix and with no flushing (implicitly commits response object)!
+                        // we need to cater for RexxScriptEngine having redirected already
+                    String code = "use arg out                                                  \n" +
+                                  "-- make sure no prefix gets inserted                         \n" +
+                                  "outWrapped=.bsf.outputStream~new(out, .nil, '0d0a'x, .false) \n" +
+                                  "prev=.output~current                                         \n" +
+                                  " -- remove monitored object, if none left, add it back       \n" +
+                                  "if .output~destination=.nil then .output~destination(prev)   \n" +
+                                  ".output~destination(outWrapped)                              \n" +
+                                  "                                                             \n" +
+                                  "::requires BSF.CLS  -- load camouflaging support             \n" ;
+
+                    engine.put(engine.ARGV, new Object [] {out});
+                    engine.eval(code);
+                }
+
+                if (!bArguments)        // no arguments to supply, make sure we remove the args
+                {
+                    engine.put(engine.ARGV, new Object [] {});
+                }
+
+                if (isExpression())     // rewrite expression code to return expression result
+                {
+                    scriptCode="return "+scriptCode;
+                }
+            }
+
+            // define arguments (supply implicit objects "request", "response", "out" in that order
+            if (bArguments)
+            {
+                Object args [] = new Object [] {request, response, out};
+                engine.put(engine.ARGV, args);
             }
 
             if (bDebug)
@@ -468,8 +521,8 @@ abstract public class BaseImpl implements BodyTag
                 out.print  ("<tr><td "+style+">cachedSrcScripts.size()</td>");
                 out.println("<td "+style+">"+cachedSrcScripts.size()+"</td></tr>");
 
-                out.print  ("<tr><td "+style+">Attribute &quot;compileSrc&quot;</td>");
-                out.println("<td "+style+">"+bCompileSrc+"</td></tr>");
+                out.print  ("<tr><td "+style+">Attribute &quot;compile&quot;</td>");
+                out.println("<td "+style+">"+bCompile+"</td></tr>");
 
                 out.print  ("<tr><td "+style+">compiledScript</td>");
                 out.println("<td "+style+">"+compiledScript+"</td></tr>");
@@ -541,6 +594,166 @@ abstract public class BaseImpl implements BodyTag
                 out.println("</table>");
                 // -----------------------------
 
+
+                out.println("&nbsp;");
+                out.println("<table "+style+">");
+                out.println("<tr><th colspan='2'>Debug Information (ScriptEngine)</th></tr>");
+
+                try {
+                    out.print  ("<tr><td "+style+">Script manager</td>");
+                    out.println("<td "+style+">"+tlMgr.get()+"</td></tr>");
+
+                    String colspanStyle="style='text-align: center; font-style: italic; font-variant: small-caps; font-weight: bold;'";
+                    // ------------- ScriptEngineFactory
+                    out.println("<tr><td colspan='2' "+colspanStyle+" ><br>ScriptEngine Related:</td></tr>");
+
+                    out.print  ("<tr><td "+style+">Script engine</td>");
+                    out.println("<td "+style+">"+engine+"</td></tr>");
+
+                    String paramKey=engine.ARGV;
+                    out.print  ("<tr><td "+style+">ScriptEngine.ARGV=<code>\""+paramKey+"\"</code><br>");
+                    out.print  ("ScriptEngine.get(ARGV)</td>");
+                    Object args[]=(Object []) engine.get(paramKey);
+                    if (args!=null)
+                    {
+                        out.println("<td "+style+"><code>"+java.util.Arrays.toString(args)+"</code></td></tr>");
+                    }
+                    else
+                    {
+                        out.println("<td "+style+"><code>"+args+"</code></td></tr>");
+                    }
+
+                    paramKey=engine.ENGINE;
+                    out.print  ("<tr><td "+style+">ScriptEngine.ENGINE=<code>\""+paramKey+"\"</code><br>");
+                    out.print  ("ScriptEngine.get(ENGINE)</td>");
+                    out.println("<td "+style+"><code>"+engine.get(paramKey)+"</code></td></tr>");
+
+                    paramKey=engine.ENGINE_VERSION;
+                    out.print  ("<tr><td "+style+">ScriptEngine.ENGINE_VERSION=<code>\""+paramKey+"\"</code><br>");
+                    out.print  ("ScriptEngine.get(ENGINE_VERSION)</td>");
+                    out.println("<td "+style+"><code>"+engine.get(paramKey)+"</code></td></tr>");
+
+                    paramKey=engine.FILENAME;
+                    out.print  ("<tr><td "+style+">ScriptEngine.FILENAME=<code>\""+paramKey+"\"</code><br>");
+                    out.print  ("ScriptEngine.get(FILENAME)</td>");
+                    out.println("<td "+style+"><code>"+engine.get(paramKey)+"</code></td></tr>");
+
+                    paramKey=engine.LANGUAGE;
+                    out.print  ("<tr><td "+style+">ScriptEngine.LANGUAGE=<code>\""+paramKey+"\"</code><br>");
+                    out.print  ("ScriptEngine.get(LANGUAGE)</td>");
+                    out.println("<td "+style+"><code>"+engine.get(paramKey)+"</code></td></tr>");
+
+                    paramKey=engine.LANGUAGE_VERSION;
+                    out.print  ("<tr><td "+style+">ScriptEngine.LANGUAGE_VERSION=<code>\""+paramKey+"\"</code><br>");
+                    out.print  ("ScriptEngine.get(LANGUAGE_VERSION)</td>");
+                    out.println("<td "+style+"><code>"+engine.get(paramKey)+"</code></td></tr>");
+
+                    paramKey=engine.NAME;
+                    out.print  ("<tr><td "+style+">ScriptEngine.NAME=<code>\""+paramKey+"\"</code><br>");
+                    out.print  ("ScriptEngine.get(NAME)</td>");
+                    out.println("<td "+style+"><code>"+engine.get(paramKey)+"</code></td></tr>");
+
+
+                    // ------------- ScriptEngineFactory
+                    out.println("<tr><td colspan='2' "+colspanStyle+" ><br>ScriptEngineFactory Related:</td></tr>");
+
+                    ScriptEngineFactory sef = engine.getFactory();
+                    out.print  ("<tr><td "+style+">ScriptEngineFactory</td>");
+                    out.println("<td "+style+">"+sef+"</td></tr>");
+
+                    out.print  ("<tr><td "+style+">ScriptEngineFactory.getEngineName()</td>");
+                    out.println("<td "+style+">"+sef.getEngineName()+"</td></tr>");
+
+                    out.print  ("<tr><td "+style+">ScriptEngineFactory.getEngineVersion()</td>");
+                    out.println("<td "+style+">"+sef.getEngineVersion()+"</td></tr>");
+
+                    out.print  ("<tr><td "+style+">ScriptEngineFactory.getExtensions()</td>");
+                    out.println("<td "+style+"><code>"+sef.getExtensions()+"</code></td></tr>");
+
+                    out.print  ("<tr><td "+style+">ScriptEngineFactory.getLanguageName()</td>");
+                    out.println("<td "+style+">"+sef.getLanguageName()+"</td></tr>");
+
+                    out.print  ("<tr><td "+style+">ScriptEngineFactory.getLanguageVersion()</td>");
+                    out.println("<td "+style+">"+sef.getLanguageVersion()+"</td></tr>");
+
+                    out.print  ("<tr><td "+style+">ScriptEngineFactory.getMethodCallSyntax(String obj, String m, String... args)</td>");
+                    out.println("<td "+style+"><code>"+sef.getMethodCallSyntax("obj", "m", "arg1", "arg2", "arg...")+"</code></td></tr>");
+
+                    out.print  ("<tr><td "+style+">ScriptEngineFactory.getMimeTypes()</td>");
+                    out.println("<td "+style+"><code>"+sef.getMimeTypes()+"</code></td></tr>");
+
+                    out.print  ("<tr><td "+style+">ScriptEngineFactory.getNames()</td>");
+                    out.println("<td "+style+"><code>"+sef.getNames()+"</code></td></tr>");
+
+                    String toDisplay="Some \"double-quoted\" and some 'single-quoted' string.";
+                    out.print  ("<tr><td "+style+">toDisplay: <code>"+toDisplay+"</code><br>");
+                    out.print  (                 "ScriptEngineFactory.getOutputStatement(toDisplay)</td>");
+                    out.println("<td "+style+"><code>"+sef.getOutputStatement(toDisplay)+"</code></td></tr>");
+
+                    paramKey=engine.ENGINE;
+                    out.print  ("<tr><td "+style+">ScriptEngine.ENGINE=<code>\""+paramKey+"\"</code><br>");
+                    out.print  ("ScriptEngineFactory.getParameter(ENGINE)</td>");
+                    out.println("<td "+style+"><code>"+sef.getParameter(paramKey)+"</code></td></tr>");
+
+                    paramKey=engine.ENGINE_VERSION;
+                    out.print  ("<tr><td "+style+">ScriptEngine.ENGINE_VERSION=<code>\""+paramKey+"\"</code><br>");
+                    out.print  ("ScriptEngineFactory.getParameter(ENGINE_VERSION)</td>");
+                    out.println("<td "+style+"><code>"+sef.getParameter(paramKey)+"</code></td></tr>");
+
+                    paramKey=ScriptEngine.LANGUAGE;
+                    out.print  ("<tr><td "+style+">ScriptEngine.LANGUAGE=<code>\""+paramKey+"\"</code><br>");
+                    out.print  ("ScriptEngineFactory.getParameter(LANGUAGE)</td>");
+                    out.println("<td "+style+"><code>"+sef.getParameter(paramKey)+"</code></td></tr>");
+
+                    paramKey=ScriptEngine.LANGUAGE_VERSION;
+                    out.print  ("<tr><td "+style+">ScriptEngine.LANGUAGE_VERSION=<code>\""+paramKey+"\"</code><br>");
+                    out.print  ("ScriptEngineFactory.getParameter(LANGUAGE_VERSION)</td>");
+                    out.println("<td "+style+"><code>"+sef.getParameter(paramKey)+"</code></td></tr>");
+
+                    paramKey=ScriptEngine.NAME;
+                    out.print  ("<tr><td "+style+">ScriptEngine.NAME=<code>\""+paramKey+"\"</code><br>");
+                    out.print  ("ScriptEngineFactory.getParameter(NAME)</td>");
+                    out.println("<td "+style+"><code>"+sef.getParameter(paramKey)+"</code></td></tr>");
+
+                    paramKey="THREADING";
+                    out.print  ("<tr><td "+style+">ScriptEngineFactory.getParameter(<code>\""+paramKey+"\"</code>)</td>");
+                    out.println("<td "+style+"><code>"+sef.getParameter(paramKey)+"</code></td></tr>");
+
+                    String strings[] = new String[] {"Hello, world", "this is \""+scriptTaglib+"'.'"+getTagName()+"\"" };
+
+                    String statements[] = new String[strings.length];
+                    for (int i=0;i<strings.length;i++)
+                    {
+                        statements[i]=sef.getOutputStatement(strings[i]);
+                    }
+
+                    out.print  ("<tr><td "+style+">strings:<code>");
+                    for (int i=0; i<statements.length; i++)
+                    {
+                        out.print("<br>&nbsp;&nbsp;&nbsp;"+strings[i]);
+                    }
+                    out.print("</code></td>");
+
+                    out.print  ("<td "+style+">output statements:<code>");
+                    for (int i=0; i<statements.length; i++)
+                    {
+                        out.print("<br>&nbsp;&nbsp;&nbsp;"+statements[i]);
+                    }
+                    out.print("</code></td></tr>");
+
+                    out.print  ("<tr><td "+style+">");
+                    out.print  ("ScriptEngineFactory.getProgram(statements)</td>");
+                    out.println("<td "+style+"><pre>"+sef.getProgram(statements)+"</pre></td></tr>");
+                }
+
+                catch (Exception e) // just in case ScriptEngine or ScriptEngineFactory cause an unexpected exception
+                {
+                    out.print ("Unexpected Exception Occurred: "+ e.toString()+"</code></td></tr>");
+                }
+                out.println("</table>");
+                // -----------------------------
+
+
                 out.println("</center>");
                 out.println("<hr style=\"color: maroon;\"/>");
             }
@@ -549,54 +762,6 @@ abstract public class BaseImpl implements BodyTag
             ScriptContext sc=engine.getContext();
             sc.setWriter(out);      // make sure the scripts can directly print/write to their output stream
 
-            // if Rexx, make sure BSF.CLS is required, such that the Scriptlet code
-            // invocation will be able to fetch the arguments directly as BSF proxies
-            // with USE ARG; in addition redirect the standard streams to Java and
-            // .output specifically to "out" such that SAY statements get directed to it
-
-            if (isRexx)     // redirect .output target to out-Java object
-            {
-                // redirect .output to 'out' ?
-                if (pageContext.getAttribute(rexxOutRedirected, pageContext.PAGE_SCOPE) == null)
-                {
-                    // indicate that for this page we have Rexx .output redirected to not do it repeatedly
-                    pageContext.setAttribute(rexxOutRedirected, new Object(), pageContext.PAGE_SCOPE);
-
-                    // setup the Rexx instance to use the implicit 'out' object for its .output,
-                    // if needed (only the first time)
-                        // make sure we always set 'out' with no prefix and with no flushing (implicitly commits response object)!
-                        // we need to cater for RexxScriptEngine having redirected already
-                    String code = "use arg out                                                  \n" +
-                                  "-- make sure no prefix gets inserted                         \n" +
-                                  "outWrapped=.bsf.outputStream~new(out, .nil, '0d0a'x, .false) \n" +
-                                  "prev=.output~current                                         \n" +
-                                  " -- remove monitored object, if none left, add it back       \n" +
-                                  "if .output~destination=.nil then .output~destination(prev)   \n" +
-                                  ".output~destination(outWrapped)                              \n" +
-                                  "                                                             \n" +
-                                  "::requires BSF.CLS  -- load camouflaging support             \n" ;
-
-                    engine.put(engine.ARGV, new Object [] {out});
-                    engine.eval(code);
-                }
-
-                if (!bArguments)        // no arguments to supply, make sure we remove the args
-                {
-                    engine.put(engine.ARGV, new Object [] {});
-                }
-
-                if (isExpression())     // rewrite expression code to return expression result
-                {
-                    scriptCode="return "+scriptCode;
-                }
-            }
-
-            // define arguments (supply implicit objects "request", "response", "out" in that order
-            if (bArguments)
-            {
-                Object args [] = new Object [] {request, response, out};
-                engine.put(engine.ARGV, args);
-            }
 
             // evaluate expression from body content and print result to page
             Object result=null;

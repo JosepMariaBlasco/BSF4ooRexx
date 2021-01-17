@@ -26,6 +26,8 @@
         - 2020-11-09: make sure that for ooRexx 'out' gets used only at the very first invocation
                       on a page (otherwise each Rexx script/expr would needleslly redirect over and over)
 
+        - 2020-11-12: if no BSFManager was created yet, do not use it for terminating engines
+
 */
 
 /*
@@ -47,22 +49,22 @@
 
 package org.rexxla.taglibs.bsf ;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.ServletContext;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException ;
+import java.io.InputStreamReader;
 
 import java.util.HashMap;
 import java.util.Vector;
 
-import java.io.InputStreamReader;
-import java.io.File;
-import java.io.FileInputStream;
-
+import javax.servlet.ServletContext;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.jsp.* ;
 import javax.servlet.jsp.tagext.* ;
-import java.io.IOException ;
 
 import org.apache.bsf.* ;
+
 
 abstract public class BaseImpl implements BodyTag
 {
@@ -105,7 +107,7 @@ abstract public class BaseImpl implements BodyTag
 
     public void finalize() throws Exception // make sure the BSF engines get a chance to clean up, if need be
     {
-        if (tlMgr!=null)
+        if (tlMgr!=null && tlMgr.get()!=null)
         {
             try {
                 tlMgr.get().terminate();    // makes sure all enginges get terminated as well
@@ -519,22 +521,26 @@ abstract public class BaseImpl implements BodyTag
             // invocation will be able to fetch the arguments directly as BSF proxies
             // with USE ARG; in addition redirect the standard streams to Java and
             // .output specifically to "out" such that SAY statements get directed to it
-            if (isRexx && (pageContext.getAttribute(rexxOutRedirected, pageContext.PAGE_SCOPE) == null))     // redirect .output target to out-Java object
+            if (isRexx)     // redirect .output target to out-Java object
             {
-                // indicate that for this page we have Rexx .output redirected to not do it repeatedly
-                pageContext.setAttribute(rexxOutRedirected, new Object(), pageContext.PAGE_SCOPE);
-                // setup the Rexx instance to use the implicit 'out' object for its .output,
-                // if needed (only the first time)
+                // redirect .output to 'out' ?
+                if (pageContext.getAttribute(rexxOutRedirected, pageContext.PAGE_SCOPE) == null)
+                {
+                    // indicate that for this page we have Rexx .output redirected to not do it repeatedly
+                    pageContext.setAttribute(rexxOutRedirected, new Object(), pageContext.PAGE_SCOPE);
+                    // setup the Rexx instance to use the implicit 'out' object for its .output,
+                    // if needed (only the first time)
 
-                    // make sure we always set 'out'
-                String code = "out=bsf.lookupBean('out')                                   \n" +
-                              // make sure no prefix gets inserted, and CR-LF gets used as endOfLine
-                              // also make sure no flushing takes place (will implicitly commit response object)
-                              "jspWriter=.bsf.outputStream~new(out, .nil, '0d0a'x, .false) \n" +
-                              // redirect Rexx standard streams to Java, make sure .output uses jspWriter
-                              "call bsf.redirectTo 'Java', , jspWriter                     \n" +
-                              "::requires BSF.CLS  -- load camouflaging support"   ;
-                engine.apply("org.rexxla.taglibs.bsf.BaseImpl", 0, 0, code, null, null);
+                        // make sure we always set 'out'
+                    String code = "out=bsf.lookupBean('out')                                   \n" +
+                                  // make sure no prefix gets inserted, and CR-LF gets used as endOfLine
+                                  // also make sure no flushing takes place (will implicitly commit response object)
+                                  "jspWriter=.bsf.outputStream~new(out, .nil, '0d0a'x, .false) \n" +
+                                  // redirect Rexx standard streams to Java, make sure .output uses jspWriter
+                                  "call bsf.redirectTo 'Java', , jspWriter                     \n" +
+                                  "::requires BSF.CLS  -- load camouflaging support"   ;
+                    engine.apply("org.rexxla.taglibs.bsf.BaseImpl", 0, 0, code, null, null);
+                }
 
                 if (isExpression()) // rewrite expression code to return expression result
                 {
