@@ -3,6 +3,17 @@
 The taglibs jar files in this directory allow Rexx to be used in Java server pages (JSP)
 to create code and text for the HTML text to be sent back to the client.
 
+An initial presentation was done at the 2020 International Rexx Symposium
+(https://www.rexxla.org/events/2020/schedule.html) for which the following
+materials got created:
+
+* "(BSF4)ooRexx and Java Web Servers"
+  article: <https://www.rexxla.org/events/2020/presentations/202011-ooRexxAndJavaWebServers-article.pdf>,
+  and a zip-file with accompanying war-files at:
+  <https://www.rexxla.org/events/2020/presentations/202011-ooRexxAndJavaWebServers-article-code.zip>
+
+
+
 There are two scripting frameworks employed:
 
 * Apache Bean Scripting Framework (BSF): use the following taglib definition at the top
@@ -52,13 +63,14 @@ The taglib libraries implement the following attributes for the `script` and `ex
 Attribute          | Purpose
 ------------------ | -------
 `type`             | Mandatory, defines the script language to use for executing the code
-`name`             | Optional, a string that will be used as a pseudo file-name for the script (debugging)
-`src`              | Optional, a string that represents a relative path to the file where the script program to execute is located
+`arguments`        | Optional (defaults to "true"), controls supplying the three arguments `request`, `response` and `out` in that order for each script/expr
 `cacheSrc`         | Optional (defaults to "true"), will cache the source: while developping set to "false" to have the source reread each time the JSP gets invoked
 `compile`          | JSR-223 only! Optional (defaults to "true"), will compile the script and run the compiled form
-`throwException`   | Optional (defaults to "false"), will stop processing JSP in case of a script error
 `debug`            | Optional (defaults to "false"), will inject information about JSP invocation (debugging)
-`arguments`        | Optional (defaults to "true"), controls supplying the three arguments `request`, `response` and `out` in that order for each script/expr
+`name`             | Optional, a string that will be used as a pseudo file-name for the script (debugging)
+`src`              | Optional, a string that represents a relative path to the file where the script program to execute is located
+`slot`             | Optional, a string that a JSP/script developer can use for any purpose (value can be fetched from the script)
+`throwException`   | Optional (defaults to "false"), will stop processing JSP in case of a script error
 
 
 ---
@@ -133,16 +145,16 @@ File name                   | Purpose
 Cf. <https://www.baeldung.com/java-enterprise-evolution> and <https://en.wikipedia.org/wiki/Jakarta_EE>  (as of 2020-11-12).
 
 In essence: earlier implementations of Java based web servers implementing
-the "extended edition" specifications used the package name "javax.".
+the "enterprise edition" specifications used the package name "javax.".
 Oracle approached the open-source Eclipse foundation that took over
-development of future "Java extended editionS (EE)" and told them not to
+development of future "Java enterprise editionS (EE)" and told them not to
 use neither "Java EE" nor "javax." (as the top level package name)!
 
 This has an impact on quite a few packages, including taglib libraries
 that implement e.g.  the servlet specifications for up to and including
 Java EE 8 (released 2017) which use "javax." as the top level package
-name.  Starting with version 9 (released 2018) which now gets named
-"Jakarte EE 9") the top level package name got changed to "jakarta." in
+name.  Starting with version 9 (released 2018, "Jakarta EE 9")
+the top level package name got changed to "jakarta." in
 all Java packages implementing the Jakarte EE spedifications.
 
 Therefore there are two versions of the ScriptTagLibs.jar, one indicating
@@ -182,4 +194,4 @@ not have Java installed yet, then try to locate an installation package that inc
 
 ---
 
-rgf, as of: 2021-01-17
+rgf, as of: 2021-02-01

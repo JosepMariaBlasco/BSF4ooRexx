@@ -28,11 +28,17 @@
 
         - 2020-11-12: if no BSFManager was created yet, do not use it for terminating engines
 
+        - 2021-01-22: added attribute "slot": can be used to pass additional information
+                      from the JSP author (e.g. configuration data controlling the overall
+                      execution of script/expression)
+
+        - 2021-02-01: add "namespace" information to TAGLIBINFORMATION
+
 */
 
 /*
  * Copyright 1999,2004 The Apache Software Foundation.
- * Copyright 2020 Rony G., Flatscher
+ * Copyright 2020-2021 Rony G., Flatscher
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,9 +74,9 @@ import org.apache.bsf.* ;
 
 abstract public class BaseImpl implements BodyTag
 {
-    static final protected String version = "100.20201109"; // version of this taglib
+    static final protected String version = "100.20210201"; // version of this taglib
 
-    static final protected String TAGLIBINFORMATION ="Taglib.Information";
+    static final protected String TAGLIBINFORMATION ="ScriptTaglibs.Attributes";
 
     static final protected String scriptTaglib="BsfTaglib";
     // used to determine whether any tag handler runs for the first time for this page
@@ -134,6 +140,7 @@ abstract public class BaseImpl implements BodyTag
     protected boolean      bDebug = false;              // optional: if "true" show debug information
     protected boolean      bArguments = true;           // optional: if "true" supply the three implicit objects "request",
                                                         //           "response", "out" as arguments in that order
+    protected String       slot ;                       // optional: attribute 'slot': JSP/script developer can use this for any purpose
 
     public void setType    (String value)           { type = value ;    // HTML now uses 'type' instead of 'language'
                                                       // determine whether ooRexx in hand
@@ -145,6 +152,7 @@ abstract public class BaseImpl implements BodyTag
     public void setThrowException (String value)    { bThrowException = Boolean.valueOf(value) ; };
     public void setDebug   (String value)           { bDebug = Boolean.valueOf(value) ; };
     public void setArguments (String value)         { bArguments = Boolean.valueOf(value) ; };
+    public void setSlot    (String value)           { slot = value ; };
 
     public void setParent(Tag parent)               { this.parent = parent ; };
     public Tag  getParent()                         { return( this.parent ); };
@@ -314,16 +322,18 @@ abstract public class BaseImpl implements BodyTag
             // allow scripts to get at the taglib information and attribute settings
             {
                 HashMap <String,Object> attr = new HashMap();
-                attr.put("tagLibName"       , scriptTaglib    );
-                attr.put("version"          , version         );
-                attr.put("tagName"          , getTagName()    );
-                attr.put("type"             , type            );    // language
-                attr.put("name"             , name            );
-                attr.put("src"              , src             );
-                attr.put("cacheSrc"         , bCacheSrc       );
-                attr.put("throwException"   , bThrowException );
-                attr.put("debug"            , bDebug          );
                 attr.put("arguments"        , bArguments      );
+                attr.put("cacheSrc"         , bCacheSrc       );
+                attr.put("debug"            , bDebug          );
+                attr.put("name"             , name            );
+                attr.put("namespace"        , "javax"         );
+                attr.put("slot"             , slot            );
+                attr.put("src"              , src             );
+                attr.put("tagLibName"       , scriptTaglib    );
+                attr.put("tagName"          , getTagName()    );
+                attr.put("throwException"   , bThrowException );
+                attr.put("type"             , type            );    // language
+                attr.put("version"          , version         );
                 register( mgr, TAGLIBINFORMATION, attr);
             }
 
@@ -356,7 +366,7 @@ abstract public class BaseImpl implements BodyTag
                 out.print  ("<tr><td "+style+">application.getRealPath(virtualPath)</td>");
                 {
                     File fn=new File(realPath);
-                    out.println("<td "+style+">"+realPath+"<br>exists? ["+fn.exists()+"]</td></tr>");
+                    out.println("<td "+style+">"+realPath+"<br><em>exists? ("+fn.exists()+")</em></td></tr>");
                 }
 
                 out.println("</table>");
@@ -382,12 +392,6 @@ abstract public class BaseImpl implements BodyTag
 
                 out.print  ("<tr><td "+style+">Script engine</td>");
                 out.println("<td "+style+">"+engine+"</td></tr>");
-
-                out.print  ("<tr><td "+style+">Attribute &quot;type&quot;</td>");
-                out.println("<td "+style+">"+type+"</td></tr>");
-
-                out.print  ("<tr><td "+style+">Attribute &quot;name&quot;</td>");
-                out.println("<td "+style+">"+name+"</td></tr>");
 
                 {
                     out.print  ("<tr><td "+style+">scriptCode</td>");
@@ -424,11 +428,55 @@ abstract public class BaseImpl implements BodyTag
                     out.println("<td "+style+"><code>"+tmpString+"<code></td></tr>");
                 }
 
+                // ---
+
+                out.println("<tr><td colspan=\"2\"></td></tr>");
+
+                out.print  ("<tr><td "+style+">Attribute &quot;arguments&quot;</td>");
+                out.println("<td "+style+">"+bArguments+"</td></tr>");
+
+                out.print  ("<tr><td "+style+">Attribute &quot;cacheSrc&quot;</td>");
+                out.println("<td "+style+">"+bCacheSrc+"</td></tr>");
+
+                out.print  ("<tr><td "+style+">Attribute &quot;debug&quot;</td>");
+                out.println("<td "+style+">"+bDebug+"</td></tr>");
+
+                out.print  ("<tr><td "+style+">Attribute &quot;name&quot;</td>");
+                out.println("<td "+style+">"+name+"</td></tr>");
+
+                out.print  ("<tr><td "+style+">Attribute &quot;slot&quot;</td>");
+                out.println("<td "+style+">"+slot+"</td></tr>");
+
                 out.print  ("<tr><td "+style+">Attribute &quot;src&quot;</td>");
                 out.println("<td "+style+">"+src+"</td></tr>");
 
-                out.print  ("<tr><td "+style+">srcVirtualPath</td>");
-                out.println("<td "+style+">"+srcVirtualPath+"</td></tr>");
+                out.print  ("<tr><td "+style+">Attribute &quot;throwException&quot;</td>");
+                out.println("<td "+style+">"+bThrowException+"</td></tr>");
+
+                out.print  ("<tr><td "+style+">Attribute &quot;type&quot;</td>");
+                out.println("<td "+style+">"+type+"</td></tr>");
+
+                // ---
+
+                out.println("<tr><td colspan=\"2\"></td></tr>");
+
+                out.print  ("<tr><td "+style+">cachedSrcScripts.size()</td>");
+                out.println("<td "+style+">"+cachedSrcScripts.size()+"</td></tr>");
+
+                out.print  ("<tr><td "+style+">filename</td>");
+                {
+                    File fn=new File(filename);
+                    out.println("<td "+style+">"+filename+"<br><em>exists? ("+fn.exists()+")</em></td></tr>");
+                }
+
+                out.print  ("<tr><td "+style+">getTagName()</td>");
+                out.println("<td "+style+">"+getTagName()+"</td></tr>");
+
+                out.print  ("<tr><td "+style+">isExpression()</td>");
+                out.println("<td "+style+">"+isExpression()+"</td></tr>");
+
+                out.print  ("<tr><td "+style+">scriptTaglib</td>");
+                out.println("<td "+style+">"+scriptTaglib+"</td></tr>");
 
                 out.print  ("<tr><td "+style+">srcRealPath</td>");
                 {
@@ -439,39 +487,13 @@ abstract public class BaseImpl implements BodyTag
                     else
                     {
                         File fn=new File(srcRealPath);
-                        out.println("<td "+style+">"+srcRealPath+"<br>exists? ["+fn.exists()+"]</td></tr>");
+                        out.println("<td "+style+">"+srcRealPath+"<br><em>exists? ("+fn.exists()+")</em></td></tr>");
                     }
                 }
 
-                out.print  ("<tr><td "+style+">Attribute &quot;cacheSrc&quot;</td>");
-                out.println("<td "+style+">"+bCacheSrc+"</td></tr>");
+                out.print  ("<tr><td "+style+">srcVirtualPath</td>");
+                out.println("<td "+style+">"+srcVirtualPath+"</td></tr>");
 
-                out.print  ("<tr><td "+style+">cachedSrcScripts.size()</td>");
-                out.println("<td "+style+">"+cachedSrcScripts.size()+"</td></tr>");
-
-                out.print  ("<tr><td "+style+">Attribute &quot;throwException&quot;</td>");
-                out.println("<td "+style+">"+bThrowException+"</td></tr>");
-
-                out.print  ("<tr><td "+style+">Attribute &quot;debug&quot;</td>");
-                out.println("<td "+style+">"+bDebug+"</td></tr>");
-
-                out.print  ("<tr><td "+style+">Attribute &quot;arguments&quot;</td>");
-                out.println("<td "+style+">"+bArguments+"</td></tr>");
-
-                out.print  ("<tr><td "+style+">scriptTaglib</td>");
-                out.println("<td "+style+">"+scriptTaglib+"</td></tr>");
-
-                out.print  ("<tr><td "+style+">getTagName()</td>");
-                out.println("<td "+style+">"+getTagName()+"</td></tr>");
-
-                out.print  ("<tr><td "+style+">isExpression()</td>");
-                out.println("<td "+style+">"+isExpression()+"</td></tr>");
-
-                out.print  ("<tr><td "+style+">File name</td>");
-                {
-                    File fn=new File(filename);
-                    out.println("<td "+style+">"+filename+"<br>exists? ["+fn.exists()+"]</td></tr>");
-                }
 
                 out.println("</table>");
                 // -----------------------------

@@ -51,6 +51,10 @@
                                          and "out" as arguments in that order, default: "true" -->
       <required>false</required>
     </attribute>
+    <attribute>
+      <name>slot</name>             <!-- optional: JSP/script developer can use this for any purpose -->
+      <required>false</required>
+    </attribute>
   </tag>
 
   <tag>
@@ -91,13 +95,17 @@
                                          and "out" as arguments in that order, default: "true" -->
       <required>false</required>
     </attribute>
+    <attribute>
+      <name>slot</name>             <!-- optional: JSP/script developer can use this for any purpose -->
+      <required>false</required>
+    </attribute>
   </tag>
 
 </taglib>
 
 <!--
     ************************ Apache Version 2.0 license *************************
-       Copyright 2020 Rony G. Flatscher
+       Copyright 2020-2021 Rony G. Flatscher
 
        Licensed under the Apache License, Version 2.0 (the "License");
        you may not use this file except in compliance with the License.
@@ -112,7 +120,7 @@
        limitations under the License.
     *****************************************************************************
     ************************ Common Public License 1.0 **************************
-       Copyright 2020 Rony G. Flatscher
+       Copyright 2020-2021 Rony G. Flatscher
 
        This program and the accompanying materials are made available under the
        terms of the Common Public License v1.0 which accompanies this distribution.
