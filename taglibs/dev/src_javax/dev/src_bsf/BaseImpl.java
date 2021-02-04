@@ -34,6 +34,13 @@
 
         - 2021-02-01: add "namespace" information to TAGLIBINFORMATION
 
+        - 2021-02-02: add "reflect" attribute: defaults to "false", if "true" supplies an implicit
+                      HashMap object under the name TAGLIBINFORMATION containing taglib related
+                      information and attribute settings in effect
+
+        - 2021-02-03: make sure that impolicit HashMap object TAGLIBINFORMATION gets also created,
+                      if the attribute "slot" has a value, such that the script programmer can get
+                      access to it
 */
 
 /*
@@ -74,9 +81,9 @@ import org.apache.bsf.* ;
 
 abstract public class BaseImpl implements BodyTag
 {
-    static final protected String version = "100.20210201"; // version of this taglib
+    static final protected String version = "100.20210203"; // version of this taglib
 
-    static final protected String TAGLIBINFORMATION ="ScriptTaglibs.Attributes";
+    static final protected String TAGLIBINFORMATION ="ScriptTaglibs.TaglibNamespaceAttributevalues";
 
     static final protected String scriptTaglib="BsfTaglib";
     // used to determine whether any tag handler runs for the first time for this page
@@ -140,10 +147,13 @@ abstract public class BaseImpl implements BodyTag
     protected boolean      bDebug = false;              // optional: if "true" show debug information
     protected boolean      bArguments = true;           // optional: if "true" supply the three implicit objects "request",
                                                         //           "response", "out" as arguments in that order
-    protected String       slot ;                       // optional: attribute 'slot': JSP/script developer can use this for any purpose
+    protected String       slot ;                       // optional: attribute 'slot': JSP/script developer can use this for any purpose;
+                                                        //           if present the implicit HashMap object named TAGLIBINFORMATION
+                                                        //           gets created to allow access to it
+    protected boolean      bReflect = false;            // optional: if "true" supply an implicit HashMap object named TAGLIBINFORMATION
 
     public void setType    (String value)           { type = value ;    // HTML now uses 'type' instead of 'language'
-                                                      // determine whether ooRexx in hand
+                                                      // determine whether using ooRexx is needed
                                                       isRexx = (type.toLowerCase().equals("rexx"));
                                                     }; // HTML now uses 'type' instead of 'language'
     public void setName    (String value)           { name = value ; };
@@ -153,6 +163,7 @@ abstract public class BaseImpl implements BodyTag
     public void setDebug   (String value)           { bDebug = Boolean.valueOf(value) ; };
     public void setArguments (String value)         { bArguments = Boolean.valueOf(value) ; };
     public void setSlot    (String value)           { slot = value ; };
+    public void setReflect (String value)           { bReflect = Boolean.valueOf(value) ; };
 
     public void setParent(Tag parent)               { this.parent = parent ; };
     public Tag  getParent()                         { return( this.parent ); };
@@ -318,8 +329,8 @@ abstract public class BaseImpl implements BodyTag
                 }
             }
 
-            // TODO: only create if debug attribute is set to true?
             // allow scripts to get at the taglib information and attribute settings
+            if (bReflect || slot!=null)
             {
                 HashMap <String,Object> attr = new HashMap();
                 attr.put("arguments"        , bArguments      );
@@ -327,6 +338,7 @@ abstract public class BaseImpl implements BodyTag
                 attr.put("debug"            , bDebug          );
                 attr.put("name"             , name            );
                 attr.put("namespace"        , "javax"         );
+                attr.put("reflect"          , bReflect        );
                 attr.put("slot"             , slot            );
                 attr.put("src"              , src             );
                 attr.put("tagLibName"       , scriptTaglib    );
@@ -443,6 +455,9 @@ abstract public class BaseImpl implements BodyTag
 
                 out.print  ("<tr><td "+style+">Attribute &quot;name&quot;</td>");
                 out.println("<td "+style+">"+name+"</td></tr>");
+
+                out.print  ("<tr><td "+style+">Attribute &quot;reflect&quot;</td>");
+                out.println("<td "+style+">"+bReflect+"</td></tr>");
 
                 out.print  ("<tr><td "+style+">Attribute &quot;slot&quot;</td>");
                 out.println("<td "+style+">"+slot+"</td></tr>");

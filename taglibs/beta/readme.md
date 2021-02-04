@@ -68,8 +68,9 @@ Attribute          | Purpose
 `compile`          | JSR-223 only! Optional (defaults to "true"), will compile the script and run the compiled form
 `debug`            | Optional (defaults to "false"), will inject information about JSP invocation (debugging)
 `name`             | Optional, a string that will be used as a pseudo file-name for the script (debugging)
+`reflect`          | Optional (defaults to "false"), if "true" creates implicit HashMap object named "ScriptTaglibs.TaglibNamespaceAttributevalues" with taglib information, namespace and current attribute values
 `src`              | Optional, a string that represents a relative path to the file where the script program to execute is located
-`slot`             | Optional, a string that a JSP/script developer can use for any purpose (value can be fetched from the script)
+`slot`             | Optional, a string that a JSP/script developer can use for any purpose (if value present it can be fetched from the implicit HashMap object named "ScriptTaglibs.TaglibNamespaceAttributevalues")
 `throwException`   | Optional (defaults to "false"), will stop processing JSP in case of a script error
 
 
@@ -194,4 +195,4 @@ not have Java installed yet, then try to locate an installation package that inc
 
 ---
 
-rgf, as of: 2021-02-01
+rgf, as of: 2021-02-03

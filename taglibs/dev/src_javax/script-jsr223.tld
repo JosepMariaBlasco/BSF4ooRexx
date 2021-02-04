@@ -18,41 +18,64 @@
     <tagclass>org.rexxla.taglibs.jsr223.Scriptlet</tagclass>
     <bodycontent>tagdependent</bodycontent>
     <info>Run script</info>
+
     <attribute>
-      <name>type</name>             <!-- originally "language", but now HTML uses "type" -->
+      <name>type</name>             <!-- mandatory: engine name, mime-type or file extension (originally "language",
+                                         but now HTML uses "type") -->
       <required>true</required>
     </attribute>
-    <attribute>
-      <name>name</name>             <!-- optional name for the script (to ease debugging) -->
-      <required>false</required>
-    </attribute>
-    <attribute>
-      <name>src</name>              <!-- optional path to local script to run -->
-      <required>false</required>
-    </attribute>
-    <attribute>
-      <name>cacheSrc</name>         <!-- optional, if "false" (reread from file), default: "true" -->
-      <required>false</required>
-    </attribute>
-    <attribute>
-      <name>compile</name>          <!-- optional: if "false" do not compile if language can compile, default: "true" -->
-      <required>false</required>
-    </attribute>
-    <attribute>
-      <name>throwException</name>   <!-- if "true" throw this, if an exception? default: "false" -->
-      <required>false</required>
-    </attribute>
-    <attribute>
-      <name>debug</name>            <!-- if "true" show miscellaneous information, default: "false" -->
-      <required>false</required>
-    </attribute>
+
+    <!-- optional attributes: -->
     <attribute>
       <name>arguments</name>        <!-- optional: if "true" supply the implicit objects "request", "response"
                                          and "out" as arguments in that order, default: "true" -->
       <required>false</required>
     </attribute>
+
     <attribute>
-      <name>slot</name>             <!-- optional: JSP/script developer can use this for any purpose -->
+      <name>compile</name>          <!-- optional: if "false" do not compile if language can compile, default: "true" -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>cacheSrc</name>         <!-- optional, if "false" (reread from file), default: "true" -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>debug</name>            <!-- optional, if "true" show miscellaneous information, default: "false" -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>name</name>             <!-- optional name for the script (to ease debugging) -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>reflect</name>          <!-- optional, if "true" supply an implicit HashMap object named
+                                         "ScriptTaglibs.TaglibNamespaceAttributevalues" containing taglib
+                                         related information, namespace in use and current attribute
+                                         values in effect, default: "false" -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>slot</name>             <!-- optional: JSP/script developer can use this for any purpose, if
+                                         present an implicit HashMap object named
+                                         "ScriptTaglibs.TaglibNamespaceAttributevalues" gets created that
+                                         contains among other things all current attribute values among them
+                                         an entry named "slot" -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>src</name>              <!-- optional path to local script to run -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>throwException</name>   <!-- optional, if "true" throw this, if an exception? default: "false" -->
       <required>false</required>
     </attribute>
   </tag>
@@ -62,41 +85,64 @@
     <tagclass>org.rexxla.taglibs.jsr223.Expression</tagclass>
     <bodycontent>tagdependent</bodycontent>
     <info>Evaluate script expression</info>
+
     <attribute>
-      <name>type</name>             <!-- originally "language", but now HTML uses "type" -->
+      <name>type</name>             <!-- mandatory: engine name, mime-type or file extension (originally "language",
+                                         but now HTML uses "type") -->
       <required>true</required>
     </attribute>
-    <attribute>
-      <name>name</name>             <!-- optional name for the script (to ease debugging) -->
-      <required>false</required>
-    </attribute>
-    <attribute>
-      <name>src</name>              <!-- optional path to local script to run -->
-      <required>false</required>
-    </attribute>
-    <attribute>
-      <name>cacheSrc</name>         <!-- optional, if "false" (reread from file), default: "true" -->
-      <required>false</required>
-    </attribute>
-    <attribute>
-      <name>compile</name>          <!-- optional: if "false" do not compile if language can compile, default: "true" -->
-      <required>false</required>
-    </attribute>
-    <attribute>
-      <name>throwException</name>   <!-- if "true" throw this, if an exception? default: "false" -->
-      <required>false</required>
-    </attribute>
-    <attribute>
-      <name>debug</name>            <!-- if "true" show miscellaneous information, default: "false" -->
-      <required>false</required>
-    </attribute>
+
+    <!-- optional attributes: -->
     <attribute>
       <name>arguments</name>        <!-- optional: if "true" supply the implicit objects "request", "response"
                                          and "out" as arguments in that order, default: "true" -->
       <required>false</required>
     </attribute>
+
     <attribute>
-      <name>slot</name>             <!-- optional: JSP/script developer can use this for any purpose -->
+      <name>compile</name>          <!-- optional: if "false" do not compile if language can compile, default: "true" -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>cacheSrc</name>         <!-- optional, if "false" (reread from file), default: "true" -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>debug</name>            <!-- optional, if "true" show miscellaneous information, default: "false" -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>name</name>             <!-- optional name for the script (to ease debugging) -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>reflect</name>          <!-- optional, if "true" supply an implicit HashMap object named
+                                         "ScriptTaglibs.TaglibNamespaceAttributevalues" containing taglib
+                                         related information, namespace in use and current attribute
+                                         values in effect, default: "false" -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>slot</name>             <!-- optional: JSP/script developer can use this for any purpose, if
+                                         present an implicit HashMap object named
+                                         "ScriptTaglibs.TaglibNamespaceAttributevalues" gets created that
+                                         contains among other things all current attribute values among them
+                                         an entry named "slot" -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>src</name>              <!-- optional path to local script to run -->
+      <required>false</required>
+    </attribute>
+
+    <attribute>
+      <name>throwException</name>   <!-- optional, if "true" throw this, if an exception? default: "false" -->
       <required>false</required>
     </attribute>
   </tag>
