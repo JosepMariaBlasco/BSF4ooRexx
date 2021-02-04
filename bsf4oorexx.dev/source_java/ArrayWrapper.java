@@ -294,7 +294,7 @@ public class ArrayWrapper {
                   newArr=null,           // new single-dimensioned array
                   newSupplier=null;      // new single-dimensioned array for supplier
 
-//        if (totalCount==0) System.err.println("shit, now it has happened! (totalCount=0, array has no capacity, why? think about it...)");
+//        if (totalCount==0) System.err.println("*?!*, now it has happened! (totalCount=0, array has no capacity, why? think about it...)");
 
         newArr = new Object [totalCount];   // create array with needed number of elements
         if (bSupplier)                      // supplier really requested, create the array
