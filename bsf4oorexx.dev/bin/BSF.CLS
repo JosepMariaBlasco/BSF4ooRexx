@@ -19,6 +19,11 @@
           .BSF in .environment;
 
    date:
+         2021-02-05, ---rgf, - Bsf_Array_Reference::supplier will now use new ArrayWrapper.supplier(RexxProxy)
+                               method and unbox the returned genuine ooRexx supplier object; this is to
+                               allow the new ooRexx 5.0 "DO WITH" construct to work with wrapped Java arrays;
+                               Supplier.java not used anymore by BSF4ooRexx
+
          2020-10-22, ---rgf, - add "string" methods to bsf.inputStream and bsf.outputStream
                              - allow to configure bsf.outputStream to not use flush method (attribute "doFlush")
 
@@ -761,7 +766,7 @@
                       BSF_ARRAY_PROXY: MAKEARRAY and SUPPLIER now only return entries with
                                  values as does Object Rexx with native arrays)
 
-   version:     6.41 (20201022)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
+   version:     6.41 (20210205)  -- "6" -> Java minimum level "1.6/6.0", 41 -> ooRexx minimum level "4.1"
 
   If this program is part of a distribution of an Apache foundation project (e.g. BSF,
   the Bean Scripting Framework), then the immediately following Apache foundation license
@@ -770,7 +775,7 @@
 
 
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2001-2020 Rony G. Flatscher
+   Copyright 2001-2021 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -788,7 +793,7 @@
 
 
 ------------------------ Common Public License 1.0 --------------------------
-   Copyright 2001-2020 Rony G. Flatscher
+   Copyright 2001-2021 Rony G. Flatscher
 
    This program and the accompanying materials are made available under the
    terms of the Common Public License v1.0 which accompanies this distribution.
@@ -861,7 +866,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20201217" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20210205" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -2949,7 +2954,9 @@ syntax: raise propagate /* propagate dimension/subscript exception */
   aw=bsf.wrap(rBsf~call('wrapArray', self~objectname))
    -- wrap up the Supplier object, such that it will be kept in the BSF registry as long
    -- as the Object Rexx BSF proxy exists
-  return bsf.wrap( rBsf~call('invoke', aw, 'supplier', .true) )
+  -- return bsf.wrap( rBsf~call('invoke', aw, 'supplier', .true) )
+  -- return a genuine ooRexx .supplier instance using the new ArrayWrapper.supplier(RexxProxy)
+  return self~class~rBsfRexxProxy~call(bsf.wrap(rBsf~call('invoke', aw, 'supplier', .supplier)),"o")
 
 syntax:
    /* if a Java error, then the Java error message/stack trace is stored in the

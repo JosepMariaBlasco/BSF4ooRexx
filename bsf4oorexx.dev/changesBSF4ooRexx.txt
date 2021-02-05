@@ -1,3 +1,39 @@
+-------------------------------------- 2021-02-05 ----------------------------------
+
+- ArrayWrapper.java
+
+        - new public supplier(RexxProxy clzSupplier) method that returns
+          the supplier as an ooRexx .Supplier object to allow ooRexx 5.0
+          new "DO WITH" to function
+
+- BSF.CLS
+
+        - Bsf_Array_Reference::supplier will now use new ArrayWrapper.supplier(RexxProxy)
+          method and unbox the returned genuine ooRexx supplier object; this is to
+          allow the new ooRexx 5.0 "DO WITH" construct to work with wrapped Java arrays;
+          Supplier.java not used anymore by BSF4ooRexx
+
+- RexxReflectJava6.java (new: resolves nested classes now)
+
+        - if a method is expected, the bean is a class and no arguments are supplied,
+          then first seek a nested class
+
+        - new method reflectNestedClass(RexxReflectUtil rru) to carry out reflection
+
+- RexxReflectJava7.java (new: resolves nested classes now)
+
+        - if a method is expected, the bean is a class and no arguments are supplied,
+          then first seek a nested class
+
+        - new method reflectNestedClass(RexxReflectUtil rru) to carry out reflection
+
+-------------------------------------- 2021-02-04 ----------------------------------
+
+- Supplier.java
+
+        - fix bug in nextElement(): skipping first index-element pair and causing
+          a runtime exception when a Java array gets used in DO WITH ... OVER
+
 -------------------------------------- 2020-12-17 ----------------------------------
 
 - RexxScriptEngineFactory.java

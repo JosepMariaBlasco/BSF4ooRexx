@@ -24,7 +24,7 @@ import org.apache.bsf.BSFException;
  * ----------------------------------------------------------------------------- </pre>
  *
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
- * @version 1.05, 2007-07-07
+ * @version 1.06, 20210204
  */
 
  /*
@@ -39,7 +39,7 @@ public class Supplier implements Enumeration
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "105.20210204";
+    static public String version = "106.20210204";
 
 static final boolean bDebug=false;  // rgf, 2021-02-04, leave until ooRexx DO..WITH got debugged
 
