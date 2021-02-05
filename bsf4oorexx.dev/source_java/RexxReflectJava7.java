@@ -31,7 +31,7 @@ import        java.lang.reflect.Modifier;
  * ignored and resolution continues with the next ancestor.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2018-2019 Rony G. Flatscher
+ *    Copyright (C) 2018-2021 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -77,7 +77,12 @@ import        java.lang.reflect.Modifier;
         2018-11-13, rgf:    - corrected bug in processField() when accessing first element in the
                               returned value of coerceArgs(), which could also be the null value
 
-        2019-08-16, ---rgf, correct Javadocs
+        2019-08-16, rgf:    - correct Javadocs
+
+        2021-02-05, rgf:    - if a method is expected, the bean is a class and no arguments are supplied,
+                              then first seek a nested class
+
+                            - new method reflectNestedClass(RexxReflectUtil rru) to carry out reflection
 
 */
 
@@ -429,7 +434,17 @@ System.err.println("========================= > "+this+" < =====================
             case REFLECT_FIELD        :  reflectField (rru);
                                          return ;
 
-            case REFLECT_METHOD       :  reflectMethod(rru);
+            case REFLECT_METHOD       :
+                                         // if class object, no args, try to find a nested class by the name of the method
+                                         if (rru.bBeanIsClass && rru.funcArgs.length==0)
+                                         {
+                                             reflectNestedClass(rru);
+                                             if (rru.success)   // was carried out successfully!
+                                             {
+                                                 return;
+                                             }
+                                         }
+                                         reflectMethod(rru);
                                          return;
 
             case REFLECT_CONSTRUCTOR  :  reflectConstructor(rru);
@@ -1156,6 +1171,79 @@ if (debugLevel>2 || bDebugSuccess) System.err.println("// // :) -> RexxReflectJa
 
         rru.success=true;        // we could successfully carry out the get operation!
     }
+
+
+
+// SECTION: NESTEDCLASS ================================================================================================
+
+        // ========================================================================================================
+    /**
+     * This method will be invoked only if the bean is a class object and there are no arguments
+     * for the method name. Try to find a nested class by the given name, resolve the inheritance
+     * tree. There is no caching necessary, always referring to Class.getDeclaredClasses() which
+     * is always acessible, if a nested class exists return it.
+     *
+     * @param rru the {@link RexxReflectUtil} object that contains all the necessary information for the reflection
+     */
+    void reflectNestedClass(RexxReflectUtil rru)
+    {
+        boolean bAllowProtected=false;  // allow protected classes only in superclasses
+        Class   tmpClz=rru.beanClz;     // start out with the current beanClz
+
+if (bDebug)
+System.out.println("\n"+this+".reflectNestedClass(): arrived, seeking a \n\tnested class named: ["+rru.memberName+"] \n\tin class ["+tmpClz.toString()+"] ...");
+
+        // find a nested class, resolve inheritance tree
+        while (tmpClz!=null && tmpClz!=Object.class)    // do not process root class
+        {
+            Class tmpNestedClasses[]=tmpClz.getDeclaredClasses();
+            for (int i=0; i<tmpNestedClasses.length; i++)
+            {
+                Class nestedClass=tmpNestedClasses[i];
+                String simpleName=nestedClass.getSimpleName();
+                boolean bFound=false;
+                if (rru.bStrict)    // case of name must be strictly equal
+                {
+                    bFound=simpleName.equals(rru.memberName);
+                }
+                else                // any case is accepted
+                {
+                    bFound=simpleName.equalsIgnoreCase(rru.memberName);
+                }
+
+                if (bFound)     // looks good, are we allowed to access it?
+                {
+                    int   nestedClassMods=nestedClass.getModifiers();
+
+if (bDebug)
+System.out.println("... reflectNestedClass(): 1) found a nested class by the given name, modifiers: "+Modifier.toString(nestedClassMods));
+
+                        // PUBLIC or PROTECTED in superclass ?
+                    if ( (nestedClassMods & Modifier.PUBLIC)!=0 ||
+                         (bAllowProtected && ((nestedClassMods & Modifier.PROTECTED))!=0) )
+                    {
+                        rru.result=nestedClass;
+                        rru.success=true;
+if (bDebug)
+System.out.println("... reflectNestedClass(): 2) BINGO! BINGO! Returning found nested class!");
+                        return;
+                    }
+if (bDebug)
+System.out.println("... reflectNestedClass(): 3) PROBLEM not ACCESSIBLE!");
+                    // TODO: rgf, 2021-02-05, shall we throw a BSFException and report this condition?
+                    return; // we stop the look-up process
+                }
+            }
+                // not found, look in superclass
+            tmpClz=tmpClz.getSuperclass();
+if (bDebug)
+System.out.println("// --> ... reflectNestedClass(): 4) OK look in superclass ["+
+                (tmpClz==null ? null : tmpClz.toString() )
+                +"], protected now accessible!");
+            bAllowProtected=true;   // make sure we now also honor protected nested classes
+        }
+    }
+
 
 
 
