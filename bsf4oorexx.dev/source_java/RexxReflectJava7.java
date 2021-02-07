@@ -46,7 +46,7 @@ import        java.lang.reflect.Modifier;
  *    limitations under the License.
  * ----------------------------------------------------------------------------- </pre>
  *
- * @version 1.04, 2018-11-01, 2018-11-03, 2018-11-09, 2018-11-13, 2019-08-16
+ * @version 1.05, 2018-11-01, 2018-11-03, 2018-11-09, 2018-11-13, 2019-08-16, 2021-02-05, 2021-02-07
  * @since BSF4ooRexx 600 (implementation started: 2018-01-05)
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
  */
@@ -83,6 +83,8 @@ import        java.lang.reflect.Modifier;
                               then first seek a nested class
 
                             - new method reflectNestedClass(RexxReflectUtil rru) to carry out reflection
+
+        2021-02-07, rgf:    - relocate code to fetch nested classes after normal methods got sought
 
 */
 
@@ -434,17 +436,7 @@ System.err.println("========================= > "+this+" < =====================
             case REFLECT_FIELD        :  reflectField (rru);
                                          return ;
 
-            case REFLECT_METHOD       :
-                                         // if class object, no args, try to find a nested class by the name of the method
-                                         if (rru.bBeanIsClass && rru.funcArgs.length==0)
-                                         {
-                                             reflectNestedClass(rru);
-                                             if (rru.success)   // was carried out successfully!
-                                             {
-                                                 return;
-                                             }
-                                         }
-                                         reflectMethod(rru);
+            case REFLECT_METHOD       :  reflectMethod(rru);
                                          return;
 
             case REFLECT_CONSTRUCTOR  :  reflectConstructor(rru);
@@ -1417,6 +1409,16 @@ if (bDebug) System.out.println("... reflectMethod(): ---> no appropriate cache f
         if (rru.bRecursing)     // we are already in try mode, return
         {
             return;
+        }
+
+        // newly introduced in 2021-02: if class object, no args, try to find a nested class by the name of the method
+        if (rru.bBeanIsClass && rru.funcArgs.length==0)
+        {
+            reflectNestedClass(rru);
+            if (rru.success)   // was carried out successfully!
+            {
+                return;
+            }
         }
 
             // if not strict and we have 0 or 1 arguments, try other method names
