@@ -4444,6 +4444,7 @@ if (bDebug) System.err.println("RexxAndJava()::UNREGISTER_BEAN(): b) unregister=
                            "Davis, Chip"                            + "\n" +
                            "Dunkley, Paul"                          + "\n" +    // 2016-08-14, rgf: created s390x version of BSF4ooRexx.cc
                            "Dujis, Erik"                            + "\n" +
+                           "Dycks, Tony"                            + "\n" +    // 2020-12-18, rgf: created arm32 and aarm64 native libraries
                            "Egli, R\u00e4tus"                       + "\n" +
                            "Faucher, Jean-Louis"                    + "\n" +
                            "Flatscher, Alice R."                    + "\n" +

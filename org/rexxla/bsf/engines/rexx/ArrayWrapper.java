@@ -9,7 +9,7 @@ import org.apache.bsf.BSFException;
  * methods are called after their Object Rexx counterparts, if any.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2017 Rony G. Flatscher
+ *    Copyright (C) 2001-2021 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -26,10 +26,14 @@ import org.apache.bsf.BSFException;
  *
  *
  * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
- * @version 1.3, 2006-01-01
+ * @version 1.6, 2021-02-05
  */
 
 /*
+   2021-02-05, rgf, - new public supplier(RexxProxy clzSupplier) method that returns
+                      the supplier as an ooRexx .Supplier object to allow ooRexx 5.0
+                      new "DO WITH" to function
+
    2017-06-17, rgf, - throws an exception if no Java array object is supplied
 
    2009-09-10, rgf, account for Thread context class loader not set
@@ -42,7 +46,7 @@ public class ArrayWrapper {
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "105.20170617";
+    static public String version = "106.20210205";
 
 
     /** Stores the array object which this instance wraps. */
@@ -266,6 +270,21 @@ public class ArrayWrapper {
     }
 
 
+    /** Creates a Rexx supplier object (from the supplied ooRexx .Supplier class object)
+     *  for allowing to enumerate the array together with the appropriate indices.
+     *
+     *  @param clzSupplier the ooRexx "Supplier" class object to be used for creating
+     *                     a genuine ooRexx supplier (to allow ooRexx 5.0 new "DO WITH" to work)
+     *
+     *  @return the ooRexx supplier object (a Java <code>RexxProxy</code>)
+     */
+    public RexxProxy supplier (RexxProxy clzSupplier) throws BSFException
+    {
+        Object [] res=makearray(true, true);    // create index-array for supplier, index values Rexx Style
+        // create and return Rexx supplier object to work around "DO WITH" restriction (we must supply an ooRexx .stream object as of 5.0.0beta (2021-02-05)
+        return (RexxProxy) clzSupplier.sendMessage2("NEW", res[0], res[1]);
+    }
+
 
 
     /** Modelled after Object Rexx <code>MAKEARRAY</code> method of the array class. This
@@ -294,7 +313,7 @@ public class ArrayWrapper {
                   newArr=null,           // new single-dimensioned array
                   newSupplier=null;      // new single-dimensioned array for supplier
 
-//        if (totalCount==0) System.err.println("shit, now it has happened! (totalCount=0, array has no capacity, why? think about it...)");
+//        if (totalCount==0) System.err.println("*?!*, now it has happened! (totalCount=0, array has no capacity, why? think about it...)");
 
         newArr = new Object [totalCount];   // create array with needed number of elements
         if (bSupplier)                      // supplier really requested, create the array

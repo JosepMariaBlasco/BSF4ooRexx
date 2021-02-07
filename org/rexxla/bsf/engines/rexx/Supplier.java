@@ -8,7 +8,7 @@ import org.apache.bsf.BSFException;
  *  <code>null</code>, that entry is not reflected in the supplier object.
  *
  * <pre>------------------------ Apache Version 2.0 license -------------------------
- *    Copyright (C) 2001-2017 Rony G. Flatscher
+ *    Copyright (C) 2001-2021 Rony G. Flatscher
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,10 +24,12 @@ import org.apache.bsf.BSFException;
  * ----------------------------------------------------------------------------- </pre>
  *
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
- * @version 1.04, 2007-07-07
+ * @version 1.06, 20210204
  */
 
  /*
+    2021-02-04, ---rgf: fix bug in nextElement(): skipping first index-element pair and causing
+                        a runtime exception when a Java array gets used in DO WITH ... OVER
     2017-06-17, ---rgf: added BSFException to ArrayWrapper, need to declare it
     2009-09-10, ---rgf: adjust for change in ArrayWrappter, which now throws a ClassNotFound exception
     2007-07-07, ---rgf: added allIndexes() and allItems() method to match ooRexx 3.2.0.
@@ -37,7 +39,9 @@ public class Supplier implements Enumeration
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "104.20170617";
+    static public String version = "106.20210204";
+
+static final boolean bDebug=false;  // rgf, 2021-02-04, leave until ooRexx DO..WITH got debugged
 
     /** Private array storing the values of the array. */
     private Object values[]=null;
@@ -126,6 +130,7 @@ public class Supplier implements Enumeration
      */
     public void next()
     {
+if (bDebug) System.err.println("Supplier.next(): just increasing index by 1 resulting in: "+(index+1)+"], length="+length);
         index++;            // position on next item/value pair
     }
 
@@ -135,6 +140,8 @@ public class Supplier implements Enumeration
      */
     public Object item()
     {
+if (bDebug) System.err.println("Supplier.item(): returning values["+index+"]=["+values[index]+"]"
+                   +" | indices[index] would be: "+indices[index]);
         return values[index];   // return the item (value)
     }
 
@@ -144,6 +151,7 @@ public class Supplier implements Enumeration
      */
     public Object index()
     {
+if (bDebug) System.err.println("Supplier.index(): returning indices["+index+"]=["+indices[index]+"]");
         return indices[index];  // return the index
     }
 
@@ -158,6 +166,9 @@ public class Supplier implements Enumeration
      */
     public Supplier (Object arrObject, boolean bRexxStyle) throws java.lang.ClassNotFoundException, BSFException
     {
+
+if (bDebug) System.err.println(this+": Supplier(Object[] arrObject, boolean bRexxStyle="+bRexxStyle+") ...");
+
         // ArrayWrapper aw = ArrayWrapper.getArrayWrapper(arrObject);  // wrap up the array
         ArrayWrapper aw = new ArrayWrapper(arrObject);  // wrap up the array
         Object objArr [] = aw.makearray(true, bRexxStyle); // create the two arrays
@@ -184,9 +195,13 @@ public class Supplier implements Enumeration
      */
     public Supplier (Object [] values, Object [] indices)
     {
+if (bDebug) System.err.println(this+": Supplier(Object[] values="+values+", Object[] indices="+indices+") ...");
+if (bDebug) System.err.println(this+": Supplier(Object[] values.length="+values.length+", Object[] indices.length="+indices.length+") ...");
         this.values  = values;              // save values (items) array
         this.indices = indices;             // save indices array
         length  = this.indices.length;      // save length (number of entries) of array
+/*
+--- */
     }
 
 
@@ -206,12 +221,14 @@ public class Supplier implements Enumeration
      */
     public Object nextElement() throws NoSuchElementException
     {
-        this.next();            // move to next index/element pair
         if (index>=length)
         {
             throw new NoSuchElementException( this+": exceeding total number of ["+length+"] elements!");
         }
-        return this.item();     // return element
+        Object result=this.item();
+        this.next();            // move to next index/element pair
+
+        return result;
     }
 }
 

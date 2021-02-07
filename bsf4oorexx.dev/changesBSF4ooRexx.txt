@@ -1,3 +1,14 @@
+
+-------------------------------------- 2021-02-07 ----------------------------------
+
+- RexxReflectJava6.java (new: resolves nested classes now)
+
+        - relocate code to fetch nested classes after normal methods got sought
+
+- RexxReflectJava7.java (new: resolves nested classes now)
+
+        - relocate code to fetch nested classes after normal methods got sought
+
 -------------------------------------- 2021-02-05 ----------------------------------
 
 - ArrayWrapper.java
