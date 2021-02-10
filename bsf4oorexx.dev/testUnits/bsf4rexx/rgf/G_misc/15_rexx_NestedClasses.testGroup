@@ -1,0 +1,109 @@
+#!/usr/bin/env rexx
+/*
+   name:             15_rexx_NestedClasses.testGroup
+   author:           Rony G. Flatscher
+   version:          1.0.0
+   date:             2021-02-10
+   license:          ASF 2.0 (Apache Software License)
+   purpose:          test BSF4Rexx 6.4.1 new ability to fetch nested classes
+*/
+
+  parse source . . fileSpec;
+
+  group = .TestGroup~new(fileSpec)
+  group~add(.testNestedClasses)
+
+  if group~isAutomatedTest then return group
+
+  testResult = group~suite~execute~~print
+
+return testResult
+-- End of entry point.
+
+::requires "ooTest.frm"     -- load the ooRexxUnit classes
+::requires BSF.CLS
+
+
+::class "testNestedClasses" subclass ooTestCase public
+
+::method setup
+
+  pkglocal=.context~package~local   -- new in 5.0.0
+  if \pkglocal~hasentry("clzNestedClasses") then
+  do
+say "... loading testNestedClasses and store in .context~package~local  ..."
+     pkglocal~clzNestedClasses   =bsf.importClass("rgf.G_misc.TestNestedClasses")
+     pkglocal~clzNestedClassesSub=bsf.importClass("rgf.G_misc.TestNestedClassesSub")
+  end
+
+
+::method "test_01_nested_classes"
+    self~assertNotNull(.clzNestedClasses~A_static_public)
+    self~assertNotNull(.clzNestedClasses~A_static_public~A_static_public_Sub)
+
+::method "test_01b_nested_classes"
+    self~expectSyntax(40.900)
+    self~assertNull(.clzNestedClasses~A_static_public~A_static_protected_Sub)
+
+::method "test_01c_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClasses~A_static_public~A_static_private_Sub
+
+::method "test_01d_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClasses~A_static_public~A_static_package_private_Sub
+
+::method "test_01e_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClasses~B_static_protected
+
+::method "test_01f_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClasses~C_static_private
+
+::method "test_01g_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClasses~D_static_package_private
+
+
+::method "test_02_nested_classes_sub"
+    self~assertNotNull(.clzNestedClassesSub~A_static_public)
+    self~assertNotNull(.clzNestedClassesSub~A_static_public~A_static_public_Sub)
+
+::method "test_02a_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClassesSub~A_static_public~A_static_protected_Sub
+
+::method "test_02b_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClassesSub~A_static_public~A_static_private_Sub
+
+::method "test_02c_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClassesSub~A_static_public~A_static_package_private_Sub
+
+
+::method "test_03_nested_classes"
+    self~assertNotNull(.clzNestedClassesSub~B_static_protected)
+
+::method "test_03a_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClassesSub~B_static_public~B_static_protected_Sub
+
+::method "test_03b_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClassesSub~B_static_public~B_static_private_Sub
+
+::method "test_03c_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClassesSub~B_static_public~B_static_package_private_Sub
+
+
+::method "test_03f_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClasses~C_static_private
+
+::method "test_03g_nested_classes"
+    self~expectSyntax(40.900)
+    .clzNestedClasses~D_static_package_private
+
