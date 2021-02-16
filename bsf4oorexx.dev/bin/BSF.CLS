@@ -19,6 +19,12 @@
           .BSF in .environment;
 
    date:
+
+         2021-02-16, ---rgf, - routine parseJavaOptions() will now add option "java.class.path" if
+                               not defined using CLASSPATH environment variable (remove duplicates,
+                               explode trailing asterisks '*'; in Java 6 explosion of asterisks was
+                               done, at least starting with Java 8 we need to do that!)
+
          2021-02-05, ---rgf, - Bsf_Array_Reference::supplier will now use new ArrayWrapper.supplier(RexxProxy)
                                method and unbox the returned genuine ooRexx supplier object; this is to
                                allow the new ooRexx 5.0 "DO WITH" construct to work with wrapped Java arrays;
@@ -847,7 +853,8 @@ end
       if opsys="MACOSX" then  -- as of 2010-02-20: if loading Java via Rexx, awt-event thread does not work
          jso=(jso "-Djava.awt.headless=true")~strip   -- make sure that Java hints at the cause of the problem
 
-      arr=parseJavaOptions(jso)
+      arr=parseJavaOptions(jso)  -- will also add -Djava.class.path with exploded CLASSPATH (exploding asterisks '*' if any)
+
       .routines["XBSFLOADJAVA"]~callWith(arr)
    end
 
@@ -866,7 +873,7 @@ end
 
    if initialize.bsf.dir() then     -- setup .bsfrexx
    do
-      .bsf4rexx~version="641.20210205" -- set version (date distribution got created)
+      .bsf4rexx~version="641.20210216" -- set version (date distribution got created)
       .bsf4rexx~opSys  =opsys          -- save operating system name as supplied by Rexx' PARSE SOURCE
       .bsf4rexx~opSys1 =opsys~left(1)~upper  -- save operating system name's initial letter in uppercase
       .bsf4rexx~opSys2 =opsys~left(2)~upper  -- save operating system name's first two letters in uppercase
@@ -895,6 +902,9 @@ end
 
 syntax:
    raise propagate
+
+
+
 
 -- ::requires "rgf_util2.rex"    -- 20180106, rgf, temporarily because of BSF's unknown usage
 
@@ -1351,6 +1361,8 @@ syntax:
   a=.array~new
   i=0
   deli=" '" || '"'         -- delimiters for options/option-values
+  cpPropertyNeedle="-Djava.class.path="  -- rgf, 2021-02-16
+  cpPropertySeen? =.false
 
   do mainLoop=0 while options<>""
      pos=pos("-", options)
@@ -1363,7 +1375,9 @@ syntax:
         end
         else
            a[i]=a[i] || options  -- remainder of value for previous option
-        return a
+
+        cpPropertySeen? = cpPropertySeen? | abbrev(a[i],cpPropertyNeedle)
+        leave mainLoop
      end
 
      preVal=substr(options, 1, pos-1)  -- get string before dash, if any
@@ -1380,6 +1394,8 @@ syntax:
            end
            else
               a[i]=a[i] || tmpVal   -- add to previous option's value
+
+           cpPropertySeen? = cpPropertySeen? | abbrev(a[i],cpPropertyNeedle)
         end
      end
 
@@ -1402,6 +1418,8 @@ syntax:
            end
 
            a[i]=substr(options, pos, nextSwitchPos-pos)
+           cpPropertySeen? = cpPropertySeen? | abbrev(a[i],cpPropertyNeedle)
+
            options=substr(options, nextSwitchPos+1)
            iterate mainLoop
         end
@@ -1409,13 +1427,69 @@ syntax:
         if nextSwitchPos=0 then  -- last option in hand
         do
            a[i]=substr(options, pos)
-           return a
+           cpPropertySeen? = cpPropertySeen? | abbrev(a[i],cpPropertyNeedle)
+           leave mainLoop
         end
      end
 
   end
+
+  -- if java.class.path not defined, use CLASSPATH (remove duplicates, explode trailing asterisks '*';
+  -- in Java 6 explosion of asterisks was done, at least starting with Java 8 we need to do that!)
+  if cpPropertySeen?=.false then
+  do
+     processedCP=get_processed_classpath()
+     if processedCP<>"" then  -- if CLASSPATH was set, use it in the processed form
+        a~append(cpPropertyNeedle || processedCP)
+  end
   return a
 
+/*
+   2021-02-16: make sure we explode trailing asterisks (*) to individual paths to contained jar/JAR files,
+   cf. <https://docs.oracle.com/javase/7/docs/technotes/tools/windows/classpath.html>;
+   this routine will remove duplicates and non-existing paths, and replace '*' with the jar/JAR files
+   in that directory
+*/
+get_processed_classpath: procedure
+   newCP=""                      -- exploded (new) CLASSPATH
+   pathSep=.file~pathSeparator   -- get system's path separator
+   currCP=value("CLASSPATH",,"ENVIRONMENT")  -- get current value
+   val=currCP
+   if val~pos('*')>0 then     -- explode asterisks
+   do
+      processed =.set~new     -- paths to jar/JAR/zip already processed
+      do until val=""
+         parse var val path (pathSep) val
+         if path="" | path="*" then iterate  -- skip empty paths or paths that consist of the asterisk only
+
+         if processed~hasIndex(path) then iterate  -- already processed (a dupe), skip it
+         processed~put(path)  -- memorize that we processed this
+
+         if path~right(1)="*" then   -- explode
+         do
+             dir=path~left(path~length-1)   -- remove trailing asterisk
+             if sysFileExists(dir)=.false then iterate   -- non-existing path, skip it
+             do ext over .array~of('.jar', '.JAR') -- get and add the jar/JAR files found
+                pattern=path || ext
+                call sysfiletree pattern, "files.", "fo"
+                do i=1 to files.0   -- add all found jar files
+                   if processed~hasIndex(files.i) then iterate -- already on new CLASSPATH, skip
+                   processed~put(files.i)
+                   if newCP="" then newCP=files.i
+                               else newCP=newCP || pathSep || files.i
+                end
+             end
+         end
+         else  -- just append
+         do
+             if sysFileExists(path)=.false then iterate   -- non-existing path, skip it
+             if newCP="" then newCP=path
+                         else newCP=newCP || pathSep || path
+         end
+      end
+   end
+   if newCP="" then return currCP
+   return newCP
 
 
 /* ================================================================================================= */

@@ -1,3 +1,17 @@
+-------------------------------------- 2021-02-16 ----------------------------------
+
+- BSF.CLS
+
+        - routine parseJavaOptions() will now add option "-Djava.class.path=" if
+          not defined, using CLASSPATH environment variable (remove duplicates,
+          explode trailing asterisks '*'; in Java 6 explosion of asterisks was
+          done, at least starting with Java 8 we need to do that!)
+
+-------------------------------------- 2021-02-09 ----------------------------------
+
+- Supplier.java
+
+        - supplier instance method was missing (returns the instance itself)
 
 -------------------------------------- 2021-02-07 ----------------------------------
 

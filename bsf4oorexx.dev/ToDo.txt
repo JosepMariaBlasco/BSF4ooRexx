@@ -1,5 +1,35 @@
 ---
 
+2021-02-16:
+
+        - CLASSPATH: rewrite if * in it, if Rexx loads JVM (otherwise on Java 8 or later jar/JAR files not found!)
+        - nested classes: add a routine like bsf.import that adds init and newStrict if concrete class?
+
+        - creation of installation package
+                - use ooRexx to create on all platforms (forgo shell programming)
+                - single jar-file vs. multiple (bsf.jar, bsf4oorexx.jar, .netclr.jar, bsf4oorexx4uno.jar, ...) ?
+                - NOTICES.txt file !!
+
+        - installations
+                - GUI-Mac installer: do not install ooRexx if already installed ? Supply two installers, one
+                                     with ooRexx one without?
+                - Linux: - make sure installs into /opt/bsf4oorexx and links to /usr/local/bin
+                         - make sure to allow installation with apt/yum
+                - .Net install: make it optional?
+                - AOO/OOO/LO install: make it optional? allow support for multiple installations?
+                - Support files (information, help files, samples): make it optional?
+                - USB (minimal) install?
+
+        - new launcher: checks accessible/installed Java and uses it (even if not on PATH or /usr/local/bin)
+
+        - create a release for 4.1
+        - create immediately a beta requiring 5.0 and adding features only available there (create - even
+                  redirectable - command environment; SendMessageScoped() to RexxProxy)
+
+
+
+---
+
 2020-07-05, rgf: --2020-08-12: NOT NEEDED, everything needed already in place!
         - BSF.InputStream
         - BSF.OutputStream
@@ -11,13 +41,13 @@
 
 2020-07-02, rgf:
 
-        - rgf: --2020-08-12: make JDBC samples for MiniSQL, MySQL, Postgress; DONE, also added
+        - DONE: rgf: --2020-08-12: make JDBC samples for MiniSQL, MySQL, Postgress; DONE, also added
           MariaDB
-        - create and add Tomcat-Taglib for script engines, have stdout
+        - DONE: create and add Tomcat-Taglib for script engines, have stdout
           use the document writer object without a "rexxOut>" prefix
           - may need rework of BSF.CLS redirections (individually turn on/off
             prefix, get/set prefix values)
-        - check whether Tomcat "Rexx server pages (RSP)" are feasible
+        - DONE (they are!): check whether Tomcat "Rexx server pages (RSP)" are feasible
 
 
 ---
