@@ -44,6 +44,9 @@
         - 2021-02-03: make sure that impolicit HashMap object TAGLIBINFORMATION gets also created,
                       if the attribute "slot" has a value, such that the script programmer can get
                       access to it
+
+        - 2021-02-25: make sure we remove the TAGLIBINFORMATION entry in ENGINE_SCOPE after we have
+                      executed the script
 */
 
 /*
@@ -83,7 +86,7 @@ import javax.servlet.jsp.tagext.* ;
 
 abstract public class BaseImpl implements BodyTag
 {
-    static final protected String version = "100.20210203"; // version of this taglib
+    static final protected String version = "100.20210225"; // version of this taglib
 
     static final protected String TAGLIBINFORMATION ="ScriptTaglibs.TaglibNamespaceAttributevalues";
 
@@ -165,10 +168,10 @@ abstract public class BaseImpl implements BodyTag
 
     public int doEndTag() throws JspException
     {
+        ScriptEngine engine = null;
         try {
 //	    if ( bodyOut == null ) return( EVAL_PAGE );
 
-            ScriptEngine engine = null;
             // for a page there may be multiple instances of the tag handler (one per script/expression)
             // which all execute on the same thread; hence caching engines at the thread scope
             // it maybe the case that a some other code (Java) on the page ran already and
@@ -815,9 +818,18 @@ abstract public class BaseImpl implements BodyTag
             {
                 out.print(result.toString());  // just output String value in place
             }
+
+            if (bReflect || slot!=null)     // make sure we remove the reflect map entry from ENGINE_SCOPE
+            {
+                engine.getBindings(ScriptContext.ENGINE_SCOPE).remove(TAGLIBINFORMATION);
+            }
 	}
 
         catch( Exception e ) {
+            if (bReflect || slot!=null)     // make sure we remove the reflect map entry from ENGINE_SCOPE
+            {
+                engine.getBindings(ScriptContext.ENGINE_SCOPE).remove(TAGLIBINFORMATION);
+            }
             // System.out.println( e.toString() );
     	    e.printStackTrace();
             if (bThrowException)         // throw a JSPException?

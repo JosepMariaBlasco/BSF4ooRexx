@@ -41,6 +41,8 @@
         - 2021-02-03: make sure that impolicit HashMap object TAGLIBINFORMATION gets also created,
                       if the attribute "slot" has a value, such that the script programmer can get
                       access to it
+
+        - 2021-02-25: make sure we remove the TAGLIBINFORMATION entry after we have executed the script
 */
 
 /*
@@ -81,7 +83,7 @@ import org.apache.bsf.* ;
 
 abstract public class BaseImpl implements BodyTag
 {
-    static final protected String version = "100.20210203"; // version of this taglib
+    static final protected String version = "100.20210225"; // version of this taglib
 
     static final protected String TAGLIBINFORMATION ="ScriptTaglibs.TaglibNamespaceAttributevalues";
 
@@ -189,6 +191,7 @@ abstract public class BaseImpl implements BodyTag
     };
 
     public int doEndTag() throws JspException {
+        BSFManager mgr = null;
         try {
 //	    if ( bodyOut == null ) return( EVAL_PAGE );
 
@@ -202,7 +205,7 @@ abstract public class BaseImpl implements BodyTag
                 pageContext.setAttribute(pageScopeAttrName, new Object(), pageContext.PAGE_SCOPE);
 
                 // manager and engines already created, if so, use them
-                BSFManager  mgr = (BSFManager) pageContext.getAttribute(pageScopeManagerName, pageContext.PAGE_SCOPE);
+                mgr = (BSFManager) pageContext.getAttribute(pageScopeManagerName, pageContext.PAGE_SCOPE);
                 HashMap <String,BSFEngine> engines = (HashMap <String,BSFEngine>) pageContext.getAttribute(pageScopeEnginesName, pageContext.PAGE_SCOPE);
 
                 if (mgr==null)  // create the manager, store it in the pageContext for others
@@ -243,7 +246,10 @@ abstract public class BaseImpl implements BodyTag
             HttpServletResponse response=(HttpServletResponse) pageContext.getResponse();   // HttpServletResponse
             JspWriter out = pageContext.getOut();
 
-            BSFManager mgr = tlMgr.get();
+            if (mgr==null)      // do we need to get the BSFManager?
+            {
+                mgr = tlMgr.get();
+            }
             register( mgr, "application", application );
             register( mgr, "config"     , pageContext.getServletConfig() );
             register( mgr, "exception"  , pageContext.getException() );
@@ -605,9 +611,21 @@ abstract public class BaseImpl implements BodyTag
             {
                 out.print(result.toString());  // just output String value in place
             }
+
+            if (bReflect || slot!=null)     // make sure we remove the reflect map entry
+            {
+                mgr.undeclareBean(TAGLIBINFORMATION);
+            }
 	}
         catch( Exception e )
         {
+            if (bReflect || slot!=null)     // make sure we remove the reflect map entry
+            {
+                try {
+                    mgr.undeclareBean(TAGLIBINFORMATION);
+                } catch (BSFException bsfe)
+                {};
+            }
 	    // System.out.println( e.toString() );
 	    e.printStackTrace();
             if (bThrowException)         // throw a JSPException?
