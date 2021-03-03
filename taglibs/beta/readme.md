@@ -12,7 +12,11 @@ materials got created:
   and a zip-file with accompanying war-files at:
   <https://www.rexxla.org/events/2020/presentations/202011-ooRexxAndJavaWebServers-article-code.zip>
 
+As the above article and some JSP files include ooRexx code, a very brief introduction to ooRexx:
 
+* "Resurrecting REXX, Introducing ooRexx"
+  article: <http://wi.wu.ac.at/rgf/rexx/misc/ecoop06/ECOOP2006_RDL_Workshop_Flatscher_Paper.pdf>
+  slides:  <http://wi.wu.ac.at/rgf/rexx/misc/ecoop06/2006_ecoop_ooRexx.pdf>
 
 There are two scripting frameworks employed:
 
@@ -22,10 +26,10 @@ There are two scripting frameworks employed:
         <%@ taglib uri="/WEB-INF/script-bsf.tld" prefix="s" %>
 ~~~
 
-* JSR-223 (Java's "javax.script" package: use the following taglib definition at the top
+* JSR-223 (Java's `javax.script` package): use the following taglib definition at the top
   of the JSP, if the tld file is stored in the application's WEB-INF subdirectory:
 ~~~
-        <%@ taglib uri="/WEB-INF/script-script.tld" prefix="s" %>
+        <%@ taglib uri="/WEB-INF/script-jsr223.tld" prefix="s" %>
 ~~~
 
 Then, anywhere in the JSP file where you wish to employ script code you would use the
@@ -87,6 +91,8 @@ File name                   | Purpose
 **`jakarta.`**`ScriptTagLibs.jar` | taglib library, uses "**jakarta.**" as the top level package name, binary file (Jakarta EE 9 or later, e.g. Tomcat 10 or later); copy into the shared `lib` directory of your Java based web server (e.g. Tomcat: `$CATALINA_HOME/lib`)
 `demoRexx.war`              | use your Java-based web server's deploy "war"/"web module" feature to deploy (you need the latest ooRexx 5 and BSF4ooRexx installed on the system) or copy it into your Java based web server's `webapps` directory; demonstrates usage of ooRexx
 `IntelliJ-oorexx-language-injections.xml` | Import file for ooRexx language injection support in IntelliJ (see addendum below)
+`demoJavaScript.war`        | use your Java-based web server's deploy "war"/"web module" feature to deploy or copy it into your Java based web server's `webapps` directory; demonstrates usage of Nashorn/JavaScript
+`demoRhino.war`             | use your Java-based web server's deploy "war"/"web module" feature to deploy or copy it into your Java based web server's `webapps` directory; demonstrates usage of Rhino/JavaScript
 
 
 ---
@@ -104,7 +110,6 @@ File name                   | Purpose
 
 
 ---
-
 
 * Testing the ooRexx samples in `demoRexx.war` needs the latest ooRexx 5.0 or later and BSF4ooRexx (20201217 distribution or later) and deploying `demoRexx.war`:
 
@@ -141,6 +146,8 @@ File name                   | Purpose
 
 ---
 
+---
+
 ## Addendum: Namespace "**javax.**" versus "**jakarta.**" ##
 
 Cf. <https://www.baeldung.com/java-enterprise-evolution> and <https://en.wikipedia.org/wiki/Jakarta_EE>  (as of 2020-11-12).
@@ -165,7 +172,6 @@ hence named **`javax.`**`ScriptTagLibs.jar`) and one that refers to "jakarta."
 
 ---
 
-
 ## Addendum: IntelliJ ooRexx Support ##
 
 There is an ooRexx plugin for IntelliJ available from <https://sourceforge.net/projects/bsf4oorexx/files/Sandbox/aseik/ooRexxIDEA/GA/>.
@@ -176,6 +182,43 @@ which can be downloaded from <https://www.jetbrains.com/idea/download/>.
 
 Then save `IntelliJ-oorexx-language-injections.xml` and import it in the "Settings -> Editor -> Language Injections"
 to allow ooRexx code to be highlighted in HTML, XML and JSP text.
+
+
+---
+
+## Addendum: JavaScript with Nashorn ##
+
+* Testing the Nashorn/JavaScript samples in `demoJavaScript.war` needs Nashorn (included up to Java 14, later add the Nashorn module to your installation, cf. <https://openjdk.java.net/projects/nashorn/>) and deploying `demoJavaScript.war`:
+
+* deploy `demoJavaScript.war` (web application archive)
+
+  .. * either copy `demoJavaScript.war` to your Java based web server's `webapps` directory or use its deployment management tool
+
+  .. * load the Tomcat manager interface into your browser, e.g. "localhost:8080/manager" (adjust the port number to your installation),
+
+* click on "/demoJavaScript" and pick the JSP examples for Nashorn/JavaScript that you wish to look at (alternatively use the URL
+    "localhost:8080/demoJavaScript", adjust the port number to your installation)
+
+---
+
+## Addendum: JavaScript with Rhino ##
+
+* Testing the Rhino/JavaScript samples in `demoRhino.war` needs Rhino (tested against Rhino 1.7.13
+  from the bottom of <https://github.com/mozilla/rhino/releases/tag/Rhino1_7_13_Release>):
+
+  .. * get `rhino-runtime-1.7.13.jar` and copy it to your web server's shared `lib` directory (e.g. Tomcat's `$CATALINA_HOME/lib`)
+
+  .. * get `rhino-engine-1.7.13.jar`(JSR-223 engine) and copy it to your web server's shared `lib` directory (e.g. Tomcat's `$CATALINA_HOME/lib`)
+
+* deploy `demoRhino.war` (web application archive)
+
+  .. * either copy `demoRhino.war` to your Java based web server's `webapps` directory or use its deployment management tool
+
+  .. * load the Tomcat manager interface into your browser, e.g. "localhost:8080/manager" (adjust the port number to your installation),
+
+* click on "/demoRhino" and pick the JSP examples for Rhino/JavaScript that you wish to look at (alternatively use the URL
+    "localhost:8080/demoRhino", adjust the port number to your installation)
+
 
 ---
 
@@ -195,4 +238,4 @@ not have Java installed yet, then try to locate an installation package that inc
 
 ---
 
-rgf, as of: 2021-02-03
+rgf, as of: 2021-02-28
