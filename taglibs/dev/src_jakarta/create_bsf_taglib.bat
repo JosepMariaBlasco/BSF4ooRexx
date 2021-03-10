@@ -1,5 +1,5 @@
 @echo off
-rem 2020-09-08, rgf, Windows experiment
+rem 2020-09-08, rgf, Windows experiment, 2021-03-10
 rem conf ... contains tld definition
 rem src  ... contains source files
 rem META-INF ... will get tld file
@@ -18,12 +18,24 @@ if not exist %cd%\src_jsr223\Scriptlet.java  goto usage
 set tgtDir=..
 set jarname=%tgtDir%\jakarta.ScriptTagLibs.jar
 set confDir=WEB-INF
+set metaDir=META-INF
 rem make sure no leftovers
 
+rem skip confDir
+goto metaDir
+rem copy tld files into confDir
 rd %confDir% /s /q
 md %confDir%
 copy src_bsf\*tld    %confDir%
 copy src_jsr223\*tld %confDir%
+
+:metaDir
+rem copy tld files into metaDir
+rd %metaDir% /s /q
+md %metaDir%
+copy src_bsf\*tld    %metaDir%
+copy src_jsr223\*tld %metaDir%
+
 
 copy src_bsf\*tld    %tgtDir%
 copy src_jsr223\*tld %tgtDir%
@@ -31,7 +43,6 @@ copy src_jsr223\*tld %tgtDir%
 echo before removing directories for compilation
 dir
 
-rd META-INF /s /q
 
 rem md META-INF
 rem copy %confDir%\* META-INF
@@ -48,14 +59,14 @@ if %errorlevel% neq 0 goto compileError1
 javac -source 1.6 -target 1.6 src_jsr223\*.java -d work
 if %errorlevel% neq 0 goto compileError2
 
-jar -cvf %jarname% -C work %confDir%\* *
+jar -cvf %jarname% -C work %confDir%\* %metaDir%\* *
 
 rem clean up
 echo before removing directories for cleanup
 dir
-dir META-INF /s
+dir %metaDir%  /s
 echo removing META-INF
-rd META-INF /s /q
+rd %metaDir%  /s /q
 rd work /s /q
 echo removing confDir: %confDir%
 rd %confDir% /s /q
