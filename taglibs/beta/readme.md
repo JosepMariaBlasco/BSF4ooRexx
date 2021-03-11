@@ -18,18 +18,18 @@ As the above article and some JSP files include ooRexx code, a very brief introd
   article: <http://wi.wu.ac.at/rgf/rexx/misc/ecoop06/ECOOP2006_RDL_Workshop_Flatscher_Paper.pdf>
   slides:  <http://wi.wu.ac.at/rgf/rexx/misc/ecoop06/2006_ecoop_ooRexx.pdf>
 
-There are two scripting frameworks employed:
+There are two scripting frameworks supported:
 
-* Apache Bean Scripting Framework (BSF): use the following taglib definition at the top
-  of the JSP, if the tld file is stored in the application's WEB-INF subdirectory:
+* Apache Bean Scripting Framework (BSF), allows older scripting languages to be used,
+  use the following taglib definition at the top of the JSP:
 ~~~
-        <%@ taglib uri="/WEB-INF/script-bsf.tld" prefix="s" %>
+        <%@ taglib uri="http://rexxla.org/taglibs/bsf" prefix="s" %>
 ~~~
 
-* JSR-223 (Java's `javax.script` package): use the following taglib definition at the top
-  of the JSP, if the tld file is stored in the application's WEB-INF subdirectory:
+* _Preferred! JSR-223 (Java's `javax.script` package), allows newer scripting languages to be used,_
+   use the following taglib definition at the top of the JSP:
 ~~~
-        <%@ taglib uri="/WEB-INF/script-jsr223.tld" prefix="s" %>
+        <%@ taglib uri="http://rexxla.org/taglibs/jsr223" prefix="s" %>
 ~~~
 
 Then, anywhere in the JSP file where you wish to employ script code you would use the
@@ -52,7 +52,7 @@ indicated by the type attribute (type="rexx"):
 
 Remark: the invocation of the scripts will always supply the following three implicit
         objects as arguments: `request`, `response`, `out`. Scripts can use the `out`
-         object's `print` or `println` methods to output HTML text
+        object's `print` or `println` methods to output HTML text
         at the position of the script (some script languages expect the implicit
         object to be prefixed with the `$` character like `$out`).
 
@@ -85,8 +85,8 @@ Attribute          | Purpose
 File name                   | Purpose
 --------------------------- | --------------------------
 `readme.md`                 | this text file: brief infos, text file
-`script-bsf.tld`            | describes BSF     taglib, text file; copy into the web application's `WEB-INF` directory
-`script-jsr223.tld`         | describes JSR-223 taglib, text file; copy into the web application's `WEB-INF` directory
+`script-bsf.tld`            | describes BSF taglib, text file, included in ScriptTagLibs.jar's META-INF directory;
+`script-jsr223.tld`         | describes JSR-223 taglib, text file, included in ScriptTagLibs.jar's META-INF directory;
 **`javax.`**`ScriptTagLibs.jar` | taglib library, uses "**javax.**" as the top level package name, binary file (Java EE 8 or earlier, e.g. Tomcat 9 or earlier);   copy into the shared `lib` directory of your Java based web server (e.g. Tomcat: `$CATALINA_HOME/lib`)
 **`jakarta.`**`ScriptTagLibs.jar` | taglib library, uses "**jakarta.**" as the top level package name, binary file (Jakarta EE 9 or later, e.g. Tomcat 10 or later); copy into the shared `lib` directory of your Java based web server (e.g. Tomcat: `$CATALINA_HOME/lib`)
 `demoRexx.war`              | use your Java-based web server's deploy "war"/"web module" feature to deploy (you need the latest ooRexx 5 and BSF4ooRexx installed on the system) or copy it into your Java based web server's `webapps` directory; demonstrates usage of ooRexx
@@ -113,33 +113,33 @@ File name                   | Purpose
 
 * Testing the ooRexx samples in `demoRexx.war` needs the latest ooRexx 5.0 or later and BSF4ooRexx (20201217 distribution or later) and deploying `demoRexx.war`:
 
-  .. * MacOSX (needs Java installed already, see addendum below for Java downloads)
+    + MacOSX (needs Java installed already, see addendum below for Java downloads)
 
-  .. .. get the latest version of BSF4ooRexx (ooRexx-Java bridge) which also includes ooRexx from <https://sourceforge.net/projects/bsf4oorexx/files/beta/20200928/> and install it
+          - get the latest version of BSF4ooRexx (ooRexx-Java bridge) which also includes ooRexx from <https://sourceforge.net/projects/bsf4oorexx/files/beta/20200928/> and install it
 
-  .. * Linux and Windows (needs Java installed already, see addendum below for Java downloads)
+    + Linux and Windows (needs Java installed already, see addendum below for Java downloads)
 
-  .. .. get the latest version of ooRexx from <https://sourceforge.net/projects/oorexx/files/oorexx/5.0.0beta/> and install it
+          - get the latest version of ooRexx from <https://sourceforge.net/projects/oorexx/files/oorexx/5.0.0beta/> and install it
 
-  .. .. get the latest version of BSF4ooRexx (ooRexx-Java bridge) from <https://sourceforge.net/projects/bsf4oorexx/files/beta/20200928/> and install it
+          - get the latest version of BSF4ooRexx (ooRexx-Java bridge) from <https://sourceforge.net/projects/bsf4oorexx/files/beta/20200928/> and install it
 
 
 * copy the file `bsf4ooRexx-v6??-202?????-bin.jar` from your BSF4ooRexx installation into your
   Java based web application server's shared `lib` directory usually located in the installation/home
   directory (otherwise classloader problems may show up):
 
-  -> for "**Java EE**" (e.g. Tomcat 9 or earlier) copy **`javax.`**`ScriptTagLibs.jar` into your
-    Java based web application server's shared `lib` directory (e.g. Tomcat `$CATALINA_HOME/lib`)
+    -> for "**Java EE**" (e.g. Tomcat 9 or earlier) copy **`javax.`**`ScriptTagLibs.jar` into your
+       Java based web application server's shared `lib` directory (e.g. Tomcat `$CATALINA_HOME/lib`)
 
-  -> for "**Jakarta EE**" (e.g. Tomcat 10 or later) copy **`jakarta.`**`ScriptTagLibs.jar` into your
-    Java based web application server's shared `lib` directory (e.g. Tomcat `$
-    CATALINA_HOME/lib`)
+    -> for "**Jakarta EE**" (e.g. Tomcat 10 or later) copy **`jakarta.`**`ScriptTagLibs.jar` into your
+       Java based web application server's shared `lib` directory (e.g. Tomcat `$
+       CATALINA_HOME/lib`)
 
 * deploy `demoRexx.war` (web application archive)
 
-  .. * either copy `demoRexx.war` to your Java based web server's `webapps` directory or use its deployment management tool
+    + either copy `demoRexx.war` to your Java based web server's `webapps` directory or use its deployment management tool
 
-  .. * load the Tomcat manager interface into your browser, e.g. "localhost:8080/manager" (adjust the port number to your installation),
+    + load the Tomcat manager interface into your browser, e.g. "localhost:8080/manager" (adjust the port number to your installation),
 
 * click on "/demoRexx" and pick the JSP examples for Rexx that you wish to look at (alternatively use the URL
     "localhost:8080/demoRexx", adjust the port number to your installation)
@@ -192,12 +192,12 @@ to allow ooRexx code to be highlighted in HTML, XML and JSP text.
 
 * deploy `demoJavaScript.war` (web application archive)
 
-  .. * either copy `demoJavaScript.war` to your Java based web server's `webapps` directory or use its deployment management tool
+    - either copy `demoJavaScript.war` to your Java based web server's `webapps` directory or use its deployment management tool
 
-  .. * load the Tomcat manager interface into your browser, e.g. "localhost:8080/manager" (adjust the port number to your installation),
+    - load the Tomcat manager interface into your browser, e.g. "localhost:8080/manager" (adjust the port number to your installation),
 
 * click on "/demoJavaScript" and pick the JSP examples for Nashorn/JavaScript that you wish to look at (alternatively use the URL
-    "localhost:8080/demoJavaScript", adjust the port number to your installation)
+  "localhost:8080/demoJavaScript", adjust the port number to your installation)
 
 ---
 
@@ -206,18 +206,18 @@ to allow ooRexx code to be highlighted in HTML, XML and JSP text.
 * Testing the Rhino/JavaScript samples in `demoRhino.war` needs Rhino (tested against Rhino 1.7.13
   from the bottom of <https://github.com/mozilla/rhino/releases/tag/Rhino1_7_13_Release>):
 
-  .. * get `rhino-runtime-1.7.13.jar` and copy it to your web server's shared `lib` directory (e.g. Tomcat's `$CATALINA_HOME/lib`)
+    - get `rhino-runtime-1.7.13.jar` and copy it to your web server's shared `lib` directory (e.g. Tomcat's `$CATALINA_HOME/lib`)
 
-  .. * get `rhino-engine-1.7.13.jar`(JSR-223 engine) and copy it to your web server's shared `lib` directory (e.g. Tomcat's `$CATALINA_HOME/lib`)
+    - get `rhino-engine-1.7.13.jar`(JSR-223 engine) and copy it to your web server's shared `lib` directory (e.g. Tomcat's `$CATALINA_HOME/lib`)
 
 * deploy `demoRhino.war` (web application archive)
 
-  .. * either copy `demoRhino.war` to your Java based web server's `webapps` directory or use its deployment management tool
+    - either copy `demoRhino.war` to your Java based web server's `webapps` directory or use its deployment management tool
 
-  .. * load the Tomcat manager interface into your browser, e.g. "localhost:8080/manager" (adjust the port number to your installation),
+    - load the Tomcat manager interface into your browser, e.g. "localhost:8080/manager" (adjust the port number to your installation),
 
 * click on "/demoRhino" and pick the JSP examples for Rhino/JavaScript that you wish to look at (alternatively use the URL
-    "localhost:8080/demoRhino", adjust the port number to your installation)
+  "localhost:8080/demoRhino", adjust the port number to your installation)
 
 
 ---
@@ -238,4 +238,4 @@ not have Java installed yet, then try to locate an installation package that inc
 
 ---
 
-rgf, as of: 2021-02-28
+rgf, as of: 2021-02-28, 2021-03-10
