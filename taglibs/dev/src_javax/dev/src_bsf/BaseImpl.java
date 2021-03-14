@@ -43,6 +43,9 @@
                       access to it
 
         - 2021-02-25: make sure we remove the TAGLIBINFORMATION entry after we have executed the script
+
+        - 2021-03-14: - shorten key for the implicit HashMap object that supplies ScriptTagLibs information
+                      - change case from "taglib" to "TagLib"
 */
 
 /*
@@ -83,18 +86,18 @@ import org.apache.bsf.* ;
 
 abstract public class BaseImpl implements BodyTag
 {
-    static final protected String version = "100.20210225"; // version of this taglib
+    static final protected String version = "100.20210314"; // version of this taglib
 
-    static final protected String TAGLIBINFORMATION ="ScriptTaglibs.TaglibNamespaceAttributevalues";
+    static final protected String TAGLIBINFORMATION ="ScriptTagLib.Information";
 
-    static final protected String scriptTaglib="BsfTaglib";
+    static final protected String scriptTagLib="BsfTagLib";
     // used to determine whether any tag handler runs for the first time for this page
-    static final protected String pageScopeAttrName="BsfTaglibTest";
+    static final protected String pageScopeAttrName="BsfTagLibTest";
     // used to determine whether first invocation of Rexx is also the first invocation for the page
     static final protected String rexxOutRedirected="RexxOutRedirected";
     // will be used for retrieving/storing in pageContext
-    static final protected String pageScopeManagerName=scriptTaglib+".Manager";
-    static final protected String pageScopeEnginesName=scriptTaglib+".Engines";
+    static final protected String pageScopeManagerName=scriptTagLib+".Manager";
+    static final protected String pageScopeEnginesName=scriptTagLib+".Engines";
 
     protected abstract String  getTagName();
     protected abstract boolean isExpression();
@@ -261,7 +264,7 @@ abstract public class BaseImpl implements BodyTag
             register( mgr, "request"    , request );
 
             // allow scripts to also fetch this information
-            register( mgr, "scriptTaglibTag" , scriptTaglib+"."+getTagName());
+            register( mgr, "scriptTagLibTag" , scriptTagLib+"."+getTagName());
 
             String actualContextPath  = request.getContextPath();   // actual contextPath
             String actualRequestURI   = request.getRequestURI ();   // actual URL
@@ -278,7 +281,7 @@ abstract public class BaseImpl implements BodyTag
                 filename=realPath+"!"+(name==null?"(unknown)":name);
                 if (bodyOut==null)
                 {
-                    throw new JspException(scriptTaglib+": empty tag and \"src\" attribute not supplied instead");
+                    throw new JspException(scriptTagLib+": empty tag and \"src\" attribute not supplied instead");
                 }
                 scriptCode = bodyOut.getString();   // code from JSP
             }
@@ -347,7 +350,7 @@ abstract public class BaseImpl implements BodyTag
                 attr.put("reflect"          , bReflect        );
                 attr.put("slot"             , slot            );
                 attr.put("src"              , src             );
-                attr.put("tagLibName"       , scriptTaglib    );
+                attr.put("tagLibName"       , scriptTagLib    );
                 attr.put("tagName"          , getTagName()    );
                 attr.put("throwException"   , bThrowException );
                 attr.put("type"             , type            );    // language
@@ -496,8 +499,8 @@ abstract public class BaseImpl implements BodyTag
                 out.print  ("<tr><td "+style+">isExpression()</td>");
                 out.println("<td "+style+">"+isExpression()+"</td></tr>");
 
-                out.print  ("<tr><td "+style+">scriptTaglib</td>");
-                out.println("<td "+style+">"+scriptTaglib+"</td></tr>");
+                out.print  ("<tr><td "+style+">scriptTagLib</td>");
+                out.println("<td "+style+">"+scriptTagLib+"</td></tr>");
 
                 out.print  ("<tr><td "+style+">srcRealPath</td>");
                 {
@@ -550,8 +553,8 @@ abstract public class BaseImpl implements BodyTag
                 out.print  ("<tr><td "+style+">session</td>");
                 out.println("<td "+style+">"+mgr.lookupBean("session")+"</td></tr>");
 
-                out.print  ("<tr><td "+style+">scriptTaglibTag</td>");
-                out.println("<td "+style+">"+mgr.lookupBean("scriptTaglibTag")+"</td></tr>");
+                out.print  ("<tr><td "+style+">scriptTagLibTag</td>");
+                out.println("<td "+style+">"+mgr.lookupBean("scriptTagLibTag")+"</td></tr>");
 
                 out.println("</table>");
                 // -----------------------------
