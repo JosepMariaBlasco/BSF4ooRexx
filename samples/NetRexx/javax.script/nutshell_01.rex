@@ -21,7 +21,7 @@ do i=1 to arg()
       say "the last argument is a Rexx directory containing the ScriptContext of this invocation:"
       sc=arg(i)~scriptContext      -- fetch script context
          -- get the constant field values for FILENAME, ARGV from class javax.script.ScriptEngine
-      jclz=bsf.importClass("javax.script.ScriptEngine")  -- import the Java class
+      jclz=bsf.loadClass("javax.script.ScriptEngine")  -- import the Java class
       fn=jclz~FILENAME     -- get FILENAME constant value
       argv=jclz~ARGV       -- get ARGV constant value
       say "                 FILENAME ->" pp(sc~getAttributesScope(fn))  pp(fn)    pp(sc~getAttribute(fn))
@@ -33,7 +33,7 @@ end
 
 /*
    ------------------------ Apache Version 2.0 license -------------------------
-      Copyright 2015-2016 Rony G. Flatscher
+      Copyright 2015-2021 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.
@@ -50,4 +50,5 @@ end
 
    2016-11-08, ---rgf: removed "(Rexx)" from SAY statements as a proper Rexx-identifying prefix gets
                        now supplied automatically
+   2021-03-22, ---rgf: changed bsf.importClass() to bsf.loadClass() as we interact with an abstract class
 */
