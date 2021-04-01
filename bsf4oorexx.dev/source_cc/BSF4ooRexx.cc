@@ -36,6 +36,11 @@ remarks:
                              - TODO: remove dead (commented) code
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
+    6.0.0   2021-03-20, rgf: - removed a warning by explicitly using strcmp():
+                               MacOS: BSF4ooRexx.cc:8349:31: warning: result of comparison against a string literal is unspecified (use an explicit string comparison function
+      instead) [-Wstring-compare]
+        if ( options[i].option==LOAD_REQUIRED_LIBRARY )
+                              ^ ~~~~~~~~~~~~~~~~~~~~~
 
     6.0.0   2020-06-28, rgf: - in _jniRexxSendMessageToRexxObject make debug output for args better legible
 
@@ -968,11 +973,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20200628 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20210320 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20200628 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20210320 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20200628 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20210320 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -8346,7 +8351,7 @@ JNIEXPORT jstring JNICALL Java_org_rexxla_bsf_engines_rexx_RexxAndJava_jniRexxCr
 
         // delete required library names, if any
     for (int i=2; i<(countOptions-1);i++) {
-        if ( options[i].option==LOAD_REQUIRED_LIBRARY )
+        if ( strcmp(options[i].option, LOAD_REQUIRED_LIBRARY)==0 )
         {
             free((void *)options[i].optionName);
         }

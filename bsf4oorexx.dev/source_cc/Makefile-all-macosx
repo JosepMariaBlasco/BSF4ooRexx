@@ -86,30 +86,37 @@ BSF4REXX   	   = $(BLD_PATH)/libBSF4ooRexx.dylib
 
 # INC_PATH = -I/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/include -I .
 
-JDK_INCLUDE_PATH1 = /Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/include 
-JDK_INCLUDE_PATH2 = /Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/include/darwin
-INC_PATH = -I ${JDK_INCLUDE_PATH1} -I ${JDK_INCLUDE_PATH2} -I .
+JDK_HOME = /Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home
 
-
-# INC_PATH = -I/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/include -I/Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home/include/darwin -I .
+INC_PATH = -I ${JDK_HOME}/include -I ${JDK_HOME}/include/darwin -I .
 
 
 # old ooRexx 4.x installations (need different ones for ooRexx 5.0beta)
 ORX_LIBPATH_32 = /opt/oldrexx/ooRexx-i386/lib
 # ORX_LIBPATH_64 = /opt/oldrexx/ooRexx-x86_64/lib/
 # rgf, 20170122, ooRexx 5.0.0 (beta)
-ORX_LIBPATH_64 = /Library/Frameworks/ooRexx.framework/Libraries/
+# ORX_LIBPATH_64 = /Library/Frameworks/ooRexx.framework/Libraries/
+# rgf, 20210319
+ORX_LIBPATH_64 = /usr/local/lib
 
 # rgf, 2017-04-05: manually creating an ooRexx 5.0 "installation"
 # rgf, 2020-08-21: removing this now misleading definitions
 # ORX_LIBPATH_64 = /opt/oldrexx/ooRexx-5-x86_64/lib/
 # ORX5_INCPATH_64 = -I/opt/oldrexx/ooRexx-5-x86_64/include/
 
+# if BSF4ooRexx with ooRexx got installed
+OOREXX_FRAMEWORK = /Library/Frameworks/ooRexx.framework/Versions/Current/
+# make install will install to:
+OOREXX_APP_INSTALL = ~/Applications/ooRexx5
+
 ORX_LIBS_32 = $(ORX_LIBPATH_32)/librexx.dylib $(ORX_LIBPATH_32)/librexxapi.dylib
 ORX_LIBS_64 = $(ORX_LIBPATH_64)/librexx.dylib $(ORX_LIBPATH_64)/librexxapi.dylib
 
+ORX_LIBS_64 = -L/usr/local/lib -L${OOREXX_FRAMEWORK}/Libraries -L${OOREXX_APP_INSTALL}999/lib -lrexx -lrexxapi
 
-INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers $(ORX5_INCPATH_64)
+
+# INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers $(ORX5_INCPATH_64)
+INC_PATH_ALL = $(INC_PATH) -I${OOREXX_FRAMEWORK}/Headers $(OOREXX_APP_INSTALL)/include
 
 CFLAGS = -fPIC
 LFLAGS = -shared
@@ -134,7 +141,8 @@ x86_64: BSF4ooRexx.cc
 	g++ -c $(CFLAGS) $(INC_PATH) $(INC_PATH_ALL) -m64 -arch x86_64 -DUSE_OREXX -DUNIX -DBSF4REXX_64_BIT -o$(BSF_OBJ_ORX_64) BSF4ooRexx.cc
 
 # 	g++ -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(LIB_2_REXX)/librexx.dylib $(LIB_2_REXX)/librexxapi.dylib -framework JavaVM -arch x86_64
-	g++ -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -framework JavaVM -arch x86_64
+#	g++ -v -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -framework JavaVM -arch x86_64
+	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) ${JDK_HOME}/jre/lib/server/libjvm.dylib -arch x86_64
 
 	cp -p $(BSF_ORX_TARGET_64) $(BSF4REXX)
 	cp -p $(BSF_ORX_TARGET_64) $(TGT_LIB_DIR)
