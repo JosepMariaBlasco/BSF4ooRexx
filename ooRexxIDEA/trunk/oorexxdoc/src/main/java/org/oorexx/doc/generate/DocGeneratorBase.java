@@ -77,7 +77,7 @@ public abstract class DocGeneratorBase {
                 copyFromJar("/templates/js", Paths.get(jsDestination.getPath()));
             } catch (Exception e){
                 File resourceFile = new File(DocGeneratorBase.class.getClassLoader().getResource("/templates").getFile());
-                FileUtils.copyDirectory(new File(resourceFile, "js"), jsDestination);
+                copyFromJar(resourceFile.getAbsolutePath(), Paths.get(jsDestination.getPath()));
             }
         }
 
@@ -228,7 +228,8 @@ public abstract class DocGeneratorBase {
     }
 
     public void copyFromJar(String source, final Path target) throws URISyntaxException, IOException {
-        URI resource = getClass().getResource("").toURI();
+        URI resource = DocGeneratorBase.class.getClassLoader().getResource(source).toURI();
+
         try (FileSystem fileSystem = FileSystems.newFileSystem(resource, Collections.<String, String>emptyMap())) {
             final Path jarPath = fileSystem.getPath(source);
 

@@ -30,7 +30,7 @@ dependencies {
 }
 intellij {
     // Define IntelliJ Platform API version to use for building this plugin
-    version '2020.3'
+    version '2021.1'
 
 }
 sourceSets {

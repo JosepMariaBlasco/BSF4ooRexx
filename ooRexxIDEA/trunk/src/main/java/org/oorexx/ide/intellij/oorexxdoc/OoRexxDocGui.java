@@ -1,6 +1,9 @@
 package org.oorexx.ide.intellij.oorexxdoc;
 
+import com.intellij.openapi.application.Application;
 import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.command.CommandProcessor;
+import com.intellij.openapi.command.UndoConfirmationPolicy;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogBuilder;
@@ -47,8 +50,7 @@ public class OoRexxDocGui {
                                 openBrowser(docGenerator);
                             }
                         } catch (Exception e) {
-                            e.printStackTrace();
-                            JOptionPane.showMessageDialog(null, e.getMessage());
+                            throw new RuntimeException(e);
                         }
                     });
                 }, "Generating ooRexxDocs", false, project);
@@ -71,6 +73,17 @@ public class OoRexxDocGui {
         String canonicalPath = project.getProjectFile().getParent().getCanonicalPath();
         File file = new File(canonicalPath, "ooRexxDoc.xml");
         FileUtils.writeStringToFile(file, xml, "utf-8");
+    }
+
+    public void runWriteAction(final Runnable runnable) {
+        Application application = ApplicationManager.getApplication();
+        if(application.isDispatchThread()) {
+
+            application.runWriteAction(runnable);
+
+        } else {
+            application.invokeLater(()-> application.runWriteAction(runnable));
+        }
     }
 
 }
