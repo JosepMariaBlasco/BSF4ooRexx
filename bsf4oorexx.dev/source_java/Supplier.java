@@ -40,7 +40,7 @@ public class Supplier implements Enumeration
     /** Version string indicating version of this class (majorVersion*100+minorVersion
      *  concatenated with a dot and the sorted date of last change.
      */
-    static public String version = "106.20210204";
+    static public String version = "106.20210209";
 
 static final boolean bDebug=false;  // rgf, 2021-02-04, leave until ooRexx DO..WITH got debugged
 

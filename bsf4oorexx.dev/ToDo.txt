@@ -2,7 +2,8 @@
 
 2021-02-16:
 
-        - CLASSPATH: rewrite if * in it, if Rexx loads JVM (otherwise on Java 8 or later jar/JAR files not found!)
+        - DONE (2021-02-16): CLASSPATH: rewrite if * in it, if Rexx loads JVM (otherwise on Java 8 or later jar/JAR files not found!)
+
         - nested classes: add a routine like bsf.import that adds init and newStrict if concrete class?
 
         - creation of installation package

@@ -1,3 +1,17 @@
+
+-------------------------------------- 2021-05-16 ----------------------------------
+
+- MacOS installation
+
+        - added support for zsh, which now has become Apple's default shell
+
+          - "~/.zshrc" for CLASSPATH settings as for "security reasons" one is not
+            even able as root to create and maintain "/etc/zprofile"
+
+          - changed Automator menu launcher (a Java program) to start Java in
+            a subshell in the background and therefore become able to exit the
+            shell that got automatically started
+
 -------------------------------------- 2021-02-16 ----------------------------------
 
 - BSF.CLS

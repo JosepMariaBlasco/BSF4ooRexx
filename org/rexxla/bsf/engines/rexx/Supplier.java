@@ -24,10 +24,11 @@ import org.apache.bsf.BSFException;
  * ----------------------------------------------------------------------------- </pre>
  *
   * @author Rony G. Flatscher (<a href="http://www.wu-wien.ac.at">WU-Wien/Wirtschaftsuniversit&auml;t Wien</a>, <a href="http://www.wu-wien.ac.at/english">http://www.wu-wien.ac.at/english</a>)
- * @version 1.06, 20210204
+ * @version 1.06, 20210209
  */
 
  /*
+    2021-02-09, ---rgf: supplier instance method was missing (returns the instance itself)
     2021-02-04, ---rgf: fix bug in nextElement(): skipping first index-element pair and causing
                         a runtime exception when a Java array gets used in DO WITH ... OVER
     2017-06-17, ---rgf: added BSFException to ArrayWrapper, need to declare it
@@ -153,6 +154,15 @@ if (bDebug) System.err.println("Supplier.item(): returning values["+index+"]=["+
     {
 if (bDebug) System.err.println("Supplier.index(): returning indices["+index+"]=["+indices[index]+"]");
         return indices[index];  // return the index
+    }
+
+    /** Returns the Supplier object itself.
+     *
+     * @return this Supplier object
+     */
+    public Supplier supplier()
+    {
+        return this;
     }
 
 
