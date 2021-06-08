@@ -12,40 +12,73 @@ Prerequisite:
         - URL: <https://www.jetbrains.com/idea/download/#section=windows>
 
 Start:
+
 - Start IntelliJ IDEA
+
 - Check out the source code: File -> New -> Project From Version Control -> Subversion
 - Copy the content of <<Project_Root>>/ooRexxPlugin4IntelliJ.iml into <<Project_Root>>/.idea/<<Project_Name>.iml (<<Project_Root>> is the path where you checked out the source to)
-- Go to: File -> Project Strucute -> Project. Create new project SDK: "IntelliJ Platform SDK" (Choose the root of Intellij IDEA you installed it to),
-  select project language level to 8, and "Project Compiler Output" to <<Project_Root>>/out. (Replace <<Project_Root>> with the actual path.)
+
+- Go to: File -> Project Strucute -> Project. Create new project SDK:
+  "IntelliJ Platform SDK" (Choose the root of Intellij IDEA you installed it to),
+  select project language level to 8, and "Project Compiler Output" to
+  <<Project_Root>>/out. (Replace <<Project_Root>> with the actual path.)
+
 - Restart Intellij IDEA
-- Generate the missing Java classes: Browse in IntelliJ IDEA for the files ooRexx.bnf and ooRexx.flex (located in resources/).
-  Open the context menu (right click on the files) and select "Generate Parser Code" (for ooRexx.bnf) and "Run JFlex Generator"
-  (for ooRexx.flex. On the first run you have to download files and put them into the <<Project_Root>>).
+
+- Generate the missing Java classes: Browse in IntelliJ IDEA for the files
+  ooRexx.bnf and ooRexx.flex (located in resources/). Open the context menu
+  (right click on the files) and select "Generate Parser Code" (for ooRexx.bnf)
+  and "Run JFlex Generator" (for ooRexx.flex. On the first run you have to
+  download files and put them into the <<Project_Root>>).
+
   This step has to be repeated on every change in ooRexx.bnf and ooRexx.flex.
-- Go to menu Run -> Run... -> Edit Configurations -> Press on "+" -> Plugin: Make sure the "IntelliJ Platform SDK" is selected.
-  Select the plugin as "Class path of module".
-- Launch the plugin: In IntelliJ click on the "play"-button. Make sure that the IntelliJ SDK is selected as JRE.
-  A new instance of IntelliJ will be started.
-  There it is possible to add new files. All files with ooRexx file extensions will be considered by the plugin.
-- Additional step "Export the plugin as JAR": Go to the root of the project sturcture where all sources are.
-  Right click on the plugin root and choose in the context menu: "Prepare Plugin ... for Deployment".
+
+- Go to menu Run -> Run... -> Edit Configurations -> Press on "+" -> Plugin:
+  Make sure the "IntelliJ Platform SDK" is selected. Select the plugin as
+  "Class path of module".
+
+- Launch the plugin: In IntelliJ click on the "play"-button. Make sure that the
+  IntelliJ SDK is selected as JRE. A new instance of IntelliJ will be started.
+  There it is possible to add new files.
+
+  All files with ooRexx file extensions will be considered by the plugin.
+
+- Additional step "Export the plugin as JAR": Go to the root of the project
+  structure where all sources are. Right click on the plugin root and choose in
+  the context menu: "Prepare Plugin ... for Deployment".
+
   A Jar file will be created in the project root.
 
 
+---------------- Enhancing the ooRexx Plugin by Yourself:
+
 How to start plugin development:
-A recommended starting point is the IntelliJ "Custom Language Support Tutorial" (see links below).
-The tutorial shows multiple tools that are available for the platform and how to enable them to the custom language.
+
+A recommended starting point is the IntelliJ "Custom Language Support Tutorial"
+(see links below). The tutorial shows multiple tools that are available for the
+platform and how to enable them to the custom language.
 
 Structure:
-src: The source folder contains the BNF file that defines the ooRexx grammer, a flex file that specifies tokenization rules, and Java classes.
-      Java classes in org.oorexx.ide.intellij contain IDE specific classes that enrich the user experience (e.g. Syntax Highlighter).
+
+src: The source folder contains the BNF file that defines the ooRexx grammer, a
+     flex file that specifies tokenization rules, and Java classes.
+
+     Java classes in org.oorexx.ide.intellij contain IDE specific classes that
+     enrich the user experience (e.g. Syntax Highlighter).
+
 gen:  generated Java classes like lexer or parser
+
 resources: contains plugin meta data
 
-Links (last access 16.01.2017):
-Tutorial for language plugin development - http://www.jetbrains.org/intellij/sdk/docs/tutorials/custom_language_support_tutorial.html
-GrammarKit: adds tokenizer (JFlex) and BNF support - https://github.com/JetBrains/Grammar-Kit
-PsiViewer: IntelliJ IDEA plugin to inspect an abstract syntax tree (AST) - https://plugins.jetbrains.com/idea/plugin/227-psiviewer
-Language plugin forum - https://intellij-support.jetbrains.com/hc/en-us/community/topics/200366979-IntelliJ-IDEA-Open-API-and-Plugin-Development
+Plugin Developtment Download Links (last access 16.01.2017):
+
+- Tutorial for language plugin development - http://www.jetbrains.org/intellij/sdk/docs/tutorials/custom_language_support_tutorial.html
+
+- GrammarKit: adds tokenizer (JFlex) and BNF support - https://github.com/JetBrains/Grammar-Kit
+
+- PsiViewer: IntelliJ IDEA plugin to inspect an abstract syntax tree (AST) - https://plugins.jetbrains.com/idea/plugin/227-psiviewer
+
+- Language plugin forum - https://intellij-support.jetbrains.com/hc/en-us/community/topics/200366979-IntelliJ-IDEA-Open-API-and-Plugin-Development
+
 
 
