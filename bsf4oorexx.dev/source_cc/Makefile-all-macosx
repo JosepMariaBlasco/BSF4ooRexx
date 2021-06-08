@@ -1,4 +1,4 @@
-# usage: make -f Makefile-all-macosx [all \ x86 | x86_64 | ppc | universal \ clean ]
+# usage: make -f Makefile-all-macosx [all \ x86 | x86_64 | arm64 | ppc | universal \ clean ]
 # rgf, 2011-01-02, 2011-01-12, 2011-02-20, 2013-08-12, 2017-01-08
 
 # to support earlier versions of MacOSX export MACOSX_DEPLOYMENT_TARGET=min_version
@@ -58,6 +58,9 @@
 
 # allow earlier versions of MacOSX to use the lib
 # export MACOSX_DEPLOYMENT_TARGET=10.6
+
+# Mojave, 10.14, 2018-06-04
+# export MACOSX_DEPLOYMENT_TARGET=10.14
 # echo $MACOSX_DEPLOYMENT_TARGET
 
 # --------------------------------------------------------
@@ -75,6 +78,9 @@ BSF_ORX_TARGET_32  = $(BLD_PATH)/libBSF4ooRexx.dylib-32-x86
 BSF_OBJ_ORX_64     = $(BLD_PATH)/BSF4ooRexx-64-x86_64.o
 BSF_ORX_TARGET_64  = $(BLD_PATH)/libBSF4ooRexx.dylib-64-x86_64
 
+BSF_OBJ_ORX_ARM64    = $(BLD_PATH)/BSF4ooRexx-64-arm64.o
+BSF_ORX_TARGET_ARM64 = $(BLD_PATH)/libBSF4ooRexx.dylib-64-arm64
+
 # neutral target name
 BSF4REXX   	   = $(BLD_PATH)/libBSF4ooRexx.dylib
 
@@ -90,6 +96,9 @@ JDK_HOME = /Library/Java/JavaVirtualMachines/adoptopenjdk-8.jdk/Contents/Home
 
 INC_PATH = -I ${JDK_HOME}/include -I ${JDK_HOME}/include/darwin -I .
 
+# an arm64 Java for MacOS
+JDK_HOME_ARM64 = /Users/rony/work/j8-zulu-fx-arm64/zulu8.54.0.21-ca-fx-jdk8.0.292-macosx_aarch64/zulu-8.jdk/Contents/Home
+INC_PATH_ARM64 = -I ${JDK_HOME_ARM64}/include -I ${JDK_HOME_ARM64}/include/darwin -I .
 
 # old ooRexx 4.x installations (need different ones for ooRexx 5.0beta)
 ORX_LIBPATH_32 = /opt/oldrexx/ooRexx-i386/lib
@@ -107,7 +116,7 @@ ORX_LIBPATH_64 = /usr/local/lib
 # if BSF4ooRexx with ooRexx got installed
 OOREXX_FRAMEWORK = /Library/Frameworks/ooRexx.framework/Versions/Current/
 # make install will install to:
-OOREXX_APP_INSTALL = ~/Applications/ooRexx5
+OOREXX_APP_INSTALL = /Users/rony/Applications/ooRexx5
 
 ORX_LIBS_32 = $(ORX_LIBPATH_32)/librexx.dylib $(ORX_LIBPATH_32)/librexxapi.dylib
 ORX_LIBS_64 = $(ORX_LIBPATH_64)/librexx.dylib $(ORX_LIBPATH_64)/librexxapi.dylib
@@ -115,8 +124,15 @@ ORX_LIBS_64 = $(ORX_LIBPATH_64)/librexx.dylib $(ORX_LIBPATH_64)/librexxapi.dylib
 ORX_LIBS_64 = -L/usr/local/lib -L${OOREXX_FRAMEWORK}/Libraries -L${OOREXX_APP_INSTALL}999/lib -lrexx -lrexxapi
 
 
+# assuming that ooRexx is universal or arm64
+ORX_LIBS_64 = -L${OOREXX_APP_INSTALL}/lib   -lrexx -lrexxapi
+INC_PATH_ALL = $(INC_PATH) -I$(OOREXX_APP_INSTALL)/include
+INC_PATH_ALL_ARM64 = $(INC_PATH_ARM64) -I$(OOREXX_APP_INSTALL)/include ${OOREXX_FRAMEWORK}/Headers 
+
+
+
 # INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers $(ORX5_INCPATH_64)
-INC_PATH_ALL = $(INC_PATH) -I${OOREXX_FRAMEWORK}/Headers $(OOREXX_APP_INSTALL)/include
+INC_PATH_ALL = $(INC_PATH) -I$(OOREXX_APP_INSTALL)/include ${OOREXX_FRAMEWORK}/Headers 
 
 CFLAGS = -fPIC
 LFLAGS = -shared
@@ -154,9 +170,27 @@ ppc: BSF4ooRexx.cc
 	g++ -dynamiclib $(LFLAGS) -o libBSF4ooRexx-ppc.dylib BSF4ooRexx-mac-ppc.o /opt/ooRexx-ppc/lib/ooRexx/librexx.dylib /opt/ooRexx-ppc/lib/ooRexx/librexxapi.dylib -framework JavaVM -arch ppc
 
 # ---------------------------------------------------
-universal: BSF4ooRexx.cc x86 x86_64
+
+arm64: BSF4ooRexx.cc
+
+	g++ -c $(CFLAGS) $(INC_PATH_ALL_ARM64) -m64 -arch arm64 -DUSE_OREXX -DUNIX -DBSF4REXX_64_BIT -o$(BSF_OBJ_ORX_ARM64) BSF4ooRexx.cc
+
+#	g++ -v -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -framework JavaVM -arch x86_64
+	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_ARM64) $(ORX_LIBS_64) ${JDK_HOME_ARM64}/jre/lib/server/libjvm.dylib -arch arm64
+
+	cp -p $(BSF_ORX_TARGET_ARM64) $(BSF4REXX)
+	cp -p $(BSF_ORX_TARGET_ARM64) $(TGT_LIB_DIR)
+
+
+# ---------------------------------------------------
+universal_old: BSF4ooRexx.cc x86 x86_64
 #	lipo -create -output libBSF4ooRexx.dylib -arch x86_64 libBSF4ooRexx-x86_64.dylib -arch i386 libBSF4ooRexx-i386.dylib -arch ppc libBSF4ooRexx-ppc.dylib
 	lipo -create -output $(BSF4REXX)-universal -arch x86_64 $(BSF_ORX_TARGET_64) -arch i386 $(BSF_ORX_TARGET_32)
+
+# ---------------------------------------------------
+universal: BSF4ooRexx.cc x86_64 arm64
+#	lipo -create -output libBSF4ooRexx.dylib -arch x86_64 libBSF4ooRexx-x86_64.dylib -arch i386 libBSF4ooRexx-i386.dylib -arch ppc libBSF4ooRexx-ppc.dylib
+	lipo -create -output $(BSF4REXX)-universal -arch x86_64 $(BSF_ORX_TARGET_64) -arch arm64 $(BSF_ORX_TARGET_ARM64)
 
 
 # ---------------------------------------------------
