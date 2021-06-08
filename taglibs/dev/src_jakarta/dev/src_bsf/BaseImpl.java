@@ -88,11 +88,11 @@ abstract public class BaseImpl implements BodyTag
 {
     static final protected String version = "100.20210314"; // version of this taglib
 
-    static final protected String TAGLIBINFORMATION ="ScriptTagLib.Information";
+    static final protected String TAGLIBINFORMATION ="scriptTagLibInfos";
 
     static final protected String scriptTagLib="BsfTagLib";
     // used to determine whether any tag handler runs for the first time for this page
-    static final protected String pageScopeAttrName="BsfTagLibTest";
+    static final protected String pageScopeAttrName="BsfTagLibPageScope";
     // used to determine whether first invocation of Rexx is also the first invocation for the page
     static final protected String rexxOutRedirected="RexxOutRedirected";
     // will be used for retrieving/storing in pageContext
