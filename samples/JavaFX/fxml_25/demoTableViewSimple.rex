@@ -5,6 +5,7 @@
 
    changes: 2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                              - removing dependency on "rgf_util2.rex"
+            2021-06-19, rgf: - removed unused class RexxCellValueFactory
 
    purpose: demonstrate - TableView with editing, binding Person's simple properties with cell values
                         - Setting TableView item to null as a whole as opposed to removing the item
@@ -742,74 +743,6 @@ syntax:
      return .nil
 */
   return aRexxObj~send(columnName)  -- get attribute's value from the Rexx object
-
-
-/* =================================================================================== */
-
-/** This class is used to get the cell value from the supplied item/object stored
-    in the <em>ObservableArrayList</em> (Java RexxProxy objects boxing the Rexx Person
-    objects) backing the <em>TableView</em>.
-
-    This class will be used to get the values of all the columns/attributes of the Rexx
-    <em>Person</em> objects.
-
-    <p>The work gets carried out in the callback method <code>call</code> defined
-    for the JavaFX interface class named <code>javafx.util.Callback</code>.
-*/
-::class RexxCellValueFactory -- Rexx class implementing "javafx.util.Callback"'s "call" method
-
-  /* ------------------------------------------------------------------------------ */
-/** This constructor memorizes the column name (the Rexx object's attribute name)
-    which this instance serves.
-
-    @param columnName save the attribute name to use for fetching the Rexx attribute
-           value for this column
-*/
-::method init
-  expose columnName
-  use strict arg columnName
-
-  /* ------------------------------------------------------------------------------ */
-/** This callback method will fetch the attribute's value and return it in one of
-    the simple JavaFX properties.
-
-    @param obj a <em>TableColumn$CellDataFeatures</em> containng the
-               item/object (a Java RexxProxy with the boxed Rexx object) from the
-               backing <em>ObservableArrayList</em> for which the attribute is to be
-               queried and returned in the appropriate simple JavaFX property
-    @param slotDir      not used (a Rexx directory supplied by BSF4ooRexx)
-
-    @return the cell value stored in a simple JavaFX property
-*/
-::method call        -- implements "javafx.util.Callback.call(Object o)": in this case an instance of a TableCell (or a subclass of it) must be returned!
-  expose columnName
-  use arg obj
-
-    -- obj may be .nil (if user nullified row with ctl-mouseclick
-  if obj~getValue~isNil then return
-
-  if .my.app~showDebugOutput=.true, columnName="nr" then
-     say "09"x .line": ... new record: now get the cell values from the ObservableArrayList ..."
-
-   -- get the person's attribute (simple properties that can be bound by JavaFX' TableView)
-  aRexxObj=BSFRexxProxy(obj~getValue)  -- fetch Java RexxProxy and extract boxed Rexx object from it
-  if aRexxObj~isNil then
-     val=.nil
-  else
-     val=aRexxObj~send(columnName)     -- get attribute's value from the Rexx object
-
-  select case columnName
-      when "nr"        then cellValue=.fx.simpleIntegerProperty~new(val)   -- allows TableView to sort correctly by number
-      when "name"      then cellValue=.fx.simpleStringProperty~new(val)
-      when "expertise" then cellValue=.fx.simpleStringProperty~new(val)
-      when "since"     then cellValue=.fx.simpleStringProperty~new(val)
-      otherwise nop
-  end
-
-  if .my.app~showDebugOutput=.true then
-     say .line":" .dateTime~new "///<--" self"::call" (pp(columnName))~right(10,".")"="pp(val) "| RETURNING cellValue:" pp(jStrip(cellValue))
-
-  return cellValue
 
 
 /* =================================================================================== */
