@@ -4,7 +4,7 @@
 /*                                                                            */
 /* Description: Class to encode and decode ooRexx objects in JSON.            */
 /*                                                                            */
-/* Copyright (c) 2010-2016 Rexx Language Association. All rights reserved.    */
+/* Copyright (c) 2010-2021 Rexx Language Association. All rights reserved.    */
 /*                                                                            */
 /* This program and the accompanying materials are made available under       */
 /* the terms of the Common Public License v1.0 which accompanies this         */
@@ -41,83 +41,152 @@
 /*                                                                            */
 /*----------------------------------------------------------------------------*/
 
-/* changes: - author Rony G. Flatscher (2016)
-            - the toJSON-methods got renamed from "parse" to "process"
-
-            - package name translated into uppercase, now: "JSON.CLS"; reason: allows
-              using the name with or without quotes (important on Unix)
-
-            - toJSON-methods:
-              - changed "instance of" tests to isA() in method processObject()
-              - generalized processing: Array->OrderedCollection, Directory->MapCollection
-              - using indentations and CR-LF to make produced JSON files legible for humans :)
-                - added "level" and "indent" (string to use for indentations) attributes
-              - if the Rexx object has no makestring method, then its objectname gets returned
-                instead of the string "null"
-              - MapCollection entries are sorted by their index
-
-            - Added new class "JSON_Boolean" to explicitly distinguish JSON boolean
-              values from Rexx logical strings when creating the JSON encoded text file
-
-            - removed "()" after message names as ooRexx allows to leave them out, if
-              no arguments are supplied with the message
-
-            - added table "rexx2json" to allow changeStr() to be used instead of inspecting
-              each char individually from Rexx
-
-            - added class attribute "version" in the form: major*100+minor || "." || yyyymmdd
-              to class JSON and JsonBoolean
-
-            - authors: Adrian Baginski (slight changes Rony G. Flatscher), summer of 2017
-
-               - added minify(), toMinifiedJson()
-
-   references: - based on: JSON RFC, as of July 2006: <http://tools.ietf.org/html/rfc-4627>
-
-               - latest specs:
-                 - [JSON specs, April 2013: <https://tools.ietf.org/html/rfc6902#appendix-A>]
-
-                 - "The I-JSON Message Format",  March 2015: <https://tools.ietf.org/html/rfc7493>
-
-                 - JSON specs, December 2019: https://www.rfc-editor.org/info/rfc8259
-
+/** This ooRexx package supplies the <a href="https://en.wikipedia.org/wiki/JSON">JSON</a>
+*   (JavaScript Object Notation) support.
 */
 
-
-parse version "ooRexx_" rexxVersion "("
-.local~json.useRexxV5=(rexxVersion>=5)  -- determine whether to use ooRexx version 5 features
-if .json.useRexxV5 then .local~json.dirClass=.stringTable -- use .stringTable, new in 5.0
-                   else .local~json.dirClass=.directory    -- use .directory, availabe in 4.x and higher
-
-
-bDebug=.false -- .true      -- show debug output in prolog code?
-if bDebug then
-do
-   parse source s
-   .traceOutput~say("***  source:" s "***")
-   parse version v
-   .traceOutput~say("*** version:" v "***")
-   .traceOutput~say("*** .json~version: " .json~version "***")
-   .traceOutput~say("*** .json.dirClass:" .json.dirClass "***")
-end
 
 
 /* ========================================================================= */
 
-/** This class implements <code>RFC 4627</code> and allows to encode Rexx objects as JSON strings and
-*   parse JSON strings into Rexx objects. This version does no Unicode related encoding or decoding.
+/** This class implements <a href="https://www.rfc-editor.org/info/rfc8259">RFC 8259</a>
+(formerly <code>RFC 4627</code>) and allows to encode Rexx objects as JSON strings and
+*   parse JSON strings into Rexx objects.
+
+<p> This version does no Unicode related encoding or decoding.
 *   (Rexx programmers can do Unicode related processing e.g. by taking advantage of Java via the
 *   <a href="https://sourceforge.net/projects/bsf4oorexx/">BSF4ooRexx</a>
-*   package. The routines <code>getEncoding()</code> and <code>getJsonBOM()</code> are implemented
-*   in this package to support such an endeavor. Starting with 20180721 BSF.CLS supplies the public
-*   routine 'bsf.iconv(string,fromCharset,toCharset)' which can be used for charset translations.
+*   package which defines the public routine 'bsf.iconv(string,fromCharset,toCharset)').
+
+*<p>The mapping between Rexx and JSON is as follows:
+*   <ul>
+*   <li>a Rexx <code>MapCollection</code> maps to a JSON object (comma separated list of
+*       index ':' item(s), enquoted in curly brackets), a JSON object by default to a <code>.Directory</code>,
+*
+*   <li>an OrderdCollection maps to a JSON array (comma separated list of values, enquoted in sqaure brackets),
+*       a JSON array to a <code>.Array</code>,
+*
+*   <li>if a Rexx object contains the "makejson" conversion method, it will be used and the
+        returned JSON encoding string used for it,
+*
+*   <li>string values map to JSON strings (enquoted in double quotes) and vice versa,
+*
+*   <li><code>.true</code> (the value <code>1</code>) maps to JSON <code>true</code> (no surrounding quotes),
+*       a JSON <code>true</code> to an instance of <code>.JsonBoolean</code> that behaves like <code>.true</code>,
+*
+*   <li><code>.false</code> (the value <code>0</code>) maps to JSON <code>false</code> (no surrounding quotes),
+*       a JSON <code>false</code> to an instance of <code>.JsonBoolean</code> that behaves like <code>.false</code>,
+*
+*   <li><code>.nil</code> maps to JSON <code>null</code> (no surrounding quotes).
+*
+*   </ul>
+*
+*   If one needs to keep the boolean property in the JSON encoding, the Rexx objects
+*   <code>.json~true</code> (an instance of </code>.JsonBoolean</code>) and
+*   <code>.json~false</code> (an instance of </code>.JsonBoolean</code>) must be used, as
+*   they will render to their respective JSON encodings (<code>true</code> or <code>false</code>).
+*
+<p>Example:
+
+<pre>
+   obj=.StringTable~new          -- a .StringTable (a MapCollection)
+   obj['Name']    ="Caesar"      -- a string
+   obj['children']=3             -- a number
+   obj['Parents']= .array~of('Anna', 'Bertram') -- a .Array (an OrderableCollection)
+   obj['Salary']  =.nil          -- no value at all (not employed)
+   obj['rich']    =.json~false   -- use .Json's false (a JsonBoolean)
+   obj['poor']    =.json~true    -- use .Json's true (a JsonBoolean)
+   call show "obj", obj          -- show Rexx object
+   say "======================================"
+
+   j=.json~new                   -- create a minifying JSON converter
+
+   jsonString1=j~toJson(obj)     -- encode object as JSON string
+   say
+   say "json (minified):"
+   say
+   say jsonString1               -- show (minified) JSON string
+   say
+   say "rendering 'jsonString1' to 'obj1':"
+   obj1=j~fromJson(jsonString1)  -- create object from JSON string
+   call show "obj1", obj1        -- show Rexx object
+   say "--------------------------------------"
+
+   j~legible=.true               -- make JSON string legible for humans
+   jsonString2=j~toJson(obj)
+   say
+   say "json (legible):"
+   say
+   say jsonString2               -- show (legible) JSON string
+   say
+   say "rendering 'jsonString2' to 'obj2':"
+   obj2=j~fromJson(jsonString2)  -- create object from JSON string
+   call show "obj2", obj2        -- show Rexx object
+   say "--------------------------------------"
+</pre>
+*
+<p> Yields:
+*
+<pre>
+   show(): 'obj', dumping a .StringTable:
+
+       children: 3
+       Name    : Caesar
+       Parents : Anna, Bertram
+       poor    : 1
+       rich    : 0
+       Salary  : The NIL object
+   ======================================
+
+   json (minified):
+
+   {"children":3,"Name":"Caesar","Parents":["Anna","Bertram"],"poor":true,"rich":false,"Salary":null}
+
+   rendering 'jsonString1' to 'obj1':
+   show(): 'obj1', dumping a .Directory:
+
+       children: 3
+       Name    : Caesar
+       Parents : Anna, Bertram
+       poor    : 1
+       rich    : 0
+       Salary  : The NIL object
+   --------------------------------------
+
+   json (legible):
+
+   {
+       "children": 3,
+       "Name": "Caesar",
+       "Parents": [
+           "Anna",
+           "Bertram"
+       ],
+       "poor": true,
+       "rich": false,
+       "Salary": null
+   }
+
+   rendering 'jsonString2' to 'obj2':
+   show(): 'obj2', dumping a .Directory:
+
+       children: 3
+       Name    : Caesar
+       Parents : Anna, Bertram
+       poor    : 1
+       rich    : 0
+       Salary  : The NIL object
+   --------------------------------------
+</pre>
+
 *
 * @author Brandon W. Cherry (original author)
-* @author Rony G. Flatscher (adapted code to ooRexx 4.2.0 and 5.0.0)
+* @author Rony G. Flatscher (adapted and added code to ooRexx 4.2.0 and 5.0.0)
+* @author Adrian Baginski (added minify, toMinifiedJson)
 */
 ::class  JSON public
 
-/* ========================================================================= */
+/* --------------------------- class methods --------------------------- */
 
 /** Class getter attribute method that returns the version information of this class.
 *
@@ -126,7 +195,7 @@ end
 
 ::attribute version get class
   use strict arg           -- no argument allowed!
-  return "100.20170920"    -- version in the form: major*100+minor || "." || yyyymmdd
+  return "100.20210608"    -- version in the form: major*100+minor || "." || yyyymmdd
 
 
 /*
@@ -140,10 +209,14 @@ end
 
    also cf: <https://en.wikipedia.org/wiki/Byte_order_mark>
 */
+
 /** Determines the encoding by inspecting the first four bytes of a JSON string, cf.
-*   cf. <https://www.ietf.org/rfc/rfc4627.txt>
+*   cf. <https://www.ietf.org/rfc/rfc4627.txt>. Note, the JSON standard mandates UTF-8
+*   encoding to be used if exchanging data with outside of a closed system. JSON parsers
+*   are nevertheless expected to handle Unicode
+    <a href="https://en.wikipedia.org/wiki/Byte_order_mark">BOMs</a> (byte order marks).
 *
-* @param string optional JSON string in which the first four bytes may be a BOM (byte order mark)
+* @param string JSON string in which the first four bytes may be a BOM (byte order mark)
 *
 * @return "UTF-8", "UTF-16BE", "UTF-16LE", "UTF-32BE", "UTF-32LE", depending on the BOM
 */
@@ -151,107 +224,251 @@ end
   use strict arg string=""
 
   select
-     when string~left(3)    ="00 00 00"x                     then return "UTF-32BE"
-     when string~substr(2,3)="00 00 00"x                     then return "UTF-32LE"
-     when string~substr(1,1)="00"x, string~substr(3,1)="00"x then return "UTF-16BE"
-     when string~substr(2,1)="00"x, string~substr(4,1)="00"x then return "UTF-16LE"
-     otherwise return "UTF-8"  -- default encoding
+     when string~startsWith("00 00 FE FF"x) then return "UTF-32BE"
+     when string~startsWith("FF FE 00 00"x) then return "UTF-32LE"
+     when string~startsWith("FE FF"x      ) then return "UTF-16BE"
+     when string~startsWith("FF FE"x      ) then return "UTF-16LE"
+     otherwise return "UTF-8"    -- default encoding
   end
+
+/** Determines at which position the JSON payload data starts.
+
+* @param string JSON string in which the first four bytes may be a BOM (byte order mark)
+*
+* @return JSON data offset (5 for UTF-32, 3 for UTF-16, else 1)
+*/
+::method getEncodingDataOffset class    -- determine UTF-encoding, return UTF-8, UTF-16LE, UTF-16BE, UTF-32LE, UTF-32BE
+  use strict arg string=""
+
+  select
+     when string~startsWith("00 00 FE FF"x) then return 5
+     when string~startsWith("FF FE 00 00"x) then return 5
+     when string~startsWith("FE FF"x      ) then return 3
+     when string~startsWith("FF FE"x      ) then return 3
+     otherwise return 1          -- default offset (default encoding, UTF-8)
+  end
+
 
 /** Returns the JSON BOM (byte order mark) characters according to the desired encoding,
 *   cf. <https://www.ietf.org/rfc/rfc4627.txt>.
 *
-* @param encoding optional, one of "UTF-8", "UTF-16BE", "UTF-16LE", "UTF-32BE", "UTF-32LE"
+* @param encoding one of "UTF-8", "UTF-16BE", "UTF-16LE", "UTF-32BE", "UTF-32LE"
 *
-* @return the empty string for "UTF-8" or unknown encoding or a four-character string formatted
-*         as a JSON BOM
+* @return the empty string for "UTF-8", or the BOM value to use according to the encoding parameter
 */
 ::method getJsonBOM class  -- determine UTF-encoding, return UTF-8, UTF-16LE, UTF-16BE, UTF-32LE, UTF-32BE
   use strict arg encoding="UTF-8"
 
   select
      when encoding="UTF-8"    then return ""    -- default, in JSON no explicit BOM
-     when encoding="UTF-32BE" then return "00 00 00 FF"x
-     when encoding="UTF-32LE" then return "FF 00 00 00"x
-     when encoding="UTF-16BE" then return "00 FF 00 FF"x
-     when encoding="UTF-16LE" then return "FF 00 FF 00"x
+     when encoding="UTF-32BE" then return "00 00 FE FF"x
+     when encoding="UTF-32LE" then return "FF FE 00 00"x
+     when encoding="UTF-16BE" then return "FE FF"x
+     when encoding="UTF-16LE" then return "FF FE"x
      otherwise return ""   -- use default encoding, ie. UTF-8
   end
 
-::method unescape class -- unescape Unicode escape strings in the form
+/** Returns the .JsonBoolean proxy for <code>.true</code>, which ensures a proper JSON encoding.
+    It can be used interchangeably with ooRexx' <code>.true</code> or <code>1</code> values.
+
+    @return the .JsonBoolean value for <code>.true</code>
+*/
+::attribute true     get class
+  return .jsonBoolean~true
+
+/** Returns the .JsonBoolean proxy for <code>.false</code>, which ensures a proper JSON encoding.
+    It can be used interchangeably with ooRexx' <code>.false</code> or <code>0</code> values.
+
+    @return the .JsonBoolean value for <code>.false</code>
+*/
+::attribute false    get class
+  return .jsonBoolean~false
 
 
-/** Constructor. */
+/** Getter that returns the class to be used for collecting map values (either .Directory or .StringTable).
+*
+* @return the current class that will be used for storing the map values ("object attributes")
+*/
+::attribute jsonDirClass get class
+  expose json_dirClass
+  return json_dirClass
+
+/** Setter that allows to change the <code>.Directory</code> to another dirlike class (e.g.
+*   <code>.StringTable</code> since ooRexx 5.0) to be used to encode the JSON object in a Rexx object.
+*
+* @param newDirlikeClass either the .Directory class (default) or .StringTable class
+*
+P @return oldClass the class previously used to encode JSON object data
+*/
+::attribute jsonDirClass set class
+  expose json_dirClass
+  use strict arg newDirlikeClass
+  json_dirClass=newDirlikeClass                    -- save class in package local
+ .context~package~local~json.DirClass=newDirlikeClass  -- save in package local to speed up lookup
+
+/** StringTable with unescape JSON strings. */
+::attribute uJS        private class
+
+/** Array with escape for JSON strings. */
+::attribute rexx2json  private class
+
+/** String with JSON whitescape characters. */
+::attribute whiteSpace private class
+
+/** String with JSON whitescape and ending delimiter characters to ease parsing the end of a JSON value. */
+::attribute endsValue  private class
+
+
+/** Utility class method to ease reading JSON files into an ooRexx object.
+*
+<p>Example:
+<pre>
+   rexxObject = .json~fromJsonFile('some.json')
+</pre>
+*
+*  @param fn file name or file object to read JSON data from
+*
+* @return rexxObject ooRexx object representing the JSON text
+*/
+::method fromJsonFile class
+  use strict arg fn
+
+  s=.stream~new(fn)~~open("read")   -- open stream for reading
+  jsonText=s~charin(1,s~chars)      -- read all chars, close stream
+  s~close
+  json=self~new                     -- create json instance
+  return json~fromJson(jsonText)    -- use it to create ooRexx representation
+
+
+/** Utility class method to ease creating legible JSON files from an ooRexx object.
+*   If a minified JSON file is desired instead, supply <code>.false</code> as the
+*   third argument.
+*
+<p>Example:
+<pre>
+   .json~toJsonFile('some.json',someRexxObject)
+</pre>
+*
+*  @param fn file name or file object to write produced JSON text to
+*  @param rexxObject rexxObject to encode as JSON
+*  @param isLegible optional logical value, defaults to <code>.true</code>
+*
+*/
+::method toJsonFile class
+  expose legible
+  use strict arg fn, rexxObject, isLegible=.true
+
+  json=self~new(isLegible)          -- create json instance
+  jsonText=json~toJSON(rexxObject)  -- create JSON text representing the rexxObject
+
+   -- open stream for writing, delete existing file, if any, write json text to it
+  .stream~new(fn)~~open("write replace")~~charout(jsonText)~~close
+
+
+/** Class constructor that sets up default values. */
+::method init class
+  expose uJS rexx2json whiteSpace endsValue
+  self~jsonDirClass=.Directory      -- defaults to .Directory, can be set to .StringTable as well
+
+  eJS = .StringTable~new   -- escape Javascript
+  eJS['\']   = '\\'   -- escape for: backslash character
+  eJS['08'x] = '\b'   -- escape for: backspace character
+  eJS['09'x] = '\t'   -- escape for: tab character
+  eJS['0A'x] = '\n'   -- escape for: newline (line feed) character
+  eJS['0C'x] = '\f'   -- escape for: form feed character
+  eJS['0D'x] = '\r'   -- escape for: carriage return character
+  eJS['"']   = '\"'   -- escape for: double quote character
+  eJS['/']   = '\/'   -- escape for: slash character
+
+  uJS = .StringTable~new   -- unescape Javascript
+  do index over eJS
+      uJS[eJS[index]] = index
+  end
+    /*
+    -- rgf, 2016-07-24: sequence to be applied in changeStr(): first must be "\" -> "\\" as "\" is the escape char
+    -- rgf, 2021-06-01: to match current json.cls behaviour (and tests) we do not process "\uxxyy" if "xx" is not "00";
+                        as a result we cannot blindly escape "\" to "\\" as we need to leave "\u" intact
+    */
+  -- rexx2json =.array~of(.array~of('\'  , '\\'), - -- escape for: backslash character
+  rexx2json =.array~of(.array~of('08'x, '\b'), - -- escape for: backspace character
+                       .array~of('09'x, '\t'), - -- escape for: tab character
+                       .array~of('0A'x, '\n'), - -- escape for: newline (line feed) character
+                       .array~of('0C'x, '\f'), - -- escape for: form feed character
+                       .array~of('0D'x, '\r'), - -- escape for: carriage return character
+                       .array~of('"'  , '\"'), - -- escape for: double quote character
+                       .array~of('/'  , '\/'), - -- escape for: slash character
+                      )
+
+  whiteSpace="20 0d 0a 09"x
+  endsValue=whitespace || "}],"   -- chars that indicate end of value (note includes blank!)
+
+
+/* --------------------------- instance methods ------------------------ */
+
+
+/** Attribute that controls whether whitespace gets added to the JSON string in order
+*   to make it better legible for humans. Defaults to <code>.true</code>.
+*/
+::attribute legible get
+
+/** Setter method that controls whether the created JSON string gets created to be better legible for humans.
+*
+* @param newLegible a logical value (either <code>.true</code> for legible or <code>.false</code> for minimized)
+*/
+::attribute legible set
+  expose legible
+  use strict arg newLegible
+  legible=(newLegible=.true)  -- if not .true, then .false
+
+
+/** Constructor that creates a minifying JSON object by default. If it is desired to
+*   create legible JSON strings from Rexx objects, then supply the value <code>.true</code>
+*   as an argument.
+*
+* @param legible a logical value, defaults to <code>.false</code>, which causes minified json encodings
+*/
 ::method init
-    expose eJS uJS whitespace ctrl level indent rexx2json
+    expose uJS whitespace endsValue level indent rexx2json legible
+    use strict arg legible=(.false) -- default to minified version
 
-    eJS = .json.dirClass~new   -- escape Javascript
-    eJS['\']   = '\\'   -- escape for: backslash character
-    eJS['08'x] = '\b'   -- escape for: backspace character
-    eJS['09'x] = '\t'   -- escape for: tab character
-    eJS['0A'x] = '\n'   -- escape for: newline (line feed) character
-    eJS['0C'x] = '\f'   -- escape for: form feed character
-    eJS['0D'x] = '\r'   -- escape for: carriage return character
-    eJS['"']   = '\"'   -- escape for: double quote character
-    eJS['/']   = '\/'   -- escape for: slash character
+    .validate~logical("legible", legible) -- make sure we have a logical value
+    clz=self~class
+    uJS       =clz~uJS
+    rexx2json =clz~rexx2json
+    whitespace=clz~whitespace
+    endsValue =clz~endsValue
 
-    uJS = .json.dirClass~new   -- unescape Javascript
-    do index over eJS
-        uJS[eJS[index]] = index
-    end
-
-      -- rgf, 2016-07-24: sequence to be applied in changeStr(): first must be "\" -> "\\" as "\" is the escape char
-    rexx2json =.array~of(.array~of('\'  , '\\'), - -- escape for: backslash character
-                         .array~of('08'x, '\b'), - -- escape for: backspace character
-                         .array~of('09'x, '\t'), - -- escape for: tab character
-                         .array~of('0A'x, '\n'), - -- escape for: newline (line feed) character
-                         .array~of('0C'x, '\f'), - -- escape for: form feed character
-                         .array~of('0D'x, '\r'), - -- escape for: carriage return character
-                         .array~of('"'  , '\"'), - -- escape for: double quote character
-                         .array~of('/'  , '\/'), - -- escape for: slash character
-                        )
--- <---
-
-    whitespace = .set~new  -- allowed whitespace chars
-    whitespace~put('09'x)  -- TAB character
-    whitespace~put('0A'x)  -- LF (line feed) character
-    whitespace~put('0D'x)  -- CR (carriage-return) character
-    whitespace~put(' '  )  -- space/blank
-
-    ctrl = whitespace~copy -- chars that end a value
-    ctrl~put('}')
-    ctrl~put(']')
-    ctrl~put(',')
-
-    --- rgf, 2016-07-17: indentation related to ease reading generated JSON files
     level =0      -- start out with level 0
-    indent="  "   -- use two spaces per level for indentation
-
-
+    indent="    " -- use four spaces per level for indentation
 
 
 /**
- * Converts a Rexx object to JSON formatting to pass to eval()
+ * Converts a Rexx object its JSON string representation.
  *
- * @param  rexxObject   The object to converts directory, array,
- *                      or string objects. Otherwise, it calls
- *                      the makearray method for the object.
- * @return a string that represents the JSON encoding of the supplied <code>rexxObject</code>
+ * @param  rexxObject   The object to convert may be a <code>MapCollection</code> like
+               a <code>.directory</code> or <code>.stringTable</code>, an <code>OrderableCollection</code>
+               like an <code>.array</code>, a <code>.string</code>, <code>.nil</code>, <code>.json~true</code>,
+               <code>.json~false</code>, or one that has a either a <code>makeJson</code>,
+               <code>makeString</code> or <code>makeArray</code> method.
+
+ * @return a string that represents the JSON encoding of the supplied <code>rexxObject</code> in a
+               minimized form (attribute <code>legible</code> set to <code>.false</code>) or
+               in a legible form (attribute <code>legible</code> set to <code>.true</code>
+               causing insertion of whitespace to ease reading for humans)
  */
 ::method toJSON
-    expose buffer level
+    expose buffer level legible
     use strict arg rexxObject
-
     buffer = .mutablebuffer~new
     self~encodeRexxObject(rexxObject)
     return buffer~string
 
 /** Control method that determines which method should encode the supplied Rexx object.
 *
-* @param  rexxObject the Rexx object to encode
+* @param  rexxObject the Rexx object to encode as a JSON string
 */
-::method encodeRexxObject private    -- rgf, 2016-07-17
-    expose buffer
+::method encodeRexxObject private
+    expose buffer level indent
     use arg rexxObject
 
     select
@@ -264,22 +481,24 @@ end
         when rexxObject~isA(.string) then do             -- a plain string in hand
             self~encodeRexxString(rexxObject)
         end
-        when rexxObject~isA(.JsonBoolean) then do       -- a JSON Boolean
+        when rexxObject~isA(.JsonBoolean) then do        -- a JSON Boolean
              buffer~append(rexxObject~makeJSON)          -- no quotes
         end
         when rexxObject=.nil then do
             buffer~append('null')                        -- no quotes
         end
         otherwise
-            if rexxObject~hasMethod('makearray') then
-               self~encodeRexxObject(rexxObject~makearray)   -- recursive call
+            if rexxObject~hasMethod('makejson') then     -- own rendering, if so use it
+               buffer~append(rexxObject~makejson)
+
+            else if rexxObject~hasMethod('makestring') then -- render as string
+               self~encodeRexxString(rexxObject~makestring)
+
+            else if rexxObject~hasMethod('makearray') then  -- render as array
+               self~encodeRexxObject(rexxObject~makearray)  -- recursive call
+
             else        -- use rexxObject's objectname
-            do
-               if .json.useRexxV5 then
-                  buffer~append('"', rexxObject~objectName, '"')
-               else
-                  buffer~~append('"')~~append(rexxObject~objectName)~append('"')
-            end
+               buffer~append('"', rexxObject~objectName, '"')
     end
 
 
@@ -287,43 +506,46 @@ end
 *
 * @param  rexxObject the Rexx object to encode
 */
-::method encodeOrderedCollection private   -- rgf, 2016-07-17: instead of parseRexxArray
-    expose buffer level indent
+::method encodeOrderedCollection private
+    expose buffer level indent legible
     use arg rexxObject
 
-    strIndent1=indent~copies(level)       -- create outer indentation string once
-    strIndent2=indent~copies(level+1)     -- create inner indentation string once
+    if legible then  -- add whitespace and indentations to make it for humans easier to read the JSON string
+    do
+       strIndent1=indent~copies(level)       -- create outer indentation string once
+       strIndent2=indent~copies(level+1)     -- create inner indentation string once
 
-    if .json.useRexxV5 then
-       buffer~append(strIndent1, '[')
-    else
-       buffer~~append(strIndent1) ~append('[')
+       buffer~append('[')
+       sup=rexxObject~supplier
+       level+=1                  -- increase level
+       /* if an array has no items, do not use indentation between opening and closing bracket */
+       if \sup~available then
+           strIndent1 = ""
 
-    sup=rexxObject~supplier
-    level+=1                  -- increase level
-
-    /* if an array has no items, do not use indentation between opening and closing bracket */
-    if \sup~available then
-        strIndent1 = ""
-
-    do while sup~available    -- iterate and encode item entries only
-         buffer~append(.endOfLine)
-         self~encodeRexxObject(sup~item)  -- encode item object (recursive call)
-         sup~next             -- position on next item
-         if sup~available then
-         do
-            if .json.useRexxV5 then
-               buffer~append(strIndent2, ',')
-            else
-               buffer~~append(strIndent2) ~append(',')
-         end
+       do while sup~available    -- iterate and encode item entries only
+            buffer~append(.endOfLine)
+            buffer~append(strIndent2)
+            self~encodeRexxObject(sup~item, .true ) -- encode item object (recursive call), indent
+            sup~next             -- position on next item
+            if sup~available then
+               buffer~append(',')
+       end
+       level-=1                  -- decrease level
+       buffer~append(.endOfLine, strIndent1, ']')
     end
-    level-=1                  -- decrease level
-
-    if .json.useRexxV5 then
-       buffer~append(strIndent1, ']', .endOfLine)
     else
-       buffer~~append(strIndent1) ~~append(']') ~append(.endOfLine)
+    do
+       buffer~append('[')
+       sup=rexxObject~supplier
+
+       do while sup~available    -- iterate and encode item entries only
+            self~encodeRexxObject(sup~item)  -- encode item object (recursive call)
+            sup~next             -- position on next item
+            if sup~available then
+               buffer~append(',')
+       end
+       buffer~append(']')
+    end
 
 
 
@@ -342,13 +564,13 @@ end
 *
 * @param  rexxObject the Rexx object to encode
 */
-::method encodeMapCollection private -- rgf, 2016-07-18: sort by index to allow easier checks for humans in the resulting JSON file
-    expose buffer level indent
+::method encodeMapCollection private
+    expose buffer level indent legible
     use arg rexxObject
 
     bHasAllAt=rexxObject~hasMethod("ALLAT")        -- e.g. a .relation
     tmpIdx=.set~new~union(rexxObject~allIndexes)~allindexes -- create an array with unique index objects
-    tmpDir=.json.dirClass~new
+    tmpDir=.json.DirClass~new
     do idx over tmpIdx
        select  -- turn idx into a string, if necessary
           when idx~isA(.string)      then strIdx=idx
@@ -360,51 +582,74 @@ end
        end
 
        if bHasAllAt then      -- per index more than one item?
-          tmpDir[strIdx]=rexxObject~allAt(idx)  -- will return an .array of items associated with index
+       do
+          arr=rexxObject~allAt(idx)
+          if arr~items=1 then tmpDir[strIdx]=arr[1]
+                         else tmpDir[strIdx]=sort(arr)
+       end
        else
-          tmpDir[strIdx]=.array~of(rexxObject~at(idx))
+          tmpDir[strIdx]=rexxObject~at(idx)
     end
     tmpIdx~sortWith(.caselessComparator~new) -- sort caselessly in ascending order
 
-    strIndent1=indent~copies(level)       -- create outer indentation string once
-    strIndent2=indent~copies(level+1)     -- create inner indentation string once
+    if legible then  -- add whitespace and indentations to make it for humans easier to read the JSON string
+    do
+       strIndent1=indent~copies(level)       -- create outer indentation string once
+       strIndent2=indent~copies(level+1)     -- create inner indentation string once
 
-    if .json.useRexxV5 then
-       buffer~append(strIndent1, '{', .endOfLine)
-    else
-       buffer~~append(strIndent1) ~~append('{') ~append(.endOfLine)
-
-    level+=1                     -- increase level
-    nrIdx=tmpIdx~size
-    do i=1 to nrIdx
-       strIdx=tmpIdx~at(i)
-       items=tmpDir~at(strIdx)      -- get array object
-       do item over items
+       buffer~append('{', .endOfLine)
+       level+=1                     -- increase level
+       nrIdx=tmpIdx~size
+       do i=1 to nrIdx
+          strIdx=tmpIdx~at(i)       -- get index
+          item=tmpDir~at(strIdx)    -- get item
                -- index part
-          buffer ~append(strIndent2)
+          buffer~append(strIndent2)
           self~encodeRexxString(strIdx, .true)
           buffer~append(': ')
                -- item part
           self~encodeRexxObject(item) -- encode item portion (recursive call)
-
           if i<nrIdx then buffer~append(',')
           buffer~append(.endofline)
        end
+       level-=1                     -- decrease level
+       buffer~append(strIndent1, '}')
     end
-    level-=1                     -- decrease level
-
-    if .json.useRexxV5 then
-       buffer~append(strIndent1, '}', .endOfLine)
     else
-       buffer ~~append(strIndent1) ~~append('}') ~append(.endOfLine)
+    do
+       buffer~append('{')
+       nrIdx=tmpIdx~size
+       do i=1 to nrIdx
+          strIdx=tmpIdx~at(i)       -- get index
+          item=tmpDir~at(strIdx)    -- get item
+               -- index part
+          self~encodeRexxString(strIdx, .true)
+          buffer~append(':')
+               -- item part
+          self~encodeRexxObject(item)
+          if i<nrIdx then buffer~append(',')
+       end
+       buffer~append('}')
+    end
+    return
+
+sort: procedure      -- try to sort allAt-array elements; if a syntax error occurs return argument as received
+  signal on syntax   -- intercept a syntax condition while sorting elements
+  use arg arr
+  arr=arr~copy~sort
+  return arr         -- return sorted array
+syntax:
+  return arr         -- return original array
+
 
 
 /** Encodes a Rexx string, applying the JSON character escaping strings.
 *
-* @param  rexxObject the Rexx object to encode
+* @param  rexxObject the Rexx string to encode
+* @param  bQuote optional logical value, defaults to .false, if .true, enquotes Rexx string value
 */
-::method encodeRexxString private      -- rgf, 2016-07-17
-    expose buffer eJS level indent rexx2json
+::method encodeRexxString private
+    expose buffer eJS level indent rexx2json legible
     use strict arg rexxObject, bQuote=.false
 
     if rexxObject==""  then           -- empty string?
@@ -414,27 +659,37 @@ end
         if rexxObject~dataType('n') then  -- a numeric value?
         do
            if bQuote=.true then
-           do
-              if .json.useRexxV5 then
-                 buffer~append('"', rexxObject, '"')
-              else
-                 buffer~~append('"') ~~append(rexxObject)~append('"')
-           end
+              buffer~append('"', rexxObject, '"')
            else
               buffer~append(rexxObject)
         end
-        else   -- rgf, 2016-07-24): create a MutableBuffer from Rexx string, use changeStr()
+        else
         do
--- TODO: (rgf) escape "00"x-"1F"x as "\u00XX" chars; if BSF4ooRexx available one could also use java.util.Properties
             mb=.mutableBuffer~new(rexxObject,rexxObject~length*2)
+            -- leave Unicode escapes as is
+            do pos=1
+               pos=mb~pos('\', pos)
+               if pos=0 then leave
+               if mb[pos+1]<>'u' then
+               do
+                  mb~replaceAt("\\", pos, 1)
+                  pos+=1
+               end
+            end
+
             do arr over rexx2json   -- iterate over replacement pairs
                mb~changeStr(arr[1],arr[2])
             end
+            -- now replace remaining control chars
+            ctlChars=xrange('00'x, '07'x, '0b'x, '0b'x, '0e'x, '1f'x)
+            do forever
+               pos=mb~verify(ctlChars,"Match")
+               if pos=0 then leave  -- done escaping control characters to Unicode escapes
+               char=mb[pos]         -- get char to escape
+               mb~changeStr(char,"\u00"char~c2x)
+            end
 
-            if .json.useRexxV5 then
-               buffer~append('"', mb~string, '"')
-            else
-               buffer~~append('"')~~append(mb~string)~append('"')
+            buffer~append('"', mb~string, '"')
         end
     end
 
@@ -442,9 +697,8 @@ end
 /* ========================================================================= */
 
 
--- rgf, 2016-07-24: all methods controlled by fromJSON rely on character-by-character based parsing
 /**
- * Converts a JSON encoded string to Rexx objects.
+ * Converts a JSON encoded string to a Rexx object.
  *
  * @param  jsonString   some JSON encoded string
  */
@@ -455,32 +709,38 @@ end
     signal on syntax
     .ArgUtil~validateClass("jsonString", jsonString, .string)  -- check for correct type
 
-    if jsonString="" then return jsonString              -- return received empty string
+    if jsonString="" then
+       raise syntax 93.900 array( 'empty string not allowed' )
 
     signal on user parseError
-
       -- determine starting character position
-    if self~class~getEncoding(jsonString)="UTF-8" then jsonPos=1 -- no BOM characters
-                                                  else jsonPos=5 -- skip the four BOM characters
+    jsonPos=self~class~getEncodingDataOffset(jsonString)
 
     jsonStringLength = jsonString~length
-    self~trimLeadingWhitespace
+    self~trimTrailingWhitespace   -- skip leading whitespace starting out at jsonPos (changing it)
+    self~trimLeadingWhitespace   -- skip leading whitespace starting out at jsonPos (changing it)
 
     rexxObject = self~parseJSONvalue
     if jsonPos >= jsonStringLength then return rexxObject
-    else do
-        self~trimLeadingWhitespace
-        if jsonPos >= jsonStringLength then return rexxObject
-        message = 'Expected end of input'
-        signal extraChars
-    end
-    return .nil
+
+    self~trimLeadingWhitespace   -- skip leading whitespace starting out at jsonPos (changing it)
+    if jsonPos >= jsonStringLength then return rexxObject
+    message = 'Expected end of input'
+    signal extraChars
 
 parseError:
     c = condition('o')
     message = c['ADDITIONAL'][1]
 extraChars:
-    raise syntax 3.900 array(message 'at position ['jsonPos"]: ["jsonString~substr(jsonPos, 25)"]..., jsonString~length=["jsonString~length"]")
+    tmpAdd="jsonPos="jsonPos "| condition:" c~condition
+    tmpJsonString=""
+    len=jsonString~length
+    if len>0 then
+    do
+       if len>25 then tmpJsonString=jsonString~left(25)"..."
+                 else tmpJsonString=jsonString~left(len)
+    end
+    raise syntax 93.900 array(message 'at position ['jsonPos"]: ["tmpJsonString"], jsonString~length=["len"]" tmpAdd)
 
 syntax: raise propagate
 
@@ -493,7 +753,7 @@ syntax: raise propagate
     expose jsonString jsonPos
     signal on user parseError
 
-    parse value jsonString with =(jsonPos) char +1
+    char=jsonString[jsonPos]
     select
         when char = '{' then do          -- an unordered JSON collection
             jsonPos += 1
@@ -514,16 +774,16 @@ parseError: raise propagate
 
 /**
  * Converts a JSON object into a Rexx <code>Directory</code> object or - starting
- * with ooRexx 5.0 - into a <code>StringTable</code> object.
+ * with ooRexx 5.0 - optionally into a <code>StringTable</code> object.
  *
  */
 ::method parseJSONobject private
     expose jsonString jsonPos
     signal on user parseError
 
-    rexxDirectory = .json.dirClass~new
+    rexxDirectory = .json.DirClass~new
 
-    parse value jsonString with =(jsonPos) char +1
+    char=jsonString[jsonPos]
     if char == '}' then do
         jsonPos = jsonPos + 1
         return rexxDirectory
@@ -532,7 +792,7 @@ parseError: raise propagate
 
     do forever
         self~trimLeadingWhitespace
-        parse value jsonString with =(jsonPos) char +1
+        char=jsonString[jsonPos]
         select
             when char == '}' then do
                 jsonPos = jsonPos + 1
@@ -545,14 +805,14 @@ parseError: raise propagate
             otherwise raise user parseError array('Expected end of a JSON object or a new "name:value" pair')
         end
     end
-return
+    return
 parseError: raise propagate
 
 /**
- * Converts and stores a JSON <code>name:value</code> pairs as an <code>index</code>/<code>item</code> pair
- * in the Rexx directory object.
+ * Converts and stores a JSON <code>name:value</code> pair as an <code>index</code>/<code>item</code> pair
+ * in the Rexx directory like object.
  *
- * @param  rexxDirectory   A Rexx directory object to store the JSON "name:value" pair as "index:item" pair
+ * @param  rexxDirectory   A Rexx directory object to store the JSON "name:value" pair as "index,item" pair
  */
 ::method parseJSONobjectValue private
     expose jsonString jsonPos
@@ -560,7 +820,7 @@ parseError: raise propagate
     use arg rexxDirectory
 
     self~trimLeadingWhitespace
-    parse value jsonString with =(jsonPos) char +1
+    char=jsonString[jsonPos]
     if char == '"' then do
         jsonPos = jsonPos + 1
         index = self~parseJSONstring
@@ -568,14 +828,14 @@ parseError: raise propagate
     else raise user parseError array('JSON object name must start with a quote, which is missing')
 
     self~trimLeadingWhitespace
-    parse value jsonString with =(jsonPos) char +1
+    char=jsonString[jsonPos]
     if char == ':' then do
         jsonPos = jsonPos + 1
         self~trimLeadingWhitespace
         rexxDirectory[index] = self~parseJSONvalue
     end
-    else raise user parseError array('Expected colon separating JSON object name and value is missing') -- rgf, made text a little bit clearer
-return
+    else raise user parseError array('Expected colon separating JSON object name and value is missing')
+    return
 parseError: raise propagate
 
 /**
@@ -591,12 +851,8 @@ parseError: raise propagate
     rexxArray = .array~new
 
     /* remove all leading whitespaces */
-    loop forever
-      parse value jsonString with =(jsonPos) char +1
-      if char <> " " then leave
-      jsonPos += 1
-    end
-
+    self~trimLeadingWhitespace
+    char=jsonString[jsonPos]
 
     if char == ']' then do
         jsonPos += 1
@@ -604,10 +860,9 @@ parseError: raise propagate
     end
     else self~parseJSONarrayValue(rexxArray)
 
-
     do forever
         self~trimLeadingWhitespace
-        parse value jsonString with =(jsonPos) char +1
+        char=jsonString[jsonPos]
         select
             when char == ']' then do
                 jsonPos = jsonPos + 1
@@ -620,8 +875,9 @@ parseError: raise propagate
             otherwise raise user parseError array('Expected end of a JSON array or a new "name:value" pair')
         end
     end
-return
+
 parseError: raise propagate
+
 
 /**
  * Converts a JSON array value and appends it to a Rexx array.
@@ -635,15 +891,11 @@ parseError: raise propagate
     use arg rexxArray
 
     self~trimLeadingWhitespace
-    /*index = rexxArray~last
-    if .nil == index then index = 0
-    rexxArray[index + 1] = self~parseJSONvalue
-    */
     rexxArray~append(self~parseJSONvalue)
+    return
 
-
-return
 parseError: raise propagate
+
 
 /**
  * Converts a quoted JSON string into a Rexx string. Any JSON character escapes are
@@ -657,43 +909,78 @@ parseError: raise propagate
 
     rexxString = .mutablebuffer~new
     do forever
--- TODO: (rgf) unescape "\uXXXX" chars, if "\u0000"-"\u001F" and UTF-8, ignore leading "00"
-        parse value jsonString with =(jsonPos) char +1
+        char=jsonString[jsonPos]
         if char == '\' then do
             parse value jsonString with =(jsonPos) char2 +2
-            if uJS~hasIndex(char2) then do
+
+            if char2='\u' then   -- one of the escaped control chars in hand
+            do
+
+               if jsonString~substr(jsonPos,4)='\u00' then
+               do
+                  ctlChar=jsonString~subStr(jsonPos+4,2)
+                  if \ctlChar~datatype("X") then
+                  do
+                     message = """\u00"" is not followed by two hexadecimal characters, position:" jsonPos", chars=["ctlChar"]"
+                     raise syntax 93.900 array(message)
+                  end
+                   rexxString~append(ctlChar~x2c)
+                   jsonPos += 6
+               end
+               else  -- leave Unicode escape in place (remainder will be processed on next round)
+               do
+                 jsonPos += 2
+                 rexxString~append(char2)
+               end
+
+            end
+            else if uJS~hasIndex(char2) then do
                 jsonPos = jsonPos + 2
                 rexxString~append(uJS[char2])
             end
+
+            -- illegal escape char raise exception
             else do
-                jsonPos = jsonPos + 1
-                rexxString~append(char)
+                message = "illegal escape """char2""" sequence, position:" jsonPos
+                raise syntax 93.900 array(message)
             end
         end
         else do
             jsonPos = jsonPos + 1
-            if char == '"' then return rexxString~string -- TODO: (rgf) unescape string; if BSF4ooRexx available one could also use java.util.Properties
+            if char == '"' then
+            do
+               if jsonString[jsonPos] == '"' then   -- raise error
+               do
+                  message = "illegal sequence of double quotes at position:" jsonPos
+                  raise syntax 93.900 array(message)
+               end
+               return rexxString~string -- Unicode-TODO: (rgf) unescape string; if BSF4ooRexx available one could also use java.util.Properties
+            end
             else rexxString~append(char)
         end
-        if jsonPos >= jsonStringLength then raise user parseError array('Expected end of a quoted string, ending quote not found')
+        if jsonPos > jsonStringLength then raise user parseError array('Expected end of a quoted string, ending quote not found')
     end
     return
 parseError: raise propagate
 
+
 /**
- * Converts other json types into Rexx objects.
+ * Converts other JSON types (JSON number, JSON <code>true</code>, JSON <code>false</code>,
+   JSON <code>null</code>) to corresponding Rexx objects.
  *
  */
 ::method parseJSONother private
-    expose jsonString ctrl jsonPos jsonStringLength
+    expose jsonString endsValue jsonPos jsonStringLength
     signal on user parseError
 
     length = jsonStringLength + 1
-    do i = jsonPos while i \== length
-        parse value jsonString with =(i) char +1
-        if ctrl~hasIndex(char) then leave
+    do i = jsonPos to jsonStringLength
+        char=jsonString[i]
+        if endsValue~pos(char)>0 then leave
     end
+
     parse value jsonString with =(jsonPos) string +(i - jsonPos)
+
     if string~datatype('n') then do
         jsonPos = jsonPos + string~length
         return string
@@ -702,13 +989,10 @@ parseError: raise propagate
         select
             when string == 'false' then do
                 jsonPos = jsonPos + 5 -- string~length
-                -- return .false
-                -- return .json_Boolean~new(.false)
                 return .JsonBoolean~false
             end
             when string == 'true' then do
                 jsonPos = jsonPos + 4 -- string~length
-                -- return .json_Boolean~new(.true)
                 return .JsonBoolean~true
             end
             when string == 'null' then do
@@ -718,40 +1002,59 @@ parseError: raise propagate
             otherwise nop
         end
     end
-
-    raise user parseError array('Invalid JSON value, jsonPos=['jsonPos'], jsonStringLength=['jsonStringLength']')
+    raise user parseError array('Invalid JSON value, jsonPos=['jsonPos'], jsonStringLength=['jsonStringLength']' 'extracted value=['string']')
 
 parseError: raise propagate
 
 
 /**
- * Removes allowed whitespace between values.
- *
+ * Removes allowed leading whitespace.
  */
 ::method trimLeadingWhitespace private
     expose jsonString whitespace jsonPos jsonStringLength
 
-    do while jsonPos \== jsonStringLength
-        parse value jsonString with =(jsonPos) char +1
-        if whitespace~hasIndex(char) then jsonPos = jsonPos + 1
-        else leave
-    end
-
+    -- "0" if only whitespace chars, else pos of next non-whitespace, use current jsonPos to start out
+    nonWs=jsonString~verify("20 0d 0a 09"x, 'Nomatch', jsonPos)
+    if nonWs<>0 then jsonPos=nonWs
 
 
 /**
- * Removes all blank characters and line breaks to achieve a smaller String size
+ * Removes allowed trailing whitespace.
+ */
+::method trimTrailingWhitespace private
+    expose jsonString whitespace jsonPos jsonStringLength
+
+    do i=jsonStringLength to 1 by -1
+       if whiteSpace~pos(jsonString[i])=0 then leave
+    end
+    jsonStringLength=i
+
+
+
+/** Removes all "090a0d20"x (TAB, LF, CR, blank) whitespace characters to achieve the
+*   smallest possible ("minified") JSON string.
+*
+* @param jsonString  a JSON encoded string
+* @return jsonString the minified version of the JSON encoded String
+*
+*/
+::method minify
+  forward to (self~class)  -- forward to class method to do the work
+
+
+/** * Removes all "090a0d20"x (TAB, LF, CR, blank) whitespace characters to achieve the
+ *   smallest possible ("minified") JSON string.
  *
  * @author Adrian Baginski
  * @since 100.20170908
  * @param jsonString - A JSON Encoded String
  * @return jsonString - The minified version of the JSON String
  */
-::method minify
+::method minify class
   use arg jsonString
 
   jsonString=.mutableBuffer~new(jsonString)
-  jsonString~translate( ,"0d0a"x)  -- replace CR and LF with blank
+  jsonString~translate( ,"0d0a09"x)  -- replace CR, LF, TAB with blank
 
   currentPos = 1
   skipDeletingStr = .false
@@ -792,13 +1095,13 @@ parseError: raise propagate
      end
      currentPos += 1
   end
-  return jsonString~string -- return the string representation
-
+  return jsonString~string~strip -- return the string representation
 
 
 /**
- * Forwards the provided Rexx Object to be converted to a JSON String
+ * Forwards the provided Rexx Object to be converted to a JSON String.
  * Calls the method `minify` to remove all unnecessary line breaks and white spaces
+ * Note: by default a JSON object will create minified JSON strings.
  *
  * @param rxObj - the object to be converted
  * @return minified - a minified JSON encoded string representing the parameter
@@ -806,25 +1109,17 @@ parseError: raise propagate
 ::method toMinifiedJson
   use arg rxObj
   jsonString = self~toJson(rxObj)
-  minified   = self~minify(jsonString)
+  minified   = self~class~minify(jsonString)
   return minified
 
 
 /* ========================================================================= */
 
-/*
-*   -- rgf, 2016-07-17: define a class to explicitly represent a JSON boolean to ease generating correct JSON files
-*   -- rgf, 2016-07-23: - as Orderable is broken as of 4.2.0 and unclear whether 5.0.0 gets it corrected, this class
-*                         explicilty defines the methods "=", "\=", "<>" and "><" to get correct comparison results
-*                       - removing inheriting form orderable altogether
-*                       - inherit comparable (indicates that compareTo is implemented), allows sorting
-*/
-
 /** ooRexx class to represent a JSON boolean (logical) value. It inherits from the ooRexx mixinclass
 *   <code>Comparable</code> and therefore implements its abstract method <code>compareTo</code>.
 *
 */
-::class "JsonBoolean" public inherit comparable
+::class "JsonBoolean" inherit comparable
 
 /** Class getter attribute method that returns the version information of this class.
 *
@@ -833,32 +1128,35 @@ parseError: raise propagate
 
 ::attribute version get class
   use strict arg           -- no argument allowed!
-  return "100.20160804"    -- version in the form: major*100+minor || "." || yyyymmdd
+  return "100.20210608"    -- version in the form: major*100+minor || "." || yyyymmdd
 
-/** Class getter attribute method that refers to the sentinel object that represents the value <code>.true</code>.
+/** Class getter attribute method that refers to the proxy object that represents the value <code>.true</code>.
 */
-::attribute true  get class   -- true sentinel, class getter method
+::attribute true  get class   -- true proxy, class getter method
+  expose true
+  if \var("TRUE") then true=self~new(.true)
+  return true
 
-/** Class getter attribute method that refers to the sentinel object that represents the value <code>.false</code>.
+/** Class getter attribute method that refers to the proxy object that represents the value <code>.false</code>.
 */
-::attribute false get class   -- false sentinel, class getter method
+::attribute false get class   -- false proxy, class getter method
 
-/** Finalizes the class initialization by creating the two sentinel class attribute values <code>true</code>
+/** Finalizes the class initialization by creating the two proxy class attribute values <code>true</code>
 *   and <code>false</code>.
 */
 ::method    activate  class   -- initialization of class object complete, we now can use everything
   expose true false
-  true =self~new(.true)       -- create and store true value
-  false=self~new(.false)      -- create and store false value
+  true =self~new(.true)       -- create and store true proxy value
+  false=self~new(.false)      -- create and store false proxy value
 
-/** Controls the creation of instances of this class, makes sure that the sentinel values get created
+/** Controls the creation of instances of this class, makes sure that the proxy values get created
 *   and cached, otherwise returns the requested object.
 *
 * @param val a string representing a Boolean/logical value, i.e. one of &quot;0&quot;,
 *            &quot;1&quot;, &quot;true&quot;, &quot;false&quot;,
 *            &quot;.true&quot; or &quot;.false&quot; in any case.
 */
-::method new class   -- make sure we hand out only the sentinel objects for "true" and "false", do not create more instances
+::method new class   -- make sure we hand out only the proxy objects for "true" and "false", do not create more instances
   expose true false        -- expose class attributes
   use strict arg val
 
@@ -870,18 +1168,20 @@ parseError: raise propagate
   do
      if \var('TRUE') then  -- attribute not set yet?
      do
-        forward class (super) array (.true) continue -- let superclass create and carry out initialisation
+        forward class (super) array (.true) continue -- let superclass' new method create and carry out initialisation
         true=result        -- assign created object to class attribute
+        true~objectname=true~objectname"[1/.true]" -- add hint
      end
-     return true           -- return the true sentinel object
+     return true           -- return the true proxy object
   end
 
   if \var('FALSE') then    -- attribute not set yet?
   do
-     forward class (super) array (.false) continue -- let superclass create and carry out initialisation
+     forward class (super) array (.false) continue -- let superclass' new metho d create and carry out initialisation
      false=result          -- assign created object to class attribute
+     false~objectname=false~objectname"[0/.false]" -- add hint
   end
-  return false             -- return the false sentinel object
+  return false             -- return the false proxy object
 
 /** Getter attribute method that returns the Rexx string representing the logical value.
 */
@@ -942,10 +1242,9 @@ parseError: raise propagate
 * @return a Rexx string representing its logical value, either &quot;<code>0</code>&quot; or
 *         &quot;<code>1</code>&quot;
 */
-::method makestring  -- allow instances of this class to be a plug in replacement for Rexx logical values
+::method makeString  -- allow instances of this class to be a plug in replacement for Rexx logical values
   expose value
   return value
-
 
 /** Renders the object as a JSON string representing its logical value.
 * @return a string representing its logical value JSON encoded, either &quot;<code>false</code>&quot;
@@ -955,3 +1254,4 @@ parseError: raise propagate
   expose value
   if value=.true then return "true"
   return "false"
+

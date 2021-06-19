@@ -27,6 +27,8 @@
                              Java classes anymore!
             2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                              - removing dependency on "rgf_util2.rex"
+            2021-06-19, rgf: - use newer version of json-rgf.cls which includes utility class methods
+                               for easying reading and writing JSON files
 
    purpose: this is the ooRexx version of the pure Java tutorial on how to use JavaFX, demonstrating
             among other things also TableView and ObservableList; cf. the excellent tutorial as
@@ -271,10 +273,7 @@ syntax:
   expose personData     -- get access to the ObservableList
   use arg filePath
 
-  s=.stream~new(filepath)~~open("read")   -- open stream
-  jsonStr=s~charIn(1, s~query("size"))    -- read entire content
-  s~close                                 -- close stream
-  persons=.Json~new~fromJSON(jsonStr)
+  persons=.json~fromJsonFile(filePath)    -- read person data from JSON file
   personData~clear      -- clear the ObservableList
   do p over persons     -- add persons to ObservableList
      personData~add(.person~new( p["firstName"], p["lastName"], p["street"], p["postalCode"], p["city"], p["birthday"]))
@@ -298,9 +297,7 @@ syntax:
      arr~append(dir)
   end
 
-  s=.stream~new(filepath)~~open("write replace")   -- open stream for replacement
-  jsonStr=s~charout(.json~new~toJson(arr)) -- create and write JSON string to stream
-  s~close                              -- close stream
+  .json~toJsonFile(filePath,arr)       -- write array of directories to a human legible JSON file
   self~setPersonFilePath(filePath)     -- save this one as preference for next load
 
 
