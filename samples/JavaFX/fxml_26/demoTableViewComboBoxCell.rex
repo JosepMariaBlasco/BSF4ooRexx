@@ -5,6 +5,7 @@
 
    changes: 2020-08-12, rgf: - changing ppCondition2() to the new BSF.CLS routine ppJavaExceptionChain()
                              - removing dependency on "rgf_util2.rex"
+            2021-06-19, rgf: - remove unused class RexxCellValueFactory
 
    purpose: demonstrate - TableView with editing, binding Person's simple properties with cell values
                         - Setting TableView item to null as a whole as opposed to removing the item
@@ -773,6 +774,7 @@ syntax:
 
 /* =================================================================================== */
 
+/*
 /** This class is used to get the cell value from the supplied item/object stored
     in the <em>ObservableArrayList</em> (Java RexxProxy objects boxing the Rexx Person
     objects) backing the <em>TableView</em>.
@@ -843,6 +845,7 @@ syntax:
      end
   end
   return cellValue
+*/
 
 
 /* =================================================================================== */
