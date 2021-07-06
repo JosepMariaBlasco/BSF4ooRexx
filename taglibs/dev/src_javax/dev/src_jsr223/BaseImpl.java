@@ -49,6 +49,8 @@
                       executed the script
 
         - 2021-03-14: shorten key for the implicit HashMap object that supplies ScriptTagLibs information
+
+        - 2021-07-05: remove all Rexx specific code to allow a script engine neutral taglib
 */
 
 /*
@@ -125,7 +127,6 @@ abstract public class BaseImpl implements BodyTag
     protected PageContext  pageContext ;
 
     protected String       type ;                       // attribute 'type': script language name
-    protected boolean      isRexx = false;              // determine whether we have Rexx/oRexx/ooRexx in hand
     protected String       name ;                       // optional: name for the script in the JSP (for debugging)
     protected String       src  ;                       // optional: src: relative path to script to run
     protected boolean      bCacheSrc = true;            // optional: if "false" reread from file, default: true
@@ -139,13 +140,7 @@ abstract public class BaseImpl implements BodyTag
                                                         //           gets created to allow access to it
     protected boolean      bReflect = false;            // optional: if "true" supply an implicit HashMap object named TAGLIBINFORMATION
 
-    public void setType    (String value)           { type = value ;
-                                                      // determine whether ooRexx in hand
-                                                      String lowerType=type.toLowerCase();
-                                                      isRexx =    (lowerType.equals("rexx")
-                                                                || lowerType.equals("orexx")
-                                                                || lowerType.equals("oorexx") );
-                                                    }; // HTML now uses 'type' instead of 'language'
+    public void setType    (String value)           { type = value ; }; // HTML now uses 'type' instead of 'language'
     public void setName    (String value)           { name = value ; };
     public void setSrc     (String value)           { src  = value ; };
     public void setCacheSrc (String value)          { bCacheSrc  = Boolean.valueOf(value) ; };
@@ -378,47 +373,6 @@ abstract public class BaseImpl implements BodyTag
                 engine.put(TAGLIBINFORMATION, attr);
             }
 
-            // if Rexx, make sure BSF.CLS is required, such that the Scriptlet code
-            // invocation will be able to fetch the arguments directly as BSF proxies
-            // with USE ARG; in addition redirect the standard streams to Java and
-            // .output specifically to "out" such that SAY statements get directed to it
-
-            if (isRexx)     // redirect .output target to out-Java object
-            {
-                // redirect .output to 'out' ?
-                if (pageContext.getAttribute(rexxOutRedirected, pageContext.PAGE_SCOPE) == null)
-                {
-                    // indicate that for this page we have Rexx .output redirected to not do it repeatedly
-                    pageContext.setAttribute(rexxOutRedirected, new Object(), pageContext.PAGE_SCOPE);
-
-                    // setup the Rexx instance to use the implicit 'out' object for its .output,
-                    // if needed (only the first time)
-                        // make sure we always set 'out' with no prefix and with no flushing (implicitly commits response object)!
-                        // we need to cater for RexxScriptEngine having redirected already
-                    String code = "use arg out                                                  \n" +
-                                  "-- make sure no prefix gets inserted                         \n" +
-                                  "outWrapped=.bsf.outputStream~new(out, .nil, '0d0a'x, .false) \n" +
-                                  "prev=.output~current                                         \n" +
-                                  " -- remove monitored object, if none left, add it back       \n" +
-                                  "if .output~destination=.nil then .output~destination(prev)   \n" +
-                                  ".output~destination(outWrapped)                              \n" +
-                                  "                                                             \n" +
-                                  "::requires BSF.CLS  -- load camouflaging support             \n" ;
-
-                    engine.put(engine.ARGV, new Object [] {out});
-                    engine.eval(code);
-                }
-
-                if (!bArguments)        // no arguments to supply, make sure we remove the args
-                {
-                    engine.put(engine.ARGV, new Object [] {});
-                }
-
-                if (isExpression())     // rewrite expression code to return expression result
-                {
-                    scriptCode="return "+scriptCode;
-                }
-            }
 
             // define arguments (supply implicit objects "request", "response", "out" in that order
             if (bArguments)

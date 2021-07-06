@@ -1,7 +1,8 @@
 ## Purpose ##
 
 The taglibs jar files in this directory allow Rexx to be used in Java server pages (JSP)
-to create code and text for the HTML text to be sent back to the client.
+to create code and text for the HTML text to be sent back to the client. This version
+needs BSF4ooRexx 641.20210706 (the ooRexx-Java bridge) or newer.
 
 An initial presentation was done at the 2020 International Rexx Symposium
 (https://www.rexxla.org/events/2020/schedule.html) for which the following
@@ -43,11 +44,10 @@ indicated by the type attribute (type="rexx"):
 
 If you wish to merely fetch the returned result of an expression defined in a scripting language
 you would use the "expr" tag. Note, depending on the script language, you might need to
-return the expression value explicitly with the appropriate return statement (not necessary
-in the case of the script language Rexx). This example uses open object Rexx
-indicated by the type attribute (type="rexx"):
+return the expression value explicitly with the appropriate return statement.
+This example uses open object Rexx (ooRexx) indicated by the type attribute (type="rexx"):
 ~~~
-        <p>It is now exactly <s:expr type="rexx">.dateTime~new~string</s:expr>.</p>
+        <p>It is now exactly <s:expr type="rexx">return .dateTime~new~string</s:expr>.</p>
 ~~~
 
 Remark: the invocation of the scripts will always supply the following three implicit
@@ -238,4 +238,4 @@ not have Java installed yet, then try to locate an installation package that inc
 
 ---
 
-rgf, as of: 2021-02-28, 2021-03-10, 2021-03-17
+rgf, as of: 2021-02-28, 2021-03-10, 2021-03-17, 2021-07-06

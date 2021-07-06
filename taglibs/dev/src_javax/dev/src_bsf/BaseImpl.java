@@ -46,6 +46,10 @@
 
         - 2021-03-14: - shorten key for the implicit HashMap object that supplies ScriptTagLibs information
                       - change case from "taglib" to "TagLib"
+
+        - 2021-07-06: - remove special expression handling for Rexx; programmers must explicitly
+                        use the return keyword statement as we cannot differentiate between command
+                        and intended return value
 */
 
 /*
@@ -587,14 +591,9 @@ abstract public class BaseImpl implements BodyTag
                                   "::requires BSF.CLS  -- load camouflaging support"   ;
                     engine.apply("org.rexxla.taglibs.bsf.BaseImpl", 0, 0, code, null, null);
                 }
-
-                if (isExpression()) // rewrite expression code to return expression result
-                {
-                    scriptCode="return "+scriptCode;
-                }
             }
 
-            // make it easy for the script to get at the three moist important objects
+            // make it easy for the script to get at the three most important objects
             // by fetching them as arguments
             Vector args=null;
             if (bArguments)
