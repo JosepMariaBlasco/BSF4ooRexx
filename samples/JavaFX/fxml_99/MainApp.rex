@@ -5,7 +5,8 @@
    changes: 2016-12-31, adding demonstration of printing via JavaFX using the information
                         in <http://docs.oracle.com/javafx/8/webview/printing.htm>; printing
                         a GUI node to a printer is demonstrated in:
-                        in <https://carlfx.wordpress.com/2013/07/15/introduction-by-example-javafx-8-printing/>
+                        in <https://carlfx.wordpress.com/2013/07/15/introduction-by-example-javafx-8-printing/>;
+                        another tutorial about WebView: <https://docs.oracle.com/javafx/2/webview/jfxpub-webview.htm>
             2017-01-02, demo bringing up printer dialog (to choose different printer, to set page properties,
                         to cancel printing)
             2017-02-03, only runs, if ooRexx is 5.0 or higher

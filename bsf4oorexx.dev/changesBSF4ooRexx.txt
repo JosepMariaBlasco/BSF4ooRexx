@@ -1,4 +1,14 @@
 
+-------------------------------------- 2021-07-05 ----------------------------------
+
+- RexxScriptEngine.java
+
+        - added logic to cater for being used for a JSP (Java server page); if
+          'out' and ScriptContext.getWriter() are the same object, it is assumed
+          that the RexxScriptEngine gets employed for a JSP in which case no
+          prefix is injected, no automatic flushing carried out and the linend
+          is set to the sequence "0d0a"x to match HTML and XML linened conventions
+
 -------------------------------------- 2021-05-16 ----------------------------------
 
 - MacOS installation

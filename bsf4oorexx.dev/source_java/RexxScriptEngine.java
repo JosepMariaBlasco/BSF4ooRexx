@@ -26,7 +26,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 
 /*
 ------------------------ Apache Version 2.0 license -------------------------
-   Copyright 2015-2020 Rony G. Flatscher
+   Copyright 2015-2021 Rony G. Flatscher
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -42,6 +42,14 @@ import org.rexxla.bsf.engines.rexx.RexxException;
 -----------------------------------------------------------------------------
 
    Changes:
+
+        2021-07-05, ---rgf, - in order to make J2EE's JavaScriptTaglibs library Rexx agnostic:
+                              added logic to cater for being used for a JSP (Java server page); if
+                              'out' and ScriptContext.getWriter() are the same object, it is assumed
+                              that the RexxScriptEngine gets employed for a JSP in which case no
+                              prefix is injected, no automatic flushing carried out and the linend
+                              is set to the sequence "0d0a"x to match HTML and XML linened conventions
+
 
         2020-09-22, ---rgf, - make sure that redirected streams get only replaced when
                               the ScriptContext's in, out or err are not yet redirected
@@ -169,7 +177,7 @@ import org.rexxla.bsf.engines.rexx.RexxException;
  * the tow (and caching compiled scripts for invoking the aforementioned method in a sensible way.
  *
  * @author Rony G. Flatscher
- * @version 101.20200922
+ * @version 102.20210705
  * @since  2015-05-11
  *
  */
@@ -612,7 +620,7 @@ if (bDebug==true) {exc.printStackTrace(); }
          can force his versions to remain in effect, rather than getting them
          replaced by this routine automatically. This may be helpful in situations
          where e.g. the prefixes are not needed (like in the J2EE taglib library
-         where the "EXXout>" prefix must not be used and hence gets set to .nil).
+         where the "REXXout>" prefix must not be used and hence gets set to .nil).
 
          If in this case the Rexx programmer wishes to allow the default replacements
          to take effect again, then he needs to first issue a "call bsf.RedirectTo
@@ -674,6 +682,52 @@ if (bDebug==true) {exc.printStackTrace();}
             throw new ScriptException(exc);     // re-throw, wrap cause in script
         }
         return rexxRedirectStandardFiles;
+    }
+
+
+    /** Rexx code to setup <code>.output</code> to be usable for creating HTML and XML text via a JspWriter. */
+    String rexxRoutineSetupOut4JspCode =
+        "use arg out                                                  \n" +
+        "-- make sure no prefix gets inserted                         \n" +
+        "outWrapped=.bsf.outputStream~new(out, .nil, '0d0a'x, .false) \n" +
+        "prev=.output~current                                         \n" +
+        " -- remove monitored object, if none left, add it back       \n" +
+        "if .output~destination=.nil then .output~destination(prev)   \n" +
+        ".output~destination(outWrapped)                              \n" +
+        "                                                             \n" +
+        "::requires BSF.CLS  /* get Java support */                   \n" ;
+
+
+    /** <code>RexxProxy</code> for setting up <code>.output</code> for Jsp (<code>javax.servlet.jsp.JspWriter</code>),
+     *  i.e., not prefixing anything and making sure that "0d0a"x gets appended as newline.
+     */
+    private RexxProxy rexxRoutineSetupOut4Jsp=null;
+
+    /** Getter method to return the ooRexx routine. If {@link #rexxRoutineSetupOut4Jsp} is <code>null</code>
+     *  the Rexx routine object will get created, stored and returned.
+     *  @return the <code>RexxProxy</code> for the Rexx routine object
+     *
+     *  @throws ScriptException if an exception occurs
+     */
+    RexxProxy getRoutineSetupOut4Jsp()  throws ScriptException
+    {
+if (bDebug==true){ System.err.println("arrived: getRoutineSetupOut4Jsp(), rexxRoutineSetupOut4Jsp="+rexxRoutineSetupOut4Jsp);}
+        if (rexxRoutineSetupOut4Jsp!=null)
+        {
+            return rexxRoutineSetupOut4Jsp;
+        }
+
+        try
+        {
+            if (bInitialBSFRequiresDone==false) updateRexxEngine(null);
+            rexxRoutineSetupOut4Jsp=(RexxProxy) getCreateRoutine().sendMessage2("CALL", "RoutineSetupOut4Jsp", rexxRoutineSetupOut4JspCode);
+        }
+        catch (Exception exc)
+        {
+if (bDebug==true) {exc.printStackTrace(); }
+            throw new ScriptException(exc);     // re-throw, wrap cause in ScriptException
+        }
+        return rexxRoutineSetupOut4Jsp;
     }
 
 
@@ -1597,8 +1651,9 @@ if (bDebug==true) {exc.printStackTrace();}
 //          check whether current re-assignments are in place already or not
     synchronized void updateRexxEngine(ScriptContext sc) throws ScriptException, BSFException
     {
-        // boolean bDebug=false; true;
+        // boolean bDebug=false; // true;
 if (bDebug) {System.err.println(this+": --> RexxScriptEngine().updateRexxEngine(), sc=["+sc+"] ...");}
+
 
             // make sure we have the native code set to support the camouflaging support from the beginning
         if (bInitialBSFRequiresDone==false) // make sure that JNI subsystem uses BSF.CLS for passing (Java object) arguments to Rexx scripts
@@ -1627,21 +1682,11 @@ if (bDebug) {System.err.println(this+":     RexxScriptEngine(), getting and sett
             Writer tmpWriter     =(Writer) sc.getWriter();
             Writer tmpErrorWriter=(Writer) sc.getErrorWriter();
 
-if (bDebug==true)
-   System.err.println(this+":     REXX -> RexxScriptEngine.update(...)");
+if (bDebug==true) System.err.println(this+":     REXX -> RexxScriptEngine.update(...)");
+
                 // has there been a change in any of the reader or writers, if so reflect them!
             if ( (cachedReader!=tmpReader) || (cachedWriter!=tmpWriter) || (cachedErrorWriter!=tmpErrorWriter) )
             {
-
-if (bDebug==true)
-{
-   System.err.println(this+":     REXX -> RexxScriptEngine.update(...): doing a bsf.redirectTo 'Java', in, out, err with Rexx\n"
-                          +"\t\t new standard streams: in=["+tmpReader+"], out=["+tmpWriter+"], err=["+tmpErrorWriter+"]\n\tthis.rse=["+this+"]");
-// for Tomcat debugging, pritn to stdout
-   System.out.println(this+":     REXX -> RexxScriptEngine.update(...): doing a bsf.redirectTo 'Java', in, out, err with Rexx\n"
-                          +"\t\t new standard streams: in=["+tmpReader+"], out=["+tmpWriter+"], err=["+tmpErrorWriter+"]");
-}
-
                     // cache current values
                 cachedReader     =tmpReader;
                 cachedWriter     =tmpWriter;
@@ -1649,6 +1694,25 @@ if (bDebug==true)
                 try
                 {
                     getRedirectStandardFiles().sendMessage3("CALL", tmpReader, tmpWriter, tmpErrorWriter);
+
+if (bDebug==true) System.err.println("[RexxScriptEngine: after getRedirectStandardFiles(), tmpWriter: "+tmpWriter+"]\n");
+
+                    // assumption: if 'out' the same as getWriter() we run for a JSP, so remove any prefix from .output
+                    // (alternatively, check whether writer is a "javax.servlet.jsp.JspWriter" using Class.getName() and .getSuperclass())
+
+if (bDebug==true){
+    System.err.println("[RexxScriptEngine: before testing for"
+     +" 'out'==tmp'Writer: \""+(sc.getAttribute("out",sc.ENGINE_SCOPE)==tmpWriter)
+     +" 'out': \""+(sc.getAttribute("out",sc.ENGINE_SCOPE))
+     +"\"]\n");
+}
+                    if (sc.getAttribute("out",sc.ENGINE_SCOPE)==tmpWriter) // 'out' present and same object?
+                    {
+                        getRoutineSetupOut4Jsp().sendMessage1("CALL",tmpWriter);    // adjust .output
+
+if (bDebug==true) System.err.println("[RexxScriptEngine: after getRoutineSetupOut4Jsp()]\n");
+
+                    }
                 }
                 catch (BSFException exc)
                 {

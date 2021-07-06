@@ -29,7 +29,7 @@
 
    needs:      ooRexx 5.0 or later
 
-   version:    1.07
+   version:    1.08
    changed:    2019-05-07, ---rgf,
                         - fix parsing of file names, check whether input file exists
                           supply return code for calling program:
@@ -62,6 +62,7 @@
                2020-03-09, ---rgf; according to Rick's information in the ooRexx developer list
                                    the binary can be executed by future ooRexx versions, hence
                                    adjusting the test for languageLevel accordingly
+               2021-06-26, ---rgf: correct "?" handling in argument
 
    license: dual licensed as CPL 1.0 (cf. <https://opensource.org/licenses/cpl1.0.php>) and
                              AL 2.0 <https://opensource.org/licenses/Apache-2.0>
@@ -113,7 +114,7 @@ pkgLocal~bDebug              =.false -- .true       -- if .true, then use sayDeb
 
    -- get and process arguments
 parse arg args
-if args="" | args~pos('?')>1 then
+if args="" | args~pos('?')>0 then
 do
    call showUsage
    exit 0
@@ -502,10 +503,11 @@ end
      purpose: get information about rexxc compiled Rexx programs; allow for base64 encoding or base64 decoding
 
      usage:
+        rexxcUtil.rex [?]
         rexxcUtil.rex [-e | -u] fileName
 
      arguments:
-        [?]                         ... usage information
+        [?]                         ... show usage (this) information
         fileName                    ... outputs information about the rexxc compiled Rexx program named fileName
         -e fileName [newFileName]   ... encode rexxc compiled fileName, replace file unless newFileName given
         -u fileName [newFileName]   ... unencode (decode) rexxc compiled fileName, replace file unless newFileName given
@@ -515,7 +517,7 @@ end
 
 /*
    -------------------- Apache License 2.0 --------------------
-      Copyright 2019 Rony G. Flatscher
+      Copyright 2019-2021 Rony G. Flatscher
 
       Licensed under the Apache License, Version 2.0 (the "License");
       you may not use this file except in compliance with the License.

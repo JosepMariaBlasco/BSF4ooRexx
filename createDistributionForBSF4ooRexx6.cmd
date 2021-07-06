@@ -33,9 +33,9 @@ set CLASSPATH=%CLASSPATH%;%ooo_classes%\unoil.jar;%ooo_classes%\ridl.jar;%ooo_cl
 @echo adding javax.servlet.jsp and javax.servlet.http to CLASSPATH
 set CLASSPATH=%CLASSPATH%;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet.jsp.jar;F:\download\java\java2s.com-javax.servlet.jsp\javax.servlet-3.0.0.v201112011016.jar
 
-set releaseDate=20210516
-set runDate=20210516
-set doc_date=20210516
+set releaseDate=20210706
+set runDate=20210706
+set doc_date=20210706
 
 @rem values to use for creating the BSF jarfile
 @rem set bsfDate=20090910
