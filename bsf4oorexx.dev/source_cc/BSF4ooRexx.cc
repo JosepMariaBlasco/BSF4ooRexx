@@ -36,8 +36,28 @@ remarks:
                              - TODO: remove dead (commented) code
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
+
     6.0.0   2021-07-18, rgf: - when loading Java now also honor JAVA_HOME environment variable, if present
-			     - search sequence: /opt/BSF4ooRexx -> JAVA_HOME -> operating system search (simple DLL/so/dylib name)
+			     - search sequence:
+
+                    Windows: JAVA_HOME -> unqualified (system searches)
+                       JAVA_HOME\\bin\\server\\jvm.dll          Windows
+                       JAVA_HOME\\jre\\bin\\server\\jvm.dll     Windows
+
+                    Unix: /opt/BSF4ooRexx ->
+                         JAVA_HOME ->
+                         if Apple: "/System/Library/Frameworks/JavaVM.framework/JavaVM" (default) ->
+                         operating system search (simple DLL/so/dylib name)
+
+                       JAVA_HOME/lib/server/libjvm.dylib        MacOS
+                       JAVA_HOME/jre/lib/server/libjvm.dylib    MacOS
+
+                       JAVA_HOME/lib/server/libjvm.so           Linux
+                       JAVA_HOME/jre/lib/server/libjvm.so       Linux
+
+                 - if loading Java on Unix, 'java.library.path' gets set, unless it is passed as
+                   "-Djava.library.path=..." via the command line; this way we can help Java locate
+                   libBSF4ooRexx.so/libBSF4ooRexx.dylib
 
     6.0.0   2021-03-20, rgf: - removed a warning by explicitly using strcmp():
                                MacOS: BSF4ooRexx.cc:8349:31: warning: result of comparison against a string literal is unspecified (use an explicit string comparison function
@@ -4930,7 +4950,39 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
     rgf_JNI_GetDefaultJavaVMInitArgs rgfGetDefaultJavaVMInitArgs=NULL;
 
     #if defined  (WINDOWS) //   ( WIN32 )
-        HINSTANCE hVM=LoadLibrary( "jvm" );   // try to load the JavaVM
+        HINSTANCE hVM=NULL;
+
+        // 2021-07-18, rgf: use JAVA_HOME first, if it exists
+        {
+            char *java_home = getenv("JAVA_HOME");	// try to get environment variable
+            if (java_home != NULL)
+            {
+                size_t len = strlen(java_home)+128;
+                char *buf = (char *) malloc(len);
+             // try the new directory layout (since Java 9)
+                snprintf(buf, len, "%s%s", java_home, "\\bin\\server\\jvm.dll");
+                hVM=LoadLibrary( buf );
+// fprintf(stderr, "WINDOWS: hVM=[%p] buf=[%s] ...\n", hVM, buf);
+
+                if (hVM==NULL)    // try older directory layout (up to and often including Java 8)
+                {
+                    snprintf(buf, len, "%s%s", java_home, "\\jre\\bin\\server\\jvm.dll");
+                    hVM=LoadLibrary( buf );
+// fprintf(stderr, "WINDOWS: hVM=[%p] buf=[%s] ...\n", hVM, buf);
+                }
+
+                free(buf);
+            }
+        }
+
+        // 2021-07-18, rgf.
+
+        if (hVM==NULL)      // default to Windows finding and loading the DLL
+        {
+            hVM=LoadLibrary( "jvm" );   // try to load the JavaVM
+// fprintf(stderr, "WINDOWS: hVM=[%p] jvm ...\n", hVM);
+        }
+
 
         #if defined( DEBUG )
             if (hVM!= NULL)
@@ -4950,36 +5002,38 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
        //                  look first in /opt/BSF4ooRexx, and thereafter let the system find "libjvm.so"
        // 2011-01-06, rgf: on Unix-based systems the BSF4ooRexx installation may have put a link to the
        //                  JVM to be used into BSF4ooRexx home directory, so look there first
-       // 2021-07-18, rgf: after /opt/BSF4ooRexx (on Apple before the old /System/.. location is searched), 
-       //                  honor JDK_HOME environment variable, if set
+       // 2021-07-18, rgf: after /opt/BSF4ooRexx (on Apple before the old /System/.. location is searched),
+       //                  honor JAVA_HOME environment variable, if set
 
         #ifdef __APPLE__
            hVM=dlopen("/opt/BSF4ooRexx/libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL );
-// fprintf(stderr, "hVM=[%p] /opt/BSF4ooRexx/libjvm.dylib ...\n", hVM);
+// fprintf(stderr, "APPLE: hVM=[%p] /opt/BSF4ooRexx/libjvm.dylib ...\n", hVM);
 
-           if (hVM==NULL)   // not found, now look for environemnet variable JDK_HOME
+           // 2021-07-18, rgf: honor JAVA_HOME
+           if (hVM==NULL)   // not found, now look for environemnet variable JAVA_HOME
            {
                char *java_home = getenv("JAVA_HOME");	// try to get environment variable
- 	       if (java_home != NULL)
-	       {
-                   int  len = strlen(java_home)+128;
-                   char *buf = (char *) malloc(len);
-			// try the new directory layout (since Java 9)
-                   snprintf(buf, len, "%s%s", java_home, "/lib/server/libjvm.dylib");
-// fprintf(stderr, "JDK_HOME=[%s], len=[%d], buf=[%s] ...\n", java_home, len, buf);
-                   hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
-// fprintf(stderr, "hVM=[%p] buf=[%s] ...\n", hVM, buf);
+     	       if (java_home != NULL)
+    	       {
 
-		   if (hVM==NULL)    // try older directory layout (up to and often including Java 8)
-		   {
-                  snprintf(buf, len, "%s%s", java_home, "/jre/lib/server/libjvm.dylib");
-// fprintf(stderr, "JDK_HOME=[%s], len=[%d], buf=[%s] ...\n", java_home, len, buf);
+                   size_t  len = strlen(java_home)+128;
+                   char *buf = (char *) malloc(len);
+    			// try the new directory layout (since Java 9)
+                   snprintf(buf, len, "%s%s", java_home, "/lib/server/libjvm.dylib");
+// fprintf(stderr, "APPLE: JAVA_HOME=[%s], len=[%d], buf=[%s] ...\n", java_home, len, buf);
                    hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
-// fprintf(stderr, "hVM=[%p] buf=[%s] ...\n", hVM, buf);
-		   }
+// fprintf(stderr, "APPLE: hVM=[%p] buf=[%s] ...\n", hVM, buf);
+
+        		   if (hVM==NULL)    // try older directory layout (up to and often including Java 8)
+        		   {
+                       snprintf(buf, len, "%s%s", java_home, "/jre/lib/server/libjvm.dylib");
+        // fprintf(stderr, "APPLE: JAVA_HOME=[%s], len=[%d], buf=[%s] ...\n", java_home, len, buf);
+                       hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
+        // fprintf(stderr, "APPLE: hVM=[%p] buf=[%s] ...\n", hVM, buf);
+        	       }
 
                    free(buf);
-	       }
+    	       }
            }
 
            if (hVM==NULL)   // not found, now look in system's location
@@ -4987,12 +5041,38 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 		// 2021-07-18, rgf: surprisingly this still works on macOS BigSur 11.4
                hVM=dlopen("/System/Library/Frameworks/JavaVM.framework/JavaVM", RTLD_LAZY | RTLD_GLOBAL );
 // fprintf(stderr, "hVM=[%p] /System/Library/Frameworks/JavaVM.framework/JavaVM ...\n", hVM);
-
            }
 
+        #else  // ohter Unixes, e.g. Linux
 
-        #else
            hVM=dlopen("/opt/BSF4ooRexx/libjvm.so", RTLD_LAZY | RTLD_GLOBAL );
+           // 2021-07-18, rgf: honor JAVA_HOME
+           if (hVM==NULL)   // not found, now look for environemnet variable JAVA_HOME
+           {
+               char *java_home = getenv("JAVA_HOME");	// try to get environment variable
+     	       if (java_home != NULL)
+    	       {
+
+                   size_t  len = strlen(java_home)+128;
+                   char *buf = (char *) malloc(len);
+    			// try the new directory layout (since Java 9)
+                   snprintf(buf, len, "%s%s", java_home, "/lib/server/libjvm.so");
+fprintf(stderr, "LINUX: JAVA_HOME=[%s], len=[%d], buf=[%s] ...\n", java_home, len, buf);
+                   hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
+fprintf(stderr, "LINUX: hVM=[%p] buf=[%s] ...\n", hVM, buf);
+
+        		   if (hVM==NULL)    // try older directory layout (up to and often including Java 8)
+        		   {
+                       snprintf(buf, len, "%s%s", java_home, "/jre/lib/server/libjvm.so");
+fprintf(stderr, "LINUX: JAVA_HOME=[%s], len=[%d], buf=[%s] ...\n", java_home, len, buf);
+                       hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
+fprintf(stderr, "LINUX: hVM=[%p] buf=[%s] ...\n", hVM, buf);
+        	       }
+
+                   free(buf);
+    	       }
+           }
+
         #endif
 
 
@@ -5104,9 +5184,15 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
     // reserve enough space (make sure one entry is available for defining java.lang.classpath)
     options=(JavaVMOption *) malloc( sizeof( JavaVMOption ) * (numArgs+1) );
     logical_t bCPdefined=false;  // is a classpath defined in the arguments? If so, use it otherwise use CLASSPATH value, if defined
-    CSTRING needle="-Djava.class.path="; // CLASSPATH needle to look for in the Rexx arguments; if
-                                             // supplied overrides any CLASSPATH set in the environment
+    CSTRING needle="-Djava.class.path=";    // CLASSPATH needle to look for in the Rexx arguments; if
+                                            // supplied overrides any CLASSPATH set in the environment
     size_t  needleLength=strlen(needle);
+
+        // 2021-07-18, rgf: define 'java.library.path' on Unix systems, if not supplied; on Windows
+        //                  rely on Java setting it to PATH :)
+    logical_t bJLPdefined=false;  // is a classpath defined in the arguments? If so, use it otherwise use CLASSPATH value, if defined
+    CSTRING jvlpNeedle="-Djava.library.path="; // CLASSPATH needle to look for in the Rexx arguments; if
+    size_t  jvlpNeedleLength=strlen(jvlpNeedle);
 
     for (size_t i=1; i<=numArgs; i++)   // iterate over all Rexx arguments
     {
@@ -5127,6 +5213,10 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 
         // determine whether java.class.path is supplied via this Rexx argument, setting/overriding CLASSPATH
         bCPdefined= (bCPdefined || (strncmp(cTmpStrObj, needle, needleLength)==0));
+
+#if defined( UNIX )     // java.library.path
+        bJLPdefined= (bJLPdefined || (strncmp(cTmpStrObj, jvlpNeedle, jvlpNeedleLength)==0));
+#endif
 
         // create and save supplied option
         size_t tmpLength=strlen(cTmpStrObj);
@@ -5150,6 +5240,21 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
         options[m].extraInfo=NULL;
         m++;                        // increase counter to reflect number of available options
     }
+
+#if defined( UNIX )     // java.library.path
+    if ( bJLPdefined==FALSE )    // "java.library.path" not given in Rexx arguments
+    {
+        // create option for setting "java.class.path" to CLASSPATH
+        char strJLP[] = "/opt/BSF4ooRexx:/usr/lib:/usr/lib64:/usr/local/lib:/usr/local/lib64:.";
+        size_t bufLen=strlen(strJLP)+needleLength;
+        options[m].optionString = (char *) malloc(bufLen+1);    // get needed memory
+        snprintf( options[m].optionString, bufLen+1, "%s%s", jvlpNeedle, strJLP);
+
+        options[m].extraInfo=NULL;
+        m++;                        // increase counter to reflect number of available options
+    }
+#endif
+
 
     vm_args2.options  = options;    // set options-array (containing classpath)
     vm_args2.nOptions = m;          // indicate how many entries in options array

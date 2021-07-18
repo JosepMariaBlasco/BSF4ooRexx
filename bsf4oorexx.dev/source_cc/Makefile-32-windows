@@ -61,7 +61,7 @@ REXX_HOME = F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\source_cc\rexxapi.win\wi
 
 # Define RELEASE on the command line, or here, to build a non-debug version.  By
 # default debug versions are built.  I.e. nMake RELEASE=1
-# RELEASE = 1
+RELEASE = 1
 
 # rgf --->
 # need access to "org_rexxla_bsf_engines_rexx_RexxAndJava.h", created from "RexxAndJava" with "javah"
@@ -69,6 +69,8 @@ REXX_HOME = F:\work\svn\bsf4oorexx\trunk\bsf4oorexx.dev\source_cc\rexxapi.win\wi
 
 # if no JAVA_HOME defined in environment, define it manually
 JAVA_HOME       = c:\Program Files (x86)\Java\jdk1.8.0_77
+# rgf, 20210718
+JAVA_HOME = E:\jdk\jdk-11.0.5+10-32
 
 INC_PATH	=  .;$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;java_include\win_include_8\include;java_include\win_include_8\include\win32;
 INCLUDE = $(INCLUDE);$(INC_PATH)
