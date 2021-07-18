@@ -36,6 +36,9 @@ remarks:
                              - TODO: remove dead (commented) code
                              - TODO (at the end): remove #define USE_RII2OID_RELATION and code (not necessary to keep this information)
                              - TODO (at the end): remove #define USE_OREXX_REGISTRY_PACKAGE and code
+    6.0.0   2021-07-18, rgf: - when loading Java now also honor JAVA_HOME environment variable, if present
+			     - search sequence: /opt/BSF4ooRexx -> JAVA_HOME -> operating system search (simple DLL/so/dylib name)
+
     6.0.0   2021-03-20, rgf: - removed a warning by explicitly using strcmp():
                                MacOS: BSF4ooRexx.cc:8349:31: warning: result of comparison against a string literal is unspecified (use an explicit string comparison function
       instead) [-Wstring-compare]
@@ -973,11 +976,11 @@ thread_id_t  RgfGetTID();
 
 
 #if defined (BSF4REXX_32_BIT)
-    #define BSF_VERSION     "600.20210320 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20210718 org/rexxla/bsf/engines/rexx 32-bit"  // version: "MajorNumber"."YYYYMMDD"
 #elif defined (BSF4REXX_64_BIT)
-    #define BSF_VERSION     "600.20210320 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20210718 org/rexxla/bsf/engines/rexx 64-bit"  // version: "MajorNumber"."YYYYMMDD"
 #else
-    #define BSF_VERSION     "600.20210320 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
+    #define BSF_VERSION     "600.20210718 org/rexxla/bsf/engines/rexx n/a-bit"  // version: "MajorNumber"."YYYYMMDD"
 #endif
 
     // 2005-06-02, when BSF4ooRexx loads Java, the following Java class is used to initialize all necessary Java objects
@@ -4947,16 +4950,51 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
        //                  look first in /opt/BSF4ooRexx, and thereafter let the system find "libjvm.so"
        // 2011-01-06, rgf: on Unix-based systems the BSF4ooRexx installation may have put a link to the
        //                  JVM to be used into BSF4ooRexx home directory, so look there first
+       // 2021-07-18, rgf: after /opt/BSF4ooRexx (on Apple before the old /System/.. location is searched), 
+       //                  honor JDK_HOME environment variable, if set
 
         #ifdef __APPLE__
            hVM=dlopen("/opt/BSF4ooRexx/libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL );
+// fprintf(stderr, "hVM=[%p] /opt/BSF4ooRexx/libjvm.dylib ...\n", hVM);
+
+           if (hVM==NULL)   // not found, now look for environemnet variable JDK_HOME
+           {
+               char *java_home = getenv("JAVA_HOME");	// try to get environment variable
+ 	       if (java_home != NULL)
+	       {
+                   int  len = strlen(java_home)+128;
+                   char *buf = (char *) malloc(len);
+			// try the new directory layout (since Java 9)
+                   snprintf(buf, len, "%s%s", java_home, "/lib/server/libjvm.dylib");
+// fprintf(stderr, "JDK_HOME=[%s], len=[%d], buf=[%s] ...\n", java_home, len, buf);
+                   hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
+// fprintf(stderr, "hVM=[%p] buf=[%s] ...\n", hVM, buf);
+
+		   if (hVM==NULL)    // try older directory layout (up to and often including Java 8)
+		   {
+                  snprintf(buf, len, "%s%s", java_home, "/jre/lib/server/libjvm.dylib");
+// fprintf(stderr, "JDK_HOME=[%s], len=[%d], buf=[%s] ...\n", java_home, len, buf);
+                   hVM=dlopen(buf, RTLD_LAZY | RTLD_GLOBAL );
+// fprintf(stderr, "hVM=[%p] buf=[%s] ...\n", hVM, buf);
+		   }
+
+                   free(buf);
+	       }
+           }
+
            if (hVM==NULL)   // not found, now look in system's location
            {
+		// 2021-07-18, rgf: surprisingly this still works on macOS BigSur 11.4
                hVM=dlopen("/System/Library/Frameworks/JavaVM.framework/JavaVM", RTLD_LAZY | RTLD_GLOBAL );
+// fprintf(stderr, "hVM=[%p] /System/Library/Frameworks/JavaVM.framework/JavaVM ...\n", hVM);
+
            }
+
+
         #else
            hVM=dlopen("/opt/BSF4ooRexx/libjvm.so", RTLD_LAZY | RTLD_GLOBAL );
         #endif
+
 
            if (hVM==NULL)   // not found, now let the system search a "libjvm.so"
            {
@@ -4966,10 +5004,15 @@ RexxRoutine1(CSTRING, BsfLoadJava, ARGLIST, argArray)    // 20090505, ---rgf, on
 
         #ifdef __APPLE__
                hVM=dlopen("libjvm.dylib", RTLD_LAZY | RTLD_GLOBAL );   // not found, now let the system find a "libjvm.so"...
+// fprintf(stderr, "hVM=[%p] libjvm.dylib ...\n", hVM);
+
         #else
                hVM=dlopen("libjvm.so", RTLD_LAZY | RTLD_GLOBAL );   // not found, now let the system find a "libjvm.so"...
         #endif
            }
+
+// fprintf(stderr, "hVM=[%p] end ...\n", hVM);
+
     #endif
 
 

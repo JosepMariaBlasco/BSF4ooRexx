@@ -121,18 +121,19 @@ OOREXX_APP_INSTALL = /Users/rony/Applications/ooRexx5
 ORX_LIBS_32 = $(ORX_LIBPATH_32)/librexx.dylib $(ORX_LIBPATH_32)/librexxapi.dylib
 ORX_LIBS_64 = $(ORX_LIBPATH_64)/librexx.dylib $(ORX_LIBPATH_64)/librexxapi.dylib
 
-ORX_LIBS_64 = -L/usr/local/lib -L${OOREXX_FRAMEWORK}/Libraries -L${OOREXX_APP_INSTALL}999/lib -lrexx -lrexxapi
+# ORX_LIBS_64 = -L/usr/local/lib -L${OOREXX_FRAMEWORK}/Libraries -L${OOREXX_APP_INSTALL}999/lib -lrexx -lrexxapi
 
 
 # assuming that ooRexx is universal or arm64
 ORX_LIBS_64 = -L${OOREXX_APP_INSTALL}/lib   -lrexx -lrexxapi
 INC_PATH_ALL = $(INC_PATH) -I$(OOREXX_APP_INSTALL)/include
 INC_PATH_ALL_ARM64 = $(INC_PATH_ARM64) -I$(OOREXX_APP_INSTALL)/include ${OOREXX_FRAMEWORK}/Headers 
+INC_PATH_ALL_ARM64 = $(INC_PATH_ARM64) -I$(OOREXX_APP_INSTALL)/include 
 
 
 
 # INC_PATH_ALL = $(INC_PATH) -I/System/Library/Frameworks/ooRexx.framework/Versions/Current/Headers $(ORX5_INCPATH_64)
-INC_PATH_ALL = $(INC_PATH) -I$(OOREXX_APP_INSTALL)/include ${OOREXX_FRAMEWORK}/Headers 
+INC_PATH_ALL = $(INC_PATH) -I/Applications/ooRexx5/include -I$(OOREXX_APP_INSTALL)/include 
 
 CFLAGS = -fPIC
 LFLAGS = -shared
@@ -142,10 +143,7 @@ all: x86 x86_64 universal
 
 # -------------------------------------------------------- needs 32-bit ooRexx installed currently
 x86: BSF4ooRexx.cc
-#	g++ -c $(CFLAGS) $(INC_PATH_ALL) -m32 -arch i386 -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -oBSF4ooRexx-mac-i386.o BSF4ooRexx.cc
 	g++ -c $(CFLAGS) $(INC_PATH_ALL) -m32 -arch i386 -DUSE_OREXX -DUNIX -DBSF4REXX_32_BIT -o$(BSF_OBJ_ORX_32) BSF4ooRexx.cc
-
-#	g++ -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_32) $(BSF_OBJ_ORX_32) $(LIB_2_REXX_32)/librexx.dylib $(LIB_2_REXX_32)/librexxapi.dylib -framework JavaVM -arch i386
 	g++ -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_32) $(BSF_OBJ_ORX_32) $(ORX_LIBS_32) -framework JavaVM -arch i386
 
 	cp -p $(BSF_ORX_TARGET_32) $(BSF4REXX)
@@ -153,12 +151,15 @@ x86: BSF4ooRexx.cc
 
 # --------------------------------------------------- needs 64-bit ooRexx installed currently
 x86_64: BSF4ooRexx.cc
-#	g++ -c $(CFLAGS) $(INC_PATH) $(INC_PATH_ALL) -m64 -arch x86_64 -DUSE_OREXX -DUNIX -DBSF4REXX_64_BIT -oBSF4ooRexx-mac-x86_64.o BSF4ooRexx.cc
 	g++ -c $(CFLAGS) $(INC_PATH) $(INC_PATH_ALL) -m64 -arch x86_64 -DUSE_OREXX -DUNIX -DBSF4REXX_64_BIT -o$(BSF_OBJ_ORX_64) BSF4ooRexx.cc
 
 # 	g++ -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(LIB_2_REXX)/librexx.dylib $(LIB_2_REXX)/librexxapi.dylib -framework JavaVM -arch x86_64
 #	g++ -v -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -framework JavaVM -arch x86_64
-	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) ${JDK_HOME}/jre/lib/server/libjvm.dylib -arch x86_64
+#	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) ${JDK_HOME}/jre/lib/server/libjvm.dylib -arch arm64
+
+#	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -L/usr/local/lib/libjvm.dylib -arch x86_64i
+#	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -L${JDK_HOME}/jre/lib/libjvm.dylib -arch x86_64
+	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -arch x86_64
 
 	cp -p $(BSF_ORX_TARGET_64) $(BSF4REXX)
 	cp -p $(BSF_ORX_TARGET_64) $(TGT_LIB_DIR)
@@ -176,7 +177,9 @@ arm64: BSF4ooRexx.cc
 	g++ -c $(CFLAGS) $(INC_PATH_ALL_ARM64) -m64 -arch arm64 -DUSE_OREXX -DUNIX -DBSF4REXX_64_BIT -o$(BSF_OBJ_ORX_ARM64) BSF4ooRexx.cc
 
 #	g++ -v -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_64) $(BSF_OBJ_ORX_64) $(ORX_LIBS_64) -framework JavaVM -arch x86_64
-	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_ARM64) $(ORX_LIBS_64) ${JDK_HOME_ARM64}/jre/lib/server/libjvm.dylib -arch arm64
+# 	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_ARM64) $(ORX_LIBS_64) ${JDK_HOME_ARM64}/jre/lib/server/libjvm.dylib -arch arm64
+	g++    -dynamiclib $(LFLAGS) -o $(BSF_ORX_TARGET_ARM64) $(BSF_OBJ_ORX_ARM64) $(ORX_LIBS_64) -arch arm64
+
 
 	cp -p $(BSF_ORX_TARGET_ARM64) $(BSF4REXX)
 	cp -p $(BSF_ORX_TARGET_ARM64) $(TGT_LIB_DIR)
@@ -191,6 +194,8 @@ universal_old: BSF4ooRexx.cc x86 x86_64
 universal: BSF4ooRexx.cc x86_64 arm64
 #	lipo -create -output libBSF4ooRexx.dylib -arch x86_64 libBSF4ooRexx-x86_64.dylib -arch i386 libBSF4ooRexx-i386.dylib -arch ppc libBSF4ooRexx-ppc.dylib
 	lipo -create -output $(BSF4REXX)-universal -arch x86_64 $(BSF_ORX_TARGET_64) -arch arm64 $(BSF_ORX_TARGET_ARM64)
+	cp -p $(BSF4REXX)-universal $(TGT_LIB_DIR)
+
 
 
 # ---------------------------------------------------
